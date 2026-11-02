@@ -8,9 +8,33 @@ What works today:
 - Sign in, sign out, forgot password (reset link by email), change password. All of it is Django's
   built-in auth: PBKDF2 password hashing, signed one-time reset tokens, the standard password
   validators, CSRF protection and sign-out by POST only.
+- Every page needs a signed-in user (`LoginRequiredMiddleware`) unless its view opts out.
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
   choice, collapses by itself below 1100 px when no choice is saved and slides in from the left on
   phones; a sticky top bar with the page title and the user menu.
+
+## Ported farm tabs
+
+Each tab is ported from `aquaculture_platform` (farm-service entities and migrations, farm-module
+React forms) and reviewed before the next one starts. Every form has tests that create, read, edit
+and delete through the pages and check what is stored in the database.
+
+### Facility › Sites (`/sites/`)
+
+Tables `sites` and `site_contacts`. Cards with search by name, code or region; a form with three
+inner tabs (Basic info, Location, Contact); contacts saved as a whole list on the Contact tab;
+delete is a soft delete. Differences from the source:
+
+- Single company: no `tenantId`, no row-level security.
+- Satellite monitoring is not ported (monitoring radius, monitoring area, its revision trigger).
+- The jsonb `location` and `address` are flat columns (latitude, longitude, altitude, street, city,
+  state, postal code); the source kept city and country twice.
+- Code, name and lokalitetsnummer are unique among live sites and at most one contact is primary,
+  as database constraints; the source enforced most of this only in service code.
+- Column lengths win where the source's form allowed longer values (name 150, code 20, email 150).
+- Editing is guarded by the `version` column: a save based on an old version is refused.
+- Delete blockers (tanks holding biomass) and the cascade to departments, systems and equipment
+  come with those tabs.
 
 ## Local setup
 
@@ -37,6 +61,7 @@ real mail.
 | Path | Page |
 |---|---|
 | `/` | Overview (sign-in required) |
+| `/sites/` | Facility › Sites |
 | `/accounts/login/` | Sign in |
 | `/accounts/logout/` | Sign out (POST) |
 | `/accounts/password_reset/` | Forgot password |
@@ -49,6 +74,8 @@ real mail.
 |---|---|
 | `config/` | Settings, URLs, the overview view |
 | `core/` | TimescaleDB extension migration, tests |
+| `farm/` | Farm module: models, forms, views, tests |
+| `templates/farm/`, `static/css/farm.css`, `static/js/site-form.js` | Farm pages |
 | `templates/auth_base.html`, `templates/registration/` | Sign-in and password pages |
 | `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu), Lucide icons |
 | `static/css/base.css` | Colour tokens, reset, form controls shared by every page |

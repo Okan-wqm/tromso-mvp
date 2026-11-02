@@ -1,28 +1,29 @@
 {% extends "crud/list.html" %}
-{% block search_placeholder %}Search by name or code{% endblock %}
+{% load i18n %}
+{% block search_placeholder %}{% trans "Search by name or code" %}{% endblock %}
 {% block filters %}
 <form method="get" class="toolbar-filter">
   {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
-  <label class="sr-only" for="site-filter">Site</label>
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
   <select id="site-filter" name="site" data-autosubmit>
-    <option value="">All sites</option>
-    <option value="{{ none_value }}"{% if chosen_site == none_value %} selected{% endif %}>Without a site</option>
+    <option value="">{% trans "All sites" %}</option>
+    <option value="{{ none_value }}"{% if chosen_site == none_value %} selected{% endif %}>{% trans "Without a site" %}</option>
     {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
   </select>
-  <noscript><button type="submit" class="button button-ghost">Filter</button></noscript>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
 {% block notice %}
 {% if without_site %}
-<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{{ without_site }} production department{{ without_site|pluralize }} {{ without_site|pluralize:"is,are" }} not on any site. <a href="?site={{ none_value }}">Show them</a></p>
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count count=without_site %}{{ count }} production department is not on any site.{% plural %}{{ count }} production departments are not on any site.{% endblocktrans %} <a href="?site={{ none_value }}">{% trans "Show them" %}</a></p>
 {% endif %}
 {% endblock %}
-{% block empty_text %}Production departments organise a site, e.g. a hatchery hall or a grow-out unit.{% endblock %}
+{% block empty_text %}{% trans "Production departments organise a site, e.g. a hatchery hall or a grow-out unit." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">Production department</th><th scope="col">Type</th><th scope="col">Site</th><th scope="col" class="num">Capacity</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+      <tr><th scope="col">{% trans "Production department" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col" class="num">{% trans "Capacity" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     <tbody>
       {% for department in objects %}
@@ -32,11 +33,11 @@
           <span class="row-sub">{{ department.code }}</span>
         </td>
         <td>{{ department.get_type_display }}</td>
-        <td>{% if department.site %}{{ department.site.name }}{% else %}<span class="text-warning">No site</span>{% endif %}</td>
+        <td>{% if department.site %}{{ department.site.name }}{% else %}<span class="text-warning">{% trans "No site" %}</span>{% endif %}</td>
         <td class="num">{% if department.capacity is not None %}{{ department.capacity|floatformat:"-2g" }}{% else %}–{% endif %}</td>
         <td class="row-actions">
-          {% if can_change %}<a class="icon-button" href="{% url 'farm:productiondepartment_edit' department.pk %}" data-modal title="Edit {{ department.name }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">Edit {{ department.name }}</span></a>{% endif %}
-          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productiondepartment_delete' department.pk %}" data-modal title="Delete {{ department.name }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">Delete {{ department.name }}</span></a>{% endif %}
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:productiondepartment_edit' department.pk %}" data-modal title="{% blocktrans with name=department.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=department.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productiondepartment_delete' department.pk %}" data-modal title="{% blocktrans with name=department.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=department.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
         </td>
       </tr>
       {% endfor %}

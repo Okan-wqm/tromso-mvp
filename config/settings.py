@@ -47,9 +47,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # The language comes from the cookie, then the browser's Accept-Language, then LANGUAGE_CODE.
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # A signed-in person's saved language wins over the cookie.
+    'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
@@ -67,6 +71,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+                'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.navigation.rail',
@@ -121,11 +126,21 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+# English is the source language: every msgid is English text, so it has no catalog (core.catalogs).
+LANGUAGE_CODE = 'en'
+LANGUAGES = [('en', 'English'), ('tr', 'Türkçe'), ('nb', 'Norsk bokmål')]
+LOCALE_PATHS = [BASE_DIR / 'locale']
+# Date formats per language (config/formats); decimal separators are Django's own.
+FORMAT_MODULE_PATH = ['config.formats']
+LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
+LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
+# Quantities group their digits where a template asks (floatformat:"g"); plain numbers such as
+# lokalitetsnummer and form inputs never do, so an identifier is never read as 12.345.
+USE_THOUSAND_SEPARATOR = False
 
 USE_TZ = True
 

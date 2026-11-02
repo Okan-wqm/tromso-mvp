@@ -3,6 +3,7 @@ from django.contrib import admin, messages
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils.translation import gettext_lazy as _, ngettext
 
 from . import softdelete
 from .models import AuditedModel
@@ -31,7 +32,7 @@ class AuditedModelAdmin(admin.ModelAdmin):
     def has_restore_permission(self, request):
         return request.user.has_perm(f'{self.opts.app_label}.change_{self.opts.model_name}')
 
-    @admin.action(description='Restore the selected deleted records', permissions=['restore'])
+    @admin.action(description=_('Restore the selected deleted records'), permissions=['restore'])
     def restore(self, request, queryset):
         restored = 0
         for record in queryset.filter(is_deleted=True):
@@ -39,11 +40,13 @@ class AuditedModelAdmin(admin.ModelAdmin):
                 with transaction.atomic():
                     softdelete.restore(record, request.user)
             except ValidationError as error:
-                self.message_user(request, f'{record} was not restored: {" ".join(error.messages)}', messages.ERROR)
+                self.message_user(request, _('%(record)s was not restored: %(reasons)s') % {
+                    'record': record, 'reasons': ' '.join(error.messages)}, messages.ERROR)
             else:
                 restored += 1
         if restored:
-            self.message_user(request, f'Restored {restored} record(s).', messages.SUCCESS)
+            self.message_user(request, ngettext('%(count)d record restored.', '%(count)d records restored.',
+                                                restored) % {'count': restored}, messages.SUCCESS)
 
 
 def register_audited(app_label):

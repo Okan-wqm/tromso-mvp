@@ -315,6 +315,17 @@
 .menu-item:hover { background: var(--hover); color: var(--speck); }
 .menu-item[aria-current="true"] { background: var(--active-bg); color: var(--stripe-dark); font-weight: 600; }
 
+.menu-language {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: .25rem;
+}
+.menu-language > span { color: var(--muted); font-size: .875rem; }
+
 /* Content */
 .content {
   width: 100%;

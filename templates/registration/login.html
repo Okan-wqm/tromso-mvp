@@ -1,13 +1,14 @@
 {% extends "auth_base.html" %}
-{% block title %}Sign in{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Sign in" %}{% endblock %}
 {% block content %}
-<h1>Sign in</h1>
-<p class="lead">Use your username and password to open the farm console.</p>
+<h1>{% trans "Sign in" %}</h1>
+<p class="lead">{% trans "Use your username and password to open the farm console." %}</p>
 <form method="post" novalidate>
   {% csrf_token %}
   {% include "registration/_form.html" %}
   <input type="hidden" name="next" value="{{ next }}">
-  <button type="submit" class="button">Sign in</button>
+  <button type="submit" class="button">{% trans "Sign in" %}</button>
 </form>
-<p class="links"><a href="{% url 'password_reset' %}">Forgot your password?</a></p>
+<p class="links"><a href="{% url 'password_reset' %}">{% trans "Forgot your password?" %}</a></p>
 {% endblock %}

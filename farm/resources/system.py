@@ -1,3 +1,5 @@
+from django.utils.translation import gettext_lazy as _
+
 from core.crud import NONE, Resource, filter_by
 
 from ..forms import SystemForm
@@ -7,7 +9,7 @@ from ..models import ProductionDepartment, Site, System
 class SystemResource(Resource):
     model = System
     form_class = SystemForm
-    name, plural, group = 'system', 'systems', 'Facility structure'
+    name, plural, group = _('system'), _('systems'), _('Facility structure')
     url_prefix = 'systems'
     search_fields = ['name', 'code']
     list_template = 'farm/system_list.html'

@@ -1,10 +1,11 @@
 {% extends "app_base.html" %}
-{% block title %}Company overview{% endblock %}
-{% block eyebrow %}Company{% endblock %}
-{% block heading %}Overview{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Company overview" %}{% endblock %}
+{% block eyebrow %}{% trans "Company" %}{% endblock %}
+{% block heading %}{% trans "Overview" %}{% endblock %}
 {% block content %}
 {% include "_overview_tiles.html" %}
 <section class="placeholder">
-  <p>Welcome, {{ user.get_username }}. The company’s figures will appear here.</p>
+  <p>{% blocktrans trimmed with name=user.get_username %}Welcome, {{ name }}. The company’s figures will appear here.{% endblocktrans %}</p>
 </section>
 {% endblock %}

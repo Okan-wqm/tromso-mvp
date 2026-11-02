@@ -1,16 +1,17 @@
 {% extends "app_base.html" %}
-{% block title %}Database{% endblock %}
-{% block eyebrow %}Administration{% endblock %}
-{% block heading %}Database{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Database" %}{% endblock %}
+{% block eyebrow %}{% trans "Administration" %}{% endblock %}
+{% block heading %}{% trans "Database" %}{% endblock %}
 {% block content %}
-<p class="panel-help">Every table the application stores, as it is in the database. Nothing here can be changed. Deleted records are only marked as deleted, so they are still in the tables and are counted here.</p>
+<p class="panel-help">{% trans "Every table the application stores, as it is in the database. Nothing here can be changed. Deleted records are only marked as deleted, so they are still in the tables and are counted here." %}</p>
 {% for section in sections %}
 <section class="db-section" aria-labelledby="section-{{ forloop.counter }}">
   <h2 class="section-title" id="section-{{ forloop.counter }}">{{ section.label }}</h2>
   <div class="table-wrap">
     <table class="data-table">
       <thead>
-        <tr><th scope="col">Table</th><th scope="col">What it holds</th><th scope="col" class="num">Rows</th><th scope="col" class="num">Deleted</th></tr>
+        <tr><th scope="col">{% trans "Table" %}</th><th scope="col">{% trans "What it holds" %}</th><th scope="col" class="num">{% trans "Rows" %}</th><th scope="col" class="num">{% trans "Deleted" %}</th></tr>
       </thead>
       <tbody>
         {% for entry in section.tables %}

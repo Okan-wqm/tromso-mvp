@@ -1,23 +1,24 @@
+{% load i18n %}
 <ol class="audit" role="list">
   {% for entry in entries %}
   <li class="audit-entry audit-{{ entry.action }}">
     <div class="audit-head">
       <span class="audit-action">{{ entry.get_action_display }}</span>
-      {% if show_record %}<span class="audit-record">{{ entry.entity_type|capfirst }} · {{ entry.entity_label }}</span>{% endif %}
-      <span class="audit-meta">by <strong>{{ entry.user_name }}</strong> · <time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"j M Y, H:i" }}</time></span>
+      {% if show_record %}<span class="audit-record">{{ entry.shown_type|capfirst }} · {{ entry.entity_label }}</span>{% endif %}
+      <span class="audit-meta">{% blocktrans trimmed with name=entry.user_name %}by <strong>{{ name }}</strong>{% endblocktrans %} · <time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"DATETIME_FORMAT" }}</time></span>
     </div>
     {% if entry.changes %}
     <dl class="audit-changes">
-      {% for label, values in entry.changes.items %}
+      {% for label, old, new in entry.shown_changes %}
       <div>
         <dt>{{ label }}</dt>
-        <dd>{% if entry.action == "create" %}{{ values.1 }}{% else %}<del>{{ values.0|default:"empty" }}</del> → <ins>{{ values.1|default:"empty" }}</ins>{% endif %}</dd>
+        <dd>{% if entry.action == "create" %}{{ new }}{% else %}<del>{{ old|default:_("empty") }}</del> → <ins>{{ new|default:_("empty") }}</ins>{% endif %}</dd>
       </div>
       {% endfor %}
     </dl>
     {% endif %}
   </li>
   {% empty %}
-  <li class="audit-none">{{ empty_text|default:"Nothing recorded yet." }}</li>
+  <li class="audit-none">{{ empty_text|default:_("Nothing recorded yet.") }}</li>
   {% endfor %}
 </ol>

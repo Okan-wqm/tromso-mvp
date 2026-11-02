@@ -14,6 +14,7 @@ from farm.tests.helpers import site_data
 
 from . import access, audit, navigation
 from .crud import Resource
+from .audit import message
 from .models import AuditedModel, AuditLog
 
 
@@ -354,9 +355,9 @@ class UserTests(AdminTestCase):
         created, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
         self.assertEqual(created, ('create', 'user', {
             'Username': [None, 'kari'], 'First name': [None, 'Kari'], 'Last name': [None, 'Nordmann'],
-            'Email': [None, 'kari@example.com'], 'Active': [None, 'Yes'], 'Roles': [None, 'Feeder'],
+            'Email': [None, 'kari@example.com'], 'Active': [None, message('Yes')], 'Roles': [None, 'Feeder'],
         }))
-        self.assertEqual(edited, ('update', 'user', {'Active': ['Yes', 'No'], 'Roles': ['Feeder', 'Vet']}))
+        self.assertEqual(edited, ('update', 'user', {'Active': [message('Yes'), message('No')], 'Roles': ['Feeder', 'Vet']}))
 
 
 class AccessTests(AdminTestCase):

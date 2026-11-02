@@ -3,11 +3,14 @@
 A tab declares its model, form, labels and list template once; these views add what every tab
 needs the same way:
 - permissions: the role must hold view/add/change/delete on the model (the platform admin holds all);
-- audit log: every create, change and delete is recorded in the same transaction;
+- audit log: every create, change and delete is recorded in the same transaction, in English whatever
+  language the person uses (core.audit);
 - optimistic locking: a save based on an outdated `version` is refused;
 - soft delete: models with `soft_delete()` are hidden, not erased;
 - modal or page: opened from a `data-modal` link the same view renders inside a dialog, opened
-  directly it renders as a full page (see core/templates and static/js/components.js).
+  directly it renders as a full page (see core/templates and static/js/components.js);
+- languages: a tab's name, plural and group are translatable text (gettext_lazy); the pages put them
+  into sentences, so write them in the lower case a noun has in the middle of a sentence.
 """
 from django import forms
 from django.contrib import messages
@@ -17,13 +20,12 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
+from django.utils.text import capfirst
+from django.utils.translation import gettext as _
 
 from . import audit, softdelete
 from .models import AuditedModel, AuditLog
 from .softdelete import plan_delete
-
-STALE_MESSAGE = ('Someone else changed this {name} while you were editing it. '
-                 'The form now shows their version; make your changes again.')
 
 
 def is_modal(request):
@@ -34,6 +36,12 @@ def render_page(request, template, context):
     """Renders `template` inside the console page or, for a modal request, inside the dialog."""
     context.setdefault('base_template', 'modal_base.html' if is_modal(request) else 'app_base.html')
     return render(request, template, context)
+
+
+def flash(request, text, resource, obj):
+    """Tells the person what happened to a record. `text` has %(name)s (the kind of record, capitalised
+    as it starts the sentence) and %(object)s (the record)."""
+    messages.success(request, text % {'name': capfirst(resource.name), 'object': obj})
 
 
 def done(request, url, stay=False):
@@ -107,13 +115,13 @@ class CodedFormMixin:
     def clean_code(self):
         code = self.cleaned_data['code'].strip().upper()
         if len(code) < 2:
-            raise ValidationError('Code must be at least 2 characters.')
+            raise ValidationError(_('Code must be at least 2 characters.'))
         return code
 
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
         if len(name) < 2:
-            raise ValidationError('Name must be at least 2 characters.')
+            raise ValidationError(_('Name must be at least 2 characters.'))
         return name
 
 
@@ -132,9 +140,9 @@ class Resource:
 
     model = None
     form_class = None
-    name = ''             # 'site'
-    plural = ''           # 'sites'
-    group = ''            # rail group and page eyebrow, e.g. 'Facility'
+    name = ''             # _('site'), translatable like plural and group
+    plural = ''           # _('sites')
+    group = ''            # rail group and page eyebrow, e.g. _('Facility')
     url_prefix = ''       # 'sites'
     search_fields = []
     list_template = ''    # extends crud/list.html and fills the `items` block
@@ -159,8 +167,8 @@ class Resource:
 
     @classmethod
     def entity_type(cls):
-        """How the activity log names this kind of record."""
-        return cls.name or audit.entity_type_of(cls.model)
+        """How the activity log names this kind of record: its English name, shown translated."""
+        return audit.english(cls.name or audit.entity_type_of(cls.model))
 
     # --- extension points ---------------------------------------------------------------------
     @classmethod
@@ -181,6 +189,12 @@ class Resource:
     def snapshot(cls, obj):
         """What the audit log compares before and after a save: the form's fields under its labels."""
         return audit.snapshot(obj, tab_fields(cls.form_class.tabs), getattr(cls.form_class.Meta, 'labels', {}))
+
+    @classmethod
+    def recorded(cls, obj):
+        """The snapshot as the audit log stores it, built in the source language."""
+        with audit.source_language():
+            return cls.snapshot(obj)
 
     @classmethod
     def after_save(cls, request, obj, created):
@@ -302,9 +316,10 @@ class CreateView(FormView):
                     setattr(obj, field, request.user)
             obj.save()
             form.save_m2m()
-            audit.record_create(request.user, obj, r.snapshot(obj), entity_type=r.entity_type())
+            audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
             r.after_save(request, obj, created=True)
-        messages.success(request, f'{r.name.capitalize()} “{obj}” created.')
+        # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+        flash(request, _('%(name)s “%(object)s” created.'), r, obj)
         return done(request, reverse(r.url_name('edit'), args=[obj.pk]), stay=True)
 
 
@@ -325,9 +340,12 @@ class UpdateView(FormView):
             current = r.queryset().select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
             versioned = 'version' in form.fields
             if versioned and form.cleaned_data.get('version') != current.version:
-                messages.error(request, STALE_MESSAGE.format(name=r.name))
+                # Translators: %(name)s is the kind of record in lower case (e.g. site).
+                messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                          'The form now shows their version; make your changes again.')
+                               % {'name': r.name})
                 return done(request, reverse(r.url_name('edit'), args=[pk]))
-            before = r.snapshot(current)
+            before = r.recorded(current)
             obj = form.save(commit=False)
             if versioned:
                 obj.version = current.version + 1
@@ -335,9 +353,10 @@ class UpdateView(FormView):
                 obj.updated_by = request.user
             obj.save()
             form.save_m2m()
-            audit.record_update(request.user, obj, before, r.snapshot(obj), entity_type=r.entity_type())
+            audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
             r.after_save(request, obj, created=False)
-        messages.success(request, f'{r.name.capitalize()} “{obj}” saved.')
+        # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+        flash(request, _('%(name)s “%(object)s” saved.'), r, obj)
         return done(request, reverse(r.url_name('list')))
 
 
@@ -356,12 +375,16 @@ class DeleteView(ResourceView):
             if isinstance(obj, AuditedModel):
                 plan = plan_delete(obj)
                 if not plan.can_delete:
-                    messages.error(request, f'{r.name.capitalize()} “{obj}” cannot be deleted: {" ".join(plan.blockers)}')
+                    # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
+                    # record; %(reasons)s are sentences saying what is in the way.
+                    messages.error(request, _('%(name)s “%(object)s” cannot be deleted: %(reasons)s') % {
+                        'name': capfirst(r.name), 'object': obj, 'reasons': ' '.join(plan.blockers)})
                     return done(request, reverse(r.url_name('list')))
                 softdelete.execute(plan, request.user)
             else:
                 # Logged first: a hard delete clears the object's primary key.
                 audit.record_delete(request.user, obj, entity_type=r.entity_type())
                 obj.delete()
-        messages.success(request, f'{r.name.capitalize()} “{obj}” deleted.')
+        # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+        flash(request, _('%(name)s “%(object)s” deleted.'), r, obj)
         return done(request, reverse(r.url_name('list')))

@@ -1,11 +1,11 @@
-{# What a page renders when it is opened inside the dialog (core.crud.render_page). #}
+{% load i18n %}{# What a page renders when it is opened inside the dialog (core.crud.render_page). #}
 <div class="modal-head">
   <div>
     <p class="eyebrow">{% block eyebrow %}{% endblock %}</p>
     <h2 class="modal-title" id="modal-title">{% block heading %}{% endblock %}</h2>
   </div>
-  <button type="button" class="icon-button" data-modal-close title="Close">
-    {% include "icons/_icon.html" with name="x" %}<span class="sr-only">Close</span>
+  <button type="button" class="icon-button" data-modal-close title="{% trans "Close" %}">
+    {% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Close" %}</span>
   </button>
 </div>
 <div class="modal-body">

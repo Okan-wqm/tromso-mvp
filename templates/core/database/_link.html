@@ -1,2 +1,2 @@
-{# A foreign key's other end: table.column, linked when the viewer shows that table, and a note when the database does not check the link. #}
-<span class="mono">{% if link.linked %}<a href="{% url 'core:database_table' link.table %}">{{ link.table }}</a>{% else %}{{ link.table }}{% endif %}.{{ link.other_column }}</span>{% if not link.enforced %} <span class="faint">not enforced by the database</span>{% endif %}
+{% load i18n %}{# A foreign key's other end: table.column, linked when the viewer shows that table, and a note when the database does not check the link. #}
+<span class="mono">{% if link.linked %}<a href="{% url 'core:database_table' link.table %}">{{ link.table }}</a>{% else %}{{ link.table }}{% endif %}.{{ link.other_column }}</span>{% if not link.enforced %} <span class="faint">{% trans "not enforced by the database" %}</span>{% endif %}

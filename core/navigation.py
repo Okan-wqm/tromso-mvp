@@ -13,7 +13,7 @@ SESSION_KEY = 'workspace'
 
 @dataclass(frozen=True)
 class Entry:
-    label: str
+    label: str               # translatable text
     url_name: str
     icon: str
     perm: str = ''          # empty: every signed-in user

@@ -1,57 +1,57 @@
 {% extends "app_base.html" %}
-{% load static %}
-{% block title %}Activity log{% endblock %}
-{% block eyebrow %}Administration{% endblock %}
-{% block heading %}Activity log{% endblock %}
+{% load i18n static %}
+{% block title %}{% trans "Activity log" %}{% endblock %}
+{% block eyebrow %}{% trans "Administration" %}{% endblock %}
+{% block heading %}{% trans "Activity log" %}{% endblock %}
 {% block content %}
-<p class="panel-help">Every change anyone made: who, when, which record and the old and new values. Entries cannot be edited or deleted.</p>
+<p class="panel-help">{% trans "Every change anyone made: who, when, which record and the old and new values. Entries cannot be edited or deleted." %}</p>
 <form method="get" class="filters">
   <div class="field">
-    <label for="f-q">Record</label>
-    <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Name or code">
+    <label for="f-q">{% trans "Record" %}</label>
+    <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="{% trans "Name or code" %}">
   </div>
   <div class="field">
-    <label for="f-user">Person</label>
+    <label for="f-user">{% trans "Person" %}</label>
     <select id="f-user" name="user">
-      <option value="">Anyone</option>
+      <option value="">{% trans "Anyone" %}</option>
       {% for name in users %}<option value="{{ name }}"{% if name == filters.user %} selected{% endif %}>{{ name }}</option>{% endfor %}
     </select>
   </div>
   <div class="field">
-    <label for="f-type">Record type</label>
+    <label for="f-type">{% trans "Record type" %}</label>
     <select id="f-type" name="type">
-      <option value="">All types</option>
-      {% for type in types %}<option value="{{ type }}"{% if type == filters.type %} selected{% endif %}>{{ type|capfirst }}</option>{% endfor %}
+      <option value="">{% trans "All types" %}</option>
+      {% for value, shown in types %}<option value="{{ value }}"{% if value == filters.type %} selected{% endif %}>{{ shown|capfirst }}</option>{% endfor %}
     </select>
   </div>
   <div class="field">
-    <label for="f-action">Action</label>
+    <label for="f-action">{% trans "Action" %}</label>
     <select id="f-action" name="action">
-      <option value="">All actions</option>
+      <option value="">{% trans "All actions" %}</option>
       {% for value, label in actions %}<option value="{{ value }}"{% if value == filters.action %} selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
   </div>
   <div class="field">
-    <label for="f-from">From</label>
+    <label for="f-from">{% trans "From" %}</label>
     <input id="f-from" type="date" name="from" value="{{ filters.from }}">
   </div>
   <div class="field">
-    <label for="f-to">To</label>
+    <label for="f-to">{% trans "To" %}</label>
     <input id="f-to" type="date" name="to" value="{{ filters.to }}">
   </div>
   <div class="filters-actions">
-    <button type="submit" class="button button-inline">Filter</button>
-    <a class="button button-ghost" href="{% url 'core:activity_log' %}">Clear</a>
+    <button type="submit" class="button button-inline">{% trans "Filter" %}</button>
+    <a class="button button-ghost" href="{% url 'core:activity_log' %}">{% trans "Clear" %}</a>
   </div>
 </form>
 
-{% include "core/_audit_entries.html" with entries=page.object_list show_record=True empty_text="No changes match these filters." %}
+{% include "core/_audit_entries.html" with entries=page.object_list show_record=True empty_text=_("No changes match these filters.") %}
 
 {% if page.paginator.num_pages > 1 %}
-<nav class="pager" aria-label="Pages">
-  {% if page.has_previous %}<a class="button button-ghost" href="?{{ query }}&page={{ page.previous_page_number }}">Newer</a>{% endif %}
-  <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
-  {% if page.has_next %}<a class="button button-ghost" href="?{{ query }}&page={{ page.next_page_number }}">Older</a>{% endif %}
+<nav class="pager" aria-label="{% trans "Pages" %}">
+  {% if page.has_previous %}<a class="button button-ghost" href="?{{ query }}&page={{ page.previous_page_number }}">{% trans "Newer" %}</a>{% endif %}
+  <span>{% blocktrans trimmed with number=page.number total=page.paginator.num_pages %}Page {{ number }} of {{ total }}{% endblocktrans %}</span>
+  {% if page.has_next %}<a class="button button-ghost" href="?{{ query }}&page={{ page.next_page_number }}">{% trans "Older" %}</a>{% endif %}
 </nav>
 {% endif %}
 {% endblock %}

@@ -5,6 +5,7 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 
+from core.audit import message
 from core.models import AuditLog
 
 from ..models import ProductionDepartment, Site
@@ -142,7 +143,7 @@ class DepartmentAuditAndPermissionTests(ProductionDepartmentTestCase):
                          production_department_data(self.bergen, type='nursery', version='1'))
         log = list(AuditLog.objects.order_by('created_at').values_list('action', 'changes'))
         self.assertEqual(log[0][1]['Site'], [None, 'Bergen (BG)'])
-        self.assertEqual(log[1], ('update', {'Type': ['Hatchery', 'Nursery']}))
+        self.assertEqual(log[1], ('update', {'Type': [message('Hatchery'), message('Nursery')]}))
 
     def test_read_only_role_cannot_change_production_departments(self):
         viewer = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')

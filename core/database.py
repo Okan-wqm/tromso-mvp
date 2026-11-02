@@ -15,6 +15,7 @@ from django.db import connection
 from django.db.models import Count, Q
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst
+from django.utils.translation import gettext_lazy as _
 
 PERMISSION = 'core.browse_database'
 
@@ -179,7 +180,7 @@ JOIN pg_class c ON c.oid = i.indexrelid
 WHERE i.indrelid = to_regclass(%s)
 ORDER BY i.indisprimary DESC, c.relname
 """
-CONSTRAINT_KINDS = {'p': 'Primary key', 'u': 'Unique', 'f': 'Foreign key', 'c': 'Check', 'x': 'Exclusion'}
+CONSTRAINT_KINDS = {'p': _('Primary key'), 'u': _('Unique'), 'f': _('Foreign key'), 'c': _('Check'), 'x': _('Exclusion')}
 SHORT_TYPES = {
     'character varying': 'varchar', 'character': 'char', 'double precision': 'float8',
     'timestamp with time zone': 'timestamptz', 'timestamp without time zone': 'timestamp',

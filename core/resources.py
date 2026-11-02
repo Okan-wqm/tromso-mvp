@@ -1,16 +1,19 @@
 """Roles and users, declared on top of core.crud. Their permissions (auth.*_group, auth.*_user) are
 not in the access matrix, so only the platform admin manages them."""
+from django.conf import settings
 from django.contrib.auth.models import Group
+from django.utils.translation import gettext_lazy as _
 
 from . import access, audit
-from .crud import Resource
+from .crud import Resource, tab_fields
 from .forms import PasswordResetForm, RoleForm, User, UserForm
+from .language import account_language
 
 
 class RoleResource(Resource):
     model = Group
     form_class = RoleForm
-    name, plural, group = 'role', 'roles', 'Administration'
+    name, plural, group = _('role'), _('roles'), _('Administration')
     url_prefix = 'roles'
     namespace = 'core'
     search_fields = ['name']
@@ -25,14 +28,15 @@ class RoleResource(Resource):
     def snapshot(cls, role):
         """The name, and the permissions as the matrix reads them ('Sites: read, create; ...')."""
         values = audit.snapshot(role, ['name'], RoleForm.Meta.labels)
-        values['Permissions'] = access.summary(role.permissions.select_related('content_type')) or None
+        values[str(RoleForm.Meta.labels['permissions'])] = (
+            access.summary(role.permissions.select_related('content_type')) or None)
         return values
 
 
 class UserResource(Resource):
     model = User
     form_class = UserForm
-    name, plural, group = 'user', 'users', 'Administration'
+    name, plural, group = _('user'), _('users'), _('Administration')
     url_prefix = 'users'
     namespace = 'core'
     actions = ('add', 'change')     # people are deactivated, not deleted
@@ -47,6 +51,14 @@ class UserResource(Resource):
     @classmethod
     def form(cls, request, *args, **kwargs):
         return cls.form_class(*args, editor=request.user, **kwargs)
+
+    @classmethod
+    def snapshot(cls, user):
+        """The account fields, and the language the form keeps on the profile (by its native name)."""
+        fields = [name for name in tab_fields(UserForm.tabs) if name != 'language']
+        values = audit.snapshot(user, fields, UserForm.Meta.labels)
+        values[str(UserForm.base_fields['language'].label)] = dict(settings.LANGUAGES).get(account_language(user))
+        return values
 
     @classmethod
     def after_save(cls, request, user, created):

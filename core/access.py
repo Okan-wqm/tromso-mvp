@@ -14,16 +14,17 @@ from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.db.models import Q
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 
 # The matrix columns: (action, column label).
-ACTIONS = [('view', 'Read'), ('add', 'Create'), ('change', 'Edit'), ('delete', 'Delete')]
+ACTIONS = [('view', _('Read')), ('add', _('Create')), ('change', _('Edit')), ('delete', _('Delete'))]
 READ = 'view'
 
 
 @dataclass(frozen=True)
 class Area:
-    group: str            # matrix section, e.g. 'Facility' (as in the rail menu)
-    label: str            # 'Sites'
+    group: str            # matrix section, e.g. _('Facility') (as in the rail menu)
+    label: str            # _('Sites'); both are translatable text
     model: str            # 'farm.Site'
     actions: tuple = ('view', 'add', 'change', 'delete')
 

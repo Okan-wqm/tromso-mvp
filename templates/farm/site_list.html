@@ -1,6 +1,7 @@
 {% extends "crud/list.html" %}
-{% block search_placeholder %}Search by name, code or region{% endblock %}
-{% block empty_text %}Add the first site; production departments, systems and tanks are set up under a site.{% endblock %}
+{% load i18n %}
+{% block search_placeholder %}{% trans "Search by name, code or region" %}{% endblock %}
+{% block empty_text %}{% trans "Add the first site; production departments, systems and tanks are set up under a site." %}{% endblock %}
 {% block items %}
 <ul class="card-grid" role="list">
   {% for site in objects %}
@@ -13,16 +14,16 @@
       <span class="badge badge-{{ site.status }}">{{ site.get_status_display }}</span>
     </div>
     <dl class="card-facts">
-      <div><dt>Type</dt><dd>{{ site.get_type_display }}</dd></div>
-      {% if site.region or site.country %}<div><dt>Location</dt><dd>{{ site.region }}{% if site.region and site.country %}, {% endif %}{{ site.country }}</dd></div>{% endif %}
-      {% if site.area_m2 is not None %}<div><dt>Area</dt><dd>{{ site.area_m2|floatformat:"-2g" }} m²</dd></div>{% endif %}
-      {% if site.contact_email %}<div><dt>Contact</dt><dd>{{ site.contact_email }}</dd></div>{% endif %}
+      <div><dt>{% trans "Type" %}</dt><dd>{{ site.get_type_display }}</dd></div>
+      {% if site.region or site.country %}<div><dt>{% trans "Location" %}</dt><dd>{{ site.region }}{% if site.region and site.country %}, {% endif %}{{ site.country }}</dd></div>{% endif %}
+      {% if site.area_m2 is not None %}<div><dt>{% trans "Area" %}</dt><dd>{{ site.area_m2|floatformat:"-2g" }} m²</dd></div>{% endif %}
+      {% if site.contact_email %}<div><dt>{% trans "Contact" %}</dt><dd>{{ site.contact_email }}</dd></div>{% endif %}
     </dl>
     <div class="card-foot">
-      <span>Created {{ site.created_at|date:"j M Y" }}</span>
+      <span>{% blocktrans trimmed with date=site.created_at|date:"DATE_FORMAT" %}Created {{ date }}{% endblocktrans %}</span>
       <span class="card-actions">
-        {% if can_change %}<a class="icon-button" href="{% url 'farm:site_edit' site.pk %}" data-modal title="Edit {{ site.name }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">Edit {{ site.name }}</span></a>{% endif %}
-        {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:site_delete' site.pk %}" data-modal title="Delete {{ site.name }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">Delete {{ site.name }}</span></a>{% endif %}
+        {% if can_change %}<a class="icon-button" href="{% url 'farm:site_edit' site.pk %}" data-modal title="{% blocktrans with name=site.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=site.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:site_delete' site.pk %}" data-modal title="{% blocktrans with name=site.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=site.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
       </span>
     </div>
   </li>

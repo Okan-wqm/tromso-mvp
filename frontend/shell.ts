@@ -1,5 +1,5 @@
 // Console shell: collapsible rail (remembered), phone off-canvas menu, user menu.
-import { required } from './dom.js';
+import { label, required } from './dom.js';
 
 const root = document.documentElement;
 const nav = window.suderraNav;
@@ -11,10 +11,10 @@ const toggleLabel = required<HTMLElement>(toggle, '.sr-only');
 
 function syncToggle(): void {
   const collapsed = root.dataset.nav === 'collapsed';
-  const label = collapsed ? 'Expand menu' : 'Collapse menu';
+  const text = label(toggle, collapsed ? 'labelExpand' : 'labelCollapse');
   toggle.setAttribute('aria-expanded', String(!collapsed));
-  toggle.title = label;
-  toggleLabel.textContent = label;
+  toggle.title = text;
+  toggleLabel.textContent = text;
 }
 
 toggle.addEventListener('click', () => {

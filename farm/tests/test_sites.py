@@ -4,6 +4,7 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 
+from core.audit import message
 from core.models import AuditLog
 
 from ..models import Site, SiteContact
@@ -107,7 +108,7 @@ class SiteAuditTests(SiteTestCase):
         self.assertEqual(created[2]['Site code'], [None, 'BH'])
         self.assertEqual(created[2]['Total area (m²)'], [None, '100.00'])
         self.assertEqual(edited, ('update', 'ali', {
-            'Total area (m²)': ['100.00', '250.00'], 'Status': ['Active', 'Under maintenance'],
+            'Total area (m²)': ['100.00', '250.00'], 'Status': [message('Active'), message('Under maintenance')],
         }))
         self.assertEqual(contacts, ('update', 'ali', {'Contacts': [None, 'Kari (Vet, primary)']}))
         self.assertEqual(deleted, ('delete', 'ali', {}))

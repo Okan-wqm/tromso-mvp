@@ -1,0 +1,1316 @@
+# Norsk bokmål translations of the fish farm prototype.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: balik-ciftligi 1.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-02 13:02+0000\n"
+"PO-Revision-Date: 2026-11-02 13:02+0000\n"
+"Last-Translator: Suderra\n"
+"Language: nb\n"
+"Language-Team: Norsk bokmål\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#. Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
+#, python-format
+msgid "%(count)d %(name)s still belongs to it."
+msgid_plural "%(count)d %(plural)s still belong to it."
+msgstr[0] "%(count)d %(name)s tilhører den fortsatt."
+msgstr[1] "%(count)d %(plural)s tilhører den fortsatt."
+
+#, python-format
+msgid "%(count)d contact saved."
+msgid_plural "%(count)d contacts saved."
+msgstr[0] "%(count)d kontaktperson lagret."
+msgstr[1] "%(count)d kontaktpersoner lagret."
+
+#, python-format
+msgid "%(count)d record restored."
+msgid_plural "%(count)d records restored."
+msgstr[0] "%(count)d post gjenopprettet."
+msgstr[1] "%(count)d poster gjenopprettet."
+
+#, python-format
+msgid "%(count)s production department is not on any site."
+msgid_plural "%(count)s production departments are not on any site."
+msgstr[0] "%(count)s produksjonsavdeling tilhører ingen lokalitet."
+msgstr[1] "%(count)s produksjonsavdelinger tilhører ingen lokalitet."
+
+#, python-format
+msgid "%(count)s system is not in any production department."
+msgid_plural "%(count)s systems are not in any production department."
+msgstr[0] "%(count)s system tilhører ingen produksjonsavdeling."
+msgstr[1] "%(count)s systemer tilhører ingen produksjonsavdeling."
+
+#, python-format
+msgid "%(counter)s row"
+msgid_plural "%(counter)s rows"
+msgstr[0] "%(counter)s rad"
+msgstr[1] "%(counter)s rader"
+
+#, python-format
+msgid "%(field)s “%(record)s” is deleted."
+msgstr "%(field)s «%(record)s» er slettet."
+
+#, python-format
+msgid "%(kind)s form sections"
+msgstr "Seksjoner i skjemaet: %(kind)s"
+
+#, python-format
+msgid "%(label)s deleted with it"
+msgstr "%(label)s som slettes sammen med den"
+
+#, python-format
+msgid "%(label)s that lose their %(link)s"
+msgstr "%(label)s som mister koblingen «%(link)s»"
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
+#. record; %(reasons)s are sentences saying what is in the way.
+#, python-format
+msgid "%(name)s “%(object)s” cannot be deleted: %(reasons)s"
+msgstr "%(name)s «%(object)s» kan ikke slettes: %(reasons)s"
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+#, python-format
+msgid "%(name)s “%(object)s” created."
+msgstr "%(name)s «%(object)s» ble opprettet."
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+#, python-format
+msgid "%(name)s “%(object)s” deleted."
+msgstr "%(name)s «%(object)s» ble slettet."
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+#, python-format
+msgid "%(name)s “%(object)s” saved."
+msgstr "%(name)s «%(object)s» ble lagret."
+
+#, python-format
+msgid "%(number)s deleted"
+msgstr "%(number)s slettet"
+
+#, python-format
+msgid "%(record)s was not restored: %(reasons)s"
+msgstr "%(record)s ble ikke gjenopprettet: %(reasons)s"
+
+msgid "(has errors)"
+msgstr "(har feil)"
+
+msgid "0 rows"
+msgstr "0 rader"
+
+msgid "0 rows match"
+msgstr "0 rader samsvarer"
+
+msgid "9-digit Norwegian organisation number"
+msgstr "Norsk organisasjonsnummer (9 siffer)"
+
+msgid "A production department stays on the site it was created on."
+msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet på."
+
+msgid "A sea cage site needs latitude and longitude."
+msgstr "En merdlokalitet må ha breddegrad og lengdegrad."
+
+msgid "A system cannot be its own parent."
+msgstr "Et system kan ikke være sitt eget overordnede system."
+
+msgid "A system is a RAS, a pond, a cage line or a hatchery on a site; tanks and equipment belong to it."
+msgstr ""
+"Et system er et RAS-anlegg, en dam, en merdrekke eller et klekkeri på en lokalitet; kar og utstyr"
+" hører til det."
+
+msgid "A system stays on the site it was created on."
+msgstr "Et system blir værende på lokaliteten det ble opprettet på."
+
+msgid "Account"
+msgstr "Konto"
+
+msgid "Action"
+msgstr "Handling"
+
+msgid "Actions"
+msgstr "Handlinger"
+
+msgid "Active"
+msgstr "Aktiv"
+
+msgid "Activity log"
+msgstr "Aktivitetslogg"
+
+#, python-format
+msgid "Add %(name)s"
+msgstr "Legg til %(name)s"
+
+msgid "Add contact"
+msgstr "Legg til kontaktperson"
+
+#, python-format
+msgid "Add the first %(name)s."
+msgstr "Legg til første %(name)s."
+
+msgid "Add the first role, then give it to people on the Users page."
+msgstr "Legg til den første rollen, og gi den deretter til personer på Brukere-siden."
+
+msgid "Add the first site; production departments, systems and tanks are set up under a site."
+msgstr ""
+"Legg til den første lokaliteten; produksjonsavdelinger, systemer og kar settes opp under en "
+"lokalitet."
+
+msgid "Add the first user; they get an email to set their password."
+msgstr "Legg til den første brukeren; vedkommende får en e-post for å velge passord."
+
+msgid "Administration"
+msgstr "Administrasjon"
+
+msgid "Akvakulturregisteret locality number (5 digits)."
+msgstr "Lokalitetsnummer fra Akvakulturregisteret (5 siffer)."
+
+msgid ""
+"Akvakulturregisteret locality number (5 digits). Norwegian regulatory reports cannot be filed "
+"without it."
+msgstr ""
+"Lokalitetsnummer fra Akvakulturregisteret (5 siffer). Uten det kan ikke rapporter til norske "
+"myndigheter sendes inn."
+
+msgid "All actions"
+msgstr "Alle handlinger"
+
+msgid "All production departments"
+msgstr "Alle produksjonsavdelinger"
+
+msgid "All sites"
+msgstr "Alle lokaliteter"
+
+msgid "All types"
+msgstr "Alle typer"
+
+msgid "Allows"
+msgstr "Tillater"
+
+msgid "Altitude (m)"
+msgstr "Høyde over havet (m)"
+
+msgid "Another production department already uses this code."
+msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
+
+msgid "Another role already uses this name."
+msgstr "Dette navnet brukes allerede av en annen rolle."
+
+msgid "Another site already uses this code."
+msgstr "Denne koden brukes allerede av en annen lokalitet."
+
+msgid "Another site already uses this lokalitetsnummer."
+msgstr "Dette lokalitetsnummeret brukes allerede av en annen lokalitet."
+
+msgid "Another site already uses this name."
+msgstr "Dette navnet brukes allerede av en annen lokalitet."
+
+msgid "Another user already uses this email."
+msgstr "Denne e-postadressen brukes allerede av en annen bruker."
+
+msgid "Anyone"
+msgstr "Alle"
+
+msgid "Apply"
+msgstr "Bruk"
+
+msgid "Aquaponics"
+msgstr "Akvaponi"
+
+msgid "Area"
+msgstr "Areal"
+
+msgctxt "access area"
+msgid "Area"
+msgstr "Område"
+
+msgid "Back to overview"
+msgstr "Tilbake til oversikten"
+
+msgid "Back to sign in"
+msgstr "Tilbake til innlogging"
+
+msgid "Basic info"
+msgstr "Grunnleggende info"
+
+msgid "Biofloc"
+msgstr "Biofloc"
+
+msgid "Brief description of the site"
+msgstr "Kort beskrivelse av lokaliteten"
+
+msgid "Broodstock"
+msgstr "Stamfisk"
+
+msgid "Browser default"
+msgstr "Nettleserens standard"
+
+msgid "Cage"
+msgstr "Merd"
+
+msgid "Cancel"
+msgstr "Avbryt"
+
+msgid "Capacity"
+msgstr "Kapasitet"
+
+msgid "Change password"
+msgstr "Endre passord"
+
+msgid "Changed"
+msgstr "Endret"
+
+msgid "Check"
+msgstr "Sjekk"
+
+msgid "Check your email"
+msgstr "Sjekk e-posten din"
+
+msgid "City"
+msgstr "By"
+
+msgid "Clear"
+msgstr "Nullstill"
+
+msgid "Close"
+msgstr "Lukk"
+
+msgid "Closed"
+msgstr "Stengt"
+
+msgid "Code"
+msgstr "Kode"
+
+msgid "Code must be at least 2 characters."
+msgstr "Koden må ha minst 2 tegn."
+
+msgid "Collapse menu"
+msgstr "Skjul menyen"
+
+msgid "Column"
+msgstr "Kolonne"
+
+msgid "Columns"
+msgstr "Kolonner"
+
+msgid "Company"
+msgstr "Selskap"
+
+msgid "Company overview"
+msgstr "Selskapsoversikt"
+
+msgid "Company · Administration"
+msgstr "Selskap · Administrasjon"
+
+msgid "Company · Facility"
+msgstr "Selskap · Anlegg"
+
+msgid "Constraints"
+msgstr "Begrensninger"
+
+msgid "Construction"
+msgstr "Under bygging"
+
+msgid "Contact"
+msgstr "Kontakt"
+
+msgid "Contact email"
+msgstr "Kontakt-e-post"
+
+msgid "Contact phone"
+msgstr "Kontakttelefon"
+
+msgid "Contacts"
+msgstr "Kontaktpersoner"
+
+msgid "Contacts can be added once the site is created."
+msgstr "Kontaktpersoner kan legges til etter at lokaliteten er opprettet."
+
+msgid "Country"
+msgstr "Land"
+
+msgid "Create"
+msgstr "Opprett"
+
+#, python-format
+msgid "Create %(name)s"
+msgstr "Opprett %(name)s"
+
+msgid "Create, Edit and Delete include Read. Roles and users are managed by the platform admin only."
+msgstr ""
+"Opprett, Rediger og Slett omfatter også Les. Roller og brukere administreres kun av "
+"plattformadministratoren."
+
+msgid "Created"
+msgstr "Opprettet"
+
+#, python-format
+msgid "Created %(date)s"
+msgstr "Opprettet %(date)s"
+
+msgid "Created at"
+msgstr "Opprettet"
+
+msgid "Created by"
+msgstr "Opprettet av"
+
+msgid "Data"
+msgstr "Data"
+
+msgid "Database"
+msgstr "Database"
+
+msgid "Default"
+msgstr "Standard"
+
+msgid "Definition"
+msgstr "Definisjon"
+
+msgid "Delete"
+msgstr "Slett"
+
+#, python-format
+msgid "Delete %(name)s"
+msgstr "Slett %(name)s"
+
+#, python-format
+msgid "Delete %(object)s"
+msgstr "Slett %(object)s"
+
+#, python-format
+msgid "Delete “%(object)s”?"
+msgstr "Slette «%(object)s»?"
+
+msgid "Deleted"
+msgstr "Slettet"
+
+msgid "Deleted at"
+msgstr "Slettet"
+
+msgid "Deleted by"
+msgstr "Slettet av"
+
+msgid "Deleted row"
+msgstr "Slettet rad"
+
+msgid "Deleted rows"
+msgstr "Slettede rader"
+
+msgid "Description"
+msgstr "Beskrivelse"
+
+msgid "Details"
+msgstr "Detaljer"
+
+msgid "Django model"
+msgstr "Django-modell"
+
+#, python-format
+msgid "Download the rows below as CSV, up to %(limit)s rows"
+msgstr "Last ned radene nedenfor som CSV, opptil %(limit)s rader"
+
+msgid "Edit"
+msgstr "Rediger"
+
+#, python-format
+msgid "Edit %(name)s"
+msgstr "Rediger %(name)s"
+
+msgid "Email"
+msgstr "E-post"
+
+msgid "Enter the email address on your account. We will send you a link to set a new password."
+msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+msgid "Established"
+msgstr "Etablert"
+
+msgid ""
+"Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
+"edited or deleted."
+msgstr ""
+"Alle endringer som er gjort: hvem, når, hvilken post og gamle og nye verdier. Oppføringer kan "
+"ikke redigeres eller slettes."
+
+msgid "Every permission that exists: view, add, change and delete of each model, and the custom ones."
+msgstr ""
+"Alle tillatelser som finnes: visning, tillegg, endring og sletting for hver modell, og egne "
+"tillatelser."
+
+msgid ""
+"Every table the application stores, as it is in the database. Nothing here can be changed. "
+"Deleted records are only marked as deleted, so they are still in the tables and are counted here."
+msgstr ""
+"Alle tabeller applikasjonen lagrer, slik de er i databasen. Ingenting her kan endres. Slettede "
+"poster er bare merket som slettet, så de ligger fortsatt i tabellene og telles her."
+
+msgid "Exclusion"
+msgstr "Eksklusjon"
+
+msgid "Expand menu"
+msgstr "Vis menyen"
+
+msgid "Export CSV"
+msgstr "Eksporter CSV"
+
+msgid "Facilities"
+msgstr "Fasiliteter"
+
+msgid "Facility"
+msgstr "Anlegg"
+
+msgid "Facility structure"
+msgstr "Anleggsstruktur"
+
+msgid "Farm console for tanks, water quality and stock records."
+msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
+
+msgid "Feed"
+msgstr "Fôr"
+
+msgid ""
+"Feeding jobs run on the site’s local day. Leave it inherited unless the site is in a different "
+"timezone than the company."
+msgstr ""
+"Fôringsjobber kjøres etter lokalitetens lokale døgn. La verdien arves med mindre lokaliteten "
+"ligger i en annen tidssone enn selskapet."
+
+msgid "Filter"
+msgstr "Filtrer"
+
+#, python-format
+msgid "Filter %(name)s"
+msgstr "Filtrer %(name)s"
+
+msgid "First"
+msgstr "Første"
+
+msgid "First name"
+msgstr "Fornavn"
+
+msgid "Fish farm"
+msgstr "Fiskeoppdrett"
+
+msgid "Flow-through"
+msgstr "Gjennomstrømming"
+
+msgid "Foreign key"
+msgstr "Fremmednøkkel"
+
+#, python-format
+msgid "Foreign key to %(target)s"
+msgstr "Fremmednøkkel til %(target)s"
+
+msgid "Forgot your password?"
+msgstr "Glemt passordet?"
+
+msgid "From"
+msgstr "Fra"
+
+msgid "Full name of the site manager"
+msgstr "Lokalitetslederens fulle navn"
+
+msgid "Grow-out"
+msgstr "Matfisk"
+
+msgid "Hatchery"
+msgstr "Klekkeri"
+
+#, python-format
+msgid "Hi %(name)s,"
+msgstr "Hei %(name)s,"
+
+msgid "Hide"
+msgstr "Skjul"
+
+msgid "Hide deleted rows"
+msgstr "Skjul slettede rader"
+
+msgid "History"
+msgstr "Historikk"
+
+msgid ""
+"If an account uses this address, a reset link is on its way. If it has not arrived in a few "
+"minutes, check your spam folder."
+msgstr ""
+"Hvis en konto bruker denne adressen, er en tilbakestillingslenke på vei. Hvis den ikke har kommet"
+" om noen minutter, sjekk søppelpostmappen."
+
+msgid "If you did not ask for this, you can ignore this email."
+msgstr "Hvis du ikke ba om dette, kan du se bort fra denne e-posten."
+
+msgid "Inactive"
+msgstr "Inaktiv"
+
+msgid "Inactive people cannot sign in."
+msgstr "Inaktive personer kan ikke logge inn."
+
+msgid "Indexes"
+msgstr "Indekser"
+
+msgid "Inherit from company"
+msgstr "Arv fra selskapet"
+
+msgid ""
+"It disappears from every list but is not erased: the record stays in the database, the activity "
+"log keeps its history, and it can be restored from the admin."
+msgstr ""
+"Den forsvinner fra alle lister, men blir ikke slettet: posten blir i databasen, aktivitetsloggen "
+"beholder historikken, og den kan gjenopprettes fra administrasjonspanelet."
+
+msgid "Key"
+msgstr "Nøkkel"
+
+msgid "Kind"
+msgstr "Type"
+
+msgid "Laboratory"
+msgstr "Laboratorium"
+
+msgid "Land-based facility"
+msgstr "Landbasert anlegg"
+
+msgid "Language"
+msgstr "Språk"
+
+msgid "Last"
+msgstr "Siste"
+
+msgid "Last name"
+msgstr "Etternavn"
+
+msgid "Last sign-in"
+msgstr "Sist innlogget"
+
+msgid "Latitude"
+msgstr "Breddegrad"
+
+msgid "Latitude and longitude must be provided together."
+msgstr "Breddegrad og lengdegrad må oppgis sammen."
+
+msgid "Latitude is required for a sea cage."
+msgstr "Breddegrad er påkrevd for en merd."
+
+msgid "Location"
+msgstr "Plassering"
+
+msgid "Lokalitetsnummer"
+msgstr "Lokalitetsnummer"
+
+msgid "Longitude"
+msgstr "Lengdegrad"
+
+msgid "Longitude is required for a sea cage."
+msgstr "Lengdegrad er påkrevd for en merd."
+
+msgid "Main navigation"
+msgstr "Hovednavigasjon"
+
+msgid "Maintenance"
+msgstr "Vedlikehold"
+
+msgid "Manager"
+msgstr "Leder"
+
+msgid "Max biomass (kg)"
+msgstr "Maks. biomasse (kg)"
+
+msgid "Metadata"
+msgstr "Metadata"
+
+msgid "Model field"
+msgstr "Modellfelt"
+
+msgid "Name"
+msgstr "Navn"
+
+msgid "Name must be at least 2 characters."
+msgstr "Navnet må ha minst 2 tegn."
+
+msgid "Name or code"
+msgstr "Navn eller kode"
+
+msgid "Never"
+msgstr "Aldri"
+
+msgid "Never shown"
+msgstr "Vises aldri"
+
+#, python-format
+msgid "New %(name)s"
+msgstr "Opprett %(name)s"
+
+msgid "New password"
+msgstr "Nytt passord"
+
+msgid "Newer"
+msgstr "Nyere"
+
+msgid "Next"
+msgstr "Neste"
+
+msgid "No"
+msgstr "Nei"
+
+#, python-format
+msgid "No %(plural)s match “%(query)s”"
+msgstr "Ingen %(plural)s samsvarer med «%(query)s»"
+
+#, python-format
+msgid "No %(plural)s yet"
+msgstr "Ingen %(plural)s ennå"
+
+msgid "No changes match these filters."
+msgstr "Ingen endringer samsvarer med filtrene."
+
+msgid "No changes recorded yet."
+msgstr "Ingen endringer registrert ennå."
+
+msgid "No contacts yet. Use “Add contact” to add a row."
+msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad."
+
+msgid "No other table."
+msgstr "Ingen andre tabeller."
+
+msgid "No parent (top-level system)"
+msgstr "Ingen overordnet (system på øverste nivå)"
+
+msgid "No production department"
+msgstr "Ingen produksjonsavdeling"
+
+msgid "No rows match."
+msgstr "Ingen rader samsvarer."
+
+#, python-format
+msgid "No rows match. <a href=\"%(url)s\">Clear the search and filters</a>."
+msgstr "Ingen rader samsvarer. <a href=\"%(url)s\">Fjern søket og filtrene</a>."
+
+msgid "No site"
+msgstr "Ingen lokalitet"
+
+msgid "None."
+msgstr "Ingen."
+
+msgid "Notes"
+msgstr "Notater"
+
+msgid "Nothing recorded yet."
+msgstr "Ingenting registrert ennå."
+
+msgid "Nothing yet"
+msgstr "Ingenting ennå"
+
+msgid "Nullable"
+msgstr "Kan være tom"
+
+msgid "Nursery"
+msgstr "Yngelavdeling"
+
+msgid "Offline"
+msgstr "Ute av drift"
+
+msgid "Older"
+msgstr "Eldre"
+
+msgid "Only deleted rows"
+msgstr "Bare slettede rader"
+
+msgid "Only one contact can be the primary contact."
+msgstr "Bare én kontaktperson kan være hovedkontakt."
+
+#, python-format
+msgid "Only one contact can be the primary contact; %(count)d are marked."
+msgstr "Bare én kontaktperson kan være hovedkontakt; %(count)d er merket."
+
+msgid "Only the production departments of the chosen site."
+msgstr "Bare produksjonsavdelingene på den valgte lokaliteten."
+
+msgid "Only the systems of the chosen site; leave empty for a top-level system."
+msgstr "Bare systemene på den valgte lokaliteten; la feltet stå tomt for et system på øverste nivå."
+
+msgid "Open menu"
+msgstr "Åpne menyen"
+
+msgid "Open this link to set a new password:"
+msgstr "Åpne denne lenken for å velge nytt passord:"
+
+msgid "Operational"
+msgstr "I drift"
+
+msgid "Optional"
+msgstr "Valgfritt"
+
+msgid "Organisation number override"
+msgstr "Overstyring av organisasjonsnummer"
+
+msgid "Other"
+msgstr "Annet"
+
+msgid "Overview"
+msgstr "Oversikt"
+
+#, python-format
+msgid "Page %(number)s of %(total)s"
+msgstr "Side %(number)s av %(total)s"
+
+msgid "Pages"
+msgstr "Sider"
+
+msgid "Panel"
+msgstr "Panel"
+
+msgid "Panels"
+msgstr "Paneler"
+
+msgid "Parent system"
+msgstr "Overordnet system"
+
+msgid "Password saved"
+msgstr "Passordet er lagret"
+
+msgid "People who can sign in: account details and a hash of the password."
+msgstr "Personer som kan logge inn: kontoopplysninger og en hash av passordet."
+
+msgid "Permissions"
+msgstr "Tillatelser"
+
+msgid "Permissions given to one user directly instead of through a role."
+msgstr "Tillatelser gitt direkte til én bruker i stedet for gjennom en rolle."
+
+msgid "Person"
+msgstr "Person"
+
+msgid "Phone"
+msgstr "Telefon"
+
+msgid "Platform admin"
+msgstr "Plattformadministrator"
+
+msgid "Pointed at by"
+msgstr "Det pekes på av"
+
+msgid "Pond"
+msgstr "Dam"
+
+msgid "Postal code"
+msgstr "Postnummer"
+
+msgid "Previous"
+msgstr "Forrige"
+
+msgid "Primary"
+msgstr "Hovedkontakt"
+
+msgid "Primary key"
+msgstr "Primærnøkkel"
+
+msgid "Processing"
+msgstr "Bearbeiding"
+
+msgid "Production"
+msgstr "Produksjon"
+
+msgid "Production department"
+msgstr "Produksjonsavdeling"
+
+msgid "Production departments"
+msgstr "Produksjonsavdelinger"
+
+msgid "Production departments organise a site, e.g. a hatchery hall or a grow-out unit."
+msgstr ""
+"Produksjonsavdelinger organiserer en lokalitet, for eksempel en klekkerihall eller en "
+"utvekstenhet."
+
+msgid "Production overview"
+msgstr "Produksjonsoversikt"
+
+msgid "Production · Facility structure"
+msgstr "Produksjon · Anleggsstruktur"
+
+msgid "Quality control"
+msgstr "Kvalitetskontroll"
+
+msgid "Quarantine"
+msgstr "Karantene"
+
+msgid "RAS (recirculating)"
+msgstr "RAS (resirkulerende)"
+
+msgid "Raceway"
+msgstr "Raceway (strømkanal)"
+
+msgid "Read"
+msgstr "Les"
+
+#, python-format
+msgid ""
+"Read from the database itself and matched with the Django model <code>%(model)s</code> of the "
+"<code>%(app)s</code> app."
+msgstr ""
+"Lest fra selve databasen og koblet til Django-modellen <code>%(model)s</code> i appen "
+"<code>%(app)s</code>."
+
+msgid "Recirculating aquaculture system"
+msgstr "Resirkulerende akvakultursystem (RAS)"
+
+msgid "Record"
+msgstr "Post"
+
+msgid "Record type"
+msgstr "Posttype"
+
+msgid "Region"
+msgstr "Region"
+
+msgid "Relationships"
+msgstr "Relasjoner"
+
+msgid "Remove"
+msgstr "Fjern"
+
+msgid "Request a new link"
+msgstr "Be om en ny lenke"
+
+msgid "Required for a sea cage."
+msgstr "Påkrevd for en merd."
+
+msgid "Reset password"
+msgstr "Tilbakestill passord"
+
+msgid "Reset your password"
+msgstr "Tilbakestill passordet ditt"
+
+msgid "Restore the selected deleted records"
+msgstr "Gjenopprett de valgte slettede postene"
+
+msgid "Restored"
+msgstr "Gjenopprettet"
+
+msgid "Role"
+msgstr "Rolle"
+
+msgid "Role name"
+msgstr "Rollenavn"
+
+msgid "Roles"
+msgstr "Roller"
+
+msgid "Roles: a name and the permissions it allows."
+msgstr "Roller: et navn og tillatelsene det gir."
+
+msgid "Row"
+msgstr "Rad"
+
+msgid "Rows"
+msgstr "Rader"
+
+#, python-format
+msgid "Rows %(first)s–%(last)s of %(total)s"
+msgstr "Rader %(first)s–%(last)s av %(total)s"
+
+#, python-format
+msgid "Rows %(first)s–%(last)s of %(total)s match"
+msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
+
+#, python-format
+msgid "Save %(name)s"
+msgstr "Lagre %(name)s"
+
+msgid "Save contacts"
+msgstr "Lagre kontaktpersoner"
+
+msgid "Save password"
+msgstr "Lagre passord"
+
+msgid "Sea cage"
+msgstr "Merd"
+
+#, python-format
+msgid "Search %(plural)s"
+msgstr "Søk i %(plural)s"
+
+msgid "Search by name"
+msgstr "Søk etter navn"
+
+msgid "Search by name or code"
+msgstr "Søk etter navn eller kode"
+
+msgid "Search by name, code or region"
+msgstr "Søk etter navn, kode eller region"
+
+msgid "Search by name, username or email"
+msgstr "Søk etter navn, brukernavn eller e-post"
+
+msgid "Search every column"
+msgstr "Søk i alle kolonner"
+
+msgid "See all in the activity log"
+msgstr "Se alt i aktivitetsloggen"
+
+msgid "Select a site"
+msgstr "Velg en lokalitet"
+
+msgid "Send reset link"
+msgstr "Send tilbakestillingslenke"
+
+msgid "Set a new password"
+msgstr "Velg nytt passord"
+
+msgid "Settings"
+msgstr "Innstillinger"
+
+msgid "Show"
+msgstr "Vis"
+
+#, python-format
+msgid "Show all %(plural)s"
+msgstr "Vis alle %(plural)s"
+
+msgid "Show deleted rows"
+msgstr "Vis slettede rader"
+
+msgid "Show them"
+msgstr "Vis dem"
+
+msgid "Sign in"
+msgstr "Logg inn"
+
+msgid "Sign out"
+msgstr "Logg ut"
+
+msgid "Site"
+msgstr "Lokalitet"
+
+msgid "Site code"
+msgstr "Lokalitetskode"
+
+msgid "Site manager"
+msgstr "Lokalitetsleder"
+
+msgid "Site name"
+msgstr "Lokalitetsnavn"
+
+msgid "Site type"
+msgstr "Lokalitetstype"
+
+msgid "Sites"
+msgstr "Lokaliteter"
+
+msgid "Skip to content"
+msgstr "Hopp til innholdet"
+
+#. Translators: %(name)s is the kind of record in lower case (e.g. site).
+#, python-format
+msgid ""
+"Someone else changed this %(name)s while you were editing it. The form now shows their version; "
+"make your changes again."
+msgstr ""
+"Posten (%(name)s) ble endret av noen andre mens du redigerte den. Skjemaet viser nå deres "
+"versjon; gjør endringene dine på nytt."
+
+#, python-format
+msgid "Sort by %(name)s"
+msgstr "Sorter etter %(name)s"
+
+msgid "State"
+msgstr "Fylke"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Street address"
+msgstr "Gateadresse"
+
+msgid "Structure"
+msgstr "Struktur"
+
+msgid "Switch panel"
+msgstr "Bytt panel"
+
+msgid "System"
+msgstr "System"
+
+msgid "Systems"
+msgstr "Systemer"
+
+msgid "Systems by status"
+msgstr "Systemer etter status"
+
+msgid "Table"
+msgstr "Tabell"
+
+msgid "Table sections"
+msgstr "Tabellseksjoner"
+
+msgid "The biomass cannot be negative."
+msgstr "Biomassen kan ikke være negativ."
+
+msgid "The invitation to set a password is sent here."
+msgstr "Invitasjonen til å velge passord sendes hit."
+
+msgid ""
+"The language of the console and of the emails this person gets. Left empty, it follows their "
+"browser."
+msgstr ""
+"Språket i konsollen og i e-postene denne personen får. Hvis feltet er tomt, følges nettleserens "
+"språk."
+
+#, python-format
+msgid "The latest changes to this %(name)s."
+msgstr "De siste endringene i denne posten (%(name)s)."
+
+msgid "The link was already used or has expired. Request a new one."
+msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
+
+msgid "The parent system belongs to another site."
+msgstr "Det overordnede systemet hører til en annen lokalitet."
+
+msgid "The parent system is nested under this system."
+msgstr "Det overordnede systemet ligger under dette systemet."
+
+msgid "The production department belongs to another site."
+msgstr "Produksjonsavdelingen hører til en annen lokalitet."
+
+msgid "The production figures will appear here."
+msgstr "Produksjonstallene vises her."
+
+msgid ""
+"The site’s operational contacts. At most one can be the primary contact. Contacts are saved "
+"separately from the site details."
+msgstr ""
+"Lokalitetens operative kontaktpersoner. Maksimalt én kan være hovedkontakt. Kontaktpersoner "
+"lagres separat fra lokalitetsdetaljene."
+
+msgid "The volume cannot be negative."
+msgstr "Volumet kan ikke være negativt."
+
+#, python-format
+msgid "This %(name)s cannot be deleted yet."
+msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
+
+msgid "This link no longer works"
+msgstr "Denne lenken fungerer ikke lenger"
+
+msgid "This removes it permanently. The activity log keeps a record that it was deleted."
+msgstr "Dette fjerner den permanent. Aktivitetsloggen beholder en oppføring om at den ble slettet."
+
+msgid "This site already has a production department with this name."
+msgstr "Denne lokaliteten har allerede en produksjonsavdeling med dette navnet."
+
+msgid "This site already has a system with this code."
+msgstr "Denne lokaliteten har allerede et system med denne koden."
+
+msgid "This table points at"
+msgstr "Denne tabellen peker på"
+
+msgid "Timezone"
+msgstr "Tidssone"
+
+msgid "To"
+msgstr "Til"
+
+msgid "Total area (m²)"
+msgstr "Totalt areal (m²)"
+
+msgid "Total volume (m³)"
+msgstr "Totalt volum (m³)"
+
+msgid "Try another search."
+msgstr "Prøv et annet søk."
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Type your new password twice."
+msgstr "Skriv inn det nye passordet to ganger."
+
+msgid "Under maintenance"
+msgstr "Under vedlikehold"
+
+msgid "Unique"
+msgstr "Unik"
+
+msgid "Updated at"
+msgstr "Oppdatert"
+
+msgid "Updated by"
+msgstr "Oppdatert av"
+
+msgid "Use your username and password to open the farm console."
+msgstr "Bruk brukernavn og passord for å åpne driftskonsollen."
+
+msgid "Used to sign in. Letters, digits and @ . + - _ only."
+msgstr "Brukes til innlogging. Kun bokstaver, sifre og @ . + - _."
+
+msgid "Username"
+msgstr "Brukernavn"
+
+msgid "Users"
+msgstr "Brukere"
+
+msgid "Version"
+msgstr "Versjon"
+
+msgid "Volume (m³)"
+msgstr "Volum (m³)"
+
+msgid "Water capacity (m³)"
+msgstr "Vannkapasitet (m³)"
+
+#, python-format
+msgid "Welcome, %(name)s. The company’s figures will appear here."
+msgstr "Velkommen, %(name)s. Selskapets tall vises her."
+
+msgid "What it holds"
+msgstr "Hva den inneholder"
+
+msgid "What the person can open and change. Without a role they see only the overview."
+msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
+
+msgid "Which permissions each role allows."
+msgstr "Hvilke tillatelser hver rolle gir."
+
+msgid "Which roles each user has."
+msgstr "Hvilke roller hver bruker har."
+
+msgid "Without a production department"
+msgstr "Uten produksjonsavdeling"
+
+msgid "Without a site"
+msgstr "Uten lokalitet"
+
+msgid "Yes"
+msgstr "Ja"
+
+msgid "You can now sign in with your new password."
+msgstr "Du kan nå logge inn med det nye passordet ditt."
+
+msgid "You cannot deactivate your own account."
+msgstr "Du kan ikke deaktivere din egen konto."
+
+msgid "You do not have permission to do this."
+msgstr "Du har ikke tillatelse til å gjøre dette."
+
+msgid "Your new password is saved. Use it the next time you sign in."
+msgstr "Det nye passordet ditt er lagret. Bruk det neste gang du logger inn."
+
+#, python-format
+msgid "by <strong>%(name)s</strong>"
+msgstr "av <strong>%(name)s</strong>"
+
+msgid "contains"
+msgstr "inneholder"
+
+msgid "e.g. 12345"
+msgstr "f.eks. 12345"
+
+msgid "e.g. 5.3221"
+msgstr "f.eks. 5,3221"
+
+msgid "e.g. 50000"
+msgstr "f.eks. 50000"
+
+msgid "e.g. 60.3913"
+msgstr "f.eks. 60,3913"
+
+msgid "e.g. HAT-A"
+msgstr "f.eks. HAT-A"
+
+msgid "e.g. Hatchery hall A"
+msgstr "f.eks. Klekkerihall A"
+
+msgid "e.g. MPS-001"
+msgstr "f.eks. MPS-001"
+
+msgid "e.g. Main Production Site"
+msgstr "f.eks. Hovedproduksjonslokalitet"
+
+msgid "e.g. Norway"
+msgstr "f.eks. Norge"
+
+msgid "e.g. SYS-001"
+msgstr "f.eks. SYS-001"
+
+msgid "e.g. Site manager"
+msgstr "f.eks. Lokalitetsleder"
+
+msgid "e.g. Smolt RAS 1"
+msgstr "f.eks. Smolt-RAS 1"
+
+msgid "e.g. Vestland"
+msgstr "f.eks. Vestland"
+
+msgid "e.g. kari.nordmann"
+msgstr "f.eks. kari.nordmann"
+
+msgid "empty"
+msgstr "tom"
+
+msgid "equals"
+msgstr "er lik"
+
+#, python-format
+msgid "in %(name)s"
+msgstr "i %(name)s"
+
+msgid "masked"
+msgstr "maskert"
+
+msgid "no"
+msgstr "nei"
+
+msgid "no such row"
+msgstr "ingen slik rad"
+
+msgid "not enforced by the database"
+msgstr "ikke håndhevet av databasen"
+
+msgid "not in the model"
+msgstr "ikke i modellen"
+
+msgid "primary"
+msgstr "hovedkontakt"
+
+msgid "production department"
+msgstr "produksjonsavdeling"
+
+msgid "production departments"
+msgstr "produksjonsavdelinger"
+
+msgid "role"
+msgstr "rolle"
+
+msgid "roles"
+msgstr "roller"
+
+msgid "site"
+msgstr "lokalitet"
+
+msgid "site contact"
+msgstr "lokalitetskontakt"
+
+msgid "site contacts"
+msgstr "lokalitetskontakter"
+
+msgid "sites"
+msgstr "lokaliteter"
+
+msgid "system"
+msgstr "system"
+
+msgid "systems"
+msgstr "systemer"
+
+msgid "user"
+msgstr "bruker"
+
+msgid "users"
+msgstr "brukere"
+
+msgid "yes"
+msgstr "ja"
+

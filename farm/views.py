@@ -3,6 +3,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils.translation import gettext as _, ngettext
 
 from core import audit
 from core.crud import UpdateView, done
@@ -14,11 +15,12 @@ from .resources import SiteResource
 
 
 def _contacts_summary(site):
-    """The contact list as one line for the audit log, e.g. "Kari (Manager, kari@x.no, primary); Ola"."""
+    """The contact list as one line for the audit log, e.g. "Kari (Manager, kari@x.no, primary); Ola".
+    Call it inside audit.source_language(): the word "primary" is stored in English."""
     def describe(contact):
         details = [value for value in (contact.role, contact.email, contact.phone) if value]
         if contact.is_primary:
-            details.append('primary')
+            details.append(_('primary'))
         return f'{contact.name} ({", ".join(details)})' if details else contact.name
     return '; '.join(describe(contact) for contact in site.contacts.all()) or None
 
@@ -37,7 +39,7 @@ def site_contacts(request, pk):
         page = UpdateView.as_page(SiteResource, request)
         return page.page(SiteResource.form(request, instance=site), site, contacts=contacts, open_tab='contact')
     rows = contacts.kept_rows()
-    with transaction.atomic():
+    with transaction.atomic(), audit.source_language():
         before = _contacts_summary(site)
         site.contacts.all().delete()
         SiteContact.objects.bulk_create([
@@ -47,6 +49,7 @@ def site_contacts(request, pk):
         ])
         after = _contacts_summary(site)
         if before != after:
-            audit.record(request.user, AuditLog.Action.UPDATE, site, {'Contacts': [before, after]})
-    messages.success(request, f'Contacts saved ({len(rows)}).')
+            audit.record(request.user, AuditLog.Action.UPDATE, site, {_('Contacts'): [before, after]})
+    messages.success(request, ngettext('%(count)d contact saved.', '%(count)d contacts saved.', len(rows))
+                     % {'count': len(rows)})
     return done(request, edit_url, stay=True)

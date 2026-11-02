@@ -84,7 +84,7 @@ class AdminTests(RestoreTestCase):
     def test_the_restore_action_brings_records_back(self):
         self.system.soft_delete(self.admin_user)
         response = self.restore_via_admin(self.system)
-        self.assertContains(response, 'Restored 1 record(s).')
+        self.assertContains(response, '1 record restored.')
         self.assertEqual(System.objects.count(), 1)
 
     def test_the_restore_action_explains_why_a_record_stays_deleted(self):

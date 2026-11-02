@@ -1,0 +1,1313 @@
+# Türkçe translations of the fish farm prototype.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: balik-ciftligi 1.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-02 13:02+0000\n"
+"PO-Revision-Date: 2026-11-02 13:02+0000\n"
+"Last-Translator: Suderra\n"
+"Language: tr\n"
+"Language-Team: Türkçe\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#. Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
+#, python-format
+msgid "%(count)d %(name)s still belongs to it."
+msgid_plural "%(count)d %(plural)s still belong to it."
+msgstr[0] "%(count)d %(name)s hâlâ ona bağlı."
+msgstr[1] "%(count)d %(name)s hâlâ ona bağlı."
+
+#, python-format
+msgid "%(count)d contact saved."
+msgid_plural "%(count)d contacts saved."
+msgstr[0] "%(count)d kişi kaydedildi."
+msgstr[1] "%(count)d kişi kaydedildi."
+
+#, python-format
+msgid "%(count)d record restored."
+msgid_plural "%(count)d records restored."
+msgstr[0] "%(count)d kayıt geri yüklendi."
+msgstr[1] "%(count)d kayıt geri yüklendi."
+
+#, python-format
+msgid "%(count)s production department is not on any site."
+msgid_plural "%(count)s production departments are not on any site."
+msgstr[0] "%(count)s üretim departmanı hiçbir sahada değil."
+msgstr[1] "%(count)s üretim departmanı hiçbir sahada değil."
+
+#, python-format
+msgid "%(count)s system is not in any production department."
+msgid_plural "%(count)s systems are not in any production department."
+msgstr[0] "%(count)s sistem hiçbir üretim departmanında değil."
+msgstr[1] "%(count)s sistem hiçbir üretim departmanında değil."
+
+#, python-format
+msgid "%(counter)s row"
+msgid_plural "%(counter)s rows"
+msgstr[0] "%(counter)s satır"
+msgstr[1] "%(counter)s satır"
+
+#, python-format
+msgid "%(field)s “%(record)s” is deleted."
+msgstr "%(field)s “%(record)s” silinmiş."
+
+#, python-format
+msgid "%(kind)s form sections"
+msgstr "%(kind)s formu bölümleri"
+
+#, python-format
+msgid "%(label)s deleted with it"
+msgstr "%(label)s da birlikte silinir"
+
+#, python-format
+msgid "%(label)s that lose their %(link)s"
+msgstr "%(label)s: “%(link)s” bağlantısı kalkar"
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
+#. record; %(reasons)s are sentences saying what is in the way.
+#, python-format
+msgid "%(name)s “%(object)s” cannot be deleted: %(reasons)s"
+msgstr "%(name)s “%(object)s” silinemiyor: %(reasons)s"
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+#, python-format
+msgid "%(name)s “%(object)s” created."
+msgstr "%(name)s “%(object)s” oluşturuldu."
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+#, python-format
+msgid "%(name)s “%(object)s” deleted."
+msgstr "%(name)s “%(object)s” silindi."
+
+#. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+#, python-format
+msgid "%(name)s “%(object)s” saved."
+msgstr "%(name)s “%(object)s” kaydedildi."
+
+#, python-format
+msgid "%(number)s deleted"
+msgstr "%(number)s silinmiş"
+
+#, python-format
+msgid "%(record)s was not restored: %(reasons)s"
+msgstr "%(record)s geri yüklenemedi: %(reasons)s"
+
+msgid "(has errors)"
+msgstr "(hata var)"
+
+msgid "0 rows"
+msgstr "0 satır"
+
+msgid "0 rows match"
+msgstr "0 satır eşleşiyor"
+
+msgid "9-digit Norwegian organisation number"
+msgstr "9 haneli Norveç kuruluş numarası"
+
+msgid "A production department stays on the site it was created on."
+msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
+
+msgid "A sea cage site needs latitude and longitude."
+msgstr "Deniz kafesi sahası için enlem ve boylam gerekir."
+
+msgid "A system cannot be its own parent."
+msgstr "Bir sistem kendi üst sistemi olamaz."
+
+msgid "A system is a RAS, a pond, a cage line or a hatchery on a site; tanks and equipment belong to it."
+msgstr ""
+"Sistem, bir sahadaki bir RAS, havuz, kafes hattı veya kuluçkahanedir; tanklar ve ekipman ona "
+"bağlıdır."
+
+msgid "A system stays on the site it was created on."
+msgstr "Sistem, oluşturulduğu sahada kalır."
+
+msgid "Account"
+msgstr "Hesap"
+
+msgid "Action"
+msgstr "İşlem"
+
+msgid "Actions"
+msgstr "İşlemler"
+
+msgid "Active"
+msgstr "Aktif"
+
+msgid "Activity log"
+msgstr "Etkinlik günlüğü"
+
+#, python-format
+msgid "Add %(name)s"
+msgstr "Yeni %(name)s"
+
+msgid "Add contact"
+msgstr "Kişi ekle"
+
+#, python-format
+msgid "Add the first %(name)s."
+msgstr "İlk %(name)s kaydını ekleyin."
+
+msgid "Add the first role, then give it to people on the Users page."
+msgstr "İlk rolü ekleyin, sonra Kullanıcılar sayfasından kişilere atayın."
+
+msgid "Add the first site; production departments, systems and tanks are set up under a site."
+msgstr "İlk sahayı ekleyin; üretim departmanları, sistemler ve tanklar bir sahanın altında tanımlanır."
+
+msgid "Add the first user; they get an email to set their password."
+msgstr "İlk kullanıcıyı ekleyin; parolasını belirlemesi için e-posta alır."
+
+msgid "Administration"
+msgstr "Yönetim"
+
+msgid "Akvakulturregisteret locality number (5 digits)."
+msgstr "Akvakulturregisteret lokalite numarası (5 hane)."
+
+msgid ""
+"Akvakulturregisteret locality number (5 digits). Norwegian regulatory reports cannot be filed "
+"without it."
+msgstr ""
+"Akvakulturregisteret lokalite numarası (5 hane). Bu numara olmadan Norveç mevzuat raporları "
+"sunulamaz."
+
+msgid "All actions"
+msgstr "Tüm işlemler"
+
+msgid "All production departments"
+msgstr "Tüm üretim departmanları"
+
+msgid "All sites"
+msgstr "Tüm sahalar"
+
+msgid "All types"
+msgstr "Tüm türler"
+
+msgid "Allows"
+msgstr "İzin verir"
+
+msgid "Altitude (m)"
+msgstr "Rakım (m)"
+
+msgid "Another production department already uses this code."
+msgstr "Bu kodu başka bir üretim departmanı zaten kullanıyor."
+
+msgid "Another role already uses this name."
+msgstr "Bu adı başka bir rol zaten kullanıyor."
+
+msgid "Another site already uses this code."
+msgstr "Bu kodu başka bir saha zaten kullanıyor."
+
+msgid "Another site already uses this lokalitetsnummer."
+msgstr "Bu lokalitetsnummer başka bir sahada zaten kullanılıyor."
+
+msgid "Another site already uses this name."
+msgstr "Bu adı başka bir saha zaten kullanıyor."
+
+msgid "Another user already uses this email."
+msgstr "Bu e-postayı başka bir kullanıcı zaten kullanıyor."
+
+msgid "Anyone"
+msgstr "Herkes"
+
+msgid "Apply"
+msgstr "Uygula"
+
+msgid "Aquaponics"
+msgstr "Akuaponik"
+
+msgid "Area"
+msgstr "Alan"
+
+msgctxt "access area"
+msgid "Area"
+msgstr "Alan"
+
+msgid "Back to overview"
+msgstr "Genel bakışa dön"
+
+msgid "Back to sign in"
+msgstr "Girişe dön"
+
+msgid "Basic info"
+msgstr "Temel bilgiler"
+
+msgid "Biofloc"
+msgstr "Biyoflok"
+
+msgid "Brief description of the site"
+msgstr "Sahanın kısa açıklaması"
+
+msgid "Broodstock"
+msgstr "Damızlık"
+
+msgid "Browser default"
+msgstr "Tarayıcı varsayılanı"
+
+msgid "Cage"
+msgstr "Kafes"
+
+msgid "Cancel"
+msgstr "İptal"
+
+msgid "Capacity"
+msgstr "Kapasite"
+
+msgid "Change password"
+msgstr "Parolayı değiştir"
+
+msgid "Changed"
+msgstr "Değiştirildi"
+
+msgid "Check"
+msgstr "Kontrol"
+
+msgid "Check your email"
+msgstr "E-postanızı kontrol edin"
+
+msgid "City"
+msgstr "Şehir"
+
+msgid "Clear"
+msgstr "Temizle"
+
+msgid "Close"
+msgstr "Kapat"
+
+msgid "Closed"
+msgstr "Kapalı"
+
+msgid "Code"
+msgstr "Kod"
+
+msgid "Code must be at least 2 characters."
+msgstr "Kod en az 2 karakter olmalı."
+
+msgid "Collapse menu"
+msgstr "Menüyü daralt"
+
+msgid "Column"
+msgstr "Sütun"
+
+msgid "Columns"
+msgstr "Sütunlar"
+
+msgid "Company"
+msgstr "Şirket"
+
+msgid "Company overview"
+msgstr "Şirket genel bakışı"
+
+msgid "Company · Administration"
+msgstr "Şirket · Yönetim"
+
+msgid "Company · Facility"
+msgstr "Şirket · Tesis"
+
+msgid "Constraints"
+msgstr "Kısıtlamalar"
+
+msgid "Construction"
+msgstr "Yapım aşamasında"
+
+msgid "Contact"
+msgstr "İletişim"
+
+msgid "Contact email"
+msgstr "İletişim e-postası"
+
+msgid "Contact phone"
+msgstr "İletişim telefonu"
+
+msgid "Contacts"
+msgstr "İletişim kişileri"
+
+msgid "Contacts can be added once the site is created."
+msgstr "Kişiler, saha oluşturulduktan sonra eklenebilir."
+
+msgid "Country"
+msgstr "Ülke"
+
+msgid "Create"
+msgstr "Oluştur"
+
+#, python-format
+msgid "Create %(name)s"
+msgstr "Oluştur: %(name)s"
+
+msgid "Create, Edit and Delete include Read. Roles and users are managed by the platform admin only."
+msgstr ""
+"Oluşturma, düzenleme ve silme, görüntülemeyi de kapsar. Roller ve kullanıcılar yalnızca platform "
+"yöneticisi tarafından yönetilir."
+
+msgid "Created"
+msgstr "Oluşturuldu"
+
+#, python-format
+msgid "Created %(date)s"
+msgstr "Oluşturulma: %(date)s"
+
+msgid "Created at"
+msgstr "Oluşturulma zamanı"
+
+msgid "Created by"
+msgstr "Oluşturan"
+
+msgid "Data"
+msgstr "Veri"
+
+msgid "Database"
+msgstr "Veritabanı"
+
+msgid "Default"
+msgstr "Varsayılan"
+
+msgid "Definition"
+msgstr "Tanım"
+
+msgid "Delete"
+msgstr "Sil"
+
+#, python-format
+msgid "Delete %(name)s"
+msgstr "Sil: %(name)s"
+
+#, python-format
+msgid "Delete %(object)s"
+msgstr "Sil: %(object)s"
+
+#, python-format
+msgid "Delete “%(object)s”?"
+msgstr "“%(object)s” silinsin mi?"
+
+msgid "Deleted"
+msgstr "Silindi"
+
+msgid "Deleted at"
+msgstr "Silinme zamanı"
+
+msgid "Deleted by"
+msgstr "Silen"
+
+msgid "Deleted row"
+msgstr "Silinmiş satır"
+
+msgid "Deleted rows"
+msgstr "Silinmiş satırlar"
+
+msgid "Description"
+msgstr "Açıklama"
+
+msgid "Details"
+msgstr "Ayrıntılar"
+
+msgid "Django model"
+msgstr "Django modeli"
+
+#, python-format
+msgid "Download the rows below as CSV, up to %(limit)s rows"
+msgstr "Aşağıdaki satırları CSV olarak indir, en fazla %(limit)s satır"
+
+msgid "Edit"
+msgstr "Düzenle"
+
+#, python-format
+msgid "Edit %(name)s"
+msgstr "Düzenle: %(name)s"
+
+msgid "Email"
+msgstr "E-posta"
+
+msgid "Enter the email address on your account. We will send you a link to set a new password."
+msgstr ""
+"Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
+"göndereceğiz."
+
+msgid "Established"
+msgstr "Kuruluş tarihi"
+
+msgid ""
+"Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
+"edited or deleted."
+msgstr ""
+"Herkesin yaptığı her değişiklik: kim, ne zaman, hangi kayıt ve eski ile yeni değerler. Kayıtlar "
+"düzenlenemez veya silinemez."
+
+msgid "Every permission that exists: view, add, change and delete of each model, and the custom ones."
+msgstr ""
+"Var olan tüm izinler: her modelin görüntüleme, ekleme, değiştirme ve silme izinleri ile özel "
+"olanlar."
+
+msgid ""
+"Every table the application stores, as it is in the database. Nothing here can be changed. "
+"Deleted records are only marked as deleted, so they are still in the tables and are counted here."
+msgstr ""
+"Uygulamanın sakladığı her tablo, veritabanında olduğu gibi. Burada hiçbir şey değiştirilemez. "
+"Silinen kayıtlar yalnızca silinmiş olarak işaretlenir; bu yüzden tablolarda durur ve burada "
+"sayılır."
+
+msgid "Exclusion"
+msgstr "Dışlama"
+
+msgid "Expand menu"
+msgstr "Menüyü genişlet"
+
+msgid "Export CSV"
+msgstr "CSV dışa aktar"
+
+msgid "Facilities"
+msgstr "Tesis özellikleri"
+
+msgid "Facility"
+msgstr "Tesis"
+
+msgid "Facility structure"
+msgstr "Tesis yapısı"
+
+msgid "Farm console for tanks, water quality and stock records."
+msgstr "Tanklar, su kalitesi ve stok kayıtları için çiftlik konsolu."
+
+msgid "Feed"
+msgstr "Yem"
+
+msgid ""
+"Feeding jobs run on the site’s local day. Leave it inherited unless the site is in a different "
+"timezone than the company."
+msgstr ""
+"Yemleme görevleri sahanın yerel gününe göre çalışır. Saha şirketten farklı bir saat diliminde "
+"değilse devralınan değeri değiştirmeyin."
+
+msgid "Filter"
+msgstr "Filtrele"
+
+#, python-format
+msgid "Filter %(name)s"
+msgstr "Filtrele: %(name)s"
+
+msgid "First"
+msgstr "İlk"
+
+msgid "First name"
+msgstr "Ad"
+
+msgid "Fish farm"
+msgstr "Balık çiftliği"
+
+msgid "Flow-through"
+msgstr "Akışlı sistem"
+
+msgid "Foreign key"
+msgstr "Yabancı anahtar"
+
+#, python-format
+msgid "Foreign key to %(target)s"
+msgstr "Yabancı anahtar: %(target)s"
+
+msgid "Forgot your password?"
+msgstr "Parolanızı mı unuttunuz?"
+
+msgid "From"
+msgstr "Başlangıç"
+
+msgid "Full name of the site manager"
+msgstr "Saha sorumlusunun tam adı"
+
+msgid "Grow-out"
+msgstr "Büyütme"
+
+msgid "Hatchery"
+msgstr "Kuluçkahane"
+
+#, python-format
+msgid "Hi %(name)s,"
+msgstr "Merhaba %(name)s,"
+
+msgid "Hide"
+msgstr "Gizle"
+
+msgid "Hide deleted rows"
+msgstr "Silinmiş satırları gizle"
+
+msgid "History"
+msgstr "Geçmiş"
+
+msgid ""
+"If an account uses this address, a reset link is on its way. If it has not arrived in a few "
+"minutes, check your spam folder."
+msgstr ""
+"Bu adresi kullanan bir hesap varsa, sıfırlama bağlantısı yolda. Birkaç dakika içinde gelmezse "
+"spam klasörünüzü kontrol edin."
+
+msgid "If you did not ask for this, you can ignore this email."
+msgstr "Bunu siz istemediyseniz bu e-postayı yok sayabilirsiniz."
+
+msgid "Inactive"
+msgstr "Pasif"
+
+msgid "Inactive people cannot sign in."
+msgstr "Pasif kişiler giriş yapamaz."
+
+msgid "Indexes"
+msgstr "Dizinler"
+
+msgid "Inherit from company"
+msgstr "Şirketten devral"
+
+msgid ""
+"It disappears from every list but is not erased: the record stays in the database, the activity "
+"log keeps its history, and it can be restored from the admin."
+msgstr ""
+"Her listeden kaybolur ama silinmez: kayıt veritabanında kalır, etkinlik günlüğü geçmişini korur "
+"ve yönetim panelinden geri yüklenebilir."
+
+msgid "Key"
+msgstr "Anahtar"
+
+msgid "Kind"
+msgstr "Tür"
+
+msgid "Laboratory"
+msgstr "Laboratuvar"
+
+msgid "Land-based facility"
+msgstr "Kara tesisi"
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Last"
+msgstr "Son"
+
+msgid "Last name"
+msgstr "Soyad"
+
+msgid "Last sign-in"
+msgstr "Son giriş"
+
+msgid "Latitude"
+msgstr "Enlem"
+
+msgid "Latitude and longitude must be provided together."
+msgstr "Enlem ve boylam birlikte girilmelidir."
+
+msgid "Latitude is required for a sea cage."
+msgstr "Deniz kafesi için enlem zorunludur."
+
+msgid "Location"
+msgstr "Konum"
+
+msgid "Lokalitetsnummer"
+msgstr "Lokalitetsnummer"
+
+msgid "Longitude"
+msgstr "Boylam"
+
+msgid "Longitude is required for a sea cage."
+msgstr "Deniz kafesi için boylam zorunludur."
+
+msgid "Main navigation"
+msgstr "Ana gezinme"
+
+msgid "Maintenance"
+msgstr "Bakım"
+
+msgid "Manager"
+msgstr "Yönetici"
+
+msgid "Max biomass (kg)"
+msgstr "Azami biyokütle (kg)"
+
+msgid "Metadata"
+msgstr "Üstveri"
+
+msgid "Model field"
+msgstr "Model alanı"
+
+msgid "Name"
+msgstr "Ad"
+
+msgid "Name must be at least 2 characters."
+msgstr "Ad en az 2 karakter olmalı."
+
+msgid "Name or code"
+msgstr "Ad veya kod"
+
+msgid "Never"
+msgstr "Hiç"
+
+msgid "Never shown"
+msgstr "Hiçbir zaman gösterilmez"
+
+#, python-format
+msgid "New %(name)s"
+msgstr "Yeni %(name)s"
+
+msgid "New password"
+msgstr "Yeni parola"
+
+msgid "Newer"
+msgstr "Daha yeni"
+
+msgid "Next"
+msgstr "Sonraki"
+
+msgid "No"
+msgstr "Hayır"
+
+#, python-format
+msgid "No %(plural)s match “%(query)s”"
+msgstr "“%(query)s” ile eşleşen %(plural)s yok"
+
+#, python-format
+msgid "No %(plural)s yet"
+msgstr "Henüz %(plural)s yok"
+
+msgid "No changes match these filters."
+msgstr "Bu filtrelerle eşleşen değişiklik yok."
+
+msgid "No changes recorded yet."
+msgstr "Henüz kaydedilmiş değişiklik yok."
+
+msgid "No contacts yet. Use “Add contact” to add a row."
+msgstr "Henüz kişi yok. Satır eklemek için “Kişi ekle” düğmesini kullanın."
+
+msgid "No other table."
+msgstr "Başka tablo yok."
+
+msgid "No parent (top-level system)"
+msgstr "Üst sistem yok (en üst düzey sistem)"
+
+msgid "No production department"
+msgstr "Üretim departmanı yok"
+
+msgid "No rows match."
+msgstr "Eşleşen satır yok."
+
+#, python-format
+msgid "No rows match. <a href=\"%(url)s\">Clear the search and filters</a>."
+msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizleyin</a>."
+
+msgid "No site"
+msgstr "Saha yok"
+
+msgid "None."
+msgstr "Yok."
+
+msgid "Notes"
+msgstr "Notlar"
+
+msgid "Nothing recorded yet."
+msgstr "Henüz kayıt yok."
+
+msgid "Nothing yet"
+msgstr "Henüz yok"
+
+msgid "Nullable"
+msgstr "Boş olabilir"
+
+msgid "Nursery"
+msgstr "Yavru yetiştirme"
+
+msgid "Offline"
+msgstr "Devre dışı"
+
+msgid "Older"
+msgstr "Daha eski"
+
+msgid "Only deleted rows"
+msgstr "Yalnızca silinmiş satırlar"
+
+msgid "Only one contact can be the primary contact."
+msgstr "Yalnızca bir kişi birincil kişi olabilir."
+
+#, python-format
+msgid "Only one contact can be the primary contact; %(count)d are marked."
+msgstr "Yalnızca bir kişi birincil kişi olabilir; %(count)d kişi işaretli."
+
+msgid "Only the production departments of the chosen site."
+msgstr "Yalnızca seçilen sahanın üretim departmanları."
+
+msgid "Only the systems of the chosen site; leave empty for a top-level system."
+msgstr "Yalnızca seçilen sahanın sistemleri; en üst düzey sistem için boş bırakın."
+
+msgid "Open menu"
+msgstr "Menüyü aç"
+
+msgid "Open this link to set a new password:"
+msgstr "Yeni parola belirlemek için bu bağlantıyı açın:"
+
+msgid "Operational"
+msgstr "Çalışıyor"
+
+msgid "Optional"
+msgstr "İsteğe bağlı"
+
+msgid "Organisation number override"
+msgstr "Kuruluş numarası (geçersiz kılma)"
+
+msgid "Other"
+msgstr "Diğer"
+
+msgid "Overview"
+msgstr "Genel bakış"
+
+#, python-format
+msgid "Page %(number)s of %(total)s"
+msgstr "Sayfa %(number)s / %(total)s"
+
+msgid "Pages"
+msgstr "Sayfalar"
+
+msgid "Panel"
+msgstr "Panel"
+
+msgid "Panels"
+msgstr "Paneller"
+
+msgid "Parent system"
+msgstr "Üst sistem"
+
+msgid "Password saved"
+msgstr "Parola kaydedildi"
+
+msgid "People who can sign in: account details and a hash of the password."
+msgstr "Giriş yapabilen kişiler: hesap bilgileri ve parolanın özeti (hash)."
+
+msgid "Permissions"
+msgstr "İzinler"
+
+msgid "Permissions given to one user directly instead of through a role."
+msgstr "Bir role değil, doğrudan tek bir kullanıcıya verilen izinler."
+
+msgid "Person"
+msgstr "Kişi"
+
+msgid "Phone"
+msgstr "Telefon"
+
+msgid "Platform admin"
+msgstr "Platform yöneticisi"
+
+msgid "Pointed at by"
+msgstr "Şunlar tarafından işaret edilir"
+
+msgid "Pond"
+msgstr "Toprak havuz"
+
+msgid "Postal code"
+msgstr "Posta kodu"
+
+msgid "Previous"
+msgstr "Önceki"
+
+msgid "Primary"
+msgstr "Birincil"
+
+msgid "Primary key"
+msgstr "Birincil anahtar"
+
+msgid "Processing"
+msgstr "İşleme"
+
+msgid "Production"
+msgstr "Üretim"
+
+msgid "Production department"
+msgstr "Üretim departmanı"
+
+msgid "Production departments"
+msgstr "Üretim departmanları"
+
+msgid "Production departments organise a site, e.g. a hatchery hall or a grow-out unit."
+msgstr "Üretim departmanları bir sahayı düzenler; örneğin bir kuluçkahane salonu veya bir büyütme birimi."
+
+msgid "Production overview"
+msgstr "Üretim genel bakışı"
+
+msgid "Production · Facility structure"
+msgstr "Üretim · Tesis yapısı"
+
+msgid "Quality control"
+msgstr "Kalite kontrol"
+
+msgid "Quarantine"
+msgstr "Karantina"
+
+msgid "RAS (recirculating)"
+msgstr "RAS (devridaimli)"
+
+msgid "Raceway"
+msgstr "Raceway (akış kanalı)"
+
+msgid "Read"
+msgstr "Görüntüle"
+
+#, python-format
+msgid ""
+"Read from the database itself and matched with the Django model <code>%(model)s</code> of the "
+"<code>%(app)s</code> app."
+msgstr ""
+"Veritabanının kendisinden okundu ve <code>%(app)s</code> uygulamasının <code>%(model)s</code> "
+"Django modeliyle eşleştirildi."
+
+msgid "Recirculating aquaculture system"
+msgstr "Devridaimli yetiştiricilik sistemi (RAS)"
+
+msgid "Record"
+msgstr "Kayıt"
+
+msgid "Record type"
+msgstr "Kayıt türü"
+
+msgid "Region"
+msgstr "Bölge"
+
+msgid "Relationships"
+msgstr "İlişkiler"
+
+msgid "Remove"
+msgstr "Kaldır"
+
+msgid "Request a new link"
+msgstr "Yeni bağlantı iste"
+
+msgid "Required for a sea cage."
+msgstr "Deniz kafesi için zorunludur."
+
+msgid "Reset password"
+msgstr "Parolayı sıfırla"
+
+msgid "Reset your password"
+msgstr "Parolanızı sıfırlayın"
+
+msgid "Restore the selected deleted records"
+msgstr "Seçilen silinmiş kayıtları geri yükle"
+
+msgid "Restored"
+msgstr "Geri yüklendi"
+
+msgid "Role"
+msgstr "Rol"
+
+msgid "Role name"
+msgstr "Rol adı"
+
+msgid "Roles"
+msgstr "Roller"
+
+msgid "Roles: a name and the permissions it allows."
+msgstr "Roller: bir ad ve izin verdiği izinler."
+
+msgid "Row"
+msgstr "Satır"
+
+msgid "Rows"
+msgstr "Satırlar"
+
+#, python-format
+msgid "Rows %(first)s–%(last)s of %(total)s"
+msgstr "Satır %(first)s–%(last)s / %(total)s"
+
+#, python-format
+msgid "Rows %(first)s–%(last)s of %(total)s match"
+msgstr "Satır %(first)s–%(last)s / %(total)s eşleşiyor"
+
+#, python-format
+msgid "Save %(name)s"
+msgstr "Kaydet: %(name)s"
+
+msgid "Save contacts"
+msgstr "Kişileri kaydet"
+
+msgid "Save password"
+msgstr "Parolayı kaydet"
+
+msgid "Sea cage"
+msgstr "Deniz kafesi"
+
+#, python-format
+msgid "Search %(plural)s"
+msgstr "Ara: %(plural)s"
+
+msgid "Search by name"
+msgstr "Ada göre ara"
+
+msgid "Search by name or code"
+msgstr "Ada veya koda göre ara"
+
+msgid "Search by name, code or region"
+msgstr "Ada, koda veya bölgeye göre ara"
+
+msgid "Search by name, username or email"
+msgstr "Ada, kullanıcı adına veya e-postaya göre ara"
+
+msgid "Search every column"
+msgstr "Tüm sütunlarda ara"
+
+msgid "See all in the activity log"
+msgstr "Etkinlik günlüğünde tümünü gör"
+
+msgid "Select a site"
+msgstr "Bir saha seçin"
+
+msgid "Send reset link"
+msgstr "Sıfırlama bağlantısı gönder"
+
+msgid "Set a new password"
+msgstr "Yeni parola belirleyin"
+
+msgid "Settings"
+msgstr "Ayarlar"
+
+msgid "Show"
+msgstr "Göster"
+
+#, python-format
+msgid "Show all %(plural)s"
+msgstr "Tüm %(plural)s"
+
+msgid "Show deleted rows"
+msgstr "Silinmiş satırları göster"
+
+msgid "Show them"
+msgstr "Göster"
+
+msgid "Sign in"
+msgstr "Giriş yap"
+
+msgid "Sign out"
+msgstr "Çıkış yap"
+
+msgid "Site"
+msgstr "Saha"
+
+msgid "Site code"
+msgstr "Saha kodu"
+
+msgid "Site manager"
+msgstr "Saha sorumlusu"
+
+msgid "Site name"
+msgstr "Saha adı"
+
+msgid "Site type"
+msgstr "Saha türü"
+
+msgid "Sites"
+msgstr "Sahalar"
+
+msgid "Skip to content"
+msgstr "İçeriğe geç"
+
+#. Translators: %(name)s is the kind of record in lower case (e.g. site).
+#, python-format
+msgid ""
+"Someone else changed this %(name)s while you were editing it. The form now shows their version; "
+"make your changes again."
+msgstr ""
+"Siz düzenlerken bu kayıt (%(name)s) başka biri tarafından değiştirildi. Form artık onun sürümünü "
+"gösteriyor; değişikliklerinizi yeniden yapın."
+
+#, python-format
+msgid "Sort by %(name)s"
+msgstr "Sırala: %(name)s"
+
+msgid "State"
+msgstr "Eyalet / il"
+
+msgid "Status"
+msgstr "Durum"
+
+msgid "Street address"
+msgstr "Sokak adresi"
+
+msgid "Structure"
+msgstr "Yapı"
+
+msgid "Switch panel"
+msgstr "Paneli değiştir"
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "Systems"
+msgstr "Sistemler"
+
+msgid "Systems by status"
+msgstr "Duruma göre sistemler"
+
+msgid "Table"
+msgstr "Tablo"
+
+msgid "Table sections"
+msgstr "Tablo bölümleri"
+
+msgid "The biomass cannot be negative."
+msgstr "Biyokütle negatif olamaz."
+
+msgid "The invitation to set a password is sent here."
+msgstr "Parola belirleme daveti buraya gönderilir."
+
+msgid ""
+"The language of the console and of the emails this person gets. Left empty, it follows their "
+"browser."
+msgstr "Konsolun ve bu kişinin aldığı e-postaların dili. Boş bırakılırsa tarayıcısının dilini izler."
+
+#, python-format
+msgid "The latest changes to this %(name)s."
+msgstr "Bu kaydın (%(name)s) son değişiklikleri."
+
+msgid "The link was already used or has expired. Request a new one."
+msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
+
+msgid "The parent system belongs to another site."
+msgstr "Üst sistem başka bir sahaya ait."
+
+msgid "The parent system is nested under this system."
+msgstr "Üst sistem bu sistemin altında yer alıyor."
+
+msgid "The production department belongs to another site."
+msgstr "Üretim departmanı başka bir sahaya ait."
+
+msgid "The production figures will appear here."
+msgstr "Üretim rakamları burada görünecek."
+
+msgid ""
+"The site’s operational contacts. At most one can be the primary contact. Contacts are saved "
+"separately from the site details."
+msgstr ""
+"Sahanın operasyonel iletişim kişileri. En fazla biri birincil kişi olabilir. Kişiler saha "
+"ayrıntılarından ayrı kaydedilir."
+
+msgid "The volume cannot be negative."
+msgstr "Hacim negatif olamaz."
+
+#, python-format
+msgid "This %(name)s cannot be deleted yet."
+msgstr "Bu kayıt (%(name)s) henüz silinemez."
+
+msgid "This link no longer works"
+msgstr "Bu bağlantı artık çalışmıyor"
+
+msgid "This removes it permanently. The activity log keeps a record that it was deleted."
+msgstr "Bu işlem kaydı kalıcı olarak kaldırır. Etkinlik günlüğü, silindiğine dair bir kayıt tutar."
+
+msgid "This site already has a production department with this name."
+msgstr "Bu sahada bu adla bir üretim departmanı zaten var."
+
+msgid "This site already has a system with this code."
+msgstr "Bu sahada bu kodlu bir sistem zaten var."
+
+msgid "This table points at"
+msgstr "Bu tablonun işaret ettikleri"
+
+msgid "Timezone"
+msgstr "Saat dilimi"
+
+msgid "To"
+msgstr "Bitiş"
+
+msgid "Total area (m²)"
+msgstr "Toplam alan (m²)"
+
+msgid "Total volume (m³)"
+msgstr "Toplam hacim (m³)"
+
+msgid "Try another search."
+msgstr "Başka bir arama deneyin."
+
+msgid "Type"
+msgstr "Tür"
+
+msgid "Type your new password twice."
+msgstr "Yeni parolanızı iki kez yazın."
+
+msgid "Under maintenance"
+msgstr "Bakımda"
+
+msgid "Unique"
+msgstr "Benzersiz"
+
+msgid "Updated at"
+msgstr "Güncellenme zamanı"
+
+msgid "Updated by"
+msgstr "Güncelleyen"
+
+msgid "Use your username and password to open the farm console."
+msgstr "Çiftlik konsolunu açmak için kullanıcı adınızı ve parolanızı kullanın."
+
+msgid "Used to sign in. Letters, digits and @ . + - _ only."
+msgstr "Giriş için kullanılır. Yalnızca harfler, rakamlar ve @ . + - _ karakterleri."
+
+msgid "Username"
+msgstr "Kullanıcı adı"
+
+msgid "Users"
+msgstr "Kullanıcılar"
+
+msgid "Version"
+msgstr "Sürüm"
+
+msgid "Volume (m³)"
+msgstr "Hacim (m³)"
+
+msgid "Water capacity (m³)"
+msgstr "Su kapasitesi (m³)"
+
+#, python-format
+msgid "Welcome, %(name)s. The company’s figures will appear here."
+msgstr "Hoş geldiniz, %(name)s. Şirketin rakamları burada görünecek."
+
+msgid "What it holds"
+msgstr "İçeriği"
+
+msgid "What the person can open and change. Without a role they see only the overview."
+msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."
+
+msgid "Which permissions each role allows."
+msgstr "Her rolün hangi izinlere izin verdiği."
+
+msgid "Which roles each user has."
+msgstr "Her kullanıcının hangi rollere sahip olduğu."
+
+msgid "Without a production department"
+msgstr "Üretim departmanı olmayanlar"
+
+msgid "Without a site"
+msgstr "Sahasız"
+
+msgid "Yes"
+msgstr "Evet"
+
+msgid "You can now sign in with your new password."
+msgstr "Artık yeni parolanızla giriş yapabilirsiniz."
+
+msgid "You cannot deactivate your own account."
+msgstr "Kendi hesabınızı devre dışı bırakamazsınız."
+
+msgid "You do not have permission to do this."
+msgstr "Bunu yapma izniniz yok."
+
+msgid "Your new password is saved. Use it the next time you sign in."
+msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."
+
+#, python-format
+msgid "by <strong>%(name)s</strong>"
+msgstr "<strong>%(name)s</strong> tarafından"
+
+msgid "contains"
+msgstr "içerir"
+
+msgid "e.g. 12345"
+msgstr "örn. 12345"
+
+msgid "e.g. 5.3221"
+msgstr "örn. 5,3221"
+
+msgid "e.g. 50000"
+msgstr "örn. 50000"
+
+msgid "e.g. 60.3913"
+msgstr "örn. 60,3913"
+
+msgid "e.g. HAT-A"
+msgstr "örn. HAT-A"
+
+msgid "e.g. Hatchery hall A"
+msgstr "örn. Kuluçkahane salonu A"
+
+msgid "e.g. MPS-001"
+msgstr "örn. MPS-001"
+
+msgid "e.g. Main Production Site"
+msgstr "örn. Ana Üretim Sahası"
+
+msgid "e.g. Norway"
+msgstr "örn. Norveç"
+
+msgid "e.g. SYS-001"
+msgstr "örn. SYS-001"
+
+msgid "e.g. Site manager"
+msgstr "örn. Saha sorumlusu"
+
+msgid "e.g. Smolt RAS 1"
+msgstr "örn. Smolt RAS 1"
+
+msgid "e.g. Vestland"
+msgstr "örn. Vestland"
+
+msgid "e.g. kari.nordmann"
+msgstr "örn. kari.nordmann"
+
+msgid "empty"
+msgstr "boş"
+
+msgid "equals"
+msgstr "eşittir"
+
+#, python-format
+msgid "in %(name)s"
+msgstr "%(name)s içinde"
+
+msgid "masked"
+msgstr "gizli"
+
+msgid "no"
+msgstr "hayır"
+
+msgid "no such row"
+msgstr "böyle bir satır yok"
+
+msgid "not enforced by the database"
+msgstr "veritabanı tarafından zorunlu kılınmıyor"
+
+msgid "not in the model"
+msgstr "modelde yok"
+
+msgid "primary"
+msgstr "birincil"
+
+msgid "production department"
+msgstr "üretim departmanı"
+
+msgid "production departments"
+msgstr "üretim departmanları"
+
+msgid "role"
+msgstr "rol"
+
+msgid "roles"
+msgstr "roller"
+
+msgid "site"
+msgstr "saha"
+
+msgid "site contact"
+msgstr "saha iletişim kişisi"
+
+msgid "site contacts"
+msgstr "saha iletişim kişileri"
+
+msgid "sites"
+msgstr "sahalar"
+
+msgid "system"
+msgstr "sistem"
+
+msgid "systems"
+msgstr "sistemler"
+
+msgid "user"
+msgstr "kullanıcı"
+
+msgid "users"
+msgstr "kullanıcılar"
+
+msgid "yes"
+msgstr "evet"
+

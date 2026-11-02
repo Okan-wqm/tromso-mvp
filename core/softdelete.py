@@ -9,12 +9,15 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
 
 A model adds conditions that are not links by overriding `delete_blockers()` (fish still in a
 tank). One plan serves both the confirmation (what will be affected) and the delete itself, and
-every record it touches gets its own activity-log row.
+every record it touches gets its own activity-log row, written in English like every audit row
+(core.audit).
 """
 from dataclasses import dataclass, field
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.text import capfirst
+from django.utils.translation import gettext as _, ngettext
 
 from . import audit
 from .models import AuditedModel, AuditLog
@@ -42,7 +45,7 @@ class DeletePlan:
     def deleted_groups(self):
         """[{'label': 'Systems', 'records': [...]}] for the confirmation."""
         return [
-            {'label': str(model._meta.verbose_name_plural).capitalize(), 'records': records}
+            {'label': capfirst(model._meta.verbose_name_plural), 'records': records}
             for model, records in self._by_model(self.cascade).items()
         ]
 
@@ -52,8 +55,8 @@ class DeletePlan:
         for model, pairs in self._by_model(self.detach, record_of=lambda pair: pair[0]).items():
             for link in dict.fromkeys(link for _, link in pairs):
                 groups.append({
-                    'label': str(model._meta.verbose_name_plural).capitalize(),
-                    'link': str(model._meta.get_field(link).verbose_name),
+                    'label': capfirst(model._meta.verbose_name_plural),
+                    'link': str(model._meta.get_field(link).verbose_name).lower(),
                     'records': [record for record, name in pairs if name == link],
                 })
         return groups
@@ -89,23 +92,26 @@ def _collect(obj, plan, seen):
         elif action is models.SET_NULL:
             plan.detach.extend((child, link) for child in children)
         elif action in (models.PROTECT, models.RESTRICT):
-            one = len(children) == 1
-            noun = model._meta.verbose_name if one else model._meta.verbose_name_plural
-            plan.blockers.append(f'{len(children)} {noun} still {"belongs" if one else "belong"} to it.')
+            # Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
+            plan.blockers.append(ngettext(
+                '%(count)d %(name)s still belongs to it.', '%(count)d %(plural)s still belong to it.',
+                len(children)) % {'count': len(children), 'name': model._meta.verbose_name,
+                                  'plural': model._meta.verbose_name_plural})
 
 
 def execute(plan, user):
     """Carries the plan out, inside the caller's transaction, one log row per affected record."""
-    for record, link in plan.detach:
-        label = str(record._meta.get_field(link).verbose_name).capitalize()
-        before = str(getattr(record, link))
-        record.detach(link, user)
-        audit.record(user, AuditLog.Action.UPDATE, record, {label: [before, None]})
-    for record in reversed(plan.cascade):
-        record.soft_delete(user)
-        audit.record_delete(user, record)
-    plan.obj.soft_delete(user)
-    audit.record_delete(user, plan.obj)
+    with audit.source_language():
+        for record, link in plan.detach:
+            label = capfirst(record._meta.get_field(link).verbose_name)
+            before = str(getattr(record, link))
+            record.detach(link, user)
+            audit.record(user, AuditLog.Action.UPDATE, record, {str(label): [before, None]})
+        for record in reversed(plan.cascade):
+            record.soft_delete(user)
+            audit.record_delete(user, record)
+        plan.obj.soft_delete(user)
+        audit.record_delete(user, plan.obj)
 
 
 def restore(record, user):
@@ -115,7 +121,8 @@ def restore(record, user):
     for link in record._meta.concrete_fields:
         target = getattr(record, link.name) if link.is_relation else None
         if isinstance(target, AuditedModel) and target.is_deleted:
-            raise ValidationError(f'{str(link.verbose_name).capitalize()} “{target}” is deleted.')
+            raise ValidationError(_('%(field)s “%(record)s” is deleted.'),
+                                  params={'field': capfirst(link.verbose_name), 'record': target})
     record.is_deleted, record.deleted_at, record.deleted_by = False, None, None
     record.updated_by = user
     record.version += 1

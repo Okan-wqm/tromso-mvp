@@ -1,11 +1,26 @@
 from datetime import datetime, time
 
-from django.contrib.auth.decorators import permission_required
+from django.conf import settings
+from django.contrib.auth.decorators import login_not_required, permission_required
 from django.core.paginator import Paginator
 from django.shortcuts import render
 from django.utils import timezone
+from django.utils.translation import gettext
+from django.views import i18n
 
+from .language import is_supported, save_account_language
 from .models import AuditLog
+
+
+@login_not_required
+def set_language(request):
+    """Django's language switch (it sets the language cookie), which also saves the choice on the
+    signed-in person's account. Open to everyone: the sign-in pages have it too."""
+    response = i18n.set_language(request)
+    chosen = response.cookies.get(settings.LANGUAGE_COOKIE_NAME)
+    if chosen and is_supported(chosen.value) and request.user.is_authenticated:
+        save_account_language(request.user, chosen.value)
+    return response
 
 
 def _day(value, end=False):
@@ -42,6 +57,7 @@ def activity_log(request):
         'filters': filters,
         'query': query.urlencode(),
         'users': AuditLog.objects.order_by('user_name').values_list('user_name', flat=True).distinct(),
-        'types': AuditLog.objects.order_by('entity_type').values_list('entity_type', flat=True).distinct(),
+        'types': [(name, gettext(name)) for name in
+                  AuditLog.objects.order_by('entity_type').values_list('entity_type', flat=True).distinct()],
         'actions': AuditLog.Action.choices,
     })

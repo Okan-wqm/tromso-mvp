@@ -1,10 +1,14 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth import forms as auth_forms, get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
+from django.utils import translation
+from django.utils.translation import gettext_lazy as _
 
 from . import access
 from .crud import TabbedForm, tab_fields
+from .language import account_language, save_account_language
 
 User = get_user_model()
 
@@ -34,7 +38,7 @@ class PermissionMatrix(forms.CheckboxSelectMultiple):
         return context
 
 
-ROLE_FORM_TABS = [('role', 'Role', ['name', 'permissions'])]
+ROLE_FORM_TABS = [('role', _('Role'), ['name', 'permissions'])]
 
 
 class RoleForm(TabbedForm):
@@ -43,12 +47,12 @@ class RoleForm(TabbedForm):
     class Meta:
         model = Group
         fields = tab_fields(ROLE_FORM_TABS)
-        labels = {'name': 'Role name', 'permissions': 'Permissions'}
-        help_texts = {'permissions': 'Create, Edit and Delete include Read. '
-                                     'Roles and users are managed by the platform admin only.'}
-        error_messages = {'name': {'unique': 'Another role already uses this name.'}}
+        labels = {'name': _('Role name'), 'permissions': _('Permissions')}
+        help_texts = {'permissions': _('Create, Edit and Delete include Read. '
+                                       'Roles and users are managed by the platform admin only.')}
+        error_messages = {'name': {'unique': _('Another role already uses this name.')}}
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': 'e.g. Site manager'}),
+            'name': forms.TextInput(attrs={'placeholder': _('e.g. Site manager')}),
             'permissions': PermissionMatrix,
         }
 
@@ -66,27 +70,35 @@ class RoleForm(TabbedForm):
                 if access.perm_name(permission) in names]
 
 
-USER_FORM_TABS = [('account', 'Account', ['username', 'first_name', 'last_name', 'email', 'is_active', 'groups'])]
+USER_FORM_TABS = [('account', _('Account'), [
+    'username', 'first_name', 'last_name', 'email', 'language', 'is_active', 'groups'])]
 
 
 class UserForm(TabbedForm):
     """A person's account. Who may sign in is `is_active`: people are deactivated, not deleted, so
-    their name stays on their history. Platform admin status is not set here."""
+    their name stays on their history. Platform admin status is not set here. The language is kept on
+    the person's profile (core.language)."""
 
     tabs = USER_FORM_TABS
+    language = forms.ChoiceField(
+        label=_('Language'), required=False, choices=[('', _('Browser default'))] + settings.LANGUAGES,
+        help_text=_('The language of the console and of the emails this person gets. '
+                    'Left empty, it follows their browser.'),
+    )
 
     class Meta:
         model = User
         fields = tab_fields(USER_FORM_TABS)
-        labels = {'email': 'Email', 'is_active': 'Active', 'groups': 'Roles'}
+        labels = {'username': _('Username'), 'first_name': _('First name'), 'last_name': _('Last name'),
+                  'email': _('Email'), 'is_active': _('Active'), 'groups': _('Roles')}
         help_texts = {
-            'username': 'Used to sign in. Letters, digits and @ . + - _ only.',
-            'email': 'The invitation to set a password is sent here.',
-            'is_active': 'Inactive people cannot sign in.',
-            'groups': 'What the person can open and change. Without a role they see only the overview.',
+            'username': _('Used to sign in. Letters, digits and @ . + - _ only.'),
+            'email': _('The invitation to set a password is sent here.'),
+            'is_active': _('Inactive people cannot sign in.'),
+            'groups': _('What the person can open and change. Without a role they see only the overview.'),
         }
         widgets = {
-            'username': forms.TextInput(attrs={'placeholder': 'e.g. kari.nordmann'}),
+            'username': forms.TextInput(attrs={'placeholder': _('e.g. kari.nordmann')}),
             'email': forms.EmailInput(attrs={'placeholder': 'email@example.com'}),
             'groups': forms.CheckboxSelectMultiple(attrs={'class': 'choices'}),
         }
@@ -95,21 +107,26 @@ class UserForm(TabbedForm):
         super().__init__(*args, **kwargs)
         self.editor = editor
         self.fields['email'].required = True
+        self.initial['language'] = account_language(self.instance) or ''
         self.fields['groups'].queryset = Group.objects.order_by('name')
         if self.instance._state.adding:
             # A new person has no password until they set one through the invitation link.
             self.instance.set_unusable_password()
 
+    def _save_m2m(self):
+        super()._save_m2m()
+        save_account_language(self.instance, self.cleaned_data['language'])
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if User.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
-            raise ValidationError('Another user already uses this email.')
+            raise ValidationError(_('Another user already uses this email.'))
         return email
 
     def clean_is_active(self):
         active = self.cleaned_data['is_active']
         if not active and self.instance.pk == self.editor.pk:
-            raise ValidationError('You cannot deactivate your own account.')
+            raise ValidationError(_('You cannot deactivate your own account.'))
         return active
 
 
@@ -117,6 +134,14 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
     """Django's reset form, also for people who have not set a password yet: users the platform admin
     creates start without one, and this email is their invitation (and its replacement once the
     link has expired)."""
+
+    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email,
+                  html_email_template_name=None):
+        """Written in the recipient's saved language, not the language of whoever triggered it (an
+        invitation is sent while the admin who created the account is signed in)."""
+        with translation.override(account_language(context['user']) or translation.get_language()):
+            super().send_mail(subject_template_name, email_template_name, context, from_email, to_email,
+                              html_email_template_name)
 
     def get_users(self, email):
         users = User._default_manager.filter(email__iexact=email, is_active=True)

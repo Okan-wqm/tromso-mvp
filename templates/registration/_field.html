@@ -1,4 +1,4 @@
-{# One form field. A group of boxes (roles, the permission matrix) is a fieldset named by its legend. #}
+{% load i18n %}{# One form field. A group of boxes (roles, the permission matrix) is a fieldset named by its legend. #}
 {% with tag=field.use_fieldset|yesno:"fieldset,div" %}
 <{{ tag }} class="field{% if field.use_fieldset %} field-set{% endif %}{% if field.errors %} has-error{% endif %}">
   {% if field.use_fieldset %}
@@ -10,7 +10,8 @@
   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
   <div class="password-wrap">
     {{ field }}
-    <button type="button" class="reveal" data-reveal="{{ field.id_for_label }}" aria-controls="{{ field.id_for_label }}" aria-pressed="false">Show</button>
+    {% trans "Show" as show_label %}{% trans "Hide" as hide_label %}
+    <button type="button" class="reveal" data-reveal="{{ field.id_for_label }}" aria-controls="{{ field.id_for_label }}" aria-pressed="false" data-label-show="{{ show_label }}" data-label-hide="{{ hide_label }}">{{ show_label }}</button>
   </div>
   {% else %}
   <label for="{{ field.id_for_label }}">{{ field.label }}</label>

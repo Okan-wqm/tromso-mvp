@@ -1,8 +1,33 @@
 """Writing the audit log. Call these inside the same transaction as the change they describe, so a
-change is never stored without its log row (or the other way round)."""
+change is never stored without its log row (or the other way round).
+
+The log is language-neutral at rest: labels, record types and enumerated values are stored as their
+English msgids whatever language the person who made the change was using, and shown translated
+(AuditLog.shown_changes). Build every snapshot inside `source_language()` (core.crud does); a person's
+own text (names, descriptions) is stored as written and never translated."""
+from django.conf import settings
 from django.db import models
+from django.utils import translation
+from django.utils.text import capfirst
+from django.utils.translation import gettext_lazy as _
 
 from .models import AuditLog
+
+
+def source_language():
+    """Text built inside this block comes out as the msgids themselves, ready to be stored."""
+    return translation.override(settings.LANGUAGE_CODE)
+
+
+def english(text):
+    with source_language():
+        return str(text)
+
+
+def message(text):
+    """An enumerated value (a choice, yes/no): stored as its msgid, shown translated. Only these are
+    translated, so a site that happens to be called "Pond" keeps its name in every language."""
+    return {'msgid': english(text)}
 
 
 def _display(instance, field):
@@ -13,9 +38,9 @@ def _display(instance, field):
         return ', '.join(sorted(str(item) for item in getattr(instance, field.name).all())) or None
     value = getattr(instance, field.attname)
     if isinstance(field, models.BooleanField):
-        return 'Yes' if value else 'No'
+        return message(_('Yes') if value else _('No'))
     if field.choices and value not in (None, ''):
-        return str(dict(field.flatchoices).get(value, value))
+        return message(dict(field.flatchoices).get(value, value))
     if value in (None, ''):
         return None
     if isinstance(field, models.DecimalField):
@@ -31,7 +56,7 @@ def snapshot(instance, field_names, labels=None):
     result = {}
     for name in field_names:
         field = instance._meta.get_field(name)
-        result[str(labels.get(name, field.verbose_name.capitalize()))] = _display(instance, field)
+        result[str(labels.get(name, capfirst(field.verbose_name)))] = _display(instance, field)
     return result
 
 
@@ -41,8 +66,9 @@ def diff(before, after):
 
 
 def entity_type_of(model):
-    """How the activity log names a kind of record; the one definition for writing and searching it."""
-    return str(model._meta.verbose_name)
+    """How the activity log names a kind of record (its English name, shown translated); the one
+    definition for writing and searching it."""
+    return english(model._meta.verbose_name)
 
 
 def record(user, action, instance, changes=None, entity_type=None, label=None):
@@ -50,7 +76,7 @@ def record(user, action, instance, changes=None, entity_type=None, label=None):
         user=user if user and user.is_authenticated else None,
         user_name=user.get_username() if user and user.is_authenticated else 'system',
         action=action,
-        entity_type=entity_type or entity_type_of(type(instance)),
+        entity_type=english(entity_type or entity_type_of(type(instance))),
         entity_id=str(instance.pk),
         entity_label=label or str(instance),
         changes=changes or {},

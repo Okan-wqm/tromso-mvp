@@ -74,9 +74,17 @@
 
 /* Form side */
 .panel {
+  position: relative;
   display: flex;
   align-items: center;
   padding: 3rem clamp(1.5rem, 7vw, 6rem);
+}
+
+/* The language switch sits in the corner: nobody is signed in yet, so it only sets the cookie. */
+.panel > .language-switch {
+  position: absolute;
+  top: 1.5rem;
+  right: clamp(1.5rem, 4vw, 3rem);
 }
 
 .panel-inner {
@@ -102,6 +110,7 @@
   .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .skin { min-height: 9rem; padding: 1.25rem 1rem; }
   .skin-note { display: none; }
-  .panel { align-items: flex-start; padding: 2rem 1rem 3rem; }
+  .panel { align-items: flex-start; padding: 4.5rem 1rem 3rem; }
+  .panel > .language-switch { top: 1rem; right: 1rem; }
   .panel h1 { font-size: 1.875rem; }
 }

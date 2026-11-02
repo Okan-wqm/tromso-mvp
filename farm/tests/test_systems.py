@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 
+from core.audit import message
 from core.models import AuditLog
 
 from ..models import ProductionDepartment, Site, System
@@ -246,7 +247,7 @@ class SystemAuditAndPermissionTests(SystemTestCase):
             self.bergen, production_department='', status='offline', version='1'))
         created, edited = AuditLog.objects.order_by('created_at')
         self.assertEqual(created.changes['Production department'], [None, 'Hall A (HA)'])
-        self.assertEqual(edited.changes, {'Status': ['Operational', 'Offline'], 'Production department': ['Hall A (HA)', None]})
+        self.assertEqual(edited.changes, {'Status': [message('Operational'), message('Offline')], 'Production department': ['Hall A (HA)', None]})
 
     def test_a_read_only_role_sees_systems_but_cannot_change_them(self):
         viewer = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')

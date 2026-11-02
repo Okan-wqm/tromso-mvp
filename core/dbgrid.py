@@ -19,10 +19,11 @@ from django.db.models import F, Q
 from django.db.models.functions import Cast
 from django.db.models.lookups import IContains
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 PAGE_SIZE = 100
 EXPORT_LIMIT = 50_000
-DELETED_MODES = [('show', 'Show deleted rows'), ('hide', 'Hide deleted rows'), ('only', 'Only deleted rows')]
+DELETED_MODES = [('show', _('Show deleted rows')), ('hide', _('Hide deleted rows')), ('only', _('Only deleted rows'))]
 SHORT_TEXT = 80          # characters of a long value a cell shows; the rest opens on click
 FULL_TEXT = 5_000        # characters of it the page carries; the export has everything
 UUID_SHOWN = 8

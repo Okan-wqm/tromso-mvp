@@ -6,6 +6,7 @@ from .resources import RoleResource, UserResource
 app_name = 'core'
 
 urlpatterns = [
+    path('language/', views.set_language, name='set_language'),
     path('activity/', views.activity_log, name='activity_log'),
     path('database/', dbview.overview, name='database'),
     path('database/<slug:name>/', dbview.browse, name='database_table'),

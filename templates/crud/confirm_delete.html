@@ -1,17 +1,18 @@
 {% extends base_template %}
+{% load i18n %}
 {# Delete confirmation of a tab (core.crud.DeleteView), in a dialog or as a page. For records that
    are soft-deleted `plan` says what else is affected (core.softdelete). #}
-{% block title %}Delete {{ object }}{% endblock %}
+{% block title %}{% blocktrans trimmed %}Delete {{ object }}{% endblocktrans %}{% endblock %}
 {% block eyebrow %}{{ group }} · {{ plural|capfirst }}{% endblock %}
-{% block heading %}Delete {{ name }}{% endblock %}
+{% block heading %}{% blocktrans trimmed %}Delete {{ name }}{% endblocktrans %}{% endblock %}
 {% block content %}
 <div class="confirm">
-  <p class="confirm-question">Delete “{{ object }}”?</p>
+  <p class="confirm-question">{% blocktrans trimmed %}Delete “{{ object }}”?{% endblocktrans %}</p>
 
   {% if plan.blockers %}
   <div class="notice notice-error" role="alert">
     <div>
-      <strong>This {{ name }} cannot be deleted yet.</strong>
+      <strong>{% blocktrans trimmed %}This {{ name }} cannot be deleted yet.{% endblocktrans %}</strong>
       <ul>{% for blocker in plan.blockers %}<li>{{ blocker }}</li>{% endfor %}</ul>
     </div>
   </div>
@@ -20,26 +21,26 @@
   {% if plan %}
     {% for group in plan.deleted_groups %}
     <section class="affected">
-      <h3>{{ group.label }} deleted with it <span class="count">{{ group.records|length }}</span></h3>
+      <h3>{% blocktrans trimmed with label=group.label %}{{ label }} deleted with it{% endblocktrans %} <span class="count">{{ group.records|length }}</span></h3>
       <ul>{% for record in group.records %}<li>{{ record }}</li>{% endfor %}</ul>
     </section>
     {% endfor %}
     {% for group in plan.detached_groups %}
     <section class="affected">
-      <h3>{{ group.label }} that lose their {{ group.link }} <span class="count">{{ group.records|length }}</span></h3>
+      <h3>{% blocktrans trimmed with label=group.label link=group.link %}{{ label }} that lose their {{ link }}{% endblocktrans %} <span class="count">{{ group.records|length }}</span></h3>
       <ul>{% for record in group.records %}<li>{{ record }}</li>{% endfor %}</ul>
     </section>
     {% endfor %}
-    <p>It disappears from every list but is not erased: the record stays in the database, the activity log keeps its history, and it can be restored from the admin.</p>
+    <p>{% trans "It disappears from every list but is not erased: the record stays in the database, the activity log keeps its history, and it can be restored from the admin." %}</p>
   {% else %}
-  <p>This removes it permanently. The activity log keeps a record that it was deleted.</p>
+  <p>{% trans "This removes it permanently. The activity log keeps a record that it was deleted." %}</p>
   {% endif %}
 
   <form method="post" action="{{ request.path }}">
     {% csrf_token %}
     <div class="form-actions">
-      <a class="button button-ghost" href="{{ list_url }}" data-modal-close>Cancel</a>
-      <button type="submit" class="button button-inline button-danger"{% if plan and not plan.can_delete %} disabled{% endif %}>Delete {{ name }}</button>
+      <a class="button button-ghost" href="{{ list_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline button-danger"{% if plan and not plan.can_delete %} disabled{% endif %}>{% blocktrans trimmed %}Delete {{ name }}{% endblocktrans %}</button>
     </div>
   </form>
 </div>

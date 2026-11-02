@@ -1,13 +1,13 @@
-{# The Data tab: toolbar, a spreadsheet-style grid with a frozen header, filter row and row numbers, and the pager. #}
+{% load i18n %}{# The Data tab: toolbar, a spreadsheet-style grid with a frozen header, filter row and row numbers, and the pager. #}
 <form method="get" id="grid-form" class="toolbar grid-toolbar" role="search" data-omit-empty>
   <div class="search">
     {% include "icons/_icon.html" with name="search" %}
-    <label class="sr-only" for="grid-search">Search every column</label>
-    <input id="grid-search" type="search" name="q" value="{{ grid.search }}" placeholder="Search every column" autocomplete="off">
+    <label class="sr-only" for="grid-search">{% trans "Search every column" %}</label>
+    <input id="grid-search" type="search" name="q" value="{{ grid.search }}" placeholder="{% trans "Search every column" %}" autocomplete="off">
   </div>
   {% if table.soft_deletable %}
   <div class="toolbar-filter">
-    <label class="sr-only" for="grid-deleted">Deleted rows</label>
+    <label class="sr-only" for="grid-deleted">{% trans "Deleted rows" %}</label>
     <select id="grid-deleted" name="deleted" data-autosubmit>
       {% for value, label in deleted_modes %}<option value="{{ value }}"{% if value == grid.deleted %} selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
@@ -18,60 +18,60 @@
   {% if grid.params.dir %}<input type="hidden" name="dir" value="{{ grid.params.dir }}">{% endif %}
   {% endif %}
   <div class="toolbar-actions">
-    <button type="submit" class="button button-inline">Apply</button>
-    {% if grid.custom %}<a class="button button-ghost" href="{% url 'core:database_table' table.name %}">Clear</a>{% endif %}
+    <button type="submit" class="button button-inline">{% trans "Apply" %}</button>
+    {% if grid.custom %}<a class="button button-ghost" href="{% url 'core:database_table' table.name %}">{% trans "Clear" %}</a>{% endif %}
   </div>
-  <a class="button button-ghost" href="{{ grid.export_href }}" title="Download the rows below as CSV, up to {{ export_limit }} rows">{% include "icons/_icon.html" with name="download" %}Export CSV</a>
+  <a class="button button-ghost" href="{{ grid.export_href }}" title="{% blocktrans trimmed with limit=export_limit %}Download the rows below as CSV, up to {{ limit }} rows{% endblocktrans %}">{% include "icons/_icon.html" with name="download" %}{% trans "Export CSV" %}</a>
 </form>
 
 <div class="table-wrap grid-wrap">
   <table class="data-table data-grid">
     <thead>
       <tr class="grid-head">
-        <th scope="col" class="grid-no"><span class="sr-only">Row</span></th>
+        <th scope="col" class="grid-no"><span class="sr-only">{% trans "Row" %}</span></th>
         {% for header in grid.headers %}
         <th scope="col"{% if header.numeric %} class="num"{% endif %}{% if header.direction %} aria-sort="{{ header.direction }}"{% endif %}>
-          {% if header.sort_href %}<a class="grid-name" href="{{ header.sort_href }}" title="Sort by {{ header.column.name }}">{{ header.column.name }}</a>{% else %}<span class="grid-name">{{ header.column.name }}</span>{% endif %}
-          <span class="grid-type">{{ header.column.type }}{% if header.column.primary_key %} <abbr title="Primary key">PK</abbr>{% elif header.column.reference %} <abbr title="Foreign key to {{ header.column.reference.table }}.{{ header.column.reference.other_column }}">FK</abbr>{% endif %}{% if header.column.masked %} masked{% endif %}</span>
+          {% if header.sort_href %}<a class="grid-name" href="{{ header.sort_href }}" title="{% blocktrans trimmed with name=header.column.name %}Sort by {{ name }}{% endblocktrans %}">{{ header.column.name }}</a>{% else %}<span class="grid-name">{{ header.column.name }}</span>{% endif %}
+          <span class="grid-type">{{ header.column.type }}{% if header.column.primary_key %} <abbr title="{% trans "Primary key" %}">PK</abbr>{% elif header.column.reference %} <abbr title="{% blocktrans trimmed with target=header.column.reference.table|add:"."|add:header.column.reference.other_column %}Foreign key to {{ target }}{% endblocktrans %}">FK</abbr>{% endif %}{% if header.column.masked %} {% trans "masked" %}{% endif %}</span>
         </th>
         {% endfor %}
       </tr>
       <tr class="grid-filter">
-        <th scope="col" class="grid-no"><span class="sr-only">Filter</span></th>
+        <th scope="col" class="grid-no"><span class="sr-only">{% trans "Filter" %}</span></th>
         {% for header in grid.headers %}
-        <th scope="col">{% if header.filter_param %}<input type="search" form="grid-form" name="{{ header.filter_param }}" value="{{ header.filter_value }}" placeholder="{% if header.exact %}equals{% else %}contains{% endif %}" aria-label="Filter {{ header.column.name }}" autocomplete="off">{% endif %}</th>
+        <th scope="col">{% if header.filter_param %}<input type="search" form="grid-form" name="{{ header.filter_param }}" value="{{ header.filter_value }}" placeholder="{% if header.exact %}{% trans "equals" %}{% else %}{% trans "contains" %}{% endif %}" aria-label="{% blocktrans trimmed with name=header.column.name %}Filter {{ name }}{% endblocktrans %}" autocomplete="off">{% endif %}</th>
         {% endfor %}
       </tr>
     </thead>
     <tbody>
       {% for row in grid.rows %}
       <tr{% if row.deleted %} class="grid-deleted"{% endif %}>
-        <th scope="row" class="grid-no"{% if row.deleted %} title="Deleted row"{% endif %}>{{ row.number }}</th>
+        <th scope="row" class="grid-no"{% if row.deleted %} title="{% trans "Deleted row" %}"{% endif %}>{{ row.number }}</th>
         {% for cell in row.cells %}
         {% if cell.kind == "null" %}<td><span class="null">NULL</span></td>
-        {% elif cell.kind == "masked" %}<td><span class="null" title="Never shown">masked</span></td>
+        {% elif cell.kind == "masked" %}<td><span class="null" title="{% trans "Never shown" %}">{% trans "masked" %}</span></td>
         {% elif cell.kind == "bool" %}<td class="c-bool"><span class="bool-{{ cell.text }}" title="{{ cell.text }}">{% if cell.text == "true" %}✓{% else %}–{% endif %}</span></td>
         {% elif cell.kind == "uuid" %}<td><span title="{{ cell.full }}">{{ cell.text }}</span></td>
-        {% elif cell.kind == "fk" %}<td class="c-fk"><span class="fk-id"{% if cell.full != cell.text %} title="{{ cell.full }}"{% endif %}>{{ cell.text }}</span>{% if cell.label is None %} <span class="null">no such row</span>{% elif cell.href %} <a class="fk-link" href="{{ cell.href }}">{{ cell.label }}</a>{% else %} <span class="fk-label">{{ cell.label }}</span>{% endif %}</td>
+        {% elif cell.kind == "fk" %}<td class="c-fk"><span class="fk-id"{% if cell.full != cell.text %} title="{{ cell.full }}"{% endif %}>{{ cell.text }}</span>{% if cell.label is None %} <span class="null">{% trans "no such row" %}</span>{% elif cell.href %} <a class="fk-link" href="{{ cell.href }}">{{ cell.label }}</a>{% else %} <span class="fk-label">{{ cell.label }}</span>{% endif %}</td>
         {% elif cell.kind == "long" %}<td><details class="more"><summary>{{ cell.text }}</summary><pre>{{ cell.full }}</pre></details></td>
         {% elif cell.kind == "number" %}<td class="num">{{ cell.text }}</td>
         {% else %}<td{% if cell.text|length > 40 %} title="{{ cell.text }}"{% endif %}>{{ cell.text }}</td>{% endif %}
         {% endfor %}
       </tr>
       {% empty %}
-      <tr class="grid-empty"><th scope="row" class="grid-no"></th><td colspan="{{ grid.headers|length }}">No rows match{% if grid.custom %}. <a href="{% url 'core:database_table' table.name %}">Clear the search and filters</a>{% endif %}.</td></tr>
+      <tr class="grid-empty"><th scope="row" class="grid-no"></th><td colspan="{{ grid.headers|length }}">{% if grid.custom %}{% url 'core:database_table' table.name as clear_url %}{% blocktrans trimmed with url=clear_url %}No rows match. <a href="{{ url }}">Clear the search and filters</a>.{% endblocktrans %}{% else %}{% trans "No rows match." %}{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 
-<nav class="pager grid-pager" aria-label="Pages">
-  <span>{% if grid.page.paginator.count %}Rows {{ grid.page.start_index }}–{{ grid.page.end_index }} of {{ grid.page.paginator.count }}{% else %}0 rows{% endif %}{% if grid.custom %} match{% endif %}</span>
+<nav class="pager grid-pager" aria-label="{% trans "Pages" %}">
+  <span>{% if grid.page.paginator.count %}{% if grid.custom %}{% blocktrans trimmed with first=grid.page.start_index last=grid.page.end_index total=grid.page.paginator.count %}Rows {{ first }}–{{ last }} of {{ total }} match{% endblocktrans %}{% else %}{% blocktrans trimmed with first=grid.page.start_index last=grid.page.end_index total=grid.page.paginator.count %}Rows {{ first }}–{{ last }} of {{ total }}{% endblocktrans %}{% endif %}{% elif grid.custom %}{% trans "0 rows match" %}{% else %}{% trans "0 rows" %}{% endif %}</span>
   {% if grid.page.paginator.num_pages > 1 %}
   <span class="pager-links">
-    {% if grid.pager.first %}<a class="button button-ghost" href="{{ grid.pager.first }}">First</a><a class="button button-ghost" href="{{ grid.pager.previous }}">Previous</a>{% endif %}
-    <span>Page {{ grid.page.number }} of {{ grid.page.paginator.num_pages }}</span>
-    {% if grid.pager.next %}<a class="button button-ghost" href="{{ grid.pager.next }}">Next</a><a class="button button-ghost" href="{{ grid.pager.last }}">Last</a>{% endif %}
+    {% if grid.pager.first %}<a class="button button-ghost" href="{{ grid.pager.first }}">{% trans "First" %}</a><a class="button button-ghost" href="{{ grid.pager.previous }}">{% trans "Previous" %}</a>{% endif %}
+    <span>{% blocktrans trimmed with number=grid.page.number total=grid.page.paginator.num_pages %}Page {{ number }} of {{ total }}{% endblocktrans %}</span>
+    {% if grid.pager.next %}<a class="button button-ghost" href="{{ grid.pager.next }}">{% trans "Next" %}</a><a class="button button-ghost" href="{{ grid.pager.last }}">{% trans "Last" %}</a>{% endif %}
   </span>
   {% endif %}
 </nav>

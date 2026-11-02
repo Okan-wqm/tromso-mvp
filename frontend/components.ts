@@ -8,8 +8,10 @@
 //   data-omit-empty       a GET form that leaves its empty fields out of the address it builds (the database viewer's filters)
 //   data-formset          a list of rows with "add row" and, for [data-primary], one ticked box
 //   data-requires="<id>"  a check box that needs another one (e.g. Edit needs Read in the role matrix)
+// The code has no UI text of its own: the templates render every text into a data attribute (e.g. the
+// dialog's data-forbidden), translated by the server, and `label()` reads it.
 // Everything is set up on the page and again on whatever the dialog loads.
-import { required } from './dom.js';
+import { label, required } from './dom.js';
 
 // ---- inner tabs ----------------------------------------------------------------------------
 function initTabs(root: ParentNode & Element | Document): void {
@@ -208,7 +210,13 @@ class Modal {
       return;
     }
     if (response.status === 403) {
-      this.content.innerHTML = '<div class="modal-body"><p class="form-error">You do not have permission to do this.</p></div>';
+      const message = document.createElement('p');
+      message.className = 'form-error';
+      message.textContent = label(this.dialog, 'forbidden');   // translated by the server
+      const body = document.createElement('div');
+      body.className = 'modal-body';
+      body.append(message);
+      this.content.replaceChildren(body);
     } else {
       this.content.innerHTML = await response.text();
     }

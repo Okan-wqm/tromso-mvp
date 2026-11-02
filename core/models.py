@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext, gettext_lazy as _
 
 
 class ActiveManager(models.Manager):
@@ -20,19 +21,22 @@ class AuditedModel(models.Model):
     follows each link's `on_delete` (see core.softdelete)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(_('Created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Updated at'), auto_now=True)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+        verbose_name=_('Created by'),
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+        verbose_name=_('Updated by'),
     )
-    version = models.PositiveIntegerField(default=1)
-    is_deleted = models.BooleanField(default=False, db_index=True)
-    deleted_at = models.DateTimeField(null=True, blank=True)
+    version = models.PositiveIntegerField(_('Version'), default=1)
+    is_deleted = models.BooleanField(_('Deleted'), default=False, db_index=True)
+    deleted_at = models.DateTimeField(_('Deleted at'), null=True, blank=True)
     deleted_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+        verbose_name=_('Deleted by'),
     )
 
     objects = ActiveManager()
@@ -78,10 +82,10 @@ class AuditLog(models.Model):
     the platform admin."""
 
     class Action(models.TextChoices):
-        CREATE = 'create', 'Created'
-        UPDATE = 'update', 'Changed'
-        DELETE = 'delete', 'Deleted'
-        RESTORE = 'restore', 'Restored'
+        CREATE = 'create', _('Created')
+        UPDATE = 'update', _('Changed')
+        DELETE = 'delete', _('Deleted')
+        RESTORE = 'restore', _('Restored')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -96,7 +100,8 @@ class AuditLog(models.Model):
     entity_type = models.CharField(max_length=50, db_index=True)
     entity_id = models.CharField(max_length=64)
     entity_label = models.CharField(max_length=255)
-    # {field label: [old, new]}; on create old is None, on delete new is None.
+    # {field label: [old, new]}; on create old is None, on delete new is None. Labels are msgids; a value
+    # is None, a person's text as written, or {'msgid': ...} for an enumeration (see core.audit).
     changes = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -109,3 +114,31 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f'{self.user_name} {self.get_action_display().lower()} {self.entity_type} {self.entity_label}'
+
+    def shown_type(self):
+        """The record type in the active language."""
+        return gettext(self.entity_type)
+
+    def shown_changes(self):
+        """[(label, old, new)] in the active language. The stored rows stay in English."""
+        def shown(value):
+            if isinstance(value, dict):
+                msgid = value['msgid']
+                return gettext(msgid)
+            return value
+        return [(gettext(label), shown(old), shown(new)) for label, (old, new) in self.changes.items()]
+
+
+class Profile(models.Model):
+    """What the platform keeps about a person beyond Django's account. Today that is their language;
+    it lives here because the user model is Django's own."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    # One of settings.LANGUAGES; empty until the person (or the admin who invited them) chooses one.
+    language = models.CharField(max_length=10, blank=True)
+
+    class Meta:
+        db_table = 'profiles'
+
+    def __str__(self):
+        return str(self.user)

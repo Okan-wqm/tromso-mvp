@@ -1,3 +1,5 @@
+from django.utils.translation import gettext_lazy as _
+
 from core.crud import Resource
 
 from ..forms import SiteContactFormSet, SiteForm
@@ -7,7 +9,7 @@ from ..models import Site
 class SiteResource(Resource):
     model = Site
     form_class = SiteForm
-    name, plural, group = 'site', 'sites', 'Facility'
+    name, plural, group = _('site'), _('sites'), _('Facility')
     url_prefix = 'sites'
     search_fields = ['name', 'code', 'region']
     list_template = 'farm/site_list.html'

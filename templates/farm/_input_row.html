@@ -1,0 +1,11 @@
+{% load i18n %}<fieldset class="contact-row input-row input-row-{{ row.fields|length }}" data-row>
+  <legend class="sr-only">{% trans "Unit" %}</legend>
+  {% for field in row.visible_fields %}
+  <div class="field{% if field.errors %} has-error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {{ field.errors }}
+  </div>
+  {% endfor %}
+  {% if row.non_field_errors %}<div class="form-error">{{ row.non_field_errors }}</div>{% endif %}
+</fieldset>

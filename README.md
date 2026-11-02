@@ -98,7 +98,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   badge. Email is required and unique. A new user has no password: they are sent the password reset
   email, whose link sets their first password (and "Forgot password" sends a new link if it
   expired). People are deactivated, not deleted, and nobody can deactivate their own account.
-  Platform admin status is not edited here (only with `createsuperuser` or the Django admin).
+  Platform admin status is not edited here (only with `createsuperuser`).
 
 ## Local setup
 
@@ -148,6 +148,14 @@ confirmation, which lists what will be affected and disables the button when som
 the delete itself, which writes an activity-log row for every record it touches. A tab never writes
 down what a delete does to its neighbours: it is whatever its links say.
 
+### Restoring
+
+A deleted record stays in the database. In `/admin/` (platform admin) every farm record type lists its
+records including deleted ones, and the "Restore" action brings them back: refused when a record it
+points at is deleted too (bring that back first) or its code was taken meanwhile, and logged. Only
+the record itself returns, not what was deleted with it. The admin edits nothing, and users and roles
+are not in it: they are changed on their own screens, where every change is logged.
+
 ### Adding a tab
 
 A tab is done only when all of this exists; the first three are enforced by `TabRulesTests` in
@@ -155,7 +163,9 @@ A tab is done only when all of this exists; the first three are enforced by `Tab
 
 1. The model on `AuditedModel` (author, version, soft delete) with its constraints and links; each
    link's `on_delete` says what deleting the other record does to it.
-2. The form on `TabbedForm`, the `Resource` in `farm/resources.py` and its URLs.
+2. The form on `TabbedForm` and the `Resource`, each in its own module (`farm/forms/<tab>.py`,
+   `farm/resources/<tab>.py`, the model in `farm/models/<tab>.py`); the URLs and the admin follow from
+   the registered resource and the model, nothing to add by hand.
 3. **The permission matrix**: the area in `config/access.py`, so a role can be given it.
 4. **The menu entry** in `config/navigation.py` with the read permission.
 5. Tests that create, read, edit and delete through the pages and check the stored rows, the
@@ -187,7 +197,7 @@ real mail.
 | `/accounts/logout/` | Sign out (POST) |
 | `/accounts/password_reset/` | Forgot password |
 | `/accounts/password_change/` | Change password |
-| `/admin/` | Django admin |
+| `/admin/` | Django admin: deleted farm records, and restoring them (platform admin) |
 
 ## Layout of the code
 
@@ -196,12 +206,13 @@ real mail.
 | `config/` | Settings, URLs, the overview view |
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
-| `farm/` | Farm module: models, forms, views, tests |
+| `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py` | `DependentSelect`: a choice that belongs to another field's value (a department to its site) |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
 | `core/navigation.py`, `config/navigation.py` | The rail menu as data, filtered by permission |
-| `farm/resources.py`, `templates/farm/` | Farm tabs declared on top of `core.crud` |
+| `farm/resources/`, `templates/farm/` | Farm tabs declared on top of `core.crud`; their URLs come from the registry |
+| `core/admin.py` | The admin for farm records: shows deleted ones, restores them (checked like a new one), edits nothing |
 | `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |
 | `templates/auth_base.html`, `templates/registration/` | Sign-in and password pages |
 | `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu), Lucide icons |

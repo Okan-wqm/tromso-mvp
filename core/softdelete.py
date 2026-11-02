@@ -13,6 +13,7 @@ every record it touches gets its own activity-log row.
 """
 from dataclasses import dataclass, field
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from . import audit
@@ -105,3 +106,19 @@ def execute(plan, user):
         audit.record_delete(user, record)
     plan.obj.soft_delete(user)
     audit.record_delete(user, plan.obj)
+
+
+def restore(record, user):
+    """Brings a deleted record back, checked like a new one: refused when a record it points at is
+    deleted too (bring that back first) or when its code was taken meanwhile. Only the record itself
+    returns, not what was deleted with it. The change is logged."""
+    for link in record._meta.concrete_fields:
+        target = getattr(record, link.name) if link.is_relation else None
+        if isinstance(target, AuditedModel) and target.is_deleted:
+            raise ValidationError(f'{str(link.verbose_name).capitalize()} “{target}” is deleted.')
+    record.is_deleted, record.deleted_at, record.deleted_by = False, None, None
+    record.updated_by = user
+    record.version += 1
+    record.full_clean()   # re-checks the constraints among live records, e.g. a code taken meanwhile
+    record.save()
+    audit.record(user, AuditLog.Action.RESTORE, record)

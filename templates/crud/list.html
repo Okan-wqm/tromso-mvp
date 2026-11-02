@@ -24,6 +24,7 @@
 
 {% if objects %}
 {% block items %}{% endblock %}
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
 {% else %}
 <div class="empty">
   {% include "icons/_icon.html" with name=empty_icon|default:"plus" %}

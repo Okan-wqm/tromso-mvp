@@ -79,6 +79,10 @@ msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s “%(record)s” silinmiş."
 
 #, python-format
+msgid "%(first)s–%(last)s of %(total)s"
+msgstr "%(first)s–%(last)s / %(total)s"
+
+#, python-format
 msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
 

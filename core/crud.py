@@ -14,13 +14,15 @@ needs the same way:
 - rows saved as a list: a tab's `row_lists` (a site's contacts) get their URL, their formset on the
   edit page and a logged save (RowList).
 """
+import copy
 from dataclasses import dataclass, field as dataclass_field
 
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.paginator import Paginator
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
@@ -127,25 +129,29 @@ class TabbedForm(forms.ModelForm):
         return cleaned
 
     def _check_conditional_unique(self, cleaned):
-        """Conditional unique constraints, e.g. "code unique among live records". Django leaves them
-        out of form validation when the condition uses a field the form does not edit (is_deleted),
-        so check them here against the same condition; the field error is the constraint's message."""
+        """Conditional unique constraints, e.g. "code unique among live records", or "scientific name
+        unique among live records whatever its case" (a constraint on an expression, Lower(...)).
+        Django leaves them out of form validation when the condition uses a field the form does not
+        edit (is_deleted), so check them here: the record as the form would save it, by the constraint
+        itself. The error goes on the constraint's last field the form shows, with its message."""
         model = self._meta.model
         for constraint in model._meta.constraints:
-            if not isinstance(constraint, models.UniqueConstraint) or constraint.condition is None or not constraint.fields:
+            if not isinstance(constraint, models.UniqueConstraint) or constraint.condition is None:
                 continue
-            values = {}
-            for name in constraint.fields:
+            names = constrained_fields(constraint)
+            candidate = copy.copy(self.instance)
+            for name in names:
                 value = cleaned.get(name) if name in self.fields else getattr(self.instance, name, None)
                 if value in (None, ''):
                     break
-                values[name] = value
+                setattr(candidate, name, value)
             else:
-                error_field = next((f for f in reversed(constraint.fields) if f in self.fields), None)
+                error_field = next((f for f in reversed(names) if f in self.fields), None)
                 if error_field is None or error_field in self.errors:
                     continue
-                clash = model._base_manager.filter(constraint.condition, **values).exclude(pk=self.instance.pk)
-                if clash.exists():
+                try:
+                    constraint.validate(model, candidate)
+                except ValidationError:
                     self.add_error(error_field, constraint.violation_error_message)
 
     def tab_list(self):
@@ -196,6 +202,15 @@ def tab_fields(tabs):
     """Every field name of the tabs, the ones inside a Fieldset too."""
     return [name for _, _, names in tabs for item in names
             for name in (item.names if isinstance(item, Fieldset) else [item])]
+
+
+def constrained_fields(constraint):
+    """The fields a unique constraint covers: its `fields`, or the fields its expressions read
+    (Lower('scientific_name') covers scientific_name)."""
+    if constraint.fields:
+        return list(constraint.fields)
+    return [node.name for expression in constraint.expressions for node in expression.flatten()
+            if isinstance(node, F)]
 
 
 class RowFormSet(forms.BaseInlineFormSet):
@@ -280,6 +295,7 @@ class Resource:
     namespace = ''        # URL namespace; defaults to the model's app label
     actions = ('add', 'change', 'delete')   # what this tab offers besides the list
     row_lists = ()        # RowList classes edited on the record's tabs (a site's contacts)
+    page_size = None      # rows per page of the list; None lists every record on one page (nested lists)
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -434,7 +450,15 @@ class ListView(ResourceView):
                 condition |= Q(**{f'{field}__icontains': query})
             objects = objects.filter(condition)
         objects, filters = self.resource.filter_list(request, objects)
-        return render_page(request, self.resource.list_template, self.context(objects=objects, query=query, **filters))
+        page = None
+        if self.resource.page_size:
+            # Paged on the server, after the search and the filters; the page links keep both.
+            page = Paginator(objects, self.resource.page_size).get_page(request.GET.get('page'))
+            objects = page.object_list
+        kept = request.GET.copy()
+        kept.pop('page', None)
+        return render_page(request, self.resource.list_template, self.context(
+            objects=objects, query=query, page=page, pager_query=kept.urlencode(), **filters))
 
 
 class FormView(ResourceView):

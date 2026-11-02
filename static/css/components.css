@@ -738,7 +738,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
   overflow-wrap: anywhere;
 }
 
-.grid-pager { justify-content: space-between; margin-top: 1rem; }
+.grid-pager, .list-pager { justify-content: space-between; margin-top: 1rem; }
 .pager-links { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 
 .db-structure th,

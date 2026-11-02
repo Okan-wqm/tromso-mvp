@@ -66,10 +66,13 @@ class AuditedModel(models.Model):
 
 
 class CodedMixin:
-    """Records known by a name and a short code: codes are stored upper-case, shown as "Name (CODE)"."""
+    """Records known by a name and a short code: codes are stored upper-case, shown as "Name (CODE)".
+    `name_field` is the field that holds the name: `name` for most records, `common_name` for a species."""
+
+    name_field = 'name'
 
     def __str__(self):
-        return f'{self.name} ({self.code})'
+        return f'{getattr(self, self.name_field)} ({self.code})'
 
     def save(self, *args, **kwargs):
         self.code = self.code.strip().upper()

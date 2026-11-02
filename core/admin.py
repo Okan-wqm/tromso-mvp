@@ -57,12 +57,13 @@ def register_audited(app_label):
     """Registers every farm record of an app (an AuditedModel) with the admin."""
     for model in apps.get_app_config(app_label).get_models():
         if issubclass(model, AuditedModel):
+            fields = {field.name for field in model._meta.concrete_fields}
+            name = getattr(model, 'name_field', 'name')    # a species is named by its common name
             admin.site.register(model, type(f'{model.__name__}Admin', (AuditedModelAdmin,), {
                 'list_display': [
-                    field.name for field in model._meta.concrete_fields
-                    if field.name in ('name', 'code', 'type', 'status', 'is_deleted')
+                    field for field in (name, 'code', 'type', 'status', 'is_deleted') if field in fields
                 ] or ['__str__', 'is_deleted'],
-                'search_fields': [name for name in ('name', 'code') if model._meta.get_field(name)],
+                'search_fields': [field for field in (name, 'code') if field in fields],
             }))
 
 

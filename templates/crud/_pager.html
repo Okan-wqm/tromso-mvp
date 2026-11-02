@@ -1,0 +1,10 @@
+{% load i18n %}{# The pages of a long list (Resource.page_size): which rows this page shows, and links to the
+   others that keep the search and the filters (pager_query). #}
+<nav class="pager list-pager" aria-label="{% trans "Pages" %}">
+  <span>{% blocktrans trimmed with first=page.start_index last=page.end_index total=page.paginator.count %}{{ first }}–{{ last }} of {{ total }}{% endblocktrans %}</span>
+  <span class="pager-links">
+    {% if page.has_previous %}<a class="button button-ghost" href="?{% if pager_query %}{{ pager_query }}&amp;{% endif %}page={{ page.previous_page_number }}">{% trans "Previous" %}</a>{% endif %}
+    <span>{% blocktrans trimmed with number=page.number total=page.paginator.num_pages %}Page {{ number }} of {{ total }}{% endblocktrans %}</span>
+    {% if page.has_next %}<a class="button button-ghost" href="?{% if pager_query %}{{ pager_query }}&amp;{% endif %}page={{ page.next_page_number }}">{% trans "Next" %}</a>{% endif %}
+  </span>
+</nav>

@@ -366,10 +366,18 @@ What one tab needed and the next ones will too lives in `core/`:
   far, nothing validated or saved; the values travel in the request body, never in the address; the
   marker names the field that changed and the form comes back on that field's tab). A form can drop
   fields for one record (a pond has no diameter): the tabs show the fields it kept.
+  A unique constraint among live records, on fields or on an expression (a species' scientific name
+  in any case, `Lower(...)`), is checked on the form by the constraint itself, with its message on
+  the field.
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
   "Tanks, ponds & cages" lists units.
+- `Resource.page_size`: the list is paged on the server, after the search and the filters, and the
+  page links keep both (`templates/crud/_pager.html`). Lists that nest records (systems, equipment)
+  stay on one page.
+- `CodedMixin.name_field`: a record shown as "Name (CODE)" whose name is in another field (a
+  species' common name).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
   replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations).
 - `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of

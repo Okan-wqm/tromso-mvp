@@ -37,8 +37,26 @@ delete is a soft delete. Differences from the source:
   as database constraints; the source enforced most of this only in service code.
 - Column lengths win where the source's form allowed longer values (name 150, code 20, email 150).
 - Editing is guarded by the `version` column: a save based on an old version is refused.
-- Delete blockers (tanks holding biomass) and the cascade to departments, systems and equipment
-  come with those tabs.
+- Deleting a site leaves its departments without a site (see Departments); the other dependants
+  join the delete plan as their tabs arrive.
+
+### Facility › Departments (`/departments/`)
+
+Table `departments`: a table (department, type, site, capacity) with search by name or code, a
+site filter that includes "without a site", a flat form in the dialog and delete. Differences from
+the source:
+
+- A department belongs to a site chosen once, at creation. Deleting a site leaves its departments
+  without a site, as in the source; the confirmation lists them and each gets its own activity-log
+  row (see the delete plan below).
+- Code is unique among live departments and a name is unique within a site, as database
+  constraints; capacity cannot be negative.
+- Not carried over: `settings` and `area` (accepted but never stored), the second status flag
+  `isActive`, the load figure that was never filled in. Notes can be shown and cleared.
+- The manager is a user of this system, and can be removed.
+
+The bugs found in the source while porting are listed in
+[docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), with how each is avoided here.
 
 ## Roles and users
 
@@ -99,6 +117,20 @@ opened directly, as a page. The rail menu is data (`config/navigation.py`) and s
 only to people allowed to read it. There are no built-in roles: the platform admin creates roles
 and grants permissions.
 
+### The delete plan
+
+Records are soft-deleted, so the database's own `on_delete` never runs. `core/softdelete.py` reads
+each link's `on_delete` instead and applies it to live records: `CASCADE` deletes the records that
+point at it too, `SET_NULL` keeps them but clears the link, `PROTECT` blocks the delete. A model
+adds conditions that are not links by overriding `delete_blockers()`. One plan serves the
+confirmation, which lists what will be affected and disables the button when something blocks, and
+the delete itself, which writes an activity-log row for every record it touches. A tab never writes
+down what a delete does to its neighbours: it is whatever its links say.
+
+### Line endings
+
+Every text file is LF (`.gitattributes`), so tools on any system produce the same file.
+
 ## Email
 
 Email uses the console backend for now: the password reset email is printed in the `runserver`
@@ -111,6 +143,7 @@ real mail.
 |---|---|
 | `/` | Overview (sign-in required) |
 | `/sites/` | Facility › Sites |
+| `/departments/` | Facility › Departments |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -128,6 +161,7 @@ real mail.
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module: models, forms, views, tests |
+| `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
 | `core/navigation.py`, `config/navigation.py` | The rail menu as data, filtered by permission |
 | `farm/resources.py`, `templates/farm/` | Farm tabs declared on top of `core.crud` |
@@ -145,5 +179,5 @@ real mail.
 .venv\Scripts\python.exe manage.py test
 ```
 
-The tests need the database container running (they check the timescaledb extension too). Set
+Tests hash passwords quickly (`config/test_runner.py`). The tests need the database container running (they check the timescaledb extension too). Set
 `DB_TEST_NAME` to give a checkout its own test database when two test runs overlap.

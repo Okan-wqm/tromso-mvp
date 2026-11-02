@@ -15,7 +15,7 @@ from core.models import AuditLog, Profile
 from ..equipment_types import TYPES
 from ..models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Site,
                       System)
-from .helpers import role
+from .helpers import role, rows_data
 
 EQUIPMENT_MANAGER = (
     'view_equipment', 'add_equipment', 'change_equipment', 'delete_equipment', 'view_site', 'delete_site',
@@ -47,15 +47,7 @@ def equipment_data(kind, department, links=(), specs=None, **overrides):
 
 
 def calibrations_data(rows, initial=0):
-    data = {'calibrations-TOTAL_FORMS': str(len(rows)), 'calibrations-INITIAL_FORMS': str(initial),
-            'calibrations-MIN_NUM_FORMS': '0', 'calibrations-MAX_NUM_FORMS': '1000'}
-    for i, row in enumerate(rows):
-        for key, value in row.items():
-            if value is True:
-                data[f'calibrations-{i}-{key}'] = 'on'
-            elif value is not False:
-                data[f'calibrations-{i}-{key}'] = value
-    return data
+    return rows_data('calibrations', rows, initial)
 
 
 class EquipmentTestCase(TestCase):

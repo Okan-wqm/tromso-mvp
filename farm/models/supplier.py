@@ -3,7 +3,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
-from django.utils.translation import gettext_lazy as _, ngettext
+from django.utils.translation import gettext_lazy as _
 
 from core.fields import ChoiceArrayField
 from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
@@ -47,14 +47,40 @@ class SupplierStatus(models.TextChoices):
     BLOCKED = 'blocked', _('Blocked')
 
 
+class SupplierLink(models.ForeignKey):
+    """A link to a supplier of one category: equipment to a supplier of equipment and spare parts, a feed
+    to its manufacturer, a supplier of feed. Both sides of the rule are declared here, once per link:
+
+    - the link takes only a live supplier of the category (`limit_choices_to`, which is part of the
+      model's validation and narrows the form's list);
+    - the supplier keeps the category while live records link to it this way: Supplier.clean reads
+      every SupplierLink that points at suppliers and refuses to untick its category, saying `kept`, an
+      ngettext_lazy(..., 'count') whose %(count)d is the number of records and %(category)s the
+      category's label.
+
+    Migrations see a plain ForeignKey: the category is already in `limit_choices_to` and the message
+    changes no column."""
+
+    def __init__(self, to=None, on_delete=None, category=None, kept=None, **kwargs):
+        self.category, self.kept = category, kept
+        if category is not None:
+            kwargs['limit_choices_to'] = {'is_deleted': False, 'supplies__contains': [category]}
+        super().__init__(to, on_delete, **kwargs)
+
+    def deconstruct(self):
+        name, _path, args, kwargs = super().deconstruct()
+        return name, 'django.db.models.ForeignKey', args, kwargs
+
+
 class Supplier(CodedMixin, AuditedModel):
     """A company the farm buys from: what it supplies (goods, live fish, services), how to reach it and on
     which terms. Source table: farm.suppliers.
 
     What it supplies is a list of categories (`supplies`), several at once: a feed mill that also
-    delivers by boat supplies feed and transport. Other records link to a supplier by what they buy:
-    equipment takes only a supplier of equipment and spare parts (Equipment.supplier), so such a
-    supplier keeps that category while equipment is bought from it.
+    delivers by boat supplies feed and transport. Other records link to a supplier by what they buy, each
+    through a SupplierLink: equipment takes only a supplier of equipment and spare parts
+    (Equipment.supplier), a feed only a supplier of feed as its manufacturer (Feed.manufacturer), and a
+    supplier keeps a category while live records link to it for that category (`clean`).
 
     Differences from the source: one list of categories instead of a main type next to a second, free
     list (`type`, `supplyTypes`); one status (no `isActive`); the address in flat columns (the source
@@ -140,16 +166,22 @@ class Supplier(CodedMixin, AuditedModel):
         return next((contact for contact in self.contacts.all() if contact.is_primary), None)
 
     def clean(self):
+        """A supplier keeps a category while live records link to it for that category: every
+        SupplierLink that points at suppliers is checked, and says so in its own words."""
         super().clean()
-        if not self._state.adding and SupplyCategory.EQUIPMENT not in (self.supplies or []):
-            bought = self.equipment.count()
-            if bought:
-                raise ValidationError({'supplies': ValidationError(ngettext(
-                    '%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose '
-                    'another supplier for it first.',
-                    '%(count)d pieces of equipment are bought from it: keep “%(category)s” ticked, or choose '
-                    'another supplier for them first.', bought),
-                    params={'count': bought, 'category': SupplyCategory.EQUIPMENT.label})})
+        if self._state.adding:
+            return
+        supplies, errors = self.supplies or [], []
+        for relation in self._meta.related_objects:
+            link = relation.field
+            if not isinstance(link, SupplierLink) or link.category in supplies:
+                continue
+            count = relation.related_model._default_manager.filter(**{link.name: self}).count()
+            if count:
+                errors.append(ValidationError(link.kept, params={
+                    'count': count, 'category': SupplyCategory(link.category).label}))
+        if errors:
+            raise ValidationError({'supplies': errors})
 
     def save(self, *args, **kwargs):
         self.organisation_number = normalise_organisation_number(self.organisation_number)

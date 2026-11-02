@@ -6,13 +6,13 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils.functional import cached_property
-from django.utils.translation import gettext, gettext_lazy as _, pgettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy, pgettext_lazy
 
 from core.models import AuditedModel, CodedMixin, TreeMixin
 from core.schema import Schema, SchemaValuesField
 
 from .production_department import ProductionDepartment
-from .supplier import Supplier, SupplyCategory
+from .supplier import Supplier, SupplierLink, SupplyCategory
 from .system import System
 
 
@@ -115,15 +115,18 @@ class Equipment(CodedMixin, TreeMixin, AuditedModel):
     systems = models.ManyToManyField(
         System, through='EquipmentSystem', related_name='equipment', verbose_name=_('Systems'),
     )
-    # Who it was bought from: a live supplier of equipment and spare parts, checked on every save
-    # (`limit_choices_to` is part of the model's validation and narrows the form's list). Such a supplier
-    # keeps the category while equipment is bought from it (Supplier.clean); deleting it leaves the
+    # Who it was bought from: a live supplier of equipment and spare parts, checked on every save. Such a
+    # supplier keeps the category while equipment is bought from it (SupplierLink); deleting it leaves the
     # equipment without a supplier.
-    supplier = models.ForeignKey(
+    supplier = SupplierLink(
         Supplier, null=True, blank=True, on_delete=models.SET_NULL, related_name='equipment',
-        limit_choices_to={'is_deleted': False, 'supplies__contains': [SupplyCategory.EQUIPMENT]},
-        verbose_name=_('Supplier'),
+        category=SupplyCategory.EQUIPMENT, verbose_name=_('Supplier'),
         error_messages={'invalid': _('Choose a supplier of equipment and spare parts.')},
+        kept=ngettext_lazy(
+            '%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose another '
+            'supplier for it first.',
+            '%(count)d pieces of equipment are bought from it: keep “%(category)s” ticked, or choose another '
+            'supplier for them first.', 'count'),
     )
     name = models.CharField(_('Name'), max_length=255)
     code = models.CharField(_('Code'), max_length=50)

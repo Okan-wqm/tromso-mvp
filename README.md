@@ -13,6 +13,8 @@ What works today:
   database trigger refuses to update or delete them. Each record's form has a History tab.
 - Every page needs a signed-in user (`LoginRequiredMiddleware`) unless its view opts out.
 - Roles (`/roles/`) and users (`/users/`), managed by the platform admin only (see Roles and users).
+- A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
+  (see Database viewer).
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
   choice, collapses by itself below 1100 px when no choice is saved and slides in from the left on
   phones; a sticky top bar with the page title and the user menu.
@@ -104,6 +106,41 @@ only one who manages roles and users; everyone else gets exactly what their role
   expired). People are deactivated, not deleted, and nobody can deactivate their own account.
   Platform admin status is not edited here (only with `createsuperuser`).
 
+## Database viewer
+
+Administration › Database (`/database/`) shows what the application really stores, table by table,
+so the data can be checked against what the screens say. It is **read-only** (only GET is accepted;
+there is no SQL console) and for the **platform admin only**: the permission `core.browse_database`
+is not in the access matrix, so no role can be given it.
+
+- **Tables** (`/database/`): every table by section with a line about it, its number of rows and, for
+  tables that soft-delete, the number of deleted rows. Names are the real PostgreSQL names
+  (`sites`, `audit_log`, `auth_user`).
+- **Data** (`/database/<table>/`): a grid with the database's column names and SQL types in a frozen
+  header, a filter row under it, a frozen row-number column and monospace values. NULL is a faint
+  badge, booleans are check marks, timestamps and numbers are shown as stored (not localised), UUIDs
+  are shortened (the full value on hover), long text and JSON open in place, and a foreign key shows the
+  stored id and the record it points at, linked to that table filtered to that row. Deleted rows are
+  shown and marked, and can be hidden or shown alone. A header sorts, a filter box matches text
+  inside a value (equals, for numbers, ids and booleans), the search box looks in every column, 100
+  rows a page. **Export CSV** gives the current filter, streamed and capped at 50,000 rows; text a
+  spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`) gets a leading apostrophe.
+- **Structure**: columns (SQL type, nullable, default, key, the model's field), constraints, indexes
+  and the relationships in both directions, read from the database and matched with the Django
+  model. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
+
+Tables are not listed one by one: they come from the models of the apps in `config/database.py`
+(`farm`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
+Everything the query string names is checked against the table's real columns and the rows come
+through the ORM.
+
+**Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`). A masked
+column is never read from the database: its cells show a placeholder, it cannot be sorted, filtered or
+searched (that would reveal it a character at a time) and the export leaves it out. A column that
+holds a secret belongs in that list; a test fails when a column named like a password, secret, token
+or session is not in it.
+
 ## Local setup
 
 ```
@@ -128,7 +165,8 @@ compiled by `npm run build` into `static/js/`, which is not committed:
 - `shell.ts` the rail toggle, the phone menu and the user menu;
 - `components.ts` the shared parts every tab uses through data attributes: the dialog
   (`data-modal`), inner tabs, upper-case inputs, row lists and check boxes that need another one
-  (`data-requires`, the role matrix);
+  (`data-requires`, the role matrix), GET forms that leave empty fields out of the address
+  (`data-omit-empty`, the database viewer's filters);
 - `auth.ts` the show/hide password button.
 
 ## One format for every tab
@@ -197,6 +235,8 @@ real mail.
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
+| `/database/` | Administration › Database: every table (platform admin) |
+| `/database/<table>/` | One table: Data and Structure tabs; `export.csv` below it downloads the filtered rows |
 | `/accounts/login/` | Sign in |
 | `/accounts/logout/` | Sign out (POST) |
 | `/accounts/password_reset/` | Forgot password |
@@ -212,6 +252,8 @@ real mail.
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site) |
+| `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
+| `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
 | `core/navigation.py`, `config/navigation.py` | The rail menu as data, filtered by permission |

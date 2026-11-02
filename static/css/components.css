@@ -830,7 +830,9 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .drawer-title { margin: 0; font-size: 1.375rem; line-height: 1.2; }
 .drawer-sub { margin: .25rem 0 0; color: var(--muted); font-size: .875rem; }
 .drawer-line { margin: .5rem 0 0; font-size: .9375rem; }
-.drawer-body { display: grid; gap: 1.25rem; padding: 1rem 1.25rem 1.25rem; }
+/* One column as wide as the drawer: a wide part (the batches table) scrolls in its own frame instead of
+   widening every other part. */
+.drawer-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; padding: 1rem 1.25rem 1.25rem; }
 .drawer-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .metrics {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0;

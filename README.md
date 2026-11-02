@@ -17,7 +17,7 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species). Each has its own overview. A
+  species, suppliers). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -107,8 +107,9 @@ delete. The form has four inner tabs:
 - **Location**: the production department, which decides the site ("Bergen · Hall A"); the systems
   it serves, a box per system of that site, one marked primary, each with a role and a criticality from
   1 to 5; the parent equipment (equipment can be a part of other equipment on its site).
-- **Details**: manufacturer, model, serial number, purchase, warranty end and installation dates,
-  description, notes.
+- **Details**: manufacturer, model, serial number, the supplier it was bought from (a supplier of
+  equipment and spare parts, see Purchasing › Suppliers), purchase, warranty end and installation
+  dates, description, notes.
 - **Technical specifications**: the fields of the chosen type, built on the server from the type's
   schema (`core/schema.py`): numbers with their unit and bounds, choices, several choices, yes/no,
   dates, text. Changing the category or the type renders the form again with what was entered
@@ -138,8 +139,11 @@ Differences from the source:
   system is restored. Saving the equipment drops its links to deleted systems, and the form says so.
 - Only equipment statuses (the source also accepted tank statuses such as fallow).
 - Code and serial number are unique among live equipment, as database constraints.
-- Every optional field can be cleared, the parent too; description, installation date and notes have
-  inputs (the source had none).
+- Every optional field can be cleared, the parent and the supplier too; description, installation date
+  and notes have inputs (the source had none).
+- The supplier is a link to a live supplier of equipment and spare parts, checked by the model; the
+  source kept a loose id with no foreign key and offered every supplier (SUP-06). Deleting the supplier
+  leaves the equipment without one.
 - Feed calibrations: a real foreign key; only a feeder has them, and a feeder that has them keeps a
   feeder type; new rows start empty instead of 0 / 0 / 0.
 - Deleting a production department deletes its equipment, as in the source; deleting equipment deletes
@@ -148,9 +152,9 @@ Differences from the source:
 - The catalogue: English and metric throughout, bounds on every quantity, no fuel type on the heat
   exchanger (EQ-17 to EQ-19).
 - Not ported: sub-equipment (a second way of nesting next to the parent, unusable in the source,
-  EQ-20), the sensor links (`temperatureSensorId`, `isVisibleInSensor`), the supplier (added with the
-  Suppliers tab), price, currency, location, maintenance schedule and operating hours (no screen set
-  them), the second status flag `isActive`, the stored part count.
+  EQ-20), the sensor links (`temperatureSensorId`, `isVisibleInSensor`), price, currency, location,
+  maintenance schedule and operating hours (no screen set them), the second status flag `isActive`, the
+  stored part count.
 
 ### Facility › Tanks, ponds & cages (`/tanks/`)
 
@@ -271,6 +275,59 @@ Differences from the source:
   (Water chemistry › parameters and limits; SPC-05, SPC-19, SPC-23), and growth bands, target FCR,
   survival and harvest weight per stage (the growth model, with the batches tab; SPC-20, SPC-21).
 
+### Purchasing › Suppliers (`/suppliers/`)
+
+Tables `suppliers`, `supplier_contacts` and `supplier_sites`: the companies the farm buys from, goods,
+live fish and services. A table (supplier with its code and organisation number, what it supplies,
+primary contact with the supplier's email and phone, city and country, sites served, rating, status),
+search by name, code, organisation number, email, city or country, filters by what it supplies, site
+and status, 50 suppliers a page, a form in the dialog and delete. The form has five inner tabs:
+
+- **Basic info**: name, code, organisation number, what it supplies (a box per category, at least
+  one), status (active, inactive, suspended, blocked) and the farm's own rating from 1 to 5.
+- **Contact**: the supplier's email, phone and website, and its contact persons (name, role, email,
+  phone, at most one primary), saved as a whole list like a site's contacts.
+- **Address**: street, postal code, city, country.
+- **Sites**: the sites it delivers to or works at.
+- **Terms and notes**: payment terms, notes.
+
+What a supplier supplies is a list of categories, several at once (`Supplier.supplies`, a PostgreSQL
+array of choices, `core.fields.ChoiceArrayField`): live fish and eggs, feed, equipment and spare parts,
+consumables, chemicals, medicines and vaccines, veterinary and fish health, laboratory analyses, diving
+and ROV, wellboat and transport, maintenance and repair, consultancy, other. The database checks that
+there is at least one and that each is a category; they are stored once each, in that order. The
+activity log stores each as its msgid and shows them in the reader's language.
+
+Equipment links to its supplier (`Equipment.supplier`, on the equipment's Details tab and in its list).
+Only a live supplier of equipment and spare parts can be chosen: the category is what says a supplier
+sells equipment, so a feed mill or a vet is not offered, and the rule is part of the model's
+validation (`limit_choices_to`), not only of the form. The status is not a filter: the link says
+where the equipment was bought, which stays true when a supplier is later suspended or blocked, and
+old equipment is often registered after the fact; the list shows the status of a supplier that is not
+active. A supplier keeps the equipment category while equipment is bought from it. Deleting a supplier
+leaves its equipment without a supplier, each change logged on the equipment; deleting a site keeps
+the suppliers' links to it, which count again when the site is restored.
+
+Differences from the source:
+
+- What it supplies is one list of categories, checked by the database, instead of a main type next to
+  a second list nobody could read or edit (SUP-08, SUP-09). The categories cover what a fish farm buys:
+  eggs and smolt, medicines apart from chemicals, and each kind of service.
+- Every field of the form is stored on create (the source dropped notes, products and the city,
+  SUP-01) and can be cleared on edit (SUP-07); the status chosen on create is kept (SUP-04).
+- Contact persons are rows; the source accepted a list and stored one name (SUP-02).
+- One status; the second flag `isActive` is not carried over (SUP-05).
+- Code (required, 2 to 20 capital letters, digits, `-` and `_`), name (whatever its case) and
+  organisation number are unique among live suppliers, as database constraints; a deleted supplier
+  frees them and a restore from the admin re-checks them (SUP-03, SUP-13).
+- The organisation number is on the form, without spaces, in capital letters (SUP-10); the website is a
+  URL, `https://` added when left out (SUP-21); the rating is 1 to 5 or none (SUP-17).
+- The address is flat columns, each once (SUP-12); payment terms are text (SUP-11).
+- Not ported: the free list of product names (the products are records of their own tabs, the feeds,
+  chemicals and consumables, linked to the supplier), the preferred site (a preferred supplier is a
+  choice per site and category, for the purchasing tab, SUP-16), the type table `supplier_types`,
+  description, fax and certifications (accepted and never stored, SUP-23).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -278,7 +335,7 @@ only one who manages roles and users; everyone else gets exactly what their role
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
-  Systems, Equipment, Tanks, ponds & cages and Species (read, create, edit, delete) and Activity log
+  Systems, Equipment, Tanks, ponds & cages, Species and Suppliers (read, create, edit, delete) and Activity log
   (read). A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -307,7 +364,7 @@ is not in the access matrix, so no role can be given it.
   (`sites`, `audit_log`, `auth_user`).
 - **Data** (`/database/<table>/`): a grid with the database's column names and SQL types in a frozen
   header, a filter row under it, a frozen row-number column and monospace values. NULL is a faint
-  badge, booleans are check marks, timestamps and numbers are shown as stored (not localised), UUIDs
+  badge, booleans are check marks, timestamps, numbers and arrays are shown as stored (not localised), UUIDs
   are shortened (the full value on hover), long text and JSON open in place, and a foreign key shows the
   stored id and the record it points at, linked to that table filtered to that row. Deleted rows are
   shown and marked, and can be hidden or shown alone. A header sorts, a filter box matches text
@@ -394,8 +451,9 @@ log in the same transaction, an outdated `version` is refused, models with soft 
 rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
 opened directly, as a page. The menu is data (`config/navigation.py`: panels, main headings, groups,
 entries) and shows each entry only to people allowed to read it. Production's menu has two main
-headings, as in the platform: **Setup** (the farm's structure under Facility structure, and the
-reference lists the production side picks from under Reference data) and **Operations** (the daily
+headings, as in the platform: **Setup** (the farm's structure under Facility structure, the
+reference lists the production side picks from under Reference data, and the suppliers under
+Purchasing) and **Operations** (the daily
 production records; it appears with its first tab). The source calls the reference lists "Records";
 the prototype does not, because Operations holds the daily records. The menu is the one place that says
 where a page sits: the role matrix and the small heading above a tab's title follow it
@@ -437,7 +495,14 @@ What one tab needed and the next ones will too lives in `core/`:
 - `CodedMixin.name_field`: a record shown as "Name (CODE)" whose name is in another field (a
   species' common name).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
-  replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations).
+  replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations). A
+  record's contact persons are one shape for every record that has them (`farm/models/contact.py`,
+  `farm/forms/contact.py`, `farm/resources/contact.py`, `templates/farm/_contacts.html`): a site's,
+  a supplier's.
+- `ChoiceArrayField` (`core/fields.py`): several choices of one list stored as a PostgreSQL array
+  (what a supplier supplies), a check box per choice in the form, stored once each in the order of the
+  choices; the activity log keeps each as its msgid and the database viewer shows the array as
+  PostgreSQL prints it (`{feed,transport}`).
 - `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of
   check boxes with the details of each link, that belongs to another field's value.
 - `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data (a type's technical
@@ -497,6 +562,7 @@ real mail.
 | `/equipment/` | Facility › Equipment; `<id>/calibrations/` saves a feeder's calibrations |
 | `/tanks/` | Facility › Tanks, ponds & cages |
 | `/species/` | Reference data › Species |
+| `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -519,6 +585,7 @@ real mail.
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
+| `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |

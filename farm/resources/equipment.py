@@ -10,8 +10,8 @@ from ..models import Equipment, EquipmentType, ProductionDepartment, Site, Syste
 
 # What the activity log compares for a piece of equipment, besides its type, systems and specifications.
 LOGGED_FIELDS = [
-    'status', 'production_department', 'parent', 'manufacturer', 'model', 'serial_number', 'purchase_date',
-    'warranty_end_date', 'installation_date', 'description', 'notes',
+    'status', 'production_department', 'parent', 'manufacturer', 'model', 'serial_number', 'supplier',
+    'purchase_date', 'warranty_end_date', 'installation_date', 'description', 'notes',
 ]
 
 
@@ -48,7 +48,8 @@ class EquipmentResource(Resource):
 
     @classmethod
     def queryset(cls):
-        return super().queryset().select_related('production_department__site', 'equipment_type', 'parent')
+        return super().queryset().select_related('production_department__site', 'equipment_type', 'parent',
+                                                 'supplier')
 
     @classmethod
     def snapshot(cls, equipment):
@@ -90,7 +91,7 @@ class EquipmentResource(Resource):
         objects, chosen_type = filter_by(request, objects, 'type', types, 'equipment_type_id')
         objects, chosen_status = filter_by(request, objects, 'status', Equipment.Status.choices, 'status')
         records = (Equipment.objects
-                   .select_related('production_department__site', 'equipment_type', 'parent')
+                   .select_related('production_department__site', 'equipment_type', 'parent', 'supplier')
                    .prefetch_related('system_links__system')
                    .annotate(parts=Count('children', filter=Q(children__is_deleted=False)))
                    .order_by('production_department__site__name', 'name'))

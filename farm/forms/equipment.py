@@ -7,7 +7,8 @@ from core.crud import CodedFormMixin, Fieldset, RowFormSet, TabbedForm
 from core.links import LinkList
 from core.widgets import DependentSelect
 
-from ..models import Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, System
+from ..models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Supplier,
+                      System)
 
 SPECIFICATIONS = 'specifications'   # the inner tab with the type's own fields
 
@@ -15,8 +16,8 @@ EQUIPMENT_FORM_TABS = [
     ('general', _('General'), ['name', 'code', 'category', 'equipment_type', 'status']),
     ('location', _('Location'), ['production_department', 'systems', 'parent']),
     ('details', _('Details'), [
-        'manufacturer', 'model', 'serial_number', 'purchase_date', 'warranty_end_date', 'installation_date',
-        'description', 'notes',
+        'manufacturer', 'model', 'serial_number', 'supplier', 'purchase_date', 'warranty_end_date',
+        'installation_date', 'description', 'notes',
     ]),
     # Filled per form with the fields of the chosen type (core.schema).
     (SPECIFICATIONS, _('Technical specifications'), []),
@@ -47,11 +48,13 @@ class EquipmentForm(CodedFormMixin, TabbedForm):
         model = Equipment
         fields = [
             'name', 'code', 'equipment_type', 'status', 'production_department', 'parent', 'manufacturer', 'model',
-            'serial_number', 'purchase_date', 'warranty_end_date', 'installation_date', 'description', 'notes',
+            'serial_number', 'supplier', 'purchase_date', 'warranty_end_date', 'installation_date', 'description',
+            'notes',
         ]
         help_texts = {
             'production_department': _('Its site decides which systems and which parent equipment can be chosen.'),
             'parent': _('When this is a part of other equipment, e.g. the pump of a filter unit.'),
+            'supplier': _('Who it was bought from: a supplier of equipment and spare parts (Purchasing › Suppliers).'),
         }
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': _('e.g. Main circulation pump')}),
@@ -121,6 +124,13 @@ class EquipmentForm(CodedFormMixin, TabbedForm):
         parent_field.empty_label = _('None: not a part of other equipment')
         DependentSelect.apply(parent_field, 'production_department',
                               {str(part.pk): on_site.get(part.site_id, []) for part in parents})
+
+        # The suppliers of equipment (the link's limit_choices_to), with the status of those not active.
+        supplier_field = self.fields['supplier']
+        supplier_field.empty_label = _('None')
+        supplier_field.label_from_instance = lambda supplier: (
+            str(supplier) if supplier.status == Supplier.Status.ACTIVE
+            else f'{supplier} · {supplier.get_status_display()}')
 
         self._add_specification_fields(stored_type)
 

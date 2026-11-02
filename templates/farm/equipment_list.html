@@ -48,7 +48,7 @@
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">{% trans "Equipment" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Production department" %}</th><th scope="col">{% trans "Systems" %}</th><th scope="col">{% trans "Parts" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Make and model" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+      <tr><th scope="col">{% trans "Equipment" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Production department" %}</th><th scope="col">{% trans "Systems" %}</th><th scope="col">{% trans "Parts" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Make and model" %}</th><th scope="col">{% trans "Supplier" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     <tbody>
       {% for equipment in objects %}
@@ -64,6 +64,7 @@
         <td class="nowrap">{% if equipment.parts %}{% blocktrans trimmed count count=equipment.parts %}{{ count }} part{% plural %}{{ count }} parts{% endblocktrans %}{% else %}–{% endif %}</td>
         <td><span class="badge badge-{{ equipment.status }}">{{ equipment.get_status_display }}</span></td>
         <td>{% if equipment.manufacturer or equipment.model %}{{ equipment.manufacturer }}{% if equipment.manufacturer and equipment.model %} · {% endif %}{{ equipment.model }}{% else %}–{% endif %}</td>
+        <td>{% if equipment.supplier %}{{ equipment.supplier.name }}{% else %}–{% endif %}</td>
         <td class="row-actions">
           {% if can_change %}<a class="icon-button" href="{% url 'farm:equipment_edit' equipment.pk %}" data-modal title="{% blocktrans with name=equipment.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=equipment.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
           {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:equipment_delete' equipment.pk %}" data-modal title="{% blocktrans with name=equipment.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=equipment.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}

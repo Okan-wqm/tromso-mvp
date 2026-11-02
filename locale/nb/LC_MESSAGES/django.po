@@ -35,6 +35,20 @@ msgstr[0] "%(count)d kontaktperson lagret."
 msgstr[1] "%(count)d kontaktpersoner lagret."
 
 #, python-format
+msgid ""
+"%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose another "
+"supplier for it first."
+msgid_plural ""
+"%(count)d pieces of equipment are bought from it: keep “%(category)s” ticked, or choose another "
+"supplier for them first."
+msgstr[0] ""
+"%(count)d utstyrsenhet er kjøpt fra den: behold «%(category)s» avkrysset, eller velg en annen "
+"leverandør for den først."
+msgstr[1] ""
+"%(count)d utstyrsenheter er kjøpt fra den: behold «%(category)s» avkrysset, eller velg en annen "
+"leverandør for dem først."
+
+#, python-format
 msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d post gjenopprettet."
@@ -126,6 +140,10 @@ msgstr "%(name)s «%(object)s» ble lagret."
 #, python-format
 msgid "%(number)s deleted"
 msgstr "%(number)s slettet"
+
+#, python-format
+msgid "%(rating)s of 5"
+msgstr "%(rating)s av 5"
 
 #, python-format
 msgid "%(record)s is the primary one"
@@ -232,6 +250,13 @@ msgid "Active"
 msgstr "Aktiv"
 
 msgid ""
+"Active: buy from it. Inactive: not used at the moment. Suspended: on hold, e.g. during a "
+"complaint. Blocked: never buy from it."
+msgstr ""
+"Aktiv: kjøp fra den. Inaktiv: ikke i bruk nå. Suspendert: satt på vent, f.eks. under en "
+"reklamasjon. Sperret: kjøp aldri fra den."
+
+msgid ""
 "Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
 "longer farmed."
 msgstr ""
@@ -265,6 +290,9 @@ msgstr ""
 
 msgid "Add the first user; they get an email to set their password."
 msgstr "Legg til den første brukeren; vedkommende får en e-post for å velge passord."
+
+msgid "Address"
+msgstr "Adresse"
 
 msgid "Administration"
 msgstr "Administrasjon"
@@ -367,6 +395,15 @@ msgstr "En annen art har allerede dette vitenskapelige navnet."
 msgid "Another species already uses this code."
 msgstr "Denne koden brukes allerede av en annen art."
 
+msgid "Another supplier already has this name."
+msgstr "En annen leverandør har allerede dette navnet."
+
+msgid "Another supplier already has this organisation number."
+msgstr "En annen leverandør har allerede dette organisasjonsnummeret."
+
+msgid "Another supplier already uses this code."
+msgstr "En annen leverandør bruker allerede denne koden."
+
 msgid "Another unit already has this regulatory unit ID."
 msgstr "En annen enhet har allerede denne offisielle enhets-ID-en."
 
@@ -451,6 +488,9 @@ msgstr "Biofloc"
 msgid "Biological filter"
 msgstr "Biofilter"
 
+msgid "Blocked"
+msgstr "Sperret"
+
 msgid "Blower"
 msgstr "Luftblåser"
 
@@ -509,8 +549,14 @@ msgstr "Sjekk"
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
 
+msgid "Chemicals"
+msgstr "Kjemikalier"
+
 msgid "Chiller"
 msgstr "Kjøleaggregat"
+
+msgid "Choose a supplier of equipment and spare parts."
+msgstr "Velg en leverandør av utstyr og reservedeler."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Velg en type på fanen Generelt; spesifikasjonene vises her."
@@ -596,6 +642,12 @@ msgstr "Begrensninger"
 msgid "Construction"
 msgstr "Under bygging"
 
+msgid "Consultancy"
+msgstr "Rådgivning"
+
+msgid "Consumables"
+msgstr "Forbruksvarer"
+
 msgid "Contact"
 msgstr "Kontakt"
 
@@ -610,6 +662,9 @@ msgstr "Kontaktpersoner"
 
 msgid "Contacts can be added once the site is created."
 msgstr "Kontaktpersoner kan legges til etter at lokaliteten er opprettet."
+
+msgid "Contacts can be added once the supplier is created."
+msgstr "Kontaktpersoner kan legges til etter at leverandøren er opprettet."
 
 msgid "Control type"
 msgstr "Styringstype"
@@ -750,6 +805,9 @@ msgstr "Oksygensensor"
 msgid "Distribution holes"
 msgstr "Fordelingshull"
 
+msgid "Diving and ROV"
+msgstr "Dykking og ROV"
+
 msgid "Django model"
 msgstr "Django-modell"
 
@@ -794,6 +852,9 @@ msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å 
 msgid "Equipment"
 msgstr "Utstyr"
 
+msgid "Equipment and spare parts"
+msgstr "Utstyr og reservedeler"
+
 msgid "Equipment cannot be a part of itself."
 msgstr "Utstyr kan ikke være en del av seg selv."
 
@@ -828,6 +889,16 @@ msgid ""
 msgstr ""
 "Alt vann arten oppdrettes i. Laks og regnbueørret vokser opp i ferskvann og går videre i sjøvann:"
 " kryss av for begge."
+
+msgid "Everything supplied"
+msgstr "Alt som leveres"
+
+msgid ""
+"Everything the farm buys from it, goods and services. Equipment can be bought only from a "
+"supplier of equipment and spare parts."
+msgstr ""
+"Alt anlegget kjøper fra den, varer og tjenester. Utstyr kan bare kjøpes fra en leverandør av "
+"utstyr og reservedeler."
 
 msgid "Exclusion"
 msgstr "Eksklusjon"
@@ -1122,6 +1193,9 @@ msgstr ""
 msgid "It holds fish: move or harvest them first."
 msgstr "Det er fisk i den: flytt eller høst fisken først."
 
+msgid "Its company registration or VAT number, e.g. 923456789 in Norway; spaces are left out."
+msgstr "Organisasjonsnummer eller MVA-nummer, f.eks. 923456789 i Norge; mellomrom fjernes."
+
 msgid "Its current status and the ones it can move to. Harvesting needs fish in the unit."
 msgstr "Nåværende status og de den kan gå til. Høsting krever fisk i enheten."
 
@@ -1156,6 +1230,9 @@ msgstr "Etikett"
 
 msgid "Laboratory"
 msgstr "Laboratorium"
+
+msgid "Laboratory analyses"
+msgstr "Laboratorieanalyser"
 
 msgid "Lake or reservoir"
 msgstr "Innsjø eller magasin"
@@ -1214,6 +1291,9 @@ msgstr "Duk på ramme"
 msgid "Liner thickness (mm)"
 msgstr "Duktykkelse (mm)"
 
+msgid "Live fish and eggs"
+msgstr "Levende fisk og rogn"
+
 msgid "Lobster"
 msgstr "Hummer"
 
@@ -1249,6 +1329,9 @@ msgstr "Hovednavigasjon"
 
 msgid "Maintenance"
 msgstr "Vedlikehold"
+
+msgid "Maintenance and repair"
+msgstr "Vedlikehold og reparasjon"
 
 msgid "Make and model"
 msgstr "Merke og modell"
@@ -1294,6 +1377,9 @@ msgstr "Mekanisk filter"
 
 msgid "Media volume"
 msgstr "Medievolum"
+
+msgid "Medicines and vaccines"
+msgstr "Legemidler og vaksiner"
 
 msgid "Medium pressure"
 msgstr "Mellomtrykk"
@@ -1423,6 +1509,9 @@ msgstr ""
 "Ingen system å velge: produksjonsavdelingens lokalitet har ingen, eller ingen produksjonsavdeling"
 " er valgt."
 
+msgid "None"
+msgstr "Ingen"
+
 msgid "None (bare soil)"
 msgstr "Ingen (bar jord)"
 
@@ -1443,6 +1532,9 @@ msgstr "Ikke i et system"
 
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
+
+msgid "Not rated"
+msgstr "Ikke vurdert"
 
 msgid "Notes"
 msgstr "Notater"
@@ -1527,6 +1619,9 @@ msgstr "Valgfritt"
 msgid "Order"
 msgstr "Rekkefølge"
 
+msgid "Organisation number"
+msgstr "Organisasjonsnummer"
+
 msgid "Organisation number override"
 msgstr "Overstyring av organisasjonsnummer"
 
@@ -1594,6 +1689,9 @@ msgstr "Deler"
 msgid "Password saved"
 msgstr "Passordet er lagret"
 
+msgid "Payment terms"
+msgstr "Betalingsbetingelser"
+
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Personer som kan logge inn: kontoopplysninger og en hash av passordet."
 
@@ -1621,6 +1719,9 @@ msgstr "Telefon"
 
 msgid "Pipe size"
 msgstr "Rørdimensjon"
+
+msgid "Place"
+msgstr "Sted"
 
 msgid "Platform admin"
 msgstr "Plattformadministrator"
@@ -1722,6 +1823,9 @@ msgstr ""
 msgid "Purchase date"
 msgstr "Kjøpsdato"
 
+msgid "Purchasing"
+msgstr "Innkjøp"
+
 msgid "Quality control"
 msgstr "Kvalitetskontroll"
 
@@ -1736,6 +1840,9 @@ msgstr "Raceway (strømkanal)"
 
 msgid "Rain and run-off"
 msgstr "Regn og overvann"
+
+msgid "Rating"
+msgstr "Vurdering"
 
 msgid "Read"
 msgstr "Les"
@@ -1902,6 +2009,9 @@ msgstr "Søk på navn, kode eller offisiell enhets-ID"
 msgid "Search by name, code or serial number"
 msgstr "Søk på navn, kode eller serienummer"
 
+msgid "Search by name, code, organisation number, email or place"
+msgstr "Søk etter navn, kode, organisasjonsnummer, e-post eller sted"
+
 msgid "Search by name, scientific name or code"
 msgstr "Søk etter navn, vitenskapelig navn eller kode"
 
@@ -2017,6 +2127,9 @@ msgstr "Lokalitetstype"
 msgid "Sites"
 msgstr "Lokaliteter"
 
+msgid "Sites served"
+msgstr "Lokaliteter den betjener"
+
 msgid "Size"
 msgstr "Størrelse"
 
@@ -2094,8 +2207,20 @@ msgstr "Nedsenkbar"
 msgid "Submersible pump"
 msgstr "Dykkpumpe"
 
+msgid "Supplier"
+msgstr "Leverandør"
+
+msgid "Suppliers"
+msgstr "Leverandører"
+
+msgid "Supplies"
+msgstr "Leveranser"
+
 msgid "Surface area (m²)"
 msgstr "Overflateareal (m²)"
+
+msgid "Suspended"
+msgstr "Suspendert"
 
 msgid "Switch panel"
 msgstr "Bytt panel"
@@ -2133,8 +2258,14 @@ msgstr "Temperatur"
 msgid "Temperature sensor"
 msgstr "Temperatursensor"
 
+msgid "Terms and notes"
+msgstr "Betingelser og notater"
+
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "Det engelske navnet, f.eks. Atlantic salmon."
+
+msgid "The address for orders and questions; contact persons have their own below."
+msgstr "Adressen for bestillinger og spørsmål; kontaktpersonene har sine egne nedenfor."
 
 msgid ""
 "The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
@@ -2148,6 +2279,13 @@ msgstr "Gjennomsnittlig vanndybde når dammen er full."
 
 msgid "The biomass cannot be negative."
 msgstr "Biomassen kan ikke være negativ."
+
+msgid ""
+"The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
+"such as vets, divers and wellboats."
+msgstr ""
+"Selskapene anlegget kjøper fra: fôr, levende fisk og rogn, utstyr, legemidler og tjenester som "
+"veterinærer, dykkere og brønnbåter."
 
 msgid "The criticality is from 1 to 5."
 msgstr "Kritikaliteten er fra 1 til 5."
@@ -2208,6 +2346,13 @@ msgstr "Det overordnede systemet hører til en annen lokalitet."
 msgid "The parent system is nested under this system."
 msgstr "Det overordnede systemet ligger under dette systemet."
 
+msgid ""
+"The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
+" one can be the primary contact. Contacts are saved separately from the supplier details."
+msgstr ""
+"Personene å kontakte hos leverandøren: salg, bestillinger, teknisk støtte, vakthavende veterinær."
+" Høyst én kan være hovedkontakt. Kontaktpersonene lagres separat fra leverandøropplysningene."
+
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
 
@@ -2225,6 +2370,9 @@ msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
 
 msgid "The silo is filled automatically."
 msgstr "Siloen fylles automatisk."
+
+msgid "The sites it delivers to or works at."
+msgstr "Lokalitetene den leverer til eller arbeider på."
 
 msgid ""
 "The site’s operational contacts. At most one can be the primary contact. Contacts are saved "
@@ -2329,6 +2477,9 @@ msgstr "Denne typen er ikke i den valgte kategorien."
 msgid "Three-phase"
 msgstr "Trefase"
 
+msgid "Tick at least one thing it supplies."
+msgstr "Kryss av for minst én ting den leverer."
+
 msgid "Tick at least one water environment."
 msgstr "Kryss av for minst ett vannmiljø."
 
@@ -2402,6 +2553,9 @@ msgstr "Oppdatert av"
 msgid "Use capital letters, digits, hyphens and underscores only."
 msgstr "Bruk bare store bokstaver, sifre, bindestrek og understrek."
 
+msgid "Use letters, digits and hyphens only, e.g. 923456789 or NO923456789MVA."
+msgstr "Bruk bare bokstaver, sifre og bindestreker, f.eks. 923456789 eller NO923456789MVA."
+
 msgid "Use your username and password to open the farm console."
 msgstr "Bruk brukernavn og passord for å åpne driftskonsollen."
 
@@ -2416,6 +2570,9 @@ msgstr "Brukere"
 
 msgid "Version"
 msgstr "Versjon"
+
+msgid "Veterinary and fish health"
+msgstr "Veterinær og fiskehelse"
 
 msgid "Voltage"
 msgstr "Spenning"
@@ -2450,12 +2607,18 @@ msgstr "Vanntype"
 msgid "Water volume (m³)"
 msgstr "Vannvolum (m³)"
 
+msgid "Website"
+msgstr "Nettsted"
+
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
 msgstr "Velkommen, %(name)s. Selskapets tall vises her."
 
 msgid "Well (groundwater)"
 msgstr "Brønn (grunnvann)"
+
+msgid "Wellboat and transport"
+msgstr "Brønnbåt og transport"
 
 msgid "What it holds"
 msgstr "Hva den inneholder"
@@ -2471,6 +2634,12 @@ msgstr "Hvilke tillatelser hver rolle gir."
 
 msgid "Which roles each user has."
 msgstr "Hvilke roller hver bruker har."
+
+msgid "Which sites each supplier delivers to or works at."
+msgstr "Hvilke lokaliteter hver leverandør leverer til eller arbeider på."
+
+msgid "Who it was bought from: a supplier of equipment and spare parts (Purchasing › Suppliers)."
+msgstr "Hvem det ble kjøpt fra: en leverandør av utstyr og reservedeler (Innkjøp › Leverandører)."
 
 msgid ""
 "Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
@@ -2519,6 +2688,9 @@ msgstr "Du har ikke tillatelse til å gjøre dette."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Det nye passordet ditt er lagret. Bruk det neste gang du logger inn."
+
+msgid "Your own rating, from 1 (poor) to 5 (excellent)."
+msgstr "Deres egen vurdering, fra 1 (dårlig) til 5 (utmerket)."
 
 msgid "Your own short code: capital letters, digits, hyphens and underscores."
 msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek."
@@ -2576,6 +2748,9 @@ msgstr "f.eks. 250"
 msgid "e.g. 3"
 msgstr "f.eks. 3"
 
+msgid "e.g. 30 days net"
+msgstr "f.eks. 30 dager netto"
+
 msgid "e.g. 5.3221"
 msgstr "f.eks. 5,3221"
 
@@ -2585,14 +2760,26 @@ msgstr "f.eks. 50000"
 msgid "e.g. 60.3913"
 msgstr "f.eks. 60,3913"
 
+msgid "e.g. 923456789"
+msgstr "f.eks. 923456789"
+
 msgid "e.g. Atlantic salmon"
 msgstr "f.eks. Atlantic salmon"
+
+msgid "e.g. FJF"
+msgstr "f.eks. FJF"
+
+msgid "e.g. Fjord Feed AS"
+msgstr "f.eks. Fjord Feed AS"
 
 msgid "e.g. HAT-A"
 msgstr "f.eks. HAT-A"
 
 msgid "e.g. Hatchery hall A"
 msgstr "f.eks. Klekkerihall A"
+
+msgid "e.g. Kaien 1"
+msgstr "f.eks. Kaien 1"
 
 msgid "e.g. Laks"
 msgstr "f.eks. Laks"
@@ -2678,6 +2865,9 @@ msgstr "fôrkalibrering"
 msgid "feed calibrations"
 msgstr "fôrkalibreringer"
 
+msgid "https:// is added when it is left out."
+msgstr "https:// legges til når det mangler."
+
 #, python-format
 msgid "in %(name)s"
 msgstr "i %(name)s"
@@ -2737,6 +2927,18 @@ msgstr "art"
 msgctxt "plural"
 msgid "species"
 msgstr "arter"
+
+msgid "supplier"
+msgstr "leverandør"
+
+msgid "supplier contact"
+msgstr "leverandørkontakt"
+
+msgid "supplier contacts"
+msgstr "leverandørkontakter"
+
+msgid "suppliers"
+msgstr "leverandører"
 
 msgid "system"
 msgstr "system"

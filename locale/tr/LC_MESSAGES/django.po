@@ -35,6 +35,20 @@ msgstr[0] "%(count)d kişi kaydedildi."
 msgstr[1] "%(count)d kişi kaydedildi."
 
 #, python-format
+msgid ""
+"%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose another "
+"supplier for it first."
+msgid_plural ""
+"%(count)d pieces of equipment are bought from it: keep “%(category)s” ticked, or choose another "
+"supplier for them first."
+msgstr[0] ""
+"%(count)d ekipman bu tedarikçiden alındı: “%(category)s” işaretli kalsın ya da önce o ekipman "
+"için başka bir tedarikçi seçin."
+msgstr[1] ""
+"%(count)d ekipman bu tedarikçiden alındı: “%(category)s” işaretli kalsın ya da önce bu ekipmanlar"
+" için başka bir tedarikçi seçin."
+
+#, python-format
 msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d kayıt geri yüklendi."
@@ -126,6 +140,10 @@ msgstr "%(name)s “%(object)s” kaydedildi."
 #, python-format
 msgid "%(number)s deleted"
 msgstr "%(number)s silinmiş"
+
+#, python-format
+msgid "%(rating)s of 5"
+msgstr "5 üzerinden %(rating)s"
 
 #, python-format
 msgid "%(record)s is the primary one"
@@ -232,6 +250,13 @@ msgid "Active"
 msgstr "Aktif"
 
 msgid ""
+"Active: buy from it. Inactive: not used at the moment. Suspended: on hold, e.g. during a "
+"complaint. Blocked: never buy from it."
+msgstr ""
+"Aktif: alım yapılır. Pasif: şu an kullanılmıyor. Askıda: beklemede, örn. bir şikâyet sürerken. "
+"Engellendi: asla alım yapılmaz."
+
+msgid ""
 "Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
 "longer farmed."
 msgstr ""
@@ -263,6 +288,9 @@ msgstr "İlk sahayı ekleyin; üretim departmanları, sistemler ve tanklar bir s
 
 msgid "Add the first user; they get an email to set their password."
 msgstr "İlk kullanıcıyı ekleyin; parolasını belirlemesi için e-posta alır."
+
+msgid "Address"
+msgstr "Adres"
 
 msgid "Administration"
 msgstr "Yönetim"
@@ -365,6 +393,15 @@ msgstr "Bu bilimsel ad başka bir balık türünde zaten var."
 msgid "Another species already uses this code."
 msgstr "Bu kodu başka bir balık türü zaten kullanıyor."
 
+msgid "Another supplier already has this name."
+msgstr "Bu ada sahip başka bir tedarikçi zaten var."
+
+msgid "Another supplier already has this organisation number."
+msgstr "Bu kuruluş numarasına sahip başka bir tedarikçi zaten var."
+
+msgid "Another supplier already uses this code."
+msgstr "Bu kodu başka bir tedarikçi zaten kullanıyor."
+
 msgid "Another unit already has this regulatory unit ID."
 msgstr "Bu resmî birim numarası başka bir birimde zaten var."
 
@@ -449,6 +486,9 @@ msgstr "Biyoflok"
 msgid "Biological filter"
 msgstr "Biyolojik filtre"
 
+msgid "Blocked"
+msgstr "Engellendi"
+
 msgid "Blower"
 msgstr "Hava üfleyici (blower)"
 
@@ -507,8 +547,14 @@ msgstr "Kontrol"
 msgid "Check your email"
 msgstr "E-postanızı kontrol edin"
 
+msgid "Chemicals"
+msgstr "Kimyasallar"
+
 msgid "Chiller"
 msgstr "Soğutucu (chiller)"
+
+msgid "Choose a supplier of equipment and spare parts."
+msgstr "Bir ekipman ve yedek parça tedarikçisi seçin."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Genel sekmesinde bir tür seçin; teknik özellikleri burada görünür."
@@ -594,6 +640,12 @@ msgstr "Kısıtlamalar"
 msgid "Construction"
 msgstr "Yapım aşamasında"
 
+msgid "Consultancy"
+msgstr "Danışmanlık"
+
+msgid "Consumables"
+msgstr "Sarf malzemeleri"
+
 msgid "Contact"
 msgstr "İletişim"
 
@@ -608,6 +660,9 @@ msgstr "İletişim kişileri"
 
 msgid "Contacts can be added once the site is created."
 msgstr "Kişiler, saha oluşturulduktan sonra eklenebilir."
+
+msgid "Contacts can be added once the supplier is created."
+msgstr "Kişiler, tedarikçi oluşturulduktan sonra eklenebilir."
 
 msgid "Control type"
 msgstr "Kontrol tipi"
@@ -748,6 +803,9 @@ msgstr "Çözünmüş oksijen sensörü"
 msgid "Distribution holes"
 msgstr "Dağıtım delikleri"
 
+msgid "Diving and ROV"
+msgstr "Dalış ve ROV"
+
 msgid "Django model"
 msgstr "Django modeli"
 
@@ -794,6 +852,9 @@ msgstr ""
 msgid "Equipment"
 msgstr "Ekipman"
 
+msgid "Equipment and spare parts"
+msgstr "Ekipman ve yedek parça"
+
 msgid "Equipment cannot be a part of itself."
 msgstr "Ekipman kendisinin parçası olamaz."
 
@@ -829,6 +890,16 @@ msgid ""
 msgstr ""
 "Balık türünün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, "
 "sonra deniz suyunda yetiştirilir: ikisini de işaretleyin."
+
+msgid "Everything supplied"
+msgstr "Tedarik edilen her şey"
+
+msgid ""
+"Everything the farm buys from it, goods and services. Equipment can be bought only from a "
+"supplier of equipment and spare parts."
+msgstr ""
+"Çiftliğin ondan aldığı her şey, mallar ve hizmetler. Ekipman yalnızca bir ekipman ve yedek parça "
+"tedarikçisinden alınabilir."
 
 msgid "Exclusion"
 msgstr "Dışlama"
@@ -1123,6 +1194,9 @@ msgstr ""
 msgid "It holds fish: move or harvest them first."
 msgstr "İçinde balık var: önce taşıyın veya hasat edin."
 
+msgid "Its company registration or VAT number, e.g. 923456789 in Norway; spaces are left out."
+msgstr "Şirket sicil ya da vergi numarası, örn. Norveç’te 923456789; boşluklar atılır."
+
 msgid "Its current status and the ones it can move to. Harvesting needs fish in the unit."
 msgstr "Mevcut durumu ve geçebileceği durumlar. Hasat için birimde balık olmalıdır."
 
@@ -1157,6 +1231,9 @@ msgstr "Etiket"
 
 msgid "Laboratory"
 msgstr "Laboratuvar"
+
+msgid "Laboratory analyses"
+msgstr "Laboratuvar analizleri"
 
 msgid "Lake or reservoir"
 msgstr "Göl veya baraj gölü"
@@ -1215,6 +1292,9 @@ msgstr "Çerçeve üzerine kaplama"
 msgid "Liner thickness (mm)"
 msgstr "Kaplama kalınlığı (mm)"
 
+msgid "Live fish and eggs"
+msgstr "Canlı balık ve yumurta"
+
 msgid "Lobster"
 msgstr "Istakoz"
 
@@ -1250,6 +1330,9 @@ msgstr "Ana gezinme"
 
 msgid "Maintenance"
 msgstr "Bakım"
+
+msgid "Maintenance and repair"
+msgstr "Bakım ve onarım"
 
 msgid "Make and model"
 msgstr "Marka ve model"
@@ -1295,6 +1378,9 @@ msgstr "Mekanik filtre"
 
 msgid "Media volume"
 msgstr "Ortam hacmi"
+
+msgid "Medicines and vaccines"
+msgstr "İlaçlar ve aşılar"
 
 msgid "Medium pressure"
 msgstr "Orta basınç"
@@ -1422,6 +1508,9 @@ msgid ""
 "chosen."
 msgstr "Seçilecek sistem yok: üretim departmanının sahasında sistem yok ya da üretim departmanı seçilmedi."
 
+msgid "None"
+msgstr "Yok"
+
 msgid "None (bare soil)"
 msgstr "Yok (çıplak toprak)"
 
@@ -1442,6 +1531,9 @@ msgstr "Bir sistemde değil"
 
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
+
+msgid "Not rated"
+msgstr "Puanlanmadı"
 
 msgid "Notes"
 msgstr "Notlar"
@@ -1526,6 +1618,9 @@ msgstr "İsteğe bağlı"
 msgid "Order"
 msgstr "Sıra"
 
+msgid "Organisation number"
+msgstr "Kuruluş numarası"
+
 msgid "Organisation number override"
 msgstr "Kuruluş numarası (geçersiz kılma)"
 
@@ -1593,6 +1688,9 @@ msgstr "Parçalar"
 msgid "Password saved"
 msgstr "Parola kaydedildi"
 
+msgid "Payment terms"
+msgstr "Ödeme koşulları"
+
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Giriş yapabilen kişiler: hesap bilgileri ve parolanın özeti (hash)."
 
@@ -1620,6 +1718,9 @@ msgstr "Telefon"
 
 msgid "Pipe size"
 msgstr "Boru çapı"
+
+msgid "Place"
+msgstr "Yer"
 
 msgid "Platform admin"
 msgstr "Platform yöneticisi"
@@ -1719,6 +1820,9 @@ msgstr ""
 msgid "Purchase date"
 msgstr "Satın alma tarihi"
 
+msgid "Purchasing"
+msgstr "Satın alma"
+
 msgid "Quality control"
 msgstr "Kalite kontrol"
 
@@ -1733,6 +1837,9 @@ msgstr "Raceway (akış kanalı)"
 
 msgid "Rain and run-off"
 msgstr "Yağmur ve yüzey akışı"
+
+msgid "Rating"
+msgstr "Puan"
 
 msgid "Read"
 msgstr "Görüntüle"
@@ -1899,6 +2006,9 @@ msgstr "Ad, kod veya resmî birim numarasıyla ara"
 msgid "Search by name, code or serial number"
 msgstr "Ad, kod veya seri numarasıyla ara"
 
+msgid "Search by name, code, organisation number, email or place"
+msgstr "Ad, kod, kuruluş numarası, e-posta ya da yere göre ara"
+
 msgid "Search by name, scientific name or code"
 msgstr "Ad, bilimsel ad veya koda göre ara"
 
@@ -2014,6 +2124,9 @@ msgstr "Saha türü"
 msgid "Sites"
 msgstr "Sahalar"
 
+msgid "Sites served"
+msgstr "Hizmet verilen sahalar"
+
 msgid "Size"
 msgstr "Boyut"
 
@@ -2091,8 +2204,20 @@ msgstr "Batırılabilir"
 msgid "Submersible pump"
 msgstr "Dalgıç pompa"
 
+msgid "Supplier"
+msgstr "Tedarikçi"
+
+msgid "Suppliers"
+msgstr "Tedarikçiler"
+
+msgid "Supplies"
+msgstr "Tedarik ettikleri"
+
 msgid "Surface area (m²)"
 msgstr "Yüzey alanı (m²)"
+
+msgid "Suspended"
+msgstr "Askıda"
 
 msgid "Switch panel"
 msgstr "Paneli değiştir"
@@ -2130,8 +2255,14 @@ msgstr "Sıcaklık"
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
 
+msgid "Terms and notes"
+msgstr "Koşullar ve notlar"
+
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "İngilizce adı, örn. Atlantic salmon."
+
+msgid "The address for orders and questions; contact persons have their own below."
+msgstr "Siparişler ve sorular için adres; kişilerin kendi adresleri aşağıdadır."
 
 msgid ""
 "The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
@@ -2145,6 +2276,13 @@ msgstr "Havuz doluyken suyun ortalama derinliği."
 
 msgid "The biomass cannot be negative."
 msgstr "Biyokütle negatif olamaz."
+
+msgid ""
+"The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
+"such as vets, divers and wellboats."
+msgstr ""
+"Çiftliğin alım yaptığı şirketler: yem, canlı balık ve yumurta, ekipman, ilaç ve veteriner, dalgıç"
+" ve kuyulu tekne gibi hizmetler."
 
 msgid "The criticality is from 1 to 5."
 msgstr "Kritiklik 1 ile 5 arasındadır."
@@ -2203,6 +2341,13 @@ msgstr "Üst sistem başka bir sahaya ait."
 msgid "The parent system is nested under this system."
 msgstr "Üst sistem bu sistemin altında yer alıyor."
 
+msgid ""
+"The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
+" one can be the primary contact. Contacts are saved separately from the supplier details."
+msgstr ""
+"Tedarikçide ulaşılacak kişiler: satış, sipariş, teknik destek, nöbetçi veteriner. En fazla biri "
+"birincil kişi olabilir. Kişiler, tedarikçi bilgilerinden ayrı kaydedilir."
+
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Suyu dağıtım deliklerinden tanka veren boru."
 
@@ -2220,6 +2365,9 @@ msgstr "Uzun eksene dik en kısa çap."
 
 msgid "The silo is filled automatically."
 msgstr "Silo otomatik olarak doldurulur."
+
+msgid "The sites it delivers to or works at."
+msgstr "Teslimat yaptığı ya da çalıştığı sahalar."
 
 msgid ""
 "The site’s operational contacts. At most one can be the primary contact. Contacts are saved "
@@ -2324,6 +2472,9 @@ msgstr "Bu tür seçilen kategoride değil."
 msgid "Three-phase"
 msgstr "Üç faz"
 
+msgid "Tick at least one thing it supplies."
+msgstr "Tedarik ettiği en az bir şeyi işaretleyin."
+
 msgid "Tick at least one water environment."
 msgstr "En az bir su ortamı işaretleyin."
 
@@ -2397,6 +2548,9 @@ msgstr "Güncelleyen"
 msgid "Use capital letters, digits, hyphens and underscores only."
 msgstr "Yalnızca büyük harf, rakam, kısa çizgi ve alt çizgi kullanın."
 
+msgid "Use letters, digits and hyphens only, e.g. 923456789 or NO923456789MVA."
+msgstr "Yalnızca harf, rakam ve kısa çizgi kullanın, örn. 923456789 ya da NO923456789MVA."
+
 msgid "Use your username and password to open the farm console."
 msgstr "Çiftlik konsolunu açmak için kullanıcı adınızı ve parolanızı kullanın."
 
@@ -2411,6 +2565,9 @@ msgstr "Kullanıcılar"
 
 msgid "Version"
 msgstr "Sürüm"
+
+msgid "Veterinary and fish health"
+msgstr "Veteriner ve balık sağlığı"
 
 msgid "Voltage"
 msgstr "Gerilim"
@@ -2445,12 +2602,18 @@ msgstr "Su tipi"
 msgid "Water volume (m³)"
 msgstr "Su hacmi (m³)"
 
+msgid "Website"
+msgstr "Web sitesi"
+
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
 msgstr "Hoş geldiniz, %(name)s. Şirketin rakamları burada görünecek."
 
 msgid "Well (groundwater)"
 msgstr "Kuyu (yeraltı suyu)"
+
+msgid "Wellboat and transport"
+msgstr "Kuyulu tekne ve nakliye"
 
 msgid "What it holds"
 msgstr "İçeriği"
@@ -2466,6 +2629,12 @@ msgstr "Her rolün hangi izinlere izin verdiği."
 
 msgid "Which roles each user has."
 msgstr "Her kullanıcının hangi rollere sahip olduğu."
+
+msgid "Which sites each supplier delivers to or works at."
+msgstr "Her tedarikçinin teslimat yaptığı ya da çalıştığı sahalar."
+
+msgid "Who it was bought from: a supplier of equipment and spare parts (Purchasing › Suppliers)."
+msgstr "Kimden satın alındığı: bir ekipman ve yedek parça tedarikçisi (Satın alma › Tedarikçiler)."
 
 msgid ""
 "Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
@@ -2514,6 +2683,9 @@ msgstr "Bunu yapma izniniz yok."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."
+
+msgid "Your own rating, from 1 (poor) to 5 (excellent)."
+msgstr "Kendi puanınız, 1 (zayıf) ile 5 (mükemmel) arası."
 
 msgid "Your own short code: capital letters, digits, hyphens and underscores."
 msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
@@ -2571,6 +2743,9 @@ msgstr "örn. 250"
 msgid "e.g. 3"
 msgstr "örn. 3"
 
+msgid "e.g. 30 days net"
+msgstr "örn. 30 gün vadeli"
+
 msgid "e.g. 5.3221"
 msgstr "örn. 5,3221"
 
@@ -2580,14 +2755,26 @@ msgstr "örn. 50000"
 msgid "e.g. 60.3913"
 msgstr "örn. 60,3913"
 
+msgid "e.g. 923456789"
+msgstr "örn. 923456789"
+
 msgid "e.g. Atlantic salmon"
 msgstr "örn. Atlantic salmon"
+
+msgid "e.g. FJF"
+msgstr "örn. FJF"
+
+msgid "e.g. Fjord Feed AS"
+msgstr "örn. Fjord Feed AS"
 
 msgid "e.g. HAT-A"
 msgstr "örn. HAT-A"
 
 msgid "e.g. Hatchery hall A"
 msgstr "örn. Kuluçkahane salonu A"
+
+msgid "e.g. Kaien 1"
+msgstr "örn. Kaien 1"
 
 msgid "e.g. Laks"
 msgstr "örn. Laks"
@@ -2673,6 +2860,9 @@ msgstr "yem kalibrasyonu"
 msgid "feed calibrations"
 msgstr "yem kalibrasyonları"
 
+msgid "https:// is added when it is left out."
+msgstr "Yazılmazsa https:// eklenir."
+
 #, python-format
 msgid "in %(name)s"
 msgstr "%(name)s içinde"
@@ -2732,6 +2922,18 @@ msgstr "balık türü"
 msgctxt "plural"
 msgid "species"
 msgstr "balık türleri"
+
+msgid "supplier"
+msgstr "tedarikçi"
+
+msgid "supplier contact"
+msgstr "tedarikçi kişisi"
+
+msgid "supplier contacts"
+msgstr "tedarikçi kişileri"
+
+msgid "suppliers"
+msgstr "tedarikçiler"
 
 msgid "system"
 msgstr "sistem"

@@ -10,10 +10,11 @@ from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibrat
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
+from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
 
 __all__ = [
     'Equipment', 'EquipmentSystem', 'EquipmentType', 'FeederCalibration', 'ProductionDepartment', 'Site',
-    'SiteContact', 'Species', 'System', 'Tank',
+    'SiteContact', 'Species', 'Supplier', 'SupplierContact', 'System', 'Tank',
 ]

@@ -157,6 +157,8 @@
 .badge-preparing, .badge-fallow { background: #ECECEA; color: var(--muted); }
 .badge-quarantine { background: #F7E6E6; color: var(--error); }
 .badge-admin, .badge-experimental { background: var(--active-bg); color: var(--stripe-dark); }
+.badge-suspended { background: #FBF0D9; color: #7A5410; }
+.badge-blocked { background: #F7E6E6; color: var(--error); }
 
 /* Empty state */
 .empty {

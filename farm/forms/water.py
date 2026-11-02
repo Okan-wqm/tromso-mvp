@@ -1,11 +1,13 @@
 """The water chemistry forms: a sample (Record water sample), a round (many points at one time), voiding a
-sample, and a species' water limit (Setup › Reference data › Water limits).
+sample, a species' water limit (Setup › Reference data › Water limits) and the calculator (Operations ›
+Water chemistry › Calculator).
 
 A sample's form is one call of farm/water/services.py: the form checks what it can see (a number inside
 its parameter's range, a date and time), the service the rest (a deleted point, the backdating window),
 and its message lands on the field it concerns. Every value field is the column of the same name,
 with the parameter's label, range and precision (farm/water/parameters.py)."""
 import uuid
+from decimal import Decimal
 
 from django import forms
 from django.utils import timezone
@@ -17,7 +19,7 @@ from ..models import ProductionDepartment, Site, Species, System, Tank, WaterLim
 from ..models.site import zone_of
 from ..models.water import BOUNDS, site_of
 from ..templatetags.water import limit_text
-from ..water import parameters, services
+from ..water import chemistry, deffeyes, parameters, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
 
@@ -56,9 +58,14 @@ def now_on(zone):
 
 def value_field(parameter, help_text=''):
     """The form field of one parameter: its label, range and precision, never required."""
+    return number_field(parameter.label, parameter.low, parameter.high, parameter.decimals, help_text=help_text)
+
+
+def number_field(label, low, high, decimals, help_text='', required=False):
+    """A decimal field typed as the language writes it, inside its range and at its precision."""
     return forms.DecimalField(
-        label=parameter.label, required=False, min_value=parameter.low, max_value=parameter.high,
-        decimal_places=parameter.decimals, localize=True, widget=forms.TextInput(attrs=DECIMAL), help_text=help_text)
+        label=label, required=required, min_value=Decimal(str(low)), max_value=Decimal(str(high)),
+        decimal_places=decimals, localize=True, widget=forms.TextInput(attrs=DECIMAL), help_text=help_text)
 
 
 def point_value(point):
@@ -308,3 +315,131 @@ class WaterLimitForm(TabbedForm):
                                                  'decimals.') % {
                 'parameter': measure.label, 'low': measure.low, 'high': measure.high, 'decimals': measure.decimals}
 
+
+
+# ---- the calculator -----------------------------------------------------------------------------------------
+def _measured(code, required=False, low=None, help_text=None):
+    """A measured parameter's field in the calculator: its label, range and precision (the pH's range starts
+    at the chart's, 4)."""
+    parameter = parameters.get(code)
+    return number_field(parameter.label, parameter.low if low is None else low, parameter.high, parameter.decimals,
+                        help_text=parameter.help if help_text is None else help_text, required=required)
+
+
+class CalculatorForm(forms.Form):
+    """The water the Water Quality Management Chart is drawn for, a target, the limits and the chart's layers.
+    A GET form: the values live in the address and nothing is stored. Without values it shows DEFAULTS: the
+    source's example water, and limits that are defaults, not the limits of any fish (farm/water/deffeyes.py;
+    the bug document, WQ-30 on). A measured value has its parameter's label, range and precision."""
+
+    temperature_c = _measured('temperature_c', required=True)
+    ph = _measured('ph', required=True, low=4)
+    salinity_ppt = _measured('salinity_ppt', required=True)
+    alkalinity_mg_l = _measured('alkalinity_mg_l', required=True)
+    tan_mg_l = _measured('tan_mg_l', help_text=_('NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from '
+                                                 'it.'))
+    total_sulfide_ug_l = number_field(
+        _('Total sulfide (µg/L as S)'), 0, 10000, 1,
+        _('Sulfide as a laboratory or a methylene-blue kit reports it, as S. The H₂S is worked out from it, the '
+          'pH, the temperature and the salinity.'))
+    oxygen_mg_l = _measured('oxygen_mg_l', help_text=_('For the oxygen saturation.'))
+    calcium_mg_l = number_field(_('Calcium (mg/L Ca²⁺)'), 0, 2000, 1,
+                                _('For the calcite and aragonite saturation lines, in water of 5 to 44 ‰.'))
+    altitude_m = number_field(_('Altitude (m)'), 0, 5000, 0,
+                              _('For the oxygen saturation: the pressure of the standard atmosphere there. Empty is '
+                                'sea level.'))
+    target_ph = number_field(_('Target pH (NBS scale)'), 4, 12, 2)
+    target_alkalinity_mg_l = number_field(_('Target alkalinity (mg/L as CaCO₃)'), 0, 1000, 0)
+    alkalinity_low_mg_l = number_field(_('Alkalinity band, low (mg/L as CaCO₃)'), 0, 1000, 0,
+                                       _('The safe zone lies in this band.'))
+    alkalinity_high_mg_l = number_field(_('Alkalinity band, high (mg/L as CaCO₃)'), 0, 1000, 0)
+    nh3_n_limit_mg_l = number_field(
+        _('NH₃-N limit (mg/L as N)'), Decimal('0.0001'), 100, 4,
+        _('Default 0.0103: 0.0125 mg/L NH₃ (Piper et al. 1982) as nitrogen.'))
+    co2_limit_mg_l = number_field(_('CO₂ limit (mg/L)'), Decimal('0.1'), 200, 1,
+                                  _('Default 15 mg/L, a common guideline for salmonids.'))
+    h2s_limit_ug_l = number_field(_('H₂S limit (µg/L H₂S)'), Decimal('0.1'), 10000, 1,
+                                  _('Default 2 µg/L, the US EPA criterion for un-ionised H₂S (1986).'))
+    layers = forms.MultipleChoiceField(label=_('Show on the chart'), choices=deffeyes.LAYERS, required=False,
+                                       widget=forms.CheckboxSelectMultiple)
+
+    GROUPS = [
+        (_('Water'), ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'total_sulfide_ug_l',
+                      'oxygen_mg_l', 'calcium_mg_l', 'altitude_m']),
+        (_('Target and alkalinity band'), ['target_ph', 'target_alkalinity_mg_l', 'alkalinity_low_mg_l',
+                                           'alkalinity_high_mg_l']),
+        (_('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l']),
+    ]
+    DEFAULTS = {
+        'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'salinity_ppt': Decimal('1'),
+        'alkalinity_mg_l': Decimal('80'), 'tan_mg_l': Decimal('0.5'), 'total_sulfide_ug_l': Decimal('2'),
+        'oxygen_mg_l': None, 'calcium_mg_l': None, 'altitude_m': None,
+        'target_ph': Decimal('7.5'), 'target_alkalinity_mg_l': Decimal('100'),
+        'alkalinity_low_mg_l': Decimal('50'), 'alkalinity_high_mg_l': Decimal('100'),
+        'nh3_n_limit_mg_l': Decimal('0.0103'), 'co2_limit_mg_l': Decimal('15'), 'h2s_limit_ug_l': Decimal('2'),
+        'layers': [key for key, _label in deffeyes.LAYERS],
+    }
+    # A submitted form carries this, so a chart with every layer unticked stays so.
+    DRAWN = 'drawn'
+
+    def __init__(self, data=None, **kwargs):
+        super().__init__(data, initial=self.DEFAULTS, **kwargs)
+
+    def groups(self):
+        return [(label, [self[name] for name in names]) for label, names in self.GROUPS]
+
+    def clean_layers(self):
+        if self.DRAWN not in self.data:
+            return self.DEFAULTS['layers']
+        return self.cleaned_data['layers']
+
+    def clean(self):
+        data = super().clean()
+        for pair in (('target_ph', 'target_alkalinity_mg_l'), ('alkalinity_low_mg_l', 'alkalinity_high_mg_l')):
+            given = [name for name in pair if data.get(name) is not None]
+            if len(given) == 1 and not any(name in self.errors for name in pair):
+                self.add_error(next(name for name in pair if name not in given), _('Give both or neither.'))
+        low, high = data.get('alkalinity_low_mg_l'), data.get('alkalinity_high_mg_l')
+        if low is not None and high is not None and low > high:
+            self.add_error('alkalinity_high_mg_l', _('The band goes up: the high end is not below the low end.'))
+        self._possible(data)
+        return data
+
+    def _possible(self, data):
+        """A pH the alkalinity allows: hydroxide and borate are alkalinity too, so at a high pH the alkalinity
+        has a floor, below which the DIC would be negative. Checked for the water and the target once their
+        values are in."""
+        if data.get('temperature_c') is None or data.get('salinity_ppt') is None:
+            return
+        eq = chemistry.equilibria(float(data['temperature_c']), float(data['salinity_ppt']))
+        for ph_name, alkalinity_name in (('ph', 'alkalinity_mg_l'), ('target_ph', 'target_alkalinity_mg_l')):
+            if data.get(ph_name) is None or data.get(alkalinity_name) is None:
+                continue
+            floor = eq.isoline(float(data[ph_name]))[1] * chemistry.MG_CACO3_PER_MEQ
+            if float(data[alkalinity_name]) <= floor:
+                self.add_error(alkalinity_name, _('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: '
+                                                  'the hydroxide and borate alone are that much.')
+                               % {'floor': deffeyes.shown(floor, 1)})
+
+    def values(self):
+        """The values the chart is drawn for: those of a submitted form, DEFAULTS before."""
+        return self.cleaned_data if self.is_bound else self.DEFAULTS
+
+    def inputs(self):
+        """(water, limits, target, pressure in atm, layers) for farm/water/deffeyes.py."""
+        values = {name: float(value) if isinstance(value, Decimal) else value for name, value in self.values().items()}
+        water = deffeyes.Water(
+            temperature_c=values['temperature_c'], salinity_ppt=values['salinity_ppt'], ph=values['ph'],
+            alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values['tan_mg_l'],
+            total_sulfide_ug_l=values['total_sulfide_ug_l'], calcium_mg_l=values['calcium_mg_l'],
+            oxygen_mg_l=values['oxygen_mg_l'])
+        limits = deffeyes.Limits(
+            nh3_n_mg_l=values['nh3_n_limit_mg_l'], co2_mg_l=values['co2_limit_mg_l'],
+            h2s_ug_l=values['h2s_limit_ug_l'], alkalinity_low_mg_l=values['alkalinity_low_mg_l'],
+            alkalinity_high_mg_l=values['alkalinity_high_mg_l'])
+        target = None
+        if values['target_ph'] is not None:
+            target = deffeyes.Target(values['target_ph'], values['target_alkalinity_mg_l'])
+        altitude = values['altitude_m']
+        pressure = chemistry.pressure_atm(altitude) if altitude is not None else 1.0
+        return water, limits, target, pressure, frozenset(values['layers'])

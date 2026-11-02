@@ -23,6 +23,12 @@ msgstr[0] "%(count)d %(name)s tilhører den fortsatt."
 msgstr[1] "%(count)d %(plural)s tilhører den fortsatt."
 
 #, python-format
+msgid "%(count)d calibration saved."
+msgid_plural "%(count)d calibrations saved."
+msgstr[0] "%(count)d kalibrering lagret."
+msgstr[1] "%(count)d kalibreringer lagret."
+
+#, python-format
 msgid "%(count)d contact saved."
 msgid_plural "%(count)d contacts saved."
 msgstr[0] "%(count)d kontaktperson lagret."
@@ -33,6 +39,18 @@ msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d post gjenopprettet."
 msgstr[1] "%(count)d poster gjenopprettet."
+
+#, python-format
+msgid "%(count)s part"
+msgid_plural "%(count)s parts"
+msgstr[0] "%(count)s del"
+msgstr[1] "%(count)s deler"
+
+#, python-format
+msgid "%(count)s piece of equipment is not linked to any system."
+msgid_plural "%(count)s pieces of equipment are not linked to any system."
+msgstr[0] "%(count)s utstyrsenhet er ikke knyttet til noe system."
+msgstr[1] "%(count)s utstyrsenheter er ikke knyttet til noe system."
 
 #, python-format
 msgid "%(count)s production department is not on any site."
@@ -109,6 +127,14 @@ msgstr "%(record)s er den primære"
 msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s ble ikke gjenopprettet: %(reasons)s"
 
+#, python-format
+msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
+msgstr "%(size)s: %(grams)s g per skudd, silo %(silo)s kg"
+
+#, python-format
+msgid "%(system)s is on another site than the production department."
+msgstr "%(system)s er på en annen lokalitet enn produksjonsavdelingen."
+
 msgid "(has errors)"
 msgstr "(har feil)"
 
@@ -120,6 +146,12 @@ msgstr "0 rader samsvarer"
 
 msgid "9-digit Norwegian organisation number"
 msgstr "Norsk organisasjonsnummer (9 siffer)"
+
+#, python-format
+msgid "A feeder has at most %(num)d calibration."
+msgid_plural "A feeder has at most %(num)d calibrations."
+msgstr[0] "En fôrautomat har høyst %(num)d kalibrering."
+msgstr[1] "En fôrautomat har høyst %(num)d kalibreringer."
 
 msgid "A production department stays on the site it was created on."
 msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet på."
@@ -141,6 +173,9 @@ msgstr "Et system blir værende på lokaliteten det ble opprettet på."
 msgid "Account"
 msgstr "Konto"
 
+msgid "Accuracy"
+msgstr "Nøyaktighet"
+
 msgid "Action"
 msgstr "Handling"
 
@@ -156,6 +191,9 @@ msgstr "Aktivitetslogg"
 #, python-format
 msgid "Add %(name)s"
 msgstr "Legg til %(name)s"
+
+msgid "Add calibration"
+msgstr "Legg til kalibrering"
 
 msgid "Add contact"
 msgstr "Legg til kontaktperson"
@@ -178,6 +216,18 @@ msgstr "Legg til den første brukeren; vedkommende får en e-post for å velge p
 msgid "Administration"
 msgstr "Administrasjon"
 
+msgid "Aeration"
+msgstr "Lufting"
+
+msgid "Aerator"
+msgstr "Lufter"
+
+msgid "Air"
+msgstr "Luft"
+
+msgid "Airflow"
+msgstr "Luftmengde"
+
 msgid "Akvakulturregisteret locality number (5 digits)."
 msgstr "Lokalitetsnummer fra Akvakulturregisteret (5 siffer)."
 
@@ -191,11 +241,20 @@ msgstr ""
 msgid "All actions"
 msgstr "Alle handlinger"
 
+msgid "All categories"
+msgstr "Alle kategorier"
+
 msgid "All production departments"
 msgstr "Alle produksjonsavdelinger"
 
 msgid "All sites"
 msgstr "Alle lokaliteter"
+
+msgid "All statuses"
+msgstr "Alle statuser"
+
+msgid "All systems"
+msgstr "Alle systemer"
 
 msgid "All types"
 msgstr "Alle typer"
@@ -205,6 +264,15 @@ msgstr "Tillater"
 
 msgid "Altitude (m)"
 msgstr "Høyde over havet (m)"
+
+msgid "Amalgam"
+msgstr "Amalgam"
+
+msgid "Ammonia sensor"
+msgstr "Ammoniakksensor"
+
+msgid "Analog"
+msgstr "Analog"
 
 msgid "Another production department already uses this code."
 msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
@@ -248,17 +316,53 @@ msgstr "Minst %(min)s."
 msgid "At most %(max)s."
 msgstr "Høyst %(max)s."
 
+msgid "Automatic"
+msgstr "Automatisk"
+
+msgid "Automatic feeder"
+msgstr "Automatisk fôrautomat"
+
+msgid "Automatic filling"
+msgstr "Automatisk påfylling"
+
 msgid "Back to overview"
 msgstr "Tilbake til oversikten"
 
 msgid "Back to sign in"
 msgstr "Tilbake til innlogging"
 
+msgid "Backup power supply."
+msgstr "Reservestrøm."
+
+msgid "Backwash frequency"
+msgstr "Tilbakespylingsfrekvens"
+
+msgid "Backwash interval"
+msgstr "Tilbakespylingsintervall"
+
 msgid "Basic info"
 msgstr "Grunnleggende info"
 
+msgid "Bead filter"
+msgstr "Perlefilter"
+
+msgid "Bead material"
+msgstr "Perlemateriale"
+
+msgid "Bead volume"
+msgstr "Perlevolum"
+
+msgid "Bed type"
+msgstr "Biomedietype"
+
 msgid "Biofloc"
 msgstr "Biofloc"
+
+msgid "Biological filter"
+msgstr "Biofilter"
+
+msgid "Blower"
+msgstr "Luftblåser"
 
 msgid "Brief description of the site"
 msgstr "Kort beskrivelse av lokaliteten"
@@ -269,14 +373,27 @@ msgstr "Stamfisk"
 msgid "Browser default"
 msgstr "Nettleserens standard"
 
+#. Translators: the coefficient of performance of a chiller.
+msgid "COP (efficiency)"
+msgstr "COP (virkningsgrad)"
+
 msgid "Cage"
 msgstr "Merd"
+
+msgid "Calibrations can be added once the equipment is created."
+msgstr "Kalibreringer kan legges til når utstyret er opprettet."
 
 msgid "Cancel"
 msgstr "Avbryt"
 
 msgid "Capacity"
 msgstr "Kapasitet"
+
+msgid "Category"
+msgstr "Kategori"
+
+msgid "Centrifugal pump"
+msgstr "Sentrifugalpumpe"
 
 msgid "Change password"
 msgstr "Endre passord"
@@ -289,6 +406,12 @@ msgstr "Sjekk"
 
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
+
+msgid "Chiller"
+msgstr "Kjøleaggregat"
+
+msgid "Choose a type on the General tab; its specifications appear here."
+msgstr "Velg en type på fanen Generelt; spesifikasjonene vises her."
 
 msgid "Choose among the ones offered."
 msgstr "Velg blant dem som tilbys."
@@ -329,6 +452,12 @@ msgstr "Selskap"
 msgid "Company overview"
 msgstr "Selskapsoversikt"
 
+msgid "Conductivity"
+msgstr "Ledningsevne"
+
+msgid "Connectivity"
+msgstr "Tilkobling"
+
 msgid "Constraints"
 msgstr "Begrensninger"
 
@@ -349,6 +478,18 @@ msgstr "Kontaktpersoner"
 
 msgid "Contacts can be added once the site is created."
 msgstr "Kontaktpersoner kan legges til etter at lokaliteten er opprettet."
+
+msgid "Control type"
+msgstr "Styringstype"
+
+msgid "Cooling"
+msgstr "Kjøling"
+
+msgid "Cooling capacity"
+msgstr "Kjølekapasitet"
+
+msgid "Corona discharge"
+msgstr "Koronautladning"
 
 msgid "Country"
 msgstr "Land"
@@ -378,11 +519,26 @@ msgstr "Opprettet"
 msgid "Created by"
 msgstr "Opprettet av"
 
+msgid "Criticality"
+msgstr "Kritikalitet"
+
+msgid "Custom field 1"
+msgstr "Egendefinert felt 1"
+
+msgid "Custom field 2"
+msgstr "Egendefinert felt 2"
+
+msgid "Custom field 3"
+msgstr "Egendefinert felt 3"
+
 msgid "Data"
 msgstr "Data"
 
 msgid "Database"
 msgstr "Database"
+
+msgid "Decommissioned"
+msgstr "Utrangert"
 
 msgid "Default"
 msgstr "Standard"
@@ -420,11 +576,26 @@ msgstr "Slettet rad"
 msgid "Deleted rows"
 msgstr "Slettede rader"
 
+msgid "Demand feeder"
+msgstr "Behovsfôrer"
+
 msgid "Description"
 msgstr "Beskrivelse"
 
 msgid "Details"
 msgstr "Detaljer"
+
+msgid "Diesel"
+msgstr "Diesel"
+
+msgid "Dissolved oxygen"
+msgstr "Løst oksygen"
+
+msgid "Dissolved oxygen sensor"
+msgstr "Oksygensensor"
+
+msgid "Distribution holes"
+msgstr "Fordelingshull"
 
 msgid "Django model"
 msgstr "Django-modell"
@@ -433,6 +604,12 @@ msgstr "Django-modell"
 msgid "Download the rows below as CSV, up to %(limit)s rows"
 msgstr "Last ned radene nedenfor som CSV, opptil %(limit)s rader"
 
+msgid "Drum diameter"
+msgstr "Trommeldiameter"
+
+msgid "Drum filter"
+msgstr "Trommelfilter"
+
 msgid "Edit"
 msgstr "Rediger"
 
@@ -440,11 +617,29 @@ msgstr "Rediger"
 msgid "Edit %(name)s"
 msgstr "Rediger %(name)s"
 
+msgid "Efficiency"
+msgstr "Virkningsgrad"
+
+msgid "Electric"
+msgstr "Elektrisk"
+
+msgid "Electrical"
+msgstr "Elektrisk"
+
 msgid "Email"
 msgstr "E-post"
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+msgid "Equipment"
+msgstr "Utstyr"
+
+msgid "Equipment cannot be a part of itself."
+msgstr "Utstyr kan ikke være en del av seg selv."
+
+msgid "Equipment that fits none of the other types."
+msgstr "Utstyr som ikke passer i noen av de andre typene."
 
 msgid "Established"
 msgstr "Etablert"
@@ -492,6 +687,24 @@ msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
 msgid "Feed"
 msgstr "Fôr"
 
+msgid "Feed calibration"
+msgstr "Fôrkalibrering"
+
+msgid "Feed calibrations"
+msgstr "Fôrkalibreringer"
+
+msgid "Feed gas"
+msgstr "Fødegass"
+
+msgid "Feed per shot (g)"
+msgstr "Fôr per skudd (g)"
+
+msgid "Feed size (mm)"
+msgstr "Fôrstørrelse (mm)"
+
+msgid "Feeding"
+msgstr "Fôring"
+
 msgid ""
 "Feeding jobs run on the site’s local day. Leave it inherited unless the site is in a different "
 "timezone than the company."
@@ -499,12 +712,28 @@ msgstr ""
 "Fôringsjobber kjøres etter lokalitetens lokale døgn. La verdien arves med mindre lokaliteten "
 "ligger i en annen tidssone enn selskapet."
 
+#. Translators: a placeholder showing what to type.
+msgid "Feeding rate"
+msgstr "Fôringsmengde"
+
+msgid "Feeds when the fish trigger it."
+msgstr "Fôrer når fisken utløser den."
+
 msgid "Filter"
 msgstr "Filtrer"
 
 #, python-format
 msgid "Filter %(name)s"
 msgstr "Filtrer %(name)s"
+
+msgid "Filter medium"
+msgstr "Filtermedium"
+
+msgid "Filtration"
+msgstr "Filtrering"
+
+msgid "Filtration size"
+msgstr "Filtreringsfinhet"
 
 msgid "First"
 msgstr "Første"
@@ -515,8 +744,27 @@ msgstr "Fornavn"
 msgid "Fish farm"
 msgstr "Fiskeoppdrett"
 
+msgid "Fixed bed"
+msgstr "Fastmedium"
+
+msgid "Flow rate"
+msgstr "Vannmengde"
+
+msgid "Flow sensor"
+msgstr "Strømningssensor"
+
 msgid "Flow-through"
 msgstr "Gjennomstrømming"
+
+msgid "Fluidised bed"
+msgstr "Fluidisert sjikt"
+
+msgid ""
+"For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 "
+"rows. They are saved separately from the equipment details."
+msgstr ""
+"For hver fôrstørrelse: hvor mye fôr ett skudd gir og hvor mye siloen rommer; høyst 50 rader. De "
+"lagres separat fra utstyrsdetaljene."
 
 msgid "Foreign key"
 msgstr "Fremmednøkkel"
@@ -535,14 +783,51 @@ msgstr "Fra"
 msgid "From %(min)s to %(max)s."
 msgstr "Fra %(min)s til %(max)s."
 
+msgid "Fuel consumption"
+msgstr "Drivstofforbruk"
+
+msgid "Fuel type"
+msgstr "Drivstofftype"
+
 msgid "Full name of the site manager"
 msgstr "Lokalitetslederens fulle navn"
+
+msgid "Gas"
+msgstr "Gass"
+
+msgid "General"
+msgstr "Generelt"
+
+msgid "Generation method"
+msgstr "Produksjonsmetode"
+
+msgid "Generator"
+msgstr "Aggregat"
 
 msgid "Grow-out"
 msgstr "Matfisk"
 
+msgid "Harvesting"
+msgstr "Høsting"
+
 msgid "Hatchery"
 msgstr "Klekkeri"
+
+#. Translators: the delivery head of a pump, the height it lifts water to.
+msgid "Head"
+msgstr "Løftehøyde"
+
+msgid "Heat exchanger"
+msgstr "Varmeveksler"
+
+msgid "Heater"
+msgstr "Varmer"
+
+msgid "Heating and cooling"
+msgstr "Oppvarming og kjøling"
+
+msgid "Heating capacity"
+msgstr "Varmekapasitet"
 
 #, python-format
 msgid "Hi %(name)s,"
@@ -579,6 +864,9 @@ msgstr "Indekser"
 msgid "Inherit from company"
 msgstr "Arv fra selskapet"
 
+msgid "Installation date"
+msgstr "Installasjonsdato"
+
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
 "log keeps its history, and it can be restored from the admin."
@@ -586,14 +874,41 @@ msgstr ""
 "Den forsvinner fra alle lister, men blir ikke slettet: posten blir i databasen, aktivitetsloggen "
 "beholder historikken, og den kan gjenopprettes fra administrasjonspanelet."
 
+msgid ""
+"It has feed calibrations, which only a feeder has: remove them on the Feed calibration tab before"
+" choosing another kind of type."
+msgstr ""
+"Den har fôrkalibreringer, som bare en fôrautomat har: fjern dem på fanen Fôrkalibrering før du "
+"velger en annen type."
+
+#, python-format
+msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
+msgstr "Koblingene til slettede systemer (%(systems)s) fjernes når det lagres."
+
+#, python-format
+msgid "Its parts are on another site: %(parts)s. Move them first."
+msgstr "Delene er på en annen lokalitet: %(parts)s. Flytt dem først."
+
+msgid "Its site decides which systems and which parent equipment can be chosen."
+msgstr "Lokaliteten avgjør hvilke systemer og hvilket overordnet utstyr som kan velges."
+
 msgid "Key"
 msgstr "Nøkkel"
 
 msgid "Kind"
 msgstr "Type"
 
+msgid "Label"
+msgstr "Etikett"
+
 msgid "Laboratory"
 msgstr "Laboratorium"
+
+msgid "Lamp life"
+msgstr "Lampelevetid"
+
+msgid "Lamp type"
+msgstr "Lampetype"
 
 msgid "Land-based facility"
 msgstr "Landbasert anlegg"
@@ -603,6 +918,9 @@ msgstr "Språk"
 
 msgid "Last"
 msgstr "Siste"
+
+msgid "Last calibration"
+msgstr "Siste kalibrering"
 
 msgid "Last name"
 msgstr "Etternavn"
@@ -619,6 +937,9 @@ msgstr "Breddegrad og lengdegrad må oppgis sammen."
 msgid "Latitude is required for a sea cage."
 msgstr "Breddegrad er påkrevd for en merd."
 
+msgid "Level sensor"
+msgstr "Nivåsensor"
+
 msgid "Location"
 msgstr "Plassering"
 
@@ -631,26 +952,71 @@ msgstr "Lengdegrad"
 msgid "Longitude is required for a sea cage."
 msgstr "Lengdegrad er påkrevd for en merd."
 
+msgid "Low pressure"
+msgstr "Lavtrykk"
+
 msgid "Main navigation"
 msgstr "Hovednavigasjon"
 
 msgid "Maintenance"
 msgstr "Vedlikehold"
 
+msgid "Make and model"
+msgstr "Merke og modell"
+
 msgid "Manager"
 msgstr "Leder"
+
+msgid "Manufacturer"
+msgstr "Produsent"
 
 msgid "Mark which one is the primary one."
 msgstr "Merk hvilken som er den primære."
 
+msgid "Material"
+msgstr "Materiale"
+
 msgid "Max biomass (kg)"
 msgstr "Maks. biomasse (kg)"
+
+msgid "Maximum flow rate"
+msgstr "Maksimal vannmengde"
+
+msgid "Maximum temperature"
+msgstr "Maksimal temperatur"
+
+msgid "Measured parameters"
+msgstr "Målte parametere"
+
+msgid "Measurement range"
+msgstr "Måleområde"
+
+msgid "Mechanical filter"
+msgstr "Mekanisk filter"
+
+msgid "Media volume"
+msgstr "Medievolum"
+
+msgid "Medium pressure"
+msgstr "Mellomtrykk"
 
 msgid "Metadata"
 msgstr "Metadata"
 
+msgid "Minimum transmittance"
+msgstr "Minste transmittans"
+
+msgid "Model"
+msgstr "Modell"
+
 msgid "Model field"
 msgstr "Modellfelt"
+
+msgid "Moving bed (MBBR)"
+msgstr "Bevegelig medium (MBBR)"
+
+msgid "Multiparameter probe"
+msgstr "Multiparametersonde"
 
 msgid "Name"
 msgstr "Navn"
@@ -660,6 +1026,12 @@ msgstr "Navnet må ha minst 2 tegn."
 
 msgid "Name or code"
 msgstr "Navn eller kode"
+
+msgid "Narrows the list of types."
+msgstr "Snevrer inn listen over typer."
+
+msgid "Natural gas"
+msgstr "Naturgass"
 
 msgid "Never"
 msgstr "Aldri"
@@ -691,6 +1063,9 @@ msgstr "Ingen %(plural)s samsvarer med «%(query)s»"
 msgid "No %(plural)s yet"
 msgstr "Ingen %(plural)s ennå"
 
+msgid "No calibrations yet. Use “Add calibration” to add a row."
+msgstr "Ingen kalibreringer ennå. Bruk «Legg til kalibrering» for å legge til en rad."
+
 msgid "No changes match these filters."
 msgstr "Ingen endringer samsvarer med filtrene."
 
@@ -719,8 +1094,24 @@ msgstr "Ingen rader samsvarer. <a href=\"%(url)s\">Fjern søket og filtrene</a>.
 msgid "No site"
 msgstr "Ingen lokalitet"
 
+msgid "No system"
+msgstr "Intet system"
+
+msgid ""
+"No system to choose: the production department’s site has none, or no production department is "
+"chosen."
+msgstr ""
+"Ingen system å velge: produksjonsavdelingens lokalitet har ingen, eller ingen produksjonsavdeling"
+" er valgt."
+
 msgid "None."
 msgstr "Ingen."
+
+msgid "None: not a part of other equipment"
+msgstr "Ingen: ikke en del av annet utstyr"
+
+msgid "Not linked to any system"
+msgstr "Ikke knyttet til noe system"
 
 msgid "Notes"
 msgstr "Notater"
@@ -734,14 +1125,29 @@ msgstr "Ingenting ennå"
 msgid "Nullable"
 msgstr "Kan være tom"
 
+msgid "Number of lamps"
+msgstr "Antall lamper"
+
 msgid "Nursery"
 msgstr "Yngelavdeling"
+
+msgid "Offered"
+msgstr "Tilbys"
 
 msgid "Offline"
 msgstr "Ute av drift"
 
+msgid "Oil"
+msgstr "Olje"
+
 msgid "Older"
 msgstr "Eldre"
+
+msgid "One probe that measures several water parameters."
+msgstr "Én sonde som måler flere vannparametere."
+
+msgid "Only a feeder has feed calibrations."
+msgstr "Bare en fôrautomat har fôrkalibreringer."
 
 msgid "Only deleted rows"
 msgstr "Bare slettede rader"
@@ -752,6 +1158,9 @@ msgstr "Bare én kontaktperson kan være hovedkontakt."
 #, python-format
 msgid "Only one contact can be the primary contact; %(count)d are marked."
 msgstr "Bare én kontaktperson kan være hovedkontakt; %(count)d er merket."
+
+msgid "Only one system can be the primary one."
+msgstr "Bare ett system kan være det primære."
 
 msgid "Only the production departments of the chosen site."
 msgstr "Bare produksjonsavdelingene på den valgte lokaliteten."
@@ -771,14 +1180,41 @@ msgstr "I drift"
 msgid "Optional"
 msgstr "Valgfritt"
 
+msgid "Order"
+msgstr "Rekkefølge"
+
 msgid "Organisation number override"
 msgstr "Overstyring av organisasjonsnummer"
 
 msgid "Other"
 msgstr "Annet"
 
+msgid "Other equipment"
+msgstr "Annet utstyr"
+
+msgid "Other equipment already has this serial number."
+msgstr "Annet utstyr har allerede dette serienummeret."
+
+msgid "Other equipment already uses this code."
+msgstr "Annet utstyr bruker allerede denne koden."
+
+msgid "Out of service"
+msgstr "Ute av tjeneste"
+
 msgid "Overview"
 msgstr "Oversikt"
+
+msgid "Oxygen"
+msgstr "Oksygen"
+
+msgid "Ozone concentration"
+msgstr "Ozonkonsentrasjon"
+
+msgid "Ozone generator"
+msgstr "Ozongenerator"
+
+msgid "Ozone production"
+msgstr "Ozonproduksjon"
 
 #, python-format
 msgid "Page %(number)s of %(total)s"
@@ -793,14 +1229,23 @@ msgstr "Panel"
 msgid "Panels"
 msgstr "Paneler"
 
+msgid "Parent equipment"
+msgstr "Overordnet utstyr"
+
 msgid "Parent system"
 msgstr "Overordnet system"
+
+msgid "Parts"
+msgstr "Deler"
 
 msgid "Password saved"
 msgstr "Passordet er lagret"
 
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Personer som kan logge inn: kontoopplysninger og en hash av passordet."
+
+msgid "Performance"
+msgstr "Ytelse"
 
 msgid "Permissions"
 msgstr "Tillatelser"
@@ -811,20 +1256,54 @@ msgstr "Tillatelser gitt direkte til én bruker i stedet for gjennom en rolle."
 msgid "Person"
 msgstr "Person"
 
+msgid "Petrol"
+msgstr "Bensin"
+
+#. Translators: the electrical phase of the supply (single-phase or three-phase).
+msgid "Phase"
+msgstr "Fase"
+
 msgid "Phone"
 msgstr "Telefon"
+
+msgid "Pipe size"
+msgstr "Rørdimensjon"
 
 msgid "Platform admin"
 msgstr "Plattformadministrator"
 
+msgid "Plumbing"
+msgstr "Rør og ventiler"
+
 msgid "Pointed at by"
 msgstr "Det pekes på av"
+
+msgid "Polyethylene"
+msgstr "Polyetylen"
+
+msgid "Polypropylene"
+msgstr "Polypropylen"
 
 msgid "Pond"
 msgstr "Dam"
 
 msgid "Postal code"
 msgstr "Postnummer"
+
+msgid "Power"
+msgstr "Effekt"
+
+msgid "Power consumption"
+msgstr "Effektforbruk"
+
+msgid "Power output"
+msgstr "Utgangseffekt"
+
+msgid "Pressure"
+msgstr "Trykk"
+
+msgid "Pressure sensor"
+msgstr "Trykksensor"
 
 msgid "Previous"
 msgstr "Forrige"
@@ -838,6 +1317,9 @@ msgstr "Primær"
 
 msgid "Primary key"
 msgstr "Primærnøkkel"
+
+msgid "Primary system"
+msgstr "Primært system"
 
 msgid "Processing"
 msgstr "Bearbeiding"
@@ -858,6 +1340,22 @@ msgstr ""
 
 msgid "Production overview"
 msgstr "Produksjonsoversikt"
+
+msgid "Propane"
+msgstr "Propan"
+
+msgid "Pumping"
+msgstr "Pumping"
+
+msgid ""
+"Pumps, filters, feeders, sensors and generators of a production department, linked to the systems"
+" they serve."
+msgstr ""
+"Pumper, filtre, fôrautomater, sensorer og aggregater i en produksjonsavdeling, knyttet til "
+"systemene de betjener."
+
+msgid "Purchase date"
+msgstr "Kjøpsdato"
 
 msgid "Quality control"
 msgstr "Kvalitetskontroll"
@@ -891,14 +1389,23 @@ msgstr "Post"
 msgid "Record type"
 msgstr "Posttype"
 
+msgid "Refrigerant"
+msgstr "Kjølemedium"
+
 msgid "Region"
 msgstr "Region"
 
 msgid "Relationships"
 msgstr "Relasjoner"
 
+msgid "Remote"
+msgstr "Fjernstyrt"
+
 msgid "Remove"
 msgstr "Fjern"
+
+msgid "Repair"
+msgstr "Reparasjon"
 
 msgid "Request a new link"
 msgstr "Be om en ny lenke"
@@ -944,15 +1451,33 @@ msgstr "Rader %(first)s–%(last)s av %(total)s"
 msgid "Rows %(first)s–%(last)s of %(total)s match"
 msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
 
+msgid "Safety"
+msgstr "Sikkerhet"
+
+msgid "Salinity"
+msgstr "Salinitet"
+
+msgid "Salinity sensor"
+msgstr "Salinitetssensor"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Lagre %(name)s"
+
+msgid "Save calibrations"
+msgstr "Lagre kalibreringer"
 
 msgid "Save contacts"
 msgstr "Lagre kontaktpersoner"
 
 msgid "Save password"
 msgstr "Lagre passord"
+
+msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
+msgstr "Lagre utstyret med denne fôrautomattypen først; deretter kan kalibreringene legges til her."
+
+msgid "Screen size"
+msgstr "Duksåpning"
 
 msgid "Sea cage"
 msgstr "Merd"
@@ -970,6 +1495,9 @@ msgstr "Søk etter navn eller kode"
 msgid "Search by name, code or region"
 msgstr "Søk etter navn, kode eller region"
 
+msgid "Search by name, code or serial number"
+msgstr "Søk på navn, kode eller serienummer"
+
 msgid "Search by name, username or email"
 msgstr "Søk etter navn, brukernavn eller e-post"
 
@@ -979,11 +1507,29 @@ msgstr "Søk i alle kolonner"
 msgid "See all in the activity log"
 msgstr "Se alt i aktivitetsloggen"
 
+msgid "Select a category"
+msgstr "Velg en kategori"
+
+msgid "Select a production department"
+msgstr "Velg en produksjonsavdeling"
+
 msgid "Select a site"
 msgstr "Velg en lokalitet"
 
+msgid "Select a type"
+msgstr "Velg en type"
+
+msgid "Semi-automatic feeder"
+msgstr "Halvautomatisk fôrautomat"
+
 msgid "Send reset link"
 msgstr "Send tilbakestillingslenke"
+
+msgid "Sensors"
+msgstr "Sensorer"
+
+msgid "Serial number"
+msgstr "Serienummer"
 
 msgid "Set a new password"
 msgstr "Velg nytt passord"
@@ -1013,6 +1559,15 @@ msgstr "Logg inn"
 msgid "Sign out"
 msgstr "Logg ut"
 
+msgid "Silo capacity (kg)"
+msgstr "Silokapasitet (kg)"
+
+msgid "Silo volume"
+msgstr "Silovolum"
+
+msgid "Single-phase"
+msgstr "Enfase"
+
 msgid "Site"
 msgstr "Lokalitet"
 
@@ -1034,6 +1589,9 @@ msgstr "Lokaliteter"
 msgid "Skip to content"
 msgstr "Hopp til innholdet"
 
+msgid "Solar"
+msgstr "Sol"
+
 #. Translators: %(name)s is the kind of record in lower case (e.g. site).
 #, python-format
 msgid ""
@@ -1047,6 +1605,18 @@ msgstr ""
 msgid "Sort by %(name)s"
 msgstr "Sorter etter %(name)s"
 
+msgid "Specific surface area"
+msgstr "Spesifikt overflateareal"
+
+msgid "Specification fields"
+msgstr "Spesifikasjonsfelt"
+
+msgid "Stainless steel"
+msgstr "Rustfritt stål"
+
+msgid "Standby"
+msgstr "Reserve"
+
 msgid "State"
 msgstr "Fylke"
 
@@ -1058,6 +1628,9 @@ msgstr "Gateadresse"
 
 msgid "Structure"
 msgstr "Struktur"
+
+msgid "Submersible pump"
+msgstr "Dykkpumpe"
 
 msgid "Switch panel"
 msgstr "Bytt panel"
@@ -1077,8 +1650,26 @@ msgstr "Tabell"
 msgid "Table sections"
 msgstr "Tabellseksjoner"
 
+msgid "Tank inlet"
+msgstr "Karinnløp"
+
+msgid "Technical specifications"
+msgstr "Tekniske spesifikasjoner"
+
+msgid "Temperature"
+msgstr "Temperatur"
+
+msgid "Temperature sensor"
+msgstr "Temperatursensor"
+
 msgid "The biomass cannot be negative."
 msgstr "Biomassen kan ikke være negativ."
+
+msgid "The criticality is from 1 to 5."
+msgstr "Kritikaliteten er fra 1 til 5."
+
+msgid "The equipment is linked to this system already."
+msgstr "Utstyret er allerede knyttet til dette systemet."
 
 msgid "The invitation to set a password is sent here."
 msgstr "Invitasjonen til å velge passord sendes hit."
@@ -1097,17 +1688,29 @@ msgstr "De siste endringene i denne posten (%(name)s)."
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
 
+msgid "The parent equipment is on another site."
+msgstr "Det overordnede utstyret er på en annen lokalitet."
+
+msgid "The parent equipment is one of its own parts."
+msgstr "Det overordnede utstyret er en av dets egne deler."
+
 msgid "The parent system belongs to another site."
 msgstr "Det overordnede systemet hører til en annen lokalitet."
 
 msgid "The parent system is nested under this system."
 msgstr "Det overordnede systemet ligger under dette systemet."
 
+msgid "The pipe that lets water into a tank through distribution holes."
+msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
+
 msgid "The production department belongs to another site."
 msgstr "Produksjonsavdelingen hører til en annen lokalitet."
 
 msgid "The production figures will appear here."
 msgstr "Produksjonstallene vises her."
+
+msgid "The silo is filled automatically."
+msgstr "Siloen fylles automatisk."
 
 msgid ""
 "The site’s operational contacts. At most one can be the primary contact. Contacts are saved "
@@ -1119,8 +1722,19 @@ msgstr ""
 msgid "The specifications must be a set of named values."
 msgstr "Spesifikasjonene må være et sett med navngitte verdier."
 
+msgid ""
+"The systems it serves, on the site of its production department: at least one, and one of them "
+"its primary system. Criticality is how much the system depends on it, from 1 (little) to 5 "
+"(completely)."
+msgstr ""
+"Systemene det betjener, på produksjonsavdelingens lokalitet: minst ett, og ett av dem dets "
+"primære system. Kritikalitet er hvor mye systemet er avhengig av det, fra 1 (lite) til 5 (helt)."
+
 msgid "The volume cannot be negative."
 msgstr "Volumet kan ikke være negativt."
+
+msgid "The warranty cannot end before the purchase date."
+msgstr "Garantien kan ikke slutte før kjøpsdatoen."
 
 msgid ""
 "They keep the link, but it does not count while this is deleted; restoring it brings the link "
@@ -1136,6 +1750,9 @@ msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 msgid "This link no longer works"
 msgstr "Denne lenken fungerer ikke lenger"
 
+msgid "This production department is not on any site; choose one that is."
+msgstr "Denne produksjonsavdelingen er ikke på noen lokalitet; velg en som er det."
+
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Dette fjerner den permanent. Aktivitetsloggen beholder en oppføring om at den ble slettet."
 
@@ -1147,6 +1764,18 @@ msgstr "Denne lokaliteten har allerede et system med denne koden."
 
 msgid "This table points at"
 msgstr "Denne tabellen peker på"
+
+msgid "This type has no technical specifications."
+msgstr "Denne typen har ingen tekniske spesifikasjoner."
+
+msgid "This type is not in the chosen category."
+msgstr "Denne typen er ikke i den valgte kategorien."
+
+msgid "Three-phase"
+msgstr "Trefase"
+
+msgid "Timer"
+msgstr "Tidsur"
 
 msgid "Timezone"
 msgstr "Tidssone"
@@ -1160,14 +1789,32 @@ msgstr "Totalt areal (m²)"
 msgid "Total volume (m³)"
 msgstr "Totalt volum (m³)"
 
+msgid "Transport"
+msgstr "Transport"
+
 msgid "Try another search."
 msgstr "Prøv et annet søk."
+
+msgid "Turbidity"
+msgstr "Turbiditet"
+
+msgid "Two rows have the same feed size."
+msgstr "To rader har samme fôrstørrelse."
 
 msgid "Type"
 msgstr "Type"
 
 msgid "Type your new password twice."
 msgstr "Skriv inn det nye passordet to ganger."
+
+msgid "UV dose"
+msgstr "UV-dose"
+
+msgid "UV filter"
+msgstr "UV-filter"
+
+msgid "UV steriliser"
+msgstr "UV-anlegg"
 
 msgid "Under maintenance"
 msgstr "Under vedlikehold"
@@ -1196,11 +1843,23 @@ msgstr "Brukere"
 msgid "Version"
 msgstr "Versjon"
 
+msgid "Voltage"
+msgstr "Spenning"
+
 msgid "Volume (m³)"
 msgstr "Volum (m³)"
 
+msgid "Warranty end date"
+msgstr "Garantien utløper"
+
+msgid "Water"
+msgstr "Vann"
+
 msgid "Water capacity (m³)"
 msgstr "Vannkapasitet (m³)"
+
+msgid "Water treatment"
+msgstr "Vannbehandling"
 
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
@@ -1211,6 +1870,9 @@ msgstr "Hva den inneholder"
 
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
+
+msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
+msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
 msgid "Which permissions each role allows."
 msgstr "Hvilke tillatelser hver rolle gir."
@@ -1246,8 +1908,51 @@ msgstr "av <strong>%(name)s</strong>"
 msgid "contains"
 msgstr "inneholder"
 
+#, python-format
+msgid "criticality %(level)d"
+msgstr "kritikalitet %(level)d"
+
+msgid "deleted"
+msgstr "slettet"
+
+msgid "e.g. 0–10 bar"
+msgstr "f.eks. 0–10 bar"
+
+msgid "e.g. 0–10 m"
+msgstr "f.eks. 0–10 m"
+
+msgid "e.g. 0–10 mg/L"
+msgstr "f.eks. 0–10 mg/L"
+
+msgid "e.g. 0–100 m³/h"
+msgstr "f.eks. 0–100 m³/h"
+
+msgid "e.g. 0–14 pH"
+msgstr "f.eks. 0–14 pH"
+
+msgid "e.g. 0–20 mg/L"
+msgstr "f.eks. 0–20 mg/L"
+
+msgid "e.g. 0–50 ppt"
+msgstr "f.eks. 0–50 ppt"
+
+msgid "e.g. 0–50 °C"
+msgstr "f.eks. 0–50 °C"
+
 msgid "e.g. 12345"
 msgstr "f.eks. 12345"
+
+msgid "e.g. 1–10 kg/h"
+msgstr "f.eks. 1–10 kg/h"
+
+msgid "e.g. 25"
+msgstr "f.eks. 25"
+
+msgid "e.g. 250"
+msgstr "f.eks. 250"
+
+msgid "e.g. 3"
+msgstr "f.eks. 3"
 
 msgid "e.g. 5.3221"
 msgstr "f.eks. 5,3221"
@@ -1270,8 +1975,17 @@ msgstr "f.eks. MPS-001"
 msgid "e.g. Main Production Site"
 msgstr "f.eks. Hovedproduksjonslokalitet"
 
+msgid "e.g. Main circulation pump"
+msgstr "f.eks. Hovedsirkulasjonspumpe"
+
 msgid "e.g. Norway"
 msgstr "f.eks. Norge"
+
+msgid "e.g. PMP-001"
+msgstr "f.eks. PMP-001"
+
+msgid "e.g. R410A"
+msgstr "f.eks. R410A"
 
 msgid "e.g. SYS-001"
 msgstr "f.eks. SYS-001"
@@ -1282,17 +1996,44 @@ msgstr "f.eks. Lokalitetsleder"
 msgid "e.g. Smolt RAS 1"
 msgstr "f.eks. Smolt-RAS 1"
 
+msgid "e.g. Starter"
+msgstr "f.eks. Startfôr"
+
 msgid "e.g. Vestland"
 msgstr "f.eks. Vestland"
 
+msgid "e.g. by parameter"
+msgstr "f.eks. per parameter"
+
+msgid "e.g. daily"
+msgstr "f.eks. daglig"
+
 msgid "e.g. kari.nordmann"
 msgstr "f.eks. kari.nordmann"
+
+msgid "e.g. sand, cartridge"
+msgstr "f.eks. sand, patron"
 
 msgid "empty"
 msgstr "tom"
 
 msgid "equals"
 msgstr "er lik"
+
+msgid "equipment"
+msgstr "utstyr"
+
+msgid "equipment type"
+msgstr "utstyrstype"
+
+msgid "equipment types"
+msgstr "utstyrstyper"
+
+msgid "feed calibration"
+msgstr "fôrkalibrering"
+
+msgid "feed calibrations"
+msgstr "fôrkalibreringer"
 
 #, python-format
 msgid "in %(name)s"
@@ -1312,6 +2053,13 @@ msgstr "ikke håndhevet av databasen"
 
 msgid "not in the model"
 msgstr "ikke i modellen"
+
+msgid "pH sensor"
+msgstr "pH-sensor"
+
+#, python-format
+msgid "part of %(code)s"
+msgstr "del av %(code)s"
 
 msgid "primary"
 msgstr "hovedkontakt"
@@ -1342,6 +2090,12 @@ msgstr "lokaliteter"
 
 msgid "system"
 msgstr "system"
+
+msgid "system link"
+msgstr "systemkobling"
+
+msgid "system links"
+msgstr "systemkoblinger"
 
 msgid "systems"
 msgstr "systemer"

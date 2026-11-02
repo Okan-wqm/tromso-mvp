@@ -32,6 +32,7 @@ WORKSPACES = [
                 Entry(_('Production departments'), 'farm:productiondepartment_list', 'layout-grid',
                       'farm.view_productiondepartment'),
                 Entry(_('Systems'), 'farm:system_list', 'waves', 'farm.view_system'),
+                Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
             ]),
         ]),
     ]),

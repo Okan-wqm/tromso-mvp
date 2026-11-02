@@ -148,6 +148,9 @@
 .badge-maintenance { background: #FBF0D9; color: #7A5410; }
 .badge-inactive, .badge-construction { background: #ECECEA; color: var(--muted); }
 .badge-closed, .badge-offline { background: #F7E6E6; color: var(--error); }
+.badge-repair { background: #FBF0D9; color: #7A5410; }
+.badge-standby, .badge-decommissioned { background: #ECECEA; color: var(--muted); }
+.badge-out_of_service { background: #F7E6E6; color: var(--error); }
 .badge-admin { background: var(--active-bg); color: var(--stripe-dark); }
 
 /* Tables (roles, users) */
@@ -312,6 +315,13 @@
 .link-row:not(:has(.link-name input:checked)) :is(.link-primary, .link-detail) { opacity: .45; }
 .link-none { margin: 0; color: var(--muted); }
 
+/* A feeder's calibrations: rows like the contacts, with a heading row */
+.calibration-head, .calibration-row {
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, .9fr) minmax(0, 1.4fr) 5.5rem;
+}
+.calibration-head { display: grid; gap: .625rem; padding: 0 .75rem .375rem; color: var(--muted); font-size: .8125rem; font-weight: 600; }
+.calibration-error { grid-column: 1 / -1; margin: 0; }
+
 .check {
   display: inline-flex;
   align-items: center;
@@ -385,6 +395,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   .form-grid > .field,
   .form-grid-location > .field { grid-column: 1 / -1 !important; }
   .contact-row { grid-template-columns: 1fr 1fr; }
+  .calibration-head { display: none; }
   .contact-row .field { grid-column: 1 / -1; }
   .form-actions { justify-content: stretch; }
   .form-actions > * { flex: 1 1 auto; justify-content: center; }
@@ -526,6 +537,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table tbody tr:hover { background: var(--mist); }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .nowrap { white-space: nowrap; }
 .row-title { display: block; color: var(--speck); font-weight: 600; text-decoration: none; }
 a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .row-sub { display: block; color: var(--muted); font-size: .8125rem; }

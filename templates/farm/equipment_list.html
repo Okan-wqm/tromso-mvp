@@ -1,0 +1,76 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% block search_placeholder %}{% trans "Search by name, code or serial number" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <select id="site-filter" name="site" data-autosubmit>
+    <option value="">{% trans "All sites" %}</option>
+    {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="department-filter">{% trans "Production department" %}</label>
+  <select id="department-filter" name="production_department" data-autosubmit>
+    <option value="">{% trans "All production departments" %}</option>
+    {% for department in departments %}<option value="{{ department.pk }}"{% if chosen_department == department.pk|stringformat:"s" %} selected{% endif %}>{% if department.site %}{{ department.site.name }} · {% endif %}{{ department.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="system-filter">{% trans "System" %}</label>
+  <select id="system-filter" name="system" data-autosubmit>
+    <option value="">{% trans "All systems" %}</option>
+    <option value="{{ none_value }}"{% if chosen_system == none_value %} selected{% endif %}>{% trans "Not linked to any system" %}</option>
+    {% for system in systems %}<option value="{{ system.pk }}"{% if chosen_system == system.pk|stringformat:"s" %} selected{% endif %}>{{ system.site.name }} · {{ system.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="category-filter">{% trans "Category" %}</label>
+  <select id="category-filter" name="category" data-autosubmit>
+    <option value="">{% trans "All categories" %}</option>
+    {% for value, label in categories %}<option value="{{ value }}"{% if chosen_category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="type-filter">{% trans "Type" %}</label>
+  <select id="type-filter" name="type" data-autosubmit>
+    <option value="">{% trans "All types" %}</option>
+    {% for kind in types %}<option value="{{ kind.pk }}"{% if chosen_type == kind.pk|stringformat:"s" %} selected{% endif %}>{{ kind }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "All statuses" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}
+{% if unlinked %}
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed count count=unlinked %}{{ count }} piece of equipment is not linked to any system.{% plural %}{{ count }} pieces of equipment are not linked to any system.{% endblocktrans %} <a href="?system={{ none_value }}">{% trans "Show them" %}</a></p>
+{% endif %}
+{% endblock %}
+{% block empty_text %}{% trans "Pumps, filters, feeders, sensors and generators of a production department, linked to the systems they serve." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Equipment" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Production department" %}</th><th scope="col">{% trans "Systems" %}</th><th scope="col">{% trans "Parts" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Make and model" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for equipment in objects %}
+      <tr>
+        <td class="depth-{% if equipment.depth > 5 %}5{% else %}{{ equipment.depth }}{% endif %}">
+          {% if equipment.depth %}<span class="nested-mark" aria-hidden="true">↳</span>{% endif %}
+          {% if can_change %}<a class="row-title row-title-inline" href="{% url 'farm:equipment_edit' equipment.pk %}" data-modal>{{ equipment.name }}</a>{% else %}<span class="row-title row-title-inline">{{ equipment.name }}</span>{% endif %}
+          <span class="row-sub">{{ equipment.code }}{% if equipment.parent %} · {% blocktrans with code=equipment.parent.code %}part of {{ code }}{% endblocktrans %}{% endif %}</span>
+        </td>
+        <td>{{ equipment.equipment_type }}<span class="row-sub">{{ equipment.equipment_type.get_category_display }}</span></td>
+        <td>{{ equipment.production_department.name }}<span class="row-sub">{% if equipment.production_department.site %}{{ equipment.production_department.site.name }}{% else %}<span class="text-warning">{% trans "No site" %}</span>{% endif %}</span></td>
+        <td>{% for link in equipment.live_links %}{% if not forloop.first %}, {% endif %}{% if link.is_primary %}<strong title="{% trans "Primary system" %}">{{ link.system.name }}</strong>{% else %}{{ link.system.name }}{% endif %}{% empty %}<span class="text-warning">{% trans "No system" %}</span>{% endfor %}</td>
+        <td class="nowrap">{% if equipment.parts %}{% blocktrans trimmed count count=equipment.parts %}{{ count }} part{% plural %}{{ count }} parts{% endblocktrans %}{% else %}–{% endif %}</td>
+        <td><span class="badge badge-{{ equipment.status }}">{{ equipment.get_status_display }}</span></td>
+        <td>{% if equipment.manufacturer or equipment.model %}{{ equipment.manufacturer }}{% if equipment.manufacturer and equipment.model %} · {% endif %}{{ equipment.model }}{% else %}–{% endif %}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:equipment_edit' equipment.pk %}" data-modal title="{% blocktrans with name=equipment.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=equipment.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:equipment_delete' equipment.pk %}" data-modal title="{% blocktrans with name=equipment.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=equipment.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

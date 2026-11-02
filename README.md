@@ -16,7 +16,7 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
-  and **Production** (overview, production departments, systems). Each has its own overview. A
+  and **Production** (overview, production departments, systems, equipment). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -91,14 +91,72 @@ Differences from the source:
 - Deleting a site deletes its systems, a system the systems nested under it, and a production department
   leaves its systems without one, all through the delete plan.
 
+### Facility › Equipment (`/equipment/`)
+
+Tables `equipment`, `equipment_systems`, `feeder_calibrations` and the catalogue `equipment_types`.
+Pumps, filters, feeders, heaters, sensors, generators: a table (equipment, type, production department
+and site, systems, parts, status, make and model) with parts listed under the equipment they belong to,
+search by name, code or serial number, filters by site, production department, system (or "not linked
+to any system", with a notice that counts them), category, type and status, a form in the dialog and
+delete. The form has four inner tabs:
+
+- **General**: name, code, category and type (the category narrows the types), status.
+- **Location**: the production department, which decides the site ("Bergen · Hall A"); the systems
+  it serves, a box per system of that site, one marked primary, each with a role and a criticality from
+  1 to 5; the parent equipment (equipment can be a part of other equipment on its site).
+- **Details**: manufacturer, model, serial number, purchase, warranty end and installation dates,
+  description, notes.
+- **Technical specifications**: the fields of the chosen type, built on the server from the type's
+  schema (`core/schema.py`): numbers with their unit and bounds, choices, several choices, yes/no,
+  dates, text. Changing the category or the type renders the form again with what was entered
+  (`TabbedForm.refresh_on`); values typed for one type never fill the fields of another.
+
+A feeder (a type of the Feeding category) has a fifth tab, **Feed calibration**, once it exists: per
+feed size, the feed one shot dispenses and the silo capacity, at most 50 rows, saved as a whole list
+like a site's contacts and logged on the equipment.
+
+The type catalogue (29 types) is reference data: `farm/equipment_types.py` holds it and a migration
+writes it; it has no screen (the source has none either), the admin and the database viewer show it,
+and a test fails when the database and the file differ.
+
+Differences from the source:
+
+- Tanks, ponds and cages are not equipment: the source rerouted them from this form into the tanks
+  table and lost data on the way (EQ-01). They get their own tab; their types are not in the catalogue.
+- The links are checked on every save, not on create only: the systems and the parent on the site of
+  the production department, no loops, the parts on the same site; the production department must be on
+  a site.
+- The specifications are checked against the type's schema on every save, by the same fields the form
+  shows (types, bounds, choices, whole numbers), with the error on the field; blank values are not
+  stored. Equipment keeps its type when the type is no longer offered.
+- Each system link has a primary mark, a role and a criticality you can edit (the source had no input
+  for role and criticality); one primary per piece of equipment and criticality 1 to 5 are database
+  constraints. A deleted system keeps its link rows: the link stops counting and comes back when the
+  system is restored. Saving the equipment drops its links to deleted systems, and the form says so.
+- Only equipment statuses (the source also accepted tank statuses such as fallow).
+- Code and serial number are unique among live equipment, as database constraints.
+- Every optional field can be cleared, the parent too; description, installation date and notes have
+  inputs (the source had none).
+- Feed calibrations: a real foreign key; only a feeder has them, and a feeder that has them keeps a
+  feeder type; new rows start empty instead of 0 / 0 / 0.
+- Deleting a production department deletes its equipment, as in the source; deleting equipment deletes
+  its parts. Deleting a site leaves its production departments without a site (as before), so their
+  equipment stays with them, without systems: the source deleted that equipment with the site.
+- The catalogue: English and metric throughout, bounds on every quantity, no fuel type on the heat
+  exchanger (EQ-17 to EQ-19).
+- Not ported: sub-equipment (a second way of nesting next to the parent, unusable in the source,
+  EQ-20), the sensor links (`temperatureSensorId`, `isVisibleInSensor`), the supplier (added with the
+  Suppliers tab), price, currency, location, maintenance schedule and operating hours (no screen set
+  them), the second status flag `isActive`, the stored part count.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
 only one who manages roles and users; everyone else gets exactly what their roles allow.
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
-  can be given, one line each, with the actions each offers: Sites, Production departments and
-  Systems (read, create, edit, delete) and Activity log (read). A new tab appears in the matrix by
+  can be given, one line each, with the actions each offers: Sites, Production departments,
+  Systems and Equipment (read, create, edit, delete) and Activity log (read). A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
@@ -225,22 +283,22 @@ adds conditions that are not links by overriding `delete_blockers()`. One plan s
 confirmation, which lists what will be affected and disables the button when something blocks, and
 the delete itself, which writes an activity-log row for every record it touches. A tab never writes
 down what a delete does to its neighbours: it is whatever its links say. Records linked through a
-many-to-many link keep their link rows; the confirmation lists them, and the link counts again once
-the record is restored.
+many-to-many link (the equipment serving a system) keep their link rows; the confirmation lists them,
+and the link counts again once the record is restored.
 
 ### Shared form parts
 
-What one tab needs and the next ones will too lives in `core/`:
+What one tab needed and the next ones will too lives in `core/`:
 
 - `TabbedForm` (`core/crud.py`): inner tabs, fields grouped under a heading (`Fieldset`), a word per
   tab (`tab_help`), fields chosen once (`fixed_after_creation`) and fields that change the form itself
   (`refresh_on`: the form is rendered again from a `draft`, the values entered so far, nothing saved).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
-  replacing the stored rows, logged on the record (a site's contacts).
+  replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations).
 - `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of
   check boxes with the details of each link, that belongs to another field's value.
-- `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data, the form fields and
-  the check of the stored values from one definition.
+- `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data (a type's technical
+  specifications), the form fields and the check of the stored values from one definition.
 - `TreeMixin` (`core/models.py`): records nested under records of the same kind, without loops.
 
 ### Restoring
@@ -293,6 +351,7 @@ real mail.
 | `/sites/` | Facility › Sites |
 | `/production-departments/` | Production departments |
 | `/systems/` | Facility › Systems |
+| `/equipment/` | Facility › Equipment; `<id>/calibrations/` saves a feeder's calibrations |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -315,14 +374,15 @@ real mail.
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `LinkList`: check boxes for a record's links, with their details |
-| `core/schema.py` | Fields described by a schema: the form fields and the check of stored values |
+| `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
+| `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
 | `core/navigation.py`, `config/navigation.py`, `core/middleware.py` | The menu as data: panels (workspaces) with main headings, groups and entries, filtered by permission; the panel in use is remembered; where a page sits (`place`) for the role matrix and page headings |
 | `farm/resources/`, `templates/farm/` | Farm tabs declared on top of `core.crud`; their URLs come from the registry |
-| `core/admin.py` | The admin for farm records: shows deleted ones, restores them (checked like a new one), edits nothing |
+| `core/admin.py` | The admin for farm records: shows deleted ones, restores them (checked like a new one), edits nothing; reference data (equipment types) is shown read-only |
 | `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |
 | `templates/auth_base.html`, `templates/registration/` | Sign-in and password pages |
 | `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu), Lucide icons |

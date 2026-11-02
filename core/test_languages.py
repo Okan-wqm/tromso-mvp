@@ -13,7 +13,8 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
-from farm.models import ProductionDepartment, Site, SiteContact, System
+from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Site,
+                         SiteContact, System)
 from farm.tests.helpers import SITE_MANAGER, contacts_data, role, site_data
 
 from .audit import message
@@ -126,6 +127,13 @@ class PagesInEveryLanguageTests(TestCase):
         cls.system = System.objects.create(name='RAS 1', code='R1', site=cls.site,
                                            production_department=cls.department,
                                            total_volume_m3=Decimal('1500'))
+        cls.feeder = Equipment.objects.create(
+            name='Feeder 1', code='F1', production_department=cls.department,
+            equipment_type=EquipmentType.objects.get(code='feeder-automatic'),
+            specifications={'capacity': 50, 'siloVolume': 200.5, 'controlType': 'timer', 'autoFilling': True})
+        EquipmentSystem.objects.create(equipment=cls.feeder, system=cls.system, is_primary=True, role='feeding')
+        FeederCalibration.objects.create(equipment=cls.feeder, feed_size_mm=Decimal('3'), grams_per_dispensing=25,
+                                         silo_capacity_kg=Decimal('250.5'))
         cls.role = Group.objects.create(name='Feeder')
         cls.role.permissions.set(Permission.objects.filter(codename='view_site'))
         cls.admin.groups.add(cls.role)
@@ -141,7 +149,8 @@ class PagesInEveryLanguageTests(TestCase):
             reverse('core:user_list'), reverse('core:user_create'), reverse('core:user_edit', args=[self.admin.pk]),
             reverse('core:database'), reverse('core:database_table', args=['sites']),
         ]
-        for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system)):
+        for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system),
+                                 ('equipment', self.feeder)):
             pages += [reverse(f'farm:{resource}_list'), reverse(f'farm:{resource}_create'),
                       reverse(f'farm:{resource}_edit', args=[record.pk]),
                       reverse(f'farm:{resource}_delete', args=[record.pk])]

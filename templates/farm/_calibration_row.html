@@ -1,0 +1,16 @@
+{% load i18n %}<fieldset class="contact-row calibration-row" data-row>
+  <legend class="sr-only">{% trans "Feed calibration" %}</legend>
+  {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if row.non_field_errors %}<div class="form-error calibration-error">{{ row.non_field_errors }}</div>{% endif %}
+  {% for field in row.visible_fields %}
+  {% if field.name == "DELETE" %}
+  <label class="check check-remove">{{ field }} {% trans "Remove" %}</label>
+  {% else %}
+  <div class="field{% if field.errors %} has-error{% endif %}">
+    <label class="sr-only" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {{ field.errors }}
+  </div>
+  {% endif %}
+  {% endfor %}
+</fieldset>

@@ -23,6 +23,12 @@ msgstr[0] "%(count)d %(name)s hâlâ ona bağlı."
 msgstr[1] "%(count)d %(name)s hâlâ ona bağlı."
 
 #, python-format
+msgid "%(count)d calibration saved."
+msgid_plural "%(count)d calibrations saved."
+msgstr[0] "%(count)d kalibrasyon kaydedildi."
+msgstr[1] "%(count)d kalibrasyon kaydedildi."
+
+#, python-format
 msgid "%(count)d contact saved."
 msgid_plural "%(count)d contacts saved."
 msgstr[0] "%(count)d kişi kaydedildi."
@@ -33,6 +39,18 @@ msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d kayıt geri yüklendi."
 msgstr[1] "%(count)d kayıt geri yüklendi."
+
+#, python-format
+msgid "%(count)s part"
+msgid_plural "%(count)s parts"
+msgstr[0] "%(count)s parça"
+msgstr[1] "%(count)s parça"
+
+#, python-format
+msgid "%(count)s piece of equipment is not linked to any system."
+msgid_plural "%(count)s pieces of equipment are not linked to any system."
+msgstr[0] "%(count)s ekipman hiçbir sisteme bağlı değil."
+msgstr[1] "%(count)s ekipman hiçbir sisteme bağlı değil."
 
 #, python-format
 msgid "%(count)s production department is not on any site."
@@ -109,6 +127,14 @@ msgstr "%(record)s birincil olan"
 msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s geri yüklenemedi: %(reasons)s"
 
+#, python-format
+msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
+msgstr "%(size)s: atış başına %(grams)s g, silo %(silo)s kg"
+
+#, python-format
+msgid "%(system)s is on another site than the production department."
+msgstr "%(system)s, üretim departmanından farklı bir sahada."
+
 msgid "(has errors)"
 msgstr "(hata var)"
 
@@ -120,6 +146,12 @@ msgstr "0 satır eşleşiyor"
 
 msgid "9-digit Norwegian organisation number"
 msgstr "9 haneli Norveç kuruluş numarası"
+
+#, python-format
+msgid "A feeder has at most %(num)d calibration."
+msgid_plural "A feeder has at most %(num)d calibrations."
+msgstr[0] "Bir yemleme makinesinin en fazla %(num)d kalibrasyonu olabilir."
+msgstr[1] "Bir yemleme makinesinin en fazla %(num)d kalibrasyonu olabilir."
 
 msgid "A production department stays on the site it was created on."
 msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
@@ -141,6 +173,9 @@ msgstr "Sistem, oluşturulduğu sahada kalır."
 msgid "Account"
 msgstr "Hesap"
 
+msgid "Accuracy"
+msgstr "Doğruluk"
+
 msgid "Action"
 msgstr "İşlem"
 
@@ -156,6 +191,9 @@ msgstr "Etkinlik günlüğü"
 #, python-format
 msgid "Add %(name)s"
 msgstr "Yeni %(name)s"
+
+msgid "Add calibration"
+msgstr "Kalibrasyon ekle"
 
 msgid "Add contact"
 msgstr "Kişi ekle"
@@ -176,6 +214,18 @@ msgstr "İlk kullanıcıyı ekleyin; parolasını belirlemesi için e-posta alı
 msgid "Administration"
 msgstr "Yönetim"
 
+msgid "Aeration"
+msgstr "Havalandırma"
+
+msgid "Aerator"
+msgstr "Havalandırıcı"
+
+msgid "Air"
+msgstr "Hava"
+
+msgid "Airflow"
+msgstr "Hava debisi"
+
 msgid "Akvakulturregisteret locality number (5 digits)."
 msgstr "Akvakulturregisteret lokalite numarası (5 hane)."
 
@@ -189,11 +239,20 @@ msgstr ""
 msgid "All actions"
 msgstr "Tüm işlemler"
 
+msgid "All categories"
+msgstr "Tüm kategoriler"
+
 msgid "All production departments"
 msgstr "Tüm üretim departmanları"
 
 msgid "All sites"
 msgstr "Tüm sahalar"
+
+msgid "All statuses"
+msgstr "Tüm durumlar"
+
+msgid "All systems"
+msgstr "Tüm sistemler"
 
 msgid "All types"
 msgstr "Tüm türler"
@@ -203,6 +262,15 @@ msgstr "İzin verir"
 
 msgid "Altitude (m)"
 msgstr "Rakım (m)"
+
+msgid "Amalgam"
+msgstr "Amalgam"
+
+msgid "Ammonia sensor"
+msgstr "Amonyak sensörü"
+
+msgid "Analog"
+msgstr "Analog"
 
 msgid "Another production department already uses this code."
 msgstr "Bu kodu başka bir üretim departmanı zaten kullanıyor."
@@ -246,17 +314,53 @@ msgstr "En az %(min)s."
 msgid "At most %(max)s."
 msgstr "En fazla %(max)s."
 
+msgid "Automatic"
+msgstr "Otomatik"
+
+msgid "Automatic feeder"
+msgstr "Otomatik yemleme makinesi"
+
+msgid "Automatic filling"
+msgstr "Otomatik dolum"
+
 msgid "Back to overview"
 msgstr "Genel bakışa dön"
 
 msgid "Back to sign in"
 msgstr "Girişe dön"
 
+msgid "Backup power supply."
+msgstr "Yedek güç kaynağı."
+
+msgid "Backwash frequency"
+msgstr "Ters yıkama sıklığı"
+
+msgid "Backwash interval"
+msgstr "Ters yıkama aralığı"
+
 msgid "Basic info"
 msgstr "Temel bilgiler"
 
+msgid "Bead filter"
+msgstr "Boncuk filtre"
+
+msgid "Bead material"
+msgstr "Boncuk malzemesi"
+
+msgid "Bead volume"
+msgstr "Boncuk hacmi"
+
+msgid "Bed type"
+msgstr "Yatak tipi"
+
 msgid "Biofloc"
 msgstr "Biyoflok"
+
+msgid "Biological filter"
+msgstr "Biyolojik filtre"
+
+msgid "Blower"
+msgstr "Hava üfleyici (blower)"
 
 msgid "Brief description of the site"
 msgstr "Sahanın kısa açıklaması"
@@ -267,14 +371,27 @@ msgstr "Damızlık"
 msgid "Browser default"
 msgstr "Tarayıcı varsayılanı"
 
+#. Translators: the coefficient of performance of a chiller.
+msgid "COP (efficiency)"
+msgstr "COP (verim)"
+
 msgid "Cage"
 msgstr "Kafes"
+
+msgid "Calibrations can be added once the equipment is created."
+msgstr "Kalibrasyonlar ekipman oluşturulduktan sonra eklenebilir."
 
 msgid "Cancel"
 msgstr "İptal"
 
 msgid "Capacity"
 msgstr "Kapasite"
+
+msgid "Category"
+msgstr "Kategori"
+
+msgid "Centrifugal pump"
+msgstr "Santrifüj pompa"
 
 msgid "Change password"
 msgstr "Parolayı değiştir"
@@ -287,6 +404,12 @@ msgstr "Kontrol"
 
 msgid "Check your email"
 msgstr "E-postanızı kontrol edin"
+
+msgid "Chiller"
+msgstr "Soğutucu (chiller)"
+
+msgid "Choose a type on the General tab; its specifications appear here."
+msgstr "Genel sekmesinde bir tür seçin; teknik özellikleri burada görünür."
 
 msgid "Choose among the ones offered."
 msgstr "Sunulanlar arasından seçin."
@@ -327,6 +450,12 @@ msgstr "Şirket"
 msgid "Company overview"
 msgstr "Şirket genel bakışı"
 
+msgid "Conductivity"
+msgstr "İletkenlik"
+
+msgid "Connectivity"
+msgstr "Bağlantı"
+
 msgid "Constraints"
 msgstr "Kısıtlamalar"
 
@@ -347,6 +476,18 @@ msgstr "İletişim kişileri"
 
 msgid "Contacts can be added once the site is created."
 msgstr "Kişiler, saha oluşturulduktan sonra eklenebilir."
+
+msgid "Control type"
+msgstr "Kontrol tipi"
+
+msgid "Cooling"
+msgstr "Soğutma"
+
+msgid "Cooling capacity"
+msgstr "Soğutma kapasitesi"
+
+msgid "Corona discharge"
+msgstr "Korona deşarjı"
 
 msgid "Country"
 msgstr "Ülke"
@@ -376,11 +517,26 @@ msgstr "Oluşturulma zamanı"
 msgid "Created by"
 msgstr "Oluşturan"
 
+msgid "Criticality"
+msgstr "Kritiklik"
+
+msgid "Custom field 1"
+msgstr "Serbest alan 1"
+
+msgid "Custom field 2"
+msgstr "Serbest alan 2"
+
+msgid "Custom field 3"
+msgstr "Serbest alan 3"
+
 msgid "Data"
 msgstr "Veri"
 
 msgid "Database"
 msgstr "Veritabanı"
+
+msgid "Decommissioned"
+msgstr "Kullanımdan kaldırıldı"
 
 msgid "Default"
 msgstr "Varsayılan"
@@ -418,11 +574,26 @@ msgstr "Silinmiş satır"
 msgid "Deleted rows"
 msgstr "Silinmiş satırlar"
 
+msgid "Demand feeder"
+msgstr "Talep yemleme makinesi"
+
 msgid "Description"
 msgstr "Açıklama"
 
 msgid "Details"
 msgstr "Ayrıntılar"
+
+msgid "Diesel"
+msgstr "Dizel"
+
+msgid "Dissolved oxygen"
+msgstr "Çözünmüş oksijen"
+
+msgid "Dissolved oxygen sensor"
+msgstr "Çözünmüş oksijen sensörü"
+
+msgid "Distribution holes"
+msgstr "Dağıtım delikleri"
 
 msgid "Django model"
 msgstr "Django modeli"
@@ -431,12 +602,27 @@ msgstr "Django modeli"
 msgid "Download the rows below as CSV, up to %(limit)s rows"
 msgstr "Aşağıdaki satırları CSV olarak indir, en fazla %(limit)s satır"
 
+msgid "Drum diameter"
+msgstr "Tambur çapı"
+
+msgid "Drum filter"
+msgstr "Tambur filtre"
+
 msgid "Edit"
 msgstr "Düzenle"
 
 #, python-format
 msgid "Edit %(name)s"
 msgstr "Düzenle: %(name)s"
+
+msgid "Efficiency"
+msgstr "Verim"
+
+msgid "Electric"
+msgstr "Elektrik"
+
+msgid "Electrical"
+msgstr "Elektrik"
 
 msgid "Email"
 msgstr "E-posta"
@@ -445,6 +631,15 @@ msgid "Enter the email address on your account. We will send you a link to set a
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
 "göndereceğiz."
+
+msgid "Equipment"
+msgstr "Ekipman"
+
+msgid "Equipment cannot be a part of itself."
+msgstr "Ekipman kendisinin parçası olamaz."
+
+msgid "Equipment that fits none of the other types."
+msgstr "Diğer türlerin hiçbirine uymayan ekipman."
 
 msgid "Established"
 msgstr "Kuruluş tarihi"
@@ -493,6 +688,24 @@ msgstr "Tanklar, su kalitesi ve stok kayıtları için çiftlik konsolu."
 msgid "Feed"
 msgstr "Yem"
 
+msgid "Feed calibration"
+msgstr "Yem kalibrasyonu"
+
+msgid "Feed calibrations"
+msgstr "Yem kalibrasyonları"
+
+msgid "Feed gas"
+msgstr "Besleme gazı"
+
+msgid "Feed per shot (g)"
+msgstr "Atış başına yem (g)"
+
+msgid "Feed size (mm)"
+msgstr "Yem boyutu (mm)"
+
+msgid "Feeding"
+msgstr "Yemleme"
+
 msgid ""
 "Feeding jobs run on the site’s local day. Leave it inherited unless the site is in a different "
 "timezone than the company."
@@ -500,12 +713,28 @@ msgstr ""
 "Yemleme görevleri sahanın yerel gününe göre çalışır. Saha şirketten farklı bir saat diliminde "
 "değilse devralınan değeri değiştirmeyin."
 
+#. Translators: a placeholder showing what to type.
+msgid "Feeding rate"
+msgstr "Yemleme hızı"
+
+msgid "Feeds when the fish trigger it."
+msgstr "Balıklar tetiklediğinde yem verir."
+
 msgid "Filter"
 msgstr "Filtrele"
 
 #, python-format
 msgid "Filter %(name)s"
 msgstr "Filtrele: %(name)s"
+
+msgid "Filter medium"
+msgstr "Filtre ortamı"
+
+msgid "Filtration"
+msgstr "Filtrasyon"
+
+msgid "Filtration size"
+msgstr "Filtrasyon boyutu"
 
 msgid "First"
 msgstr "İlk"
@@ -516,8 +745,27 @@ msgstr "Ad"
 msgid "Fish farm"
 msgstr "Balık çiftliği"
 
+msgid "Fixed bed"
+msgstr "Sabit yatak"
+
+msgid "Flow rate"
+msgstr "Debi"
+
+msgid "Flow sensor"
+msgstr "Debi sensörü"
+
 msgid "Flow-through"
 msgstr "Akışlı sistem"
+
+msgid "Fluidised bed"
+msgstr "Akışkan yatak"
+
+msgid ""
+"For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 "
+"rows. They are saved separately from the equipment details."
+msgstr ""
+"Her yem boyutu için bir atışın ne kadar yem verdiği ve silonun ne kadar aldığı; en fazla 50 "
+"satır. Ekipman ayrıntılarından ayrı kaydedilir."
 
 msgid "Foreign key"
 msgstr "Yabancı anahtar"
@@ -536,14 +784,51 @@ msgstr "Başlangıç"
 msgid "From %(min)s to %(max)s."
 msgstr "%(min)s ile %(max)s arası."
 
+msgid "Fuel consumption"
+msgstr "Yakıt tüketimi"
+
+msgid "Fuel type"
+msgstr "Yakıt tipi"
+
 msgid "Full name of the site manager"
 msgstr "Saha sorumlusunun tam adı"
+
+msgid "Gas"
+msgstr "Gaz"
+
+msgid "General"
+msgstr "Genel"
+
+msgid "Generation method"
+msgstr "Üretim yöntemi"
+
+msgid "Generator"
+msgstr "Jeneratör"
 
 msgid "Grow-out"
 msgstr "Büyütme"
 
+msgid "Harvesting"
+msgstr "Hasat"
+
 msgid "Hatchery"
 msgstr "Kuluçkahane"
+
+#. Translators: the delivery head of a pump, the height it lifts water to.
+msgid "Head"
+msgstr "Basma yüksekliği"
+
+msgid "Heat exchanger"
+msgstr "Isı eşanjörü"
+
+msgid "Heater"
+msgstr "Isıtıcı"
+
+msgid "Heating and cooling"
+msgstr "Isıtma ve soğutma"
+
+msgid "Heating capacity"
+msgstr "Isıtma kapasitesi"
 
 #, python-format
 msgid "Hi %(name)s,"
@@ -580,6 +865,9 @@ msgstr "Dizinler"
 msgid "Inherit from company"
 msgstr "Şirketten devral"
 
+msgid "Installation date"
+msgstr "Kurulum tarihi"
+
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
 "log keeps its history, and it can be restored from the admin."
@@ -587,14 +875,41 @@ msgstr ""
 "Her listeden kaybolur ama silinmez: kayıt veritabanında kalır, etkinlik günlüğü geçmişini korur "
 "ve yönetim panelinden geri yüklenebilir."
 
+msgid ""
+"It has feed calibrations, which only a feeder has: remove them on the Feed calibration tab before"
+" choosing another kind of type."
+msgstr ""
+"Yalnızca yemleme makinelerinde olan yem kalibrasyonları var: başka türde bir tür seçmeden önce "
+"bunları Yem kalibrasyonu sekmesinde kaldırın."
+
+#, python-format
+msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
+msgstr "Silinmiş sistemlere bağlantıları (%(systems)s) kaydedildiğinde kaldırılır."
+
+#, python-format
+msgid "Its parts are on another site: %(parts)s. Move them first."
+msgstr "Parçaları başka bir sahada: %(parts)s. Önce onları taşıyın."
+
+msgid "Its site decides which systems and which parent equipment can be chosen."
+msgstr "Hangi sistemlerin ve üst ekipmanın seçilebileceğini bunun sahası belirler."
+
 msgid "Key"
 msgstr "Anahtar"
 
 msgid "Kind"
 msgstr "Tür"
 
+msgid "Label"
+msgstr "Etiket"
+
 msgid "Laboratory"
 msgstr "Laboratuvar"
+
+msgid "Lamp life"
+msgstr "Lamba ömrü"
+
+msgid "Lamp type"
+msgstr "Lamba tipi"
 
 msgid "Land-based facility"
 msgstr "Kara tesisi"
@@ -604,6 +919,9 @@ msgstr "Dil"
 
 msgid "Last"
 msgstr "Son"
+
+msgid "Last calibration"
+msgstr "Son kalibrasyon"
 
 msgid "Last name"
 msgstr "Soyad"
@@ -620,6 +938,9 @@ msgstr "Enlem ve boylam birlikte girilmelidir."
 msgid "Latitude is required for a sea cage."
 msgstr "Deniz kafesi için enlem zorunludur."
 
+msgid "Level sensor"
+msgstr "Seviye sensörü"
+
 msgid "Location"
 msgstr "Konum"
 
@@ -632,26 +953,71 @@ msgstr "Boylam"
 msgid "Longitude is required for a sea cage."
 msgstr "Deniz kafesi için boylam zorunludur."
 
+msgid "Low pressure"
+msgstr "Düşük basınç"
+
 msgid "Main navigation"
 msgstr "Ana gezinme"
 
 msgid "Maintenance"
 msgstr "Bakım"
 
+msgid "Make and model"
+msgstr "Marka ve model"
+
 msgid "Manager"
 msgstr "Yönetici"
+
+msgid "Manufacturer"
+msgstr "Üretici"
 
 msgid "Mark which one is the primary one."
 msgstr "Hangisinin birincil olduğunu işaretleyin."
 
+msgid "Material"
+msgstr "Malzeme"
+
 msgid "Max biomass (kg)"
 msgstr "Azami biyokütle (kg)"
+
+msgid "Maximum flow rate"
+msgstr "Azami debi"
+
+msgid "Maximum temperature"
+msgstr "Azami sıcaklık"
+
+msgid "Measured parameters"
+msgstr "Ölçülen parametreler"
+
+msgid "Measurement range"
+msgstr "Ölçüm aralığı"
+
+msgid "Mechanical filter"
+msgstr "Mekanik filtre"
+
+msgid "Media volume"
+msgstr "Ortam hacmi"
+
+msgid "Medium pressure"
+msgstr "Orta basınç"
 
 msgid "Metadata"
 msgstr "Üstveri"
 
+msgid "Minimum transmittance"
+msgstr "Asgari geçirgenlik"
+
+msgid "Model"
+msgstr "Model"
+
 msgid "Model field"
 msgstr "Model alanı"
+
+msgid "Moving bed (MBBR)"
+msgstr "Hareketli yatak (MBBR)"
+
+msgid "Multiparameter probe"
+msgstr "Çok parametreli prob"
 
 msgid "Name"
 msgstr "Ad"
@@ -661,6 +1027,12 @@ msgstr "Ad en az 2 karakter olmalı."
 
 msgid "Name or code"
 msgstr "Ad veya kod"
+
+msgid "Narrows the list of types."
+msgstr "Tür listesini daraltır."
+
+msgid "Natural gas"
+msgstr "Doğal gaz"
 
 msgid "Never"
 msgstr "Hiç"
@@ -692,6 +1064,9 @@ msgstr "“%(query)s” ile eşleşen %(plural)s yok"
 msgid "No %(plural)s yet"
 msgstr "Henüz %(plural)s yok"
 
+msgid "No calibrations yet. Use “Add calibration” to add a row."
+msgstr "Henüz kalibrasyon yok. Satır eklemek için “Kalibrasyon ekle”yi kullanın."
+
 msgid "No changes match these filters."
 msgstr "Bu filtrelerle eşleşen değişiklik yok."
 
@@ -720,8 +1095,22 @@ msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizle
 msgid "No site"
 msgstr "Saha yok"
 
+msgid "No system"
+msgstr "Sistem yok"
+
+msgid ""
+"No system to choose: the production department’s site has none, or no production department is "
+"chosen."
+msgstr "Seçilecek sistem yok: üretim departmanının sahasında sistem yok ya da üretim departmanı seçilmedi."
+
 msgid "None."
 msgstr "Yok."
+
+msgid "None: not a part of other equipment"
+msgstr "Yok: başka bir ekipmanın parçası değil"
+
+msgid "Not linked to any system"
+msgstr "Hiçbir sisteme bağlı değil"
 
 msgid "Notes"
 msgstr "Notlar"
@@ -735,14 +1124,29 @@ msgstr "Henüz yok"
 msgid "Nullable"
 msgstr "Boş olabilir"
 
+msgid "Number of lamps"
+msgstr "Lamba sayısı"
+
 msgid "Nursery"
 msgstr "Yavru yetiştirme"
+
+msgid "Offered"
+msgstr "Sunuluyor"
 
 msgid "Offline"
 msgstr "Devre dışı"
 
+msgid "Oil"
+msgstr "Fuel-oil"
+
 msgid "Older"
 msgstr "Daha eski"
+
+msgid "One probe that measures several water parameters."
+msgstr "Birden çok su parametresini ölçen tek prob."
+
+msgid "Only a feeder has feed calibrations."
+msgstr "Yem kalibrasyonu yalnızca yemleme makinelerinde olur."
 
 msgid "Only deleted rows"
 msgstr "Yalnızca silinmiş satırlar"
@@ -753,6 +1157,9 @@ msgstr "Yalnızca bir kişi birincil kişi olabilir."
 #, python-format
 msgid "Only one contact can be the primary contact; %(count)d are marked."
 msgstr "Yalnızca bir kişi birincil kişi olabilir; %(count)d kişi işaretli."
+
+msgid "Only one system can be the primary one."
+msgstr "Yalnızca bir sistem birincil olabilir."
 
 msgid "Only the production departments of the chosen site."
 msgstr "Yalnızca seçilen sahanın üretim departmanları."
@@ -772,14 +1179,41 @@ msgstr "Çalışıyor"
 msgid "Optional"
 msgstr "İsteğe bağlı"
 
+msgid "Order"
+msgstr "Sıra"
+
 msgid "Organisation number override"
 msgstr "Kuruluş numarası (geçersiz kılma)"
 
 msgid "Other"
 msgstr "Diğer"
 
+msgid "Other equipment"
+msgstr "Diğer ekipman"
+
+msgid "Other equipment already has this serial number."
+msgstr "Bu seri numarası başka bir ekipmanda zaten var."
+
+msgid "Other equipment already uses this code."
+msgstr "Bu kodu başka bir ekipman zaten kullanıyor."
+
+msgid "Out of service"
+msgstr "Hizmet dışı"
+
 msgid "Overview"
 msgstr "Genel bakış"
+
+msgid "Oxygen"
+msgstr "Oksijen"
+
+msgid "Ozone concentration"
+msgstr "Ozon konsantrasyonu"
+
+msgid "Ozone generator"
+msgstr "Ozon jeneratörü"
+
+msgid "Ozone production"
+msgstr "Ozon üretimi"
 
 #, python-format
 msgid "Page %(number)s of %(total)s"
@@ -794,14 +1228,23 @@ msgstr "Panel"
 msgid "Panels"
 msgstr "Paneller"
 
+msgid "Parent equipment"
+msgstr "Üst ekipman"
+
 msgid "Parent system"
 msgstr "Üst sistem"
+
+msgid "Parts"
+msgstr "Parçalar"
 
 msgid "Password saved"
 msgstr "Parola kaydedildi"
 
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Giriş yapabilen kişiler: hesap bilgileri ve parolanın özeti (hash)."
+
+msgid "Performance"
+msgstr "Performans"
 
 msgid "Permissions"
 msgstr "İzinler"
@@ -812,20 +1255,54 @@ msgstr "Bir role değil, doğrudan tek bir kullanıcıya verilen izinler."
 msgid "Person"
 msgstr "Kişi"
 
+msgid "Petrol"
+msgstr "Benzin"
+
+#. Translators: the electrical phase of the supply (single-phase or three-phase).
+msgid "Phase"
+msgstr "Faz"
+
 msgid "Phone"
 msgstr "Telefon"
+
+msgid "Pipe size"
+msgstr "Boru çapı"
 
 msgid "Platform admin"
 msgstr "Platform yöneticisi"
 
+msgid "Plumbing"
+msgstr "Tesisat"
+
 msgid "Pointed at by"
 msgstr "Şunlar tarafından işaret edilir"
+
+msgid "Polyethylene"
+msgstr "Polietilen"
+
+msgid "Polypropylene"
+msgstr "Polipropilen"
 
 msgid "Pond"
 msgstr "Toprak havuz"
 
 msgid "Postal code"
 msgstr "Posta kodu"
+
+msgid "Power"
+msgstr "Güç"
+
+msgid "Power consumption"
+msgstr "Güç tüketimi"
+
+msgid "Power output"
+msgstr "Çıkış gücü"
+
+msgid "Pressure"
+msgstr "Basınç"
+
+msgid "Pressure sensor"
+msgstr "Basınç sensörü"
 
 msgid "Previous"
 msgstr "Önceki"
@@ -839,6 +1316,9 @@ msgstr "Birincil"
 
 msgid "Primary key"
 msgstr "Birincil anahtar"
+
+msgid "Primary system"
+msgstr "Birincil sistem"
 
 msgid "Processing"
 msgstr "İşleme"
@@ -857,6 +1337,22 @@ msgstr "Üretim departmanları bir sahayı düzenler; örneğin bir kuluçkahane
 
 msgid "Production overview"
 msgstr "Üretim genel bakışı"
+
+msgid "Propane"
+msgstr "Propan"
+
+msgid "Pumping"
+msgstr "Pompalama"
+
+msgid ""
+"Pumps, filters, feeders, sensors and generators of a production department, linked to the systems"
+" they serve."
+msgstr ""
+"Bir üretim departmanının pompaları, filtreleri, yemleme makineleri, sensörleri ve jeneratörleri; "
+"hizmet ettikleri sistemlere bağlı."
+
+msgid "Purchase date"
+msgstr "Satın alma tarihi"
 
 msgid "Quality control"
 msgstr "Kalite kontrol"
@@ -890,14 +1386,23 @@ msgstr "Kayıt"
 msgid "Record type"
 msgstr "Kayıt türü"
 
+msgid "Refrigerant"
+msgstr "Soğutucu akışkan"
+
 msgid "Region"
 msgstr "Bölge"
 
 msgid "Relationships"
 msgstr "İlişkiler"
 
+msgid "Remote"
+msgstr "Uzaktan"
+
 msgid "Remove"
 msgstr "Kaldır"
+
+msgid "Repair"
+msgstr "Onarımda"
 
 msgid "Request a new link"
 msgstr "Yeni bağlantı iste"
@@ -943,15 +1448,33 @@ msgstr "Satır %(first)s–%(last)s / %(total)s"
 msgid "Rows %(first)s–%(last)s of %(total)s match"
 msgstr "Satır %(first)s–%(last)s / %(total)s eşleşiyor"
 
+msgid "Safety"
+msgstr "Güvenlik"
+
+msgid "Salinity"
+msgstr "Tuzluluk"
+
+msgid "Salinity sensor"
+msgstr "Tuzluluk sensörü"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Kaydet: %(name)s"
+
+msgid "Save calibrations"
+msgstr "Kalibrasyonları kaydet"
 
 msgid "Save contacts"
 msgstr "Kişileri kaydet"
 
 msgid "Save password"
 msgstr "Parolayı kaydet"
+
+msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
+msgstr "Önce ekipmanı bu yemleme makinesi türüyle kaydedin; ardından kalibrasyonları buraya eklenebilir."
+
+msgid "Screen size"
+msgstr "Elek açıklığı"
 
 msgid "Sea cage"
 msgstr "Deniz kafesi"
@@ -969,6 +1492,9 @@ msgstr "Ada veya koda göre ara"
 msgid "Search by name, code or region"
 msgstr "Ada, koda veya bölgeye göre ara"
 
+msgid "Search by name, code or serial number"
+msgstr "Ad, kod veya seri numarasıyla ara"
+
 msgid "Search by name, username or email"
 msgstr "Ada, kullanıcı adına veya e-postaya göre ara"
 
@@ -978,11 +1504,29 @@ msgstr "Tüm sütunlarda ara"
 msgid "See all in the activity log"
 msgstr "Etkinlik günlüğünde tümünü gör"
 
+msgid "Select a category"
+msgstr "Bir kategori seçin"
+
+msgid "Select a production department"
+msgstr "Bir üretim departmanı seçin"
+
 msgid "Select a site"
 msgstr "Bir saha seçin"
 
+msgid "Select a type"
+msgstr "Bir tür seçin"
+
+msgid "Semi-automatic feeder"
+msgstr "Yarı otomatik yemleme makinesi"
+
 msgid "Send reset link"
 msgstr "Sıfırlama bağlantısı gönder"
+
+msgid "Sensors"
+msgstr "Sensörler"
+
+msgid "Serial number"
+msgstr "Seri numarası"
 
 msgid "Set a new password"
 msgstr "Yeni parola belirleyin"
@@ -1012,6 +1556,15 @@ msgstr "Giriş yap"
 msgid "Sign out"
 msgstr "Çıkış yap"
 
+msgid "Silo capacity (kg)"
+msgstr "Silo kapasitesi (kg)"
+
+msgid "Silo volume"
+msgstr "Silo hacmi"
+
+msgid "Single-phase"
+msgstr "Tek faz"
+
 msgid "Site"
 msgstr "Saha"
 
@@ -1033,6 +1586,9 @@ msgstr "Sahalar"
 msgid "Skip to content"
 msgstr "İçeriğe geç"
 
+msgid "Solar"
+msgstr "Güneş"
+
 #. Translators: %(name)s is the kind of record in lower case (e.g. site).
 #, python-format
 msgid ""
@@ -1046,6 +1602,18 @@ msgstr ""
 msgid "Sort by %(name)s"
 msgstr "Sırala: %(name)s"
 
+msgid "Specific surface area"
+msgstr "Özgül yüzey alanı"
+
+msgid "Specification fields"
+msgstr "Teknik özellik alanları"
+
+msgid "Stainless steel"
+msgstr "Paslanmaz çelik"
+
+msgid "Standby"
+msgstr "Yedekte"
+
 msgid "State"
 msgstr "Eyalet / il"
 
@@ -1057,6 +1625,9 @@ msgstr "Sokak adresi"
 
 msgid "Structure"
 msgstr "Yapı"
+
+msgid "Submersible pump"
+msgstr "Dalgıç pompa"
 
 msgid "Switch panel"
 msgstr "Paneli değiştir"
@@ -1076,8 +1647,26 @@ msgstr "Tablo"
 msgid "Table sections"
 msgstr "Tablo bölümleri"
 
+msgid "Tank inlet"
+msgstr "Tank su girişi"
+
+msgid "Technical specifications"
+msgstr "Teknik özellikler"
+
+msgid "Temperature"
+msgstr "Sıcaklık"
+
+msgid "Temperature sensor"
+msgstr "Sıcaklık sensörü"
+
 msgid "The biomass cannot be negative."
 msgstr "Biyokütle negatif olamaz."
+
+msgid "The criticality is from 1 to 5."
+msgstr "Kritiklik 1 ile 5 arasındadır."
+
+msgid "The equipment is linked to this system already."
+msgstr "Ekipman bu sisteme zaten bağlı."
 
 msgid "The invitation to set a password is sent here."
 msgstr "Parola belirleme daveti buraya gönderilir."
@@ -1094,17 +1683,29 @@ msgstr "Bu kaydın (%(name)s) son değişiklikleri."
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
 
+msgid "The parent equipment is on another site."
+msgstr "Üst ekipman başka bir sahada."
+
+msgid "The parent equipment is one of its own parts."
+msgstr "Üst ekipman, bu ekipmanın kendi parçalarından biri."
+
 msgid "The parent system belongs to another site."
 msgstr "Üst sistem başka bir sahaya ait."
 
 msgid "The parent system is nested under this system."
 msgstr "Üst sistem bu sistemin altında yer alıyor."
 
+msgid "The pipe that lets water into a tank through distribution holes."
+msgstr "Suyu dağıtım deliklerinden tanka veren boru."
+
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
 
 msgid "The production figures will appear here."
 msgstr "Üretim rakamları burada görünecek."
+
+msgid "The silo is filled automatically."
+msgstr "Silo otomatik olarak doldurulur."
 
 msgid ""
 "The site’s operational contacts. At most one can be the primary contact. Contacts are saved "
@@ -1116,8 +1717,19 @@ msgstr ""
 msgid "The specifications must be a set of named values."
 msgstr "Teknik özellikler adlandırılmış değerler kümesi olmalıdır."
 
+msgid ""
+"The systems it serves, on the site of its production department: at least one, and one of them "
+"its primary system. Criticality is how much the system depends on it, from 1 (little) to 5 "
+"(completely)."
+msgstr ""
+"Hizmet ettiği sistemler, üretim departmanının sahasında: en az biri ve bunlardan biri birincil "
+"sistemi. Kritiklik, sistemin ona ne kadar bağlı olduğudur: 1 (az) ile 5 (tamamen) arası."
+
 msgid "The volume cannot be negative."
 msgstr "Hacim negatif olamaz."
+
+msgid "The warranty cannot end before the purchase date."
+msgstr "Garanti satın alma tarihinden önce bitemez."
 
 msgid ""
 "They keep the link, but it does not count while this is deleted; restoring it brings the link "
@@ -1133,6 +1745,9 @@ msgstr "Bu kayıt (%(name)s) henüz silinemez."
 msgid "This link no longer works"
 msgstr "Bu bağlantı artık çalışmıyor"
 
+msgid "This production department is not on any site; choose one that is."
+msgstr "Bu üretim departmanı hiçbir sahada değil; bir sahada olanı seçin."
+
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Bu işlem kaydı kalıcı olarak kaldırır. Etkinlik günlüğü, silindiğine dair bir kayıt tutar."
 
@@ -1144,6 +1759,18 @@ msgstr "Bu sahada bu kodlu bir sistem zaten var."
 
 msgid "This table points at"
 msgstr "Bu tablonun işaret ettikleri"
+
+msgid "This type has no technical specifications."
+msgstr "Bu türün teknik özelliği yok."
+
+msgid "This type is not in the chosen category."
+msgstr "Bu tür seçilen kategoride değil."
+
+msgid "Three-phase"
+msgstr "Üç faz"
+
+msgid "Timer"
+msgstr "Zamanlayıcı"
 
 msgid "Timezone"
 msgstr "Saat dilimi"
@@ -1157,14 +1784,32 @@ msgstr "Toplam alan (m²)"
 msgid "Total volume (m³)"
 msgstr "Toplam hacim (m³)"
 
+msgid "Transport"
+msgstr "Taşıma"
+
 msgid "Try another search."
 msgstr "Başka bir arama deneyin."
+
+msgid "Turbidity"
+msgstr "Bulanıklık"
+
+msgid "Two rows have the same feed size."
+msgstr "İki satır aynı yem boyutuna sahip."
 
 msgid "Type"
 msgstr "Tür"
 
 msgid "Type your new password twice."
 msgstr "Yeni parolanızı iki kez yazın."
+
+msgid "UV dose"
+msgstr "UV dozu"
+
+msgid "UV filter"
+msgstr "UV filtre"
+
+msgid "UV steriliser"
+msgstr "UV sterilizatör"
 
 msgid "Under maintenance"
 msgstr "Bakımda"
@@ -1193,11 +1838,23 @@ msgstr "Kullanıcılar"
 msgid "Version"
 msgstr "Sürüm"
 
+msgid "Voltage"
+msgstr "Gerilim"
+
 msgid "Volume (m³)"
 msgstr "Hacim (m³)"
 
+msgid "Warranty end date"
+msgstr "Garanti bitiş tarihi"
+
+msgid "Water"
+msgstr "Su"
+
 msgid "Water capacity (m³)"
 msgstr "Su kapasitesi (m³)"
+
+msgid "Water treatment"
+msgstr "Su arıtma"
 
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
@@ -1208,6 +1865,9 @@ msgstr "İçeriği"
 
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."
+
+msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
+msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
 
 msgid "Which permissions each role allows."
 msgstr "Her rolün hangi izinlere izin verdiği."
@@ -1243,8 +1903,51 @@ msgstr "<strong>%(name)s</strong> tarafından"
 msgid "contains"
 msgstr "içerir"
 
+#, python-format
+msgid "criticality %(level)d"
+msgstr "kritiklik %(level)d"
+
+msgid "deleted"
+msgstr "silindi"
+
+msgid "e.g. 0–10 bar"
+msgstr "örn. 0–10 bar"
+
+msgid "e.g. 0–10 m"
+msgstr "örn. 0–10 m"
+
+msgid "e.g. 0–10 mg/L"
+msgstr "örn. 0–10 mg/L"
+
+msgid "e.g. 0–100 m³/h"
+msgstr "örn. 0–100 m³/h"
+
+msgid "e.g. 0–14 pH"
+msgstr "örn. 0–14 pH"
+
+msgid "e.g. 0–20 mg/L"
+msgstr "örn. 0–20 mg/L"
+
+msgid "e.g. 0–50 ppt"
+msgstr "örn. 0–50 ppt"
+
+msgid "e.g. 0–50 °C"
+msgstr "örn. 0–50 °C"
+
 msgid "e.g. 12345"
 msgstr "örn. 12345"
+
+msgid "e.g. 1–10 kg/h"
+msgstr "örn. 1–10 kg/h"
+
+msgid "e.g. 25"
+msgstr "örn. 25"
+
+msgid "e.g. 250"
+msgstr "örn. 250"
+
+msgid "e.g. 3"
+msgstr "örn. 3"
 
 msgid "e.g. 5.3221"
 msgstr "örn. 5,3221"
@@ -1267,8 +1970,17 @@ msgstr "örn. MPS-001"
 msgid "e.g. Main Production Site"
 msgstr "örn. Ana Üretim Sahası"
 
+msgid "e.g. Main circulation pump"
+msgstr "örn. Ana sirkülasyon pompası"
+
 msgid "e.g. Norway"
 msgstr "örn. Norveç"
+
+msgid "e.g. PMP-001"
+msgstr "örn. PMP-001"
+
+msgid "e.g. R410A"
+msgstr "örn. R410A"
 
 msgid "e.g. SYS-001"
 msgstr "örn. SYS-001"
@@ -1279,17 +1991,44 @@ msgstr "örn. Saha sorumlusu"
 msgid "e.g. Smolt RAS 1"
 msgstr "örn. Smolt RAS 1"
 
+msgid "e.g. Starter"
+msgstr "örn. Başlangıç yemi"
+
 msgid "e.g. Vestland"
 msgstr "örn. Vestland"
 
+msgid "e.g. by parameter"
+msgstr "örn. parametreye göre"
+
+msgid "e.g. daily"
+msgstr "örn. günlük"
+
 msgid "e.g. kari.nordmann"
 msgstr "örn. kari.nordmann"
+
+msgid "e.g. sand, cartridge"
+msgstr "örn. kum, kartuş"
 
 msgid "empty"
 msgstr "boş"
 
 msgid "equals"
 msgstr "eşittir"
+
+msgid "equipment"
+msgstr "ekipman"
+
+msgid "equipment type"
+msgstr "ekipman türü"
+
+msgid "equipment types"
+msgstr "ekipman türleri"
+
+msgid "feed calibration"
+msgstr "yem kalibrasyonu"
+
+msgid "feed calibrations"
+msgstr "yem kalibrasyonları"
 
 #, python-format
 msgid "in %(name)s"
@@ -1309,6 +2048,13 @@ msgstr "veritabanı tarafından zorunlu kılınmıyor"
 
 msgid "not in the model"
 msgstr "modelde yok"
+
+msgid "pH sensor"
+msgstr "pH sensörü"
+
+#, python-format
+msgid "part of %(code)s"
+msgstr "%(code)s parçası"
 
 msgid "primary"
 msgstr "birincil"
@@ -1339,6 +2085,12 @@ msgstr "sahalar"
 
 msgid "system"
 msgstr "sistem"
+
+msgid "system link"
+msgstr "sistem bağlantısı"
+
+msgid "system links"
+msgstr "sistem bağlantıları"
 
 msgid "systems"
 msgstr "sistemler"

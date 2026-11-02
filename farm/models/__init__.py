@@ -6,8 +6,12 @@ Differences from the source schema (apply to every model here):
 - jsonb location/address are flat columns; the source also duplicated city and country.
 - Uniqueness rules the source only enforced in service code are database constraints here.
 """
+from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibration
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .system import System
 
-__all__ = ['ProductionDepartment', 'Site', 'SiteContact', 'System']
+__all__ = [
+    'Equipment', 'EquipmentSystem', 'EquipmentType', 'FeederCalibration', 'ProductionDepartment', 'Site',
+    'SiteContact', 'System',
+]

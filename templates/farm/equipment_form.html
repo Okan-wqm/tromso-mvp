@@ -4,30 +4,12 @@
 {% block extra_tabs %}{% if form.chosen_type.takes_calibrations or calibrations %}<button type="button" role="tab" class="tab" data-tab="calibration">{% trans "Feed calibration" %}</button>{% endif %}{% endblock %}
 {% block extra_panels %}
 {% if form.chosen_type.takes_calibrations or calibrations %}
-<section class="tab-panel calibrations" data-panel="calibration" aria-labelledby="calibrations-title">
-  <h3 class="panel-title" id="calibrations-title">{% trans "Feed calibration" %}</h3>
-  {% if calibrations %}
-  <p class="panel-help">{% trans "For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 rows. They are saved separately from the equipment details." %}</p>
-  <form method="post" action="{% url 'farm:equipment_calibrations' object.pk %}" novalidate data-formset>
-    {% csrf_token %}
-    {{ calibrations.management_form }}
-    {% if calibrations.non_form_errors %}<div class="form-error" role="alert">{{ calibrations.non_form_errors }}</div>{% endif %}
-    <div class="calibration-head" aria-hidden="true">{% for field in calibrations.empty_form.visible_fields %}{% if field.name != "DELETE" %}<span>{{ field.label }}</span>{% endif %}{% endfor %}</div>
-    <div class="contact-rows" data-rows>
-      {% for row in calibrations %}{% include "farm/_calibration_row.html" %}{% endfor %}
-    </div>
-    <p class="contact-empty" data-empty{% if calibrations.forms %} hidden{% endif %}>{% trans "No calibrations yet. Use “Add calibration” to add a row." %}</p>
-    <template data-row-template>{% with row=calibrations.empty_form %}{% include "farm/_calibration_row.html" %}{% endwith %}</template>
-    <div class="form-actions">
-      <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{% trans "Add calibration" %}</button>
-      <button type="submit" class="button button-inline">{% trans "Save calibrations" %}</button>
-    </div>
-  </form>
-  {% elif object %}
-  <p class="panel-help">{% trans "Save the equipment with this feeder type first; then its calibrations can be added here." %}</p>
-  {% else %}
-  <p class="panel-help">{% trans "Calibrations can be added once the equipment is created." %}</p>
-  {% endif %}
-</section>
+{% trans "Feed calibration" as title %}
+{% trans "For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 rows. They are saved separately from the equipment details." as help %}
+{% trans "No calibrations yet. Use “Add calibration” to add a row." as empty %}
+{% trans "Add calibration" as add %}
+{% trans "Save calibrations" as save %}
+{% if object %}{% url 'farm:equipment_calibrations' object.pk as action %}{% trans "Save the equipment with this feeder type first; then its calibrations can be added here." as pending %}{% else %}{% trans "Calibrations can be added once the equipment is created." as pending %}{% endif %}
+{% include "crud/_row_list.html" with rows=calibrations tab="calibration" legend=title kind="calibration-row" %}
 {% endif %}
 {% endblock %}

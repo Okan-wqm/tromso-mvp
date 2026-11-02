@@ -299,12 +299,13 @@
 .link-row:not(:has(.link-name input:checked)) :is(.link-primary, .link-detail) { opacity: .45; }
 .link-none { margin: 0; color: var(--muted); }
 
-/* A feeder's calibrations: rows like the contacts, with a heading row */
-.calibration-head, .calibration-row {
+/* Rows on a tab of their own with a heading row (crud/_row_list.html), like the contacts; each list gives
+   its heading and its rows the same columns through one class */
+.row-list-head { display: grid; gap: .625rem; padding: 0 .75rem .375rem; color: var(--muted); font-size: .8125rem; font-weight: 600; }
+.row-error { grid-column: 1 / -1; margin: 0; }
+.calibration-row {
   grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, .9fr) minmax(0, 1.4fr) 5.5rem;
 }
-.calibration-head { display: grid; gap: .625rem; padding: 0 .75rem .375rem; color: var(--muted); font-size: .8125rem; font-weight: 600; }
-.calibration-error { grid-column: 1 / -1; margin: 0; }
 
 .check {
   display: inline-flex;
@@ -379,7 +380,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   .form-grid > .field,
   .form-grid-location > .field { grid-column: 1 / -1 !important; }
   .contact-row { grid-template-columns: 1fr 1fr; }
-  .calibration-head { display: none; }
+  .row-list-head { display: none; }
   .contact-row .field { grid-column: 1 / -1; }
   .form-actions { justify-content: stretch; }
   .form-actions > * { flex: 1 1 auto; justify-content: center; }

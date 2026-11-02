@@ -19,6 +19,8 @@ What works today:
   and **Production** (overview, production departments, systems). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
+- Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
+  user menu and on the sign-in pages (see Languages).
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
   choice, collapses by itself below 1100 px when no choice is saved and slides in from the left on
   phones; a sticky top bar with the page title and the user menu.
@@ -153,12 +155,26 @@ docker compose up -d                         # TimescaleDB on localhost:5433 (54
 C:\Python312\python.exe -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 .venv\Scripts\python.exe manage.py migrate   # also enables the timescaledb extension (core/migrations)
+.venv\Scripts\python.exe manage.py compile_catalogs   # builds the translations (.mo, not committed); redo after pulling .po changes
 .venv\Scripts\python.exe manage.py createsuperuser
 .venv\Scripts\python.exe manage.py runserver 8047
 ```
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
 defaults match the local container in `docker-compose.yml`.
+
+## Languages
+
+English is the source language of every text in the code and templates; Norwegian bokmål (`nb`) and
+Turkish (`tr`) are translations kept in `locale/<language>/LC_MESSAGES/django.po`. A visitor gets the
+language of the cookie set by the switch, otherwise of the browser, otherwise English; a signed-in
+person's choice is also saved on their account (`Profile`) and the admin can set it on the user form,
+so an invitation email arrives in the new person's language. Numbers and dates follow the language
+(`60,3913`, `2. november 2026`). The activity log is stored in English and shown translated.
+
+GNU gettext is not needed: `manage.py update_catalogs` and `manage.py compile_catalogs` (Babel) do
+what `makemessages` and `compilemessages` do. How to add a string or a language, the glossary and the
+translations that need a native speaker's review are in [`docs/i18n.md`](docs/i18n.md).
 
 ## Browser code
 
@@ -177,6 +193,9 @@ Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/
 compiled modules are reached through an import map (`{% module_map %}`), so a browser never shows a
 page with new markup and an old stylesheet or script from its cache. `manage.py check` warns when
 the compiled code is missing.
+
+The browser code has no text of its own: the templates render the texts it shows into data
+attributes (`data-label-show`, `data-forbidden`, ...), already translated.
 
 ## One format for every tab
 
@@ -222,6 +241,10 @@ A tab is done only when all of this exists; the first three are enforced by `Tab
 5. Tests that create, read, edit and delete through the pages and check the stored rows, the
    validation and link rules, the delete plan, the activity-log rows and the permissions.
 6. The bugs found in the source in `docs/aquaculture-platform-bugs.md`.
+7. **Translatable text**: names, labels, help texts, choices and messages written with
+   `gettext_lazy` / `{% trans %}`, `manage.py update_catalogs`, and the Turkish and Norwegian
+   translations (`docs/i18n.md`); `TabTranslationTests` and the catalog tests in `core/test_catalogs.py`
+   fail otherwise.
 
 ### Line endings
 
@@ -230,7 +253,8 @@ Every text file is LF (`.gitattributes`), so tools on any system produce the sam
 ## Email
 
 Email uses the console backend for now: the password reset email is printed in the `runserver`
-terminal instead of being sent. Put an SMTP backend into `MAILERS` in `config/settings.py` to send
+terminal instead of being sent. It is written in the recipient's saved language, otherwise in the
+language of the request. Put an SMTP backend into `MAILERS` in `config/settings.py` to send
 real mail.
 
 ## Pages
@@ -247,6 +271,7 @@ real mail.
 | `/users/` | Administration › Users (platform admin) |
 | `/database/` | Administration › Database: every table (platform admin) |
 | `/database/<table>/` | One table: Data and Structure tabs; `export.csv` below it downloads the filtered rows |
+| `/language/` | Language switch (POST; sets the cookie and the account's language) |
 | `/accounts/login/` | Sign in |
 | `/accounts/logout/` | Sign out (POST) |
 | `/accounts/password_reset/` | Forgot password |
@@ -259,6 +284,7 @@ real mail.
 |---|---|
 | `config/` | Settings, URLs, the overview view |
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
+| `core/language.py`, `core/catalogs.py`, `locale/`, `config/formats/`, `docs/i18n.md` | Languages: which one a request gets, the catalogs without GNU gettext, the English date look, the guide and glossary |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site) |
@@ -283,5 +309,6 @@ real mail.
 .venv\Scripts\python.exe manage.py test
 ```
 
-Tests hash passwords quickly (`config/test_runner.py`). The tests need the database container running (they check the timescaledb extension too). Set
+Tests build the catalogs first and hash passwords quickly (`config/test_runner.py`); the TypeScript is
+type-checked by a test when Node and `npm install` are there. The tests need the database container running (they check the timescaledb extension too). Set
 `DB_TEST_NAME` to give a checkout its own test database when two test runs overlap.

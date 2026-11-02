@@ -5,7 +5,9 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
 
 - CASCADE   the records that point at it are deleted with it, and so on down;
 - SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
-- PROTECT / RESTRICT  they block the delete until they are dealt with.
+- PROTECT / RESTRICT  they block the delete until they are dealt with;
+- DO_NOTHING  they stay as they are: their manager hides them while it is deleted, and they come back
+  with it when it is restored (a unit's water samples). The confirmation counts them.
 
 Records linked to it through a many-to-many link (the equipment serving a system) keep the link row:
 the link only stops counting while the record is deleted, so restoring it brings the link back. The
@@ -34,6 +36,7 @@ class DeletePlan:
     cascade: list = field(default_factory=list)   # deleted with obj; parents before their children
     detach: list = field(default_factory=list)    # (record, link) pairs whose link is cleared
     unlinked: list = field(default_factory=list)  # records linked many-to-many, whose link stops counting
+    kept: dict = field(default_factory=dict)      # model -> how many records keep their link, out of sight
 
     @property
     def can_delete(self):
@@ -66,6 +69,10 @@ class DeletePlan:
                 })
         return groups
 
+    def kept_groups(self):
+        """[{'label': 'Water samples', 'count': 120}]: kept as they are, hidden while it is deleted."""
+        return [{'label': capfirst(model._meta.verbose_name_plural), 'count': count}
+                for model, count in self.kept.items()]
 
     def unlinked_groups(self):
         """[{'label': 'Equipment', 'records': [...]}]: linked to a deleted record, keeping the link row."""
@@ -97,10 +104,15 @@ def _collect(obj, plan, seen):
         if not relation.one_to_many or not issubclass(model, AuditedModel):
             continue
         link = relation.field.name
+        action = relation.on_delete
+        if action is models.DO_NOTHING:
+            count = model.objects.filter(**{link: obj}).count()
+            if count:
+                plan.kept[model] = plan.kept.get(model, 0) + count
+            continue
         children = list(model.objects.filter(**{link: obj}))
         if not children:
             continue
-        action = relation.on_delete
         if action is models.CASCADE:
             for child in children:
                 if (model, child.pk) not in seen:

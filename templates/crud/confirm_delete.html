@@ -31,6 +31,12 @@
       <ul>{% for record in group.records %}<li>{{ record }}</li>{% endfor %}</ul>
     </section>
     {% endfor %}
+    {% for group in plan.kept_groups %}
+    <section class="affected">
+      <h3>{% blocktrans trimmed with label=group.label %}{{ label }} kept with it{% endblocktrans %} <span class="count">{{ group.count }}</span></h3>
+      <p class="affected-note">{% trans "They stay as they are, out of sight while this is deleted, and come back when it is restored." %}</p>
+    </section>
+    {% endfor %}
     {% for group in plan.unlinked_groups %}
     <section class="affected">
       <h3>{% blocktrans trimmed with label=group.label %}{{ label }} linked to it{% endblocktrans %} <span class="count">{{ group.records|length }}</span></h3>

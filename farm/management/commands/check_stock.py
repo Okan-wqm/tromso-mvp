@@ -5,7 +5,8 @@ from farm.stock import integrity
 
 class Command(BaseCommand):
     help = ('Folds every batch of the stock ledger from its first line and reports every broken rule: counts '
-            'below zero, operations not made of their lines, stocking dates, unit statuses and species.')
+            'below zero, operations not made of their lines, stocking dates, unit statuses and species, and '
+            'feedings in a unit without fish that day.')
 
     def handle(self, *args, **options):
         found = integrity.problems()

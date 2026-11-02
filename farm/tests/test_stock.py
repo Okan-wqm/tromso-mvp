@@ -756,7 +756,9 @@ class PageTests(StockTestCase):
                      'Empty — ready to stock', 'Empty · Maintenance', '3 units · 245 kg',
                      '<span class="view-count">1</span>'):
             self.assertIn(text, html)
-        self.assertContains(response, 'title="Comes with the feeding records."', count=2 * 3)   # FCR, last fed
+        # No weighing since stocking: no FCR yet, and why; last fed is a dash until a feeding is recorded
+        # (farm/tests/test_feeding.py has the figures).
+        self.assertContains(response, 'title="Not weighed since the fish came in."', count=1)
         self.assertContains(response, '<h1>Production units</h1>', html=True)
 
     def test_filters_and_the_drawer_are_in_the_address(self):

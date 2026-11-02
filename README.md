@@ -17,9 +17,8 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, water limits, suppliers, and under Operations the production units with their fish and
-  the water chemistry). Each has its
-  own overview. A
+  species, feeds, water limits, suppliers, and under Operations the production units with their fish, the
+  feeding records and the water chemistry). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -439,19 +438,21 @@ Every tank, pond and cage of Setup with the fish in it now, and the operations o
 search (unit, batch, species), **New batch**, one row of filters (site, kind, stocked or empty, status),
 the count line ("14 units · 3.2 t") and a table with the source's nine default columns: unit (code,
 production department · site), batch ("B-2026-001 + B-2026-004" and the species, or "Empty — ready to
-stock"), fish, average weight, biomass, density · capacity with its bar, FCR, survival and last fed.
-FCR and last fed show a dash until the feeding records exist (the source showed 0 and nothing). A row
+stock"), fish, average weight, biomass, density · capacity with its bar, biological FCR (bFCR), survival and last
+fed, both from the feeding records (see Feeding records; the source showed 0 and nothing). A row
 picked (accent tint and bar) and a row over its max biomass (amber, an "Over" mark, a rust bar) look
 different. The filters and the open unit are in the address, so a view can be linked and the back
 button works; a row is one link. Two empty states: no units at all (with a link to Setup) and no match
 (with "Clear filters"). The column chooser and sorting come next.
 
 **The drawer** (`?unit=`), beside the table: the unit's code, name, place, status and since when; for a
-stocked unit its batches, "Stocked · N days", fish, average, biomass, FCR, survival, volume, the density
-bar against its max, a line per batch (fish, average and when it was weighed, biomass, survival, deaths
-and culls, its share of the unit), and the operations; for an empty unit its volume, max density and max
-biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit its last
-20 operations, voided ones struck through with their reason, each with **Void** while it may be voided.
+stocked unit its batches, "Stocked · N days", fish, average, biomass, bFCR and eFCR, survival, the density
+bar against its max with the volume, a line per batch (fish, average and when it was weighed, biomass,
+survival, deaths and culls, the feed of its stay and its bFCR, its share of the unit), its feeding (see
+Feeding records) and the operations, **Record feeding** first; for an empty unit its volume, max density
+and max biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit
+its last 20 operations and 10 feedings, voided ones struck through with their reason, each with **Void**
+while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
 service, with the server's reason on the field it concerns: a new batch (species, stage at input,
@@ -476,8 +477,9 @@ the whole lot. Only measured weights enter the book. Nothing is stored that can 
 **One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
 date, the units' status (a unit takes fish while active, preparing or fallow), the species (one per unit,
 several batches of it), then writes and folds every batch involved from its first line, so a backdated
-operation is accepted only if every later day stays right (no share ever below 0 fish); above a unit's
-max biomass it asks for an acknowledgement, stored on the operation. The unit's status follows its fish:
+operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
+recorded in the unit still finds fish there on its day: "The feeding of 2 Nov in T-01 would have no fish:
+void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The unit's status follows its fish:
 the first fish make a preparing or fallow unit active, the last fish out make an active one fallow and
 a harvesting or quarantined one due for cleaning; a void that brings fish back makes the unit active.
 Every operation, every void and every status change is in the activity log ("Voided", with the reason).
@@ -491,7 +493,8 @@ operations and batches but does not restore them (a restore would skip the check
 page, Create records an operation, Delete voids one. A unit with fish cannot be deleted, nor resized,
 nor set to a status that needs it empty; a species with batches and a supplier fish were bought from
 cannot be deleted (`PROTECT`). `manage.py check_stock` checks the whole ledger from scratch (counts,
-operations made of their lines, stocking dates, unit statuses, species) and the tests run it.
+operations made of their lines, stocking dates, unit statuses, species, feedings without fish) and the
+tests run it.
 
 Differences from the source (details in the bug document, STK-01 to STK-73):
 
@@ -504,10 +507,98 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   the person's language; the drawer's "Stock this unit" knows its unit.
 - Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
-- Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), feeding (FCR, last
-  fed, feed rate), sensors and water temperature, harvest plans, lot numbers, buyers and prices, the
+- Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors and water
+  temperature, harvest plans, lot numbers, buyers and prices, the
   medicine-withdrawal block on harvest (**it must come back with the health module before real
   harvests**), batch documents and costs, count adjustments as a dialog (their lines and checks exist).
+
+### Operations › Feeding records (`/operations/feeding/`)
+
+Table `feeding_records`: feed given to one unit on one day, the farm's daily feeding record. A record is
+the unit, the day, the feed (an active feed of Reference data › Feeds) and the kilos given, to the gram,
+and optionally the time, the number of meals, the feeder and notes; several a day are fine (meals, a feed
+change mid-day). **No batch is stored**: the batches a record fed are the batches the stock ledger has in
+the unit that day, the feed split between them by their book biomass at the start of the day (at its
+end when the unit was empty that morning, the day it was stocked). A backdated stock operation therefore
+never leaves a stored batch wrong, and nothing is written back into the stock: feed never changes a count
+or a gram of the book (only measured weights enter it).
+
+**Recording.** "Record feeding", the first and primary button of a stocked unit's drawer on Production
+units, or **Record feeding** on the list (it lists the units with fish). The dialog has the date (the
+farm's today), the feed (the active feeds; those whose suitability rows suit the fish's species and
+average weight first, the others under "Other active feeds": choosing one of those is allowed and
+noticed), the kilos (`0.035` for 35 g), meals, time, feeder (a feeder of the unit's site) and notes. A
+unit with two batches says how the feed is split ("Split by the book biomass at the start of 2 Nov:
+B-2026-001 71 %, B-2026-004 29 %"). The rules, in one write path (`farm/feeding/services.py`), each with
+the server's reason on its field:
+
+- the date as for the stock: the farm's today at the latest, at most `STOCK_BACKDATE_DAYS` (31) back;
+- the unit must hold fish at the start or the end of that day (from the stock ledger); and the other way
+  round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
+  fish) is refused while a recorded feeding would be left without fish, naming it;
+- a new record takes an active feed; a record keeps its feed whatever the feed's status becomes;
+- above `FEEDING_ACK_PERCENT` (10 %) of the unit's book biomass in a day, the person is asked to confirm,
+  and the confirmation is stored on the record (a kilo typed for a gram is caught; fry may be fed more);
+- a form sent twice records once; the unit is locked as a stock operation locks it, so a feeding and a
+  harvest of one unit take turns.
+
+**Void** is the undo, the stock's own (one rule for both, `farm.stock.services.voided`): a reason, within
+the backdating window, the record stays struck through with its reason, "Voided" in the activity log. A
+correction is a void and a new record; nothing is edited.
+
+**The list**: filters in the address, site, unit, batch (the records whose split fed it), feed, from and
+to dates, and "Show voided"; 50 a page, newest first (a record without a time after those of its day with
+one, then the order of entry, so pages never repeat or skip a row); the count line ("128 records · 3.4
+t", voided ones not in the total); per record the date and time, the unit with its department and site,
+the batches it fed, the feed with its pellet size, the kilos, meals, feeder, who recorded it and when,
+notes, and **Void** while allowed.
+
+**The figures**, computed on read from the stock ledger and the live records, nothing stored
+(`farm/feeding/read.py`; the walk is `farm/feeding/fold.py`, one pass over the stock fold):
+
+- **Last fed**: the latest day of a record in the current stay of the unit's fish (Today, Yesterday or
+  the date).
+- **bFCR** (biological) = feed / biological gain, **eFCR** (economic) = feed / economic gain, over a
+  window from the first measured point of the fish's stay in the unit (their stocking, or fish graded in)
+  to its last weighing; the feed of the days from its start up to the weighing's day (the fish are weighed
+  before the day's feeding); biological gain = biomass at the weighing − biomass at the start + biomass
+  removed meanwhile (dead fish at their weighed kilos when weighed, a harvest at its weighed kilos, the
+  rest at the book's average) − biomass added; economic gain leaves out the fish lost (dead, culled,
+  escaped, unaccounted). eFCR ≥ bFCR. Per unit: Σ feed / Σ gain over its batches that have a window. A
+  dash when the fish were not weighed since they came in, no feed was recorded or there was no growth
+  (the dash's title says which). Fish moved in by a plain transfer arrive at book weight, so they start a
+  window only at their first weighing. Known bias, said in the drawer: dead fish leave at the last
+  weighed average, so their growth since is not credited (bFCR a little high when many die).
+- In the drawer: fed today (kilos, meals), the last 7 days' kilos and the **feed rate** (SFR, % of the
+  biomass a day = 100 × feed / the sum of the book biomass of the days with fish; the book does not grow
+  between weighings, so it reads high as the last weighing ages, and the drawer says how old it is), the
+  feed in use, each batch's window ("1 Oct – 15 Oct, 168 kg fed, 196 kg grown") and its last 10 records.
+- The production overview: feed today and over the last 7 days on the whole farm.
+
+**Who may do what:** the area Feeding records in the role matrix (Production · Operations): Read the list
+and the feeding part of a unit's drawer, Create records a feeding, Delete voids one. A feed or a feeder
+with live records cannot be deleted (`PROTECT`: set the feed to discontinued, the feeder to
+decommissioned); an empty unit with feeding records can be, as with its stock history (owner decision
+Q-F3), and its records stay with it (`DO_NOTHING`, see the delete plan). `manage.py check_stock` reports a
+feeding without fish. The admin shows voided records and does not restore them.
+
+Differences from the source (details in the bug document, FDR-01 to FDR-41):
+
+- The unit is the record's anchor and is required; the source's web dialog had no unit input, so its
+  manual records had none (FDR-07, FDR-34). No batch column: the source booked feed on whatever batch it
+  was told, or on a unit's "primary" batch, while it spread the growth over all of them (FDR-05, FDR-06).
+- Feed is never written into the stock; the source added feed / expected FCR to the biomass, so its unit
+  FCR met the target by construction and its rations fed the projection (FDR-19, FDR-21).
+- One FCR definition, on measured weights only, biological and economic; the source had three formulas
+  that disagreed, none economic (FDR-22, FDR-23, FDR-32). Last fed and the feed rate are computed from the
+  records (FDR-24, FDR-31).
+- Recording never depends on the feed store (FDR-08); records are kept, no 800-day retention (FDR-18);
+  one date rule, farm-local (FDR-20, FDR-36); void with reason instead of a partial edit (FDR-13, FDR-30,
+  FDR-37); who recorded is the person signed in (FDR-11); amounts to the gram (FDR-35, FDR-40).
+- Not ported: planned amounts and variance, waste, cost and currency, method, environment, behaviour,
+  duration, verified-by, the meal board, day plans, protocols and feeding tables, feed stock (lots,
+  deductions), the feeder's shots and calibrations (the feeder is recorded, the kilos are typed), a
+  daily feeding sheet for all units of a department, the batch page's FCR, SGR and alerts.
 
 ### Operations › Water chemistry (`/operations/water/`) and Reference data › Water limits (`/water-limits/`)
 
@@ -636,8 +727,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   can be given, one line each, with the actions each offers: Sites, Production departments,
   Systems, Equipment, Tanks, ponds & cages, Species, Feeds, Water limits and Suppliers (read, create,
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
-  Water chemistry (read the page and a unit's water, create = record a sample or a round, delete = void
-  one) and Activity log (read). A new tab appears in the matrix by
+  Feeding records (read, create = record a feeding, delete = void one), Water chemistry (read the page
+  and a unit's water, create = record a sample or a round, delete = void one) and Activity log (read).
+  A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
@@ -768,7 +860,9 @@ each link's `on_delete` instead and applies it to live records: `CASCADE` delete
 point at it too, `SET_NULL` keeps them but clears the link, `PROTECT` blocks the delete. A model
 adds conditions that are not links by overriding `delete_blockers()`. One plan serves the
 confirmation, which lists what will be affected and disables the button when something blocks, and
-the delete itself, which writes an activity-log row for every record it touches. A tab never writes
+the delete itself, which writes an activity-log row for every record it touches. `DO_NOTHING` keeps the
+records as they are, still pointing at the deleted one: history that does not hold a delete back (a
+unit's feeding records, as its stock lines), shown again when it is restored. A tab never writes
 down what a delete does to its neighbours: it is whatever its links say. Records linked through a
 many-to-many link (the equipment serving a system) keep their link rows; the confirmation lists them,
 and the link counts again once the record is restored. Records whose link is `DO_NOTHING` (a unit's or a
@@ -874,6 +968,10 @@ real mail.
 | `/operations/units/new-batch/` | A new batch (`?unit=<id>` chooses the unit) |
 | `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |
 | `/operations/units/void/<id>/` | Voids a stock operation |
+| `/operations/units/<id>/feeding/` | Records a feeding of a unit (`?next=` goes back to the page it came from) |
+| `/operations/feeding/` | Operations › Feeding records |
+| `/operations/feeding/new/` | Record feeding from the list: the units with fish |
+| `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
 | `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
@@ -905,6 +1003,7 @@ real mail.
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
+| `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the list and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

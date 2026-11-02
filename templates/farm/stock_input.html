@@ -12,7 +12,7 @@
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
   <p class="panel-help">{% trans "The batch number is given on saving." %}</p>
   <div class="form-grid">
-    {% for field in form.visible_fields %}{% if field.name != "over_capacity_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
+    {% for field in form.visible_fields %}{% if field.name != form.ack_field %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
   </div>
 
   <fieldset class="form-fieldset" data-formset>
@@ -28,7 +28,7 @@
   </fieldset>
 
   {% if form.needs_ack %}
-  <div class="notice notice-warning">{% with field=form.over_capacity_ack %}{% include "registration/_field.html" %}{% endwith %}</div>
+  <div class="notice notice-warning">{% with field=form.ack %}{% include "registration/_field.html" %}{% endwith %}</div>
   {% endif %}
 
   <div class="form-actions">

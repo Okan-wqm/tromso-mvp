@@ -1,6 +1,7 @@
-{% load i18n stock %}
-{% comment %} The drawer of the unit picked on Production units (?unit=): its fish, the operations that make sense
-   for it, and its recent operations. Closing it is a link to the page without the unit.{% endcomment %}
+{% load i18n stock feeding %}
+{% comment %} The drawer of the unit picked on Production units (?unit=): its fish, its feeding, the operations that
+   make sense for it (Record feeding first), and its recent operations and feedings. Closing it is a link
+   to the page without the unit.{% endcomment %}
 {% with unit=drawer stock=drawer_stock %}
 <aside class="drawer" aria-labelledby="drawer-title">
   <div class="drawer-head">
@@ -21,24 +22,26 @@
       <div><dt>{% trans "Fish" %}</dt><dd>{{ stock.count|fish }}</dd></div>
       <div><dt>{% trans "Avg. weight" %}</dt><dd>{{ stock.avg_weight_g|grams }}</dd></div>
       <div><dt>{% trans "Biomass" %}</dt><dd>{{ stock.biomass_kg|kilos }}</dd></div>
-      <div><dt>{% trans "FCR" %}</dt><dd title="{% trans "Comes with the feeding records." %}">—</dd></div>
+      {% with conversion=feeding.conversion %}
+      <div><dt><abbr title="{% trans "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing" %}">{% trans "bFCR" %}</abbr></dt><dd title="{% if conversion.biological %}{% blocktrans trimmed with feed=conversion.feed_kg|kilos gain=conversion.gain_kg|kilos %}{{ feed }} fed, {{ gain }} grown{% endblocktrans %}{% else %}{{ conversion.why_no_biological }}{% endif %}">{{ conversion.biological|fcr }}</dd></div>
+      <div><dt><abbr title="{% trans "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited" %}">{% trans "eFCR" %}</abbr></dt><dd title="{% if conversion.economic %}{% blocktrans trimmed with feed=conversion.feed_kg|kilos gain=conversion.economic_gain_kg|kilos %}{{ feed }} fed, {{ gain }} grown{% endblocktrans %}{% else %}{{ conversion.why_no_economic }}{% endif %}">{{ conversion.economic|fcr }}</dd></div>
+      {% endwith %}
       <div><dt>{% trans "Survival" %}</dt><dd>{{ stock.survival|percent:1 }}</dd></div>
-      <div><dt>{% trans "Volume" %}</dt><dd>{% blocktrans trimmed with volume=stock.volume_m3|floatformat:"-1g" %}{{ volume }} m³{% endblocktrans %}</dd></div>
     </dl>
 
     <div class="drawer-capacity{% if stock.over_capacity %} is-over{% endif %}">
       <p class="capacity-line"><span>{% trans "Density · capacity" %}</span><span>{{ stock.density|density }} · <strong>{{ stock.capacity|percent }}</strong></span></p>
       <span class="capacity-bar capacity-bar-large" aria-hidden="true"><span style="width: {{ stock.capacity|bar_width }}%"></span></span>
-      <p class="capacity-note">{% blocktrans trimmed with density=unit.max_density_kg_m3|floatformat:"-2g" biomass=unit.max_biomass_kg|kilos %}Max {{ density }} kg/m³, {{ biomass }}{% endblocktrans %}{% if stock.over_capacity %} · <strong class="over-text">{% trans "Over capacity" %}</strong>{% endif %}</p>
+      <p class="capacity-note">{% blocktrans trimmed with volume=stock.volume_m3|floatformat:"-1g" %}{{ volume }} m³{% endblocktrans %} · {% blocktrans trimmed with density=unit.max_density_kg_m3|floatformat:"-2g" biomass=unit.max_biomass_kg|kilos %}Max {{ density }} kg/m³, {{ biomass }}{% endblocktrans %}{% if stock.over_capacity %} · <strong class="over-text">{% trans "Over capacity" %}</strong>{% endif %}</p>
     </div>
 
     <section class="drawer-section">
       <h3>{% trans "Batches" %}</h3>
       <div class="table-wrap">
         <table class="data-table drawer-table">
-          <thead><tr><th scope="col">{% trans "Batch" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col" class="num">{% trans "Avg. weight" %}</th><th scope="col" class="num">{% trans "Biomass" %}</th><th scope="col" class="num">{% trans "Survival" %}</th><th scope="col" class="num">{% trans "Losses" %}</th></tr></thead>
+          <thead><tr><th scope="col">{% trans "Batch" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col" class="num">{% trans "Avg. weight" %}</th><th scope="col" class="num">{% trans "Biomass" %}</th><th scope="col" class="num">{% trans "Survival" %}</th><th scope="col" class="num">{% trans "Losses" %}</th><th scope="col" class="num">{% trans "Fed" %}</th><th scope="col" class="num">{% trans "bFCR" %}</th></tr></thead>
           <tbody>
-            {% for share in stock.shares %}
+            {% for share, fed in batch_rows %}
             <tr>
               <td><span class="row-title">{{ share.batch.code }}</span><span class="row-sub">{{ share.batch.get_input_stage_display }} · {% blocktrans trimmed with date=share.since|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% if stock.shares|length > 1 %} · {{ share.percent_of_unit|percent }}{% endif %}</span></td>
               <td class="num">{{ share.count|fish }}</td>
@@ -46,12 +49,34 @@
               <td class="num">{{ share.biomass_kg|kilos }}</td>
               <td class="num">{{ share.survival|percent:1 }}</td>
               <td class="num">{{ share.losses|fish }}<span class="row-sub">{% blocktrans trimmed with deaths=share.deaths|fish culls=share.culls|fish %}{{ deaths }} dead · {{ culls }} culled{% endblocktrans %}</span></td>
+              <td class="num">{{ fed.fed_kg|kilos }}</td>
+              {% with conversion=fed.conversion %}<td class="num"{% if not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </section>
+
+    {% if feeding_list_url and feeding %}
+    <section class="drawer-section">
+      <h3>{% trans "Feeding" %}</h3>
+      {% with week=feeding.week %}
+      <dl class="metrics">
+        <div><dt>{% trans "Last fed" %}</dt><dd>{{ feeding.last_fed|fed_on:feeding.today }}</dd></div>
+        <div><dt>{% trans "Fed today" %}</dt><dd>{{ week.today_kg|feed_kg }}</dd>{% if week.today_meals %}<dd class="row-sub">{% blocktrans trimmed count meals=week.today_meals %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</dd>{% endif %}</div>
+        <div><dt>{% trans "Last 7 days" %}</dt><dd>{{ week.kg|kilos }}</dd></div>
+      </dl>
+      <p class="capacity-note">{% blocktrans trimmed with rate=week.sfr|percent:2 %}Feed rate {{ rate }} of the biomass a day over the last 7 days{% endblocktrans %} · {% if weighed_days is not None %}{% blocktrans trimmed count days=weighed_days %}biomass as weighed {{ days }} day ago{% plural %}biomass as weighed {{ days }} days ago{% endblocktrans %}{% else %}{% trans "biomass as stocked" %}{% endif %}{% if week.feed %} · {% blocktrans trimmed with feed=week.feed %}feed in use: {{ feed }}{% endblocktrans %}{% endif %}</p>
+      {% endwith %}
+      <ul class="feeding-window" role="list">
+        {% for share, fed in batch_rows %}{% with window=fed.window %}
+        <li>{% if window %}{% blocktrans trimmed with batch=share.batch.code start=window.start.day|date:"DATE_FORMAT" end=window.end.day|date:"DATE_FORMAT" feed=window.feed_kg|kilos gain=window.gain_kg|kilos %}{{ batch }}: {{ start }} – {{ end }}, {{ feed }} fed, {{ gain }} grown{% endblocktrans %}{% else %}{% blocktrans trimmed with batch=share.batch.code %}{{ batch }}: not weighed since it came in, so no FCR yet{% endblocktrans %}{% endif %}</li>
+        {% endwith %}{% endfor %}
+      </ul>
+      <p class="capacity-note">{% trans "FCR runs from stocking to the last weighing, on weighed biomass only. Dead fish leave at the last weighed average, so their growth since is not credited: bFCR reads a little high when many die." %}</p>
+    </section>
+    {% endif %}
 
     {% if actions %}
     <section class="drawer-section">
@@ -76,6 +101,31 @@
     {% endif %}
     {% endif %}
 
+    {% if feeding_list_url %}
+    <section class="drawer-section">
+      <h3>{% trans "Recent feedings" %}</h3>
+      {% if feedings %}
+      <ol class="op-history" role="list">
+        {% for item in feedings %}{% with record=item.record %}
+        <li class="op-entry{% if record.is_deleted %} is-voided{% endif %}">
+          <div class="op-head">
+            <time datetime="{{ record.date|date:'Y-m-d' }}">{{ record.date|date:"DATE_FORMAT" }}{% if record.time %} {{ record.time|time:"H:i" }}{% endif %}</time>
+            <strong>{{ record.amount_kg|feed_kg }}</strong>
+            {% if record.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}
+            {% if item.void_url %}<a class="op-void" href="{{ item.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}
+          </div>
+          <ul class="op-lines" role="list"><li>{{ record.feed }}{% if record.meals %} · {% blocktrans trimmed count meals=record.meals %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}{% endif %}{% if record.feeder %} · {{ record.feeder.name }}{% endif %}</li></ul>
+          <p class="op-meta">{% blocktrans trimmed with name=record.created_by.get_username|default:"system" %}by {{ name }}{% endblocktrans %}{% if record.notes %} · {{ record.notes }}{% endif %}{% if record.is_deleted %} · {% blocktrans trimmed with reason=record.void_reason name=record.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}{% endif %}</p>
+        </li>
+        {% endwith %}{% endfor %}
+      </ol>
+      {% else %}
+      <p class="muted">{% trans "No feeding recorded in this unit yet." %}</p>
+      {% endif %}
+      <p><a href="{{ feeding_list_url }}">{% blocktrans trimmed with unit=unit.code %}All feeding records of {{ unit }}{% endblocktrans %}</a></p>
+    </section>
+
+    {% endif %}
     <section class="drawer-section">
       <h3>{% trans "Recent operations" %}</h3>
       {% if history %}

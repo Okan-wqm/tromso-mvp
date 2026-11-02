@@ -32,6 +32,14 @@ msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s balık · %(weight)s g"
 
 #, python-format
+msgid "%(batch)s: %(start)s – %(end)s, %(feed)s fed, %(gain)s grown"
+msgstr "%(batch)s: %(start)s – %(end)s, %(feed)s yem, %(gain)s büyüme"
+
+#, python-format
+msgid "%(batch)s: not weighed since it came in, so no FCR yet"
+msgstr "%(batch)s: geldiğinden beri tartılmadı, bu yüzden henüz FCR yok"
+
+#, python-format
 msgid "%(code)s · %(name)s (loop)"
 msgstr "%(code)s · %(name)s (döngü)"
 
@@ -87,6 +95,12 @@ msgstr[0] ""
 msgstr[1] ""
 "%(count)d ekipman bu tedarikçiden alındı: “%(category)s” işaretli kalsın ya da önce bu ekipmanlar"
 " için başka bir tedarikçi seçin."
+
+#, python-format
+msgid "%(count)d record"
+msgid_plural "%(count)d records"
+msgstr[0] "%(count)d kayıt"
+msgstr[1] "%(count)d kayıt"
 
 #, python-format
 msgid "%(count)d record restored."
@@ -181,6 +195,24 @@ msgid "%(energy)s MJ/kg digestible"
 msgstr "%(energy)s MJ/kg sindirilebilir"
 
 #, python-format
+msgid "%(feed)s fed, %(gain)s grown"
+msgstr "%(feed)s yem, %(gain)s büyüme"
+
+#, python-format
+msgid "%(feed)s is %(status)s: a new feeding takes an active feed."
+msgstr "%(feed)s durumu: %(status)s; yeni bir yemleme aktif bir yem alır."
+
+#, python-format
+msgid "%(feed)s is not listed as suitable for %(species)s at %(weight)s (Reference data › Feeds)."
+msgstr ""
+"%(feed)s, %(weight)s ağırlıktaki %(species)s için uygun olarak kayıtlı değil (Referans verileri ›"
+" Yemler)."
+
+#, python-format
+msgid "%(feed)s · %(size)s mm"
+msgstr "%(feed)s · %(size)s mm"
+
+#, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s “%(record)s” silinmiş."
 
@@ -193,12 +225,25 @@ msgid "%(fish)s fish"
 msgstr "%(fish)s balık"
 
 #, python-format
+msgid "%(fish)s fish, %(biomass)s"
+msgstr "%(fish)s balık, %(biomass)s"
+
+#, python-format
 msgid "%(fish)s fish, %(biomass)s now"
 msgstr "şu an %(fish)s balık, %(biomass)s"
 
 #, python-format
 msgid "%(free)s kg free"
 msgstr "%(free)s kg boş yer"
+
+#, python-format
+msgid ""
+"%(kilos)s kg is %(rate)s %% of the %(biomass)s kg %(unit)s holds on %(date)s in the book; more "
+"than %(limit)s %% a day is unusual. Tick the box below to record it anyway."
+msgstr ""
+"%(kilos)s kg, %(unit)s biriminin %(date)s tarihinde kayıtlardaki %(biomass)s kg biyokütlesinin "
+"%%%(rate)s kadarı; günde %%%(limit)s üzeri olağan dışıdır. Yine de kaydetmek için aşağıdaki "
+"kutuyu işaretleyin."
 
 #, python-format
 msgid "%(kilos)s weighed"
@@ -227,6 +272,12 @@ msgstr "%(label)s: “%(link)s” bağlantısı kalkar"
 #, python-format
 msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
 msgstr "%(label)s: kayıtlı %(value)s değeri, kaydedildiği biçimde değil."
+
+#, python-format
+msgid "%(meals)s meal"
+msgid_plural "%(meals)s meals"
+msgstr[0] "%(meals)s öğün"
+msgstr[1] "%(meals)s öğün"
 
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
@@ -278,6 +329,10 @@ msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s geri yüklenemedi: %(reasons)s"
 
 #, python-format
+msgid "%(size)s mm"
+msgstr "%(size)s mm"
+
+#, python-format
 msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
 msgstr "%(size)s: atış başına %(grams)s g, silo %(silo)s kg"
 
@@ -302,6 +357,10 @@ msgid "%(unit)s has the status %(status)s: set it to preparing or fallow in Setu
 msgstr ""
 "%(unit)s şu an %(status)s durumunda: stoklamak için Kurulum’da hazırlanıyor veya dinlendirmede "
 "durumuna alın."
+
+#, python-format
+msgid "%(unit)s holds no fish on %(date)s."
+msgstr "%(unit)s biriminde %(date)s tarihinde balık yok."
 
 #, python-format
 msgid "%(unit)s is deleted and would hold fish again: restore it first."
@@ -335,6 +394,7 @@ msgstr "%%%(value)s"
 msgid "%(value)s g"
 msgstr "%(value)s g"
 
+#. Translators: an amount of feed in kilograms, e.g. 12.5 kg.
 #. Translators: a weight in kilograms, e.g. 1,798 kg.
 #, python-format
 msgid "%(value)s kg"
@@ -451,6 +511,9 @@ msgstr "İçinde balık olan bir birim pasif yapılamaz: önce balıkları taş�
 
 msgid "Above the max density, accepted"
 msgstr "Azami yoğunluğun üstü, kabul edildi"
+
+msgid "Above the usual feed rate, accepted"
+msgstr "Olağan yemleme oranının üzerinde, onaylandı"
 
 msgid "Account"
 msgstr "Hesap"
@@ -572,11 +635,21 @@ msgstr "Tümü"
 msgid "All actions"
 msgstr "Tüm işlemler"
 
+msgid "All batches"
+msgstr "Tüm partiler"
+
 msgid "All categories"
 msgstr "Tüm kategoriler"
 
 msgid "All feed types"
 msgstr "Tüm yem türleri"
+
+#, python-format
+msgid "All feeding records of %(unit)s"
+msgstr "%(unit)s biriminin tüm yemleme kayıtları"
+
+msgid "All feeds"
+msgstr "Tüm yemler"
 
 msgid "All kinds"
 msgstr "Tüm türler"
@@ -610,6 +683,9 @@ msgstr "Yemdeki tüm enerji, verildiği hâliyle kg başına MJ."
 
 msgid "All types"
 msgstr "Tüm türler"
+
+msgid "All units"
+msgstr "Tüm birimler"
 
 msgid "All units and systems"
 msgstr "Tüm birimler ve sistemler"
@@ -725,6 +801,9 @@ msgstr ""
 "Oksijen ölçerin gösterdiği gibi; oksijen verilirken %100'ün üstünde. Sıcaklıkla birlikte, "
 "girilmezse mg/L hesaplanır."
 
+msgid "As given, to the gram (0.035 for 35 g)."
+msgstr "Verildiği gibi, gram hassasiyetinde (35 g için 0,035)."
+
 msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
 msgstr "Azot olarak. NO₂⁻ okuyan bir kit: 3,29'a bölün."
 
@@ -820,6 +899,9 @@ msgstr "Parti no"
 msgid "Batches"
 msgstr "Partiler"
 
+msgid "Batches fed"
+msgstr "Yemlenen partiler"
+
 msgid "Bead filter"
 msgstr "Boncuk filtre"
 
@@ -842,6 +924,13 @@ msgstr "%(low)s ile %(high)s arasında: değeri kontrol edin."
 
 msgid "Biofloc"
 msgstr "Biyoflok"
+
+msgid ""
+"Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from "
+"stocking to the last weighing"
+msgstr ""
+"Biyolojik yem dönüşüm oranı: kg büyüme başına verilen yem, ölü balıklar hesaba katılarak, "
+"stoklamadan son tartıma kadar"
 
 msgid "Biological filter"
 msgstr "Biyolojik filtre"
@@ -954,6 +1043,13 @@ msgstr "Kimyasallar"
 msgid "Chiller"
 msgstr "Soğutucu (chiller)"
 
+#, python-format
+msgid "Choose a feeder on the site of %(unit)s."
+msgstr "%(unit)s biriminin sahasındaki bir yemleme makinesi seçin."
+
+msgid "Choose a feeder: equipment of the Feeding category."
+msgstr "Bir yemleme makinesi seçin: Yemleme kategorisinden bir ekipman."
+
 msgid "Choose a site to list its units and loops."
 msgstr "Birimlerini ve döngülerini listelemek için bir saha seçin."
 
@@ -983,6 +1079,9 @@ msgstr "Genel sekmesinde türü seçin; boyutları burada görünür."
 
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Şekli seçin; hacmin hesaplandığı ölçüler onunla birlikte görünür."
+
+msgid "Choose the unit that was fed."
+msgstr "Yemlenen birimi seçin."
 
 msgid "Choose the unit the fish go into."
 msgstr "Balıkların gireceği birimi seçin."
@@ -1031,9 +1130,6 @@ msgstr "Sütun"
 
 msgid "Columns"
 msgstr "Sütunlar"
-
-msgid "Comes with the feeding records."
-msgstr "Besleme kayıtlarıyla gelecek."
 
 msgid "Common name"
 msgstr "Yaygın ad"
@@ -1351,6 +1447,13 @@ msgstr ""
 msgid "Earthen"
 msgstr "Toprak"
 
+msgid ""
+"Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, "
+"culled and lost fish are not credited"
+msgstr ""
+"Ekonomik yem dönüşüm oranı: kalan, hasat edilen ya da aktarılan kg balık başına verilen yem; "
+"ölen, itlaf edilen ve kaybolan balıklar hesaba katılmaz"
+
 msgid "Edit"
 msgstr "Düzenle"
 
@@ -1470,8 +1573,20 @@ msgstr "Deneysel"
 msgid "Export CSV"
 msgstr "CSV dışa aktar"
 
-msgid "FCR"
-msgstr "FCR"
+msgid ""
+"FCR and the feed figures are worked out again without it. To correct a feeding, void it and "
+"record it again."
+msgstr ""
+"FCR ve yem rakamları onsuz yeniden hesaplanır. Bir yemlemeyi düzeltmek için iptal edip yeniden "
+"kaydedin."
+
+msgid ""
+"FCR runs from stocking to the last weighing, on weighed biomass only. Dead fish leave at the last"
+" weighed average, so their growth since is not credited: bFCR reads a little high when many die."
+msgstr ""
+"FCR stoklamadan son tartıma kadar, yalnızca tartılmış biyokütle üzerinden hesaplanır. Ölü "
+"balıklar son tartılan ortalamayla düşülür, o günden sonraki büyümeleri hesaba katılmaz: çok ölüm "
+"olduğunda bFCR biraz yüksek çıkar."
 
 msgid "Facilities"
 msgstr "Tesis özellikleri"
@@ -1491,8 +1606,17 @@ msgstr "Familya"
 msgid "Farm console for tanks, water quality and stock records."
 msgstr "Tanklar, su kalitesi ve stok kayıtları için çiftlik konsolu."
 
+msgid "Fed"
+msgstr "Yemlenen"
+
+msgid "Fed today"
+msgstr "Bugün verilen"
+
 msgid "Feed"
 msgstr "Yem"
+
+msgid "Feed above the usual rate"
+msgstr "Olağan oranın üzerinde yem ver"
 
 msgid "Feed calibration"
 msgstr "Yem kalibrasyonu"
@@ -1500,20 +1624,41 @@ msgstr "Yem kalibrasyonu"
 msgid "Feed calibrations"
 msgstr "Yem kalibrasyonları"
 
-msgid "Feed conversion ratio"
-msgstr "Yem dönüşüm oranı"
-
 msgid "Feed gas"
 msgstr "Besleme gazı"
+
+msgid "Feed given"
+msgstr "Verilen yem"
+
+msgid "Feed given (kg)"
+msgstr "Verilen yem (kg)"
+
+msgid "Feed given to a unit is recorded from its drawer on Production units, or with Record feeding."
+msgstr ""
+"Bir birime verilen yem, Üretim birimleri sayfasındaki çekmecesinden ya da Yemleme kaydet ile "
+"kaydedilir."
 
 msgid "Feed per shot (g)"
 msgstr "Atış başına yem (g)"
 
+#, python-format
+msgid "Feed rate %(rate)s of the biomass a day over the last 7 days"
+msgstr "Yemleme oranı: son 7 günde günlük biyokütlenin %(rate)s kadarı"
+
 msgid "Feed size (mm)"
 msgstr "Yem boyutu (mm)"
 
+msgid "Feed today"
+msgstr "Bugün verilen yem"
+
 msgid "Feed type"
 msgstr "Yem türü"
+
+msgid "Feed, last 7 days"
+msgstr "Yem, son 7 gün"
+
+msgid "Feeder"
+msgstr "Yemleme makinesi"
 
 msgid "Feeding"
 msgstr "Yemleme"
@@ -1525,9 +1670,20 @@ msgstr ""
 "Yemleme görevleri sahanın yerel gününe göre çalışır. Saha şirketten farklı bir saat diliminde "
 "değilse devralınan değeri değiştirmeyin."
 
+#, python-format
+msgid "Feeding of %(date)s in %(unit)s voided."
+msgstr "%(unit)s biriminin %(date)s tarihli yemlemesi iptal edildi."
+
 #. Translators: a placeholder showing what to type.
 msgid "Feeding rate"
 msgstr "Yemleme hızı"
+
+#, python-format
+msgid "Feeding recorded: %(kilos)s kg of %(feed)s in %(unit)s on %(date)s."
+msgstr "Yemleme kaydedildi: %(date)s tarihinde %(unit)s birimine %(kilos)s kg %(feed)s."
+
+msgid "Feeding records"
+msgstr "Yemleme kayıtları"
 
 msgid "Feeds"
 msgstr "Yemler"
@@ -1958,11 +2114,14 @@ msgstr "Larva yemi"
 msgid "Last"
 msgstr "Son"
 
+msgid "Last 7 days"
+msgstr "Son 7 gün"
+
 msgid "Last calibration"
 msgstr "Son kalibrasyon"
 
 msgid "Last fed"
-msgstr "Son besleme"
+msgstr "Son yemleme"
 
 msgid "Last name"
 msgstr "Soyad"
@@ -2105,6 +2264,9 @@ msgstr "Azami debi"
 
 msgid "Maximum temperature"
 msgstr "Azami sıcaklık"
+
+msgid "Meals"
+msgstr "Öğün"
 
 msgid "Measured at"
 msgstr "Ölçüm zamanı"
@@ -2290,6 +2452,18 @@ msgstr "Henüz kaydedilmiş değişiklik yok."
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Henüz kişi yok. Satır eklemek için “Kişi ekle” düğmesini kullanın."
 
+msgid "No feed recorded up to the last weighing."
+msgstr "Son tartıma kadar yem kaydedilmedi."
+
+msgid "No feeding matches these filters."
+msgstr "Bu filtrelere uyan yemleme yok."
+
+msgid "No feeding recorded in this unit yet."
+msgstr "Bu birimde henüz yemleme kaydedilmedi."
+
+msgid "No feeding recorded yet"
+msgstr "Henüz yemleme kaydedilmedi"
+
 #, python-format
 msgid "No fish are in %(unit)s."
 msgstr "%(unit)s içinde balık yok."
@@ -2301,6 +2475,9 @@ msgstr "%(date)s tarihinde %(unit)s içinde tartılacak %(batch)s balığı yok.
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
+
+msgid "No growth up to the last weighing."
+msgstr "Son tartıma kadar büyüme yok."
 
 msgid "No limit"
 msgstr "Sınır yok"
@@ -2340,6 +2517,9 @@ msgid ""
 "No system to choose: the production department’s site has none, or no production department is "
 "chosen."
 msgstr "Seçilecek sistem yok: üretim departmanının sahasında sistem yok ya da üretim departmanı seçilmedi."
+
+msgid "No unit holds fish: a feeding needs fish in its unit."
+msgstr "Hiçbir birimde balık yok: bir yemleme için biriminde balık olmalı."
 
 msgid "No units match these filters."
 msgstr "Bu filtrelere uyan birim yok."
@@ -2382,6 +2562,9 @@ msgstr "Puanlanmadı"
 
 msgid "Not stated"
 msgstr "Belirtilmedi"
+
+msgid "Not weighed since the fish came in."
+msgstr "Balıklar geldiğinden beri tartılmadı."
 
 msgid "Notes"
 msgstr "Notlar"
@@ -2500,6 +2683,15 @@ msgstr ""
 "İsteğe bağlı, tartıldılarsa. Stok onları bu birimdeki partinin ortalama ağırlığıyla düşer; "
 "tartılan değer yanında saklanır."
 
+msgid "Optional: how many meals it was given in."
+msgstr "İsteğe bağlı: kaç öğünde verildiği."
+
+msgid "Optional: the feeder that gave it, on the unit’s site."
+msgstr "İsteğe bağlı: birimin sahasında onu veren yemleme makinesi."
+
+msgid "Optional: the time of the feeding, or of its first meal."
+msgstr "İsteğe bağlı: yemlemenin ya da ilk öğünün saati."
+
 msgid "Optional; the batch number is given on saving."
 msgstr "İsteğe bağlı; parti numarası kaydedilirken verilir."
 
@@ -2520,6 +2712,9 @@ msgstr "Köken"
 
 msgid "Other"
 msgstr "Diğer"
+
+msgid "Other active feeds"
+msgstr "Diğer aktif yemler"
 
 msgid "Other equipment"
 msgstr "Diğer ekipman"
@@ -2836,6 +3031,9 @@ msgstr "Durumun nedeni"
 msgid "Reason for voiding"
 msgstr "İptal nedeni"
 
+msgid "Recent feedings"
+msgstr "Son yemlemeler"
+
 msgid "Recent operations"
 msgstr "Son işlemler"
 
@@ -2847,6 +3045,9 @@ msgstr "Kayıt"
 
 msgid "Record cull"
 msgstr "İtlaf kaydet"
+
+msgid "Record feeding"
+msgstr "Yemleme kaydet"
 
 msgid "Record mortality"
 msgstr "Ölüm kaydet"
@@ -2862,6 +3063,9 @@ msgstr "Kayıt türü"
 
 msgid "Record water sample"
 msgstr "Su numunesi kaydet"
+
+msgid "Recorded by"
+msgstr "Kaydeden"
 
 msgid "Rectangular"
 msgstr "Dikdörtgen"
@@ -3140,6 +3344,9 @@ msgstr "Birimleri göster"
 msgid "Show them"
 msgstr "Göster"
 
+msgid "Show voided"
+msgstr "İptal edilenleri göster"
+
 msgid "Shrimp"
 msgstr "Karides"
 
@@ -3250,6 +3457,14 @@ msgstr "Teknik özellik alanları"
 msgid "Split"
 msgstr "Bölme"
 
+#, python-format
+msgid "Split by the book biomass at the end of %(date)s:"
+msgstr "%(date)s günü sonundaki kayıtlı biyokütleye göre bölünür:"
+
+#, python-format
+msgid "Split by the book biomass at the start of %(date)s:"
+msgstr "%(date)s günü başındaki kayıtlı biyokütleye göre bölünür:"
+
 msgid "Spring"
 msgstr "Kaynak suyu"
 
@@ -3353,6 +3568,9 @@ msgstr "Dalgıç pompa"
 
 msgid "Suitable for"
 msgstr "Uygunluk"
+
+msgid "Suitable for these fish"
+msgstr "Bu balıklara uygun"
 
 msgid "Supplier"
 msgstr "Tedarikçi"
@@ -3505,6 +3723,15 @@ msgstr "Beklenen hasat stoklama tarihinden sonra gelir."
 
 msgid "The feed mill that makes it: a supplier of feed (Purchasing › Suppliers)."
 msgstr "Onu üreten yem fabrikası: bir yem tedarikçisi (Satın alma › Tedarikçiler)."
+
+#, python-format
+msgid "The feeding of %(date)s in %(unit)s would have no fish: void it first."
+msgstr "%(unit)s biriminin %(date)s tarihli yemlemesinde balık kalmazdı: önce onu iptal edin."
+
+msgid ""
+"The feeds that suit the species and average weight of these fish (Reference data › Feeds) come "
+"first."
+msgstr "Bu balıkların türüne ve ortalama ağırlığına uygun yemler (Referans verileri › Yemler) önce gelir."
 
 msgid ""
 "The feeds the farm uses: who makes them, their pellet and analysis, and the species and fish "
@@ -3825,6 +4052,12 @@ msgstr "Tedarik ettiği en az bir şeyi işaretleyin."
 msgid "Tick at least one water environment."
 msgstr "En az bir su ortamı işaretleyin."
 
+msgid "Tick it only when the amount is right, e.g. for fry that are fed more."
+msgstr "Yalnızca miktar doğruysa işaretleyin, örn. daha çok yemlenen yavrular için."
+
+msgid "Time"
+msgstr "Saat"
+
 msgid "Timer"
 msgstr "Zamanlayıcı"
 
@@ -3836,6 +4069,9 @@ msgstr "Bitiş"
 
 msgid "To units"
 msgstr "Hedef birimler"
+
+msgid "Today"
+msgstr "Bugün"
 
 msgid "Total alkalinity. A kit in dKH: multiply by 17.85."
 msgstr "Toplam alkalinite. dKH veren bir kit: 17,85 ile çarpın."
@@ -3963,12 +4199,19 @@ msgstr "Veteriner ve balık sağlığı"
 msgid "Void"
 msgstr "İptal et"
 
+msgid "Void feeding"
+msgstr "Yemlemeyi iptal et"
+
 msgid "Void operation"
 msgstr "İşlemi iptal et"
 
 #, python-format
 msgid "Void the %(operation)s of %(date)s?"
 msgstr "%(date)s tarihli %(operation)s işlemi iptal edilsin mi?"
+
+#, python-format
+msgid "Void the feeding of %(date)s in %(unit)s?"
+msgstr "%(unit)s biriminin %(date)s tarihli yemlemesi iptal edilsin mi?"
 
 #, python-format
 msgid "Void the sample of %(point)s at %(moment)s?"
@@ -3982,9 +4225,6 @@ msgstr "İptal edildi"
 
 msgid "Voltage"
 msgstr "Gerilim"
-
-msgid "Volume"
-msgstr "Hacim"
 
 msgid "Volume (m³)"
 msgstr "Hacim (m³)"
@@ -4159,6 +4399,9 @@ msgstr ""
 msgid "Yes"
 msgstr "Evet"
 
+msgid "Yesterday"
+msgstr "Dün"
+
 msgid "You can now sign in with your new password."
 msgstr "Artık yeni parolanızla giriş yapabilirsiniz."
 
@@ -4184,11 +4427,23 @@ msgstr "stoklandığı gibi"
 msgid "average %(weight)s"
 msgstr "ortalama %(weight)s"
 
+msgid "bFCR"
+msgstr "bFCR"
+
 msgid "batch"
 msgstr "parti"
 
 msgid "batches"
 msgstr "partiler"
+
+msgid "biomass as stocked"
+msgstr "stoklamadaki biyokütle"
+
+#, python-format
+msgid "biomass as weighed %(days)s day ago"
+msgid_plural "biomass as weighed %(days)s days ago"
+msgstr[0] "%(days)s gün önce tartılan biyokütle"
+msgstr[1] "%(days)s gün önce tartılan biyokütle"
 
 #, python-format
 msgid "by %(name)s"
@@ -4369,6 +4624,9 @@ msgstr "örn. kum, kartuş"
 msgid "e.g. the vet, November 2026"
 msgstr "örn. veteriner, Kasım 2026"
 
+msgid "eFCR"
+msgstr "eFCR"
+
 msgid "empty"
 msgstr "boş"
 
@@ -4397,8 +4655,18 @@ msgstr "yem kalibrasyonu"
 msgid "feed calibrations"
 msgstr "yem kalibrasyonları"
 
+#, python-format
+msgid "feed in use: %(feed)s"
+msgstr "kullanılan yem: %(feed)s"
+
 msgid "feed suitability"
 msgstr "yem uygunluğu"
+
+msgid "feeding record"
+msgstr "yemleme kaydı"
+
+msgid "feeding records"
+msgstr "yemleme kayıtları"
 
 msgid "feeds"
 msgstr "yemler"

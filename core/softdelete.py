@@ -6,8 +6,10 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
 - CASCADE   the records that point at it are deleted with it, and so on down;
 - SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
 - PROTECT / RESTRICT  they block the delete until they are dealt with;
-- DO_NOTHING  they stay as they are: their manager hides them while it is deleted, and they come back
-  with it when it is restored (a unit's water samples). The confirmation counts them.
+- DO_NOTHING  they stay as they are, still pointing at it: history that outlives the record without
+  holding it back (a deleted unit's feeding records and water samples, as its stock lines), shown again
+  with it when it is restored. The database's own foreign key still refuses a hard delete. The
+  confirmation counts them.
 
 Records linked to it through a many-to-many link (the equipment serving a system) keep the link row:
 the link only stops counting while the record is deleted, so restoring it brings the link back. The

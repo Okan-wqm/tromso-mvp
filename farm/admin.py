@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from core.admin import AuditedModelAdmin, ReadOnlyAdmin, register_audited
 
-from .models import Batch, EquipmentType, StockOperation, WaterMeasurement
+from .models import Batch, EquipmentType, FeedingRecord, StockOperation, WaterMeasurement
 
 register_audited('farm')
 
@@ -17,14 +17,14 @@ class EquipmentTypeAdmin(ReadOnlyAdmin):
 
 
 class StockRecordAdmin(AuditedModelAdmin):
-    """Stock operations and batches, voided ones too, to look at. A voided operation (and the batch of a
-    voided stocking) does not come back by a restore, which would skip the stock's checks: it is entered
-    again on the Production units page, where the timeline is checked."""
+    """Stock operations, batches and feedings, voided ones too, to look at. A voided operation (and the
+    batch of a voided stocking) or feeding does not come back by a restore, which would skip the checks
+    (the timeline, the fish a feeding needs): it is entered again on its page, where they run."""
 
     actions = []
 
 
-admin.site.unregister([Batch, StockOperation, WaterMeasurement])
+admin.site.unregister([Batch, FeedingRecord, StockOperation, WaterMeasurement])
 
 
 @admin.register(Batch)
@@ -37,6 +37,13 @@ class BatchAdmin(StockRecordAdmin):
 class StockOperationAdmin(StockRecordAdmin):
     list_display = ['kind', 'date', 'created_by', 'is_deleted', 'void_reason']
     list_filter = ['is_deleted', 'kind']
+
+
+@admin.register(FeedingRecord)
+class FeedingRecordAdmin(StockRecordAdmin):
+    list_display = ['date', 'unit', 'feed', 'amount_kg', 'created_by', 'is_deleted', 'void_reason']
+    list_filter = ['is_deleted']
+    search_fields = ['unit__code', 'feed__code', 'feed__name']
 
 
 @admin.register(WaterMeasurement)

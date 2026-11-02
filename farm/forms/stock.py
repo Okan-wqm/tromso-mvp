@@ -50,12 +50,19 @@ def acknowledgement():
 
 
 class Acknowledged:
-    """A form that brings fish into units: the acknowledgement is offered once the stock service said a
-    unit would go above its max biomass, or when it is ticked already."""
+    """A form whose service may ask the person to confirm something unusual (fish above a unit's max
+    biomass, a feeding above the usual rate): the box `ack_field` is offered once the service asked, or
+    when it is ticked already, and the dialog shows it apart from the other fields."""
+
+    ack_field = 'over_capacity_ack'
+
+    @property
+    def ack(self):
+        return self[self.ack_field]
 
     @property
     def needs_ack(self):
-        return 'over_capacity_ack' in self.errors or bool(self['over_capacity_ack'].value())
+        return self.ack_field in self.errors or bool(self.ack.value())
 
 
 class OperationForm(ServiceErrors, forms.Form):

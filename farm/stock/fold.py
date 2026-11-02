@@ -4,7 +4,7 @@ The count of a batch in a unit is the sum of its lines; the biomass needs the or
 this one function over the lines, ordered by the operation's date, then by the order the operations
 were entered (the first line id of each), and inside an operation removals first, then weighings,
 then arrivals. Nothing here touches the database: the stock service, the page and check_stock all
-fold the same way.
+fold the same way, and the feeding walk (farm/feeding/fold.py) reads the same fold through its hooks.
 
 The rules (the source got each of these wrong somewhere, STK-14, STK-24, STK-29):
 - fish leave at the share's own average on that day, so the average does not move;
@@ -45,6 +45,9 @@ class Line:
     count_delta: int
     avg_weight_g: Decimal = None
     pair: int = None
+    # A weighed total beside the book (dead fish, a harvest's catch): never in the fold, read by the
+    # feeding walk for the biomass removed.
+    measured_weight_kg: Decimal = None
 
 
 class StockError(Exception):
@@ -127,20 +130,25 @@ def _arriving(share, line, moved):
     return share.grams * line.count_delta / share.count
 
 
-def fold(lines, observe=None):
+def fold(lines, observe=None, *, before=None, on_line=None):
     """{(unit id, batch id): Share} after every line. `observe(op, shares)` is called after each
-    operation, with the shares as they are then (the stock service checks capacity and species there).
-    Raises StockError at the first line that cannot happen."""
+    operation, with the shares as they are then (the stock service checks capacity and species there),
+    `before(op, shares)` before it, and `on_line(line, share, grams)` after each line with the grams it
+    moved: the grams that left, or came in (None for a weighing, which sets the share's grams). Raises
+    StockError at the first line that cannot happen."""
     shares = {}
     for op, op_lines in operations(lines):
+        if before is not None:
+            before(op, shares)
         moved = {}
         touched = []
         for line in op_lines:
             share = shares.setdefault((line.unit_id, line.batch_id), Share())
             touched.append((share, line))
             k = line.count_delta
+            grams = None
             if k < 0:
-                out = _take(share, -k, line)
+                out = grams = _take(share, -k, line)
                 if line.kind == MovementKind.MORTALITY:
                     share.deaths -= k
                 elif line.kind == MovementKind.CULL:
@@ -159,6 +167,8 @@ def fold(lines, observe=None):
                 share.count += k
                 share.grams += grams
                 share.fish_in += k
+            if on_line is not None:
+                on_line(line, share, grams)
         for share, line in touched:
             if share.count and share.grams <= 0:
                 raise StockError(StockError.NO_BIOMASS, line)

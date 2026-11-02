@@ -1,0 +1,91 @@
+{% extends base_template %}
+{% load i18n stock feeding %}
+{% comment %} Operations › Feeding records (farm.feeding.views.feeding_records): every feeding, newest first, filtered
+   by site, unit, the batch it fed, feed and dates in the address; the batches a record fed are worked out
+   from the stock ledger (the record names only the unit). Voided records, struck through with their
+   reason, are shown when asked for.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <form method="get" class="toolbar-filter feeding-filters" data-omit-empty>
+    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <select id="site-filter" name="site" data-autosubmit>
+      <option value="">{% trans "All sites" %}</option>
+      {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="unit-filter">{% trans "Unit" %}</label>
+    <select id="unit-filter" name="unit" data-autosubmit>
+      <option value="">{% trans "All units" %}</option>
+      {% for unit in choices.unit %}<option value="{{ unit.pk }}"{% if params.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="batch-filter">{% trans "Batch" %}</label>
+    <select id="batch-filter" name="batch" data-autosubmit>
+      <option value="">{% trans "All batches" %}</option>
+      {% for batch in choices.batch %}<option value="{{ batch.pk }}"{% if params.batch == batch.pk|stringformat:"s" %} selected{% endif %}>{{ batch.code }}{% if batch.name %} · {{ batch.name }}{% endif %}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="feed-filter">{% trans "Feed" %}</label>
+    <select id="feed-filter" name="feed" data-autosubmit>
+      <option value="">{% trans "All feeds" %}</option>
+      {% for feed in choices.feed %}<option value="{{ feed.pk }}"{% if params.feed == feed.pk|stringformat:"s" %} selected{% endif %}>{{ feed }}</option>{% endfor %}
+    </select>
+    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
+    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
+    <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
+  </form>
+  {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record feeding" %}</a>{% endif %}
+</div>
+
+<p class="units-count">{{ count_line }} · {{ kilos|tonnes }}</p>
+
+{% if not rows %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="clipboard-list" %}
+  {% if filtered %}
+  <h2>{% trans "No feeding matches these filters." %}</h2>
+  <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+  {% else %}
+  <h2>{% trans "No feeding recorded yet" %}</h2>
+  <p>{% trans "Feed given to a unit is recorded from its drawer on Production units, or with Record feeding." %}</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data-table feeding-table">
+    <thead>
+      <tr>
+        <th scope="col">{% trans "Date" %}</th>
+        <th scope="col">{% trans "Unit" %}</th>
+        <th scope="col">{% trans "Batches fed" %}</th>
+        <th scope="col">{% trans "Feed" %}</th>
+        <th scope="col" class="num">{% trans "Feed given" %}</th>
+        <th scope="col" class="num">{% trans "Meals" %}</th>
+        <th scope="col">{% trans "Feeder" %}</th>
+        <th scope="col">{% trans "Recorded by" %}</th>
+        <th scope="col">{% trans "Notes" %}</th>
+        <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}{% with record=row.record %}
+      <tr{% if record.is_deleted %} class="is-voided"{% endif %}>
+        <td class="nowrap"><time datetime="{{ record.date|date:'Y-m-d' }}">{{ record.date|date:"DATE_FORMAT" }}</time>{% if record.time %}<span class="row-sub">{{ record.time|time:"H:i" }}</span>{% endif %}</td>
+        <td><span class="row-title">{{ record.unit.code }}</span><span class="row-sub nowrap">{{ record.unit.production_department.name }}{% if record.unit.production_department.site %} · {{ record.unit.production_department.site.name }}{% endif %}</span></td>
+        <td class="nowrap">{% for batch in row.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% empty %}—{% endfor %}</td>
+        <td>{{ record.feed.name }}<span class="row-sub">{{ record.feed.code }}{% if record.feed.pellet_size_mm %} · {% blocktrans trimmed with size=record.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %}</span></td>
+        <td class="num">{{ record.amount_kg|feed_kg }}</td>
+        <td class="num">{{ record.meals|default:"—" }}</td>
+        <td>{{ record.feeder.name|default:"—" }}</td>
+        <td>{{ record.created_by.get_username|default:"system" }}<span class="row-sub">{{ record.created_at|date:"DATETIME_FORMAT" }}</span></td>
+        <td>{{ record.notes }}{% if record.high_rate_ack %}<span class="row-sub">{% trans "Above the usual feed rate, accepted" %}</span>{% endif %}{% if record.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=record.void_reason name=record.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% elif record.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% endif %}
+{% endblock %}

@@ -5,6 +5,7 @@
 {% block heading %}{% trans "Overview" %}{% endblock %}
 {% block content %}
 {% if stock_tiles %}{% include "_overview_tiles.html" with tiles=stock_tiles %}{% endif %}
+{% if feeding_tiles %}{% include "_overview_tiles.html" with tiles=feeding_tiles %}{% endif %}
 {% include "_overview_tiles.html" %}
 {% if units_by_kind %}
 <section class="overview-block">

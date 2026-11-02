@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock %}
+{% load i18n stock feeding %}
 {% comment %} Operations › Production units (farm.stock.views.production_units): the platform's /sites/tanks. One
    table of every unit with its fish now, computed from the stock ledger, and a drawer for the unit
    picked (?unit=). Filters and the drawer live in the address; a row is one link (its code stretched
@@ -76,7 +76,7 @@
             <th scope="col" class="num">{% trans "Avg. weight" %}</th>
             <th scope="col" class="num">{% trans "Biomass" %}</th>
             <th scope="col" class="num">{% trans "Density · capacity" %}</th>
-            <th scope="col" class="num"><abbr title="{% trans "Feed conversion ratio" %}">{% trans "FCR" %}</abbr></th>
+            <th scope="col" class="num"><abbr title="{% trans "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing" %}">{% trans "bFCR" %}</abbr></th>
             <th scope="col" class="num">{% trans "Survival" %}</th>
             <th scope="col">{% trans "Last fed" %}</th>
           </tr>
@@ -109,9 +109,9 @@
               </span>
               {% else %}—{% endif %}
             </td>
-            <td class="num" title="{% trans "Comes with the feeding records." %}">—</td>
+            {% with conversion=row.feeding.conversion %}<td class="num"{% if row.feeding and not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}
             <td class="num">{{ stock.survival|percent:1 }}</td>
-            <td title="{% trans "Comes with the feeding records." %}">—</td>
+            <td class="nowrap">{% if row.feeding %}{{ row.feeding.last_fed|fed_on:row.feeding.today }}{% else %}—{% endif %}</td>
           </tr>
           {% endwith %}{% endfor %}
         </tbody>

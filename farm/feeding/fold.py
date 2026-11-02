@@ -1,0 +1,209 @@
+"""Feed against the stock's timeline: one walk over the stock fold (farm/stock/fold.py, through its hooks)
+that splits each day's feed among the batches in the unit and keeps the measured points of every share,
+from which FCR is read (farm/feeding/read.py). Pure: nothing here touches the database. The page, the
+stock service's check and check_stock walk the same way (feeding-records §4.7, §4.8).
+
+Feed is never written into the stock: the fold's grams are the book, measured weights only, and the
+walk only reads them (the source added fed kg / expected FCR to the biomass, so its FCR met the target
+by construction, FDR-19).
+
+- A feeding needs fish in its unit at the start of its day (after every operation dated before it) or
+  at its end (after every operation dated that day); one without is an orphan.
+- Its feed goes to the batches in the unit at the start of the day, split by their book biomass then;
+  when the unit held no fish at the start (stocked that day), by the biomass at the end of the day.
+  Decimals at full precision, so the parts of a record add up to it; only the page rounds.
+- A share's measured points in a stay (the time a batch is in a unit without a break): its stocking, fish
+  graded into it while it had none (they carry their measured weight), a weighing (a grading's
+  remainder too), and the harvest that empties it. Fish moved in by a plain transfer arrive at book
+  grams, so they start no point. At each point the walk keeps the book biomass B and, since the stay
+  began, the biomass removed R (dead and culled fish at their weighed kilos when weighed, a harvest at
+  its weighed kilos, the rest at the grams the fold took), the part of R that is lost fish D (mortality,
+  cull, a count adjustment down: escape or unaccounted loss) and the biomass added A (fish that came in
+  during the stay)."""
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import date
+from decimal import Decimal
+
+from farm.models.stock import MovementKind, OperationKind
+from farm.stock.fold import fold
+
+ZERO = Decimal(0)
+LOST = (MovementKind.MORTALITY, MovementKind.CULL, MovementKind.ADJUSTMENT)
+
+
+@dataclass(frozen=True)
+class Feeding:
+    """A feeding record as the walk needs it."""
+    id: object
+    unit_id: object
+    date: date
+    amount_kg: Decimal
+
+
+class PointKind:
+    START = 'start'          # stocked, or graded into the unit while the batch had no fish there
+    WEIGHING = 'weighing'    # a weighing, or the fish that stay at a grading
+    CLOSE = 'close'          # the harvest that empties the unit of the batch
+
+
+@dataclass(frozen=True)
+class Point:
+    """A measured point of a share: the book biomass then, and the running sums of its stay (kg)."""
+    kind: str
+    day: date
+    biomass_kg: Decimal
+    removed_kg: Decimal
+    lost_kg: Decimal
+    added_kg: Decimal
+
+
+@dataclass
+class Stay:
+    """A batch in a unit from the day it came in while it had none there: its measured points and the
+    feed it was given, per day (kg). The sums run in grams."""
+    since: date
+    points: list = field(default_factory=list)
+    feed: dict = field(default_factory=dict)
+    removed: Decimal = ZERO
+    lost: Decimal = ZERO
+    added: Decimal = ZERO
+
+    def fed_kg(self, start=None, end=None, closing=False):
+        """The feed of the days from `start` up to, not including, `end` (including it when `closing`)."""
+        return sum((kilos for day, kilos in self.feed.items()
+                    if (start is None or day >= start)
+                    and (end is None or day < end or closing and day == end)), ZERO)
+
+
+@dataclass(frozen=True)
+class Day:
+    """A unit on a day: the grams of each batch with fish at the start of the day and at its end."""
+    start: dict
+    end: dict
+
+    @property
+    def weights(self):
+        """What the day's feed is split by: the start, or the end when the unit was empty at the start."""
+        return self.start or self.end
+
+    @property
+    def has_fish(self):
+        return bool(self.weights)
+
+    @property
+    def biomass_kg(self):
+        """The book biomass the day's feed rate is read against (kg); 0 when the unit held no fish."""
+        return sum(self.weights.values(), ZERO) / 1000
+
+
+@dataclass
+class Walk:
+    shares: dict = field(default_factory=dict)                  # the fold: (unit, batch) -> Share
+    stays: dict = field(default_factory=lambda: defaultdict(list))   # (unit, batch) -> [Stay], oldest first
+    days: dict = field(default_factory=dict)                    # (unit, day) -> Day, for the days asked
+    split: dict = field(default_factory=dict)                   # feeding id -> {batch id: kg}
+    orphans: list = field(default_factory=list)                 # feedings without fish, earliest first
+
+
+class _Walker:
+    def __init__(self, feedings, days, observe):
+        self.result = Walk()
+        self.observe = observe
+        self.feedings = defaultdict(list)
+        wanted = defaultdict(set)
+        for feeding in feedings:
+            self.feedings[(feeding.unit_id, feeding.date)].append(feeding)
+            wanted[feeding.date].add(feeding.unit_id)
+        for unit_id, day in days:
+            wanted[day].add(unit_id)
+        self.wanted = wanted
+        self.order = sorted(wanted)
+        self.started = self.ended = 0    # the days whose start, and whose end, are read
+        self.start = {}
+        self.pending = {}                # points of the operation being folded: (unit, batch) -> kind
+
+    # ---- the days asked for: their start and their end ------------------------------------------
+    def capture(self, shares, until=None):
+        """Reads every asked day whose start (all operations before it folded) and end (all operations
+        of it folded) are reached when the next operation is dated `until` (None: the fold is done)."""
+        while self.started < len(self.order) and (until is None or self.order[self.started] <= until):
+            day = self.order[self.started]
+            for unit_id in self.wanted[day]:
+                self.start[(unit_id, day)] = present = _present(shares, unit_id)
+                if present:
+                    self._allocate(unit_id, day, present)
+            self.started += 1
+        while self.ended < len(self.order) and (until is None or self.order[self.ended] < until):
+            day = self.order[self.ended]
+            for unit_id in self.wanted[day]:
+                start = self.start.pop((unit_id, day))
+                end = _present(shares, unit_id)
+                self.result.days[(unit_id, day)] = Day(start, end)
+                if not start and end:
+                    self._allocate(unit_id, day, end)
+                elif not start:
+                    self.result.orphans.extend(self.feedings.get((unit_id, day), ()))
+            self.ended += 1
+
+    def _allocate(self, unit_id, day, grams):
+        total = sum(grams.values(), ZERO)
+        for feeding in self.feedings.get((unit_id, day), ()):
+            parts = {batch_id: feeding.amount_kg * share / total for batch_id, share in grams.items()}
+            self.result.split[feeding.id] = parts
+            for batch_id, kilos in parts.items():
+                stay = self.result.stays[(unit_id, batch_id)][-1]
+                stay.feed[day] = stay.feed.get(day, ZERO) + kilos
+
+    # ---- the fold's hooks ----------------------------------------------------------------------
+    def before(self, op, shares):
+        self.capture(shares, op.date)
+
+    def line(self, line, share, grams):
+        key = (line.unit_id, line.batch_id)
+        k = line.count_delta
+        if line.kind == MovementKind.WEIGHING:
+            self.pending[key] = PointKind.WEIGHING
+        elif k > 0 and share.count == k:          # the batch had no fish here: a new stay
+            self.result.stays[key].append(Stay(line.op.date))
+            if line.kind == MovementKind.INPUT or (line.kind == MovementKind.TRANSFER_IN
+                                                   and line.op.kind == OperationKind.GRADING):
+                self.pending[key] = PointKind.START
+        elif k > 0:
+            self.result.stays[key][-1].added += grams
+        else:
+            stay = self.result.stays[key][-1]
+            removed = grams if line.measured_weight_kg is None else line.measured_weight_kg * 1000
+            stay.removed += removed
+            if line.kind in LOST:
+                stay.lost += removed
+            if line.kind == MovementKind.HARVEST:
+                self.pending[key] = PointKind.CLOSE
+
+    def after(self, op, shares):
+        for key, kind in self.pending.items():
+            share = shares[key]
+            if kind == PointKind.CLOSE and share.count:
+                continue                           # a harvest that leaves fish: no measured point
+            stay = self.result.stays[key][-1]
+            stay.points.append(Point(kind, op.date, share.grams / 1000, stay.removed / 1000, stay.lost / 1000,
+                                     stay.added / 1000))
+        self.pending.clear()
+        if self.observe is not None:
+            self.observe(op, shares)
+
+
+def _present(shares, unit_id):
+    """{batch id: grams} of the batches with fish in the unit now."""
+    return {batch_id: share.grams for (unit, batch_id), share in shares.items() if unit == unit_id and share.count}
+
+
+def walk(lines, feedings=(), days=(), observe=None):
+    """Folds `lines` (farm/stock/fold.py) and walks `feedings` (Feeding) along: their split, the stays
+    with their measured points and feed, the unit's book on each feeding day and on `days` ((unit id,
+    day) pairs, e.g. the last week's for the feed rate), and the feedings without fish. `observe` is passed
+    on to the fold. Raises the fold's StockError."""
+    walker = _Walker(feedings, days, observe)
+    walker.result.shares = fold(lines, walker.after, before=walker.before, on_line=walker.line)
+    walker.capture(walker.result.shares)
+    return walker.result

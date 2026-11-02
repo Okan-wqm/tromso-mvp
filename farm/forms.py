@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 from core.crud import TabbedForm, tab_fields
 
-from .models import Site, SiteContact
+from .models import Department, Site, SiteContact
 
 class CodedFormMixin:
     """Name and code as the source validates them: both at least 2 characters, the code upper-case."""
@@ -138,3 +138,31 @@ class BaseSiteContactFormSet(forms.BaseInlineFormSet):
 SiteContactFormSet = forms.inlineformset_factory(
     Site, SiteContact, form=SiteContactForm, formset=BaseSiteContactFormSet, extra=0, can_delete=True,
 )
+
+
+class DepartmentForm(CodedFormMixin, TabbedForm):
+    tabs = [('details', 'Details', ['name', 'code', 'type', 'site', 'capacity', 'notes'])]
+
+    class Meta:
+        model = Department
+        fields = ['name', 'code', 'type', 'site', 'capacity', 'notes']
+        help_texts = {'site': 'A department stays on the site it was created on.'}
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'e.g. Hatchery hall A'}),
+            'code': forms.TextInput(attrs={'placeholder': 'e.g. HAT-A', 'data-uppercase': ''}),
+            'capacity': forms.NumberInput(attrs={'min': 0, 'step': 'any'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        site = self.fields['site']
+        site.queryset = Site.objects.all()
+        site.empty_label = 'Select a site'
+        if not self.instance._state.adding:
+            # As in the source, the site is chosen once; an orphaned department shows "No site".
+            site.disabled = True
+            site.required = False
+            site.empty_label = 'No site'
+        else:
+            site.required = True

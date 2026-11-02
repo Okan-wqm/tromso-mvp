@@ -1,10 +1,10 @@
 {% load i18n %}{% comment %} Rows a record owns, on an inner tab of its own and saved as one list (core.crud.RowList), with a
    heading row: a feeder's calibrations, a feed's suitability. `rows` is the formset (none until the record
-   can have them), `tab` the inner tab's key, `title`, `help`, `action` where it is saved, `legend` (one row),
+   can have them), `tab` the inner tab's key, `panel_title`, `help`, `action` where it is saved, `legend` (one row),
    `empty` (no rows yet), `add` and `save` (the buttons), `kind` (the class giving the rows their columns)
    and `pending`, said instead of the list while there is none. {% endcomment %}
 <section class="tab-panel row-list" data-panel="{{ tab }}" aria-labelledby="{{ tab }}-title">
-  <h3 class="panel-title" id="{{ tab }}-title">{{ title }}</h3>
+  <h3 class="panel-title" id="{{ tab }}-title">{{ panel_title }}</h3>
   {% if rows %}
   <p class="panel-help">{{ help }}</p>
   <form method="post" action="{{ action }}" novalidate data-formset>

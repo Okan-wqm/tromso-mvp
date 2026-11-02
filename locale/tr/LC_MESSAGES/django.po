@@ -2556,3 +2556,211 @@ msgstr "evet"
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "“%(name)s” bu türün teknik özelliklerinden biri değil."
 
+msgid ""
+"A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
+" the reports and the water it lives in."
+msgstr ""
+"Çiftliğin yetiştirdiği veya stokladığı bir tür, örneğin Atlantik somonu veya lompa balığı: "
+"adları, resmî bildirim kodları ve yaşadığı su."
+
+msgid ""
+"Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
+"longer farmed."
+msgstr ""
+"Aktif: şu an yetiştiriliyor. Deneysel: denemede. Pasif: şu an yetiştirilmiyor. Üretimden "
+"kaldırıldı: artık yetiştirilmiyor."
+
+msgid "All species"
+msgstr "Tüm türler"
+
+msgid "All water environments"
+msgstr "Tüm su ortamları"
+
+msgid "Another species already has this scientific name."
+msgstr "Bu bilimsel ad başka bir türde zaten var."
+
+msgid "Another species already uses this code."
+msgstr "Bu kodu başka bir tür zaten kullanıyor."
+
+msgid "Brackish water"
+msgstr "Acı su"
+
+msgid "Classification"
+msgstr "Sınıflandırma"
+
+msgid "Cleaner fish"
+msgstr "Temizleyici balık"
+
+msgid "Cleaner fish only"
+msgstr "Yalnızca temizleyici balıklar"
+
+msgid "Common name"
+msgstr "Yaygın ad"
+
+msgid "Crab"
+msgstr "Yengeç"
+
+msgid "Discontinued"
+msgstr "Üretimden kaldırıldı"
+
+msgid ""
+"Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
+"and are farmed on in sea water: tick both."
+msgstr ""
+"Türün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, sonra deniz"
+" suyunda yetiştirilir: ikisini de işaretleyin."
+
+msgid "Experimental"
+msgstr "Deneysel"
+
+msgid "Family"
+msgstr "Familya"
+
+#, python-format
+msgid "Filled in from the species catalogue: %(values)s."
+msgstr "Tür kataloğundan dolduruldu: %(values)s."
+
+msgid "Fish"
+msgstr "Balık"
+
+msgid "Fresh water"
+msgstr "Tatlı su"
+
+msgid ""
+"Genus and species, e.g. Salmo salar; a subspecies may follow. For a species in the catalogue "
+"(salmon, trout, char, cod, halibut, turbot, seabass, seabream, lumpfish, wrasses), empty fields "
+"are filled in when it is saved."
+msgstr ""
+"Cins ve tür, örn. Salmo salar; ardından bir alt tür gelebilir. Katalogdaki bir türde (somon, "
+"alabalık, kutup alabalığı, morina, pisi, kalkan, levrek, çipura, lompa, lapinalar) boş alanlar "
+"kaydedilirken doldurulur."
+
+#, python-format
+msgid "Genus: %(genus)s (the first word of the scientific name)."
+msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
+
+msgid "Lobster"
+msgstr "Istakoz"
+
+msgid "Local name"
+msgstr "Yerel ad"
+
+msgid "Lumpfish"
+msgstr "Lompa balığı"
+
+msgid "Lumpfish and wrasses are stocked with salmon to eat sea lice."
+msgstr "Lompa ve lapin balıkları, deniz bitlerini yemeleri için somonla birlikte stoklanır."
+
+msgid "Missing"
+msgstr "Eksik"
+
+msgid "Mollusc"
+msgstr "Yumuşakça"
+
+msgid "Not a cleaner fish"
+msgstr "Temizleyici balık değil"
+
+msgid "Official code"
+msgstr "Resmî tür kodu"
+
+msgid "Prawn"
+msgstr "Tatlı su karidesi"
+
+msgid "Reference data"
+msgstr "Referans verileri"
+
+msgid "Regulatory"
+msgstr "Mevzuat"
+
+msgid "Reports for this species cannot be filed without it."
+msgstr "Bu türün resmî bildirimleri bu kod olmadan gönderilemez."
+
+msgid "Scientific name"
+msgstr "Bilimsel ad"
+
+msgid "Sea water"
+msgstr "Deniz suyu"
+
+msgid "Search by name, scientific name or code"
+msgstr "Ad, bilimsel ad veya koda göre ara"
+
+msgid "Seaweed"
+msgstr "Deniz yosunu"
+
+msgid "Shrimp"
+msgstr "Karides"
+
+msgid "Species"
+msgstr "Türler"
+
+msgctxt "singular"
+msgid "Species"
+msgstr "Tür"
+
+msgid "Status and notes"
+msgstr "Durum ve notlar"
+
+msgid "The English name, e.g. Atlantic salmon."
+msgstr "İngilizce adı, örn. Atlantic salmon."
+
+msgid ""
+"The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
+"Reports send this code, never your own code."
+msgstr ""
+"Norveç resmî bildirimlerindeki tür kodu (artskode), üç büyük harf, örn. Atlantik somonu için SAL."
+" Bildirimler kendi kodunuzu değil, bu kodu gönderir."
+
+msgid "The name in the farm’s own language, e.g. Laks."
+msgstr "Çiftliğin kendi dilindeki adı, örn. Laks."
+
+msgid "The official code is three capital letters, e.g. SAL."
+msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
+
+#, python-format
+msgid "The official code of %(name)s is %(code)s."
+msgstr "%(name)s türünün resmî kodu %(code)s."
+
+msgid "Tick at least one water environment."
+msgstr "En az bir su ortamı işaretleyin."
+
+msgid "Use capital letters, digits, hyphens and underscores only."
+msgstr "Yalnızca büyük harf, rakam, kısa çizgi ve alt çizgi kullanın."
+
+msgid "Water environment"
+msgstr "Su ortamı"
+
+msgid "Wrasse"
+msgstr "Lapin"
+
+msgid ""
+"Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
+"third word."
+msgstr ""
+"Cinsi ve türü Latin harfleriyle yazın, örn. Salmo salar; üçüncü kelime olarak bir alt tür "
+"gelebilir."
+
+msgid "Your own short code: capital letters, digits, hyphens and underscores."
+msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
+
+msgid "e.g. Atlantic salmon"
+msgstr "örn. Atlantic salmon"
+
+msgid "e.g. Laks"
+msgstr "örn. Laks"
+
+msgid "e.g. SAL"
+msgstr "örn. SAL"
+
+msgid "e.g. Salmo salar"
+msgstr "örn. Salmo salar"
+
+msgid "e.g. Salmonidae"
+msgstr "örn. Salmonidae"
+
+msgid "species"
+msgstr "tür"
+
+msgctxt "plural"
+msgid "species"
+msgstr "türler"
+

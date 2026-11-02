@@ -14,7 +14,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Site,
-                         SiteContact, System, Tank)
+                         SiteContact, Species, System, Tank)
 from farm.tests.helpers import SITE_MANAGER, contacts_data, role, site_data
 
 from .audit import message
@@ -139,6 +139,8 @@ class PagesInEveryLanguageTests(TestCase):
             water_type='brackish', pond_type='lined', liner_type='hdpe', liner_thickness_mm=Decimal('1.5'),
             surface_area_m2=Decimal('2500.5'), depth=Decimal('1.5'), water_depth=Decimal('1.25'),
             max_density_kg_m3=Decimal('3'))
+        cls.species = Species.objects.create(common_name='Atlantic salmon', scientific_name='Salmo salar', code='SAL',
+                                             freshwater=True, saltwater=True)
         cls.role = Group.objects.create(name='Feeder')
         cls.role.permissions.set(Permission.objects.filter(codename='view_site'))
         cls.admin.groups.add(cls.role)
@@ -155,7 +157,7 @@ class PagesInEveryLanguageTests(TestCase):
             reverse('core:database'), reverse('core:database_table', args=['sites']),
         ]
         for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system),
-                                 ('equipment', self.feeder), ('tank', self.unit)):
+                                 ('equipment', self.feeder), ('tank', self.unit), ('species', self.species)):
             pages += [reverse(f'farm:{resource}_list'), reverse(f'farm:{resource}_create'),
                       reverse(f'farm:{resource}_edit', args=[record.pk]),
                       reverse(f'farm:{resource}_delete', args=[record.pk])]

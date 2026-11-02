@@ -149,14 +149,14 @@
 .badge-inactive, .badge-construction { background: #ECECEA; color: var(--muted); }
 .badge-closed, .badge-offline { background: #F7E6E6; color: var(--error); }
 .badge-repair { background: #FBF0D9; color: #7A5410; }
-.badge-standby, .badge-decommissioned { background: #ECECEA; color: var(--muted); }
+.badge-standby, .badge-decommissioned, .badge-discontinued { background: #ECECEA; color: var(--muted); }
 .badge-out_of_service { background: #F7E6E6; color: var(--error); }
 /* A unit's status (tanks, ponds and cages): quarantine is the one that signals a problem */
 .badge-harvesting { background: var(--mist); color: var(--olive); border: 1px solid var(--sage); }
 .badge-cleaning { background: #FBF0D9; color: #7A5410; }
 .badge-preparing, .badge-fallow { background: #ECECEA; color: var(--muted); }
 .badge-quarantine { background: #F7E6E6; color: var(--error); }
-.badge-admin { background: var(--active-bg); color: var(--stripe-dark); }
+.badge-admin, .badge-experimental { background: var(--active-bg); color: var(--stripe-dark); }
 
 /* Tables (roles, users) */
 .table-wrap {

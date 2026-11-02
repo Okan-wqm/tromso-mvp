@@ -9,10 +9,11 @@ Differences from the source schema (apply to every model here):
 from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibration
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
+from .species import Species
 from .system import System
 from .tank import Tank
 
 __all__ = [
     'Equipment', 'EquipmentSystem', 'EquipmentType', 'FeederCalibration', 'ProductionDepartment', 'Site',
-    'SiteContact', 'System', 'Tank',
+    'SiteContact', 'Species', 'System', 'Tank',
 ]

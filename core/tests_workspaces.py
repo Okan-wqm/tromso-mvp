@@ -57,7 +57,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                    'Tanks, ponds & cages'])
+                                                    'Tanks, ponds & cages', 'Species'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -111,7 +111,7 @@ class PanelMemoryTests(WorkspaceTestCase):
         response = self.page(reverse('password_change'))
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                  'Tanks, ponds & cages'])
+                                                  'Tanks, ponds & cages', 'Species'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -141,9 +141,10 @@ class MainHeadingTests(WorkspaceTestCase):
     def test_production_puts_its_structure_under_setup(self):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
-        self.assertEqual(self.headings(response), [('', ['']), ('Setup', ['Facility structure'])])
+        self.assertEqual(self.headings(response), [('', ['']), ('Setup', ['Facility structure', 'Reference data'])])
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
+        self.assertContains(response, '<p class="rail-group">Reference data</p>', html=True)
 
     def test_company_has_no_main_headings(self):
         self.sign_in(self.admin)
@@ -177,6 +178,7 @@ class MenuPlacementTests(TestCase):
             'farm.System': 'Production · Setup · Facility structure',
             'farm.Equipment': 'Production · Setup · Facility structure',
             'farm.Tank': 'Production · Setup · Facility structure',
+            'farm.Species': 'Production · Setup · Reference data',
             'core.AuditLog': 'Company · Administration',
         })
 

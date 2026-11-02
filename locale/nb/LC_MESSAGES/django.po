@@ -2561,3 +2561,211 @@ msgstr "ja"
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "«%(name)s» er ikke en av spesifikasjonene for denne typen."
 
+msgid ""
+"A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
+" the reports and the water it lives in."
+msgstr ""
+"En art som oppdrettes eller settes ut, som laks eller rognkjeks: navnene, kodene til rapportene "
+"og vannet den lever i."
+
+msgid ""
+"Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
+"longer farmed."
+msgstr ""
+"Aktiv: oppdrettes nå. Forsøk: prøves ut. Inaktiv: oppdrettes ikke for tiden. Avviklet: oppdrettes"
+" ikke lenger."
+
+msgid "All species"
+msgstr "Alle arter"
+
+msgid "All water environments"
+msgstr "Alle vannmiljøer"
+
+msgid "Another species already has this scientific name."
+msgstr "En annen art har allerede dette vitenskapelige navnet."
+
+msgid "Another species already uses this code."
+msgstr "Denne koden brukes allerede av en annen art."
+
+msgid "Brackish water"
+msgstr "Brakkvann"
+
+msgid "Classification"
+msgstr "Klassifisering"
+
+msgid "Cleaner fish"
+msgstr "Rensefisk"
+
+msgid "Cleaner fish only"
+msgstr "Bare rensefisk"
+
+msgid "Common name"
+msgstr "Vanlig navn"
+
+msgid "Crab"
+msgstr "Krabbe"
+
+msgid "Discontinued"
+msgstr "Avviklet"
+
+msgid ""
+"Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
+"and are farmed on in sea water: tick both."
+msgstr ""
+"Alt vann arten oppdrettes i. Laks og regnbueørret vokser opp i ferskvann og går videre i sjøvann:"
+" kryss av for begge."
+
+msgid "Experimental"
+msgstr "Forsøk"
+
+msgid "Family"
+msgstr "Familie"
+
+#, python-format
+msgid "Filled in from the species catalogue: %(values)s."
+msgstr "Fylt ut fra artskatalogen: %(values)s."
+
+msgid "Fish"
+msgstr "Fisk"
+
+msgid "Fresh water"
+msgstr "Ferskvann"
+
+msgid ""
+"Genus and species, e.g. Salmo salar; a subspecies may follow. For a species in the catalogue "
+"(salmon, trout, char, cod, halibut, turbot, seabass, seabream, lumpfish, wrasses), empty fields "
+"are filled in when it is saved."
+msgstr ""
+"Slekt og art, f.eks. Salmo salar; en underart kan følge. For en art i katalogen (laks, ørret, "
+"røye, torsk, kveite, piggvar, havabbor, dorade, rognkjeks, leppefisk) fylles tomme felt ut når "
+"den lagres."
+
+#, python-format
+msgid "Genus: %(genus)s (the first word of the scientific name)."
+msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
+
+msgid "Lobster"
+msgstr "Hummer"
+
+msgid "Local name"
+msgstr "Lokalt navn"
+
+msgid "Lumpfish"
+msgstr "Rognkjeks"
+
+msgid "Lumpfish and wrasses are stocked with salmon to eat sea lice."
+msgstr "Rognkjeks og leppefisk settes ut sammen med laksen for å spise lakselus."
+
+msgid "Missing"
+msgstr "Mangler"
+
+msgid "Mollusc"
+msgstr "Bløtdyr"
+
+msgid "Not a cleaner fish"
+msgstr "Ikke rensefisk"
+
+msgid "Official code"
+msgstr "Artskode"
+
+msgid "Prawn"
+msgstr "Ferskvannsreke"
+
+msgid "Reference data"
+msgstr "Referansedata"
+
+msgid "Regulatory"
+msgstr "Myndighetskrav"
+
+msgid "Reports for this species cannot be filed without it."
+msgstr "Rapporter for denne arten kan ikke sendes inn uten den."
+
+msgid "Scientific name"
+msgstr "Vitenskapelig navn"
+
+msgid "Sea water"
+msgstr "Sjøvann"
+
+msgid "Search by name, scientific name or code"
+msgstr "Søk etter navn, vitenskapelig navn eller kode"
+
+msgid "Seaweed"
+msgstr "Tang og tare"
+
+msgid "Shrimp"
+msgstr "Reke"
+
+msgid "Species"
+msgstr "Arter"
+
+msgctxt "singular"
+msgid "Species"
+msgstr "Art"
+
+msgid "Status and notes"
+msgstr "Status og notater"
+
+msgid "The English name, e.g. Atlantic salmon."
+msgstr "Det engelske navnet, f.eks. Atlantic salmon."
+
+msgid ""
+"The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
+"Reports send this code, never your own code."
+msgstr ""
+"Artskoden i rapportene til myndighetene, tre store bokstaver, f.eks. SAL for laks. Rapportene "
+"sender denne koden, aldri deres egen kode."
+
+msgid "The name in the farm’s own language, e.g. Laks."
+msgstr "Navnet på selskapets eget språk, f.eks. Laks."
+
+msgid "The official code is three capital letters, e.g. SAL."
+msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
+
+#, python-format
+msgid "The official code of %(name)s is %(code)s."
+msgstr "Artskoden for %(name)s er %(code)s."
+
+msgid "Tick at least one water environment."
+msgstr "Kryss av for minst ett vannmiljø."
+
+msgid "Use capital letters, digits, hyphens and underscores only."
+msgstr "Bruk bare store bokstaver, sifre, bindestrek og understrek."
+
+msgid "Water environment"
+msgstr "Vannmiljø"
+
+msgid "Wrasse"
+msgstr "Leppefisk"
+
+msgid ""
+"Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
+"third word."
+msgstr ""
+"Skriv slekt og art med latinske bokstaver, f.eks. Salmo salar; en underart kan følge som tredje "
+"ord."
+
+msgid "Your own short code: capital letters, digits, hyphens and underscores."
+msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek."
+
+msgid "e.g. Atlantic salmon"
+msgstr "f.eks. Atlantic salmon"
+
+msgid "e.g. Laks"
+msgstr "f.eks. Laks"
+
+msgid "e.g. SAL"
+msgstr "f.eks. SAL"
+
+msgid "e.g. Salmo salar"
+msgstr "f.eks. Salmo salar"
+
+msgid "e.g. Salmonidae"
+msgstr "f.eks. Salmonidae"
+
+msgid "species"
+msgstr "art"
+
+msgctxt "plural"
+msgid "species"
+msgstr "arter"
+

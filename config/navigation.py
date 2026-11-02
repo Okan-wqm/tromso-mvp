@@ -35,6 +35,11 @@ WORKSPACES = [
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
+            # The reference lists the production side picks from: species now; feeds, water parameters,
+            # chemicals, fish-health substances and slaughter facilities as their tabs arrive.
+            Group(_('Reference data'), [
+                Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
+            ]),
         ]),
     ]),
 ]

@@ -16,8 +16,8 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
-  and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages). Each
-  has its own overview. A
+  and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
+  species). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -215,6 +215,61 @@ Differences from the source:
   tables, the code generator, quotas and events.
 - A cage's volume is a cylinder or box down to the net depth, as in the source; a cone-bottomed net
   holds less (a question for the owner, in the bug document).
+### Reference data › Species (`/species/`)
+
+Table `species`: the species the farm grows or stocks, Atlantic salmon, rainbow trout, lumpfish,
+picked later by batches, feeds and the water limits. A table (species with its local name,
+scientific name with family and genus, code, official code with a "Missing" mark when there is none,
+category, water, cleaner fish, status), search by common, local or scientific name, code or official
+code, filters by category, water environment, cleaner fish (any, lumpfish, wrasse, none) and status,
+50 species a page, a form in the dialog and delete. The form has four inner tabs:
+
+- **Basic info**: common name (English), local name (the farm's own language, e.g. Laks),
+  scientific name, code, description.
+- **Classification**: category, family and the water environment: fresh, brackish and sea water,
+  at least one. The genus is shown on an existing species; it is the first word of the scientific name.
+- **Regulatory**: the official code (artskode), and the cleaner-fish type (lumpfish or wrasse).
+- **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
+  experimental species are the ones the batches tab will offer for new batches.
+
+The species catalogue (`farm/species_catalog.py`) knows the 13 species Norwegian farms grow or stock
+(salmon, rainbow and brown trout, Arctic char, cod, halibut, turbot, seabass, seabream, lumpfish and
+three wrasses). When a species is created under one of these scientific names, or renamed to one,
+the fields left blank are filled in from it (local name in Norwegian, family, water environments
+when none is ticked, cleaner-fish type, official code) and the message after saving lists them;
+a typed value is never replaced, and an edit that keeps the name fills nothing, so every field can
+be cleared. Official codes are filled in only for the nine grow-out species (FAO ASFIS, e.g. SAL);
+the four cleaner-fish codes of the source are unverified and never filled in (SPC-32). A catalogue
+species cannot be given an official code other than its verified one. No species rows are seeded
+and there is no "add from catalogue" action.
+
+Deleting a species: nothing points at a species yet. The batches tab will link to it with
+`on_delete=PROTECT` (a species with batches is set to discontinued instead of deleted) and the
+Feeds tab's suitability rows with `CASCADE`. Later report code must send the official code and
+never fall back to the internal code.
+
+Differences from the source:
+
+- The scientific name is normalised (`salmo  SALAR` is stored as `Salmo salar`), checked as a
+  binomial (a subspecies may follow; `sp.` is not accepted) and unique among live species whatever
+  its case; the code is capital letters, digits, `-` and `_`, unique among live species; the official
+  code is three capital letters or empty. All of it is checked by the database too.
+- The official code can be changed and cleared on an existing species (the source dropped it on
+  update, SPC-01), and is filled in from the catalogue (SPC-03).
+- The water environment is three flags instead of one water type: salmon and trout live in fresh
+  and in sea water (SPC-22).
+- The cleaner-fish type is on the form; "is a cleaner fish" is derived from it (SPC-04). The
+  source's `cleaner-fish` tag is not carried over.
+- One status; the second flag `isActive` is not carried over (SPC-15). The genus is not stored.
+- Every field can be cleared; the list is paged on the server instead of 100 cards filtered in the
+  browser.
+- Not ported: tags, the species-level supplier (it belongs to the batch), market and breeding
+  information, documents, the image, the light regime (a production protocol, not a species
+  constant), the "compatible feeds" section (never stored by the source; it belongs to the Feeds
+  tab) and the JSON blobs. Two parts come back with later tabs as typed tables, never as JSON, and
+  with no silent defaults: water-quality limits per species and parameter, each with its unit
+  (Water chemistry › parameters and limits; SPC-05, SPC-19, SPC-23), and growth bands, target FCR,
+  survival and harvest weight per stage (the growth model, with the batches tab; SPC-20, SPC-21).
 
 ## Roles and users
 
@@ -223,7 +278,8 @@ only one who manages roles and users; everyone else gets exactly what their role
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
-  Systems, Equipment and Tanks, ponds & cages (read, create, edit, delete) and Activity log (read). A new tab appears in the matrix by
+  Systems, Equipment, Tanks, ponds & cages and Species (read, create, edit, delete) and Activity log
+  (read). A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
@@ -338,8 +394,10 @@ log in the same transaction, an outdated `version` is refused, models with soft 
 rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
 opened directly, as a page. The menu is data (`config/navigation.py`: panels, main headings, groups,
 entries) and shows each entry only to people allowed to read it. Production's menu has two main
-headings, as in the platform: **Setup** (the farm's structure and reference lists) and **Operations**
-(the daily production records; it appears with its first tab). The menu is the one place that says
+headings, as in the platform: **Setup** (the farm's structure under Facility structure, and the
+reference lists the production side picks from under Reference data) and **Operations** (the daily
+production records; it appears with its first tab). The source calls the reference lists "Records";
+the prototype does not, because Operations holds the daily records. The menu is the one place that says
 where a page sits: the role matrix and the small heading above a tab's title follow it
 (`core.navigation.place`). There are no built-in roles: the platform admin creates roles
 and grants permissions.
@@ -438,6 +496,7 @@ real mail.
 | `/systems/` | Facility › Systems |
 | `/equipment/` | Facility › Equipment; `<id>/calibrations/` saves a feeder's calibrations |
 | `/tanks/` | Facility › Tanks, ponds & cages |
+| `/species/` | Reference data › Species |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -462,6 +521,7 @@ real mail.
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
+| `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |

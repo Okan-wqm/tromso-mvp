@@ -10,5 +10,6 @@ AREAS = [
     Area(_('Systems'), 'farm.System'),
     Area(_('Equipment'), 'farm.Equipment'),
     Area(_('Tanks, ponds & cages'), 'farm.Tank'),
+    Area(_('Species'), 'farm.Species'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

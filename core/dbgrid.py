@@ -12,6 +12,7 @@ from functools import cached_property, reduce
 from operator import or_
 from urllib.parse import urlencode
 
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import models
@@ -66,9 +67,10 @@ def match(column, term):
 
 
 def select(column):
-    """What the grid reads: the stored value, timestamps as the database prints them (the text a filter matches)."""
+    """What the grid reads: the stored value; timestamps and arrays ({feed,equipment}) as the database
+    prints them, which is the text a filter matches."""
     name = column.field.attname
-    return Cast(name, models.TextField()) if isinstance(column.field, models.DateTimeField) else name
+    return Cast(name, models.TextField()) if isinstance(column.field, (models.DateTimeField, ArrayField)) else name
 
 
 def raw(column, value):

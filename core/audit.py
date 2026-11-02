@@ -6,6 +6,7 @@ English msgids whatever language the person who made the change was using, and s
 (AuditLog.shown_changes). Build every snapshot inside `source_language()` (core.crud does); a person's
 own text (names, descriptions) is stored as written and never translated."""
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import translation
 from django.utils.text import capfirst
@@ -37,6 +38,10 @@ def _display(instance, field):
     if isinstance(field, models.ManyToManyField):
         return ', '.join(sorted(str(item) for item in getattr(instance, field.name).all())) or None
     value = getattr(instance, field.attname)
+    if isinstance(field, ArrayField) and field.base_field.choices:
+        # Several choices (what a supplier supplies): each stored as its msgid, shown translated.
+        labels = dict(field.base_field.flatchoices)
+        return [message(labels.get(item, item)) for item in value or []] or None
     if isinstance(field, models.BooleanField):
         return message(_('Yes') if value else _('No'))
     if field.choices and value not in (None, ''):

@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # PostgreSQL's own field types: an array of choices (core.fields.ChoiceArrayField).
+    'django.contrib.postgres',
     'django.forms',
     'core',
     'farm',

@@ -157,7 +157,8 @@ class AuditLog(models.Model):
     entity_id = models.CharField(max_length=64)
     entity_label = models.CharField(max_length=255)
     # {field label: [old, new]}; on create old is None, on delete new is None. Labels are msgids; a value
-    # is None, a person's text as written, or {'msgid': ...} for an enumeration (see core.audit).
+    # is None, a person's text as written, {'msgid': ...} for an enumeration, or a list of those for several
+    # choices (see core.audit).
     changes = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -178,6 +179,8 @@ class AuditLog(models.Model):
     def shown_changes(self):
         """[(label, old, new)] in the active language. The stored rows stay in English."""
         def shown(value):
+            if isinstance(value, list):
+                return ', '.join(shown(item) for item in value)
             if isinstance(value, dict):
                 msgid = value['msgid']
                 return gettext(msgid)

@@ -12,7 +12,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0007_equipment_types'),
+        ('farm', '0008_tanks'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

@@ -182,6 +182,13 @@ msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet p
 msgid "A sea cage site needs latitude and longitude."
 msgstr "En merdlokalitet må ha breddegrad og lengdegrad."
 
+msgid ""
+"A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
+" the reports and the water it lives in."
+msgstr ""
+"En art som oppdrettes eller settes ut, som laks eller rognkjeks: navnene, kodene til rapportene "
+"og vannet den lever i."
+
 msgid "A system cannot be its own parent."
 msgstr "Et system kan ikke være sitt eget overordnede system."
 
@@ -223,6 +230,13 @@ msgstr "Handlinger"
 
 msgid "Active"
 msgstr "Aktiv"
+
+msgid ""
+"Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
+"longer farmed."
+msgstr ""
+"Aktiv: oppdrettes nå. Forsøk: prøves ut. Inaktiv: oppdrettes ikke for tiden. Avviklet: oppdrettes"
+" ikke lenger."
 
 msgid "Activity log"
 msgstr "Aktivitetslogg"
@@ -292,6 +306,9 @@ msgstr "Alle produksjonsavdelinger"
 msgid "All sites"
 msgstr "Alle lokaliteter"
 
+msgid "All species"
+msgstr "Alle arter"
+
 msgid "All statuses"
 msgstr "Alle statuser"
 
@@ -300,6 +317,9 @@ msgstr "Alle systemer"
 
 msgid "All types"
 msgstr "Alle typer"
+
+msgid "All water environments"
+msgstr "Alle vannmiljøer"
 
 msgid "All water types"
 msgstr "Alle vanntyper"
@@ -340,6 +360,12 @@ msgstr "Dette lokalitetsnummeret brukes allerede av en annen lokalitet."
 
 msgid "Another site already uses this name."
 msgstr "Dette navnet brukes allerede av en annen lokalitet."
+
+msgid "Another species already has this scientific name."
+msgstr "En annen art har allerede dette vitenskapelige navnet."
+
+msgid "Another species already uses this code."
+msgstr "Denne koden brukes allerede av en annen art."
 
 msgid "Another unit already has this regulatory unit ID."
 msgstr "En annen enhet har allerede denne offisielle enhets-ID-en."
@@ -431,6 +457,9 @@ msgstr "Luftblåser"
 msgid "Brackish"
 msgstr "Brakkvann"
 
+msgid "Brackish water"
+msgstr "Brakkvann"
+
 msgid "Brief description of the site"
 msgstr "Kort beskrivelse av lokaliteten"
 
@@ -504,6 +533,15 @@ msgstr "Rund"
 msgid "City"
 msgstr "By"
 
+msgid "Classification"
+msgstr "Klassifisering"
+
+msgid "Cleaner fish"
+msgstr "Rensefisk"
+
+msgid "Cleaner fish only"
+msgstr "Bare rensefisk"
+
 msgid "Cleaning"
 msgstr "Rengjøring"
 
@@ -530,6 +568,9 @@ msgstr "Kolonne"
 
 msgid "Columns"
 msgstr "Kolonner"
+
+msgid "Common name"
+msgstr "Vanlig navn"
 
 msgid "Compacted clay"
 msgstr "Komprimert leire"
@@ -587,6 +628,9 @@ msgstr "Koronautladning"
 
 msgid "Country"
 msgstr "Land"
+
+msgid "Crab"
+msgstr "Krabbe"
 
 msgid "Create"
 msgstr "Opprett"
@@ -694,6 +738,9 @@ msgstr "Diesel"
 msgid "Dimensions"
 msgstr "Mål"
 
+msgid "Discontinued"
+msgstr "Avviklet"
+
 msgid "Dissolved oxygen"
 msgstr "Løst oksygen"
 
@@ -775,11 +822,21 @@ msgstr ""
 "Alle tabeller applikasjonen lagrer, slik de er i databasen. Ingenting her kan endres. Slettede "
 "poster er bare merket som slettet, så de ligger fortsatt i tabellene og telles her."
 
+msgid ""
+"Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
+"and are farmed on in sea water: tick both."
+msgstr ""
+"Alt vann arten oppdrettes i. Laks og regnbueørret vokser opp i ferskvann og går videre i sjøvann:"
+" kryss av for begge."
+
 msgid "Exclusion"
 msgstr "Eksklusjon"
 
 msgid "Expand menu"
 msgstr "Vis menyen"
+
+msgid "Experimental"
+msgstr "Forsøk"
 
 msgid "Export CSV"
 msgstr "Eksporter CSV"
@@ -795,6 +852,9 @@ msgstr "Anleggsstruktur"
 
 msgid "Fallow"
 msgstr "Brakklagt"
+
+msgid "Family"
+msgstr "Familie"
 
 msgid "Farm console for tanks, water quality and stock records."
 msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
@@ -837,6 +897,10 @@ msgstr "Fôrer når fisken utløser den."
 msgid "Fibreglass (GRP)"
 msgstr "Glassfiber (GRP)"
 
+#, python-format
+msgid "Filled in from the species catalogue: %(values)s."
+msgstr "Fylt ut fra artskatalogen: %(values)s."
+
 msgid "Filter"
 msgstr "Filtrer"
 
@@ -858,6 +922,9 @@ msgstr "Første"
 
 msgid "First name"
 msgstr "Fornavn"
+
+msgid "Fish"
+msgstr "Fisk"
 
 msgid "Fish are in it, so its size cannot change: move or harvest them first."
 msgstr "Det er fisk i den, så målene kan ikke endres: flytt eller høst fisken først."
@@ -906,6 +973,9 @@ msgstr "Ramme"
 msgid "Freeboard (m)"
 msgstr "Fribord (m)"
 
+msgid "Fresh water"
+msgstr "Ferskvann"
+
 msgid "Freshwater"
 msgstr "Ferskvann"
 
@@ -952,6 +1022,19 @@ msgstr "Produksjonsmetode"
 
 msgid "Generator"
 msgstr "Aggregat"
+
+msgid ""
+"Genus and species, e.g. Salmo salar; a subspecies may follow. For a species in the catalogue "
+"(salmon, trout, char, cod, halibut, turbot, seabass, seabream, lumpfish, wrasses), empty fields "
+"are filled in when it is saved."
+msgstr ""
+"Slekt og art, f.eks. Salmo salar; en underart kan følge. For en art i katalogen (laks, ørret, "
+"røye, torsk, kveite, piggvar, havabbor, dorade, rognkjeks, leppefisk) fylles tomme felt ut når "
+"den lagres."
+
+#, python-format
+msgid "Genus: %(genus)s (the first word of the scientific name)."
+msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
 
 msgid "Grow-out"
 msgstr "Matfisk"
@@ -1131,6 +1214,12 @@ msgstr "Duk på ramme"
 msgid "Liner thickness (mm)"
 msgstr "Duktykkelse (mm)"
 
+msgid "Lobster"
+msgstr "Hummer"
+
+msgid "Local name"
+msgstr "Lokalt navn"
+
 msgid "Location"
 msgstr "Plassering"
 
@@ -1148,6 +1237,12 @@ msgstr "Lengdegrad er påkrevd for en merd."
 
 msgid "Low pressure"
 msgstr "Lavtrykk"
+
+msgid "Lumpfish"
+msgstr "Rognkjeks"
+
+msgid "Lumpfish and wrasses are stocked with salmon to eat sea lice."
+msgstr "Rognkjeks og leppefisk settes ut sammen med laksen for å spise lakselus."
 
 msgid "Main navigation"
 msgstr "Hovednavigasjon"
@@ -1212,6 +1307,9 @@ msgstr "Metadata"
 msgid "Minimum transmittance"
 msgstr "Minste transmittans"
 
+msgid "Missing"
+msgstr "Mangler"
+
 msgid "Mixed"
 msgstr "Blandet"
 
@@ -1220,6 +1318,9 @@ msgstr "Modell"
 
 msgid "Model field"
 msgstr "Modellfelt"
+
+msgid "Mollusc"
+msgstr "Bløtdyr"
 
 msgid "Moving bed (MBBR)"
 msgstr "Bevegelig medium (MBBR)"
@@ -1331,6 +1432,9 @@ msgstr "Ingen."
 msgid "None: not a part of other equipment"
 msgstr "Ingen: ikke en del av annet utstyr"
 
+msgid "Not a cleaner fish"
+msgstr "Ikke rensefisk"
+
 msgid "Not given"
 msgstr "Ikke oppgitt"
 
@@ -1363,6 +1467,9 @@ msgstr "Nylon"
 
 msgid "Offered"
 msgstr "Tilbys"
+
+msgid "Official code"
+msgstr "Artskode"
 
 msgid "Offline"
 msgstr "Ute av drift"
@@ -1551,6 +1658,9 @@ msgstr "Effektforbruk"
 msgid "Power output"
 msgstr "Utgangseffekt"
 
+msgid "Prawn"
+msgstr "Ferskvannsreke"
+
 msgid "Preparing"
 msgstr "Klargjøres"
 
@@ -1653,11 +1763,17 @@ msgstr "Posttype"
 msgid "Rectangular"
 msgstr "Rektangulær"
 
+msgid "Reference data"
+msgstr "Referansedata"
+
 msgid "Refrigerant"
 msgstr "Kjølemedium"
 
 msgid "Region"
 msgstr "Region"
+
+msgid "Regulatory"
+msgstr "Myndighetskrav"
 
 msgid "Regulatory unit ID"
 msgstr "Offisiell enhets-ID"
@@ -1673,6 +1789,9 @@ msgstr "Fjern"
 
 msgid "Repair"
 msgstr "Reparasjon"
+
+msgid "Reports for this species cannot be filed without it."
+msgstr "Rapporter for denne arten kan ikke sendes inn uten den."
 
 msgid "Request a new link"
 msgstr "Be om en ny lenke"
@@ -1749,6 +1868,9 @@ msgstr "Lagre passord"
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Lagre utstyret med denne fôrautomattypen først; deretter kan kalibreringene legges til her."
 
+msgid "Scientific name"
+msgstr "Vitenskapelig navn"
+
 msgid "Screen size"
 msgstr "Duksåpning"
 
@@ -1757,6 +1879,9 @@ msgstr "Merd"
 
 msgid "Sea or estuary"
 msgstr "Sjø eller elvemunning"
+
+msgid "Sea water"
+msgstr "Sjøvann"
 
 #, python-format
 msgid "Search %(plural)s"
@@ -1777,11 +1902,17 @@ msgstr "Søk på navn, kode eller offisiell enhets-ID"
 msgid "Search by name, code or serial number"
 msgstr "Søk på navn, kode eller serienummer"
 
+msgid "Search by name, scientific name or code"
+msgstr "Søk etter navn, vitenskapelig navn eller kode"
+
 msgid "Search by name, username or email"
 msgstr "Søk etter navn, brukernavn eller e-post"
 
 msgid "Search every column"
 msgstr "Søk i alle kolonner"
+
+msgid "Seaweed"
+msgstr "Tang og tare"
 
 msgid "See all in the activity log"
 msgstr "Se alt i aktivitetsloggen"
@@ -1847,6 +1978,9 @@ msgstr "Vis slettede rader"
 msgid "Show them"
 msgstr "Vis dem"
 
+msgid "Shrimp"
+msgstr "Reke"
+
 msgid "Side (m)"
 msgstr "Side (m)"
 
@@ -1905,6 +2039,13 @@ msgstr ""
 msgid "Sort by %(name)s"
 msgstr "Sorter etter %(name)s"
 
+msgid "Species"
+msgstr "Arter"
+
+msgctxt "singular"
+msgid "Species"
+msgstr "Art"
+
 msgid "Specific surface area"
 msgstr "Spesifikt overflateareal"
 
@@ -1931,6 +2072,9 @@ msgstr "Oppgitt volum (m³)"
 
 msgid "Status"
 msgstr "Status"
+
+msgid "Status and notes"
+msgstr "Status og notater"
 
 msgid "Status since"
 msgstr "Status siden"
@@ -1989,6 +2133,16 @@ msgstr "Temperatur"
 msgid "Temperature sensor"
 msgstr "Temperatursensor"
 
+msgid "The English name, e.g. Atlantic salmon."
+msgstr "Det engelske navnet, f.eks. Atlantic salmon."
+
+msgid ""
+"The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
+"Reports send this code, never your own code."
+msgstr ""
+"Artskoden i rapportene til myndighetene, tre store bokstaver, f.eks. SAL for laks. Rapportene "
+"sender denne koden, aldri deres egen kode."
+
 msgid "The average depth of the water when the pond is full."
 msgstr "Gjennomsnittlig vanndybde når dammen er full."
 
@@ -2031,6 +2185,16 @@ msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
 "licence’s."
 msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller konsesjonens."
+
+msgid "The name in the farm’s own language, e.g. Laks."
+msgstr "Navnet på selskapets eget språk, f.eks. Laks."
+
+msgid "The official code is three capital letters, e.g. SAL."
+msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
+
+#, python-format
+msgid "The official code of %(name)s is %(code)s."
+msgstr "Artskoden for %(name)s er %(code)s."
 
 msgid "The parent equipment is on another site."
 msgstr "Det overordnede utstyret er på en annen lokalitet."
@@ -2165,6 +2329,9 @@ msgstr "Denne typen er ikke i den valgte kategorien."
 msgid "Three-phase"
 msgstr "Trefase"
 
+msgid "Tick at least one water environment."
+msgstr "Kryss av for minst ett vannmiljø."
+
 msgid "Timer"
 msgstr "Tidsur"
 
@@ -2232,6 +2399,9 @@ msgstr "Oppdatert"
 msgid "Updated by"
 msgstr "Oppdatert av"
 
+msgid "Use capital letters, digits, hyphens and underscores only."
+msgstr "Bruk bare store bokstaver, sifre, bindestrek og understrek."
+
 msgid "Use your username and password to open the farm console."
 msgstr "Bruk brukernavn og passord for å åpne driftskonsollen."
 
@@ -2264,6 +2434,9 @@ msgstr "Vannkapasitet (m³)"
 
 msgid "Water depth (m)"
 msgstr "Vanndybde (m)"
+
+msgid "Water environment"
+msgstr "Vannmiljø"
 
 msgid "Water source"
 msgstr "Vannkilde"
@@ -2322,6 +2495,16 @@ msgstr ""
 "Beregnes ut fra målene og maks. tetthet hver gang enheten lagres; vises som sist lagret. Maks. "
 "biomasse bruker vannvolumet når det finnes, ellers volumet."
 
+msgid "Wrasse"
+msgstr "Leppefisk"
+
+msgid ""
+"Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
+"third word."
+msgstr ""
+"Skriv slekt og art med latinske bokstaver, f.eks. Salmo salar; en underart kan følge som tredje "
+"ord."
+
 msgid "Yes"
 msgstr "Ja"
 
@@ -2336,6 +2519,9 @@ msgstr "Du har ikke tillatelse til å gjøre dette."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Det nye passordet ditt er lagret. Bruk det neste gang du logger inn."
+
+msgid "Your own short code: capital letters, digits, hyphens and underscores."
+msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek."
 
 #, python-format
 msgid "by <strong>%(name)s</strong>"
@@ -2399,11 +2585,17 @@ msgstr "f.eks. 50000"
 msgid "e.g. 60.3913"
 msgstr "f.eks. 60,3913"
 
+msgid "e.g. Atlantic salmon"
+msgstr "f.eks. Atlantic salmon"
+
 msgid "e.g. HAT-A"
 msgstr "f.eks. HAT-A"
 
 msgid "e.g. Hatchery hall A"
 msgstr "f.eks. Klekkerihall A"
+
+msgid "e.g. Laks"
+msgstr "f.eks. Laks"
 
 msgid "e.g. MPS-001"
 msgstr "f.eks. MPS-001"
@@ -2423,8 +2615,17 @@ msgstr "f.eks. PMP-001"
 msgid "e.g. R410A"
 msgstr "f.eks. R410A"
 
+msgid "e.g. SAL"
+msgstr "f.eks. SAL"
+
 msgid "e.g. SYS-001"
 msgstr "f.eks. SYS-001"
+
+msgid "e.g. Salmo salar"
+msgstr "f.eks. Salmo salar"
+
+msgid "e.g. Salmonidae"
+msgstr "f.eks. Salmonidae"
 
 msgid "e.g. Site manager"
 msgstr "f.eks. Lokalitetsleder"
@@ -2530,6 +2731,13 @@ msgstr "lokalitetskontakter"
 msgid "sites"
 msgstr "lokaliteter"
 
+msgid "species"
+msgstr "art"
+
+msgctxt "plural"
+msgid "species"
+msgstr "arter"
+
 msgid "system"
 msgstr "system"
 
@@ -2560,212 +2768,4 @@ msgstr "ja"
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "«%(name)s» er ikke en av spesifikasjonene for denne typen."
-
-msgid ""
-"A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
-" the reports and the water it lives in."
-msgstr ""
-"En art som oppdrettes eller settes ut, som laks eller rognkjeks: navnene, kodene til rapportene "
-"og vannet den lever i."
-
-msgid ""
-"Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
-"longer farmed."
-msgstr ""
-"Aktiv: oppdrettes nå. Forsøk: prøves ut. Inaktiv: oppdrettes ikke for tiden. Avviklet: oppdrettes"
-" ikke lenger."
-
-msgid "All species"
-msgstr "Alle arter"
-
-msgid "All water environments"
-msgstr "Alle vannmiljøer"
-
-msgid "Another species already has this scientific name."
-msgstr "En annen art har allerede dette vitenskapelige navnet."
-
-msgid "Another species already uses this code."
-msgstr "Denne koden brukes allerede av en annen art."
-
-msgid "Brackish water"
-msgstr "Brakkvann"
-
-msgid "Classification"
-msgstr "Klassifisering"
-
-msgid "Cleaner fish"
-msgstr "Rensefisk"
-
-msgid "Cleaner fish only"
-msgstr "Bare rensefisk"
-
-msgid "Common name"
-msgstr "Vanlig navn"
-
-msgid "Crab"
-msgstr "Krabbe"
-
-msgid "Discontinued"
-msgstr "Avviklet"
-
-msgid ""
-"Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
-"and are farmed on in sea water: tick both."
-msgstr ""
-"Alt vann arten oppdrettes i. Laks og regnbueørret vokser opp i ferskvann og går videre i sjøvann:"
-" kryss av for begge."
-
-msgid "Experimental"
-msgstr "Forsøk"
-
-msgid "Family"
-msgstr "Familie"
-
-#, python-format
-msgid "Filled in from the species catalogue: %(values)s."
-msgstr "Fylt ut fra artskatalogen: %(values)s."
-
-msgid "Fish"
-msgstr "Fisk"
-
-msgid "Fresh water"
-msgstr "Ferskvann"
-
-msgid ""
-"Genus and species, e.g. Salmo salar; a subspecies may follow. For a species in the catalogue "
-"(salmon, trout, char, cod, halibut, turbot, seabass, seabream, lumpfish, wrasses), empty fields "
-"are filled in when it is saved."
-msgstr ""
-"Slekt og art, f.eks. Salmo salar; en underart kan følge. For en art i katalogen (laks, ørret, "
-"røye, torsk, kveite, piggvar, havabbor, dorade, rognkjeks, leppefisk) fylles tomme felt ut når "
-"den lagres."
-
-#, python-format
-msgid "Genus: %(genus)s (the first word of the scientific name)."
-msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
-
-msgid "Lobster"
-msgstr "Hummer"
-
-msgid "Local name"
-msgstr "Lokalt navn"
-
-msgid "Lumpfish"
-msgstr "Rognkjeks"
-
-msgid "Lumpfish and wrasses are stocked with salmon to eat sea lice."
-msgstr "Rognkjeks og leppefisk settes ut sammen med laksen for å spise lakselus."
-
-msgid "Missing"
-msgstr "Mangler"
-
-msgid "Mollusc"
-msgstr "Bløtdyr"
-
-msgid "Not a cleaner fish"
-msgstr "Ikke rensefisk"
-
-msgid "Official code"
-msgstr "Artskode"
-
-msgid "Prawn"
-msgstr "Ferskvannsreke"
-
-msgid "Reference data"
-msgstr "Referansedata"
-
-msgid "Regulatory"
-msgstr "Myndighetskrav"
-
-msgid "Reports for this species cannot be filed without it."
-msgstr "Rapporter for denne arten kan ikke sendes inn uten den."
-
-msgid "Scientific name"
-msgstr "Vitenskapelig navn"
-
-msgid "Sea water"
-msgstr "Sjøvann"
-
-msgid "Search by name, scientific name or code"
-msgstr "Søk etter navn, vitenskapelig navn eller kode"
-
-msgid "Seaweed"
-msgstr "Tang og tare"
-
-msgid "Shrimp"
-msgstr "Reke"
-
-msgid "Species"
-msgstr "Arter"
-
-msgctxt "singular"
-msgid "Species"
-msgstr "Art"
-
-msgid "Status and notes"
-msgstr "Status og notater"
-
-msgid "The English name, e.g. Atlantic salmon."
-msgstr "Det engelske navnet, f.eks. Atlantic salmon."
-
-msgid ""
-"The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
-"Reports send this code, never your own code."
-msgstr ""
-"Artskoden i rapportene til myndighetene, tre store bokstaver, f.eks. SAL for laks. Rapportene "
-"sender denne koden, aldri deres egen kode."
-
-msgid "The name in the farm’s own language, e.g. Laks."
-msgstr "Navnet på selskapets eget språk, f.eks. Laks."
-
-msgid "The official code is three capital letters, e.g. SAL."
-msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
-
-#, python-format
-msgid "The official code of %(name)s is %(code)s."
-msgstr "Artskoden for %(name)s er %(code)s."
-
-msgid "Tick at least one water environment."
-msgstr "Kryss av for minst ett vannmiljø."
-
-msgid "Use capital letters, digits, hyphens and underscores only."
-msgstr "Bruk bare store bokstaver, sifre, bindestrek og understrek."
-
-msgid "Water environment"
-msgstr "Vannmiljø"
-
-msgid "Wrasse"
-msgstr "Leppefisk"
-
-msgid ""
-"Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
-"third word."
-msgstr ""
-"Skriv slekt og art med latinske bokstaver, f.eks. Salmo salar; en underart kan følge som tredje "
-"ord."
-
-msgid "Your own short code: capital letters, digits, hyphens and underscores."
-msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek."
-
-msgid "e.g. Atlantic salmon"
-msgstr "f.eks. Atlantic salmon"
-
-msgid "e.g. Laks"
-msgstr "f.eks. Laks"
-
-msgid "e.g. SAL"
-msgstr "f.eks. SAL"
-
-msgid "e.g. Salmo salar"
-msgstr "f.eks. Salmo salar"
-
-msgid "e.g. Salmonidae"
-msgstr "f.eks. Salmonidae"
-
-msgid "species"
-msgstr "art"
-
-msgctxt "plural"
-msgid "species"
-msgstr "arter"
 

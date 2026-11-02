@@ -182,6 +182,13 @@ msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
 msgid "A sea cage site needs latitude and longitude."
 msgstr "Deniz kafesi sahası için enlem ve boylam gerekir."
 
+msgid ""
+"A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
+" the reports and the water it lives in."
+msgstr ""
+"Çiftliğin yetiştirdiği veya stokladığı bir balık türü, örneğin Atlantik somonu veya lompa balığı:"
+" adları, resmî bildirim kodları ve yaşadığı su."
+
 msgid "A system cannot be its own parent."
 msgstr "Bir sistem kendi üst sistemi olamaz."
 
@@ -223,6 +230,13 @@ msgstr "İşlemler"
 
 msgid "Active"
 msgstr "Aktif"
+
+msgid ""
+"Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
+"longer farmed."
+msgstr ""
+"Aktif: şu an yetiştiriliyor. Deneysel: denemede. Pasif: şu an yetiştirilmiyor. Üretimden "
+"kaldırıldı: artık yetiştirilmiyor."
 
 msgid "Activity log"
 msgstr "Etkinlik günlüğü"
@@ -290,6 +304,9 @@ msgstr "Tüm üretim departmanları"
 msgid "All sites"
 msgstr "Tüm sahalar"
 
+msgid "All species"
+msgstr "Tüm balık türleri"
+
 msgid "All statuses"
 msgstr "Tüm durumlar"
 
@@ -298,6 +315,9 @@ msgstr "Tüm sistemler"
 
 msgid "All types"
 msgstr "Tüm türler"
+
+msgid "All water environments"
+msgstr "Tüm su ortamları"
 
 msgid "All water types"
 msgstr "Tüm su tipleri"
@@ -338,6 +358,12 @@ msgstr "Bu lokalitetsnummer başka bir sahada zaten kullanılıyor."
 
 msgid "Another site already uses this name."
 msgstr "Bu adı başka bir saha zaten kullanıyor."
+
+msgid "Another species already has this scientific name."
+msgstr "Bu bilimsel ad başka bir balık türünde zaten var."
+
+msgid "Another species already uses this code."
+msgstr "Bu kodu başka bir balık türü zaten kullanıyor."
 
 msgid "Another unit already has this regulatory unit ID."
 msgstr "Bu resmî birim numarası başka bir birimde zaten var."
@@ -429,6 +455,9 @@ msgstr "Hava üfleyici (blower)"
 msgid "Brackish"
 msgstr "Acı su"
 
+msgid "Brackish water"
+msgstr "Acı su"
+
 msgid "Brief description of the site"
 msgstr "Sahanın kısa açıklaması"
 
@@ -502,6 +531,15 @@ msgstr "Dairesel"
 msgid "City"
 msgstr "Şehir"
 
+msgid "Classification"
+msgstr "Sınıflandırma"
+
+msgid "Cleaner fish"
+msgstr "Temizleyici balık"
+
+msgid "Cleaner fish only"
+msgstr "Yalnızca temizleyici balıklar"
+
 msgid "Cleaning"
 msgstr "Temizlik"
 
@@ -528,6 +566,9 @@ msgstr "Sütun"
 
 msgid "Columns"
 msgstr "Sütunlar"
+
+msgid "Common name"
+msgstr "Yaygın ad"
 
 msgid "Compacted clay"
 msgstr "Sıkıştırılmış kil"
@@ -585,6 +626,9 @@ msgstr "Korona deşarjı"
 
 msgid "Country"
 msgstr "Ülke"
+
+msgid "Crab"
+msgstr "Yengeç"
 
 msgid "Create"
 msgstr "Oluştur"
@@ -692,6 +736,9 @@ msgstr "Dizel"
 msgid "Dimensions"
 msgstr "Boyutlar"
 
+msgid "Discontinued"
+msgstr "Üretimden kaldırıldı"
+
 msgid "Dissolved oxygen"
 msgstr "Çözünmüş oksijen"
 
@@ -776,11 +823,21 @@ msgstr ""
 "Silinen kayıtlar yalnızca silinmiş olarak işaretlenir; bu yüzden tablolarda durur ve burada "
 "sayılır."
 
+msgid ""
+"Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
+"and are farmed on in sea water: tick both."
+msgstr ""
+"Balık türünün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, "
+"sonra deniz suyunda yetiştirilir: ikisini de işaretleyin."
+
 msgid "Exclusion"
 msgstr "Dışlama"
 
 msgid "Expand menu"
 msgstr "Menüyü genişlet"
+
+msgid "Experimental"
+msgstr "Deneysel"
 
 msgid "Export CSV"
 msgstr "CSV dışa aktar"
@@ -796,6 +853,9 @@ msgstr "Tesis yapısı"
 
 msgid "Fallow"
 msgstr "Dinlendirmede"
+
+msgid "Family"
+msgstr "Familya"
 
 msgid "Farm console for tanks, water quality and stock records."
 msgstr "Tanklar, su kalitesi ve stok kayıtları için çiftlik konsolu."
@@ -838,6 +898,10 @@ msgstr "Balıklar tetiklediğinde yem verir."
 msgid "Fibreglass (GRP)"
 msgstr "Cam elyaf (CTP)"
 
+#, python-format
+msgid "Filled in from the species catalogue: %(values)s."
+msgstr "Balık türü kataloğundan dolduruldu: %(values)s."
+
 msgid "Filter"
 msgstr "Filtrele"
 
@@ -859,6 +923,9 @@ msgstr "İlk"
 
 msgid "First name"
 msgstr "Ad"
+
+msgid "Fish"
+msgstr "Balık"
 
 msgid "Fish are in it, so its size cannot change: move or harvest them first."
 msgstr "İçinde balık var, bu yüzden boyutu değişemez: önce balıkları taşıyın veya hasat edin."
@@ -907,6 +974,9 @@ msgstr "Çerçeve"
 msgid "Freeboard (m)"
 msgstr "Hava payı (m)"
 
+msgid "Fresh water"
+msgstr "Tatlı su"
+
 msgid "Freshwater"
 msgstr "Tatlı su"
 
@@ -953,6 +1023,19 @@ msgstr "Üretim yöntemi"
 
 msgid "Generator"
 msgstr "Jeneratör"
+
+msgid ""
+"Genus and species, e.g. Salmo salar; a subspecies may follow. For a species in the catalogue "
+"(salmon, trout, char, cod, halibut, turbot, seabass, seabream, lumpfish, wrasses), empty fields "
+"are filled in when it is saved."
+msgstr ""
+"Cins ve tür, örn. Salmo salar; ardından bir alt tür gelebilir. Katalogdaki bir türde (somon, "
+"alabalık, kutup alabalığı, morina, pisi, kalkan, levrek, çipura, lompa, lapinalar) boş alanlar "
+"kaydedilirken doldurulur."
+
+#, python-format
+msgid "Genus: %(genus)s (the first word of the scientific name)."
+msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
 
 msgid "Grow-out"
 msgstr "Büyütme"
@@ -1132,6 +1215,12 @@ msgstr "Çerçeve üzerine kaplama"
 msgid "Liner thickness (mm)"
 msgstr "Kaplama kalınlığı (mm)"
 
+msgid "Lobster"
+msgstr "Istakoz"
+
+msgid "Local name"
+msgstr "Yerel ad"
+
 msgid "Location"
 msgstr "Konum"
 
@@ -1149,6 +1238,12 @@ msgstr "Deniz kafesi için boylam zorunludur."
 
 msgid "Low pressure"
 msgstr "Düşük basınç"
+
+msgid "Lumpfish"
+msgstr "Lompa balığı"
+
+msgid "Lumpfish and wrasses are stocked with salmon to eat sea lice."
+msgstr "Lompa ve lapin balıkları, deniz bitlerini yemeleri için somonla birlikte stoklanır."
 
 msgid "Main navigation"
 msgstr "Ana gezinme"
@@ -1213,6 +1308,9 @@ msgstr "Üstveri"
 msgid "Minimum transmittance"
 msgstr "Asgari geçirgenlik"
 
+msgid "Missing"
+msgstr "Eksik"
+
 msgid "Mixed"
 msgstr "Karışık"
 
@@ -1221,6 +1319,9 @@ msgstr "Model"
 
 msgid "Model field"
 msgstr "Model alanı"
+
+msgid "Mollusc"
+msgstr "Yumuşakça"
 
 msgid "Moving bed (MBBR)"
 msgstr "Hareketli yatak (MBBR)"
@@ -1330,6 +1431,9 @@ msgstr "Yok."
 msgid "None: not a part of other equipment"
 msgstr "Yok: başka bir ekipmanın parçası değil"
 
+msgid "Not a cleaner fish"
+msgstr "Temizleyici balık değil"
+
 msgid "Not given"
 msgstr "Belirtilmedi"
 
@@ -1362,6 +1466,9 @@ msgstr "Naylon"
 
 msgid "Offered"
 msgstr "Sunuluyor"
+
+msgid "Official code"
+msgstr "Resmî tür kodu"
 
 msgid "Offline"
 msgstr "Devre dışı"
@@ -1550,6 +1657,9 @@ msgstr "Güç tüketimi"
 msgid "Power output"
 msgstr "Çıkış gücü"
 
+msgid "Prawn"
+msgstr "Tatlı su karidesi"
+
 msgid "Preparing"
 msgstr "Hazırlanıyor"
 
@@ -1650,11 +1760,17 @@ msgstr "Kayıt türü"
 msgid "Rectangular"
 msgstr "Dikdörtgen"
 
+msgid "Reference data"
+msgstr "Referans verileri"
+
 msgid "Refrigerant"
 msgstr "Soğutucu akışkan"
 
 msgid "Region"
 msgstr "Bölge"
+
+msgid "Regulatory"
+msgstr "Mevzuat"
 
 msgid "Regulatory unit ID"
 msgstr "Resmî birim numarası"
@@ -1670,6 +1786,9 @@ msgstr "Kaldır"
 
 msgid "Repair"
 msgstr "Onarımda"
+
+msgid "Reports for this species cannot be filed without it."
+msgstr "Bu balık türünün resmî bildirimleri bu kod olmadan gönderilemez."
 
 msgid "Request a new link"
 msgstr "Yeni bağlantı iste"
@@ -1746,6 +1865,9 @@ msgstr "Parolayı kaydet"
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Önce ekipmanı bu yemleme makinesi türüyle kaydedin; ardından kalibrasyonları buraya eklenebilir."
 
+msgid "Scientific name"
+msgstr "Bilimsel ad"
+
 msgid "Screen size"
 msgstr "Elek açıklığı"
 
@@ -1754,6 +1876,9 @@ msgstr "Deniz kafesi"
 
 msgid "Sea or estuary"
 msgstr "Deniz veya haliç"
+
+msgid "Sea water"
+msgstr "Deniz suyu"
 
 #, python-format
 msgid "Search %(plural)s"
@@ -1774,11 +1899,17 @@ msgstr "Ad, kod veya resmî birim numarasıyla ara"
 msgid "Search by name, code or serial number"
 msgstr "Ad, kod veya seri numarasıyla ara"
 
+msgid "Search by name, scientific name or code"
+msgstr "Ad, bilimsel ad veya koda göre ara"
+
 msgid "Search by name, username or email"
 msgstr "Ada, kullanıcı adına veya e-postaya göre ara"
 
 msgid "Search every column"
 msgstr "Tüm sütunlarda ara"
+
+msgid "Seaweed"
+msgstr "Deniz yosunu"
 
 msgid "See all in the activity log"
 msgstr "Etkinlik günlüğünde tümünü gör"
@@ -1844,6 +1975,9 @@ msgstr "Silinmiş satırları göster"
 msgid "Show them"
 msgstr "Göster"
 
+msgid "Shrimp"
+msgstr "Karides"
+
 msgid "Side (m)"
 msgstr "Kenar (m)"
 
@@ -1902,6 +2036,13 @@ msgstr ""
 msgid "Sort by %(name)s"
 msgstr "Sırala: %(name)s"
 
+msgid "Species"
+msgstr "Balık türleri"
+
+msgctxt "singular"
+msgid "Species"
+msgstr "Balık türü"
+
 msgid "Specific surface area"
 msgstr "Özgül yüzey alanı"
 
@@ -1928,6 +2069,9 @@ msgstr "Girilen hacim (m³)"
 
 msgid "Status"
 msgstr "Durum"
+
+msgid "Status and notes"
+msgstr "Durum ve notlar"
 
 msgid "Status since"
 msgstr "Durum başlangıcı"
@@ -1986,6 +2130,16 @@ msgstr "Sıcaklık"
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
 
+msgid "The English name, e.g. Atlantic salmon."
+msgstr "İngilizce adı, örn. Atlantic salmon."
+
+msgid ""
+"The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
+"Reports send this code, never your own code."
+msgstr ""
+"Norveç resmî bildirimlerindeki tür kodu (artskode), üç büyük harf, örn. Atlantik somonu için SAL."
+" Bildirimler kendi kodunuzu değil, bu kodu gönderir."
+
 msgid "The average depth of the water when the pond is full."
 msgstr "Havuz doluyken suyun ortalama derinliği."
 
@@ -2026,6 +2180,16 @@ msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
 "licence’s."
 msgstr "Birimin m³ su başına tutabileceği en fazla balık: türün refah sınırı veya ruhsattaki sınır."
+
+msgid "The name in the farm’s own language, e.g. Laks."
+msgstr "Çiftliğin kendi dilindeki adı, örn. Laks."
+
+msgid "The official code is three capital letters, e.g. SAL."
+msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
+
+#, python-format
+msgid "The official code of %(name)s is %(code)s."
+msgstr "%(name)s için resmî kod %(code)s."
 
 msgid "The parent equipment is on another site."
 msgstr "Üst ekipman başka bir sahada."
@@ -2160,6 +2324,9 @@ msgstr "Bu tür seçilen kategoride değil."
 msgid "Three-phase"
 msgstr "Üç faz"
 
+msgid "Tick at least one water environment."
+msgstr "En az bir su ortamı işaretleyin."
+
 msgid "Timer"
 msgstr "Zamanlayıcı"
 
@@ -2227,6 +2394,9 @@ msgstr "Güncellenme zamanı"
 msgid "Updated by"
 msgstr "Güncelleyen"
 
+msgid "Use capital letters, digits, hyphens and underscores only."
+msgstr "Yalnızca büyük harf, rakam, kısa çizgi ve alt çizgi kullanın."
+
 msgid "Use your username and password to open the farm console."
 msgstr "Çiftlik konsolunu açmak için kullanıcı adınızı ve parolanızı kullanın."
 
@@ -2259,6 +2429,9 @@ msgstr "Su kapasitesi (m³)"
 
 msgid "Water depth (m)"
 msgstr "Su derinliği (m)"
+
+msgid "Water environment"
+msgstr "Su ortamı"
 
 msgid "Water source"
 msgstr "Su kaynağı"
@@ -2317,6 +2490,16 @@ msgstr ""
 "Birim her kaydedildiğinde boyutlardan ve azami yoğunluktan hesaplanır; son kaydedildiği hâliyle "
 "gösterilir. Azami biyokütle, varsa su hacmini, yoksa hacmi kullanır."
 
+msgid "Wrasse"
+msgstr "Lapin"
+
+msgid ""
+"Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
+"third word."
+msgstr ""
+"Cinsi ve türü Latin harfleriyle yazın, örn. Salmo salar; üçüncü kelime olarak bir alt tür "
+"gelebilir."
+
 msgid "Yes"
 msgstr "Evet"
 
@@ -2331,6 +2514,9 @@ msgstr "Bunu yapma izniniz yok."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."
+
+msgid "Your own short code: capital letters, digits, hyphens and underscores."
+msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
 
 #, python-format
 msgid "by <strong>%(name)s</strong>"
@@ -2394,11 +2580,17 @@ msgstr "örn. 50000"
 msgid "e.g. 60.3913"
 msgstr "örn. 60,3913"
 
+msgid "e.g. Atlantic salmon"
+msgstr "örn. Atlantic salmon"
+
 msgid "e.g. HAT-A"
 msgstr "örn. HAT-A"
 
 msgid "e.g. Hatchery hall A"
 msgstr "örn. Kuluçkahane salonu A"
+
+msgid "e.g. Laks"
+msgstr "örn. Laks"
 
 msgid "e.g. MPS-001"
 msgstr "örn. MPS-001"
@@ -2418,8 +2610,17 @@ msgstr "örn. PMP-001"
 msgid "e.g. R410A"
 msgstr "örn. R410A"
 
+msgid "e.g. SAL"
+msgstr "örn. SAL"
+
 msgid "e.g. SYS-001"
 msgstr "örn. SYS-001"
+
+msgid "e.g. Salmo salar"
+msgstr "örn. Salmo salar"
+
+msgid "e.g. Salmonidae"
+msgstr "örn. Salmonidae"
 
 msgid "e.g. Site manager"
 msgstr "örn. Saha sorumlusu"
@@ -2525,6 +2726,13 @@ msgstr "saha iletişim kişileri"
 msgid "sites"
 msgstr "sahalar"
 
+msgid "species"
+msgstr "balık türü"
+
+msgctxt "plural"
+msgid "species"
+msgstr "balık türleri"
+
 msgid "system"
 msgstr "sistem"
 
@@ -2555,212 +2763,4 @@ msgstr "evet"
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "“%(name)s” bu türün teknik özelliklerinden biri değil."
-
-msgid ""
-"A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
-" the reports and the water it lives in."
-msgstr ""
-"Çiftliğin yetiştirdiği veya stokladığı bir balık türü, örneğin Atlantik somonu veya lompa balığı: "
-"adları, resmî bildirim kodları ve yaşadığı su."
-
-msgid ""
-"Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. Discontinued: no "
-"longer farmed."
-msgstr ""
-"Aktif: şu an yetiştiriliyor. Deneysel: denemede. Pasif: şu an yetiştirilmiyor. Üretimden "
-"kaldırıldı: artık yetiştirilmiyor."
-
-msgid "All species"
-msgstr "Tüm balık türleri"
-
-msgid "All water environments"
-msgstr "Tüm su ortamları"
-
-msgid "Another species already has this scientific name."
-msgstr "Bu bilimsel ad başka bir balık türünde zaten var."
-
-msgid "Another species already uses this code."
-msgstr "Bu kodu başka bir balık türü zaten kullanıyor."
-
-msgid "Brackish water"
-msgstr "Acı su"
-
-msgid "Classification"
-msgstr "Sınıflandırma"
-
-msgid "Cleaner fish"
-msgstr "Temizleyici balık"
-
-msgid "Cleaner fish only"
-msgstr "Yalnızca temizleyici balıklar"
-
-msgid "Common name"
-msgstr "Yaygın ad"
-
-msgid "Crab"
-msgstr "Yengeç"
-
-msgid "Discontinued"
-msgstr "Üretimden kaldırıldı"
-
-msgid ""
-"Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
-"and are farmed on in sea water: tick both."
-msgstr ""
-"Balık türünün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, sonra deniz"
-" suyunda yetiştirilir: ikisini de işaretleyin."
-
-msgid "Experimental"
-msgstr "Deneysel"
-
-msgid "Family"
-msgstr "Familya"
-
-#, python-format
-msgid "Filled in from the species catalogue: %(values)s."
-msgstr "Balık türü kataloğundan dolduruldu: %(values)s."
-
-msgid "Fish"
-msgstr "Balık"
-
-msgid "Fresh water"
-msgstr "Tatlı su"
-
-msgid ""
-"Genus and species, e.g. Salmo salar; a subspecies may follow. For a species in the catalogue "
-"(salmon, trout, char, cod, halibut, turbot, seabass, seabream, lumpfish, wrasses), empty fields "
-"are filled in when it is saved."
-msgstr ""
-"Cins ve tür, örn. Salmo salar; ardından bir alt tür gelebilir. Katalogdaki bir türde (somon, "
-"alabalık, kutup alabalığı, morina, pisi, kalkan, levrek, çipura, lompa, lapinalar) boş alanlar "
-"kaydedilirken doldurulur."
-
-#, python-format
-msgid "Genus: %(genus)s (the first word of the scientific name)."
-msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
-
-msgid "Lobster"
-msgstr "Istakoz"
-
-msgid "Local name"
-msgstr "Yerel ad"
-
-msgid "Lumpfish"
-msgstr "Lompa balığı"
-
-msgid "Lumpfish and wrasses are stocked with salmon to eat sea lice."
-msgstr "Lompa ve lapin balıkları, deniz bitlerini yemeleri için somonla birlikte stoklanır."
-
-msgid "Missing"
-msgstr "Eksik"
-
-msgid "Mollusc"
-msgstr "Yumuşakça"
-
-msgid "Not a cleaner fish"
-msgstr "Temizleyici balık değil"
-
-msgid "Official code"
-msgstr "Resmî tür kodu"
-
-msgid "Prawn"
-msgstr "Tatlı su karidesi"
-
-msgid "Reference data"
-msgstr "Referans verileri"
-
-msgid "Regulatory"
-msgstr "Mevzuat"
-
-msgid "Reports for this species cannot be filed without it."
-msgstr "Bu balık türünün resmî bildirimleri bu kod olmadan gönderilemez."
-
-msgid "Scientific name"
-msgstr "Bilimsel ad"
-
-msgid "Sea water"
-msgstr "Deniz suyu"
-
-msgid "Search by name, scientific name or code"
-msgstr "Ad, bilimsel ad veya koda göre ara"
-
-msgid "Seaweed"
-msgstr "Deniz yosunu"
-
-msgid "Shrimp"
-msgstr "Karides"
-
-msgid "Species"
-msgstr "Balık türleri"
-
-msgctxt "singular"
-msgid "Species"
-msgstr "Balık türü"
-
-msgid "Status and notes"
-msgstr "Durum ve notlar"
-
-msgid "The English name, e.g. Atlantic salmon."
-msgstr "İngilizce adı, örn. Atlantic salmon."
-
-msgid ""
-"The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
-"Reports send this code, never your own code."
-msgstr ""
-"Norveç resmî bildirimlerindeki tür kodu (artskode), üç büyük harf, örn. Atlantik somonu için SAL."
-" Bildirimler kendi kodunuzu değil, bu kodu gönderir."
-
-msgid "The name in the farm’s own language, e.g. Laks."
-msgstr "Çiftliğin kendi dilindeki adı, örn. Laks."
-
-msgid "The official code is three capital letters, e.g. SAL."
-msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
-
-#, python-format
-msgid "The official code of %(name)s is %(code)s."
-msgstr "%(name)s için resmî kod %(code)s."
-
-msgid "Tick at least one water environment."
-msgstr "En az bir su ortamı işaretleyin."
-
-msgid "Use capital letters, digits, hyphens and underscores only."
-msgstr "Yalnızca büyük harf, rakam, kısa çizgi ve alt çizgi kullanın."
-
-msgid "Water environment"
-msgstr "Su ortamı"
-
-msgid "Wrasse"
-msgstr "Lapin"
-
-msgid ""
-"Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
-"third word."
-msgstr ""
-"Cinsi ve türü Latin harfleriyle yazın, örn. Salmo salar; üçüncü kelime olarak bir alt tür "
-"gelebilir."
-
-msgid "Your own short code: capital letters, digits, hyphens and underscores."
-msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
-
-msgid "e.g. Atlantic salmon"
-msgstr "örn. Atlantic salmon"
-
-msgid "e.g. Laks"
-msgstr "örn. Laks"
-
-msgid "e.g. SAL"
-msgstr "örn. SAL"
-
-msgid "e.g. Salmo salar"
-msgstr "örn. Salmo salar"
-
-msgid "e.g. Salmonidae"
-msgstr "örn. Salmonidae"
-
-msgid "species"
-msgstr "balık türü"
-
-msgctxt "plural"
-msgid "species"
-msgstr "balık türleri"
 

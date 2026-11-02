@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load assets %}<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -7,8 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
-  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+  <link rel="icon" href="{% asset 'favicon.svg' %}" type="image/svg+xml">
+  {% module_map %}
+  <link rel="stylesheet" href="{% asset 'css/base.css' %}">
+  <link rel="stylesheet" href="{% asset 'css/auth.css' %}">
 </head>
 <body>
   <div class="auth">
@@ -22,6 +24,6 @@
       </div>
     </main>
   </div>
-  <script type="module" src="{% static 'js/auth.js' %}"></script>
+  <script type="module" src="{% asset 'js/auth.js' %}"></script>
 </body>
 </html>

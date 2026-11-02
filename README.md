@@ -173,6 +173,11 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   (`data-omit-empty`, the database viewer's filters);
 - `auth.ts` the show/hide password button.
 
+Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
+compiled modules are reached through an import map (`{% module_map %}`), so a browser never shows a
+page with new markup and an old stylesheet or script from its cache. `manage.py check` warns when
+the compiled code is missing.
+
 ## One format for every tab
 
 `core/crud.py` turns a `Resource` (model, form, labels, list template) into list, create, edit and

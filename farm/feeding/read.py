@@ -20,19 +20,27 @@ fold's book biomass (measured weights only), in kg:
   last weighing ages.
 
 Known bias, said on the page: dead fish between weighings leave at the last measured average, so their
-growth since is not credited (bFCR slightly high when mortality is heavy)."""
+growth since is not credited (bFCR slightly high when mortality is heavy).
+
+The rations (`project`): the same walk with a projector (farm/feeding/projection.py), over the units' lineage (every
+unit their batches were in), keeps the estimated weight and the day's ration of the days asked, from the protocols,
+assignments and temperatures loaded once into a ration.Policy (`policy`). Nothing of it is stored."""
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
-from django.db.models import Max
+from django.db.models import Max, Prefetch, Q
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from farm.models import FeedingRecord, StockMovement
+from farm.models import Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank
 from farm.stock.dates import local_today
 from farm.stock.read import batches_ever_in, ledger
 
-from .fold import ZERO, Feeding, PointKind, walk
+from .fold import ZERO, Feeding, PointKind, Window, ratio, walk
+from .projection import Projector
+from .ration import Band, Cell, Policy, Table
+from .temperature import TemperatureBook, end_of
 
 WEEK = 7          # the days the drawer's feed rate and feed total cover
 HUNDRED = Decimal(100)
@@ -44,18 +52,105 @@ NO_GAIN = _('No growth up to the last weighing.')
 
 
 def feedings(unit_ids=None, since=None):
-    """The live feedings (fold.Feeding) of these units (None: every unit) dated `since` or later."""
+    """The live feedings (fold.Feeding) of these units (None: every unit) dated `since` or later, each with its
+    meals and its place among the day's records (its time, a record without one last, then the order of entry)."""
     rows = FeedingRecord.objects.order_by()
     if unit_ids is not None:
         rows = rows.filter(unit_id__in=unit_ids)
     if since is not None:
         rows = rows.filter(date__gte=since)
-    return [Feeding(*row) for row in rows.values_list('pk', 'unit_id', 'date', 'amount_kg')]
+    return [Feeding(pk, unit_id, day, kilos, meals, (clock is None, clock or time.min, created))
+            for pk, unit_id, day, kilos, meals, clock, created
+            in rows.values_list('pk', 'unit_id', 'date', 'amount_kg', 'meals', 'time', 'created_at')]
 
 
 def _walk(unit_ids, records, days=()):
     """The walk of these units: the ledger of every batch ever in them, with `records` (fold.Feeding)."""
     return walk(ledger(batches_ever_in(unit_ids)), records, days)
+
+
+# ---- the projected weight and the rations ------------------------------------------------------------------
+def lineage(unit_ids):
+    """(unit ids, batch ids) a projection of these units reads: every batch ever in them, every unit those batches
+    were ever in, and every batch ever in those, until nothing is added. Fish moved in carry their estimate from
+    where they were, and the feed of a unit is split among every batch in it."""
+    units, batches = set(unit_ids), set()
+    while True:
+        added = batches_ever_in(units) - batches
+        if not added:
+            return units, batches
+        batches |= added
+        more = set(StockMovement.objects.filter(batch_id__in=added, operation__is_deleted=False)
+                   .values_list('unit_id', flat=True)) - units
+        if not more:
+            return units, batches
+        units |= more
+
+
+def tables(protocol_ids):
+    """{protocol id: ration.Table} of these protocols, their bands in weight order with their feed and cells."""
+    bands = ProtocolBand.objects.select_related('feed').prefetch_related('rates').order_by('min_weight_g')
+    found = {}
+    for protocol in (FeedingProtocol.all_objects.filter(pk__in=protocol_ids).select_related('species')
+                     .prefetch_related(Prefetch('bands', bands))):
+        found[protocol.pk] = Table(protocol, tuple(
+            Band(band.pk, band.min_weight_g, band.max_weight_g, band.feed, band.meals_per_day, band.expected_fcr,
+                 tuple(Cell(rate.temperature_c, rate.sfr_pct)
+                       for rate in sorted(band.rates.all(), key=lambda rate: rate.temperature_c)))
+            for band in protocol.bands.all()))
+    return found
+
+
+def policy(units, batch_ids, first, now):
+    """The ration.Policy of these units (Tank, by id) and batches from the day `first` to now: the assignment rows
+    in force over those days, their tables, the batches' species and the units' temperatures, read once."""
+    rows = list(ProtocolAssignment.objects.filter(Q(unit_id__in=list(units)) | Q(batch_id__in=batch_ids))
+                .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first))
+                .select_related('unit', 'protocol__species'))
+    species = dict(Batch.all_objects.filter(pk__in=batch_ids).values_list('pk', 'species_id'))
+    book = TemperatureBook(units.values(), datetime.combine(first, time.min, tzinfo=UTC) - timedelta(days=1), now)
+    today = {unit_id: local_today(unit) for unit_id, unit in units.items()}
+    found = {}
+
+    def temperature(unit_id, day):
+        """Now for the unit's today, the end of the day for a day before it."""
+        if (unit_id, day) not in found:
+            unit = units[unit_id]
+            found[(unit_id, day)] = book.at(unit, now if day >= today[unit_id] else end_of(day, unit))
+        return found[(unit_id, day)]
+
+    return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature)
+
+
+@dataclass
+class Projection:
+    """A walk with the projected weight (projection.Projector): the stays, the days asked (`days`: (unit id, day)
+    -> projection.UnitDay) and the weighings' corrections."""
+    walked: object
+    projector: Projector
+
+    @property
+    def days(self):
+        return self.projector.days
+
+    def corrections(self, unit_id, batch_id=None):
+        """The corrections of the batches of a unit (or of one batch in it), oldest first."""
+        return [correction for (unit, batch), found in self.projector.corrections.items()
+                if unit == unit_id and (batch_id is None or batch == batch_id) for correction in found]
+
+
+def project(unit_ids, days=(), now=None):
+    """One walk of the units' lineage with the projected weight, keeping the UnitDay of each (unit id, day) of
+    `days`. Every feeding of those units is walked: the estimate runs from the last measured point, wherever the
+    fish were then."""
+    now = now or timezone.now()
+    unit_ids, batch_ids = lineage(unit_ids)
+    records = feedings(unit_ids)
+    units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
+    first = min([record.date for record in records] + [day for _unit, day in days],
+                default=timezone.localdate(now))
+    projector = Projector(policy(units, batch_ids, first, now), days)
+    return Projection(walk(ledger(batch_ids), records, days, projector=projector), projector)
 
 
 def book_on(unit, day):
@@ -81,30 +176,6 @@ def records_of_batch(batch, records):
 
 
 # ---- FCR -----------------------------------------------------------------------------------------
-def ratio(feed, gain):
-    return feed / gain if feed > 0 and gain > 0 else None
-
-
-@dataclass(frozen=True)
-class Window:
-    """A share's stay from its first measured point to its last weighing (or the harvest that closed it)."""
-    start: object
-    end: object
-    feed_kg: Decimal
-
-    @property
-    def gain_kg(self):
-        """Biological gain: the biomass grown, the fish removed meanwhile credited, those added not."""
-        start, end = self.start, self.end
-        return (end.biomass_kg - start.biomass_kg + (end.removed_kg - start.removed_kg)
-                - (end.added_kg - start.added_kg))
-
-    @property
-    def economic_gain_kg(self):
-        """Economic gain: the biological gain less the fish lost (dead, culled, escaped, unaccounted)."""
-        return self.gain_kg - (self.end.lost_kg - self.start.lost_kg)
-
-
 def window(stay):
     if not stay.points:
         return None
@@ -190,11 +261,14 @@ class Week:
 
 @dataclass
 class UnitFeeding:
-    """The feeding figures of a unit with fish."""
+    """The feeding figures of a unit with fish; for the drawer's unit also its last WEEK days, today's ration
+    (projection.UnitDay) and the corrections of its weighings."""
     today: date
     last_fed: date = None
     shares: list = field(default_factory=list)
     week: Week = None
+    ration: object = None
+    corrections: list = field(default_factory=list)
 
     @property
     def conversion(self):
@@ -208,8 +282,9 @@ class UnitFeeding:
 
 
 def figures(stock, detail=None):
-    """{unit id: UnitFeeding} of the units with fish (`stock`: read.stock_of), and the last WEEK days of
-    `detail` (the drawer's unit). One walk and two queries for the page."""
+    """{unit id: UnitFeeding} of the units with fish (`stock`: read.stock_of), and the last WEEK days, today's
+    ration and the weighings' corrections of `detail` (the drawer's unit), whose walk keeps the projected weight.
+    One walk for the page."""
     if not stock:
         return {}
     unit_ids = list(stock)
@@ -220,7 +295,8 @@ def figures(stock, detail=None):
         first = today[detail.pk] - timedelta(days=WEEK - 1)
         days = [(detail.pk, first + timedelta(days=n)) for n in range(WEEK)]
         since = min(since, first)
-    walked = _walk(unit_ids, feedings(unit_ids, since), days)
+    projection = project(unit_ids, days) if days else None
+    walked = projection.walked if projection else _walk(unit_ids, feedings(unit_ids, since), days)
     last = dict(FeedingRecord.objects.filter(unit_id__in=unit_ids).order_by().values('unit_id')
                 .annotate(last=Max('date')).values_list('unit_id', 'last'))
     result = {}
@@ -231,7 +307,10 @@ def figures(stock, detail=None):
             stay = walked.stays[(unit_id, share.batch.pk)][-1]
             unit.shares.append(ShareFeeding(share.batch, stay, window(stay)))
     if days:
-        result[detail.pk].week = _week(detail, stock[detail.pk], today[detail.pk], days, walked)
+        drawer = result[detail.pk]
+        drawer.week = _week(detail, stock[detail.pk], today[detail.pk], days, walked)
+        drawer.ration = projection.days.get((detail.pk, today[detail.pk]))
+        drawer.corrections = projection.corrections(detail.pk)
     return result
 
 

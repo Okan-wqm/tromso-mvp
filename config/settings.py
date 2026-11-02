@@ -188,3 +188,12 @@ STOCK_BACKDATE_DAYS = 31
 # A feeding above this % of the unit's book biomass a day asks for an acknowledgement, stored on the record
 # (farm/feeding/services.py; owner decision Q-F5): a kilo typed for a gram is caught, fry may be fed more.
 FEEDING_ACK_PERCENT = 10
+
+# A ration reads the latest temperature of the unit or its loop measured at most this many days before (owner
+# decision Q5): stale after the temperature's 24 hours, no ration after this (farm/feeding/temperature.py).
+TEMPERATURE_USABLE_DAYS = 7
+
+# The estimated weight between weighings (farm/feeding/projection.py) is marked "weigh soon" after this many days
+# since the last measured point, and "weigh now: the estimate is unreliable" after the second (owner decision Q6).
+WEIGH_SOON_DAYS = 14
+WEIGH_NOW_DAYS = 28

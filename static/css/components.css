@@ -158,33 +158,6 @@
 .badge-quarantine { background: #F7E6E6; color: var(--error); }
 .badge-admin, .badge-experimental { background: var(--active-bg); color: var(--stripe-dark); }
 
-/* Tables (roles, users) */
-.table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--white);
-}
-
-.table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
-.table th,
-.table td {
-  padding: .75rem 1rem;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-  vertical-align: middle;
-}
-.table thead th { color: var(--muted); font-size: .8125rem; font-weight: 600; white-space: nowrap; }
-.table tbody tr:last-child > * { border-bottom: 0; }
-.table tbody tr:hover { background: var(--hover); }
-.table tbody th { font-weight: 600; }
-.table tbody th a { color: var(--speck); text-decoration: none; }
-.table tbody th a:hover { color: var(--stripe-dark); text-decoration: underline; }
-.table tbody th .badge { margin-left: .5rem; }
-.table .num { text-align: right; font-variant-numeric: tabular-nums; }
-.table .nowrap { white-space: nowrap; }
-.table-actions { width: 1%; padding-block: .25rem; text-align: right; white-space: nowrap; }
-
 /* Empty state */
 .empty {
   display: flex;
@@ -525,8 +498,11 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .notice-warning a { color: inherit; font-weight: 600; }
 .text-warning { color: #7A5410; font-style: italic; }
 
-/* Tables */
+/* Tables: every list (farm tabs, roles, users). The wrapper scrolls a wide table inside itself; it is
+   the containing block of what is positioned in the table (the screen-reader labels of the row
+   buttons), so nothing in a table can widen the page. */
 .table-wrap {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -543,6 +519,10 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
   white-space: nowrap;
 }
 .data-table td { padding: .75rem 1rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.data-table tbody th { color: var(--speck); font-size: inherit; font-weight: 600; vertical-align: middle; }
+.data-table tbody th a { color: var(--speck); text-decoration: none; }
+.data-table tbody th a:hover { color: var(--stripe-dark); text-decoration: underline; }
+.data-table tbody th .badge { margin-left: .5rem; }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table tbody tr:hover { background: var(--mist); }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }

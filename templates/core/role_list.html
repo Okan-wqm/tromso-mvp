@@ -4,7 +4,7 @@
 {% block empty_text %}{% trans "Add the first role, then give it to people on the Users page." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">
-  <table class="table">
+  <table class="data-table">
     <thead>
       <tr><th scope="col">{% trans "Role" %}</th><th scope="col" class="num">{% trans "Users" %}</th><th scope="col">{% trans "Allows" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
@@ -14,7 +14,7 @@
         <th scope="row">{% if can_change %}<a href="{% url 'core:group_edit' role.pk %}" data-modal>{{ role.name }}</a>{% else %}{{ role.name }}{% endif %}</th>
         <td class="num">{{ role.user_set.all|length }}</td>
         <td>{{ role.permissions.all|access_summary|default:_("Nothing yet") }}</td>
-        <td class="table-actions">
+        <td class="row-actions">
           {% if can_change %}<a class="icon-button" href="{% url 'core:group_edit' role.pk %}" data-modal title="{% blocktrans with name=role.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=role.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
           {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'core:group_delete' role.pk %}" data-modal title="{% blocktrans with name=role.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=role.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
         </td>

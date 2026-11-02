@@ -32,7 +32,6 @@ voidable. Count adjustments have their line kind and checks but no dialog yet.""
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
-from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -48,6 +47,7 @@ from farm.models import Batch, Species, StockMovement, StockOperation, Tank
 from farm.models.stock import (
     ARRIVAL_STATUSES, REASONS, AdjustmentReason, MovementKind, OperationKind, TransferReason,
 )
+from farm.models.site import zone_of
 from farm.models.tank import NEEDS_NO_FISH
 from farm.templatetags.stock import number
 
@@ -96,11 +96,8 @@ class NewBatch:
 
 # ---- dates ---------------------------------------------------------------------------------------
 def local_today(unit=None):
-    """Today on the farm: in the time zone of the unit's site, else the company's (settings.TIME_ZONE).
-    Never the UTC date of a browser (the source's dialogs were a day behind east of UTC)."""
-    site = unit.production_department.site if unit is not None else None
-    name = site.timezone if site is not None and site.timezone else settings.TIME_ZONE
-    return timezone.localdate(timezone=ZoneInfo(name))
+    """Today on the farm: in the time zone of the unit's site, else the company's (farm.models.site.zone_of)."""
+    return timezone.localdate(timezone=zone_of(unit.production_department.site if unit is not None else None))
 
 
 def earliest(unit=None):

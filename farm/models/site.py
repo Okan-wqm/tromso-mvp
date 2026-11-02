@@ -1,3 +1,6 @@
+from zoneinfo import ZoneInfo
+
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -130,6 +133,12 @@ class Site(CodedMixin, AuditedModel):
             models.Index(fields=['type']),
             models.Index(fields=['status']),
         ]
+
+
+def zone_of(site):
+    """The time zone a farm's day and clock are read in: the site's, else the company's (settings.TIME_ZONE).
+    Never a browser's (the source's dialogs were a day behind east of UTC)."""
+    return ZoneInfo(site.timezone if site is not None and site.timezone else settings.TIME_ZONE)
 
 
 class SiteContact(Contact):

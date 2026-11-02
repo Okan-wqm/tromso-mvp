@@ -8,3 +8,6 @@ staticfiles/
 # Compiled from frontend/*.ts by `npm run build`
 static/js/
 node_modules/
+
+# Built from locale/*/LC_MESSAGES/django.po by `manage.py compile_catalogs`
+*.mo

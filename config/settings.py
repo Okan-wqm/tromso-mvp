@@ -157,5 +157,8 @@ RAIL_MENU = 'config.navigation.MENU'
 # What a role can be given (core.access).
 ACCESS_AREAS = 'config.access.AREAS'
 
+# What Administration › Database shows (core.database).
+DATABASE_VIEWER = 'config.database.VIEWER'
+
 # Tests hash passwords quickly (config/test_runner.py).
 TEST_RUNNER = 'config.test_runner.FastPasswordRunner'

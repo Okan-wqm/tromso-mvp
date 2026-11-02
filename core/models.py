@@ -103,6 +103,9 @@ class AuditLog(models.Model):
         db_table = 'audit_log'
         ordering = ['-created_at']
         indexes = [models.Index(fields=['entity_type', 'entity_id'])]
+        # Not about audit rows: the one permission of the platform's own screens that no model owns
+        # (core.database). It is not in the access matrix, so only the platform admin has it.
+        permissions = [('browse_database', 'Can browse the database')]
 
     def __str__(self):
         return f'{self.user_name} {self.get_action_display().lower()} {self.entity_type} {self.entity_label}'

@@ -17,7 +17,8 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, suppliers, and under Operations the production units with their fish). Each has its
+  species, feeds, water limits, suppliers, and under Operations the production units with their fish and
+  the water chemistry). Each has its
   own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
@@ -275,9 +276,10 @@ Differences from the source:
   information, documents, the image, the light regime (a production protocol, not a species
   constant), the "compatible feeds" section (never stored by the source; it belongs to the Feeds
   tab) and the JSON blobs. Two parts come back with later tabs as typed tables, never as JSON, and
-  with no silent defaults: water-quality limits per species and parameter, each with its unit
-  (Water chemistry › parameters and limits; SPC-05, SPC-19, SPC-23), and growth bands, target FCR,
-  survival and harvest weight per stage (the growth model, with the batches tab; SPC-20, SPC-21).
+  with no silent defaults: the water limits per species and parameter, each in its parameter's unit
+  (Reference data › Water limits, see Operations › Water chemistry; SPC-05, SPC-19, SPC-23), and growth
+  bands, target FCR, survival and harvest weight per stage (the growth model, with the batches tab;
+  SPC-20, SPC-21). Deleting a species deletes its water limits with it (listed in the confirmation).
 
 ### Reference data › Feeds (`/feeds/`)
 
@@ -507,6 +509,124 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   medicine-withdrawal block on harvest (**it must come back with the health module before real
   harvests**), batch documents and costs, count adjustments as a dialog (their lines and checks exist).
 
+### Operations › Water chemistry (`/operations/water/`) and Reference data › Water limits (`/water-limits/`)
+
+The water samples people take, in a unit or in a system's loop (at the sump), and the limits the owner
+sets per species. Tables `water_measurements` (a TimescaleDB hypertable) and `water_limits`.
+
+**The parameters** are a fixed list in code (`farm/water/parameters.py`), each with one unit and one
+basis in its label and its column's name, so a value can never be relabelled into another unit and
+nitrogen is always recorded as N (owner decision 3; the help of each field gives the kit conversions,
+NO₂⁻ ÷ 3.29, NO₃⁻ ÷ 4.43, NH₄⁺ ÷ 1.29). Each has a plausible range, which catches a typing slip and is a
+database check (the ranges are argued in the bug document), its precision and how long a value is fresh:
+
+| Column | Label | Decimals | Plausible | Fresh |
+|---|---|---|---|---|
+| `temperature_c` | Temperature (°C) | 1 | −3 … 40 | 24 h |
+| `oxygen_mg_l` | Dissolved oxygen (mg/L O₂) | 2 | 0 … 50 | 24 h |
+| `oxygen_saturation_pct` | Oxygen saturation (% of air saturation) | 1 | 0 … 400 | 24 h |
+| `ph` | pH (NBS scale) | 2 | 2 … 12 | 72 h |
+| `alkalinity_mg_l` | Alkalinity (mg/L as CaCO₃) | 0 | 0 … 1000 | 14 days |
+| `co2_mg_l` | Carbon dioxide (mg/L free CO₂) | 1 | 0 … 200 | 72 h |
+| `tan_mg_l` | Total ammonia nitrogen (mg/L TAN as N) | 3 | 0 … 100 | 7 days |
+| `nitrite_n_mg_l` | Nitrite (mg/L NO₂ as N) | 3 | 0 … 100 | 7 days |
+| `nitrate_n_mg_l` | Nitrate (mg/L NO₃ as N) | 1 | 0 … 1000 | 14 days |
+| `tgp_pct` | Total gas pressure (% of barometric pressure) | 1 | 50 … 200 | 7 days |
+| `salinity_ppt` | Salinity (‰, g/kg) | 1 | 0 … 50 | 7 days |
+| `turbidity_ntu` | Turbidity (NTU) | 1 | 0 … 4000 | 7 days |
+
+**A sample** is one row: what a person measured at one point at one moment, a typed column per
+parameter, empty when not measured, at least one value (a database check). The point is a unit or a
+system, exactly one (a database check). The time is on the clock of the point's site, never in the
+future and at most 31 days back (`WATER_BACKDATE_DAYS`), as stock operations are dated; the source is a
+meter or kit, or a laboratory; the person is the one signed in. A form sent twice records once (its key,
+stored with the time). Samples are never edited: **Void** (with a reason, logged as "Voided" like a stock
+operation) and a new entry correct one; a voided sample stays in the history, struck through. The only
+writer is `farm/water/services.py`.
+
+**The hypertable.** `water_measurements` is a TimescaleDB hypertable on `measured_at` (90-day chunks),
+made by one `RunSQL` in migration `farm/0014_water`, which depends on `core/0001_timescaledb` (the
+migration that runs `CREATE EXTENSION IF NOT EXISTS timescaledb`). Its primary key in the database is
+`(id, measured_at)`, as a hypertable's must be, while Django's model keeps `id`, so `makemigrations
+--check` stays clean (a test runs it). The rules that follow are in the model's docstring: every unique
+constraint includes `measured_at`, no foreign key points at the table, compression is left for later.
+
+**Limits** (Setup › Reference data › Water limits) are rows per species, parameter (every measured one,
+and the un-ionised ammonia NH₃-N) and water type, or any water: critical below, warning below, warning
+above, critical above, any of them open, and where the values come from. The bounds go up, each is in
+its parameter's range and precision, and there is one live row per species, parameter and water type;
+the database checks all of it, and the form says it on the field. The unit is the parameter's. **Nothing
+is seeded**: the owner enters the values a vet or a guideline gives (starting points for Atlantic salmon
+are in the bug document, not in the database).
+
+**Judged on read** (`farm/water/evaluate.py`, `farm/water/read.py`); nothing about a status is stored:
+- Inside the warning bounds a value is ok, outside them a warning, outside the critical bounds critical;
+  a value on a bound is in the inner band.
+- A value is judged for the species in its unit on the day it was measured (any time of that day, from
+  the stock ledger), against the row for the unit's water type, else the row for any water; with
+  several species the worst wins. A loop's sample is judged for every unit of the loop. **A unit without
+  fish shows its values with "no limit"** (owner decision 1).
+- **A past sample is judged against the limits as they are now** (owner decision 2): a changed limit
+  re-judges the history at once; the limits of the time are not kept. The page says so.
+- The latest value of each parameter is per parameter, not per sample: a later sample without DO never
+  hides a critical DO. A value older than its freshness is "stale" with its age, never ok. A unit's
+  status is the worst of its fresh values; stale when nothing is fresh.
+
+**Worked out from a sample**, never stored (`farm/water/chemistry.py`, each pinned by a test against
+published values):
+- **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
+  converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
+  water it equals Emerson et al. (1975) within 0.002 pK. It needs the pH and the temperature of the same
+  sample; the salinity is the sample's, else the point's latest within 30 days before it, else 0 where
+  every unit is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
+- **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
+  barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none). From
+  mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
+  kept and flagged.
+
+**The page** has two views: **Latest** (every unit and every loop with a sample in the last 30 days, its
+status and the latest value of each parameter, coloured by status, its time and age on hover; a filter by
+site) and **History** (the samples, newest first, 50 a page, filtered by site, unit or loop, dates, and
+"only warnings and criticals"; each value coloured as judged now, worked-out values in italics; Void
+while the sample is in the window). **Record sample** opens the dialog (date and time on the site's
+clock, source, the twelve values in four groups, notes; from a unit's history the unit is fixed and each
+field's help shows its species' limits). **Round** is the morning round: a site and optionally a
+production department or a system, the columns to fill (temperature and oxygen by default), one row per
+unit that is not inactive and per loop, one time and one source; empty rows are skipped, a value out of
+range is shown in its cell and nothing is recorded until every cell is right (at most 200 rows).
+
+**Who may do what**: the area Water chemistry (Production · Operations): Read the page, Create records
+a sample or a round, Delete voids one; the area Water limits (Production · Setup · Reference data) with
+read, create, edit and delete.
+
+**Deleting**: a unit or a system keeps its samples, out of sight while it is deleted (the link is
+`DO_NOTHING`; the confirmation counts them) and back when it is restored, as its stock lines are; a
+species takes its water limits with it, each listed and logged. The admin shows voided samples but does
+not restore them.
+
+**The MVP alerts nobody.** A critical value is shown on the page (and, with Production units, on the
+unit), never sent: there is no email, SMS or push, no acknowledgement and no escalation. Someone has to
+look.
+
+Differences from the source (details in the bug document, WQ-01 to WQ-29):
+
+- One store of limits, per species and water type, read by the one evaluator; the source had seven that
+  disagreed and never applied its species limits (WQ-01, WQ-02, WQ-24).
+- Typed columns with one unit and basis each and plausible ranges in the database, instead of a JSONB
+  bag, free-text units and ammonia and nitrite of no basis (WQ-03, WQ-07, WQ-23).
+- Status on read, per parameter, from the latest value of that parameter (WQ-04, WQ-05, WQ-06, WQ-21);
+  two bands (WQ-09); nothing is required but one value (WQ-08).
+- The time and the person are the server's rules (WQ-10, WQ-11); samples are voided, never edited or
+  erased, and every change is logged (WQ-12); loop samples can be recorded (WQ-13); real foreign keys
+  (WQ-14, WQ-15); a round skips empty rows (WQ-16) and is translated (WQ-17).
+- The oxygen saturation is worked out from mg/L (or the reverse) at the site's altitude (WQ-27); TGP is
+  a parameter (WQ-25).
+- Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
+  notifications, the Deffeyes calculator and dosing, H₂S, hardness and the other lab parameters,
+  detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan per unit,
+  and a site's intake water. The feeding tab is to read the latest water temperature from here and keep
+  no copy of its own (WQ-02).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -514,9 +634,10 @@ only one who manages roles and users; everyone else gets exactly what their role
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
-  Systems, Equipment, Tanks, ponds & cages, Species, Feeds and Suppliers (read, create, edit, delete),
-  Production units (read the page, create = record an operation, delete = void one) and Activity log
-  (read). A new tab appears in the matrix by
+  Systems, Equipment, Tanks, ponds & cages, Species, Feeds, Water limits and Suppliers (read, create,
+  edit, delete), Production units (read the page, create = record an operation, delete = void one),
+  Water chemistry (read the page and a unit's water, create = record a sample or a round, delete = void
+  one) and Activity log (read). A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
@@ -650,7 +771,9 @@ confirmation, which lists what will be affected and disables the button when som
 the delete itself, which writes an activity-log row for every record it touches. A tab never writes
 down what a delete does to its neighbours: it is whatever its links say. Records linked through a
 many-to-many link (the equipment serving a system) keep their link rows; the confirmation lists them,
-and the link counts again once the record is restored.
+and the link counts again once the record is restored. Records whose link is `DO_NOTHING` (a unit's or a
+system's water samples) stay as they are: their manager hides them while the record is deleted, the
+confirmation counts them, and they come back with it.
 
 ### Shared form parts
 
@@ -751,6 +874,11 @@ real mail.
 | `/operations/units/new-batch/` | A new batch (`?unit=<id>` chooses the unit) |
 | `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |
 | `/operations/units/void/<id>/` | Voids a stock operation |
+| `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
+| `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
+| `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
+| `/operations/water/void/<id>/` | Voids a water sample |
+| `/water-limits/` | Reference data › Water limits |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -777,6 +905,7 @@ real mail.
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
+| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |

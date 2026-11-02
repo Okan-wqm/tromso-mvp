@@ -8,6 +8,9 @@ services:
       POSTGRES_DB: ${DB_NAME:-balik}
       POSTGRES_USER: ${DB_USER:-balik}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-balik}
+      # No usage reports to Timescale, and no telemetry job running in every database (each test
+      # database included).
+      TIMESCALEDB_TELEMETRY: "off"
     ports: ["${DB_PORT:-5433}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
 

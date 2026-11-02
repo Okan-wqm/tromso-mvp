@@ -1,0 +1,73 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% block search_placeholder %}{% trans "Search by name, code or regulatory unit ID" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <select id="site-filter" name="site" data-autosubmit>
+    <option value="">{% trans "All sites" %}</option>
+    {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="department-filter">{% trans "Production department" %}</label>
+  <select id="department-filter" name="production_department" data-autosubmit>
+    <option value="">{% trans "All production departments" %}</option>
+    {% for department in departments %}<option value="{{ department.pk }}"{% if chosen_department == department.pk|stringformat:"s" %} selected{% endif %}>{% if department.site %}{{ department.site.name }} · {% endif %}{{ department.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="system-filter">{% trans "System" %}</label>
+  <select id="system-filter" name="system" data-autosubmit>
+    <option value="">{% trans "All systems" %}</option>
+    <option value="{{ none_value }}"{% if chosen_system == none_value %} selected{% endif %}>{% trans "Not in a system" %}</option>
+    {% for system in systems %}<option value="{{ system.pk }}"{% if chosen_system == system.pk|stringformat:"s" %} selected{% endif %}>{{ system.site.name }} · {{ system.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="kind-filter">{% trans "Kind" %}</label>
+  <select id="kind-filter" name="kind" data-autosubmit>
+    <option value="">{% trans "All kinds" %}</option>
+    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "All statuses" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="water-type-filter">{% trans "Water type" %}</label>
+  <select id="water-type-filter" name="water_type" data-autosubmit>
+    <option value="">{% trans "All water types" %}</option>
+    {% for value, label in water_types %}<option value="{{ value }}"{% if chosen_water_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block empty_text %}{% trans "The tanks, ponds and cages fish are held in, each in a production department and, when it has one, a system." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Unit" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col">{% trans "Production department" %}</th><th scope="col">{% trans "System" %}</th><th scope="col" class="num">{% trans "Volume (m³)" %}</th><th scope="col" class="num">{% trans "Water volume (m³)" %}</th><th scope="col" class="num">{% trans "Max density (kg/m³)" %}</th><th scope="col" class="num">{% trans "Max biomass (kg)" %}</th><th scope="col">{% trans "Water type" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for unit in objects %}
+      <tr>
+        <td>
+          {% if can_change %}<a class="row-title row-title-inline" href="{% url 'farm:tank_edit' unit.pk %}" data-modal>{{ unit.name }}</a>{% else %}<span class="row-title row-title-inline">{{ unit.name }}</span>{% endif %}
+          <span class="row-sub">{{ unit.code }}{% if unit.regulatory_unit_id %} · {{ unit.regulatory_unit_id }}{% endif %}</span>
+        </td>
+        <td>{{ unit.get_kind_display }}<span class="row-sub">{{ unit.subtype }}</span></td>
+        <td>{{ unit.production_department.name }}<span class="row-sub">{% if unit.production_department.site %}{{ unit.production_department.site.name }}{% else %}<span class="text-warning">{% trans "No site" %}</span>{% endif %}</span></td>
+        <td>{% if unit.system %}{{ unit.system.name }}{% else %}–{% endif %}</td>
+        <td class="num">{{ unit.volume_m3|floatformat:"-2g" }}</td>
+        <td class="num">{% if unit.water_volume_m3 is not None %}{{ unit.water_volume_m3|floatformat:"-2g" }}{% else %}–{% endif %}</td>
+        <td class="num">{{ unit.max_density_kg_m3|floatformat:"-2g" }}</td>
+        <td class="num">{{ unit.max_biomass_kg|floatformat:"-2g" }}</td>
+        <td>{{ unit.get_water_type_display }}</td>
+        <td><span class="badge badge-{{ unit.status }}">{{ unit.get_status_display }}</span></td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:tank_edit' unit.pk %}" data-modal title="{% blocktrans with name=unit.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=unit.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:tank_delete' unit.pk %}" data-modal title="{% blocktrans with name=unit.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=unit.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

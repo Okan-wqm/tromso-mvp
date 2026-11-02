@@ -3,5 +3,6 @@ from .equipment import EquipmentResource
 from .production_department import ProductionDepartmentResource
 from .site import SiteResource
 from .system import SystemResource
+from .tank import TankResource
 
-__all__ = ['EquipmentResource', 'ProductionDepartmentResource', 'SiteResource', 'SystemResource']
+__all__ = ['EquipmentResource', 'ProductionDepartmentResource', 'SiteResource', 'SystemResource', 'TankResource']

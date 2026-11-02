@@ -56,7 +56,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Activity log', 'Roles', 'Users', 'Database'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
-        self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment'])
+        self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
+                                                    'Tanks, ponds & cages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -109,7 +110,8 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(self.client.session['workspace'], 'production')
         response = self.page(reverse('password_change'))
         self.assertEqual(response.context['workspace']['key'], 'production')
-        self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment'])
+        self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
+                                                  'Tanks, ponds & cages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -174,6 +176,7 @@ class MenuPlacementTests(TestCase):
             'farm.ProductionDepartment': 'Production · Setup · Facility structure',
             'farm.System': 'Production · Setup · Facility structure',
             'farm.Equipment': 'Production · Setup · Facility structure',
+            'farm.Tank': 'Production · Setup · Facility structure',
             'core.AuditLog': 'Company · Administration',
         })
 
@@ -213,7 +216,7 @@ class OverviewTests(WorkspaceTestCase):
         self.assertEqual([(t['label'], t['count']) for t in self.page(reverse('home')).context['tiles']], [('Sites', 1)])
         production = self.page(reverse('production_home'))
         self.assertEqual([(t['label'], t['count']) for t in production.context['tiles']],
-                         [('Production departments', 1), ('Systems', 2), ('Equipment', 0)])
+                         [('Production departments', 1), ('Systems', 2), ('Equipment', 0), ('Tanks, ponds & cages', 0)])
         by_status = {item['value']: item['count'] for item in production.context['systems_by_status']}
         self.assertEqual((by_status['operational'], by_status['maintenance'], by_status['offline']), (1, 1, 0))
 
@@ -223,6 +226,7 @@ class OverviewTests(WorkspaceTestCase):
         self.assertEqual(self.page(reverse('home')).context['tiles'], [])
         production = self.page(reverse('production_home'))
         self.assertEqual([t['label'] for t in production.context['tiles']], ['Systems'])
+        self.assertEqual(production.context['units_by_kind'], [])
         self.user.groups.clear()
         self.assertEqual(self.page(reverse('production_home')).context['systems_by_status'], [])
 

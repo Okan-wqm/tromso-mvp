@@ -71,6 +71,10 @@ msgstr[0] "%(counter)s satır"
 msgstr[1] "%(counter)s satır"
 
 #, python-format
+msgid "%(department)s (no site)"
+msgstr "%(department)s (sahasız)"
+
+#, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s “%(record)s” silinmiş."
 
@@ -153,6 +157,21 @@ msgid_plural "A feeder has at most %(num)d calibrations."
 msgstr[0] "Bir yemleme makinesinin en fazla %(num)d kalibrasyonu olabilir."
 msgstr[1] "Bir yemleme makinesinin en fazla %(num)d kalibrasyonu olabilir."
 
+#, python-format
+msgid ""
+"A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
+"%(concrete_high)s mm."
+msgstr ""
+"Membran (HDPE, PVC, EPDM) %(low)s ile %(high)s mm, beton %(concrete_low)s ile %(concrete_high)s "
+"mm kalınlığındadır."
+
+#, python-format
+msgid "A new unit starts as one of: %(statuses)s."
+msgstr "Yeni bir birim şunlardan biriyle başlar: %(statuses)s."
+
+msgid "A new unit starts in one of these; harvesting, cleaning and quarantine come later."
+msgstr "Yeni bir birim bunlardan biriyle başlar; hasat, temizlik ve karantina daha sonra gelir."
+
 msgid "A production department stays on the site it was created on."
 msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
 
@@ -170,11 +189,27 @@ msgstr ""
 msgid "A system stays on the site it was created on."
 msgstr "Sistem, oluşturulduğu sahada kalır."
 
+msgid "A tank, a pond or a cage; it cannot be changed later."
+msgstr "Tank, havuz veya kafes; sonradan değiştirilemez."
+
+msgid "A unit can be harvested only while fish are in it."
+msgstr "Bir birimde hasat ancak içinde balık varken yapılabilir."
+
+#, python-format
+msgid "A unit cannot go from %(old)s to %(new)s."
+msgstr "Bir birim %(old)s durumundan %(new)s durumuna geçemez."
+
+msgid "A unit with fish in it cannot be made inactive: move or harvest them first."
+msgstr "İçinde balık olan bir birim pasif yapılamaz: önce balıkları taşıyın veya hasat edin."
+
 msgid "Account"
 msgstr "Hesap"
 
 msgid "Accuracy"
 msgstr "Doğruluk"
+
+msgid "Across the ring: its circumference divided by π, so a 160 m ring is 50.9 m across."
+msgstr "Halkanın çapı: çevresinin π’ye bölümü; 160 m’lik bir halkanın çapı 50,9 m’dir."
 
 msgid "Action"
 msgstr "İşlem"
@@ -242,6 +277,9 @@ msgstr "Tüm işlemler"
 msgid "All categories"
 msgstr "Tüm kategoriler"
 
+msgid "All kinds"
+msgstr "Tüm türler"
+
 msgid "All production departments"
 msgstr "Tüm üretim departmanları"
 
@@ -257,6 +295,9 @@ msgstr "Tüm sistemler"
 msgid "All types"
 msgstr "Tüm türler"
 
+msgid "All water types"
+msgstr "Tüm su tipleri"
+
 msgid "Allows"
 msgstr "İzin verir"
 
@@ -268,6 +309,13 @@ msgstr "Amalgam"
 
 msgid "Ammonia sensor"
 msgstr "Amonyak sensörü"
+
+msgid ""
+"An earthen pond is bare soil or compacted clay; a lined pond has a membrane or concrete, and "
+"needs it."
+msgstr ""
+"Toprak havuz çıplak toprak veya sıkıştırılmış kildir; kaplamalı havuzun membranı veya betonu "
+"vardır ve bu gereklidir."
 
 msgid "Analog"
 msgstr "Analog"
@@ -286,6 +334,12 @@ msgstr "Bu lokalitetsnummer başka bir sahada zaten kullanılıyor."
 
 msgid "Another site already uses this name."
 msgstr "Bu adı başka bir saha zaten kullanıyor."
+
+msgid "Another unit already has this regulatory unit ID."
+msgstr "Bu resmî birim numarası başka bir birimde zaten var."
+
+msgid "Another unit already uses this code."
+msgstr "Bu kodu başka bir birim zaten kullanıyor."
 
 msgid "Another user already uses this email."
 msgstr "Bu e-postayı başka bir kullanıcı zaten kullanıyor."
@@ -314,6 +368,9 @@ msgstr "En az %(min)s."
 msgid "At most %(max)s."
 msgstr "En fazla %(max)s."
 
+msgid "At the deepest point, usually by the outlet."
+msgstr "En derin noktada, genellikle çıkışın yanında."
+
 msgid "Automatic"
 msgstr "Otomatik"
 
@@ -322,6 +379,9 @@ msgstr "Otomatik yemleme makinesi"
 
 msgid "Automatic filling"
 msgstr "Otomatik dolum"
+
+msgid "Average depth (m)"
+msgstr "Ortalama derinlik (m)"
 
 msgid "Back to overview"
 msgstr "Genel bakışa dön"
@@ -362,6 +422,9 @@ msgstr "Biyolojik filtre"
 msgid "Blower"
 msgstr "Hava üfleyici (blower)"
 
+msgid "Brackish"
+msgstr "Acı su"
+
 msgid "Brief description of the site"
 msgstr "Sahanın kısa açıklaması"
 
@@ -377,6 +440,12 @@ msgstr "COP (verim)"
 
 msgid "Cage"
 msgstr "Kafes"
+
+msgid "Cage type"
+msgstr "Kafes tipi"
+
+msgid "Calculated"
+msgstr "Hesaplanan"
 
 msgid "Calibrations can be added once the equipment is created."
 msgstr "Kalibrasyonlar ekipman oluşturulduktan sonra eklenebilir."
@@ -417,8 +486,20 @@ msgstr "Sunulanlar arasından seçin."
 msgid "Choose at least one."
 msgstr "En az birini seçin."
 
+msgid "Choose the kind on the General tab; its dimensions appear here."
+msgstr "Genel sekmesinde türü seçin; boyutları burada görünür."
+
+msgid "Choose the shape; the measures it is worked out from appear with it."
+msgstr "Şekli seçin; hacmin hesaplandığı ölçüler onunla birlikte görünür."
+
+msgid "Circular"
+msgstr "Dairesel"
+
 msgid "City"
 msgstr "Şehir"
+
+msgid "Cleaning"
+msgstr "Temizlik"
 
 msgid "Clear"
 msgstr "Temizle"
@@ -444,11 +525,17 @@ msgstr "Sütun"
 msgid "Columns"
 msgstr "Sütunlar"
 
+msgid "Compacted clay"
+msgstr "Sıkıştırılmış kil"
+
 msgid "Company"
 msgstr "Şirket"
 
 msgid "Company overview"
 msgstr "Şirket genel bakışı"
+
+msgid "Concrete"
+msgstr "Beton"
 
 msgid "Conductivity"
 msgstr "İletkenlik"
@@ -485,6 +572,9 @@ msgstr "Soğutma"
 
 msgid "Cooling capacity"
 msgstr "Soğutma kapasitesi"
+
+msgid "Copper alloy"
+msgstr "Bakır alaşımı"
 
 msgid "Corona discharge"
 msgstr "Korona deşarjı"
@@ -528,6 +618,9 @@ msgstr "Serbest alan 2"
 
 msgid "Custom field 3"
 msgstr "Serbest alan 3"
+
+msgid "D-ended"
+msgstr "D-uçlu"
 
 msgid "Data"
 msgstr "Veri"
@@ -577,14 +670,23 @@ msgstr "Silinmiş satırlar"
 msgid "Demand feeder"
 msgstr "Talep yemleme makinesi"
 
+msgid "Depth (m)"
+msgstr "Derinlik (m)"
+
 msgid "Description"
 msgstr "Açıklama"
 
 msgid "Details"
 msgstr "Ayrıntılar"
 
+msgid "Diameter (m)"
+msgstr "Çap (m)"
+
 msgid "Diesel"
 msgstr "Dizel"
+
+msgid "Dimensions"
+msgstr "Boyutlar"
 
 msgid "Dissolved oxygen"
 msgstr "Çözünmüş oksijen"
@@ -607,6 +709,12 @@ msgstr "Tambur çapı"
 
 msgid "Drum filter"
 msgstr "Tambur filtre"
+
+msgid "EPDM"
+msgstr "EPDM"
+
+msgid "Earthen"
+msgstr "Toprak"
 
 msgid "Edit"
 msgstr "Düzenle"
@@ -682,6 +790,9 @@ msgstr "Tesis"
 msgid "Facility structure"
 msgstr "Tesis yapısı"
 
+msgid "Fallow"
+msgstr "Dinlendirmede"
+
 msgid "Farm console for tanks, water quality and stock records."
 msgstr "Tanklar, su kalitesi ve stok kayıtları için çiftlik konsolu."
 
@@ -720,6 +831,9 @@ msgstr "Yemleme hızı"
 msgid "Feeds when the fish trigger it."
 msgstr "Balıklar tetiklediğinde yem verir."
 
+msgid "Fibreglass (GRP)"
+msgstr "Cam elyaf (CTP)"
+
 msgid "Filter"
 msgstr "Filtrele"
 
@@ -742,11 +856,17 @@ msgstr "İlk"
 msgid "First name"
 msgstr "Ad"
 
+msgid "Fish are in it, so its size cannot change: move or harvest them first."
+msgstr "İçinde balık var, bu yüzden boyutu değişemez: önce balıkları taşıyın veya hasat edin."
+
 msgid "Fish farm"
 msgstr "Balık çiftliği"
 
 msgid "Fixed bed"
 msgstr "Sabit yatak"
+
+msgid "Floating"
+msgstr "Yüzer"
 
 msgid "Flow rate"
 msgstr "Debi"
@@ -777,12 +897,34 @@ msgstr "Yabancı anahtar: %(target)s"
 msgid "Forgot your password?"
 msgstr "Parolanızı mı unuttunuz?"
 
+msgid "Frame"
+msgstr "Çerçeve"
+
+msgid "Freeboard (m)"
+msgstr "Hava payı (m)"
+
+msgid "Freshwater"
+msgstr "Tatlı su"
+
 msgid "From"
 msgstr "Başlangıç"
 
 #, python-format
+msgid "From %(low)s to %(high)s."
+msgstr "%(low)s ile %(high)s arası."
+
+#, python-format
 msgid "From %(min)s to %(max)s."
 msgstr "%(min)s ile %(max)s arası."
+
+msgid "From end to end; each end is a half circle as wide as the tank."
+msgstr "Uçtan uca; her uç, tank genişliğinde bir yarım dairedir."
+
+msgid "From the floor to the rim."
+msgstr "Tabandan kenara kadar."
+
+msgid "From the water surface to the bottom of the net."
+msgstr "Su yüzeyinden ağın dibine kadar."
 
 msgid "Fuel consumption"
 msgstr "Yakıt tüketimi"
@@ -792,6 +934,9 @@ msgstr "Yakıt tipi"
 
 msgid "Full name of the site manager"
 msgstr "Saha sorumlusunun tam adı"
+
+msgid "Galvanised steel"
+msgstr "Galvanizli çelik"
 
 msgid "Gas"
 msgstr "Gaz"
@@ -807,6 +952,9 @@ msgstr "Jeneratör"
 
 msgid "Grow-out"
 msgstr "Büyütme"
+
+msgid "HDPE"
+msgstr "HDPE"
 
 msgid "Harvesting"
 msgstr "Hasat"
@@ -842,6 +990,9 @@ msgstr "Silinmiş satırları gizle"
 
 msgid "History"
 msgstr "Geçmiş"
+
+msgid "How deep the top of the cage can be lowered."
+msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
 msgid ""
 "If an account uses this address, a reset link is on its way. If it has not arrived in a few "
@@ -882,9 +1033,18 @@ msgstr ""
 "Yalnızca yemleme makinelerinde olan yem kalibrasyonları var: başka türde bir tür seçmeden önce "
 "bunları Yem kalibrasyonu sekmesinde kaldırın."
 
+msgid "It holds fish: move or harvest them first."
+msgstr "İçinde balık var: önce taşıyın veya hasat edin."
+
+msgid "Its current status and the ones it can move to. Harvesting needs fish in the unit."
+msgstr "Mevcut durumu ve geçebileceği durumlar. Hasat için birimde balık olmalıdır."
+
 #, python-format
 msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
 msgstr "Silinmiş sistemlere bağlantıları (%(systems)s) kaydedildiğinde kaldırılır."
+
+msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
+msgstr "Resmî makamlara yapılan bildirimlerdeki numarası (kar veya merd numarası), koddan farklıysa."
 
 #, python-format
 msgid "Its parts are on another site: %(parts)s. Move them first."
@@ -892,6 +1052,12 @@ msgstr "Parçaları başka bir sahada: %(parts)s. Önce onları taşıyın."
 
 msgid "Its site decides which systems and which parent equipment can be chosen."
 msgstr "Hangi sistemlerin ve üst ekipmanın seçilebileceğini bunun sahası belirler."
+
+msgid "Its site decides which systems can be chosen."
+msgstr "Hangi sistemlerin seçilebileceğini bunun sahası belirler."
+
+msgid "Its volume cannot be calculated from its shape: enter it as measured or as drawn."
+msgstr "Hacmi şeklinden hesaplanamaz: ölçüldüğü veya çizimdeki gibi girin."
 
 msgid "Key"
 msgstr "Anahtar"
@@ -904,6 +1070,9 @@ msgstr "Etiket"
 
 msgid "Laboratory"
 msgstr "Laboratuvar"
+
+msgid "Lake or reservoir"
+msgstr "Göl veya baraj gölü"
 
 msgid "Lamp life"
 msgstr "Lamba ömrü"
@@ -938,14 +1107,35 @@ msgstr "Enlem ve boylam birlikte girilmelidir."
 msgid "Latitude is required for a sea cage."
 msgstr "Deniz kafesi için enlem zorunludur."
 
+msgid "Leave the water depth empty, or give one above 0."
+msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
+
+msgid "Length (m)"
+msgstr "Uzunluk (m)"
+
 msgid "Level sensor"
 msgstr "Seviye sensörü"
+
+msgid "Lined"
+msgstr "Kaplamalı"
+
+msgid "Liner"
+msgstr "Kaplama"
+
+msgid "Liner on a frame"
+msgstr "Çerçeve üzerine kaplama"
+
+msgid "Liner thickness (mm)"
+msgstr "Kaplama kalınlığı (mm)"
 
 msgid "Location"
 msgstr "Konum"
 
 msgid "Lokalitetsnummer"
 msgstr "Lokalitetsnummer"
+
+msgid "Long axis (m)"
+msgstr "Uzun eksen (m)"
 
 msgid "Longitude"
 msgstr "Boylam"
@@ -980,6 +1170,15 @@ msgstr "Malzeme"
 msgid "Max biomass (kg)"
 msgstr "Azami biyokütle (kg)"
 
+msgid "Max density (kg/m³)"
+msgstr "Azami yoğunluk (kg/m³)"
+
+msgid "Max depth (m)"
+msgstr "Azami derinlik (m)"
+
+msgid "Max submersion depth (m)"
+msgstr "Azami batırma derinliği (m)"
+
 msgid "Maximum flow rate"
 msgstr "Azami debi"
 
@@ -1001,11 +1200,17 @@ msgstr "Ortam hacmi"
 msgid "Medium pressure"
 msgstr "Orta basınç"
 
+msgid "Mesh size (mm)"
+msgstr "Göz açıklığı (mm)"
+
 msgid "Metadata"
 msgstr "Üstveri"
 
 msgid "Minimum transmittance"
 msgstr "Asgari geçirgenlik"
+
+msgid "Mixed"
+msgstr "Karışık"
 
 msgid "Model"
 msgstr "Model"
@@ -1033,6 +1238,15 @@ msgstr "Tür listesini daraltır."
 
 msgid "Natural gas"
 msgstr "Doğal gaz"
+
+msgid "Net and frame"
+msgstr "Ağ ve çerçeve"
+
+msgid "Net depth (m)"
+msgstr "Ağ derinliği (m)"
+
+msgid "Net material"
+msgstr "Ağ malzemesi"
 
 msgid "Never"
 msgstr "Hiç"
@@ -1103,11 +1317,20 @@ msgid ""
 "chosen."
 msgstr "Seçilecek sistem yok: üretim departmanının sahasında sistem yok ya da üretim departmanı seçilmedi."
 
+msgid "None (bare soil)"
+msgstr "Yok (çıplak toprak)"
+
 msgid "None."
 msgstr "Yok."
 
 msgid "None: not a part of other equipment"
 msgstr "Yok: başka bir ekipmanın parçası değil"
+
+msgid "Not given"
+msgstr "Belirtilmedi"
+
+msgid "Not in a system"
+msgstr "Bir sistemde değil"
 
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
@@ -1129,6 +1352,9 @@ msgstr "Lamba sayısı"
 
 msgid "Nursery"
 msgstr "Yavru yetiştirme"
+
+msgid "Nylon"
+msgstr "Naylon"
 
 msgid "Offered"
 msgstr "Sunuluyor"
@@ -1167,6 +1393,13 @@ msgstr "Yalnızca seçilen sahanın üretim departmanları."
 msgid "Only the systems of the chosen site; leave empty for a top-level system."
 msgstr "Yalnızca seçilen sahanın sistemleri; en üst düzey sistem için boş bırakın."
 
+msgid ""
+"Only the systems on the production department’s site, and of that production department when a "
+"system belongs to one."
+msgstr ""
+"Yalnızca üretim departmanının sahasındaki sistemler; bir üretim departmanına ait bir sistem ise "
+"yalnızca o departmanın."
+
 msgid "Open menu"
 msgstr "Menüyü aç"
 
@@ -1200,6 +1433,12 @@ msgstr "Bu kodu başka bir ekipman zaten kullanıyor."
 msgid "Out of service"
 msgstr "Hizmet dışı"
 
+msgid "Oval"
+msgstr "Oval"
+
+msgid "Overall length (m)"
+msgstr "Toplam uzunluk (m)"
+
 msgid "Overview"
 msgstr "Genel bakış"
 
@@ -1214,6 +1453,9 @@ msgstr "Ozon jeneratörü"
 
 msgid "Ozone production"
 msgstr "Ozon üretimi"
+
+msgid "PVC"
+msgstr "PVC"
 
 #, python-format
 msgid "Page %(number)s of %(total)s"
@@ -1277,6 +1519,9 @@ msgstr "Tesisat"
 msgid "Pointed at by"
 msgstr "Şunlar tarafından işaret edilir"
 
+msgid "Polyester (PET)"
+msgstr "Polyester (PET)"
+
 msgid "Polyethylene"
 msgstr "Polietilen"
 
@@ -1284,7 +1529,10 @@ msgid "Polypropylene"
 msgstr "Polipropilen"
 
 msgid "Pond"
-msgstr "Toprak havuz"
+msgstr "Havuz"
+
+msgid "Pond type"
+msgstr "Havuz tipi"
 
 msgid "Postal code"
 msgstr "Posta kodu"
@@ -1297,6 +1545,9 @@ msgstr "Güç tüketimi"
 
 msgid "Power output"
 msgstr "Çıkış gücü"
+
+msgid "Preparing"
+msgstr "Hazırlanıyor"
 
 msgid "Pressure"
 msgstr "Basınç"
@@ -1366,6 +1617,9 @@ msgstr "RAS (devridaimli)"
 msgid "Raceway"
 msgstr "Raceway (akış kanalı)"
 
+msgid "Rain and run-off"
+msgstr "Yağmur ve yüzey akışı"
+
 msgid "Read"
 msgstr "Görüntüle"
 
@@ -1377,6 +1631,9 @@ msgstr ""
 "Veritabanının kendisinden okundu ve <code>%(app)s</code> uygulamasının <code>%(model)s</code> "
 "Django modeliyle eşleştirildi."
 
+msgid "Reason for the status"
+msgstr "Durumun nedeni"
+
 msgid "Recirculating aquaculture system"
 msgstr "Devridaimli yetiştiricilik sistemi (RAS)"
 
@@ -1386,11 +1643,17 @@ msgstr "Kayıt"
 msgid "Record type"
 msgstr "Kayıt türü"
 
+msgid "Rectangular"
+msgstr "Dikdörtgen"
+
 msgid "Refrigerant"
 msgstr "Soğutucu akışkan"
 
 msgid "Region"
 msgstr "Bölge"
+
+msgid "Regulatory unit ID"
+msgstr "Resmî birim numarası"
 
 msgid "Relationships"
 msgstr "İlişkiler"
@@ -1421,6 +1684,9 @@ msgstr "Seçilen silinmiş kayıtları geri yükle"
 
 msgid "Restored"
 msgstr "Geri yüklendi"
+
+msgid "River or stream"
+msgstr "Nehir veya dere"
 
 msgid "Role"
 msgstr "Rol"
@@ -1457,6 +1723,9 @@ msgstr "Tuzluluk"
 msgid "Salinity sensor"
 msgstr "Tuzluluk sensörü"
 
+msgid "Saltwater"
+msgstr "Tuzlu su"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Kaydet: %(name)s"
@@ -1479,6 +1748,9 @@ msgstr "Elek açıklığı"
 msgid "Sea cage"
 msgstr "Deniz kafesi"
 
+msgid "Sea or estuary"
+msgstr "Deniz veya haliç"
+
 #, python-format
 msgid "Search %(plural)s"
 msgstr "Ara: %(plural)s"
@@ -1491,6 +1763,9 @@ msgstr "Ada veya koda göre ara"
 
 msgid "Search by name, code or region"
 msgstr "Ada, koda veya bölgeye göre ara"
+
+msgid "Search by name, code or regulatory unit ID"
+msgstr "Ad, kod veya resmî birim numarasıyla ara"
 
 msgid "Search by name, code or serial number"
 msgstr "Ad, kod veya seri numarasıyla ara"
@@ -1507,6 +1782,9 @@ msgstr "Etkinlik günlüğünde tümünü gör"
 msgid "Select a category"
 msgstr "Bir kategori seçin"
 
+msgid "Select a kind"
+msgstr "Bir tür seçin"
+
 msgid "Select a production department"
 msgstr "Bir üretim departmanı seçin"
 
@@ -1515,6 +1793,12 @@ msgstr "Bir saha seçin"
 
 msgid "Select a type"
 msgstr "Bir tür seçin"
+
+msgid "Select a water type"
+msgstr "Bir su tipi seçin"
+
+msgid "Select one"
+msgstr "Birini seçin"
 
 msgid "Semi-automatic feeder"
 msgstr "Yarı otomatik yemleme makinesi"
@@ -1537,6 +1821,12 @@ msgstr "Ayarlar"
 msgid "Setup"
 msgstr "Kurulum"
 
+msgid "Shape"
+msgstr "Şekil"
+
+msgid "Short axis (m)"
+msgstr "Kısa eksen (m)"
+
 msgid "Show"
 msgstr "Göster"
 
@@ -1549,6 +1839,9 @@ msgstr "Silinmiş satırları göster"
 
 msgid "Show them"
 msgstr "Göster"
+
+msgid "Side (m)"
+msgstr "Kenar (m)"
 
 msgid "Sign in"
 msgstr "Giriş yap"
@@ -1583,6 +1876,9 @@ msgstr "Saha türü"
 msgid "Sites"
 msgstr "Sahalar"
 
+msgid "Size"
+msgstr "Boyut"
+
 msgid "Skip to content"
 msgstr "İçeriğe geç"
 
@@ -1608,6 +1904,12 @@ msgstr "Özgül yüzey alanı"
 msgid "Specification fields"
 msgstr "Teknik özellik alanları"
 
+msgid "Spring"
+msgstr "Kaynak suyu"
+
+msgid "Square"
+msgstr "Kare"
+
 msgid "Stainless steel"
 msgstr "Paslanmaz çelik"
 
@@ -1617,8 +1919,17 @@ msgstr "Yedekte"
 msgid "State"
 msgstr "Eyalet / il"
 
+msgid "Stated volume (m³)"
+msgstr "Girilen hacim (m³)"
+
 msgid "Status"
 msgstr "Durum"
+
+msgid "Status since"
+msgstr "Durum başlangıcı"
+
+msgid "Steel"
+msgstr "Çelik"
 
 msgid "Street address"
 msgstr "Sokak adresi"
@@ -1626,8 +1937,14 @@ msgstr "Sokak adresi"
 msgid "Structure"
 msgstr "Yapı"
 
+msgid "Submersible"
+msgstr "Batırılabilir"
+
 msgid "Submersible pump"
 msgstr "Dalgıç pompa"
+
+msgid "Surface area (m²)"
+msgstr "Yüzey alanı (m²)"
 
 msgid "Switch panel"
 msgstr "Paneli değiştir"
@@ -1647,8 +1964,14 @@ msgstr "Tablo"
 msgid "Table sections"
 msgstr "Tablo bölümleri"
 
+msgid "Tank"
+msgstr "Tank"
+
 msgid "Tank inlet"
 msgstr "Tank su girişi"
+
+msgid "Tanks, ponds & cages"
+msgstr "Tanklar, havuzlar ve kafesler"
 
 msgid "Technical specifications"
 msgstr "Teknik özellikler"
@@ -1659,14 +1982,23 @@ msgstr "Sıcaklık"
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
 
+msgid "The average depth of the water when the pond is full."
+msgstr "Havuz doluyken suyun ortalama derinliği."
+
 msgid "The biomass cannot be negative."
 msgstr "Biyokütle negatif olamaz."
 
 msgid "The criticality is from 1 to 5."
 msgstr "Kritiklik 1 ile 5 arasındadır."
 
+msgid "The deepest point cannot be shallower than the average depth."
+msgstr "En derin nokta ortalama derinlikten sığ olamaz."
+
 msgid "The equipment is linked to this system already."
 msgstr "Ekipman bu sisteme zaten bağlı."
+
+msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
+msgstr "Yarım göz: bir düğümden ötekine; gerilmiş tam göz bunun iki katıdır."
 
 msgid "The invitation to set a password is sent here."
 msgstr "Parola belirleme daveti buraya gönderilir."
@@ -1682,6 +2014,14 @@ msgstr "Bu kaydın (%(name)s) son değişiklikleri."
 
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
+
+msgid "The longest distance across the ellipse."
+msgstr "Elipsin en uzun çapı."
+
+msgid ""
+"The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
+"licence’s."
+msgstr "Birimin m³ su başına tutabileceği en fazla balık: türün refah sınırı veya ruhsattaki sınır."
 
 msgid "The parent equipment is on another site."
 msgstr "Üst ekipman başka bir sahada."
@@ -1701,8 +2041,14 @@ msgstr "Suyu dağıtım deliklerinden tanka veren boru."
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
 
+msgid "The production department is not on any site, so its units cannot be in a system."
+msgstr "Üretim departmanı hiçbir sahada değil, bu yüzden birimleri bir sistemde olamaz."
+
 msgid "The production figures will appear here."
 msgstr "Üretim rakamları burada görünecek."
+
+msgid "The shortest distance across, at right angles to the long axis."
+msgstr "Uzun eksene dik en kısa çap."
 
 msgid "The silo is filled automatically."
 msgstr "Silo otomatik olarak doldurulur."
@@ -1717,6 +2063,13 @@ msgstr ""
 msgid "The specifications must be a set of named values."
 msgstr "Teknik özellikler adlandırılmış değerler kümesi olmalıdır."
 
+#, python-format
+msgid "The system belongs to another production department: %(department)s."
+msgstr "Sistem başka bir üretim departmanına ait: %(department)s."
+
+msgid "The system is on another site than the production department."
+msgstr "Sistem, üretim departmanından başka bir sahada."
+
 msgid ""
 "The systems it serves, on the site of its production department: at least one, and one of them "
 "its primary system. Criticality is how much the system depends on it, from 1 (little) to 5 "
@@ -1725,11 +2078,38 @@ msgstr ""
 "Hizmet ettiği sistemler, üretim departmanının sahasında: en az biri ve bunlardan biri birincil "
 "sistemi. Kritiklik, sistemin ona ne kadar bağlı olduğudur: 1 (az) ile 5 (tamamen) arası."
 
+msgid ""
+"The tanks, ponds and cages fish are held in, each in a production department and, when it has "
+"one, a system."
+msgstr ""
+"Balıkların tutulduğu tanklar, havuzlar ve kafesler; her biri bir üretim departmanında ve varsa "
+"bir sistemde."
+
+msgid "The usual average water depth when it is below the full depth; empty when the pond is kept full."
+msgstr "Tam derinliğin altındaysa olağan ortalama su derinliği; havuz dolu tutuluyorsa boş."
+
+msgid "The usual water level when it is below the rim; empty when the tank is filled to its depth."
+msgstr "Kenarın altındaysa olağan su seviyesi; tank tam derinliğine kadar doluysa boş."
+
 msgid "The volume cannot be negative."
 msgstr "Hacim negatif olamaz."
 
+msgid ""
+"The volume, the water volume and the max biomass are worked out from the dimensions when the unit"
+" is saved."
+msgstr "Hacim, su hacmi ve azami biyokütle, birim kaydedildiğinde boyutlardan hesaplanır."
+
 msgid "The warranty cannot end before the purchase date."
 msgstr "Garanti satın alma tarihinden önce bitemez."
+
+msgid "The water cannot stand higher than the depth."
+msgstr "Su, derinlikten yüksek olamaz."
+
+msgid "The water surface when the pond is full."
+msgstr "Havuz doluyken su yüzeyi."
+
+msgid "The width cannot be more than the length."
+msgstr "Genişlik uzunluktan fazla olamaz."
 
 msgid ""
 "They keep the link, but it does not count while this is deleted; restoring it brings the link "
@@ -1741,6 +2121,10 @@ msgstr ""
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Bu kayıt (%(name)s) henüz silinemez."
+
+#, python-format
+msgid "This liner is %(low)s to %(high)s mm thick."
+msgstr "Bu kaplama %(low)s ile %(high)s mm kalınlığındadır."
 
 msgid "This link no longer works"
 msgstr "Bu bağlantı artık çalışmıyor"
@@ -1756,6 +2140,9 @@ msgstr "Bu sahada bu adla bir üretim departmanı zaten var."
 
 msgid "This site already has a system with this code."
 msgstr "Bu sahada bu kodlu bir sistem zaten var."
+
+msgid "This system is deleted."
+msgstr "Bu sistem silinmiş."
 
 msgid "This table points at"
 msgstr "Bu tablonun işaret ettikleri"
@@ -1817,6 +2204,19 @@ msgstr "Bakımda"
 msgid "Unique"
 msgstr "Benzersiz"
 
+msgid "Unit"
+msgstr "Birim"
+
+msgid "Units"
+msgstr "Birimler"
+
+msgid "Units by kind"
+msgstr "Türe göre birimler"
+
+#, python-format
+msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
+msgstr "İçinde başka bir üretim departmanının birimleri var: %(units)s. Önce onları sistemden çıkarın."
+
 msgid "Updated at"
 msgstr "Güncellenme zamanı"
 
@@ -1853,12 +2253,27 @@ msgstr "Su"
 msgid "Water capacity (m³)"
 msgstr "Su kapasitesi (m³)"
 
+msgid "Water depth (m)"
+msgstr "Su derinliği (m)"
+
+msgid "Water source"
+msgstr "Su kaynağı"
+
 msgid "Water treatment"
 msgstr "Su arıtma"
+
+msgid "Water type"
+msgstr "Su tipi"
+
+msgid "Water volume (m³)"
+msgstr "Su hacmi (m³)"
 
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
 msgstr "Hoş geldiniz, %(name)s. Şirketin rakamları burada görünecek."
+
+msgid "Well (groundwater)"
+msgstr "Kuyu (yeraltı suyu)"
 
 msgid "What it holds"
 msgstr "İçeriği"
@@ -1875,11 +2290,28 @@ msgstr "Her rolün hangi izinlere izin verdiği."
 msgid "Which roles each user has."
 msgstr "Her kullanıcının hangi rollere sahip olduğu."
 
+msgid ""
+"Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
+" it was is cleared."
+msgstr ""
+"Birimin neden bu durumda olduğu, örn. “ağ değişimi”. Durum değiştiğinde, olduğu gibi bırakılan "
+"neden silinir."
+
+msgid "Width (m)"
+msgstr "Genişlik (m)"
+
 msgid "Without a production department"
 msgstr "Üretim departmanı olmayanlar"
 
 msgid "Without a site"
 msgstr "Sahasız"
+
+msgid ""
+"Worked out from the dimensions and the max density each time the unit is saved; shown as last "
+"saved. The max biomass uses the water volume when there is one, else the volume."
+msgstr ""
+"Birim her kaydedildiğinde boyutlardan ve azami yoğunluktan hesaplanır; son kaydedildiği hâliyle "
+"gösterilir. Azami biyokütle, varsa su hacmini, yoksa hacmi kullanır."
 
 msgid "Yes"
 msgstr "Evet"
@@ -1991,8 +2423,14 @@ msgstr "örn. Saha sorumlusu"
 msgid "e.g. Smolt RAS 1"
 msgstr "örn. Smolt RAS 1"
 
+msgid "e.g. Start feeding tank 3"
+msgstr "örn. İlk yemleme tankı 3"
+
 msgid "e.g. Starter"
 msgstr "örn. Başlangıç yemi"
+
+msgid "e.g. T-03"
+msgstr "örn. T-03"
 
 msgid "e.g. Vestland"
 msgstr "örn. Vestland"
@@ -2094,6 +2532,12 @@ msgstr "sistem bağlantıları"
 
 msgid "systems"
 msgstr "sistemler"
+
+msgid "unit"
+msgstr "birim"
+
+msgid "units"
+msgstr "birimler"
 
 msgid "user"
 msgstr "kullanıcı"

@@ -28,7 +28,7 @@
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">{% trans "System" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Production department" %}</th><th scope="col" class="num">{% trans "Volume (m³)" %}</th><th scope="col" class="num">{% trans "Max biomass (kg)" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+      <tr><th scope="col">{% trans "System" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Production department" %}</th><th scope="col" class="num">{% trans "Volume (m³)" %}</th><th scope="col" class="num">{% trans "Max biomass (kg)" %}</th><th scope="col" class="num">{% trans "Units" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     <tbody>
       {% for system in objects %}
@@ -44,6 +44,7 @@
         <td>{% if system.production_department %}{{ system.production_department.name }}{% else %}<span class="text-warning">{% trans "No production department" %}</span>{% endif %}</td>
         <td class="num">{% if system.total_volume_m3 is not None %}{{ system.total_volume_m3|floatformat:"-2g" }}{% else %}–{% endif %}</td>
         <td class="num">{% if system.max_biomass_kg is not None %}{{ system.max_biomass_kg|floatformat:"-2g" }}{% else %}–{% endif %}</td>
+        <td class="num">{% if system.units and perms.farm.view_tank %}<a href="{% url 'farm:tank_list' %}?system={{ system.pk }}">{{ system.units }}</a>{% else %}{{ system.units }}{% endif %}</td>
         <td class="row-actions">
           {% if can_change %}<a class="icon-button" href="{% url 'farm:system_edit' system.pk %}" data-modal title="{% blocktrans with name=system.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=system.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
           {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:system_delete' system.pk %}" data-modal title="{% blocktrans with name=system.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=system.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}

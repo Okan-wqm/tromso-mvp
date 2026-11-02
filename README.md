@@ -16,7 +16,8 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
-  and **Production** (overview, production departments, systems, equipment). Each has its own overview. A
+  and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages). Each
+  has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -85,8 +86,10 @@ Differences from the source:
 - A link or the description can be cleared when editing (the source sent `undefined`, which the API
   reads as "no change").
 - Volume and biomass cannot be negative (database check and form).
-- The hand-typed tank count is not carried over: it would drift from the real tanks and is derived
-  once tanks exist. The second status flag `isActive` is not carried over either.
+- The hand-typed tank count is not carried over: it would drift from the real tanks. The list counts
+  the units in each system instead (linked to the units list). The second status flag `isActive` is not
+  carried over either.
+- A system cannot be moved to another production department while units of another are in it.
 - Code is unique within a site among live systems.
 - Deleting a site deletes its systems, a system the systems nested under it, and a production department
   leaves its systems without one, all through the delete plan.
@@ -149,6 +152,70 @@ Differences from the source:
   Suppliers tab), price, currency, location, maintenance schedule and operating hours (no screen set
   them), the second status flag `isActive`, the stored part count.
 
+### Facility › Tanks, ponds & cages (`/tanks/`)
+
+Table `tanks`: the units fish are held in, a tank, a pond or a cage, each in a production department and
+optionally in one system. The model keeps the source's name (`Tank`, table `tanks`) because its later
+tables point at `tankId`; a person reads "unit". Master data only: the fish in a unit (count, biomass,
+batches) come with the Operations tab. A table (unit, kind with its shape or type, production department
+and site, system, volume, water volume, max density, max biomass, water type, status), search by name,
+code or regulatory unit ID, filters by site, production department, system (or "not in a system"), kind,
+status and water type, a form in the dialog and delete. The form has five inner tabs:
+
+- **General**: name, code, kind (tank, pond or cage, chosen once), status with the time it was set and
+  its reason, water type, regulatory unit ID (the kar or merd number in reports to the authorities).
+- **Location**: the production department ("Bergen · Hall A"), and a system of its site; a system that
+  belongs to a production department takes only that department's units.
+- **Dimensions**: the fields of the chosen kind, built per form (changing the kind, the shape, the pond
+  type or the cage type renders the form again with what was entered, `TabbedForm.refresh_on`). A tank:
+  shape and material, the shape's measures (a circle's diameter; a rectangle's or raceway's length and
+  width; a square's side; an oval's long and short axis; a D-ended tank's overall length and width), its
+  depth and water depth, or, for a shape of its own, its volume. A pond: earthen or lined, water source,
+  surface area, average and deepest depth, water depth, liner and, when lined, its thickness. A cage:
+  floating or submersible, circular or square, diameter or side, net depth, submersion depth (submersible
+  only), net material, mesh size (half mesh) and frame. Each field has the bounds of its kind in its help.
+- **Capacity**: the max density; the volume, water volume, freeboard and max biomass are shown, never
+  typed.
+- **Details**: installation date, description, notes.
+
+The volume, the water volume and the max biomass are **generated columns**: the database works them out
+from the measures on every write (`Tank.water_surface()`: π·d²/4, L·W, an ellipse π·L·W/4, a D-ended
+tank (L − W)·W + π·W²/4, a pond's area), so a stored volume always matches its unit, whatever wrote the
+row. The max biomass is the water volume (else the volume) times the max density. The status follows the
+source's status machine, in one place (`TRANSITIONS`); a new unit starts as preparing, active, fallow,
+maintenance or inactive; the form offers the current status and where it can go. Every rule that needs
+the fish in a unit (harvesting needs fish, inactive needs none, a unit with fish cannot be deleted or
+resized) asks `Tank.has_stock()`, which says no until the Operations tab records stock.
+
+Differences from the source:
+
+- Its own tab: the source created units only through the equipment form, which lost the typed code and
+  every pond and cage field on the way (TNK-01 to TNK-03).
+- Every kind has typed columns, and the columns of another kind stay empty: kind, shape, measures and
+  bounds are database checks, one per rule.
+- Derived values are derived: the source let a typed volume and max biomass contradict the dimensions
+  and the density; the D-ended and oval formulas are corrected (TNK-05 to TNK-10).
+- Bounds per kind (a net is 15–50 m deep, a tank's depth stops at 20 m), and max densities up to the
+  intensive species (TNK-09, TNK-11); see the bounds table in the bug document.
+- The system is checked on every save, against the department's site and, when the system has one, its
+  production department; a system cannot move to another production department while units of another
+  are in it; deleting a system takes its units out of it, logged.
+- Water type is required and has no default (the source defaulted to saltwater in one place and
+  freshwater in another).
+- Code and regulatory unit ID are unique among live units, as database constraints; a deleted unit can
+  be restored from the admin.
+- Deleting a site leaves its production departments, with their units, without a site (as for
+  equipment); the source deactivated their tanks.
+- Water sources "spring" and "sea or estuary" and the net material "polyester (PET)" are added; an
+  earthen pond is bare soil or compacted clay, a membrane or concrete makes it a lined pond.
+- Not ported: the sensor link (`temperatureSensorId`), the equipment type (kind and shape replace the
+  13 tank, pond and cage types), `isActive` (status and soft delete), the stock mirrors
+  (`currentBiomass`, `currentCount`), the maintenance dates (nothing wrote them; the Maintenance tab),
+  the `location`, `waterFlow` and `aeration` JSON (no screen wrote them), the legacy `ponds` and `farms`
+  tables, the code generator, quotas and events.
+- A cage's volume is a cylinder or box down to the net depth, as in the source; a cone-bottomed net
+  holds less (a question for the owner, in the bug document).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -156,7 +223,7 @@ only one who manages roles and users; everyone else gets exactly what their role
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
-  Systems and Equipment (read, create, edit, delete) and Activity log (read). A new tab appears in the matrix by
+  Systems, Equipment and Tanks, ponds & cages (read, create, edit, delete) and Activity log (read). A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
@@ -193,7 +260,8 @@ is not in the access matrix, so no role can be given it.
   spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`) gets a leading apostrophe.
 - **Structure**: columns (SQL type, nullable, default, key, the model's field), constraints, indexes
   and the relationships in both directions, read from the database and matched with the Django
-  model. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
+  model. A generated column (a unit's volume) shows its expression where a default would be, and is
+  sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
 (`farm`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
@@ -233,7 +301,9 @@ so an invitation email arrives in the new person's language. Numbers and dates f
 (`60,3913`, `2. november 2026`). The activity log is stored in English and shown translated.
 
 GNU gettext is not needed: `manage.py update_catalogs` and `manage.py compile_catalogs` (Babel) do
-what `makemessages` and `compilemessages` do. How to add a string or a language, the glossary and the
+what `makemessages` and `compilemessages` do; they skip the system checks, so they run without the
+database (the other commands' checks ask the database for its version, which a generated column needs:
+`makemigrations` without a database needs `--skip-checks`). How to add a string or a language, the glossary and the
 translations that need a native speaker's review are in [`docs/i18n.md`](docs/i18n.md).
 
 ## Browser code
@@ -293,7 +363,13 @@ What one tab needed and the next ones will too lives in `core/`:
 - `TabbedForm` (`core/crud.py`): inner tabs, fields grouped under a heading (`Fieldset`), a word per
   tab (`tab_help`), fields chosen once (`fixed_after_creation`) and fields that change the form itself
   (`refresh_on`: the form is posted with a `_draft` marker and rendered again from the values entered so
-  far, nothing validated or saved; the values travel in the request body, never in the address).
+  far, nothing validated or saved; the values travel in the request body, never in the address; the
+  marker names the field that changed and the form comes back on that field's tab). A form can drop
+  fields for one record (a pond has no diameter): the tabs show the fields it kept.
+- `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
+  disabled field so a posted value is never read.
+- A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
+  "Tanks, ponds & cages" lists units.
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
   replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations).
 - `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of
@@ -353,6 +429,7 @@ real mail.
 | `/production-departments/` | Production departments |
 | `/systems/` | Facility › Systems |
 | `/equipment/` | Facility › Equipment; `<id>/calibrations/` saves a feeder's calibrations |
+| `/tanks/` | Facility › Tanks, ponds & cages |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -374,7 +451,7 @@ real mail.
 | `core/language.py`, `core/catalogs.py`, `locale/`, `config/formats/`, `docs/i18n.md` | Languages: which one a request gets, the catalogs without GNU gettext, the English date look, the guide and glossary |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
-| `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `LinkList`: check boxes for a record's links, with their details |
+| `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

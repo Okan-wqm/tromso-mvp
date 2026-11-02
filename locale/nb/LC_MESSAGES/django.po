@@ -71,6 +71,10 @@ msgstr[0] "%(counter)s rad"
 msgstr[1] "%(counter)s rader"
 
 #, python-format
+msgid "%(department)s (no site)"
+msgstr "%(department)s (uten lokalitet)"
+
+#, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s «%(record)s» er slettet."
 
@@ -153,6 +157,21 @@ msgid_plural "A feeder has at most %(num)d calibrations."
 msgstr[0] "En fôrautomat har høyst %(num)d kalibrering."
 msgstr[1] "En fôrautomat har høyst %(num)d kalibreringer."
 
+#, python-format
+msgid ""
+"A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
+"%(concrete_high)s mm."
+msgstr ""
+"En membran (HDPE, PVC, EPDM) er %(low)s til %(high)s mm tykk, betong %(concrete_low)s til "
+"%(concrete_high)s mm."
+
+#, python-format
+msgid "A new unit starts as one of: %(statuses)s."
+msgstr "En ny enhet starter som en av disse: %(statuses)s."
+
+msgid "A new unit starts in one of these; harvesting, cleaning and quarantine come later."
+msgstr "En ny enhet starter i en av disse; høsting, rengjøring og karantene kommer senere."
+
 msgid "A production department stays on the site it was created on."
 msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet på."
 
@@ -170,11 +189,27 @@ msgstr ""
 msgid "A system stays on the site it was created on."
 msgstr "Et system blir værende på lokaliteten det ble opprettet på."
 
+msgid "A tank, a pond or a cage; it cannot be changed later."
+msgstr "Kar, dam eller merd; kan ikke endres senere."
+
+msgid "A unit can be harvested only while fish are in it."
+msgstr "En enhet kan bare høstes mens det er fisk i den."
+
+#, python-format
+msgid "A unit cannot go from %(old)s to %(new)s."
+msgstr "En enhet kan ikke gå fra %(old)s til %(new)s."
+
+msgid "A unit with fish in it cannot be made inactive: move or harvest them first."
+msgstr "En enhet med fisk i kan ikke gjøres inaktiv: flytt eller høst fisken først."
+
 msgid "Account"
 msgstr "Konto"
 
 msgid "Accuracy"
 msgstr "Nøyaktighet"
+
+msgid "Across the ring: its circumference divided by π, so a 160 m ring is 50.9 m across."
+msgstr "Tvers over ringen: omkretsen delt på π, så en ring på 160 m er 50,9 m i diameter."
 
 msgid "Action"
 msgstr "Handling"
@@ -244,6 +279,9 @@ msgstr "Alle handlinger"
 msgid "All categories"
 msgstr "Alle kategorier"
 
+msgid "All kinds"
+msgstr "Alle typer"
+
 msgid "All production departments"
 msgstr "Alle produksjonsavdelinger"
 
@@ -259,6 +297,9 @@ msgstr "Alle systemer"
 msgid "All types"
 msgstr "Alle typer"
 
+msgid "All water types"
+msgstr "Alle vanntyper"
+
 msgid "Allows"
 msgstr "Tillater"
 
@@ -270,6 +311,13 @@ msgstr "Amalgam"
 
 msgid "Ammonia sensor"
 msgstr "Ammoniakksensor"
+
+msgid ""
+"An earthen pond is bare soil or compacted clay; a lined pond has a membrane or concrete, and "
+"needs it."
+msgstr ""
+"En jorddam er bar jord eller komprimert leire; en dam med duk har membran eller betong, og må ha "
+"det."
 
 msgid "Analog"
 msgstr "Analog"
@@ -288,6 +336,12 @@ msgstr "Dette lokalitetsnummeret brukes allerede av en annen lokalitet."
 
 msgid "Another site already uses this name."
 msgstr "Dette navnet brukes allerede av en annen lokalitet."
+
+msgid "Another unit already has this regulatory unit ID."
+msgstr "En annen enhet har allerede denne offisielle enhets-ID-en."
+
+msgid "Another unit already uses this code."
+msgstr "Denne koden brukes allerede av en annen enhet."
 
 msgid "Another user already uses this email."
 msgstr "Denne e-postadressen brukes allerede av en annen bruker."
@@ -316,6 +370,9 @@ msgstr "Minst %(min)s."
 msgid "At most %(max)s."
 msgstr "Høyst %(max)s."
 
+msgid "At the deepest point, usually by the outlet."
+msgstr "På det dypeste punktet, vanligvis ved utløpet."
+
 msgid "Automatic"
 msgstr "Automatisk"
 
@@ -324,6 +381,9 @@ msgstr "Automatisk fôrautomat"
 
 msgid "Automatic filling"
 msgstr "Automatisk påfylling"
+
+msgid "Average depth (m)"
+msgstr "Gjennomsnittlig dybde (m)"
 
 msgid "Back to overview"
 msgstr "Tilbake til oversikten"
@@ -364,6 +424,9 @@ msgstr "Biofilter"
 msgid "Blower"
 msgstr "Luftblåser"
 
+msgid "Brackish"
+msgstr "Brakkvann"
+
 msgid "Brief description of the site"
 msgstr "Kort beskrivelse av lokaliteten"
 
@@ -379,6 +442,12 @@ msgstr "COP (virkningsgrad)"
 
 msgid "Cage"
 msgstr "Merd"
+
+msgid "Cage type"
+msgstr "Merdtype"
+
+msgid "Calculated"
+msgstr "Beregnet"
 
 msgid "Calibrations can be added once the equipment is created."
 msgstr "Kalibreringer kan legges til når utstyret er opprettet."
@@ -419,8 +488,20 @@ msgstr "Velg blant dem som tilbys."
 msgid "Choose at least one."
 msgstr "Velg minst én."
 
+msgid "Choose the kind on the General tab; its dimensions appear here."
+msgstr "Velg typen på fanen Generelt; målene vises her."
+
+msgid "Choose the shape; the measures it is worked out from appear with it."
+msgstr "Velg formen; målene volumet beregnes ut fra, vises sammen med den."
+
+msgid "Circular"
+msgstr "Rund"
+
 msgid "City"
 msgstr "By"
+
+msgid "Cleaning"
+msgstr "Rengjøring"
 
 msgid "Clear"
 msgstr "Nullstill"
@@ -446,11 +527,17 @@ msgstr "Kolonne"
 msgid "Columns"
 msgstr "Kolonner"
 
+msgid "Compacted clay"
+msgstr "Komprimert leire"
+
 msgid "Company"
 msgstr "Selskap"
 
 msgid "Company overview"
 msgstr "Selskapsoversikt"
+
+msgid "Concrete"
+msgstr "Betong"
 
 msgid "Conductivity"
 msgstr "Ledningsevne"
@@ -487,6 +574,9 @@ msgstr "Kjøling"
 
 msgid "Cooling capacity"
 msgstr "Kjølekapasitet"
+
+msgid "Copper alloy"
+msgstr "Kobberlegering"
 
 msgid "Corona discharge"
 msgstr "Koronautladning"
@@ -530,6 +620,9 @@ msgstr "Egendefinert felt 2"
 
 msgid "Custom field 3"
 msgstr "Egendefinert felt 3"
+
+msgid "D-ended"
+msgstr "D-ende"
 
 msgid "Data"
 msgstr "Data"
@@ -579,14 +672,23 @@ msgstr "Slettede rader"
 msgid "Demand feeder"
 msgstr "Behovsfôrer"
 
+msgid "Depth (m)"
+msgstr "Dybde (m)"
+
 msgid "Description"
 msgstr "Beskrivelse"
 
 msgid "Details"
 msgstr "Detaljer"
 
+msgid "Diameter (m)"
+msgstr "Diameter (m)"
+
 msgid "Diesel"
 msgstr "Diesel"
+
+msgid "Dimensions"
+msgstr "Mål"
 
 msgid "Dissolved oxygen"
 msgstr "Løst oksygen"
@@ -609,6 +711,12 @@ msgstr "Trommeldiameter"
 
 msgid "Drum filter"
 msgstr "Trommelfilter"
+
+msgid "EPDM"
+msgstr "EPDM"
+
+msgid "Earthen"
+msgstr "Jord"
 
 msgid "Edit"
 msgstr "Rediger"
@@ -681,6 +789,9 @@ msgstr "Anlegg"
 msgid "Facility structure"
 msgstr "Anleggsstruktur"
 
+msgid "Fallow"
+msgstr "Brakklagt"
+
 msgid "Farm console for tanks, water quality and stock records."
 msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
 
@@ -719,6 +830,9 @@ msgstr "Fôringsmengde"
 msgid "Feeds when the fish trigger it."
 msgstr "Fôrer når fisken utløser den."
 
+msgid "Fibreglass (GRP)"
+msgstr "Glassfiber (GRP)"
+
 msgid "Filter"
 msgstr "Filtrer"
 
@@ -741,11 +855,17 @@ msgstr "Første"
 msgid "First name"
 msgstr "Fornavn"
 
+msgid "Fish are in it, so its size cannot change: move or harvest them first."
+msgstr "Det er fisk i den, så målene kan ikke endres: flytt eller høst fisken først."
+
 msgid "Fish farm"
 msgstr "Fiskeoppdrett"
 
 msgid "Fixed bed"
 msgstr "Fastmedium"
+
+msgid "Floating"
+msgstr "Flytende"
 
 msgid "Flow rate"
 msgstr "Vannmengde"
@@ -776,12 +896,34 @@ msgstr "Fremmednøkkel til %(target)s"
 msgid "Forgot your password?"
 msgstr "Glemt passordet?"
 
+msgid "Frame"
+msgstr "Ramme"
+
+msgid "Freeboard (m)"
+msgstr "Fribord (m)"
+
+msgid "Freshwater"
+msgstr "Ferskvann"
+
 msgid "From"
 msgstr "Fra"
 
 #, python-format
+msgid "From %(low)s to %(high)s."
+msgstr "Fra %(low)s til %(high)s."
+
+#, python-format
 msgid "From %(min)s to %(max)s."
 msgstr "Fra %(min)s til %(max)s."
+
+msgid "From end to end; each end is a half circle as wide as the tank."
+msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
+
+msgid "From the floor to the rim."
+msgstr "Fra bunnen til kanten."
+
+msgid "From the water surface to the bottom of the net."
+msgstr "Fra vannflaten til bunnen av nota."
 
 msgid "Fuel consumption"
 msgstr "Drivstofforbruk"
@@ -791,6 +933,9 @@ msgstr "Drivstofftype"
 
 msgid "Full name of the site manager"
 msgstr "Lokalitetslederens fulle navn"
+
+msgid "Galvanised steel"
+msgstr "Galvanisert stål"
 
 msgid "Gas"
 msgstr "Gass"
@@ -806,6 +951,9 @@ msgstr "Aggregat"
 
 msgid "Grow-out"
 msgstr "Matfisk"
+
+msgid "HDPE"
+msgstr "HDPE"
 
 msgid "Harvesting"
 msgstr "Høsting"
@@ -841,6 +989,9 @@ msgstr "Skjul slettede rader"
 
 msgid "History"
 msgstr "Historikk"
+
+msgid "How deep the top of the cage can be lowered."
+msgstr "Hvor dypt toppen av merden kan senkes."
 
 msgid ""
 "If an account uses this address, a reset link is on its way. If it has not arrived in a few "
@@ -881,9 +1032,18 @@ msgstr ""
 "Den har fôrkalibreringer, som bare en fôrautomat har: fjern dem på fanen Fôrkalibrering før du "
 "velger en annen type."
 
+msgid "It holds fish: move or harvest them first."
+msgstr "Det er fisk i den: flytt eller høst fisken først."
+
+msgid "Its current status and the ones it can move to. Harvesting needs fish in the unit."
+msgstr "Nåværende status og de den kan gå til. Høsting krever fisk i enheten."
+
 #, python-format
 msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
 msgstr "Koblingene til slettede systemer (%(systems)s) fjernes når det lagres."
+
+msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
+msgstr "Nummeret i rapporter til myndighetene (kar- eller merdnummeret), når det ikke er koden."
 
 #, python-format
 msgid "Its parts are on another site: %(parts)s. Move them first."
@@ -891,6 +1051,12 @@ msgstr "Delene er på en annen lokalitet: %(parts)s. Flytt dem først."
 
 msgid "Its site decides which systems and which parent equipment can be chosen."
 msgstr "Lokaliteten avgjør hvilke systemer og hvilket overordnet utstyr som kan velges."
+
+msgid "Its site decides which systems can be chosen."
+msgstr "Lokaliteten avgjør hvilke systemer som kan velges."
+
+msgid "Its volume cannot be calculated from its shape: enter it as measured or as drawn."
+msgstr "Volumet kan ikke beregnes ut fra formen: oppgi det som målt eller som tegnet."
 
 msgid "Key"
 msgstr "Nøkkel"
@@ -903,6 +1069,9 @@ msgstr "Etikett"
 
 msgid "Laboratory"
 msgstr "Laboratorium"
+
+msgid "Lake or reservoir"
+msgstr "Innsjø eller magasin"
 
 msgid "Lamp life"
 msgstr "Lampelevetid"
@@ -937,14 +1106,35 @@ msgstr "Breddegrad og lengdegrad må oppgis sammen."
 msgid "Latitude is required for a sea cage."
 msgstr "Breddegrad er påkrevd for en merd."
 
+msgid "Leave the water depth empty, or give one above 0."
+msgstr "La vanndybden stå tom, eller oppgi en over 0."
+
+msgid "Length (m)"
+msgstr "Lengde (m)"
+
 msgid "Level sensor"
 msgstr "Nivåsensor"
+
+msgid "Lined"
+msgstr "Med duk"
+
+msgid "Liner"
+msgstr "Duk"
+
+msgid "Liner on a frame"
+msgstr "Duk på ramme"
+
+msgid "Liner thickness (mm)"
+msgstr "Duktykkelse (mm)"
 
 msgid "Location"
 msgstr "Plassering"
 
 msgid "Lokalitetsnummer"
 msgstr "Lokalitetsnummer"
+
+msgid "Long axis (m)"
+msgstr "Lang akse (m)"
 
 msgid "Longitude"
 msgstr "Lengdegrad"
@@ -979,6 +1169,15 @@ msgstr "Materiale"
 msgid "Max biomass (kg)"
 msgstr "Maks. biomasse (kg)"
 
+msgid "Max density (kg/m³)"
+msgstr "Maks. tetthet (kg/m³)"
+
+msgid "Max depth (m)"
+msgstr "Maks. dybde (m)"
+
+msgid "Max submersion depth (m)"
+msgstr "Maks. nedsenkingsdybde (m)"
+
 msgid "Maximum flow rate"
 msgstr "Maksimal vannmengde"
 
@@ -1000,11 +1199,17 @@ msgstr "Medievolum"
 msgid "Medium pressure"
 msgstr "Mellomtrykk"
 
+msgid "Mesh size (mm)"
+msgstr "Maskevidde (mm)"
+
 msgid "Metadata"
 msgstr "Metadata"
 
 msgid "Minimum transmittance"
 msgstr "Minste transmittans"
+
+msgid "Mixed"
+msgstr "Blandet"
 
 msgid "Model"
 msgstr "Modell"
@@ -1032,6 +1237,15 @@ msgstr "Snevrer inn listen over typer."
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid "Net and frame"
+msgstr "Not og ramme"
+
+msgid "Net depth (m)"
+msgstr "Notdybde (m)"
+
+msgid "Net material"
+msgstr "Notmateriale"
 
 msgid "Never"
 msgstr "Aldri"
@@ -1104,11 +1318,20 @@ msgstr ""
 "Ingen system å velge: produksjonsavdelingens lokalitet har ingen, eller ingen produksjonsavdeling"
 " er valgt."
 
+msgid "None (bare soil)"
+msgstr "Ingen (bar jord)"
+
 msgid "None."
 msgstr "Ingen."
 
 msgid "None: not a part of other equipment"
 msgstr "Ingen: ikke en del av annet utstyr"
+
+msgid "Not given"
+msgstr "Ikke oppgitt"
+
+msgid "Not in a system"
+msgstr "Ikke i et system"
 
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
@@ -1130,6 +1353,9 @@ msgstr "Antall lamper"
 
 msgid "Nursery"
 msgstr "Yngelavdeling"
+
+msgid "Nylon"
+msgstr "Nylon"
 
 msgid "Offered"
 msgstr "Tilbys"
@@ -1168,6 +1394,13 @@ msgstr "Bare produksjonsavdelingene på den valgte lokaliteten."
 msgid "Only the systems of the chosen site; leave empty for a top-level system."
 msgstr "Bare systemene på den valgte lokaliteten; la feltet stå tomt for et system på øverste nivå."
 
+msgid ""
+"Only the systems on the production department’s site, and of that production department when a "
+"system belongs to one."
+msgstr ""
+"Bare systemene på produksjonsavdelingens lokalitet, og bare den produksjonsavdelingens når et "
+"system hører til en."
+
 msgid "Open menu"
 msgstr "Åpne menyen"
 
@@ -1201,6 +1434,12 @@ msgstr "Annet utstyr bruker allerede denne koden."
 msgid "Out of service"
 msgstr "Ute av tjeneste"
 
+msgid "Oval"
+msgstr "Oval"
+
+msgid "Overall length (m)"
+msgstr "Total lengde (m)"
+
 msgid "Overview"
 msgstr "Oversikt"
 
@@ -1215,6 +1454,9 @@ msgstr "Ozongenerator"
 
 msgid "Ozone production"
 msgstr "Ozonproduksjon"
+
+msgid "PVC"
+msgstr "PVC"
 
 #, python-format
 msgid "Page %(number)s of %(total)s"
@@ -1278,6 +1520,9 @@ msgstr "Rør og ventiler"
 msgid "Pointed at by"
 msgstr "Det pekes på av"
 
+msgid "Polyester (PET)"
+msgstr "Polyester (PET)"
+
 msgid "Polyethylene"
 msgstr "Polyetylen"
 
@@ -1286,6 +1531,9 @@ msgstr "Polypropylen"
 
 msgid "Pond"
 msgstr "Dam"
+
+msgid "Pond type"
+msgstr "Damtype"
 
 msgid "Postal code"
 msgstr "Postnummer"
@@ -1298,6 +1546,9 @@ msgstr "Effektforbruk"
 
 msgid "Power output"
 msgstr "Utgangseffekt"
+
+msgid "Preparing"
+msgstr "Klargjøres"
 
 msgid "Pressure"
 msgstr "Trykk"
@@ -1369,6 +1620,9 @@ msgstr "RAS (resirkulerende)"
 msgid "Raceway"
 msgstr "Raceway (strømkanal)"
 
+msgid "Rain and run-off"
+msgstr "Regn og overvann"
+
 msgid "Read"
 msgstr "Les"
 
@@ -1380,6 +1634,9 @@ msgstr ""
 "Lest fra selve databasen og koblet til Django-modellen <code>%(model)s</code> i appen "
 "<code>%(app)s</code>."
 
+msgid "Reason for the status"
+msgstr "Årsak til statusen"
+
 msgid "Recirculating aquaculture system"
 msgstr "Resirkulerende akvakultursystem (RAS)"
 
@@ -1389,11 +1646,17 @@ msgstr "Post"
 msgid "Record type"
 msgstr "Posttype"
 
+msgid "Rectangular"
+msgstr "Rektangulær"
+
 msgid "Refrigerant"
 msgstr "Kjølemedium"
 
 msgid "Region"
 msgstr "Region"
+
+msgid "Regulatory unit ID"
+msgstr "Offisiell enhets-ID"
 
 msgid "Relationships"
 msgstr "Relasjoner"
@@ -1424,6 +1687,9 @@ msgstr "Gjenopprett de valgte slettede postene"
 
 msgid "Restored"
 msgstr "Gjenopprettet"
+
+msgid "River or stream"
+msgstr "Elv eller bekk"
 
 msgid "Role"
 msgstr "Rolle"
@@ -1460,6 +1726,9 @@ msgstr "Salinitet"
 msgid "Salinity sensor"
 msgstr "Salinitetssensor"
 
+msgid "Saltwater"
+msgstr "Saltvann"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Lagre %(name)s"
@@ -1482,6 +1751,9 @@ msgstr "Duksåpning"
 msgid "Sea cage"
 msgstr "Merd"
 
+msgid "Sea or estuary"
+msgstr "Sjø eller elvemunning"
+
 #, python-format
 msgid "Search %(plural)s"
 msgstr "Søk i %(plural)s"
@@ -1494,6 +1766,9 @@ msgstr "Søk etter navn eller kode"
 
 msgid "Search by name, code or region"
 msgstr "Søk etter navn, kode eller region"
+
+msgid "Search by name, code or regulatory unit ID"
+msgstr "Søk på navn, kode eller offisiell enhets-ID"
 
 msgid "Search by name, code or serial number"
 msgstr "Søk på navn, kode eller serienummer"
@@ -1510,6 +1785,9 @@ msgstr "Se alt i aktivitetsloggen"
 msgid "Select a category"
 msgstr "Velg en kategori"
 
+msgid "Select a kind"
+msgstr "Velg en type"
+
 msgid "Select a production department"
 msgstr "Velg en produksjonsavdeling"
 
@@ -1518,6 +1796,12 @@ msgstr "Velg en lokalitet"
 
 msgid "Select a type"
 msgstr "Velg en type"
+
+msgid "Select a water type"
+msgstr "Velg en vanntype"
+
+msgid "Select one"
+msgstr "Velg en"
 
 msgid "Semi-automatic feeder"
 msgstr "Halvautomatisk fôrautomat"
@@ -1540,6 +1824,12 @@ msgstr "Innstillinger"
 msgid "Setup"
 msgstr "Oppsett"
 
+msgid "Shape"
+msgstr "Form"
+
+msgid "Short axis (m)"
+msgstr "Kort akse (m)"
+
 msgid "Show"
 msgstr "Vis"
 
@@ -1552,6 +1842,9 @@ msgstr "Vis slettede rader"
 
 msgid "Show them"
 msgstr "Vis dem"
+
+msgid "Side (m)"
+msgstr "Side (m)"
 
 msgid "Sign in"
 msgstr "Logg inn"
@@ -1586,6 +1879,9 @@ msgstr "Lokalitetstype"
 msgid "Sites"
 msgstr "Lokaliteter"
 
+msgid "Size"
+msgstr "Størrelse"
+
 msgid "Skip to content"
 msgstr "Hopp til innholdet"
 
@@ -1611,6 +1907,12 @@ msgstr "Spesifikt overflateareal"
 msgid "Specification fields"
 msgstr "Spesifikasjonsfelt"
 
+msgid "Spring"
+msgstr "Kilde"
+
+msgid "Square"
+msgstr "Kvadratisk"
+
 msgid "Stainless steel"
 msgstr "Rustfritt stål"
 
@@ -1620,8 +1922,17 @@ msgstr "Reserve"
 msgid "State"
 msgstr "Fylke"
 
+msgid "Stated volume (m³)"
+msgstr "Oppgitt volum (m³)"
+
 msgid "Status"
 msgstr "Status"
+
+msgid "Status since"
+msgstr "Status siden"
+
+msgid "Steel"
+msgstr "Stål"
 
 msgid "Street address"
 msgstr "Gateadresse"
@@ -1629,8 +1940,14 @@ msgstr "Gateadresse"
 msgid "Structure"
 msgstr "Struktur"
 
+msgid "Submersible"
+msgstr "Nedsenkbar"
+
 msgid "Submersible pump"
 msgstr "Dykkpumpe"
+
+msgid "Surface area (m²)"
+msgstr "Overflateareal (m²)"
 
 msgid "Switch panel"
 msgstr "Bytt panel"
@@ -1650,8 +1967,14 @@ msgstr "Tabell"
 msgid "Table sections"
 msgstr "Tabellseksjoner"
 
+msgid "Tank"
+msgstr "Kar"
+
 msgid "Tank inlet"
 msgstr "Karinnløp"
+
+msgid "Tanks, ponds & cages"
+msgstr "Kar, dammer og merder"
 
 msgid "Technical specifications"
 msgstr "Tekniske spesifikasjoner"
@@ -1662,14 +1985,23 @@ msgstr "Temperatur"
 msgid "Temperature sensor"
 msgstr "Temperatursensor"
 
+msgid "The average depth of the water when the pond is full."
+msgstr "Gjennomsnittlig vanndybde når dammen er full."
+
 msgid "The biomass cannot be negative."
 msgstr "Biomassen kan ikke være negativ."
 
 msgid "The criticality is from 1 to 5."
 msgstr "Kritikaliteten er fra 1 til 5."
 
+msgid "The deepest point cannot be shallower than the average depth."
+msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
+
 msgid "The equipment is linked to this system already."
 msgstr "Utstyret er allerede knyttet til dette systemet."
+
+msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
+msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
 
 msgid "The invitation to set a password is sent here."
 msgstr "Invitasjonen til å velge passord sendes hit."
@@ -1687,6 +2019,14 @@ msgstr "De siste endringene i denne posten (%(name)s)."
 
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
+
+msgid "The longest distance across the ellipse."
+msgstr "Den lengste avstanden over ellipsen."
+
+msgid ""
+"The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
+"licence’s."
+msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller konsesjonens."
 
 msgid "The parent equipment is on another site."
 msgstr "Det overordnede utstyret er på en annen lokalitet."
@@ -1706,8 +2046,14 @@ msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
 msgid "The production department belongs to another site."
 msgstr "Produksjonsavdelingen hører til en annen lokalitet."
 
+msgid "The production department is not on any site, so its units cannot be in a system."
+msgstr "Produksjonsavdelingen er ikke på noen lokalitet, så enhetene kan ikke være i et system."
+
 msgid "The production figures will appear here."
 msgstr "Produksjonstallene vises her."
+
+msgid "The shortest distance across, at right angles to the long axis."
+msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
 
 msgid "The silo is filled automatically."
 msgstr "Siloen fylles automatisk."
@@ -1722,6 +2068,13 @@ msgstr ""
 msgid "The specifications must be a set of named values."
 msgstr "Spesifikasjonene må være et sett med navngitte verdier."
 
+#, python-format
+msgid "The system belongs to another production department: %(department)s."
+msgstr "Systemet hører til en annen produksjonsavdeling: %(department)s."
+
+msgid "The system is on another site than the production department."
+msgstr "Systemet er på en annen lokalitet enn produksjonsavdelingen."
+
 msgid ""
 "The systems it serves, on the site of its production department: at least one, and one of them "
 "its primary system. Criticality is how much the system depends on it, from 1 (little) to 5 "
@@ -1730,11 +2083,38 @@ msgstr ""
 "Systemene det betjener, på produksjonsavdelingens lokalitet: minst ett, og ett av dem dets "
 "primære system. Kritikalitet er hvor mye systemet er avhengig av det, fra 1 (lite) til 5 (helt)."
 
+msgid ""
+"The tanks, ponds and cages fish are held in, each in a production department and, when it has "
+"one, a system."
+msgstr ""
+"Karene, dammene og merdene fisken holdes i, hver i en produksjonsavdeling og, når den har et, i "
+"et system."
+
+msgid "The usual average water depth when it is below the full depth; empty when the pond is kept full."
+msgstr "Vanlig gjennomsnittlig vanndybde når den er under full dybde; tom når dammen holdes full."
+
+msgid "The usual water level when it is below the rim; empty when the tank is filled to its depth."
+msgstr "Vanlig vannstand når den er under kanten; tom når karet er fylt til full dybde."
+
 msgid "The volume cannot be negative."
 msgstr "Volumet kan ikke være negativt."
 
+msgid ""
+"The volume, the water volume and the max biomass are worked out from the dimensions when the unit"
+" is saved."
+msgstr "Volumet, vannvolumet og maks. biomasse beregnes ut fra målene når enheten lagres."
+
 msgid "The warranty cannot end before the purchase date."
 msgstr "Garantien kan ikke slutte før kjøpsdatoen."
+
+msgid "The water cannot stand higher than the depth."
+msgstr "Vannet kan ikke stå høyere enn dybden."
+
+msgid "The water surface when the pond is full."
+msgstr "Vannflaten når dammen er full."
+
+msgid "The width cannot be more than the length."
+msgstr "Bredden kan ikke være større enn lengden."
 
 msgid ""
 "They keep the link, but it does not count while this is deleted; restoring it brings the link "
@@ -1746,6 +2126,10 @@ msgstr ""
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
+
+#, python-format
+msgid "This liner is %(low)s to %(high)s mm thick."
+msgstr "Denne duken er %(low)s til %(high)s mm tykk."
 
 msgid "This link no longer works"
 msgstr "Denne lenken fungerer ikke lenger"
@@ -1761,6 +2145,9 @@ msgstr "Denne lokaliteten har allerede en produksjonsavdeling med dette navnet."
 
 msgid "This site already has a system with this code."
 msgstr "Denne lokaliteten har allerede et system med denne koden."
+
+msgid "This system is deleted."
+msgstr "Dette systemet er slettet."
 
 msgid "This table points at"
 msgstr "Denne tabellen peker på"
@@ -1822,6 +2209,19 @@ msgstr "Under vedlikehold"
 msgid "Unique"
 msgstr "Unik"
 
+msgid "Unit"
+msgstr "Enhet"
+
+msgid "Units"
+msgstr "Enheter"
+
+msgid "Units by kind"
+msgstr "Enheter etter type"
+
+#, python-format
+msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
+msgstr "Enheter fra en annen produksjonsavdeling er i det: %(units)s. Ta dem ut av systemet først."
+
 msgid "Updated at"
 msgstr "Oppdatert"
 
@@ -1858,12 +2258,27 @@ msgstr "Vann"
 msgid "Water capacity (m³)"
 msgstr "Vannkapasitet (m³)"
 
+msgid "Water depth (m)"
+msgstr "Vanndybde (m)"
+
+msgid "Water source"
+msgstr "Vannkilde"
+
 msgid "Water treatment"
 msgstr "Vannbehandling"
+
+msgid "Water type"
+msgstr "Vanntype"
+
+msgid "Water volume (m³)"
+msgstr "Vannvolum (m³)"
 
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
 msgstr "Velkommen, %(name)s. Selskapets tall vises her."
+
+msgid "Well (groundwater)"
+msgstr "Brønn (grunnvann)"
 
 msgid "What it holds"
 msgstr "Hva den inneholder"
@@ -1880,11 +2295,28 @@ msgstr "Hvilke tillatelser hver rolle gir."
 msgid "Which roles each user has."
 msgstr "Hvilke roller hver bruker har."
 
+msgid ""
+"Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
+" it was is cleared."
+msgstr ""
+"Hvorfor enheten har nåværende status, f.eks. «notskifte». Når statusen endres, slettes en årsak "
+"som står uendret."
+
+msgid "Width (m)"
+msgstr "Bredde (m)"
+
 msgid "Without a production department"
 msgstr "Uten produksjonsavdeling"
 
 msgid "Without a site"
 msgstr "Uten lokalitet"
+
+msgid ""
+"Worked out from the dimensions and the max density each time the unit is saved; shown as last "
+"saved. The max biomass uses the water volume when there is one, else the volume."
+msgstr ""
+"Beregnes ut fra målene og maks. tetthet hver gang enheten lagres; vises som sist lagret. Maks. "
+"biomasse bruker vannvolumet når det finnes, ellers volumet."
 
 msgid "Yes"
 msgstr "Ja"
@@ -1996,8 +2428,14 @@ msgstr "f.eks. Lokalitetsleder"
 msgid "e.g. Smolt RAS 1"
 msgstr "f.eks. Smolt-RAS 1"
 
+msgid "e.g. Start feeding tank 3"
+msgstr "f.eks. Startfôringskar 3"
+
 msgid "e.g. Starter"
 msgstr "f.eks. Startfôr"
+
+msgid "e.g. T-03"
+msgstr "f.eks. T-03"
 
 msgid "e.g. Vestland"
 msgstr "f.eks. Vestland"
@@ -2099,6 +2537,12 @@ msgstr "systemkoblinger"
 
 msgid "systems"
 msgstr "systemer"
+
+msgid "unit"
+msgstr "enhet"
+
+msgid "units"
+msgstr "enheter"
 
 msgid "user"
 msgstr "bruker"

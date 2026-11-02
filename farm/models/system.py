@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import F, Q
+from django.db.models import Count, F, Q
 from django.utils.translation import gettext_lazy as _
 
 from core.models import AuditedModel, CodedMixin, TreeMixin, in_tree_order
@@ -15,8 +15,10 @@ class System(CodedMixin, TreeMixin, AuditedModel):
 
     Differences from the source: the production department must be on the system's site and a parent system
     on the same site and not below the system itself (the source checked this on create only, and
-    update could break it); no second status flag `isActive`; no hand-typed tank count (it would
-    drift from the real tanks; it is derived once tanks exist); volumes cannot be negative."""
+    update could break it); the units in it (Tank) must be of its production department when it has
+    one, so it cannot be moved to another while units of another are in it; no second status flag
+    `isActive`; no hand-typed tank count (it would drift from the real units: the list counts them);
+    volumes cannot be negative."""
 
     class Type(models.TextChoices):
         RAS = 'ras', _('RAS (recirculating)')
@@ -100,11 +102,20 @@ class System(CodedMixin, TreeMixin, AuditedModel):
                 errors['parent'] = _('The parent system belongs to another site.')
             elif self.nested_under_itself():
                 errors['parent'] = _('The parent system is nested under this system.')
+        if self.production_department_id and not self._state.adding:
+            elsewhere = self.tanks.exclude(production_department_id=self.production_department_id)
+            if elsewhere and 'production_department' not in errors:
+                errors['production_department'] = ValidationError(
+                    _('Units of another production department are in it: %(units)s. Take them out of the system '
+                      'first.'), params={'units': ', '.join(str(unit) for unit in elsewhere)})
         if errors:
             raise ValidationError(errors)
 
     @classmethod
     def in_tree_order(cls, wanted=None):
-        """The live systems, site by site, each followed by the systems nested under it."""
-        records = cls.objects.select_related('site', 'production_department', 'parent').order_by('site__name', 'name')
+        """The live systems, site by site, each followed by the systems nested under it, with the number
+        of live units in each (`units`)."""
+        records = (cls.objects.select_related('site', 'production_department', 'parent')
+                   .annotate(units=Count('tanks', filter=Q(tanks__is_deleted=False)))
+                   .order_by('site__name', 'name'))
         return in_tree_order(records, wanted)

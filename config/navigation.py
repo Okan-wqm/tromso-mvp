@@ -33,6 +33,7 @@ WORKSPACES = [
                       'farm.view_productiondepartment'),
                 Entry(_('Systems'), 'farm:system_list', 'waves', 'farm.view_system'),
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
+                Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
         ]),
     ]),

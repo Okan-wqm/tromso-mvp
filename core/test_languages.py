@@ -14,7 +14,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Site,
-                         SiteContact, System)
+                         SiteContact, System, Tank)
 from farm.tests.helpers import SITE_MANAGER, contacts_data, role, site_data
 
 from .audit import message
@@ -134,6 +134,11 @@ class PagesInEveryLanguageTests(TestCase):
         EquipmentSystem.objects.create(equipment=cls.feeder, system=cls.system, is_primary=True, role='feeding')
         FeederCalibration.objects.create(equipment=cls.feeder, feed_size_mm=Decimal('3'), grams_per_dispensing=25,
                                          silo_capacity_kg=Decimal('250.5'))
+        cls.unit = Tank.objects.create(
+            name='Pond 1', code='P1', kind='pond', production_department=cls.department, system=cls.system,
+            water_type='brackish', pond_type='lined', liner_type='hdpe', liner_thickness_mm=Decimal('1.5'),
+            surface_area_m2=Decimal('2500.5'), depth=Decimal('1.5'), water_depth=Decimal('1.25'),
+            max_density_kg_m3=Decimal('3'))
         cls.role = Group.objects.create(name='Feeder')
         cls.role.permissions.set(Permission.objects.filter(codename='view_site'))
         cls.admin.groups.add(cls.role)
@@ -150,7 +155,7 @@ class PagesInEveryLanguageTests(TestCase):
             reverse('core:database'), reverse('core:database_table', args=['sites']),
         ]
         for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system),
-                                 ('equipment', self.feeder)):
+                                 ('equipment', self.feeder), ('tank', self.unit)):
             pages += [reverse(f'farm:{resource}_list'), reverse(f'farm:{resource}_create'),
                       reverse(f'farm:{resource}_edit', args=[record.pk]),
                       reverse(f'farm:{resource}_delete', args=[record.pk])]

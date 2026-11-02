@@ -11,7 +11,7 @@ from django.db import connection
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from farm.models import ProductionDepartment, Site, SiteContact
+from farm.models import ProductionDepartment, Site, SiteContact, Tank
 
 from . import access, database, dbgrid
 from .database import Section, Viewer
@@ -194,7 +194,10 @@ class EveryTableTests(DatabaseViewerTestCase):
         super().setUp()
         site = self.make_site(facilities={'tanks': 3}, notes='x' * 300)
         SiteContact.objects.create(site=site, name='Kari', is_primary=True)
-        ProductionDepartment.objects.create(name='Hall', code='H', site=site, manager=self.admin)
+        hall = ProductionDepartment.objects.create(name='Hall', code='H', site=site, manager=self.admin)
+        # A table with generated columns (the volumes the database works out).
+        Tank.objects.create(name='Tank', code='T', kind='tank', production_department=hall, water_type='freshwater',
+                            shape='circular', material='concrete', diameter=2, depth=1, max_density_kg_m3=50)
         AuditLog.objects.create(user=self.admin, user_name='root', action='create', entity_type='site',
                                 entity_id=str(site.pk), entity_label='Bergen Hatchery (BH)', changes={'Name': [None, 'x']})
 

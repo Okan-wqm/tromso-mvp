@@ -5,6 +5,14 @@
 {% block heading %}{% trans "Overview" %}{% endblock %}
 {% block content %}
 {% include "_overview_tiles.html" %}
+{% if units_by_kind %}
+<section class="overview-block">
+  <h2>{% trans "Units by kind" %}</h2>
+  <ul class="status-list" role="list">
+    {% for item in units_by_kind %}<li><a href="{{ item.url }}">{{ item.label }}</a> <strong>{{ item.count }}</strong></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
 {% if systems_by_status %}
 <section class="overview-block">
   <h2>{% trans "Systems by status" %}</h2>

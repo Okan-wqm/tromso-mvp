@@ -1,5 +1,5 @@
-{% load i18n %}{# One row of a list with a heading row (crud/_row_list.html): its fields without visible labels
-   (the heading row names them), and "Remove". #}<fieldset class="contact-row {{ kind }}" data-row>
+{% load i18n %}{% comment %} One row of a list with a heading row (crud/_row_list.html): its fields without visible labels
+   (the heading row names them), and "Remove". {% endcomment %}<fieldset class="contact-row {{ kind }}" data-row>
   <legend class="sr-only">{{ legend }}</legend>
   {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
   {% if row.non_field_errors %}<div class="form-error row-error">{{ row.non_field_errors }}</div>{% endif %}

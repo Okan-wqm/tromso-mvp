@@ -1,8 +1,8 @@
 {% extends base_template %}
 {% load i18n %}
-{# The list page of a tab (core.crud.ListView). A tab's own template extends this and fills `items`.
+{% comment %} The list page of a tab (core.crud.ListView). A tab's own template extends this and fills `items`.
    The heading is the menu entry's label (Resource.title); the nouns (name, plural) come from the tab and
-   each sentence puts them where its language wants them. #}
+   each sentence puts them where its language wants them. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ group }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}

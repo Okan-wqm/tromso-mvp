@@ -1,12 +1,13 @@
 import re
 from importlib import import_module
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.conf import settings
 from django.core import mail
 from django.db import DatabaseError, connection, transaction
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from farm.models import Site
@@ -434,3 +435,14 @@ class TabRulesTests(TestCase):
         for tab in self.tabs:
             self.assertEqual(tab.entity_type(), audit.entity_type_of(tab.model), tab.__name__)
 
+
+class TemplateCommentTests(SimpleTestCase):
+    """A `{# #}` comment is one line: Django prints one that spans lines on the page (it did in the pager and
+    in the contact and row lists). A longer note is a `{% comment %}` block."""
+
+    def test_no_one_line_comment_spans_lines(self):
+        for path in sorted(Path(settings.BASE_DIR, 'templates').rglob('*.html')):
+            for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+                for opening in re.finditer(r'\{#', line):
+                    self.assertIn('#}', line[opening.end():], f'{path.name}:{number} opens a {{# comment it does '
+                                                              'not close on the same line')

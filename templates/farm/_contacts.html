@@ -1,5 +1,5 @@
-{% load i18n %}{# A record's contact persons on its Contact tab, saved as a whole list (core.crud.RowList): `contacts`
-   is the list, `action` where it is saved, `help` and `pending` (before the record exists) the record's own words. #}
+{% load i18n %}{% comment %} A record's contact persons on its Contact tab, saved as a whole list (core.crud.RowList): `contacts`
+   is the list, `action` where it is saved, `help` and `pending` (before the record exists) the record's own words. {% endcomment %}
 <section class="tab-panel contacts" data-panel="contact" aria-labelledby="contacts-title">
   <h3 class="panel-title" id="contacts-title">{% trans "Contacts" %}</h3>
   {% if object %}

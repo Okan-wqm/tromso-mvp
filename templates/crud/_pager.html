@@ -1,5 +1,5 @@
-{% load i18n %}{# The pages of a long list (Resource.page_size): which rows this page shows, and links to the
-   others that keep the search and the filters (pager_query). #}
+{% load i18n %}{% comment %} The pages of a long list (Resource.page_size): which rows this page shows, and links to the
+   others that keep the search and the filters (pager_query). {% endcomment %}
 <nav class="pager list-pager" aria-label="{% trans "Pages" %}">
   <span>{% blocktrans trimmed with first=page.start_index last=page.end_index total=page.paginator.count %}{{ first }}–{{ last }} of {{ total }}{% endblocktrans %}</span>
   <span class="pager-links">

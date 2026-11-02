@@ -1,0 +1,107 @@
+/* Sign-in and password pages (layout only; tokens and form controls are in base.css).
+   The left panel is an abstract trout skin: speckled olive back, pink lateral line, silver belly. */
+
+.auth {
+  display: grid;
+  grid-template-columns: minmax(18rem, 5fr) 7fr;
+  min-height: 100vh;
+}
+
+/* Trout skin */
+.skin {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.5rem;
+  color: var(--mist);
+  background:
+    /* lateral line: the iridescent pink band */
+    linear-gradient(180deg,
+      transparent 56%,
+      rgba(184, 69, 95, 0) 56%,
+      rgba(184, 69, 95, .55) 60%,
+      rgba(214, 120, 135, .75) 63%,
+      rgba(184, 69, 95, .55) 66%,
+      rgba(184, 69, 95, 0) 70%,
+      transparent 70%),
+    /* back to belly */
+    linear-gradient(180deg,
+      var(--olive-deep) 0%,
+      var(--olive) 38%,
+      #7D8A6C 58%,
+      #C9CFC0 78%,
+      #E4E8E0 100%);
+}
+
+/* Spots: dense on the back, thinning out toward the lateral line */
+.skin::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 38% 0;
+  /* Tile sizes are coprime so the layers never line up into a visible grid */
+  background-image:
+    radial-gradient(ellipse 3.5px 3px at 30% 40%, var(--speck) 98%, transparent),
+    radial-gradient(circle 2px at 70% 20%, var(--speck) 98%, transparent),
+    radial-gradient(ellipse 5px 4px at 20% 80%, rgba(35, 41, 32, .85) 98%, transparent),
+    radial-gradient(circle 2.5px at 60% 65%, var(--speck) 98%, transparent),
+    radial-gradient(ellipse 4px 3px at 85% 75%, rgba(35, 41, 32, .7) 98%, transparent),
+    radial-gradient(circle 1.5px at 45% 10%, var(--speck) 98%, transparent);
+  background-size: 53px 41px, 37px 47px, 89px 67px, 61px 23px, 71px 59px, 29px 31px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+          mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+  opacity: .55;
+}
+
+.skin > * { position: relative; }
+
+.brand {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.skin-note {
+  max-width: 22rem;
+  margin: 0;
+  color: var(--olive-deep);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Form side */
+.panel {
+  display: flex;
+  align-items: center;
+  padding: 3rem clamp(1.5rem, 7vw, 6rem);
+}
+
+.panel-inner {
+  width: 100%;
+  max-width: 23rem;
+}
+
+.panel h1 {
+  margin: 0 0 .5rem;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+}
+
+.lead {
+  margin: 0 0 2rem;
+  color: var(--muted);
+}
+
+/* Phone: the skin becomes a band across the top */
+@media (max-width: 48rem) {
+  .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .skin { min-height: 9rem; padding: 1.25rem 1rem; }
+  .skin-note { display: none; }
+  .panel { align-items: flex-start; padding: 2rem 1rem 3rem; }
+  .panel h1 { font-size: 1.875rem; }
+}

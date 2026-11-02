@@ -1,9 +1,9 @@
 {% extends base_template %}
 {% load i18n %}
-{# The create/edit form of a tab (core.crud.CreateView/UpdateView), in a dialog or as a page.
+{% comment %} The create/edit form of a tab (core.crud.CreateView/UpdateView), in a dialog or as a page.
    Fields come from the form's tabs, some under a heading (core.crud.Fieldset); a tab's own template
    can add panels in `extra_panels` (give them data-panel="<tab key>" to show them on an existing tab,
-   or add the tab itself in `extra_tabs`). #}
+   or add the tab itself in `extra_tabs`).{% endcomment %}
 {% block title %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
 {% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
 {% block heading %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}

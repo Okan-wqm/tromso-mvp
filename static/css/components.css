@@ -759,10 +759,9 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 
 
 /* Operations › Production units (templates/farm/production_units.html): the table of units and the
-   drawer of the unit picked. A picked row and a row over capacity look different: picked is the
+   drawer of the unit picked. The drawer opens over the right of the page, as in the platform, so the
+   table keeps its full width. A picked row and a row over capacity look different: picked is the
    accent tint with an accent bar, over capacity is amber with a rust capacity bar and an "Over" mark. */
-.units-page { display: grid; gap: 1.5rem; align-items: start; }
-.units-page.has-drawer { grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem); }
 .units-main { min-width: 0; }
 
 .view-tabs { display: flex; gap: 1.5rem; margin: 0 0 1rem; border-bottom: 1px solid var(--line); }
@@ -819,9 +818,10 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .over-text { color: var(--error); }
 
 .drawer {
-  position: sticky; top: calc(var(--topbar-h) + 1rem);
-  max-height: calc(100vh - var(--topbar-h) - 2rem); overflow-y: auto;
-  border: 1px solid var(--line); border-radius: 8px; background: var(--white);
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 45;   /* over the top bar (30), under the menus (60) */
+  width: min(30rem, 100vw); overflow-y: auto;
+  border-left: 1px solid var(--line); background: var(--white);
+  box-shadow: -12px 0 32px rgba(35, 41, 32, .14);
 }
 .drawer-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
@@ -867,10 +867,6 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
   .input-row, .input-row-4 { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media (max-width: 1199px) {
-  .units-page.has-drawer { grid-template-columns: minmax(0, 1fr); }
-  .drawer { position: static; max-height: none; order: -1; }
-}
 @media (max-width: 767px) {
   .metrics { grid-template-columns: minmax(0, 1fr); }
   .drawer-actions { grid-template-columns: minmax(0, 1fr); }

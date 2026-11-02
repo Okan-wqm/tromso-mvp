@@ -1,7 +1,7 @@
 {% extends base_template %}
 {% load i18n stock %}
-{# Voiding a stock operation (farm.stock.views.void_operation): it stops counting and stays in the history
-   with its reason. Refused, with the reason, when later operations need its fish. #}
+{% comment %} Voiding a stock operation (farm.stock.views.void_operation): it stops counting and stays in the history
+   with its reason. Refused, with the reason, when later operations need its fish.{% endcomment %}
 {% block title %}{{ heading }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}

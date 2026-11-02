@@ -1,14 +1,14 @@
 {% extends base_template %}
 {% load i18n stock %}
-{# Operations › Production units (farm.stock.views.production_units): the platform's /sites/tanks. One
+{% comment %} Operations › Production units (farm.stock.views.production_units): the platform's /sites/tanks. One
    table of every unit with its fish now, computed from the stock ledger, and a drawer for the unit
    picked (?unit=). Filters and the drawer live in the address; a row is one link (its code stretched
-   over the row), so the page works without the browser code. #}
+   over the row), so the page works without the browser code.{% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<div class="units-page{% if drawer %} has-drawer{% endif %}">
+<div>
   <div class="units-main">
     <nav class="view-tabs" aria-label="{% trans "Fish" %}">
       <span class="view-tab" aria-current="page">{% trans "Production" %} <span class="view-count">{{ stocked }}</span></span>

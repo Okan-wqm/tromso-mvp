@@ -1,6 +1,6 @@
 {% load i18n stock %}
-{# The drawer of the unit picked on Production units (?unit=): its fish, the operations that make sense
-   for it, and its recent operations. Closing it is a link to the page without the unit. #}
+{% comment %} The drawer of the unit picked on Production units (?unit=): its fish, the operations that make sense
+   for it, and its recent operations. Closing it is a link to the page without the unit.{% endcomment %}
 {% with unit=drawer stock=drawer_stock %}
 <aside class="drawer" aria-labelledby="drawer-title">
   <div class="drawer-head">

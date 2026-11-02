@@ -1,7 +1,7 @@
 {% extends base_template %}
 {% load i18n stock %}
-{# An operation on the fish of one unit (farm.stock.views.record_operation): mortality, cull, a weighing.
-   In the dialog or as a page; the server's reasons appear on the field they concern. #}
+{% comment %} An operation on the fish of one unit (farm.stock.views.record_operation): mortality, cull, a weighing.
+   In the dialog or as a page; the server's reasons appear on the field they concern.{% endcomment %}
 {% block title %}{{ heading }} · {{ unit.code }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}

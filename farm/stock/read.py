@@ -10,7 +10,8 @@ Definitions (stock-db §4), for a unit u today:
 - survival = 100 × (1 − deaths / fish in), losses = deaths + culls, both over the current stay
   (owner decision Q2: survival counts deaths only);
 - last weighing = the latest weighing of the current stay.
-FCR and the last feeding need the feeding tab: they are not computed (the page shows a dash)."""
+FCR, the last feeding and the feed rate are read from the feeding records with the same ledger
+(farm/feeding/read.py)."""
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -28,15 +29,15 @@ def ledger(batch_ids):
     so the lines of an operation all come with its batch."""
     rows = list(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False).values_list(
         'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
-        'avg_weight_g', 'pair'))
+        'avg_weight_g', 'pair', 'measured_weight_kg'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])
     ops = {}
     lines = []
-    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair in rows:
+    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured in rows:
         op = ops.setdefault(op_id, Op(op_id, op_kind, op_date, first[op_id]))
-        lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair))
+        lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair, measured))
     return lines
 
 

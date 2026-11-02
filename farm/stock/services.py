@@ -11,8 +11,10 @@ code that changes a unit's status for stock reasons. In one transaction it:
 3. writes the operation and its lines;
 4. folds every batch the operation touches, and every batch that was ever in its units, from the
    first line, and checks the whole timeline, not only today: no share ever below 0 fish, a weighing
-   only where there are fish, one species per unit (owner decision Q1). A backdated operation is
-   placed where it belongs and accepted only if every later day stays valid;
+   only where there are fish, one species per unit (owner decision Q1), and every feeding recorded
+   in its units from its date on still finds fish there at the start or the end of its day (the
+   feeding records, farm/feeding). A backdated operation is placed where it belongs and accepted only
+   if every later day stays valid;
 5. checks the capacity of the units fish arrive in, on the operation's date: above the max biomass
    only with the person's acknowledgement, stored on the operation (owner decision Q4);
 6. moves the unit statuses that follow the fish (a unit going from empty to stocked, or back), and
@@ -20,7 +22,8 @@ code that changes a unit's status for stock reasons. In one transaction it:
 
 A failure raises ValidationError (a dict of field to message, the field names below) and nothing is
 written. A void is the undo: steps 1, 4 and 6 with the operation left out; it fails, naming the
-operation that depends on it, when later operations need its fish.
+operation (or the feeding) that depends on it, when later operations need its fish. `voided` is the
+one void of the farm's daily records, a stock operation's and a feeding's.
 
 Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 'notes',
 'avg_weight_g', 'measured_weight_kg', 'destinations', 'over_capacity_ack' and NON_FIELD_ERRORS.
@@ -30,20 +33,19 @@ transfer (out of one unit into one or several: a split is a transfer into severa
 transfer whose fish are weighed per size class, the fish that stay weighed too) and a harvest; each is
 voidable. Count adjustments have their line kind and checks but no dialog yet."""
 from dataclasses import dataclass, field
-from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
-from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import connection, transaction
 from django.db.models import IntegerField, Max
 from django.db.models.functions import Cast, Substr
-from django.utils import formats, timezone
 from django.utils.translation import gettext as _
 
 from core import audit
 from core.models import AuditLog
+from farm.feeding import read as feeding_read
+from farm.feeding.fold import walk
 from farm.models import Batch, Species, StockMovement, StockOperation, Tank
 from farm.models.stock import (
     ARRIVAL_STATUSES, REASONS, AdjustmentReason, MovementKind, OperationKind, TransferReason,
@@ -52,7 +54,9 @@ from farm.models.tank import NEEDS_NO_FISH
 from farm.templatetags.stock import number
 
 from . import read
-from .fold import StockError, fold
+# The farm's dates are one rule for every daily record; services.local_today and the others stay here.
+from .dates import check_date, earliest, local_today, shown_date  # noqa: F401
+from .fold import StockError
 
 Status = Tank.Status
 GRAMS = Decimal('0.0001')
@@ -94,36 +98,10 @@ class NewBatch:
     fields: dict = field(default_factory=dict)
 
 
-# ---- dates ---------------------------------------------------------------------------------------
-def local_today(unit=None):
-    """Today on the farm: in the time zone of the unit's site, else the company's (settings.TIME_ZONE).
-    Never the UTC date of a browser (the source's dialogs were a day behind east of UTC)."""
-    site = unit.production_department.site if unit is not None else None
-    name = site.timezone if site is not None and site.timezone else settings.TIME_ZONE
-    return timezone.localdate(timezone=ZoneInfo(name))
-
-
-def earliest(unit=None):
-    """The first day an operation may be dated (and the oldest one that may be voided)."""
-    return local_today(unit) - timedelta(days=settings.STOCK_BACKDATE_DAYS)
-
-
-def shown_date(day):
-    return formats.date_format(day, 'DATE_FORMAT')
-
-
-def _check_date(day, units):
-    for unit in units:
-        if day > local_today(unit):
-            raise ValidationError({'date': _('The date cannot be in the future.')})
-        if day < earliest(unit):
-            raise ValidationError({'date': _('Operations can be dated at most %(days)d days back.')
-                                   % {'days': settings.STOCK_BACKDATE_DAYS}})
-
-
 # ---- the one write path --------------------------------------------------------------------------
-def _locked(model, pks):
-    """The rows, locked for this transaction in primary-key order, deleted ones included."""
+def locked(model, pks):
+    """The rows, locked for this transaction in primary-key order, deleted ones included (a feeding
+    locks its unit the same way, so a feeding and a stock operation of one unit take turns)."""
     return model.all_objects.select_for_update(of=('self',)).filter(pk__in=pks).order_by('pk').in_bulk()
 
 
@@ -148,8 +126,8 @@ def _next_code(year):
 def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None):
     """Writes an operation and its lines (see the module's docstring); returns the operation."""
     with transaction.atomic():
-        batches = _locked(Batch, {entry.batch.pk for entry in entries if entry.batch is not None})
-        units = _locked(Tank, {entry.unit.pk for entry in entries})
+        batches = locked(Batch, {entry.batch.pk for entry in entries if entry.batch is not None})
+        units = locked(Tank, {entry.unit.pk for entry in entries})
         _already(token)
         _check_static(kind, day, entries, batches, units, new_batch)
         before = read.unit_counts(list(units))
@@ -190,7 +168,7 @@ def _check_static(kind, day, entries, batches, units, new_batch):
     for batch in batches.values():
         if batch.is_deleted:
             raise ValidationError({'batch': _('%(batch)s was voided.') % {'batch': batch.code}})
-    _check_date(day, units.values())
+    check_date(day, units.values())
     if kind != OperationKind.INPUT:
         for batch in batches.values():
             if day < batch.input_date:
@@ -216,10 +194,12 @@ def _check_timeline(operation, batches, units):
     capacity messages of the units the operation brings fish into, empty when none is above its max."""
     arriving = set(StockMovement.objects.filter(operation=operation, count_delta__gt=0).values_list('unit_id',
                                                                                                     flat=True))
-    return _validate(set(batches), set(units), operation.pk, arriving)
+    return _validate(set(batches), set(units), operation.date, operation.pk, arriving)
 
 
-def _validate(batch_ids, unit_ids, new_op_id=None, arriving=()):
+def _validate(batch_ids, unit_ids, day, new_op_id=None, arriving=()):
+    """Folds the batches and every batch ever in the units, with the live feedings of the units dated
+    `day` or later: only the counts of these units change, and only from that day."""
     batch_ids = batch_ids | read.batches_ever_in(unit_ids)
     lines = read.ledger(batch_ids)
     species = dict(Batch.all_objects.filter(pk__in=batch_ids).values_list('pk', 'species_id'))
@@ -241,9 +221,15 @@ def _validate(batch_ids, unit_ids, new_op_id=None, arriving=()):
     for line in lines:
         lines_of.setdefault(line.op.id, []).append(line)
     try:
-        fold(lines, observe)
+        walked = walk(lines, feeding_read.feedings(unit_ids, since=day), observe=observe)
     except StockError as error:
         raise _explain(error, new_op_id) from None
+    if walked.orphans:
+        feeding = walked.orphans[0]
+        unit, _batch, _species = _names(feeding.unit_id)
+        raise ValidationError({NON_FIELD_ERRORS: _(
+            'The feeding of %(date)s in %(unit)s would have no fish: void it first.') % {
+            'date': shown_date(feeding.date), 'unit': unit}})
     return _over_capacity(grams_after, new_op_id)
 
 
@@ -363,17 +349,36 @@ def label(operation, lines=None):
     return f'{audit.english(operation.get_kind_display())} · {units} · {batches} · {operation.date.isoformat()}'
 
 
-def _log(user, action, operation, reason=''):
+def _log(user, action, operation):
     lines = list(operation.movements.select_related('unit', 'batch'))
     with audit.source_language():
-        if action == AuditLog.Action.VOID:
-            changes = {str(_('Reason for voiding')): [None, reason]}
-        else:
-            names = ['kind', 'date', 'notes', *(['over_capacity_ack'] if operation.over_capacity_ack else [])]
-            changes = {label_: [None, value] for label_, value in audit.snapshot(operation, names).items()
-                       if value is not None}
-            changes[str(_('Stock lines'))] = [None, '; '.join(_describe(line) for line in lines)]
+        names = ['kind', 'date', 'notes', *(['over_capacity_ack'] if operation.over_capacity_ack else [])]
+        changes = {label_: [None, value] for label_, value in audit.snapshot(operation, names).items()
+                   if value is not None}
+        changes[str(_('Stock lines'))] = [None, '; '.join(_describe(line) for line in lines)]
         audit.record(user, action, operation, changes, label=label(operation, lines))
+
+
+def voided(user, entry, reason, units, label, check=None):
+    """The void of a daily record, a stock operation or a feeding: one rule for both. It needs its reason,
+    is refused when the record is voided already or dated before the backdating window of one of its
+    units, then stops counting (soft-deleted, with its reason), `check()` runs without it, and the activity
+    log says "Voided" with the reason. Inside the caller's transaction, with the record locked."""
+    reason = reason.strip()
+    if not reason:
+        raise ValidationError({'reason': _('Say why it is voided.')})
+    if entry.is_deleted:
+        raise ValidationError({NON_FIELD_ERRORS: _('This operation is already voided.')})
+    for unit in units:
+        if entry.date < earliest(unit):
+            raise ValidationError({NON_FIELD_ERRORS: _(
+                'Operations older than %(days)d days cannot be voided.') % {'days': settings.STOCK_BACKDATE_DAYS}})
+    entry.void_reason = reason
+    entry.soft_delete(user)
+    if check is not None:
+        check()
+    with audit.source_language():
+        audit.record(user, AuditLog.Action.VOID, entry, {str(_('Reason for voiding')): [None, reason]}, label=label)
 
 
 # ---- the operations ------------------------------------------------------------------------------
@@ -466,8 +471,8 @@ def record_grading(user, *, source, batch, day, outputs, remainder_avg_weight_g=
     stays the same, the size class is on the line (owner decision Q6). One transaction for all outputs."""
     _destinations(source, [unit for unit, _count, _weight, _size in outputs])
     with transaction.atomic():
-        _locked(Batch, {batch.pk})
-        _locked(Tank, {source.pk, *(unit.pk for unit, *_rest in outputs)})
+        locked(Batch, {batch.pk})
+        locked(Tank, {source.pk, *(unit.pk for unit, *_rest in outputs)})
         staying = read.share_on(source.pk, batch.pk, day).count - sum(count for _unit, count, *_rest in outputs)
         if staying > 0 and remainder_avg_weight_g is None:
             raise ValidationError({'avg_weight_g': _('%(count)s fish stay in %(unit)s: weigh them too.') % {
@@ -491,8 +496,8 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, everyth
     the book holds beyond the count are an unaccounted loss (a count adjustment of the same operation,
     taken before the harvest so the harvest takes the rest of the book)."""
     with transaction.atomic():
-        _locked(Batch, {batch.pk})
-        _locked(Tank, {unit.pk})
+        locked(Batch, {batch.pk})
+        locked(Tank, {unit.pk})
         book = read.share_on(unit.pk, batch.pk, day).count
         if count > book:
             raise ValidationError({'count': _('Only %(available)s fish of %(batch)s are in %(unit)s on %(date)s.') % {
@@ -509,25 +514,14 @@ def void(user, operation, reason):
     """The undo: the operation stops counting, with its reason. Refused when later operations need its
     fish (the message names them), and for operations older than the backdating window. Voiding a
     stocking voids its batch too: the batch exists only through it."""
-    reason = reason.strip()
-    if not reason:
-        raise ValidationError({'reason': _('Say why it is voided.')})
     with transaction.atomic():
         operation = StockOperation.all_objects.select_for_update().get(pk=operation.pk)
-        if operation.is_deleted:
-            raise ValidationError({NON_FIELD_ERRORS: _('This operation is already voided.')})
-        lines = list(operation.movements.all())
-        batches = _locked(Batch, {line.batch_id for line in lines})
-        units = _locked(Tank, {line.unit_id for line in lines})
-        for unit in units.values():
-            if operation.date < earliest(unit):
-                raise ValidationError({NON_FIELD_ERRORS: _(
-                    'Operations older than %(days)d days cannot be voided.') % {'days': settings.STOCK_BACKDATE_DAYS}})
+        lines = list(operation.movements.select_related('unit', 'batch'))
+        batches = locked(Batch, {line.batch_id for line in lines})
+        units = locked(Tank, {line.unit_id for line in lines})
         before = read.unit_counts(list(units))
-        operation.void_reason = reason
-        operation.soft_delete(user)
-        _validate(set(batches), set(units))
-        _log(user, AuditLog.Action.VOID, operation, reason)
+        voided(user, operation, reason, units.values(), label(operation, lines),
+               check=lambda: _validate(set(batches), set(units), operation.date))
         _follow_status(user, units, before)
         if operation.kind == OperationKind.INPUT:
             for batch in batches.values():

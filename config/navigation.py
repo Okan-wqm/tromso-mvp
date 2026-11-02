@@ -46,11 +46,12 @@ WORKSPACES = [
                 Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
             ]),
         ]),
-        # The daily production records: the fish in each unit and what happens to them; feeding, water
-        # chemistry, health and harvest join as their tabs arrive.
+        # The daily production records: the fish in each unit and what happens to them, and their feeding;
+        # water chemistry, health and harvest join as their tabs arrive.
         Section(_('Operations'), [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
+                Entry(_('Feeding records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
             ]),
         ]),
     ]),

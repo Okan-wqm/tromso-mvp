@@ -1,0 +1,21 @@
+{% extends base_template %}
+{% load i18n stock %}
+{% comment %} Record feeding from Operations › Feeding records (farm.feeding.views.choose_unit): the units with fish,
+   each opening its feeding dialog.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+{% if units %}
+<p>{% trans "Choose the unit that was fed." %}</p>
+<ul class="link-list unit-choice" role="list">
+  {% for item in units %}{% with unit=item.unit stock=item.stock %}
+  <li><a href="{{ item.url }}" data-modal><strong>{{ unit.code }}</strong> · {{ unit.name }} · {{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}
+    <span class="row-sub">{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %} · {% blocktrans trimmed with fish=stock.count|fish biomass=stock.biomass_kg|kilos %}{{ fish }} fish, {{ biomass }}{% endblocktrans %}</span></a></li>
+  {% endwith %}{% endfor %}
+</ul>
+{% else %}
+<p class="notice notice-warning">{% trans "No unit holds fish: a feeding needs fish in its unit." %}</p>
+{% endif %}
+<div class="form-actions"><a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a></div>
+{% endblock %}

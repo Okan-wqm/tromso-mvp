@@ -16,5 +16,8 @@ AREAS = [
     # The stock: Read is the Production units page, Create records an operation (a stocking, a mortality,
     # a weighing), Delete voids one. Operations are never edited: a correction is a void and a new entry.
     Area(_('Production units'), 'farm.StockOperation', actions=('view', 'add', 'delete')),
+    # The feeding records: Read is the Feeding records page (and the feeding part of a unit's drawer), Create
+    # records a feeding, Delete voids one. Records are never edited: a correction is a void and a new entry.
+    Area(_('Feeding records'), 'farm.FeedingRecord', actions=('view', 'add', 'delete')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

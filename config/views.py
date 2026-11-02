@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from farm.models import Equipment, ProductionDepartment, Site, System, Tank
+from farm.feeding.views import overview_tiles as feeding_tiles
 from farm.stock.views import overview_tiles
 
 
@@ -23,10 +24,11 @@ def home(request):
 
 
 def production_home(request):
-    """The production overview: the stock now (units with fish, fish, biomass, from the ledger), then the
-    farm's structure."""
+    """The production overview: the stock now (units with fish, fish, biomass, from the ledger) and the feed
+    given (today, the last 7 days), then the farm's structure."""
     return render(request, 'production_home.html', {
         'stock_tiles': overview_tiles(request.user),
+        'feeding_tiles': feeding_tiles(request.user),
         'tiles': _counts(request.user,
                          (_('Production departments'), ProductionDepartment, 'farm:productiondepartment_list'),
                          (_('Systems'), System, 'farm:system_list'),

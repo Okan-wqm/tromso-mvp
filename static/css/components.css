@@ -878,3 +878,24 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
   .metrics { grid-template-columns: minmax(0, 1fr); }
   .drawer-actions { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Operations › Feeding records (templates/farm/feeding_list.html) and the feeding part of a unit's drawer.
+   A voided feeding is struck through, as a voided stock operation is in the drawer. */
+.feeding-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+.feeding-filters select { min-width: 10rem; }
+.date-filter { display: inline-flex; align-items: center; gap: .375rem; color: var(--muted); font-size: .9375rem; }
+.date-filter input {
+  min-height: 42px; padding: 0 .625rem; border: 1.5px solid var(--sage); border-radius: 6px;
+  background: var(--white); color: var(--speck); font: inherit;
+}
+.feeding-table td { vertical-align: top; }
+.data-table tbody tr.is-voided td { color: var(--muted); }
+.data-table tbody tr.is-voided td:nth-child(-n+7) { text-decoration: line-through; }
+.unit-choice { display: grid; gap: .5rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.unit-choice a {
+  display: block; padding: .625rem .875rem; border: 1.5px solid var(--sage); border-radius: 6px;
+  color: var(--speck); text-decoration: none;
+}
+.unit-choice a:hover, .unit-choice a:focus-visible { border-color: var(--olive); background: var(--mist); }
+.feeding-window { margin: 0; padding-left: 1.125rem; font-size: .9375rem; }

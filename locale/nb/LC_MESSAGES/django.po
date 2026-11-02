@@ -27,6 +27,14 @@ msgstr "%(batch)s er annullert."
 msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s fisk · %(weight)s g"
 
+#, python-format
+msgid "%(batch)s: %(start)s – %(end)s, %(feed)s fed, %(gain)s grown"
+msgstr "%(batch)s: %(start)s – %(end)s, %(feed)s fôret, %(gain)s tilvekst"
+
+#, python-format
+msgid "%(batch)s: not weighed since it came in, so no FCR yet"
+msgstr "%(batch)s: ikke veid siden den kom inn, så ingen fôrfaktor ennå"
+
 #. Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
 #, python-format
 msgid "%(count)d %(name)s still belongs to it."
@@ -79,6 +87,12 @@ msgstr[0] ""
 msgstr[1] ""
 "%(count)d utstyrsenheter er kjøpt fra den: behold «%(category)s» avkrysset, eller velg en annen "
 "leverandør for dem først."
+
+#, python-format
+msgid "%(count)d record"
+msgid_plural "%(count)d records"
+msgstr[0] "%(count)d registrering"
+msgstr[1] "%(count)d registreringer"
 
 #, python-format
 msgid "%(count)d record restored."
@@ -149,6 +163,22 @@ msgid "%(energy)s MJ/kg digestible"
 msgstr "%(energy)s MJ/kg fordøyelig"
 
 #, python-format
+msgid "%(feed)s fed, %(gain)s grown"
+msgstr "%(feed)s fôret, %(gain)s tilvekst"
+
+#, python-format
+msgid "%(feed)s is %(status)s: a new feeding takes an active feed."
+msgstr "%(feed)s er %(status)s: en ny fôring bruker et aktivt fôr."
+
+#, python-format
+msgid "%(feed)s is not listed as suitable for %(species)s at %(weight)s (Reference data › Feeds)."
+msgstr "%(feed)s er ikke oppført som egnet for %(species)s på %(weight)s (Referansedata › Fôr)."
+
+#, python-format
+msgid "%(feed)s · %(size)s mm"
+msgstr "%(feed)s · %(size)s mm"
+
+#, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s «%(record)s» er slettet."
 
@@ -161,12 +191,24 @@ msgid "%(fish)s fish"
 msgstr "%(fish)s fisk"
 
 #, python-format
+msgid "%(fish)s fish, %(biomass)s"
+msgstr "%(fish)s fisk, %(biomass)s"
+
+#, python-format
 msgid "%(fish)s fish, %(biomass)s now"
 msgstr "%(fish)s fisk, %(biomass)s nå"
 
 #, python-format
 msgid "%(free)s kg free"
 msgstr "%(free)s kg ledig"
+
+#, python-format
+msgid ""
+"%(kilos)s kg is %(rate)s %% of the %(biomass)s kg %(unit)s holds on %(date)s in the book; more "
+"than %(limit)s %% a day is unusual. Tick the box below to record it anyway."
+msgstr ""
+"%(kilos)s kg er %(rate)s %% av de %(biomass)s kg %(unit)s har i beholdningen %(date)s; mer enn "
+"%(limit)s %% om dagen er uvanlig. Kryss av i boksen under for å registrere det likevel."
 
 #, python-format
 msgid "%(kilos)s weighed"
@@ -191,6 +233,12 @@ msgstr "%(label)s som mister koblingen «%(link)s»"
 #, python-format
 msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
 msgstr "%(label)s: den lagrede verdien %(value)s er ikke i formen den lagres i."
+
+#, python-format
+msgid "%(meals)s meal"
+msgid_plural "%(meals)s meals"
+msgstr[0] "%(meals)s måltid"
+msgstr[1] "%(meals)s måltider"
 
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
@@ -234,6 +282,10 @@ msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s ble ikke gjenopprettet: %(reasons)s"
 
 #, python-format
+msgid "%(size)s mm"
+msgstr "%(size)s mm"
+
+#, python-format
 msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
 msgstr "%(size)s: %(grams)s g per skudd, silo %(silo)s kg"
 
@@ -258,6 +310,10 @@ msgid "%(unit)s has the status %(status)s: set it to preparing or fallow in Setu
 msgstr ""
 "%(unit)s har status %(status)s: sett den til klargjøres eller brakklagt i Oppsett for å sette ut "
 "fisk i den."
+
+#, python-format
+msgid "%(unit)s holds no fish on %(date)s."
+msgstr "%(unit)s har ingen fisk %(date)s."
 
 #, python-format
 msgid "%(unit)s is deleted and would hold fish again: restore it first."
@@ -289,6 +345,7 @@ msgstr "%(value)s %%"
 msgid "%(value)s g"
 msgstr "%(value)s g"
 
+#. Translators: an amount of feed in kilograms, e.g. 12.5 kg.
 #. Translators: a weight in kilograms, e.g. 1,798 kg.
 #, python-format
 msgid "%(value)s kg"
@@ -398,6 +455,9 @@ msgstr "En enhet med fisk i kan ikke gjøres inaktiv: flytt eller høst fisken f
 
 msgid "Above the max density, accepted"
 msgstr "Over maks. tetthet, godtatt"
+
+msgid "Above the usual feed rate, accepted"
+msgstr "Over vanlig fôringsrate, godtatt"
 
 msgid "Account"
 msgstr "Konto"
@@ -512,11 +572,21 @@ msgstr "Alle"
 msgid "All actions"
 msgstr "Alle handlinger"
 
+msgid "All batches"
+msgstr "Alle fiskegrupper"
+
 msgid "All categories"
 msgstr "Alle kategorier"
 
 msgid "All feed types"
 msgstr "Alle fôrtyper"
+
+#, python-format
+msgid "All feeding records of %(unit)s"
+msgstr "Alle fôringer i %(unit)s"
+
+msgid "All feeds"
+msgstr "Alt fôr"
 
 msgid "All kinds"
 msgstr "Alle typer"
@@ -544,6 +614,9 @@ msgstr "All energien i fôret, i MJ per kg slik det fôres."
 
 msgid "All types"
 msgstr "Alle typer"
+
+msgid "All units"
+msgstr "Alle enheter"
 
 msgid "All water environments"
 msgstr "Alle vannmiljøer"
@@ -640,6 +713,9 @@ msgctxt "access area"
 msgid "Area"
 msgstr "Område"
 
+msgid "As given, to the gram (0.035 for 35 g)."
+msgstr "Som gitt, på grammet (0,035 for 35 g)."
+
 msgid "As weighed on arrival; to 0.0001 g for eggs and larvae."
 msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
 
@@ -713,6 +789,9 @@ msgstr "Gruppenummer"
 msgid "Batches"
 msgstr "Fiskegrupper"
 
+msgid "Batches fed"
+msgstr "Fôrede fiskegrupper"
+
 msgid "Bead filter"
 msgstr "Perlefilter"
 
@@ -727,6 +806,11 @@ msgstr "Biomedietype"
 
 msgid "Biofloc"
 msgstr "Biofloc"
+
+msgid ""
+"Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from "
+"stocking to the last weighing"
+msgstr "Biologisk fôrfaktor: fôr gitt per kg tilvekst, dødfisk medregnet, fra utsett til siste veiing"
 
 msgid "Biological filter"
 msgstr "Biofilter"
@@ -825,6 +909,13 @@ msgstr "Kjemikalier"
 msgid "Chiller"
 msgstr "Kjøleaggregat"
 
+#, python-format
+msgid "Choose a feeder on the site of %(unit)s."
+msgstr "Velg en fôrautomat på lokaliteten til %(unit)s."
+
+msgid "Choose a feeder: equipment of the Feeding category."
+msgstr "Velg en fôrautomat: utstyr i kategorien Fôring."
+
 msgid "Choose a supplier of equipment and spare parts."
 msgstr "Velg en leverandør av utstyr og reservedeler."
 
@@ -848,6 +939,9 @@ msgstr "Velg typen på fanen Generelt; målene vises her."
 
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Velg formen; målene volumet beregnes ut fra, vises sammen med den."
+
+msgid "Choose the unit that was fed."
+msgstr "Velg enheten som ble fôret."
 
 msgid "Choose the unit the fish go into."
 msgstr "Velg enheten fisken skal i."
@@ -896,9 +990,6 @@ msgstr "Kolonne"
 
 msgid "Columns"
 msgstr "Kolonner"
-
-msgid "Comes with the feeding records."
-msgstr "Kommer med fôringsregistreringene."
 
 msgid "Common name"
 msgstr "Vanlig navn"
@@ -1186,6 +1277,13 @@ msgstr "Hver enhet kan bare stå én gang."
 msgid "Earthen"
 msgstr "Jord"
 
+msgid ""
+"Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, "
+"culled and lost fish are not credited"
+msgstr ""
+"Økonomisk fôrfaktor: fôr gitt per kg fisk som står igjen, er høstet eller flyttet videre; "
+"dødfisk, utsortert og tapt fisk regnes ikke med"
+
 msgid "Edit"
 msgstr "Rediger"
 
@@ -1299,8 +1397,19 @@ msgstr "Forsøk"
 msgid "Export CSV"
 msgstr "Eksporter CSV"
 
-msgid "FCR"
-msgstr "FCR"
+msgid ""
+"FCR and the feed figures are worked out again without it. To correct a feeding, void it and "
+"record it again."
+msgstr ""
+"Fôrfaktor og fôrtallene regnes ut på nytt uten den. For å rette en fôring, annuller den og "
+"registrer den på nytt."
+
+msgid ""
+"FCR runs from stocking to the last weighing, on weighed biomass only. Dead fish leave at the last"
+" weighed average, so their growth since is not credited: bFCR reads a little high when many die."
+msgstr ""
+"Fôrfaktoren går fra utsett til siste veiing, bare på veid biomasse. Dødfisk går ut med siste "
+"veide snittvekt, så tilveksten deres siden regnes ikke med: bFCR blir litt høy når mange dør."
 
 msgid "Facilities"
 msgstr "Fasiliteter"
@@ -1320,8 +1429,17 @@ msgstr "Familie"
 msgid "Farm console for tanks, water quality and stock records."
 msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
 
+msgid "Fed"
+msgstr "Fôret"
+
+msgid "Fed today"
+msgstr "Fôret i dag"
+
 msgid "Feed"
 msgstr "Fôr"
+
+msgid "Feed above the usual rate"
+msgstr "Fôr over vanlig rate"
 
 msgid "Feed calibration"
 msgstr "Fôrkalibrering"
@@ -1329,20 +1447,41 @@ msgstr "Fôrkalibrering"
 msgid "Feed calibrations"
 msgstr "Fôrkalibreringer"
 
-msgid "Feed conversion ratio"
-msgstr "Fôrfaktor"
-
 msgid "Feed gas"
 msgstr "Fødegass"
+
+msgid "Feed given"
+msgstr "Fôr gitt"
+
+msgid "Feed given (kg)"
+msgstr "Fôr gitt (kg)"
+
+msgid "Feed given to a unit is recorded from its drawer on Production units, or with Record feeding."
+msgstr ""
+"Fôr gitt til en enhet registreres fra skuffen dens under Produksjonsenheter, eller med Registrer "
+"fôring."
 
 msgid "Feed per shot (g)"
 msgstr "Fôr per skudd (g)"
 
+#, python-format
+msgid "Feed rate %(rate)s of the biomass a day over the last 7 days"
+msgstr "Fôringsrate %(rate)s av biomassen per dag de siste 7 dagene"
+
 msgid "Feed size (mm)"
 msgstr "Fôrstørrelse (mm)"
 
+msgid "Feed today"
+msgstr "Fôr i dag"
+
 msgid "Feed type"
 msgstr "Fôrtype"
+
+msgid "Feed, last 7 days"
+msgstr "Fôr, siste 7 dager"
+
+msgid "Feeder"
+msgstr "Fôrautomat"
 
 msgid "Feeding"
 msgstr "Fôring"
@@ -1354,9 +1493,20 @@ msgstr ""
 "Fôringsjobber kjøres etter lokalitetens lokale døgn. La verdien arves med mindre lokaliteten "
 "ligger i en annen tidssone enn selskapet."
 
+#, python-format
+msgid "Feeding of %(date)s in %(unit)s voided."
+msgstr "Fôringen %(date)s i %(unit)s er annullert."
+
 #. Translators: a placeholder showing what to type.
 msgid "Feeding rate"
 msgstr "Fôringsmengde"
+
+#, python-format
+msgid "Feeding recorded: %(kilos)s kg of %(feed)s in %(unit)s on %(date)s."
+msgstr "Fôring registrert: %(kilos)s kg %(feed)s i %(unit)s %(date)s."
+
+msgid "Feeding records"
+msgstr "Fôringer"
 
 msgid "Feeds"
 msgstr "Fôr"
@@ -1751,6 +1901,9 @@ msgstr "Larvefôr"
 msgid "Last"
 msgstr "Siste"
 
+msgid "Last 7 days"
+msgstr "Siste 7 dager"
+
 msgid "Last calibration"
 msgstr "Siste kalibrering"
 
@@ -1890,6 +2043,9 @@ msgstr "Maksimal vannmengde"
 msgid "Maximum temperature"
 msgstr "Maksimal temperatur"
 
+msgid "Meals"
+msgstr "Måltider"
+
 msgid "Measured parameters"
 msgstr "Målte parametere"
 
@@ -2026,6 +2182,18 @@ msgstr "Ingen endringer registrert ennå."
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad."
 
+msgid "No feed recorded up to the last weighing."
+msgstr "Ingen fôring registrert fram til siste veiing."
+
+msgid "No feeding matches these filters."
+msgstr "Ingen fôring passer disse filtrene."
+
+msgid "No feeding recorded in this unit yet."
+msgstr "Ingen fôring registrert i denne enheten ennå."
+
+msgid "No feeding recorded yet"
+msgstr "Ingen fôring registrert ennå"
+
 #, python-format
 msgid "No fish are in %(unit)s."
 msgstr "Det er ingen fisk i %(unit)s."
@@ -2037,6 +2205,9 @@ msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
+
+msgid "No growth up to the last weighing."
+msgstr "Ingen tilvekst fram til siste veiing."
 
 msgid "No other table."
 msgstr "Ingen andre tabeller."
@@ -2073,6 +2244,9 @@ msgstr ""
 "Ingen system å velge: produksjonsavdelingens lokalitet har ingen, eller ingen produksjonsavdeling"
 " er valgt."
 
+msgid "No unit holds fish: a feeding needs fish in its unit."
+msgstr "Ingen enhet har fisk: en fôring trenger fisk i enheten."
+
 msgid "No units match these filters."
 msgstr "Ingen enheter passer til disse filtrene."
 
@@ -2105,6 +2279,9 @@ msgstr "Ikke vurdert"
 
 msgid "Not stated"
 msgstr "Ikke oppgitt"
+
+msgid "Not weighed since the fish came in."
+msgstr "Ikke veid siden fisken kom inn."
 
 msgid "Notes"
 msgstr "Notater"
@@ -2217,6 +2394,15 @@ msgstr ""
 "Valgfritt, når de ble veid. Beholdningen trekker dem ut med snittvekten til fiskegruppen i denne "
 "enheten; den veide vekten lagres ved siden av."
 
+msgid "Optional: how many meals it was given in."
+msgstr "Valgfritt: hvor mange måltider det ble gitt i."
+
+msgid "Optional: the feeder that gave it, on the unit’s site."
+msgstr "Valgfritt: fôrautomaten som ga det, på enhetens lokalitet."
+
+msgid "Optional: the time of the feeding, or of its first meal."
+msgstr "Valgfritt: tidspunktet for fôringen, eller første måltid."
+
 msgid "Optional; the batch number is given on saving."
 msgstr "Valgfritt; gruppenummeret gis ved lagring."
 
@@ -2237,6 +2423,9 @@ msgstr "Opprinnelse"
 
 msgid "Other"
 msgstr "Annet"
+
+msgid "Other active feeds"
+msgstr "Annet aktivt fôr"
 
 msgid "Other equipment"
 msgstr "Annet utstyr"
@@ -2536,6 +2725,9 @@ msgstr "Årsak til statusen"
 msgid "Reason for voiding"
 msgstr "Årsak til annullering"
 
+msgid "Recent feedings"
+msgstr "Siste fôringer"
+
 msgid "Recent operations"
 msgstr "Siste operasjoner"
 
@@ -2548,11 +2740,17 @@ msgstr "Post"
 msgid "Record cull"
 msgstr "Registrer utsortering"
 
+msgid "Record feeding"
+msgstr "Registrer fôring"
+
 msgid "Record mortality"
 msgstr "Registrer dødfisk"
 
 msgid "Record type"
 msgstr "Posttype"
+
+msgid "Recorded by"
+msgstr "Registrert av"
 
 msgid "Rectangular"
 msgstr "Rektangulær"
@@ -2805,6 +3003,9 @@ msgstr "Vis slettede rader"
 msgid "Show them"
 msgstr "Vis dem"
 
+msgid "Show voided"
+msgstr "Vis annullerte"
+
 msgid "Shrimp"
 msgstr "Reke"
 
@@ -2909,6 +3110,14 @@ msgstr "Spesifikasjonsfelt"
 msgid "Split"
 msgstr "Splitting"
 
+#, python-format
+msgid "Split by the book biomass at the end of %(date)s:"
+msgstr "Fordelt etter beholdningens biomasse ved slutten av %(date)s:"
+
+#, python-format
+msgid "Split by the book biomass at the start of %(date)s:"
+msgstr "Fordelt etter beholdningens biomasse ved starten av %(date)s:"
+
 msgid "Spring"
 msgstr "Kilde"
 
@@ -3009,6 +3218,9 @@ msgstr "Dykkpumpe"
 
 msgid "Suitable for"
 msgstr "Egnet for"
+
+msgid "Suitable for these fish"
+msgstr "Egnet for denne fisken"
 
 msgid "Supplier"
 msgstr "Leverandør"
@@ -3133,6 +3345,15 @@ msgstr "Forventet høsting kommer etter utsettsdatoen."
 
 msgid "The feed mill that makes it: a supplier of feed (Purchasing › Suppliers)."
 msgstr "Fôrfabrikken som lager det: en leverandør av fôr (Innkjøp › Leverandører)."
+
+#, python-format
+msgid "The feeding of %(date)s in %(unit)s would have no fish: void it first."
+msgstr "Fôringen %(date)s i %(unit)s ville ikke ha fisk: annuller den først."
+
+msgid ""
+"The feeds that suit the species and average weight of these fish (Reference data › Feeds) come "
+"first."
+msgstr "Fôret som passer arten og snittvekten til denne fisken (Referansedata › Fôr) kommer først."
 
 msgid ""
 "The feeds the farm uses: who makes them, their pellet and analysis, and the species and fish "
@@ -3417,6 +3638,12 @@ msgstr "Kryss av for minst én ting den leverer."
 msgid "Tick at least one water environment."
 msgstr "Kryss av for minst ett vannmiljø."
 
+msgid "Tick it only when the amount is right, e.g. for fry that are fed more."
+msgstr "Kryss av bare når mengden er riktig, f.eks. for yngel som fôres mer."
+
+msgid "Time"
+msgstr "Tidspunkt"
+
 msgid "Timer"
 msgstr "Tidsur"
 
@@ -3428,6 +3655,9 @@ msgstr "Til"
 
 msgid "To units"
 msgstr "Til enheter"
+
+msgid "Today"
+msgstr "I dag"
 
 msgid "Total area (m²)"
 msgstr "Totalt areal (m²)"
@@ -3536,6 +3766,9 @@ msgstr "Veterinær og fiskehelse"
 msgid "Void"
 msgstr "Annuller"
 
+msgid "Void feeding"
+msgstr "Annuller fôring"
+
 msgid "Void operation"
 msgstr "Annuller operasjon"
 
@@ -3543,14 +3776,15 @@ msgstr "Annuller operasjon"
 msgid "Void the %(operation)s of %(date)s?"
 msgstr "Annullere operasjonen %(operation)s %(date)s?"
 
+#, python-format
+msgid "Void the feeding of %(date)s in %(unit)s?"
+msgstr "Annullere fôringen %(date)s i %(unit)s?"
+
 msgid "Voided"
 msgstr "Annullert"
 
 msgid "Voltage"
 msgstr "Spenning"
-
-msgid "Volume"
-msgstr "Volum"
 
 msgid "Volume (m³)"
 msgstr "Volum (m³)"
@@ -3693,6 +3927,9 @@ msgstr ""
 msgid "Yes"
 msgstr "Ja"
 
+msgid "Yesterday"
+msgstr "I går"
+
 msgid "You can now sign in with your new password."
 msgstr "Du kan nå logge inn med det nye passordet ditt."
 
@@ -3718,11 +3955,23 @@ msgstr "som ved utsett"
 msgid "average %(weight)s"
 msgstr "snitt %(weight)s"
 
+msgid "bFCR"
+msgstr "bFCR"
+
 msgid "batch"
 msgstr "fiskegruppe"
 
 msgid "batches"
 msgstr "fiskegrupper"
+
+msgid "biomass as stocked"
+msgstr "biomasse som ved utsett"
+
+#, python-format
+msgid "biomass as weighed %(days)s day ago"
+msgid_plural "biomass as weighed %(days)s days ago"
+msgstr[0] "biomasse som veid for %(days)s dag siden"
+msgstr[1] "biomasse som veid for %(days)s dager siden"
 
 #, python-format
 msgid "by %(name)s"
@@ -3892,6 +4141,9 @@ msgstr "f.eks. kari.nordmann"
 msgid "e.g. sand, cartridge"
 msgstr "f.eks. sand, patron"
 
+msgid "eFCR"
+msgstr "eFCR"
+
 msgid "empty"
 msgstr "tom"
 
@@ -3920,8 +4172,18 @@ msgstr "fôrkalibrering"
 msgid "feed calibrations"
 msgstr "fôrkalibreringer"
 
+#, python-format
+msgid "feed in use: %(feed)s"
+msgstr "fôr i bruk: %(feed)s"
+
 msgid "feed suitability"
 msgstr "fôregnethet"
+
+msgid "feeding record"
+msgstr "fôring"
+
+msgid "feeding records"
+msgstr "fôringer"
 
 msgid "feeds"
 msgstr "fôr"

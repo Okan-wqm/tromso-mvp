@@ -1,11 +1,14 @@
-"""Every rule of the stock, checked from scratch over the whole ledger (stock-db §6.5). The stock
-service holds these on every write; this finds a row that got past it (a hand edit in the database, a
-bug). `manage.py check_stock` prints what it finds; the test suite runs it after its stock tests.
-Its messages are for the developer, in English."""
+"""Every rule of the stock, checked from scratch over the whole ledger (stock-db §6.5), and the one rule
+the feeding records share with it: every live feeding finds fish in its unit at the start or the end of
+its day. The stock and feeding services hold these on every write; this finds a row that got past them
+(a hand edit in the database, a bug). `manage.py check_stock` prints what it finds; the test suite runs
+it after its stock tests. Its messages are for the developer, in English."""
 from collections import Counter, defaultdict
 
 from django.db.models import Sum
 
+from farm.feeding import read as feeding_read
+from farm.feeding.fold import walk
 from farm.models import Batch, StockMovement, StockOperation, Tank
 from farm.models.stock import MovementKind, OperationKind
 from farm.models.tank import NEEDS_FISH, NEEDS_NO_FISH
@@ -79,13 +82,20 @@ def problems():
             found.append(f'Batch {batch.code} is voided but its stocking counts.')
 
     shares = {}
+    broken = False
     for batch_id in batches:
         try:
             shares.update(fold(read.ledger([batch_id])))
         except StockError as error:
+            broken = True
             line = error.line
             found.append(f'Batch {batches[batch_id].code}: {error.reason} at line {line.id} '
                          f'({line.kind} {line.count_delta:+d} in unit {line.unit_id} on {line.op.date}).')
+    if not broken:      # a broken batch is reported above; its units' feedings cannot be placed
+        codes = dict(Tank.all_objects.values_list('pk', 'code'))
+        for feeding in walk(read.ledger(list(batches)), feeding_read.feedings()).orphans:
+            found.append(f'Feeding {feeding.id} of {feeding.date} in unit {codes[feeding.unit_id]}: no fish in '
+                         f'the unit at the start or the end of that day.')
     sums = (StockMovement.objects.filter(operation__is_deleted=False).values('unit_id', 'batch_id')
             .annotate(fish=Sum('count_delta')))
     for row in sums:

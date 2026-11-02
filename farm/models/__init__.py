@@ -8,6 +8,7 @@ Differences from the source schema (apply to every model here):
 """
 from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibration
 from .feed import Feed, FeedSuitability
+from .feeding import FeedingRecord
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
@@ -18,6 +19,6 @@ from .tank import Tank
 
 __all__ = [
     'Batch', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
-    'ProductionDepartment', 'Site', 'SiteContact', 'Species', 'StockMovement', 'StockOperation', 'Supplier',
-    'SupplierContact', 'System', 'Tank',
+    'FeedingRecord', 'ProductionDepartment', 'Site', 'SiteContact', 'Species', 'StockMovement', 'StockOperation',
+    'Supplier', 'SupplierContact', 'System', 'Tank',
 ]

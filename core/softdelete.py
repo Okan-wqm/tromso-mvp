@@ -5,7 +5,10 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
 
 - CASCADE   the records that point at it are deleted with it, and so on down;
 - SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
-- PROTECT / RESTRICT  they block the delete until they are dealt with.
+- PROTECT / RESTRICT  they block the delete until they are dealt with;
+- DO_NOTHING  they stay as they are, still pointing at it: history that outlives the record without
+  holding it back (a deleted unit's feeding records, as its stock lines), shown again with it when it
+  is restored. The database's own foreign key still refuses a hard delete.
 
 Records linked to it through a many-to-many link (the equipment serving a system) keep the link row:
 the link only stops counting while the record is deleted, so restoring it brings the link back. The
@@ -97,10 +100,12 @@ def _collect(obj, plan, seen):
         if not relation.one_to_many or not issubclass(model, AuditedModel):
             continue
         link = relation.field.name
+        action = relation.on_delete
+        if action is models.DO_NOTHING:
+            continue
         children = list(model.objects.filter(**{link: obj}))
         if not children:
             continue
-        action = relation.on_delete
         if action is models.CASCADE:
             for child in children:
                 if (model, child.pk) not in seen:

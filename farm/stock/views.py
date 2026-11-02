@@ -7,7 +7,8 @@ and goes back to the page with the drawer open (core.crud.done).
 Every filter and the open drawer live in the query string, so a view can be linked to and the back
 button works. Who may do what: reading the page needs view on the stock operations, recording one
 add, voiding one delete (config/access.py); the buttons a person cannot use are not shown, and the
-views refuse them too."""
+views refuse them too. The feeding figures (FCR, last fed, the drawer's Feeding part) come from the
+feeding records (farm/feeding), whose dialog the drawer offers first."""
 import uuid
 from urllib.parse import urlencode
 
@@ -23,6 +24,7 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgett
 from core import navigation
 from core.crud import done, render_page
 
+from ..feeding import read as feeding_read, views as feeding_views
 from ..forms.stock import (
     BatchInputForm, CullForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm, TransferForm, VoidForm,
     WeighingForm, kept_rows, stockable_units,
@@ -129,11 +131,13 @@ def production_units(request):
     kinds_present = {unit.kind for unit in units}
     biomass = sum((stock[unit.pk].biomass_kg for unit in shown if unit.pk in stock), start=0)
     drawer_unit = next((unit for unit in units if str(unit.pk) == params['unit']), None)
+    feeding = feeding_read.figures(stock, detail=drawer_unit)
 
     context = _context(
         units=units, stocked=len(stock),
-        rows=[{'unit': unit, 'stock': stock.get(unit.pk), 'selected': unit is drawer_unit,
-               'href': page_url(params, unit=str(unit.pk)), 'takes_fish': unit.status in ARRIVAL_STATUSES}
+        rows=[{'unit': unit, 'stock': stock.get(unit.pk), 'feeding': feeding.get(unit.pk),
+               'selected': unit is drawer_unit, 'href': page_url(params, unit=str(unit.pk)),
+               'takes_fish': unit.status in ARRIVAL_STATUSES}
               for unit in shown],
         biomass=biomass,
         count_line=ngettext('%(count)d unit', '%(count)d units', len(shown)) % {'count': len(shown)},
@@ -152,7 +156,8 @@ def production_units(request):
         new_batch_url=reverse('farm:stock_input') + _with_query(_query(params, unit='')),
     )
     if drawer_unit is not None:
-        context.update(_drawer(request, drawer_unit, stock.get(drawer_unit.pk), params))
+        context.update(_drawer(request, drawer_unit, stock.get(drawer_unit.pk), feeding.get(drawer_unit.pk),
+                               params))
     return render_page(request, 'farm/production_units.html', context)
 
 
@@ -165,8 +170,9 @@ def _with_query(query):
     return f'?{query}' if query else ''
 
 
-def _drawer(request, unit, stock, params):
-    """The drawer of one unit: its fish, the operations that make sense for it, its recent history."""
+def _drawer(request, unit, stock, feeding, params):
+    """The drawer of one unit: its fish, its feeding, the operations that make sense for it (feeding first,
+    the daily one), its recent history."""
     query = _with_query(_query(params, unit=str(unit.pk)))
     can_record, can_void = request.user.has_perm(RECORD), request.user.has_perm(VOID)
     operations = (StockOperation.all_objects.filter(movements__unit=unit).distinct()
@@ -180,12 +186,20 @@ def _drawer(request, unit, stock, params):
                for operation in operations]
     takes_fish = unit.status in ARRIVAL_STATUSES
     actions = []
+    if stock is not None and request.user.has_perm(feeding_views.RECORD):
+        actions.append({'label': _('Record feeding'), 'url': reverse('farm:feeding_record', args=[unit.pk]) + query})
     if can_record and stock is not None:
-        actions = [{'label': heading, 'url': reverse(f'farm:stock_{kind}', args=[unit.pk]) + query,
-                    'primary': kind == 'mortality'} for kind, (_form, heading) in OPERATIONS.items()]
+        actions += [{'label': heading, 'url': reverse(f'farm:stock_{kind}', args=[unit.pk]) + query}
+                    for kind, (_form, heading) in OPERATIONS.items()]
         if takes_fish:
             actions.append({'label': _('Stock another batch'), 'url': reverse('farm:stock_input') + query})
+    for index, action in enumerate(actions):
+        action['primary'] = index == 0
     return {
+        **feeding_views.drawer(request, unit, stock, feeding, query),
+        'feeding': feeding,
+        # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares).
+        'batch_rows': list(zip(stock.shares, feeding.shares)) if stock is not None else [],
         'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,
         'drawer_days': stock.days(services.local_today(unit)) if stock else None,
         'stock_url': reverse('farm:stock_input') + query if can_record and takes_fish else '',

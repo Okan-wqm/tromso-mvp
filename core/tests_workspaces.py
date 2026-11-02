@@ -58,7 +58,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Suppliers',
-                                                    'Production units'])
+                                                    'Production units', 'Feeding records'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -113,7 +113,7 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Suppliers',
-                                                  'Production units'])
+                                                  'Production units', 'Feeding records'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -188,6 +188,7 @@ class MenuPlacementTests(TestCase):
             'farm.Feed': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
+            'farm.FeedingRecord': 'Production · Operations',
             'core.AuditLog': 'Company · Administration',
         })
 

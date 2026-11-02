@@ -11,7 +11,7 @@ needs the same way:
 """
 from django import forms
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import models, transaction
 from django.db.models import Q
 from django.http import HttpResponse
@@ -99,6 +99,22 @@ class TabbedForm(forms.ModelForm):
              'has_errors': any(name in self.errors for name in names)}
             for key, label, names in self.tabs
         ]
+
+
+class CodedFormMixin:
+    """Name and code as the source validates them: both at least 2 characters, the code upper-case."""
+
+    def clean_code(self):
+        code = self.cleaned_data['code'].strip().upper()
+        if len(code) < 2:
+            raise ValidationError('Code must be at least 2 characters.')
+        return code
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if len(name) < 2:
+            raise ValidationError('Name must be at least 2 characters.')
+        return name
 
 
 def tab_fields(tabs):
@@ -228,6 +244,21 @@ class ResourceView:
 
     def get_object(self, pk):
         return get_object_or_404(self.resource.queryset(), pk=pk)
+
+
+NONE = 'none'   # a list filter's value for "records without one" (departments without a site)
+
+
+def filter_by(request, objects, param, choices, lookup, allow_none=False):
+    """Narrows `objects` to the record chosen in the `param` query parameter, or (`allow_none`) to
+    those without one. Anything else, a stale or malformed value, shows everything.
+    Returns the objects and the value the filter shows as chosen."""
+    chosen = request.GET.get(param, '')
+    if allow_none and chosen == NONE:
+        return objects.filter(**{f'{lookup}__isnull': True}), chosen
+    if chosen in {str(pk) for pk in choices.values_list('pk', flat=True)}:
+        return objects.filter(**{lookup: chosen}), chosen
+    return objects, ''
 
 
 class ListView(ResourceView):

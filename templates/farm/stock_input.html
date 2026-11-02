@@ -1,0 +1,39 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} A new batch (farm.stock.views.stock_input): who the fish are, how many arrive at what weight, and the
+   units they go into, whose fish must add up to the fish arriving.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<form method="post" action="{{ request.get_full_path }}" class="record-form" novalidate>
+  {% csrf_token %}
+  {{ form.token }}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  <p class="panel-help">{% trans "The batch number is given on saving." %}</p>
+  <div class="form-grid">
+    {% for field in form.visible_fields %}{% if field.name != "over_capacity_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
+  </div>
+
+  <fieldset class="form-fieldset" data-formset>
+    <legend>{% trans "Units" %}</legend>
+    <p class="panel-help">{% trans "The units the fish go into and how many each takes; together they take every fish arriving." %}</p>
+    {{ rows.management_form }}
+    {% if rows.non_form_errors %}<div class="form-error" role="alert">{{ rows.non_form_errors }}</div>{% endif %}
+    <div class="contact-rows" data-rows>
+      {% for row in rows %}{% include "farm/_input_row.html" %}{% endfor %}
+    </div>
+    <template data-row-template>{% with row=rows.empty_form %}{% include "farm/_input_row.html" %}{% endwith %}</template>
+    <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{% trans "Add unit" %}</button>
+  </fieldset>
+
+  {% if form.needs_ack %}
+  <div class="notice notice-warning">{% with field=form.over_capacity_ack %}{% include "registration/_field.html" %}{% endwith %}</div>
+  {% endif %}
+
+  <div class="form-actions">
+    <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{% trans "Stock the batch" %}</button>
+  </div>
+</form>
+{% endblock %}

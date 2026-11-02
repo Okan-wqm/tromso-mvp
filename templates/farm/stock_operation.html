@@ -1,0 +1,46 @@
+{% extends base_template %}
+{% load i18n stock %}
+{% comment %} An operation on the fish of one unit (farm.stock.views.record_operation): mortality, cull, a weighing.
+   In the dialog or as a page; the server's reasons appear on the field they concern.{% endcomment %}
+{% block title %}{{ heading }} · {{ unit.code }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<p class="op-context"><strong>{{ unit.code }}</strong> · {{ unit.name }}{% if stock %} · {% blocktrans trimmed with fish=stock.count|fish biomass=stock.biomass_kg|kilos %}{{ fish }} fish, {{ biomass }} now{% endblocktrans %}{% endif %}</p>
+{% if not form %}
+<p class="notice notice-warning">{% blocktrans trimmed with unit=unit.code %}No fish are in {{ unit }}.{% endblocktrans %}</p>
+<div class="form-actions"><a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Close" %}</a></div>
+{% else %}
+<form method="post" action="{{ request.get_full_path }}" class="record-form" novalidate>
+  {% csrf_token %}
+  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% for hidden in form.hidden_fields %}{% if hidden.errors %}<div class="form-error" role="alert">{{ hidden.errors }}</div>{% endif %}{% endfor %}
+  {% with share=form.only_batch %}{% if share %}
+  <p class="op-batch">{% blocktrans trimmed with batch=share.batch.code fish=share.count|fish weight=share.avg_weight_g|grams %}Batch {{ batch }}: {{ fish }} fish at {{ weight }}{% endblocktrans %}</p>
+  {% endif %}{% endwith %}
+  <div class="form-grid">
+    {% for field in form.visible_fields %}{% if field.name != "over_capacity_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
+  </div>
+  {% if rows %}
+  <fieldset class="form-fieldset" data-formset>
+    <legend>{{ form.rows_label }}</legend>
+    {{ rows.management_form }}
+    {% if rows.non_form_errors %}<div class="form-error" role="alert">{{ rows.non_form_errors }}</div>{% endif %}
+    <div class="contact-rows" data-rows>
+      {% for row in rows %}{% include "farm/_input_row.html" %}{% endfor %}
+    </div>
+    <template data-row-template>{% with row=rows.empty_form %}{% include "farm/_input_row.html" %}{% endwith %}</template>
+    <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{% trans "Add unit" %}</button>
+  </fieldset>
+  {% endif %}
+  {% if form.needs_ack %}
+  <div class="notice notice-warning">{% with field=form.over_capacity_ack %}{% include "registration/_field.html" %}{% endwith %}</div>
+  {% endif %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{{ heading }}</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

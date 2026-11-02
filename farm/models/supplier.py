@@ -166,8 +166,9 @@ class Supplier(CodedMixin, AuditedModel):
         return next((contact for contact in self.contacts.all() if contact.is_primary), None)
 
     def clean(self):
-        """A supplier keeps a category while live records link to it for that category: every
-        SupplierLink that points at suppliers is checked, and says so in its own words."""
+        """A supplier keeps a category while live records link to it for that category (equipment, which
+        can choose another supplier; feeds, made by it; batches of fish, whose origin stays as it was):
+        every SupplierLink that points at suppliers is checked, and says so in its own words."""
         super().clean()
         if self._state.adding:
             return

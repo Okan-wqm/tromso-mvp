@@ -417,10 +417,12 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 }
 .audit-create { border-left-color: var(--olive); }
 .audit-delete { border-left-color: var(--error); }
+.audit-void { border-left-color: #7A5410; }
 
 .audit-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; }
 .audit-action { font-weight: 700; }
 .audit-delete .audit-action { color: var(--error); }
+.audit-void .audit-action { color: #7A5410; }
 .audit-record { font-weight: 500; }
 .audit-meta { color: var(--muted); font-size: .875rem; }
 .audit-meta strong { color: var(--speck); font-weight: 600; }
@@ -760,3 +762,119 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .status-list { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; margin: 0; padding: 0; list-style: none; }
 .status-list li { display: flex; align-items: center; gap: .5rem; }
 
+
+/* Operations › Production units (templates/farm/production_units.html): the table of units and the
+   drawer of the unit picked. The drawer opens over the right of the page, as in the platform, so the
+   table keeps its full width. A picked row and a row over capacity look different: picked is the
+   accent tint with an accent bar, over capacity is amber with a rust capacity bar and an "Over" mark. */
+.units-main { min-width: 0; }
+
+.view-tabs { display: flex; gap: 1.5rem; margin: 0 0 1rem; border-bottom: 1px solid var(--line); }
+.view-tab {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .25rem 0 .625rem; margin-bottom: -1px;
+  border-bottom: 2px solid var(--stripe); color: var(--stripe-dark);
+  font-size: 1.25rem; font-weight: 600;
+}
+.view-count {
+  padding: .0625rem .5rem; border-radius: 4px; background: var(--active-bg);
+  color: var(--stripe-dark); font-size: .8125rem; font-weight: 600;
+}
+
+.units-toolbar { justify-content: flex-start; }
+.units-toolbar .search { flex: 1 1 14rem; max-width: 38.75rem; }
+.units-toolbar > .button { margin-left: 0; }
+
+.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.5rem; margin: 0 0 .875rem; }
+.filter-group { display: flex; flex-wrap: wrap; gap: .375rem; }
+.filter-button {
+  display: inline-flex; align-items: center; min-height: 42px; padding: 0 .875rem;
+  border: 1.5px solid var(--sage); border-radius: 6px; background: var(--white);
+  color: var(--speck); font-weight: 500; text-decoration: none;
+}
+.filter-button:hover { border-color: var(--muted); }
+.filter-button[aria-pressed="true"] { border-color: var(--olive); background: var(--olive); color: var(--white); }
+.filter-status select {
+  min-height: 42px; min-width: 12rem; padding: 0 2rem 0 .875rem;
+  border: 1.5px solid var(--sage); border-radius: 6px; background: var(--white); color: var(--speck); font: inherit;
+}
+.units-count { margin: 0 0 1rem; color: var(--muted); font-size: .96875rem; }
+
+.units-table td { vertical-align: top; }
+.unit-row { position: relative; cursor: pointer; }
+.unit-code { color: var(--speck); font-size: 1.0625rem; font-weight: 700; text-decoration: none; }
+.unit-code:hover, .unit-code:focus-visible { color: var(--stripe-dark); text-decoration: underline; }
+.row-link::after { content: ""; position: absolute; inset: 0; }
+.batch-codes { font-weight: 600; }
+.empty-unit { color: var(--muted); font-style: italic; }
+.data-table tbody tr.is-over { background: #FBF0D9; box-shadow: inset 4px 0 0 #C58A16; }
+.data-table tbody tr.is-selected { background: var(--active-bg); box-shadow: inset 4px 0 0 var(--stripe); }
+
+.capacity { display: inline-grid; gap: .3125rem; width: 10.625rem; text-align: left; }
+.capacity-line { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin: 0; }
+.capacity-bar { display: block; height: 8px; overflow: hidden; border: 1px solid var(--sage); background: var(--white); }
+.capacity-bar > span { display: block; height: 100%; background: var(--olive); }
+.capacity-bar-large { height: 14px; }
+.is-over .capacity-bar > span { background: var(--error); }
+.over-badge {
+  padding: 0 .375rem; border-radius: 4px; background: #F7E6E6; color: var(--error);
+  font-size: .75rem; font-weight: 700;
+}
+.over-text { color: var(--error); }
+
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 45;   /* over the top bar (30), under the menus (60) */
+  width: min(30rem, 100vw); overflow-y: auto;
+  border-left: 1px solid var(--line); background: var(--white);
+  box-shadow: -12px 0 32px rgba(35, 41, 32, .14);
+}
+.drawer-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--line);
+}
+.drawer-title { margin: 0; font-size: 1.375rem; line-height: 1.2; }
+.drawer-sub { margin: .25rem 0 0; color: var(--muted); font-size: .875rem; }
+.drawer-line { margin: .5rem 0 0; font-size: .9375rem; }
+/* One column as wide as the drawer: a wide part (the batches table) scrolls in its own frame instead of
+   widening every other part. */
+.drawer-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; padding: 1rem 1.25rem 1.25rem; }
+.drawer-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.metrics {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0;
+  border: 1px solid var(--line); background: var(--line);
+}
+.metrics div { padding: .625rem .75rem; background: var(--white); }
+.metrics dt { color: var(--muted); font-size: .8125rem; }
+.metrics dd { margin: 0; font-size: 1.375rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.drawer-capacity { display: grid; gap: .375rem; }
+.capacity-note { margin: 0; color: var(--muted); font-size: .875rem; }
+.drawer-table th, .drawer-table td { padding: .5rem .625rem; }
+.drawer-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.drawer-actions .button { justify-content: center; }
+.facts { display: grid; gap: .25rem; margin: 0; }
+.facts div { display: grid; grid-template-columns: 9rem 1fr; gap: .75rem; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.op-history { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.op-entry { padding: .5rem .75rem; border-left: 3px solid var(--sage); background: var(--mist); border-radius: 0 6px 6px 0; }
+.op-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .625rem; }
+.op-head time { color: var(--muted); font-size: .875rem; }
+.op-void { margin-left: auto; color: var(--error); font-size: .875rem; }
+.op-lines { margin: .25rem 0 0; padding-left: 1.125rem; font-size: .9375rem; }
+.op-meta { margin: .25rem 0 0; color: var(--muted); font-size: .8125rem; }
+.op-entry.is-voided { border-left-color: #C58A16; }
+.op-entry.is-voided .op-lines, .op-entry.is-voided strong { color: var(--muted); text-decoration: line-through; }
+.badge-voided { background: #FBF0D9; color: #7A5410; }
+.muted { color: var(--muted); }
+.op-context { margin: 0 0 1rem; }
+.op-batch { margin: 0 0 1rem; font-weight: 600; }
+.input-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.input-row-4 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+@media (max-width: 767px) {
+  .input-row, .input-row-4 { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 767px) {
+  .metrics { grid-template-columns: minmax(0, 1fr); }
+  .drawer-actions { grid-template-columns: minmax(0, 1fr); }
+}

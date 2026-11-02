@@ -41,3 +41,23 @@ def role(name, *codenames):
 
 
 SITE_MANAGER = ('view_site', 'add_site', 'change_site', 'delete_site', 'view_auditlog')
+
+
+def make_species(code='SAL', common_name='Atlantic salmon', scientific_name='Salmo salar', **fields):
+    from ..models import Species
+    values = {'local_name': 'Laks', 'freshwater': True, 'saltwater': True, **fields}
+    return Species.objects.create(code=code, common_name=common_name, scientific_name=scientific_name, **values)
+
+
+def stock_fish(user, unit, count=1000, weight='50', days_ago=10, species=None, **fields):
+    """Stocks a new batch of `count` fish of `weight` g into `unit`, `days_ago` days back; returns the batch."""
+    from datetime import timedelta
+    from decimal import Decimal
+
+    from ..models import Species
+    from ..stock import services
+    species = species or Species.objects.first() or make_species()
+    values = {'input_stage': 'fry', 'origin': 'own_hatchery', **fields}
+    operation = services.record_input(user, species=species, day=services.local_today(unit) - timedelta(days=days_ago),
+                                      lines=[(unit, count, Decimal(weight))], **values)
+    return operation.movements.get().batch

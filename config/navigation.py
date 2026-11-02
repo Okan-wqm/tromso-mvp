@@ -9,8 +9,7 @@ from core.navigation import Entry, Group, Section, Workspace
 #
 # Production's menu has two main headings, as in the platform: Setup (the farm's structure, its
 # reference lists and its suppliers, entered once and changed seldom) and Operations (the daily
-# production records: stocking, feeding, water chemistry, health, harvest). Operations appears with its
-# first tab.
+# production records: stocking, feeding, water chemistry, health, harvest), from Production units on.
 #
 # Where an entry sits here is also where the role matrix and the tab's page heading place it.
 WORKSPACES = [
@@ -45,6 +44,13 @@ WORKSPACES = [
             # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
             Group(_('Purchasing'), [
                 Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
+            ]),
+        ]),
+        # The daily production records: the fish in each unit and what happens to them; feeding, water
+        # chemistry, health and harvest join as their tabs arrive.
+        Section(_('Operations'), [
+            Group('', [
+                Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
             ]),
         ]),
     ]),

@@ -142,6 +142,8 @@ class AuditLog(models.Model):
         UPDATE = 'update', _('Changed')
         DELETE = 'delete', _('Deleted')
         RESTORE = 'restore', _('Restored')
+        # An operation that stops counting, with its reason (farm stock operations): history keeps it.
+        VOID = 'void', _('Voided')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

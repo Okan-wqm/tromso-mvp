@@ -11,11 +11,13 @@ from .feed import Feed, FeedSuitability
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
+from .stock import Batch, StockMovement, StockOperation
 from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
 
 __all__ = [
-    'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
-    'ProductionDepartment', 'Site', 'SiteContact', 'Species', 'Supplier', 'SupplierContact', 'System', 'Tank',
+    'Batch', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
+    'ProductionDepartment', 'Site', 'SiteContact', 'Species', 'StockMovement', 'StockOperation', 'Supplier',
+    'SupplierContact', 'System', 'Tank',
 ]

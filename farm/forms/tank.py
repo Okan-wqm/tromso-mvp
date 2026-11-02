@@ -62,8 +62,10 @@ WORDING = {
     ('max_density_kg_m3', None): (None, _('The most fish per m³ of water the unit may hold: the welfare limit of the '
                                           'species or the licence’s.')),
 }
-STATUS_HELP_NEW = _('A new unit starts in one of these; harvesting, cleaning and quarantine come later.')
-STATUS_HELP = _('Its current status and the ones it can move to. Harvesting needs fish in the unit.')
+STATUS_HELP_NEW = _('A new unit starts in one of these: it holds no fish yet. It becomes active when fish are stocked in '
+                    'it; harvesting, cleaning and quarantine come later.')
+STATUS_HELP = _('Its current status and the ones it can move to. Active and harvesting need fish in the unit; '
+                'preparing, fallow, cleaning and inactive need it empty.')
 
 
 def number(value):

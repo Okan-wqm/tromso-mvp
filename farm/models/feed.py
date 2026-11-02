@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _, ngettext_lazy
 from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
 
 from .species import Species
+from .stock import InputStage
 from .supplier import Supplier, SupplierLink, SupplyCategory
 
 # The proximate analysis of a feed as fed, in % of the feed as delivered: protein, fat, carbohydrate (the
@@ -69,18 +70,13 @@ class FeedStatus(models.TextChoices):
     DISCONTINUED = 'discontinued', _('Discontinued')
 
 
-class GrowthStage(models.TextChoices):
-    """The life stage of the fish a feed suits. The stages are the ones a batch is stocked at (eggs are not
-    fed), and "every stage" when the weight band alone says it."""
-    ALL = 'all', _('Every stage')
-    LARVAE = 'larvae', _('Larvae')
-    POST_LARVAE = 'post_larvae', _('Post-larvae')
-    FRY = 'fry', _('Fry')
-    FINGERLINGS = 'fingerlings', _('Fingerlings')
-    JUVENILES = 'juveniles', _('Juveniles')
-    SMOLT = 'smolt', _('Smolt')
-    ADULTS = 'adults', _('Adults')
-    BROODSTOCK = 'broodstock', _('Broodstock')
+# The life stage of the fish a feed suits: "every stage" (when the weight band alone says it) and the
+# stages a batch is stocked at (InputStage, one list of life stages for the farm), without eggs, which are
+# not fed. A batch's stage and a suitability row's stage compare by value.
+GrowthStage = models.TextChoices('GrowthStage', [
+    ('ALL', ('all', _('Every stage'))),
+    *[(stage.name, (stage.value, stage.label)) for stage in InputStage if stage is not InputStage.EGGS],
+])
 
 
 def _fractions_total():

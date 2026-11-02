@@ -17,7 +17,8 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, suppliers). Each has its own overview. A
+  species, feeds, suppliers, and under Operations the production units with their fish). Each has its
+  own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -161,7 +162,7 @@ Differences from the source:
 Table `tanks`: the units fish are held in, a tank, a pond or a cage, each in a production department and
 optionally in one system. The model keeps the source's name (`Tank`, table `tanks`) because its later
 tables point at `tankId`; a person reads "unit". Master data only: the fish in a unit (count, biomass,
-batches) come with the Operations tab. A table (unit, kind with its shape or type, production department
+batches) are on Operations › Production units. A table (unit, kind with its shape or type, production department
 and site, system, volume, water volume, max density, max biomass, water type, status), search by name,
 code or regulatory unit ID, filters by site, production department, system (or "not in a system"), kind,
 status and water type, a form in the dialog and delete. The form has five inner tabs:
@@ -186,10 +187,12 @@ The volume, the water volume and the max biomass are **generated columns**: the 
 from the measures on every write (`Tank.water_surface()`: π·d²/4, L·W, an ellipse π·L·W/4, a D-ended
 tank (L − W)·W + π·W²/4, a pond's area), so a stored volume always matches its unit, whatever wrote the
 row. The max biomass is the water volume (else the volume) times the max density. The status follows the
-source's status machine, in one place (`TRANSITIONS`); a new unit starts as preparing, active, fallow,
-maintenance or inactive; the form offers the current status and where it can go. Every rule that needs
-the fish in a unit (harvesting needs fish, inactive needs none, a unit with fish cannot be deleted or
-resized) asks `Tank.has_stock()`, which says no until the Operations tab records stock.
+source's status machine, in one place (`TRANSITIONS`); a new unit holds no fish, so it starts as
+preparing, fallow, maintenance or inactive; the form offers the current status and where it can go.
+Every rule that needs the fish in a unit asks `Tank.has_stock()`, which reads the stock ledger: active
+and harvesting need fish, preparing, fallow, cleaning and inactive need none (maintenance and
+quarantine can be either), and a unit with fish cannot be deleted or resized. Stocking and emptying a
+unit move its status by themselves (see Production units).
 
 Differences from the source:
 
@@ -234,7 +237,7 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   at least one. The genus is shown on an existing species; it is the first word of the scientific name.
 - **Regulatory**: the official code (artskode), and the cleaner-fish type (lumpfish or wrasse).
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
-  experimental species are the ones the batches tab will offer for new batches.
+  experimental species are the ones a new batch can take (Production units).
 
 The species catalogue (`farm/species_catalog.py`) knows the 13 species Norwegian farms grow or stock
 (salmon, rainbow and brown trout, Arctic char, cod, halibut, turbot, seabass, seabream, lumpfish and
@@ -247,11 +250,11 @@ the four cleaner-fish codes of the source are unverified and never filled in (SP
 species cannot be given an official code other than its verified one. No species rows are seeded
 and there is no "add from catalogue" action.
 
-Deleting a species: the feeds that suit it keep their suitability rows for it (a many-to-many link of
-the feed, `CASCADE`): the confirmation lists those feeds, the rows stop showing and come back with the
-species when it is restored (see Reference data › Feeds). The batches tab will link to it with
-`on_delete=PROTECT` (a species with batches is set to discontinued instead of deleted). Later report
-code must send the official code and never fall back to the internal code.
+Deleting a species: a batch links to it with `on_delete=PROTECT`, so a species with batches is set
+to discontinued instead of deleted. The feeds that suit it keep their suitability rows for it (a
+many-to-many link of the feed, `CASCADE`): the confirmation lists those feeds, the rows stop showing and
+come back with the species when it is restored (see Reference data › Feeds). Later report code must
+send the official code and never fall back to the internal code.
 
 Differences from the source:
 
@@ -332,9 +335,10 @@ What the feeding tabs can rely on: a feed is `farm.Feed` (UUID, live ones throug
 feed whatever the status becomes); `pellet_size_mm` matches `FeederCalibration.feed_size_mm` by
 equality; the analysis and energy are typed decimals or `NULL` (not stated, never 0 by default);
 `price_per_kg` and `currency` come together or not at all; the suitability is
-`feed.suitability.all()` (live species only) with `growth_stage`, using the life stages of a batch's
-stocking stage (minus eggs, plus "every stage"), and `suits(weight_g)` for the band. A feed record of a
-later tab should link to the feed with `PROTECT`, as batches link to a species.
+`feed.suitability.all()` (live species only) with `growth_stage`, whose values are a batch's
+`input_stage` values (`FeedSuitability.GrowthStage` is built from `InputStage`, without eggs, plus
+"every stage"), and `suits(weight_g)` for the band. A feed record of a later tab should link to the feed
+with `PROTECT`, as batches link to a species.
 
 Differences from the source:
 
@@ -357,8 +361,9 @@ Differences from the source:
   impact, the feeding curve, the 2D feeding matrix and the feeding table, the sites a feed is approved
   for (FEED-13), and on the suitability rows the recommendation level, priority, feeding rate and
   frequency and the JSON of rates per temperature and expected performance.
-- The life stages are the ones a batch is stocked at (the stock tab's list, without eggs), smolt among
-  them; the source's grower and pre-adult stages are not: the weight band says it more precisely.
+- The life stages are the ones a batch is stocked at (`InputStage`, one list for the farm, without
+  eggs), smolt among them; the source's grower and pre-adult stages are not: the weight band says it
+  more precisely.
 
 ### Purchasing › Suppliers (`/suppliers/`)
 
@@ -391,14 +396,17 @@ where the equipment was bought, which stays true when a supplier is later suspen
 old equipment is often registered after the fact; the list shows the status of a supplier that is not
 active. A supplier keeps the equipment category while equipment is bought from it. Deleting a supplier
 leaves its equipment without a supplier, each change logged on the equipment; deleting a site keeps
-the suppliers' links to it, which count again when the site is restored.
+the suppliers' links to it, which count again when the site is restored. Bought fish link to their
+supplier too (`Batch.supplier`, a live supplier of live fish and eggs): that link is `PROTECT`, since
+where fish came from must stay traceable, so a supplier fish were bought from keeps that category and
+is set inactive rather than deleted.
 
 A feed links to its manufacturer the same way (`Feed.manufacturer`, a live supplier of feed, see
-Reference data › Feeds), but a supplier that makes live feeds cannot be deleted. Both links are a
-`SupplierLink` (`farm/models/supplier.py`): one declaration per link holds the category it takes
-(`limit_choices_to`, the model's validation and the form's list) and the words the supplier's form says
-when the category must stay ticked; `Supplier.clean` checks every such link, so a later link (a batch
-of fish to a supplier of live fish) adds no code to the supplier.
+Reference data › Feeds), and like bought fish, a supplier that makes live feeds cannot be deleted. The
+three links are each a `SupplierLink` (`farm/models/supplier.py`): one declaration per link holds the
+category it takes (`limit_choices_to`, the model's validation and the form's list) and the words the
+supplier's form says when the category must stay ticked; `Supplier.clean` checks every such link, so a
+new link adds no code to the supplier.
 
 Differences from the source:
 
@@ -420,6 +428,85 @@ Differences from the source:
   choice per site and category, for the purchasing tab, SUP-16), the type table `supplier_types`,
   description, fax and certifications (accepted and never stored, SUP-23).
 
+### Operations › Production units (`/operations/units/`)
+
+Every tank, pond and cage of Setup with the fish in it now, and the operations on them: the platform's
+`/sites/tanks`. Tables `batches`, `stock_operations` and `stock_movements`.
+
+**The page.** A Production tab with the number of stocked units (the cleaner-fish tab comes later), a
+search (unit, batch, species), **New batch**, one row of filters (site, kind, stocked or empty, status),
+the count line ("14 units · 3.2 t") and a table with the source's nine default columns: unit (code,
+production department · site), batch ("B-2026-001 + B-2026-004" and the species, or "Empty — ready to
+stock"), fish, average weight, biomass, density · capacity with its bar, FCR, survival and last fed.
+FCR and last fed show a dash until the feeding records exist (the source showed 0 and nothing). A row
+picked (accent tint and bar) and a row over its max biomass (amber, an "Over" mark, a rust bar) look
+different. The filters and the open unit are in the address, so a view can be linked and the back
+button works; a row is one link. Two empty states: no units at all (with a link to Setup) and no match
+(with "Clear filters"). The column chooser and sorting come next.
+
+**The drawer** (`?unit=`), beside the table: the unit's code, name, place, status and since when; for a
+stocked unit its batches, "Stocked · N days", fish, average, biomass, FCR, survival, volume, the density
+bar against its max, a line per batch (fish, average and when it was weighed, biomass, survival, deaths
+and culls, its share of the unit), and the operations; for an empty unit its volume, max density and max
+biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit its last
+20 operations, voided ones struck through with their reason, each with **Void** while it may be voided.
+
+**Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
+service, with the server's reason on the field it concerns: a new batch (species, stage at input,
+stocking date, fish arriving and their average weight, origin, supplier and its batch number, strain,
+name, expected harvest, notes, and the units the fish go into, whose fish must add up to the fish
+arriving); mortality (fish, cause, the weighed kilos if known); cull (fish, reason); a sampling
+weigh-in (fish weighed and their weight together, or a measured average); transfer / split (to one or
+several units, a reason); grading (per size class a unit, fish and measured average, and the average of
+the fish that stay); harvest (fish and their weighed kilos; "this empties the unit of this batch"
+records the fish the book still holds as an unaccounted loss). A unit holding two batches asks which one.
+Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
+(`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored on the operation).
+
+**The ledger.** A batch holds its identity and origin, no count. An operation (`StockOperation`) is what
+a person did, with its date; its lines (`StockMovement`) say how many fish of which batch came into (+)
+or left (−) which unit, or were weighed there (0). Every figure on the page is computed from the live
+lines: a unit's fish is their sum, its biomass a date-ordered fold (`farm/stock/fold.py`): fish leave at
+their batch's average in that unit on that day, a weighing sets the biomass from that day, the last fish
+out take whatever the book holds, moved fish arrive with exactly the grams that left, a grading weighs
+the whole lot. Only measured weights enter the book. Nothing is stored that can drift.
+
+**One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
+date, the units' status (a unit takes fish while active, preparing or fallow), the species (one per unit,
+several batches of it), then writes and folds every batch involved from its first line, so a backdated
+operation is accepted only if every later day stays right (no share ever below 0 fish); above a unit's
+max biomass it asks for an acknowledgement, stored on the operation. The unit's status follows its fish:
+the first fish make a preparing or fallow unit active, the last fish out make an active one fallow and
+a harvesting or quarantined one due for cleaning; a void that brings fish back makes the unit active.
+Every operation, every void and every status change is in the activity log ("Voided", with the reason).
+
+**Void** is the undo: the operation stops counting, the stock is folded again without it, and it is
+refused when later operations need its fish (the message names them). A correction is a void and a new
+entry. Voiding a stocking voids its batch; a batch number is never given twice. The admin shows voided
+operations and batches but does not restore them (a restore would skip the checks).
+
+**Who may do what:** the area Production units in the role matrix (Production · Operations): Read the
+page, Create records an operation, Delete voids one. A unit with fish cannot be deleted, nor resized,
+nor set to a status that needs it empty; a species with batches and a supplier fish were bought from
+cannot be deleted (`PROTECT`). `manage.py check_stock` checks the whole ledger from scratch (counts,
+operations made of their lines, stocking dates, unit statuses, species) and the tests run it.
+
+Differences from the source (details in the bug document, STK-01 to STK-73):
+
+- One ledger instead of the count in six places and the biomass in seven; no mirrors, no reconcile
+  job, no read-model tables. A batch's status is derived (in stock, ended), not set by hand.
+- The split of a new batch must add up; fish never come from nowhere (no "allocate").
+- Removals at the unit's own average, weighings applied in date order, a harvest's weighed kilos kept
+  beside the book (the last harvest is never refused); grading in one transaction, as a weighing.
+- One date rule and one void for every operation; the server's reasons reach the person; dialogs in
+  the person's language; the drawer's "Stock this unit" knows its unit.
+- Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
+  deaths and culls (owner decision Q2). Capacity and density computed on every read.
+- Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), feeding (FCR, last
+  fed, feed rate), sensors and water temperature, harvest plans, lot numbers, buyers and prices, the
+  medicine-withdrawal block on harvest (**it must come back with the health module before real
+  harvests**), batch documents and costs, count adjustments as a dialog (their lines and checks exist).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -427,7 +514,8 @@ only one who manages roles and users; everyone else gets exactly what their role
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
-  Systems, Equipment, Tanks, ponds & cages, Species, Feeds and Suppliers (read, create, edit, delete) and Activity log
+  Systems, Equipment, Tanks, ponds & cages, Species, Feeds and Suppliers (read, create, edit, delete),
+  Production units (read the page, create = record an operation, delete = void one) and Activity log
   (read). A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -659,6 +747,10 @@ real mail.
 | `/species/` | Reference data › Species |
 | `/feeds/` | Reference data › Feeds; `<id>/suitability/` saves the species and fish weights a feed suits |
 | `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
+| `/operations/units/` | Operations › Production units; `?unit=<id>` opens a unit's drawer |
+| `/operations/units/new-batch/` | A new batch (`?unit=<id>` chooses the unit) |
+| `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |
+| `/operations/units/void/<id>/` | Voids a stock operation |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -684,6 +776,7 @@ real mail.
 | `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
+| `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |

@@ -16,7 +16,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0010_suppliers'),
+        ('farm', '0011_stock'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

@@ -63,7 +63,7 @@
         <td>
           {% for item in row.shares %}{% with share=item.share basis=item.share.end %}
           <span class="row-line"><strong>{{ item.batch.code }}</strong> · {% blocktrans trimmed with weight=share.end_g|grams fish=share.fish|fish %}{{ fish }} fish at {{ weight }} est.{% endblocktrans %}
-          {% if item.why %}<span class="row-sub warn-text">{{ item.why }}</span>{% else %}<span class="row-sub">{% blocktrans trimmed with protocol=basis.protocol.name sfr=basis.sfr.value|percent:2 temperature=basis.temperature.value_c|celsius meals=share.planned_meals %}{{ protocol }}: {{ sfr }} at {{ temperature }}, {{ meals }} meals{% endblocktrans %}{% if share.over_kg > 0 %} · <span class="over-text">{% blocktrans trimmed with kilos=share.over_kg|feed_kg %}{{ kilos }} over the ration{% endblocktrans %}</span>{% endif %}</span>{% endif %}</span>
+          {% if item.why %}<span class="row-sub warn-text">{{ item.why }}</span>{% else %}<span class="row-sub">{% blocktrans trimmed with protocol=basis.protocol.name sfr=basis.sfr.value|percent:2 temperature=basis.temperature.value_c|celsius count meals=share.planned_meals %}{{ protocol }}: {{ sfr }} at {{ temperature }}, {{ meals }} meal{% plural %}{{ protocol }}: {{ sfr }} at {{ temperature }}, {{ meals }} meals{% endblocktrans %}{% if share.over_kg > 0 %} · <span class="over-text">{% blocktrans trimmed with kilos=share.over_kg|feed_kg %}{{ kilos }} over the ration{% endblocktrans %}</span>{% endif %}</span>{% endif %}</span>
           {% endwith %}{% empty %}<span class="muted">{% trans "No fish at the end of the day" %}</span>{% endfor %}
         </td>
         <td class="num">{% if unit_day.calculated_kg is not None %}{{ unit_day.calculated_kg|feed_kg }}{% else %}—{% endif %}</td>

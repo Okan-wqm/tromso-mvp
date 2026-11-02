@@ -58,8 +58,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                    'Suppliers', 'Production units', 'Feeding records',
-                                                    'Water chemistry'])
+                                                    'Suppliers', 'Production units', 'Water chemistry',
+                                                    'Meal board', 'Records', 'Protocols', 'Assignments'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -147,7 +147,7 @@ class MainHeadingTests(WorkspaceTestCase):
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Purchasing']),
-                          ('Operations', [''])])
+                          ('Operations', ['', 'Feeding'])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)

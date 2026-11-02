@@ -11,7 +11,7 @@ from django.db import connection
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from farm.models import Department, Site, SiteContact
+from farm.models import ProductionDepartment, Site, SiteContact
 
 from . import access, database, dbgrid
 from .database import Section, Viewer
@@ -117,7 +117,7 @@ class RegistryTests(DatabaseViewerTestCase):
         expected = {model._meta.db_table for label in ('farm', 'core', 'auth')
                     for model in apps.get_app_config(label).get_models(include_auto_created=True)}
         self.assertEqual(set(names()), expected)
-        self.assertTrue({'sites', 'site_contacts', 'departments', 'audit_log', 'auth_user',
+        self.assertTrue({'sites', 'site_contacts', 'production_departments', 'audit_log', 'auth_user',
                          'auth_group', 'auth_permission', 'auth_user_groups'} <= expected)
         self.assertNotIn('django_session', expected)
 
@@ -125,7 +125,7 @@ class RegistryTests(DatabaseViewerTestCase):
         sections = dict(database.sections())
         facility = [t.name for t in sections['Facility']]
         self.assertEqual(facility, sorted(facility))
-        self.assertTrue({'departments', 'site_contacts', 'sites'} <= set(facility))
+        self.assertTrue({'production_departments', 'site_contacts', 'sites'} <= set(facility))
         self.assertIn('audit_log', [t.name for t in sections['Administration']])
         self.assertIn('auth_user', [t.name for t in sections['Administration']])
 
@@ -141,7 +141,7 @@ class RegistryTests(DatabaseViewerTestCase):
         self.assertNotIn('sites', names())
         self.assertNotIn('auth_user', names())
         self.assertEqual(self.page('sites').status_code, 404)
-        self.assertEqual(self.page('departments').status_code, 200)
+        self.assertEqual(self.page('production_departments').status_code, 200)
 
     def test_every_table_matches_its_model(self):
         for _, tables in database.sections():
@@ -176,11 +176,12 @@ class OverviewTests(DatabaseViewerTestCase):
         live = self.make_site()
         gone = self.make_site(name='Tromsø', code='TS')
         gone.soft_delete(self.admin)
-        Department.objects.create(name='Hall', code='H', site=live)
+        ProductionDepartment.objects.create(name='Hall', code='H', site=live)
         entries = {entry['table'].name: entry for section in self.client.get(reverse('core:database')).context['sections']
                    for entry in section['tables']}
         self.assertEqual((entries['sites']['rows'], entries['sites']['deleted']), (2, 1))
-        self.assertEqual((entries['departments']['rows'], entries['departments']['deleted']), (1, 0))
+        halls = entries['production_departments']
+        self.assertEqual((halls['rows'], halls['deleted']), (1, 0))
         self.assertEqual(entries['auth_user']['rows'], 1)
         self.assertEqual(entries['audit_log']['rows'], AuditLog.objects.count())
         self.assertIsNone(entries['audit_log']['deleted'])   # this table does not soft-delete
@@ -193,7 +194,7 @@ class EveryTableTests(DatabaseViewerTestCase):
         super().setUp()
         site = self.make_site(facilities={'tanks': 3}, notes='x' * 300)
         SiteContact.objects.create(site=site, name='Kari', is_primary=True)
-        Department.objects.create(name='Hall', code='H', site=site, manager=self.admin)
+        ProductionDepartment.objects.create(name='Hall', code='H', site=site, manager=self.admin)
         AuditLog.objects.create(user=self.admin, user_name='root', action='create', entity_type='site',
                                 entity_id=str(site.pk), entity_label='Bergen Hatchery (BH)', changes={'Name': [None, 'x']})
 
@@ -390,8 +391,8 @@ class ValuesTests(DatabaseViewerTestCase):
 
     def test_a_link_shows_the_stored_id_and_the_record_it_points_at(self):
         site = self.make_site()
-        Department.objects.create(name='Hall', code='H', site=site, created_by=self.admin)
-        cells = self.cells('departments')
+        ProductionDepartment.objects.create(name='Hall', code='H', site=site, created_by=self.admin)
+        cells = self.cells('production_departments')
         link = cells['site_id']
         self.assertEqual((link.kind, link.text, link.full, link.label), ('fk', f'{str(site.pk)[:8]}…', str(site.pk), 'Bergen Hatchery (BH)'))
         self.assertEqual(link.href, f'{reverse("core:database_table", args=["sites"])}?f_id={site.pk}')
@@ -412,9 +413,9 @@ class ValuesTests(DatabaseViewerTestCase):
 
     def test_a_link_to_a_deleted_record_still_shows_it(self):
         site = self.make_site()
-        Department.objects.create(name='Hall', code='H', site=site)
+        ProductionDepartment.objects.create(name='Hall', code='H', site=site)
         site.soft_delete(self.admin)
-        self.assertEqual(self.cells('departments')['site_id'].label, 'Bergen Hatchery (BH)')
+        self.assertEqual(self.cells('production_departments')['site_id'].label, 'Bergen Hatchery (BH)')
 
 
 class MaskingTests(DatabaseViewerTestCase):
@@ -575,10 +576,10 @@ class StructureTests(DatabaseViewerTestCase):
 
     def test_relationships_run_both_ways(self):
         sites = self.structure('sites')
-        self.assertTrue({('departments', 'site_id'), ('site_contacts', 'site_id')}
+        self.assertTrue({('production_departments', 'site_id'), ('site_contacts', 'site_id')}
                         <= {(r.table, r.other_column) for r in sites.referenced_by})
         self.assertTrue(all(r.linked and r.enforced for r in sites.referenced_by))
-        departments = self.structure('departments')
+        departments = self.structure('production_departments')
         self.assertTrue({('site_id', 'sites', 'id'), ('manager_id', 'auth_user', 'id'), ('created_by_id', 'auth_user', 'id')}
                         <= {(r.column, r.table, r.other_column) for r in departments.references})
 

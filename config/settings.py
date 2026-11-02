@@ -156,3 +156,6 @@ RAIL_MENU = 'config.navigation.MENU'
 
 # What a role can be given (core.access).
 ACCESS_AREAS = 'config.access.AREAS'
+
+# Tests hash passwords quickly (config/test_runner.py).
+TEST_RUNNER = 'config.test_runner.FastPasswordRunner'

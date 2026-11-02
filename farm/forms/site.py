@@ -1,10 +1,10 @@
 from django import forms
-from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from core.crud import CodedFormMixin, RowFormSet, TabbedForm, tab_fields
+from core.crud import CodedFormMixin, TabbedForm, tab_fields
 
 from ..models import Site, SiteContact
+from .contact import contact_formset
 
 # The source form's inner tabs (Basic info / Location info / Contact info) and their fields.
 SITE_FORM_TABS = [
@@ -71,37 +71,4 @@ class SiteForm(CodedFormMixin, TabbedForm):
         return cleaned
 
 
-class SiteContactForm(forms.ModelForm):
-    class Meta:
-        model = SiteContact
-        fields = ['name', 'role', 'email', 'phone', 'is_primary']
-        widgets = {
-            'name': forms.TextInput(attrs={'placeholder': _('Name')}),
-            'role': forms.TextInput(attrs={'placeholder': _('Role')}),
-            'email': forms.EmailInput(attrs={'placeholder': _('Email')}),
-            'phone': forms.TextInput(attrs={'placeholder': _('Phone'), 'type': 'tel'}),
-            'is_primary': forms.CheckboxInput(attrs={'data-primary': ''}),
-        }
-
-    def validate_constraints(self):
-        # The one-primary rule spans the whole list, which is saved as a full replace; the formset
-        # checks it and the database constraint backs it up. Checking each row against the stored
-        # rows would reject moving the primary flag from one contact to another.
-        pass
-
-
-class BaseSiteContactFormSet(RowFormSet):
-    def clean(self):
-        super().clean()
-        primaries = sum(
-            1 for form in self.forms
-            if form.cleaned_data.get('is_primary') and not form.cleaned_data.get('DELETE')
-        )
-        if primaries > 1:
-            raise ValidationError(_('Only one contact can be the primary contact; %(count)d are marked.'),
-                                  params={'count': primaries})
-
-
-SiteContactFormSet = forms.inlineformset_factory(
-    Site, SiteContact, form=SiteContactForm, formset=BaseSiteContactFormSet, extra=0, can_delete=True,
-)
+SiteContactFormSet = contact_formset(Site, SiteContact)

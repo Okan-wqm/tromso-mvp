@@ -1,12 +1,11 @@
-import uuid
-
-from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from core.models import AuditedModel, CodedMixin
+
+from .contact import ONE_PRIMARY, Contact
 
 
 class Site(CodedMixin, AuditedModel):
@@ -133,37 +132,22 @@ class Site(CodedMixin, AuditedModel):
         ]
 
 
-class SiteContact(models.Model):
+class SiteContact(Contact):
     """An operational contact of a site. Source table: farm.site_contacts.
 
     The source saves the contact list as a full replace (delete all, insert all), so rows have no
-    update or soft-delete columns.
+    update or soft-delete columns (farm.models.contact.Contact).
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='contacts', verbose_name=_('Site'))
-    name = models.CharField(_('Name'), max_length=100)
-    role = models.CharField(_('Role'), max_length=100, blank=True)
-    email = models.EmailField(_('Email'), max_length=150, blank=True)
-    phone = models.CharField(_('Phone'), max_length=50, blank=True)
-    is_primary = models.BooleanField(_('Primary'), default=False)
-    created_at = models.DateTimeField(_('Created at'), auto_now_add=True)
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
-        verbose_name=_('Created by'),
-    )
 
-    class Meta:
+    class Meta(Contact.Meta):
         db_table = 'site_contacts'
-        ordering = ['-is_primary', 'created_at']
         verbose_name = _('site contact')
         verbose_name_plural = _('site contacts')
         constraints = [
             models.UniqueConstraint(
                 fields=['site'], condition=Q(is_primary=True), name='uq_site_contacts_one_primary',
-                violation_error_message=_('Only one contact can be the primary contact.'),
+                violation_error_message=ONE_PRIMARY,
             ),
         ]
-
-    def __str__(self):
-        return self.name

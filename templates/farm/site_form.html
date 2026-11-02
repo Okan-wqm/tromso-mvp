@@ -2,26 +2,8 @@
 {% load i18n %}
 {# The site form adds the contact list to its Contact tab. #}
 {% block extra_panels %}
-<section class="tab-panel contacts" data-panel="contact" aria-labelledby="contacts-title">
-  <h3 class="panel-title" id="contacts-title">{% trans "Contacts" %}</h3>
-  {% if object %}
-  <p class="panel-help">{% trans "The site’s operational contacts. At most one can be the primary contact. Contacts are saved separately from the site details." %}</p>
-  <form method="post" action="{% url 'farm:site_contacts' object.pk %}" novalidate data-formset>
-    {% csrf_token %}
-    {{ contacts.management_form }}
-    {% if contacts.non_form_errors %}<div class="form-error" role="alert">{{ contacts.non_form_errors }}</div>{% endif %}
-    <div class="contact-rows" data-rows>
-      {% for row in contacts %}{% include "farm/_contact_row.html" %}{% endfor %}
-    </div>
-    <p class="contact-empty" data-empty{% if contacts.forms %} hidden{% endif %}>{% trans "No contacts yet. Use “Add contact” to add a row." %}</p>
-    <template data-row-template>{% with row=contacts.empty_form %}{% include "farm/_contact_row.html" %}{% endwith %}</template>
-    <div class="form-actions">
-      <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{% trans "Add contact" %}</button>
-      <button type="submit" class="button button-inline">{% trans "Save contacts" %}</button>
-    </div>
-  </form>
-  {% else %}
-  <p class="panel-help">{% trans "Contacts can be added once the site is created." %}</p>
-  {% endif %}
-</section>
+{% trans "The site’s operational contacts. At most one can be the primary contact. Contacts are saved separately from the site details." as help %}
+{% trans "Contacts can be added once the site is created." as pending %}
+{% if object %}{% url 'farm:site_contacts' object.pk as action %}{% endif %}
+{% include "farm/_contacts.html" %}
 {% endblock %}

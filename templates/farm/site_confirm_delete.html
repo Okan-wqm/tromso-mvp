@@ -1,0 +1,19 @@
+{% extends "app_base.html" %}
+{% load static %}
+{% block title %}Delete {{ site.name }}{% endblock %}
+{% block eyebrow %}Facility · Sites{% endblock %}
+{% block heading %}Delete site{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/farm.css' %}">{% endblock %}
+{% block content %}
+<div class="confirm">
+  <h2>Delete “{{ site.name }}” ({{ site.code }})?</h2>
+  <p>The site disappears from every list but is not erased: the record and its contacts stay in the database and can be restored from the admin.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{% url 'farm:site_list' %}">Cancel</a>
+      <button type="submit" class="button button-inline button-danger">Delete site</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

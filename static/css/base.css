@@ -38,7 +38,9 @@ body {
   font-size: .9375rem;
 }
 
-.field input {
+.field input,
+.field select,
+.field textarea {
   width: 100%;
   padding: .75rem .875rem;
   border: 1.5px solid var(--sage);
@@ -49,15 +51,21 @@ body {
   transition: border-color .15s;
 }
 
-.field input:hover { border-color: var(--muted); }
+.field input:hover,
+.field select:hover,
+.field textarea:hover { border-color: var(--muted); }
 
-.field input:focus {
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
   outline: none;
   border-color: var(--stripe);
   box-shadow: 0 0 0 3px rgba(184, 69, 95, .2);
 }
 
-.field.has-error input { border-color: var(--error); }
+.field.has-error input,
+.field.has-error select,
+.field.has-error textarea { border-color: var(--error); }
 
 .password-wrap { position: relative; }
 .password-wrap input { padding-right: 4.75rem; }
@@ -139,7 +147,9 @@ a:hover { color: var(--speck); }
   outline-offset: 2px;
 }
 
-.field input:focus-visible { outline: none; }
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }

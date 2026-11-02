@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
@@ -36,22 +37,15 @@
 
       <nav class="rail-nav">
         {% block nav %}
-        {% url 'home' as home_url %}
-        <a class="rail-link" href="{{ home_url }}" title="Overview"{% if request.path == home_url %} aria-current="page"{% endif %}>
+        {% with current=request.resolver_match.url_name %}
+        <a class="rail-link" href="{% url 'home' %}" title="Overview"{% if current == 'home' %} aria-current="page"{% endif %}>
           {% include "icons/_icon.html" with name="home" %}<span class="rail-label">Overview</span>
         </a>
-        <a class="rail-link" href="#" title="Tanks">
-          {% include "icons/_icon.html" with name="fish" %}<span class="rail-label">Tanks</span>
+        <p class="rail-group">Facility</p>
+        <a class="rail-link" href="{% url 'farm:site_list' %}" title="Sites"{% if current|slice:":5" == 'site_' %} aria-current="page"{% endif %}>
+          {% include "icons/_icon.html" with name="building" %}<span class="rail-label">Sites</span>
         </a>
-        <a class="rail-link" href="#" title="Sensors">
-          {% include "icons/_icon.html" with name="activity" %}<span class="rail-label">Sensors</span>
-        </a>
-        <a class="rail-link" href="#" title="Reports">
-          {% include "icons/_icon.html" with name="file-text" %}<span class="rail-label">Reports</span>
-        </a>
-        <a class="rail-link" href="#" title="Settings">
-          {% include "icons/_icon.html" with name="settings" %}<span class="rail-label">Settings</span>
-        </a>
+        {% endwith %}
         {% endblock %}
       </nav>
 
@@ -91,10 +85,16 @@
       </header>
 
       <main class="content" id="content" tabindex="-1">
+        {% if messages %}
+        <div class="flash-list" role="status">
+          {% for message in messages %}<p class="flash flash-{{ message.tags }}">{{ message }}</p>{% endfor %}
+        </div>
+        {% endif %}
         {% block content %}{% endblock %}
       </main>
     </div>
   </div>
   <script src="{% static 'js/app.js' %}" defer></script>
+  {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.forms',
     'core',
     'farm',
 ]
@@ -72,6 +73,9 @@ TEMPLATES = [
         },
     },
 ]
+
+# Widgets render with the project's templates too (e.g. the role form's permission matrix).
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -147,3 +151,6 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # The rail menu (core.navigation).
 RAIL_MENU = 'config.navigation.MENU'
+
+# What a role can be given (core.access).
+ACCESS_AREAS = 'config.access.AREAS'

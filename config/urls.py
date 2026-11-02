@@ -15,12 +15,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import include, path
+
+from core.forms import PasswordResetForm
 
 from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
+    # Reset links go to invited people too, who have no password yet (core.forms.PasswordResetForm).
+    path('accounts/password_reset/', auth_views.PasswordResetView.as_view(form_class=PasswordResetForm),
+         name='password_reset'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('farm.urls')),
     path('', include('core.urls')),

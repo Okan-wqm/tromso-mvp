@@ -1,0 +1,26 @@
+{% extends "crud/list.html" %}
+{% load access %}
+{% block search_placeholder %}Search by name{% endblock %}
+{% block empty_text %}Add the first role, then give it to people on the Users page.{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr><th scope="col">Role</th><th scope="col" class="num">Users</th><th scope="col">Allows</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+    </thead>
+    <tbody>
+      {% for role in objects %}
+      <tr>
+        <th scope="row">{% if can_change %}<a href="{% url 'core:group_edit' role.pk %}" data-modal>{{ role.name }}</a>{% else %}{{ role.name }}{% endif %}</th>
+        <td class="num">{{ role.user_set.all|length }}</td>
+        <td>{{ role.permissions.all|access_summary|default:"Nothing yet" }}</td>
+        <td class="table-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'core:group_edit' role.pk %}" data-modal title="Edit {{ role.name }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">Edit {{ role.name }}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'core:group_delete' role.pk %}" data-modal title="Delete {{ role.name }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">Delete {{ role.name }}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

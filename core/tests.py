@@ -1,11 +1,14 @@
 import re
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
 from django.core import mail
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
 from django.urls import reverse
+
+from farm.models import Site
+from farm.tests import site_data
 
 from .models import AuditLog
 
@@ -126,3 +129,265 @@ class AuditLogTests(TestCase):
         self.assertEqual(labels(user='kari'), ['Tromsø (TS)'])
         self.assertEqual(labels(action='create'), ['Bergen (BH)'])
         self.assertEqual(labels(**{'from': '2999-01-01'}), [])
+
+
+def perms(*names):
+    """Permission ids for 'app.codename' names, as the role form posts them."""
+    ids = []
+    for name in names:
+        app_label, codename = name.split('.')
+        ids.append(str(Permission.objects.get(content_type__app_label=app_label, codename=codename).pk))
+    return ids
+
+
+def perm_names(group):
+    return {f'{p.content_type.app_label}.{p.codename}' for p in group.permissions.select_related('content_type')}
+
+
+def user_data(**overrides):
+    data = {'username': 'kari', 'first_name': 'Kari', 'last_name': 'Nordmann', 'email': 'kari@example.com',
+            'is_active': 'on', 'groups': []}
+    data.update(overrides)
+    return data
+
+
+class AdminTestCase(TestCase):
+    """Roles and users are managed by the platform admin."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'eski-sifre-123')
+        self.client.force_login(self.admin)
+
+
+class AdminPageTests(AdminTestCase):
+    def test_role_and_user_pages_render_as_page_and_in_the_dialog(self):
+        role = Group.objects.create(name='Feeder')
+        role.permissions.set(Permission.objects.filter(codename__in=['view_site', 'view_auditlog']))
+        self.admin.groups.add(role)
+        urls = [reverse('core:group_list'), reverse('core:group_create'), reverse('core:group_edit', args=[role.pk]),
+                reverse('core:group_delete', args=[role.pk]), reverse('core:user_list'), reverse('core:user_create'),
+                reverse('core:user_edit', args=[self.admin.pk])]
+        for url in urls:
+            for headers in ({}, {'X-Modal': '1'}):
+                self.assertEqual(self.client.get(url, headers=headers).status_code, 200, (url, headers))
+        self.assertContains(self.client.get(reverse('core:group_list')), 'Sites: read; Activity log: read')
+
+
+class RoleTests(AdminTestCase):
+    def test_role_create_read_edit_delete(self):
+        # Create
+        self.client.post(reverse('core:group_create'), {
+            'name': ' Feeder ', 'permissions': perms('farm.view_site', 'farm.add_site', 'core.view_auditlog'),
+        })
+        role = Group.objects.get()
+        self.assertEqual(role.name, 'Feeder')
+        self.assertEqual(perm_names(role), {'farm.view_site', 'farm.add_site', 'core.view_auditlog'})
+
+        # Read: the list shows it with what it allows, the form is filled from the database
+        response = self.client.get(reverse('core:group_list'))
+        self.assertContains(response, 'Feeder')
+        self.assertContains(response, 'Sites: read, create; Activity log: read')
+        form = self.client.get(reverse('core:group_edit', args=[role.pk])).context['form']
+        self.assertEqual(sorted(form['permissions'].value()),
+                         sorted(int(pk) for pk in perms('farm.view_site', 'farm.add_site', 'core.view_auditlog')))
+
+        # Edit: rename, take create and the activity log away, give edit
+        self.client.post(reverse('core:group_edit', args=[role.pk]), {
+            'name': 'Site editor', 'permissions': perms('farm.view_site', 'farm.change_site'),
+        })
+        role.refresh_from_db()
+        self.assertEqual(role.name, 'Site editor')
+        self.assertEqual(perm_names(role), {'farm.view_site', 'farm.change_site'})
+
+        # Delete
+        self.assertContains(self.client.get(reverse('core:group_delete', args=[role.pk])), 'Delete “Site editor”?')
+        self.client.post(reverse('core:group_delete', args=[role.pk]))
+        self.assertFalse(Group.objects.exists())
+
+    def test_create_edit_and_delete_imply_read(self):
+        self.client.post(reverse('core:group_create'), {'name': 'Cleaner', 'permissions': perms('farm.delete_site')})
+        self.assertEqual(perm_names(Group.objects.get()), {'farm.view_site', 'farm.delete_site'})
+
+    def test_matrix_offers_only_the_access_areas(self):
+        form = self.client.get(reverse('core:group_create')).context['form']
+        offered = {f'{p.content_type.app_label}.{p.codename}' for p in form.fields['permissions'].queryset}
+        self.assertEqual(offered, {'farm.view_site', 'farm.add_site', 'farm.change_site', 'farm.delete_site',
+                                   'core.view_auditlog'})
+        response = self.client.post(reverse('core:group_create'), {
+            'name': 'Sneaky', 'permissions': perms('auth.change_user'),
+        })
+        self.assertIn('permissions', response.context['form'].errors)
+        self.assertFalse(Group.objects.exists())
+
+    def test_matrix_ties_create_edit_and_delete_to_their_read_box(self):
+        html = self.client.get(reverse('core:group_create')).content.decode()
+        read_id = re.search(r'value="%s" id="(\w+)"' % perms('farm.view_site')[0], html).group(1)
+        for action in ('add', 'change', 'delete'):
+            self.assertRegex(html, r'value="%s" id="\w+" data-requires="%s"' % (perms(f'farm.{action}_site')[0], read_id))
+        self.assertEqual(html.count('data-requires="'), 3)    # the activity log offers Read only
+
+    def test_names_are_unique(self):
+        Group.objects.create(name='Feeder')
+        response = self.client.post(reverse('core:group_create'), {'name': 'Feeder'})
+        self.assertEqual(response.context['form'].errors['name'], ['Another role already uses this name.'])
+
+    def test_list_counts_users(self):
+        role = Group.objects.create(name='Feeder')
+        get_user_model().objects.create_user('ola').groups.add(role)
+        response = self.client.get(reverse('core:group_list'))
+        self.assertEqual([len(r.user_set.all()) for r in response.context['objects']], [1])
+        self.assertContains(response, 'Nothing yet')
+
+    def test_permission_changes_are_logged(self):
+        self.client.post(reverse('core:group_create'), {'name': 'Feeder', 'permissions': perms('farm.view_site')})
+        role = Group.objects.get()
+        self.client.post(reverse('core:group_edit', args=[role.pk]), {
+            'name': 'Feeder', 'permissions': perms('farm.add_site', 'core.view_auditlog'),
+        })
+        self.client.post(reverse('core:group_delete', args=[role.pk]))
+        log = list(AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'entity_id', 'changes'))
+        self.assertEqual(log, [
+            ('create', 'role', str(role.pk), {'Role name': [None, 'Feeder'], 'Permissions': [None, 'Sites: read']}),
+            ('update', 'role', str(role.pk),
+             {'Permissions': ['Sites: read', 'Sites: read, create; Activity log: read']}),
+            ('delete', 'role', str(role.pk), {}),
+        ])
+
+
+class UserTests(AdminTestCase):
+    def setUp(self):
+        super().setUp()
+        self.feeder = Group.objects.create(name='Feeder')
+        self.vet = Group.objects.create(name='Vet')
+
+    def test_user_create_read_edit_deactivate(self):
+        # Create: no password yet, an invitation instead
+        self.client.post(reverse('core:user_create'), user_data(groups=[self.feeder.pk]))
+        kari = get_user_model().objects.get(username='kari')
+        self.assertEqual((kari.first_name, kari.last_name, kari.email, kari.is_active, kari.is_superuser),
+                         ('Kari', 'Nordmann', 'kari@example.com', True, False))
+        self.assertEqual(list(kari.groups.all()), [self.feeder])
+        self.assertFalse(kari.has_usable_password())
+
+        # Read
+        response = self.client.get(reverse('core:user_list'))
+        self.assertContains(response, 'kari@example.com')
+        self.assertContains(response, 'Kari Nordmann')
+        form = self.client.get(reverse('core:user_edit', args=[kari.pk])).context['form']
+        self.assertEqual((form['email'].value(), list(form['groups'].value())), ('kari@example.com', [self.feeder.pk]))
+
+        # Edit: change the details and the roles
+        self.client.post(reverse('core:user_edit', args=[kari.pk]),
+                         user_data(email='kari@farm.no', last_name='Berg', groups=[self.vet.pk, self.feeder.pk]))
+        kari.refresh_from_db()
+        self.assertEqual((kari.last_name, kari.email), ('Berg', 'kari@farm.no'))
+        self.assertEqual(set(kari.groups.all()), {self.vet, self.feeder})
+
+        # Deactivate (there is no delete)
+        self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(is_active='', groups=[]))
+        kari.refresh_from_db()
+        self.assertFalse(kari.is_active)
+        self.assertFalse(kari.groups.exists())
+        self.assertEqual(self.client.get(f'/users/{kari.pk}/delete/').status_code, 404)
+        self.assertNotContains(self.client.get(reverse('core:user_list')), '/delete/')
+
+    def test_new_user_is_invited_and_can_set_a_password(self):
+        self.client.post(reverse('core:user_create'), user_data())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['kari@example.com'])
+        link = re.search(r'http://testserver(\S+)', mail.outbox[0].body).group(1)
+
+        self.client.logout()
+        response = self.client.get(link, follow=True)
+        self.client.post(response.redirect_chain[-1][0],
+                         {'new_password1': 'yeni-sifre-456', 'new_password2': 'yeni-sifre-456'})
+        self.assertTrue(get_user_model().objects.get(username='kari').check_password('yeni-sifre-456'))
+
+    def test_editing_sends_no_invitation(self):
+        kari = get_user_model().objects.create_user('kari', 'kari@example.com')
+        self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(first_name='Kari Anne'))
+        kari.refresh_from_db()
+        self.assertEqual(kari.first_name, 'Kari Anne')
+        self.assertEqual(mail.outbox, [])
+
+    def test_invited_user_can_ask_for_a_new_link(self):
+        get_user_model().objects.create_user('kari', 'kari@example.com')    # no usable password
+        self.client.logout()
+        self.client.post(reverse('password_reset'), {'email': 'kari@example.com'})
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_email_is_required_and_unique(self):
+        response = self.client.post(reverse('core:user_create'), user_data(email=''))
+        self.assertIn('email', response.context['form'].errors)
+        response = self.client.post(reverse('core:user_create'), user_data(username='other', email='ROOT@example.com'))
+        self.assertEqual(response.context['form'].errors['email'], ['Another user already uses this email.'])
+        self.assertEqual(get_user_model().objects.count(), 1)
+
+    def test_admin_cannot_deactivate_own_account(self):
+        response = self.client.post(reverse('core:user_edit', args=[self.admin.pk]),
+                                    user_data(username='root', email='root@example.com', is_active=''))
+        self.assertEqual(response.context['form'].errors['is_active'], ['You cannot deactivate your own account.'])
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    def test_platform_admin_is_marked_and_stays_admin_when_edited(self):
+        self.assertContains(self.client.get(reverse('core:user_list')), 'Platform admin')
+        self.client.post(reverse('core:user_edit', args=[self.admin.pk]),
+                         user_data(username='root', email='root@example.com', is_superuser=''))
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_superuser)
+
+    def test_user_changes_are_logged(self):
+        self.client.post(reverse('core:user_create'), user_data(groups=[self.feeder.pk]))
+        kari = get_user_model().objects.get(username='kari')
+        self.client.post(reverse('core:user_edit', args=[kari.pk]), user_data(is_active='', groups=[self.vet.pk]))
+        created, edited = AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'changes')
+        self.assertEqual(created, ('create', 'user', {
+            'Username': [None, 'kari'], 'First name': [None, 'Kari'], 'Last name': [None, 'Nordmann'],
+            'Email': [None, 'kari@example.com'], 'Active': [None, 'Yes'], 'Roles': [None, 'Feeder'],
+        }))
+        self.assertEqual(edited, ('update', 'user', {'Active': ['Yes', 'No'], 'Roles': ['Feeder', 'Vet']}))
+
+
+class AccessTests(AdminTestCase):
+    """Only the platform admin manages roles and users; a role grants exactly what its matrix says."""
+
+    def test_roles_and_users_are_closed_to_everyone_else(self):
+        ola = get_user_model().objects.create_user('ola', 'ola@example.com', 'eski-sifre-123')
+        everything = Group.objects.create(name='Everything')
+        everything.permissions.set(Permission.objects.filter(codename__in=[
+            'view_site', 'add_site', 'change_site', 'delete_site', 'view_auditlog']))
+        ola.groups.add(everything)
+        self.client.force_login(ola)
+        for url in (reverse('core:group_list'), reverse('core:group_create'),
+                    reverse('core:group_edit', args=[everything.pk]),
+                    reverse('core:user_list'), reverse('core:user_create'),
+                    reverse('core:user_edit', args=[ola.pk])):
+            self.assertEqual(self.client.get(url).status_code, 403, url)
+        home = self.client.get(reverse('home'))
+        self.assertNotContains(home, reverse('core:group_list'))
+        self.assertNotContains(home, reverse('core:user_list'))
+        self.assertContains(home, reverse('farm:site_list'))
+
+    def test_admin_sees_roles_and_users_in_the_menu(self):
+        home = self.client.get(reverse('home'))
+        self.assertContains(home, reverse('core:group_list'))
+        self.assertContains(home, reverse('core:user_list'))
+
+    def test_a_role_given_through_the_pages_allows_exactly_what_it_says(self):
+        site = Site.objects.create(name='Site A', code='SA')
+        self.client.post(reverse('core:group_create'), {
+            'name': 'Site clerk', 'permissions': perms('farm.view_site', 'farm.add_site'),
+        })
+        self.client.post(reverse('core:user_create'), user_data(groups=[Group.objects.get().pk]))
+        self.client.force_login(get_user_model().objects.get(username='kari'))
+
+        self.assertEqual(self.client.get(reverse('farm:site_list')).status_code, 200)
+        self.client.post(reverse('farm:site_create'), site_data(name='Site B', code='SB'))
+        self.assertTrue(Site.objects.filter(code='SB').exists())
+        self.assertEqual(self.client.post(reverse('farm:site_edit', args=[site.pk]),
+                                          site_data(name='Renamed', code='SA', version='1')).status_code, 403)
+        self.assertEqual(self.client.post(reverse('farm:site_delete', args=[site.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse('core:activity_log')).status_code, 403)
+        site.refresh_from_db()
+        self.assertEqual((site.name, site.is_deleted), ('Site A', False))

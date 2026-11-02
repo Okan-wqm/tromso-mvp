@@ -1,5 +1,5 @@
-/* Shared page components: buttons, list toolbar, cards, inner tabs, form grids, contact rows,
-   filters and the audit trail. */
+/* Shared page components: buttons, list toolbar, cards, tables, inner tabs, form grids, check
+   boxes, the permission matrix, contact rows, filters and the audit trail. */
 
 /* Buttons beyond the full-width primary in base.css */
 .button-inline {
@@ -148,6 +148,34 @@
 .badge-maintenance { background: #FBF0D9; color: #7A5410; }
 .badge-inactive { background: #ECECEA; color: var(--muted); }
 .badge-closed { background: #F7E6E6; color: var(--error); }
+.badge-admin { background: var(--active-bg); color: var(--stripe-dark); }
+
+/* Tables (roles, users) */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+.table th,
+.table td {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+.table thead th { color: var(--muted); font-size: .8125rem; font-weight: 600; white-space: nowrap; }
+.table tbody tr:last-child > * { border-bottom: 0; }
+.table tbody tr:hover { background: var(--hover); }
+.table tbody th { font-weight: 600; }
+.table tbody th a { color: var(--speck); text-decoration: none; }
+.table tbody th a:hover { color: var(--stripe-dark); text-decoration: underline; }
+.table tbody th .badge { margin-left: .5rem; }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.table .nowrap { white-space: nowrap; }
+.table-actions { width: 1%; padding-block: .25rem; text-align: right; white-space: nowrap; }
 
 /* Empty state */
 .empty {
@@ -279,6 +307,47 @@
 }
 .check input { width: 18px; height: 18px; accent-color: var(--stripe); }
 .check-remove { color: var(--muted); }
+
+/* Check boxes in a form field: one box (.check) or a group in a fieldset (.field-set) */
+.field input[type="checkbox"] { flex: none; width: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--stripe); }
+.field .check { display: inline-flex; min-height: 0; margin-bottom: 0; }
+
+.field-set { min-width: 0; margin-inline: 0; padding: 0; border: 0; }
+.field-set legend {
+  margin-bottom: .375rem;
+  padding: 0;
+  font-weight: 600;
+  font-size: .9375rem;
+}
+
+div.choices { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+div.choices label { display: inline-flex; align-items: center; gap: .375rem; font-weight: 500; cursor: pointer; }
+
+/* Permission matrix (role form): a row per area, a column per action */
+.form-grid > .field-set { grid-column: 1 / -1; }
+
+.matrix-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+.matrix { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+.matrix th,
+.matrix td { padding: .625rem 1rem; border-bottom: 1px solid var(--line); text-align: center; }
+.matrix th[scope="row"],
+.matrix thead th:first-child { text-align: left; font-weight: 500; }
+.matrix thead th { color: var(--muted); font-size: .8125rem; font-weight: 600; }
+.matrix-group th {
+  padding-block: .5rem;
+  background: var(--mist);
+  color: var(--stripe-dark);
+  font-size: .8125rem;
+  font-weight: 600;
+  text-align: left;
+}
+.matrix tbody:last-child tr:last-child > * { border-bottom: 0; }
+.matrix-check { display: inline-grid; place-items: center; padding: .25rem; cursor: pointer; }
 
 .contact-empty { color: var(--muted); }
 

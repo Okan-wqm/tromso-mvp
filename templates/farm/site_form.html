@@ -3,13 +3,13 @@
 {% block title %}{% if site %}Edit {{ site.name }}{% else %}New site{% endif %}{% endblock %}
 {% block eyebrow %}Facility · Sites{% endblock %}
 {% block heading %}{% if site %}{{ site.name }}{% else %}New site{% endif %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/farm.css' %}">{% endblock %}
 {% block content %}
 {% with tabs=form.tabs %}
 <div class="tabs" role="tablist" aria-label="Site form sections" data-tabs data-open="{{ open_tab|default:'' }}" hidden>
   {% for tab in tabs %}
   <button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" id="tab-{{ tab.key }}" data-tab="{{ tab.key }}" aria-controls="panel-{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> (has errors)</span>{% endif %}</button>
   {% endfor %}
+  {% if site %}<button type="button" role="tab" class="tab" id="tab-history" data-tab="history" aria-controls="panel-history">History</button>{% endif %}
 </div>
 
 <form method="post" class="site-form" novalidate>
@@ -53,5 +53,13 @@
   <p class="panel-help">Contacts can be added after the site is created.</p>
   {% endif %}
 </section>
+
+{% if site %}
+<section class="tab-panel history" id="panel-history" role="tabpanel" aria-labelledby="tab-history" data-panel="history">
+  <h2 class="panel-title">History</h2>
+  <p class="panel-help">The latest changes to this site. <a href="{% url 'core:activity_log' %}?type=site&amp;q={{ site.code|urlencode }}">See all in the activity log</a></p>
+  {% include "core/_audit_entries.html" with entries=history empty_text="No changes recorded for this site yet." %}
+</section>
+{% endif %}
 {% endblock %}
 {% block extra_scripts %}<script src="{% static 'js/site-form.js' %}" defer></script>{% endblock %}

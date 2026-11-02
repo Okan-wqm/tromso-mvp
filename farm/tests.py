@@ -3,6 +3,8 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 
+from core.models import AuditLog
+
 from .models import Site, SiteContact
 
 
@@ -108,6 +110,46 @@ class SiteRoundTripTests(SiteTestCase):
         edited = site.contacts.get()
         self.client.post(url, contacts_data([{'id': str(edited.pk), 'name': 'Kari N.', 'DELETE': True}], initial=1))
         self.assertFalse(site.contacts.exists())
+
+
+class SiteAuditTests(SiteTestCase):
+    def log(self):
+        return list(AuditLog.objects.order_by('created_at').values_list('action', 'user_name', 'changes'))
+
+    def test_create_edit_contacts_and_delete_are_logged_with_old_and_new_values(self):
+        self.client.post(reverse('farm:site_create'), site_data(name='Bergen', code='bh', area_m2='100'))
+        site = Site.objects.get()
+        self.client.post(reverse('farm:site_edit', args=[site.pk]),
+                         site_data(name='Bergen', code='bh', area_m2='250', status='maintenance', version='1'))
+        self.client.post(reverse('farm:site_contacts', args=[site.pk]),
+                         contacts_data([{'name': 'Kari', 'role': 'Vet', 'is_primary': True}]))
+        self.client.post(reverse('farm:site_delete', args=[site.pk]))
+
+        created, edited, contacts, deleted = self.log()
+        self.assertEqual(created[:2], ('create', 'ali'))
+        self.assertEqual(created[2]['Site code'], [None, 'BH'])
+        self.assertEqual(created[2]['Total area (m²)'], [None, '100.00'])
+        self.assertEqual(edited, ('update', 'ali', {
+            'Total area (m²)': ['100.00', '250.00'], 'Status': ['Active', 'Under maintenance'],
+        }))
+        self.assertEqual(contacts, ('update', 'ali', {'Contacts': [None, 'Kari (Vet, primary)']}))
+        self.assertEqual(deleted, ('delete', 'ali', {}))
+
+    def test_saving_without_changes_logs_nothing(self):
+        site = self.make_site(name='Same', code='SM', area_m2='100.00', latitude='60.391300', longitude='5.322100')
+        # Same values typed differently (100 vs 100.00) are not a change.
+        self.client.post(reverse('farm:site_edit', args=[site.pk]), site_data(
+            name='Same', code='SM', country='', region='', area_m2='100', latitude='60.3913', longitude='5.3221',
+            version='1',
+        ))
+        self.assertEqual(self.log(), [])
+
+    def test_history_tab_shows_the_site_changes(self):
+        self.client.post(reverse('farm:site_create'), site_data(name='Bergen', code='bh'))
+        site = Site.objects.get()
+        response = self.client.get(reverse('farm:site_edit', args=[site.pk]))
+        self.assertEqual([entry.action for entry in response.context['history']], ['create'])
+        self.assertContains(response, 'id="panel-history"')
 
 
 class SiteAccessTests(TestCase):

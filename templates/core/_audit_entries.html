@@ -1,0 +1,23 @@
+<ol class="audit" role="list">
+  {% for entry in entries %}
+  <li class="audit-entry audit-{{ entry.action }}">
+    <div class="audit-head">
+      <span class="audit-action">{{ entry.get_action_display }}</span>
+      {% if show_record %}<span class="audit-record">{{ entry.entity_type|capfirst }} · {{ entry.entity_label }}</span>{% endif %}
+      <span class="audit-meta">by <strong>{{ entry.user_name }}</strong> · <time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"j M Y, H:i" }}</time></span>
+    </div>
+    {% if entry.changes %}
+    <dl class="audit-changes">
+      {% for label, values in entry.changes.items %}
+      <div>
+        <dt>{{ label }}</dt>
+        <dd>{% if entry.action == "create" %}{{ values.1 }}{% else %}<del>{{ values.0|default:"empty" }}</del> → <ins>{{ values.1|default:"empty" }}</ins>{% endif %}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+    {% endif %}
+  </li>
+  {% empty %}
+  <li class="audit-none">{{ empty_text|default:"Nothing recorded yet." }}</li>
+  {% endfor %}
+</ol>

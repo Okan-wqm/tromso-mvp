@@ -2,9 +2,11 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core import mail
-from django.db import connection
+from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
 from django.urls import reverse
+
+from .models import AuditLog
 
 
 class AuthFlowTests(TestCase):
@@ -83,3 +85,38 @@ class DatabaseTests(TestCase):
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'")
             self.assertIsNotNone(cursor.fetchone())
+
+
+class AuditLogTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+
+    def make_entry(self, **fields):
+        defaults = dict(user=self.user, user_name='ali', action=AuditLog.Action.UPDATE,
+                        entity_type='site', entity_id='1', entity_label='Site A (SA)')
+        return AuditLog.objects.create(**{**defaults, **fields})
+
+    def test_entries_cannot_be_changed_or_deleted(self):
+        entry = self.make_entry()
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            AuditLog.objects.filter(pk=entry.pk).update(user_name='someone else')
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            AuditLog.objects.filter(pk=entry.pk).delete()
+        self.assertEqual(AuditLog.objects.get(pk=entry.pk).user_name, 'ali')
+
+    def test_deleting_a_user_keeps_their_history(self):
+        self.make_entry()
+        self.user.delete()
+        self.assertEqual(AuditLog.objects.get().user_name, 'ali')
+
+    def test_activity_log_filters(self):
+        self.client.force_login(self.user)
+        self.make_entry(entity_label='Bergen (BH)', action=AuditLog.Action.CREATE)
+        self.make_entry(entity_label='Tromsø (TS)', action=AuditLog.Action.DELETE, user_name='kari')
+        labels = lambda **query: [e.entity_label for e in
+                                  self.client.get(reverse('core:activity_log'), query).context['page'].object_list]
+        self.assertEqual(sorted(labels()), ['Bergen (BH)', 'Tromsø (TS)'])
+        self.assertEqual(labels(q='bh'), ['Bergen (BH)'])
+        self.assertEqual(labels(user='kari'), ['Tromsø (TS)'])
+        self.assertEqual(labels(action='create'), ['Bergen (BH)'])
+        self.assertEqual(labels(**{'from': '2999-01-01'}), [])

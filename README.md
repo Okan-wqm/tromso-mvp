@@ -8,6 +8,9 @@ What works today:
 - Sign in, sign out, forgot password (reset link by email), change password. All of it is Django's
   built-in auth: PBKDF2 password hashing, signed one-time reset tokens, the standard password
   validators, CSRF protection and sign-out by POST only.
+- An activity log (`/activity/`): who created, changed or deleted which record, when, with the old
+  and new value of every changed field. Rows are written in the same transaction as the change and a
+  database trigger refuses to update or delete them. Each record's form has a History tab.
 - Every page needs a signed-in user (`LoginRequiredMiddleware`) unless its view opts out.
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
   choice, collapses by itself below 1100 px when no choice is saved and slides in from the left on
@@ -62,6 +65,7 @@ real mail.
 |---|---|
 | `/` | Overview (sign-in required) |
 | `/sites/` | Facility › Sites |
+| `/activity/` | Activity log |
 | `/accounts/login/` | Sign in |
 | `/accounts/logout/` | Sign out (POST) |
 | `/accounts/password_reset/` | Forgot password |
@@ -73,9 +77,10 @@ real mail.
 | Path | Contents |
 |---|---|
 | `config/` | Settings, URLs, the overview view |
-| `core/` | TimescaleDB extension migration, tests |
+| `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), tests |
 | `farm/` | Farm module: models, forms, views, tests |
-| `templates/farm/`, `static/css/farm.css`, `static/js/site-form.js` | Farm pages |
+| `templates/farm/`, `static/js/site-form.js` | Farm pages |
+| `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |
 | `templates/auth_base.html`, `templates/registration/` | Sign-in and password pages |
 | `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu), Lucide icons |
 | `static/css/base.css` | Colour tokens, reset, form controls shared by every page |

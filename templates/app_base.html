@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -44,6 +45,10 @@
         <p class="rail-group">Facility</p>
         <a class="rail-link" href="{% url 'farm:site_list' %}" title="Sites"{% if current|slice:":5" == 'site_' %} aria-current="page"{% endif %}>
           {% include "icons/_icon.html" with name="building" %}<span class="rail-label">Sites</span>
+        </a>
+        <p class="rail-group">Administration</p>
+        <a class="rail-link" href="{% url 'core:activity_log' %}" title="Activity log"{% if current == 'activity_log' %} aria-current="page"{% endif %}>
+          {% include "icons/_icon.html" with name="history" %}<span class="rail-label">Activity log</span>
         </a>
         {% endwith %}
         {% endblock %}

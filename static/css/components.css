@@ -1,4 +1,5 @@
-/* Farm module pages: list toolbar, cards, inner tabs, form grids, contact rows. */
+/* Shared page components: buttons, list toolbar, cards, inner tabs, form grids, contact rows,
+   filters and the audit trail. */
 
 /* Buttons beyond the full-width primary in base.css */
 .button-inline {
@@ -301,4 +302,55 @@
   .contact-row .field { grid-column: 1 / -1; }
   .form-actions { justify-content: stretch; }
   .form-actions > * { flex: 1 1 auto; justify-content: center; }
+}
+
+/* Filters (activity log) */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  align-items: end;
+  gap: 0 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+.filters .field input,
+.filters .field select { padding: .5625rem .75rem; }
+.filters-actions { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+
+/* Audit trail: one entry per change, field by field */
+.audit { display: grid; gap: .625rem; margin: 0; padding: 0; list-style: none; max-width: 60rem; }
+
+.audit-entry {
+  padding: .875rem 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--sage);
+  border-radius: 0 8px 8px 0;
+  background: var(--white);
+}
+.audit-create { border-left-color: var(--olive); }
+.audit-delete { border-left-color: var(--error); }
+
+.audit-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; }
+.audit-action { font-weight: 700; }
+.audit-delete .audit-action { color: var(--error); }
+.audit-record { font-weight: 500; }
+.audit-meta { color: var(--muted); font-size: .875rem; }
+.audit-meta strong { color: var(--speck); font-weight: 600; }
+
+.audit-changes { display: grid; gap: .25rem; margin: .625rem 0 0; font-size: .9375rem; }
+.audit-changes div { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr; gap: .75rem; }
+.audit-changes dt { color: var(--muted); }
+.audit-changes dd { margin: 0; overflow-wrap: anywhere; }
+.audit-changes del { color: var(--muted); }
+.audit-changes ins { text-decoration: none; font-weight: 600; }
+
+.audit-none { color: var(--muted); }
+
+.pager { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; color: var(--muted); }
+
+@media (max-width: 767px) {
+  .audit-changes div { grid-template-columns: 1fr; gap: 0; }
 }

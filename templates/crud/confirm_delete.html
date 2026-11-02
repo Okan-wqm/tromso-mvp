@@ -1,7 +1,7 @@
 {% extends base_template %}
 {% load i18n %}
 {% comment %} Delete confirmation of a tab (core.crud.DeleteView), in a dialog or as a page. For records that
-   are soft-deleted `plan` says what else is affected (core.softdelete). {% endcomment %}
+   are soft-deleted `plan` says what else is affected (core.softdelete).{% endcomment %}
 {% block title %}{% blocktrans trimmed %}Delete {{ object }}{% endblocktrans %}{% endblock %}
 {% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
 {% block heading %}{% blocktrans trimmed %}Delete {{ name }}{% endblocktrans %}{% endblock %}

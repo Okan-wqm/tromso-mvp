@@ -40,6 +40,20 @@ class SiteClockField(forms.DateTimeField):
         return None if moment is None else timezone.make_naive(moment, timezone.get_current_timezone())
 
 
+def clock(point):
+    """The clock a sample's time is read on: the point's site; before a point is chosen, the zone every site
+    shares, else the company's."""
+    if point is not None:
+        return zone_of(site_of(point))
+    zones = {zone_of(site) for site in Site.objects.all()}
+    return zones.pop() if len(zones) == 1 else zone_of(None)
+
+
+def now_on(zone):
+    """Now on a clock, to the minute, as the date and time field shows it."""
+    return timezone.localtime(timezone.now(), zone).replace(second=0, microsecond=0, tzinfo=None)
+
+
 def value_field(parameter, help_text=''):
     """The form field of one parameter: its label, range and precision, never required."""
     return forms.DecimalField(
@@ -126,9 +140,7 @@ class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
         else:
             field.choices = [('', '---------'), *point_choices()]
         self.fields['token'].initial = uuid.uuid4()
-        self.fields['measured_at'].initial = timezone.localtime(
-            timezone.now(), zone_of(site_of(point)) if point is not None else zone_of(None)).replace(
-            second=0, microsecond=0, tzinfo=None)
+        self.fields['measured_at'].initial = now_on(clock(point))
         self.order_fields(['point', 'measured_at', 'source', *(parameter.code for parameter in MEASURED), 'notes'])
 
     def clean_point(self):
@@ -219,8 +231,7 @@ class RoundForm(ServiceErrors, forms.Form):
         super().__init__(*args, **kwargs)
         self.site = site
         self.fields['token'].initial = uuid.uuid4()
-        self.fields['measured_at'].initial = timezone.localtime(timezone.now(), zone_of(site)).replace(
-            second=0, microsecond=0, tzinfo=None)
+        self.fields['measured_at'].initial = now_on(zone_of(site))
 
     def clean_measured_at(self):
         return timezone.make_aware(self.cleaned_data['measured_at'], zone_of(self.site))

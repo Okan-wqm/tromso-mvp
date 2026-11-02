@@ -110,7 +110,7 @@
     <tbody>
       {% for row in rows %}{% with point=row.point water=row.water %}
       <tr>
-        <td class="nowrap"><a class="row-title" href="{{ row.history_url }}">{{ point.code }}</a><span class="row-sub">{% if point.site %}{% trans "Loop" %} · {{ point.site.name }}{% else %}{{ point.production_department.name }}{% if point.production_department.site %} · {{ point.production_department.site.name }}{% endif %}{% endif %}</span></td>
+        <td class="nowrap"><a class="row-title" href="{{ row.history_url }}">{{ point.code }}</a><span class="row-sub">{% if row.loop %}{% trans "Loop" %} · {{ point.site.name }}{% else %}{{ point.production_department.name }}{% if point.production_department.site %} · {{ point.production_department.site.name }}{% endif %}{% endif %}</span></td>
         <td class="nowrap">{% include "farm/_water_status.html" with status=water.status %}</td>
         {% for reading in row.cells %}{% include "farm/_water_cell.html" with latest=True %}{% endfor %}
         <td class="row-actions"><a href="{{ row.history_url }}">{% trans "History" %}</a></td>

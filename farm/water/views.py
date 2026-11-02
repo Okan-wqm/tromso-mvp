@@ -137,7 +137,8 @@ def _latest(site):
               *systems.order_by('site__name', 'code')]
     water = read.latest(points)
     columns = _columns([water[read.key(point)].readings for point in points])
-    rows = [{'point': point, 'water': water[read.key(point)], 'history_url': history_url(point),
+    rows = [{'point': point, 'loop': isinstance(point, System), 'water': water[read.key(point)],
+             'history_url': history_url(point),
              'cells': [water[read.key(point)].get(parameter.code) for parameter in columns]}
             for point in points]
     counts = {status: sum(1 for row in rows if row['water'].status == status) for status in ALERTS}

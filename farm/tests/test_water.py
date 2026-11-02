@@ -663,6 +663,15 @@ class PageTests(WaterTestCase):
         self.post(reverse('farm:water_record'), self.record_data(measured_at=oslo.strftime('%Y-%m-%dT%H:%M'), ph='7'))
         self.assertEqual(WaterMeasurement.objects.get().measured_at, self.ago(hours=1).replace(second=0))
 
+    def test_the_time_starts_now_on_the_sites_clock(self):
+        Site.objects.filter(pk=self.bergen.pk).update(timezone='Asia/Tokyo')
+        tokyo = timezone.localtime(timezone.now(), ZoneInfo('Asia/Tokyo')).replace(tzinfo=None)
+        for url in (reverse('farm:water_record'), f'{reverse("farm:water_record")}?unit={self.t1.pk}',
+                    f'{reverse("farm:water_round")}?site={self.bergen.pk}'):
+            response = self.client.get(url)
+            form = response.context.get('form') or response.context['header']
+            self.assertLess(abs(tokyo - form['measured_at'].value()), timedelta(minutes=2), url)
+
     def test_the_servers_reasons_are_on_the_fields_and_the_form_is_refused(self):
         url = reverse('farm:water_record')
         response = self.post(url, self.record_data())

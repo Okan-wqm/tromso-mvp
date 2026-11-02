@@ -498,14 +498,14 @@ class SpeciesAuditTests(SpeciesTestCase):
         Profile.objects.create(user=self.user, language='tr')
         response = self.client.post(reverse('farm:species_create'), species_data(
             common_name='Atlantic salmon', scientific_name='Salmo salar', code='SAL', freshwater=False), follow=True)
-        self.assertContains(response, 'Tür kataloğundan dolduruldu: Yerel ad: Laks; Familya: Salmonidae; Su ortamı: '
+        self.assertContains(response, 'Balık türü kataloğundan dolduruldu: Yerel ad: Laks; Familya: Salmonidae; Su ortamı: '
                                        'Tatlı su, Deniz suyu; Resmî tür kodu: SAL.')
         entry = AuditLog.objects.get()
         self.assertEqual(entry.entity_type, 'species')
         self.assertEqual(entry.changes['Category'], [None, message('Fish')])
         self.assertEqual(entry.changes['Fresh water'], [None, message('Yes')])
         with translation.override('tr'):
-            self.assertEqual(entry.shown_type(), 'tür')
+            self.assertEqual(entry.shown_type(), 'balık türü')
 
     def test_the_history_tab_shows_the_changes(self):
         self.create()
@@ -560,7 +560,7 @@ class SpeciesPermissionTests(SpeciesTestCase):
 class SpeciesLanguageTests(SpeciesTestCase):
     def test_the_tab_speaks_each_language_with_singular_and_plural_apart(self):
         self.make()
-        for language, words in {'tr': ('<h1>Türler</h1>', 'Yeni tür', 'Bilimsel ad', 'Tatlı su', 'Eksik'),
+        for language, words in {'tr': ('<h1>Balık türleri</h1>', 'Yeni balık türü', 'Bilimsel ad', 'Tatlı su', 'Eksik'),
                                 'nb': ('<h1>Arter</h1>', 'Legg til art', 'Vitenskapelig navn', 'Ferskvann',
                                        'Mangler')}.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})

@@ -1,0 +1,57 @@
+{% extends "app_base.html" %}
+{% load static %}
+{% block title %}{% if site %}Edit {{ site.name }}{% else %}New site{% endif %}{% endblock %}
+{% block eyebrow %}Facility · Sites{% endblock %}
+{% block heading %}{% if site %}{{ site.name }}{% else %}New site{% endif %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/farm.css' %}">{% endblock %}
+{% block content %}
+{% with tabs=form.tabs %}
+<div class="tabs" role="tablist" aria-label="Site form sections" data-tabs data-open="{{ open_tab|default:'' }}" hidden>
+  {% for tab in tabs %}
+  <button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" id="tab-{{ tab.key }}" data-tab="{{ tab.key }}" aria-controls="panel-{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> (has errors)</span>{% endif %}</button>
+  {% endfor %}
+</div>
+
+<form method="post" class="site-form" novalidate>
+  {% csrf_token %}
+  {{ form.version }}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% for tab in tabs %}
+  <section class="tab-panel" id="panel-{{ tab.key }}" role="tabpanel" aria-labelledby="tab-{{ tab.key }}" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
+    <h2 class="panel-title">{{ tab.label }}</h2>
+    <div class="form-grid form-grid-{{ tab.key }}">
+      {% for field in tab.fields %}{% include "registration/_field.html" %}{% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{% url 'farm:site_list' %}">Cancel</a>
+    <button type="submit" class="button button-inline">{% if site %}Save site{% else %}Create site{% endif %}</button>
+  </div>
+</form>
+{% endwith %}
+
+<section class="tab-panel contacts" data-panel="contact" aria-labelledby="contacts-title">
+  <h2 class="panel-title" id="contacts-title">Contacts</h2>
+  {% if site %}
+  <p class="panel-help">The site’s operational contacts. At most one can be the primary contact. Contacts are saved separately from the site details.</p>
+  <form method="post" action="{% url 'farm:site_contacts' site.pk %}" novalidate data-formset>
+    {% csrf_token %}
+    {{ contacts.management_form }}
+    {% if contacts.non_form_errors %}<div class="form-error" role="alert">{{ contacts.non_form_errors }}</div>{% endif %}
+    <div class="contact-rows" data-rows>
+      {% for row in contacts %}{% include "farm/_contact_row.html" %}{% endfor %}
+    </div>
+    <p class="contact-empty" data-empty{% if contacts.forms %} hidden{% endif %}>No contacts yet. Use “Add contact” to add a row.</p>
+    <template data-row-template>{% with row=contacts.empty_form %}{% include "farm/_contact_row.html" %}{% endwith %}</template>
+    <div class="form-actions">
+      <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}Add contact</button>
+      <button type="submit" class="button button-inline">Save contacts</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="panel-help">Contacts can be added after the site is created.</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block extra_scripts %}<script src="{% static 'js/site-form.js' %}" defer></script>{% endblock %}

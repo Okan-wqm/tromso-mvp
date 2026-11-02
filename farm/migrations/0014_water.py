@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     dependencies = [
         # The hypertable needs the timescaledb extension, which core's first migration creates.
         ('core', '0001_timescaledb'),
-        ('farm', '0012_feeds'),
+        ('farm', '0013_feeding_records'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

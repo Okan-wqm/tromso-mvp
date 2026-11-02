@@ -1,0 +1,9 @@
+{% extends "auth_base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>Welcome, {{ user.get_username }}</h1>
+<form method="post" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit" class="button">Sign out</button>
+</form>
+{% endblock %}

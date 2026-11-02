@@ -1,0 +1,13 @@
+<div class="field{% if field.errors %} has-error{% endif %}">
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {% if field.field.widget.input_type == "password" %}
+  <div class="password-wrap">
+    {{ field }}
+    <button type="button" class="reveal" data-reveal="{{ field.id_for_label }}" aria-controls="{{ field.id_for_label }}" aria-pressed="false">Show</button>
+  </div>
+  {% else %}
+  {{ field }}
+  {% endif %}
+  {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+  {{ field.errors }}
+</div>

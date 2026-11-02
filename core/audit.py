@@ -9,7 +9,11 @@ def _display(instance, field):
     if isinstance(field, models.ForeignKey):
         value = getattr(instance, field.name)
         return None if value is None else str(value)
+    if isinstance(field, models.ManyToManyField):
+        return ', '.join(sorted(str(item) for item in getattr(instance, field.name).all())) or None
     value = getattr(instance, field.attname)
+    if isinstance(field, models.BooleanField):
+        return 'Yes' if value else 'No'
     if field.choices and value not in (None, ''):
         return str(dict(field.flatchoices).get(value, value))
     if value in (None, ''):
@@ -48,20 +52,19 @@ def record(user, action, instance, changes=None, entity_type=None, label=None):
     )
 
 
-def record_create(user, instance, field_names, labels=None):
-    values = {
-        label: [None, value] for label, value in snapshot(instance, field_names, labels).items() if value is not None
-    }
-    return record(user, AuditLog.Action.CREATE, instance, values)
+def record_create(user, instance, values, **kwargs):
+    """Logs a new record with its non-empty values (a snapshot)."""
+    changes = {label: [None, value] for label, value in values.items() if value is not None}
+    return record(user, AuditLog.Action.CREATE, instance, changes, **kwargs)
 
 
-def record_update(user, instance, before, field_names, labels=None):
-    """Logs the fields that changed since the `before` snapshot; logs nothing when none did."""
-    changes = diff(before, snapshot(instance, field_names, labels))
+def record_update(user, instance, before, after, **kwargs):
+    """Logs what differs between two snapshots; logs nothing when nothing changed."""
+    changes = diff(before, after)
     if changes:
-        return record(user, AuditLog.Action.UPDATE, instance, changes)
+        return record(user, AuditLog.Action.UPDATE, instance, changes, **kwargs)
     return None
 
 
-def record_delete(user, instance):
-    return record(user, AuditLog.Action.DELETE, instance)
+def record_delete(user, instance, **kwargs):
+    return record(user, AuditLog.Action.DELETE, instance, **kwargs)

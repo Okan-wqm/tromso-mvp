@@ -12,7 +12,7 @@ needs the same way:
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -83,6 +83,8 @@ class Resource:
     list_template = ''    # extends crud/list.html and fills the `items` block
     form_template = 'crud/form.html'
     icon = 'plus'         # shown in the empty list
+    namespace = ''        # URL namespace; defaults to the model's app label
+    actions = ('add', 'change', 'delete')   # what this tab offers besides the list
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -92,19 +94,16 @@ class Resource:
 
     @classmethod
     def url_name(cls, action):
-        return f'{cls.model._meta.app_label}:{cls.model._meta.model_name}_{action}'
+        return f'{cls.namespace or cls.model._meta.app_label}:{cls.model._meta.model_name}_{action}'
 
     @classmethod
-    def audit_fields(cls):
-        return tab_fields(cls.form_class.tabs)
-
-    @classmethod
-    def audit_labels(cls):
-        return getattr(cls.form_class.Meta, 'labels', {})
+    def allows(cls, action):
+        return action == 'view' or action in cls.actions
 
     @classmethod
     def entity_type(cls):
-        return str(cls.model._meta.verbose_name)
+        """How the activity log names this kind of record."""
+        return cls.name or str(cls.model._meta.verbose_name)
 
     # --- extension points ---------------------------------------------------------------------
     @classmethod
@@ -112,20 +111,36 @@ class Resource:
         return cls.model._default_manager.all()
 
     @classmethod
+    def form(cls, request, *args, **kwargs):
+        """The tab's form; override to hand it more, e.g. who is editing."""
+        return cls.form_class(*args, **kwargs)
+
+    @classmethod
     def edit_extras(cls, request, obj):
         """Extra context for the edit page, e.g. inline lists shown on their own tab."""
         return {}
+
+    @classmethod
+    def snapshot(cls, obj):
+        """What the audit log compares before and after a save: the form's fields under its labels."""
+        return audit.snapshot(obj, tab_fields(cls.form_class.tabs), getattr(cls.form_class.Meta, 'labels', {}))
+
+    @classmethod
+    def after_save(cls, request, obj, created):
+        """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
 
     # --- URLs ---------------------------------------------------------------------------------
     @classmethod
     def urls(cls):
         p, n = cls.url_prefix, cls.model._meta.model_name
-        return [
-            path(f'{p}/', ListView.as_view(resource=cls), name=f'{n}_list'),
-            path(f'{p}/new/', CreateView.as_view(resource=cls), name=f'{n}_create'),
-            path(f'{p}/<uuid:pk>/', UpdateView.as_view(resource=cls), name=f'{n}_edit'),
-            path(f'{p}/<uuid:pk>/delete/', DeleteView.as_view(resource=cls), name=f'{n}_delete'),
-        ]
+        pk = 'uuid:pk' if isinstance(cls.model._meta.pk, models.UUIDField) else 'int:pk'
+        routes = {
+            'list': path(f'{p}/', ListView.as_view(resource=cls), name=f'{n}_list'),
+            'add': path(f'{p}/new/', CreateView.as_view(resource=cls), name=f'{n}_create'),
+            'change': path(f'{p}/<{pk}>/', UpdateView.as_view(resource=cls), name=f'{n}_edit'),
+            'delete': path(f'{p}/<{pk}>/delete/', DeleteView.as_view(resource=cls), name=f'{n}_delete'),
+        }
+        return [route for action, route in routes.items() if action == 'list' or cls.allows(action)]
 
 
 class ResourceView:
@@ -139,7 +154,7 @@ class ResourceView:
             for key, value in initkwargs.items():
                 setattr(self, key, value)
             self.request = request
-            if not request.user.has_perm(self.resource.perm(self.action)):
+            if not self.resource.allows(self.action) or not request.user.has_perm(self.resource.perm(self.action)):
                 raise PermissionDenied
             handler = getattr(self, request.method.lower(), None)
             if handler is None:
@@ -158,9 +173,10 @@ class ResourceView:
         r, user = self.resource, self.request.user
         return {
             'resource': r, 'name': r.name, 'plural': r.plural, 'group': r.group, 'empty_icon': r.icon,
-            'list_url': reverse(r.url_name('list')), 'create_url': reverse(r.url_name('create')),
-            'can_add': user.has_perm(r.perm('add')), 'can_change': user.has_perm(r.perm('change')),
-            'can_delete': user.has_perm(r.perm('delete')),
+            'list_url': reverse(r.url_name('list')),
+            'create_url': reverse(r.url_name('create')) if r.allows('add') else '',
+            **{f'can_{action}': r.allows(action) and user.has_perm(r.perm(action))
+               for action in ('add', 'change', 'delete')},
             **extra,
         }
 
@@ -194,11 +210,11 @@ class CreateView(FormView):
     action = 'add'
 
     def get(self, request):
-        return self.page(self.resource.form_class())
+        return self.page(self.resource.form(request))
 
     def post(self, request):
         r = self.resource
-        form = r.form_class(request.POST)
+        form = r.form(request, request.POST)
         if not form.is_valid():
             return self.page(form)
         with transaction.atomic():
@@ -208,7 +224,8 @@ class CreateView(FormView):
                     setattr(obj, field, request.user)
             obj.save()
             form.save_m2m()
-            audit.record_create(request.user, obj, r.audit_fields(), r.audit_labels())
+            audit.record_create(request.user, obj, r.snapshot(obj), entity_type=r.entity_type())
+            r.after_save(request, obj, created=True)
         messages.success(request, f'{r.name.capitalize()} “{obj}” created.')
         return done(request, reverse(r.url_name('edit'), args=[obj.pk]), stay=True)
 
@@ -218,12 +235,12 @@ class UpdateView(FormView):
 
     def get(self, request, pk):
         obj = self.get_object(pk)
-        return self.page(self.resource.form_class(instance=obj), obj)
+        return self.page(self.resource.form(request, instance=obj), obj)
 
     def post(self, request, pk):
         r = self.resource
         obj = self.get_object(pk)
-        form = r.form_class(request.POST, instance=obj)
+        form = r.form(request, request.POST, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
         with transaction.atomic():
@@ -232,7 +249,7 @@ class UpdateView(FormView):
             if versioned and form.cleaned_data.get('version') != current.version:
                 messages.error(request, STALE_MESSAGE.format(name=r.name))
                 return done(request, reverse(r.url_name('edit'), args=[pk]))
-            before = audit.snapshot(current, r.audit_fields(), r.audit_labels())
+            before = r.snapshot(current)
             obj = form.save(commit=False)
             if versioned:
                 obj.version = current.version + 1
@@ -240,7 +257,8 @@ class UpdateView(FormView):
                 obj.updated_by = request.user
             obj.save()
             form.save_m2m()
-            audit.record_update(request.user, obj, before, r.audit_fields(), r.audit_labels())
+            audit.record_update(request.user, obj, before, r.snapshot(obj), entity_type=r.entity_type())
+            r.after_save(request, obj, created=False)
         messages.success(request, f'{r.name.capitalize()} “{obj}” saved.')
         return done(request, reverse(r.url_name('list')))
 
@@ -257,10 +275,11 @@ class DeleteView(ResourceView):
         r = self.resource
         obj = self.get_object(pk)
         with transaction.atomic():
+            # Logged first: a hard delete clears the object's primary key.
+            audit.record_delete(request.user, obj, entity_type=r.entity_type())
             if hasattr(obj, 'soft_delete'):
                 obj.soft_delete(request.user)
             else:
                 obj.delete()
-            audit.record_delete(request.user, obj)
         messages.success(request, f'{r.name.capitalize()} “{obj}” deleted.')
         return done(request, reverse(r.url_name('list')))

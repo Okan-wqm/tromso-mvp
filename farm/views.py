@@ -35,7 +35,7 @@ def site_contacts(request, pk):
     contacts = SiteContactFormSet(request.POST, instance=site, prefix='contacts')
     if not contacts.is_valid():
         page = UpdateView.as_page(SiteResource, request)
-        return page.page(SiteResource.form_class(instance=site), site, contacts=contacts, open_tab='contact')
+        return page.page(SiteResource.form(request, instance=site), site, contacts=contacts, open_tab='contact')
     rows = contacts.kept_rows()
     with transaction.atomic():
         before = _contacts_summary(site)

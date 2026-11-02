@@ -629,11 +629,11 @@ database check (the ranges are argued in the bug document), its precision and ho
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
 parameter, empty when not measured, at least one value (a database check). The point is a unit or a
 system, exactly one (a database check). The time is on the clock of the point's site, never in the
-future and at most 31 days back (`WATER_BACKDATE_DAYS`), as stock operations are dated; the source is a
-meter or kit, or a laboratory; the person is the one signed in. A form sent twice records once (its key,
-stored with the time). Samples are never edited: **Void** (with a reason, logged as "Voided" like a stock
-operation) and a new entry correct one; a voided sample stays in the history, struck through. The only
-writer is `farm/water/services.py`.
+future and at most 31 days back (`STOCK_BACKDATE_DAYS`, `farm/stock/dates.py`), the rule of every daily
+record; the source is a meter or kit, or a laboratory; the person is the one signed in. A form sent twice
+records once (its key, stored with the time). Samples are never edited: **Void** (with a reason, logged as
+"Voided" like a stock operation) and a new entry correct one; a voided sample stays in the history, struck
+through. The only writer is `farm/water/services.py`.
 
 **The hypertable.** `water_measurements` is a TimescaleDB hypertable on `measured_at` (90-day chunks),
 made by one `RunSQL` in migration `farm/0014_water`, which depends on `core/0001_timescaledb` (the

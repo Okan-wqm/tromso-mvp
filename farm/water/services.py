@@ -5,8 +5,8 @@ every void: the forms call these functions and the views show what they refuse o
   all of them or none. Each locks its points (the units and systems sampled) in primary-key order,
   refuses a form sent twice (its key), checks the time and every value, writes the rows and their
   activity-log rows.
-- The time: not in the future and at most WATER_BACKDATE_DAYS back, on the clock of the point's site
-  (farm.models.site.zone_of), as stock operations are dated (WQ-10).
+- The time: not in the future and at most STOCK_BACKDATE_DAYS back, on the clock of the point's site, the
+  rule of every daily record (farm/stock/dates.py; WQ-10).
 - A value: inside its parameter's plausible range and at its precision (farm/water/parameters.py); the
   database checks both again. At least one value per sample; nothing is required beyond that (WQ-08).
 - `void` is the undo, as for a stock operation: the sample stops counting and stays in the history with
@@ -16,7 +16,6 @@ A failure raises ValidationError, a dict of field to message: 'measured_at', 'po
 code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row', index). Nothing is
 written."""
 import uuid
-from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -27,8 +26,8 @@ from django.utils.translation import gettext as _
 from core import audit
 from core.models import AuditLog
 from farm.models import System, Tank, WaterMeasurement
-from farm.models.site import zone_of
 from farm.models.water import local_time, site_of
+from farm.stock import dates
 from farm.stock.services import AlreadyRecorded
 
 from . import parameters
@@ -39,14 +38,10 @@ LOGGED = ['source', *parameters.COLUMNS, 'notes']
 ROUND_ROWS = 200
 
 
-def local_today(point):
-    """Today on the clock of the point's site."""
-    return timezone.localdate(timezone=zone_of(site_of(point)))
-
-
 def earliest(point):
-    """The first day a sample at this point may be dated (and the oldest one that may be voided)."""
-    return local_today(point) - timedelta(days=settings.WATER_BACKDATE_DAYS)
+    """The first day a sample at this point may be dated (and the oldest one that may be voided): the window
+    of every daily record (farm/stock/dates.py)."""
+    return dates.site_earliest(site_of(point))
 
 
 def _check_time(measured_at, points):
@@ -55,7 +50,7 @@ def _check_time(measured_at, points):
     for point in points:
         if local_time(measured_at, point).date() < earliest(point):
             raise ValidationError({'measured_at': _('Samples can be dated at most %(days)d days back.')
-                                   % {'days': settings.WATER_BACKDATE_DAYS}})
+                                   % {'days': settings.STOCK_BACKDATE_DAYS}})
 
 
 def value_errors(values):
@@ -188,7 +183,7 @@ def void(user, sample, reason):
             raise ValidationError({NON_FIELD_ERRORS: _('This sample is already voided.')})
         if local_time(sample.measured_at, sample.point).date() < earliest(sample.point):
             raise ValidationError({NON_FIELD_ERRORS: _('Samples older than %(days)d days cannot be voided.')
-                                   % {'days': settings.WATER_BACKDATE_DAYS}})
+                                   % {'days': settings.STOCK_BACKDATE_DAYS}})
         sample.void_reason = reason
         sample.soft_delete(user)
         with audit.source_language():

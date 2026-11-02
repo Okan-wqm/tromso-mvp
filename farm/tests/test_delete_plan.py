@@ -9,20 +9,20 @@ from django.urls import reverse
 from core.models import AuditLog
 from core.softdelete import plan_delete
 
-from ..models import Department, Site
+from ..models import ProductionDepartment, Site
 from .helpers import role
 
-DEPARTMENT_SITE_LINK = Department._meta.get_field('site').remote_field
+DEPARTMENT_SITE_LINK = ProductionDepartment._meta.get_field('site').remote_field
 
 
 class DeletePlanTestCase(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
-        self.user.groups.add(role('Manager', 'view_site', 'delete_site', 'view_department', 'view_auditlog'))
+        self.user.groups.add(role('Manager', 'view_site', 'delete_site', 'view_productiondepartment', 'view_auditlog'))
         self.client.force_login(self.user)
         self.site = Site.objects.create(name='Bergen', code='BG')
-        self.hall_a = Department.objects.create(site=self.site, name='Hall A', code='HA')
-        self.hall_b = Department.objects.create(site=self.site, name='Hall B', code='HB')
+        self.hall_a = ProductionDepartment.objects.create(site=self.site, name='Hall A', code='HA')
+        self.hall_b = ProductionDepartment.objects.create(site=self.site, name='Hall B', code='HB')
         self.url = reverse('farm:site_delete', args=[self.site.pk])
 
     def log(self):
@@ -30,7 +30,7 @@ class DeletePlanTestCase(TestCase):
 
 
 class SetNullTests(DeletePlanTestCase):
-    """Department.site is SET_NULL, as in the source: the departments stay, without a site."""
+    """ProductionDepartment.site is SET_NULL, as in the source: the departments stay, without a site."""
 
     def test_plan_lists_the_departments_that_lose_their_site(self):
         plan = plan_delete(self.site)
@@ -38,11 +38,11 @@ class SetNullTests(DeletePlanTestCase):
         self.assertEqual(plan.cascade, [])
         (group,) = plan.detached_groups()
         self.assertEqual((group['label'], group['link'], set(group['records'])),
-                         ('Departments', 'site', {self.hall_a, self.hall_b}))
+                         ('Production departments', 'site', {self.hall_a, self.hall_b}))
 
     def test_the_confirmation_shows_what_will_happen(self):
         response = self.client.get(self.url)
-        self.assertContains(response, 'Departments that lose their site')
+        self.assertContains(response, 'Production departments that lose their site')
         self.assertContains(response, 'Hall A (HA)')
         self.assertNotContains(response, 'deleted with it')
         self.assertNotContains(response, 'disabled')
@@ -56,14 +56,14 @@ class SetNullTests(DeletePlanTestCase):
             self.assertEqual((hall.version, hall.updated_by, hall.is_deleted), (2, self.user, False))
         self.assertEqual(sorted(self.log()), [
             ('delete', 'site', 'Bergen (BG)'),
-            ('update', 'department', 'Hall A (HA)'),
-            ('update', 'department', 'Hall B (HB)'),
+            ('update', 'production department', 'Hall A (HA)'),
+            ('update', 'production department', 'Hall B (HB)'),
         ])
         entry = AuditLog.objects.get(entity_label='Hall A (HA)')
         self.assertEqual(entry.changes, {'Site': ['Bergen (BG)', None]})
 
     def test_a_site_without_departments_deletes_plainly(self):
-        Department.objects.all().delete()
+        ProductionDepartment.objects.all().delete()
         self.client.post(self.url)
         self.assertEqual(self.log(), [('delete', 'site', 'Bergen (BG)')])
 
@@ -81,18 +81,18 @@ class CascadeTests(DeletePlanTestCase):
         plan = plan_delete(self.site)
         self.assertEqual(plan.detach, [])
         (group,) = plan.deleted_groups()
-        self.assertEqual((group['label'], set(group['records'])), ('Departments', {self.hall_a, self.hall_b}))
-        self.assertContains(self.client.get(self.url), 'Departments deleted with it')
+        self.assertEqual((group['label'], set(group['records'])), ('Production departments', {self.hall_a, self.hall_b}))
+        self.assertContains(self.client.get(self.url), 'Production departments deleted with it')
 
     def test_delete_soft_deletes_the_whole_tree_and_logs_each_record(self):
         self.client.post(self.url)
         self.assertFalse(Site.objects.exists())
-        self.assertFalse(Department.objects.exists())
-        self.assertEqual({d.is_deleted for d in Department.all_objects.all()}, {True})
+        self.assertFalse(ProductionDepartment.objects.exists())
+        self.assertEqual({d.is_deleted for d in ProductionDepartment.all_objects.all()}, {True})
         log = self.log()
         self.assertEqual(sorted(log), [
-            ('delete', 'department', 'Hall A (HA)'),
-            ('delete', 'department', 'Hall B (HB)'),
+            ('delete', 'production department', 'Hall A (HA)'),
+            ('delete', 'production department', 'Hall B (HB)'),
             ('delete', 'site', 'Bergen (BG)'),
         ])
         self.assertEqual(log[-1], ('delete', 'site', 'Bergen (BG)'))   # the children go first
@@ -103,18 +103,18 @@ class ProtectTests(DeletePlanTestCase):
 
     def test_a_protecting_link_blocks_the_delete(self):
         with mock.patch.object(DEPARTMENT_SITE_LINK, 'on_delete', models.PROTECT):
-            self.assertEqual(plan_delete(self.site).blockers, ['2 departments still belong to it.'])
+            self.assertEqual(plan_delete(self.site).blockers, ['2 production departments still belong to it.'])
             self.assertContains(self.client.get(self.url), 'cannot be deleted yet')
             self.assertContains(self.client.get(self.url), 'disabled')
             response = self.client.post(self.url, follow=True)
-        self.assertContains(response, 'cannot be deleted: 2 departments still belong to it.')
+        self.assertContains(response, 'cannot be deleted: 2 production departments still belong to it.')
         self.assertTrue(Site.objects.exists())
         self.assertEqual(self.log(), [])
 
     def test_a_single_blocker_is_worded_in_the_singular(self):
         self.hall_b.soft_delete(self.user)
         with mock.patch.object(DEPARTMENT_SITE_LINK, 'on_delete', models.PROTECT):
-            self.assertEqual(plan_delete(self.site).blockers, ['1 department still belongs to it.'])
+            self.assertEqual(plan_delete(self.site).blockers, ['1 production department still belongs to it.'])
 
     def test_a_model_can_block_with_its_own_condition(self):
         with mock.patch.object(Site, 'delete_blockers', return_value=['Fish are still in tank 3.']):

@@ -37,19 +37,23 @@ delete is a soft delete. Differences from the source:
   as database constraints; the source enforced most of this only in service code.
 - Column lengths win where the source's form allowed longer values (name 150, code 20, email 150).
 - Editing is guarded by the `version` column: a save based on an old version is refused.
-- Deleting a site leaves its departments without a site (see Departments); the other dependants
+- Deleting a site leaves its production departments without a site (see Production departments); the other dependants
   join the delete plan as their tabs arrive.
 
-### Facility › Departments (`/departments/`)
+### Production departments (`/production-departments/`)
 
-Table `departments`: a table (department, type, site, capacity) with search by name or code, a
+The farm's production departments: a hatchery hall, a nursery, a grow-out unit on a site. They are not the
+company's organisational departments (management, HR and the like), which come with the HR module.
+Table `production_departments` (renamed from `departments` by migration 0004, data kept): a table (production
+department, type, site, capacity) with search by name or code, a
 site filter that includes "without a site", a flat form in the dialog and delete. Differences from
 the source:
 
-- A department belongs to a site chosen once, at creation. Deleting a site leaves its departments
+- A production department belongs to a site chosen once, at creation. Deleting a site leaves its production departments
   without a site, as in the source; the confirmation lists them and each gets its own activity-log
   row (see the delete plan below).
-- Code is unique among live departments and a name is unique within a site, as database
+- The source's `administration` type is not carried over: an administrative department is an organisational one.
+- Code is unique among live production departments and a name is unique within a site, as database
   constraints; capacity cannot be negative.
 - Not carried over: `settings` and `area` (accepted but never stored), the second status flag
   `isActive`, the load figure that was never filled in. Notes can be shown and cleared.
@@ -60,13 +64,13 @@ The bugs found in the source while porting are listed in
 
 ### Facility › Systems (`/systems/`)
 
-Table `systems`: a table (system, type, status, site, department, volume, max biomass), nested
-systems shown under their parent, search by name or code, filters by site and by department
-(including "without a department"), a form in the dialog and delete. A system belongs to a site
-(chosen once) and optionally to a department of that site and to a parent system of that site.
+Table `systems`: a table (system, type, status, site, production department, volume, max biomass), nested
+systems shown under their parent, search by name or code, filters by site and by production department
+(including "without a production department"), a form in the dialog and delete. A system belongs to a site
+(chosen once) and optionally to a production department of that site and to a parent system of that site.
 Differences from the source:
 
-- The links are checked on every save, not on create only: the department must be on the system's
+- The links are checked on every save, not on create only: the production department must be on the system's
   site, a parent on the same site, and a system cannot be nested under itself or anything below it.
   The parent list offers only valid choices (the source excluded the system itself but not its
   descendants and was narrowed by the list's own filters).
@@ -76,8 +80,8 @@ Differences from the source:
 - The hand-typed tank count is not carried over: it would drift from the real tanks and is derived
   once tanks exist. The second status flag `isActive` is not carried over either.
 - Code is unique within a site among live systems.
-- Deleting a site deletes its systems, a system the systems nested under it, and a department
-  leaves its systems without a department, all through the delete plan.
+- Deleting a site deletes its systems, a system the systems nested under it, and a production department
+  leaves its systems without one, all through the delete plan.
 
 ## Roles and users
 
@@ -188,7 +192,7 @@ real mail.
 |---|---|
 | `/` | Overview (sign-in required) |
 | `/sites/` | Facility › Sites |
-| `/departments/` | Facility › Departments |
+| `/production-departments/` | Production departments |
 | `/systems/` | Facility › Systems |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
@@ -207,7 +211,7 @@ real mail.
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
-| `core/widgets.py` | `DependentSelect`: a choice that belongs to another field's value (a department to its site) |
+| `core/widgets.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site) |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
 | `core/navigation.py`, `config/navigation.py` | The rail menu as data, filtered by permission |

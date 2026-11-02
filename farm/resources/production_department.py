@@ -1,16 +1,16 @@
 from core.crud import NONE, Resource, filter_by
 
-from ..forms import DepartmentForm
-from ..models import Department, Site
+from ..forms import ProductionDepartmentForm
+from ..models import ProductionDepartment, Site
 
 
-class DepartmentResource(Resource):
-    model = Department
-    form_class = DepartmentForm
-    name, plural, group = 'department', 'departments', 'Facility'
-    url_prefix = 'departments'
+class ProductionDepartmentResource(Resource):
+    model = ProductionDepartment
+    form_class = ProductionDepartmentForm
+    name, plural, group = 'production department', 'production departments', 'Facility'
+    url_prefix = 'production-departments'
     search_fields = ['name', 'code']
-    list_template = 'farm/department_list.html'
+    list_template = 'farm/production_department_list.html'
     icon = 'layout-grid'
 
     @classmethod
@@ -23,5 +23,5 @@ class DepartmentResource(Resource):
         objects, chosen = filter_by(request, objects, 'site', sites, 'site_id', allow_none=True)
         return objects, {
             'sites': sites, 'chosen_site': chosen, 'none_value': NONE,
-            'without_site': Department.objects.filter(site__isnull=True).count(),
+            'without_site': ProductionDepartment.objects.filter(site__isnull=True).count(),
         }

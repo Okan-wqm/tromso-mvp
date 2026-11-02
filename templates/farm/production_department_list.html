@@ -14,29 +14,29 @@
 {% endblock %}
 {% block notice %}
 {% if without_site %}
-<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{{ without_site }} department{{ without_site|pluralize }} {{ without_site|pluralize:"is,are" }} not on any site. <a href="?site={{ none_value }}">Show them</a></p>
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{{ without_site }} production department{{ without_site|pluralize }} {{ without_site|pluralize:"is,are" }} not on any site. <a href="?site={{ none_value }}">Show them</a></p>
 {% endif %}
 {% endblock %}
-{% block empty_text %}Departments organise a site, e.g. a hatchery hall or a grow-out unit.{% endblock %}
+{% block empty_text %}Production departments organise a site, e.g. a hatchery hall or a grow-out unit.{% endblock %}
 {% block items %}
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">Department</th><th scope="col">Type</th><th scope="col">Site</th><th scope="col" class="num">Capacity</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+      <tr><th scope="col">Production department</th><th scope="col">Type</th><th scope="col">Site</th><th scope="col" class="num">Capacity</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
     </thead>
     <tbody>
       {% for department in objects %}
       <tr>
         <td>
-          {% if can_change %}<a class="row-title" href="{% url 'farm:department_edit' department.pk %}" data-modal>{{ department.name }}</a>{% else %}<span class="row-title">{{ department.name }}</span>{% endif %}
+          {% if can_change %}<a class="row-title" href="{% url 'farm:productiondepartment_edit' department.pk %}" data-modal>{{ department.name }}</a>{% else %}<span class="row-title">{{ department.name }}</span>{% endif %}
           <span class="row-sub">{{ department.code }}</span>
         </td>
         <td>{{ department.get_type_display }}</td>
         <td>{% if department.site %}{{ department.site.name }}{% else %}<span class="text-warning">No site</span>{% endif %}</td>
         <td class="num">{% if department.capacity is not None %}{{ department.capacity|floatformat:"-2g" }}{% else %}–{% endif %}</td>
         <td class="row-actions">
-          {% if can_change %}<a class="icon-button" href="{% url 'farm:department_edit' department.pk %}" data-modal title="Edit {{ department.name }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">Edit {{ department.name }}</span></a>{% endif %}
-          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:department_delete' department.pk %}" data-modal title="Delete {{ department.name }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">Delete {{ department.name }}</span></a>{% endif %}
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:productiondepartment_edit' department.pk %}" data-modal title="Edit {{ department.name }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">Edit {{ department.name }}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productiondepartment_delete' department.pk %}" data-modal title="Delete {{ department.name }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">Delete {{ department.name }}</span></a>{% endif %}
         </td>
       </tr>
       {% endfor %}

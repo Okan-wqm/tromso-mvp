@@ -8,10 +8,10 @@
     <option value="">All sites</option>
     {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
   </select>
-  <label class="sr-only" for="department-filter">Department</label>
-  <select id="department-filter" name="department" data-autosubmit>
-    <option value="">All departments</option>
-    <option value="{{ none_value }}"{% if chosen_department == none_value %} selected{% endif %}>Without a department</option>
+  <label class="sr-only" for="department-filter">Production department</label>
+  <select id="department-filter" name="production_department" data-autosubmit>
+    <option value="">All production departments</option>
+    <option value="{{ none_value }}"{% if chosen_department == none_value %} selected{% endif %}>Without a production department</option>
     {% for department in departments %}<option value="{{ department.pk }}"{% if chosen_department == department.pk|stringformat:"s" %} selected{% endif %}>{{ department.name }}</option>{% endfor %}
   </select>
   <noscript><button type="submit" class="button button-ghost">Filter</button></noscript>
@@ -19,7 +19,7 @@
 {% endblock %}
 {% block notice %}
 {% if without_department %}
-<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{{ without_department }} system{{ without_department|pluralize }} {{ without_department|pluralize:"is,are" }} not in any department. <a href="?department={{ none_value }}">Show them</a></p>
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{{ without_department }} system{{ without_department|pluralize }} {{ without_department|pluralize:"is,are" }} not in any production department. <a href="?production_department={{ none_value }}">Show them</a></p>
 {% endif %}
 {% endblock %}
 {% block empty_text %}A system is a RAS, a pond, a cage line or a hatchery on a site; tanks and equipment belong to it.{% endblock %}
@@ -27,7 +27,7 @@
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">System</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Site</th><th scope="col">Department</th><th scope="col" class="num">Volume (m³)</th><th scope="col" class="num">Max biomass (kg)</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+      <tr><th scope="col">System</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Site</th><th scope="col">Production department</th><th scope="col" class="num">Volume (m³)</th><th scope="col" class="num">Max biomass (kg)</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
     </thead>
     <tbody>
       {% for system in objects %}
@@ -40,7 +40,7 @@
         <td>{{ system.get_type_display }}</td>
         <td><span class="badge badge-{{ system.status }}">{{ system.get_status_display }}</span></td>
         <td>{{ system.site.name }}</td>
-        <td>{% if system.department %}{{ system.department.name }}{% else %}<span class="text-warning">No department</span>{% endif %}</td>
+        <td>{% if system.production_department %}{{ system.production_department.name }}{% else %}<span class="text-warning">No production department</span>{% endif %}</td>
         <td class="num">{% if system.total_volume_m3 is not None %}{{ system.total_volume_m3|floatformat:"-2g" }}{% else %}–{% endif %}</td>
         <td class="num">{% if system.max_biomass_kg is not None %}{{ system.max_biomass_kg|floatformat:"-2g" }}{% else %}–{% endif %}</td>
         <td class="row-actions">

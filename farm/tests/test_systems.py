@@ -8,18 +8,18 @@ from django.urls import reverse
 
 from core.models import AuditLog
 
-from ..models import Department, Site, System
+from ..models import ProductionDepartment, Site, System
 from .helpers import role
 
 SYSTEM_MANAGER = (
     'view_system', 'add_system', 'change_system', 'delete_system', 'view_site', 'delete_site',
-    'view_department', 'delete_department', 'view_auditlog',
+    'view_productiondepartment', 'delete_productiondepartment', 'view_auditlog',
 )
 
 
 def system_data(site=None, **overrides):
     data = {'name': 'Smolt RAS 1', 'code': 'sys-1', 'type': 'ras', 'status': 'operational',
-            'site': str(site.pk) if site else '', 'department': '', 'parent': '', 'description': '',
+            'site': str(site.pk) if site else '', 'production_department': '', 'parent': '', 'description': '',
             'total_volume_m3': '', 'max_biomass_kg': ''}
     data.update(overrides)
     return data
@@ -32,8 +32,8 @@ class SystemTestCase(TestCase):
         self.client.force_login(self.user)
         self.bergen = Site.objects.create(name='Bergen', code='BG')
         self.tromso = Site.objects.create(name='Tromso', code='TR')
-        self.hall = Department.objects.create(site=self.bergen, name='Hall A', code='HA')
-        self.cages = Department.objects.create(site=self.tromso, name='Cages', code='CG')
+        self.hall = ProductionDepartment.objects.create(site=self.bergen, name='Hall A', code='HA')
+        self.cages = ProductionDepartment.objects.create(site=self.tromso, name='Cages', code='CG')
 
     def make(self, site=None, **fields):
         fields.setdefault('name', 'System A')
@@ -45,11 +45,11 @@ class SystemRoundTripTests(SystemTestCase):
     def test_create_read_edit_delete(self):
         # Create
         self.client.post(reverse('farm:system_create'), system_data(
-            self.bergen, department=str(self.hall.pk), description='Main loop', total_volume_m3='120.5',
+            self.bergen, production_department=str(self.hall.pk), description='Main loop', total_volume_m3='120.5',
             max_biomass_kg='9000'))
         system = System.objects.get()
         self.assertEqual(
-            (system.name, system.code, system.type, system.status, system.site, system.department,
+            (system.name, system.code, system.type, system.status, system.site, system.production_department,
              system.parent, system.description, system.total_volume_m3, system.max_biomass_kg, system.created_by),
             ('Smolt RAS 1', 'SYS-1', 'ras', 'operational', self.bergen, self.hall, None, 'Main loop',
              Decimal('120.50'), Decimal('9000.00'), self.user),
@@ -57,11 +57,11 @@ class SystemRoundTripTests(SystemTestCase):
         # Read: listed, and the edit form is filled from the database
         self.assertEqual([s.pk for s in self.client.get(reverse('farm:system_list')).context['objects']], [system.pk])
         form = self.client.get(reverse('farm:system_edit', args=[system.pk])).context['form']
-        self.assertEqual((form['description'].value(), form['department'].value()), ('Main loop', self.hall.pk))
+        self.assertEqual((form['description'].value(), form['production_department'].value()), ('Main loop', self.hall.pk))
         # Edit; the site is chosen once and cannot be moved
         self.client.post(reverse('farm:system_edit', args=[system.pk]), system_data(
             self.tromso, name='Smolt RAS 2', type='flow_through', status='maintenance',
-            department=str(self.hall.pk), description='Main loop', total_volume_m3='130', max_biomass_kg='',
+            production_department=str(self.hall.pk), description='Main loop', total_volume_m3='130', max_biomass_kg='',
             version='1'))
         system.refresh_from_db()
         self.assertEqual((system.name, system.type, system.status, system.site, system.total_volume_m3,
@@ -74,11 +74,11 @@ class SystemRoundTripTests(SystemTestCase):
 
     def test_links_and_text_can_be_cleared_when_editing(self):
         parent = self.make(name='Parent', code='PA')
-        system = self.make(name='Child', code='CH', department=self.hall, parent=parent, description='Note')
+        system = self.make(name='Child', code='CH', production_department=self.hall, parent=parent, description='Note')
         self.client.post(reverse('farm:system_edit', args=[system.pk]),
                          system_data(self.bergen, name='Child', code='CH', version='1'))
         system.refresh_from_db()
-        self.assertEqual((system.department, system.parent, system.description), (None, None, ''))
+        self.assertEqual((system.production_department, system.parent, system.description), (None, None, ''))
 
 
 class SystemValidationTests(SystemTestCase):
@@ -108,10 +108,10 @@ class SystemValidationTests(SystemTestCase):
                 self.make(**{field: -1})
 
     def test_the_department_must_be_on_the_systems_site(self):
-        errors = self.errors(site=self.bergen, department=str(self.cages.pk))
-        self.assertEqual(errors['department'], ['The department belongs to another site.'])
-        self.client.post(reverse('farm:system_create'), system_data(self.bergen, department=str(self.hall.pk)))
-        self.assertEqual(System.objects.get().department, self.hall)
+        errors = self.errors(site=self.bergen, production_department=str(self.cages.pk))
+        self.assertEqual(errors['production_department'], ['The production department belongs to another site.'])
+        self.client.post(reverse('farm:system_create'), system_data(self.bergen, production_department=str(self.hall.pk)))
+        self.assertEqual(System.objects.get().production_department, self.hall)
 
     def test_a_parent_system_must_be_on_the_same_site(self):
         elsewhere = self.make(site=self.tromso, name='Elsewhere', code='EL')
@@ -150,7 +150,7 @@ class SystemValidationTests(SystemTestCase):
         self.tromso.soft_delete(self.user)
         self.assertIn('site', self.errors(site=self.tromso))
         self.cages.soft_delete(self.user)
-        self.assertIn('department', self.errors(site=self.bergen, department=str(self.cages.pk)))
+        self.assertIn('production_department', self.errors(site=self.bergen, production_department=str(self.cages.pk)))
 
 
 class SystemFormTests(SystemTestCase):
@@ -170,10 +170,10 @@ class SystemFormTests(SystemTestCase):
 class SystemListTests(SystemTestCase):
     def setUp(self):
         super().setUp()
-        self.top = self.make(name='Alpha RAS', code='AL', department=self.hall)
+        self.top = self.make(name='Alpha RAS', code='AL', production_department=self.hall)
         self.child = self.make(name='Alpha tank loop', code='ALT', parent=self.top)
         self.grandchild = self.make(name='Alpha filter', code='ALF', parent=self.child)
-        self.other = self.make(site=self.tromso, name='Beta pond', code='BP', department=self.cages)
+        self.other = self.make(site=self.tromso, name='Beta pond', code='BP', production_department=self.cages)
 
     def rows(self, **query):
         response = self.client.get(reverse('farm:system_list'), query)
@@ -187,12 +187,12 @@ class SystemListTests(SystemTestCase):
 
     def test_site_and_department_filters(self):
         self.assertEqual(self.rows(site=str(self.tromso.pk)), [('Beta pond', 0)])
-        self.assertEqual(self.rows(department=str(self.hall.pk)), [('Alpha RAS', 0)])
-        self.assertEqual(self.rows(department='none'), [('Alpha tank loop', 1), ('Alpha filter', 2)])
-        self.assertEqual(len(self.rows(site='not-a-site', department='x')), 4)
+        self.assertEqual(self.rows(production_department=str(self.hall.pk)), [('Alpha RAS', 0)])
+        self.assertEqual(self.rows(production_department='none'), [('Alpha tank loop', 1), ('Alpha filter', 2)])
+        self.assertEqual(len(self.rows(site='not-a-site', production_department='x')), 4)
 
-    def test_systems_without_a_department_are_flagged(self):
-        self.assertContains(self.client.get(reverse('farm:system_list')), '2 systems are not in any department.')
+    def test_systems_without_a_production_department_are_flagged(self):
+        self.assertContains(self.client.get(reverse('farm:system_list')), '2 systems are not in any production department.')
 
     def test_the_empty_list_invites_to_add_one(self):
         System.objects.all().delete()
@@ -202,7 +202,7 @@ class SystemListTests(SystemTestCase):
 class SystemDeleteTests(SystemTestCase):
     def setUp(self):
         super().setUp()
-        self.top = self.make(name='Top', code='TOP', department=self.hall)
+        self.top = self.make(name='Top', code='TOP', production_department=self.hall)
         self.child = self.make(name='Child', code='CH', parent=self.top)
 
     def log(self):
@@ -215,38 +215,38 @@ class SystemDeleteTests(SystemTestCase):
         self.assertFalse(System.objects.exists())
         self.assertEqual(self.log(), [('delete', 'system', 'Child (CH)'), ('delete', 'system', 'Top (TOP)')])
 
-    def test_deleting_a_site_deletes_its_systems_and_leaves_its_departments_without_a_site(self):
+    def test_deleting_a_site_deletes_its_systems_and_leaves_its_production_departments_without_a_site(self):
         page = self.client.get(reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertContains(page, 'Systems deleted with it')
-        self.assertContains(page, 'Departments that lose their site')
+        self.assertContains(page, 'Production departments that lose their site')
         self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertFalse(System.objects.exists())
         self.hall.refresh_from_db()
         self.assertIsNone(self.hall.site)
         self.assertEqual(self.log(), [
             ('delete', 'site', 'Bergen (BG)'), ('delete', 'system', 'Child (CH)'),
-            ('delete', 'system', 'Top (TOP)'), ('update', 'department', 'Hall A (HA)'),
+            ('delete', 'system', 'Top (TOP)'), ('update', 'production department', 'Hall A (HA)'),
         ])
 
-    def test_deleting_a_department_leaves_its_systems_in_place_without_a_department(self):
-        page = self.client.get(reverse('farm:department_delete', args=[self.hall.pk]))
-        self.assertContains(page, 'Systems that lose their department')
-        self.client.post(reverse('farm:department_delete', args=[self.hall.pk]))
+    def test_deleting_a_department_leaves_its_systems_in_place_without_a_production_department(self):
+        page = self.client.get(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
+        self.assertContains(page, 'Systems that lose their production department')
+        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.top.refresh_from_db()
-        self.assertEqual((self.top.department, self.top.is_deleted, self.top.version), (None, False, 2))
-        self.assertEqual(self.log(), [('delete', 'department', 'Hall A (HA)'), ('update', 'system', 'Top (TOP)')])
-        self.assertEqual(AuditLog.objects.get(entity_label='Top (TOP)').changes, {'Department': ['Hall A (HA)', None]})
+        self.assertEqual((self.top.production_department, self.top.is_deleted, self.top.version), (None, False, 2))
+        self.assertEqual(self.log(), [('delete', 'production department', 'Hall A (HA)'), ('update', 'system', 'Top (TOP)')])
+        self.assertEqual(AuditLog.objects.get(entity_label='Top (TOP)').changes, {'Production department': ['Hall A (HA)', None]})
 
 
 class SystemAuditAndPermissionTests(SystemTestCase):
     def test_changes_are_logged_with_old_and_new_values(self):
-        self.client.post(reverse('farm:system_create'), system_data(self.bergen, department=str(self.hall.pk)))
+        self.client.post(reverse('farm:system_create'), system_data(self.bergen, production_department=str(self.hall.pk)))
         system = System.objects.get()
         self.client.post(reverse('farm:system_edit', args=[system.pk]), system_data(
-            self.bergen, department='', status='offline', version='1'))
+            self.bergen, production_department='', status='offline', version='1'))
         created, edited = AuditLog.objects.order_by('created_at')
-        self.assertEqual(created.changes['Department'], [None, 'Hall A (HA)'])
-        self.assertEqual(edited.changes, {'Status': ['Operational', 'Offline'], 'Department': ['Hall A (HA)', None]})
+        self.assertEqual(created.changes['Production department'], [None, 'Hall A (HA)'])
+        self.assertEqual(edited.changes, {'Status': ['Operational', 'Offline'], 'Production department': ['Hall A (HA)', None]})
 
     def test_a_read_only_role_sees_systems_but_cannot_change_them(self):
         viewer = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')

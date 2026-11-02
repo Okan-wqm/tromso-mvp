@@ -1,6 +1,6 @@
 {% extends "crud/list.html" %}
 {% block search_placeholder %}Search by name, code or region{% endblock %}
-{% block empty_text %}Add the first site; departments, systems and tanks are set up under a site.{% endblock %}
+{% block empty_text %}Add the first site; production departments, systems and tanks are set up under a site.{% endblock %}
 {% block items %}
 <ul class="card-grid" role="list">
   {% for site in objects %}

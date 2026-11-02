@@ -21,7 +21,7 @@ in `core/`, or by not porting the feature (satellite monitoring is deliberately 
 
 1. [Patterns that repeat across tabs](#patterns-that-repeat-across-tabs)
 2. [Sites](#sites)
-3. [Departments](#departments)
+3. [Production departments](#production-departments) (the source calls them departments)
 4. [Systems](#systems)
 
 ## Patterns that repeat across tabs
@@ -60,7 +60,9 @@ live, closes the whole class.
 | SITE-11 | Low | `SitesTab.tsx` | A card shows `", "` when region and country are empty and `" m²"` when the area is empty. The empty state renders below an empty grid. Contact dialog and delete dialog texts are Turkish in an English UI. | Parts are shown only when present. · Fix the formatting and the catalog. |
 | SITE-12 | Low | `CHK_sites_sea_cage_location` | Created `NOT VALID`, so existing sea-cage rows without coordinates are never checked. | Valid constraint. · `VALIDATE CONSTRAINT` after cleaning the data. |
 
-## Departments
+## Production departments
+
+The source names them departments and mixes in an `administration` type (an organisational department, which the prototype leaves to the HR module; see DEP-16). Entries keep the source's wording.
 
 | ID | Sev. | Where | What is wrong | In the prototype · Fix in the source |
 |---|---|---|---|---|
@@ -79,6 +81,7 @@ live, closes the whole class.
 | DEP-13 | Low | `CodeGeneratorService.generateDepartmentCode` (`database/services/code-generator.service.ts:295`) | Written, never called: codes are typed by hand. | Typed by hand. · Use it or delete it. |
 | DEP-14 | Low | `DepartmentsTab.tsx` | Two empty messages show at once; delete dialog in Turkish; frontend sends `cascade: true` always, so the non-cascade path is unreachable. | Single empty state. · Clean up. |
 | DEP-15 | Medium | `DepartmentsTab.tsx` | The list is fetched with a fixed `limit: 100` and no pager: the 101st department is invisible. | Not limited. · Page or load all. |
+| DEP-16 | Low | `department.entity.ts` (`DepartmentType.ADMINISTRATION`) | Production units and the company's organisational departments share one table and one type list, so a management department sits next to a hatchery hall. | Not ported: the HR module will own organisational departments. · Separate the two concepts. |
 
 ## Systems
 

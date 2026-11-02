@@ -48,7 +48,7 @@ def done(request, url, stay=False):
 class TabbedForm(forms.ModelForm):
     """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`.
     `fixed_after_creation` names the fields chosen once: they are shown but cannot be changed on an
-    existing record (a department stays on its site)."""
+    existing record (a production department stays on its site)."""
 
     tabs = []
     fixed_after_creation = ()
@@ -246,7 +246,7 @@ class ResourceView:
         return get_object_or_404(self.resource.queryset(), pk=pk)
 
 
-NONE = 'none'   # a list filter's value for "records without one" (departments without a site)
+NONE = 'none'   # a list filter's value for "records without one" (production departments without a site)
 
 
 def filter_by(request, objects, param, choices, lookup, allow_none=False):

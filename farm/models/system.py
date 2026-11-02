@@ -5,14 +5,14 @@ from django.db.models import F, Q
 
 from core.models import AuditedModel, CodedMixin
 
-from .department import Department
+from .production_department import ProductionDepartment
 from .site import Site
 
 
 class System(CodedMixin, AuditedModel):
     """A production system of a site: a RAS, a pond, a cage line, a hatchery. Source table: farm.systems.
 
-    Differences from the source: the department must be on the system's site and a parent system
+    Differences from the source: the production department must be on the system's site and a parent system
     on the same site and not below the system itself (the source checked this on create only, and
     update could break it); no second status flag `isActive`; no hand-typed tank count (it would
     drift from the real tanks; it is derived once tanks exist); volumes cannot be negative."""
@@ -37,10 +37,10 @@ class System(CodedMixin, AuditedModel):
 
     # What deleting a record does to the records that point at it is read from these links
     # (core.softdelete): a deleted site takes its systems with it, a deleted system the systems
-    # nested under it, and a deleted department leaves its systems in place without a department.
+    # nested under it, and a deleted production department leaves its systems in place without one.
     site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='systems')
-    department = models.ForeignKey(
-        Department, null=True, blank=True, on_delete=models.SET_NULL, related_name='systems',
+    production_department = models.ForeignKey(
+        ProductionDepartment, null=True, blank=True, on_delete=models.SET_NULL, related_name='systems',
     )
     parent = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.CASCADE, related_name='children',
@@ -85,8 +85,8 @@ class System(CodedMixin, AuditedModel):
     def clean(self):
         super().clean()
         errors = {}
-        if self.department_id and self.site_id and self.department.site_id != self.site_id:
-            errors['department'] = 'The department belongs to another site.'
+        if self.production_department_id and self.site_id and self.production_department.site_id != self.site_id:
+            errors['production_department'] = 'The production department belongs to another site.'
         if self.parent_id:
             if self.parent_id == self.pk:
                 errors['parent'] = 'A system cannot be its own parent.'
@@ -118,7 +118,7 @@ class System(CodedMixin, AuditedModel):
         """The live systems, site by site, each followed by the systems nested under it, with `depth`
         set on each. `wanted` (a queryset) keeps only its systems, in the same order and depth."""
         children = {}
-        for system in cls.objects.select_related('site', 'department', 'parent').order_by('name'):
+        for system in cls.objects.select_related('site', 'production_department', 'parent').order_by('name'):
             children.setdefault(system.parent_id, []).append(system)
         keep = None if wanted is None else {system.pk for system in wanted}
         ordered = []

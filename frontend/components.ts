@@ -110,7 +110,8 @@ function initAutosubmit(root: ParentNode): void {
 }
 
 // ---- selects whose options belong to another field's value ---------------------------------
-// A department belongs to a site: after the site is chosen only its departments are offered, and a
+// A production department belongs to a site: after the site is chosen only its departments are
+// offered, and a
 // choice that no longer fits is cleared. The server checks the same rule; this only guides.
 function initDependentSelects(root: ParentNode): void {
   root.querySelectorAll<HTMLSelectElement>('select[data-depends-on]').forEach((select) => {

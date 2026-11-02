@@ -4,7 +4,8 @@ MENU = [
     Group('', [Entry('Overview', 'home', 'home')]),
     Group('Facility', [
         Entry('Sites', 'farm:site_list', 'building', 'farm.view_site'),
-        Entry('Departments', 'farm:department_list', 'layout-grid', 'farm.view_department'),
+        Entry('Production departments', 'farm:productiondepartment_list', 'layout-grid',
+              'farm.view_productiondepartment'),
         Entry('Systems', 'farm:system_list', 'waves', 'farm.view_system'),
     ]),
     Group('Administration', [

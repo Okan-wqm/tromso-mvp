@@ -4,7 +4,7 @@ Records are soft-deleted, so the database's own `on_delete` never runs. Instead 
 consequences per tab, this reads each link's `on_delete` and applies it to live records:
 
 - CASCADE   the records that point at it are deleted with it, and so on down;
-- SET_NULL  they stay, but lose the link (e.g. a deleted site's departments);
+- SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
 - PROTECT / RESTRICT  they block the delete until they are dealt with.
 
 A model adds conditions that are not links by overriding `delete_blockers()` (fish still in a
@@ -40,14 +40,14 @@ class DeletePlan:
         return groups
 
     def deleted_groups(self):
-        """[{'label': 'Departments', 'records': [...]}] for the confirmation."""
+        """[{'label': 'Systems', 'records': [...]}] for the confirmation."""
         return [
             {'label': str(model._meta.verbose_name_plural).capitalize(), 'records': records}
             for model, records in self._by_model(self.cascade).items()
         ]
 
     def detached_groups(self):
-        """[{'label': 'Departments', 'link': 'site', 'records': [...]}]: kept, but losing their link."""
+        """[{'label': 'Production departments', 'link': 'site', 'records': [...]}]: kept, but losing their link."""
         groups = []
         for model, pairs in self._by_model(self.detach, record_of=lambda pair: pair[0]).items():
             for link in dict.fromkeys(link for _, link in pairs):

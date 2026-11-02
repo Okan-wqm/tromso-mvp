@@ -3,12 +3,12 @@ from django import forms
 from core.crud import CodedFormMixin, TabbedForm
 from core.widgets import DependentSelect
 
-from ..models import Department, Site, System
+from ..models import ProductionDepartment, Site, System
 
 
 class SystemForm(CodedFormMixin, TabbedForm):
     tabs = [('details', 'Details', [
-        'name', 'code', 'type', 'status', 'site', 'department', 'parent', 'description',
+        'name', 'code', 'type', 'status', 'site', 'production_department', 'parent', 'description',
         'total_volume_m3', 'max_biomass_kg',
     ])]
     fixed_after_creation = ('site',)
@@ -16,13 +16,13 @@ class SystemForm(CodedFormMixin, TabbedForm):
     class Meta:
         model = System
         fields = [
-            'name', 'code', 'type', 'status', 'site', 'department', 'parent', 'description',
+            'name', 'code', 'type', 'status', 'site', 'production_department', 'parent', 'description',
             'total_volume_m3', 'max_biomass_kg',
         ]
         labels = {'total_volume_m3': 'Total volume (m³)', 'max_biomass_kg': 'Max biomass (kg)'}
         help_texts = {
             'site': 'A system stays on the site it was created on.',
-            'department': 'Only the departments of the chosen site.',
+            'production_department': 'Only the production departments of the chosen site.',
             'parent': 'Only the systems of the chosen site; leave empty for a top-level system.',
         }
         widgets = {
@@ -39,8 +39,8 @@ class SystemForm(CodedFormMixin, TabbedForm):
         self.fields['site'].required = True
         self.fields['site'].empty_label = 'Select a site'
 
-        departments = Department.objects.exclude(site=None)
-        self._depend_on_site('department', departments, 'No department')
+        departments = ProductionDepartment.objects.exclude(site=None)
+        self._depend_on_site('production_department', departments, 'No production department')
 
         # A system cannot be nested under itself or under anything below it.
         parents = System.objects.all()

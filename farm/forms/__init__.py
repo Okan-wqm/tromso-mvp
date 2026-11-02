@@ -1,5 +1,5 @@
-from .department import DepartmentForm
+from .production_department import ProductionDepartmentForm
 from .site import SiteContactFormSet, SiteForm
 from .system import SystemForm
 
-__all__ = ['DepartmentForm', 'SiteContactFormSet', 'SiteForm', 'SystemForm']
+__all__ = ['ProductionDepartmentForm', 'SiteContactFormSet', 'SiteForm', 'SystemForm']

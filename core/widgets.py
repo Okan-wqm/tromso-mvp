@@ -2,8 +2,8 @@ from django import forms
 
 
 class DependentSelect(forms.Select):
-    """A select whose options belong to the value of another field of the form: a department
-    belongs to a site, a parent system to a site. Each option carries `data-group`, the value of
+    """A select whose options belong to the value of another field of the form: a production
+    department belongs to a site, a parent system to a site. Each option carries `data-group`, the value of
     the other field it belongs to; the browser shows only the options of the chosen value
     (frontend/components.ts, `data-depends-on`). The server checks the same rule when it validates,
     so the browser only keeps the choice honest while editing."""

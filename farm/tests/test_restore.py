@@ -9,7 +9,7 @@ from django.urls import reverse
 from core import softdelete
 from core.models import AuditedModel, AuditLog
 
-from ..models import Department, Site, System
+from ..models import ProductionDepartment, Site, System
 from .helpers import role
 
 
@@ -114,11 +114,11 @@ class AdminTests(RestoreTestCase):
 class DeleteConfirmationPromiseTests(RestoreTestCase):
     def test_what_the_confirmation_promises_is_true_for_every_farm_record_type(self):
         # "It can be restored from the admin": a type missing from the admin would make that a lie.
-        department = Department.objects.create(site=self.site, name='Hall', code='HA')
+        department = ProductionDepartment.objects.create(site=self.site, name='Hall', code='HA')
         self.client.force_login(self.admin_user)
         for url in (reverse('farm:site_delete', args=[self.site.pk]),
-                    reverse('farm:department_delete', args=[department.pk]),
+                    reverse('farm:productiondepartment_delete', args=[department.pk]),
                     reverse('farm:system_delete', args=[self.system.pk])):
             self.assertContains(self.client.get(url), 'restored from the admin')
-        for name in ('site', 'department', 'system'):
+        for name in ('site', 'productiondepartment', 'system'):
             self.assertEqual(self.client.get(reverse(f'admin:farm_{name}_changelist')).status_code, 200)

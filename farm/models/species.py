@@ -5,19 +5,17 @@ from django.db.models import Q
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _, pgettext_lazy
 
-from core.models import AuditedModel, CodedMixin
+from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
 
 from .. import species_catalog
 
 # Genus and species, optionally a subspecies, as written after normalise_scientific_name: "Salmo salar".
 # Genus-level names ("Labrus sp.") are not accepted: reports and the catalogue work per species.
 SCIENTIFIC_NAME = r'^[A-Z][a-z]+( [a-z]{2,}){1,2}$'
-CODE = r'^[A-Z0-9_-]+$'
 OFFICIAL_CODE = r'^[A-Z]{3}$'
 
 SCIENTIFIC_NAME_MESSAGE = _('Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies '
                             'may follow as a third word.')
-CODE_MESSAGE = _('Use capital letters, digits, hyphens and underscores only.')
 OFFICIAL_CODE_MESSAGE = _('The official code is three capital letters, e.g. SAL.')
 WATER_MESSAGE = _('Tick at least one water environment.')
 

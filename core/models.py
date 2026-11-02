@@ -65,6 +65,12 @@ class AuditedModel(models.Model):
         return []
 
 
+# A code as lists and reports show it: capital letters, digits, hyphens and underscores. A model that checks
+# it uses both, in a RegexValidator and a database check (a species, a supplier).
+CODE = r'^[A-Z0-9_-]+$'
+CODE_MESSAGE = _('Use capital letters, digits, hyphens and underscores only.')
+
+
 class CodedMixin:
     """Records known by a name and a short code: codes are stored upper-case, shown as "Name (CODE)".
     `name_field` is the field that holds the name: `name` for most records, `common_name` for a species."""

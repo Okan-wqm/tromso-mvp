@@ -183,3 +183,5 @@ TEST_RUNNER = 'config.test_runner.FastPasswordRunner'
 
 # How many days back a stock operation may be dated, and voided (farm/stock/services.py; owner decision Q3).
 STOCK_BACKDATE_DAYS = 31
+# How many days back a water sample may be dated, and voided (farm/water/services.py): the stock's window.
+WATER_BACKDATE_DAYS = 31

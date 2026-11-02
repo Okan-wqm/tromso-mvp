@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from core.admin import AuditedModelAdmin, ReadOnlyAdmin, register_audited
 
-from .models import Batch, EquipmentType, StockOperation
+from .models import Batch, EquipmentType, StockOperation, WaterMeasurement
 
 register_audited('farm')
 
@@ -24,7 +24,7 @@ class StockRecordAdmin(AuditedModelAdmin):
     actions = []
 
 
-admin.site.unregister([Batch, StockOperation])
+admin.site.unregister([Batch, StockOperation, WaterMeasurement])
 
 
 @admin.register(Batch)
@@ -37,3 +37,13 @@ class BatchAdmin(StockRecordAdmin):
 class StockOperationAdmin(StockRecordAdmin):
     list_display = ['kind', 'date', 'created_by', 'is_deleted', 'void_reason']
     list_filter = ['is_deleted', 'kind']
+
+
+@admin.register(WaterMeasurement)
+class WaterMeasurementAdmin(StockRecordAdmin):
+    """Water samples, voided ones too, to look at. A voided sample is entered again on the Water chemistry
+    page, like a stock operation: a restore would bring back a value someone said was wrong."""
+
+    list_display = ['__str__', 'source', 'created_by', 'is_deleted', 'void_reason']
+    list_filter = ['is_deleted', 'source']
+    list_select_related = ['unit__production_department__site', 'system__site', 'created_by']

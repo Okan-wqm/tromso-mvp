@@ -35,22 +35,24 @@ WORKSPACES = [
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
-            # The reference lists the production side picks from: species and feeds now; water parameters,
-            # chemicals, fish-health substances and slaughter facilities as their tabs arrive.
+            # The reference lists the production side picks from: species, feeds and the water limits per species
+            # now; chemicals, fish-health substances and slaughter facilities as their tabs arrive.
             Group(_('Reference data'), [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
+                Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
             ]),
             # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
             Group(_('Purchasing'), [
                 Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
             ]),
         ]),
-        # The daily production records: the fish in each unit and what happens to them; feeding, water
-        # chemistry, health and harvest join as their tabs arrive.
+        # The daily production records: the fish in each unit and what happens to them, the water they are in;
+        # feeding, health and harvest join as their tabs arrive.
         Section(_('Operations'), [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
+                Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
             ]),
         ]),
     ]),

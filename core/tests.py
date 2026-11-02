@@ -1,3 +1,4 @@
+import io
 import re
 from importlib import import_module
 
@@ -5,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.conf import settings
 from django.core import mail
+from django.core.management import call_command
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
 from django.urls import reverse
@@ -94,6 +96,12 @@ class DatabaseTests(TestCase):
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'")
             self.assertIsNotNone(cursor.fetchone())
+
+    def test_the_migrations_match_the_models(self):
+        # Hand-written steps (the water hypertable's RunSQL) must leave Django's state as the models declare it.
+        out = io.StringIO()
+        call_command('makemigrations', '--check', '--dry-run', stdout=out)
+        self.assertIn('No changes detected', out.getvalue())
 
 
 class AuditLogTests(TestCase):

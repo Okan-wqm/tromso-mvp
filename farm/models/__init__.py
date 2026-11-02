@@ -15,9 +15,10 @@ from .stock import Batch, StockMovement, StockOperation
 from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
+from .water import WaterLimit, WaterMeasurement
 
 __all__ = [
     'Batch', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
     'ProductionDepartment', 'Site', 'SiteContact', 'Species', 'StockMovement', 'StockOperation', 'Supplier',
-    'SupplierContact', 'System', 'Tank',
+    'SupplierContact', 'System', 'Tank', 'WaterLimit', 'WaterMeasurement',
 ]

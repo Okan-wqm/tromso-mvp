@@ -1,0 +1,130 @@
+{% extends base_template %}
+{% load i18n stock water %}
+{% comment %} Operations › Water chemistry (farm.water.views.water_page): the latest water of every unit and loop
+   with its status, or the history of the samples (?view=history, or one point's with ?unit= / ?system=),
+   each value judged on read against the limits as they are now. Filters live in the address.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<nav class="view-tabs" aria-label="{% trans "Water chemistry" %}">
+  <a class="view-tab" href="{{ latest_url }}"{% if not showing_history %} aria-current="page"{% endif %}>{% trans "Latest" %}</a>
+  <a class="view-tab" href="{{ history_tab_url }}"{% if showing_history %} aria-current="page"{% endif %}>{% trans "History" %}</a>
+</nav>
+
+<div class="toolbar">
+  {% if showing_history %}
+  <form method="get" class="toolbar-filter water-filters">
+    <input type="hidden" name="view" value="history">
+    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <select id="site-filter" name="site" data-autosubmit>
+      <option value="">{% trans "All sites" %}</option>
+      {% for item in sites %}<option value="{{ item.pk }}"{% if site == item %} selected{% endif %}>{{ item.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="unit-filter">{% trans "Unit or system" %}</label>
+    <select id="unit-filter" name="unit" data-autosubmit>
+      <option value="">{% trans "All units and systems" %}</option>
+      <optgroup label="{% trans "Units" %}">{% for unit in point_choices.units %}<option value="{{ unit.pk }}"{% if point == unit %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}</optgroup>
+    </select>
+    <label class="sr-only" for="system-filter">{% trans "System" %}</label>
+    <select id="system-filter" name="system" data-autosubmit>
+      <option value="">{% trans "All loops" %}</option>
+      {% for system in point_choices.systems %}<option value="{{ system.pk }}"{% if point == system %} selected{% endif %}>{{ system.code }} · {{ system.name }}</option>{% endfor %}
+    </select>
+    <label class="water-date">{% trans "From" %} <input type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+    <label class="water-date">{% trans "To" %} <input type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+    <label class="check"><input type="checkbox" name="alerts" value="1"{% if alerts_only %} checked{% endif %}> {% trans "Only warnings and criticals" %}</label>
+    <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
+  </form>
+  {% else %}
+  <form method="get" class="toolbar-filter">
+    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <select id="site-filter" name="site" data-autosubmit>
+      <option value="">{% trans "All sites" %}</option>
+      {% for item in sites %}<option value="{{ item.pk }}"{% if site == item %} selected{% endif %}>{{ item.name }}</option>{% endfor %}
+    </select>
+    <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+  </form>
+  {% endif %}
+  {% if can_record %}
+  <div class="toolbar-actions">
+    <a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record sample" %}</a>
+    <a class="button button-ghost" href="{{ round_url }}">{% trans "Round" %}</a>
+  </div>
+  {% endif %}
+</div>
+
+<p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Nobody is alerted: critical values are shown here, not sent.{% endblocktrans %}</p>
+
+{% if showing_history %}
+{% if point %}<h2 class="water-point">{% blocktrans trimmed with point=point.code %}History of {{ point }}{% endblocktrans %}</h2>{% endif %}
+{% if history %}
+<div class="table-wrap">
+  <table class="data-table water-table">
+    <thead>
+      <tr>
+        <th scope="col">{% trans "Measured at" %}</th>
+        <th scope="col">{% trans "Unit or system" %}</th>
+        <th scope="col">{% trans "Source" %}</th>
+        {% for parameter in columns %}<th scope="col" class="num">{{ parameter.short }}</th>{% endfor %}
+        <th scope="col">{% trans "By" %}</th>
+        <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in history %}{% with sample=row.sample %}
+      <tr class="{% if sample.is_deleted %}is-voided{% else %}wq-row-{{ row.status }}{% endif %}">
+        <td class="nowrap"><time datetime="{{ sample.measured_at|date:'c' }}">{{ sample|site_clock|date:"DATETIME_FORMAT" }}</time>{% if sample.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=sample.void_reason name=sample.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td class="nowrap"><a class="row-title" href="{{ request.path }}?{% if sample.system_id %}system={{ sample.system_id }}{% else %}unit={{ sample.unit_id }}{% endif %}">{{ sample.point.code }}</a>{% if sample.system_id %}<span class="row-sub">{% trans "Loop" %}</span>{% endif %}</td>
+        <td>{{ sample.get_source_display }}{% if sample.notes %}<span class="row-sub">{{ sample.notes }}</span>{% endif %}</td>
+        {% for reading in row.cells %}{% include "farm/_water_cell.html" %}{% endfor %}
+        <td>{{ sample.created_by.get_username|default:"system" }}</td>
+        <td class="row-actions">{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}</td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% else %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="droplet" %}
+  <h2>{% trans "No samples match these filters." %}</h2>
+  <p>{% blocktrans trimmed with start=start|date:"DATE_FORMAT" end=end|date:"DATE_FORMAT" %}From {{ start }} to {{ end }}.{% endblocktrans %}</p>
+</div>
+{% endif %}
+
+{% else %}
+<p class="units-count">{% blocktrans trimmed count count=rows|length %}{{ count }} unit or loop{% plural %}{{ count }} units and loops{% endblocktrans %}{% if critical_count %} · <strong class="over-text">{% blocktrans trimmed count count=critical_count %}{{ count }} critical{% plural %}{{ count }} critical{% endblocktrans %}</strong>{% endif %}{% if warning_count %} · {% blocktrans trimmed count count=warning_count %}{{ count }} warning{% plural %}{{ count }} warnings{% endblocktrans %}{% endif %}</p>
+{% if rows %}
+<div class="table-wrap">
+  <table class="data-table water-table">
+    <thead>
+      <tr>
+        <th scope="col">{% trans "Unit or system" %}</th>
+        <th scope="col">{% trans "Status" %}</th>
+        {% for parameter in columns %}<th scope="col" class="num">{{ parameter.short }}</th>{% endfor %}
+        <th scope="col"><span class="sr-only">{% trans "History" %}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}{% with point=row.point water=row.water %}
+      <tr>
+        <td class="nowrap"><a class="row-title" href="{{ row.history_url }}">{{ point.code }}</a><span class="row-sub">{% if point.site %}{% trans "Loop" %} · {{ point.site.name }}{% else %}{{ point.production_department.name }}{% if point.production_department.site %} · {{ point.production_department.site.name }}{% endif %}{% endif %}</span></td>
+        <td class="nowrap">{% include "farm/_water_status.html" with status=water.status %}</td>
+        {% for reading in row.cells %}{% include "farm/_water_cell.html" with latest=True %}{% endfor %}
+        <td class="row-actions"><a href="{{ row.history_url }}">{% trans "History" %}</a></td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="droplet" %}
+  <h2>{% trans "No units yet" %}</h2>
+  <p>{% trans "Water is sampled in the tanks, ponds and cages of Setup, and in the loops of its systems." %}</p>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

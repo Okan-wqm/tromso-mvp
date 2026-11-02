@@ -7,6 +7,7 @@ from .species import SpeciesResource
 from .supplier import SupplierResource
 from .system import SystemResource
 from .tank import TankResource
+from .water_limit import WaterLimitResource
 
 __all__ = ['EquipmentResource', 'FeedResource', 'ProductionDepartmentResource', 'SiteResource', 'SpeciesResource',
-           'SupplierResource', 'SystemResource', 'TankResource']
+           'SupplierResource', 'SystemResource', 'TankResource', 'WaterLimitResource']

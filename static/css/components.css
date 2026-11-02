@@ -558,6 +558,40 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
   font-weight: 600;
 }
 .affected ul { margin: 0; padding-left: 1.125rem; max-height: 9rem; overflow-y: auto; color: var(--muted); }
+
+/* Water chemistry (templates/farm/water*.html, the unit drawer's Water section): a value's status is its
+   colour. Only problems get a strong colour: critical is the error red, a warning amber; ok stays quiet;
+   no limit and stale are grey, stale in italics. A worked-out value is in italics too. */
+.wq-status { display: inline-flex; align-items: center; gap: .375rem; font-size: .875rem; }
+.wq-dot { width: .625rem; height: .625rem; border-radius: 50%; background: var(--sage); }
+.wq-critical .wq-dot { background: var(--error); }
+.wq-warning .wq-dot { background: #C58A16; }
+.wq-ok .wq-dot { background: var(--olive); }
+.wq-stale .wq-dot, .wq-not_measured .wq-dot { background: transparent; border: 1.5px solid var(--sage); }
+td.wq-critical, .wq-value.wq-critical { color: var(--error); font-weight: 700; }
+td.wq-warning, .wq-value.wq-warning { color: #7A5410; font-weight: 600; }
+td.wq-stale, .wq-value.wq-stale, td.wq-no_limit, .wq-value.wq-no_limit { color: var(--muted); }
+td.wq-stale, .wq-value.wq-stale { font-style: italic; }
+.wq-derived { font-style: italic; }
+.wq-note { margin-left: .125rem; color: var(--muted); }
+.wq-missing { color: var(--muted); }
+.data-table tbody tr.wq-row-critical { box-shadow: inset 4px 0 0 var(--error); }
+.data-table tbody tr.wq-row-warning { box-shadow: inset 4px 0 0 #C58A16; }
+.data-table tbody tr.is-voided td { color: var(--muted); }
+.data-table tbody tr.is-voided td.wq { text-decoration: line-through; }
+.water-table th.num { white-space: nowrap; }
+a.view-tab { text-decoration: none; }
+a.view-tab:not([aria-current]) { border-bottom-color: transparent; color: var(--muted); }
+a.view-tab:not([aria-current]):hover { color: var(--speck); }
+.water-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+.water-date { display: inline-flex; align-items: center; gap: .375rem; color: var(--muted); font-size: .875rem; }
+.water-date input { min-height: 42px; padding: 0 .5rem; border: 1.5px solid var(--sage); border-radius: 6px; font: inherit; }
+.water-point { margin: 0 0 .75rem; font-size: 1.125rem; }
+.round-scope { margin: 0 0 1.5rem; }
+.round-table td { padding: .375rem .5rem; }
+.round-table td.field { margin: 0; }
+.round-table input { width: 100%; min-width: 5.5rem; }
+.data-table tbody tr.group-row th { background: var(--mist); color: var(--speck); }
 .button[disabled] { opacity: .5; cursor: not-allowed; }
 
 /* A system nested under another is indented one step per level (up to five) */

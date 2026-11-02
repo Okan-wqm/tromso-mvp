@@ -16,6 +16,10 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 #, python-format
+msgid "%(age)s ago"
+msgstr "%(age)s önce"
+
+#, python-format
 msgid "%(batch)s was stocked on %(date)s: an operation on it cannot be dated before."
 msgstr "%(batch)s %(date)s tarihinde stoklandı: üzerindeki bir işlem bundan önceye tarihlenemez."
 
@@ -26,6 +30,10 @@ msgstr "%(batch)s iptal edildi."
 #, python-format
 msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s balık · %(weight)s g"
+
+#, python-format
+msgid "%(code)s · %(name)s (loop)"
+msgstr "%(code)s · %(name)s (döngü)"
 
 #. Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
 #, python-format
@@ -99,6 +107,18 @@ msgstr[0] "%(count)d birim"
 msgstr[1] "%(count)d birim"
 
 #, python-format
+msgid "%(count)d water sample recorded."
+msgid_plural "%(count)d water samples recorded."
+msgstr[0] "%(count)d su numunesi kaydedildi."
+msgstr[1] "%(count)d su numunesi kaydedildi."
+
+#, python-format
+msgid "%(count)s critical"
+msgid_plural "%(count)s critical"
+msgstr[0] "%(count)s kritik"
+msgstr[1] "%(count)s kritik"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(unit)s içinde %(count)s balık kalıyor: onları da tartın."
 
@@ -125,6 +145,18 @@ msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s sistem hiçbir üretim departmanında değil."
 msgstr[1] "%(count)s sistem hiçbir üretim departmanında değil."
+
+#, python-format
+msgid "%(count)s unit or loop"
+msgid_plural "%(count)s units and loops"
+msgstr[0] "%(count)s birim veya döngü"
+msgstr[1] "%(count)s birim ve döngü"
+
+#, python-format
+msgid "%(count)s warning"
+msgid_plural "%(count)s warnings"
+msgstr[0] "%(count)s uyarı"
+msgstr[1] "%(count)s uyarı"
 
 #, python-format
 msgid "%(counter)s row"
@@ -181,6 +213,10 @@ msgid "%(label)s deleted with it"
 msgstr "%(label)s da birlikte silinir"
 
 #, python-format
+msgid "%(label)s kept with it"
+msgstr "Onunla korunan: %(label)s"
+
+#, python-format
 msgid "%(label)s linked to it"
 msgstr "Buna bağlı: %(label)s"
 
@@ -220,6 +256,14 @@ msgstr "%(number)s silinmiş"
 #, python-format
 msgid "%(operation)s of %(date)s voided."
 msgstr "%(operation)s (%(date)s) iptal edildi."
+
+#, python-format
+msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d decimals."
+msgstr "%(parameter)s: sınırlar %(low)s ile %(high)s arasında, en çok %(decimals)d ondalık."
+
+#, python-format
+msgid "%(point)s is deleted."
+msgstr "%(point)s silinmiş."
 
 #, python-format
 msgid "%(rating)s of 5"
@@ -358,6 +402,13 @@ msgstr "Fiyatın bir para birimi, para biriminin de bir fiyatı olmalı."
 msgid "A production department stays on the site it was created on."
 msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
 
+#, python-format
+msgid "A round takes at most %(rows)d rows."
+msgstr "Bir tur en çok %(rows)d satır alır."
+
+msgid "A sample is taken in a unit or in a system’s loop, one of the two."
+msgstr "Numune bir birimde ya da bir sistemin döngüsünde alınır; ikisinden biri."
+
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "Bir örnek, tartılan balık sayısı ile toplam ağırlıklarıdır."
 
@@ -406,6 +457,9 @@ msgstr "Hesap"
 
 msgid "Accuracy"
 msgstr "Doğruluk"
+
+msgid "Acid–base and CO₂"
+msgstr "Asit–baz ve CO₂"
 
 msgid "Across the ring: its circumference divided by π, so a 160 m ring is 50.9 m across."
 msgstr "Halkanın çapı: çevresinin π’ye bölümü; 160 m’lik bir halkanın çapı 50,9 m’dir."
@@ -506,6 +560,12 @@ msgstr ""
 "Akvakulturregisteret lokalite numarası (5 hane). Bu numara olmadan Norveç mevzuat raporları "
 "sunulamaz."
 
+msgid "Alkalinity (mg/L as CaCO₃)"
+msgstr "Alkalinite (CaCO₃ olarak mg/L)"
+
+msgid "Alkalinity (mg/L)"
+msgstr "Alkalinite (mg/L)"
+
 msgid "All"
 msgstr "Tümü"
 
@@ -521,8 +581,14 @@ msgstr "Tüm yem türleri"
 msgid "All kinds"
 msgstr "Tüm türler"
 
+msgid "All loops"
+msgstr "Tüm döngüler"
+
 msgid "All manufacturers"
 msgstr "Tüm üreticiler"
+
+msgid "All parameters"
+msgstr "Tüm parametreler"
 
 msgid "All production departments"
 msgstr "Tüm üretim departmanları"
@@ -545,6 +611,9 @@ msgstr "Yemdeki tüm enerji, verildiği hâliyle kg başına MJ."
 msgid "All types"
 msgstr "Tüm türler"
 
+msgid "All units and systems"
+msgstr "Tüm birimler ve sistemler"
+
 msgid "All water environments"
 msgstr "Tüm su ortamları"
 
@@ -565,6 +634,9 @@ msgstr "Amonyak"
 
 msgid "Ammonia sensor"
 msgstr "Amonyak sensörü"
+
+msgid "Ammonium (mg/L NH₄⁺ as N)"
+msgstr "Amonyum (N olarak mg/L NH₄⁺)"
 
 msgid ""
 "An earthen pond is bare soil or compacted clay; a lined pond has a membrane or concrete, and "
@@ -624,6 +696,9 @@ msgstr "Bu kodu başka bir birim zaten kullanıyor."
 msgid "Another user already uses this email."
 msgstr "Bu e-postayı başka bir kullanıcı zaten kullanıyor."
 
+msgid "Any water"
+msgstr "Her su"
+
 msgid "Anyone"
 msgstr "Herkes"
 
@@ -640,6 +715,27 @@ msgctxt "access area"
 msgid "Area"
 msgstr "Alan"
 
+msgid "As a pH meter or kit reads it."
+msgstr "pH metrenin veya kitin okuduğu gibi."
+
+msgid ""
+"As an oxygen meter shows it; above 100 % with added oxygen. With the temperature, the mg/L is "
+"worked out when it is not entered."
+msgstr ""
+"Oksijen ölçerin gösterdiği gibi; oksijen verilirken %100'ün üstünde. Sıcaklıkla birlikte, "
+"girilmezse mg/L hesaplanır."
+
+msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
+msgstr "Azot olarak. NO₂⁻ okuyan bir kit: 3,29'a bölün."
+
+msgid "As nitrogen. A kit that reads NO₃⁻: divide by 4.43."
+msgstr "Azot olarak. NO₃⁻ okuyan bir kit: 4,43'e bölün."
+
+msgid ""
+"As the meter or kit reads it. With the temperature, the saturation is worked out when it is not "
+"entered."
+msgstr "Ölçerin veya kitin okuduğu gibi. Sıcaklıkla birlikte, girilmezse doygunluk hesaplanır."
+
 msgid "As weighed on arrival; to 0.0001 g for eggs and larvae."
 msgstr "Gelişte tartıldığı gibi; yumurta ve larvalar için 0,0001 g’a kadar."
 
@@ -651,8 +747,19 @@ msgid "At least %(min)s."
 msgstr "En az %(min)s."
 
 #, python-format
+msgid "At most %(decimals)d decimals for this parameter."
+msgstr "Bu parametre için en çok %(decimals)d ondalık."
+
+#, python-format
+msgid "At most %(decimals)d decimals."
+msgstr "En çok %(decimals)d ondalık."
+
+#, python-format
 msgid "At most %(max)s."
 msgstr "En fazla %(max)s."
+
+msgid "At sea-level pressure: the site has no altitude."
+msgstr "Deniz seviyesi basıncında: sahanın rakımı yok."
 
 msgid "At the deepest point, usually by the outlet."
 msgstr "En derin noktada, genellikle çıkışın yanında."
@@ -725,6 +832,14 @@ msgstr "Boncuk hacmi"
 msgid "Bed type"
 msgstr "Yatak tipi"
 
+#, python-format
+msgid "Between %(low)s and %(high)s for this parameter."
+msgstr "Bu parametre için %(low)s ile %(high)s arasında."
+
+#, python-format
+msgid "Between %(low)s and %(high)s: check the value."
+msgstr "%(low)s ile %(high)s arasında: değeri kontrol edin."
+
 msgid "Biofloc"
 msgstr "Biyoflok"
 
@@ -748,6 +863,9 @@ msgstr ""
 msgid "Bought from a supplier"
 msgstr "Tedarikçiden satın alındı"
 
+msgid "Bounds"
+msgstr "Sınırlar"
+
 msgid "Brackish"
 msgstr "Acı su"
 
@@ -769,9 +887,15 @@ msgstr "Tarayıcı varsayılanı"
 msgid "Buoyancy"
 msgstr "Yüzerlik"
 
+msgid "By"
+msgstr "Kaydeden"
+
 #. Translators: the coefficient of performance of a chiller.
 msgid "COP (efficiency)"
 msgstr "COP (verim)"
+
+msgid "CO₂ (mg/L)"
+msgstr "CO₂ (mg/L)"
 
 msgid "Cage"
 msgstr "Kafes"
@@ -800,6 +924,9 @@ msgstr "Kapasite"
 msgid "Carbohydrate, NFE (%)"
 msgstr "Karbonhidrat, NFE (%)"
 
+msgid "Carbon dioxide (mg/L free CO₂)"
+msgstr "Karbondioksit (mg/L serbest CO₂)"
+
 msgid "Category"
 msgstr "Kategori"
 
@@ -827,6 +954,9 @@ msgstr "Kimyasallar"
 msgid "Chiller"
 msgstr "Soğutucu (chiller)"
 
+msgid "Choose a site to list its units and loops."
+msgstr "Birimlerini ve döngülerini listelemek için bir saha seçin."
+
 msgid "Choose a supplier of equipment and spare parts."
 msgstr "Bir ekipman ve yedek parça tedarikçisi seçin."
 
@@ -838,6 +968,9 @@ msgstr "Canlı balık ve yumurta tedarikçisi seçin."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Genel sekmesinde bir tür seçin; teknik özellikleri burada görünür."
+
+msgid "Choose a unit or a system."
+msgstr "Bir birim veya sistem seçin."
 
 msgid "Choose among the ones offered."
 msgstr "Sunulanlar arasından seçin."
@@ -1011,6 +1144,15 @@ msgstr "Oluşturulma zamanı"
 msgid "Created by"
 msgstr "Oluşturan"
 
+msgid "Critical"
+msgstr "Kritik"
+
+msgid "Critical above"
+msgstr "Kritik üst sınır"
+
+msgid "Critical below"
+msgstr "Kritik alt sınır"
+
 msgid "Criticality"
 msgstr "Kritiklik"
 
@@ -1059,6 +1201,9 @@ msgstr "Veritabanı"
 
 msgid "Date"
 msgstr "Tarih"
+
+msgid "Date and time on the site’s clock."
+msgstr "Sahanın saatine göre tarih ve saat."
 
 msgid "Dead fish"
 msgstr "Ölü balık"
@@ -1147,6 +1292,9 @@ msgstr "Hastalık"
 msgid "Dissolved oxygen"
 msgstr "Çözünmüş oksijen"
 
+msgid "Dissolved oxygen (mg/L O₂)"
+msgstr "Çözünmüş oksijen (mg/L O₂)"
+
 msgid "Dissolved oxygen sensor"
 msgstr "Çözünmüş oksijen sensörü"
 
@@ -1177,11 +1325,28 @@ msgid ""
 "reason."
 msgstr "Örn. “100 yerine 1000 yazıldı”. İşlem bu nedenle birlikte, üstü çizili olarak geçmişte kalır."
 
+msgid ""
+"E.g. “typed into the wrong unit”. The sample stays in the history, struck through, with this "
+"reason."
+msgstr "Örn. “yanlış birime girildi”. Numune geçmişte üstü çizili olarak, bu nedenle birlikte kalır."
+
 msgid "EPDM"
 msgstr "EPDM"
 
 msgid "Each unit can be listed once."
 msgstr "Her birim bir kez yazılabilir."
+
+msgid "Each unit or system can be listed once."
+msgstr "Her birim veya sistem bir kez listelenebilir."
+
+msgid ""
+"Each value is judged on read against the water limits as they are now, for the fish in the unit "
+"that day; a sample of a loop for every unit of the loop. A unit without fish shows its values "
+"with no limit. Nobody is alerted: critical values are shown here, not sent."
+msgstr ""
+"Her değer okunurken su sınırlarının bugünkü haline göre, o gün birimdeki balıklar için "
+"değerlendirilir; bir döngü numunesi döngünün her birimi için. Balıksız bir birim değerlerini "
+"sınırsız gösterir. Kimseye uyarı gitmez: kritik değerler burada gösterilir, gönderilmez."
 
 msgid "Earthen"
 msgstr "Toprak"
@@ -1223,6 +1388,9 @@ msgstr "Boş — stoklamaya hazır"
 
 msgid "Energy"
 msgstr "Enerji"
+
+msgid "Enter at least one value."
+msgstr "En az bir değer girin."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr ""
@@ -1471,6 +1639,9 @@ msgstr "Parolanızı mı unuttunuz?"
 msgid "Frame"
 msgstr "Çerçeve"
 
+msgid "Free carbon dioxide, from a CO₂ probe or a titration."
+msgstr "Serbest karbondioksit; bir CO₂ probundan veya titrasyonla."
+
 msgid "Freeboard (m)"
 msgstr "Hava payı (m)"
 
@@ -1491,8 +1662,15 @@ msgstr "%(low)s ile %(high)s arası."
 msgid "From %(min)s to %(max)s."
 msgstr "%(min)s ile %(max)s arası."
 
+#, python-format
+msgid "From %(start)s to %(end)s."
+msgstr "%(start)s – %(end)s."
+
 msgid "From (g)"
 msgstr "Alt sınır (g)"
+
+msgid "From a saturometer (total dissolved gas)."
+msgstr "Bir saturometreden (toplam çözünmüş gaz)."
 
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Uçtan uca; her uç, tank genişliğinde bir yarım dairedir."
@@ -1524,6 +1702,9 @@ msgstr "Galvanizli çelik"
 msgid "Gas"
 msgstr "Gaz"
 
+msgid "Gas and other"
+msgstr "Gaz ve diğer"
+
 msgid "General"
 msgstr "Genel"
 
@@ -1548,6 +1729,9 @@ msgstr ""
 #, python-format
 msgid "Genus: %(genus)s (the first word of the scientific name)."
 msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
+
+msgid "Give at least one bound."
+msgstr "En az bir sınır girin."
 
 msgid "Give the average or the sample, not both."
 msgstr "Ortalamayı ya da örneği girin, ikisini birden değil."
@@ -1636,6 +1820,10 @@ msgstr "Silinmiş satırları gizle"
 msgid "History"
 msgstr "Geçmiş"
 
+#, python-format
+msgid "History of %(point)s"
+msgstr "%(point)s geçmişi"
+
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
@@ -1661,6 +1849,13 @@ msgstr "Dizinler"
 msgid "Inherit from company"
 msgstr "Şirketten devral"
 
+msgid ""
+"Inside the warning bounds a value is ok; outside them, a warning; outside the critical bounds, "
+"critical. A value on a bound is in the inner band. Leave a bound empty where there is none."
+msgstr ""
+"Uyarı sınırlarının içindeki değer normaldir; dışındaki uyarıdır; kritik sınırların dışındaki "
+"kritiktir. Sınırın üzerindeki değer iç banttadır. Olmayan sınırı boş bırakın."
+
 msgid "Installation date"
 msgstr "Kurulum tarihi"
 
@@ -1683,6 +1878,13 @@ msgstr "Stok işlemleri var: önce onları iptal edin."
 
 msgid "It holds fish: move or harvest them first."
 msgstr "İçinde balık var: önce taşıyın veya hasat edin."
+
+msgid ""
+"It stops counting: the latest values and statuses are worked out again without it. To correct a "
+"sample, void it and enter it again."
+msgstr ""
+"Artık sayılmaz: son değerler ve durumlar onsuz yeniden hesaplanır. Bir numuneyi düzeltmek için "
+"iptal edip yeniden girin."
 
 msgid "Its company registration or VAT number, e.g. 923456789 in Norway; spaces are left out."
 msgstr "Şirket sicil ya da vergi numarası, örn. Norveç’te 923456789; boşluklar atılır."
@@ -1768,6 +1970,9 @@ msgstr "Soyad"
 msgid "Last sign-in"
 msgstr "Son giriş"
 
+msgid "Latest"
+msgstr "Son değerler"
+
 msgid "Latitude"
 msgstr "Enlem"
 
@@ -1788,6 +1993,9 @@ msgstr "Seviye sensörü"
 
 msgid "Life stage"
 msgstr "Yaşam evresi"
+
+msgid "Limit"
+msgstr "Sınır"
 
 msgid "Line"
 msgstr "Satır"
@@ -1827,6 +2035,9 @@ msgstr "Boylam"
 
 msgid "Longitude is required for a sea cage."
 msgstr "Deniz kafesi için boylam zorunludur."
+
+msgid "Loop"
+msgstr "Döngü"
 
 msgid "Losses"
 msgstr "Kayıplar"
@@ -1895,6 +2106,9 @@ msgstr "Azami debi"
 msgid "Maximum temperature"
 msgstr "Azami sıcaklık"
 
+msgid "Measured at"
+msgstr "Ölçüm zamanı"
+
 msgid "Measured parameters"
 msgstr "Ölçülen parametreler"
 
@@ -1922,6 +2136,9 @@ msgstr "Göz açıklığı (mm)"
 msgid "Metadata"
 msgstr "Üstveri"
 
+msgid "Meter or test kit"
+msgstr "Ölçer veya test kiti"
+
 msgid "Minimum transmittance"
 msgstr "Asgari geçirgenlik"
 
@@ -1943,6 +2160,10 @@ msgstr "Nem (%)"
 msgid "Mollusc"
 msgstr "Yumuşakça"
 
+#, python-format
+msgid "More than %(rows)d units and systems: choose a production department or a system."
+msgstr "%(rows)d'den fazla birim ve sistem: bir üretim departmanı veya sistem seçin."
+
 msgid "Mortality"
 msgstr "Ölüm"
 
@@ -1962,6 +2183,26 @@ msgstr "Hareketli yatak (MBBR)"
 msgid "Multiparameter probe"
 msgstr "Çok parametreli prob"
 
+msgid ""
+"NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
+"divide by 1.22. The toxic NH₃ is worked out from this, the pH and the temperature of the same "
+"sample."
+msgstr ""
+"NH₃ ve NH₄⁺ birlikte, azot olarak. NH₄⁺ okuyan bir kit: 1,29'a bölün; NH₃ okuyan: 1,22'ye bölün. "
+"Toksik NH₃ bundan, aynı numunenin pH'ından ve sıcaklığından hesaplanır."
+
+msgid "NH₃-N (mg/L)"
+msgstr "NH₃-N (mg/L)"
+
+msgid "NH₄-N (mg/L)"
+msgstr "NH₄-N (mg/L)"
+
+msgid "NO₂-N (mg/L)"
+msgstr "NO₂-N (mg/L)"
+
+msgid "NO₃-N (mg/L)"
+msgstr "NO₃-N (mg/L)"
+
 msgid "Name"
 msgstr "Ad"
 
@@ -1976,6 +2217,15 @@ msgstr "Tür listesini daraltır."
 
 msgid "Natural gas"
 msgstr "Doğal gaz"
+
+msgid "Needs the pH and the temperature of the same sample."
+msgstr "Aynı numunenin pH'ı ve sıcaklığı gerekir."
+
+msgid "Needs the salinity: none was recorded here in the 30 days before."
+msgstr "Tuzluluk gerekir: burada önceki 30 günde kaydedilmemiş."
+
+msgid "Needs the temperature of the same sample."
+msgstr "Aynı numunenin sıcaklığı gerekir."
 
 msgid "Net and frame"
 msgstr "Ağ ve çerçeve"
@@ -2007,6 +2257,15 @@ msgstr "Daha yeni"
 
 msgid "Next"
 msgstr "Sonraki"
+
+msgid "Nitrate (mg/L NO₃ as N)"
+msgstr "Nitrat (N olarak mg/L NO₃)"
+
+msgid "Nitrite (mg/L NO₂ as N)"
+msgstr "Nitrit (N olarak mg/L NO₂)"
+
+msgid "Nitrogen"
+msgstr "Azot"
 
 msgid "No"
 msgstr "Hayır"
@@ -2043,6 +2302,9 @@ msgstr "%(date)s tarihinde %(unit)s içinde tartılacak %(batch)s balığı yok.
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
 
+msgid "No limit"
+msgstr "Sınır yok"
+
 msgid "No other table."
 msgstr "Başka tablo yok."
 
@@ -2062,6 +2324,9 @@ msgstr "Eşleşen satır yok."
 msgid "No rows match. <a href=\"%(url)s\">Clear the search and filters</a>."
 msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizleyin</a>."
 
+msgid "No samples match these filters."
+msgstr "Bu filtrelere uyan numune yok."
+
 msgid "No site"
 msgstr "Saha yok"
 
@@ -2078,6 +2343,12 @@ msgstr "Seçilecek sistem yok: üretim departmanının sahasında sistem yok ya 
 
 msgid "No units match these filters."
 msgstr "Bu filtrelere uyan birim yok."
+
+msgid "No units or loops here."
+msgstr "Burada birim veya döngü yok."
+
+msgid "No units yet"
+msgstr "Henüz birim yok"
 
 msgid "None"
 msgstr "Yok"
@@ -2102,6 +2373,9 @@ msgstr "Bir sistemde değil"
 
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
+
+msgid "Not measured"
+msgstr "Ölçülmedi"
 
 msgid "Not rated"
 msgstr "Puanlanmadı"
@@ -2132,6 +2406,9 @@ msgstr "Yavru yetiştirme"
 
 msgid "Nylon"
 msgstr "Naylon"
+
+msgid "OK"
+msgstr "Normal"
 
 msgid "Offered"
 msgstr "Sunuluyor"
@@ -2186,6 +2463,9 @@ msgid ""
 msgstr ""
 "Yalnızca üretim departmanının sahasındaki sistemler; bir üretim departmanına ait bir sistem ise "
 "yalnızca o departmanın."
+
+msgid "Only warnings and criticals"
+msgstr "Yalnızca uyarılar ve kritikler"
 
 msgid "Open menu"
 msgstr "Menüyü aç"
@@ -2274,6 +2554,10 @@ msgstr "Kendi kuluçkahanemiz"
 msgid "Oxygen"
 msgstr "Oksijen"
 
+#, python-format
+msgid "Oxygen saturation (% of air saturation)"
+msgstr "Oksijen doygunluğu (hava doygunluğunun %'si)"
+
 msgid "Ozone concentration"
 msgstr "Ozon konsantrasyonu"
 
@@ -2282,6 +2566,15 @@ msgstr "Ozon jeneratörü"
 
 msgid "Ozone production"
 msgstr "Ozon üretimi"
+
+msgid "O₂ (%)"
+msgstr "O₂ (%)"
+
+msgid "O₂ (mg/L)"
+msgstr "O₂ (mg/L)"
+
+msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
+msgstr "PSU aynı sayıdır: tatlı suda 0, denizde yaklaşık 35."
 
 msgid "PVC"
 msgstr "PVC"
@@ -2298,6 +2591,12 @@ msgstr "Panel"
 
 msgid "Panels"
 msgstr "Paneller"
+
+msgid "Parameter"
+msgstr "Parametre"
+
+msgid "Parameters"
+msgstr "Parametreler"
 
 msgid "Parent equipment"
 msgstr "Üst ekipman"
@@ -2552,8 +2851,17 @@ msgstr "İtlaf kaydet"
 msgid "Record mortality"
 msgstr "Ölüm kaydet"
 
+msgid "Record sample"
+msgstr "Numune kaydet"
+
+msgid "Record the round"
+msgstr "Turu kaydet"
+
 msgid "Record type"
 msgstr "Kayıt türü"
+
+msgid "Record water sample"
+msgstr "Su numunesi kaydet"
 
 msgid "Rectangular"
 msgstr "Dikdörtgen"
@@ -2624,6 +2932,9 @@ msgstr "Roller"
 msgid "Roles: a name and the permissions it allows."
 msgstr "Roller: bir ad ve izin verdiği izinler."
 
+msgid "Round"
+msgstr "Tur"
+
 msgid "Row"
 msgstr "Satır"
 
@@ -2644,11 +2955,25 @@ msgstr "Güvenlik"
 msgid "Salinity"
 msgstr "Tuzluluk"
 
+msgid "Salinity (‰)"
+msgstr "Tuzluluk (‰)"
+
+msgid "Salinity (‰, g/kg)"
+msgstr "Tuzluluk (‰, g/kg)"
+
 msgid "Salinity sensor"
 msgstr "Tuzluluk sensörü"
 
 msgid "Saltwater"
 msgstr "Tuzlu su"
+
+#, python-format
+msgid "Samples can be dated at most %(days)d days back."
+msgstr "Numuneler en çok %(days)d gün geriye tarihlenebilir."
+
+#, python-format
+msgid "Samples older than %(days)d days cannot be voided."
+msgstr "%(days)d günden eski numuneler iptal edilemez."
 
 msgid "Sampling weigh-in"
 msgstr "Tartım örneklemesi"
@@ -2724,6 +3049,9 @@ msgstr "Ad, bilimsel ad veya koda göre ara"
 msgid "Search by name, username or email"
 msgstr "Ada, kullanıcı adına veya e-postaya göre ara"
 
+msgid "Search by species or source"
+msgstr "Balık türüne veya kaynağa göre ara"
+
 msgid "Search every column"
 msgstr "Tüm sütunlarda ara"
 
@@ -2747,6 +3075,9 @@ msgstr "Bir tür seçin"
 
 msgid "Select a life stage"
 msgstr "Bir yaşam evresi seçin"
+
+msgid "Select a parameter"
+msgstr "Bir parametre seçin"
 
 msgid "Select a production department"
 msgstr "Bir üretim departmanı seçin"
@@ -2802,6 +3133,9 @@ msgstr "Tüm %(plural)s"
 
 msgid "Show deleted rows"
 msgstr "Silinmiş satırları göster"
+
+msgid "Show the units"
+msgstr "Birimleri göster"
 
 msgid "Show them"
 msgstr "Göster"
@@ -2891,6 +3225,12 @@ msgstr ""
 msgid "Sort by %(name)s"
 msgstr "Sırala: %(name)s"
 
+msgid "Source"
+msgstr "Kaynak"
+
+msgid "Source of the values"
+msgstr "Değerlerin kaynağı"
+
 msgid "Species"
 msgstr "Balık türleri"
 
@@ -2921,6 +3261,9 @@ msgstr "Giriş evresi"
 
 msgid "Stainless steel"
 msgstr "Paslanmaz çelik"
+
+msgid "Stale"
+msgstr "Eski"
 
 msgid "Standby"
 msgstr "Yedekte"
@@ -3041,8 +3384,17 @@ msgstr "Sistem"
 msgid "Systems"
 msgstr "Sistemler"
 
+msgid "Systems (loop)"
+msgstr "Sistemler (döngü)"
+
 msgid "Systems by status"
 msgstr "Duruma göre sistemler"
+
+msgid "TAN (mg/L N)"
+msgstr "TAN (mg/L N)"
+
+msgid "TGP (%)"
+msgstr "TGP (%)"
 
 msgid "Table"
 msgstr "Tablo"
@@ -3065,8 +3417,17 @@ msgstr "Tanklar, havuzlar ve kafesler"
 msgid "Technical specifications"
 msgstr "Teknik özellikler"
 
+msgid "Temp. (°C)"
+msgstr "Sıc. (°C)"
+
 msgid "Temperature"
 msgstr "Sıcaklık"
+
+msgid "Temperature (°C)"
+msgstr "Sıcaklık (°C)"
+
+msgid "Temperature and oxygen"
+msgstr "Sıcaklık ve oksijen"
 
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
@@ -3103,6 +3464,16 @@ msgstr "Parti numarası kaydedilirken verilir."
 
 msgid "The biomass cannot be negative."
 msgstr "Biyokütle negatif olamaz."
+
+msgid ""
+"The bounds a water value is judged by, per species and parameter: a warning outside one pair, "
+"critical outside the other."
+msgstr ""
+"Bir su değerinin değerlendirildiği sınırlar, balık türü ve parametre başına: bir çiftin dışında "
+"uyarı, diğerinin dışında kritik."
+
+msgid "The bounds go up: critical below ≤ warning below ≤ warning above ≤ critical above."
+msgstr "Sınırlar artarak gider: kritik alt ≤ uyarı alt ≤ uyarı üst ≤ kritik üst."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
@@ -3168,6 +3539,14 @@ msgstr "Elipsin en uzun çapı."
 
 msgid "The lower weight must be below the upper weight."
 msgstr "Alt ağırlık üst ağırlıktan küçük olmalı."
+
+#, python-format
+msgid ""
+"The mg/L and the % disagree by more than 10 % at this temperature and salinity: check the meter’s"
+" settings."
+msgstr ""
+"Bu sıcaklık ve tuzlulukta mg/L ile % arasında %10'dan fazla fark var: ölçerin ayarlarını kontrol "
+"edin."
 
 msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
@@ -3288,6 +3667,9 @@ msgstr ""
 "Balıkların tutulduğu tanklar, havuzlar ve kafesler; her biri bir üretim departmanında ve varsa "
 "bir sistemde."
 
+msgid "The time cannot be in the future."
+msgstr "Zaman gelecekte olamaz."
+
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
 "for a few days before a split."
@@ -3324,6 +3706,22 @@ msgstr "Garanti satın alma tarihinden önce bitemez."
 msgid "The water cannot stand higher than the depth."
 msgstr "Su, derinlikten yüksek olamaz."
 
+msgid ""
+"The water each species is kept in. A value outside the warning bounds is a warning, outside the "
+"critical bounds critical; a value on a bound is in the inner band. A row for a unit’s water type "
+"wins over the row for any water. Nothing is filled in for you: enter the values your vet or "
+"guideline gives, and say where they come from."
+msgstr ""
+"Her balık türünün tutulduğu su. Uyarı sınırlarının dışındaki değer uyarı, kritik sınırların "
+"dışındaki kritiktir; sınırın üzerindeki değer iç banttadır. Birimin su tipine ait satır, her su "
+"için olan satırdan önce gelir. Sizin yerinize hiçbir şey doldurulmaz: veterinerinizin veya "
+"kılavuzunuzun verdiği değerleri girin ve nereden geldiklerini yazın."
+
+msgid ""
+"The water of the units it applies to. A row for a unit’s water type wins over the row for any "
+"water."
+msgstr "Uygulandığı birimlerin suyu. Birimin su tipine ait satır, her su için olan satırdan önce gelir."
+
 msgid "The water surface when the pond is full."
 msgstr "Havuz doluyken su yüzeyi."
 
@@ -3359,6 +3757,9 @@ msgstr ""
 "Bağlantıyı korurlar, ancak bu kayıt silinmişken bağlantı sayılmaz; geri yüklemek bağlantıyı geri "
 "getirir."
 
+msgid "They stay as they are, out of sight while this is deleted, and come back when it is restored."
+msgstr "Oldukları gibi kalırlar; bu silinmişken görünmezler ve geri yüklendiğinde geri gelirler."
+
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Bu kayıt (%(name)s) henüz silinemez."
@@ -3382,11 +3783,17 @@ msgstr "Bu üretim departmanı hiçbir sahada değil; bir sahada olanı seçin."
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Bu işlem kaydı kalıcı olarak kaldırır. Etkinlik günlüğü, silindiğine dair bir kayıt tutar."
 
+msgid "This sample is already voided."
+msgstr "Bu numune zaten iptal edildi."
+
 msgid "This site already has a production department with this name."
 msgstr "Bu sahada bu adla bir üretim departmanı zaten var."
 
 msgid "This site already has a system with this code."
 msgstr "Bu sahada bu kodlu bir sistem zaten var."
+
+msgid "This species already has limits for this parameter and water type."
+msgstr "Bu balık türünün bu parametre ve su tipi için zaten sınırları var."
 
 msgid "This system is deleted."
 msgstr "Bu sistem silinmiş."
@@ -3430,8 +3837,18 @@ msgstr "Bitiş"
 msgid "To units"
 msgstr "Hedef birimler"
 
+msgid "Total alkalinity. A kit in dKH: multiply by 17.85."
+msgstr "Toplam alkalinite. dKH veren bir kit: 17,85 ile çarpın."
+
+msgid "Total ammonia nitrogen (mg/L TAN as N)"
+msgstr "Toplam amonyak azotu (N olarak mg/L TAN)"
+
 msgid "Total area (m²)"
 msgstr "Toplam alan (m²)"
+
+#, python-format
+msgid "Total gas pressure (% of barometric pressure)"
+msgstr "Toplam gaz basıncı (barometrik basıncın %'si)"
 
 msgid "Total volume (m³)"
 msgstr "Toplam hacim (m³)"
@@ -3455,6 +3872,9 @@ msgstr "Başka bir arama deneyin."
 msgid "Turbidity"
 msgstr "Bulanıklık"
 
+msgid "Turbidity (NTU)"
+msgstr "Bulanıklık (NTU)"
+
 msgid "Two rows have the same feed size."
 msgstr "İki satır aynı yem boyutuna sahip."
 
@@ -3476,6 +3896,9 @@ msgstr "UV filtre"
 msgid "UV steriliser"
 msgstr "UV sterilizatör"
 
+msgid "Un-ionised ammonia (mg/L NH₃ as N)"
+msgstr "İyonize olmamış amonyak (N olarak mg/L NH₃)"
+
 msgid "Unaccounted loss"
 msgstr "Açıklanamayan kayıp"
 
@@ -3487,6 +3910,9 @@ msgstr "Benzersiz"
 
 msgid "Unit"
 msgstr "Birim"
+
+msgid "Unit or system"
+msgstr "Birim veya sistem"
 
 msgid "Units"
 msgstr "Birimler"
@@ -3544,6 +3970,13 @@ msgstr "İşlemi iptal et"
 msgid "Void the %(operation)s of %(date)s?"
 msgstr "%(date)s tarihli %(operation)s işlemi iptal edilsin mi?"
 
+#, python-format
+msgid "Void the sample of %(point)s at %(moment)s?"
+msgstr "%(point)s birimindeki %(moment)s numunesi iptal edilsin mi?"
+
+msgid "Void water sample"
+msgstr "Su numunesini iptal et"
+
 msgid "Voided"
 msgstr "İptal edildi"
 
@@ -3556,6 +3989,15 @@ msgstr "Hacim"
 msgid "Volume (m³)"
 msgstr "Hacim (m³)"
 
+msgid "Warning"
+msgstr "Uyarı"
+
+msgid "Warning above"
+msgstr "Uyarı üst sınırı"
+
+msgid "Warning below"
+msgstr "Uyarı alt sınırı"
+
 msgid "Warranty end date"
 msgstr "Garanti bitiş tarihi"
 
@@ -3565,14 +4007,34 @@ msgstr "Su"
 msgid "Water capacity (m³)"
 msgstr "Su kapasitesi (m³)"
 
+msgid "Water chemistry"
+msgstr "Su kimyası"
+
 msgid "Water depth (m)"
 msgstr "Su derinliği (m)"
 
 msgid "Water environment"
 msgstr "Su ortamı"
 
+msgid "Water is sampled in the tanks, ponds and cages of Setup, and in the loops of its systems."
+msgstr "Su, Kurulum'daki tanklarda, havuzlarda ve kafeslerde ve sistemlerinin döngülerinde örneklenir."
+
+msgid "Water limits"
+msgstr "Su sınırları"
+
 msgid "Water quality"
 msgstr "Su kalitesi"
+
+msgid "Water round"
+msgstr "Su turu"
+
+#, python-format
+msgid "Water sample of %(point)s voided."
+msgstr "%(point)s su numunesi iptal edildi."
+
+#, python-format
+msgid "Water sample recorded at %(point)s."
+msgstr "%(point)s için su numunesi kaydedildi."
 
 msgid "Water source"
 msgstr "Su kaynağı"
@@ -3632,6 +4094,9 @@ msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel
 
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
+
+msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
+msgstr "Değerlerin nereden geldiği, örn. “veteriner, Kasım 2026” veya bir kılavuz."
 
 msgid "Which permissions each role allows."
 msgstr "Her rolün hangi izinlere izin verdiği."
@@ -3735,6 +4200,14 @@ msgstr "<strong>%(name)s</strong> tarafından"
 
 msgid "contains"
 msgstr "içerir"
+
+#, python-format
+msgid "critical above %(value)s"
+msgstr "%(value)s üstü kritik"
+
+#, python-format
+msgid "critical below %(value)s"
+msgstr "%(value)s altı kritik"
 
 #, python-format
 msgid "criticality %(level)d"
@@ -3893,6 +4366,9 @@ msgstr "örn. kari.nordmann"
 msgid "e.g. sand, cartridge"
 msgstr "örn. kum, kartuş"
 
+msgid "e.g. the vet, November 2026"
+msgstr "örn. veteriner, Kasım 2026"
+
 msgid "empty"
 msgstr "boş"
 
@@ -3952,6 +4428,12 @@ msgstr "veritabanı tarafından zorunlu kılınmıyor"
 
 msgid "not in the model"
 msgstr "modelde yok"
+
+msgid "pH"
+msgstr "pH"
+
+msgid "pH (NBS scale)"
+msgstr "pH (NBS ölçeği)"
 
 msgid "pH sensor"
 msgstr "pH sensörü"
@@ -4055,8 +4537,31 @@ msgid "voided by %(name)s: %(reason)s"
 msgstr "%(name)s tarafından iptal edildi: %(reason)s"
 
 #, python-format
+msgid "warning above %(value)s"
+msgstr "%(value)s üstü uyarı"
+
+#, python-format
+msgid "warning below %(value)s"
+msgstr "%(value)s altı uyarı"
+
+msgid "water limit"
+msgstr "su sınırı"
+
+msgid "water limits"
+msgstr "su sınırları"
+
+msgid "water sample"
+msgstr "su numunesi"
+
+msgid "water samples"
+msgstr "su numuneleri"
+
+#, python-format
 msgid "weighed %(date)s"
 msgstr "%(date)s tartıldı"
+
+msgid "worked out from the sample"
+msgstr "numuneden hesaplandı"
 
 msgid "yes"
 msgstr "evet"

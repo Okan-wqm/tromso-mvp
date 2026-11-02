@@ -16,6 +16,10 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 #, python-format
+msgid "%(age)s ago"
+msgstr "%(age)s siden"
+
+#, python-format
 msgid "%(batch)s was stocked on %(date)s: an operation on it cannot be dated before."
 msgstr "%(batch)s ble satt ut %(date)s: en operasjon på den kan ikke dateres tidligere."
 
@@ -26,6 +30,10 @@ msgstr "%(batch)s er annullert."
 #, python-format
 msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s fisk · %(weight)s g"
+
+#, python-format
+msgid "%(code)s · %(name)s (loop)"
+msgstr "%(code)s · %(name)s (kretsløp)"
 
 #. Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
 #, python-format
@@ -99,6 +107,18 @@ msgstr[0] "%(count)d enhet"
 msgstr[1] "%(count)d enheter"
 
 #, python-format
+msgid "%(count)d water sample recorded."
+msgid_plural "%(count)d water samples recorded."
+msgstr[0] "%(count)d vannprøve registrert."
+msgstr[1] "%(count)d vannprøver registrert."
+
+#, python-format
+msgid "%(count)s critical"
+msgid_plural "%(count)s critical"
+msgstr[0] "%(count)s kritisk"
+msgstr[1] "%(count)s kritiske"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(count)s fisk blir igjen i %(unit)s: vei dem også."
 
@@ -125,6 +145,18 @@ msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s system tilhører ingen produksjonsavdeling."
 msgstr[1] "%(count)s systemer tilhører ingen produksjonsavdeling."
+
+#, python-format
+msgid "%(count)s unit or loop"
+msgid_plural "%(count)s units and loops"
+msgstr[0] "%(count)s enhet eller kretsløp"
+msgstr[1] "%(count)s enheter og kretsløp"
+
+#, python-format
+msgid "%(count)s warning"
+msgid_plural "%(count)s warnings"
+msgstr[0] "%(count)s advarsel"
+msgstr[1] "%(count)s advarsler"
 
 #, python-format
 msgid "%(counter)s row"
@@ -181,6 +213,10 @@ msgid "%(label)s deleted with it"
 msgstr "%(label)s som slettes sammen med den"
 
 #, python-format
+msgid "%(label)s kept with it"
+msgstr "%(label)s som beholdes med den"
+
+#, python-format
 msgid "%(label)s linked to it"
 msgstr "%(label)s knyttet til den"
 
@@ -220,6 +256,14 @@ msgstr "%(number)s slettet"
 #, python-format
 msgid "%(operation)s of %(date)s voided."
 msgstr "%(operation)s (%(date)s) er annullert."
+
+#, python-format
+msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d decimals."
+msgstr "%(parameter)s: grenser fra %(low)s til %(high)s, høyst %(decimals)d desimaler."
+
+#, python-format
+msgid "%(point)s is deleted."
+msgstr "%(point)s er slettet."
 
 #, python-format
 msgid "%(rating)s of 5"
@@ -356,6 +400,13 @@ msgstr "En pris trenger sin valuta, og en valuta trenger en pris."
 msgid "A production department stays on the site it was created on."
 msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet på."
 
+#, python-format
+msgid "A round takes at most %(rows)d rows."
+msgstr "En runde tar høyst %(rows)d rader."
+
+msgid "A sample is taken in a unit or in a system’s loop, one of the two."
+msgstr "En prøve tas i en enhet eller i et systems kretsløp, ett av de to."
+
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "En prøve er antall fisk veid og samlet vekt."
 
@@ -404,6 +455,9 @@ msgstr "Konto"
 
 msgid "Accuracy"
 msgstr "Nøyaktighet"
+
+msgid "Acid–base and CO₂"
+msgstr "Syre–base og CO₂"
 
 msgid "Across the ring: its circumference divided by π, so a 160 m ring is 50.9 m across."
 msgstr "Tvers over ringen: omkretsen delt på π, så en ring på 160 m er 50,9 m i diameter."
@@ -506,6 +560,12 @@ msgstr ""
 "Lokalitetsnummer fra Akvakulturregisteret (5 siffer). Uten det kan ikke rapporter til norske "
 "myndigheter sendes inn."
 
+msgid "Alkalinity (mg/L as CaCO₃)"
+msgstr "Alkalitet (mg/L som CaCO₃)"
+
+msgid "Alkalinity (mg/L)"
+msgstr "Alkalitet (mg/L)"
+
 msgid "All"
 msgstr "Alle"
 
@@ -521,8 +581,14 @@ msgstr "Alle fôrtyper"
 msgid "All kinds"
 msgstr "Alle typer"
 
+msgid "All loops"
+msgstr "Alle kretsløp"
+
 msgid "All manufacturers"
 msgstr "Alle produsenter"
+
+msgid "All parameters"
+msgstr "Alle parametere"
 
 msgid "All production departments"
 msgstr "Alle produksjonsavdelinger"
@@ -545,6 +611,9 @@ msgstr "All energien i fôret, i MJ per kg slik det fôres."
 msgid "All types"
 msgstr "Alle typer"
 
+msgid "All units and systems"
+msgstr "Alle enheter og systemer"
+
 msgid "All water environments"
 msgstr "Alle vannmiljøer"
 
@@ -565,6 +634,9 @@ msgstr "Ammoniakk"
 
 msgid "Ammonia sensor"
 msgstr "Ammoniakksensor"
+
+msgid "Ammonium (mg/L NH₄⁺ as N)"
+msgstr "Ammonium (mg/L NH₄⁺ som N)"
 
 msgid ""
 "An earthen pond is bare soil or compacted clay; a lined pond has a membrane or concrete, and "
@@ -624,6 +696,9 @@ msgstr "Denne koden brukes allerede av en annen enhet."
 msgid "Another user already uses this email."
 msgstr "Denne e-postadressen brukes allerede av en annen bruker."
 
+msgid "Any water"
+msgstr "Alt vann"
+
 msgid "Anyone"
 msgstr "Alle"
 
@@ -640,6 +715,29 @@ msgctxt "access area"
 msgid "Area"
 msgstr "Område"
 
+msgid "As a pH meter or kit reads it."
+msgstr "Slik et pH-meter eller et sett leser den."
+
+msgid ""
+"As an oxygen meter shows it; above 100 % with added oxygen. With the temperature, the mg/L is "
+"worked out when it is not entered."
+msgstr ""
+"Slik et oksygenmeter viser den; over 100 % med tilsatt oksygen. Med temperaturen regnes mg/L ut "
+"når den ikke er lagt inn."
+
+msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
+msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,29."
+
+msgid "As nitrogen. A kit that reads NO₃⁻: divide by 4.43."
+msgstr "Som nitrogen. Et sett som leser NO₃⁻: del på 4,43."
+
+msgid ""
+"As the meter or kit reads it. With the temperature, the saturation is worked out when it is not "
+"entered."
+msgstr ""
+"Slik måleren eller settet leser den. Med temperaturen regnes metningen ut når den ikke er lagt "
+"inn."
+
 msgid "As weighed on arrival; to 0.0001 g for eggs and larvae."
 msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
 
@@ -651,8 +749,19 @@ msgid "At least %(min)s."
 msgstr "Minst %(min)s."
 
 #, python-format
+msgid "At most %(decimals)d decimals for this parameter."
+msgstr "Høyst %(decimals)d desimaler for denne parameteren."
+
+#, python-format
+msgid "At most %(decimals)d decimals."
+msgstr "Høyst %(decimals)d desimaler."
+
+#, python-format
 msgid "At most %(max)s."
 msgstr "Høyst %(max)s."
+
+msgid "At sea-level pressure: the site has no altitude."
+msgstr "Ved trykket ved havnivå: lokaliteten har ingen høyde over havet."
 
 msgid "At the deepest point, usually by the outlet."
 msgstr "På det dypeste punktet, vanligvis ved utløpet."
@@ -725,6 +834,14 @@ msgstr "Perlevolum"
 msgid "Bed type"
 msgstr "Biomedietype"
 
+#, python-format
+msgid "Between %(low)s and %(high)s for this parameter."
+msgstr "Mellom %(low)s og %(high)s for denne parameteren."
+
+#, python-format
+msgid "Between %(low)s and %(high)s: check the value."
+msgstr "Mellom %(low)s og %(high)s: kontroller verdien."
+
 msgid "Biofloc"
 msgstr "Biofloc"
 
@@ -745,6 +862,9 @@ msgstr "Kjøpt fisk har en leverandør; fisk fra eget klekkeri eller villfanget 
 
 msgid "Bought from a supplier"
 msgstr "Kjøpt fra leverandør"
+
+msgid "Bounds"
+msgstr "Grenser"
 
 msgid "Brackish"
 msgstr "Brakkvann"
@@ -767,9 +887,15 @@ msgstr "Nettleserens standard"
 msgid "Buoyancy"
 msgstr "Flyteevne"
 
+msgid "By"
+msgstr "Av"
+
 #. Translators: the coefficient of performance of a chiller.
 msgid "COP (efficiency)"
 msgstr "COP (virkningsgrad)"
+
+msgid "CO₂ (mg/L)"
+msgstr "CO₂ (mg/L)"
 
 msgid "Cage"
 msgstr "Merd"
@@ -798,6 +924,9 @@ msgstr "Kapasitet"
 msgid "Carbohydrate, NFE (%)"
 msgstr "Karbohydrat, NFE (%)"
 
+msgid "Carbon dioxide (mg/L free CO₂)"
+msgstr "Karbondioksid (mg/L fri CO₂)"
+
 msgid "Category"
 msgstr "Kategori"
 
@@ -825,6 +954,9 @@ msgstr "Kjemikalier"
 msgid "Chiller"
 msgstr "Kjøleaggregat"
 
+msgid "Choose a site to list its units and loops."
+msgstr "Velg en lokalitet for å liste enhetene og kretsløpene."
+
 msgid "Choose a supplier of equipment and spare parts."
 msgstr "Velg en leverandør av utstyr og reservedeler."
 
@@ -836,6 +968,9 @@ msgstr "Velg en leverandør av levende fisk og rogn."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Velg en type på fanen Generelt; spesifikasjonene vises her."
+
+msgid "Choose a unit or a system."
+msgstr "Velg en enhet eller et system."
 
 msgid "Choose among the ones offered."
 msgstr "Velg blant dem som tilbys."
@@ -1009,6 +1144,15 @@ msgstr "Opprettet"
 msgid "Created by"
 msgstr "Opprettet av"
 
+msgid "Critical"
+msgstr "Kritisk"
+
+msgid "Critical above"
+msgstr "Kritisk over"
+
+msgid "Critical below"
+msgstr "Kritisk under"
+
 msgid "Criticality"
 msgstr "Kritikalitet"
 
@@ -1057,6 +1201,9 @@ msgstr "Database"
 
 msgid "Date"
 msgstr "Dato"
+
+msgid "Date and time on the site’s clock."
+msgstr "Dato og klokkeslett etter lokalitetens klokke."
 
 msgid "Dead fish"
 msgstr "Dødfisk"
@@ -1145,6 +1292,9 @@ msgstr "Sykdom"
 msgid "Dissolved oxygen"
 msgstr "Løst oksygen"
 
+msgid "Dissolved oxygen (mg/L O₂)"
+msgstr "Løst oksygen (mg/L O₂)"
+
 msgid "Dissolved oxygen sensor"
 msgstr "Oksygensensor"
 
@@ -1177,11 +1327,30 @@ msgstr ""
 "F.eks. «skrev 1000 i stedet for 100». Operasjonen blir stående i historikken, gjennomstreket, med"
 " denne begrunnelsen."
 
+msgid ""
+"E.g. “typed into the wrong unit”. The sample stays in the history, struck through, with this "
+"reason."
+msgstr ""
+"F.eks. «registrert i feil enhet». Prøven blir stående i historikken, gjennomstreket, med denne "
+"årsaken."
+
 msgid "EPDM"
 msgstr "EPDM"
 
 msgid "Each unit can be listed once."
 msgstr "Hver enhet kan bare stå én gang."
+
+msgid "Each unit or system can be listed once."
+msgstr "Hver enhet eller hvert system kan stå én gang."
+
+msgid ""
+"Each value is judged on read against the water limits as they are now, for the fish in the unit "
+"that day; a sample of a loop for every unit of the loop. A unit without fish shows its values "
+"with no limit. Nobody is alerted: critical values are shown here, not sent."
+msgstr ""
+"Hver verdi vurderes ved lesing mot vanngrensene slik de er nå, for fisken i enheten den dagen; en"
+" prøve fra et kretsløp for hver enhet i kretsløpet. En enhet uten fisk viser verdiene uten "
+"grense. Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
 
 msgid "Earthen"
 msgstr "Jord"
@@ -1223,6 +1392,9 @@ msgstr "Tom – klar for utsett"
 
 msgid "Energy"
 msgstr "Energi"
+
+msgid "Enter at least one value."
+msgstr "Legg inn minst én verdi."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
@@ -1468,6 +1640,9 @@ msgstr "Glemt passordet?"
 msgid "Frame"
 msgstr "Ramme"
 
+msgid "Free carbon dioxide, from a CO₂ probe or a titration."
+msgstr "Fri karbondioksid, fra en CO₂-sonde eller en titrering."
+
 msgid "Freeboard (m)"
 msgstr "Fribord (m)"
 
@@ -1488,8 +1663,15 @@ msgstr "Fra %(low)s til %(high)s."
 msgid "From %(min)s to %(max)s."
 msgstr "Fra %(min)s til %(max)s."
 
+#, python-format
+msgid "From %(start)s to %(end)s."
+msgstr "Fra %(start)s til %(end)s."
+
 msgid "From (g)"
 msgstr "Fra (g)"
+
+msgid "From a saturometer (total dissolved gas)."
+msgstr "Fra et saturometer (total løst gass)."
 
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
@@ -1521,6 +1703,9 @@ msgstr "Galvanisert stål"
 msgid "Gas"
 msgstr "Gass"
 
+msgid "Gas and other"
+msgstr "Gass og annet"
+
 msgid "General"
 msgstr "Generelt"
 
@@ -1545,6 +1730,9 @@ msgstr ""
 #, python-format
 msgid "Genus: %(genus)s (the first word of the scientific name)."
 msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
+
+msgid "Give at least one bound."
+msgstr "Oppgi minst én grense."
 
 msgid "Give the average or the sample, not both."
 msgstr "Oppgi snittvekten eller prøven, ikke begge."
@@ -1631,6 +1819,10 @@ msgstr "Skjul slettede rader"
 msgid "History"
 msgstr "Historikk"
 
+#, python-format
+msgid "History of %(point)s"
+msgstr "Historikk for %(point)s"
+
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
 
@@ -1656,6 +1848,13 @@ msgstr "Indekser"
 msgid "Inherit from company"
 msgstr "Arv fra selskapet"
 
+msgid ""
+"Inside the warning bounds a value is ok; outside them, a warning; outside the critical bounds, "
+"critical. A value on a bound is in the inner band. Leave a bound empty where there is none."
+msgstr ""
+"Innenfor varselgrensene er en verdi OK; utenfor dem en advarsel; utenfor de kritiske grensene "
+"kritisk. En verdi på en grense er i det indre båndet. La en grense stå tom der det ikke er noen."
+
 msgid "Installation date"
 msgstr "Installasjonsdato"
 
@@ -1678,6 +1877,13 @@ msgstr "Den har beholdningsoperasjoner: annuller dem først."
 
 msgid "It holds fish: move or harvest them first."
 msgstr "Det er fisk i den: flytt eller høst fisken først."
+
+msgid ""
+"It stops counting: the latest values and statuses are worked out again without it. To correct a "
+"sample, void it and enter it again."
+msgstr ""
+"Den slutter å telle: de siste verdiene og statusene regnes ut igjen uten den. For å rette en "
+"prøve, annuller den og legg den inn på nytt."
 
 msgid "Its company registration or VAT number, e.g. 923456789 in Norway; spaces are left out."
 msgstr "Organisasjonsnummer eller MVA-nummer, f.eks. 923456789 i Norge; mellomrom fjernes."
@@ -1763,6 +1969,9 @@ msgstr "Etternavn"
 msgid "Last sign-in"
 msgstr "Sist innlogget"
 
+msgid "Latest"
+msgstr "Siste"
+
 msgid "Latitude"
 msgstr "Breddegrad"
 
@@ -1783,6 +1992,9 @@ msgstr "Nivåsensor"
 
 msgid "Life stage"
 msgstr "Livsstadium"
+
+msgid "Limit"
+msgstr "Grense"
 
 msgid "Line"
 msgstr "Linje"
@@ -1822,6 +2034,9 @@ msgstr "Lengdegrad"
 
 msgid "Longitude is required for a sea cage."
 msgstr "Lengdegrad er påkrevd for en merd."
+
+msgid "Loop"
+msgstr "Kretsløp"
 
 msgid "Losses"
 msgstr "Tap"
@@ -1890,6 +2105,9 @@ msgstr "Maksimal vannmengde"
 msgid "Maximum temperature"
 msgstr "Maksimal temperatur"
 
+msgid "Measured at"
+msgstr "Målt"
+
 msgid "Measured parameters"
 msgstr "Målte parametere"
 
@@ -1917,6 +2135,9 @@ msgstr "Maskevidde (mm)"
 msgid "Metadata"
 msgstr "Metadata"
 
+msgid "Meter or test kit"
+msgstr "Måler eller testsett"
+
 msgid "Minimum transmittance"
 msgstr "Minste transmittans"
 
@@ -1938,6 +2159,10 @@ msgstr "Vann (%)"
 msgid "Mollusc"
 msgstr "Bløtdyr"
 
+#, python-format
+msgid "More than %(rows)d units and systems: choose a production department or a system."
+msgstr "Flere enn %(rows)d enheter og systemer: velg en produksjonsavdeling eller et system."
+
 msgid "Mortality"
 msgstr "Dødelighet"
 
@@ -1957,6 +2182,26 @@ msgstr "Bevegelig medium (MBBR)"
 msgid "Multiparameter probe"
 msgstr "Multiparametersonde"
 
+msgid ""
+"NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
+"divide by 1.22. The toxic NH₃ is worked out from this, the pH and the temperature of the same "
+"sample."
+msgstr ""
+"NH₃ og NH₄⁺ sammen, som nitrogen. Et sett som leser NH₄⁺: del på 1,29; et som leser NH₃: del på "
+"1,22. Den giftige NH₃ regnes ut fra denne, pH og temperaturen i samme prøve."
+
+msgid "NH₃-N (mg/L)"
+msgstr "NH₃-N (mg/L)"
+
+msgid "NH₄-N (mg/L)"
+msgstr "NH₄-N (mg/L)"
+
+msgid "NO₂-N (mg/L)"
+msgstr "NO₂-N (mg/L)"
+
+msgid "NO₃-N (mg/L)"
+msgstr "NO₃-N (mg/L)"
+
 msgid "Name"
 msgstr "Navn"
 
@@ -1971,6 +2216,15 @@ msgstr "Snevrer inn listen over typer."
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid "Needs the pH and the temperature of the same sample."
+msgstr "Trenger pH og temperatur fra samme prøve."
+
+msgid "Needs the salinity: none was recorded here in the 30 days before."
+msgstr "Trenger saliniteten: ingen ble registrert her de 30 dagene før."
+
+msgid "Needs the temperature of the same sample."
+msgstr "Trenger temperaturen fra samme prøve."
 
 msgid "Net and frame"
 msgstr "Not og ramme"
@@ -2002,6 +2256,15 @@ msgstr "Nyere"
 
 msgid "Next"
 msgstr "Neste"
+
+msgid "Nitrate (mg/L NO₃ as N)"
+msgstr "Nitrat (mg/L NO₃ som N)"
+
+msgid "Nitrite (mg/L NO₂ as N)"
+msgstr "Nitritt (mg/L NO₂ som N)"
+
+msgid "Nitrogen"
+msgstr "Nitrogen"
 
 msgid "No"
 msgstr "Nei"
@@ -2038,6 +2301,9 @@ msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
 
+msgid "No limit"
+msgstr "Ingen grense"
+
 msgid "No other table."
 msgstr "Ingen andre tabeller."
 
@@ -2057,6 +2323,9 @@ msgstr "Ingen rader samsvarer."
 msgid "No rows match. <a href=\"%(url)s\">Clear the search and filters</a>."
 msgstr "Ingen rader samsvarer. <a href=\"%(url)s\">Fjern søket og filtrene</a>."
 
+msgid "No samples match these filters."
+msgstr "Ingen prøver samsvarer med disse filtrene."
+
 msgid "No site"
 msgstr "Ingen lokalitet"
 
@@ -2075,6 +2344,12 @@ msgstr ""
 
 msgid "No units match these filters."
 msgstr "Ingen enheter passer til disse filtrene."
+
+msgid "No units or loops here."
+msgstr "Ingen enheter eller kretsløp her."
+
+msgid "No units yet"
+msgstr "Ingen enheter ennå"
 
 msgid "None"
 msgstr "Ingen"
@@ -2099,6 +2374,9 @@ msgstr "Ikke i et system"
 
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
+
+msgid "Not measured"
+msgstr "Ikke målt"
 
 msgid "Not rated"
 msgstr "Ikke vurdert"
@@ -2129,6 +2407,9 @@ msgstr "Yngelavdeling"
 
 msgid "Nylon"
 msgstr "Nylon"
+
+msgid "OK"
+msgstr "OK"
 
 msgid "Offered"
 msgstr "Tilbys"
@@ -2183,6 +2464,9 @@ msgid ""
 msgstr ""
 "Bare systemene på produksjonsavdelingens lokalitet, og bare den produksjonsavdelingens når et "
 "system hører til en."
+
+msgid "Only warnings and criticals"
+msgstr "Bare advarsler og kritiske"
 
 msgid "Open menu"
 msgstr "Åpne menyen"
@@ -2271,6 +2555,10 @@ msgstr "Eget klekkeri"
 msgid "Oxygen"
 msgstr "Oksygen"
 
+#, python-format
+msgid "Oxygen saturation (% of air saturation)"
+msgstr "Oksygenmetning (% av luftmetning)"
+
 msgid "Ozone concentration"
 msgstr "Ozonkonsentrasjon"
 
@@ -2279,6 +2567,15 @@ msgstr "Ozongenerator"
 
 msgid "Ozone production"
 msgstr "Ozonproduksjon"
+
+msgid "O₂ (%)"
+msgstr "O₂ (%)"
+
+msgid "O₂ (mg/L)"
+msgstr "O₂ (mg/L)"
+
+msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
+msgstr "PSU er samme tall: 0 i ferskvann, omkring 35 i sjøen."
 
 msgid "PVC"
 msgstr "PVC"
@@ -2295,6 +2592,12 @@ msgstr "Panel"
 
 msgid "Panels"
 msgstr "Paneler"
+
+msgid "Parameter"
+msgstr "Parameter"
+
+msgid "Parameters"
+msgstr "Parametere"
 
 msgid "Parent equipment"
 msgstr "Overordnet utstyr"
@@ -2551,8 +2854,17 @@ msgstr "Registrer utsortering"
 msgid "Record mortality"
 msgstr "Registrer dødfisk"
 
+msgid "Record sample"
+msgstr "Registrer prøve"
+
+msgid "Record the round"
+msgstr "Registrer runden"
+
 msgid "Record type"
 msgstr "Posttype"
+
+msgid "Record water sample"
+msgstr "Registrer vannprøve"
 
 msgid "Rectangular"
 msgstr "Rektangulær"
@@ -2623,6 +2935,9 @@ msgstr "Roller"
 msgid "Roles: a name and the permissions it allows."
 msgstr "Roller: et navn og tillatelsene det gir."
 
+msgid "Round"
+msgstr "Runde"
+
 msgid "Row"
 msgstr "Rad"
 
@@ -2643,11 +2958,25 @@ msgstr "Sikkerhet"
 msgid "Salinity"
 msgstr "Salinitet"
 
+msgid "Salinity (‰)"
+msgstr "Salinitet (‰)"
+
+msgid "Salinity (‰, g/kg)"
+msgstr "Salinitet (‰, g/kg)"
+
 msgid "Salinity sensor"
 msgstr "Salinitetssensor"
 
 msgid "Saltwater"
 msgstr "Saltvann"
+
+#, python-format
+msgid "Samples can be dated at most %(days)d days back."
+msgstr "Prøver kan dateres høyst %(days)d dager tilbake."
+
+#, python-format
+msgid "Samples older than %(days)d days cannot be voided."
+msgstr "Prøver eldre enn %(days)d dager kan ikke annulleres."
 
 msgid "Sampling weigh-in"
 msgstr "Prøveveiing"
@@ -2723,6 +3052,9 @@ msgstr "Søk etter navn, vitenskapelig navn eller kode"
 msgid "Search by name, username or email"
 msgstr "Søk etter navn, brukernavn eller e-post"
 
+msgid "Search by species or source"
+msgstr "Søk etter art eller kilde"
+
 msgid "Search every column"
 msgstr "Søk i alle kolonner"
 
@@ -2746,6 +3078,9 @@ msgstr "Velg en type"
 
 msgid "Select a life stage"
 msgstr "Velg et livsstadium"
+
+msgid "Select a parameter"
+msgstr "Velg en parameter"
 
 msgid "Select a production department"
 msgstr "Velg en produksjonsavdeling"
@@ -2801,6 +3136,9 @@ msgstr "Vis alle %(plural)s"
 
 msgid "Show deleted rows"
 msgstr "Vis slettede rader"
+
+msgid "Show the units"
+msgstr "Vis enhetene"
 
 msgid "Show them"
 msgstr "Vis dem"
@@ -2890,6 +3228,12 @@ msgstr ""
 msgid "Sort by %(name)s"
 msgstr "Sorter etter %(name)s"
 
+msgid "Source"
+msgstr "Kilde"
+
+msgid "Source of the values"
+msgstr "Kilde for verdiene"
+
 msgid "Species"
 msgstr "Arter"
 
@@ -2920,6 +3264,9 @@ msgstr "Stadium ved utsett"
 
 msgid "Stainless steel"
 msgstr "Rustfritt stål"
+
+msgid "Stale"
+msgstr "Utdatert"
 
 msgid "Standby"
 msgstr "Reserve"
@@ -3040,8 +3387,17 @@ msgstr "System"
 msgid "Systems"
 msgstr "Systemer"
 
+msgid "Systems (loop)"
+msgstr "Systemer (kretsløp)"
+
 msgid "Systems by status"
 msgstr "Systemer etter status"
+
+msgid "TAN (mg/L N)"
+msgstr "TAN (mg/L N)"
+
+msgid "TGP (%)"
+msgstr "TGP (%)"
 
 msgid "Table"
 msgstr "Tabell"
@@ -3064,8 +3420,17 @@ msgstr "Kar, dammer og merder"
 msgid "Technical specifications"
 msgstr "Tekniske spesifikasjoner"
 
+msgid "Temp. (°C)"
+msgstr "Temp. (°C)"
+
 msgid "Temperature"
 msgstr "Temperatur"
+
+msgid "Temperature (°C)"
+msgstr "Temperatur (°C)"
+
+msgid "Temperature and oxygen"
+msgstr "Temperatur og oksygen"
 
 msgid "Temperature sensor"
 msgstr "Temperatursensor"
@@ -3102,6 +3467,16 @@ msgstr "Gruppenummeret gis ved lagring."
 
 msgid "The biomass cannot be negative."
 msgstr "Biomassen kan ikke være negativ."
+
+msgid ""
+"The bounds a water value is judged by, per species and parameter: a warning outside one pair, "
+"critical outside the other."
+msgstr ""
+"Grensene en vannverdi vurderes etter, per art og parameter: en advarsel utenfor det ene paret, "
+"kritisk utenfor det andre."
+
+msgid "The bounds go up: critical below ≤ warning below ≤ warning above ≤ critical above."
+msgstr "Grensene går oppover: kritisk under ≤ advarsel under ≤ advarsel over ≤ kritisk over."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
@@ -3169,6 +3544,14 @@ msgstr "Den lengste avstanden over ellipsen."
 
 msgid "The lower weight must be below the upper weight."
 msgstr "Den nedre vekten må være under den øvre vekten."
+
+#, python-format
+msgid ""
+"The mg/L and the % disagree by more than 10 % at this temperature and salinity: check the meter’s"
+" settings."
+msgstr ""
+"mg/L og % avviker med mer enn 10 % ved denne temperaturen og saliniteten: kontroller målerens "
+"innstillinger."
 
 msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
@@ -3289,6 +3672,9 @@ msgstr ""
 "Karene, dammene og merdene fisken holdes i, hver i en produksjonsavdeling og, når den har et, i "
 "et system."
 
+msgid "The time cannot be in the future."
+msgstr "Tidspunktet kan ikke være fram i tid."
+
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
 "for a few days before a split."
@@ -3322,6 +3708,22 @@ msgstr "Garantien kan ikke slutte før kjøpsdatoen."
 
 msgid "The water cannot stand higher than the depth."
 msgstr "Vannet kan ikke stå høyere enn dybden."
+
+msgid ""
+"The water each species is kept in. A value outside the warning bounds is a warning, outside the "
+"critical bounds critical; a value on a bound is in the inner band. A row for a unit’s water type "
+"wins over the row for any water. Nothing is filled in for you: enter the values your vet or "
+"guideline gives, and say where they come from."
+msgstr ""
+"Vannet hver art holdes i. En verdi utenfor varselgrensene er en advarsel, utenfor de kritiske "
+"grensene kritisk; en verdi på en grense er i det indre båndet. En rad for enhetens vanntype går "
+"foran raden for alt vann. Ingenting fylles inn for deg: legg inn verdiene veterinæren eller "
+"veilederen din gir, og oppgi hvor de kommer fra."
+
+msgid ""
+"The water of the units it applies to. A row for a unit’s water type wins over the row for any "
+"water."
+msgstr "Vannet i enhetene den gjelder for. En rad for enhetens vanntype går foran raden for alt vann."
 
 msgid "The water surface when the pond is full."
 msgstr "Vannflaten når dammen er full."
@@ -3358,6 +3760,9 @@ msgstr ""
 "De beholder koblingen, men den teller ikke så lenge denne er slettet; å gjenopprette den bringer "
 "koblingen tilbake."
 
+msgid "They stay as they are, out of sight while this is deleted, and come back when it is restored."
+msgstr "De blir stående som de er, skjult mens denne er slettet, og kommer tilbake når den gjenopprettes."
+
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
@@ -3381,11 +3786,17 @@ msgstr "Denne produksjonsavdelingen er ikke på noen lokalitet; velg en som er d
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Dette fjerner den permanent. Aktivitetsloggen beholder en oppføring om at den ble slettet."
 
+msgid "This sample is already voided."
+msgstr "Denne prøven er allerede annullert."
+
 msgid "This site already has a production department with this name."
 msgstr "Denne lokaliteten har allerede en produksjonsavdeling med dette navnet."
 
 msgid "This site already has a system with this code."
 msgstr "Denne lokaliteten har allerede et system med denne koden."
+
+msgid "This species already has limits for this parameter and water type."
+msgstr "Denne arten har allerede grenser for denne parameteren og vanntypen."
 
 msgid "This system is deleted."
 msgstr "Dette systemet er slettet."
@@ -3429,8 +3840,18 @@ msgstr "Til"
 msgid "To units"
 msgstr "Til enheter"
 
+msgid "Total alkalinity. A kit in dKH: multiply by 17.85."
+msgstr "Total alkalitet. Et sett i dKH: gang med 17,85."
+
+msgid "Total ammonia nitrogen (mg/L TAN as N)"
+msgstr "Total ammoniakknitrogen (mg/L TAN som N)"
+
 msgid "Total area (m²)"
 msgstr "Totalt areal (m²)"
+
+#, python-format
+msgid "Total gas pressure (% of barometric pressure)"
+msgstr "Totalt gasstrykk (% av lufttrykket)"
 
 msgid "Total volume (m³)"
 msgstr "Totalt volum (m³)"
@@ -3454,6 +3875,9 @@ msgstr "Prøv et annet søk."
 msgid "Turbidity"
 msgstr "Turbiditet"
 
+msgid "Turbidity (NTU)"
+msgstr "Turbiditet (NTU)"
+
 msgid "Two rows have the same feed size."
 msgstr "To rader har samme fôrstørrelse."
 
@@ -3475,6 +3899,9 @@ msgstr "UV-filter"
 msgid "UV steriliser"
 msgstr "UV-anlegg"
 
+msgid "Un-ionised ammonia (mg/L NH₃ as N)"
+msgstr "Uionisert ammoniakk (mg/L NH₃ som N)"
+
 msgid "Unaccounted loss"
 msgstr "Uforklart svinn"
 
@@ -3486,6 +3913,9 @@ msgstr "Unik"
 
 msgid "Unit"
 msgstr "Enhet"
+
+msgid "Unit or system"
+msgstr "Enhet eller system"
 
 msgid "Units"
 msgstr "Enheter"
@@ -3543,6 +3973,13 @@ msgstr "Annuller operasjon"
 msgid "Void the %(operation)s of %(date)s?"
 msgstr "Annullere operasjonen %(operation)s %(date)s?"
 
+#, python-format
+msgid "Void the sample of %(point)s at %(moment)s?"
+msgstr "Annullere prøven fra %(point)s kl. %(moment)s?"
+
+msgid "Void water sample"
+msgstr "Annuller vannprøve"
+
 msgid "Voided"
 msgstr "Annullert"
 
@@ -3555,6 +3992,15 @@ msgstr "Volum"
 msgid "Volume (m³)"
 msgstr "Volum (m³)"
 
+msgid "Warning"
+msgstr "Advarsel"
+
+msgid "Warning above"
+msgstr "Advarsel over"
+
+msgid "Warning below"
+msgstr "Advarsel under"
+
 msgid "Warranty end date"
 msgstr "Garantien utløper"
 
@@ -3564,14 +4010,34 @@ msgstr "Vann"
 msgid "Water capacity (m³)"
 msgstr "Vannkapasitet (m³)"
 
+msgid "Water chemistry"
+msgstr "Vannkjemi"
+
 msgid "Water depth (m)"
 msgstr "Vanndybde (m)"
 
 msgid "Water environment"
 msgstr "Vannmiljø"
 
+msgid "Water is sampled in the tanks, ponds and cages of Setup, and in the loops of its systems."
+msgstr "Vann tas prøver av i karene, dammene og merdene i Oppsett, og i kretsløpene til systemene."
+
+msgid "Water limits"
+msgstr "Vanngrenser"
+
 msgid "Water quality"
 msgstr "Vannkvalitet"
+
+msgid "Water round"
+msgstr "Vannrunde"
+
+#, python-format
+msgid "Water sample of %(point)s voided."
+msgstr "Vannprøven fra %(point)s er annullert."
+
+#, python-format
+msgid "Water sample recorded at %(point)s."
+msgstr "Vannprøve registrert i %(point)s."
 
 msgid "Water source"
 msgstr "Vannkilde"
@@ -3631,6 +4097,9 @@ msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversik
 
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
+
+msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
+msgstr "Hvor verdiene kommer fra, f.eks. «veterinæren, november 2026» eller en veileder."
 
 msgid "Which permissions each role allows."
 msgstr "Hvilke tillatelser hver rolle gir."
@@ -3734,6 +4203,14 @@ msgstr "av <strong>%(name)s</strong>"
 
 msgid "contains"
 msgstr "inneholder"
+
+#, python-format
+msgid "critical above %(value)s"
+msgstr "kritisk over %(value)s"
+
+#, python-format
+msgid "critical below %(value)s"
+msgstr "kritisk under %(value)s"
 
 #, python-format
 msgid "criticality %(level)d"
@@ -3892,6 +4369,9 @@ msgstr "f.eks. kari.nordmann"
 msgid "e.g. sand, cartridge"
 msgstr "f.eks. sand, patron"
 
+msgid "e.g. the vet, November 2026"
+msgstr "f.eks. veterinæren, november 2026"
+
 msgid "empty"
 msgstr "tom"
 
@@ -3951,6 +4431,12 @@ msgstr "ikke håndhevet av databasen"
 
 msgid "not in the model"
 msgstr "ikke i modellen"
+
+msgid "pH"
+msgstr "pH"
+
+msgid "pH (NBS scale)"
+msgstr "pH (NBS-skala)"
 
 msgid "pH sensor"
 msgstr "pH-sensor"
@@ -4054,8 +4540,31 @@ msgid "voided by %(name)s: %(reason)s"
 msgstr "annullert av %(name)s: %(reason)s"
 
 #, python-format
+msgid "warning above %(value)s"
+msgstr "advarsel over %(value)s"
+
+#, python-format
+msgid "warning below %(value)s"
+msgstr "advarsel under %(value)s"
+
+msgid "water limit"
+msgstr "vanngrense"
+
+msgid "water limits"
+msgstr "vanngrenser"
+
+msgid "water sample"
+msgstr "vannprøve"
+
+msgid "water samples"
+msgstr "vannprøver"
+
+#, python-format
 msgid "weighed %(date)s"
 msgstr "veid %(date)s"
+
+msgid "worked out from the sample"
+msgstr "regnet ut fra prøven"
 
 msgid "yes"
 msgstr "ja"

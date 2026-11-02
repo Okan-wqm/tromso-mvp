@@ -1,0 +1,83 @@
+{# The Structure tab: what the database says about the table (core.database.Table.structure). #}
+<p class="panel-help">Read from the database itself and matched with the Django model <code>{{ table.app }}.{{ table.model_name }}</code> of the <code>{{ table.app }}</code> app.</p>
+
+<h4 class="section-title">Columns</h4>
+<div class="table-wrap">
+  <table class="data-table db-structure">
+    <thead>
+      <tr><th scope="col" class="num">#</th><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Nullable</th><th scope="col">Default</th><th scope="col">Key</th><th scope="col">Model field</th></tr>
+    </thead>
+    <tbody>
+      {% for column in structure.columns %}
+      <tr>
+        <td class="num faint">{{ forloop.counter }}</td>
+        <th scope="row" class="mono">{{ column.name }}{% if column.masked %} <span class="badge badge-inactive">masked</span>{% endif %}</th>
+        <td class="mono">{{ column.type }}</td>
+        <td>{% if column.nullable %}yes{% else %}no{% endif %}</td>
+        <td class="mono">{% if column.default %}{{ column.default }}{% else %}<span class="faint">–</span>{% endif %}</td>
+        <td>
+          {% if column.primary_key %}<span class="badge badge-admin">PK</span>{% endif %}
+          {% if column.reference %}<span class="badge badge-admin">FK</span> {% include "core/database/_link.html" with link=column.reference %}{% endif %}
+        </td>
+        <td>{% if column.field %}{{ column.field.get_internal_type }}{% else %}<span class="text-warning">not in the model</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h4 class="section-title">Constraints</h4>
+{% if structure.constraints %}
+<div class="table-wrap">
+  <table class="data-table db-structure">
+    <thead><tr><th scope="col">Name</th><th scope="col">Kind</th><th scope="col">Definition</th></tr></thead>
+    <tbody>
+      {% for constraint in structure.constraints %}
+      <tr><th scope="row" class="mono">{{ constraint.name }}</th><td>{{ constraint.kind }}</td><td class="mono">{{ constraint.definition }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="faint">None.</p>
+{% endif %}
+
+<h4 class="section-title">Indexes</h4>
+{% if structure.indexes %}
+<div class="table-wrap">
+  <table class="data-table db-structure">
+    <thead><tr><th scope="col">Name</th><th scope="col">Unique</th><th scope="col">Definition</th></tr></thead>
+    <tbody>
+      {% for index in structure.indexes %}
+      <tr><th scope="row" class="mono">{{ index.name }}</th><td>{% if index.unique %}yes{% else %}no{% endif %}</td><td class="mono">{{ index.definition }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="faint">None.</p>
+{% endif %}
+
+<h4 class="section-title">Relationships</h4>
+<div class="db-relations">
+  <div>
+    <h5>This table points at</h5>
+    {% if structure.references %}
+    <ul class="db-links" role="list">
+      {% for link in structure.references %}
+      <li><span class="mono">{{ link.column }}</span> → {% include "core/database/_link.html" %}</li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="faint">No other table.</p>{% endif %}
+  </div>
+  <div>
+    <h5>Pointed at by</h5>
+    {% if structure.referenced_by %}
+    <ul class="db-links" role="list">
+      {% for link in structure.referenced_by %}
+      <li>{% include "core/database/_link.html" %} → <span class="mono">{{ link.column }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="faint">No other table.</p>{% endif %}
+  </div>
+</div>

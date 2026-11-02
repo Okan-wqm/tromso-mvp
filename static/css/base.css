@@ -13,6 +13,7 @@
   --error: #A3272F;
 
   --font: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

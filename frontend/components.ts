@@ -5,6 +5,7 @@
 //   data-uppercase        upper-cases a text input while typing
 //   data-autosubmit       a filter select that applies on change
 //   data-depends-on       a select whose options (data-group) belong to another field's value
+//   data-omit-empty       a GET form that leaves its empty fields out of the address it builds (the database viewer's filters)
 //   data-formset          a list of rows with "add row" and, for [data-primary], one ticked box
 //   data-requires="<id>"  a check box that needs another one (e.g. Edit needs Read in the role matrix)
 // Everything is set up on the page and again on whatever the dialog loads.
@@ -131,6 +132,17 @@ function initDependentSelects(root: ParentNode): void {
   });
 }
 
+// ---- GET forms with many optional fields -----------------------------------------------------------
+function initOmitEmpty(root: ParentNode): void {
+  root.querySelectorAll<HTMLFormElement>('form[data-omit-empty]').forEach((form) => {
+    form.addEventListener('formdata', (event) => {
+      for (const [name, value] of [...event.formData]) {
+        if (value === '') event.formData.delete(name);
+      }
+    });
+  });
+}
+
 function init(root: Element | Document): void {
   initTabs(root);
   initUppercase(root);
@@ -138,6 +150,7 @@ function init(root: Element | Document): void {
   initRequires(root);
   initAutosubmit(root);
   initDependentSelects(root);
+  initOmitEmpty(root);
 }
 
 // ---- dialog --------------------------------------------------------------------------------

@@ -12,5 +12,6 @@ MENU = [
         Entry('Activity log', 'core:activity_log', 'history', 'core.view_auditlog'),
         Entry('Roles', 'core:group_list', 'shield', 'auth.view_group'),
         Entry('Users', 'core:user_list', 'users', 'auth.view_user'),
+        Entry('Database', 'core:database', 'database', 'core.browse_database'),
     ]),
 ]

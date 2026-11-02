@@ -541,3 +541,171 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .nested-mark { margin-right: .375rem; color: var(--muted); }
 
 .row-title-inline { display: inline; }
+
+/* Database viewer: the table list, a spreadsheet-style grid and a table's structure (templates/core/database) */
+.mono, code { font-family: var(--font-mono); font-size: .875em; }
+.faint { color: var(--muted); opacity: .8; }
+.section-title { margin: 0 0 .75rem; font-size: 1.0625rem; }
+.db-section + .db-section { margin-top: 2rem; }
+.db-section .data-table { table-layout: fixed; }
+.db-section .data-table th:nth-child(1) { width: 17rem; }
+.db-section .data-table th:nth-child(3),
+.db-section .data-table th:nth-child(4) { width: 7rem; }
+.db-about { max-width: 60rem; margin: -.25rem 0 1.25rem; }
+.db-about .faint { display: block; font-size: .875rem; }
+.eyebrow a { color: inherit; }
+.tab-panel-wide { max-width: none; }
+.tab-panel .section-title { margin-top: 1.75rem; }
+.tab-panel > .section-title:first-of-type { margin-top: 1.25rem; }
+
+.data-table tbody th {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--speck);
+  font-size: inherit;
+  text-align: left;
+  vertical-align: middle;
+}
+.data-table tbody tr:last-child th { border-bottom: 0; }
+.data-table td.num { white-space: nowrap; }
+
+.grid-toolbar { justify-content: flex-start; }
+.grid-toolbar .search { flex: 0 1 22rem; }
+.toolbar-actions { display: flex; gap: .5rem; }
+
+/* The grid scrolls inside its frame so the header, the filter row and the row numbers stay in view */
+.grid-wrap {
+  max-height: max(24rem, calc(100vh - 19rem));
+  overflow: auto;
+}
+.data-grid {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-mono);
+  font-size: .8125rem;
+  line-height: 1.35;
+}
+.data-grid th,
+.data-grid td {
+  padding: .3125rem .75rem;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+  text-align: left;
+  white-space: nowrap;
+}
+.data-grid td { max-width: 26rem; overflow: hidden; text-overflow: ellipsis; }
+.data-grid .num { text-align: right; }
+.data-grid tbody tr:last-child th,
+.data-grid tbody tr:last-child td { border-bottom: 0; }
+.data-grid tbody tr:hover td { background: var(--mist); }
+
+.data-grid thead th { position: sticky; z-index: 2; background: var(--rail-bg); }
+.grid-head th { top: 0; height: 3rem; padding-block: .375rem; vertical-align: top; }
+.grid-filter th { top: 3rem; padding: .25rem; background: #F2F5F0; border-bottom-color: var(--sage); }
+.grid-name { display: block; color: var(--speck); font-weight: 700; text-decoration: none; }
+a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
+.grid-type { display: block; color: var(--muted); font-size: .6875rem; font-weight: 400; }
+.grid-type abbr { padding: 0 .25rem; border-radius: 3px; background: var(--active-bg); color: var(--stripe-dark); font-weight: 600; text-decoration: none; }
+.data-grid th[aria-sort] .grid-name::after {
+  content: "";
+  display: inline-block;
+  margin-left: .375rem;
+  border: .25rem solid transparent;
+  border-top: 0;
+  border-bottom-color: var(--stripe);
+}
+.data-grid th[aria-sort="descending"] .grid-name::after {
+  border-top: .25rem solid var(--stripe);
+  border-bottom: 0;
+}
+.grid-filter input {
+  width: 100%;
+  min-width: 6rem;
+  padding: .25rem .4375rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--white);
+  color: var(--speck);
+  font: inherit;
+  font-size: .75rem;
+}
+.grid-filter input::placeholder { color: var(--muted); opacity: .55; }
+.grid-filter input:focus { outline: none; border-color: var(--stripe); box-shadow: 0 0 0 2px rgba(184, 69, 95, .2); }
+
+/* The frozen row-number column; its corner cells also stay under the header */
+.data-grid .grid-no {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 3.5rem;
+  background: var(--rail-bg);
+  color: var(--muted);
+  text-align: right;
+}
+.data-grid thead .grid-no { z-index: 3; }
+.data-grid tbody tr:hover .grid-no { background: #D9E0D5; }
+
+/* Deleted rows stay in the table; here they are marked */
+.data-grid .grid-deleted td { background: #FBF1F1; color: #7C5A5C; }
+.data-grid .grid-deleted .grid-no { background: #F0D6D6; color: var(--error); box-shadow: inset 3px 0 0 var(--error); }
+.data-grid .grid-deleted:hover td { background: #F7E4E4; }
+.data-grid .grid-empty td { color: var(--muted); font-family: var(--font); }
+
+.null {
+  display: inline-block;
+  padding: 0 .375rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--mist);
+  color: var(--muted);
+  font-size: .6875rem;
+  line-height: 1.4;
+  opacity: .8;
+}
+.c-bool { text-align: center; }
+.bool-true { color: var(--olive); font-weight: 700; }
+.bool-false { color: var(--muted); opacity: .6; }
+.fk-id { color: var(--muted); }
+.fk-link { margin-left: .25rem; color: var(--stripe-dark); }
+.more summary { overflow: hidden; text-overflow: ellipsis; cursor: pointer; list-style: none; }
+.more summary::before {
+  content: "";
+  display: inline-block;
+  margin-right: .5rem;
+  border: .25rem solid transparent;
+  border-right: 0;
+  border-left: .375rem solid var(--muted);
+}
+.more[open] summary::before {
+  border: .25rem solid transparent;
+  border-bottom: 0;
+  border-top: .375rem solid var(--muted);
+  margin-right: .4375rem;
+}
+.more pre {
+  max-width: 100%;
+  max-height: 16rem;
+  margin: .375rem 0 .25rem;
+  padding: .5rem .625rem;
+  overflow: auto;
+  border-radius: 4px;
+  background: var(--mist);
+  color: var(--speck);
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.grid-pager { justify-content: space-between; margin-top: 1rem; }
+.pager-links { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+
+.db-structure th,
+.db-structure td { padding: .4375rem .875rem; vertical-align: top; }
+.db-structure tbody th { padding: .4375rem .875rem; }
+.db-structure .mono { white-space: pre-wrap; overflow-wrap: anywhere; }
+.db-relations { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1.5rem; }
+.db-relations h5 { margin: 0 0 .5rem; font-size: .9375rem; }
+.db-links { display: grid; gap: .375rem; margin: 0; padding: 0; list-style: none; }

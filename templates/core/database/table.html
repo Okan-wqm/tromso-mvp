@@ -1,0 +1,26 @@
+{% extends "app_base.html" %}
+{# One table of the database viewer (core.dbview.browse): its rows on the Data tab and what the database says about it on the Structure tab. #}
+{% block title %}{{ table.name }} · Database{% endblock %}
+{% block eyebrow %}Administration · <a href="{% url 'core:database' %}">Database</a>{% endblock %}
+{% block heading %}<span class="mono">{{ table.name }}</span>{% endblock %}
+{% block content %}
+<p class="db-about">
+  {{ table.description }}
+  <span class="faint">{{ table.section }} · Django model <code>{{ table.app }}.{{ table.model_name }}</code> · {{ counts.rows }} row{{ counts.rows|pluralize }}{% if counts.deleted %}, {{ counts.deleted }} deleted{% endif %}</span>
+</p>
+
+<div class="tabs" role="tablist" aria-label="Table sections" data-tabs hidden>
+  <button type="button" role="tab" class="tab" data-tab="data">Data</button>
+  <button type="button" role="tab" class="tab" data-tab="structure">Structure</button>
+</div>
+
+<section class="tab-panel tab-panel-wide" role="tabpanel" data-panel="data">
+  <h3 class="panel-title">Data</h3>
+  {% include "core/database/_grid.html" %}
+</section>
+
+<section class="tab-panel tab-panel-wide" role="tabpanel" data-panel="structure">
+  <h3 class="panel-title">Structure</h3>
+  {% include "core/database/_structure.html" %}
+</section>
+{% endblock %}

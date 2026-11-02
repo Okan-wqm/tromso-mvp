@@ -1,0 +1,29 @@
+{% extends "app_base.html" %}
+{% block title %}Database{% endblock %}
+{% block eyebrow %}Administration{% endblock %}
+{% block heading %}Database{% endblock %}
+{% block content %}
+<p class="panel-help">Every table the application stores, as it is in the database. Nothing here can be changed. Deleted records are only marked as deleted, so they are still in the tables and are counted here.</p>
+{% for section in sections %}
+<section class="db-section" aria-labelledby="section-{{ forloop.counter }}">
+  <h2 class="section-title" id="section-{{ forloop.counter }}">{{ section.label }}</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th scope="col">Table</th><th scope="col">What it holds</th><th scope="col" class="num">Rows</th><th scope="col" class="num">Deleted</th></tr>
+      </thead>
+      <tbody>
+        {% for entry in section.tables %}
+        <tr>
+          <td><a class="row-title mono" href="{% url 'core:database_table' entry.table.name %}">{{ entry.table.name }}</a></td>
+          <td>{{ entry.table.description }}</td>
+          <td class="num">{{ entry.rows }}</td>
+          <td class="num">{% if entry.deleted %}<span class="badge badge-closed">{{ entry.deleted }}</span>{% elif entry.deleted == 0 %}0{% else %}<span class="faint">–</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

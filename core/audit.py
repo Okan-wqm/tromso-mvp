@@ -40,12 +40,17 @@ def diff(before, after):
     return {label: [before.get(label), value] for label, value in after.items() if before.get(label) != value}
 
 
+def entity_type_of(model):
+    """How the activity log names a kind of record; the one definition for writing and searching it."""
+    return str(model._meta.verbose_name)
+
+
 def record(user, action, instance, changes=None, entity_type=None, label=None):
     return AuditLog.objects.create(
         user=user if user and user.is_authenticated else None,
         user_name=user.get_username() if user and user.is_authenticated else 'system',
         action=action,
-        entity_type=entity_type or instance._meta.verbose_name,
+        entity_type=entity_type or entity_type_of(type(instance)),
         entity_id=str(instance.pk),
         entity_label=label or str(instance),
         changes=changes or {},

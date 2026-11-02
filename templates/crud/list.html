@@ -6,14 +6,18 @@
 {% block content %}
 <div class="toolbar">
   <form method="get" class="search" role="search">
+    {% for key, value in request.GET.items %}{% if key != "q" and key != "page" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
     {% include "icons/_icon.html" with name="search" %}
     <label class="sr-only" for="list-search">Search {{ plural }}</label>
     <input id="list-search" type="search" name="q" value="{{ query }}" placeholder="{% block search_placeholder %}Search {{ plural }}{% endblock %}">
   </form>
+  {% block filters %}{% endblock %}
   {% if can_add %}
   <a class="button button-inline" href="{{ create_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}Add {{ name }}</a>
   {% endif %}
 </div>
+
+{% block notice %}{% endblock %}
 
 {% if objects %}
 {% block items %}{% endblock %}

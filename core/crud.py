@@ -18,8 +18,9 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 
-from . import audit
-from .models import AuditLog
+from . import audit, softdelete
+from .models import AuditedModel, AuditLog
+from .softdelete import plan_delete
 
 STALE_MESSAGE = ('Someone else changed this {name} while you were editing it. '
                  'The form now shows their version; make your changes again.')
@@ -54,8 +55,35 @@ class TabbedForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if not any(f.name == 'version' for f in self._meta.model._meta.fields):
             del self.fields['version']
-        elif self.instance.pk and not self.is_bound:
+        elif not self.instance._state.adding and not self.is_bound:
             self.initial['version'] = self.instance.version
+
+    def clean(self):
+        cleaned = super().clean()
+        self._check_conditional_unique(cleaned)
+        return cleaned
+
+    def _check_conditional_unique(self, cleaned):
+        """Conditional unique constraints, e.g. "code unique among live records". Django leaves them
+        out of form validation when the condition uses a field the form does not edit (is_deleted),
+        so check them here against the same condition; the field error is the constraint's message."""
+        model = self._meta.model
+        for constraint in model._meta.constraints:
+            if not isinstance(constraint, models.UniqueConstraint) or constraint.condition is None or not constraint.fields:
+                continue
+            values = {}
+            for name in constraint.fields:
+                value = cleaned.get(name) if name in self.fields else getattr(self.instance, name, None)
+                if value in (None, ''):
+                    break
+                values[name] = value
+            else:
+                error_field = next((f for f in reversed(constraint.fields) if f in self.fields), None)
+                if error_field is None or error_field in self.errors:
+                    continue
+                clash = model._base_manager.filter(constraint.condition, **values).exclude(pk=self.instance.pk)
+                if clash.exists():
+                    self.add_error(error_field, constraint.violation_error_message)
 
     def tab_list(self):
         """The inner tabs with their bound fields and whether any field on them has an error."""
@@ -103,7 +131,7 @@ class Resource:
     @classmethod
     def entity_type(cls):
         """How the activity log names this kind of record."""
-        return cls.name or str(cls.model._meta.verbose_name)
+        return cls.name or audit.entity_type_of(cls.model)
 
     # --- extension points ---------------------------------------------------------------------
     @classmethod
@@ -128,6 +156,11 @@ class Resource:
     @classmethod
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
+
+    @classmethod
+    def filter_list(cls, request, objects):
+        """Narrows the list by the tab's own filters; returns the objects and context for the filter bar."""
+        return objects, {}
 
     # --- URLs ---------------------------------------------------------------------------------
     @classmethod
@@ -193,7 +226,8 @@ class ListView(ResourceView):
             for field in self.resource.search_fields:
                 condition |= Q(**{f'{field}__icontains': query})
             objects = objects.filter(condition)
-        return render_page(request, self.resource.list_template, self.context(objects=objects, query=query))
+        objects, filters = self.resource.filter_list(request, objects)
+        return render_page(request, self.resource.list_template, self.context(objects=objects, query=query, **filters))
 
 
 class FormView(ResourceView):
@@ -244,7 +278,7 @@ class UpdateView(FormView):
         if not form.is_valid():
             return self.page(form, obj)
         with transaction.atomic():
-            current = r.queryset().select_for_update().get(pk=pk)
+            current = r.queryset().select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
             versioned = 'version' in form.fields
             if versioned and form.cleaned_data.get('version') != current.version:
                 messages.error(request, STALE_MESSAGE.format(name=r.name))
@@ -268,18 +302,22 @@ class DeleteView(ResourceView):
 
     def get(self, request, pk):
         obj = self.get_object(pk)
-        return render_page(request, 'crud/confirm_delete.html',
-                           self.context(object=obj, soft_delete=hasattr(obj, 'soft_delete')))
+        plan = plan_delete(obj) if isinstance(obj, AuditedModel) else None
+        return render_page(request, 'crud/confirm_delete.html', self.context(object=obj, plan=plan))
 
     def post(self, request, pk):
         r = self.resource
-        obj = self.get_object(pk)
         with transaction.atomic():
-            # Logged first: a hard delete clears the object's primary key.
-            audit.record_delete(request.user, obj, entity_type=r.entity_type())
-            if hasattr(obj, 'soft_delete'):
-                obj.soft_delete(request.user)
+            obj = get_object_or_404(r.queryset().select_for_update(of=('self',)), pk=pk)
+            if isinstance(obj, AuditedModel):
+                plan = plan_delete(obj)
+                if not plan.can_delete:
+                    messages.error(request, f'{r.name.capitalize()} “{obj}” cannot be deleted: {" ".join(plan.blockers)}')
+                    return done(request, reverse(r.url_name('list')))
+                softdelete.execute(plan, request.user)
             else:
+                # Logged first: a hard delete clears the object's primary key.
+                audit.record_delete(request.user, obj, entity_type=r.entity_type())
                 obj.delete()
         messages.success(request, f'{r.name.capitalize()} “{obj}” deleted.')
         return done(request, reverse(r.url_name('list')))

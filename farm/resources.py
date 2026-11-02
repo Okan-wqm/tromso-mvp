@@ -4,6 +4,8 @@ from core.crud import Resource
 from .forms import SiteContactFormSet, SiteForm
 from .models import Site
 
+NO_SITE = 'none'   # the site filter value for departments without a site
+
 
 class SiteResource(Resource):
     model = Site

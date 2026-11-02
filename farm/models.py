@@ -12,46 +12,11 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.utils import timezone
+
+from core.models import AuditedModel, CodedMixin
 
 
-class AuditedModel(models.Model):
-    """createdAt/updatedAt/createdBy/updatedBy, an optimistic-lock version and soft delete."""
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
-    )
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
-    )
-    version = models.PositiveIntegerField(default=1)
-    is_deleted = models.BooleanField(default=False, db_index=True)
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    deleted_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
-    )
-
-    class Meta:
-        abstract = True
-
-    def soft_delete(self, user):
-        self.is_deleted = True
-        self.deleted_at = timezone.now()
-        self.deleted_by = user
-        self.updated_by = user
-        self.version += 1
-        self.save()
-
-
-class ActiveManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset().filter(is_deleted=False)
-
-
-class Site(AuditedModel):
+class Site(CodedMixin, AuditedModel):
     """A physical facility (locality). Source table: farm.sites."""
 
     class Type(models.TextChoices):
@@ -122,9 +87,6 @@ class Site(AuditedModel):
     notes = models.TextField(blank=True)
     metadata = models.JSONField(null=True, blank=True)
 
-    objects = ActiveManager()
-    all_objects = models.Manager()
-
     class Meta:
         db_table = 'sites'
         ordering = ['name']
@@ -171,13 +133,6 @@ class Site(AuditedModel):
             models.Index(fields=['type']),
             models.Index(fields=['status']),
         ]
-
-    def __str__(self):
-        return f'{self.name} ({self.code})'
-
-    def save(self, *args, **kwargs):
-        self.code = self.code.strip().upper()
-        super().save(*args, **kwargs)
 
 
 class SiteContact(models.Model):

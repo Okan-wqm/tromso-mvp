@@ -5,6 +5,22 @@ from core.crud import TabbedForm, tab_fields
 
 from .models import Site, SiteContact
 
+class CodedFormMixin:
+    """Name and code as the source validates them: both at least 2 characters, the code upper-case."""
+
+    def clean_code(self):
+        code = self.cleaned_data['code'].strip().upper()
+        if len(code) < 2:
+            raise ValidationError('Code must be at least 2 characters.')
+        return code
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if len(name) < 2:
+            raise ValidationError('Name must be at least 2 characters.')
+        return name
+
+
 # The source form's inner tabs (Basic info / Location info / Contact info) and their fields.
 SITE_FORM_TABS = [
     ('basic', 'Basic info', [
@@ -18,7 +34,7 @@ SITE_FORM_TABS = [
 ]
 
 
-class SiteForm(TabbedForm):
+class SiteForm(CodedFormMixin, TabbedForm):
     tabs = SITE_FORM_TABS
 
     class Meta:
@@ -66,15 +82,6 @@ class SiteForm(TabbedForm):
         super().__init__(*args, **kwargs)
         self.fields['timezone'].choices = [('', 'Inherit from company')] + Site.TIMEZONES
 
-    def clean_code(self):
-        code = self.cleaned_data['code'].strip().upper()
-        if len(code) < 2:
-            raise ValidationError('Code must be at least 2 characters.')
-        return code
-
-    def clean_name(self):
-        return self.cleaned_data['name'].strip()
-
     def clean(self):
         cleaned = super().clean()
         latitude, longitude = cleaned.get('latitude'), cleaned.get('longitude')
@@ -86,14 +93,6 @@ class SiteForm(TabbedForm):
         elif (latitude is None) != (longitude is None):
             field = 'longitude' if longitude is None else 'latitude'
             self.add_error(field, 'Latitude and longitude must be provided together.')
-
-        # Unique among live sites. The database constraints enforce the same, but Django skips them
-        # during form validation because their condition uses is_deleted, which is not a form field.
-        others = Site.objects.exclude(pk=self.instance.pk)
-        for field, lookup in (('code', 'code'), ('name', 'name'), ('lokalitetsnummer', 'lokalitetsnummer')):
-            value = cleaned.get(field)
-            if value not in (None, '') and field not in self.errors and others.filter(**{lookup: value}).exists():
-                self.add_error(field, f'Another site already uses this {self.fields[field].label.lower()}.')
         return cleaned
 
 

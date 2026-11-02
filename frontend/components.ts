@@ -3,6 +3,7 @@
 //   data-modal-close      closes the dialog (a plain link when the page is not in a dialog)
 //   data-tabs/-tab/-panel inner tabs; without this script every panel simply shows
 //   data-uppercase        upper-cases a text input while typing
+//   data-autosubmit       a filter select that applies on change
 //   data-formset          a list of rows with "add row" and, for [data-primary], one ticked box
 //   data-requires="<id>"  a check box that needs another one (e.g. Edit needs Read in the role matrix)
 // Everything is set up on the page and again on whatever the dialog loads.
@@ -100,11 +101,19 @@ function initRequires(root: ParentNode): void {
   });
 }
 
+// ---- filters that apply as soon as they change ----------------------------------------------
+function initAutosubmit(root: ParentNode): void {
+  root.querySelectorAll<HTMLSelectElement>('select[data-autosubmit]').forEach((select) => {
+    select.addEventListener('change', () => select.form?.requestSubmit());
+  });
+}
+
 function init(root: Element | Document): void {
   initTabs(root);
   initUppercase(root);
   initFormsets(root);
   initRequires(root);
+  initAutosubmit(root);
 }
 
 // ---- dialog --------------------------------------------------------------------------------

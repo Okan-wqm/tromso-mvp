@@ -2,6 +2,74 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+
+
+class ActiveManager(models.Manager):
+    """Hides soft-deleted records."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
+class AuditedModel(models.Model):
+    """Base of every farm record: author and time of creation and last change, an optimistic-lock
+    version, and soft delete. `objects` shows live records only; `all_objects` shows everything.
+
+    How deleting one of these affects the records that point at it is not written per model: it
+    follows each link's `on_delete` (see core.softdelete)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+    )
+    version = models.PositiveIntegerField(default=1)
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+'
+    )
+
+    objects = ActiveManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+
+    def soft_delete(self, user):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.deleted_by = user
+        self.updated_by = user
+        self.version += 1
+        self.save()
+
+    def detach(self, link, user):
+        """Clears the link to a deleted record; the change counts as an edit by `user`."""
+        setattr(self, link, None)
+        self.updated_by = user
+        self.version += 1
+        self.save(update_fields=[link, 'updated_by', 'version', 'updated_at'])
+
+    def delete_blockers(self):
+        """Reasons this record cannot be deleted now (e.g. fish still in a tank); none by default."""
+        return []
+
+
+class CodedMixin:
+    """Records known by a name and a short code: codes are stored upper-case, shown as "Name (CODE)"."""
+
+    def __str__(self):
+        return f'{self.name} ({self.code})'
+
+    def save(self, *args, **kwargs):
+        self.code = self.code.strip().upper()
+        super().save(*args, **kwargs)
 
 
 class AuditLog(models.Model):

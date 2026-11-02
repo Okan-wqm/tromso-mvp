@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from farm.models import Site
-from farm.tests import site_data
+from farm.tests.helpers import site_data
 
 from .models import AuditLog
 

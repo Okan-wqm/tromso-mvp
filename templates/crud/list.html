@@ -1,10 +1,11 @@
 {% extends base_template %}
 {% load i18n %}
 {# The list page of a tab (core.crud.ListView). A tab's own template extends this and fills `items`.
-   The nouns (name, plural) come from the tab; each sentence puts them where its language wants them. #}
-{% block title %}{{ plural|capfirst }}{% endblock %}
+   The heading is the menu entry's label (Resource.title); the nouns (name, plural) come from the tab and
+   each sentence puts them where its language wants them. #}
+{% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ group }}{% endblock %}
-{% block heading %}{{ plural|capfirst }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
 {% block content %}
 <div class="toolbar">
   <form method="get" class="search" role="search">

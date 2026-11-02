@@ -3,7 +3,7 @@
 {# Delete confirmation of a tab (core.crud.DeleteView), in a dialog or as a page. For records that
    are soft-deleted `plan` says what else is affected (core.softdelete). #}
 {% block title %}{% blocktrans trimmed %}Delete {{ object }}{% endblocktrans %}{% endblock %}
-{% block eyebrow %}{{ group }} · {{ plural|capfirst }}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
 {% block heading %}{% blocktrans trimmed %}Delete {{ name }}{% endblocktrans %}{% endblock %}
 {% block content %}
 <div class="confirm">

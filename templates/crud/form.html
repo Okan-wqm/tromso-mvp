@@ -5,7 +5,7 @@
    can add panels in `extra_panels` (give them data-panel="<tab key>" to show them on an existing tab,
    or add the tab itself in `extra_tabs`). #}
 {% block title %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
-{% block eyebrow %}{{ group }} · {{ plural|capfirst }}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
 {% block heading %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
 {% block content %}
 {% with tabs=form.tab_list %}

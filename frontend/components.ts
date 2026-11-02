@@ -159,7 +159,8 @@ function initDependents(root: ParentNode): void {
 // data-refresh="<marker>": the field decides which other fields the form has (an equipment type, its
 // specifications). After a change the form is posted with the marker, and the server renders it again
 // with everything entered so far, saving nothing: into the dialog, or as the page. The values go in the
-// request body, never in the address.
+// request body, never in the address. The marker's value is the field's name, so the form comes back open
+// on that field's tab.
 function initRefresh(root: ParentNode): void {
   root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-refresh]').forEach((field) => {
     field.addEventListener('change', () => {
@@ -168,14 +169,14 @@ function initRefresh(root: ParentNode): void {
       if (!form || !marker) return;
       if (modal?.holds(form)) {
         const data = new FormData(form);
-        data.set(marker, '1');
+        data.set(marker, field.name);
         void modal.load(form.action, { method: 'POST', body: data }).then(() => modal?.focus(field.name));
         return;
       }
       const input = document.createElement('input');
       input.type = 'hidden';
       input.name = marker;
-      input.value = '1';
+      input.value = field.name;
       form.append(input);
       form.submit();
     });

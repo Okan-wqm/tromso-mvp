@@ -1,8 +1,13 @@
 """The shared form parts: fields described by a schema (core.schema), a form rendered again from a
-draft (core.crud.TabbedForm), filters over fixed choices, and the log of a field that went away."""
+draft (core.crud.TabbedForm), fields a form drops for one record, a value shown but not typed
+(core.widgets.Output), filters over fixed choices, and the log of a field that went away."""
 import datetime
 from decimal import Decimal
+from importlib import import_module
 
+from django import forms
+from django.conf import settings
+from django.contrib.auth.models import Group
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.management import call_command
 from django.http import QueryDict
@@ -11,10 +16,11 @@ from django.utils import translation
 
 from farm.models import Site
 
-from . import audit
-from .crud import Fieldset, filter_by, tab_fields
+from . import audit, navigation
+from .crud import Fieldset, Resource, TabbedForm, filter_by, tab_fields
 from .forms import RoleForm
 from .schema import Schema
+from .widgets import Output
 
 
 def setUpModule():
@@ -152,3 +158,54 @@ class FormFieldsetTests(SimpleTestCase):
     def test_tab_fields_include_the_fields_inside_a_fieldset(self):
         tabs = [('a', 'A', ['x', Fieldset('Group', ['y', 'z'])]), ('b', 'B', [])]
         self.assertEqual(tab_fields(tabs), ['x', 'y', 'z'])
+
+
+class GroupForm(TabbedForm):
+    """A form that drops fields for one record, as a unit's form drops the measures its kind does not have."""
+    tabs = [('one', 'One', ['name', Fieldset('Shown', ['note']), Fieldset('Dropped', ['extra'])]),
+            ('two', 'Two', ['size'])]
+    note = forms.CharField(required=False)
+    extra = forms.CharField(required=False)
+    size = forms.CharField(required=False, disabled=True, widget=Output)
+
+    class Meta:
+        model = Group
+        fields = ['name']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        del self.fields['extra']
+        self.initial['size'] = '12.5'
+
+
+class DroppedFieldTests(TestCase):
+    def test_the_tabs_show_the_fields_the_form_kept_and_no_empty_heading(self):
+        form = GroupForm()
+        one = form.tab_list()[0]
+        self.assertEqual([(fieldset['label'], [field.name for field in fieldset['fields']])
+                          for fieldset in one['fieldsets']], [('', ['name']), ('Shown', ['note'])])
+
+    def test_the_tab_of_a_field(self):
+        form = GroupForm()
+        self.assertEqual((form.tab_of('note'), form.tab_of('size'), form.tab_of('nothing')), ('one', 'two', ''))
+
+    def test_an_output_shows_a_value_nobody_types(self):
+        form = GroupForm({'name': 'Feeders', 'size': '999'})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['size'], '12.5')    # a posted value is never read
+        html = form['size'].as_widget()
+        self.assertInHTML('<output class="output" id="id_size">12.5</output>', html)
+        self.assertNotIn('disabled', html)
+        empty = GroupForm()
+        empty.initial['size'] = ''
+        self.assertInHTML('<output class="output" id="id_size">–</output>', empty['size'].as_widget())
+
+
+class TitleTests(TestCase):
+    def test_a_pages_heading_is_what_the_menu_calls_it(self):
+        import_module(settings.ROOT_URLCONF)    # declares every resource
+        for tab in Resource.registry:
+            place = navigation.place(tab.perm('view'))
+            self.assertEqual(tab.title(), place.entry.label, tab.__name__)
+        titles = {tab.__name__: str(tab.title()) for tab in Resource.registry}
+        self.assertEqual(titles['SiteResource'], 'Sites')

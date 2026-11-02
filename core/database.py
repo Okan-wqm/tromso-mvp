@@ -56,7 +56,7 @@ class Column:
     name: str          # as the database spells it
     type: str          # 'varchar(150)'
     nullable: bool
-    default: str       # the database's default, empty when it has none
+    default: str       # the database's default, empty when it has none; a generated column's expression
     field: object      # the model's field; None when the model does not have the column
     masked: bool
     reference: Reference = None
@@ -161,7 +161,9 @@ class Table:
 # the models intend. The table name is a parameter, never part of the SQL text.
 COLUMNS_SQL = """
 SELECT a.attname, format_type(a.atttypid, a.atttypmod), NOT a.attnotnull,
-       CASE WHEN a.attidentity <> '' THEN 'identity' ELSE pg_get_expr(d.adbin, d.adrelid) END
+       CASE WHEN a.attidentity <> '' THEN 'identity'
+            WHEN a.attgenerated = 's' THEN 'generated always as (' || pg_get_expr(d.adbin, d.adrelid) || ') stored'
+            ELSE pg_get_expr(d.adbin, d.adrelid) END
 FROM pg_attribute a
 LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
 WHERE a.attrelid = to_regclass(%s) AND a.attnum > 0 AND NOT a.attisdropped

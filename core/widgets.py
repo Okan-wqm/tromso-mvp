@@ -35,3 +35,15 @@ class DependentSelect(forms.Select):
         field.widget = cls(depends_on, belongs_to, attrs=field.widget.attrs)
         field.widget.is_required = field.required
         field.widget.choices = field.choices
+
+
+class Output(forms.Widget):
+    """A value the form shows but nobody types, worked out from the record: a tank's volume, the date
+    its status changed. It renders as an <output> element (a dash when there is no value), so it reads
+    as a result, not as a field that is switched off. Put it on a disabled field: Django then never reads
+    a posted value for it."""
+
+    template_name = 'core/widgets/output.html'
+
+    def value_omitted_from_data(self, data, files, name):
+        return True

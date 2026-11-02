@@ -80,7 +80,11 @@ class TabbedForm(forms.ModelForm):
     it again with everything entered so far, validating and saving nothing (frontend/components.ts,
     data-refresh). The values travel in the request body, not the address, so long texts fit and stay out
     of access logs. They reach the form as a `draft`; an unbound form starts from them instead of the
-    stored record."""
+    stored record. The marker carries the name of the field that changed, and the form opens again on
+    that field's tab.
+
+    A form can drop fields for one record (`del self.fields[name]` in `__init__`, e.g. the measures a
+    pond does not have); the tabs then show the fields it kept, and a heading left without fields goes."""
 
     tabs = []
     fixed_after_creation = ()
@@ -146,21 +150,30 @@ class TabbedForm(forms.ModelForm):
 
     def tab_list(self):
         """The inner tabs: their fieldsets of bound fields (fields outside a Fieldset form one without a
-        heading), their help, and whether a field on them has an error."""
+        heading), their help, and whether a field on them has an error. Fields the form dropped for
+        this record are left out, and so is a fieldset left without fields."""
         tabs = []
         for key, label, names in self.tabs:
             fieldsets = []
             for item in names:
                 if isinstance(item, Fieldset):
-                    fieldsets.append({'label': item.label, 'help': item.help, 'fields': [self[n] for n in item.names]})
+                    fieldsets.append({'label': item.label, 'help': item.help,
+                                      'fields': [self[n] for n in item.names if n in self.fields]})
+                elif item not in self.fields:
+                    continue
                 elif fieldsets and not fieldsets[-1]['label']:
                     fieldsets[-1]['fields'].append(self[item])
                 else:
                     fieldsets.append({'label': '', 'help': '', 'fields': [self[item]]})
             names = tab_fields([(key, label, names)])
-            tabs.append({'key': key, 'label': label, 'help': self.tab_help.get(key, ''), 'fieldsets': fieldsets,
+            tabs.append({'key': key, 'label': label, 'help': self.tab_help.get(key, ''),
+                         'fieldsets': [fieldset for fieldset in fieldsets if fieldset['fields']],
                          'has_errors': any(name in self.errors for name in names)})
         return tabs
+
+    def tab_of(self, name):
+        """The key of the inner tab that shows the field `name`; '' when no tab shows it."""
+        return next((key for key, label, names in self.tabs if name in tab_fields([(key, label, names)])), '')
 
 
 class CodedFormMixin:
@@ -284,6 +297,12 @@ class Resource:
         return navigation.place(cls.perm('view')).group.label
 
     @classmethod
+    def title(cls):
+        """The page's heading: the menu entry's label, so the page is called what the menu calls it
+        (e.g. Tanks, ponds & cages, whose records are units)."""
+        return navigation.place(cls.perm('view')).entry.label
+
+    @classmethod
     def allows(cls, action):
         return action == 'view' or action in cls.actions
 
@@ -372,7 +391,8 @@ class ResourceView:
     def context(self, **extra):
         r, user = self.resource, self.request.user
         return {
-            'resource': r, 'name': r.name, 'plural': r.plural, 'group': r.group(), 'empty_icon': r.icon,
+            'resource': r, 'name': r.name, 'plural': r.plural, 'group': r.group(), 'title': r.title(),
+            'empty_icon': r.icon,
             'list_url': reverse(r.url_name('list')),
             'create_url': reverse(r.url_name('create')) if r.allows('add') else '',
             **{f'can_{action}': r.allows(action) and user.has_perm(r.perm(action))
@@ -426,6 +446,11 @@ class FormView(ResourceView):
             extra = {**r.edit_extras(self.request, obj), **extra}
         return render_page(self.request, r.form_template, self.context(form=form, object=obj, history=history, **extra))
 
+    def draft_page(self, form, obj=None):
+        """The form rendered again from a draft (TabbedForm.refresh_on), open on the tab of the field
+        whose change asked for it: the draft marker carries that field's name."""
+        return self.page(form, obj, open_tab=form.tab_of(self.request.POST.get(DRAFT, '')))
+
 
 class CreateView(FormView):
     action = 'add'
@@ -436,7 +461,7 @@ class CreateView(FormView):
     def post(self, request):
         r = self.resource
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
-            return self.page(r.form(request, draft=request.POST))
+            return self.draft_page(r.form(request, draft=request.POST))
         form = r.form(request, request.POST)
         if not form.is_valid():
             return self.page(form)
@@ -465,7 +490,7 @@ class UpdateView(FormView):
         r = self.resource
         obj = self.get_object(pk)
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
-            return self.page(r.form(request, instance=obj, draft=request.POST), obj)
+            return self.draft_page(r.form(request, instance=obj, draft=request.POST), obj)
         form = r.form(request, request.POST, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)

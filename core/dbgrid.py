@@ -35,12 +35,18 @@ EXACT_FIELDS = (models.UUIDField, models.IntegerField, models.DecimalField, mode
 NUMERIC_FIELDS = (models.IntegerField, models.DecimalField, models.FloatField)
 
 
+def holds(column):
+    """The field that says what a column holds: a generated column's output field (a volume worked out
+    by the database is a number), any other column's own field."""
+    return column.field.output_field if column.field.generated else column.field
+
+
 def is_numeric(column):
-    return isinstance(column.field, NUMERIC_FIELDS) and not column.field.is_relation
+    return isinstance(holds(column), NUMERIC_FIELDS) and not column.field.is_relation
 
 
 def is_exact(column):
-    return column.field.is_relation or isinstance(column.field, EXACT_FIELDS)
+    return column.field.is_relation or isinstance(holds(column), EXACT_FIELDS)
 
 
 def match(column, term):
@@ -52,7 +58,7 @@ def match(column, term):
         return None if value is None else Q(**{field.attname: value})
     if is_exact(column):
         try:
-            value = (field.target_field if field.is_relation else field).clean(term, None)
+            value = (field.target_field if field.is_relation else holds(column)).clean(term, None)
         except ValidationError:
             return None
         return Q(**{field.attname: value})

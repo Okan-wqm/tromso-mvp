@@ -69,6 +69,7 @@ class Place:
     workspace: Workspace
     section: Section
     group: Group
+    entry: Entry
 
     @property
     def path(self):
@@ -91,8 +92,9 @@ def place(perm):
     for workspace in workspaces():
         for section in workspace.sections:
             for group in section.groups:
-                if any(entry.perm == perm for entry in group.entries):
-                    return Place(workspace, section, group)
+                for entry in group.entries:
+                    if entry.perm == perm:
+                        return Place(workspace, section, group, entry)
     raise ImproperlyConfigured(f'No menu entry in {settings.RAIL_MENU} is read with {perm!r}: add one.')
 
 

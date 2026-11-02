@@ -127,7 +127,7 @@ class TabTranslationTests(SimpleTestCase):
 
     def test_a_tabs_names_are_translatable(self):
         for tab in self.tabs:
-            for attribute in ('name', 'plural', 'group'):
+            for attribute in ('name', 'plural'):
                 self.assertTranslatable(getattr(tab, attribute), f'{tab.__name__}.{attribute}')
 
     def test_a_tabs_form_texts_are_translatable(self):
@@ -164,13 +164,15 @@ class TabTranslationTests(SimpleTestCase):
     def test_menu_and_access_areas_are_translatable(self):
         for workspace in import_string(settings.RAIL_MENU):
             self.assertTranslatable(workspace.label, f'menu panel {workspace.key!r}')
-            for group in workspace.groups:
-                if group.label:
-                    self.assertTranslatable(group.label, f'menu group {group.label!r}')
-                for entry in group.entries:
-                    self.assertTranslatable(entry.label, f'menu entry {entry.label!r}')
+            for section in workspace.sections:
+                if section.label:
+                    self.assertTranslatable(section.label, f'menu heading {section.label!r}')
+                for group in section.groups:
+                    if group.label:
+                        self.assertTranslatable(group.label, f'menu group {group.label!r}')
+                    for entry in group.entries:
+                        self.assertTranslatable(entry.label, f'menu entry {entry.label!r}')
         for area in import_string(settings.ACCESS_AREAS):
-            self.assertTranslatable(area.group, f'access area group of {area.model}')
             self.assertTranslatable(area.label, f'access area {area.model}')
 
 

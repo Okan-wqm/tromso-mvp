@@ -23,7 +23,7 @@ from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, softdelete
+from . import audit, navigation, softdelete
 from .models import AuditedModel, AuditLog
 from .softdelete import plan_delete
 
@@ -140,9 +140,8 @@ class Resource:
 
     model = None
     form_class = None
-    name = ''             # _('site'), translatable like plural and group
+    name = ''             # _('site'), translatable like plural
     plural = ''           # _('sites')
-    group = ''            # rail group and page eyebrow, e.g. _('Facility')
     url_prefix = ''       # 'sites'
     search_fields = []
     list_template = ''    # extends crud/list.html and fills the `items` block
@@ -160,6 +159,11 @@ class Resource:
     @classmethod
     def url_name(cls, action):
         return f'{cls.namespace or cls.model._meta.app_label}:{cls.model._meta.model_name}_{action}'
+
+    @classmethod
+    def group(cls):
+        """The menu group the tab's page sits in, shown above its heading, e.g. _('Facility')."""
+        return navigation.place(cls.perm('view')).group.label
 
     @classmethod
     def allows(cls, action):
@@ -248,7 +252,7 @@ class ResourceView:
     def context(self, **extra):
         r, user = self.resource, self.request.user
         return {
-            'resource': r, 'name': r.name, 'plural': r.plural, 'group': r.group, 'empty_icon': r.icon,
+            'resource': r, 'name': r.name, 'plural': r.plural, 'group': r.group(), 'empty_icon': r.icon,
             'list_url': reverse(r.url_name('list')),
             'create_url': reverse(r.url_name('create')) if r.allows('add') else '',
             **{f'can_{action}': r.allows(action) and user.has_perm(r.perm(action))

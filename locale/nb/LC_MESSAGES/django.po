@@ -303,12 +303,6 @@ msgstr "Selskap"
 msgid "Company overview"
 msgstr "Selskapsoversikt"
 
-msgid "Company · Administration"
-msgstr "Selskap · Administrasjon"
-
-msgid "Company · Facility"
-msgstr "Selskap · Anlegg"
-
 msgid "Constraints"
 msgstr "Begrensninger"
 
@@ -828,9 +822,6 @@ msgstr ""
 msgid "Production overview"
 msgstr "Produksjonsoversikt"
 
-msgid "Production · Facility structure"
-msgstr "Produksjon · Anleggsstruktur"
-
 msgid "Quality control"
 msgstr "Kvalitetskontroll"
 
@@ -962,6 +953,9 @@ msgstr "Velg nytt passord"
 
 msgid "Settings"
 msgstr "Innstillinger"
+
+msgid "Setup"
+msgstr "Oppsett"
 
 msgid "Show"
 msgstr "Vis"

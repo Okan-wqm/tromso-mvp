@@ -301,12 +301,6 @@ msgstr "Şirket"
 msgid "Company overview"
 msgstr "Şirket genel bakışı"
 
-msgid "Company · Administration"
-msgstr "Şirket · Yönetim"
-
-msgid "Company · Facility"
-msgstr "Şirket · Tesis"
-
 msgid "Constraints"
 msgstr "Kısıtlamalar"
 
@@ -827,9 +821,6 @@ msgstr "Üretim departmanları bir sahayı düzenler; örneğin bir kuluçkahane
 msgid "Production overview"
 msgstr "Üretim genel bakışı"
 
-msgid "Production · Facility structure"
-msgstr "Üretim · Tesis yapısı"
-
 msgid "Quality control"
 msgstr "Kalite kontrol"
 
@@ -961,6 +952,9 @@ msgstr "Yeni parola belirleyin"
 
 msgid "Settings"
 msgstr "Ayarlar"
+
+msgid "Setup"
+msgstr "Kurulum"
 
 msgid "Show"
 msgstr "Göster"

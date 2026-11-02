@@ -44,12 +44,15 @@
       </div>
 
       <nav class="rail-nav">
-        {% for group in rail_groups %}
+        {% for section in rail_sections %}
+        {% if section.label %}<p class="rail-section">{{ section.label }}</p>{% endif %}
+        {% for group in section.groups %}
         {% if group.label %}<p class="rail-group">{{ group.label }}</p>{% endif %}
         {% for entry in group.entries %}
         <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %}>
           {% include "icons/_icon.html" with name=entry.icon %}<span class="rail-label">{{ entry.label }}</span>
         </a>
+        {% endfor %}
         {% endfor %}
         {% endfor %}
       </nav>

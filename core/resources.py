@@ -13,7 +13,7 @@ from .language import account_language
 class RoleResource(Resource):
     model = Group
     form_class = RoleForm
-    name, plural, group = _('role'), _('roles'), _('Administration')
+    name, plural = _('role'), _('roles')
     url_prefix = 'roles'
     namespace = 'core'
     search_fields = ['name']
@@ -36,7 +36,7 @@ class RoleResource(Resource):
 class UserResource(Resource):
     model = User
     form_class = UserForm
-    name, plural, group = _('user'), _('users'), _('Administration')
+    name, plural = _('user'), _('users')
     url_prefix = 'users'
     namespace = 'core'
     actions = ('add', 'change')     # people are deactivated, not deleted

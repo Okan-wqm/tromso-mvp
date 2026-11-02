@@ -386,20 +386,35 @@
   .rail { transition: none; }
 }
 
-/* Rail group heading; in the collapsed rail a thin rule stands in for it */
+/* Main heading of the rail (Setup, Operations) over its groups: a rule above it marks where a
+   new part of the menu begins. Group headings sit under it. In the collapsed rail a thin rule
+   stands in for either. */
+.rail-section {
+  margin: 1.5rem .875rem .25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--speck);
+  font-size: .875rem;
+  font-weight: 700;
+}
 .rail-group {
   margin: 1.25rem .875rem .375rem;
   color: var(--muted);
   font-size: .8125rem;
   font-weight: 600;
 }
+.rail-section + .rail-group { margin-top: .5rem; }
+[data-nav="collapsed"] .rail-section,
 [data-nav="collapsed"] .rail-group {
   height: 1px;
   margin: .75rem .5rem;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   background: var(--line);
   color: transparent;
 }
+[data-nav="collapsed"] .rail-section + .rail-group { display: none; }
 
 /* Messages after a save or a delete */
 .flash-list { display: grid; gap: .5rem; max-width: 52rem; margin-bottom: 1.25rem; }
@@ -413,10 +428,19 @@
 .flash-error { border-left-color: var(--error); background: #F7E6E6; color: var(--error); }
 
 @media (max-width: 767px) {
+  [data-nav="collapsed"] .rail-section {
+    height: auto;
+    margin: 1.5rem .875rem .25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    background: none;
+    color: var(--speck);
+  }
   [data-nav="collapsed"] .rail-group {
     height: auto;
     margin: 1.25rem .875rem .375rem;
     background: none;
     color: var(--muted);
   }
+  [data-nav="collapsed"] .rail-section + .rail-group { display: block; margin-top: .5rem; }
 }

@@ -9,7 +9,7 @@ from ..models import Site
 class SiteResource(Resource):
     model = Site
     form_class = SiteForm
-    name, plural, group = _('site'), _('sites'), _('Facility')
+    name, plural = _('site'), _('sites')
     url_prefix = 'sites'
     search_fields = ['name', 'code', 'region']
     list_template = 'farm/site_list.html'

@@ -9,7 +9,7 @@ from ..models import ProductionDepartment, Site
 class ProductionDepartmentResource(Resource):
     model = ProductionDepartment
     form_class = ProductionDepartmentForm
-    name, plural, group = _('production department'), _('production departments'), _('Facility structure')
+    name, plural = _('production department'), _('production departments')
     url_prefix = 'production-departments'
     search_fields = ['name', 'code']
     list_template = 'farm/production_department_list.html'

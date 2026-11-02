@@ -97,9 +97,11 @@ There are no built-in roles. The platform admin (a Django superuser) can open ev
 only one who manages roles and users; everyone else gets exactly what their roles allow.
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
-  can be given, one line each, with the actions each offers. Today: Facility › Sites (read, create,
-  edit, delete) and Administration › Activity log (read). A new tab appears in the matrix by adding
-  its line there. Roles and users are not areas, so no role can grant them.
+  can be given, one line each, with the actions each offers: Sites, Production departments and
+  Systems (read, create, edit, delete) and Activity log (read). A new tab appears in the matrix by
+  adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
+  `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
+  users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
   Delete). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Saving
@@ -204,8 +206,12 @@ delete pages. Every tab gets the same behaviour from it: a role needs view/add/c
 model for each page (the platform admin has all of them), every change is written to the activity
 log in the same transaction, an outdated `version` is refused, models with soft delete are hidden
 rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
-opened directly, as a page. The menu is data (`config/navigation.py`: panels, groups, entries) and shows each entry
-only to people allowed to read it. There are no built-in roles: the platform admin creates roles
+opened directly, as a page. The menu is data (`config/navigation.py`: panels, main headings, groups,
+entries) and shows each entry only to people allowed to read it. Production's menu has two main
+headings, as in the platform: **Setup** (the farm's structure and reference lists) and **Operations**
+(the daily production records; it appears with its first tab). The menu is the one place that says
+where a page sits: the role matrix and the small heading above a tab's title follow it
+(`core.navigation.place`). There are no built-in roles: the platform admin creates roles
 and grants permissions.
 
 ### The delete plan
@@ -237,7 +243,9 @@ A tab is done only when all of this exists; the first three are enforced by `Tab
    `farm/resources/<tab>.py`, the model in `farm/models/<tab>.py`); the URLs and the admin follow from
    the registered resource and the model, nothing to add by hand.
 3. **The permission matrix**: the area in `config/access.py`, so a role can be given it.
-4. **The menu entry** in `config/navigation.py`, in the right panel, with the read permission.
+4. **The menu entry** in `config/navigation.py`, in the right panel, under the right main heading
+   (Setup for structure and reference lists, Operations for daily records) and group, with the read
+   permission. The role matrix and the page heading take their grouping from it.
 5. Tests that create, read, edit and delete through the pages and check the stored rows, the
    validation and link rules, the delete plan, the activity-log rows and the permissions.
 6. The bugs found in the source in `docs/aquaculture-platform-bugs.md`.
@@ -292,7 +300,7 @@ real mail.
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
-| `core/navigation.py`, `config/navigation.py`, `core/middleware.py` | The menu as data: panels (workspaces) of groups of entries, filtered by permission; the panel in use is remembered |
+| `core/navigation.py`, `config/navigation.py`, `core/middleware.py` | The menu as data: panels (workspaces) with main headings, groups and entries, filtered by permission; the panel in use is remembered; where a page sits (`place`) for the role matrix and page headings |
 | `farm/resources/`, `templates/farm/` | Farm tabs declared on top of `core.crud`; their URLs come from the registry |
 | `core/admin.py` | The admin for farm records: shows deleted ones, restores them (checked like a new one), edits nothing |
 | `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |

@@ -1,11 +1,15 @@
 """The console is split into panels (workspaces), switched from the top left."""
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ImproperlyConfigured
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
+from farm.resources.site import SiteResource
+from farm.resources.system import SystemResource
 from farm.tests.helpers import role
 
-from . import navigation
+from . import access, navigation
+from .resources import RoleResource
 
 
 class WorkspaceTestCase(TestCase):
@@ -20,7 +24,8 @@ class WorkspaceTestCase(TestCase):
         return self.client.get(url)
 
     def labels(self, response):
-        return [entry['label'] for group in response.context['rail_groups'] for entry in group['entries']]
+        return [entry['label'] for section in response.context['rail_sections']
+                for group in section['groups'] for entry in group['entries']]
 
 
 class WorkspaceOfPathTests(TestCase):
@@ -122,6 +127,63 @@ class PanelMemoryTests(WorkspaceTestCase):
         response = self.client.get(reverse('login'))
         self.assertNotIn('workspace', response.context)
         self.assertNotIn('workspace', self.client.session)
+
+
+class MainHeadingTests(WorkspaceTestCase):
+    """Production's menu has main headings (Setup now, Operations with its first tab) over its groups."""
+
+    def headings(self, response):
+        return [(section['label'], [group['label'] for group in section['groups']])
+                for section in response.context['rail_sections']]
+
+    def test_production_puts_its_structure_under_setup(self):
+        self.sign_in(self.admin)
+        response = self.page(reverse('farm:system_list'))
+        self.assertEqual(self.headings(response), [('', ['']), ('Setup', ['Facility structure'])])
+        self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
+        self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
+
+    def test_company_has_no_main_headings(self):
+        self.sign_in(self.admin)
+        response = self.page(reverse('home'))
+        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Administration'])])
+        self.assertNotContains(response, 'rail-section')
+
+    def test_a_heading_with_nothing_the_person_may_read_is_not_shown(self):
+        self.sign_in(self.user)
+        self.user.groups.add(role('Sites only', 'view_site'))
+        response = self.page(reverse('production_home'))
+        self.assertEqual(self.headings(response), [('', ['', 'Facility'])])    # the company menu: no Production rights
+
+
+class MenuPlacementTests(TestCase):
+    """The menu is the one place that says where a page sits; the role matrix and the small heading
+    above a tab's title follow it, so they cannot drift apart."""
+
+    def test_a_page_is_placed_where_its_menu_entry_is(self):
+        place = navigation.place('farm.view_system')
+        self.assertEqual((place.workspace.key, place.section.label, place.group.label),
+                         ('production', 'Setup', 'Facility structure'))
+        self.assertEqual(str(place.path), 'Production · Setup · Facility structure')
+        self.assertEqual(str(navigation.place('farm.view_site').path), 'Company · Facility')
+
+    def test_the_role_matrix_groups_areas_as_the_menu_does(self):
+        groups = {area.model: str(area.group) for area in access.areas()}
+        self.assertEqual(groups, {
+            'farm.Site': 'Company · Facility',
+            'farm.ProductionDepartment': 'Production · Setup · Facility structure',
+            'farm.System': 'Production · Setup · Facility structure',
+            'core.AuditLog': 'Company · Administration',
+        })
+
+    def test_a_tab_heading_shows_its_menu_group(self):
+        self.assertEqual(str(SiteResource.group()), 'Facility')
+        self.assertEqual(str(SystemResource.group()), 'Facility structure')
+        self.assertEqual(str(RoleResource.group()), 'Administration')
+
+    def test_a_permission_with_no_menu_entry_is_a_configuration_error(self):
+        with self.assertRaisesMessage(ImproperlyConfigured, "'farm.view_nothing'"):
+            navigation.place('farm.view_nothing')
 
 
 class RailContextTests(TestCase):

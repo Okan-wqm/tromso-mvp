@@ -16,6 +16,8 @@ from django.db.models import Q
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
+from . import navigation
+
 # The matrix columns: (action, column label).
 ACTIONS = [('view', _('Read')), ('add', _('Create')), ('change', _('Edit')), ('delete', _('Delete'))]
 READ = 'view'
@@ -23,14 +25,18 @@ READ = 'view'
 
 @dataclass(frozen=True)
 class Area:
-    group: str            # matrix section, e.g. _('Facility') (as in the rail menu)
-    label: str            # _('Sites'); both are translatable text
+    label: str            # _('Sites'), translatable text
     model: str            # 'farm.Site'
     actions: tuple = ('view', 'add', 'change', 'delete')
 
     def perm(self, action):
         meta = apps.get_model(self.model)._meta
         return f'{meta.app_label}.{action}_{meta.model_name}'
+
+    @property
+    def group(self):
+        """The matrix section: where the area's page sits in the menu, 'Company · Facility'."""
+        return navigation.place(self.perm(READ)).path
 
 
 def areas():

@@ -1,12 +1,18 @@
-"""The menu as data. It is split into workspaces (panels such as Company and Production), each with
-groups of entries shown only to people allowed to read them. The project's menu lives in
-config/navigation.py; `rail` is the context processor, and WorkspaceMiddleware (core.middleware)
-remembers the panel a person works in so that pages belonging to none (change password) keep it."""
+"""The menu as data. It is split into workspaces (panels such as Company and Production); a panel's
+menu has sections under main headings (Setup, Operations), each with groups of entries shown only to
+people allowed to read them. The project's menu lives in config/navigation.py; `rail` is the context
+processor, and WorkspaceMiddleware (core.middleware) remembers the panel a person works in so that
+pages belonging to none (change password) keep it.
+
+The menu is the one place that says where a page sits: the role matrix (core.access) and a tab's
+page heading (core.crud) take their grouping from it through `place`."""
 from dataclasses import dataclass, field
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from django.utils.module_loading import import_string
+from django.utils.text import format_lazy
 
 SESSION_KEY = 'workspace'
 
@@ -36,10 +42,17 @@ class Group:
 
 
 @dataclass(frozen=True)
+class Section:
+    """A main heading of a panel's menu, e.g. Setup or Operations; '' for entries above them."""
+    label: str
+    groups: list = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class Workspace:
     key: str
     label: str
-    groups: list = field(default_factory=list)
+    sections: list = field(default_factory=list)
     always: bool = False    # offered to everyone; otherwise only to people who can use something in it
 
     def offered_to(self, user):
@@ -47,7 +60,21 @@ class Workspace:
         return self.always or any(entry.perm and entry.allowed_for(user) for entry in self.entries())
 
     def entries(self):
-        return [entry for group in self.groups for entry in group.entries]
+        return [entry for section in self.sections for group in section.groups for entry in group.entries]
+
+
+@dataclass(frozen=True)
+class Place:
+    """Where an entry sits in the menu."""
+    workspace: Workspace
+    section: Section
+    group: Group
+
+    @property
+    def path(self):
+        """'Production · Setup · Facility structure', translated when shown."""
+        labels = [label for label in (self.workspace.label, self.section.label, self.group.label) if label]
+        return format_lazy(' · '.join(['{}'] * len(labels)), *labels)
 
 
 def workspaces():
@@ -57,6 +84,16 @@ def workspaces():
 def entries():
     """Every entry of every workspace."""
     return [entry for workspace in workspaces() for entry in workspace.entries()]
+
+
+def place(perm):
+    """Where the page read with this permission ('farm.view_site') sits in the menu."""
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                if any(entry.perm == perm for entry in group.entries):
+                    return Place(workspace, section, group)
+    raise ImproperlyConfigured(f'No menu entry in {settings.RAIL_MENU} is read with {perm!r}: add one.')
 
 
 def workspace_of(path):
@@ -76,17 +113,22 @@ def rail(request):
     for workspace in workspaces():
         if not workspace.offered_to(user):
             continue
-        groups = []
-        for group in workspace.groups:
-            shown = [
-                {'label': entry.label, 'url': entry.url(), 'icon': entry.icon, 'current': entry.matches(request.path)}
-                for entry in group.entries if entry.allowed_for(user)
-            ]
-            if shown:
-                groups.append({'label': group.label, 'entries': shown})
-        if groups:
-            panels.append({'key': workspace.key, 'label': workspace.label, 'groups': groups,
-                           'url': groups[0]['entries'][0]['url']})
+        sections = []
+        for section in workspace.sections:
+            groups = []
+            for group in section.groups:
+                shown = [
+                    {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
+                     'current': entry.matches(request.path)}
+                    for entry in group.entries if entry.allowed_for(user)
+                ]
+                if shown:
+                    groups.append({'label': group.label, 'entries': shown})
+            if groups:
+                sections.append({'label': section.label, 'groups': groups})
+        if sections:
+            panels.append({'key': workspace.key, 'label': workspace.label, 'sections': sections,
+                           'url': sections[0]['groups'][0]['entries'][0]['url']})
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
-    return {'workspaces': panels, 'workspace': current, 'rail_groups': current['groups'] if current else []}
+    return {'workspaces': panels, 'workspace': current, 'rail_sections': current['sections'] if current else []}

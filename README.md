@@ -145,4 +145,5 @@ real mail.
 .venv\Scripts\python.exe manage.py test
 ```
 
-The tests need the database container running (they check the timescaledb extension too).
+The tests need the database container running (they check the timescaledb extension too). Set
+`DB_TEST_NAME` to give a checkout its own test database when two test runs overlap.

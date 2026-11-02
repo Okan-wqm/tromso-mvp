@@ -92,6 +92,8 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'balik'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5433'),
+        # Lets two checkouts run tests at the same time on separate test databases.
+        'TEST': {'NAME': os.environ.get('DB_TEST_NAME') or None},
     }
 }
 

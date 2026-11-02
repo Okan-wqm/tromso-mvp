@@ -1,16 +1,21 @@
 import re
+from importlib import import_module
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
+from django.conf import settings
 from django.core import mail
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.module_loading import import_string
 
 from farm.models import Site
 from farm.tests.helpers import site_data
 
-from .models import AuditLog
+from . import access, audit
+from .crud import Resource
+from .models import AuditedModel, AuditLog
 
 
 class AuthFlowTests(TestCase):
@@ -211,8 +216,7 @@ class RoleTests(AdminTestCase):
     def test_matrix_offers_only_the_access_areas(self):
         form = self.client.get(reverse('core:group_create')).context['form']
         offered = {f'{p.content_type.app_label}.{p.codename}' for p in form.fields['permissions'].queryset}
-        self.assertEqual(offered, {'farm.view_site', 'farm.add_site', 'farm.change_site', 'farm.delete_site',
-                                   'core.view_auditlog'})
+        self.assertEqual(offered, {area.perm(action) for area in access.areas() for action in area.actions})
         response = self.client.post(reverse('core:group_create'), {
             'name': 'Sneaky', 'permissions': perms('auth.change_user'),
         })
@@ -221,10 +225,17 @@ class RoleTests(AdminTestCase):
 
     def test_matrix_ties_create_edit_and_delete_to_their_read_box(self):
         html = self.client.get(reverse('core:group_create')).content.decode()
-        read_id = re.search(r'value="%s" id="(\w+)"' % perms('farm.view_site')[0], html).group(1)
-        for action in ('add', 'change', 'delete'):
-            self.assertRegex(html, r'value="%s" id="\w+" data-requires="%s"' % (perms(f'farm.{action}_site')[0], read_id))
-        self.assertEqual(html.count('data-requires="'), 3)    # the activity log offers Read only
+        tied = 0
+        for area in access.areas():
+            if access.READ not in area.actions:
+                continue
+            read_id = re.search(r'value="%s" id="(\w+)"' % perms(area.perm(access.READ))[0], html).group(1)
+            for action in area.actions:
+                if action != access.READ:
+                    tied += 1
+                    self.assertRegex(
+                        html, r'value="%s" id="\w+" data-requires="%s"' % (perms(area.perm(action))[0], read_id))
+        self.assertEqual(html.count('data-requires="'), tied)    # an area that offers Read only has none
 
     def test_names_are_unique(self):
         Group.objects.create(name='Feeder')
@@ -391,3 +402,35 @@ class AccessTests(AdminTestCase):
         self.assertEqual(self.client.get(reverse('core:activity_log')).status_code, 403)
         site.refresh_from_db()
         self.assertEqual((site.name, site.is_deleted), ('Site A', False))
+
+
+class TabRulesTests(TestCase):
+    """What every tab (a Resource on a farm record) must have. A tab added without one of these
+    fails here, so none can be forgotten: reachable by a role, in the menu, logged consistently."""
+
+    @classmethod
+    def setUpTestData(cls):
+        import_module(settings.ROOT_URLCONF)    # declares every resource
+        cls.tabs = [tab for tab in Resource.registry if issubclass(tab.model, AuditedModel)]
+
+    def test_the_tabs_are_found(self):
+        self.assertTrue(self.tabs)
+
+    def test_every_tab_can_be_given_to_a_role_in_the_permission_matrix(self):
+        offered = {(area.model, action) for area in access.areas() for action in area.actions}
+        for tab in self.tabs:
+            for action in ('view', *tab.actions):
+                self.assertIn((tab.model._meta.label, action), offered,
+                              f'{tab.__name__}: add {tab.model._meta.label} to config/access.py')
+
+    def test_every_tab_has_a_menu_entry_for_its_read_permission(self):
+        menu = {entry.perm for group in import_string(settings.RAIL_MENU) for entry in group.entries}
+        for tab in self.tabs:
+            self.assertIn(tab.perm('view'), menu, f'{tab.__name__}: add it to config/navigation.py')
+
+    def test_the_activity_log_names_a_tabs_records_as_the_delete_plan_does(self):
+        # The delete plan logs the records it touches by their model's name; a tab searches the history
+        # by its own. If the two drifted apart, a record's History tab would miss those entries.
+        for tab in self.tabs:
+            self.assertEqual(tab.entity_type(), audit.entity_type_of(tab.model), tab.__name__)
+

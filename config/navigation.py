@@ -5,6 +5,7 @@ MENU = [
     Group('Facility', [
         Entry('Sites', 'farm:site_list', 'building', 'farm.view_site'),
         Entry('Departments', 'farm:department_list', 'layout-grid', 'farm.view_department'),
+        Entry('Systems', 'farm:system_list', 'waves', 'farm.view_system'),
     ]),
     Group('Administration', [
         Entry('Activity log', 'core:activity_log', 'history', 'core.view_auditlog'),

@@ -6,7 +6,7 @@
   <label class="sr-only" for="site-filter">Site</label>
   <select id="site-filter" name="site" data-autosubmit>
     <option value="">All sites</option>
-    <option value="{{ no_site }}"{% if chosen_site == no_site %} selected{% endif %}>Without a site</option>
+    <option value="{{ none_value }}"{% if chosen_site == none_value %} selected{% endif %}>Without a site</option>
     {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
   </select>
   <noscript><button type="submit" class="button button-ghost">Filter</button></noscript>
@@ -14,7 +14,7 @@
 {% endblock %}
 {% block notice %}
 {% if without_site %}
-<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{{ without_site }} department{{ without_site|pluralize }} {{ without_site|pluralize:"is,are" }} not on any site. <a href="?site={{ no_site }}">Show them</a></p>
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{{ without_site }} department{{ without_site|pluralize }} {{ without_site|pluralize:"is,are" }} not on any site. <a href="?site={{ none_value }}">Show them</a></p>
 {% endif %}
 {% endblock %}
 {% block empty_text %}Departments organise a site, e.g. a hatchery hall or a grow-out unit.{% endblock %}

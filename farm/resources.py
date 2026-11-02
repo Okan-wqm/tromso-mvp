@@ -1,10 +1,22 @@
 """The farm tabs, each declared once on top of core.crud."""
 from core.crud import Resource
 
-from .forms import DepartmentForm, SiteContactFormSet, SiteForm
-from .models import Department, Site
+from .forms import DepartmentForm, SiteContactFormSet, SiteForm, SystemForm
+from .models import Department, Site, System
 
-NO_SITE = 'none'   # the site filter value for departments without a site
+NONE = 'none'   # a list filter's value for "records without one" (departments without a site)
+
+
+def filter_by(request, objects, param, choices, lookup, allow_none=False):
+    """Narrows `objects` to the record chosen in the `param` query parameter, or (`allow_none`) to
+    those without one. Anything else, a stale or malformed value, shows everything.
+    Returns the objects and the value the filter shows as chosen."""
+    chosen = request.GET.get(param, '')
+    if allow_none and chosen == NONE:
+        return objects.filter(**{f'{lookup}__isnull': True}), chosen
+    if chosen in {str(pk) for pk in choices.values_list('pk', flat=True)}:
+        return objects.filter(**{lookup: chosen}), chosen
+    return objects, ''
 
 
 class SiteResource(Resource):
@@ -37,15 +49,35 @@ class DepartmentResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        chosen = request.GET.get('site', '')
         sites = Site.objects.all()
-        if chosen == NO_SITE:
-            objects = objects.filter(site__isnull=True)
-        elif chosen in {str(pk) for pk in sites.values_list('pk', flat=True)}:
-            objects = objects.filter(site_id=chosen)
-        else:
-            chosen = ''   # unknown or malformed: show all
+        objects, chosen = filter_by(request, objects, 'site', sites, 'site_id', allow_none=True)
         return objects, {
-            'sites': sites, 'chosen_site': chosen, 'no_site': NO_SITE,
+            'sites': sites, 'chosen_site': chosen, 'none_value': NONE,
             'without_site': Department.objects.filter(site__isnull=True).count(),
+        }
+
+
+class SystemResource(Resource):
+    model = System
+    form_class = SystemForm
+    name, plural, group = 'system', 'systems', 'Facility'
+    url_prefix = 'systems'
+    search_fields = ['name', 'code']
+    list_template = 'farm/system_list.html'
+    icon = 'waves'
+
+    @classmethod
+    def queryset(cls):
+        return super().queryset().select_related('site', 'department', 'parent')
+
+    @classmethod
+    def filter_list(cls, request, objects):
+        sites, departments = Site.objects.all(), Department.objects.all()
+        objects, chosen_site = filter_by(request, objects, 'site', sites, 'site_id')
+        objects, chosen_department = filter_by(
+            request, objects, 'department', departments, 'department_id', allow_none=True)
+        return System.in_tree_order(objects), {
+            'sites': sites, 'chosen_site': chosen_site,
+            'departments': departments, 'chosen_department': chosen_department, 'none_value': NONE,
+            'without_department': System.objects.filter(department__isnull=True).count(),
         }

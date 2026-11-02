@@ -46,13 +46,20 @@ def done(request, url, stay=False):
 
 
 class TabbedForm(forms.ModelForm):
-    """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`."""
+    """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`.
+    `fixed_after_creation` names the fields chosen once: they are shown but cannot be changed on an
+    existing record (a department stays on its site)."""
 
     tabs = []
+    fixed_after_creation = ()
     version = forms.IntegerField(widget=forms.HiddenInput, required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance._state.adding:
+            for name in self.fixed_after_creation:
+                self.fields[name].disabled = True
+                self.fields[name].required = False
         if not any(f.name == 'version' for f in self._meta.model._meta.fields):
             del self.fields['version']
         elif not self.instance._state.adding and not self.is_bound:
@@ -100,6 +107,12 @@ def tab_fields(tabs):
 
 class Resource:
     """A farm tab. Subclass and set the attributes; `urls()` gives its URL patterns."""
+
+    registry = []         # every declared tab; the tab rules in core/tests.py check each one
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        Resource.registry.append(cls)
 
     model = None
     form_class = None

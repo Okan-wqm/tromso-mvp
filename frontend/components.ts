@@ -4,6 +4,7 @@
 //   data-tabs/-tab/-panel inner tabs; without this script every panel simply shows
 //   data-uppercase        upper-cases a text input while typing
 //   data-autosubmit       a filter select that applies on change
+//   data-depends-on       a select whose options (data-group) belong to another field's value
 //   data-formset          a list of rows with "add row" and, for [data-primary], one ticked box
 //   data-requires="<id>"  a check box that needs another one (e.g. Edit needs Read in the role matrix)
 // Everything is set up on the page and again on whatever the dialog loads.
@@ -108,12 +109,34 @@ function initAutosubmit(root: ParentNode): void {
   });
 }
 
+// ---- selects whose options belong to another field's value ---------------------------------
+// A department belongs to a site: after the site is chosen only its departments are offered, and a
+// choice that no longer fits is cleared. The server checks the same rule; this only guides.
+function initDependentSelects(root: ParentNode): void {
+  root.querySelectorAll<HTMLSelectElement>('select[data-depends-on]').forEach((select) => {
+    const source = select.form?.elements.namedItem(select.dataset.dependsOn ?? '');
+    if (!(source instanceof HTMLSelectElement || source instanceof HTMLInputElement)) return;
+
+    const fit = (): void => {
+      for (const option of select.options) {
+        const shown = option.value === '' || (source.value !== '' && option.dataset.group === source.value);
+        option.hidden = !shown;
+        option.disabled = !shown;
+      }
+      if (select.selectedOptions[0]?.disabled) select.value = '';
+    };
+    source.addEventListener('change', fit);
+    fit();
+  });
+}
+
 function init(root: Element | Document): void {
   initTabs(root);
   initUppercase(root);
   initFormsets(root);
   initRequires(root);
   initAutosubmit(root);
+  initDependentSelects(root);
 }
 
 // ---- dialog --------------------------------------------------------------------------------

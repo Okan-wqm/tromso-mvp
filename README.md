@@ -58,6 +58,27 @@ the source:
 The bugs found in the source while porting are listed in
 [docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), with how each is avoided here.
 
+### Facility › Systems (`/systems/`)
+
+Table `systems`: a table (system, type, status, site, department, volume, max biomass), nested
+systems shown under their parent, search by name or code, filters by site and by department
+(including "without a department"), a form in the dialog and delete. A system belongs to a site
+(chosen once) and optionally to a department of that site and to a parent system of that site.
+Differences from the source:
+
+- The links are checked on every save, not on create only: the department must be on the system's
+  site, a parent on the same site, and a system cannot be nested under itself or anything below it.
+  The parent list offers only valid choices (the source excluded the system itself but not its
+  descendants and was narrowed by the list's own filters).
+- A link or the description can be cleared when editing (the source sent `undefined`, which the API
+  reads as "no change").
+- Volume and biomass cannot be negative (database check and form).
+- The hand-typed tank count is not carried over: it would drift from the real tanks and is derived
+  once tanks exist. The second status flag `isActive` is not carried over either.
+- Code is unique within a site among live systems.
+- Deleting a site deletes its systems, a system the systems nested under it, and a department
+  leaves its systems without a department, all through the delete plan.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -127,6 +148,20 @@ confirmation, which lists what will be affected and disables the button when som
 the delete itself, which writes an activity-log row for every record it touches. A tab never writes
 down what a delete does to its neighbours: it is whatever its links say.
 
+### Adding a tab
+
+A tab is done only when all of this exists; the first three are enforced by `TabRulesTests` in
+`core/tests.py`, which checks every declared `Resource`:
+
+1. The model on `AuditedModel` (author, version, soft delete) with its constraints and links; each
+   link's `on_delete` says what deleting the other record does to it.
+2. The form on `TabbedForm`, the `Resource` in `farm/resources.py` and its URLs.
+3. **The permission matrix**: the area in `config/access.py`, so a role can be given it.
+4. **The menu entry** in `config/navigation.py` with the read permission.
+5. Tests that create, read, edit and delete through the pages and check the stored rows, the
+   validation and link rules, the delete plan, the activity-log rows and the permissions.
+6. The bugs found in the source in `docs/aquaculture-platform-bugs.md`.
+
 ### Line endings
 
 Every text file is LF (`.gitattributes`), so tools on any system produce the same file.
@@ -144,6 +179,7 @@ real mail.
 | `/` | Overview (sign-in required) |
 | `/sites/` | Facility › Sites |
 | `/departments/` | Facility › Departments |
+| `/systems/` | Facility › Systems |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -161,6 +197,7 @@ real mail.
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), roles and users (`resources.py`, `forms.py`), tests |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module: models, forms, views, tests |
+| `core/widgets.py` | `DependentSelect`: a choice that belongs to another field's value (a department to its site) |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
 | `core/navigation.py`, `config/navigation.py` | The rail menu as data, filtered by permission |

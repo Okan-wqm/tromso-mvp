@@ -144,10 +144,10 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.badge-active { background: var(--mist); color: var(--olive); border: 1px solid var(--sage); }
+.badge-active, .badge-operational { background: var(--mist); color: var(--olive); border: 1px solid var(--sage); }
 .badge-maintenance { background: #FBF0D9; color: #7A5410; }
-.badge-inactive { background: #ECECEA; color: var(--muted); }
-.badge-closed { background: #F7E6E6; color: var(--error); }
+.badge-inactive, .badge-construction { background: #ECECEA; color: var(--muted); }
+.badge-closed, .badge-offline { background: #F7E6E6; color: var(--error); }
 .badge-admin { background: var(--active-bg); color: var(--stripe-dark); }
 
 /* Tables (roles, users) */
@@ -531,3 +531,13 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 }
 .affected ul { margin: 0; padding-left: 1.125rem; max-height: 9rem; overflow-y: auto; color: var(--muted); }
 .button[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* A system nested under another is indented one step per level (up to five) */
+.data-table td.depth-1 { padding-left: 2rem; }
+.data-table td.depth-2 { padding-left: 3rem; }
+.data-table td.depth-3 { padding-left: 4rem; }
+.data-table td.depth-4 { padding-left: 5rem; }
+.data-table td.depth-5 { padding-left: 6rem; }
+.nested-mark { margin-right: .375rem; color: var(--muted); }
+
+.row-title-inline { display: inline; }

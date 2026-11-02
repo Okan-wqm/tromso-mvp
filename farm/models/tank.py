@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
-from django.db.models import Case, F, Q, Value, When
+from django.db.models import Case, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce, Round
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -182,7 +182,14 @@ TRANSITIONS = {
     Status.FALLOW: (Status.PREPARING,),
     Status.QUARANTINE: (Status.ACTIVE, Status.CLEANING),
 }
-STARTING_STATUSES = (Status.PREPARING, Status.ACTIVE, Status.FALLOW, Status.MAINTENANCE, Status.INACTIVE)
+# A status says whether fish are in the unit: active and harvesting need fish, preparing, fallow,
+# cleaning and inactive need none; maintenance and quarantine can be either. Stocking and emptying a
+# unit move it in and out of these by themselves (farm/stock/services.py); the form refuses a status
+# that contradicts the fish in it.
+NEEDS_FISH = (Status.ACTIVE, Status.HARVESTING)
+NEEDS_NO_FISH = (Status.PREPARING, Status.FALLOW, Status.CLEANING, Status.INACTIVE)
+# A new unit holds no fish, so it does not start as active.
+STARTING_STATUSES = (Status.PREPARING, Status.FALLOW, Status.MAINTENANCE, Status.INACTIVE)
 
 
 def described_by(kind, shape='', pond_type='', cage_type=''):
@@ -299,11 +306,13 @@ class Tank(CodedMixin, AuditedModel):
     always matches its unit's measures, whatever wrote the row; the freeboard is the depth less the
     water depth. Only a shape of its own ("other") has its volume entered.
 
-    Master data only: the fish in a unit (count, biomass, batches) belong to the Operations tab, and
-    `has_stock()` is the one place that will ask it. Differences from the source: its own tab instead of
+    Master data only: the fish in a unit (count, biomass, batches) are the stock ledger's
+    (farm/models/stock.py), and `has_stock()` is the one place that asks it; stocking and emptying the
+    unit move its status (farm/stock/services.py). Differences from the source: its own tab instead of
     the equipment form; the code is typed and kept; every pond and cage field has a column; the system
     must be on the production department's site and in that production department when it belongs to
-    one; the status machine is in one place and refuses statuses a new unit cannot start in; the
+    one; the status machine is in one place and refuses statuses a new unit cannot start in, and
+    statuses that contradict the fish in it; the
     unique code and regulatory unit ID are among live units. Not ported: the sensor link, the
     equipment type, isActive, the stock mirrors, the maintenance dates, and the location, water flow
     and aeration JSON (no screen wrote them)."""
@@ -427,12 +436,17 @@ class Tank(CodedMixin, AuditedModel):
 
     # ---- stock ------------------------------------------------------------------------------------
     def has_stock(self):
-        """Whether fish are in the unit now. The fish in a unit are recorded by the Operations tab
-        (batches and stocking), which does not exist yet, so no unit holds fish and this says False.
-        Every rule that depends on fish asks this one method: harvesting needs fish, a unit with fish
-        cannot be made inactive or deleted, and its size cannot change while they are in it. When the
-        Operations tab lands, this reads its stock."""
-        return False
+        """Whether fish are in the unit now: the sum of its live stock lines (Operations › Production
+        units). The stock service keeps every batch's share of a unit at 0 or more on every day, so a
+        positive sum means at least one batch is in it. Every rule that depends on fish asks this one
+        method: the statuses that need fish or none, a unit with fish cannot be deleted, and its size
+        cannot change while they are in it."""
+        if self._state.adding:
+            return False
+        from .stock import StockMovement
+        total = StockMovement.objects.filter(unit=self, operation__is_deleted=False).aggregate(
+            fish=Sum('count_delta'))['fish']
+        return (total or 0) > 0
 
     def delete_blockers(self):
         if self.has_stock():
@@ -448,10 +462,15 @@ class Tank(CodedMixin, AuditedModel):
 
     def status_blocker(self, status):
         """Why the unit cannot be given `status` now, for its fish; None when it can."""
-        if status == Status.HARVESTING and not self.has_stock():
-            return gettext('A unit can be harvested only while fish are in it.')
-        if status == Status.INACTIVE and self.has_stock():
-            return gettext('A unit with fish in it cannot be made inactive: move or harvest them first.')
+        if status in NEEDS_FISH and not self.has_stock():
+            if status == Status.HARVESTING:
+                return gettext('A unit can be harvested only while fish are in it.')
+            return gettext('A unit becomes active when fish are stocked in it (Operations › Production units).')
+        if status in NEEDS_NO_FISH and self.has_stock():
+            if status == Status.INACTIVE:
+                return gettext('A unit with fish in it cannot be made inactive: move or harvest them first.')
+            return gettext('Fish are in the unit, so it cannot be %(status)s: move or harvest them first.') % {
+                'status': str(Status(status).label).lower()}
         return None
 
     def next_statuses(self):

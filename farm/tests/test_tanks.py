@@ -15,8 +15,9 @@ from core.audit import message
 from core.models import AuditLog, Profile
 
 from ..models import ProductionDepartment, Site, System, Tank
-from ..models.tank import STARTING_STATUSES, TRANSITIONS
-from .helpers import role
+from ..models.tank import NEEDS_FISH, STARTING_STATUSES, TRANSITIONS
+from ..stock import services
+from .helpers import role, stock_fish
 
 Status = Tank.Status
 UNIT_MANAGER = (
@@ -92,7 +93,7 @@ class TankTestCase(TestCase):
 class TankRoundTripTests(TankTestCase):
     def test_a_tank_create_read_edit_delete(self):
         # Create
-        self.post(unit_data(self.hall, system=str(self.ras_a.pk), status='active', status_reason='Filled',
+        self.post(unit_data(self.hall, system=str(self.ras_a.pk), status='fallow', status_reason='Rested',
                             water_type='saltwater', regulatory_unit_id='K-17', water_depth='1.2',
                             installation_date='2026-03-01', description='Start feeding', notes='Check the outlet'))
         tank = Tank.objects.get()
@@ -101,7 +102,7 @@ class TankRoundTripTests(TankTestCase):
              tank.production_department, tank.system, tank.shape, tank.material, tank.diameter, tank.length, tank.width,
              tank.depth, tank.water_depth, tank.max_density_kg_m3, tank.installation_date, tank.description, tank.notes,
              tank.created_by, tank.version),
-            ('Start tank 1', 'T-01', 'tank', 'active', 'Filled', 'saltwater', 'K-17', self.hall, self.ras_a, 'circular',
+            ('Start tank 1', 'T-01', 'tank', 'fallow', 'Rested', 'saltwater', 'K-17', self.hall, self.ras_a, 'circular',
              'fiberglass', Decimal('2.00'), None, None, Decimal('1.50'), Decimal('1.20'), Decimal('60.00'),
              date(2026, 3, 1), 'Start feeding', 'Check the outlet', self.user, 1))
         self.assertEqual((tank.volume_m3, tank.water_volume_m3, tank.max_biomass_kg),
@@ -112,7 +113,7 @@ class TankRoundTripTests(TankTestCase):
         response = self.client.get(reverse('farm:tank_list'))
         self.assertEqual([unit.pk for unit in response.context['objects']], [tank.pk])
         self.assertContains(response, 'Start tank 1')
-        self.assertContains(response, '<span class="badge badge-active">Active</span>', html=True)
+        self.assertContains(response, '<span class="badge badge-fallow">Fallow</span>', html=True)
         form = self.client.get(reverse('farm:tank_edit', args=[tank.pk])).context['form']
         self.assertEqual((form['kind'].value(), form['shape'].value(), form['diameter'].value(),
                           form['water_depth'].value(), form['system'].value(), form['volume_m3'].value(),
@@ -121,13 +122,13 @@ class TankRoundTripTests(TankTestCase):
 
         # Edit: another shape, its measures, and a status it can move to
         self.post(unit_data(self.hall, name='Start tank 1b', code='t-01', shape='rectangular', diameter='',
-                            length='4', width='2', depth='1', water_depth='', status='maintenance',
+                            length='4', width='2', depth='1', water_depth='', status='preparing',
                             max_density_kg_m3='50', water_type='saltwater', version='1'), tank)
         tank.refresh_from_db()
         self.assertEqual((tank.name, tank.shape, tank.diameter, tank.length, tank.width, tank.depth, tank.water_depth,
                           tank.status, tank.version, tank.updated_by),
                          ('Start tank 1b', 'rectangular', None, Decimal('4.00'), Decimal('2.00'), Decimal('1.00'), None,
-                          'maintenance', 2, self.user))
+                          'preparing', 2, self.user))
         self.assertEqual((tank.volume_m3, tank.water_volume_m3, tank.max_biomass_kg),
                          (Decimal('8.000'), None, Decimal('400.00')))
 
@@ -512,7 +513,8 @@ class StatusTests(TankTestCase):
             with self.subTest(old=old, new=new):
                 unit = self.make(code=f'S{index}', status=old)
                 unit.status = new
-                with mock.patch.object(Tank, 'has_stock', return_value=new == Status.HARVESTING):
+                # Fish where the new status needs them (active, harvesting), none where it needs none.
+                with mock.patch.object(Tank, 'has_stock', return_value=new in NEEDS_FISH):
                     if (old, new) in allowed:
                         unit.full_clean()
                     else:
@@ -520,7 +522,7 @@ class StatusTests(TankTestCase):
                             unit.full_clean()
 
     def test_a_new_unit_starts_in_a_starting_status(self):
-        self.assertEqual(list(STARTING_STATUSES), ['preparing', 'active', 'fallow', 'maintenance', 'inactive'])
+        self.assertEqual(list(STARTING_STATUSES), ['preparing', 'fallow', 'maintenance', 'inactive'])
         form = self.client.get(reverse('farm:tank_create')).context['form']
         self.assertEqual([value for value, _ in form.fields['status'].choices], list(STARTING_STATUSES))
         for status in Status.values:
@@ -566,50 +568,71 @@ class StatusTests(TankTestCase):
 
 
 class StockGuardTests(TankTestCase):
-    """Every rule that depends on fish asks Tank.has_stock(), which says no until the Operations tab exists."""
+    """Every rule that depends on fish asks Tank.has_stock(), which reads the stock ledger."""
 
-    def test_no_unit_holds_fish_yet(self):
-        self.assertFalse(self.make().has_stock())
+    def stock(self, unit, count=100):
+        return stock_fish(self.user, unit, count, '50', days_ago=2)
 
-    def test_harvesting_needs_fish_and_inactive_needs_none(self):
-        unit = self.make(status='active')
+    def test_a_unit_holds_fish_while_its_lines_add_up_to_more_than_none(self):
+        unit = self.make(status='preparing')
+        self.assertFalse(unit.has_stock())
+        batch = self.stock(unit)
+        self.assertTrue(unit.has_stock())
+        services.record_mortality(self.user, unit=unit, batch=batch, day=services.local_today(unit), count=100,
+                                  cause='unknown')
+        self.assertFalse(unit.has_stock())
+
+    def test_the_statuses_that_need_fish_and_those_that_need_none(self):
+        unit = self.make(status='preparing')
+        unit.status = Status.ACTIVE
+        with self.assertRaisesMessage(ValidationError, 'A unit becomes active when fish are stocked in it'):
+            unit.full_clean()
+        self.stock(unit)
+        unit = Tank.objects.get(pk=unit.pk)
+        self.assertEqual(unit.status, 'active')     # stocking made it active
+        self.assertEqual(unit.next_statuses(), ['active', 'harvesting', 'maintenance', 'quarantine'])
         unit.status = Status.HARVESTING
+        unit.full_clean()
+        empty = self.make(code='T2', status='maintenance')
+        self.assertEqual(empty.next_statuses(), ['maintenance', 'preparing', 'inactive'])
+        legacy = self.make(code='T4', status='active')    # active without fish: saved before the stock existed
+        self.assertEqual(legacy.next_statuses(), ['active', 'maintenance', 'quarantine', 'fallow'])
+        legacy.status = Status.HARVESTING
         with self.assertRaisesMessage(ValidationError, 'A unit can be harvested only while fish are in it.'):
-            unit.full_clean()
-        self.assertNotIn('harvesting', Tank.objects.get(pk=unit.pk).next_statuses())
-        with mock.patch.object(Tank, 'has_stock', return_value=True):
-            unit.full_clean()
-            self.assertIn('harvesting', Tank.objects.get(pk=unit.pk).next_statuses())
-            unit = self.make(code='T2', status='preparing')
-            unit.status = Status.INACTIVE
-            with self.assertRaisesMessage(ValidationError, 'cannot be made inactive'):
-                unit.full_clean()
-            self.assertNotIn('inactive', Tank.objects.get(pk=unit.pk).next_statuses())
-        self.assertIn('inactive', Tank.objects.get(pk=unit.pk).next_statuses())
+            legacy.full_clean()
+        stocked = self.make(code='T3', status='preparing')
+        self.stock(stocked)
+        Tank.objects.filter(pk=stocked.pk).update(status='maintenance')
+        stocked = Tank.objects.get(pk=stocked.pk)
+        self.assertEqual(stocked.next_statuses(), ['maintenance'])
+        stocked.status = Status.INACTIVE
+        with self.assertRaisesMessage(ValidationError, 'cannot be made inactive'):
+            stocked.full_clean()
 
     def test_a_unit_with_fish_cannot_be_deleted_nor_its_department(self):
         unit = self.make()
-        with mock.patch.object(Tank, 'has_stock', return_value=True):
-            page = self.client.get(reverse('farm:tank_delete', args=[unit.pk]))
-            self.assertContains(page, 'It holds fish: move or harvest them first.')
-            self.client.post(reverse('farm:tank_delete', args=[unit.pk]))
-            self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
+        self.stock(unit)
+        page = self.client.get(reverse('farm:tank_delete', args=[unit.pk]))
+        self.assertContains(page, 'It holds fish: move or harvest them first.')
+        self.client.post(reverse('farm:tank_delete', args=[unit.pk]))
+        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.assertTrue(Tank.objects.filter(pk=unit.pk).exists())
         self.assertTrue(ProductionDepartment.objects.filter(pk=self.hall.pk).exists())
 
     def test_the_size_of_a_unit_with_fish_cannot_change(self):
         unit = self.make()
-        with mock.patch.object(Tank, 'has_stock', return_value=True):
-            form = self.client.get(reverse('farm:tank_edit', args=[unit.pk])).context['form']
-            self.assertTrue(all(form.fields[name].disabled for name in ('shape', 'diameter', 'depth', 'water_depth')))
-            self.assertFalse(form.fields['material'].disabled)
-            self.post(unit_data(self.hall, name='Tank', code='T1', diameter='3', depth='2', material='concrete',
-                                version='1'), unit)
-            unit.refresh_from_db()
-            self.assertEqual((unit.diameter, unit.depth, unit.material), (Decimal('2.00'), Decimal('1.50'), 'concrete'))
-            unit.depth = Decimal('2')
-            with self.assertRaisesMessage(ValidationError, 'its size cannot change'):
-                unit.full_clean()
+        self.stock(unit)
+        unit = Tank.objects.get(pk=unit.pk)
+        form = self.client.get(reverse('farm:tank_edit', args=[unit.pk])).context['form']
+        self.assertTrue(all(form.fields[name].disabled for name in ('shape', 'diameter', 'depth', 'water_depth')))
+        self.assertFalse(form.fields['material'].disabled)
+        self.post(unit_data(self.hall, name='Tank', code='T1', diameter='3', depth='2', material='concrete',
+                            status='active', version=str(unit.version)), unit)
+        unit.refresh_from_db()
+        self.assertEqual((unit.diameter, unit.depth, unit.material), (Decimal('2.00'), Decimal('1.50'), 'concrete'))
+        unit.depth = Decimal('2')
+        with self.assertRaisesMessage(ValidationError, 'its size cannot change'):
+            unit.full_clean()
 
 
 class TankDeletePlanTests(TankTestCase):
@@ -730,8 +753,8 @@ class TankAuditTests(TankTestCase):
     def test_create_and_edit_are_logged_with_the_calculated_values_and_the_status(self):
         self.post(unit_data(self.hall, water_type='saltwater'))
         unit = Tank.objects.get()
-        self.post(unit_data(self.hall, water_type='saltwater', depth='2', status='active',
-                            status_reason='Filled and cycled', version='1'), unit)
+        self.post(unit_data(self.hall, water_type='saltwater', depth='2', status='inactive',
+                            status_reason='Pump replaced', version='1'), unit)
         created, edited = AuditLog.objects.order_by('created_at')
         self.assertEqual((created.action, created.entity_type, created.entity_label), ('create', 'unit', 'Start tank 1 (T-01)'))
         self.assertEqual(created.changes['Kind'], [None, message('Tank')])
@@ -741,8 +764,8 @@ class TankAuditTests(TankTestCase):
         self.assertEqual(created.changes['Max biomass (kg)'], [None, '282.72'])
         self.assertNotIn('Stated volume (m³)', created.changes)
         self.assertEqual(edited.changes, {
-            'Status': [message('Preparing'), message('Active')],
-            'Reason for the status': [None, 'Filled and cycled'],
+            'Status': [message('Preparing'), message('Inactive')],
+            'Reason for the status': [None, 'Pump replaced'],
             'Depth (m)': ['1.50', '2.00'],
             'Volume (m³)': ['4.712', '6.283'],
             'Max biomass (kg)': ['282.72', '376.98'],

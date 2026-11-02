@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from core.admin import ReadOnlyAdmin, register_audited
+from core.admin import AuditedModelAdmin, ReadOnlyAdmin, register_audited
 
-from .models import EquipmentType
+from .models import Batch, EquipmentType, StockOperation
 
 register_audited('farm')
 
@@ -14,3 +14,26 @@ class EquipmentTypeAdmin(ReadOnlyAdmin):
     list_display = ['name', 'code', 'category', 'is_active']
     list_filter = ['category', 'is_active']
     search_fields = ['name', 'code']
+
+
+class StockRecordAdmin(AuditedModelAdmin):
+    """Stock operations and batches, voided ones too, to look at. A voided operation (and the batch of a
+    voided stocking) does not come back by a restore, which would skip the stock's checks: it is entered
+    again on the Production units page, where the timeline is checked."""
+
+    actions = []
+
+
+admin.site.unregister([Batch, StockOperation])
+
+
+@admin.register(Batch)
+class BatchAdmin(StockRecordAdmin):
+    list_display = ['code', 'species', 'input_stage', 'input_date', 'is_deleted']
+    search_fields = ['code', 'name']
+
+
+@admin.register(StockOperation)
+class StockOperationAdmin(StockRecordAdmin):
+    list_display = ['kind', 'date', 'created_by', 'is_deleted', 'void_reason']
+    list_filter = ['is_deleted', 'kind']

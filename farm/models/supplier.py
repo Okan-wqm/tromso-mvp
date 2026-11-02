@@ -140,16 +140,26 @@ class Supplier(CodedMixin, AuditedModel):
         return next((contact for contact in self.contacts.all() if contact.is_primary), None)
 
     def clean(self):
+        """A supplier keeps a category while something of it is bought from it: equipment (which can
+        choose another supplier) and batches of fish (whose origin stays as it was)."""
         super().clean()
-        if not self._state.adding and SupplyCategory.EQUIPMENT not in (self.supplies or []):
-            bought = self.equipment.count()
-            if bought:
-                raise ValidationError({'supplies': ValidationError(ngettext(
-                    '%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose '
-                    'another supplier for it first.',
-                    '%(count)d pieces of equipment are bought from it: keep “%(category)s” ticked, or choose '
-                    'another supplier for them first.', bought),
-                    params={'count': bought, 'category': SupplyCategory.EQUIPMENT.label})})
+        if self._state.adding:
+            return
+        supplies, errors = self.supplies or [], []
+        if SupplyCategory.EQUIPMENT not in supplies and (bought := self.equipment.count()):
+            errors.append(ValidationError(ngettext(
+                '%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose '
+                'another supplier for it first.',
+                '%(count)d pieces of equipment are bought from it: keep “%(category)s” ticked, or choose '
+                'another supplier for them first.', bought),
+                params={'count': bought, 'category': SupplyCategory.EQUIPMENT.label}))
+        if SupplyCategory.LIVE_FISH not in supplies and (bought := self.batches.count()):
+            errors.append(ValidationError(ngettext(
+                '%(count)d batch of fish was bought from it: keep “%(category)s” ticked.',
+                '%(count)d batches of fish were bought from it: keep “%(category)s” ticked.', bought),
+                params={'count': bought, 'category': SupplyCategory.LIVE_FISH.label}))
+        if errors:
+            raise ValidationError({'supplies': errors})
 
     def save(self, *args, **kwargs):
         self.organisation_number = normalise_organisation_number(self.organisation_number)

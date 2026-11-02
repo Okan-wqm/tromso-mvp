@@ -24,6 +24,7 @@ from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('production/', views.production_home, name='production_home'),
     # Reset links go to invited people too, who have no password yet (core.forms.PasswordResetForm).
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(form_class=PasswordResetForm),
          name='password_reset'),

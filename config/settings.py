@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.WorkspaceMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -152,7 +153,7 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
 # The rail menu (core.navigation).
-RAIL_MENU = 'config.navigation.MENU'
+RAIL_MENU = 'config.navigation.WORKSPACES'
 
 # What a role can be given (core.access).
 ACCESS_AREAS = 'config.access.AREAS'

@@ -7,7 +7,7 @@ from ..models import ProductionDepartment, Site
 class ProductionDepartmentResource(Resource):
     model = ProductionDepartment
     form_class = ProductionDepartmentForm
-    name, plural, group = 'production department', 'production departments', 'Facility'
+    name, plural, group = 'production department', 'production departments', 'Facility structure'
     url_prefix = 'production-departments'
     search_fields = ['name', 'code']
     list_template = 'farm/production_department_list.html'

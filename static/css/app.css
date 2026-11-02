@@ -85,15 +85,29 @@
   flex: none;
 }
 
-.rail-brand {
+.workspace-menu { flex: 1; min-width: 0; }
+
+.workspace-trigger {
   display: flex;
   align-items: center;
   gap: .75rem;
+  width: 100%;
   min-width: 0;
-  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--speck);
+  font: inherit;
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
 }
+.workspace-trigger .icon { width: 18px; height: 18px; flex: none; margin-left: auto; color: var(--muted); }
+.workspace-trigger:hover .workspace-name { color: var(--stripe-dark); }
+
+.workspace-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.workspace-brand { color: var(--muted); font-size: .8125rem; font-weight: 500; }
+.workspace-name { overflow: hidden; font-size: 1.25rem; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
 
 .logo-plate {
   display: grid;
@@ -106,14 +120,6 @@
   color: var(--mist);
   font-size: 1.375rem;
   font-weight: 700;
-}
-
-.rail-brand-text {
-  overflow: hidden;
-  font-size: 1.25rem;
-  font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .rail-nav {
@@ -172,8 +178,9 @@
 /* Collapsed rail: icon on top, short label underneath */
 [data-nav="collapsed"] .rail { width: var(--rail-closed); }
 [data-nav="collapsed"] .rail-head { flex-direction: column; justify-content: center; gap: .25rem; height: auto; min-height: var(--topbar-h); padding: .75rem 0; }
-[data-nav="collapsed"] .rail-brand { flex: none; }
-[data-nav="collapsed"] .rail-brand-text { display: none; }
+[data-nav="collapsed"] .workspace-menu { flex: none; }
+[data-nav="collapsed"] .workspace-text,
+[data-nav="collapsed"] .workspace-trigger .icon { display: none; }
 [data-nav="collapsed"] .rail-toggle .icon { transform: scaleX(-1); }
 [data-nav="collapsed"] .rail-link {
   flex-direction: column;
@@ -265,10 +272,13 @@
 
 .user-name { font-weight: 500; }
 
-.user-panel {
+.menu { position: relative; flex: none; }
+
+.menu-panel {
   position: absolute;
   top: calc(100% + 10px);
-  right: 0;
+  left: 0;
+  z-index: 60;
   width: min(300px, calc(100vw - 32px));
   padding: .5rem;
   border: 1px solid var(--line);
@@ -276,20 +286,20 @@
   background: var(--white);
   box-shadow: 0 12px 32px rgba(35, 41, 32, .18);
 }
-.user-panel[hidden] { display: none; }
+.menu-panel-right { left: auto; right: 0; }
+.menu-panel[hidden] { display: none; }
+.menu-panel form { margin: 0; }
 
-.user-panel-head {
+.menu-head {
   display: flex;
   flex-direction: column;
   margin: 0 0 .375rem;
   padding: .5rem .75rem .75rem;
   border-bottom: 1px solid var(--line);
 }
-.user-panel-head span { color: var(--muted); font-size: .875rem; overflow-wrap: anywhere; }
+.menu-head span { color: var(--muted); font-size: .875rem; overflow-wrap: anywhere; }
 
-.user-panel form { margin: 0; }
-
-.user-panel-link {
+.menu-item {
   display: block;
   width: 100%;
   padding: .625rem .75rem;
@@ -302,7 +312,8 @@
   text-decoration: none;
   cursor: pointer;
 }
-.user-panel-link:hover { background: var(--hover); color: var(--speck); }
+.menu-item:hover { background: var(--hover); color: var(--speck); }
+.menu-item[aria-current="true"] { background: var(--active-bg); color: var(--stripe-dark); font-weight: 600; }
 
 /* Content */
 .content {
@@ -343,8 +354,9 @@
 
   /* On a phone the rail is always the full, labelled version */
   [data-nav="collapsed"] .rail-head { flex-direction: row; justify-content: flex-start; height: var(--topbar-h); padding: 0 .75rem 0 1rem; }
-  [data-nav="collapsed"] .rail-brand { flex: 1; }
-  [data-nav="collapsed"] .rail-brand-text { display: block; }
+  [data-nav="collapsed"] .workspace-menu { flex: 1; }
+  [data-nav="collapsed"] .workspace-text { display: flex; }
+  [data-nav="collapsed"] .workspace-trigger .icon { display: block; }
   [data-nav="collapsed"] .rail-link { flex-direction: row; justify-content: flex-start; gap: .875rem; min-height: 48px; padding: 0 .875rem; font-size: .96875rem; text-align: left; }
   [data-nav="collapsed"] .rail-link .icon { width: 22px; height: 22px; }
   [data-nav="collapsed"] .rail-foot { padding: .875rem 1rem; text-align: left; font-size: .8125rem; }

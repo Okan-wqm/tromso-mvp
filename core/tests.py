@@ -8,12 +8,11 @@ from django.core import mail
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.module_loading import import_string
 
 from farm.models import Site
 from farm.tests.helpers import site_data
 
-from . import access, audit
+from . import access, audit, navigation
 from .crud import Resource
 from .models import AuditedModel, AuditLog
 
@@ -424,7 +423,7 @@ class TabRulesTests(TestCase):
                               f'{tab.__name__}: add {tab.model._meta.label} to config/access.py')
 
     def test_every_tab_has_a_menu_entry_for_its_read_permission(self):
-        menu = {entry.perm for group in import_string(settings.RAIL_MENU) for entry in group.entries}
+        menu = {entry.perm for entry in navigation.entries()}
         for tab in self.tabs:
             self.assertIn(tab.perm('view'), menu, f'{tab.__name__}: add it to config/navigation.py')
 

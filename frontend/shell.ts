@@ -47,29 +47,50 @@ openButton.addEventListener('click', () => setMobileOpen(true));
 scrim.addEventListener('click', () => setMobileOpen(false));
 phone.addEventListener('change', () => setMobileOpen(false));
 
-// User menu
-const userToggle = required<HTMLButtonElement>(document, '[data-user-toggle]');
-const userPanel = required<HTMLElement>(document, '#user-panel');
-
-function setUserOpen(open: boolean): void {
-  userPanel.hidden = !open;
-  userToggle.setAttribute('aria-expanded', String(open));
+// Popup menus (the panel switcher, the user menu): [data-menu] holds a [data-menu-toggle] button and a
+// [data-menu-panel]. One is open at a time; a click outside or Esc closes it.
+interface PopupMenu {
+  toggle: HTMLButtonElement;
+  panel: HTMLElement;
 }
 
-userToggle.addEventListener('click', (event) => {
-  event.stopPropagation();
-  setUserOpen(userPanel.hidden);
-});
+const menus: PopupMenu[] = [...document.querySelectorAll<HTMLElement>('[data-menu]')].map((menu) => ({
+  toggle: required<HTMLButtonElement>(menu, '[data-menu-toggle]'),
+  panel: required<HTMLElement>(menu, '[data-menu-panel]'),
+}));
+
+function setMenuOpen(menu: PopupMenu, open: boolean): void {
+  menu.panel.hidden = !open;
+  menu.toggle.setAttribute('aria-expanded', String(open));
+}
+
+function closeMenus(except?: PopupMenu): PopupMenu | undefined {
+  let closed: PopupMenu | undefined;
+  for (const menu of menus) {
+    if (menu !== except && !menu.panel.hidden) {
+      setMenuOpen(menu, false);
+      closed = menu;
+    }
+  }
+  return closed;
+}
+
+for (const menu of menus) {
+  menu.toggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeMenus(menu);
+    setMenuOpen(menu, menu.panel.hidden);
+  });
+}
 document.addEventListener('click', (event) => {
-  if (!userPanel.hidden && !userPanel.contains(event.target as Node)) setUserOpen(false);
+  for (const menu of menus) {
+    if (!menu.panel.hidden && !menu.panel.contains(event.target as Node)) setMenuOpen(menu, false);
+  }
 });
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  if (!userPanel.hidden) {
-    setUserOpen(false);
-    userToggle.focus();
-  }
+  closeMenus()?.toggle.focus();
   if (root.hasAttribute('data-nav-open-mobile')) {
     setMobileOpen(false);
     openButton.focus();

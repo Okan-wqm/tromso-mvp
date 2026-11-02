@@ -1,0 +1,18 @@
+{% extends "app_base.html" %}
+{% block title %}Production overview{% endblock %}
+{% block eyebrow %}Production{% endblock %}
+{% block heading %}Overview{% endblock %}
+{% block content %}
+{% include "_overview_tiles.html" %}
+{% if systems_by_status %}
+<section class="overview-block">
+  <h2>Systems by status</h2>
+  <ul class="status-list" role="list">
+    {% for item in systems_by_status %}<li><span class="badge badge-{{ item.value }}">{{ item.label }}</span> <strong>{{ item.count }}</strong></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+<section class="placeholder">
+  <p>The production figures will appear here.</p>
+</section>
+{% endblock %}

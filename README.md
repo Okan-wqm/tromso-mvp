@@ -15,6 +15,10 @@ What works today:
 - Roles (`/roles/`) and users (`/users/`), managed by the platform admin only (see Roles and users).
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
+- Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
+  and **Production** (overview, production departments, systems). Each has its own overview. A
+  panel is offered only to people who can use something in it (Company to everyone), and the panel
+  a person works in is remembered for pages that belong to neither (change password).
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
   choice, collapses by itself below 1100 px when no choice is saved and slides in from the left on
   phones; a sticky top bar with the page title and the user menu.
@@ -176,7 +180,7 @@ delete pages. Every tab gets the same behaviour from it: a role needs view/add/c
 model for each page (the platform admin has all of them), every change is written to the activity
 log in the same transaction, an outdated `version` is refused, models with soft delete are hidden
 rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
-opened directly, as a page. The rail menu is data (`config/navigation.py`) and shows each entry
+opened directly, as a page. The menu is data (`config/navigation.py`: panels, groups, entries) and shows each entry
 only to people allowed to read it. There are no built-in roles: the platform admin creates roles
 and grants permissions.
 
@@ -209,7 +213,7 @@ A tab is done only when all of this exists; the first three are enforced by `Tab
    `farm/resources/<tab>.py`, the model in `farm/models/<tab>.py`); the URLs and the admin follow from
    the registered resource and the model, nothing to add by hand.
 3. **The permission matrix**: the area in `config/access.py`, so a role can be given it.
-4. **The menu entry** in `config/navigation.py` with the read permission.
+4. **The menu entry** in `config/navigation.py`, in the right panel, with the read permission.
 5. Tests that create, read, edit and delete through the pages and check the stored rows, the
    validation and link rules, the delete plan, the activity-log rows and the permissions.
 6. The bugs found in the source in `docs/aquaculture-platform-bugs.md`.
@@ -228,7 +232,8 @@ real mail.
 
 | Path | Page |
 |---|---|
-| `/` | Overview (sign-in required) |
+| `/` | Company overview (sign-in required) |
+| `/production/` | Production overview |
 | `/sites/` | Facility › Sites |
 | `/production-departments/` | Production departments |
 | `/systems/` | Facility › Systems |
@@ -256,7 +261,7 @@ real mail.
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |
 | `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `frontend/components.ts` | One format for every tab: list, form, delete, dialog, permissions, audit |
-| `core/navigation.py`, `config/navigation.py` | The rail menu as data, filtered by permission |
+| `core/navigation.py`, `config/navigation.py`, `core/middleware.py` | The menu as data: panels (workspaces) of groups of entries, filtered by permission; the panel in use is remembered |
 | `farm/resources/`, `templates/farm/` | Farm tabs declared on top of `core.crud`; their URLs come from the registry |
 | `core/admin.py` | The admin for farm records: shows deleted ones, restores them (checked like a new one), edits nothing |
 | `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |

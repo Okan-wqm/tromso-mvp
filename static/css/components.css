@@ -711,3 +711,26 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .db-relations { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1.5rem; }
 .db-relations h5 { margin: 0 0 .5rem; font-size: .9375rem; }
 .db-links { display: grid; gap: .375rem; margin: 0; padding: 0; list-style: none; }
+
+/* Overview pages: counts that link to their list, and a breakdown */
+.tiles { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0 0 1.5rem; padding: 0; list-style: none; }
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--speck);
+  text-decoration: none;
+}
+.tile:hover { border-color: var(--stripe); }
+.tile-count { font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile-label { color: var(--muted); font-size: .9375rem; }
+
+.overview-block { margin: 0 0 1.5rem; }
+.overview-block h2 { margin: 0 0 .5rem; font-size: 1.125rem; }
+.status-list { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; margin: 0; padding: 0; list-style: none; }
+.status-list li { display: flex; align-items: center; gap: .5rem; }
+

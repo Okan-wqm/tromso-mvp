@@ -1,0 +1,7 @@
+{% if tiles %}
+<ul class="tiles" role="list">
+  {% for tile in tiles %}
+  <li><a class="tile" href="{{ tile.url }}"><span class="tile-count">{{ tile.count }}</span><span class="tile-label">{{ tile.label }}</span></a></li>
+  {% endfor %}
+</ul>
+{% endif %}

@@ -1,8 +1,9 @@
 {% extends base_template %}
 {% load i18n %}
 {# The create/edit form of a tab (core.crud.CreateView/UpdateView), in a dialog or as a page.
-   Fields come from the form's tabs; a tab's own template can add panels in `extra_panels`
-   (give them data-panel="<tab key>" to show them on an existing tab). #}
+   Fields come from the form's tabs, some under a heading (core.crud.Fieldset); a tab's own template
+   can add panels in `extra_panels` (give them data-panel="<tab key>" to show them on an existing tab,
+   or add the tab itself in `extra_tabs`). #}
 {% block title %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
 {% block eyebrow %}{{ group }} · {{ plural|capfirst }}{% endblock %}
 {% block heading %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
@@ -13,6 +14,7 @@
   {% for tab in tabs %}
   <button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> {% trans "(has errors)" %}</span>{% endif %}</button>
   {% endfor %}
+  {% block extra_tabs %}{% endblock %}
   {% if object %}<button type="button" role="tab" class="tab" data-tab="history">{% trans "History" %}</button>{% endif %}
 </div>
 {% endif %}
@@ -24,9 +26,14 @@
   {% for tab in tabs %}
   <section class="tab-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
     <h3 class="panel-title">{{ tab.label }}</h3>
+    {% if tab.help %}<p class="panel-help">{{ tab.help }}</p>{% endif %}
+    {% for fieldset in tab.fieldsets %}
+    {% if fieldset.label %}<fieldset class="form-fieldset"><legend>{{ fieldset.label }}</legend>{% if fieldset.help %}<p class="panel-help">{{ fieldset.help }}</p>{% endif %}{% endif %}
     <div class="form-grid form-grid-{{ tab.key }}">
-      {% for field in tab.fields %}{% include "registration/_field.html" %}{% endfor %}
+      {% for field in fieldset.fields %}{% include "registration/_field.html" %}{% endfor %}
     </div>
+    {% if fieldset.label %}</fieldset>{% endif %}
+    {% endfor %}
   </section>
   {% endfor %}
   <div class="form-actions">

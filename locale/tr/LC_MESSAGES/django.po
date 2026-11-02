@@ -65,8 +65,16 @@ msgid "%(label)s deleted with it"
 msgstr "%(label)s da birlikte silinir"
 
 #, python-format
+msgid "%(label)s linked to it"
+msgstr "Buna bağlı: %(label)s"
+
+#, python-format
 msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s: “%(link)s” bağlantısı kalkar"
+
+#, python-format
+msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
+msgstr "%(label)s: kayıtlı %(value)s değeri, kaydedildiği biçimde değil."
 
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
@@ -92,6 +100,10 @@ msgstr "%(name)s “%(object)s” kaydedildi."
 #, python-format
 msgid "%(number)s deleted"
 msgstr "%(number)s silinmiş"
+
+#, python-format
+msgid "%(record)s is the primary one"
+msgstr "%(record)s birincil olan"
 
 #, python-format
 msgid "%(record)s was not restored: %(reasons)s"
@@ -226,6 +238,14 @@ msgctxt "access area"
 msgid "Area"
 msgstr "Alan"
 
+#, python-format
+msgid "At least %(min)s."
+msgstr "En az %(min)s."
+
+#, python-format
+msgid "At most %(max)s."
+msgstr "En fazla %(max)s."
+
 msgid "Back to overview"
 msgstr "Genel bakışa dön"
 
@@ -267,6 +287,12 @@ msgstr "Kontrol"
 
 msgid "Check your email"
 msgstr "E-postanızı kontrol edin"
+
+msgid "Choose among the ones offered."
+msgstr "Sunulanlar arasından seçin."
+
+msgid "Choose at least one."
+msgstr "En az birini seçin."
 
 msgid "City"
 msgstr "Şehir"
@@ -506,6 +532,10 @@ msgstr "Parolanızı mı unuttunuz?"
 msgid "From"
 msgstr "Başlangıç"
 
+#, python-format
+msgid "From %(min)s to %(max)s."
+msgstr "%(min)s ile %(max)s arası."
+
 msgid "Full name of the site manager"
 msgstr "Saha sorumlusunun tam adı"
 
@@ -610,6 +640,9 @@ msgstr "Bakım"
 
 msgid "Manager"
 msgstr "Yönetici"
+
+msgid "Mark which one is the primary one."
+msgstr "Hangisinin birincil olduğunu işaretleyin."
 
 msgid "Max biomass (kg)"
 msgstr "Azami biyokütle (kg)"
@@ -797,6 +830,10 @@ msgstr "Posta kodu"
 msgid "Previous"
 msgstr "Önceki"
 
+msgid "Primary"
+msgstr "Birincil"
+
+msgctxt "link"
 msgid "Primary"
 msgstr "Birincil"
 
@@ -1076,8 +1113,18 @@ msgstr ""
 "Sahanın operasyonel iletişim kişileri. En fazla biri birincil kişi olabilir. Kişiler saha "
 "ayrıntılarından ayrı kaydedilir."
 
+msgid "The specifications must be a set of named values."
+msgstr "Teknik özellikler adlandırılmış değerler kümesi olmalıdır."
+
 msgid "The volume cannot be negative."
 msgstr "Hacim negatif olamaz."
+
+msgid ""
+"They keep the link, but it does not count while this is deleted; restoring it brings the link "
+"back."
+msgstr ""
+"Bağlantıyı korurlar, ancak bu kayıt silinmişken bağlantı sayılmaz; geri yüklemek bağlantıyı geri "
+"getirir."
 
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
@@ -1304,4 +1351,8 @@ msgstr "kullanıcılar"
 
 msgid "yes"
 msgstr "evet"
+
+#, python-format
+msgid "“%(name)s” is not one of the specifications of this type."
+msgstr "“%(name)s” bu türün teknik özelliklerinden biri değil."
 

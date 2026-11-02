@@ -1,0 +1,16 @@
+{% load i18n %}{# A record's links (core.links.LinkList): a box per record that can be linked, the primary mark and the link's details beside it. #}
+<div class="links" id="{{ widget.attrs.id }}" data-links{% if widget.depends_on %} data-depends-on="{{ widget.depends_on }}"{% endif %}>
+  {% if widget.rows %}
+  <div class="link-head" aria-hidden="true">
+    <span class="link-name"></span>{% if widget.primary %}<span class="link-primary">{% trans "Primary" context "link" %}</span>{% endif %}{% for label in widget.columns %}<span class="link-detail">{{ label }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% for row in widget.rows %}
+  <div class="link-row" data-link{% if widget.depends_on %} data-group="{{ row.group }}"{% endif %}>
+    <label class="check link-name"><input type="checkbox" name="{{ widget.name }}" value="{{ row.pk }}" id="{{ row.id }}"{% if row.checked %} checked{% endif %}> {{ row.label }}</label>
+    {% if widget.primary %}<label class="check link-primary"><input type="radio" name="{{ widget.name }}-primary" value="{{ row.pk }}"{% if row.primary %} checked{% endif %}><span class="sr-only">{% blocktrans trimmed with record=row.label %}{{ record }} is the primary one{% endblocktrans %}</span></label>{% endif %}
+    {% for field in row.details %}<label class="link-detail"><span class="sr-only">{{ field.label }}</span>{{ field }}</label>{% endfor %}
+  </div>
+  {% endfor %}
+  <p class="link-none" data-none{% if widget.rows %} hidden{% endif %}>{{ widget.empty_text }}</p>
+</div>

@@ -61,8 +61,11 @@ def snapshot(instance, field_names, labels=None):
 
 
 def diff(before, after):
-    """{label: [old, new]} for the labels whose value changed between two snapshots."""
-    return {label: [before.get(label), value] for label, value in after.items() if before.get(label) != value}
+    """{label: [old, new]} for the labels whose value changed between two snapshots. A label only in
+    `before` (a specification of the type a piece of equipment no longer has) changes to None."""
+    changes = {label: [before.get(label), value] for label, value in after.items() if before.get(label) != value}
+    changes.update({label: [value, None] for label, value in before.items() if label not in after and value is not None})
+    return changes
 
 
 def entity_type_of(model):

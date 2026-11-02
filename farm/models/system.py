@@ -4,13 +4,13 @@ from django.db import models
 from django.db.models import F, Q
 from django.utils.translation import gettext_lazy as _
 
-from core.models import AuditedModel, CodedMixin
+from core.models import AuditedModel, CodedMixin, TreeMixin, in_tree_order
 
 from .production_department import ProductionDepartment
 from .site import Site
 
 
-class System(CodedMixin, AuditedModel):
+class System(CodedMixin, TreeMixin, AuditedModel):
     """A production system of a site: a RAS, a pond, a cage line, a hatchery. Source table: farm.systems.
 
     Differences from the source: the production department must be on the system's site and a parent system
@@ -98,44 +98,13 @@ class System(CodedMixin, AuditedModel):
                 errors['parent'] = _('A system cannot be its own parent.')
             elif self.site_id and self.parent.site_id != self.site_id:
                 errors['parent'] = _('The parent system belongs to another site.')
-            elif self.pk in {system.pk for system in self.parent.self_and_ancestors()}:
+            elif self.nested_under_itself():
                 errors['parent'] = _('The parent system is nested under this system.')
         if errors:
             raise ValidationError(errors)
 
-    def self_and_ancestors(self):
-        """This system, its parent, that one's parent, and so on up to the top."""
-        seen, node = set(), self
-        while node is not None and node.pk not in seen:
-            seen.add(node.pk)
-            yield node
-            node = node.parent
-
-    def descendants(self):
-        """Every system nested below this one, at any depth."""
-        found, frontier = [], [self]
-        while frontier:
-            frontier = list(System.objects.filter(parent__in=frontier))
-            found.extend(frontier)
-        return found
-
     @classmethod
     def in_tree_order(cls, wanted=None):
-        """The live systems, site by site, each followed by the systems nested under it, with `depth`
-        set on each. `wanted` (a queryset) keeps only its systems, in the same order and depth."""
-        children = {}
-        for system in cls.objects.select_related('site', 'production_department', 'parent').order_by('name'):
-            children.setdefault(system.parent_id, []).append(system)
-        keep = None if wanted is None else {system.pk for system in wanted}
-        ordered = []
-
-        def walk(system, depth):
-            system.depth = depth
-            if keep is None or system.pk in keep:
-                ordered.append(system)
-            for child in children.get(system.pk, []):
-                walk(child, depth + 1)
-
-        for system in sorted(children.get(None, []), key=lambda s: (s.site.name, s.name)):
-            walk(system, 0)
-        return ordered
+        """The live systems, site by site, each followed by the systems nested under it."""
+        records = cls.objects.select_related('site', 'production_department', 'parent').order_by('site__name', 'name')
+        return in_tree_order(records, wanted)

@@ -10,14 +10,18 @@ needs the same way:
 - modal or page: opened from a `data-modal` link the same view renders inside a dialog, opened
   directly it renders as a full page (see core/templates and static/js/components.js);
 - languages: a tab's name, plural and group are translatable text (gettext_lazy); the pages put them
-  into sentences, so write them in the lower case a noun has in the middle of a sentence.
+  into sentences, so write them in the lower case a noun has in the middle of a sentence;
+- rows saved as a list: a tab's `row_lists` (a site's contacts) get their URL, their formset on the
+  edit page and a logged save (RowList).
 """
+from dataclasses import dataclass, field as dataclass_field
+
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import models, transaction
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from django.utils.text import capfirst
@@ -53,17 +57,40 @@ def done(request, url, stay=False):
     return redirect(url)
 
 
+# The query parameter of a form rendered again with what was entered, nothing saved (TabbedForm.refresh_on).
+DRAFT = '_draft'
+
+
+@dataclass(frozen=True)
+class Fieldset:
+    """Fields of an inner tab shown together under a heading, e.g. an equipment type's "Performance"."""
+    label: str
+    names: list = dataclass_field(default_factory=list)
+    help: str = ''
+
+
 class TabbedForm(forms.ModelForm):
-    """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`.
+    """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`, where a
+    tab can group some of its fields under a heading (Fieldset) and say a word about itself (`tab_help`).
     `fixed_after_creation` names the fields chosen once: they are shown but cannot be changed on an
-    existing record (a production department stays on its site)."""
+    existing record (a production department stays on its site).
+
+    `refresh_on` names fields whose value changes the form itself (an equipment type decides its
+    specification fields): changing one renders the form again with everything entered so far, nothing
+    saved (frontend/components.ts, data-refresh). That request carries the values as a `draft`; an
+    unsaved form starts from them instead of the stored record."""
 
     tabs = []
     fixed_after_creation = ()
+    refresh_on = ()
     version = forms.IntegerField(widget=forms.HiddenInput, required=False)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, draft=None, **kwargs):
+        self.draft = draft
+        self.tab_help = {}
         super().__init__(*args, **kwargs)
+        for name in self.refresh_on:
+            self.fields[name].widget.attrs['data-refresh'] = DRAFT
         if not self.instance._state.adding:
             for name in self.fixed_after_creation:
                 self.fields[name].disabled = True
@@ -72,6 +99,21 @@ class TabbedForm(forms.ModelForm):
             del self.fields['version']
         elif not self.instance._state.adding and not self.is_bound:
             self.initial['version'] = self.instance.version
+
+    def get_initial_for_field(self, field, field_name):
+        """A draft starts from the values it carries; a field it does not carry, or one that cannot be
+        changed, from the record as usual."""
+        key = self.add_prefix(field_name)
+        if self.draft is not None and not field.disabled and not field.widget.value_omitted_from_data(self.draft, {}, key):
+            return field.widget.value_from_datadict(self.draft, {}, key)
+        return super().get_initial_for_field(field, field_name)
+
+    def current(self, name):
+        """A field's value as the form has it now (posted, drafted or stored), cleaned; None when it is not valid."""
+        try:
+            return self.fields[name].clean(self[name].value())
+        except ValidationError:
+            return None
 
     def clean(self):
         cleaned = super().clean()
@@ -101,12 +143,22 @@ class TabbedForm(forms.ModelForm):
                     self.add_error(error_field, constraint.violation_error_message)
 
     def tab_list(self):
-        """The inner tabs with their bound fields and whether any field on them has an error."""
-        return [
-            {'key': key, 'label': label, 'fields': [self[name] for name in names],
-             'has_errors': any(name in self.errors for name in names)}
-            for key, label, names in self.tabs
-        ]
+        """The inner tabs: their fieldsets of bound fields (fields outside a Fieldset form one without a
+        heading), their help, and whether a field on them has an error."""
+        tabs = []
+        for key, label, names in self.tabs:
+            fieldsets = []
+            for item in names:
+                if isinstance(item, Fieldset):
+                    fieldsets.append({'label': item.label, 'help': item.help, 'fields': [self[n] for n in item.names]})
+                elif fieldsets and not fieldsets[-1]['label']:
+                    fieldsets[-1]['fields'].append(self[item])
+                else:
+                    fieldsets.append({'label': '', 'help': '', 'fields': [self[item]]})
+            names = tab_fields([(key, label, names)])
+            tabs.append({'key': key, 'label': label, 'help': self.tab_help.get(key, ''), 'fieldsets': fieldsets,
+                         'has_errors': any(name in self.errors for name in names)})
+        return tabs
 
 
 class CodedFormMixin:
@@ -126,7 +178,70 @@ class CodedFormMixin:
 
 
 def tab_fields(tabs):
-    return [name for _, _, names in tabs for name in names]
+    """Every field name of the tabs, the ones inside a Fieldset too."""
+    return [name for _, _, names in tabs for item in names
+            for name in (item.names if isinstance(item, Fieldset) else [item])]
+
+
+class RowFormSet(forms.BaseInlineFormSet):
+    """The rows of a RowList."""
+
+    def kept_rows(self):
+        """Cleaned data of the rows to keep: not marked for removal and not an untouched blank row."""
+        return [
+            form.cleaned_data for form in self.forms
+            if form.cleaned_data and not form.cleaned_data.get('DELETE')
+            and (form.instance.pk or form.has_changed())
+        ]
+
+
+class RowList:
+    """Rows a record owns that are edited as one list on a tab of the record's form and saved
+    together, replacing the stored rows: a site's contacts, a feeder's calibrations. Saving needs the
+    record's change permission and is logged on the record as one change, the list before and after
+    (`describe` each row, in English like every log row). Declare it in the Resource's `row_lists`;
+    its URL, its formset on the edit page and its save follow from there."""
+
+    key = ''          # 'contacts': URL part, formset prefix and the edit page's context name
+    tab = ''          # the inner tab it is shown on
+    label = ''        # how the activity log names the list, e.g. _('Contacts')
+    formset = None    # an inline formset over the row model (RowFormSet); the rows have `created_by`
+    saved = ''        # the flash message: ngettext_lazy('%(count)d ... saved.', '...', 'count')
+
+    @classmethod
+    def applies_to(cls, obj):
+        """Whether the record has this list at all (only a feeder has calibrations)."""
+        return True
+
+    @classmethod
+    def describe(cls, row):
+        """One row as the activity log shows it."""
+        return str(row)
+
+    @classmethod
+    def rows(cls, obj):
+        return cls.formset.model.objects.filter(**{cls.formset.fk.name: obj})
+
+    @classmethod
+    def summary(cls, obj):
+        return '; '.join(cls.describe(row) for row in cls.rows(obj)) or None
+
+    @classmethod
+    def save(cls, user, obj, rows, entity_type):
+        """Replaces the stored rows with `rows` (cleaned data) and logs the change on `obj`."""
+        model, link = cls.formset.model, cls.formset.fk.name
+        # The row's own fields; an inline formset adds the link to its parent to the form's fields.
+        fields = [name for name in cls.formset.form._meta.fields if name != link]
+        with transaction.atomic(), audit.source_language():
+            before = cls.summary(obj)
+            cls.rows(obj).delete()
+            model.objects.bulk_create([
+                model(**{link: obj, 'created_by': user}, **{name: row[name] for name in fields}) for row in rows
+            ])
+            after = cls.summary(obj)
+            if before != after:
+                audit.record(user, AuditLog.Action.UPDATE, obj, {str(cls.label): [before, after]},
+                             entity_type=entity_type)
 
 
 class Resource:
@@ -149,6 +264,7 @@ class Resource:
     icon = 'plus'         # shown in the empty list
     namespace = ''        # URL namespace; defaults to the model's app label
     actions = ('add', 'change', 'delete')   # what this tab offers besides the list
+    row_lists = ()        # RowList classes edited on the record's tabs (a site's contacts)
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -186,8 +302,8 @@ class Resource:
 
     @classmethod
     def edit_extras(cls, request, obj):
-        """Extra context for the edit page, e.g. inline lists shown on their own tab."""
-        return {}
+        """Extra context for the edit page: the formsets of its row lists, and whatever a tab adds."""
+        return {rows.key: rows.formset(instance=obj, prefix=rows.key) for rows in cls.row_lists if rows.applies_to(obj)}
 
     @classmethod
     def snapshot(cls, obj):
@@ -220,7 +336,9 @@ class Resource:
             'change': path(f'{p}/<{pk}>/', UpdateView.as_view(resource=cls), name=f'{n}_edit'),
             'delete': path(f'{p}/<{pk}>/delete/', DeleteView.as_view(resource=cls), name=f'{n}_delete'),
         }
-        return [route for action, route in routes.items() if action == 'list' or cls.allows(action)]
+        rows = [path(f'{p}/<{pk}>/{row_list.key}/', RowListView.as_view(resource=cls, rows=row_list),
+                     name=f'{n}_{row_list.key}') for row_list in cls.row_lists] if cls.allows('change') else []
+        return [route for action, route in routes.items() if action == 'list' or cls.allows(action)] + rows
 
 
 class ResourceView:
@@ -268,13 +386,18 @@ NONE = 'none'   # a list filter's value for "records without one" (production de
 
 
 def filter_by(request, objects, param, choices, lookup, allow_none=False):
-    """Narrows `objects` to the record chosen in the `param` query parameter, or (`allow_none`) to
-    those without one. Anything else, a stale or malformed value, shows everything.
+    """Narrows `objects` to the value chosen in the `param` query parameter: a record of `choices` (a
+    queryset) or one of `choices` given as (value, label) pairs; or (`allow_none`) to those without
+    one. Anything else, a stale or malformed value, shows everything.
     Returns the objects and the value the filter shows as chosen."""
     chosen = request.GET.get(param, '')
     if allow_none and chosen == NONE:
         return objects.filter(**{f'{lookup}__isnull': True}), chosen
-    if chosen in {str(pk) for pk in choices.values_list('pk', flat=True)}:
+    if isinstance(choices, models.QuerySet):
+        allowed = {str(pk) for pk in choices.values_list('pk', flat=True)}
+    else:
+        allowed = {str(value) for value, _label in choices}
+    if chosen in allowed:
         return objects.filter(**{lookup: chosen}), chosen
     return objects, ''
 
@@ -293,6 +416,10 @@ class ListView(ResourceView):
 
 
 class FormView(ResourceView):
+    def form_arguments(self):
+        """A GET that carries a draft (TabbedForm.refresh_on) renders the form from those values."""
+        return {'draft': self.request.GET} if DRAFT in self.request.GET else {}
+
     def page(self, form, obj=None, **extra):
         r = self.resource
         history = []
@@ -306,7 +433,7 @@ class CreateView(FormView):
     action = 'add'
 
     def get(self, request):
-        return self.page(self.resource.form(request))
+        return self.page(self.resource.form(request, **self.form_arguments()))
 
     def post(self, request):
         r = self.resource
@@ -332,7 +459,7 @@ class UpdateView(FormView):
 
     def get(self, request, pk):
         obj = self.get_object(pk)
-        return self.page(self.resource.form(request, instance=obj), obj)
+        return self.page(self.resource.form(request, instance=obj, **self.form_arguments()), obj)
 
     def post(self, request, pk):
         r = self.resource
@@ -392,3 +519,28 @@ class DeleteView(ResourceView):
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” deleted.'), r, obj)
         return done(request, reverse(r.url_name('list')))
+
+
+class RowListView(ResourceView):
+    """Saves a RowList of a record. Editing its rows is part of editing the record, so it needs the
+    record's change permission."""
+
+    action = 'change'
+    rows = None
+
+    def get(self, request, pk):
+        return redirect(reverse(self.resource.url_name('edit'), args=[pk]))
+
+    def post(self, request, pk):
+        r, rows = self.resource, self.rows
+        obj = self.get_object(pk)
+        if not rows.applies_to(obj):
+            raise Http404
+        formset = rows.formset(request.POST, instance=obj, prefix=rows.key)
+        if not formset.is_valid():
+            page = UpdateView.as_page(r, request)
+            return page.page(r.form(request, instance=obj), obj, **{rows.key: formset, 'open_tab': rows.tab})
+        kept = formset.kept_rows()
+        rows.save(request.user, obj, kept, r.entity_type())
+        messages.success(request, rows.saved % {'count': len(kept)})
+        return done(request, reverse(r.url_name('edit'), args=[pk]), stay=True)

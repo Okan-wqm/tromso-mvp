@@ -65,8 +65,16 @@ msgid "%(label)s deleted with it"
 msgstr "%(label)s som slettes sammen med den"
 
 #, python-format
+msgid "%(label)s linked to it"
+msgstr "%(label)s knyttet til den"
+
+#, python-format
 msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s som mister koblingen «%(link)s»"
+
+#, python-format
+msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
+msgstr "%(label)s: den lagrede verdien %(value)s er ikke i formen den lagres i."
 
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
@@ -92,6 +100,10 @@ msgstr "%(name)s «%(object)s» ble lagret."
 #, python-format
 msgid "%(number)s deleted"
 msgstr "%(number)s slettet"
+
+#, python-format
+msgid "%(record)s is the primary one"
+msgstr "%(record)s er den primære"
 
 #, python-format
 msgid "%(record)s was not restored: %(reasons)s"
@@ -228,6 +240,14 @@ msgctxt "access area"
 msgid "Area"
 msgstr "Område"
 
+#, python-format
+msgid "At least %(min)s."
+msgstr "Minst %(min)s."
+
+#, python-format
+msgid "At most %(max)s."
+msgstr "Høyst %(max)s."
+
 msgid "Back to overview"
 msgstr "Tilbake til oversikten"
 
@@ -269,6 +289,12 @@ msgstr "Sjekk"
 
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
+
+msgid "Choose among the ones offered."
+msgstr "Velg blant dem som tilbys."
+
+msgid "Choose at least one."
+msgstr "Velg minst én."
 
 msgid "City"
 msgstr "By"
@@ -505,6 +531,10 @@ msgstr "Glemt passordet?"
 msgid "From"
 msgstr "Fra"
 
+#, python-format
+msgid "From %(min)s to %(max)s."
+msgstr "Fra %(min)s til %(max)s."
+
 msgid "Full name of the site manager"
 msgstr "Lokalitetslederens fulle navn"
 
@@ -609,6 +639,9 @@ msgstr "Vedlikehold"
 
 msgid "Manager"
 msgstr "Leder"
+
+msgid "Mark which one is the primary one."
+msgstr "Merk hvilken som er den primære."
 
 msgid "Max biomass (kg)"
 msgstr "Maks. biomasse (kg)"
@@ -798,6 +831,10 @@ msgstr "Forrige"
 
 msgid "Primary"
 msgstr "Hovedkontakt"
+
+msgctxt "link"
+msgid "Primary"
+msgstr "Primær"
 
 msgid "Primary key"
 msgstr "Primærnøkkel"
@@ -1079,8 +1116,18 @@ msgstr ""
 "Lokalitetens operative kontaktpersoner. Maksimalt én kan være hovedkontakt. Kontaktpersoner "
 "lagres separat fra lokalitetsdetaljene."
 
+msgid "The specifications must be a set of named values."
+msgstr "Spesifikasjonene må være et sett med navngitte verdier."
+
 msgid "The volume cannot be negative."
 msgstr "Volumet kan ikke være negativt."
+
+msgid ""
+"They keep the link, but it does not count while this is deleted; restoring it brings the link "
+"back."
+msgstr ""
+"De beholder koblingen, men den teller ikke så lenge denne er slettet; å gjenopprette den bringer "
+"koblingen tilbake."
 
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
@@ -1307,4 +1354,8 @@ msgstr "brukere"
 
 msgid "yes"
 msgstr "ja"
+
+#, python-format
+msgid "“%(name)s” is not one of the specifications of this type."
+msgstr "«%(name)s» er ikke en av spesifikasjonene for denne typen."
 

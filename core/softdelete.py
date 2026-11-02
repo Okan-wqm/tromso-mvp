@@ -7,6 +7,10 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
 - SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
 - PROTECT / RESTRICT  they block the delete until they are dealt with.
 
+Records linked to it through a many-to-many link (the equipment serving a system) keep the link row:
+the link only stops counting while the record is deleted, so restoring it brings the link back. The
+confirmation lists them; nothing about them changes, so nothing is logged for them.
+
 A model adds conditions that are not links by overriding `delete_blockers()` (fish still in a
 tank). One plan serves both the confirmation (what will be affected) and the delete itself, and
 every record it touches gets its own activity-log row, written in English like every audit row
@@ -29,6 +33,7 @@ class DeletePlan:
     blockers: list = field(default_factory=list)
     cascade: list = field(default_factory=list)   # deleted with obj; parents before their children
     detach: list = field(default_factory=list)    # (record, link) pairs whose link is cleared
+    unlinked: list = field(default_factory=list)  # records linked many-to-many, whose link stops counting
 
     @property
     def can_delete(self):
@@ -62,12 +67,22 @@ class DeletePlan:
         return groups
 
 
+    def unlinked_groups(self):
+        """[{'label': 'Equipment', 'records': [...]}]: linked to a deleted record, keeping the link row."""
+        return [
+            {'label': capfirst(model._meta.verbose_name_plural), 'records': records}
+            for model, records in self._by_model(self.unlinked).items()
+        ]
+
+
 def plan_delete(obj):
     """What deleting `obj` would do, without doing it."""
     plan = DeletePlan(obj)
     _collect(obj, plan, {(type(obj), obj.pk)})
     deleted = {(type(record), record.pk) for record in plan.cascade}
     plan.detach = [(record, link) for record, link in plan.detach if (type(record), record.pk) not in deleted]
+    plan.unlinked = list({(type(record), record.pk): record for record in plan.unlinked
+                          if (type(record), record.pk) not in deleted}.values())
     return plan
 
 
@@ -75,6 +90,9 @@ def _collect(obj, plan, seen):
     plan.blockers.extend(obj.delete_blockers())
     for relation in obj._meta.related_objects:
         model = relation.related_model
+        if relation.many_to_many and issubclass(model, AuditedModel):
+            plan.unlinked.extend(model.objects.filter(**{relation.field.name: obj}))
+            continue
         # Only links from other farm records; plain rows (a site's contacts) stay with their parent.
         if not relation.one_to_many or not issubclass(model, AuditedModel):
             continue

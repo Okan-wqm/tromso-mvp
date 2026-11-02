@@ -76,6 +76,53 @@ class CodedMixin:
         super().save(*args, **kwargs)
 
 
+class TreeMixin:
+    """Records nested under another record of the same kind through a `parent` link (a system inside
+    a system, a pump mounted on a skid). A record cannot be nested under itself or anything below it."""
+
+    def self_and_ancestors(self):
+        """This record, its parent, that one's parent, and so on up to the top."""
+        seen, node = set(), self
+        while node is not None and node.pk not in seen:
+            seen.add(node.pk)
+            yield node
+            node = node.parent
+
+    def nested_under_itself(self):
+        """Whether the chosen parent is this record or sits somewhere below it."""
+        return self.parent is not None and self.pk in {node.pk for node in self.parent.self_and_ancestors()}
+
+    def descendants(self):
+        """Every live record nested below this one, at any depth."""
+        found, frontier = [], [self]
+        while frontier:
+            frontier = list(type(self).objects.filter(parent__in=frontier))
+            found.extend(frontier)
+        return found
+
+
+def in_tree_order(records, wanted=None):
+    """Nested records (TreeMixin) as a list shows them: `records` (every live record, in the order
+    siblings are listed) with each one followed by the records nested under it, and `depth` set on
+    each. `wanted` (a queryset) keeps only its records, in the same order and at their real depth."""
+    children = {}
+    for record in records:
+        children.setdefault(record.parent_id, []).append(record)
+    keep = None if wanted is None else {record.pk for record in wanted}
+    ordered = []
+
+    def walk(record, depth):
+        record.depth = depth
+        if keep is None or record.pk in keep:
+            ordered.append(record)
+        for child in children.get(record.pk, []):
+            walk(child, depth + 1)
+
+    for record in children.get(None, []):
+        walk(record, 0)
+    return ordered
+
+
 class AuditLog(models.Model):
     """Who did what to which record, with old and new values. Rows are append-only: a database
     trigger (migration 0003) refuses UPDATE and DELETE, so history cannot be edited, not even by

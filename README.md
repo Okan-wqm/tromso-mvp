@@ -188,7 +188,9 @@ compiled by `npm run build` into `static/js/`, which is not committed:
 - `components.ts` the shared parts every tab uses through data attributes: the dialog
   (`data-modal`), inner tabs, upper-case inputs, row lists and check boxes that need another one
   (`data-requires`, the role matrix), GET forms that leave empty fields out of the address
-  (`data-omit-empty`, the database viewer's filters);
+  (`data-omit-empty`, the database viewer's filters), choices and rows that belong to another field's
+  value (`data-depends-on`), fields that render the form again with what was entered (`data-refresh`),
+  link lists with one primary mark (`data-links`);
 - `auth.ts` the show/hide password button.
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
@@ -222,7 +224,24 @@ point at it too, `SET_NULL` keeps them but clears the link, `PROTECT` blocks the
 adds conditions that are not links by overriding `delete_blockers()`. One plan serves the
 confirmation, which lists what will be affected and disables the button when something blocks, and
 the delete itself, which writes an activity-log row for every record it touches. A tab never writes
-down what a delete does to its neighbours: it is whatever its links say.
+down what a delete does to its neighbours: it is whatever its links say. Records linked through a
+many-to-many link keep their link rows; the confirmation lists them, and the link counts again once
+the record is restored.
+
+### Shared form parts
+
+What one tab needs and the next ones will too lives in `core/`:
+
+- `TabbedForm` (`core/crud.py`): inner tabs, fields grouped under a heading (`Fieldset`), a word per
+  tab (`tab_help`), fields chosen once (`fixed_after_creation`) and fields that change the form itself
+  (`refresh_on`: the form is rendered again from a `draft`, the values entered so far, nothing saved).
+- `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
+  replacing the stored rows, logged on the record (a site's contacts).
+- `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of
+  check boxes with the details of each link, that belongs to another field's value.
+- `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data, the form fields and
+  the check of the stored values from one definition.
+- `TreeMixin` (`core/models.py`): records nested under records of the same kind, without loops.
 
 ### Restoring
 
@@ -295,7 +314,8 @@ real mail.
 | `core/language.py`, `core/catalogs.py`, `locale/`, `config/formats/`, `docs/i18n.md` | Languages: which one a request gets, the catalogs without GNU gettext, the English date look, the guide and glossary |
 | `core/access.py`, `config/access.py` | Access areas: what a role can be given (the permission matrix) |
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
-| `core/widgets.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site) |
+| `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `LinkList`: check boxes for a record's links, with their details |
+| `core/schema.py` | Fields described by a schema: the form fields and the check of stored values |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |

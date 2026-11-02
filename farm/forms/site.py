@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from core.crud import CodedFormMixin, TabbedForm, tab_fields
+from core.crud import CodedFormMixin, RowFormSet, TabbedForm, tab_fields
 
 from ..models import Site, SiteContact
 
@@ -90,7 +90,7 @@ class SiteContactForm(forms.ModelForm):
         pass
 
 
-class BaseSiteContactFormSet(forms.BaseInlineFormSet):
+class BaseSiteContactFormSet(RowFormSet):
     def clean(self):
         super().clean()
         primaries = sum(
@@ -100,14 +100,6 @@ class BaseSiteContactFormSet(forms.BaseInlineFormSet):
         if primaries > 1:
             raise ValidationError(_('Only one contact can be the primary contact; %(count)d are marked.'),
                                   params={'count': primaries})
-
-    def kept_rows(self):
-        """Cleaned data of the rows to keep: not marked for removal and not an untouched blank row."""
-        return [
-            form.cleaned_data for form in self.forms
-            if form.cleaned_data and not form.cleaned_data.get('DELETE')
-            and (form.instance.pk or form.has_changed())
-        ]
 
 
 SiteContactFormSet = forms.inlineformset_factory(

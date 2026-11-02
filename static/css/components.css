@@ -295,6 +295,23 @@
 .contact-row.is-removed { opacity: .5; }
 .contact-row.is-removed input:not([type="checkbox"]) { text-decoration: line-through; }
 
+/* A form's fields under a heading (core.crud.Fieldset), e.g. an equipment type's "Performance" */
+.form-fieldset { min-width: 0; margin: 0 0 1.25rem; padding: 0; border: 0; }
+.form-fieldset legend { margin-bottom: .625rem; padding: 0; font-size: .9375rem; font-weight: 700; color: var(--speck); }
+
+/* A record's links with their details (core.links.LinkList), e.g. the systems a pump serves */
+.links { display: grid; gap: .375rem; }
+.link-head, .link-row { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .75rem; }
+.link-head { padding: 0 .75rem; color: var(--muted); font-size: .8125rem; font-weight: 600; }
+.link-row { padding: .375rem .75rem; border: 1px solid var(--line); border-radius: 6px; background: var(--white); }
+.link-row[hidden] { display: none; }
+.link-name { flex: 1 1 14rem; min-height: 2.25rem; white-space: normal; }
+.link-primary { flex: 0 0 4.5rem; justify-content: center; min-height: 0; }
+.link-detail { flex: 0 0 8.5rem; }
+.link-detail input, .link-detail select { width: 100%; }
+.link-row:not(:has(.link-name input:checked)) :is(.link-primary, .link-detail) { opacity: .45; }
+.link-none { margin: 0; color: var(--muted); }
+
 .check {
   display: inline-flex;
   align-items: center;
@@ -520,6 +537,7 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .confirm-question { margin: 0 0 1rem; font-size: 1.125rem; font-weight: 600; color: var(--speck); }
 .affected { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line); border-radius: 6px; background: var(--white); }
 .affected h3 { margin: 0 0 .375rem; font-size: .9375rem; }
+.affected .affected-note { margin: 0 0 .375rem; font-size: .875rem; }
 .affected .count {
   margin-left: .375rem;
   padding: .0625rem .4375rem;

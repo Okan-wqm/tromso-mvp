@@ -9,16 +9,9 @@ from . import softdelete
 from .models import AuditedModel
 
 
-class AuditedModelAdmin(admin.ModelAdmin):
-    """Admin for farm records: deleted ones are shown too, and a platform admin can restore them.
-    It is read-only on purpose: records are changed on their own screens, where every change is
-    written to the activity log; an edit here would not be."""
-
-    list_filter = ['is_deleted']
-    actions = ['restore']
-
-    def get_queryset(self, request):
-        return self.model.all_objects.all()
+class ReadOnlyAdmin(admin.ModelAdmin):
+    """Shows records and changes nothing: farm records are changed on their own screens, where every
+    change is written to the activity log, and reference data (equipment types) by migrations."""
 
     def has_add_permission(self, request):
         return False
@@ -28,6 +21,17 @@ class AuditedModelAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+class AuditedModelAdmin(ReadOnlyAdmin):
+    """Admin for farm records: deleted ones are shown too, and a platform admin can restore them.
+    It is read-only on purpose: an edit here would not be in the activity log."""
+
+    list_filter = ['is_deleted']
+    actions = ['restore']
+
+    def get_queryset(self, request):
+        return self.model.all_objects.all()
 
     def has_restore_permission(self, request):
         return request.user.has_perm(f'{self.opts.app_label}.change_{self.opts.model_name}')

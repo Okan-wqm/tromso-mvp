@@ -31,6 +31,13 @@
       <ul>{% for record in group.records %}<li>{{ record }}</li>{% endfor %}</ul>
     </section>
     {% endfor %}
+    {% for group in plan.unlinked_groups %}
+    <section class="affected">
+      <h3>{% blocktrans trimmed with label=group.label %}{{ label }} linked to it{% endblocktrans %} <span class="count">{{ group.records|length }}</span></h3>
+      <p class="affected-note">{% trans "They keep the link, but it does not count while this is deleted; restoring it brings the link back." %}</p>
+      <ul>{% for record in group.records %}<li>{{ record }}</li>{% endfor %}</ul>
+    </section>
+    {% endfor %}
     <p>{% trans "It disappears from every list but is not erased: the record stays in the database, the activity log keeps its history, and it can be restored from the admin." %}</p>
   {% else %}
   <p>{% trans "This removes it permanently. The activity log keeps a record that it was deleted." %}</p>

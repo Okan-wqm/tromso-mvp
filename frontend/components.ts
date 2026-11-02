@@ -4,7 +4,9 @@
 //   data-tabs/-tab/-panel inner tabs; without this script every panel simply shows
 //   data-uppercase        upper-cases a text input while typing
 //   data-autosubmit       a filter select that applies on change
-//   data-depends-on       a select whose options (data-group) belong to another field's value
+//   data-depends-on       a select whose options, or a list whose rows, belong to another field's value (data-group)
+//   data-refresh          a field that changes the form itself: the server renders the form again with what was entered
+//   data-links            a list of links (core.links.LinkList): one ticked box is marked as the primary one
 //   data-omit-empty       a GET form that leaves its empty fields out of the address it builds (the database viewer's filters)
 //   data-formset          a list of rows with "add row" and, for [data-primary], one ticked box
 //   data-requires="<id>"  a check box that needs another one (e.g. Edit needs Read in the role matrix)
@@ -112,25 +114,96 @@ function initAutosubmit(root: ParentNode): void {
   });
 }
 
-// ---- selects whose options belong to another field's value ---------------------------------
+// ---- choices that belong to another field's value --------------------------------------------
 // A production department belongs to a site: after the site is chosen only its departments are
-// offered, and a
-// choice that no longer fits is cleared. The server checks the same rule; this only guides.
-function initDependentSelects(root: ParentNode): void {
-  root.querySelectorAll<HTMLSelectElement>('select[data-depends-on]').forEach((select) => {
-    const source = select.form?.elements.namedItem(select.dataset.dependsOn ?? '');
+// offered, and a choice that no longer fits is cleared. The options of a select, or the rows of a list
+// of check boxes, carry data-group: the value, or the space-separated values, of the other field they
+// belong to. The server checks the same rule; this only guides.
+function initDependents(root: ParentNode): void {
+  root.querySelectorAll<HTMLElement>('[data-depends-on]').forEach((dependent) => {
+    const source = dependent.closest('form')?.elements.namedItem(dependent.dataset.dependsOn ?? '');
     if (!(source instanceof HTMLSelectElement || source instanceof HTMLInputElement)) return;
+    const fits = (item: HTMLElement): boolean =>
+      source.value !== '' && (item.dataset.group ?? '').split(' ').includes(source.value);
 
-    const fit = (): void => {
+    const fitSelect = (select: HTMLSelectElement): void => {
       for (const option of select.options) {
-        const shown = option.value === '' || (source.value !== '' && option.dataset.group === source.value);
+        const shown = option.value === '' || fits(option);
         option.hidden = !shown;
         option.disabled = !shown;
       }
       if (select.selectedOptions[0]?.disabled) select.value = '';
     };
+    const fitRows = (): void => {
+      const rows = [...dependent.querySelectorAll<HTMLElement>('[data-group]')];
+      for (const row of rows) {
+        row.hidden = !fits(row);
+        row.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((input) => {
+          input.disabled = row.hidden;
+          if (row.hidden && input instanceof HTMLInputElement) input.checked = false;
+        });
+      }
+      const none = dependent.querySelector<HTMLElement>('[data-none]');
+      if (none) none.hidden = rows.some((row) => !row.hidden);
+    };
+    const fit = (): void => {
+      if (dependent instanceof HTMLSelectElement) fitSelect(dependent);
+      else fitRows();
+    };
     source.addEventListener('change', fit);
     fit();
+  });
+}
+
+// ---- fields that change the form itself ----------------------------------------------------------
+// data-refresh="<param>": the field decides which other fields the form has (an equipment type, its
+// specifications). After a change the server renders the form again with everything entered so far,
+// nothing saved: GET <form action>?<param>=1&<values>, into the dialog or as the page.
+function initRefresh(root: ParentNode): void {
+  root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-refresh]').forEach((field) => {
+    field.addEventListener('change', () => {
+      const form = field.form;
+      if (!form) return;
+      const query = new URLSearchParams();
+      for (const [name, value] of new FormData(form)) {
+        if (typeof value === 'string' && name !== 'csrfmiddlewaretoken') query.append(name, value);
+      }
+      query.set(field.dataset.refresh ?? '', '1');
+      const url = `${form.action}?${query.toString()}`;
+      if (modal?.holds(form)) void modal.load(url).then(() => modal?.focus(field.name));
+      else window.location.assign(url);
+    });
+  });
+}
+
+// ---- link lists (core.links.LinkList) ----------------------------------------------------------
+// One radio button marks the primary link among the ticked boxes: the first box ticked gets it, and
+// unticking the marked one passes it on; marking an unticked row ticks its box. The server applies the
+// same rule; this only keeps the form honest while editing.
+function initLinkLists(root: ParentNode): void {
+  root.querySelectorAll<HTMLElement>('[data-links]').forEach((list) => {
+    const rows = [...list.querySelectorAll<HTMLElement>('[data-link]')];
+    const box = (row: HTMLElement): HTMLInputElement | null => row.querySelector('input[type="checkbox"]');
+    const mark = (row: HTMLElement): HTMLInputElement | null => row.querySelector('input[type="radio"]');
+    list.addEventListener('change', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      const row = input.closest<HTMLElement>('[data-link]');
+      if (!row) return;
+      if (input.type === 'radio' && input.checked) {
+        const ticked = box(row);
+        if (ticked) ticked.checked = true;
+      }
+      for (const other of rows) {
+        const radio = mark(other);
+        if (radio && !box(other)?.checked) radio.checked = false;
+      }
+      const ticked = rows.filter((other) => box(other)?.checked);
+      if (!ticked.some((other) => mark(other)?.checked)) {
+        const first = ticked[0] ? mark(ticked[0]) : null;
+        if (first) first.checked = true;
+      }
+    });
   });
 }
 
@@ -151,7 +224,9 @@ function init(root: Element | Document): void {
   initFormsets(root);
   initRequires(root);
   initAutosubmit(root);
-  initDependentSelects(root);
+  initDependents(root);
+  initRefresh(root);   // after initDependents: a choice that no longer fits is cleared before the form is sent
+  initLinkLists(root);
   initOmitEmpty(root);
 }
 
@@ -226,8 +301,16 @@ class Modal {
       .querySelector<HTMLElement>('.has-error input, .has-error select, input:not([type="hidden"]), select, textarea, button')
       ?.focus();
   }
+
+  holds(element: Element): boolean {
+    return this.dialog.open && this.content.contains(element);
+  }
+
+  focus(name: string): void {
+    this.content.querySelector<HTMLElement>(`[name="${CSS.escape(name)}"]`)?.focus();
+  }
 }
 
 const dialog = document.querySelector<HTMLDialogElement>('dialog#modal');
-if (dialog) new Modal(dialog);
+const modal = dialog ? new Modal(dialog) : null;
 init(document);

@@ -345,7 +345,7 @@ class SpecificationTests(EquipmentTestCase):
         self.assertEqual(Equipment.objects.get().specifications, {'parameters': ['temperature', 'do']})
 
     def test_groups_of_a_type_are_shown_under_their_heading(self):
-        form = self.client.get(reverse('farm:equipment_create'), {'_draft': '1', 'equipment_type': self.pump.pk,
+        form = self.client.post(reverse('farm:equipment_create'), {'_draft': '1', 'equipment_type': self.pump.pk,
                                                                   'category': 'pump'}).context['form']
         (spec_tab,) = [tab for tab in form.tab_list() if tab['key'] == 'specifications']
         self.assertEqual([(fieldset['label'], [f.name for f in fieldset['fields']]) for fieldset in spec_tab['fieldsets']], [
@@ -362,7 +362,7 @@ class SpecificationTests(EquipmentTestCase):
 
     def test_a_new_type_starts_from_its_defaults_and_a_changed_type_drops_the_old_values(self):
         inlet = EquipmentType.objects.get(code='tank-inlet')
-        form = self.client.get(reverse('farm:equipment_create'), {'_draft': '1', 'equipment_type': inlet.pk,
+        form = self.client.post(reverse('farm:equipment_create'), {'_draft': '1', 'equipment_type': inlet.pk,
                                                                   'category': 'plumbing'}).context['form']
         self.assertEqual((form['spec__tank-inlet__pipeSize'].value(), form['spec__tank-inlet__material'].value()),
                          (110, 'pvc'))
@@ -415,7 +415,7 @@ class DraftTests(EquipmentTestCase):
         self.assertIn('data-depends-on="category"', html)
 
     def test_a_draft_keeps_what_was_entered_and_shows_no_errors(self):
-        response = self.client.get(reverse('farm:equipment_create'), {
+        response = self.client.post(reverse('farm:equipment_create'), {
             '_draft': '1', 'name': 'Feeder 1', 'code': 'fd-1', 'category': 'feeding',
             'equipment_type': self.feeder.pk, 'production_department': self.hall.pk, 'systems': [self.ras.pk],
             f'systems-{self.ras.pk}-role': 'feeding', 'spec__pump-centrifugal__flowRate': '99'})
@@ -428,12 +428,25 @@ class DraftTests(EquipmentTestCase):
         self.assertNotContains(response, 'errorlist')
         self.assertContains(response, 'data-tab="calibration"')
         self.assertContains(response, 'Calibrations can be added once the equipment is created.')
+        self.assertFalse(Equipment.objects.exists())
+        self.assertFalse(AuditLog.objects.exists())
 
-    def test_a_draft_of_an_existing_record_keeps_what_cannot_be_typed(self):
+    def test_a_draft_of_an_existing_record_keeps_what_cannot_be_typed_and_saves_nothing(self):
         pump = self.make()
-        form = self.client.get(reverse('farm:equipment_edit', args=[pump.pk]), {
+        form = self.client.post(reverse('farm:equipment_edit', args=[pump.pk]), {
             '_draft': '1', 'name': 'Renamed', 'version': '1'}).context['form']
         self.assertEqual((form['name'].value(), form['version'].value()), ('Renamed', '1'))
+        stored = Equipment.objects.get(pk=pump.pk)
+        self.assertEqual((stored.name, stored.version), (pump.name, pump.version))
+
+    def test_a_draft_travels_in_the_request_body_not_the_address(self):
+        long_notes = 'Inspected. ' * 1000    # far beyond what an address may carry
+        response = self.client.post(reverse('farm:equipment_create'), {
+            '_draft': '1', 'equipment_type': self.pump.pk, 'category': 'pump', 'notes': long_notes})
+        self.assertEqual(response.context['form']['notes'].value(), long_notes)
+        self.assertFalse(Equipment.objects.exists())
+        address = self.client.get(reverse('farm:equipment_create'), {'_draft': '1', 'name': 'From the address'})
+        self.assertIsNone(address.context['form']['name'].value())    # a draft in the address is not read
 
 
 class FeederCalibrationTests(EquipmentTestCase):

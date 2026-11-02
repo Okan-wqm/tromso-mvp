@@ -57,7 +57,7 @@ def done(request, url, stay=False):
     return redirect(url)
 
 
-# The query parameter of a form rendered again with what was entered, nothing saved (TabbedForm.refresh_on).
+# The marker of a posted form to render again with what was entered, nothing saved (TabbedForm.refresh_on).
 DRAFT = '_draft'
 
 
@@ -76,9 +76,11 @@ class TabbedForm(forms.ModelForm):
     existing record (a production department stays on its site).
 
     `refresh_on` names fields whose value changes the form itself (an equipment type decides its
-    specification fields): changing one renders the form again with everything entered so far, nothing
-    saved (frontend/components.ts, data-refresh). That request carries the values as a `draft`; an
-    unsaved form starts from them instead of the stored record."""
+    specification fields): changing one posts the form with the `_draft` marker and the server renders
+    it again with everything entered so far, validating and saving nothing (frontend/components.ts,
+    data-refresh). The values travel in the request body, not the address, so long texts fit and stay out
+    of access logs. They reach the form as a `draft`; an unbound form starts from them instead of the
+    stored record."""
 
     tabs = []
     fixed_after_creation = ()
@@ -416,10 +418,6 @@ class ListView(ResourceView):
 
 
 class FormView(ResourceView):
-    def form_arguments(self):
-        """A GET that carries a draft (TabbedForm.refresh_on) renders the form from those values."""
-        return {'draft': self.request.GET} if DRAFT in self.request.GET else {}
-
     def page(self, form, obj=None, **extra):
         r = self.resource
         history = []
@@ -433,10 +431,12 @@ class CreateView(FormView):
     action = 'add'
 
     def get(self, request):
-        return self.page(self.resource.form(request, **self.form_arguments()))
+        return self.page(self.resource.form(request))
 
     def post(self, request):
         r = self.resource
+        if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
+            return self.page(r.form(request, draft=request.POST))
         form = r.form(request, request.POST)
         if not form.is_valid():
             return self.page(form)
@@ -459,11 +459,13 @@ class UpdateView(FormView):
 
     def get(self, request, pk):
         obj = self.get_object(pk)
-        return self.page(self.resource.form(request, instance=obj, **self.form_arguments()), obj)
+        return self.page(self.resource.form(request, instance=obj), obj)
 
     def post(self, request, pk):
         r = self.resource
         obj = self.get_object(pk)
+        if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
+            return self.page(r.form(request, instance=obj, draft=request.POST), obj)
         form = r.form(request, request.POST, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)

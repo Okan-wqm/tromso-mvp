@@ -292,7 +292,8 @@ What one tab needed and the next ones will too lives in `core/`:
 
 - `TabbedForm` (`core/crud.py`): inner tabs, fields grouped under a heading (`Fieldset`), a word per
   tab (`tab_help`), fields chosen once (`fixed_after_creation`) and fields that change the form itself
-  (`refresh_on`: the form is rendered again from a `draft`, the values entered so far, nothing saved).
+  (`refresh_on`: the form is posted with a `_draft` marker and rendered again from the values entered so
+  far, nothing validated or saved; the values travel in the request body, never in the address).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
   replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations).
 - `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of

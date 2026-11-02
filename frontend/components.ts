@@ -156,22 +156,28 @@ function initDependents(root: ParentNode): void {
 }
 
 // ---- fields that change the form itself ----------------------------------------------------------
-// data-refresh="<param>": the field decides which other fields the form has (an equipment type, its
-// specifications). After a change the server renders the form again with everything entered so far,
-// nothing saved: GET <form action>?<param>=1&<values>, into the dialog or as the page.
+// data-refresh="<marker>": the field decides which other fields the form has (an equipment type, its
+// specifications). After a change the form is posted with the marker, and the server renders it again
+// with everything entered so far, saving nothing: into the dialog, or as the page. The values go in the
+// request body, never in the address.
 function initRefresh(root: ParentNode): void {
   root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-refresh]').forEach((field) => {
     field.addEventListener('change', () => {
       const form = field.form;
-      if (!form) return;
-      const query = new URLSearchParams();
-      for (const [name, value] of new FormData(form)) {
-        if (typeof value === 'string' && name !== 'csrfmiddlewaretoken') query.append(name, value);
+      const marker = field.dataset.refresh;
+      if (!form || !marker) return;
+      if (modal?.holds(form)) {
+        const data = new FormData(form);
+        data.set(marker, '1');
+        void modal.load(form.action, { method: 'POST', body: data }).then(() => modal?.focus(field.name));
+        return;
       }
-      query.set(field.dataset.refresh ?? '', '1');
-      const url = `${form.action}?${query.toString()}`;
-      if (modal?.holds(form)) void modal.load(url).then(() => modal?.focus(field.name));
-      else window.location.assign(url);
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = marker;
+      input.value = '1';
+      form.append(input);
+      form.submit();
     });
   });
 }

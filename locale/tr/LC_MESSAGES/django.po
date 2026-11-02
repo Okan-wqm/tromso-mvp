@@ -2560,7 +2560,7 @@ msgid ""
 "A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
 " the reports and the water it lives in."
 msgstr ""
-"Çiftliğin yetiştirdiği veya stokladığı bir tür, örneğin Atlantik somonu veya lompa balığı: "
+"Çiftliğin yetiştirdiği veya stokladığı bir balık türü, örneğin Atlantik somonu veya lompa balığı: "
 "adları, resmî bildirim kodları ve yaşadığı su."
 
 msgid ""
@@ -2571,16 +2571,16 @@ msgstr ""
 "kaldırıldı: artık yetiştirilmiyor."
 
 msgid "All species"
-msgstr "Tüm türler"
+msgstr "Tüm balık türleri"
 
 msgid "All water environments"
 msgstr "Tüm su ortamları"
 
 msgid "Another species already has this scientific name."
-msgstr "Bu bilimsel ad başka bir türde zaten var."
+msgstr "Bu bilimsel ad başka bir balık türünde zaten var."
 
 msgid "Another species already uses this code."
-msgstr "Bu kodu başka bir tür zaten kullanıyor."
+msgstr "Bu kodu başka bir balık türü zaten kullanıyor."
 
 msgid "Brackish water"
 msgstr "Acı su"
@@ -2607,7 +2607,7 @@ msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
 "and are farmed on in sea water: tick both."
 msgstr ""
-"Türün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, sonra deniz"
+"Balık türünün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, sonra deniz"
 " suyunda yetiştirilir: ikisini de işaretleyin."
 
 msgid "Experimental"
@@ -2618,7 +2618,7 @@ msgstr "Familya"
 
 #, python-format
 msgid "Filled in from the species catalogue: %(values)s."
-msgstr "Tür kataloğundan dolduruldu: %(values)s."
+msgstr "Balık türü kataloğundan dolduruldu: %(values)s."
 
 msgid "Fish"
 msgstr "Balık"
@@ -2673,7 +2673,7 @@ msgid "Regulatory"
 msgstr "Mevzuat"
 
 msgid "Reports for this species cannot be filed without it."
-msgstr "Bu türün resmî bildirimleri bu kod olmadan gönderilemez."
+msgstr "Bu balık türünün resmî bildirimleri bu kod olmadan gönderilemez."
 
 msgid "Scientific name"
 msgstr "Bilimsel ad"
@@ -2691,11 +2691,11 @@ msgid "Shrimp"
 msgstr "Karides"
 
 msgid "Species"
-msgstr "Türler"
+msgstr "Balık türleri"
 
 msgctxt "singular"
 msgid "Species"
-msgstr "Tür"
+msgstr "Balık türü"
 
 msgid "Status and notes"
 msgstr "Durum ve notlar"
@@ -2718,7 +2718,7 @@ msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
 
 #, python-format
 msgid "The official code of %(name)s is %(code)s."
-msgstr "%(name)s türünün resmî kodu %(code)s."
+msgstr "%(name)s için resmî kod %(code)s."
 
 msgid "Tick at least one water environment."
 msgstr "En az bir su ortamı işaretleyin."
@@ -2758,9 +2758,9 @@ msgid "e.g. Salmonidae"
 msgstr "örn. Salmonidae"
 
 msgid "species"
-msgstr "tür"
+msgstr "balık türü"
 
 msgctxt "plural"
 msgid "species"
-msgstr "türler"
+msgstr "balık türleri"
 

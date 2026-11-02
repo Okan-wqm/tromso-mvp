@@ -1,0 +1,13 @@
+{
+  "name": "balik-ciftligi-frontend",
+  "private": true,
+  "description": "TypeScript sources of the browser code; compiled into static/js (not committed).",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3"
+  }
+}

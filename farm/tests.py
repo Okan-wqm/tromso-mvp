@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
@@ -34,9 +35,19 @@ def contacts_data(rows, initial=0):
     return data
 
 
+def role(name, *codenames):
+    group = Group.objects.create(name=name)
+    group.permissions.set(Permission.objects.filter(codename__in=codenames))
+    return group
+
+
+SITE_MANAGER = ('view_site', 'add_site', 'change_site', 'delete_site', 'view_auditlog')
+
+
 class SiteTestCase(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+        self.user.groups.add(role('Site manager', *SITE_MANAGER))
         self.client.force_login(self.user)
 
     def make_site(self, **fields):
@@ -84,7 +95,7 @@ class SiteRoundTripTests(SiteTestCase):
         # Delete
         self.client.post(reverse('farm:site_delete', args=[site.pk]))
         self.assertFalse(Site.objects.exists())
-        self.assertEqual(list(self.client.get(reverse('farm:site_list')).context['sites']), [])
+        self.assertEqual(list(self.client.get(reverse('farm:site_list')).context['objects']), [])
         self.assertTrue(Site.all_objects.get(pk=site.pk).is_deleted)
 
     def test_contact_create_read_edit_delete(self):
@@ -149,7 +160,65 @@ class SiteAuditTests(SiteTestCase):
         site = Site.objects.get()
         response = self.client.get(reverse('farm:site_edit', args=[site.pk]))
         self.assertEqual([entry.action for entry in response.context['history']], ['create'])
-        self.assertContains(response, 'id="panel-history"')
+        self.assertContains(response, 'data-panel="history"')
+
+
+class SitePermissionTests(TestCase):
+    def setUp(self):
+        self.site = Site.objects.create(name='Site A', code='SA')
+        self.user = get_user_model().objects.create_user('ola', 'ola@example.com', 'eski-sifre-123')
+        self.client.force_login(self.user)
+
+    def test_without_view_permission_the_tab_is_closed_and_not_in_the_menu(self):
+        self.assertEqual(self.client.get(reverse('farm:site_list')).status_code, 403)
+        self.assertNotContains(self.client.get(reverse('home')), reverse('farm:site_list'))
+
+    def test_read_only_role_sees_the_list_but_cannot_change_anything(self):
+        self.user.groups.add(role('Viewer', 'view_site'))
+        response = self.client.get(reverse('farm:site_list'))
+        self.assertContains(response, 'Site A')
+        self.assertNotContains(response, reverse('farm:site_create'))
+        self.assertNotContains(response, reverse('farm:site_edit', args=[self.site.pk]))
+        self.assertNotContains(response, reverse('farm:site_delete', args=[self.site.pk]))
+        for url in (reverse('farm:site_create'), reverse('farm:site_edit', args=[self.site.pk]),
+                    reverse('farm:site_delete', args=[self.site.pk]),
+                    reverse('farm:site_contacts', args=[self.site.pk])):
+            self.assertEqual(self.client.post(url, site_data()).status_code, 403, url)
+        self.site.refresh_from_db()
+        self.assertFalse(self.site.is_deleted)
+
+    def test_each_action_needs_its_own_permission(self):
+        self.user.groups.add(role('Editor', 'view_site', 'change_site'))
+        self.assertEqual(self.client.get(reverse('farm:site_edit', args=[self.site.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse('farm:site_create')).status_code, 403)
+        self.assertEqual(self.client.post(reverse('farm:site_delete', args=[self.site.pk])).status_code, 403)
+
+    def test_platform_admin_can_do_everything(self):
+        admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'eski-sifre-123')
+        self.client.force_login(admin)
+        self.client.post(reverse('farm:site_delete', args=[self.site.pk]))
+        self.assertFalse(Site.objects.exists())
+
+
+class SiteModalTests(SiteTestCase):
+    def test_opened_in_the_dialog_the_form_renders_without_the_console(self):
+        response = self.client.get(reverse('farm:site_create'), headers={'X-Modal': '1'})
+        self.assertContains(response, 'class="modal-head"')
+        self.assertNotContains(response, 'id="rail"')
+
+    def test_saving_in_the_dialog_tells_it_where_to_go(self):
+        response = self.client.post(reverse('farm:site_create'), site_data(), headers={'X-Modal': '1'})
+        site = Site.objects.get()
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response['X-Modal-Load'], reverse('farm:site_edit', args=[site.pk]))
+        response = self.client.post(reverse('farm:site_delete', args=[site.pk]), headers={'X-Modal': '1'})
+        self.assertEqual(response['X-Modal-Redirect'], reverse('farm:site_list'))
+
+    def test_errors_come_back_into_the_dialog(self):
+        response = self.client.post(reverse('farm:site_create'), site_data(name=''), headers={'X-Modal': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="modal-head"')
+        self.assertTrue(response.context['form'].errors)
 
 
 class SiteAccessTests(TestCase):
@@ -214,7 +283,7 @@ class SiteCreateTests(SiteTestCase):
 
     def test_errors_mark_their_tab(self):
         response = self.client.post(reverse('farm:site_create'), site_data(type='sea_cage'))
-        tabs = {tab['key']: tab['has_errors'] for tab in response.context['form'].tabs()}
+        tabs = {tab['key']: tab['has_errors'] for tab in response.context['form'].tab_list()}
         self.assertEqual(tabs, {'basic': False, 'location': True, 'contact': False})
 
 
@@ -236,7 +305,7 @@ class SiteListTests(SiteTestCase):
         self.make_site(name='Tromsø Smolt', code='TS', region='Troms')
         self.make_site(name='Old Site', code='OS').soft_delete(self.user)
 
-        names = lambda response: [site.name for site in response.context['sites']]
+        names = lambda response: [site.name for site in response.context['objects']]
         self.assertEqual(names(self.client.get(reverse('farm:site_list'))), ['Bergen Hatchery', 'Tromsø Smolt'])
         self.assertEqual(names(self.client.get(reverse('farm:site_list'), {'q': 'troms'})), ['Tromsø Smolt'])
         self.assertEqual(names(self.client.get(reverse('farm:site_list'), {'q': 'bh'})), ['Bergen Hatchery'])
@@ -314,7 +383,7 @@ class SiteContactTests(SiteTestCase):
 class SiteDeleteTests(SiteTestCase):
     def test_delete_asks_first_then_soft_deletes(self):
         site = self.make_site()
-        self.assertContains(self.client.get(reverse('farm:site_delete', args=[site.pk])), 'Delete “Site A” (SA)?')
+        self.assertContains(self.client.get(reverse('farm:site_delete', args=[site.pk])), 'Delete “Site A (SA)”?')
         response = self.client.post(reverse('farm:site_delete', args=[site.pk]))
         self.assertRedirects(response, reverse('farm:site_list'))
         site = Site.all_objects.get(pk=site.pk)

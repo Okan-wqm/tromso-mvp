@@ -1,0 +1,33 @@
+{% extends base_template %}
+{# The list page of a tab (core.crud.ListView). A tab's own template extends this and fills `items`. #}
+{% block title %}{{ plural|capfirst }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ plural|capfirst }}{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <form method="get" class="search" role="search">
+    {% include "icons/_icon.html" with name="search" %}
+    <label class="sr-only" for="list-search">Search {{ plural }}</label>
+    <input id="list-search" type="search" name="q" value="{{ query }}" placeholder="{% block search_placeholder %}Search {{ plural }}{% endblock %}">
+  </form>
+  {% if can_add %}
+  <a class="button button-inline" href="{{ create_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}Add {{ name }}</a>
+  {% endif %}
+</div>
+
+{% if objects %}
+{% block items %}{% endblock %}
+{% else %}
+<div class="empty">
+  {% include "icons/_icon.html" with name=empty_icon|default:"plus" %}
+  {% if query %}
+  <h2>No {{ plural }} match “{{ query }}”</h2>
+  <p>Try another search. <a href="{{ list_url }}">Show all {{ plural }}</a></p>
+  {% else %}
+  <h2>No {{ plural }} yet</h2>
+  <p>{% block empty_text %}Add the first {{ name }}.{% endblock %}</p>
+  {% if can_add %}<a class="button button-inline" href="{{ create_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}Add {{ name }}</a>{% endif %}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

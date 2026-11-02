@@ -4,3 +4,7 @@ __pycache__/
 db.sqlite3
 .env
 staticfiles/
+
+# Compiled from frontend/*.ts by `npm run build`
+static/js/
+node_modules/

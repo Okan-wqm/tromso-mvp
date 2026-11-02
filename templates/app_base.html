@@ -4,15 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Panel{% endblock %} · Suderra</title>
-  <script>
-    // Set the rail state before first paint so it never flickers.
-    try {
-      var nav = localStorage.getItem('suderra.nav');
-      if (nav === 'collapsed' || (nav === null && window.innerWidth < 1100)) {
-        document.documentElement.dataset.nav = 'collapsed';
-      }
-    } catch (e) {}
-  </script>
+  <script src="{% static 'js/nav-boot.js' %}"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
@@ -37,21 +29,14 @@
       </div>
 
       <nav class="rail-nav">
-        {% block nav %}
-        {% with current=request.resolver_match.url_name %}
-        <a class="rail-link" href="{% url 'home' %}" title="Overview"{% if current == 'home' %} aria-current="page"{% endif %}>
-          {% include "icons/_icon.html" with name="home" %}<span class="rail-label">Overview</span>
+        {% for group in rail_groups %}
+        {% if group.label %}<p class="rail-group">{{ group.label }}</p>{% endif %}
+        {% for entry in group.entries %}
+        <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %}>
+          {% include "icons/_icon.html" with name=entry.icon %}<span class="rail-label">{{ entry.label }}</span>
         </a>
-        <p class="rail-group">Facility</p>
-        <a class="rail-link" href="{% url 'farm:site_list' %}" title="Sites"{% if current|slice:":5" == 'site_' %} aria-current="page"{% endif %}>
-          {% include "icons/_icon.html" with name="building" %}<span class="rail-label">Sites</span>
-        </a>
-        <p class="rail-group">Administration</p>
-        <a class="rail-link" href="{% url 'core:activity_log' %}" title="Activity log"{% if current == 'activity_log' %} aria-current="page"{% endif %}>
-          {% include "icons/_icon.html" with name="history" %}<span class="rail-label">Activity log</span>
-        </a>
-        {% endwith %}
-        {% endblock %}
+        {% endfor %}
+        {% endfor %}
       </nav>
 
       <div class="rail-foot">{% block rail_foot %}Fish farm{% endblock %}</div>
@@ -99,7 +84,8 @@
       </main>
     </div>
   </div>
-  <script src="{% static 'js/app.js' %}" defer></script>
-  {% block extra_scripts %}{% endblock %}
+  <dialog class="modal" id="modal" aria-labelledby="modal-title"><div data-modal-content></div></dialog>
+  <script type="module" src="{% static 'js/shell.js' %}"></script>
+  <script type="module" src="{% static 'js/components.js' %}"></script>
 </body>
 </html>

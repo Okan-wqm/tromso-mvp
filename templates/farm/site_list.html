@@ -1,25 +1,13 @@
-{% extends "app_base.html" %}
-{% load static %}
-{% block title %}Sites{% endblock %}
-{% block eyebrow %}Facility{% endblock %}
-{% block heading %}Sites{% endblock %}
-{% block content %}
-<div class="toolbar">
-  <form method="get" class="search" role="search">
-    {% include "icons/_icon.html" with name="search" %}
-    <label class="sr-only" for="site-search">Search sites</label>
-    <input id="site-search" type="search" name="q" value="{{ query }}" placeholder="Search by name, code or region">
-  </form>
-  <a class="button button-inline" href="{% url 'farm:site_create' %}">{% include "icons/_icon.html" with name="plus" %}Add site</a>
-</div>
-
-{% if sites %}
+{% extends "crud/list.html" %}
+{% block search_placeholder %}Search by name, code or region{% endblock %}
+{% block empty_text %}Add the first site; departments, systems and tanks are set up under a site.{% endblock %}
+{% block items %}
 <ul class="card-grid" role="list">
-  {% for site in sites %}
+  {% for site in objects %}
   <li class="card">
     <div class="card-head">
       <div class="card-title">
-        <h2><a href="{% url 'farm:site_edit' site.pk %}">{{ site.name }}</a></h2>
+        <h2>{% if can_change %}<a href="{% url 'farm:site_edit' site.pk %}" data-modal>{{ site.name }}</a>{% else %}{{ site.name }}{% endif %}</h2>
         <p class="card-code">{{ site.code }}</p>
       </div>
       <span class="badge badge-{{ site.status }}">{{ site.get_status_display }}</span>
@@ -33,24 +21,11 @@
     <div class="card-foot">
       <span>Created {{ site.created_at|date:"j M Y" }}</span>
       <span class="card-actions">
-        <a class="icon-button" href="{% url 'farm:site_edit' site.pk %}" title="Edit {{ site.name }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">Edit {{ site.name }}</span></a>
-        <a class="icon-button icon-button-danger" href="{% url 'farm:site_delete' site.pk %}" title="Delete {{ site.name }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">Delete {{ site.name }}</span></a>
+        {% if can_change %}<a class="icon-button" href="{% url 'farm:site_edit' site.pk %}" data-modal title="Edit {{ site.name }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">Edit {{ site.name }}</span></a>{% endif %}
+        {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:site_delete' site.pk %}" data-modal title="Delete {{ site.name }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">Delete {{ site.name }}</span></a>{% endif %}
       </span>
     </div>
   </li>
   {% endfor %}
 </ul>
-{% else %}
-<div class="empty">
-  {% include "icons/_icon.html" with name="building" %}
-  {% if query %}
-  <h2>No sites match “{{ query }}”</h2>
-  <p>Try another name, code or region. <a href="{% url 'farm:site_list' %}">Show all sites</a></p>
-  {% else %}
-  <h2>No sites yet</h2>
-  <p>Add the first site; departments, systems and tanks are set up under a site.</p>
-  <a class="button button-inline" href="{% url 'farm:site_create' %}">{% include "icons/_icon.html" with name="plus" %}Add site</a>
-  {% endif %}
-</div>
-{% endif %}
 {% endblock %}

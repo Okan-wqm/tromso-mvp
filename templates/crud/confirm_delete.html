@@ -1,0 +1,22 @@
+{% extends base_template %}
+{# Delete confirmation of a tab (core.crud.DeleteView), in a dialog or as a page. #}
+{% block title %}Delete {{ object }}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ plural|capfirst }}{% endblock %}
+{% block heading %}Delete {{ name }}{% endblock %}
+{% block content %}
+<div class="confirm">
+  <p class="confirm-question">Delete “{{ object }}”?</p>
+  {% if soft_delete %}
+  <p>It disappears from every list but is not erased: the record stays in the database, the activity log keeps its history, and it can be restored from the admin.</p>
+  {% else %}
+  <p>This removes it permanently. The activity log keeps a record that it was deleted.</p>
+  {% endif %}
+  <form method="post" action="{{ request.path }}">
+    {% csrf_token %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ list_url }}" data-modal-close>Cancel</a>
+      <button type="submit" class="button button-inline button-danger">Delete {{ name }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

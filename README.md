@@ -42,6 +42,7 @@ delete is a soft delete. Differences from the source:
 ## Local setup
 
 ```
+npm install && npm run build                 # compiles frontend/*.ts into static/js (use `npm run watch` while editing)
 docker compose up -d                         # TimescaleDB on localhost:5433 (5432 is often a local PostgreSQL)
 C:\Python312\python.exe -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
@@ -52,6 +53,28 @@ C:\Python312\python.exe -m venv .venv
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
 defaults match the local container in `docker-compose.yml`.
+
+## Browser code
+
+There is no hand-written JavaScript. The browser code is TypeScript in `frontend/` (strict mode),
+compiled by `npm run build` into `static/js/`, which is not committed:
+
+- `nav-boot.ts` sets the rail state before the first paint and owns the open/collapsed rule;
+- `shell.ts` the rail toggle, the phone menu and the user menu;
+- `components.ts` the shared parts every tab uses through data attributes: the dialog
+  (`data-modal`), inner tabs, upper-case inputs and row lists;
+- `auth.ts` the show/hide password button.
+
+## One format for every tab
+
+`core/crud.py` turns a `Resource` (model, form, labels, list template) into list, create, edit and
+delete pages. Every tab gets the same behaviour from it: a role needs view/add/change/delete on the
+model for each page (the platform admin has all of them), every change is written to the activity
+log in the same transaction, an outdated `version` is refused, models with soft delete are hidden
+rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
+opened directly, as a page. The rail menu is data (`config/navigation.py`) and shows each entry
+only to people allowed to read it. There are no built-in roles: the platform admin creates roles
+and grants permissions.
 
 ## Email
 
@@ -79,13 +102,16 @@ real mail.
 | `config/` | Settings, URLs, the overview view |
 | `core/` | TimescaleDB extension, audit log (model, append-only trigger, `audit.py` helpers, activity page), tests |
 | `farm/` | Farm module: models, forms, views, tests |
-| `templates/farm/`, `static/js/site-form.js` | Farm pages |
+| `core/crud.py`, `templates/crud/`, `templates/modal_base.html`, `static/js/components.js` | One format for every tab: list, form, delete, dialog, permissions, audit |
+| `core/navigation.py`, `config/navigation.py` | The rail menu as data, filtered by permission |
+| `farm/resources.py`, `templates/farm/` | Farm tabs declared on top of `core.crud` |
 | `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |
 | `templates/auth_base.html`, `templates/registration/` | Sign-in and password pages |
 | `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu), Lucide icons |
 | `static/css/base.css` | Colour tokens, reset, form controls shared by every page |
-| `static/css/auth.css`, `static/js/auth.js` | Sign-in layout, show/hide password |
-| `static/css/app.css`, `static/js/app.js` | Console shell layout and behaviour |
+| `static/css/auth.css` | Sign-in layout |
+| `static/css/app.css` | Console shell layout |
+| `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |
 
 ## Tests
 

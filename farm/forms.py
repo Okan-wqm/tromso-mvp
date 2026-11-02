@@ -1,9 +1,11 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
+from core.crud import TabbedForm, tab_fields
+
 from .models import Site, SiteContact
 
-# Which inner tab of the site form each field sits on (Basic info / Location / Contact).
+# The source form's inner tabs (Basic info / Location info / Contact info) and their fields.
 SITE_FORM_TABS = [
     ('basic', 'Basic info', [
         'name', 'code', 'lokalitetsnummer', 'organisation_number_override', 'description',
@@ -16,13 +18,12 @@ SITE_FORM_TABS = [
 ]
 
 
-class SiteForm(forms.ModelForm):
-    # The version the user started editing; a mismatch means someone else saved in between.
-    version = forms.IntegerField(widget=forms.HiddenInput, required=False)
+class SiteForm(TabbedForm):
+    tabs = SITE_FORM_TABS
 
     class Meta:
         model = Site
-        fields = [field for _, _, fields in SITE_FORM_TABS for field in fields]
+        fields = tab_fields(SITE_FORM_TABS)
         labels = {
             'name': 'Site name',
             'code': 'Site code',
@@ -64,8 +65,6 @@ class SiteForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['timezone'].choices = [('', 'Inherit from company')] + Site.TIMEZONES
-        if self.instance.pk and not self.is_bound:
-            self.initial['version'] = self.instance.version
 
     def clean_code(self):
         code = self.cleaned_data['code'].strip().upper()
@@ -96,18 +95,6 @@ class SiteForm(forms.ModelForm):
             if value not in (None, '') and field not in self.errors and others.filter(**{lookup: value}).exists():
                 self.add_error(field, f'Another site already uses this {self.fields[field].label.lower()}.')
         return cleaned
-
-    def tabs(self):
-        """The inner tabs with their bound fields and whether any field on them has an error."""
-        return [
-            {
-                'key': key,
-                'label': label,
-                'fields': [self[name] for name in names],
-                'has_errors': any(name in self.errors for name in names),
-            }
-            for key, label, names in SITE_FORM_TABS
-        ]
 
 
 class SiteContactForm(forms.ModelForm):

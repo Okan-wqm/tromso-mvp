@@ -1,0 +1,47 @@
+{% extends base_template %}
+{# The create/edit form of a tab (core.crud.CreateView/UpdateView), in a dialog or as a page.
+   Fields come from the form's tabs; a tab's own template can add panels in `extra_panels`
+   (give them data-panel="<tab key>" to show them on an existing tab). #}
+{% block title %}{% if object %}{{ object }}{% else %}New {{ name }}{% endif %}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ plural|capfirst }}{% endblock %}
+{% block heading %}{% if object %}{{ object }}{% else %}New {{ name }}{% endif %}{% endblock %}
+{% block content %}
+{% with tabs=form.tab_list %}
+{% if tabs|length > 1 or object %}
+<div class="tabs" role="tablist" aria-label="{{ name|capfirst }} form sections" data-tabs data-open="{{ open_tab|default:'' }}" hidden>
+  {% for tab in tabs %}
+  <button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" data-tab="{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> (has errors)</span>{% endif %}</button>
+  {% endfor %}
+  {% if object %}<button type="button" role="tab" class="tab" data-tab="history">History</button>{% endif %}
+</div>
+{% endif %}
+
+<form method="post" action="{{ request.path }}" class="record-form" novalidate>
+  {% csrf_token %}
+  {% if form.version %}{{ form.version }}{% endif %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% for tab in tabs %}
+  <section class="tab-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
+    <h3 class="panel-title">{{ tab.label }}</h3>
+    <div class="form-grid form-grid-{{ tab.key }}">
+      {% for field in tab.fields %}{% include "registration/_field.html" %}{% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{{ list_url }}" data-modal-close>Cancel</a>
+    <button type="submit" class="button button-inline">{% if object %}Save {{ name }}{% else %}Create {{ name }}{% endif %}</button>
+  </div>
+</form>
+{% endwith %}
+
+{% block extra_panels %}{% endblock %}
+
+{% if object %}
+<section class="tab-panel history" role="tabpanel" data-panel="history">
+  <h3 class="panel-title">History</h3>
+  <p class="panel-help">The latest changes to this {{ name }}. <a href="{% url 'core:activity_log' %}?type={{ resource.entity_type|urlencode }}&amp;q={{ object|urlencode }}">See all in the activity log</a></p>
+  {% include "core/_audit_entries.html" with entries=history empty_text="No changes recorded yet." %}
+</section>
+{% endif %}
+{% endblock %}

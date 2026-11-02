@@ -1,6 +1,7 @@
 import re
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core import mail
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
@@ -109,7 +110,12 @@ class AuditLogTests(TestCase):
         self.user.delete()
         self.assertEqual(AuditLog.objects.get().user_name, 'ali')
 
+    def test_activity_log_needs_permission(self):
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(reverse('core:activity_log')).status_code, 403)
+
     def test_activity_log_filters(self):
+        self.user.user_permissions.add(Permission.objects.get(codename='view_auditlog'))
         self.client.force_login(self.user)
         self.make_entry(entity_label='Bergen (BH)', action=AuditLog.Action.CREATE)
         self.make_entry(entity_label='Tromsø (TS)', action=AuditLog.Action.DELETE, user_name='kari')

@@ -1,41 +1,11 @@
-{% extends "app_base.html" %}
-{% load static %}
-{% block title %}{% if site %}Edit {{ site.name }}{% else %}New site{% endif %}{% endblock %}
-{% block eyebrow %}Facility · Sites{% endblock %}
-{% block heading %}{% if site %}{{ site.name }}{% else %}New site{% endif %}{% endblock %}
-{% block content %}
-{% with tabs=form.tabs %}
-<div class="tabs" role="tablist" aria-label="Site form sections" data-tabs data-open="{{ open_tab|default:'' }}" hidden>
-  {% for tab in tabs %}
-  <button type="button" role="tab" class="tab{% if tab.has_errors %} tab-error{% endif %}" id="tab-{{ tab.key }}" data-tab="{{ tab.key }}" aria-controls="panel-{{ tab.key }}">{{ tab.label }}{% if tab.has_errors %}<span class="sr-only"> (has errors)</span>{% endif %}</button>
-  {% endfor %}
-  {% if site %}<button type="button" role="tab" class="tab" id="tab-history" data-tab="history" aria-controls="panel-history">History</button>{% endif %}
-</div>
-
-<form method="post" class="site-form" novalidate>
-  {% csrf_token %}
-  {{ form.version }}
-  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-  {% for tab in tabs %}
-  <section class="tab-panel" id="panel-{{ tab.key }}" role="tabpanel" aria-labelledby="tab-{{ tab.key }}" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
-    <h2 class="panel-title">{{ tab.label }}</h2>
-    <div class="form-grid form-grid-{{ tab.key }}">
-      {% for field in tab.fields %}{% include "registration/_field.html" %}{% endfor %}
-    </div>
-  </section>
-  {% endfor %}
-  <div class="form-actions">
-    <a class="button button-ghost" href="{% url 'farm:site_list' %}">Cancel</a>
-    <button type="submit" class="button button-inline">{% if site %}Save site{% else %}Create site{% endif %}</button>
-  </div>
-</form>
-{% endwith %}
-
+{% extends "crud/form.html" %}
+{# The site form adds the contact list to its Contact tab. #}
+{% block extra_panels %}
 <section class="tab-panel contacts" data-panel="contact" aria-labelledby="contacts-title">
-  <h2 class="panel-title" id="contacts-title">Contacts</h2>
-  {% if site %}
+  <h3 class="panel-title" id="contacts-title">Contacts</h3>
+  {% if object %}
   <p class="panel-help">The site’s operational contacts. At most one can be the primary contact. Contacts are saved separately from the site details.</p>
-  <form method="post" action="{% url 'farm:site_contacts' site.pk %}" novalidate data-formset>
+  <form method="post" action="{% url 'farm:site_contacts' object.pk %}" novalidate data-formset>
     {% csrf_token %}
     {{ contacts.management_form }}
     {% if contacts.non_form_errors %}<div class="form-error" role="alert">{{ contacts.non_form_errors }}</div>{% endif %}
@@ -50,16 +20,7 @@
     </div>
   </form>
   {% else %}
-  <p class="panel-help">Contacts can be added after the site is created.</p>
+  <p class="panel-help">Contacts can be added once the site is created.</p>
   {% endif %}
 </section>
-
-{% if site %}
-<section class="tab-panel history" id="panel-history" role="tabpanel" aria-labelledby="tab-history" data-panel="history">
-  <h2 class="panel-title">History</h2>
-  <p class="panel-help">The latest changes to this site. <a href="{% url 'core:activity_log' %}?type=site&amp;q={{ site.code|urlencode }}">See all in the activity log</a></p>
-  {% include "core/_audit_entries.html" with entries=history empty_text="No changes recorded for this site yet." %}
-</section>
-{% endif %}
 {% endblock %}
-{% block extra_scripts %}<script src="{% static 'js/site-form.js' %}" defer></script>{% endblock %}

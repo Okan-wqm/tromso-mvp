@@ -1,5 +1,6 @@
 from datetime import datetime, time
 
+from django.contrib.auth.decorators import permission_required
 from django.core.paginator import Paginator
 from django.shortcuts import render
 from django.utils import timezone
@@ -15,6 +16,7 @@ def _day(value, end=False):
     return timezone.make_aware(datetime.combine(day, time.max if end else time.min))
 
 
+@permission_required('core.view_auditlog', raise_exception=True)
 def activity_log(request):
     """Every recorded change, newest first, filterable by person, record type, action and dates."""
     entries = AuditLog.objects.all()

@@ -1354,7 +1354,7 @@ msgid "Its volume cannot be calculated from its shape: enter it as measured or a
 msgstr "Hacmi şeklinden hesaplanamaz: ölçüldüğü veya çizimdeki gibi girin."
 
 msgid "Juveniles"
-msgstr "Genç balık"
+msgstr "Juvenil"
 
 msgid "Key"
 msgstr "Anahtar"

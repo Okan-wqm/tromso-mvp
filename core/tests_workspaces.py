@@ -114,8 +114,8 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                  'Suppliers', 'Production units', 'Feeding records',
-                                                  'Water chemistry'])
+                                                  'Suppliers', 'Production units', 'Water chemistry', 'Meal board',
+                                                  'Records', 'Protocols', 'Assignments'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -191,7 +191,9 @@ class MenuPlacementTests(TestCase):
             'farm.WaterLimit': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
-            'farm.FeedingRecord': 'Production · Operations',
+            'farm.FeedingRecord': 'Production · Operations · Feeding',
+            'farm.FeedingProtocol': 'Production · Operations · Feeding',
+            'farm.ProtocolAssignment': 'Production · Operations · Feeding',
             'farm.WaterMeasurement': 'Production · Operations',
             'core.AuditLog': 'Company · Administration',
         })

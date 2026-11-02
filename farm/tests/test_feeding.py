@@ -450,7 +450,7 @@ class ListTests(FeedingTestCase):
                          [sea.pk, morning.pk, late.pk])
         response = self.client.get(reverse('farm:feeding_records'))
         self.assertContains(response, '3 records · 27 kg')
-        self.assertContains(response, '<h1>Feeding records</h1>', html=True)
+        self.assertContains(response, '<h1>Records</h1>', html=True)
 
     def test_record_feeding_from_the_list_goes_back_to_the_list(self):
         listing = f'{reverse("farm:feeding_records")}?unit={self.t1.pk}'
@@ -496,7 +496,7 @@ class PermissionTests(FeedingTestCase):
         self.assertNotContains(drawer, 'Recent feedings')
 
     def test_the_menu_and_the_role_matrix_place_it_under_operations(self):
-        self.assertEqual(str(navigation.place('farm.view_feedingrecord').path), 'Production · Operations')
+        self.assertEqual(str(navigation.place('farm.view_feedingrecord').path), 'Production · Operations · Feeding')
         area = next(area for area in access.areas() if area.model == 'farm.FeedingRecord')
         self.assertEqual((str(area.label), area.actions), ('Feeding records', ('view', 'add', 'delete')))
         self.assertContains(self.client.get(reverse('farm:feeding_records')), 'aria-current="page"')

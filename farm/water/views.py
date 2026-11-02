@@ -285,3 +285,49 @@ def void_sample(request, pk):
                 return done(request, back)
         return _refused(request, 'farm/water_void.html', {**context, 'form': form})
     return render_page(request, 'farm/water_void.html', {**context, 'form': SampleVoidForm()})
+
+
+# ---- Production units and the overview ------------------------------------------------------------------
+def unit_water(user, units):
+    """The latest water of each unit on Production units, by unit id (its Temp. and O₂ columns and its
+    status dot); nothing for a person who may not read the water."""
+    if not user.has_perm(VIEW):
+        return {}
+    water = read.latest(units)
+    return {unit.pk: water[read.key(unit)] for unit in units}
+
+
+def critical_count(water):
+    return sum(1 for point_water in water.values() if point_water.status == Status.CRITICAL)
+
+
+def _drawer_order(point_water):
+    """A unit's readings in the registry's order, the ammonia worked out from TAN after it."""
+    codes = []
+    for parameter in MEASURED:
+        codes.append(parameter.code)
+        if parameter.code == parameters.TAN:
+            codes += [NH3_N.code, parameters.NH4_N.code]
+    return [point_water.get(code) for code in codes if point_water.get(code)]
+
+
+def drawer(request, unit):
+    """The Water section of a unit's drawer on Production units: the latest value of every parameter with its
+    age, status and limits, the values worked out from it, Record water sample and the unit's history."""
+    if not request.user.has_perm(VIEW):
+        return {}
+    point_water = read.latest([unit])[read.key(unit)]
+    return {
+        'water_point': point_water, 'water_readings': _drawer_order(point_water),
+        'water_history_url': history_url(unit),
+        'water_record_url': _dialog_url('farm:water_record', request, unit) if request.user.has_perm(RECORD) else '',
+    }
+
+
+def overview_tiles(user):
+    """The production overview's water figure: the units with a critical water value now."""
+    if not user.has_perm(VIEW):
+        return []
+    units = list(Tank.objects.select_related('production_department__site'))
+    return [{'label': _('Units with a critical water value'), 'count': critical_count(unit_water(user, units)),
+             'url': page_url()}]

@@ -796,6 +796,96 @@ class PermissionTests(WaterTestCase):
                          ('Water limits', ('view', 'add', 'change', 'delete')))
 
 
+class ProductionUnitsTests(WaterTestCase):
+    """The water on Operations › Production units: the Temp. and O₂ columns, the status dot, the count of
+    critical units, the drawer's Water section and the overview's tile."""
+
+    url = reverse('farm:production_units')
+
+    def as_role(self, *codenames):
+        person = get_user_model().objects.create_user(f'p{len(codenames)}', f'p{len(codenames)}@example.com')
+        person.groups.add(role(f'Role {len(codenames)}', *codenames))
+        self.client.force_login(person)
+
+    def test_the_columns_the_status_dot_and_the_count_of_critical_units(self):
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.sample(hours=2, temperature_c='9.5', oxygen_mg_l='5.2')
+        self.sample(point=self.t2, hours=30, temperature_c='12')              # older than its 24 h: stale
+        response = self.client.get(self.url)
+        rows = {row['unit'].code: row for row in response.context['rows']}
+        self.assertEqual((rows['T-01']['water'].status, rows['T-02']['water'].status),
+                         (Status.CRITICAL, Status.STALE))
+        self.assertEqual(response.context['water_critical'], 1)
+        html = response.content.decode()
+        for text in ('<th scope="col" class="num">Temp. (°C)</th>', '<th scope="col" class="num">O₂ (mg/L)</th>',
+                     '>9.5</td>', '>5.20</td>', '>12.0</td>', 'wq-stale', '<span class="sr-only">Critical</span>',
+                     '<strong class="over-text">1 critical</strong>'):
+            self.assertIn(text, html)
+        self.assertEqual(html.count('class="num wq wq-critical'), 1)
+
+    def test_the_drawers_water_section(self):
+        self.stock()
+        self.limit('oxygen_saturation_pct', critical_low=60, warning_low=80)
+        self.sample(hours=2, temperature_c='10', oxygen_mg_l='8.5', tan_mg_l='1', ph='7.5')
+        response = self.client.get(self.url, {'unit': self.t1.pk})
+        readings = {reading.code: reading for reading in response.context['water_readings']}
+        self.assertEqual(list(readings), ['temperature_c', 'oxygen_mg_l', 'oxygen_saturation_pct', 'ph', 'tan_mg_l',
+                                          'nh3_n_mg_l', 'nh4_n_mg_l'])
+        self.assertEqual((readings['oxygen_saturation_pct'].value, readings['oxygen_saturation_pct'].status),
+                         (D('75.3'), Status.WARNING))                         # 8.5 / 11.288 mg/L at 10 °C
+        html = response.content.decode()
+        for text in ('Atlantic salmon: critical below 60.0, warning below 80.0', 'Record water sample',
+                     f'href="/operations/water/?unit={self.t1.pk}"', 'Un-ionised ammonia (mg/L NH₃ as N)'):
+            self.assertIn(text, html)
+        record = response.context['water_record_url']
+        self.assertTrue(record.startswith(f'{reverse("farm:water_record")}?next='))
+        self.assertIn(f'unit={self.t1.pk}', record)
+        response = self.client.get(self.url, {'unit': self.t2.pk})
+        self.assertContains(response, 'No water sample in the last 30 days.')
+
+    def test_a_sample_recorded_from_the_drawer_goes_back_to_it(self):
+        self.stock()
+        record = self.client.get(self.url, {'unit': self.t1.pk}).context['water_record_url']
+        local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
+        data = {'token': str(uuid.uuid4()), 'point': f'tank:{self.t1.pk}', 'measured_at': local, 'source': 'manual',
+                'notes': '', **{code: '' for code in parameters.COLUMNS}, 'temperature_c': '9'}
+        response = self.client.post(record, data, headers={'X-Modal': '1'})
+        self.assertEqual(response['X-Modal-Redirect'], f'{self.url}?unit={self.t1.pk}')
+        self.assertContains(self.client.get(self.url, {'unit': self.t1.pk}), '>9.0</td>')
+
+    def test_read_shows_the_water_and_create_records_it(self):
+        self.sample(temperature_c='9')
+        self.as_role('view_stockoperation')
+        response = self.client.get(self.url, {'unit': self.t1.pk})
+        self.assertNotContains(response, 'Temp. (°C)')
+        self.assertNotIn('water_readings', response.context)
+        self.assertEqual(self.client.get(reverse('production_home')).context['water_tiles'], [])
+        self.as_role('view_stockoperation', 'view_watermeasurement')
+        response = self.client.get(self.url, {'unit': self.t1.pk})
+        self.assertContains(response, 'Temp. (°C)')
+        self.assertContains(response, '<h3>Water ', count=1)
+        self.assertNotContains(response, 'Record water sample')
+
+    def test_the_overview_counts_the_units_with_a_critical_water_value(self):
+        self.stock()
+        self.limit('temperature_c', critical_high=16)
+        self.sample(temperature_c='18')
+        tiles = self.client.get(reverse('production_home')).context['water_tiles']
+        self.assertEqual([(str(tile['label']), tile['count'], tile['url']) for tile in tiles],
+                         [('Units with a critical water value', 1, reverse('farm:water'))])
+
+    def test_the_drawer_speaks_each_language(self):
+        self.stock()
+        self.sample(oxygen_mg_l='9.25', temperature_c='10')
+        for language, words in {'tr': ('Su', 'Su numunesi kaydet', '9,25'),
+                                'nb': ('Vann', 'Registrer vannprøve', '9,25')}.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            response = self.client.get(self.url, {'unit': self.t1.pk})
+            for word in words:
+                self.assertContains(response, word, msg_prefix=language)
+
+
 class DatabaseViewerTests(TestCase):
     def test_the_water_tables_are_shown_with_their_descriptions_and_checks(self):
         tables = {table.name: table for _, tables in database.sections() for table in tables}

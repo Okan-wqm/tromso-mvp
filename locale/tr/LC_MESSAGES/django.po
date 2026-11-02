@@ -2530,6 +2530,9 @@ msgstr "Burada birim veya döngü yok."
 msgid "No units yet"
 msgstr "Henüz birim yok"
 
+msgid "No water sample in the last 30 days."
+msgstr "Son 30 günde su numunesi yok."
+
 msgid "None"
 msgstr "Yok"
 
@@ -4159,6 +4162,9 @@ msgstr "Türe göre birimler"
 #, python-format
 msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
 msgstr "İçinde başka bir üretim departmanının birimleri var: %(units)s. Önce onları sistemden çıkarın."
+
+msgid "Units with a critical water value"
+msgstr "Kritik su değeri olan birimler"
 
 msgid "Unknown"
 msgstr "Bilinmiyor"

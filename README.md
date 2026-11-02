@@ -444,15 +444,22 @@ picked (accent tint and bar) and a row over its max biomass (amber, an "Over" ma
 different. The filters and the open unit are in the address, so a view can be linked and the back
 button works; a row is one link. Two empty states: no units at all (with a link to Setup) and no match
 (with "Clear filters"). The column chooser and sorting come next.
+For people who may read the water (see Water chemistry), the table also has **Temp. (°C)** and **O₂ (mg/L)**
+after survival, each the unit's latest value coloured by its status, stale ones grey (time and age on
+hover), a status dot by the unit's code (its worst fresh status), and the count line says how many units
+shown are critical ("14 units · 3.2 t · 2 critical"); the production overview has a tile "Units with a
+critical water value".
 
 **The drawer** (`?unit=`), beside the table: the unit's code, name, place, status and since when; for a
 stocked unit its batches, "Stocked · N days", fish, average, biomass, bFCR and eFCR, survival, the density
 bar against its max with the volume, a line per batch (fish, average and when it was weighed, biomass,
 survival, deaths and culls, the feed of its stay and its bFCR, its share of the unit), its feeding (see
 Feeding records) and the operations, **Record feeding** first; for an empty unit its volume, max density
-and max biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit
-its last 20 operations and 10 feedings, voided ones struck through with their reason, each with **Void**
-while it may be voided.
+and max biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit,
+with the water read, its **Water**: the latest value of every parameter with its age, status and limits,
+the worked-out NH₃-N and O₂ saturation, **Record water sample** (the unit fixed, back to the drawer) and
+its water history; for every unit its last 20 operations and 10 feedings, voided ones struck through with
+their reason, each with **Void** while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
 service, with the server's reason on the field it concerns: a new batch (species, stage at input,
@@ -507,8 +514,8 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   the person's language; the drawer's "Stock this unit" knows its unit.
 - Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
-- Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors and water
-  temperature, harvest plans, lot numbers, buyers and prices, the
+- Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
+  comes from the samples, see Water chemistry), harvest plans, lot numbers, buyers and prices, the
   medicine-withdrawal block on harvest (**it must come back with the health module before real
   harvests**), batch documents and costs, count adjustments as a dialog (their lines and checks exist).
 
@@ -695,9 +702,9 @@ read, create, edit and delete.
 species takes its water limits with it, each listed and logged. The admin shows voided samples but does
 not restore them.
 
-**The MVP alerts nobody.** A critical value is shown on the page (and, with Production units, on the
-unit), never sent: there is no email, SMS or push, no acknowledgement and no escalation. Someone has to
-look.
+**The MVP alerts nobody.** A critical value is shown on the page, on the unit in Production units (its
+columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
+email, SMS or push, no acknowledgement and no escalation. Someone has to look.
 
 Differences from the source (details in the bug document, WQ-01 to WQ-29):
 

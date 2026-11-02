@@ -2525,6 +2525,9 @@ msgstr "Ingen enheter eller kretsløp her."
 msgid "No units yet"
 msgstr "Ingen enheter ennå"
 
+msgid "No water sample in the last 30 days."
+msgstr "Ingen vannprøve de siste 30 dagene."
+
 msgid "None"
 msgstr "Ingen"
 
@@ -4156,6 +4159,9 @@ msgstr "Enheter etter type"
 #, python-format
 msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
 msgstr "Enheter fra en annen produksjonsavdeling er i det: %(units)s. Ta dem ut av systemet først."
+
+msgid "Units with a critical water value"
+msgstr "Enheter med en kritisk vannverdi"
 
 msgid "Unknown"
 msgstr "Ukjent"

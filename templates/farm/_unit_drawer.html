@@ -1,7 +1,7 @@
 {% load i18n stock feeding %}
-{% comment %} The drawer of the unit picked on Production units (?unit=): its fish, its feeding, the operations that
-   make sense for it (Record feeding first), and its recent operations and feedings. Closing it is a link
-   to the page without the unit.{% endcomment %}
+{% comment %} The drawer of the unit picked on Production units (?unit=): its fish, its feeding, its water, the
+   operations that make sense for it (Record feeding first), and its recent operations and feedings. Closing
+   it is a link to the page without the unit.{% endcomment %}
 {% with unit=drawer stock=drawer_stock %}
 <aside class="drawer" aria-labelledby="drawer-title">
   <div class="drawer-head">
@@ -100,6 +100,8 @@
     <p class="notice notice-warning">{% blocktrans trimmed with unit=unit.code status=unit.get_status_display|lower %}{{ unit }} has the status {{ status }}: set it to preparing or fallow in Setup to stock it.{% endblocktrans %}{% if edit_unit_url %} <a href="{{ edit_unit_url }}" data-modal>{% trans "Edit the unit" %}</a>{% endif %}</p>
     {% endif %}
     {% endif %}
+
+    {% if water_history_url %}{% include "farm/_unit_water.html" %}{% endif %}
 
     {% if feeding_list_url %}
     <section class="drawer-section">

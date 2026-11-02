@@ -8,7 +8,9 @@ Every filter and the open drawer live in the query string, so a view can be link
 button works. Who may do what: reading the page needs view on the stock operations, recording one
 add, voiding one delete (config/access.py); the buttons a person cannot use are not shown, and the
 views refuse them too. The feeding figures (FCR, last fed, the drawer's Feeding part) come from the
-feeding records (farm/feeding), whose dialog the drawer offers first."""
+feeding records (farm/feeding), whose dialog the drawer offers first; the Temp. and O₂ columns, the
+status dot and the drawer's Water section from the water samples (farm/water), for people who may read
+them."""
 import uuid
 from urllib.parse import urlencode
 
@@ -32,6 +34,7 @@ from ..forms.stock import (
 from ..models import StockMovement, StockOperation, Tank
 from ..models.stock import ARRIVAL_STATUSES
 from ..templatetags.stock import fish, number, tonnes
+from ..water import views as water_views
 from . import read, services
 from .services import AlreadyRecorded
 
@@ -132,15 +135,17 @@ def production_units(request):
     biomass = sum((stock[unit.pk].biomass_kg for unit in shown if unit.pk in stock), start=0)
     drawer_unit = next((unit for unit in units if str(unit.pk) == params['unit']), None)
     feeding = feeding_read.figures(stock, detail=drawer_unit)
+    water = water_views.unit_water(request.user, shown)
 
     context = _context(
         units=units, stocked=len(stock),
         rows=[{'unit': unit, 'stock': stock.get(unit.pk), 'feeding': feeding.get(unit.pk),
-               'selected': unit is drawer_unit, 'href': page_url(params, unit=str(unit.pk)),
-               'takes_fish': unit.status in ARRIVAL_STATUSES}
+               'water': water.get(unit.pk), 'selected': unit is drawer_unit,
+               'href': page_url(params, unit=str(unit.pk)), 'takes_fish': unit.status in ARRIVAL_STATUSES}
               for unit in shown],
         biomass=biomass,
         count_line=ngettext('%(count)d unit', '%(count)d units', len(shown)) % {'count': len(shown)},
+        show_water=request.user.has_perm(water_views.VIEW), water_critical=water_views.critical_count(water),
         params=params, query=params['q'],
         search_hidden=[(key, params[key]) for key in (*FILTERS, 'unit') if key != 'q' and params[key]],
         status_hidden=[(key, params[key]) for key in (*FILTERS, 'unit') if key != 'status' and params[key]],
@@ -197,6 +202,7 @@ def _drawer(request, unit, stock, feeding, params):
         action['primary'] = index == 0
     return {
         **feeding_views.drawer(request, unit, stock, feeding, query),
+        **water_views.drawer(request, unit),
         'feeding': feeding,
         # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares).
         'batch_rows': list(zip(stock.shares, feeding.shares)) if stock is not None else [],

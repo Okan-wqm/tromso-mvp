@@ -1,0 +1,27 @@
+{% load i18n water %}
+{% comment %} The Water section of a unit's drawer (farm.water.views.drawer): the latest value of every parameter
+   measured in the last 30 days, worked-out values in italics, its time and age, its status for the fish
+   in the unit now and the limits that judged it; Record water sample and the unit's water history.{% endcomment %}
+<section class="drawer-section">
+  <h3>{% trans "Water" %} {% include "farm/_water_status.html" with status=water_point.status %}</h3>
+  {% if water_readings %}
+  <div class="table-wrap">
+    <table class="data-table drawer-table water-drawer">
+      <tbody>
+        {% for reading in water_readings %}
+        <tr>
+          <th scope="row">{{ reading.parameter.label }}<span class="row-sub">{% blocktrans trimmed with age=reading.at|age %}{{ age }} ago{% endblocktrans %}{% for row in reading.limits %} · {{ row|limit_text }}{% empty %}{% if reading.status == "no_limit" %} · {{ reading.status|status_label }}{% endif %}{% endfor %}{% if reading.note %} · {{ reading.note }}{% endif %}</span></th>
+          {% include "farm/_water_cell.html" with latest=True %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">{% trans "No water sample in the last 30 days." %}</p>
+  {% endif %}
+  <div class="drawer-actions">
+    {% if water_record_url %}<a class="button button-inline" href="{{ water_record_url }}" data-modal>{% trans "Record water sample" %}</a>{% endif %}
+    <a class="button button-ghost" href="{{ water_history_url }}">{% trans "History" %}</a>
+  </div>
+</section>

@@ -60,6 +60,24 @@ class AuthFlowTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
+class ShellTests(TestCase):
+    def setUp(self):
+        user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
+        self.client.force_login(user)
+
+    def test_home_renders_shell_with_current_page_marked(self):
+        response = self.client.get(reverse('home'))
+        self.assertContains(response, 'id="rail"')
+        self.assertContains(response, 'data-nav-toggle')
+        self.assertContains(response, 'aria-current="page"', count=1)
+        self.assertContains(response, 'action="%s"' % reverse('logout'))
+
+    def test_password_change_uses_shell(self):
+        response = self.client.get(reverse('password_change'))
+        self.assertContains(response, 'id="rail"')
+        self.assertContains(response, '<h1>Change password</h1>', html=True)
+
+
 class DatabaseTests(TestCase):
     def test_timescaledb_extension_is_installed(self):
         with connection.cursor() as cursor:

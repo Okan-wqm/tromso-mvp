@@ -29,7 +29,7 @@
           <div class="menu-panel" id="workspace-panel" data-menu-panel hidden>
             <p class="menu-head">{% trans "Panels" %}</p>
             {% for panel in workspaces %}
-            <a class="menu-item" href="{{ panel.url }}"{% if panel.key == workspace.key %} aria-current="true"{% endif %}>{{ panel.label }}</a>
+            <a class="menu-item" href="{{ panel.url }}"{% if panel.key == workspace.key %} aria-current="true"{% endif %}>{{ panel.label }}{% if panel.badge.text %}<span class="menu-badge">{{ panel.badge.text }}</span>{% endif %}</a>
             {% endfor %}
           </div>
         </div>
@@ -51,6 +51,7 @@
         {% for entry in group.entries %}
         <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %}>
           {% include "icons/_icon.html" with name=entry.icon %}<span class="rail-label">{{ entry.label }}</span>
+          {% if entry.badge %}<span class="rail-badge" data-poll="{{ entry.badge.url }}" data-poll-every="30">{{ entry.badge.text }}</span>{% endif %}
         </a>
         {% endfor %}
         {% endfor %}
@@ -106,5 +107,6 @@
   <dialog class="modal" id="modal" aria-labelledby="modal-title" data-forbidden="{% trans "You do not have permission to do this." %}"><div data-modal-content></div></dialog>
   <script type="module" src="{% asset 'js/shell.js' %}"></script>
   <script type="module" src="{% asset 'js/components.js' %}"></script>
+  <script type="module" src="{% asset 'js/poll.js' %}"></script>
 </body>
 </html>

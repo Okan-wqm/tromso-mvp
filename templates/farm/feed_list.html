@@ -1,0 +1,61 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% block search_placeholder %}{% trans "Search by name, code or manufacturer" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="type-filter">{% trans "Feed type" %}</label>
+  <select id="type-filter" name="type" data-autosubmit>
+    <option value="">{% trans "All feed types" %}</option>
+    {% for value, label in types %}<option value="{{ value }}"{% if chosen_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="manufacturer-filter">{% trans "Manufacturer" %}</label>
+  <select id="manufacturer-filter" name="manufacturer" data-autosubmit>
+    <option value="">{% trans "All manufacturers" %}</option>
+    {% for supplier in manufacturers %}<option value="{{ supplier.pk }}"{% if chosen_manufacturer == supplier.pk|stringformat:"s" %} selected{% endif %}>{{ supplier.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="species-filter">{% trans "Suitable for" %}</label>
+  <select id="species-filter" name="species" data-autosubmit>
+    <option value="">{% trans "All species" %}</option>
+    {% for species in species_list %}<option value="{{ species.pk }}"{% if chosen_species == species.pk|stringformat:"s" %} selected{% endif %}>{{ species.common_name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "All statuses" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block empty_text %}{% trans "The feeds the farm uses: who makes them, their pellet and analysis, and the species and fish weights each one suits." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Feed" %}</th><th scope="col">{% trans "Manufacturer" %}</th><th scope="col">{% trans "Feed type" %}</th><th scope="col">{% trans "Pellet" %}</th><th scope="col">{% trans "Protein / fat" %}</th><th scope="col">{% trans "Energy" %}</th><th scope="col">{% trans "Suitable for" %}</th><th scope="col">{% trans "Price per kg" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for feed in objects %}
+      <tr>
+        <td>
+          {% if can_change %}<a class="row-title" href="{% url 'farm:feed_edit' feed.pk %}" data-modal>{{ feed.name }}</a>{% else %}<span class="row-title">{{ feed.name }}</span>{% endif %}
+          <span class="row-sub">{{ feed.code }}</span>
+        </td>
+        <td>{% if feed.manufacturer %}{{ feed.manufacturer.name }}{% if feed.manufacturer.status != "active" %}<span class="row-sub">{{ feed.manufacturer.get_status_display }}</span>{% endif %}{% else %}–{% endif %}</td>
+        <td>{{ feed.get_feed_type_display }}</td>
+        <td class="nowrap">{% if feed.pellet_size_mm is not None %}{{ feed.pellet_size_mm|floatformat:"-2" }} mm{% else %}–{% endif %}{% if feed.buoyancy %}<span class="row-sub">{{ feed.get_buoyancy_display }}</span>{% endif %}</td>
+        <td class="nowrap">{% if feed.protein_pct is not None or feed.fat_pct is not None %}{{ feed.protein_pct|floatformat:"-2"|default:"–" }} / {{ feed.fat_pct|floatformat:"-2"|default:"–" }} %{% else %}–{% endif %}</td>
+        <td class="nowrap">{% if feed.gross_energy_mj_kg is not None %}{{ feed.gross_energy_mj_kg|floatformat:"-2" }} MJ/kg{% else %}–{% endif %}{% if feed.digestible_energy_mj_kg is not None %}<span class="row-sub">{% blocktrans trimmed with energy=feed.digestible_energy_mj_kg|floatformat:"-2" %}{{ energy }} MJ/kg digestible{% endblocktrans %}</span>{% endif %}</td>
+        <td>{% for row in feed.suitability.all %}<span class="row-line">{{ row.species.common_name }} · {{ row.get_growth_stage_display }}{% include "farm/_weight_band.html" %}</span>{% empty %}–{% endfor %}</td>
+        <td class="nowrap">{% if feed.price_per_kg is not None %}{{ feed.price_per_kg|floatformat:"2g" }} {{ feed.currency }}{% else %}–{% endif %}</td>
+        <td><span class="badge badge-{{ feed.status }}">{{ feed.get_status_display }}</span></td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:feed_edit' feed.pk %}" data-modal title="{% blocktrans with name=feed.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=feed.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:feed_delete' feed.pk %}" data-modal title="{% blocktrans with name=feed.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=feed.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

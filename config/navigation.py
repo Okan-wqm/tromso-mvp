@@ -36,10 +36,11 @@ WORKSPACES = [
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
-            # The reference lists the production side picks from: species now; feeds, water parameters,
+            # The reference lists the production side picks from: species and feeds now; water parameters,
             # chemicals, fish-health substances and slaughter facilities as their tabs arrive.
             Group(_('Reference data'), [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
+                Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
             ]),
             # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
             Group(_('Purchasing'), [

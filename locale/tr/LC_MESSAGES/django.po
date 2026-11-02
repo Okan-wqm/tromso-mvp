@@ -36,6 +36,20 @@ msgstr[1] "%(count)d kişi kaydedildi."
 
 #, python-format
 msgid ""
+"%(count)d feed is made by it: keep “%(category)s” ticked, or choose another manufacturer for it "
+"first."
+msgid_plural ""
+"%(count)d feeds are made by it: keep “%(category)s” ticked, or choose another manufacturer for "
+"them first."
+msgstr[0] ""
+"%(count)d yem bu üreticinin: “%(category)s” işaretli kalsın ya da önce o yem için başka bir "
+"üretici seçin."
+msgstr[1] ""
+"%(count)d yem bu üreticinin: “%(category)s” işaretli kalsın ya da önce bu yemler için başka bir "
+"üretici seçin."
+
+#, python-format
+msgid ""
 "%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose another "
 "supplier for it first."
 msgid_plural ""
@@ -53,6 +67,12 @@ msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d kayıt geri yüklendi."
 msgstr[1] "%(count)d kayıt geri yüklendi."
+
+#, python-format
+msgid "%(count)d row saved."
+msgid_plural "%(count)d rows saved."
+msgstr[0] "%(count)d satır kaydedildi."
+msgstr[1] "%(count)d satır kaydedildi."
 
 #, python-format
 msgid "%(count)s part"
@@ -87,6 +107,10 @@ msgstr[1] "%(counter)s satır"
 #, python-format
 msgid "%(department)s (no site)"
 msgstr "%(department)s (sahasız)"
+
+#, python-format
+msgid "%(energy)s MJ/kg digestible"
+msgstr "%(energy)s MJ/kg sindirilebilir"
 
 #, python-format
 msgid "%(field)s “%(record)s” is deleted."
@@ -174,6 +198,12 @@ msgid "9-digit Norwegian organisation number"
 msgstr "9 haneli Norveç kuruluş numarası"
 
 #, python-format
+msgid "A feed has at most %(num)d row."
+msgid_plural "A feed has at most %(num)d rows."
+msgstr[0] "Bir yemin en fazla %(num)d satırı olabilir."
+msgstr[1] "Bir yemin en fazla %(num)d satırı olabilir."
+
+#, python-format
 msgid "A feeder has at most %(num)d calibration."
 msgid_plural "A feeder has at most %(num)d calibrations."
 msgstr[0] "Bir yemleme makinesinin en fazla %(num)d kalibrasyonu olabilir."
@@ -193,6 +223,9 @@ msgstr "Yeni bir birim şunlardan biriyle başlar: %(statuses)s."
 
 msgid "A new unit starts in one of these; harvesting, cleaning and quarantine come later."
 msgstr "Yeni bir birim bunlardan biriyle başlar; hasat, temizlik ve karantina daha sonra gelir."
+
+msgid "A price needs its currency, and a currency needs a price."
+msgstr "Fiyatın bir para birimi, para biriminin de bir fiyatı olmalı."
 
 msgid "A production department stays on the site it was created on."
 msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
@@ -263,6 +296,13 @@ msgstr ""
 "Aktif: şu an yetiştiriliyor. Deneysel: denemede. Pasif: şu an yetiştirilmiyor. Üretimden "
 "kaldırıldı: artık yetiştirilmiyor."
 
+msgid ""
+"Active: fed now or ready to be fed. Inactive: not used at the moment. Discontinued: no longer "
+"made or bought."
+msgstr ""
+"Aktif: şu an yemleniyor ya da yemlemeye hazır. Pasif: şu an kullanılmıyor. Üretimden kaldırıldı: "
+"artık üretilmiyor ya da alınmıyor."
+
 msgid "Activity log"
 msgstr "Etkinlik günlüğü"
 
@@ -275,6 +315,9 @@ msgstr "Kalibrasyon ekle"
 
 msgid "Add contact"
 msgstr "Kişi ekle"
+
+msgid "Add species"
+msgstr "Balık türü ekle"
 
 #, python-format
 msgid "Add the first %(name)s."
@@ -294,6 +337,9 @@ msgstr "Adres"
 
 msgid "Administration"
 msgstr "Yönetim"
+
+msgid "Adults"
+msgstr "Ergin"
 
 msgid "Aeration"
 msgstr "Havalandırma"
@@ -323,8 +369,14 @@ msgstr "Tüm işlemler"
 msgid "All categories"
 msgstr "Tüm kategoriler"
 
+msgid "All feed types"
+msgstr "Tüm yem türleri"
+
 msgid "All kinds"
 msgstr "Tüm türler"
+
+msgid "All manufacturers"
+msgstr "Tüm üreticiler"
 
 msgid "All production departments"
 msgstr "Tüm üretim departmanları"
@@ -340,6 +392,9 @@ msgstr "Tüm durumlar"
 
 msgid "All systems"
 msgstr "Tüm sistemler"
+
+msgid "All the energy in the feed, in MJ per kg as fed."
+msgstr "Yemdeki tüm enerji, verildiği hâliyle kg başına MJ."
 
 msgid "All types"
 msgstr "Tüm türler"
@@ -371,6 +426,15 @@ msgstr ""
 
 msgid "Analog"
 msgstr "Analog"
+
+msgid "Analysis"
+msgstr "Analiz"
+
+msgid "Another feed already has this name."
+msgstr "Bu ad başka bir yemde zaten var."
+
+msgid "Another feed already uses this code."
+msgstr "Bu kodu başka bir yem zaten kullanıyor."
 
 msgid "Another production department already uses this code."
 msgstr "Bu kodu başka bir üretim departmanı zaten kullanıyor."
@@ -426,6 +490,9 @@ msgstr "Alan"
 msgctxt "access area"
 msgid "Area"
 msgstr "Alan"
+
+msgid "Ash (%)"
+msgstr "Ham kül (%)"
 
 #, python-format
 msgid "At least %(min)s."
@@ -504,8 +571,14 @@ msgstr "Sahanın kısa açıklaması"
 msgid "Broodstock"
 msgstr "Damızlık"
 
+msgid "Broodstock feed"
+msgstr "Damızlık yemi"
+
 msgid "Browser default"
 msgstr "Tarayıcı varsayılanı"
+
+msgid "Buoyancy"
+msgstr "Yüzerlik"
 
 #. Translators: the coefficient of performance of a chiller.
 msgid "COP (efficiency)"
@@ -528,6 +601,9 @@ msgstr "İptal"
 
 msgid "Capacity"
 msgstr "Kapasite"
+
+msgid "Carbohydrate, NFE (%)"
+msgstr "Karbonhidrat, NFE (%)"
 
 msgid "Category"
 msgstr "Kategori"
@@ -555,6 +631,9 @@ msgstr "Soğutucu (chiller)"
 
 msgid "Choose a supplier of equipment and spare parts."
 msgstr "Bir ekipman ve yedek parça tedarikçisi seçin."
+
+msgid "Choose a supplier of feed."
+msgstr "Yem tedarikçisi olan birini seçin."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Genel sekmesinde bir tür seçin; teknik özellikleri burada görünür."
@@ -624,6 +703,9 @@ msgstr "Şirket"
 
 msgid "Company overview"
 msgstr "Şirket genel bakışı"
+
+msgid "Composition as fed"
+msgstr "Verildiği hâliyle bileşim"
 
 msgid "Concrete"
 msgstr "Beton"
@@ -713,6 +795,18 @@ msgstr "Oluşturan"
 msgid "Criticality"
 msgstr "Kritiklik"
 
+msgid "Crude fat (%)"
+msgstr "Ham yağ (%)"
+
+msgid "Crude fibre (%)"
+msgstr "Ham selüloz (%)"
+
+msgid "Crude protein (%)"
+msgstr "Ham protein (%)"
+
+msgid "Currency"
+msgstr "Para birimi"
+
 msgid "Custom field 1"
 msgstr "Serbest alan 1"
 
@@ -788,6 +882,9 @@ msgstr "Çap (m)"
 msgid "Diesel"
 msgstr "Dizel"
 
+msgid "Digestible energy (MJ/kg)"
+msgstr "Sindirilebilir enerji (MJ/kg)"
+
 msgid "Dimensions"
 msgstr "Boyutlar"
 
@@ -844,6 +941,9 @@ msgstr "Elektrik"
 msgid "Email"
 msgstr "E-posta"
 
+msgid "Energy"
+msgstr "Enerji"
+
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
@@ -875,6 +975,9 @@ msgid "Every permission that exists: view, add, change and delete of each model,
 msgstr ""
 "Var olan tüm izinler: her modelin görüntüleme, ekleme, değiştirme ve silme izinleri ile özel "
 "olanlar."
+
+msgid "Every stage"
+msgstr "Her evre"
 
 msgid ""
 "Every table the application stores, as it is in the database. Nothing here can be changed. "
@@ -949,6 +1052,9 @@ msgstr "Atış başına yem (g)"
 msgid "Feed size (mm)"
 msgstr "Yem boyutu (mm)"
 
+msgid "Feed type"
+msgstr "Yem türü"
+
 msgid "Feeding"
 msgstr "Yemleme"
 
@@ -962,6 +1068,9 @@ msgstr ""
 #. Translators: a placeholder showing what to type.
 msgid "Feeding rate"
 msgstr "Yemleme hızı"
+
+msgid "Feeds"
+msgstr "Yemler"
 
 msgid "Feeds when the fish trigger it."
 msgstr "Balıklar tetiklediğinde yem verir."
@@ -989,6 +1098,12 @@ msgstr "Filtrasyon"
 msgid "Filtration size"
 msgstr "Filtrasyon boyutu"
 
+msgid "Fingerlings"
+msgstr "Parmak boy"
+
+msgid "Finisher feed"
+msgstr "Bitirme yemi"
+
 msgid "First"
 msgstr "İlk"
 
@@ -1009,6 +1124,9 @@ msgstr "Sabit yatak"
 
 msgid "Floating"
 msgstr "Yüzer"
+
+msgid "Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep tanks."
+msgstr "Yüzen yem yüzeyde kalır; batan ve yavaş batan yem kafesler ve derin tanklar içindir."
 
 msgid "Flow rate"
 msgstr "Debi"
@@ -1062,6 +1180,9 @@ msgstr "%(low)s ile %(high)s arası."
 msgid "From %(min)s to %(max)s."
 msgstr "%(min)s ile %(max)s arası."
 
+msgid "From (g)"
+msgstr "Alt sınır (g)"
+
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Uçtan uca; her uç, tank genişliğinde bir yarım dairedir."
 
@@ -1070,6 +1191,12 @@ msgstr "Tabandan kenara kadar."
 
 msgid "From the water surface to the bottom of the net."
 msgstr "Su yüzeyinden ağın dibine kadar."
+
+msgid "Fry"
+msgstr "Yavru"
+
+msgid "Fry feed"
+msgstr "Yavru yemi"
 
 msgid "Fuel consumption"
 msgstr "Yakıt tüketimi"
@@ -1108,8 +1235,14 @@ msgstr ""
 msgid "Genus: %(genus)s (the first word of the scientific name)."
 msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
 
+msgid "Gross energy (MJ/kg)"
+msgstr "Brüt enerji (MJ/kg)"
+
 msgid "Grow-out"
 msgstr "Büyütme"
+
+msgid "Grower feed"
+msgstr "Büyütme yemi"
 
 msgid "HDPE"
 msgstr "HDPE"
@@ -1220,6 +1353,9 @@ msgstr "Hangi sistemlerin seçilebileceğini bunun sahası belirler."
 msgid "Its volume cannot be calculated from its shape: enter it as measured or as drawn."
 msgstr "Hacmi şeklinden hesaplanamaz: ölçüldüğü veya çizimdeki gibi girin."
 
+msgid "Juveniles"
+msgstr "Genç balık"
+
 msgid "Key"
 msgstr "Anahtar"
 
@@ -1250,6 +1386,12 @@ msgstr "Kara tesisi"
 msgid "Language"
 msgstr "Dil"
 
+msgid "Larvae"
+msgstr "Larva"
+
+msgid "Larval feed"
+msgstr "Larva yemi"
+
 msgid "Last"
 msgstr "Son"
 
@@ -1279,6 +1421,9 @@ msgstr "Uzunluk (m)"
 
 msgid "Level sensor"
 msgstr "Seviye sensörü"
+
+msgid "Life stage"
+msgstr "Yaşam evresi"
 
 msgid "Lined"
 msgstr "Kaplamalı"
@@ -1379,6 +1524,9 @@ msgstr "Mekanik filtre"
 msgid "Media volume"
 msgstr "Ortam hacmi"
 
+msgid "Medicated feed"
+msgstr "İlaçlı yem"
+
 msgid "Medicines and vaccines"
 msgstr "İlaçlar ve aşılar"
 
@@ -1405,6 +1553,9 @@ msgstr "Model"
 
 msgid "Model field"
 msgstr "Model alanı"
+
+msgid "Moisture (%)"
+msgstr "Nem (%)"
 
 msgid "Mollusc"
 msgstr "Yumuşakça"
@@ -1500,6 +1651,9 @@ msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizle
 msgid "No site"
 msgstr "Saha yok"
 
+msgid "No species yet. Use “Add species” to add a row."
+msgstr "Henüz balık türü yok. Satır eklemek için “Balık türü ekle”yi kullanın."
+
 msgid "No system"
 msgstr "Sistem yok"
 
@@ -1534,6 +1688,9 @@ msgstr "Hiçbir sisteme bağlı değil"
 
 msgid "Not rated"
 msgstr "Puanlanmadı"
+
+msgid "Not stated"
+msgstr "Belirtilmedi"
 
 msgid "Notes"
 msgstr "Notlar"
@@ -1691,8 +1848,21 @@ msgstr "Parola kaydedildi"
 msgid "Payment terms"
 msgstr "Ödeme koşulları"
 
+msgid "Pellet"
+msgstr "Pelet"
+
+msgid "Pellet size (mm)"
+msgstr "Pelet boyutu (mm)"
+
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Giriş yapabilen kişiler: hesap bilgileri ve parolanın özeti (hash)."
+
+msgid ""
+"Percent of the feed as delivered, as the feed declaration states it. Protein, fat, carbohydrate, "
+"fibre, ash and moisture together are at most 100; phosphorus is part of the ash."
+msgstr ""
+"Teslim edilen yemin yüzdesi, yem beyannamesinde yazdığı gibi. Protein, yağ, karbonhidrat, "
+"selüloz, kül ve nem toplamı en fazla 100’dür; fosfor külün bir parçasıdır."
 
 msgid "Performance"
 msgstr "Performans"
@@ -1715,6 +1885,12 @@ msgstr "Faz"
 
 msgid "Phone"
 msgstr "Telefon"
+
+msgid "Phosphorus (%)"
+msgstr "Fosfor (%)"
+
+msgid "Phosphorus is part of the ash: it cannot be more than the ash."
+msgstr "Fosfor külün bir parçasıdır: külden fazla olamaz."
 
 msgid "Pipe size"
 msgstr "Boru çapı"
@@ -1746,6 +1922,9 @@ msgstr "Havuz"
 msgid "Pond type"
 msgstr "Havuz tipi"
 
+msgid "Post-larvae"
+msgstr "Post-larva"
+
 msgid "Postal code"
 msgstr "Posta kodu"
 
@@ -1772,6 +1951,12 @@ msgstr "Basınç sensörü"
 
 msgid "Previous"
 msgstr "Önceki"
+
+msgid "Price and notes"
+msgstr "Fiyat ve notlar"
+
+msgid "Price per kg"
+msgstr "Kg fiyatı"
 
 msgid "Primary"
 msgstr "Birincil"
@@ -1806,6 +1991,16 @@ msgstr "Üretim genel bakışı"
 
 msgid "Propane"
 msgstr "Propan"
+
+msgid "Protein / fat"
+msgstr "Protein / yağ"
+
+msgid ""
+"Protein, fat, carbohydrate, fibre, ash and moisture are parts of the feed as fed: together they "
+"cannot add up to more than 100 per cent."
+msgstr ""
+"Protein, yağ, karbonhidrat, selüloz, kül ve nem, verildiği hâliyle yemin parçalarıdır: toplamları"
+" yüzde 100’ü geçemez."
 
 msgid "Pumping"
 msgstr "Pompalama"
@@ -1969,6 +2164,9 @@ msgstr "Kişileri kaydet"
 msgid "Save password"
 msgstr "Parolayı kaydet"
 
+msgid "Save suitability"
+msgstr "Uygunluğu kaydet"
+
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Önce ekipmanı bu yemleme makinesi türüyle kaydedin; ardından kalibrasyonları buraya eklenebilir."
 
@@ -1996,6 +2194,9 @@ msgstr "Ada göre ara"
 
 msgid "Search by name or code"
 msgstr "Ada veya koda göre ara"
+
+msgid "Search by name, code or manufacturer"
+msgstr "Ad, kod ya da üreticiye göre ara"
 
 msgid "Search by name, code or region"
 msgstr "Ada, koda veya bölgeye göre ara"
@@ -2027,14 +2228,23 @@ msgstr "Etkinlik günlüğünde tümünü gör"
 msgid "Select a category"
 msgstr "Bir kategori seçin"
 
+msgid "Select a feed type"
+msgstr "Bir yem türü seçin"
+
 msgid "Select a kind"
 msgstr "Bir tür seçin"
+
+msgid "Select a life stage"
+msgstr "Bir yaşam evresi seçin"
 
 msgid "Select a production department"
 msgstr "Bir üretim departmanı seçin"
 
 msgid "Select a site"
 msgstr "Bir saha seçin"
+
+msgid "Select a species"
+msgstr "Bir balık türü seçin"
 
 msgid "Select a type"
 msgstr "Bir tür seçin"
@@ -2106,6 +2316,9 @@ msgstr "Silo hacmi"
 msgid "Single-phase"
 msgstr "Tek faz"
 
+msgid "Sinking"
+msgstr "Batan"
+
 msgid "Site"
 msgstr "Saha"
 
@@ -2133,6 +2346,12 @@ msgstr "Boyut"
 msgid "Skip to content"
 msgstr "İçeriğe geç"
 
+msgid "Slow sinking"
+msgstr "Yavaş batan"
+
+msgid "Smolt"
+msgstr "Smolt"
+
 msgid "Solar"
 msgstr "Güneş"
 
@@ -2156,6 +2375,9 @@ msgctxt "singular"
 msgid "Species"
 msgstr "Balık türü"
 
+msgid "Species and fish weights can be added once the feed is created."
+msgstr "Balık türleri ve balık ağırlıkları yem oluşturulduktan sonra eklenebilir."
+
 msgid "Specific surface area"
 msgstr "Özgül yüzey alanı"
 
@@ -2173,6 +2395,9 @@ msgstr "Paslanmaz çelik"
 
 msgid "Standby"
 msgstr "Yedekte"
+
+msgid "Starter feed"
+msgstr "Başlangıç yemi"
 
 msgid "State"
 msgstr "Eyalet / il"
@@ -2203,6 +2428,9 @@ msgstr "Batırılabilir"
 
 msgid "Submersible pump"
 msgstr "Dalgıç pompa"
+
+msgid "Suitable for"
+msgstr "Uygunluk"
 
 msgid "Supplier"
 msgstr "Tedarikçi"
@@ -2287,11 +2515,27 @@ msgstr ""
 msgid "The criticality is from 1 to 5."
 msgstr "Kritiklik 1 ile 5 arasındadır."
 
+msgid "The currency is a three-letter code, e.g. NOK or EUR."
+msgstr "Para birimi üç harfli bir koddur, örn. NOK ya da EUR."
+
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "En derin nokta ortalama derinlikten sığ olamaz."
 
+msgid "The digestible energy cannot be more than the gross energy."
+msgstr "Sindirilebilir enerji brüt enerjiden fazla olamaz."
+
 msgid "The equipment is linked to this system already."
 msgstr "Ekipman bu sisteme zaten bağlı."
+
+msgid "The feed mill that makes it: a supplier of feed (Purchasing › Suppliers)."
+msgstr "Onu üreten yem fabrikası: bir yem tedarikçisi (Satın alma › Tedarikçiler)."
+
+msgid ""
+"The feeds the farm uses: who makes them, their pellet and analysis, and the species and fish "
+"weights each one suits."
+msgstr ""
+"Çiftliğin kullandığı yemler: kimin ürettiği, peleti ve analizi, her birinin uygun olduğu balık "
+"türleri ve balık ağırlıkları."
 
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Yarım göz: bir düğümden ötekine; gerilmiş tam göz bunun iki katıdır."
@@ -2314,6 +2558,9 @@ msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane
 msgid "The longest distance across the ellipse."
 msgstr "Elipsin en uzun çapı."
 
+msgid "The lower weight must be below the upper weight."
+msgstr "Alt ağırlık üst ağırlıktan küçük olmalı."
+
 msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
 "licence’s."
@@ -2321,6 +2568,9 @@ msgstr "Birimin m³ su başına tutabileceği en fazla balık: türün refah sı
 
 msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Çiftliğin kendi dilindeki adı, örn. Laks."
+
+msgid "The nitrogen-free extract: what is left when the other parts are taken away."
+msgstr "Azotsuz öz madde: diğer parçalar çıkarıldığında kalan."
 
 msgid "The official code is three capital letters, e.g. SAL."
 msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
@@ -2341,6 +2591,12 @@ msgstr "Üst sistem başka bir sahaya ait."
 msgid "The parent system is nested under this system."
 msgstr "Üst sistem bu sistemin altında yer alıyor."
 
+msgid "The part of the gross energy the fish can digest."
+msgstr "Brüt enerjinin balığın sindirebildiği kısmı."
+
+msgid "The pellet diameter, as a feeder’s calibrations write it."
+msgstr "Pelet çapı, yemleme makinesinin kalibrasyonlarında yazıldığı gibi."
+
 msgid ""
 "The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
 " one can be the primary contact. Contacts are saved separately from the supplier details."
@@ -2350,6 +2606,9 @@ msgstr ""
 
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Suyu dağıtım deliklerinden tanka veren boru."
+
+msgid "The product name, as on the bag, e.g. Nutra Olympic 3 mm."
+msgstr "Ürün adı, torbada yazdığı gibi, örn. Nutra Olympic 3 mm."
 
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
@@ -2375,6 +2634,15 @@ msgid ""
 msgstr ""
 "Sahanın operasyonel iletişim kişileri. En fazla biri birincil kişi olabilir. Kişiler saha "
 "ayrıntılarından ayrı kaydedilir."
+
+msgid ""
+"The species and life stages it is made for, and the fish weights in grams: from the lower weight "
+"up to, not including, the upper one; leave an end empty when it has none. One row per species and"
+" stage, at most 50. They are saved separately from the feed details."
+msgstr ""
+"Yemin yapıldığı balık türleri ve yaşam evreleri ile gram cinsinden balık ağırlıkları: alt "
+"ağırlıktan başlayıp üst ağırlığa kadar, üst ağırlık hariç; sınırı olmayan ucu boş bırakın. Her "
+"balık türü ve evre için bir satır, en fazla 50. Yem bilgilerinden ayrı kaydedilirler."
 
 msgid "The specifications must be a set of named values."
 msgstr "Teknik özellikler adlandırılmış değerler kümesi olmalıdır."
@@ -2469,6 +2737,9 @@ msgstr "Bu türün teknik özelliği yok."
 msgid "This type is not in the chosen category."
 msgstr "Bu tür seçilen kategoride değil."
 
+msgid "Three letters, e.g. NOK."
+msgstr "Üç harf, örn. NOK."
+
 msgid "Three-phase"
 msgstr "Üç faz"
 
@@ -2505,6 +2776,9 @@ msgstr "Bulanıklık"
 msgid "Two rows have the same feed size."
 msgstr "İki satır aynı yem boyutuna sahip."
 
+msgid "Two rows have the same species and life stage."
+msgstr "İki satırda aynı balık türü ve yaşam evresi var."
+
 msgid "Type"
 msgstr "Tür"
 
@@ -2538,6 +2812,9 @@ msgstr "Türe göre birimler"
 #, python-format
 msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
 msgstr "İçinde başka bir üretim departmanının birimleri var: %(units)s. Önce onları sistemden çıkarın."
+
+msgid "Up to (g)"
+msgstr "Üst sınır (g)"
 
 msgid "Updated at"
 msgstr "Güncellenme zamanı"
@@ -2617,6 +2894,12 @@ msgstr "Kuyulu tekne ve nakliye"
 
 msgid "What it holds"
 msgstr "İçeriği"
+
+msgid "What it is made for. A medicated feed is given on a vet’s prescription."
+msgstr "Ne için yapıldığı. İlaçlı yem veteriner reçetesiyle verilir."
+
+msgid "What the farm pays per kg, with its currency."
+msgstr "Çiftliğin kg başına ödediği, para birimiyle."
 
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."
@@ -2731,6 +3014,9 @@ msgstr "örn. 0–50 °C"
 msgid "e.g. 12345"
 msgstr "örn. 12345"
 
+msgid "e.g. 150"
+msgstr "örn. 150"
+
 msgid "e.g. 1–10 kg/h"
 msgstr "örn. 1–10 kg/h"
 
@@ -2748,6 +3034,9 @@ msgstr "örn. 30 gün vadeli"
 
 msgid "e.g. 5.3221"
 msgstr "örn. 5,3221"
+
+msgid "e.g. 50"
+msgstr "örn. 50"
 
 msgid "e.g. 50000"
 msgstr "örn. 50000"
@@ -2788,8 +3077,14 @@ msgstr "örn. Ana Üretim Sahası"
 msgid "e.g. Main circulation pump"
 msgstr "örn. Ana sirkülasyon pompası"
 
+msgid "e.g. NUTRA-3"
+msgstr "örn. NUTRA-3"
+
 msgid "e.g. Norway"
 msgstr "örn. Norveç"
+
+msgid "e.g. Nutra Olympic 3 mm"
+msgstr "örn. Nutra Olympic 3 mm"
 
 msgid "e.g. PMP-001"
 msgstr "örn. PMP-001"
@@ -2854,11 +3149,24 @@ msgstr "ekipman türü"
 msgid "equipment types"
 msgstr "ekipman türleri"
 
+msgid "feed"
+msgstr "yem"
+
 msgid "feed calibration"
 msgstr "yem kalibrasyonu"
 
 msgid "feed calibrations"
 msgstr "yem kalibrasyonları"
+
+msgid "feed suitability"
+msgstr "yem uygunluğu"
+
+msgid "feeds"
+msgstr "yemler"
+
+#, python-format
+msgid "from %(weight)s g"
+msgstr "%(weight)s g ve üstü"
 
 msgid "https:// is added when it is left out."
 msgstr "Yazılmazsa https:// eklenir."
@@ -2952,6 +3260,10 @@ msgstr "birim"
 
 msgid "units"
 msgstr "birimler"
+
+#, python-format
+msgid "up to %(weight)s g"
+msgstr "%(weight)s g altı"
 
 msgid "user"
 msgstr "kullanıcı"

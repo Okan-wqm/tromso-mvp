@@ -7,6 +7,7 @@ Differences from the source schema (apply to every model here):
 - Uniqueness rules the source only enforced in service code are database constraints here.
 """
 from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibration
+from .feed import Feed, FeedSuitability
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
@@ -15,6 +16,6 @@ from .system import System
 from .tank import Tank
 
 __all__ = [
-    'Equipment', 'EquipmentSystem', 'EquipmentType', 'FeederCalibration', 'ProductionDepartment', 'Site',
-    'SiteContact', 'Species', 'Supplier', 'SupplierContact', 'System', 'Tank',
+    'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
+    'ProductionDepartment', 'Site', 'SiteContact', 'Species', 'Supplier', 'SupplierContact', 'System', 'Tank',
 ]

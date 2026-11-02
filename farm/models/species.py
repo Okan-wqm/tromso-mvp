@@ -61,9 +61,10 @@ class Species(CodedMixin, AuditedModel):
     Status: "active" and "experimental" species are the ones offered for new batches (the batches
     tab); "inactive" and "discontinued" ones are not. There is no second flag `isActive`.
 
-    Delete: nothing points at a species yet. The batches tab will link to it with on_delete=PROTECT, so
-    a species with batches is set to discontinued instead of deleted; the feed suitability rows of the
-    Feeds tab with CASCADE.
+    Delete: the feeds that suit it keep their suitability rows for it (FeedSuitability, a many-to-many
+    link of the feed, CASCADE): the rows stop showing and come back with the species when it is restored.
+    The batches tab will link to it with on_delete=PROTECT, so a species with batches is set to
+    discontinued instead of deleted.
 
     Differences from the source: one status (no `isActive`); the water environment is three flags,
     since salmon and trout live in fresh and in sea water; the genus is derived from the scientific

@@ -306,6 +306,9 @@
 .calibration-row {
   grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, .9fr) minmax(0, 1.4fr) 5.5rem;
 }
+.suitability-row {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, .7fr) minmax(0, 1.2fr) 5.5rem;
+}
 
 .check {
   display: inline-flex;
@@ -533,6 +536,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .row-title { display: block; color: var(--speck); font-weight: 600; text-decoration: none; }
 a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .row-sub { display: block; color: var(--muted); font-size: .8125rem; }
+.row-line { display: block; }
 .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 
 /* Delete confirmation: what else the delete touches (core.softdelete) */

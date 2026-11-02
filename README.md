@@ -17,7 +17,7 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, suppliers). Each has its own overview. A
+  species, feeds, suppliers). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -247,10 +247,11 @@ the four cleaner-fish codes of the source are unverified and never filled in (SP
 species cannot be given an official code other than its verified one. No species rows are seeded
 and there is no "add from catalogue" action.
 
-Deleting a species: nothing points at a species yet. The batches tab will link to it with
-`on_delete=PROTECT` (a species with batches is set to discontinued instead of deleted) and the
-Feeds tab's suitability rows with `CASCADE`. Later report code must send the official code and
-never fall back to the internal code.
+Deleting a species: the feeds that suit it keep their suitability rows for it (a many-to-many link of
+the feed, `CASCADE`): the confirmation lists those feeds, the rows stop showing and come back with the
+species when it is restored (see Reference data › Feeds). The batches tab will link to it with
+`on_delete=PROTECT` (a species with batches is set to discontinued instead of deleted). Later report
+code must send the official code and never fall back to the internal code.
 
 Differences from the source:
 
@@ -274,6 +275,90 @@ Differences from the source:
   with no silent defaults: water-quality limits per species and parameter, each with its unit
   (Water chemistry › parameters and limits; SPC-05, SPC-19, SPC-23), and growth bands, target FCR,
   survival and harvest weight per stage (the growth model, with the batches tab; SPC-20, SPC-21).
+
+### Reference data › Feeds (`/feeds/`)
+
+Tables `feeds` and `feed_suitability`: the feeds the farm uses, who makes them, their pellet and
+analysis, and the species, life stages and fish weights each one suits. A table (feed with its code,
+manufacturer, feed type, pellet size with its buoyancy, protein / fat, gross energy with the digestible
+energy, what it suits, price per kg, status), search by name, code or manufacturer, filters by feed
+type, manufacturer, species it suits and status, 50 feeds a page, a form in the dialog and delete. The
+form has four inner tabs:
+
+- **Basic info**: name (as on the bag), code, manufacturer (a supplier of feed), feed type (larval,
+  starter, fry, grower, finisher, broodstock, medicated, other), pellet size in mm, buoyancy (floating,
+  slow sinking, sinking, or not stated), status (active, inactive, discontinued).
+- **Analysis**: the composition as fed, in % of the feed as delivered (crude protein, crude fat,
+  carbohydrate as NFE, crude fibre, ash, moisture, phosphorus), and the gross and digestible energy in
+  MJ/kg.
+- **Price and notes**: the price per kg with its currency (three letters, e.g. NOK), notes.
+- **Suitable for**, once the feed exists: a row per species and life stage (every stage, larvae,
+  post-larvae, fry, fingerlings, juveniles, smolt, adults, broodstock) with the fish weights in grams
+  and a note; at most 50, saved as a whole list like a feeder's calibrations and logged on the feed.
+
+The rules, each a database check as well, with the error on the field to change:
+
+- Protein, fat, carbohydrate, fibre, ash and moisture are the parts of the feed as fed and add up to at
+  most 100; phosphorus is part of the ash and at most the ash; each percentage is 0–100. NFE is what is
+  left when the others are taken away, so a declaration's figures plus NFE make 100.
+- The digestible energy is at most the gross energy, both at most 40 MJ/kg (pure fat holds about 39.5).
+- The pellet size is 0.01–100 mm with two decimals: the column and bounds of a feeder's calibrations
+  (`FeederCalibration.feed_size_mm`), so a feed's size finds a feeder's calibration by equality.
+- A price (0.01 or more) needs its currency, and a currency a price; the currency is stored in capitals.
+- A weight band runs from the lower weight up to, not including, the upper one
+  (`FeedSuitability.suits(weight)`), so the bands of a feed range (0–5, 5–20 g) meet without
+  overlapping; either end can be left open; the lower is below the upper. One row per species and stage.
+- Code (2 to 50 capital letters, digits, `-` and `_`) and name (whatever its case) are unique among
+  live feeds; a deleted feed frees them and a restore from the admin re-checks them.
+
+The manufacturer is a live supplier of feed (a `SupplierLink`, see Purchasing › Suppliers); the list
+shows its status when it is not active. A supplier keeps the feed category while live feeds name it, and
+**a supplier that makes live feeds cannot be deleted** (`PROTECT`): the maker is part of what a feed is,
+for its declaration and its traceability (a medicated feed above all), so a supplier the farm stops
+buying from is set inactive or blocked, or its feeds get another manufacturer first. Restoring a feed
+needs its manufacturer live and still a supplier of feed.
+
+Deleting a feed keeps its suitability rows with it. Deleting a species keeps its rows in the table but
+out of sight (`FeedSuitability.objects` holds the rows of live species; `Feed.species` is the
+many-to-many link through them): the species' confirmation lists the feeds linked to it, saving a
+feed's list leaves those rows alone, and restoring the species brings them back.
+
+Not on this tab, each with a tab of its own later: the feed stock (lots, quantities, expiry, storage
+conditions, where it is kept), purchase orders, feeding tables and curves (feeding rate and FCR per
+temperature and fish weight) and the feeding records.
+
+What the feeding tabs can rely on: a feed is `farm.Feed` (UUID, live ones through `Feed.objects`), with
+`status` active, inactive or discontinued (offer active ones for new feeding plans; a record keeps its
+feed whatever the status becomes); `pellet_size_mm` matches `FeederCalibration.feed_size_mm` by
+equality; the analysis and energy are typed decimals or `NULL` (not stated, never 0 by default);
+`price_per_kg` and `currency` come together or not at all; the suitability is
+`feed.suitability.all()` (live species only) with `growth_stage`, using the life stages of a batch's
+stocking stage (minus eggs, plus "every stage"), and `suits(weight_g)` for the band. A feed record of a
+later tab should link to the feed with `PROTECT`, as batches link to a species.
+
+Differences from the source:
+
+- Which species, life stages and weights a feed suits is written and read on this tab; the source
+  accepted it on create through the API only and never returned it (FEED-01). The weight band is per
+  species and stage; the feed-level minimum and maximum (whose maximum the source lost on create) are
+  not carried over (FEED-02, FEED-14).
+- The analysis is typed columns with the rules above, instead of a JSON object rebuilt on every edit,
+  with the energy under two names and units (FEED-04 to FEED-06).
+- The manufacturer is a link to a supplier of feed; the source had free texts for the manufacturer and
+  the brand next to a link to any supplier (FEED-08).
+- The status is the product's; the source's low stock, out of stock and expired are stock states, set
+  again by every stock movement (FEED-07). One status, no `isActive` (FEED-19).
+- One list of feed types, the source's eight, in the model; its `feed_types` table is not ported
+  (FEED-09). Buoyancy has no default (FEED-16); a price has its own currency (FEED-17).
+- Code and name are unique among live feeds and every optional field can be cleared (FEED-03, FEED-10).
+- Not ported: brand, description, the pellet size label, the product stage text, the ingredients text,
+  unit size and unit price, the storage temperatures, humidity and requirements, shelf life and expiry
+  date, stock quantity, minimum stock and unit, the procurement lead time, documents, the environmental
+  impact, the feeding curve, the 2D feeding matrix and the feeding table, the sites a feed is approved
+  for (FEED-13), and on the suitability rows the recommendation level, priority, feeding rate and
+  frequency and the JSON of rates per temperature and expected performance.
+- The life stages are the ones a batch is stocked at (the stock tab's list, without eggs), smolt among
+  them; the source's grower and pre-adult stages are not: the weight band says it more precisely.
 
 ### Purchasing › Suppliers (`/suppliers/`)
 
@@ -308,6 +393,13 @@ active. A supplier keeps the equipment category while equipment is bought from i
 leaves its equipment without a supplier, each change logged on the equipment; deleting a site keeps
 the suppliers' links to it, which count again when the site is restored.
 
+A feed links to its manufacturer the same way (`Feed.manufacturer`, a live supplier of feed, see
+Reference data › Feeds), but a supplier that makes live feeds cannot be deleted. Both links are a
+`SupplierLink` (`farm/models/supplier.py`): one declaration per link holds the category it takes
+(`limit_choices_to`, the model's validation and the form's list) and the words the supplier's form says
+when the category must stay ticked; `Supplier.clean` checks every such link, so a later link (a batch
+of fish to a supplier of live fish) adds no code to the supplier.
+
 Differences from the source:
 
 - What it supplies is one list of categories, checked by the database, instead of a main type next to
@@ -335,7 +427,7 @@ only one who manages roles and users; everyone else gets exactly what their role
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
-  Systems, Equipment, Tanks, ponds & cages, Species and Suppliers (read, create, edit, delete) and Activity log
+  Systems, Equipment, Tanks, ponds & cages, Species, Feeds and Suppliers (read, create, edit, delete) and Activity log
   (read). A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -495,10 +587,13 @@ What one tab needed and the next ones will too lives in `core/`:
 - `CodedMixin.name_field`: a record shown as "Name (CODE)" whose name is in another field (a
   species' common name).
 - `RowList` (`core/crud.py`): rows a record owns, edited as one list on a tab and saved together,
-  replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations). A
-  record's contact persons are one shape for every record that has them (`farm/models/contact.py`,
-  `farm/forms/contact.py`, `farm/resources/contact.py`, `templates/farm/_contacts.html`): a site's,
-  a supplier's.
+  replacing the stored rows, logged on the record (a site's contacts, a feeder's calibrations, a feed's
+  suitability). A record's contact persons are one shape for every record that has them
+  (`farm/models/contact.py`, `farm/forms/contact.py`, `farm/resources/contact.py`,
+  `templates/farm/_contacts.html`): a site's, a supplier's. Rows on an inner tab of their own with a
+  heading row (a feeder's calibrations, a feed's suitability) are one template,
+  `templates/crud/_row_list.html` with `crud/_row.html`; a class per list (`calibration-row`,
+  `suitability-row`) gives its heading and its rows the same columns.
 - `ChoiceArrayField` (`core/fields.py`): several choices of one list stored as a PostgreSQL array
   (what a supplier supplies), a check box per choice in the form, stored once each in the order of the
   choices; the activity log keeps each as its msgid and the database viewer shows the array as
@@ -562,6 +657,7 @@ real mail.
 | `/equipment/` | Facility › Equipment; `<id>/calibrations/` saves a feeder's calibrations |
 | `/tanks/` | Facility › Tanks, ponds & cages |
 | `/species/` | Reference data › Species |
+| `/feeds/` | Reference data › Feeds; `<id>/suitability/` saves the species and fish weights a feed suits |
 | `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |

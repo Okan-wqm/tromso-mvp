@@ -36,6 +36,20 @@ msgstr[1] "%(count)d kontaktpersoner lagret."
 
 #, python-format
 msgid ""
+"%(count)d feed is made by it: keep “%(category)s” ticked, or choose another manufacturer for it "
+"first."
+msgid_plural ""
+"%(count)d feeds are made by it: keep “%(category)s” ticked, or choose another manufacturer for "
+"them first."
+msgstr[0] ""
+"%(count)d fôr er laget av den: behold «%(category)s» avkrysset, eller velg en annen produsent for"
+" det først."
+msgstr[1] ""
+"%(count)d fôr er laget av den: behold «%(category)s» avkrysset, eller velg en annen produsent for"
+" dem først."
+
+#, python-format
+msgid ""
 "%(count)d piece of equipment is bought from it: keep “%(category)s” ticked, or choose another "
 "supplier for it first."
 msgid_plural ""
@@ -53,6 +67,12 @@ msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d post gjenopprettet."
 msgstr[1] "%(count)d poster gjenopprettet."
+
+#, python-format
+msgid "%(count)d row saved."
+msgid_plural "%(count)d rows saved."
+msgstr[0] "%(count)d rad lagret."
+msgstr[1] "%(count)d rader lagret."
 
 #, python-format
 msgid "%(count)s part"
@@ -87,6 +107,10 @@ msgstr[1] "%(counter)s rader"
 #, python-format
 msgid "%(department)s (no site)"
 msgstr "%(department)s (uten lokalitet)"
+
+#, python-format
+msgid "%(energy)s MJ/kg digestible"
+msgstr "%(energy)s MJ/kg fordøyelig"
 
 #, python-format
 msgid "%(field)s “%(record)s” is deleted."
@@ -174,6 +198,12 @@ msgid "9-digit Norwegian organisation number"
 msgstr "Norsk organisasjonsnummer (9 siffer)"
 
 #, python-format
+msgid "A feed has at most %(num)d row."
+msgid_plural "A feed has at most %(num)d rows."
+msgstr[0] "Et fôr har høyst %(num)d rad."
+msgstr[1] "Et fôr har høyst %(num)d rader."
+
+#, python-format
 msgid "A feeder has at most %(num)d calibration."
 msgid_plural "A feeder has at most %(num)d calibrations."
 msgstr[0] "En fôrautomat har høyst %(num)d kalibrering."
@@ -193,6 +223,9 @@ msgstr "En ny enhet starter som en av disse: %(statuses)s."
 
 msgid "A new unit starts in one of these; harvesting, cleaning and quarantine come later."
 msgstr "En ny enhet starter i en av disse; høsting, rengjøring og karantene kommer senere."
+
+msgid "A price needs its currency, and a currency needs a price."
+msgstr "En pris trenger sin valuta, og en valuta trenger en pris."
 
 msgid "A production department stays on the site it was created on."
 msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet på."
@@ -263,6 +296,13 @@ msgstr ""
 "Aktiv: oppdrettes nå. Forsøk: prøves ut. Inaktiv: oppdrettes ikke for tiden. Avviklet: oppdrettes"
 " ikke lenger."
 
+msgid ""
+"Active: fed now or ready to be fed. Inactive: not used at the moment. Discontinued: no longer "
+"made or bought."
+msgstr ""
+"Aktiv: fôres nå eller klar til å fôres. Inaktiv: brukes ikke for øyeblikket. Avviklet: lages "
+"eller kjøpes ikke lenger."
+
 msgid "Activity log"
 msgstr "Aktivitetslogg"
 
@@ -275,6 +315,9 @@ msgstr "Legg til kalibrering"
 
 msgid "Add contact"
 msgstr "Legg til kontaktperson"
+
+msgid "Add species"
+msgstr "Legg til art"
 
 #, python-format
 msgid "Add the first %(name)s."
@@ -296,6 +339,9 @@ msgstr "Adresse"
 
 msgid "Administration"
 msgstr "Administrasjon"
+
+msgid "Adults"
+msgstr "Voksen fisk"
 
 msgid "Aeration"
 msgstr "Lufting"
@@ -325,8 +371,14 @@ msgstr "Alle handlinger"
 msgid "All categories"
 msgstr "Alle kategorier"
 
+msgid "All feed types"
+msgstr "Alle fôrtyper"
+
 msgid "All kinds"
 msgstr "Alle typer"
+
+msgid "All manufacturers"
+msgstr "Alle produsenter"
 
 msgid "All production departments"
 msgstr "Alle produksjonsavdelinger"
@@ -342,6 +394,9 @@ msgstr "Alle statuser"
 
 msgid "All systems"
 msgstr "Alle systemer"
+
+msgid "All the energy in the feed, in MJ per kg as fed."
+msgstr "All energien i fôret, i MJ per kg slik det fôres."
 
 msgid "All types"
 msgstr "Alle typer"
@@ -373,6 +428,15 @@ msgstr ""
 
 msgid "Analog"
 msgstr "Analog"
+
+msgid "Analysis"
+msgstr "Analyse"
+
+msgid "Another feed already has this name."
+msgstr "Et annet fôr har allerede dette navnet."
+
+msgid "Another feed already uses this code."
+msgstr "Et annet fôr bruker allerede denne koden."
 
 msgid "Another production department already uses this code."
 msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
@@ -428,6 +492,9 @@ msgstr "Areal"
 msgctxt "access area"
 msgid "Area"
 msgstr "Område"
+
+msgid "Ash (%)"
+msgstr "Aske (%)"
 
 #, python-format
 msgid "At least %(min)s."
@@ -506,8 +573,14 @@ msgstr "Kort beskrivelse av lokaliteten"
 msgid "Broodstock"
 msgstr "Stamfisk"
 
+msgid "Broodstock feed"
+msgstr "Stamfiskfôr"
+
 msgid "Browser default"
 msgstr "Nettleserens standard"
+
+msgid "Buoyancy"
+msgstr "Flyteevne"
 
 #. Translators: the coefficient of performance of a chiller.
 msgid "COP (efficiency)"
@@ -530,6 +603,9 @@ msgstr "Avbryt"
 
 msgid "Capacity"
 msgstr "Kapasitet"
+
+msgid "Carbohydrate, NFE (%)"
+msgstr "Karbohydrat, NFE (%)"
 
 msgid "Category"
 msgstr "Kategori"
@@ -557,6 +633,9 @@ msgstr "Kjøleaggregat"
 
 msgid "Choose a supplier of equipment and spare parts."
 msgstr "Velg en leverandør av utstyr og reservedeler."
+
+msgid "Choose a supplier of feed."
+msgstr "Velg en leverandør av fôr."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Velg en type på fanen Generelt; spesifikasjonene vises her."
@@ -626,6 +705,9 @@ msgstr "Selskap"
 
 msgid "Company overview"
 msgstr "Selskapsoversikt"
+
+msgid "Composition as fed"
+msgstr "Sammensetning slik det fôres"
 
 msgid "Concrete"
 msgstr "Betong"
@@ -715,6 +797,18 @@ msgstr "Opprettet av"
 msgid "Criticality"
 msgstr "Kritikalitet"
 
+msgid "Crude fat (%)"
+msgstr "Råfett (%)"
+
+msgid "Crude fibre (%)"
+msgstr "Trevler (%)"
+
+msgid "Crude protein (%)"
+msgstr "Råprotein (%)"
+
+msgid "Currency"
+msgstr "Valuta"
+
 msgid "Custom field 1"
 msgstr "Egendefinert felt 1"
 
@@ -790,6 +884,9 @@ msgstr "Diameter (m)"
 msgid "Diesel"
 msgstr "Diesel"
 
+msgid "Digestible energy (MJ/kg)"
+msgstr "Fordøyelig energi (MJ/kg)"
+
 msgid "Dimensions"
 msgstr "Mål"
 
@@ -846,6 +943,9 @@ msgstr "Elektrisk"
 msgid "Email"
 msgstr "E-post"
 
+msgid "Energy"
+msgstr "Energi"
+
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
 
@@ -875,6 +975,9 @@ msgid "Every permission that exists: view, add, change and delete of each model,
 msgstr ""
 "Alle tillatelser som finnes: visning, tillegg, endring og sletting for hver modell, og egne "
 "tillatelser."
+
+msgid "Every stage"
+msgstr "Alle stadier"
 
 msgid ""
 "Every table the application stores, as it is in the database. Nothing here can be changed. "
@@ -948,6 +1051,9 @@ msgstr "Fôr per skudd (g)"
 msgid "Feed size (mm)"
 msgstr "Fôrstørrelse (mm)"
 
+msgid "Feed type"
+msgstr "Fôrtype"
+
 msgid "Feeding"
 msgstr "Fôring"
 
@@ -961,6 +1067,9 @@ msgstr ""
 #. Translators: a placeholder showing what to type.
 msgid "Feeding rate"
 msgstr "Fôringsmengde"
+
+msgid "Feeds"
+msgstr "Fôr"
 
 msgid "Feeds when the fish trigger it."
 msgstr "Fôrer når fisken utløser den."
@@ -988,6 +1097,12 @@ msgstr "Filtrering"
 msgid "Filtration size"
 msgstr "Filtreringsfinhet"
 
+msgid "Fingerlings"
+msgstr "Fingerlinger"
+
+msgid "Finisher feed"
+msgstr "Sluttfôr"
+
 msgid "First"
 msgstr "Første"
 
@@ -1008,6 +1123,9 @@ msgstr "Fastmedium"
 
 msgid "Floating"
 msgstr "Flytende"
+
+msgid "Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep tanks."
+msgstr "Flytende fôr blir liggende i overflaten; synkende og saktesynkende fôr er for merder og dype kar."
 
 msgid "Flow rate"
 msgstr "Vannmengde"
@@ -1061,6 +1179,9 @@ msgstr "Fra %(low)s til %(high)s."
 msgid "From %(min)s to %(max)s."
 msgstr "Fra %(min)s til %(max)s."
 
+msgid "From (g)"
+msgstr "Fra (g)"
+
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
 
@@ -1069,6 +1190,12 @@ msgstr "Fra bunnen til kanten."
 
 msgid "From the water surface to the bottom of the net."
 msgstr "Fra vannflaten til bunnen av nota."
+
+msgid "Fry"
+msgstr "Yngel"
+
+msgid "Fry feed"
+msgstr "Yngelfôr"
 
 msgid "Fuel consumption"
 msgstr "Drivstofforbruk"
@@ -1107,8 +1234,14 @@ msgstr ""
 msgid "Genus: %(genus)s (the first word of the scientific name)."
 msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
 
+msgid "Gross energy (MJ/kg)"
+msgstr "Bruttoenergi (MJ/kg)"
+
 msgid "Grow-out"
 msgstr "Matfisk"
+
+msgid "Grower feed"
+msgstr "Vekstfôr"
 
 msgid "HDPE"
 msgstr "HDPE"
@@ -1219,6 +1352,9 @@ msgstr "Lokaliteten avgjør hvilke systemer som kan velges."
 msgid "Its volume cannot be calculated from its shape: enter it as measured or as drawn."
 msgstr "Volumet kan ikke beregnes ut fra formen: oppgi det som målt eller som tegnet."
 
+msgid "Juveniles"
+msgstr "Ungfisk"
+
 msgid "Key"
 msgstr "Nøkkel"
 
@@ -1249,6 +1385,12 @@ msgstr "Landbasert anlegg"
 msgid "Language"
 msgstr "Språk"
 
+msgid "Larvae"
+msgstr "Larver"
+
+msgid "Larval feed"
+msgstr "Larvefôr"
+
 msgid "Last"
 msgstr "Siste"
 
@@ -1278,6 +1420,9 @@ msgstr "Lengde (m)"
 
 msgid "Level sensor"
 msgstr "Nivåsensor"
+
+msgid "Life stage"
+msgstr "Livsstadium"
 
 msgid "Lined"
 msgstr "Med duk"
@@ -1378,6 +1523,9 @@ msgstr "Mekanisk filter"
 msgid "Media volume"
 msgstr "Medievolum"
 
+msgid "Medicated feed"
+msgstr "Medisinfôr"
+
 msgid "Medicines and vaccines"
 msgstr "Legemidler og vaksiner"
 
@@ -1404,6 +1552,9 @@ msgstr "Modell"
 
 msgid "Model field"
 msgstr "Modellfelt"
+
+msgid "Moisture (%)"
+msgstr "Vann (%)"
 
 msgid "Mollusc"
 msgstr "Bløtdyr"
@@ -1499,6 +1650,9 @@ msgstr "Ingen rader samsvarer. <a href=\"%(url)s\">Fjern søket og filtrene</a>.
 msgid "No site"
 msgstr "Ingen lokalitet"
 
+msgid "No species yet. Use “Add species” to add a row."
+msgstr "Ingen arter ennå. Bruk «Legg til art» for å legge til en rad."
+
 msgid "No system"
 msgstr "Intet system"
 
@@ -1535,6 +1689,9 @@ msgstr "Ikke knyttet til noe system"
 
 msgid "Not rated"
 msgstr "Ikke vurdert"
+
+msgid "Not stated"
+msgstr "Ikke oppgitt"
 
 msgid "Notes"
 msgstr "Notater"
@@ -1692,8 +1849,21 @@ msgstr "Passordet er lagret"
 msgid "Payment terms"
 msgstr "Betalingsbetingelser"
 
+msgid "Pellet"
+msgstr "Pellet"
+
+msgid "Pellet size (mm)"
+msgstr "Pelletstørrelse (mm)"
+
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Personer som kan logge inn: kontoopplysninger og en hash av passordet."
+
+msgid ""
+"Percent of the feed as delivered, as the feed declaration states it. Protein, fat, carbohydrate, "
+"fibre, ash and moisture together are at most 100; phosphorus is part of the ash."
+msgstr ""
+"Prosent av fôret slik det leveres, slik fôrdeklarasjonen oppgir det. Protein, fett, karbohydrat, "
+"trevler, aske og vann er til sammen høyst 100; fosfor er en del av asken."
 
 msgid "Performance"
 msgstr "Ytelse"
@@ -1716,6 +1886,12 @@ msgstr "Fase"
 
 msgid "Phone"
 msgstr "Telefon"
+
+msgid "Phosphorus (%)"
+msgstr "Fosfor (%)"
+
+msgid "Phosphorus is part of the ash: it cannot be more than the ash."
+msgstr "Fosfor er en del av asken: det kan ikke være mer enn asken."
 
 msgid "Pipe size"
 msgstr "Rørdimensjon"
@@ -1747,6 +1923,9 @@ msgstr "Dam"
 msgid "Pond type"
 msgstr "Damtype"
 
+msgid "Post-larvae"
+msgstr "Postlarver"
+
 msgid "Postal code"
 msgstr "Postnummer"
 
@@ -1773,6 +1952,12 @@ msgstr "Trykksensor"
 
 msgid "Previous"
 msgstr "Forrige"
+
+msgid "Price and notes"
+msgstr "Pris og notater"
+
+msgid "Price per kg"
+msgstr "Pris per kg"
 
 msgid "Primary"
 msgstr "Hovedkontakt"
@@ -1809,6 +1994,16 @@ msgstr "Produksjonsoversikt"
 
 msgid "Propane"
 msgstr "Propan"
+
+msgid "Protein / fat"
+msgstr "Protein / fett"
+
+msgid ""
+"Protein, fat, carbohydrate, fibre, ash and moisture are parts of the feed as fed: together they "
+"cannot add up to more than 100 per cent."
+msgstr ""
+"Protein, fett, karbohydrat, trevler, aske og vann er deler av fôret slik det fôres: til sammen "
+"kan de ikke utgjøre mer enn 100 prosent."
 
 msgid "Pumping"
 msgstr "Pumping"
@@ -1972,6 +2167,9 @@ msgstr "Lagre kontaktpersoner"
 msgid "Save password"
 msgstr "Lagre passord"
 
+msgid "Save suitability"
+msgstr "Lagre egnethet"
+
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Lagre utstyret med denne fôrautomattypen først; deretter kan kalibreringene legges til her."
 
@@ -1999,6 +2197,9 @@ msgstr "Søk etter navn"
 
 msgid "Search by name or code"
 msgstr "Søk etter navn eller kode"
+
+msgid "Search by name, code or manufacturer"
+msgstr "Søk etter navn, kode eller produsent"
 
 msgid "Search by name, code or region"
 msgstr "Søk etter navn, kode eller region"
@@ -2030,14 +2231,23 @@ msgstr "Se alt i aktivitetsloggen"
 msgid "Select a category"
 msgstr "Velg en kategori"
 
+msgid "Select a feed type"
+msgstr "Velg en fôrtype"
+
 msgid "Select a kind"
 msgstr "Velg en type"
+
+msgid "Select a life stage"
+msgstr "Velg et livsstadium"
 
 msgid "Select a production department"
 msgstr "Velg en produksjonsavdeling"
 
 msgid "Select a site"
 msgstr "Velg en lokalitet"
+
+msgid "Select a species"
+msgstr "Velg en art"
 
 msgid "Select a type"
 msgstr "Velg en type"
@@ -2109,6 +2319,9 @@ msgstr "Silovolum"
 msgid "Single-phase"
 msgstr "Enfase"
 
+msgid "Sinking"
+msgstr "Synkende"
+
 msgid "Site"
 msgstr "Lokalitet"
 
@@ -2136,6 +2349,12 @@ msgstr "Størrelse"
 msgid "Skip to content"
 msgstr "Hopp til innholdet"
 
+msgid "Slow sinking"
+msgstr "Saktesynkende"
+
+msgid "Smolt"
+msgstr "Smolt"
+
 msgid "Solar"
 msgstr "Sol"
 
@@ -2159,6 +2378,9 @@ msgctxt "singular"
 msgid "Species"
 msgstr "Art"
 
+msgid "Species and fish weights can be added once the feed is created."
+msgstr "Arter og fiskevekter kan legges til når fôret er opprettet."
+
 msgid "Specific surface area"
 msgstr "Spesifikt overflateareal"
 
@@ -2176,6 +2398,9 @@ msgstr "Rustfritt stål"
 
 msgid "Standby"
 msgstr "Reserve"
+
+msgid "Starter feed"
+msgstr "Startfôr"
 
 msgid "State"
 msgstr "Fylke"
@@ -2206,6 +2431,9 @@ msgstr "Nedsenkbar"
 
 msgid "Submersible pump"
 msgstr "Dykkpumpe"
+
+msgid "Suitable for"
+msgstr "Egnet for"
 
 msgid "Supplier"
 msgstr "Leverandør"
@@ -2290,11 +2518,27 @@ msgstr ""
 msgid "The criticality is from 1 to 5."
 msgstr "Kritikaliteten er fra 1 til 5."
 
+msgid "The currency is a three-letter code, e.g. NOK or EUR."
+msgstr "Valutaen er en kode på tre bokstaver, f.eks. NOK eller EUR."
+
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
 
+msgid "The digestible energy cannot be more than the gross energy."
+msgstr "Den fordøyelige energien kan ikke være mer enn bruttoenergien."
+
 msgid "The equipment is linked to this system already."
 msgstr "Utstyret er allerede knyttet til dette systemet."
+
+msgid "The feed mill that makes it: a supplier of feed (Purchasing › Suppliers)."
+msgstr "Fôrfabrikken som lager det: en leverandør av fôr (Innkjøp › Leverandører)."
+
+msgid ""
+"The feeds the farm uses: who makes them, their pellet and analysis, and the species and fish "
+"weights each one suits."
+msgstr ""
+"Fôret anlegget bruker: hvem som lager det, pelleten og analysen, og hvilke arter og fiskevekter "
+"hvert fôr passer for."
 
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
@@ -2319,6 +2563,9 @@ msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
 msgid "The longest distance across the ellipse."
 msgstr "Den lengste avstanden over ellipsen."
 
+msgid "The lower weight must be below the upper weight."
+msgstr "Den nedre vekten må være under den øvre vekten."
+
 msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
 "licence’s."
@@ -2326,6 +2573,9 @@ msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller ko
 
 msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Navnet på selskapets eget språk, f.eks. Laks."
+
+msgid "The nitrogen-free extract: what is left when the other parts are taken away."
+msgstr "Nitrogenfritt ekstrakt: det som er igjen når de andre delene er trukket fra."
 
 msgid "The official code is three capital letters, e.g. SAL."
 msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
@@ -2346,6 +2596,12 @@ msgstr "Det overordnede systemet hører til en annen lokalitet."
 msgid "The parent system is nested under this system."
 msgstr "Det overordnede systemet ligger under dette systemet."
 
+msgid "The part of the gross energy the fish can digest."
+msgstr "Den delen av bruttoenergien fisken kan fordøye."
+
+msgid "The pellet diameter, as a feeder’s calibrations write it."
+msgstr "Pelletdiameteren, slik fôrautomatens kalibreringer skriver den."
+
 msgid ""
 "The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
 " one can be the primary contact. Contacts are saved separately from the supplier details."
@@ -2355,6 +2611,9 @@ msgstr ""
 
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
+
+msgid "The product name, as on the bag, e.g. Nutra Olympic 3 mm."
+msgstr "Produktnavnet, slik det står på sekken, f.eks. Nutra Olympic 3 mm."
 
 msgid "The production department belongs to another site."
 msgstr "Produksjonsavdelingen hører til en annen lokalitet."
@@ -2380,6 +2639,15 @@ msgid ""
 msgstr ""
 "Lokalitetens operative kontaktpersoner. Maksimalt én kan være hovedkontakt. Kontaktpersoner "
 "lagres separat fra lokalitetsdetaljene."
+
+msgid ""
+"The species and life stages it is made for, and the fish weights in grams: from the lower weight "
+"up to, not including, the upper one; leave an end empty when it has none. One row per species and"
+" stage, at most 50. They are saved separately from the feed details."
+msgstr ""
+"Artene og livsstadiene fôret er laget for, og fiskevektene i gram: fra den nedre vekten opp til, "
+"men ikke med, den øvre; la en ende stå tom når den ikke har noen grense. Én rad per art og "
+"stadium, høyst 50. De lagres separat fra fôropplysningene."
 
 msgid "The specifications must be a set of named values."
 msgstr "Spesifikasjonene må være et sett med navngitte verdier."
@@ -2474,6 +2742,9 @@ msgstr "Denne typen har ingen tekniske spesifikasjoner."
 msgid "This type is not in the chosen category."
 msgstr "Denne typen er ikke i den valgte kategorien."
 
+msgid "Three letters, e.g. NOK."
+msgstr "Tre bokstaver, f.eks. NOK."
+
 msgid "Three-phase"
 msgstr "Trefase"
 
@@ -2510,6 +2781,9 @@ msgstr "Turbiditet"
 msgid "Two rows have the same feed size."
 msgstr "To rader har samme fôrstørrelse."
 
+msgid "Two rows have the same species and life stage."
+msgstr "To rader har samme art og livsstadium."
+
 msgid "Type"
 msgstr "Type"
 
@@ -2543,6 +2817,9 @@ msgstr "Enheter etter type"
 #, python-format
 msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
 msgstr "Enheter fra en annen produksjonsavdeling er i det: %(units)s. Ta dem ut av systemet først."
+
+msgid "Up to (g)"
+msgstr "Opp til (g)"
 
 msgid "Updated at"
 msgstr "Oppdatert"
@@ -2622,6 +2899,12 @@ msgstr "Brønnbåt og transport"
 
 msgid "What it holds"
 msgstr "Hva den inneholder"
+
+msgid "What it is made for. A medicated feed is given on a vet’s prescription."
+msgstr "Hva det er laget for. Medisinfôr gis etter resept fra veterinær."
+
+msgid "What the farm pays per kg, with its currency."
+msgstr "Det anlegget betaler per kg, med valuta."
 
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
@@ -2736,6 +3019,9 @@ msgstr "f.eks. 0–50 °C"
 msgid "e.g. 12345"
 msgstr "f.eks. 12345"
 
+msgid "e.g. 150"
+msgstr "f.eks. 150"
+
 msgid "e.g. 1–10 kg/h"
 msgstr "f.eks. 1–10 kg/h"
 
@@ -2753,6 +3039,9 @@ msgstr "f.eks. 30 dager netto"
 
 msgid "e.g. 5.3221"
 msgstr "f.eks. 5,3221"
+
+msgid "e.g. 50"
+msgstr "f.eks. 50"
 
 msgid "e.g. 50000"
 msgstr "f.eks. 50000"
@@ -2793,8 +3082,14 @@ msgstr "f.eks. Hovedproduksjonslokalitet"
 msgid "e.g. Main circulation pump"
 msgstr "f.eks. Hovedsirkulasjonspumpe"
 
+msgid "e.g. NUTRA-3"
+msgstr "f.eks. NUTRA-3"
+
 msgid "e.g. Norway"
 msgstr "f.eks. Norge"
+
+msgid "e.g. Nutra Olympic 3 mm"
+msgstr "f.eks. Nutra Olympic 3 mm"
 
 msgid "e.g. PMP-001"
 msgstr "f.eks. PMP-001"
@@ -2859,11 +3154,24 @@ msgstr "utstyrstype"
 msgid "equipment types"
 msgstr "utstyrstyper"
 
+msgid "feed"
+msgstr "fôr"
+
 msgid "feed calibration"
 msgstr "fôrkalibrering"
 
 msgid "feed calibrations"
 msgstr "fôrkalibreringer"
+
+msgid "feed suitability"
+msgstr "fôregnethet"
+
+msgid "feeds"
+msgstr "fôr"
+
+#, python-format
+msgid "from %(weight)s g"
+msgstr "fra %(weight)s g"
 
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."
@@ -2957,6 +3265,10 @@ msgstr "enhet"
 
 msgid "units"
 msgstr "enheter"
+
+#, python-format
+msgid "up to %(weight)s g"
+msgstr "under %(weight)s g"
 
 msgid "user"
 msgstr "bruker"

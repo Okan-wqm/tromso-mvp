@@ -705,7 +705,9 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .db-structure th,
 .db-structure td { padding: .4375rem .875rem; vertical-align: top; }
 .db-structure tbody th { padding: .4375rem .875rem; }
-.db-structure .mono { white-space: pre-wrap; overflow-wrap: anywhere; }
+.db-structure th,
+.db-structure td:not(.mono) { white-space: nowrap; }
+.db-structure td.mono { white-space: pre-wrap; overflow-wrap: anywhere; }
 .db-relations { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1.5rem; }
 .db-relations h5 { margin: 0 0 .5rem; font-size: .9375rem; }
 .db-links { display: grid; gap: .375rem; margin: 0; padding: 0; list-style: none; }

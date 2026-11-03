@@ -7339,6 +7339,20 @@ msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
 msgid "The official code of %(name)s is %(code)s."
 msgstr "Artskoden for %(name)s er %(code)s."
 
+msgid ""
+"The pH a simulator step may have, as the water limits say it: inside the warning bounds ok, "
+"outside them a warning, outside the critical bounds critical. Default 6.5 to 8.5 critical and 7.0"
+" to 8.0 warning, as the source marks it, not the limits of your fish unless the values come from "
+"a unit."
+msgstr ""
+"pH-en et simulatortrinn kan ha, slik vanngrensene sier det: innenfor varselgrensene OK, utenfor "
+"dem en advarsel, utenfor de kritiske grensene kritisk. Standard er 6,5 til 8,5 kritisk og 7,0 til"
+" 8,0 advarsel, slik kilden markerer det, ikke grensene for fisken din med mindre verdiene kommer "
+"fra en enhet."
+
+msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
+msgstr "pH-grensene går oppover: kritisk under, advarsel under, advarsel over, kritisk over."
+
 msgid "The pages in the journal or book, e.g. 45–67."
 msgstr "Sidene i tidsskriftet eller boka, f.eks. 45–67."
 
@@ -8961,6 +8975,9 @@ msgstr "lageroperasjon"
 msgid "inventory operations"
 msgstr "lageroperasjoner"
 
+msgid "its fish have no such bound"
+msgstr "fisken har ingen slik grense"
+
 msgid "kg"
 msgstr "kg"
 
@@ -9095,6 +9112,18 @@ msgstr "pH-margin til grensen"
 
 msgid "pH sensor"
 msgstr "pH-sensor"
+
+msgid "pH, critical above (NBS scale)"
+msgstr "pH, kritisk over (NBS-skala)"
+
+msgid "pH, critical below (NBS scale)"
+msgstr "pH, kritisk under (NBS-skala)"
+
+msgid "pH, warning above (NBS scale)"
+msgstr "pH, advarsel over (NBS-skala)"
+
+msgid "pH, warning below (NBS scale)"
+msgstr "pH, advarsel under (NBS-skala)"
 
 #, python-format
 msgid "part of %(code)s"

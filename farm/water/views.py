@@ -220,7 +220,7 @@ def _source(form, point):
     rows = []
     for name, offer in offers.items():
         field = form.fields[name]
-        value = offer.value.quantize(Decimal(1).scaleb(-field.decimal_places))
+        value = None if offer.value is None else offer.value.quantize(Decimal(1).scaleb(-field.decimal_places))
         rows.append({'label': field.label, 'value': value, 'decimals': field.decimal_places, 'offer': offer,
                      'changed': entered.get(name) != value})
     missing = [form.fields[name].label for name in calculation.MEASURED_FIELDS if name not in offers]

@@ -9,7 +9,7 @@
     <li class="calc-offer{% if row.changed %} is-changed{% endif %}{% if row.offer.reading.status == "stale" %} is-stale{% endif %}">
       <span class="calc-offer-label">{{ row.label }}</span>
       <span class="calc-offer-value">{{ row.value|amount:row.decimals }}</span>
-      <span class="calc-offer-from">{% if row.offer.reading %}{% blocktrans trimmed with age=row.offer.reading.at|age %}{{ age }} ago{% endblocktrans %}{% if row.offer.reading.status == "stale" %} · {% trans "stale" %}{% endif %}{% elif row.offer.rows %}{% for limit in row.offer.rows %}{{ limit|limit_text }}{% if not forloop.last %}; {% endif %}{% endfor %}{% else %}{% trans "the site’s altitude" %}{% endif %}</span>
+      <span class="calc-offer-from">{% if row.offer.reading %}{% blocktrans trimmed with age=row.offer.reading.at|age %}{{ age }} ago{% endblocktrans %}{% if row.offer.reading.status == "stale" %} · {% trans "stale" %}{% endif %}{% elif row.offer.field == "altitude_m" %}{% trans "the site’s altitude" %}{% elif row.offer.rows %}{% for limit in row.offer.rows %}{{ limit|limit_text }}{% if not forloop.last %}; {% endif %}{% endfor %}{% else %}{% trans "its fish have no such bound" %}{% endif %}</span>
       {% if row.changed %}<span class="calc-offer-changed">{% trans "changed here" %}</span>{% endif %}
     </li>
     {% endfor %}

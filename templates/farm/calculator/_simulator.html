@@ -27,10 +27,10 @@
         <tr{% if step.ph is None %} class="wq-row-critical"{% endif %}>
           <th scope="row">{% if forloop.first %}{% trans "The water" %}{% else %}+ {{ step.reagent.formula }} {% blocktrans trimmed with grams=step.grams|amount:1 %}{{ grams }} g{% endblocktrans %}{% endif %}</th>
           {% if step.ph is None %}
-          <td class="num">—</td><td class="num">{{ step.alkalinity|amount:3 }}</td><td class="num">{{ step.dic|amount:3 }}</td><td class="num">—</td>{% if tan is not None %}<td class="num">—</td>{% endif %}{% if sulfide is not None %}<td class="num">—</td>{% endif %}
+          <td class="num wq-value wq-critical">—</td><td class="num">{{ step.alkalinity|amount:3 }}</td><td class="num">{{ step.dic|amount:3 }}</td><td class="num">—</td>{% if tan is not None %}<td class="num">—</td>{% endif %}{% if sulfide is not None %}<td class="num">—</td>{% endif %}
           {% else %}
-          <td class="num">{{ step.ph|amount:2 }}</td>
-          <td class="num">{{ step.alkalinity|amount:3 }}</td>
+          <td class="num wq-value wq-{{ judged.ph_status }}">{{ step.ph|amount:2 }}<span class="sr-only"> ({{ judged.ph_status|status_label }})</span></td>
+          <td class="num wq-value wq-{{ judged.alkalinity_status }}">{{ step.alkalinity|amount:3 }}<span class="sr-only"> ({{ judged.alkalinity_status|status_label }})</span></td>
           <td class="num">{{ step.dic|amount:3 }}</td>
           <td class="num wq-value wq-{{ judged.co2.status }}">{{ step.co2_mg_l|amount:1 }}<span class="sr-only"> ({{ judged.co2.status|status_label }})</span></td>
           {% if tan is not None %}<td class="num wq-value wq-{{ judged.nh3.status }}">{{ judged.nh3_n_mg_l|amount:4 }}<span class="sr-only"> ({{ judged.nh3.status|status_label }})</span></td>{% endif %}

@@ -7340,6 +7340,20 @@ msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
 msgid "The official code of %(name)s is %(code)s."
 msgstr "%(name)s için resmî kod %(code)s."
 
+msgid ""
+"The pH a simulator step may have, as the water limits say it: inside the warning bounds ok, "
+"outside them a warning, outside the critical bounds critical. Default 6.5 to 8.5 critical and 7.0"
+" to 8.0 warning, as the source marks it, not the limits of your fish unless the values come from "
+"a unit."
+msgstr ""
+"Bir simülatör adımının sahip olabileceği pH, su sınırlarının dediği gibi: uyarı sınırlarının "
+"içinde normal, dışında uyarı, kritik sınırların dışında kritik. Varsayılan 6,5 ile 8,5 kritik ve "
+"7,0 ile 8,0 uyarı, kaynağın işaretlediği gibi; değerler bir birimden gelmedikçe balıklarınızın "
+"sınırları değil."
+
+msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
+msgstr "pH sınırları yukarı doğru gider: kritik alt, uyarı alt, uyarı üst, kritik üst."
+
 msgid "The pages in the journal or book, e.g. 45–67."
 msgstr "Dergideki ya da kitaptaki sayfalar, örn. 45–67."
 
@@ -8960,6 +8974,9 @@ msgstr "depo işlemi"
 msgid "inventory operations"
 msgstr "depo işlemleri"
 
+msgid "its fish have no such bound"
+msgstr "balıklarının böyle bir sınırı yok"
+
 msgid "kg"
 msgstr "kg"
 
@@ -9094,6 +9111,18 @@ msgstr "Sınıra pH payı"
 
 msgid "pH sensor"
 msgstr "pH sensörü"
+
+msgid "pH, critical above (NBS scale)"
+msgstr "pH, kritik üst sınır (NBS ölçeği)"
+
+msgid "pH, critical below (NBS scale)"
+msgstr "pH, kritik alt sınır (NBS ölçeği)"
+
+msgid "pH, warning above (NBS scale)"
+msgstr "pH, uyarı üst sınır (NBS ölçeği)"
+
+msgid "pH, warning below (NBS scale)"
+msgstr "pH, uyarı alt sınır (NBS ölçeği)"
 
 #, python-format
 msgid "part of %(code)s"

@@ -60,27 +60,20 @@ def grid(span):
 def bands(border, low, high):
     """The danger, alert and safe bands of a border on a pH axis (the source's getVisibleNH3ChartZones and
     getVisibleH2SChartZones): toxic above (NH₃) or below (H₂S) the border, alert within ALERT_PH of it on the
-    safe side; [] when the limit is not judged (no value or no limit)."""
+    safe side, each cut to the axis, so a border a little beyond the axis still shows its alert strip (the
+    source drew it all safe, though a water there is a warning); [] when the limit is not judged (no value or
+    no limit)."""
     if border.status not in JUDGED:
         return []
     if border.ph is None:                              # the limit cannot be reached at any pH
         return [('safe', low, high)]
     edge = border.ph
     if border.toxic_above:
-        if edge >= high:
-            return [('safe', low, high)]
-        if edge <= low:
-            return [('danger', low, high)]
-        alert = max(low, edge - ALERT_PH)
-        found = [('safe', low, alert), ('alert', alert, edge), ('danger', edge, high)]
+        found = [('safe', low, edge - ALERT_PH), ('alert', edge - ALERT_PH, edge), ('danger', edge, high)]
     else:
-        if edge <= low:
-            return [('safe', low, high)]
-        if edge >= high:
-            return [('danger', low, high)]
-        alert = min(high, edge + ALERT_PH)
-        found = [('danger', low, edge), ('alert', edge, alert), ('safe', alert, high)]
-    return [band for band in found if band[2] > band[1]]
+        found = [('danger', low, edge), ('alert', edge, edge + ALERT_PH), ('safe', edge + ALERT_PH, high)]
+    cut = [(kind, max(start, low), min(end, high)) for kind, start, end in found]
+    return [band for band in cut if band[2] > band[1]]
 
 
 def _ph_label(ph):

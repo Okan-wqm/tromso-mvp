@@ -849,14 +849,18 @@ without values it shows its defaults.
   of each measured field (temperature, pH, salinity, alkalinity, TAN, dissolved oxygen: `read.latest`, each
   with its age, stale ones marked), its site's altitude, and the limits of the fish in it today
   (`read.limits_now`: the critical high of NH₃-N and of CO₂, the warning bounds of alkalinity as the safe
-  zone's band; with several species the strictest), and sends the address with them. They can be changed for
-  this calculation (marked "changed here"); nothing is written back. A field the point has no value for keeps
-  what was entered, and the bar says which.
+  zone's band, the four pH bounds; with several species the strictest), and sends the address with them. They
+  can be changed for this calculation (marked "changed here"); nothing is written back. A field the point has no
+  value for keeps what was entered, and the bar says which; the pH bounds are the fish's all four, one they
+  have none of is emptied. The calculator has one limit per ammonia, CO₂ or sulfide (the critical one) and
+  its own 0.2 pH alert band: a species' warning bound for NH₃-N is not used, so a value between the warning and
+  the critical bound is ok here and a warning in the water module.
 - **In** (tabs Water, System, Target, Limits, Reagents, Simulator): temperature, pH (NBS, 4 to 12),
   salinity, alkalinity (mg/L as CaCO₃), each with its parameter's label, range and precision; optionally
   TAN, total sulfide (µg/L as S, as laboratories and methylene-blue kits report it), dissolved oxygen; the
   volume (m³), the calcium and the altitude; a target pH and alkalinity and the alkalinity band of the safe
-  zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S (µg/L as H₂S); the reagents to dose with (the
+  zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S (µg/L as H₂S) and the pH a step of the simulator may
+  have (critical and warning, each side); the reagents to dose with (the
   source's nine; NaHCO₃, NaOH, CO₂ added and CO₂ stripped to start with); the simulator's grams of each; and
   the chart's layers.
 - **The chart**: DIC (mmol/L) across, alkalinity (meq/L) up, 0 to 6 each and wider when the point, the
@@ -884,12 +888,20 @@ without values it shows its defaults.
   stripping −1 0, HCl 0 −1 (Deffeyes 1965; Stumm & Morgan 1996). A **recipe** reaches the target with two
   reagents: the move is split on their directions with both amounts ≥ 0; every pair of the chosen reagents,
   ranked as the source ranks them (sodium bicarbonate first), an overshoot-and-correct pair only when nothing
-  else reaches, at most six; grams for the volume and g/m³. The **simulator** adds the grams in turn and shows
-  each step's pH, alkalinity, DIC, CO₂, NH₃-N and H₂S, each judged as the water is, the change from the water
-  to the last step, and its path on the chart. Amounts are of the pure substance (a product of 31 % HCl
+  else reaches, at most six; grams for the volume and g/m³; a recipe is flagged when its stripping would end
+  below the CO₂ of water in equilibrium with the air whichever of its two doses goes first. The **simulator**
+  adds the grams in turn and shows each step's pH (against the pH bounds, as the water limits judge it: inside
+  the warning bounds ok, outside a warning, outside the critical bounds critical), alkalinity (a warning
+  outside the band), DIC, CO₂, NH₃-N and H₂S, each judged as the water is, the change from the water to the
+  last step, and its path on the chart. Amounts are of the pure substance (a product of 31 % HCl
   weighs about three times as much). Stripping below the CO₂ of water in equilibrium with the air (Weiss
   1974, 420 µmol/mol, the site's pressure) is flagged; acid past the alkalinity is shown as acid, and more
-  CO₂ stripped than there is carbon stops the simulation (the source clamped both, WQ-41).
+  CO₂ stripped than there is carbon stops the simulation (the source clamped both, WQ-41). The dosing is
+  checked against an independent carbonate model (Plummer & Busenberg's constants in fresh water, Lueker's with
+  Dickson's boron in sea water): the pH agrees within 0.005 in fresh water and 0.012 in sea water. In fresh
+  water salted to a few ‰ with NaCl alone, Millero's constants (which include the ion pairs of sea water's
+  magnesium and calcium) may put the pH after a strong base up to about 0.15 lower near pH 9, the side that
+  under-warns on NH₃: this is the inherited convention of the chemistry above, not a new one.
 - **Print report** opens `/operations/water/calculator/report/` with the same address: the values, the
   values worked out, every chart with every layer drawn (as the source's report forces its safety layers
   on), the simulator and the recipes, on a page of its own for A4 across.

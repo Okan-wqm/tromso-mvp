@@ -10,6 +10,7 @@ import re
 from datetime import timedelta
 from decimal import Decimal as D
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -144,6 +145,47 @@ class ReagentTests(SimpleTestCase):
         self.assertAlmostEqual(degas.grams, 0.3 * chemistry.MG_CO2_PER_MMOL * 2.0, places=9)
         self.assertEqual(made.waypoint, (start[0], start[1] + 0.2))
 
+    def test_a_straight_up_move_is_the_base_alone(self):
+        # WQ-40 again: the source finds no recipe for a base and stripping when the move is straight up either.
+        eq, start = water_point(12, 1, 7.0, 80)
+        (made,) = dosing.recipes(start, (start[0], start[1] + 0.2), ['naoh', 'degas'], 2.0)
+        self.assertEqual([dose.reagent.key for dose in made.doses], ['naoh'])
+        self.assertAlmostEqual(made.doses[0].grams, 0.2 * dosing.BY_KEY['naoh'].molar_mass * 2.0, places=9)
+
+    def test_the_air_flag_does_not_depend_on_the_order_of_the_doses(self):
+        # The doses go in either order and the water ends at the target: stripping is flagged only when it would
+        # end below the air's CO₂ whichever goes first (the verifier's cases; the CO₂ is each point's by
+        # chemistry.Equilibria). 12 °C, S 1, pH 7, 80 mg/L: the air leaves 0.91 mg/L.
+        eq, start = water_point(12, 1, 7.0, 80)
+        air = chemistry.co2_from_air(12, 1)
+        self.assertAlmostEqual(air, 0.91, delta=0.001)
+
+        def co2(point):
+            return eq.co2(point[0], eq.ph_at(*point)) * chemistry.MG_CO2_PER_MMOL
+
+        def below_air(dic, alkalinity):
+            return co2((dic, alkalinity)) < air
+
+        # Stripping and acid to DIC 1.55, alkalinity 1.40: stripping first ends at 0.34 mg/L, acid first and
+        # stripping last at the target's 6.7: it can be done.
+        end = (1.55, 1.40)
+        self.assertAlmostEqual(co2((end[0], start[1])), 0.344, delta=0.001)
+        self.assertAlmostEqual(co2(end), 6.713, delta=0.001)
+        (made,) = dosing.recipes(start, end, ['degas', 'hcl'], 1.0, below_air)
+        self.assertEqual([dose.reagent.key for dose in made.doses], ['degas', 'hcl'])
+        self.assertFalse(made.below_air)
+        # A base and stripping to DIC 1.7, alkalinity 2.1: stripping first ends at 4.7 mg/L, last at 0.037 (the
+        # base itself takes the CO₂ down): it can be done.
+        end = (1.7, 2.1)
+        self.assertAlmostEqual(co2((end[0], start[1])), 4.670, delta=0.001)
+        self.assertAlmostEqual(co2(end), 0.0375, delta=0.0001)
+        (made,) = dosing.recipes(start, end, ['naoh', 'degas'], 1.0, below_air)
+        self.assertFalse(made.below_air)
+        # Stripping to DIC 0.3 at the same alkalinity ends at 7e−6 mg/L in either order: it cannot.
+        (only,) = dosing.recipes(start, (0.3, start[1]), ['degas', 'hcl'], 1.0, below_air)
+        self.assertEqual([dose.reagent.key for dose in only.doses], ['degas'])
+        self.assertTrue(only.below_air)
+
     def test_every_recipe_takes_the_water_to_its_target(self):
         # Independent of the source: the doses, added by the simulator, end at the target's DIC, alkalinity and
         # pH; every amount is positive.
@@ -259,15 +301,22 @@ class SimulatorTests(SimpleTestCase):
         self.assertFalse(steps[-1].below_air)
 
     def test_each_step_is_judged_as_the_water_is(self):
+        bounds = calculation.PhBounds(6.5, 7.0, 8.0, 8.5)
         result = calculation.calculate(
             Water(12, 1, 7.0, 80, tan_mg_l=0.5, total_sulfide_ug_l=2), Limits(0.0103, 15, 2, 50, 100), Target(7.5, 100),
-            1.0, deffeyes.ALL_LAYERS, ['nahco3'], 1.0, {'naoh': 25, 'hcl': 60})
+            1.0, deffeyes.ALL_LAYERS, ['nahco3'], 1.0, {'naoh': 25, 'hcl': 60}, ph_bounds=bounds)
         water, base, acid = result.steps
         eq = result.analysis.equilibria
         self.assertEqual(water.co2.status, Status.CRITICAL)                       # 16.9 mg/L, the limit 15
         for judged in result.steps:
             step = judged.step
             with self.subTest(step=step.reagent):
+                # The pH against its bounds (a bound itself is in the inner band), the alkalinity against its band.
+                expected = (Status.CRITICAL if step.ph < 6.5 or step.ph > 8.5
+                            else Status.WARNING if step.ph < 7.0 or step.ph > 8.0 else Status.OK)
+                self.assertEqual(judged.ph_status, expected)
+                self.assertEqual(judged.alkalinity_status,
+                                 Status.OK if 50 <= judged.alkalinity_mg_l <= 100 else Status.WARNING)
                 border = eq.ph_where_co2(step.alkalinity, 15 / chemistry.MG_CO2_PER_MMOL)
                 self.assertEqual(judged.co2, deffeyes.judge(step.ph, border, False))
                 self.assertEqual(judged.nh3, deffeyes.judge(step.ph, result.analysis.nh3.ph, True))
@@ -275,7 +324,29 @@ class SimulatorTests(SimpleTestCase):
                 self.assertAlmostEqual(judged.h2s_ug_l, 2 * chemistry.H2S_PER_S * eq.h2s_share(step.ph), places=12)
         self.assertGreater(base.step.ph, 8.04)                                  # past the NH₃ border
         self.assertEqual(base.nh3.status, Status.CRITICAL)
+        self.assertEqual((water.ph_status, base.ph_status, acid.ph_status),
+                         (Status.OK, Status.CRITICAL, Status.CRITICAL))        # 7.00, 9.24, 4.26
+        self.assertEqual((water.alkalinity_status, base.alkalinity_status), (Status.OK, Status.WARNING))
         self.assertEqual(result.change['ph'], acid.step.ph - water.step.ph)
+
+    def test_a_dose_that_only_moves_the_ph_is_judged(self):
+        # 120 g NaOH in 1 m³ reaches pH 11.25 with no TAN, no sulfide and CO₂ well inside its limit: nothing but
+        # its pH says so (the verifier's case; the source marked a pH outside 6.5 to 8.5 red, OnDemandPanel.tsx).
+        bounds = calculation.PhBounds(6.5, 7.0, 8.0, 8.5)
+        for grams, expected in ((12, Status.OK), (15, Status.WARNING), (17, Status.CRITICAL), (120, Status.CRITICAL)):
+            result = calculation.calculate(
+                Water(12, 1, 7.0, 80), Limits(0.0103, 15, 2), None, 1.0, deffeyes.ALL_LAYERS, ['nahco3'], 1.0,
+                {'naoh': grams}, ph_bounds=bounds)
+            judged = result.steps[-1]
+            with self.subTest(grams=grams):
+                self.assertEqual(judged.ph_status, expected)
+        self.assertAlmostEqual(judged.step.ph, 11.25, delta=0.01)
+        self.assertEqual(judged.co2.status, Status.OK)
+        self.assertEqual((judged.nh3.status, judged.h2s.status), (Status.NOT_MEASURED, Status.NOT_MEASURED))
+        # Without bounds a step is not judged, never taken for ok.
+        result = calculation.calculate(Water(12, 1, 7.0, 80), Limits(), None, 1.0, deffeyes.ALL_LAYERS, [], 1.0,
+                                       {'naoh': 120})
+        self.assertEqual(result.steps[-1].ph_status, Status.NO_LIMIT)
 
 
 # ---- carbon dioxide from the air --------------------------------------------------------------------------------
@@ -300,8 +371,9 @@ class AirTests(SimpleTestCase):
             self.assertAlmostEqual(math.log10(chemistry.k0_co2(temp_c, 0)), log_kh, delta=0.003)
 
     def test_the_vapour_pressure_and_the_co2_of_air_saturated_water(self):
-        # Water's vapour pressure at 25 °C: 3.1690 kPa (IAPWS), 0.031276 atm.
-        self.assertAlmostEqual(chemistry.vapour_pressure_atm(25) / 0.031276, 1, delta=0.002)
+        # Water's vapour pressure at 25 °C: 3.1699 kPa (IAPWS-95 saturation), 0.031285 atm (Benson & Krause's
+        # equation, as APHA 4500-O gives it, within 0.1 %).
+        self.assertAlmostEqual(chemistry.vapour_pressure_atm(25) / (3.1699 / 101.325), 1, delta=0.001)
         # 420 µmol/mol in the dry air over fresh water at 12 °C, sea level: K0 xCO₂ (1 − Pwv) × 44.0095 g/mol.
         expected = chemistry.k0_co2(12, 0) * 420e-6 * (1 - chemistry.vapour_pressure_atm(12)) * 44009.5
         self.assertAlmostEqual(chemistry.co2_from_air(12, 0), expected, places=12)
@@ -364,6 +436,19 @@ class SmallChartTests(SimpleTestCase):
         border = result.h2s.ph
         self.assertEqual(charts.bands(result.h2s, 4.0, 12.5),
                          [('danger', 4.0, border), ('alert', border, border + 0.2), ('safe', border + 0.2, 12.5)])
+        # A border a little beyond the axis still shows its alert strip, as the status says (the source drew it
+        # all safe): an NH₃ border of 9.6 on pH 6 to 9.5, an H₂S border of 3.9 on pH 4 to 12.5.
+        nh3 = deffeyes.judge(9.45, 9.6, True)
+        self.assertEqual(nh3.status, Status.WARNING)
+        (safe, alert) = charts.bands(nh3, 6.0, 9.5)
+        self.assertEqual((safe[0], alert[0]), ('safe', 'alert'))
+        self.assertAlmostEqual(alert[1], 9.4)
+        self.assertEqual(alert[2], 9.5)
+        h2s = deffeyes.judge(4.05, 3.9, False)
+        self.assertEqual(h2s.status, Status.WARNING)
+        (alert, safe) = charts.bands(h2s, 4.0, 12.5)
+        self.assertEqual((alert[0], safe[0]), ('alert', 'safe'))
+        self.assertAlmostEqual(alert[2], 4.1)
         # A missing value or limit is never drawn as safe; a limit that cannot be reached is safe everywhere.
         self.assertEqual(charts.bands(analyse(Water(12, 1, 7.0, 80)).nh3, 6.0, 9.5), [])
         self.assertEqual(charts.bands(analyse(Water(12, 1, 7.0, 80, tan_mg_l=0.5)).nh3, 6.0, 9.5), [])
@@ -419,7 +504,8 @@ class CalculatorPageTests(TestCase):
     values = {'temperature_c': '12', 'ph': '7', 'salinity_ppt': '1', 'alkalinity_mg_l': '80', 'tan_mg_l': '0.5',
               'total_sulfide_ug_l': '2', 'volume_m3': '1', 'target_ph': '7.5', 'target_alkalinity_mg_l': '100',
               'alkalinity_low_mg_l': '50', 'alkalinity_high_mg_l': '100', 'nh3_n_limit_mg_l': '0.0103',
-              'co2_limit_mg_l': '15', 'h2s_limit_ug_l': '2', 'drawn': '1',
+              'co2_limit_mg_l': '15', 'h2s_limit_ug_l': '2', 'ph_critical_low': '6.5', 'ph_warning_low': '7',
+              'ph_warning_high': '8', 'ph_critical_high': '8.5', 'drawn': '1',
               'reagents': ['nahco3', 'naoh', 'co2', 'degas'], 'layers': [key for key, _label in deffeyes.LAYERS]}
 
     def setUp(self):
@@ -517,6 +603,30 @@ class CalculatorPageTests(TestCase):
         no_target = self.client.get(self.results_url, self.query(target_ph='', target_alkalinity_mg_l=''))
         self.assertContains(no_target, 'Give a target pH and alkalinity for the recipes.')
 
+    def test_the_simulator_marks_a_ph_no_fish_lives_in(self):
+        html = self.client.get(self.results_url, self.query(dose_naoh='120')).content.decode()
+        self.assertRegex(html, r'<td class="num wq-value wq-critical">11\.25<span class="sr-only"> \(Critical\)')
+        self.assertRegex(html, r'<td class="num wq-value wq-ok">7\.00<span')                  # the water itself
+        warning = self.client.get(self.results_url, self.query(dose_naoh='15')).content.decode()
+        self.assertRegex(warning, r'<td class="num wq-value wq-warning">8\.17<span')
+        # The bounds are the form's: with no bound given the step is not judged.
+        cleared = self.query(dose_naoh='120', ph_critical_low='', ph_warning_low='', ph_warning_high='',
+                             ph_critical_high='')
+        self.assertRegex(self.client.get(self.results_url, cleared).content.decode(),
+                         r'<td class="num wq-value wq-no_limit">11\.25<span')
+
+    def test_the_ph_bounds_go_up(self):
+        response = self.client.get(self.results_url, self.query(ph_critical_low='7', ph_warning_low='6'))
+        self.assertEqual(set(response.context['form'].errors), {'ph_warning_low'})
+        self.assertIn('The pH bounds go up', response.context['form'].errors['ph_warning_low'][0])
+        self.assertIsNone(response.context['result'])
+        # A bound below the one before it is the one refused; the next is judged against the last good one.
+        response = self.client.get(self.results_url, self.query(ph_critical_low='7', ph_warning_low='6',
+                                                                ph_warning_high='6.5', ph_critical_high='9'))
+        self.assertEqual(set(response.context['form'].errors), {'ph_warning_low', 'ph_warning_high'})
+        ok = self.client.get(self.results_url, self.query(ph_critical_low='', ph_warning_low='7', ph_critical_high=''))
+        self.assertEqual(ok.context['form'].errors, {})
+
     def test_the_simulator(self):
         response = self.client.get(self.results_url, self.query(dose_nahco3='50', dose_degas='10'))
         steps = response.context['result'].steps
@@ -591,6 +701,8 @@ class ValuesFromAUnitTests(TestCase):
         WaterLimit.objects.create(species=self.salmon, parameter='nh3_n_mg_l', warning_high=D('0.0100'),
                                   critical_high=D('0.0200'))
         WaterLimit.objects.create(species=self.salmon, parameter='co2_mg_l', critical_high=D('15.0'))
+        WaterLimit.objects.create(species=self.salmon, parameter='ph', critical_low=D('6.8'), warning_low=D('7.0'),
+                                  critical_high=D('8.2'))
         WaterLimit.objects.create(species=self.salmon, parameter='alkalinity_mg_l', warning_low=D('70'),
                                   warning_high=D('150'))
         self.samples = WaterMeasurement.all_objects.count()
@@ -609,7 +721,17 @@ class ValuesFromAUnitTests(TestCase):
         self.assertEqual(source['point'], self.unit)
         self.assertEqual({row['offer'].field for row in source['rows'] if not row['changed']},
                          {'temperature_c', 'ph', 'tan_mg_l', 'alkalinity_mg_l', 'salinity_ppt', 'altitude_m',
-                          'nh3_n_limit_mg_l', 'co2_limit_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l'})
+                          'nh3_n_limit_mg_l', 'co2_limit_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l',
+                          'ph_critical_low', 'ph_warning_low', 'ph_warning_high', 'ph_critical_high'})
+        # The fish's pH bounds are all four: the one they have none of (warning above) is emptied, not left at the
+        # default, which could cross the others.
+        query = parse_qs(urlsplit(address).query, keep_blank_values=True)
+        self.assertEqual([query[name] for name in ('ph_critical_low', 'ph_warning_low', 'ph_warning_high',
+                                                   'ph_critical_high')], [['6.80'], ['7.00'], [''], ['8.20']])
+        self.assertEqual(response.context['form'].errors, {})
+        self.assertContains(response, 'its fish have no such bound')
+        bounds = response.context['result'] and response.context['form'].inputs()['ph_bounds']
+        self.assertEqual(bounds, calculation.PhBounds(6.8, 7.0, None, 8.2))
         self.assertEqual(source['missing'], ['Dissolved oxygen (mg/L O₂)'])
         self.assertContains(response, 'The latest values of T-01')
         self.assertContains(response, 'Atlantic salmon: warning above 0.0100, critical above 0.0200')

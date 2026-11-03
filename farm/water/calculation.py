@@ -5,11 +5,14 @@ report draw from one `Calculation`, so they never disagree; nothing is stored.
 - `calculate`: the analysis of the water (farm/water/deffeyes.py), the Water Quality Management Chart with
   its dosing and simulator layers, the four small charts (farm/water/charts.py), the dosing recipes from
   the water to the target and the simulator's steps (farm/water/dosing.py), each step judged as the water is:
-  its CO₂ against the CO₂ limit at its alkalinity, its NH₃ and H₂S against their borders.
-- `offers`: what a unit or a loop gives the calculator, read from the water module and never written back:
-  the latest value of each measured field (read.latest, each with its time), the site's altitude, and the
-  limits of the fish in it today (read.limits_now): the critical high of NH₃-N and of CO₂, and the warning
-  bounds of the alkalinity as the safe zone's band; where several species are in it, the strictest."""
+  its pH against the pH bounds, its alkalinity against the band, its CO₂ against the CO₂ limit at its
+  alkalinity, its NH₃ and H₂S against their borders.
+- `offers`: what a unit or a loop gives the calculator, read from the water module (only through
+  farm/water/read.py) and never written back: the latest value of each measured field (read.latest, each with
+  its time), the site's altitude, and the limits of the fish in it today (read.limits_now): the critical high of
+  NH₃-N and of CO₂ (the calculator has one limit for each and its own 0.2 pH alert band: a species' warning
+  bound for them is not used), the warning bounds of the alkalinity as the safe zone's band, and the four pH
+  bounds; where several species are in it, the strictest."""
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -17,18 +20,38 @@ from django.utils.translation import gettext_lazy as _
 
 from ..models.water import site_of
 from . import charts, chemistry, deffeyes, dosing, read
-from .evaluate import Status
+from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
 MEASURED_FIELDS = ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'oxygen_mg_l']
 ALTITUDE_HIGH = 5000            # the calculator's altitude field goes from sea level to this (m)
+# The pH bounds, the field each fills and how the strictest of several species' is picked.
+PH_BOUNDS = [('ph_critical_low', 'critical_low', max), ('ph_warning_low', 'warning_low', max),
+             ('ph_warning_high', 'warning_high', min), ('ph_critical_high', 'critical_high', min)]
 
 
 # ---- the simulator's steps, judged ------------------------------------------------------------------------
 @dataclass(frozen=True)
+class PhBounds:
+    """The pH a water may have (NBS), as the water limits say it: inside the warning bounds ok, outside them a
+    warning, outside the critical bounds critical (farm/water/evaluate.py); any bound may be missing."""
+    critical_low: float | None = None
+    warning_low: float | None = None
+    warning_high: float | None = None
+    critical_high: float | None = None
+
+    @property
+    def given(self):
+        return any(bound is not None for bound in (self.critical_low, self.warning_low, self.warning_high,
+                                                    self.critical_high))
+
+
+@dataclass(frozen=True)
 class JudgedStep:
-    """A step of the simulator with what the water would be there."""
+    """A step of the simulator with what the water would be there, each value judged."""
     step: dosing.Step
+    ph_status: str
+    alkalinity_status: str
     co2: deffeyes.Border
     nh3_n_mg_l: float | None
     nh3: deffeyes.Border
@@ -40,13 +63,19 @@ class JudgedStep:
         return self.step.alkalinity * chemistry.MG_CACO3_PER_MEQ
 
 
-def judge_step(analysis, step):
-    """A simulator step judged as the water is: its CO₂ border at its own alkalinity, its pH against the NH₃
-    and H₂S borders (which do not depend on the alkalinity)."""
+def judge_step(analysis, step, ph_bounds=PhBounds()):
+    """A simulator step judged as the water is: its pH against the pH bounds, its alkalinity against the band
+    (a warning outside it), its CO₂ border at its own alkalinity, its pH against the NH₃ and H₂S borders (which
+    do not depend on the alkalinity). A dose can take a water to a pH no fish lives in, with nothing else wrong."""
     eq, limits, ph = analysis.equilibria, analysis.limits, step.ph
     if ph is None:
         none = deffeyes.Border(None, False, None, Status.NOT_MEASURED)
-        return JudgedStep(step, none, None, none, None, none)
+        return JudgedStep(step, Status.NOT_MEASURED, Status.NOT_MEASURED, none, None, none, None, none)
+    ph_status = judge_bounds(ph, ph_bounds) if ph_bounds.given else Status.NO_LIMIT
+    low, high = limits.alkalinity_low_mg_l, limits.alkalinity_high_mg_l
+    alkalinity = step.alkalinity * chemistry.MG_CACO3_PER_MEQ
+    alkalinity_status = (Status.NO_LIMIT if low is None or high is None
+                         else Status.OK if low <= alkalinity <= high else Status.WARNING)
     co2_limit = None if limits.co2_mg_l is None else limits.co2_mg_l / chemistry.MG_CO2_PER_MMOL
     co2 = deffeyes.judge(ph, None if co2_limit is None else eq.ph_where_co2(step.alkalinity, co2_limit), False,
                          Status.NO_LIMIT if co2_limit is None else None)
@@ -55,7 +84,7 @@ def judge_step(analysis, step):
     h2s = deffeyes.judge(ph, analysis.h2s.ph, False, analysis.h2s.status if analysis.h2s.status in missing else None)
     tan, sulfide = analysis.water.tan_mg_l, analysis.water.total_sulfide_ug_l
     return JudgedStep(
-        step, co2, None if tan is None else tan * eq.nh3_share(ph), nh3,
+        step, ph_status, alkalinity_status, co2, None if tan is None else tan * eq.nh3_share(ph), nh3,
         None if sulfide is None else sulfide * chemistry.H2S_PER_S * eq.h2s_share(ph), h2s)
 
 
@@ -95,10 +124,11 @@ class Calculation:
         return next((judged for judged in self.steps if judged.step.ph is None), None)
 
 
-def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, amounts=None, all_layers=False):
+def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, amounts=None, all_layers=False,
+              ph_bounds=PhBounds()):
     """Everything the calculator shows. `chosen`: the reagents' keys in the order chosen; `amounts`: grams by
-    reagent key for the simulator; `all_layers`: draw every layer whatever `layers` says (the printed report,
-    as the source's forces its safety overlays)."""
+    reagent key for the simulator, its steps' pH judged by `ph_bounds`; `all_layers`: draw every layer whatever
+    `layers` says (the printed report, as the source's forces its safety overlays)."""
     analysis = deffeyes.analyse(water, limits, target, pressure)
     eq = analysis.equilibria
     start = (analysis.dic, analysis.alkalinity_meq)
@@ -126,7 +156,7 @@ def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, a
             calculation.steps_note = _('Give the volume to follow the amounts.')
         else:
             steps = dosing.simulate(eq, start, water.ph, amounts, volume, air)
-            calculation.steps = [judge_step(analysis, step) for step in steps]
+            calculation.steps = [judge_step(analysis, step, ph_bounds) for step in steps]
     shown = deffeyes.ALL_LAYERS if all_layers else layers
     simulator = [(judged.step.dic, judged.step.alkalinity) for judged in calculation.steps
                  if judged.step.ph is not None]
@@ -141,7 +171,7 @@ class Offer:
     """A value a unit or a loop gives a field of the calculator: a reading (with its time and status), the
     site's altitude, or a limit of the fish in it (with the rows it comes from)."""
     field: str
-    value: Decimal
+    value: Decimal | None              # None: the fish have no such bound, the field is emptied
     reading: object = None             # read.Reading
     rows: tuple = ()                   # WaterLimit rows
 
@@ -167,6 +197,11 @@ def offers(point):
         value, rows = _strictest(limits.get(code, []), 'critical_high', min)
         if value is not None:
             found[name] = Offer(name, value, rows=rows)
+    rows = limits.get('ph', [])
+    if rows:                           # the fish's bounds are all of them: one they have none of is empty
+        for name, bound, pick in PH_BOUNDS:
+            value, used = _strictest(rows, bound, pick)
+            found[name] = Offer(name, value, rows=used)
     band = limits.get('alkalinity_mg_l', [])
     low, low_rows = _strictest(band, 'warning_low', max)
     high, high_rows = _strictest(band, 'warning_high', min)

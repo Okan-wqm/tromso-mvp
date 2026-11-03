@@ -12,7 +12,7 @@ Morgan 1996, Aquatic Chemistry, 3rd ed., 4.5; Loyless & Malone 1997, Prog. Fish-
 bicarbonate on the same chart):
 - NaHCO₃: DIC +1, alkalinity +1 (it brings one HCO₃⁻);
 - Na₂CO₃ and CaCO₃: DIC +1, alkalinity +2 (one CO₃²⁻); CaCO₃ dissolves only in water undersaturated with
-  calcite, so it is slow or does nothing in most farm water;
+  calcite (soft, acid fresh water), and slowly: in sea water and in hard or alkaline farm water it does not;
 - NaOH: alkalinity +1; Ca(OH)₂ and CaO (slaked to Ca(OH)₂ in the water): alkalinity +2; the DIC unchanged;
 - CO₂ added: DIC +1; CO₂ stripped (aeration, a degasser): DIC −1; the alkalinity unchanged, CO₂ carries no
   charge;
@@ -25,7 +25,9 @@ calcite and aragonite lines; the chart keeps the calcium entered.
 After a dose the water is the chart's point at the new DIC and alkalinity, its pH the pH whose line passes
 through it (chemistry.Equilibria.ph_at): mixed through, closed to the air while it mixes, as the source
 computes it. Stripping cannot take the CO₂ below what the water holds in equilibrium with the air
-(chemistry.co2_from_air): a step that would is flagged.
+(chemistry.co2_from_air): a simulator step that would is flagged, and a recipe whose stripping would end below
+it in either order of its two doses (the order does not change where the water ends, only the CO₂ at which
+the stripping stops: it can be done first or last).
 
 A recipe takes the water from its point to the target with two reagents: the move Δ = a v₁ + b v₂ with
 a, b ≥ 0 (Cramer's rule on the two reagents' directions); no recipe when the two cannot reach the target
@@ -155,7 +157,7 @@ def _dose(reagent, concentration, volume):
 def recipe(start, end, first, second, volume=None, below_air=None):
     """The recipe of two reagents from `start` to `end` (volume in m³; None gives the doses per litre only);
     None when they cannot reach it. `below_air(dic, alkalinity)` says whether a water's CO₂ is below the
-    air's, to flag a stripping step that would go there."""
+    air's, to flag a recipe whose stripping would go there whichever of its two doses goes first."""
     found = split(start, end, first, second)
     if found is None:
         return None
@@ -166,16 +168,24 @@ def recipe(start, end, first, second, volume=None, below_air=None):
              if amount * reagent.molar_mass * weight > LEFT_OUT_G]
     if not doses:
         return None
-    kept = {dose.reagent.key for dose in doses}
-    stripped_to = [point for reagent, point in ((lower, waypoint), (higher, end))
-                   if reagent.key == 'degas' and reagent.key in kept]
-    flagged = below_air is not None and any(below_air(*point) for point in stripped_to)
-    return Recipe(doses, waypoint, flagged)
+    return Recipe(doses, waypoint, _below_air(start, end, found, doses, below_air))
 
 
 def at_target(start, end):
     """The water is at its target: closer than AT_TARGET in DIC and in alkalinity."""
     return abs(end[0] - start[0]) < AT_TARGET and abs(end[1] - start[1]) < AT_TARGET
+
+
+def _below_air(start, end, found, doses, below_air):
+    """Whether the recipe's stripping ends below the air's CO₂ whichever way round the doses go: first (the
+    water ends at the start's alkalinity with the DIC less the stripping) or last (it ends at the target). Only
+    when both do is it flagged: the other order can do it."""
+    if below_air is None or 'degas' not in {dose.reagent.key for dose in doses}:
+        return False
+    lower, a, higher, b = found
+    stripped = a if lower.key == 'degas' else b
+    first = (start[0] - stripped, start[1])
+    return below_air(*first) and below_air(*end)
 
 
 def recipes(start, end, chosen, volume=None, below_air=None):

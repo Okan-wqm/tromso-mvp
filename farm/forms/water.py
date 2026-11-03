@@ -21,7 +21,7 @@ from ..models import ProductionDepartment, Site, Species, System, Tank, WaterLim
 from ..models.site import zone_of
 from ..models.water import BOUNDS, site_of
 from ..templatetags.water import limit_text
-from ..water import chemistry, deffeyes, dosing, parameters, services
+from ..water import calculation, chemistry, deffeyes, dosing, parameters, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
 
@@ -328,6 +328,10 @@ def _measured(code, required=False, low=None, help_text=None):
                         help_text=parameter.help if help_text is None else help_text, required=required)
 
 
+# The pH bounds of the limits tab, in the order they must go up.
+PH_FIELDS = ['ph_critical_low', 'ph_warning_low', 'ph_warning_high', 'ph_critical_high']
+
+
 def dose_name(reagent):
     """A simulator field's name: the grams of a reagent."""
     return f'dose_{reagent.key}'
@@ -373,6 +377,14 @@ class CalculatorForm(forms.Form):
                                   _('Default 15 mg/L, a common guideline for salmonids.'))
     h2s_limit_ug_l = number_field(_('H₂S limit (µg/L H₂S)'), Decimal('0.1'), 10000, 1,
                                   _('Default 2 µg/L, the US EPA criterion for un-ionised H₂S (1986).'))
+    ph_critical_low = number_field(
+        _('pH, critical below (NBS scale)'), 0, 14, 2,
+        _('The pH a simulator step may have, as the water limits say it: inside the warning bounds ok, outside them '
+          'a warning, outside the critical bounds critical. Default 6.5 to 8.5 critical and 7.0 to 8.0 warning, as '
+          'the source marks it, not the limits of your fish unless the values come from a unit.'))
+    ph_warning_low = number_field(_('pH, warning below (NBS scale)'), 0, 14, 2)
+    ph_warning_high = number_field(_('pH, warning above (NBS scale)'), 0, 14, 2)
+    ph_critical_high = number_field(_('pH, critical above (NBS scale)'), 0, 14, 2)
     reagents = forms.MultipleChoiceField(
         label=_('Reagents to dose with'), required=False,
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'choices'}),
@@ -388,7 +400,7 @@ class CalculatorForm(forms.Form):
                                'total_sulfide_ug_l', 'oxygen_mg_l']),
         ('system', _('System'), ['volume_m3', 'calcium_mg_l', 'altitude_m']),
         ('target', _('Target'), ['target_ph', 'target_alkalinity_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']),
-        ('limits', _('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l']),
+        ('limits', _('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l', *PH_FIELDS]),
         ('reagents', _('Reagents'), ['reagents']),
         ('simulator', _('Simulator'), DOSES),
     ]
@@ -400,6 +412,8 @@ class CalculatorForm(forms.Form):
         'target_ph': Decimal('7.5'), 'target_alkalinity_mg_l': Decimal('100'),
         'alkalinity_low_mg_l': Decimal('50'), 'alkalinity_high_mg_l': Decimal('100'),
         'nh3_n_limit_mg_l': Decimal('0.0103'), 'co2_limit_mg_l': Decimal('15'), 'h2s_limit_ug_l': Decimal('2'),
+        'ph_critical_low': Decimal('6.5'), 'ph_warning_low': Decimal('7.0'), 'ph_warning_high': Decimal('8.0'),
+        'ph_critical_high': Decimal('8.5'),
         'reagents': list(dosing.DEFAULT_REAGENTS),
         **{name: None for name in DOSES},
         'layers': [key for key, _label in deffeyes.LAYERS],
@@ -445,8 +459,23 @@ class CalculatorForm(forms.Form):
         low, high = data.get('alkalinity_low_mg_l'), data.get('alkalinity_high_mg_l')
         if low is not None and high is not None and low >= high:
             self.add_error('alkalinity_high_mg_l', _('The band goes up: its high end is above its low end.'))
+        self._ph_order(data)
         self._possible(data)
         return data
+
+    def _ph_order(self, data):
+        """The pH bounds go up: critical below, warning below, warning above, critical above, each given one not
+        below the one before it."""
+        before = None
+        for name in PH_FIELDS:
+            value = data.get(name)
+            if value is None:
+                continue
+            if before is not None and value < before:
+                self.add_error(name, _('The pH bounds go up: critical below, warning below, warning above, '
+                                       'critical above.'))
+                continue
+            before = value
 
     def _possible(self, data):
         """A pH the alkalinity allows: hydroxide and borate are alkalinity too, so at a high pH the alkalinity
@@ -489,7 +518,8 @@ class CalculatorForm(forms.Form):
         return {'water': water, 'limits': limits, 'target': target,
                 'pressure': chemistry.pressure_atm(altitude) if altitude is not None else 1.0,
                 'layers': frozenset(values['layers']), 'chosen': list(values['reagents']),
-                'volume': values['volume_m3'], 'amounts': amounts}
+                'volume': values['volume_m3'], 'amounts': amounts,
+                'ph_bounds': calculation.PhBounds(*(values[name] for name in PH_FIELDS))}
 
     # -- a unit's or a loop's values --
     @classmethod
@@ -512,5 +542,5 @@ class CalculatorForm(forms.Form):
         fields = cls().fields
         for name, offer in offers.items():
             step = Decimal(1).scaleb(-fields[name].decimal_places)
-            data[name] = formats.localize_input(offer.value.quantize(step))
+            data[name] = '' if offer.value is None else formats.localize_input(offer.value.quantize(step))
         return data

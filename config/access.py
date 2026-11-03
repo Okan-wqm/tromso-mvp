@@ -17,11 +17,18 @@ AREAS = [
     # The stock: Read is the Production units page, Create records an operation (a stocking, a mortality,
     # a weighing), Delete voids one. Operations are never edited: a correction is a void and a new entry.
     Area(_('Production units'), 'farm.StockOperation', actions=('view', 'add', 'delete')),
-    # The feeding records: Read is the Feeding records page (and the feeding part of a unit's drawer), Create
-    # records a feeding, Delete voids one. Records are never edited: a correction is a void and a new entry.
+    # The feeding records: Read is the Meal board and the Records page (and the feeding part of a unit's drawer),
+    # Create records a feeding or a meal, Delete voids one. Records are never edited: a correction is a void and a
+    # new entry.
     Area(_('Feeding records'), 'farm.FeedingRecord', actions=('view', 'add', 'delete')),
+    # The feeding tables and where they apply (Operations › Feeding › Protocols and Assignments).
+    Area(_('Feeding protocols'), 'farm.FeedingProtocol'),
+    Area(_('Protocol assignments'), 'farm.ProtocolAssignment'),
     # Water samples: Read is the Water chemistry page (and a unit's water in the drawer), Create records a
     # sample or a round, Delete voids a sample. Samples are never edited: a correction is a void and a new entry.
     Area(_('Water chemistry'), 'farm.WaterMeasurement', actions=('view', 'add', 'delete')),
+    # Messages: Read is the Messages page, writing in one's own conversations and starting a direct one; Create
+    # also creates channels. Only the members of a conversation read it, whatever the role (messaging/services.py).
+    Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

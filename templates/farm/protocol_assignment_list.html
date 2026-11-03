@@ -1,0 +1,70 @@
+{% extends "crud/list.html" %}
+{% load i18n stock feeding %}
+{% comment %} Operations › Feeding › Assignments: which protocol feeds which fish from which day. The rows one dialog
+   wrote (several units at once) are listed together; "Feeds now" counts the fish the row applies to today, after
+   the more specific rows (batch in unit, then unit, then whole batch).{% endcomment %}
+{% block search_placeholder %}{% trans "Search by protocol, unit or batch" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  {% if sites|length > 1 %}
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <select id="site-filter" name="site" data-autosubmit>
+    <option value="">{% trans "All sites" %}</option>
+    {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <label class="sr-only" for="unit-filter">{% trans "Unit" %}</label>
+  <select id="unit-filter" name="unit" data-autosubmit>
+    <option value="">{% trans "All units" %}</option>
+    {% for unit in units %}<option value="{{ unit.pk }}"{% if chosen_unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="batch-filter">{% trans "Batch" %}</label>
+  <select id="batch-filter" name="batch" data-autosubmit>
+    <option value="">{% trans "All batches" %}</option>
+    {% for batch in batches %}<option value="{{ batch.pk }}"{% if chosen_batch == batch.pk|stringformat:"s" %} selected{% endif %}>{{ batch.code }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="protocol-filter">{% trans "Protocol" %}</label>
+  <select id="protocol-filter" name="protocol" data-autosubmit>
+    <option value="">{% trans "All protocols" %}</option>
+    {% for protocol in protocol_list %}<option value="{{ protocol.pk }}"{% if chosen_protocol == protocol.pk|stringformat:"s" %} selected{% endif %}>{{ protocol.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="period-filter">{% trans "When" %}</label>
+  <select id="period-filter" name="period" data-autosubmit>
+    <option value="">{% trans "Any time" %}</option>
+    {% for value, label in periods %}<option value="{{ value }}"{% if chosen_period == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}<p class="panel-help">{% trans "A protocol is assigned to units (it feeds whatever is in them), to a whole batch (it follows the batch into every unit it is moved to) or to a batch in chosen units. For a batch in a unit the most specific row in force applies: batch in unit, then unit, then whole batch. A row may be changed or deleted before its first day; afterwards it is ended by its last day." %}</p>{% endblock %}
+{% block empty_text %}{% trans "Which feeding protocol feeds which fish, from which day." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Protocol" %}</th><th scope="col">{% trans "Applies to" %}</th><th scope="col">{% trans "Unit" %}</th><th scope="col">{% trans "Batch" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th><th scope="col" class="num">{% trans "Feeds now" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    {% regroup objects by group_id as groups %}
+    {% for group in groups %}
+    <tbody class="assignment-group">
+      {% for row in group.list %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'farm:protocolassignment_edit' row.pk %}" data-modal>{{ row.protocol.name }}</a>{% else %}<span class="row-title">{{ row.protocol.name }}</span>{% endif %}<span class="row-sub">{{ row.protocol.species.common_name }}{% if row.protocol.status != "active" %} · {{ row.protocol.get_status_display }}{% endif %}</span></td>
+        <td>{{ row.scope.label }}</td>
+        <td>{% if row.unit %}{{ row.unit.code }}{% if row.unit.is_deleted %} <span class="badge badge-voided">{% trans "Deleted" %}</span>{% endif %}<span class="row-sub">{{ row.unit.production_department.name }}{% if row.unit.production_department.site %} · {{ row.unit.production_department.site.name }}{% endif %}</span>{% else %}<span class="muted">{% trans "wherever it is" %}</span>{% endif %}</td>
+        <td>{% if row.batch %}{{ row.batch.code }}{% if row.batch.is_deleted %} <span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}<span class="row-sub">{{ row.batch.species.common_name }}</span>{% else %}<span class="muted">{% trans "whatever is in it" %}</span>{% endif %}</td>
+        <td class="nowrap">{{ row.valid_from|date:"DATE_FORMAT" }}</td>
+        <td class="nowrap">{% if row.valid_until %}{{ row.valid_until|date:"DATE_FORMAT" }}{% else %}<span class="muted">{% trans "open" %}</span>{% endif %}{% if row.valid_until and row.valid_until < today %}<span class="row-sub">{% trans "ended" %}</span>{% elif row.valid_from > today %}<span class="row-sub">{% trans "starts later" %}</span>{% endif %}</td>
+        <td class="num">{% with fish=feeds_now|lookup:row.pk %}{% if fish %}{{ fish|fish }}{% else %}<span class="muted">{% trans "no fish" %}</span>{% endif %}{% endwith %}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:protocolassignment_edit' row.pk %}" data-modal title="{% trans "Edit" %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Edit" %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:protocolassignment_delete' row.pk %}" data-modal title="{% trans "Delete" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete" %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

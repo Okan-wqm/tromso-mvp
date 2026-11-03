@@ -1,0 +1,24 @@
+{% load i18n %}{# The person's conversations, latest activity first: the page's list and what its poll renders again. #}
+{% if rows %}
+<ul class="chat-conversations" role="list">
+  {% for row in rows %}
+  {% with conversation=row.conversation %}
+  <li>
+    <a class="chat-row{% if row.unread and conversation.pk != open_id %} has-unread{% endif %}" href="{% url 'messaging:conversation' conversation.pk %}"{% if conversation.pk == open_id %} aria-current="page"{% endif %}>
+      <span class="chat-avatar" aria-hidden="true">{% if conversation.is_channel %}#{% else %}{{ row.title|slice:":1"|upper }}{% endif %}</span>
+      <span class="chat-row-text">
+        <span class="chat-row-title">{{ row.title }}</span>
+        <span class="chat-row-last">{% if row.last %}{% if row.last.author_id == row.participant.pk %}{% trans "You" %}{% else %}{{ row.last.author }}{% endif %}: {% if row.last.is_deleted %}<em>{% trans "Message deleted" %}</em>{% else %}{{ row.last.body|truncatechars:80 }}{% endif %}{% elif conversation.is_channel %}{% blocktrans trimmed count count=row.members %}{{ count }} member{% plural %}{{ count }} members{% endblocktrans %}{% else %}{% trans "No messages yet" %}{% endif %}</span>
+      </span>
+      <span class="chat-row-side">
+        {% if row.last %}<time datetime="{{ row.last.created_at|date:'c' }}">{{ row.last.created_at|date:"SHORT_DATE_FORMAT" }}</time>{% endif %}
+        {% if row.unread and conversation.pk != open_id %}<span class="chat-unread">{{ row.unread }}<span class="sr-only"> {% trans "unread" %}</span></span>{% endif %}
+      </span>
+    </a>
+  </li>
+  {% endwith %}
+  {% endfor %}
+</ul>
+{% else %}
+<p class="chat-list-empty">{% trans "No conversations yet." %}</p>
+{% endif %}

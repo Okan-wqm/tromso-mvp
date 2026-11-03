@@ -9,7 +9,7 @@ from django.db import models
 from django.db.models import F, Q, Value
 from django.db.models.functions import Coalesce, Lower
 from django.db.models.lookups import LessThanOrEqual
-from django.utils.translation import gettext_lazy as _, ngettext_lazy
+from django.utils.translation import gettext_lazy as _, ngettext, ngettext_lazy
 
 from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
 
@@ -217,6 +217,18 @@ class Feed(CodedMixin, AuditedModel):
                 PRICE_CURRENCY_MESSAGE)
         if errors:
             raise ValidationError(errors)
+
+    def delete_blockers(self):
+        # A band of a feeding protocol's table is a plain row of its protocol, which core.softdelete does not
+        # follow (as a batch's stock lines), so the link's PROTECT is said here: the rations of the protocol's
+        # past days are read with this feed.
+        names = sorted(set(self.protocol_bands.filter(protocol__is_deleted=False)
+                           .values_list('protocol__name', flat=True)))
+        if not names:
+            return []
+        return [ngettext('The feeding table of %(count)d feeding protocol uses it: %(names)s.',
+                         'The feeding tables of %(count)d feeding protocols use it: %(names)s.', len(names))
+                % {'count': len(names), 'names': ', '.join(names)}]
 
     def save(self, *args, **kwargs):
         self.currency = self.currency.strip().upper()

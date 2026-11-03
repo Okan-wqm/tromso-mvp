@@ -182,7 +182,7 @@ class TypeScriptTests(SimpleTestCase):
 
     ROOT = Path(settings.BASE_DIR)
     # Key names the browser reports, not text.
-    KEY_NAMES = {'Escape'}
+    KEY_NAMES = {'Escape', 'Enter'}
 
     def test_no_ui_text_in_the_typescript(self):
         sentence = re.compile(r"""(['"])([A-Z][a-z]+(?: [A-Za-z]+)*[.!?]?)\1""")

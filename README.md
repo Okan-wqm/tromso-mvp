@@ -1088,10 +1088,13 @@ long enough? Nothing is blocked (owner decision): both are warnings.
   `HandlingAcknowledgement` per warning with what the person was shown (the withdrawal's end, estimated or not,
   and reason; or the last feeding, the hours fasted, the hours asked and the rule), and the operation's
   activity-log entry is **critical**, with the warnings. Who and when are the operation's.
-- *The meal board* asks `farm.handling.fasting.fasting_on(unit, day)`: the reason when the day is in the fast a
-  planned harvest or transport asks for (every day from the one the fast starts on to the planned day, in full,
-  for the whole unit; where two overlap the one that starts first wins), else None. The feeding dialog says so
-  on such a day ("A feeding can still be recorded").
+- *The meal board* gives **no ration on a fasting day**: the ration's policy (`farm/feeding/read.policy`) loads
+  the fasts planned harvests and transports ask for (`farm.handling.fasting.fasts`, every day from the one the
+  fast starts on to the planned day, in full, for the whole unit; where two overlap the one that starts first
+  wins) and `ration.Policy.basis` answers `FASTING` with the reason, e.g. "Fasting before the harvest of 15 Nov
+  2026: from 12 Nov 2026, 00:00 (72 h)". The band stays, so a feeding recorded anyway is still credited at its
+  expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
+  The feeding dialog says so on such a day ("A feeding can still be recorded").
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 

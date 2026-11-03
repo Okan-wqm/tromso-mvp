@@ -91,7 +91,7 @@ class WaterMeasurement(AuditedModel):
 
     # A point keeps its samples (they come back with it, and with its owner): DO_NOTHING, read by SampleManager.
     # No index of its own: the one on (point, -measured_at) serves it.
-    point = models.ForeignKey(SamplingPoint, null=True, on_delete=models.DO_NOTHING, related_name="samples", db_index=False,
+    point = models.ForeignKey(SamplingPoint, on_delete=models.DO_NOTHING, related_name='samples', db_index=False,
                               verbose_name=_('Sampling point'))
     measured_at = models.DateTimeField(_('Measured at'))
     source = models.CharField(_('Source'), max_length=10, choices=Source.choices)

@@ -28,7 +28,7 @@ from ..models import (
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
 from ..feeding import services as feeding_services
-from .helpers import make_facility, role
+from .helpers import make_facility, point_of, role
 from .test_stock import StockTestCase, make_unit
 
 
@@ -68,8 +68,7 @@ class HealthTestCase(StockTestCase):
         """A water sample of `value` °C at noon, `days_ago` days back, on the point's site clock."""
         site = point.site if isinstance(point, System) else point.production_department.site
         moment = datetime.combine(self.day(days_ago), time(12), tzinfo=zone_of(site))
-        where = {'system': point} if isinstance(point, System) else {'unit': point}
-        return WaterMeasurement.objects.create(**where, measured_at=moment, source='manual',
+        return WaterMeasurement.objects.create(point=point_of(point), measured_at=moment, source='manual',
                                                temperature_c=Decimal(value), created_by=self.user)
 
     def held(self, unit=None, day=None):

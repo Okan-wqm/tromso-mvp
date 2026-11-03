@@ -1,0 +1,6 @@
+{% load i18n %}{# The pages of Operations › Harvest the person may read (farm.harvest.views.tabs), as tabs. #}
+{% if tabs|length > 1 %}
+<nav class="view-tabs" aria-label="{% trans "Harvest" %}">
+  {% for tab in tabs %}<a class="view-tab" href="{{ tab.url }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+</nav>
+{% endif %}

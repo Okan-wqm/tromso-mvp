@@ -1,0 +1,71 @@
+{% extends "crud/list.html" %}
+{% load i18n stock feeding %}
+{% comment %} Operations › Harvest › Production plans (farm.resources.harvest_plan): every batch in stock in each unit
+   it is in, its book average and its target weight; when the target is reached is the feeding protocols'
+   projection, which is not in yet, and the page says so. "Plan harvest" starts a planned harvest of the
+   share at the target weight. Plans of batches no longer in stock follow.{% endcomment %}
+{% block above %}{% include "farm/_harvest_tabs.html" %}{% endblock %}
+{% block search_placeholder %}{% trans "Search unit, batch or species" %}{% endblock %}
+{% block filters %}
+{% if sites|length > 1 %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <select id="site-filter" name="site" data-autosubmit>
+    <option value="">{% trans "All sites" %}</option>
+    {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endif %}
+{% endblock %}
+{% block notice %}<p class="panel-help">{% trans "The target weight each batch is grown to for harvest. The estimated weight now and the day it reaches the target come from the feeding protocols’ projection; the expected harvest is the date given when the batch was stocked." %}</p>{% endblock %}
+{% block empty_text %}{% trans "The batches in stock with their target weight for harvest." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th scope="col">{% trans "Unit" %}</th>
+        <th scope="col">{% trans "Batch" %}</th>
+        <th scope="col" class="num">{% trans "Fish" %}</th>
+        <th scope="col" class="num">{% trans "Avg. weight" %}</th>
+        <th scope="col" class="num">{% trans "Target weight" %}</th>
+        <th scope="col">{% trans "Estimated now · target reached" %}</th>
+        <th scope="col">{% trans "Expected harvest" %}</th>
+        <th scope="col">{% trans "Last fed" %}</th>
+        <th scope="col">{% trans "Medicine withdrawal" %}</th>
+        <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in objects %}{% with plan=row.plan share=row.share %}
+      <tr>
+        {% if share %}
+        <td><span class="row-title">{{ row.unit.code }}</span><span class="row-sub nowrap">{{ row.unit.production_department.name }}{% if row.unit.production_department.site %} · {{ row.unit.production_department.site.name }}{% endif %}</span></td>
+        <td class="nowrap">{{ share.batch.code }}<span class="row-sub">{{ share.batch.species.common_name }}</span></td>
+        <td class="num">{{ share.count|fish }}</td>
+        <td class="num">{{ share.avg_weight_g|grams }}<span class="row-sub">{% if share.last_weighed %}{% blocktrans trimmed with date=share.last_weighed|date:"DATE_FORMAT" %}weighed {{ date }}{% endblocktrans %}{% else %}{% trans "as stocked" %}{% endif %}</span></td>
+        <td class="num">{% if plan %}{% if can_change %}<a href="{% url 'farm:productionplan_edit' plan.pk %}" data-modal>{{ plan.target_weight_g|grams }}</a>{% else %}{{ plan.target_weight_g|grams }}{% endif %}{% elif can_add %}<a href="{% url 'farm:productionplan_create' %}?batch={{ share.batch.pk }}" data-modal>{% trans "Set target" %}</a>{% else %}—{% endif %}</td>
+        <td><span class="muted">{% trans "Needs the feeding protocols" %}</span></td>
+        <td class="nowrap">{{ row.expected|date:"DATE_FORMAT"|default:"—" }}</td>
+        <td class="nowrap">{{ row.last_fed|fed_on:row.today }}</td>
+        <td>{% if row.withdrawal is None %}<span class="muted">{% trans "Not checked" %}</span>{% elif row.withdrawal %}{% for block in row.withdrawal %}<span class="over-text">{% if block.until %}{% blocktrans trimmed with date=block.until|date:"DATE_FORMAT" %}Until {{ date }}{% endblocktrans %}{% else %}{% trans "End unknown" %}{% endif %}</span>{% endfor %}{% else %}{% trans "None" %}{% endif %}</td>
+        <td class="row-actions">
+          {% if row.plan_harvest_url %}<a class="button button-ghost" href="{{ row.plan_harvest_url }}" data-modal>{% trans "Plan harvest" %}</a>{% endif %}
+          {% if plan and can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productionplan_delete' plan.pk %}" data-modal title="{% trans "Delete" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete" %}</span></a>{% endif %}
+        </td>
+        {% else %}
+        <td>—</td>
+        <td class="nowrap">{{ plan.batch.code }}<span class="row-sub">{{ plan.batch.species.common_name }}</span></td>
+        <td colspan="2"><span class="muted">{% trans "No longer in stock" %}</span></td>
+        <td class="num">{% if can_change %}<a href="{% url 'farm:productionplan_edit' plan.pk %}" data-modal>{{ plan.target_weight_g|grams }}</a>{% else %}{{ plan.target_weight_g|grams }}{% endif %}</td>
+        <td colspan="4"></td>
+        <td class="row-actions">{% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productionplan_delete' plan.pk %}" data-modal title="{% trans "Delete" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete" %}</span></a>{% endif %}</td>
+        {% endif %}
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

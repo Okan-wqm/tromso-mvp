@@ -1,4 +1,4 @@
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, pgettext_lazy
 
 from core.access import Area
 
@@ -13,6 +13,8 @@ AREAS = [
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),
+    Area(_('Slaughter facilities'), 'farm.SlaughterFacility'),
+    Area(_('Handling rules'), 'farm.HandlingRule'),
     Area(_('Suppliers'), 'farm.Supplier'),
     # The stock: Read is the Production units page, Create records an operation (a stocking, a mortality,
     # a weighing), Delete voids one. Operations are never edited: a correction is a void and a new entry.
@@ -23,5 +25,11 @@ AREAS = [
     # Water samples: Read is the Water chemistry page (and a unit's water in the drawer), Create records a
     # sample or a round, Delete voids a sample. Samples are never edited: a correction is a void and a new entry.
     Area(_('Water chemistry'), 'farm.WaterMeasurement', actions=('view', 'add', 'delete')),
+    # The harvests: Read is the Harvested page. A harvest is recorded and voided as a stock operation (Production
+    # units: Create and Delete), with where the fish went, so nothing else is offered here.
+    Area(pgettext_lazy('page', 'Harvested'), 'farm.HarvestRecord', actions=('view',)),
+    # The planned harvests and transports, and the target weight per batch: read, plan, change, delete.
+    Area(_('Harvest plan'), 'farm.HandlingPlanItem'),
+    Area(_('Production plans'), 'farm.ProductionPlan'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

@@ -1,0 +1,22 @@
+{% load i18n stock %}
+{% comment %} The Harvest part of a stocked unit's drawer (farm.harvest.views.drawer): the handling check of a harvest
+   today (when the fish were last fed against the rule, a medicine withdrawal) and the unit's open plans with
+   the fast each asks of it.{% endcomment %}
+<section class="drawer-section">
+  <h3>{% trans "Harvest and handling" %}</h3>
+  <p class="capacity-note">{% trans "If the fish were harvested today:" %}</p>
+  <ul class="handling-notes" role="list">{% for note in handling.notes %}<li>{{ note }}</li>{% endfor %}</ul>
+  {% if handling.warnings %}<ul class="notice notice-warning handling-warnings" role="list">{% for warning in handling.warnings %}<li>{{ warning.message }}</li>{% endfor %}</ul>{% endif %}
+  {% if plan_list_url %}
+  {% if unit_plans %}
+  <ul class="op-lines" role="list">
+    {% for row in unit_plans %}{% with item=row.item %}
+    <li><strong>{{ item.get_kind_display }} · {{ item.date|date:"DATE_FORMAT" }}</strong>{% if row.status == "overdue" %} <span class="badge badge-voided">{{ row.status.label }}</span>{% endif %} · {{ item.batch.code }}{% if item.planned_count %} · {% blocktrans trimmed with fish=item.planned_count|fish %}{{ fish }} fish{% endblocktrans %}{% endif %}{% if item.facility %} · {{ item.facility.name }}{% elif item.destination_unit %} · {% blocktrans trimmed with unit=item.destination_unit.code %}to {{ unit }}{% endblocktrans %}{% endif %}{% if row.fast %}<span class="row-sub">{{ row.fast.why }}</span>{% endif %}</li>
+    {% endwith %}{% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">{% trans "No harvest or transport is planned for this unit." %}</p>
+  {% endif %}
+  <p><a href="{{ plan_list_url }}">{% blocktrans trimmed with unit=drawer.code %}The harvest plan of {{ unit }}{% endblocktrans %}</a></p>
+  {% endif %}
+</section>

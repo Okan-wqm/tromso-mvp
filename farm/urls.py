@@ -3,14 +3,15 @@ from django.urls import path
 from core.crud import Resource
 
 from .feeding import views as feeding
+from .harvest import views as harvest
 from .stock import views as stock
 from .water import views as water
 
 app_name = 'farm'
 
 # The tabs' routes come from the tabs (core.crud.Resource): their list, form and delete pages and their
-# row lists. Operations › Production units, Feeding records and Water chemistry are read pages with dialogs,
-# not tabs: their routes are here, each under its menu entry's address so the menu marks it while a dialog is
+# row lists. Operations › Production units, Feeding records, Water chemistry and Harvested are read pages
+# with dialogs, not tabs: their routes are here, each under its menu entry's address so the menu marks it while a dialog is
 # open as a page (a unit's feeding dialog belongs to Production units, where its drawer offers it).
 urlpatterns = [route for tab in Resource.registry if tab.model._meta.app_label == app_name for route in tab.urls()]
 urlpatterns += [
@@ -27,4 +28,5 @@ urlpatterns += [
     path('operations/water/record/', water.record_sample, name='water_record'),
     path('operations/water/round/', water.record_round, name='water_round'),
     path('operations/water/void/<uuid:pk>/', water.void_sample, name='water_void'),
+    path('operations/harvests/', harvest.harvests, name='harvests'),
 ]

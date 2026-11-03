@@ -1,0 +1,26 @@
+{% extends "crud/detail.html" %}
+{% load i18n %}
+{% comment %} An experiment's read page for everyone who may read the tab (experiments.resources.ExperimentResource): its
+   details and its team. The design, the places and the figures come with their own parts of the page.{% endcomment %}
+{% block details %}
+<section class="detail-section">
+  <p>{% include "experiments/_status.html" with experiment=object %}</p>
+  <dl class="facts">
+    <div><dt>{% trans "Experiment number" %}</dt><dd>{{ object.code }}</dd></div>
+    <div><dt>{% trans "Site" %}</dt><dd>{{ object.site.name }}</dd></div>
+    <div><dt>{% trans "Species" context "singular" %}</dt><dd>{{ object.species.common_name }}</dd></div>
+    <div><dt>{% trans "Starts on" %}</dt><dd>{% if object.starts_on %}{{ object.starts_on|date:"DATE_FORMAT" }}{% else %}–{% endif %}</dd></div>
+    <div><dt>{% trans "Duration (days)" %}</dt><dd>{{ object.duration_days }}</dd></div>
+    <div><dt>{% trans "Primary endpoint" %}</dt><dd>{{ object.get_primary_endpoint_display|default:"–" }}</dd></div>
+    {% if object.copied_from_id %}<div><dt>{% trans "Copied from" %}</dt><dd>{{ object.copied_from }}</dd></div>{% endif %}
+  </dl>
+  {% if object.hypothesis %}<h2 class="section-title">{% trans "Hypothesis" %}</h2><p>{{ object.hypothesis|linebreaksbr }}</p>{% endif %}
+  {% if object.notes %}<h2 class="section-title">{% trans "Notes" %}</h2><p>{{ object.notes|linebreaksbr }}</p>{% endif %}
+</section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Team" %}</h2>
+  <ul class="plain-list">
+    {% for member in team %}<li>{{ member }}</li>{% empty %}<li class="muted">{% trans "No one in the team yet." %}</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -104,6 +104,13 @@ WORKSPACES = [
                 Entry(_('Sea-lice counts'), 'farm:lice_counts', 'bug', 'farm.view_licecount'),
             ]),
         ]),
+        # Research: trials of one species on one site, with their design, their tanks and the days. It reads the farm
+        # and nothing reads it (README, Experiments).
+        Section(_('Research'), [
+            Group('', [
+                Entry(_('Experiments'), 'experiments:experiment_list', 'flask', 'experiments.view_experiment'),
+            ]),
+        ]),
         # Messages between the people running production, direct and in channels; their AI assistants join the
         # same conversations later (README, Messages). Neither structure nor a production record: a heading of
         # its own. The number beside it is the person's unread messages.

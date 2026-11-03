@@ -63,7 +63,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                                     'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
                                                     'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
                                                     'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
-                                                    'Sea-lice counts', 'Messages'])
+                                                    'Sea-lice counts', 'Experiments', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -122,7 +122,7 @@ class PanelMemoryTests(WorkspaceTestCase):
                                                   'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
                                                   'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
                                                   'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
-                                                  'Sea-lice counts', 'Messages'])
+                                                  'Sea-lice counts', 'Experiments', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -155,7 +155,8 @@ class MainHeadingTests(WorkspaceTestCase):
         self.assertEqual(self.headings(response),
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
                                                  'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Communication', [''])])
+                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']),
+                          ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
@@ -216,6 +217,7 @@ class MenuPlacementTests(TestCase):
             'farm.Treatment': 'Production · Operations · Health',
             'farm.HealthEvent': 'Production · Operations · Health',
             'farm.LiceCount': 'Production · Operations · Health',
+            'experiments.Experiment': 'Production · Research',
             'messaging.Conversation': 'Production · Communication',
             'tasks.Task': 'Production · Operations',
             'tasks.TaskSeries': 'Production · Operations',

@@ -264,9 +264,11 @@ class PlacementConstraintTests(ExperimentTestCase):
         self.refuses(self.placement, self.r2, self.t1, 0, 56)
         booked.soft_delete(self.user)
         self.placement(self.r2, self.t1, 0, 56)
-        running = self.experiment('Running', status='running', starts_on=self.today, hypothesis='h',
-                                  primary_endpoint='bfcr', allocation_method='manual', allocation_note='by hand')
+        running = self.experiment('Running')
         replicate = self.replicate(self.group(running, 'R'), 1)
+        Experiment.objects.filter(pk=running.pk).update(
+            status='running', starts_on=self.today, hypothesis='h', primary_endpoint='bfcr',
+            allocation_method='manual', allocation_note='by hand')                # started: its design is fixed
         self.refuses(self.placement, replicate, self.t1, 56, 60)
 
     def test_a_tank_that_was_in_a_trial_cannot_be_deleted_from_the_database(self):

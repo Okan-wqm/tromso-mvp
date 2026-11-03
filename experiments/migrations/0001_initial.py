@@ -3,6 +3,7 @@
 # migration depends on farm 0018, so it is there; it is not created again, because reversing that would drop it from
 # under the farm's own exclusion constraints.
 import django.contrib.postgres.constraints
+import django.core.validators
 import django.db.models.deletion
 import django.db.models.functions.text
 import farm.models.feeding_protocol
@@ -59,7 +60,7 @@ class Migration(migrations.Migration):
                 ('hypothesis', models.CharField(blank=True, max_length=4000, verbose_name='Hypothesis')),
                 ('primary_endpoint', models.CharField(blank=True, choices=[('bfcr', 'Biological FCR'), ('efcr', 'Economic FCR'), ('survival', 'Survival'), ('biomass_gain', 'Biomass gain')], max_length=40, verbose_name='Primary endpoint')),
                 ('starts_on', models.DateField(blank=True, null=True, verbose_name='Starts on')),
-                ('duration_days', models.PositiveSmallIntegerField(verbose_name='Duration (days)')),
+                ('duration_days', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(1095)], verbose_name='Duration (days)')),
                 ('allocation_method', models.CharField(blank=True, choices=[('', 'Not allocated'), ('sha256_v1', 'Randomised'), ('manual', 'Placed by hand')], default='', max_length=10, verbose_name='Allocation')),
                 ('allocation_seed', models.BigIntegerField(blank=True, null=True, verbose_name='Allocation seed')),
                 ('allocation_note', models.CharField(blank=True, max_length=500, verbose_name='Reason for placing by hand')),
@@ -194,7 +195,7 @@ class Migration(migrations.Migration):
                 ('version', models.PositiveIntegerField(default=1, verbose_name='Version')),
                 ('is_deleted', models.BooleanField(db_index=True, default=False, verbose_name='Deleted')),
                 ('deleted_at', models.DateTimeField(blank=True, null=True, verbose_name='Deleted at')),
-                ('number', models.PositiveSmallIntegerField(verbose_name='Replicate')),
+                ('number', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(99)], verbose_name='Replicate')),
                 ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL, verbose_name='Created by')),
                 ('deleted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL, verbose_name='Deleted by')),
                 ('group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='replicates', to='experiments.experimentgroup', verbose_name='Group')),

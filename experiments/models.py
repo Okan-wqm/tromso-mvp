@@ -20,6 +20,7 @@ every factor) is checked by `design.problems` and the services, and said so ther
 from django.conf import settings
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import RangeOperators
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q, Value
 from django.db.models.functions import Lower
@@ -82,7 +83,8 @@ class Experiment(AuditedModel):
     # Day 0 is the baseline weighing; the last day (starts_on + duration_days) is the final weighing. Days are the
     # site's own (farm/stock/dates.py).
     starts_on = models.DateField(_('Starts on'), null=True, blank=True)
-    duration_days = models.PositiveSmallIntegerField(_('Duration (days)'))
+    duration_days = models.PositiveSmallIntegerField(
+        _('Duration (days)'), validators=[MinValueValidator(1), MaxValueValidator(MAX_DURATION_DAYS)])
     allocation_method = models.CharField(_('Allocation'), max_length=10, choices=AllocationMethod.choices,
                                          blank=True, default=AllocationMethod.NONE)
     allocation_seed = models.BigIntegerField(_('Allocation seed'), null=True, blank=True)
@@ -324,7 +326,8 @@ class Replicate(AuditedModel):
 
     group = models.ForeignKey(ExperimentGroup, on_delete=models.CASCADE, related_name='replicates',
                               verbose_name=_('Group'))
-    number = models.PositiveSmallIntegerField(_('Replicate'))
+    number = models.PositiveSmallIntegerField(_('Replicate'), validators=[MinValueValidator(1),
+                                                                          MaxValueValidator(MAX_REPLICATE_NUMBER)])
 
     class Meta:
         db_table = 'experiment_replicates'

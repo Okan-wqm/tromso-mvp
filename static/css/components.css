@@ -597,6 +597,56 @@ a.view-tab:not([aria-current]):hover { color: var(--speck); }
 .data-table tbody tr.group-row th { background: var(--mist); color: var(--speck); }
 .button[disabled] { opacity: .5; cursor: not-allowed; }
 
+/* The calculator and its Water Quality Management Chart (templates/farm/water_calculator.html,
+   _deffeyes_chart.html): the form beside the chart and its values, stacked on narrow screens. The chart is an
+   inline SVG drawn on the server; its colours are the source's tokens (DeffeyesChart.tsx with
+   shared-contracts' colors: error 500 NH₃, accent 500 CO₂ and aragonite, error 700 H₂S, success 500/600 the safe
+   zone, info 600 the star and calcite, neutral 900 the cross, gray 400 the path, neutral 200 the grid). */
+.calculator { display: grid; grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); gap: 2rem; align-items: start; }
+.calculator-result { display: grid; gap: 1.25rem; min-width: 0; }
+@media (max-width: 1100px) { .calculator { grid-template-columns: minmax(0, 1fr); } }
+.deffeyes { margin: 0; padding: 1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
+.deffeyes-title { margin-bottom: .5rem; font-weight: 700; text-align: center; }
+.deffeyes-chart { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; font-family: var(--font); }
+.deffeyes-grid line { stroke: #E2E8F0; stroke-dasharray: 3 3; }
+.deffeyes-frame { fill: none; stroke: var(--muted); }
+.deffeyes-ticks text { font-size: 11px; fill: var(--muted); }
+.deffeyes-axis { font-size: 12px; fill: #334155; }
+.deffeyes-isoline { fill: none; stroke-width: .5; stroke-opacity: .25; }
+.deffeyes-isoline.is-labelled { stroke-width: 1.5; stroke-opacity: .5; }
+.deffeyes-ph { font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: central; stroke: var(--white);
+  stroke-width: 3px; paint-order: stroke; }
+.deffeyes-zone { stroke: none; }
+.deffeyes-zone-nh3 { fill: rgba(239, 68, 68, .18); }
+.deffeyes-zone-co2 { fill: rgba(249, 115, 22, .15); }
+.deffeyes-zone-h2s { fill: rgba(185, 28, 28, .15); }
+.deffeyes-zone-safe { fill: #10B981; fill-opacity: .15; stroke: #059669; stroke-width: 1.5; stroke-dasharray: 4 4; }
+.deffeyes-border { fill: none; stroke-width: 1.5; stroke-dasharray: 6 3; }
+.deffeyes-border-nh3 { stroke: #EF4444; }
+.deffeyes-border-co2 { stroke: #FF8F73; }
+.deffeyes-border-h2s { stroke: #B91C1C; }
+.deffeyes-omega { fill: none; stroke-width: 2; stroke-dasharray: 8 4; }
+.deffeyes-omega-calcite { stroke: #2563EB; }
+.deffeyes-omega-aragonite { stroke: #FF8F73; }
+.deffeyes-path { fill: none; stroke: #6B7280; stroke-width: 1.5; stroke-dasharray: 6 4; }
+.deffeyes-target line { stroke: #0F172A; stroke-width: 2.5; }
+.deffeyes-point { fill: #2563EB; stroke: #1D4ED8; stroke-width: 1; }
+.deffeyes-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: .375rem 1rem; margin: .75rem 0 0; padding: 0;
+  list-style: none; color: var(--muted); font-size: .8125rem; }
+.deffeyes-legend li { display: inline-flex; align-items: center; gap: .375rem; }
+.deffeyes-key { width: 14px; height: 14px; }
+.deffeyes-swatch { width: 14px; height: 10px; border-radius: 2px; opacity: .7; }
+.deffeyes-swatch-isolines { background: linear-gradient(90deg, #DC2626, #EAB308, #22C55E, #3B82F6, #7C3AED); }
+.deffeyes-swatch-nh3 { background: #EF4444; }
+.deffeyes-swatch-co2 { background: #FF8F73; }
+.deffeyes-swatch-h2s { background: #B91C1C; }
+.deffeyes-swatch-safe { background: #10B981; }
+.deffeyes-swatch-calcite, .deffeyes-swatch-aragonite { height: 0; border-top: 2px dashed #2563EB; border-radius: 0; }
+.deffeyes-swatch-aragonite { border-top-color: #FF8F73; }
+.deffeyes-notes { margin: .5rem 0 0; padding-left: 1.125rem; color: var(--muted); font-size: .8125rem; }
+.calculator-values caption { padding-bottom: .5rem; font-weight: 700; text-align: left; }
+.calculator-sources { margin: 0; font-size: .8125rem; }
+
 /* A system nested under another is indented one step per level (up to five) */
 .data-table td.depth-1 { padding-left: 2rem; }
 .data-table td.depth-2 { padding-left: 3rem; }

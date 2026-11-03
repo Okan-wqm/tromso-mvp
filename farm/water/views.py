@@ -1,12 +1,13 @@
 """Operations › Water chemistry: the latest water of every unit and loop with its status, the history of
-the samples with their values judged, and the dialogs that record a sample, a round or a void. A read
-page with dialogs, as Production units is (farm/stock/views.py): each dialog renders in the shared dialog
-or as a page, posts to itself and goes back where it was opened (`next`).
+the samples with their values judged, the calculator with the Water Quality Management Chart, and the
+dialogs that record a sample, a round or a void. A read page with dialogs, as Production units is
+(farm/stock/views.py): each dialog renders in the shared dialog or as a page, posts to itself and goes
+back where it was opened (`next`).
 
-Who may do what (config/access.py, area Water chemistry): reading needs view on the samples, recording a
-sample or a round add, voiding one delete. The buttons a person cannot use are not shown, and the views
-refuse them too. The page judges every value on read (farm/water/read.py) and alerts nobody: critical
-values are shown, not sent."""
+Who may do what (config/access.py, area Water chemistry): reading needs view on the samples (the
+calculator too: it stores nothing), recording a sample or a round add, voiding one delete. The buttons a
+person cannot use are not shown, and the views refuse them too. The page judges every value on read
+(farm/water/read.py) and alerts nobody: critical values are shown, not sent."""
 from datetime import datetime, time, timedelta
 
 from django.contrib import messages
@@ -24,12 +25,13 @@ from django.utils.translation import gettext as _, ngettext
 from core import navigation
 from core.crud import done, render_page
 
-from ..forms.water import RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm, find_point
+from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
+                           find_point)
 from ..models import Site, System, Tank, WaterMeasurement
 from ..models.site import zone_of
 from ..models.water import LIVE_POINT, local_time, site_of
 from ..stock.services import AlreadyRecorded
-from . import parameters, read, services
+from . import deffeyes, parameters, read, services
 from .evaluate import ALERTS, Status
 from .parameters import MEASURED, NH3_N
 
@@ -101,6 +103,7 @@ def water_page(request):
         sites=sites, site=site, point=point, showing_history=showing_history,
         latest_url=page_url(site=site.pk if site else ''),
         history_tab_url=page_url(view=HISTORY, site=site.pk if site else ''),
+        calculator_url=reverse('farm:water_calculator'),
         can_record=request.user.has_perm(RECORD), can_void=request.user.has_perm(VOID),
         record_url=_dialog_url('farm:water_record', request, point),
         round_url=reverse('farm:water_round') + (f'?{urlencode({"site": site.pk})}' if site else ''),
@@ -189,6 +192,23 @@ def _point_filter(site):
     if site is not None:
         units, systems = units.filter(production_department__site=site), systems.filter(site=site)
     return {'units': list(units), 'systems': list(systems)}
+
+
+# ---- the calculator ------------------------------------------------------------------------------------
+@permission_required(VIEW, raise_exception=True)
+def calculator(request):
+    """The calculator: a water's values, a target and the limits in, the Water Quality Management Chart
+    (farm/water/deffeyes.py) and the values worked out next to it. A GET form; without values it shows its
+    defaults. Nothing is stored."""
+    form = CalculatorForm(request.GET or None)
+    analysis = chart = None
+    if not form.is_bound or form.is_valid():
+        water, limits, target, pressure, layers = form.inputs()
+        analysis = deffeyes.analyse(water, limits, target, pressure)
+        chart = deffeyes.draw(analysis, layers)
+    context = _context(form=form, analysis=analysis, chart=chart, latest_url=page_url(),
+                       history_tab_url=page_url(view=HISTORY), calculator_url=reverse('farm:water_calculator'))
+    return render_page(request, 'farm/water_calculator.html', context)
 
 
 # ---- the dialogs ---------------------------------------------------------------------------------------

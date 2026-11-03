@@ -608,6 +608,15 @@ msgstr "Norsk organisasjonsnummer (9 siffer)"
 msgid "A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001."
 msgstr "En DOI begynner med 10. og har ingen mellomrom, f.eks. 10.1016/j.aquaculture.2019.01.001."
 
+msgid ""
+"A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the "
+"regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values"
+" are in the table next to it."
+msgstr ""
+"Et Deffeyes-diagram: løst uorganisk karbon bortover, alkalitet oppover, linjer med lik pH, "
+"områdene der CO₂, NH₃ og H₂S går over grensene sine, den trygge sonen og vannets punkt. Verdiene "
+"står i tabellen ved siden av."
+
 #, python-format
 msgid ""
 "A PDF of up to %(limit)s. Its text is read when it is saved, page by page, for the search and, "
@@ -806,6 +815,15 @@ msgstr "En enhet kan ikke gå fra %(old)s til %(new)s."
 msgid "A unit with fish in it cannot be made inactive: move or harvest them first."
 msgstr "En enhet med fisk i kan ikke gjøres inaktiv: flytt eller høst fisken først."
 
+msgid ""
+"A water on the Water Quality Management Chart: its alkalinity against its dissolved inorganic "
+"carbon, with the pH where each limit is reached. The limits start as defaults, not as the limits "
+"of your fish. Nothing is stored."
+msgstr ""
+"Et vann i diagrammet for styring av vannkvalitet: alkaliteten mot løst uorganisk karbon, med pH-"
+"en der hver grense nås. Grensene starter som standardverdier, ikke som grensene for fisken din. "
+"Ingenting lagres."
+
 msgid "Above the max density, accepted"
 msgstr "Over maks. tetthet, godtatt"
 
@@ -950,11 +968,23 @@ msgstr ""
 "Lokalitetsnummer fra Akvakulturregisteret (5 siffer). Uten det kan ikke rapporter til norske "
 "myndigheter sendes inn."
 
+msgid "Alkalinity"
+msgstr "Alkalitet"
+
+msgid "Alkalinity (meq/L)"
+msgstr "Alkalitet (meq/L)"
+
 msgid "Alkalinity (mg/L as CaCO₃)"
 msgstr "Alkalitet (mg/L som CaCO₃)"
 
 msgid "Alkalinity (mg/L)"
 msgstr "Alkalitet (mg/L)"
+
+msgid "Alkalinity band, high (mg/L as CaCO₃)"
+msgstr "Alkalitetsbånd, øvre (mg/L som CaCO₃)"
+
+msgid "Alkalinity band, low (mg/L as CaCO₃)"
+msgstr "Alkalitetsbånd, nedre (mg/L som CaCO₃)"
 
 msgid "All"
 msgstr "Alle"
@@ -1065,6 +1095,9 @@ msgstr "Ammoniakksensor"
 
 msgid "Ammonium (mg/L NH₄⁺ as N)"
 msgstr "Ammonium (mg/L NH₄⁺ som N)"
+
+msgid "Amount"
+msgstr "Mengde"
 
 msgid "An active protocol has a table."
 msgstr "En aktiv protokoll har en tabell."
@@ -1278,6 +1311,14 @@ msgstr "Ved trykket ved havnivå: lokaliteten har ingen høyde over havet."
 msgid "At the deepest point, usually by the outlet."
 msgstr "På det dypeste punktet, vanligvis ved utløpet."
 
+#, python-format
+msgid ""
+"At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide and borate alone are "
+"that much."
+msgstr ""
+"Ved denne pH-en er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksid og borat alene utgjør så "
+"mye."
+
 msgid "Author"
 msgstr "Forfatter"
 
@@ -1447,6 +1488,19 @@ msgstr "COP (virkningsgrad)"
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
+msgid "CO₂ limit (mg/L)"
+msgstr "CO₂-grense (mg/L)"
+
+msgid "CO₂ toxic"
+msgstr "CO₂ giftig"
+
+#, python-format
+msgid "CO₂ toxic (> %(limit)s mg/L)"
+msgstr "CO₂ giftig (> %(limit)s mg/L)"
+
+msgid "CO₂: no limit given."
+msgstr "CO₂: ingen grense oppgitt."
+
 msgid "Cage"
 msgstr "Merd"
 
@@ -1456,8 +1510,14 @@ msgstr "Merdtype"
 msgid "Cages"
 msgstr "Merder"
 
+msgid "Calcium (mg/L Ca²⁺)"
+msgstr "Kalsium (mg/L Ca²⁺)"
+
 msgid "Calculated"
 msgstr "Beregnet"
+
+msgid "Calculator"
+msgstr "Kalkulator"
 
 msgid "Calibrations can be added once the equipment is created."
 msgstr "Kalibreringer kan legges til når utstyret er opprettet."
@@ -1483,8 +1543,25 @@ msgstr "Kapasitet (t per dag)"
 msgid "Carbohydrate, NFE (%)"
 msgstr "Karbohydrat, NFE (%)"
 
+msgid "Carbon dioxide (CO₂)"
+msgstr "Karbondioksid (CO₂)"
+
 msgid "Carbon dioxide (mg/L free CO₂)"
 msgstr "Karbondioksid (mg/L fri CO₂)"
+
+msgid "Carbonate system"
+msgstr "Karbonatsystemet"
+
+msgid ""
+"Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); "
+"boric acid: Dickson (1990); ammonium: Millero (1995); hydrogen sulfide: Millero, Plese and "
+"Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is "
+"as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning."
+msgstr ""
+"Karbonsyre: Millero, Graham, Huang, Bustos-Serrano og Pierrot (2006); vann: Millero (1995); "
+"borsyre: Dickson (1990); ammonium: Millero (1995); hydrogensulfid: Millero, Plese og Fernandez "
+"(1988); kalsitt og aragonitt: Mucci (1983); oksygen: Benson og Krause (1984). pH er slik en måler"
+" leser den (NBS-skala). En grense nærmere enn 0,2 pH er en advarsel."
 
 msgid "Category"
 msgstr "Kategori"
@@ -1832,6 +1909,9 @@ msgstr "Egendefinert felt 3"
 msgid "D-ended"
 msgstr "D-ende"
 
+msgid "DIC (mmol/L)"
+msgstr "DIC (mmol/L)"
+
 msgid "DOI"
 msgstr "DOI"
 
@@ -1858,6 +1938,18 @@ msgstr "Utrangert"
 
 msgid "Default"
 msgstr "Standard"
+
+msgid "Default 0.0103: 0.0125 mg/L NH₃ (Piper et al. 1982) as nitrogen."
+msgstr "Standard 0,0103: 0,0125 mg/L NH₃ (Piper mfl. 1982) som nitrogen."
+
+msgid "Default 15 mg/L, a common guideline for salmonids."
+msgstr "Standard 15 mg/L, en vanlig retningslinje for laksefisk."
+
+msgid "Default 2 µg/L, the US EPA criterion for un-ionised H₂S (1986)."
+msgstr "Standard 2 µg/L, US EPAs kriterium for uionisert H₂S (1986)."
+
+msgid "Defaults"
+msgstr "Standardverdier"
 
 msgid "Definition"
 msgstr "Definisjon"
@@ -1952,6 +2044,9 @@ msgstr "Avviklet"
 msgid "Disease"
 msgstr "Sykdom"
 
+msgid "Dissolved inorganic carbon (DIC)"
+msgstr "Løst uorganisk karbon (DIC)"
+
 msgid "Dissolved oxygen"
 msgstr "Løst oksygen"
 
@@ -1990,6 +2085,9 @@ msgid "Draft: being built. Active: can be assigned. Retired: kept for the days i
 msgstr ""
 "Utkast: under arbeid. Aktiv: kan tildeles. Utfaset: beholdes for dagene den fôret, tildeles ikke "
 "lenger."
+
+msgid "Draw the chart"
+msgstr "Tegn diagrammet"
 
 msgid "Drum diameter"
 msgstr "Trommeldiameter"
@@ -2493,6 +2591,15 @@ msgstr ""
 "For hver fôrstørrelse: hvor mye fôr ett skudd gir og hvor mye siloen rommer; høyst 50 rader. De "
 "lagres separat fra utstyrsdetaljene."
 
+msgid "For the calcite and aragonite saturation lines, in water of 5 to 44 ‰."
+msgstr "For metningslinjene for kalsitt og aragonitt, i vann på 5 til 44 ‰."
+
+msgid "For the oxygen saturation."
+msgstr "For oksygenmetningen."
+
+msgid "For the oxygen saturation: the pressure of the standard atmosphere there. Empty is sea level."
+msgstr "For oksygenmetningen: trykket i standardatmosfæren der. Tomt er havnivå."
+
 msgid "Foreign key"
 msgstr "Fremmednøkkel"
 
@@ -2612,6 +2719,9 @@ msgstr "Oppgi minst én grense."
 
 msgid "Give at least one temperature column."
 msgstr "Oppgi minst én temperaturkolonne."
+
+msgid "Give both or neither."
+msgstr "Oppgi begge eller ingen."
 
 msgid "Give the average or the sample, not both."
 msgstr "Oppgi snittvekten eller prøven, ikke begge."
@@ -2783,6 +2893,37 @@ msgstr ""
 "arter; en sortering tar den lengste av sin egen regel og transportregelen. For kort sulting er en"
 " advarsel, aldri en sperre: å fortsette registreres og logges som kritisk. Dette er anleggets "
 "egne regler: startverdiene skal sjekkes med veterinæren."
+
+msgid "Hydrogen sulfide"
+msgstr "Hydrogensulfid"
+
+msgid "H₂S (as H₂S)"
+msgstr "H₂S (som H₂S)"
+
+msgid "H₂S limit (µg/L H₂S)"
+msgstr "H₂S-grense (µg/L H₂S)"
+
+msgid "H₂S toxic"
+msgstr "H₂S giftig"
+
+msgid "H₂S toxic (at every pH of the chart)"
+msgstr "H₂S giftig (ved hver pH i diagrammet)"
+
+#, python-format
+msgid "H₂S toxic (pH < %(ph)s)"
+msgstr "H₂S giftig (pH < %(ph)s)"
+
+msgid "H₂S: give the total sulfide."
+msgstr "H₂S: oppgi totalt sulfid."
+
+msgid "H₂S: no limit given."
+msgstr "H₂S: ingen grense oppgitt."
+
+msgid "H₂S: the limit is not reached anywhere on this chart."
+msgstr "H₂S: grensen nås ikke noe sted i dette diagrammet."
+
+msgid "H₂S: the total sulfide cannot give the limit at any pH."
+msgstr "H₂S: det totale sulfidet kan ikke gi grensen ved noen pH."
 
 msgid "Icelandic"
 msgstr "Islandsk"
@@ -3035,6 +3176,9 @@ msgstr "Livsstadium"
 msgid "Limit"
 msgstr "Grense"
 
+msgid "Limits"
+msgstr "Grenser"
+
 msgid "Line"
 msgstr "Linje"
 
@@ -3275,6 +3419,12 @@ msgstr "Dødelighet"
 msgid "Mortality recorded: %(count)s fish of %(batch)s in %(unit)s."
 msgstr "Dødelighet registrert: %(count)s fisk av %(batch)s i %(unit)s."
 
+msgid "Most TAN at this pH"
+msgstr "Mest TAN ved denne pH-en"
+
+msgid "Most total sulfide at this pH (as S)"
+msgstr "Mest totalt sulfid ved denne pH-en (som S)"
+
 msgid "Moved in"
 msgstr "Flyttet inn"
 
@@ -3298,8 +3448,39 @@ msgstr ""
 "NH₃ og NH₄⁺ sammen, som nitrogen. Et sett som leser NH₄⁺: del på 1,29; et som leser NH₃: del på "
 "1,22. Den giftige NH₃ regnes ut fra denne, pH og temperaturen i samme prøve."
 
+msgid "NH₃ and NH₄⁺ together, as nitrogen. The NH₃ limit is drawn from it."
+msgstr "NH₃ og NH₄⁺ sammen, som nitrogen. NH₃-grensen tegnes ut fra den."
+
+msgid "NH₃ share of TAN at the border"
+msgstr "NH₃-andelen av TAN ved grensen"
+
+msgid "NH₃ toxic"
+msgstr "NH₃ giftig"
+
+msgid "NH₃ toxic (at every pH of the chart)"
+msgstr "NH₃ giftig (ved hver pH i diagrammet)"
+
+#, python-format
+msgid "NH₃ toxic (pH > %(ph)s)"
+msgstr "NH₃ giftig (pH > %(ph)s)"
+
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
+
+msgid "NH₃-N limit (mg/L as N)"
+msgstr "NH₃-N-grense (mg/L som N)"
+
+msgid "NH₃: give the TAN."
+msgstr "NH₃: oppgi TAN."
+
+msgid "NH₃: no limit given."
+msgstr "NH₃: ingen grense oppgitt."
+
+msgid "NH₃: the TAN cannot give the limit at any pH (the limit is not below the TAN)."
+msgstr "NH₃: TAN kan ikke gi grensen ved noen pH (grensen er ikke under TAN)."
+
+msgid "NH₃: the limit is not reached anywhere on this chart."
+msgstr "NH₃: grensen nås ikke noe sted i dette diagrammet."
 
 msgid "NH₄-N (mg/L)"
 msgstr "NH₄-N (mg/L)"
@@ -3922,9 +4103,15 @@ msgstr "Eiere"
 msgid "Oxygen"
 msgstr "Oksygen"
 
+msgid "Oxygen saturation"
+msgstr "Oksygenmetning"
+
 #, python-format
 msgid "Oxygen saturation (% of air saturation)"
 msgstr "Oksygenmetning (% av luftmetning)"
+
+msgid "Oxygen solubility (air)"
+msgstr "Oksygenløselighet (luft)"
 
 msgid "Ozone concentration"
 msgstr "Ozonkonsentrasjon"
@@ -4479,6 +4666,36 @@ msgstr "SFR (% per dag)"
 msgid "SFR at %(temperature)s"
 msgstr "SFR ved %(temperature)s"
 
+msgid "Safe zone"
+msgstr "Trygg sone"
+
+msgid "Safe zone (H₂S not assessed)"
+msgstr "Trygg sone (H₂S ikke vurdert)"
+
+msgid "Safe zone: H₂S not assessed, no total sulfide given."
+msgstr "Trygg sone: H₂S ikke vurdert, ikke oppgitt totalt sulfid."
+
+msgid "Safe zone: no pH in the alkalinity band is inside every limit."
+msgstr "Trygg sone: ingen pH i alkalitetsbåndet er innenfor alle grensene."
+
+msgid "Safe zone: not drawn without the CO₂ limit."
+msgstr "Trygg sone: tegnes ikke uten CO₂-grensen."
+
+msgid "Safe zone: not drawn without the H₂S limit, a total sulfide being given."
+msgstr "Trygg sone: tegnes ikke uten H₂S-grensen når et totalt sulfid er oppgitt."
+
+msgid "Safe zone: not drawn without the NH₃ limit."
+msgstr "Trygg sone: tegnes ikke uten NH₃-grensen."
+
+msgid "Safe zone: not drawn without the TAN."
+msgstr "Trygg sone: tegnes ikke uten TAN."
+
+msgid "Safe zone: not drawn without the alkalinity band."
+msgstr "Trygg sone: tegnes ikke uten alkalitetsbåndet."
+
+msgid "Safe zone: not drawn, the alkalinity band is empty (its high end is not above its low end)."
+msgstr "Trygg sone: tegnes ikke, alkalitetsbåndet er tomt (den øvre enden er ikke over den nedre)."
+
 msgid "Safety"
 msgstr "Sikkerhet"
 
@@ -4733,6 +4950,9 @@ msgstr "Vis slettede rader"
 
 msgid "Show earlier messages"
 msgstr "Vis tidligere meldinger"
+
+msgid "Show on the chart"
+msgstr "Vis i diagrammet"
 
 msgid "Show the units"
 msgstr "Vis enhetene"
@@ -5016,6 +5236,13 @@ msgstr "Egnet for"
 msgid "Suitable for these fish"
 msgstr "Egnet for denne fisken"
 
+msgid ""
+"Sulfide as a laboratory or a methylene-blue kit reports it, as S. The H₂S is worked out from it, "
+"the pH, the temperature and the salinity."
+msgstr ""
+"Sulfid slik et laboratorium eller et metylenblått-sett rapporterer det, som S. H₂S regnes ut fra "
+"det, pH-en, temperaturen og saliniteten."
+
 msgid "Supplier"
 msgstr "Leverandør"
 
@@ -5078,6 +5305,24 @@ msgstr "Kar"
 
 msgid "Tanks, ponds & cages"
 msgstr "Kar, dammer og merder"
+
+msgid "Target"
+msgstr "Mål"
+
+msgid "Target CO₂"
+msgstr "Mål-CO₂"
+
+msgid "Target DIC"
+msgstr "Mål-DIC"
+
+msgid "Target alkalinity (mg/L as CaCO₃)"
+msgstr "Målalkalitet (mg/L som CaCO₃)"
+
+msgid "Target and alkalinity band"
+msgstr "Mål og alkalitetsbånd"
+
+msgid "Target pH (NBS scale)"
+msgstr "Mål-pH (NBS-skala)"
 
 msgid "Target weight"
 msgstr "Målvekt"
@@ -5168,6 +5413,9 @@ msgid ""
 msgstr ""
 "Gjennomsnittsvekten fisken vokser til før høsting, i gram. Når den nås, regnes ut fra "
 "fôringsprotokollenes framskrivning."
+
+msgid "The band goes up: its high end is above its low end."
+msgstr "Båndet går oppover: den øvre enden er over den nedre."
 
 #, python-format
 msgid "The bands must meet: one starts at %(start)s g, the band before it ends at %(end)s g."
@@ -5475,6 +5723,9 @@ msgstr ""
 "regnes det neste ut på nytt. Over- og underfôring flagges ikke ennå: sammenlign mengdene som er "
 "fôret og som gjenstår."
 
+msgid "The safe zone lies in this band."
+msgstr "Den trygge sonen ligger i dette båndet."
+
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
 
@@ -5623,6 +5874,9 @@ msgstr ""
 
 msgid "The warranty cannot end before the purchase date."
 msgstr "Garantien kan ikke slutte før kjøpsdatoen."
+
+msgid "The water"
+msgstr "Vannet"
 
 msgid "The water cannot stand higher than the depth."
 msgstr "Vannet kan ikke stå høyere enn dybden."
@@ -5826,6 +6080,9 @@ msgstr "Totalt areal (m²)"
 msgid "Total gas pressure (% of barometric pressure)"
 msgstr "Totalt gasstrykk (% av lufttrykket)"
 
+msgid "Total sulfide (µg/L as S)"
+msgstr "Totalt sulfid (µg/L som S)"
+
 msgid "Total volume (m³)"
 msgstr "Totalt volum (m³)"
 
@@ -5880,6 +6137,9 @@ msgstr "UV-filter"
 
 msgid "UV steriliser"
 msgstr "UV-anlegg"
+
+msgid "Un-ionised ammonia (NH₃-N)"
+msgstr "Uionisert ammoniakk (NH₃-N)"
 
 msgid "Un-ionised ammonia (mg/L NH₃ as N)"
 msgstr "Uionisert ammoniakk (mg/L NH₃ som N)"
@@ -5954,6 +6214,9 @@ msgstr "Brukernavn"
 msgid "Users"
 msgstr "Brukere"
 
+msgid "Value"
+msgstr "Verdi"
+
 msgid "Version"
 msgstr "Versjon"
 
@@ -6010,6 +6273,9 @@ msgstr "Garantien utløper"
 
 msgid "Water"
 msgstr "Vann"
+
+msgid "Water Quality Management Chart"
+msgstr "Diagram for styring av vannkvalitet"
 
 msgid "Water capacity (m³)"
 msgstr "Vannkapasitet (m³)"
@@ -6255,6 +6521,9 @@ msgid ""
 msgstr ""
 "Beregnes ut fra målene og maks. tetthet hver gang enheten lagres; vises som sist lagret. Maks. "
 "biomasse bruker vannvolumet når det finnes, ellers volumet."
+
+msgid "Worked out from the values"
+msgstr "Regnet ut fra verdiene"
 
 msgid "Wrasse"
 msgstr "Leppefisk"
@@ -6753,6 +7022,12 @@ msgstr "ikke håndhevet av databasen"
 msgid "not in the model"
 msgstr "ikke i modellen"
 
+msgid "not reached at any pH"
+msgstr "nås ikke ved noen pH"
+
+msgid "not reached in the chart's range (4 to 12.5)"
+msgstr "nås ikke i diagrammets område (4 til 12,5)"
+
 msgid "open"
 msgstr "åpen"
 
@@ -6766,6 +7041,18 @@ msgstr "pH"
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"
 
+msgid "pH border, toxic above"
+msgstr "pH-grense, giftig over"
+
+msgid "pH border, toxic below"
+msgstr "pH-grense, giftig under"
+
+msgid "pH isolines"
+msgstr "pH-isolinjer"
+
+msgid "pH margin to the border"
+msgstr "pH-margin til grensen"
+
 msgid "pH sensor"
 msgstr "pH-sensor"
 
@@ -6778,6 +7065,9 @@ msgstr "deltaker"
 
 msgid "participants"
 msgstr "deltakere"
+
+msgid "passed at every pH of the chart's range (4 to 12.5)"
+msgstr "overskredet ved hver pH i diagrammets område (4 til 12,5)"
 
 msgid "planned harvest or transport"
 msgstr "planlagt høsting eller transport"
@@ -6978,6 +7268,18 @@ msgstr "deg"
 #, python-format
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "du la inn %(weight)s: %(grams)s g, %(percent)s %%"
+
+msgid "Ω aragonite = 1"
+msgstr "Ω aragonitt = 1"
+
+msgid "Ω calcite = 1"
+msgstr "Ω kalsitt = 1"
+
+msgid "Ω calcite and aragonite"
+msgstr "Ω kalsitt og aragonitt"
+
+msgid "Ω: needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
+msgstr "Ω: trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (1983)."
 
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."

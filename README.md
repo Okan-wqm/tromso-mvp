@@ -801,7 +801,7 @@ are in the bug document, not in the database).
 published values):
 - **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
   converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
-  water it equals Emerson et al. (1975) within 0.002 pK. It needs the pH and the temperature of the same
+  water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
   sample; the salinity is the sample's, else the point's latest within 30 days before it, else 0 where
   every unit is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
@@ -809,20 +809,90 @@ published values):
   mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
   kept and flagged.
 
-**The page** has two views: **Latest** (every unit and every loop with a sample in the last 30 days, its
+**The page** has three tabs: **Latest** (every unit and every loop with a sample in the last 30 days, its
 status and the latest value of each parameter, coloured by status, its time and age on hover; a filter by
-site) and **History** (the samples, newest first, 50 a page, filtered by site, unit or loop, dates, and
+site), **History** (the samples, newest first, 50 a page, filtered by site, unit or loop, dates, and
 "only warnings and criticals"; each value coloured as judged now, worked-out values in italics; Void
-while the sample is in the window). **Record sample** opens the dialog (date and time on the site's
-clock, source, the twelve values in four groups, notes; from a unit's history the unit is fixed and each
-field's help shows its species' limits). **Round** is the morning round: a site and optionally a
-production department or a system, the columns to fill (temperature and oxygen by default), one row per
-unit that is not inactive and per loop, one time and one source; empty rows are skipped, a value out of
-range is shown in its cell and nothing is recorded until every cell is right (at most 200 rows).
+while the sample is in the window) and **Calculator** (below). **Record sample** opens the dialog (date
+and time on the site's clock, source, the twelve values in four groups, notes; from a unit's history the
+unit is fixed and each field's help shows its species' limits). **Round** is the morning round: a site
+and optionally a production department or a system, the columns to fill (temperature and oxygen by
+default), one row per unit that is not inactive and per loop, one time and one source; empty rows are
+skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right (at
+most 200 rows).
 
-**Who may do what**: the area Water chemistry (Production · Operations): Read the page, Create records
-a sample or a round, Delete voids one; the area Water limits (Production · Setup · Reference data) with
-read, create, edit and delete.
+**The calculator** (the third tab, `/operations/water/calculator/`) draws a water on the **Water
+Quality Management Chart**, the source's Deffeyes diagram, server-rendered as SVG without JavaScript
+(`farm/water/deffeyes.py`, `templates/farm/_deffeyes_chart.html`). It is a GET form: the values live in
+the address, nothing is stored, and without values it shows its defaults.
+- **In**: temperature, pH (NBS, 4 to 12), salinity, alkalinity (mg/L as CaCO₃), each with its
+  parameter's label, range and precision; optionally TAN, total sulfide (µg/L as S, as laboratories and
+  methylene-blue kits report it), dissolved oxygen with an altitude, calcium; a target pH and
+  alkalinity; the alkalinity band of the safe zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S
+  (µg/L as H₂S); and which layers to draw.
+- **The chart**: DIC (mmol/L) across, alkalinity (meq/L) up, 0 to 6 each and wider when the point, the
+  target or the band needs it; pH isolines every 0.25 from 4.25 to 12.5 (every 0.5 labelled); the
+  regions where NH₃ (above its border's isoline), H₂S (below its border's isoline) and CO₂ (below the
+  curve where CO₂ = the limit) pass their limits; the safe zone (the band, between the NH₃ border and
+  the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium given, from 5
+  to 44 ‰ (Mucci's range); the water (a star) and the target (a cross). A note says why a layer asked
+  for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its tooltip and the
+  legend.
+- **Out**, in a table next to the chart: alkalinity (meq/L), DIC, CO₂ and its status, target DIC and
+  CO₂, NH₃-N and its status, H₂S (µg/L as H₂S) and its status, each limit's pH border and the pH margin
+  to it, the most TAN and the most total sulfide this pH allows, the oxygen solubility and saturation.
+  A status follows the source: past the border critical, within 0.2 pH a warning.
+- **The chemistry** (`farm/water/chemistry.py`, one module with the ammonia and oxygen above): K1 and K2
+  of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
+  source calls them Millero 2010, WQ-39); Kw of Millero (1995); KB of Dickson (1990)
+  with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
+  Fernandez (1988); the Ksp of Mucci (1983); each converted to the free scale, the pH (NBS) too, as the
+  source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2), CO₂ = DIC α0; NH₃-N = TAN
+  K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH and an alkalinity that
+  cannot go together (the hydroxide alone above the alkalinity) are refused.
+- **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
+  comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
+  would give it one; entering 0 instead of 0.3 ‰ gives 7 to 13 % more CO₂ and 5 to 9 % more NH₃ at 5 to
+  25 °C and pH 6.5 to 8.5, the safe side. And a pH (NBS) is put on the seawater scale with a Davies-type
+  activity coefficient, not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two
+  differ by −0.07 pH at 0 °C, −0.058 at 5 °C, about 0 at 25 °C and +0.05 at 40 °C; at 5 °C the chart
+  shows about 12 % less NH₃ and 16 % more CO₂ than CO2SYS would.
+- **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
+  the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
+  missing (a missing value is never taken for a safe one). Without a total sulfide it is drawn and named
+  "Safe zone (H₂S not assessed)". A border outside the chart's pH range (4 to 12.5) is said in words in
+  the table, and its region is still shaded wherever it meets the plotted box (a large box reaches past
+  pH 12.5 or below 4).
+- **The limits are defaults, not the fish's**: NH₃-N 0.0103 mg/L (0.0125 mg/L NH₃, Piper et al. 1982,
+  as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA 1986); the example water is the
+  source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L, target pH 7.5 at 100 mg/L)
+  with 2 µg/L sulfide as S.
+- **Checked** (`farm/tests/test_deffeyes.py`): the constants against their papers' published values;
+  CO₂ against Standard Methods 4500-CO₂ D; the source's own TypeScript, copied unchanged from its
+  engine, run over 689 waters and 24 charts (`farm/tests/deffeyes_reference/driver.ts` makes
+  `reference.json`, how is in its header): every value agrees within the table's rounding (DIC, NH₃
+  and H₂S within 1e−8 relative, the constants within 5e−8 pK, CO₂ within 3e−6 for the molar mass, the
+  borders within 1e−6 pH, the boundaries within the source's 4-decimal points); the chart's lines and
+  regions against the formulas, the point at its coordinates; the page in each language. What the source
+  did wrong is in the bug document (WQ-30 to WQ-39).
+- **Not ported**: the dosing (reagents, recipes, the dosing lines and the on-demand path), the volume,
+  the fish type and size (they changed nothing, WQ-37), the four small charts beside it (NH₃, H₂S and
+  carbonate against pH, calcite saturation) and the printed report.
+
+**Next: a chart per unit or loop.** The chart takes a `Water`, `Limits` and a `Target`, not a form, so a
+unit's or a loop's own chart needs no change to `deffeyes.py`: `Water` comes from the point's latest
+values (`read.latest`: temperature, pH, alkalinity, TAN, dissolved oxygen, and the salinity as
+`Context.salinity_for` finds it), `Limits` from the water limits of the fish in it today
+(`read.limits_now`: the critical high of NH₃-N and CO₂, the warning bounds of alkalinity as the band),
+the pressure from the site's altitude, and the drawer or the history includes
+`farm/_deffeyes_chart.html`. Three things come with it: total sulfide, calcium and H₂S become parameters
+(a column each, a migration, a limit parameter for H₂S); the pH and the alkalinity are taken from the
+same sample, or their age difference is shown, since the latest value of each may come from different
+samples; and a point's history can draw its samples as a track.
+
+**Who may do what**: the area Water chemistry (Production · Operations): Read the page (the calculator
+too), Create records a sample or a round, Delete voids one; the area Water limits (Production · Setup ·
+Reference data) with read, create, edit and delete.
 
 **Deleting**: a unit or a system keeps its samples, out of sight while it is deleted (the link is
 `DO_NOTHING`; the confirmation counts them) and back when it is restored, as its stock lines are; a
@@ -833,7 +903,7 @@ not restore them.
 columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
 email, SMS or push, no acknowledgement and no escalation. Someone has to look.
 
-Differences from the source (details in the bug document, WQ-01 to WQ-29):
+Differences from the source (details in the bug document, WQ-01 to WQ-39):
 
 - One store of limits, per species and water type, read by the one evaluator; the source had seven that
   disagreed and never applied its species limits (WQ-01, WQ-02, WQ-24).
@@ -846,11 +916,16 @@ Differences from the source (details in the bug document, WQ-01 to WQ-29):
   (WQ-14, WQ-15); a round skips empty rows (WQ-16) and is translated (WQ-17).
 - The oxygen saturation is worked out from mg/L (or the reverse) at the site's altitude (WQ-27); TGP is
   a parameter (WQ-25).
+- The calculator's chart keeps the H₂S limit in its safe zone, draws one when ammonia cannot reach its
+  limit and none when a limit it needs is missing (WQ-30); sulfide goes in as S and H₂S comes out as H₂S
+  (WQ-31); Ω only where its constants hold (WQ-32); the axes hold the point (WQ-33); a border off the chart
+  is said in words (WQ-34); CO₂ is judged against its limit (WQ-36); every input is checked (WQ-37,
+  WQ-38); K1 and K2 are cited to their paper (WQ-39).
 - Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
-  notifications, the Deffeyes calculator and dosing, H₂S, hardness and the other lab parameters,
-  detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan per unit,
-  and a site's intake water. The rations read the latest water temperature from here and keep no copy of
-  their own (WQ-02; `farm/feeding/temperature.py`).
+  notifications, the calculator's dosing, H₂S as a sample parameter, hardness and the other lab
+  parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
+  per unit, and a site's intake water. The rations read the latest water temperature from here and keep
+  no copy of their own (WQ-02; `farm/feeding/temperature.py`).
 
 ## Messages (Production › Communication, `/messages/`)
 
@@ -1556,6 +1631,7 @@ real mail.
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
+| `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart of the water in the address (a GET form) |
 | `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
@@ -1607,7 +1683,7 @@ real mail.
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
-| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |

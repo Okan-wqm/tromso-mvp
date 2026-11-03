@@ -1,8 +1,8 @@
 {% load i18n stock feeding harvest %}
 {% comment %} The drawer of the unit picked on Production units (?unit=): its fish, its feeding, its water, the
-   handling check of a harvest today and its planned harvests and transports, the operations that make sense
-   for it (Record feeding first), and its recent operations and feedings; a harvest shows the book against the
-   scale and where it went. Closing it is a link to the page without the unit.{% endcomment %}
+   handling check of a harvest today and its planned harvests and transports, its health, the operations that
+   make sense for it (Record feeding first), and its recent operations and feedings; a harvest shows the book
+   against the scale and where it went. Closing it is a link to the page without the unit.{% endcomment %}
 {% with unit=drawer stock=drawer_stock %}
 <aside class="drawer" aria-labelledby="drawer-title">
   <div class="drawer-head">
@@ -117,6 +117,8 @@
     {% endif %}
 
     {% if water_history_url %}{% include "farm/_unit_water.html" %}{% endif %}
+
+    {% if health_shown or health_actions %}{% include "farm/_unit_health.html" %}{% endif %}
 
     {% if feeding_list_url %}
     <section class="drawer-section">

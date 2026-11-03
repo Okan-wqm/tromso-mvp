@@ -1,0 +1,56 @@
+{% extends "crud/list.html" %}
+{% load i18n health %}
+{# Setup › Reference data › Medicines (farm.resources.medicine): the medicines and vaccines the farm uses, with their withdrawal. #}
+{% block search_placeholder %}{% trans "Search by name, substance, MT number or manufacturer" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="kind-filter">{% trans "Kind" %}</label>
+  <select id="kind-filter" name="kind" data-autosubmit>
+    <option value="">{% trans "All kinds" %}</option>
+    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="administration-filter">{% trans "Administration" %}</label>
+  <select id="administration-filter" name="administration" data-autosubmit>
+    <option value="">{% trans "Every way of giving" %}</option>
+    {% for value, label in administrations %}<option value="{{ value }}"{% if chosen_administration == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "All statuses" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}<p class="panel-help">{% trans "The withdrawal is the product’s, as its SPC states it, in degree-days, days or both; nothing is filled in for you. A treatment counts it from its last day, on the water temperature of the fish’s units (Operations › Treatments)." %}</p>{% endblock %}
+{% block empty_text %}{% trans "The medicines and vaccines the farm uses, with their withdrawal before harvest." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Medicine" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col">{% trans "Active substance" %}</th><th scope="col">{% trans "Strength" %}</th><th scope="col">{% trans "Withdrawal" %}</th><th scope="col">{% trans "Manufacturer" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for medicine in objects %}
+      <tr>
+        <td>
+          {% if can_change %}<a class="row-title" href="{% url 'farm:medicine_edit' medicine.pk %}" data-modal>{{ medicine.name }}</a>{% else %}<span class="row-title">{{ medicine.name }}</span>{% endif %}
+          <span class="row-sub">{{ medicine.marketing_authorisation|default:"" }}{% if medicine.prescription_only %}{% if medicine.marketing_authorisation %} · {% endif %}{% trans "Prescription only" %}{% endif %}</span>
+        </td>
+        <td>{{ medicine.get_kind_display }}<span class="row-sub">{{ medicine.get_administration_display }}</span></td>
+        <td>{{ medicine.active_substance }}{% if medicine.lice_report_code %}<span class="row-sub">{{ medicine.get_lice_report_code_display }}</span>{% endif %}</td>
+        <td class="nowrap">{% if medicine.strength_value is not None %}{{ medicine.strength_value|floatformat:"-3" }} {{ medicine.get_strength_unit_display }}{% else %}—{% endif %}</td>
+        <td>{{ medicine|withdrawal_rule }}</td>
+        <td>{% if medicine.manufacturer %}{{ medicine.manufacturer.name }}{% else %}—{% endif %}</td>
+        <td><span class="badge badge-{{ medicine.status }}">{{ medicine.get_status_display }}</span></td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:medicine_edit' medicine.pk %}" data-modal title="{% blocktrans with name=medicine.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=medicine.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:medicine_delete' medicine.pk %}" data-modal title="{% blocktrans with name=medicine.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=medicine.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -10,14 +10,15 @@ add, voiding one delete (config/access.py); the buttons a person cannot use are 
 views refuse them too. The feeding figures (FCR, last fed, the drawer's Feeding part) come from the
 feeding records (farm/feeding), whose dialog the drawer offers first; the Temp. and O₂ columns, the
 status dot and the drawer's Water section from the water samples (farm/water), for people who may read
-them."""
+them; the drawer's Health section from the health records (farm/health), and the medicine withdrawal (the row's
+mark and the drawer's Harvest and handling section) through the handling check (farm/handling)."""
 import uuid
 from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -28,12 +29,13 @@ from core import navigation
 from core.crud import DRAFT, done, render_page
 
 from ..feeding import read as feeding_read, views as feeding_views
+from ..health import views as health_views
 from ..forms.stock import (
     BatchInputForm, CullForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm, PlannedForm, TransferForm,
     VoidForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
-from ..models import HandlingPlanItem, StockMovement, StockOperation, Tank
+from ..models import HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
 from ..models.stock import ARRIVAL_STATUSES
 from ..templatetags.stock import fish, number, tonnes
 from ..water import views as water_views
@@ -179,8 +181,8 @@ def _with_query(query):
 
 
 def _drawer(request, unit, stock, feeding, params):
-    """The drawer of one unit: its fish, its feeding, the operations that make sense for it (feeding first,
-    the daily one), its recent history."""
+    """The drawer of one unit: its fish, its feeding, the handling check of a harvest today, its health, the
+    operations that make sense for it (feeding first, the daily one), its recent history."""
     query = _with_query(_query(params, unit=str(unit.pk)))
     can_record, can_void = request.user.has_perm(RECORD), request.user.has_perm(VOID)
     operations = list(StockOperation.all_objects.filter(movements__unit=unit).distinct()
@@ -219,6 +221,7 @@ def _drawer(request, unit, stock, feeding, params):
         **feeding_views.drawer(request, unit, stock, feeding, query),
         **water_views.drawer(request, unit),
         **harvest_views.drawer(request, unit, stock),
+        **health_views.drawer(request, unit, page_url(params, unit=str(unit.pk))),
         'feeding': feeding,
         # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares).
         'batch_rows': list(zip(stock.shares, feeding.shares)) if stock is not None else [],
@@ -380,6 +383,17 @@ def _recorded(operation):
         **params, 'weight': number(line.avg_weight_g, 2)}
 
 
+def _events(request, unit):
+    """The health events a mortality or a cull of `unit` can be recorded under, for people who may read them
+    (None otherwise): the live ones of its site that concern it, open or closed within the backdating window."""
+    if not request.user.has_perm('farm.view_healthevent') or unit.production_department.site is None:
+        return None
+    events = (HealthEvent.objects.filter(site=unit.production_department.site)
+              .filter(Q(closed_on__isnull=True) | Q(closed_on__gte=services.earliest(unit)))
+              .filter(Q(units=unit) | Q(units__isnull=True)).distinct())
+    return events.order_by('-date', '-created_at')
+
+
 def _plan(request, unit, form_class):
     """The open plan a harvest or transfer is recorded from (`?plan=`, Operations › Harvest plan), or None."""
     chosen = request.GET.get('plan', '')
@@ -413,7 +427,8 @@ def record_operation(request, pk, kind):
         return render_page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': None,
                                                                   'estimate': _estimate(unit, form)})
     if request.method == 'POST':
-        form = form_class(request.POST, unit=unit, present=present, **form_kwargs)
+        form = form_class(request.POST, unit=unit, present=present, events=_events(request, unit),
+                          **form_kwargs)
         rows = form_class.rows(request.POST, **row_kwargs) if form_class.rows else None
         valid = form.is_valid() & (rows is None or rows.is_valid())
         if valid:
@@ -428,7 +443,7 @@ def record_operation(request, pk, kind):
                 return done(request, _back(request, unit))
         return _refused(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows,
                                                                'estimate': _estimate(unit, form)})
-    form = form_class(unit=unit, present=present, **form_kwargs)
+    form = form_class(unit=unit, present=present, events=_events(request, unit), **form_kwargs)
     if request.GET.get('batch') in form.present:
         form.initial['batch'] = request.GET['batch']
     planned_leg = plan is not None and plan.destination_unit_id

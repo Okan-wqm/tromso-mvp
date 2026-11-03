@@ -18,11 +18,11 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
   Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
-  ponds & cages, species, feeds, water limits, slaughter facilities, handling rules, suppliers, and under
-  Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and the
-  recurring tasks, Feeding: the meal
-  board, the records, the feeding protocols and their assignments, and Harvest: harvested, harvest plan,
-  production plans; and under Communication the messages). Each has its own overview. A
+  ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
+  under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
+  the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
+  Harvest: harvested, harvest plan, production plans, and Health: treatments, health events and sea-lice
+  counts; and under Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
@@ -59,7 +59,9 @@ delete is a soft delete. Differences from the source:
 - Column lengths win where the source's form allowed longer values (name 150, code 20, email 150).
 - Editing is guarded by the `version` column: a save based on an old version is refused.
 - Deleting a site leaves its production departments without a site (see Production departments); the other dependants
-  join the delete plan as their tabs arrive.
+  join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
+- The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
+  which decides the weeks of the lower spring limit (see Operations › Health).
 
 ### Production departments (`/production-departments/`)
 
@@ -531,11 +533,13 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   the person's language; the drawer's "Stock this unit" knows its unit.
 - Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
+- The medicine withdrawal of a unit's fish is on its row and in its drawer (see Operations › Health); the
+  harvest dialog's warning and acknowledgement are the handling check's (farm/handling).
 - Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
   comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
   count adjustments as a dialog (their lines and checks exist). Harvest plans and the handling check are on
-  Operations › Harvest; **the medicine withdrawal is checked once the health records register their provider:
-  until then the dialogs say it is not checked, and real harvests must wait for it**.
+  Operations › Harvest; the medicine withdrawal they check is the health records' (Operations › Health),
+  through the registry of farm/handling/withdrawal.py.
 
 ### Operations › Feeding: Meal board, Records, Protocols and Assignments
 
@@ -1060,6 +1064,286 @@ Differences from the source (details in the bug document, STR-01 to STR-28):
   ranges, the `hazmat` kind, count approval, a feeding record's lot, silo-first draw through the feeder, spare
   parts (STR-28), barcode scanning.
 
+### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Setup › Reference data › Handling rules (`/handling-rules/`)
+
+What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
+`slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
+`handling_plan_items`, `handling_rules` and `handling_acknowledgements`.
+
+**One ledger, no second stock.** A harvest is still the stock operation of Production units (`record_harvest`
+through `_commit`): its fish, its round kilos and its date stay on its line and the operation. What a harvest
+adds is its `HarvestRecord`, 1:1 with the operation (its primary key): the **slaughter facility**, required,
+the **transport** supplier (a supplier of wellboat and transport) and the **wellboat or vehicle**. It is written
+in the same transaction and never edited: voiding the harvest voids it with it (every read goes through the
+live operation). `check_stock` reports a live harvest without its record and a record on another kind of
+operation. Harvests recorded before the record existed have none: check_stock lists them as data from
+before the rule (their facility is unknown).
+
+**The harvest dialog** (a unit's drawer, or "Record harvest" on a plan) asks the fish, the **round weight
+(kg)**, the live weight as weighed before bleeding and gutting (the old label "Weighed (kg)" did not say which
+weight it was), "this empties the unit", the facility (active ones that take the batch's species, or that
+list no species), the transport and the vessel, and shows the handling check (below). After saving, the drawer
+shows the harvest as "520 kg weighed · book 500 kg · +20 kg (+4.0 %)" and "To Fjord Slakteri (M123) ·
+Brønnbåt AS · MS Ronja".
+
+**Harvested** (`/operations/harvests/`): one row per harvest, newest first: date, unit with its production
+department and site, batch and species, fish, round weight, average weight (round kilos × 1000 ÷ fish), the
+**book** kilos (what the fold took out for the harvest line: the batch's average in the unit, the last fish the
+rest of the book), the **difference** in kg and % of the book, the unaccounted loss of a harvest that emptied
+the unit (its fish and book kilos), facility and approval number, transport and vessel, who recorded it, the
+plan it fulfilled and a badge when a handling warning was acknowledged. Filters in the address: site,
+production department, unit, batch, species, facility, from and to, and "Show voided" (struck through with
+the reason, counted nowhere); 50 a page; the count line ("2 harvests · 510 kg round weight, 490 kg in the
+book") and **totals per batch and per site** of the filtered rows (harvests, fish, round weight, average, book,
+difference). Everything is computed on read (`farm/harvest/read.py`).
+
+**Harvest plan** (`/operations/harvest-plan/`): planned harvests (to a slaughter facility) and planned
+transports (to another unit) of one batch's fish in one unit on a day, with the fish and round kilos meant, the
+transport and vessel and notes. The kind is chosen once; the batches follow the unit and the facilities the
+batch's species. The **status is derived**, never set: cancelled when it has a reason ("Cancelled because";
+clearing it plans it again), done when the operation that fulfils it counts, overdue when its day has passed,
+planned otherwise. **Record harvest / Record transfer** on an open item opens the stock's dialog started from
+it (unit, batch, date, fish, facility, transport, vessel, the destination unit) and the service links the
+operation to the item in the same transaction; it is refused for a deleted or cancelled item, one recorded
+already, another kind of operation or other fish. Voiding that operation plans the item again with nothing to
+change. Planned against actual: the fish and kilos of the linked operation (a harvest's round kilos, a
+transfer's book kilos). Each open item shows the fast it asks of its unit ("Fasting before the harvest of 15 Nov
+2026: from 12 Nov 2026, 00:00 (72 h)") and a medicine withdrawal on its day. A plan names fish that are in the
+unit, a day inside the backdating window at the earliest, and, for a harvest, an active facility that takes the
+species; a done item cannot be cancelled (void its operation first). Nothing requires a plan: a harvest is
+never refused for lacking one (the source's HRV-05).
+
+**Production plans** (`/operations/production-plans/`): every batch in stock in each unit it is in, with its
+fish, book average and when it was weighed, its **target weight** (one live plan per batch; "Set target" or the
+weight, to edit), the batch's expected harvest (entered at stocking: one fact, one place), when the fish were
+last fed and a medicine withdrawal; **Plan harvest** starts a planned harvest of the share at the target weight
+(fish = the share's count, round kilos = fish × target, on the day the target is reached). Plans of batches no
+longer in stock follow. **The estimated weight now** is the feeding protocols' estimate (Operations › Feeding);
+**the day the target is reached** walks it forward a day at a time (`farm/harvest/forecast.py`): each day the fish
+eat that day's ration (the protocol in force, the band at the weight reached, its SFR at the unit's latest
+temperature, held constant and shown) and grow by it ÷ the band's expected FCR; a fasting day before a planned
+harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
+reason, never a default, and so does two years without reaching it. Nothing is stored.
+
+**Slaughter facilities** (Setup › Reference data): name, Mattilsynet's approval number (godkjenningsnummer, 1
+to 6 letters or digits, stored in capitals, unique among live facilities; the format is the source's and is not
+verified with Mattilsynet), the operator (a supplier of the new category **Slaughter and processing**, which
+keeps that category while it operates a facility), address, municipality, coordinates (both or neither), the
+species it takes (none: every species), capacity in tonnes a day, active or inactive, notes. There is no
+"default" facility (HRV-09): every harvest names its own (HRV-08). A facility harvests went to is not deleted
+("1 harvest record still belongs to it. Set it inactive instead."), and a supplier named as a harvest's transport
+keeps its category and is not deleted either (`Supplier.delete_blockers` asks every SupplierLink, and a link from
+a record the delete plan does not follow says it blocks, `SupplierLink.blocker`).
+
+**Handling rules** (Setup › Reference data): per kind of handling (harvest, transport, grading, treatment) and
+species, or for every species (no species), how many hours the fish must have been without feed, 0 to 720, and
+where the value comes from. One live rule per kind and species, and one for every species (the database's
+`NULLS NOT DISTINCT`, checked on the form too). **These are the farm's own rules; the starting values are to be
+checked with your veterinarian.** Migration `0017` writes four general rules, each with its source:
+
+| Handling | Hours | Why |
+|---|---|---|
+| harvest | 72 | Mattilsynet asks for no feed left in stomach and gut at slaughter (an outcome, no hours). Gut-clearing feed withdrawal is typically 48–72 h ([Hvas et al. 2024, *Reviews in Aquaculture*](https://munin.uit.no/handle/10037/33239)), slower in cold water; [BIM 2024](https://bim.ie/wp-content/uploads/2024/05/BIM-Fish-Welfare-During-Handling.pdf) and RSPCA (2015) advise no more than 72 h before harvest. |
+| transport | 24 | BIM 2024: feed withdrawal at least 24 to 48 h before crowding, by water temperature and fish size. RSPCA (2015, T 2.9) caps pre-transport fasting at 48 h unless a vet specifies it: a maximum, not a minimum. |
+| grading | 24 | BIM 2024: at least 24 to 48 h before grading; RSPCA (2015, FW 6.2): not above 48 h. A grading is also checked against the transport rule; the longer applies (owner). |
+| treatment | 24 | BIM 2024: commonly 24 to 48 h before handling; RSPCA (2024): at most 48 h before physical delousing, 72 h before a freshwater bath. The medicine's product information wins. |
+
+**The handling check** (`farm/handling/`, one for every dialog): before fish are harvested, transported (a
+transfer), graded or treated (the health tab's dialog), is a medicine withdrawal in force, and have they fasted
+long enough? Nothing is blocked (owner decision): both are warnings.
+
+- *Fasting*: the hours from the fish's **last feeding** to the **start of the handling's day** on the site's
+  clock (an operation has a date and no time). The last feeding is of the fish themselves, wherever they were
+  fed: the feeding walk's split says which batches a record fed, so fish moved in yesterday bring their last
+  meal in the old unit with them (`farm.feeding.read.last_fed_at`). A record without a time counts from the end
+  of its day and a feeding on the day gives 0 h, so **the fast is never overstated**. The rule is the species'
+  own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
+  rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
+- *Medicine withdrawal* (harvest, transport, grading; a treatment during a withdrawal harms nobody): every block
+  a registered provider gives for the batch whose end is after the day, or unknown (unknown is a warning, never
+  clear). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
+  `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
+  Operations › Health). With no provider registered a dialog would say "Medicine withdrawal not checked" and warn
+  nothing.
+  Before a harvest it reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026".
+- *The dialogs* (harvest, transfer, grading) show the check for the form's date and batch under "Before
+  handling": the last feeding and its hours, the rule, the withdrawal, and with warnings the box "Go on despite
+  these warnings" ("Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown
+  here and logged as critical."). The box carries the warnings' fingerprint.
+- *The save* runs the check again after the locks (a feeding of the unit takes turns with it). With warnings it
+  needs the box ticked on exactly these warnings: a feeding recorded meanwhile, a treatment entered or another
+  date asks again ("The warnings changed since the form was shown"). Going on stores one
+  `HandlingAcknowledgement` per warning with what the person was shown (the withdrawal's end, estimated or not,
+  and reason; or the last feeding, the hours fasted, the hours asked and the rule), and the operation's
+  activity-log entry is **critical**, with the warnings. Who and when are the operation's.
+- *The meal board* gives **no ration on a fasting day**: the ration's policy (`farm/feeding/read.policy`) loads
+  the fasts planned harvests and transports ask for (`farm.handling.fasting.fasts`, every day from the one the
+  fast starts on to the planned day, in full, for the whole unit; where two overlap the one that starts first
+  wins) and `ration.Policy.basis` answers `FASTING` with the reason, e.g. "Fasting before the harvest of 15 Nov
+  2026: from 12 Nov 2026, 00:00 (72 h)". The band stays, so a feeding recorded anyway is still credited at its
+  expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
+  The feeding dialog says so on such a day ("A feeding can still be recorded").
+- *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
+  **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
+
+**The activity log** has a severity: normal, or critical for an operation someone went on with past a handling
+warning (`AuditLog.severity`, a database check, a partial index); critical entries have a red edge and a
+Critical badge, and the log filters by severity. Nobody is alerted yet: the later alarms read these entries.
+
+**Who may do what** (Production · Operations · Harvest, and Setup · Reference data): Harvested (read; a harvest
+is recorded and voided as a stock operation, Production units' Create and Delete), Harvest plan and Production
+plans (read, create, edit, delete; recording from a plan also needs Production units' Create), Slaughter
+facilities and Handling rules (read, create, edit, delete).
+
+**Deleting:** a unit keeps its plans out of sight while it is deleted (`DO_NOTHING`, counted in the
+confirmation, back with it); a deleted destination unit is cleared from its planned transports; a species takes
+its handling rules with it and keeps its facilities' link rows; a facility or a supplier a harvest names stays.
+
+Differences from the source (details in the bug document, HRV-01 to HRV-23):
+
+- A harvest is the stock operation, so a harvest empties its unit on every path (the web's "Complete Harvest"
+  never moved a fish, HRV-06), and a void is the only undo (edit could cancel without moving stock, HRV-07).
+- Every harvest names its slaughter facility; there is no default facility to lose (HRV-08, HRV-09). Round weight
+  is labelled as round; gutted kilos and the quality-class split come with the slaughter result, never as a
+  default class (HRV-03, HRV-04).
+- The withdrawal is a provider's computed end, never an episode's status (HRV-01), read inside the save's
+  transaction (HRV-10); the plan shows the check, not "harvest allowed" (HRV-11).
+- Fasting is tied to every handling and to the plans (HRV-22); a plan names its unit (HRV-13), its kilos are
+  prefilled from the book or the target (HRV-14), and nothing needs a plan (HRV-05); a production plan has a
+  target weight (HRV-23).
+- Not ported: the slaughter result (gutted kilos per quality class, yield) and Mattilsynet's weekly slaughter
+  reports, lot numbers, buyers and prices, customer deliveries, size-grade distribution, an approval workflow for
+  plans, temperature scenarios and a degree-day fasting rule, a "fasted too long" warning (6 days in a slaughter
+  pen, akvakulturdriftsforskriften § 54), and alarms.
+
+### Operations › Health and Reference data › Medicines
+
+The fish's health: the medicines the farm uses with their withdrawal (Setup › Reference data › **Medicines**,
+`/medicines/`), what was given the fish (Operations › Health › **Treatments**, `/operations/health/treatments/`),
+what was seen, found or advised (**Health events**, `/operations/health/events/`) and the sea lice counted
+(**Sea-lice counts**, `/operations/health/lice/`). Tables `medicines`, `treatments` with `treatment_units`,
+`health_events` with `health_event_units`, and `lice_counts`. Typed columns and database checks, no JSON
+(the source kept a treatment, its withdrawal and a lab result in five JSON blobs of one row, HLT-07, HLT-15).
+
+**Medicines** (a tab: table, search, filters by kind, administration and status, the dialog, delete): name
+(unique among live medicines whatever its case), MT number, kind (sea-lice medicine, antibacterial, other
+antiparasitic, antifungal, vaccine, anaesthetic, other), how it is given (bath, in feed, injection, dip), the
+active substance, for a sea-lice medicine its substance as Mattilsynet's weekly lice report names it (the
+official value is stored, e.g. `EMAMECTIN_BENZOAT`; other medicines have none), the strength with its unit
+(both or neither), the manufacturer (a supplier of medicines and vaccines, a `SupplierLink`), prescription only,
+status, notes, and **the withdrawal in degree-days, in days or both, at least one** (a database check; 0 means
+none; both given, the later end wins). Nothing is seeded: the values are the product's SPC, entered by the farm
+and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer (`PROTECT`): set it
+inactive.
+
+**Treatments** (a read page with dialogs, like Feeding records): one course given to the fish of one or more
+units of a site: the method (bath, in feed, injection, dip with a medicine; thermal, mechanical, freshwater or
+other without one, a database check), the medicine (an active one; a treatment is given the way its medicine is,
+so the lice report's method follows), the reason (sea lice, other parasites, bacterial, fungal, vaccination,
+sedation, other; a vaccination uses a vaccine and a vaccine is a vaccination), the first and **last day** (the
+first day follows the date rule of every daily record, the last may be planned up to 28 days ahead), the dose
+and the amount used with their units (the report's units), the bath time, who prescribed it and the
+prescription number, the vet (a supplier of veterinary and fish health services) and the health event it
+answers. **The fast before it** is the shared handling check's (kind treatment; Setup › Reference data ›
+Handling rules, 24 h to start with): the dialog shows when the fish of each unit were last fed against the rule, and too short a
+fast is a warning; going on stores a handling acknowledgement on the treatment (`HandlingAcknowledgement`, which
+belongs to a stock operation or a treatment, exactly one, a database check) and makes its log entry critical. A
+medicated feed is not checked: it is the feeding itself. Every unit must hold fish on the first day; the other
+way round, a stock operation that would leave a treatment (or a lice count) without fish on its day is refused,
+naming it, and `check_stock` reports one. **No
+batch is stored**: the batches treated are the ones the stock ledger has in its units from its first to its last
+day. The list filters by site, unit, batch, method, medicine, dates, "under withdrawal today" and
+"vaccinations", shows every batch a treatment reached with the withdrawal it puts on it, and offers **Last day**
+(the course ended earlier or goes on: Edit, logged with the old and new day) and **Void** (with a reason, the
+farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
+
+**The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
+corrected temperature or a backdated transfer changes it at once:
+
+- it **follows the fish**: every live treatment with a medicine whose treated batches include the batch holds
+  it, wherever it is now; if only some of its units were treated, the whole batch is held;
+- **days**: day 1 is the day after the last treatment day, the first day the fish may be harvested is the last
+  day + the days + 1;
+- **degree-days**: the batch's daily mean water temperature is added up from the day after the last day until
+  it reaches the medicine's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
+  of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
+  copy); with the batch in several units that day, the lowest counts. **A past day without a temperature counts
+  as 0 °C** and the warning says how many; not reached by today, the rest is projected at the mean of the last 7
+  measured days within 30 ("about"); with none at all the end is unknown ("record the water temperature");
+- both given, the later end wins; a running course counts from its planned last day;
+- **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
+  covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
+  says so when such a feeding is recorded.
+
+A withdrawal holds the batch from the treatment's first day (or the medicated feeding's day) to the day before
+the first harvest day; a day before the treatment is not held.
+
+Where it shows: the health records give it to the shared handling check through the registry of
+`farm/handling/withdrawal.py` (`blocks(unit, day)`: a block per batch and cause, `until` the first day the fish
+may be harvested; the provider is registered in `farm/apps.py`). From there Production units marks the unit's
+row **Withdrawal** and the drawer's Harvest and handling section says **"Not suitable for harvest — medicine
+withdrawal of B-2026-001 until 14 Dec 2026."** ("about" when projected, "its end unknown") with why, to everyone
+who sees the page; the harvest, transfer and grading dialogs warn, never block (owner decision), and keep the
+acknowledgement. The Treatments list shows each batch's end as "until 13 Dec 2026 (harvest from 14 Dec 2026)".
+
+**Health events** (a tab: created and edited on their form, every change logged, voided with a reason instead of
+deleted): the site (chosen once) and some of its units or the whole site, the date, the kind (observation, vet or
+fish-health visit, lab result, increased mortality), the signs (several of a fixed list), a diagnosis from a
+reviewed catalogue (`farm/health/diseases.py`: the EU-listed and the Norwegian category F and G diseases of
+dyrehelseforskriften §§ 5–6, each with whether it must be notified, and common unlisted ones), suspected or
+confirmed (with a diagnosis, a database check), **Mattilsynet notified at** (on the site's clock), who examined,
+the vet and the laboratory (suppliers) with its reference, findings, recommendations, closed on and the outcome.
+A notifiable diagnosis, suspected or confirmed, without the time Mattilsynet was told raises the red **Notify
+Mattilsynet** banner on the list and in the unit's drawer (§ 7: at once, already on suspicion; sea lice are
+reported weekly with the counts instead). A mortality or a cull may be recorded under an event (the dialogs offer
+the events of the unit's site that concern it, open or closed within the backdating window, to people who may
+read them; `StockOperation.health_event`, a database check
+keeps it to those two kinds) and the event counts its **deaths** from those lines; mortality has the cause
+**Treatment** for deaths a treatment or its handling caused. Closing an event never lifts a withdrawal: that is
+the treatment's (HLT-01). An event that a live treatment or operation names is not voided.
+
+**Sea-lice counts** (a read page with dialogs): per unit and day, the fish examined and the lice of each stage
+found on them in total (adult females, mobile, attached); the averages per fish are worked out, never stored
+rounded. One live count per unit and day; a correction is a void and a new count (HLT-19). The page shows each
+site's **weekly averages** for the latest 12 weeks, as lakselusforskriften (FOR-2012-12-05-1140, read on Lovdata
+on 2026-11-03) has them:
+
+- Vedlegg 1 point 6: a unit's average is its lice / its fish examined, the site's average **the mean of the
+  units' averages**, every unit weighing the same (the source weighted them by their fish, HLT-22); the latest
+  count of each unit in the ISO week counts;
+- § 8: the site's average of adult female lice must stay **below 0.5**, and below **0.2 from Monday of week 16
+  to Sunday of week 21** from Nord-Trøndelag southwards, **weeks 21 to 26** in Nordland, Troms and Finnmark; at
+  the limit is over it ("færre enn"). The area is the site's (Facility › Sites, Location: Sea-lice limit area);
+  a site without one is judged by the stricter of the two, and the page says so;
+- Vedlegg 1 points 2 and 3: at least 20 fish a cage in weeks 14–21 (south) or 19–26 (north), 10 otherwise; a
+  smaller sample is pointed out; how many of the units with fish were counted is shown.
+
+Over the limit is a warning on the page; nobody is alerted yet, and the weekly report to Mattilsynet is not
+built (§ 10).
+
+**The unit's drawer** on Production units has a **Health** section: the withdrawal of each batch with why, the
+open health events that concern the unit, its treatments of the last 90 days, its latest lice count, and Record
+treatment, Record sea-lice count and Record health event with the unit chosen.
+
+**Who may do what**: the areas Medicines (Production · Setup · Reference data: read, create, edit, delete),
+Treatments (read, create, edit = change the last day, delete = void), Health events (read, create, edit, delete =
+void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
+The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
+works out every unit's withdrawal from scratch and lists the fish held, with the end and why.
+
+Differences from the source (details in the bug document, HLT-01 to HLT-23):
+
+- One treatment record, read by the withdrawal and (later) the lice report; the source had two that never met
+  (HLT-03). The withdrawal is the medicine's, in degree-days or days, from the last treatment day, worked out on
+  read; the source's date started at the click, was days only, was lifted by resolving the disease and could be
+  edited away (HLT-01, HLT-02, HLT-04, HLT-08).
+- Real foreign keys and checks everywhere (HLT-16); voids instead of deletes and edits that are logged (HLT-04);
+  the server's reasons on the field (HLT-17); a reviewed disease catalogue with ILA as the listed, endemic disease
+  it is (HLT-11); the statutory lice limits and the cage-mean average (HLT-10, HLT-22).
+- Not ported: the `health_events` JSON, quarantine as a flag (a unit status), the stats tiles, the chemical
+  master as a medicine catalogue, welfare scores, escape incidents, vaccination details, medicine stock, lab
+  result values, the reports to Mattilsynet, treatment effect and resistance tests, cleaner-fish health
+  (health-maturity §4d). The water temperature at a treatment is not typed on it: it is the water samples'.
 ### Operations › Tasks (`/operations/tasks/`) and Recurring tasks (`/operations/tasks/recurring/`)
 
 The farm's jobs: "clean the drum filter of T-01", "report the lice count to Mattilsynet", each at one place,
@@ -1283,157 +1567,6 @@ document, MSG-01 to MSG-21):
   and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
   NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
 
-### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Setup › Reference data › Handling rules (`/handling-rules/`)
-
-What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
-`slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
-`handling_plan_items`, `handling_rules` and `handling_acknowledgements`.
-
-**One ledger, no second stock.** A harvest is still the stock operation of Production units (`record_harvest`
-through `_commit`): its fish, its round kilos and its date stay on its line and the operation. What a harvest
-adds is its `HarvestRecord`, 1:1 with the operation (its primary key): the **slaughter facility**, required,
-the **transport** supplier (a supplier of wellboat and transport) and the **wellboat or vehicle**. It is written
-in the same transaction and never edited: voiding the harvest voids it with it (every read goes through the
-live operation). `check_stock` reports a live harvest without its record and a record on another kind of
-operation. Harvests recorded before the record existed have none: check_stock lists them as data from
-before the rule (their facility is unknown).
-
-**The harvest dialog** (a unit's drawer, or "Record harvest" on a plan) asks the fish, the **round weight
-(kg)**, the live weight as weighed before bleeding and gutting (the old label "Weighed (kg)" did not say which
-weight it was), "this empties the unit", the facility (active ones that take the batch's species, or that
-list no species), the transport and the vessel, and shows the handling check (below). After saving, the drawer
-shows the harvest as "520 kg weighed · book 500 kg · +20 kg (+4.0 %)" and "To Fjord Slakteri (M123) ·
-Brønnbåt AS · MS Ronja".
-
-**Harvested** (`/operations/harvests/`): one row per harvest, newest first: date, unit with its production
-department and site, batch and species, fish, round weight, average weight (round kilos × 1000 ÷ fish), the
-**book** kilos (what the fold took out for the harvest line: the batch's average in the unit, the last fish the
-rest of the book), the **difference** in kg and % of the book, the unaccounted loss of a harvest that emptied
-the unit (its fish and book kilos), facility and approval number, transport and vessel, who recorded it, the
-plan it fulfilled and a badge when a handling warning was acknowledged. Filters in the address: site,
-production department, unit, batch, species, facility, from and to, and "Show voided" (struck through with
-the reason, counted nowhere); 50 a page; the count line ("2 harvests · 510 kg round weight, 490 kg in the
-book") and **totals per batch and per site** of the filtered rows (harvests, fish, round weight, average, book,
-difference). Everything is computed on read (`farm/harvest/read.py`).
-
-**Harvest plan** (`/operations/harvest-plan/`): planned harvests (to a slaughter facility) and planned
-transports (to another unit) of one batch's fish in one unit on a day, with the fish and round kilos meant, the
-transport and vessel and notes. The kind is chosen once; the batches follow the unit and the facilities the
-batch's species. The **status is derived**, never set: cancelled when it has a reason ("Cancelled because";
-clearing it plans it again), done when the operation that fulfils it counts, overdue when its day has passed,
-planned otherwise. **Record harvest / Record transfer** on an open item opens the stock's dialog started from
-it (unit, batch, date, fish, facility, transport, vessel, the destination unit) and the service links the
-operation to the item in the same transaction; it is refused for a deleted or cancelled item, one recorded
-already, another kind of operation or other fish. Voiding that operation plans the item again with nothing to
-change. Planned against actual: the fish and kilos of the linked operation (a harvest's round kilos, a
-transfer's book kilos). Each open item shows the fast it asks of its unit ("Fasting before the harvest of 15 Nov
-2026: from 12 Nov 2026, 00:00 (72 h)") and a medicine withdrawal on its day. A plan names fish that are in the
-unit, a day inside the backdating window at the earliest, and, for a harvest, an active facility that takes the
-species; a done item cannot be cancelled (void its operation first). Nothing requires a plan: a harvest is
-never refused for lacking one (the source's HRV-05).
-
-**Production plans** (`/operations/production-plans/`): every batch in stock in each unit it is in, with its
-fish, book average and when it was weighed, its **target weight** (one live plan per batch; "Set target" or the
-weight, to edit), the batch's expected harvest (entered at stocking: one fact, one place), when the fish were
-last fed and a medicine withdrawal; **Plan harvest** starts a planned harvest of the share at the target weight
-(fish = the share's count, round kilos = fish × target, on the day the target is reached). Plans of batches no
-longer in stock follow. **The estimated weight now** is the feeding protocols' estimate (Operations › Feeding);
-**the day the target is reached** walks it forward a day at a time (`farm/harvest/forecast.py`): each day the fish
-eat that day's ration (the protocol in force, the band at the weight reached, its SFR at the unit's latest
-temperature, held constant and shown) and grow by it ÷ the band's expected FCR; a fasting day before a planned
-harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
-reason, never a default, and so does two years without reaching it. Nothing is stored.
-
-**Slaughter facilities** (Setup › Reference data): name, Mattilsynet's approval number (godkjenningsnummer, 1
-to 6 letters or digits, stored in capitals, unique among live facilities; the format is the source's and is not
-verified with Mattilsynet), the operator (a supplier of the new category **Slaughter and processing**, which
-keeps that category while it operates a facility), address, municipality, coordinates (both or neither), the
-species it takes (none: every species), capacity in tonnes a day, active or inactive, notes. There is no
-"default" facility (HRV-09): every harvest names its own (HRV-08). A facility harvests went to is not deleted
-("1 harvest record still belongs to it. Set it inactive instead."), and a supplier named as a harvest's transport
-keeps its category and is not deleted either (`Supplier.delete_blockers` asks every SupplierLink, and a link from
-a record the delete plan does not follow says it blocks, `SupplierLink.blocker`).
-
-**Handling rules** (Setup › Reference data): per kind of handling (harvest, transport, grading, treatment) and
-species, or for every species (no species), how many hours the fish must have been without feed, 0 to 720, and
-where the value comes from. One live rule per kind and species, and one for every species (the database's
-`NULLS NOT DISTINCT`, checked on the form too). **These are the farm's own rules; the starting values are to be
-checked with your veterinarian.** Migration `0017` writes four general rules, each with its source:
-
-| Handling | Hours | Why |
-|---|---|---|
-| harvest | 72 | Mattilsynet asks for no feed left in stomach and gut at slaughter (an outcome, no hours). Gut-clearing feed withdrawal is typically 48–72 h ([Hvas et al. 2024, *Reviews in Aquaculture*](https://munin.uit.no/handle/10037/33239)), slower in cold water; [BIM 2024](https://bim.ie/wp-content/uploads/2024/05/BIM-Fish-Welfare-During-Handling.pdf) and RSPCA (2015) advise no more than 72 h before harvest. |
-| transport | 24 | BIM 2024: feed withdrawal at least 24 to 48 h before crowding, by water temperature and fish size. RSPCA (2015, T 2.9) caps pre-transport fasting at 48 h unless a vet specifies it: a maximum, not a minimum. |
-| grading | 24 | BIM 2024: at least 24 to 48 h before grading; RSPCA (2015, FW 6.2): not above 48 h. A grading is also checked against the transport rule; the longer applies (owner). |
-| treatment | 24 | BIM 2024: commonly 24 to 48 h before handling; RSPCA (2024): at most 48 h before physical delousing, 72 h before a freshwater bath. The medicine's product information wins. |
-
-**The handling check** (`farm/handling/`, one for every dialog): before fish are harvested, transported (a
-transfer), graded or treated (the health tab's dialog), is a medicine withdrawal in force, and have they fasted
-long enough? Nothing is blocked (owner decision): both are warnings.
-
-- *Fasting*: the hours from the fish's **last feeding** to the **start of the handling's day** on the site's
-  clock (an operation has a date and no time). The last feeding is of the fish themselves, wherever they were
-  fed: the feeding walk's split says which batches a record fed, so fish moved in yesterday bring their last
-  meal in the old unit with them (`farm.feeding.read.last_fed_at`). A record without a time counts from the end
-  of its day and a feeding on the day gives 0 h, so **the fast is never overstated**. The rule is the species'
-  own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
-  rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
-- *Medicine withdrawal* (harvest, transport, grading; a treatment during a withdrawal harms nobody): every block
-  a registered provider gives for the batch whose end is after the day, or unknown (unknown is a warning, never
-  clear). The health records register their provider (`farm/handling/withdrawal.py`: `register(provider)`,
-  `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`). **Until they do, every
-  dialog says "Medicine withdrawal not checked: the health records are not in yet"** and nothing is warned.
-  Before a harvest it reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026".
-- *The dialogs* (harvest, transfer, grading) show the check for the form's date and batch under "Before
-  handling": the last feeding and its hours, the rule, the withdrawal, and with warnings the box "Go on despite
-  these warnings" ("Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown
-  here and logged as critical."). The box carries the warnings' fingerprint.
-- *The save* runs the check again after the locks (a feeding of the unit takes turns with it). With warnings it
-  needs the box ticked on exactly these warnings: a feeding recorded meanwhile, a treatment entered or another
-  date asks again ("The warnings changed since the form was shown"). Going on stores one
-  `HandlingAcknowledgement` per warning with what the person was shown (the withdrawal's end, estimated or not,
-  and reason; or the last feeding, the hours fasted, the hours asked and the rule), and the operation's
-  activity-log entry is **critical**, with the warnings. Who and when are the operation's.
-- *The meal board* gives **no ration on a fasting day**: the ration's policy (`farm/feeding/read.policy`) loads
-  the fasts planned harvests and transports ask for (`farm.handling.fasting.fasts`, every day from the one the
-  fast starts on to the planned day, in full, for the whole unit; where two overlap the one that starts first
-  wins) and `ration.Policy.basis` answers `FASTING` with the reason, e.g. "Fasting before the harvest of 15 Nov
-  2026: from 12 Nov 2026, 00:00 (72 h)". The band stays, so a feeding recorded anyway is still credited at its
-  expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
-  The feeding dialog says so on such a day ("A feeding can still be recorded").
-- *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
-  **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
-
-**The activity log** has a severity: normal, or critical for an operation someone went on with past a handling
-warning (`AuditLog.severity`, a database check, a partial index); critical entries have a red edge and a
-Critical badge, and the log filters by severity. Nobody is alerted yet: the later alarms read these entries.
-
-**Who may do what** (Production · Operations · Harvest, and Setup · Reference data): Harvested (read; a harvest
-is recorded and voided as a stock operation, Production units' Create and Delete), Harvest plan and Production
-plans (read, create, edit, delete; recording from a plan also needs Production units' Create), Slaughter
-facilities and Handling rules (read, create, edit, delete).
-
-**Deleting:** a unit keeps its plans out of sight while it is deleted (`DO_NOTHING`, counted in the
-confirmation, back with it); a deleted destination unit is cleared from its planned transports; a species takes
-its handling rules with it and keeps its facilities' link rows; a facility or a supplier a harvest names stays.
-
-Differences from the source (details in the bug document, HRV-01 to HRV-23):
-
-- A harvest is the stock operation, so a harvest empties its unit on every path (the web's "Complete Harvest"
-  never moved a fish, HRV-06), and a void is the only undo (edit could cancel without moving stock, HRV-07).
-- Every harvest names its slaughter facility; there is no default facility to lose (HRV-08, HRV-09). Round weight
-  is labelled as round; gutted kilos and the quality-class split come with the slaughter result, never as a
-  default class (HRV-03, HRV-04).
-- The withdrawal is a provider's computed end, never an episode's status (HRV-01), read inside the save's
-  transaction (HRV-10); the plan shows the check, not "harvest allowed" (HRV-11).
-- Fasting is tied to every handling and to the plans (HRV-22); a plan names its unit (HRV-13), its kilos are
-  prefilled from the book or the target (HRV-14), and nothing needs a plan (HRV-05); a production plan has a
-  target weight (HRV-23).
-- Not ported: the slaughter result (gutted kilos per quality class, yield) and Mattilsynet's weekly slaughter
-  reports, lot numbers, buyers and prices, customer deliveries, size-grade distribution, an approval workflow for
-  plans, temperature scenarios and a degree-day fasting rule, a "fasted too long" warning (6 days in a slaughter
-  pen, akvakulturdriftsforskriften § 54), and alarms.
-
 ## Knowledge (Company › Knowledge: Library `/knowledge/library/`, Knowledge entries `/knowledge/entries/`)
 
 The place where people record what the company knows, so that AI agents can later watch the farm with it and
@@ -1601,7 +1734,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   create = record a delivery, issue, write-off, return, transfer or count, delete = void one), Storage
   locations (read, create, edit, delete), Tasks and Recurring tasks (read, create, edit, delete; a person a task
   is for also starts, ticks and completes it), Slaughter facilities and Handling rules (read, create, edit,
-  delete), Harvested (read), Harvest plan and Production plans (read, create, edit, delete), Messages (read =
+  delete), Harvested (read), Harvest plan and Production plans (read, create, edit, delete), Medicines (read,
+  create, edit, delete), Treatments (read, create, edit = change the last day, delete = void one), Health events
+  (read, create, edit, delete = void one), Sea-lice counts (read, create, delete = void one), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
   also reviews an entry) and Activity log (read).
   A new tab appears in the matrix by
@@ -1886,6 +2021,10 @@ real mail.
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
 | `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
 | `/handling-rules/` | Reference data › Handling rules |
+| `/medicines/` | Reference data › Medicines |
+| `/operations/health/treatments/` | Operations › Treatments; `new/` records one (`?unit=<id>` ticks a unit), `<id>/last-day/` changes its last day, `<id>/void/` voids it |
+| `/operations/health/events/` | Operations › Health events; `<id>/void/` voids one |
+| `/operations/health/lice/` | Operations › Sea-lice counts; `new/` records one (`?unit=<id>` chooses the unit), `<id>/void/` voids it |
 | `/water-limits/` | Reference data › Water limits |
 | `/storage-locations/` | Company › Facility › Storage locations; `<id>/reorder/` saves a location's reorder levels |
 | `/operations/storage/` | Operations › Storage; `?tab=stock`, `movements` or `counts` |
@@ -1938,6 +2077,7 @@ real mail.
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
+| `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |

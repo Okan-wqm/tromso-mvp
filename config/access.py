@@ -14,6 +14,7 @@ AREAS = [
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),
+    Area(_('Medicines'), 'farm.Medicine'),
     Area(_('Slaughter facilities'), 'farm.SlaughterFacility'),
     Area(_('Handling rules'), 'farm.HandlingRule'),
     Area(_('Suppliers'), 'farm.Supplier'),
@@ -42,6 +43,13 @@ AREAS = [
     # The planned harvests and transports, and the target weight per batch: read, plan, change, delete.
     Area(_('Harvest plan'), 'farm.HandlingPlanItem'),
     Area(_('Production plans'), 'farm.ProductionPlan'),
+    # Treatments: Read the list (and a unit's health in the drawer), Create records one, Edit changes its last
+    # day (logged), Delete voids one, which lifts its withdrawal. Nothing else of a treatment is edited.
+    Area(_('Treatments'), 'farm.Treatment'),
+    # Health events: Read, Create, Edit on the event's form (logged), Delete voids one with its reason.
+    Area(_('Health events'), 'farm.HealthEvent'),
+    # Sea-lice counts: Read the page with the site's weekly averages, Create records a count, Delete voids one.
+    Area(_('Sea-lice counts'), 'farm.LiceCount', actions=('view', 'add', 'delete')),
     # Messages: Read is the Messages page, writing in one's own conversations and starting a direct one; Create
     # also creates channels. Only the members of a conversation read it, whatever the role (messaging/services.py).
     Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),

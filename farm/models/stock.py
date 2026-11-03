@@ -80,6 +80,9 @@ class MortalityCause(models.TextChoices):
     CANNIBALISM = 'cannibalism', _('Cannibalism')
     STARVATION = 'starvation', _('Starvation')
     GENETIC = 'genetic', _('Genetic')
+    # Deaths caused by a treatment or the handling around it (behandlingsdødelighet), counted apart from
+    # the disease treated (health-maturity §2).
+    TREATMENT = 'treatment', _('Treatment')
     UNKNOWN = 'unknown', _('Unknown')
     OTHER = 'other', _('Other')
 
@@ -217,6 +220,10 @@ class StockOperation(AuditedModel):
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
     # The person accepted that the fish arriving take a unit above its max density (owner decision Q4).
     over_capacity_ack = models.BooleanField(_('Above the max density, accepted'), default=False)
+    # The health event the deaths or culls belong to (Operations › Health events), on a mortality or a cull
+    # only; the event counts its deaths from these operations' lines.
+    health_event = models.ForeignKey('HealthEvent', null=True, blank=True, on_delete=models.PROTECT,
+                                     related_name='stock_operations', verbose_name=_('Health event'))
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
     # The key of the form it was entered with (not a secret): the same form sent twice records it once.
     entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
@@ -235,6 +242,10 @@ class StockOperation(AuditedModel):
             models.CheckConstraint(
                 condition=Q(over_capacity_ack=False) | Q(kind__in=ARRIVING_OPERATIONS),
                 name='chk_stock_operations_ack_on_arrival',
+            ),
+            models.CheckConstraint(
+                condition=Q(health_event__isnull=True) | Q(kind__in=[OperationKind.MORTALITY, OperationKind.CULL]),
+                name='chk_stock_operations_health_event',
             ),
         ]
         indexes = [models.Index(fields=['date'])]

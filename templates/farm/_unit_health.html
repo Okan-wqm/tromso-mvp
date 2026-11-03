@@ -1,0 +1,33 @@
+{% load i18n health %}
+{% comment %} The Health section of a unit's drawer (farm.health.views.drawer), for people who may read them: the open
+   health events that concern the unit, its treatments of the last 90 days, its latest sea-lice count and the
+   dialogs with the unit chosen. The withdrawal of its fish is in the Harvest and handling section.{% endcomment %}
+<section class="drawer-section">
+  <h3>{% trans "Health" %}</h3>
+  {% if health_events %}
+  <p class="op-meta">{% trans "Open health events" %}</p>
+  <ul class="op-lines" role="list">
+    {% for event in health_events %}<li>{{ event.date|date:"DATE_FORMAT" }} · {{ event }}{% if event.needs_notification %} · <strong class="over-text">{% trans "Notify Mattilsynet" %}</strong>{% endif %}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if health_treatments_url %}
+  <p class="op-meta">{% trans "Treatments, last 90 days" %}</p>
+  {% if health_treatments %}
+  <ul class="op-lines" role="list">
+    {% for treatment in health_treatments %}<li>{% blocktrans trimmed with start=treatment.start_date|date:"DATE_FORMAT" end=treatment.end_date|date:"DATE_FORMAT" %}{{ start }} – {{ end }}{% endblocktrans %} · {% if treatment.medicine %}{{ treatment.medicine.name }}{% else %}{{ treatment.get_method_display }}{% endif %} · {{ treatment.get_reason_display }}</li>{% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">{% trans "No treatment in this unit in the last 90 days." %}</p>
+  {% endif %}
+  <p><a href="{{ health_treatments_url }}">{% blocktrans trimmed with unit=drawer.code %}All treatments of {{ unit }}{% endblocktrans %}</a></p>
+  {% endif %}
+  {% if health_lice %}
+  <p class="op-meta">{% blocktrans trimmed with date=health_lice.date|date:"DATE_FORMAT" fish=health_lice.fish_counted %}Latest sea-lice count {{ date }}, {{ fish }} fish examined{% endblocktrans %}</p>
+  <p>{% blocktrans trimmed with females=health_lice|per_fish:"adult_females" mobile=health_lice|per_fish:"mobile" attached=health_lice|per_fish:"attached" %}{{ females }} adult female · {{ mobile }} mobile · {{ attached }} attached lice per fish{% endblocktrans %}</p>
+  {% endif %}
+  {% if health_actions %}
+  <div class="drawer-actions">
+    {% for action in health_actions %}<a class="button {% if forloop.first %}button-inline{% else %}button-ghost{% endif %}" href="{{ action.url }}" data-modal>{{ action.label }}</a>{% endfor %}
+  </div>
+  {% endif %}
+</section>

@@ -1,0 +1,11 @@
+{% extends "farm/stock_void.html" %}
+{% load i18n health %}
+{% comment %} Voiding a sea-lice count (farm.health.views.void_lice_count): the stock's void dialog; the count stops counting
+   in the site's weekly average and stays in the history, struck through, with its reason.{% endcomment %}
+{% block entry %}
+<p class="confirm-question">{% blocktrans trimmed with date=count.date|date:"DATE_FORMAT" unit=count.unit.code %}Void the sea-lice count of {{ date }} in {{ unit }}?{% endblocktrans %}</p>
+<ul class="op-lines">
+  <li>{% blocktrans trimmed with fish=count.fish_counted females=count.adult_females mobile=count.mobile attached=count.attached %}{{ fish }} fish: {{ females }} adult female, {{ mobile }} mobile, {{ attached }} attached lice{% endblocktrans %}</li>
+</ul>
+<p>{% trans "The site’s weekly average is worked out again without it. To correct a count, void it and record it again." %}</p>
+{% endblock %}

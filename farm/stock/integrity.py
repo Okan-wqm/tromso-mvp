@@ -1,7 +1,8 @@
 """Every rule of the stock, checked from scratch over the whole ledger (stock-db §6.5), the one rule
-the feeding records share with it: every live feeding finds fish in its unit at the start or the end of
-its day, and the rows a harvest adds (its record, the plan it fulfils, the warnings acknowledged). The
-stock and feeding services hold these on every write; this finds a row that got past them (a hand edit in
+the feeding and health records share with it: every live feeding finds fish in its unit at the start or the
+end of its day, as every live treatment on its first day and every sea-lice count on its day, and the rows a
+harvest adds (its record, the plan it fulfils, the warnings acknowledged). The stock, feeding and health
+services hold these on every write; this finds a row that got past them (a hand edit in
 the database, a bug). `manage.py check_stock` prints what it finds; the test suite runs
 it after its stock tests. Its messages are for the developer, in English."""
 from collections import Counter, defaultdict
@@ -10,6 +11,7 @@ from django.db.models import Sum
 
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
+from farm.health import read as health_read
 from farm.models import (
     Batch, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, StockMovement, StockOperation, Tank,
 )
@@ -98,9 +100,16 @@ def problems():
                          f'({line.kind} {line.count_delta:+d} in unit {line.unit_id} on {line.op.date}).')
     if not broken:      # a broken batch is reported above; its units' feedings cannot be placed
         codes = dict(Tank.all_objects.values_list('pk', 'code'))
-        for feeding in walk(read.ledger(list(batches)), feeding_read.feedings()).orphans:
+        health = health_read.dated_records(list(codes))
+        walked = walk(read.ledger(list(batches)), feeding_read.feedings(),
+                      days=[(unit_id, day) for _kind, _record, unit_id, day in health])
+        for feeding in walked.orphans:
             found.append(f'Feeding {feeding.id} of {feeding.date} in unit {codes[feeding.unit_id]}: no fish in '
                          f'the unit at the start or the end of that day.')
+        for kind, record, unit_id, day in health:
+            if not walked.days[(unit_id, day)].has_fish:
+                found.append(f'{kind.replace("_", " ").capitalize()} {record.pk} of {day} in unit {codes[unit_id]}: '
+                             f'no fish in the unit at the start or the end of that day.')
     sums = (StockMovement.objects.filter(operation__is_deleted=False).values('unit_id', 'batch_id')
             .annotate(fish=Sum('count_delta')))
     for row in sums:
@@ -151,7 +160,7 @@ def _harvest_problems(operations, lines_of):
         if source is not None and (source.unit_id, source.batch_id) != (item.unit_id, item.batch_id):
             found.append(f'Plan item {item.pk} names other fish than the {operation.kind} that fulfils it.')
     handled = set(KIND_OF_OPERATION)
-    for row in HandlingAcknowledgement.objects.select_related('operation'):
+    for row in HandlingAcknowledgement.objects.filter(operation__isnull=False).select_related('operation'):
         if row.operation.kind not in handled:
             found.append(f'Acknowledgement {row.pk} belongs to a {row.operation.kind}, which is not a handling.')
     return found

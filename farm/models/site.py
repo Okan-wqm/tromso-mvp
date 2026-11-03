@@ -8,6 +8,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel, CodedMixin
 
+from ..health import lice
 from .contact import ONE_PRIMARY, Contact
 
 
@@ -27,6 +28,12 @@ class Site(CodedMixin, AuditedModel):
         MAINTENANCE = 'maintenance', _('Under maintenance')
         INACTIVE = 'inactive', _('Inactive')
         CLOSED = 'closed', _('Closed')
+
+    class LiceArea(models.TextChoices):
+        """The two areas of lakselusforskriften § 8, whose lower spring limit runs in different weeks
+        (farm/health/lice.py)."""
+        SOUTH = lice.SOUTH, _('Nord-Trøndelag and southwards')
+        NORTH = lice.NORTH, _('Nordland, Troms and Finnmark')
 
     TIMEZONES = [
         ('UTC', 'UTC'),
@@ -66,6 +73,9 @@ class Site(CodedMixin, AuditedModel):
     postal_code = models.CharField(_('Postal code'), max_length=20, blank=True)
     country = models.CharField(_('Country'), max_length=100, blank=True)
     region = models.CharField(_('Region'), max_length=100, blank=True, db_index=True)
+    # Which statutory sea-lice limits apply (Operations › Sea-lice counts); empty for a site that has none to
+    # meet or has not been set, which is judged by the stricter area.
+    lice_area = models.CharField(_('Sea-lice limit area'), max_length=10, blank=True, choices=LiceArea.choices)
     # Empty means "inherit from the company"; the chain is site -> company -> UTC.
     timezone = models.CharField(_('Timezone'), max_length=50, blank=True, choices=TIMEZONES)
 
@@ -136,6 +146,8 @@ class Site(CodedMixin, AuditedModel):
                 name='chk_sites_sea_cage_location',
                 violation_error_message=_('A sea cage site needs latitude and longitude.'),
             ),
+            models.CheckConstraint(condition=Q(lice_area='') | Q(lice_area__in=lice.AREAS),
+                                   name='chk_sites_lice_area'),
         ]
         indexes = [
             models.Index(fields=['type']),

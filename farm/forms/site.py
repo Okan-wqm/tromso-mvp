@@ -13,7 +13,8 @@ SITE_FORM_TABS = [
         'type', 'status', 'area_m2', 'timezone',
     ]),
     ('location', _('Location'), [
-        'country', 'region', 'street', 'city', 'state', 'postal_code', 'latitude', 'longitude', 'altitude',
+        'country', 'region', 'lice_area', 'street', 'city', 'state', 'postal_code', 'latitude', 'longitude',
+        'altitude',
     ]),
     ('contact', _('Contact'), ['site_manager', 'contact_email', 'contact_phone']),
 ]
@@ -34,6 +35,9 @@ class SiteForm(CodedFormMixin, TabbedForm):
             'timezone': _('Feeding jobs run on the site’s local day. Leave it inherited unless the site is '
                           'in a different timezone than the company.'),
             'latitude': _('Required for a sea cage.'),
+            'lice_area': _('For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 '
+                           'from Nord-Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark '
+                           '(lakselusforskriften § 8).'),
         }
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': _('e.g. Main Production Site')}),
@@ -56,6 +60,7 @@ class SiteForm(CodedFormMixin, TabbedForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['timezone'].choices = [('', _('Inherit from company'))] + Site.TIMEZONES
+        self.fields['lice_area'].choices = [('', _('Not set'))] + list(Site.LiceArea.choices)
 
     def clean(self):
         cleaned = super().clean()

@@ -1,0 +1,26 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} A health dialog (farm.health.views): a treatment, its last day, a sea-lice count. In the dialog or as a page;
+   the server's reasons appear on the field they concern. A dialog's own template fills `intro` and, when
+   it groups its fields, `fields`.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<form method="post" action="{{ request.get_full_path }}" class="record-form" novalidate>
+  {% csrf_token %}
+  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% for hidden in form.hidden_fields %}{% if hidden.errors %}<div class="form-error" role="alert">{{ hidden.errors }}</div>{% endif %}{% endfor %}
+  {% block intro %}{% endblock %}
+  {% block fields %}
+  <div class="form-grid">
+    {% for field in form.visible_fields %}{% include "registration/_field.html" %}{% endfor %}
+  </div>
+  {% endblock %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{{ heading }}</button>
+  </div>
+</form>
+{% endblock %}

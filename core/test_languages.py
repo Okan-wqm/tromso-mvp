@@ -13,8 +13,9 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
-from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, HandlingRule,
-                         ProductionDepartment, SiteContact, Site, SlaughterFacility, Species, System, Tank, WaterLimit,
+from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, HandlingRule, HealthEvent,
+                         LiceCount, Medicine, ProductionDepartment, Site, SiteContact, SlaughterFacility,
+                         Species, System, Tank, Treatment, WaterLimit,
                          WaterMeasurement)
 from farm.tests.helpers import SITE_MANAGER, contacts_data, role, site_data
 
@@ -146,6 +147,17 @@ class PagesInEveryLanguageTests(TestCase):
         cls.sample = WaterMeasurement.objects.create(unit=cls.unit, measured_at=cls.unit.created_at, source='manual',
                                                      ph=Decimal('7.25'), tan_mg_l=Decimal('0.5'),
                                                      temperature_c=Decimal('9.5'), oxygen_mg_l=Decimal('10.5'))
+        cls.medicine = Medicine.objects.create(name='Salmosan vet.', kind='lice', administration='bath',
+                                               active_substance='azamethiphos', lice_report_code='AZAMETHIPHOS',
+                                               withdrawal_degree_days=150, withdrawal_days=7)
+        day = cls.unit.created_at.date()
+        cls.treatment = Treatment.objects.create(method='bath', medicine=cls.medicine, reason='sea_lice', start_date=day,
+                                                 end_date=day)
+        cls.treatment.units.set([cls.unit])
+        cls.event = HealthEvent.objects.create(site=cls.site, date=day, kind='lab_result', diagnosis='pd',
+                                               confirmation='suspected', signs=['pale_gills'])
+        cls.lice_count = LiceCount.objects.create(unit=cls.unit, date=day, fish_counted=20, adult_females=3, mobile=5,
+                                                  attached=1)
         cls.facility = SlaughterFacility.objects.create(name='Fjord Slakteri', approval_number='M123')
         cls.rule = HandlingRule.objects.get(kind='harvest', species__isnull=True)
         cls.role = Group.objects.create(name='Feeder')
@@ -168,13 +180,21 @@ class PagesInEveryLanguageTests(TestCase):
                   f'{sample}?unit={self.unit.pk}',
                   f"{reverse('farm:water_round')}?site={self.site.pk}",
                   reverse('farm:water_void', args=[self.sample.pk])]
+        pages += [reverse('farm:treatments'), reverse('farm:treatment_record'),
+                  reverse('farm:treatment_last_day', args=[self.treatment.pk]),
+                  reverse('farm:treatment_void', args=[self.treatment.pk]),
+                  reverse('farm:healthevent_list'), reverse('farm:healthevent_create'),
+                  reverse('farm:healthevent_edit', args=[self.event.pk]),
+                  reverse('farm:healthevent_void', args=[self.event.pk]),
+                  reverse('farm:lice_counts'), reverse('farm:lice_record'),
+                  reverse('farm:lice_void', args=[self.lice_count.pk])]
         pages += [reverse('farm:harvests'), reverse('farm:handlingplanitem_list'),
                   reverse('farm:handlingplanitem_create'), f"{reverse('farm:handlingplanitem_create')}?kind=transport",
                   reverse('farm:productionplan_list'), reverse('farm:productionplan_create')]
         for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system),
                                  ('equipment', self.feeder), ('tank', self.unit), ('species', self.species),
                                  ('waterlimit', self.water_limit), ('slaughterfacility', self.facility),
-                                 ('handlingrule', self.rule)):
+                                 ('handlingrule', self.rule), ('medicine', self.medicine)):
             pages += [reverse(f'farm:{resource}_list'), reverse(f'farm:{resource}_create'),
                       reverse(f'farm:{resource}_edit', args=[record.pk]),
                       reverse(f'farm:{resource}_delete', args=[record.pk])]

@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.db import IntegrityError, transaction
 from django.test import override_settings
@@ -12,7 +13,7 @@ from django.urls import reverse
 from core import access, navigation
 from core.audit import message
 from core.models import AuditLog
-from core.softdelete import plan_delete
+from core.softdelete import plan_delete, restore
 from farm.tests.helpers import make_species, role
 
 from ..models import Document, DocumentPage, KnowledgeEntry, TextStatus
@@ -352,6 +353,25 @@ class DeletePlanTests(DocumentTestCase):
         self.assertTrue(plan_delete(document).can_delete)
         self.client.post(reverse('knowledge:document_delete', args=[document.pk]))
         self.assertFalse(Document.objects.exists())
+
+    def test_a_restore_brings_the_document_back_with_its_file_and_an_entry_waits_for_its_document(self):
+        document = self.make(content=make_pdf('Kept text'), doi='10.1000/kept')
+        entry = KnowledgeEntry.objects.create(statement='Kept.', topics=['health'], source_kind='document',
+                                              document=document)
+        entry.soft_delete(self.user)
+        document.soft_delete(self.user)
+        with self.assertRaisesMessage(ValidationError, 'is deleted'), transaction.atomic():
+            restore(KnowledgeEntry.all_objects.get(pk=entry.pk), self.user)
+        restore(Document.all_objects.get(pk=document.pk), self.user)
+        restored = Document.objects.get()
+        self.assertEqual((restored.text_status, restored.page_count, restored.doi), (TextStatus.EXTRACTED, 1, '10.1000/kept'))
+        self.assertTrue(default_storage.exists(restored.file.name))
+        self.assertEqual(self.client.get(reverse('knowledge:document_file', args=[document.pk])).status_code, 200)
+        restore(KnowledgeEntry.all_objects.get(pk=entry.pk), self.user)
+        self.assertEqual(list(KnowledgeEntry.objects.all()), [entry])
+        restored_types = AuditLog.objects.filter(action='restore').order_by('created_at').values_list('entity_type',
+                                                                                                    flat=True)
+        self.assertEqual(list(restored_types), ['document', 'knowledge entry'])
 
     def test_deleting_a_species_keeps_the_documents_link_rows_out_of_sight(self):
         salmon = make_species()

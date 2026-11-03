@@ -4,6 +4,7 @@ from core.crud import NONE, Resource, filter_by
 
 from ..forms import SystemForm
 from ..models import ProductionDepartment, Site, System
+from ..water import points
 
 
 class SystemResource(Resource):
@@ -18,6 +19,12 @@ class SystemResource(Resource):
     @classmethod
     def queryset(cls):
         return super().queryset().select_related('site', 'production_department', 'parent')
+
+    @classmethod
+    def after_save(cls, request, system, created):
+        """A new system starts with its loop point (farm/water/points.py), logged with it."""
+        if created:
+            points.create_defaults(request.user, system)
 
     @classmethod
     def filter_list(cls, request, objects):

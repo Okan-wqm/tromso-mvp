@@ -11,6 +11,8 @@ AREAS = [
     Area(_('Systems'), 'farm.System'),
     Area(_('Equipment'), 'farm.Equipment'),
     Area(_('Tanks, ponds & cages'), 'farm.Tank'),
+    # Where a sample is taken: the points of a unit, a loop or a piece of equipment (the samples are Water chemistry).
+    Area(_('Sampling points'), 'farm.SamplingPoint'),
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),
@@ -57,5 +59,10 @@ AREAS = [
     # knowledge entries); Delete discards a draft. A filed report is never changed or deleted.
     Area(_('Regulatory reports'), 'reports.Report'),
     Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),
+    # Tasks: Read is the Tasks page, a task's drawer and adding a note; a person a task is for may also start it,
+    # tick its checklist and complete it. Edit also cancels and reopens any task and edits its checklist.
+    Area(_('Tasks'), 'tasks.Task'),
+    # Recurring tasks: the rules that plan tasks ahead; Create, Edit and Delete change the plan.
+    Area(_('Recurring tasks'), 'tasks.TaskSeries'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

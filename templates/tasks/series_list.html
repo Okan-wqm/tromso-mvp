@@ -1,0 +1,42 @@
+{% extends "crud/list.html" %}
+{% load i18n tasks assets %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
+{% comment %} Operations › Recurring tasks (tasks.resources.TaskSeriesResource): each rule in words, where, for whom,
+   the next day it plans a task for, and whether it is active. Its tasks are on the Tasks page.{% endcomment %}
+{% block search_placeholder %}{% trans "Search recurring tasks" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="state-filter">{% trans "Status" %}</label>
+  <select id="state-filter" name="state" data-autosubmit>
+    <option value="">{% trans "Active and paused" %}</option>
+    <option value="active"{% if state == "active" %} selected{% endif %}>{% trans "Active" %}</option>
+    <option value="paused"{% if state == "paused" %} selected{% endif %}>{% trans "Paused" %}</option>
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}<p class="panel-help">{% blocktrans trimmed with url=tasks_url %}A recurring task plans its tasks up to two weeks ahead; they are on the <a href="{{ url }}">Tasks</a> page. Changing or pausing it plans the tasks from today on that nobody has touched again; the others stay as they are.{% endblocktrans %}</p>{% endblock %}
+{% block empty_text %}{% trans "A job that comes back: every day, on chosen weekdays, or on a day of the month." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Recurring task" %}</th><th scope="col">{% trans "Repeats" %}</th><th scope="col">{% trans "Location" %}</th><th scope="col">{% trans "Assignees" %}</th><th scope="col">{% trans "Next" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for series in objects %}{% with place=series.place %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'tasks:taskseries_edit' series.pk %}" data-modal>{{ series.title }}</a>{% else %}<span class="row-title">{{ series.title }}</span>{% endif %}<span class="row-sub">{{ series.get_category_display }} · <span class="priority-{{ series.priority }}">{{ series.get_priority_display }}</span></span></td>
+        <td>{{ series|rule_text }}<span class="row-sub">{% blocktrans trimmed with first=series.starts_on|date:"DATE_FORMAT" %}from {{ first }}{% endblocktrans %}{% if series.ends_on %} · {% blocktrans trimmed with last=series.ends_on|date:"DATE_FORMAT" %}until {{ last }}{% endblocktrans %}{% endif %}</span></td>
+        <td>{{ place|place_label }}<span class="row-sub nowrap">{{ place|place_context }}</span></td>
+        <td>{% with names=series.assignees.all|people %}{% if names %}{{ names }}{% else %}<span class="over-text">{% trans "Nobody" %}</span>{% endif %}{% endwith %}</td>
+        <td class="nowrap">{% if series.next_on %}{{ series.next_on|date:"DATE_FORMAT" }}{% else %}—{% endif %}</td>
+        <td>{% if series.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Paused" %}</span>{% endif %}</td>
+        <td class="row-actions">{% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'tasks:taskseries_delete' series.pk %}" data-modal title="{% trans "Delete" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete" %}</span></a>{% endif %}</td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

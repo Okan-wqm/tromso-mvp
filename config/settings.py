@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'inventory',
     # Regulatory reports, computed from the farm's records and filed by people (Production › Reports).
     'reports',
+    'tasks',
 ]
 
 MIDDLEWARE = [
@@ -220,3 +221,8 @@ TEMPERATURE_USABLE_DAYS = 7
 # since the last measured point, and "weigh now: the estimate is unreliable" after the second (owner decision Q6).
 WEIGH_SOON_DAYS = 14
 WEIGH_NOW_DAYS = 28
+
+# How far ahead a recurring task's tasks are made, and how many days back missed ones are made after a gap (they
+# are overdue): tasks/services.py, owner decision 3.
+TASK_HORIZON_DAYS = 14
+TASK_BACKFILL_DAYS = 7

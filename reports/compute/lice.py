@@ -8,7 +8,7 @@ report also compares the cages counted with the cages that held salmonids that w
 while one that was due a count has none ("Snitt fra telling i alle merder"): a cage is due when 7 days have passed
 since its last count (14 below 4 °C; none for broodstock below 4 °C, nor when every fish of the site is planned for
 slaughter within 14 days of the day it fell due, § 6). A week in which no count fell due is filed without counts."""
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.db.models import Max
@@ -18,12 +18,16 @@ from farm.health import read as health_read
 from farm.models import Batch, HandlingPlanItem, LiceCount, Medicine, Site, Species, Treatment
 from farm.models.harvest import PlanKind
 from farm.models.health import MEDICINAL, TreatmentMethod, TreatmentReason
+from farm.models.site import zone_of
+from farm.models.water_point import PointKind
 from farm.stock import read
+from farm.water import read as water
 
 from . import stock
 from .common import Result, identity, note, text, unit_number
 
 SALMONIDS = ('SAL', 'TRS', 'TRR')       # D-11: Mattilsynet's own "Laks, Ørret, Regnbueørret"
+TEMPERATURE_DEPTH_M = Decimal(3)         # § 6: the sea temperature is measured at 3 m depth
 WARM_DAYS, COLD_DAYS, COLD = 7, 14, Decimal(4)
 SLAUGHTER_DAYS = 14
 STAGES = ('adult_females', 'mobile', 'attached')
@@ -44,13 +48,29 @@ def week_treatments(site, period):
             .order_by('start_date', 'created_at'))
 
 
+def depth_samples(site, period):
+    """The live samples taken at 3 m depth on the site in the week, on the site's clock: those of a depth point of a unit
+    whose depth is 3 m (farm/water/read.py, the one reader of the water samples). A queryset of voided samples too; the
+    sea temperature leaves them out."""
+    zone = zone_of(site)
+    first = datetime.combine(period.start, time.min, tzinfo=zone)
+    before = datetime.combine(period.end + timedelta(days=1), time.min, tzinfo=zone)
+    return water.samples_of(site=site, since=first, before=before).filter(
+        point__kind=PointKind.DEPTH, point__depth_m=TEMPERATURE_DEPTH_M)
+
+
 def sea_temperature(site, period, problems):
-    """(°C, the samples it is the mean of): the week's temperature at 3 m depth, which § 6 asks for. The water samples
-    carry no depth yet (OUR-13: the sampling points of the water module do), so there is none to read and the report
-    says so rather than take a typed number."""
-    note(problems, _('%(site)s has no sea temperature at 3 m depth for the week: record a water sample at 3 m '
-                     '(Operations › Water chemistry).') % {'site': site})
-    return None, []
+    """(°C, the ids of the samples it is the mean of): the week's temperature at 3 m depth, which § 6 asks for, the mean
+    of the live samples of the site's depth points at 3 m that have a temperature. With none, the report says which
+    sample to take rather than take a typed number."""
+    found = [sample for sample in depth_samples(site, period) if not sample.is_deleted
+             and sample.temperature_c is not None]
+    if not found:
+        note(problems, _('%(site)s has no sea temperature at 3 m depth for the week: record a water sample at a depth '
+                         'point of 3 m (Operations › Water chemistry).') % {'site': site})
+        return None, []
+    return sum((sample.temperature_c for sample in found), Decimal(0)) / len(found), sorted(
+        str(sample.pk) for sample in found)
 
 
 def compute(site, period, report):
@@ -83,6 +103,7 @@ def compute(site, period, report):
                                                     start_date__lte=period.end, end_date__gte=period.start)
          .distinct()),
         ('medicines', Medicine.all_objects.filter(treatments__in=week_treatments(site, period)).distinct()),
+        ('water_samples', depth_samples(site, period)),
     ]
     return Result(content, problems, warnings, scope)
 

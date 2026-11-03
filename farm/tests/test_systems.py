@@ -245,7 +245,7 @@ class SystemAuditAndPermissionTests(SystemTestCase):
         system = System.objects.get()
         self.client.post(reverse('farm:system_edit', args=[system.pk]), system_data(
             self.bergen, production_department='', status='offline', version='1'))
-        created, edited = AuditLog.objects.order_by('created_at')
+        created, edited = AuditLog.objects.filter(entity_type='system').order_by('created_at')
         self.assertEqual(created.changes['Production department'], [None, 'Hall A (HA)'])
         self.assertEqual(edited.changes, {'Status': [message('Operational'), message('Offline')], 'Production department': ['Hall A (HA)', None]})
 

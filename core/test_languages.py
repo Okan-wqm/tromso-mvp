@@ -17,7 +17,7 @@ from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibr
                          LiceCount, Medicine, ProductionDepartment, Site, SiteContact, SlaughterFacility,
                          Species, System, Tank, Treatment, WaterLimit,
                          WaterMeasurement)
-from farm.tests.helpers import SITE_MANAGER, contacts_data, role, site_data
+from farm.tests.helpers import SITE_MANAGER, contacts_data, point_of, role, site_data
 
 from .audit import message
 from .models import AuditLog, Profile
@@ -144,7 +144,9 @@ class PagesInEveryLanguageTests(TestCase):
         cls.species = Species.objects.create(common_name='Atlantic salmon', scientific_name='Salmo salar', code='SAL',
                                              freshwater=True, saltwater=True)
         cls.water_limit = WaterLimit.objects.create(species=cls.species, parameter='ph', critical_low=Decimal('6.5'))
-        cls.sample = WaterMeasurement.objects.create(unit=cls.unit, measured_at=cls.unit.created_at, source='manual',
+        cls.point = point_of(cls.unit)
+        cls.sample = WaterMeasurement.objects.create(point=cls.point, measured_at=cls.unit.created_at,
+                                                     source='manual',
                                                      ph=Decimal('7.25'), tan_mg_l=Decimal('0.5'),
                                                      temperature_c=Decimal('9.5'), oxygen_mg_l=Decimal('10.5'))
         cls.medicine = Medicine.objects.create(name='Salmosan vet.', kind='lice', administration='bath',
@@ -176,10 +178,18 @@ class PagesInEveryLanguageTests(TestCase):
             reverse('core:database'), reverse('core:database_table', args=['sites']),
         ]
         water, sample = reverse('farm:water'), reverse('farm:water_record')
-        pages += [water, f'{water}?view=history', f'{water}?unit={self.unit.pk}', sample,
-                  f'{sample}?unit={self.unit.pk}',
+        pages += [water, f'{water}?view=history', f'{water}?unit={self.unit.pk}', f'{water}?point={self.point.pk}', sample,
+                  f'{sample}?unit={self.unit.pk}', f'{sample}?point={self.point.pk}',
+                  f"{reverse('farm:samplingpoint_list')}?unit={self.unit.pk}",
+                  f"{reverse('farm:samplingpoint_create')}?unit={self.unit.pk}",
+                  f"{reverse('farm:samplingpoint_create')}?system={self.system.pk}",
+                  f"{reverse('farm:water_round')}?site={self.site.pk}&include=inlet&include=equipment",
                   f"{reverse('farm:water_round')}?site={self.site.pk}",
                   reverse('farm:water_void', args=[self.sample.pk])]
+        calculator = (f'?point=tank%3A{self.unit.pk}&loaded=tank%3A{self.unit.pk}&temperature_c=9&ph=7&salinity_ppt=0'
+                      '&alkalinity_mg_l=80&drawn=1&dose_nahco3=20&volume_m3=1&reagents=nahco3&reagents=naoh')
+        pages += [reverse('farm:water_calculator'), reverse('farm:water_calculator') + calculator,
+                  reverse('farm:water_calculator_report') + calculator]
         pages += [reverse('farm:treatments'), reverse('farm:treatment_record'),
                   reverse('farm:treatment_last_day', args=[self.treatment.pk]),
                   reverse('farm:treatment_void', args=[self.treatment.pk]),
@@ -193,7 +203,8 @@ class PagesInEveryLanguageTests(TestCase):
                   reverse('farm:productionplan_list'), reverse('farm:productionplan_create')]
         for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system),
                                  ('equipment', self.feeder), ('tank', self.unit), ('species', self.species),
-                                 ('waterlimit', self.water_limit), ('slaughterfacility', self.facility),
+                                 ('waterlimit', self.water_limit), ('samplingpoint', self.point),
+                                 ('slaughterfacility', self.facility),
                                  ('handlingrule', self.rule), ('medicine', self.medicine)):
             pages += [reverse(f'farm:{resource}_list'), reverse(f'farm:{resource}_create'),
                       reverse(f'farm:{resource}_edit', args=[record.pk]),

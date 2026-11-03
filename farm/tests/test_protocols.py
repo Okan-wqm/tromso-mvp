@@ -31,7 +31,7 @@ from ..models import (
 from ..stock import services as stock_services
 from ..stock.fold import Line, Op
 from ..water import services as water_services
-from .helpers import make_facility, role
+from .helpers import make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 
 D = Decimal
@@ -298,7 +298,7 @@ class ProtocolTestCase(FeedingTestCase):
                                                  valid_from=self.day(days_ago), valid_until=until)
 
     def water(self, value, unit=None, hours=2, system=None):
-        return water_services.record(self.user, point=system or unit or self.t1,
+        return water_services.record(self.user, point=point_of(system or unit or self.t1),
                                      measured_at=timezone.now() - timedelta(hours=hours), source='manual',
                                      values={'temperature_c': D(value)})
 
@@ -411,7 +411,7 @@ class BoardTests(WorkedExampleTestCase):
         self.water('12.5', system=ras, hours=3)                            # the loop's, fresh: it wins
         temperature = self.board_line()[1]['temperature']
         self.assertEqual((temperature.value_c, temperature.via, temperature.fresh), (D('12.5'), 'system', True))
-        WaterMeasurement.all_objects.filter(system=ras).delete()
+        WaterMeasurement.all_objects.filter(point__system=ras).delete()
         temperature = self.board_line()[1]['temperature']
         self.assertEqual((temperature.value_c, temperature.via, temperature.fresh), (D('13.0'), 'unit', False))
         self.assertContains(self.client.get(reverse('farm:meal_board')), 'stale')

@@ -1,0 +1,15 @@
+{% load i18n %}{% comment %} The calculator's wrong values (a live part): a summary that links each to its field, and, hidden,
+   each field's own list ([data-error-for]) that the live form puts under the field (frontend/poll.ts); on a
+   page drawn without the script the fields carry their errors themselves. {% endcomment %}
+<div class="calc-errors" data-live-part="errors">
+  {% if form.errors %}
+  <div class="form-error" role="alert">
+    <p>{% trans "Some values are not right; the results show again once they are:" %}</p>
+    <ul>
+      {% for field in form %}{% if field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}</a>: {{ field.errors|join:" " }}</li>{% endif %}{% endfor %}
+      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  </div>
+  <div hidden data-live-errors>{% for field in form %}{% if field.errors %}<ul class="errorlist" data-error-for="{{ field.html_name }}">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}{% endfor %}</div>
+  {% endif %}
+</div>

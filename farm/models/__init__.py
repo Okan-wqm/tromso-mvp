@@ -21,12 +21,13 @@ from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
 from .water import WaterLimit, WaterMeasurement
+from .water_point import SamplingPoint
 
 __all__ = [
     'Batch', 'DeliveryRecord', 'EscapeRecord', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
     'FeedingProtocol', 'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
     'HealthEvent', 'LiceCount', 'Medicine', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
-    'ProtocolBand', 'ProtocolRate', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
+    'ProtocolBand', 'ProtocolRate', 'SamplingPoint', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
     'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterLimit',
     'WaterMeasurement',
 ]

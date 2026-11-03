@@ -1,0 +1,68 @@
+{% load i18n stock water %}{% comment %} The calculator's results row (a live part), as the source's: the ammonia and the hydrogen sulfide
+   each with its status, the values worked out, and the dosing recipes from the water to the target
+   (farm/water/calculation.py). A status follows the source: past the border critical, within 0.2 pH a
+   warning. {% endcomment %}
+<div class="calc-results" data-live-part="results">
+  {% if result %}
+  <section class="calc-card calc-status wq-card-{{ analysis.nh3.status }}" aria-labelledby="calc-nh3-title">
+    <h3 class="calc-card-title" id="calc-nh3-title">{% trans "Ammonia" %}{% include "farm/_water_status.html" with status=analysis.nh3.status %}</h3>
+    <table class="calc-values">
+      <tr><th scope="row">{% trans "Un-ionised ammonia (NH₃-N)" %}</th><td class="num wq-value wq-{{ analysis.nh3.status }}">{{ analysis.nh3_n_mg_l|amount:4 }}{% if analysis.nh3_n_mg_l is not None %} mg/L{% endif %}</td></tr>
+      <tr><th scope="row">{% trans "Most TAN at this pH" %}</th><td class="num">{% if analysis.safe_tan_mg_l is None %}—{% elif analysis.safe_tan_mg_l > 100 %}&gt; 100 mg/L{% else %}{{ analysis.safe_tan_mg_l|amount:2 }} mg/L{% endif %}</td></tr>
+      {% include "farm/_deffeyes_border.html" with border=analysis.nh3 %}
+      <tr><th scope="row">{% trans "NH₃ share of TAN at the border" %}</th><td class="num">{{ analysis.nh3_share_at_border_pct|percent:3 }}</td></tr>
+    </table>
+  </section>
+
+  <section class="calc-card calc-status wq-card-{{ analysis.h2s.status }}" aria-labelledby="calc-h2s-title">
+    <h3 class="calc-card-title" id="calc-h2s-title">{% trans "Hydrogen sulfide" %}{% include "farm/_water_status.html" with status=analysis.h2s.status %}</h3>
+    <table class="calc-values">
+      <tr><th scope="row">{% trans "H₂S (as H₂S)" %}</th><td class="num wq-value wq-{{ analysis.h2s.status }}">{{ analysis.h2s_ug_l|amount:2 }}{% if analysis.h2s_ug_l is not None %} µg/L{% endif %}</td></tr>
+      <tr><th scope="row">{% trans "Total sulfide (µg/L as S)" %}</th><td class="num">{{ analysis.water.total_sulfide_ug_l|amount:1 }}</td></tr>
+      <tr><th scope="row">{% trans "Most total sulfide at this pH (as S)" %}</th><td class="num">{% if analysis.safe_total_sulfide_ug_l is None %}—{% elif analysis.safe_total_sulfide_ug_l > 10000 %}&gt; 10000 µg/L{% else %}{{ analysis.safe_total_sulfide_ug_l|amount:1 }} µg/L{% endif %}</td></tr>
+      {% include "farm/_deffeyes_border.html" with border=analysis.h2s %}
+    </table>
+  </section>
+
+  <section class="calc-card" aria-labelledby="calc-values-title">
+    <h3 class="calc-card-title" id="calc-values-title">{% trans "Worked out from the values" %}</h3>
+    <table class="calc-values">
+      <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L<span class="sr-only"> ({{ analysis.co2.status|status_label }})</span></td></tr>
+      {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
+      <tr><th scope="row">{% trans "CO₂ the air leaves in it" %}</th><td class="num">{{ result.air_co2_mg_l|amount:2 }} mg/L</td></tr>
+      <tr><th scope="row">{% trans "Alkalinity" %}</th><td class="num">{{ analysis.alkalinity_meq|amount:3 }} meq/L</td></tr>
+      <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
+      {% if analysis.target %}
+      <tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
+      <tr><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td></tr>
+      {% endif %}
+      <tr><th scope="row">{% trans "Oxygen solubility (air)" %}</th><td class="num">{{ analysis.oxygen_solubility_mg_l|amount:2 }} mg/L</td></tr>
+      <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
+    </table>
+  </section>
+
+  <section class="calc-card calc-recipes" aria-labelledby="calc-recipes-title">
+    <h3 class="calc-card-title" id="calc-recipes-title">{% trans "Dosing recipes" %}{% if result.recipes %} ({{ result.recipes|length }}){% endif %}</h3>
+    {% if result.recipes %}
+    <ol class="calc-recipe-list">
+      {% for recipe in result.recipes %}
+      <li class="calc-recipe{% if recipe.below_air %} is-flagged{% endif %}">
+        <span class="calc-recipe-name">{% if recipe.doses|length == 1 %}{% blocktrans trimmed with formula=recipe.doses.0.reagent.formula %}{{ formula }} only{% endblocktrans %}{% else %}{% for dose in recipe.doses %}{{ dose.reagent.formula }}{% if not forloop.last %} + {% endif %}{% endfor %}{% endif %}</span>
+        <ul class="calc-doses">
+          {% for dose in recipe.doses %}
+          <li><span class="calc-dose-formula">{{ dose.reagent.formula }}</span> <strong>{% if dose.grams is None %}{% blocktrans trimmed with dose=dose.mg_l|amount:1 %}{{ dose }} g/m³{% endblocktrans %}{% elif dose.grams < 1000 %}{% blocktrans trimmed with grams=dose.grams|amount:1 %}{{ grams }} g{% endblocktrans %}{% else %}{% blocktrans trimmed with kilos=dose.kilograms|amount:3 %}{{ kilos }} kg{% endblocktrans %}{% endif %}</strong>{% if dose.grams is not None %} <span class="calc-dose-rate">{% blocktrans trimmed with dose=dose.mg_l|amount:1 %}({{ dose }} g/m³){% endblocktrans %}</span>{% endif %}
+            <span class="calc-dose-move">{% blocktrans trimmed with alkalinity=dose.delta_alkalinity|signed_amount:3 dic=dose.delta_dic|signed_amount:3 %}Δalk {{ alkalinity }}, ΔDIC {{ dic }}{% endblocktrans %}</span></li>
+          {% endfor %}
+        </ul>
+        {% if recipe.below_air %}<p class="calc-note wq-value wq-warning">{% blocktrans trimmed with air=result.air_co2_mg_l|amount:2 %}Strips the CO₂ below the {{ air }} mg/L the air leaves in the water: aeration cannot do that.{% endblocktrans %}</p>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    <p class="calc-card-help">{% trans "Amounts of the pure substance, for the volume (System tab); a solution or a technical grade weighs more (divide by its strength). Dose in parts and measure the pH again: a strong base or acid moves the pH fast where it goes in." %}</p>
+    {% else %}
+    <p class="calc-note">{{ result.recipes_note }}</p>
+    {% endif %}
+    {% if result.volume_m3 is None and result.recipes %}<p class="calc-note">{% trans "No volume: the doses per m³ only." %}</p>{% endif %}
+  </section>
+  {% endif %}
+</div>

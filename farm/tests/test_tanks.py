@@ -773,7 +773,7 @@ class TankAuditTests(TankTestCase):
         unit = Tank.objects.get()
         self.post(unit_data(self.hall, water_type='saltwater', depth='2', status='inactive',
                             status_reason='Pump replaced', version='1'), unit)
-        created, edited = AuditLog.objects.order_by('created_at')
+        created, edited = AuditLog.objects.filter(entity_type='unit').order_by('created_at')
         self.assertEqual((created.action, created.entity_type, created.entity_label), ('create', 'unit', 'Start tank 1 (T-01)'))
         self.assertEqual(created.changes['Kind'], [None, message('Tank')])
         self.assertEqual(created.changes['Shape'], [None, message('Circular')])
@@ -801,7 +801,7 @@ class TankAuditTests(TankTestCase):
     def test_the_log_is_english_whatever_the_language(self):
         Profile.objects.create(user=self.user, language='nb')
         self.post(unit_data(self.hall, 'pond', depth='1,5', surface_area_m2='1000'))
-        entry = AuditLog.objects.get()
+        entry = AuditLog.objects.get(entity_type='unit')
         self.assertEqual(entry.entity_type, 'unit')
         self.assertEqual(entry.changes['Pond type'], [None, message('Earthen')])
         self.assertEqual(Tank.objects.get().depth, Decimal('1.50'))
@@ -851,7 +851,8 @@ class TankPermissionTests(TankTestCase):
         self.assertEqual(str(response.context['title']), 'Tanks, ponds & cages')
         place = navigation.place('farm.view_tank')
         self.assertEqual(str(place.path), 'Production · Setup · Facility structure')
-        self.assertEqual([entry.perm for entry in place.group.entries][-2:], ['farm.view_equipment', 'farm.view_tank'])
+        perms = [entry.perm for entry in place.group.entries]
+        self.assertEqual(perms[perms.index('farm.view_tank') - 1:][:2], ['farm.view_equipment', 'farm.view_tank'])
         (area,) = [area for area in access.areas() if area.model == 'farm.Tank']
         self.assertEqual((str(area.label), str(area.group)), ('Tanks, ponds & cages', 'Production · Setup · Facility structure'))
 

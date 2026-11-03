@@ -42,6 +42,10 @@ class AuditedModel(models.Model):
     objects = ActiveManager()
     all_objects = models.Manager()
 
+    # What a delete's confirmation says of the records of this model that keep pointing at the deleted one
+    # (their link is DO_NOTHING, core.softdelete): where they are while it is deleted.
+    kept_note = _('They stay as they are, out of sight while this is deleted, and come back when it is restored.')
+
     class Meta:
         abstract = True
 
@@ -63,6 +67,13 @@ class AuditedModel(models.Model):
     def delete_blockers(self):
         """Reasons this record cannot be deleted now (e.g. fish still in a tank); none by default."""
         return []
+
+    @classmethod
+    def deleted_with(cls, link, target):
+        """Records of this model that point at `target` through `link`, a DO_NOTHING link, and are deleted
+        with it all the same because they are only a plan, not history (a recurring task's planned tasks
+        nobody has touched). None by default: what points at a record through DO_NOTHING is kept."""
+        return cls.objects.none()
 
 
 # A code as lists and reports show it: capital letters, digits, hyphens and underscores. A model that checks

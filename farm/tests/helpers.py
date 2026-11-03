@@ -71,3 +71,18 @@ def stock_fish(user, unit, count=1000, weight='50', days_ago=10, species=None, *
     operation = services.record_input(user, species=species, day=services.local_today(unit) - timedelta(days=days_ago),
                                       lines=[(unit, count, Decimal(weight))], **values)
     return operation.movements.get().batch
+
+
+def point_of(owner, kind='middle'):
+    """The owner's sampling point of that kind (its middle one by default), made with the points a new owner starts
+    with when it has none yet: a test's units and systems are made straight in the database, not through the tabs that
+    make their points (farm/water/points.py), and without a log row. A piece of equipment has none by default, so
+    the point asked for is made."""
+    from ..models import SamplingPoint
+    from ..models.water_point import owner_type_of
+    from ..water.points import template_for
+    owner_type = owner_type_of(owner)
+    wanted = template_for(owner_type, getattr(owner, 'kind', '')) or [(kind, kind.replace('_', ' ').capitalize())]
+    for point_kind, name in wanted:
+        SamplingPoint.all_objects.get_or_create(**{owner_type: owner}, kind=point_kind, name=name)
+    return SamplingPoint.objects.get(**{owner_type: owner}, kind=kind)

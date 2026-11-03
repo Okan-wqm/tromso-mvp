@@ -2,14 +2,16 @@
 lakselusforskriften § 6, the treatments with their substances and the answers of the person, the temperature, and the
 JSON as Mattilsynet's API takes it (validated against its OpenAPI)."""
 import json
-from datetime import date
+from datetime import date, datetime, time
 from decimal import Decimal
 from unittest import mock
 
 from django.urls import reverse
 
 from farm.health import services as health
-from farm.models import Batch, HandlingPlanItem, Medicine, Site
+from farm.models import Batch, HandlingPlanItem, Medicine, SamplingPoint, Site
+from farm.models.site import zone_of
+from farm.water import services as water_services
 from farm.tests.helpers import rows_data
 from farm.tests.test_stock import make_unit
 
@@ -99,8 +101,36 @@ class CountsTests(LiceTestCase):
         report = self.draft
         result = compute.compute(report)         # no depth on the water samples yet: nothing to read (OUR-13)
         self.assertEqual(result.problems, ['Fjord (FJ) has no sea temperature at 3 m depth for the week: record a '
-                                           'water sample at 3 m (Operations › Water chemistry).'])
+                                           'water sample at a depth point of 3 m (Operations › Water chemistry).'])
         self.assertIsNone(result.content['temperature_c'])
+
+    def test_the_temperature_is_the_mean_of_the_weeks_samples_at_3_m(self):
+        self.count(self.m1, 10, 27)
+        self.count(self.m2, 10, 27)
+        three = SamplingPoint.objects.create(unit=self.m1, name='3 m', kind='depth', depth_m=Decimal('3.0'))
+        three_too = SamplingPoint.objects.create(unit=self.m2, name='3 m', kind='depth', depth_m=Decimal('3.0'))
+        five = SamplingPoint.objects.create(unit=self.m1, name='5 m', kind='depth', depth_m=Decimal('5.0'))
+        middle = SamplingPoint.objects.create(unit=self.m1, name='Middle', kind='middle')
+
+        def sample(point, month, number, value, hour=12):
+            moment = datetime.combine(day(month, number), time(hour), tzinfo=zone_of(self.sea))
+            return water_services.record(self.user, point=point, measured_at=moment, source='manual',
+                                         values={'temperature_c': Decimal(value)})
+        first = sample(three, 10, 27, '8.4')
+        second = sample(three_too, 10, 29, '9.1')
+        sample(five, 10, 28, '3.0')                          # another depth
+        sample(middle, 10, 28, '2.0')                        # not a depth point
+        sample(three, 10, 20, '1.0')                         # the week before
+        sample(three, 11, 2, '1.0')                          # the week after
+        voided = sample(three, 10, 30, '20.0')
+        water_services.void(self.user, voided, 'Wrong point')
+        result = compute.compute(self.draft)
+        self.assertEqual((result.problems, result.content['temperature_c']), ([], '8.8'))     # (8.4 + 9.1) / 2, half up
+        self.assertEqual(result.content['samples'], sorted([str(first.pk), str(second.pk)]))
+        # What it read is in its sources: a void of one of them changes the fingerprint.
+        before = compute.fingerprint(result.scope)
+        water_services.void(self.user, second, 'Wrong unit')
+        self.assertNotEqual(compute.fingerprint(compute.compute(self.draft).scope), before)
 
     def test_a_week_without_salmonids_has_nothing_to_file(self):
         report = self.report(Report.Kind.SEA_LICE, Period(WEEK, date(2026, 9, 7)), site=self.sea)

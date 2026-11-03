@@ -1,0 +1,64 @@
+{% extends "crud/list.html" %}
+{% load i18n water %}
+{% comment %} Setup › Facility structure › Sampling points (farm.resources.water_point): every point a water sample can
+   be taken at, by owner, with its kind (and what the kind means for the flow), its flow and share of the outflow, its
+   depth and whether it is active. ?unit=, ?system= or ?equipment= narrows the list to one owner's points (the
+   links on those pages).{% endcomment %}
+{% block search_placeholder %}{% trans "Search by point or owner" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  {% if narrowed %}<input type="hidden" name="{{ narrowed_type }}" value="{{ narrowed.pk }}">{% endif %}
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <select id="site-filter" name="site" data-autosubmit>
+    <option value="">{% trans "All sites" %}</option>
+    {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="owner-type-filter">{% trans "Owner" %}</label>
+  <select id="owner-type-filter" name="owner_type" data-autosubmit>
+    <option value="">{% trans "All owners" %}</option>
+    {% for value, label in owner_types %}<option value="{{ value }}"{% if chosen_owner_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="kind-filter">{% trans "Kind" %}</label>
+  <select id="kind-filter" name="kind" data-autosubmit>
+    <option value="">{% trans "All kinds" %}</option>
+    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}
+{% if narrowed %}<p class="panel-help">{% blocktrans trimmed with owner=narrowed.code %}The points of {{ owner }}.{% endblocktrans %} <a href="{{ list_url }}">{% trans "Show all" %}</a>{% if can_add %} · <a href="{{ create_url }}?{{ narrowed_type }}={{ narrowed.pk }}" data-modal>{% trans "Add a point to it" %}</a>{% endif %}</p>{% endif %}
+{% for note in share_notes %}
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{% if note.over %}{% blocktrans trimmed with owner=note.owner.code total=note.total|floatformat:"-2" %}The outlets of {{ owner }} take {{ total }} % of its outflow: more than 100 %. Correct the shares.{% endblocktrans %}{% else %}{% blocktrans trimmed with owner=note.owner.code total=note.total|floatformat:"-2" %}The outlets of {{ owner }} take {{ total }} % of its outflow, not 100 %.{% endblocktrans %}{% endif %}</p>
+{% endfor %}
+<p class="panel-help">{% trans "A sample says where it was taken: at one of these points. A unit’s water, as the rations, the withdrawal and the Production units page read it, is its middle point. The flow and the share of the outflow are the design or last-known figures a mass balance will start from; nothing here is measured." %}</p>
+{% endblock %}
+{% block empty_text %}{% trans "A point is a named place on a unit, a loop or a piece of equipment where water is sampled: its inlet, its middle, its outlets. A new unit or system gets its points when it is created." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Owner" %}</th><th scope="col">{% trans "Sampling point" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col" class="num">{% trans "Flow (m³/h)" %}</th><th scope="col" class="num">{% trans "Share of the outflow (%)" %}</th><th scope="col" class="num">{% trans "Depth (m)" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for point in objects %}
+      <tr{% if not point.is_active %} class="is-voided"{% endif %}>
+        <td class="nowrap"><span class="row-title row-title-inline">{{ point.owner.code }}</span><span class="row-sub">{{ point.owner.name }} · {% if point.unit_id %}{% trans "Unit" %}{% elif point.system_id %}{% trans "System" %}{% else %}{% trans "Equipment" %}{% endif %}</span></td>
+        <td>{% if can_change %}<a class="row-title row-title-inline" href="{% url 'farm:samplingpoint_edit' point.pk %}" data-modal>{{ point.name }}</a>{% else %}<span class="row-title row-title-inline">{{ point.name }}</span>{% endif %}{% if point.description %}<span class="row-sub">{{ point.description }}</span>{% endif %}</td>
+        <td>{{ point.get_kind_display }}<span class="row-sub">{{ point.role.label }}</span></td>
+        <td class="num">{% if point.flow_m3_h is not None %}{{ point.flow_m3_h|floatformat:"-2g" }}{% else %}–{% endif %}</td>
+        <td class="num">{% if point.flow_share_pct is not None %}{{ point.flow_share_pct|floatformat:"-2g" }}{% else %}–{% endif %}</td>
+        <td class="num">{% if point.depth_m is not None %}{{ point.depth_m|floatformat:"-1g" }}{% else %}–{% endif %}</td>
+        <td>{% if point.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}</td>
+        <td class="row-actions">
+          {% if perms.farm.view_watermeasurement %}<a href="{% url 'farm:water' %}?point={{ point.pk }}">{% trans "History" %}</a>{% endif %}
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:samplingpoint_edit' point.pk %}" data-modal title="{% blocktrans with name=point %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=point %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:samplingpoint_delete' point.pk %}" data-modal title="{% blocktrans with name=point %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=point %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

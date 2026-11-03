@@ -2925,8 +2925,8 @@ msgstr "H₂S: toplam sülfürü verin."
 msgid "H₂S: no limit given."
 msgstr "H₂S: sınır verilmedi."
 
-msgid "H₂S: the limit is not reached between pH 4 and 12.5."
-msgstr "H₂S: sınıra pH 4 ile 12,5 arasında ulaşılmaz."
+msgid "H₂S: the limit is not reached anywhere on this chart."
+msgstr "H₂S: bu çizelgenin hiçbir yerinde sınıra ulaşılmaz."
 
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: toplam sülfür hiçbir pH'de sınıra ulaşamaz."
@@ -3485,8 +3485,8 @@ msgstr "NH₃: sınır verilmedi."
 msgid "NH₃: the TAN cannot give the limit at any pH (the limit is not below the TAN)."
 msgstr "NH₃: TAN hiçbir pH'de sınıra ulaşamaz (sınır TAN'ın altında değil)."
 
-msgid "NH₃: the limit is not reached between pH 4 and 12.5."
-msgstr "NH₃: sınıra pH 4 ile 12,5 arasında ulaşılmaz."
+msgid "NH₃: the limit is not reached anywhere on this chart."
+msgstr "NH₃: bu çizelgenin hiçbir yerinde sınıra ulaşılmaz."
 
 msgid "NH₄-N (mg/L)"
 msgstr "NH₄-N (mg/L)"

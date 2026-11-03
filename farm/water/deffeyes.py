@@ -27,7 +27,8 @@ What the chart shows, as the source draws it (the corrections are in the bug doc
 - Ω = 1 for calcite and aragonite (Mucci 1983) for the calcium given, in water of 5 to 44 ‰ (WQ-32).
 - The water (a star) and the target (a cross), a dashed line between them.
 - A limit's status follows the source: past its pH border critical, within 0.2 pH of it a warning. A
-  border outside the chart's pH range (4 to 12.5) is said in words, not as a number (WQ-34)."""
+  border outside the chart's pH range (4 to 12.5) is said in words, not as a number (WQ-34); its region is
+  still shaded wherever it meets the plotted box, which in a large box can reach past pH 12.5 or below 4."""
 import math
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -449,12 +450,7 @@ def geometry(analysis, layers=ALL_LAYERS):
             if segment is not None:
                 shape.isolines.append(Isoline(ph, ph in LABELLED_PHS, segment))
     if 'nh3' in layers:
-        if analysis.nh3.on_chart or analysis.nh3.everywhere:
-            shape.regions['nh3'] = _half(eq, analysis.nh3.ph, box, above=True)
-            segment = _isoline_segment(eq, analysis.nh3.ph, box)
-            shape.boundaries['nh3'] = [list(segment)] if segment else []
-        else:
-            shape.notes.append(_nh3_note(analysis))
+        _toxic_region(shape, eq, 'nh3', analysis.nh3, above=True, note=_nh3_note(analysis))
     if 'co2' in layers:
         if limits.co2_mg_l is not None:
             curve, leaves_top = co2_curve(eq, limits.co2_mg_l / chemistry.MG_CO2_PER_MMOL, box)
@@ -464,12 +460,7 @@ def geometry(analysis, layers=ALL_LAYERS):
         else:
             shape.notes.append(_('CO₂: no limit given.'))
     if 'h2s' in layers:
-        if analysis.h2s.on_chart or analysis.h2s.everywhere:
-            shape.regions['h2s'] = _half(eq, analysis.h2s.ph, box, above=False)
-            segment = _isoline_segment(eq, analysis.h2s.ph, box)
-            shape.boundaries['h2s'] = [list(segment)] if segment else []
-        else:
-            shape.notes.append(_h2s_note(analysis))
+        _toxic_region(shape, eq, 'h2s', analysis.h2s, above=False, note=_h2s_note(analysis))
     if 'safe' in layers:
         gaps = safe_zone_gaps(analysis)
         zone = safe_zone(analysis, box)
@@ -492,13 +483,26 @@ def geometry(analysis, layers=ALL_LAYERS):
     return shape
 
 
+def _toxic_region(shape, eq, key, border, above, note):
+    """The region past a limit's border (above its isoline for NH₃, below for H₂S), shaded from the real
+    border wherever it meets the plotted box, whether or not the border is inside the chart's pH range: a
+    large box reaches past pH 12.5 or below 4. The note when there is nothing to shade."""
+    region = _half(eq, border.ph, shape.box, above=above) if border.ph is not None else []
+    if region:
+        shape.regions[key] = region
+        segment = _isoline_segment(eq, border.ph, shape.box)
+        shape.boundaries[key] = [list(segment)] if segment else []
+    else:
+        shape.notes.append(note)
+
+
 def _nh3_note(analysis):
     if analysis.nh3.status == Status.NOT_MEASURED:
         return _('NH₃: give the TAN.')
     if analysis.nh3.status == Status.NO_LIMIT:
         return _('NH₃: no limit given.')
-    if analysis.nh3.off_chart:
-        return _('NH₃: the limit is not reached between pH 4 and 12.5.')
+    if analysis.nh3.ph is not None:
+        return _('NH₃: the limit is not reached anywhere on this chart.')
     return _('NH₃: the TAN cannot give the limit at any pH (the limit is not below the TAN).')
 
 
@@ -507,8 +511,8 @@ def _h2s_note(analysis):
         return _('H₂S: give the total sulfide.')
     if analysis.h2s.status == Status.NO_LIMIT:
         return _('H₂S: no limit given.')
-    if analysis.h2s.off_chart:
-        return _('H₂S: the limit is not reached between pH 4 and 12.5.')
+    if analysis.h2s.ph is not None:
+        return _('H₂S: the limit is not reached anywhere on this chart.')
     return _('H₂S: the total sulfide cannot give the limit at any pH.')
 
 

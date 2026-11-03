@@ -2916,8 +2916,8 @@ msgstr "H₂S: oppgi totalt sulfid."
 msgid "H₂S: no limit given."
 msgstr "H₂S: ingen grense oppgitt."
 
-msgid "H₂S: the limit is not reached between pH 4 and 12.5."
-msgstr "H₂S: grensen nås ikke mellom pH 4 og 12,5."
+msgid "H₂S: the limit is not reached anywhere on this chart."
+msgstr "H₂S: grensen nås ikke noe sted i dette diagrammet."
 
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: det totale sulfidet kan ikke gi grensen ved noen pH."
@@ -3476,8 +3476,8 @@ msgstr "NH₃: ingen grense oppgitt."
 msgid "NH₃: the TAN cannot give the limit at any pH (the limit is not below the TAN)."
 msgstr "NH₃: TAN kan ikke gi grensen ved noen pH (grensen er ikke under TAN)."
 
-msgid "NH₃: the limit is not reached between pH 4 and 12.5."
-msgstr "NH₃: grensen nås ikke mellom pH 4 og 12,5."
+msgid "NH₃: the limit is not reached anywhere on this chart."
+msgstr "NH₃: grensen nås ikke noe sted i dette diagrammet."
 
 msgid "NH₄-N (mg/L)"
 msgstr "NH₄-N (mg/L)"

@@ -852,15 +852,17 @@ the address, nothing is stored, and without values it shows its defaults.
   cannot go together (the hydroxide alone above the alkalinity) are refused.
 - **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
   comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
-  would give it one; entering 0 instead of 0.3 ‰ gives 7 to 10 % more CO₂ and 6 to 9 % more NH₃ at
-  5 to 25 °C, the safe side. And a pH (NBS) is put on the seawater scale with a Davies-type activity
-  coefficient, not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two differ by
-  −0.07 pH at 0 °C, −0.058 at 5 °C, about 0 at 25 °C and +0.05 at 40 °C; at 5 °C the chart shows about
-  12 % less NH₃ and 16 % more CO₂ than CO2SYS would.
+  would give it one; entering 0 instead of 0.3 ‰ gives 7 to 13 % more CO₂ and 5 to 9 % more NH₃ at 5 to
+  25 °C and pH 6.5 to 8.5, the safe side. And a pH (NBS) is put on the seawater scale with a Davies-type
+  activity coefficient, not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two
+  differ by −0.07 pH at 0 °C, −0.058 at 5 °C, about 0 at 25 °C and +0.05 at 40 °C; at 5 °C the chart
+  shows about 12 % less NH₃ and 16 % more CO₂ than CO2SYS would.
 - **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
   the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
   missing (a missing value is never taken for a safe one). Without a total sulfide it is drawn and named
-  "Safe zone (H₂S not assessed)". A border outside the chart's pH range (4 to 12.5) is said in words.
+  "Safe zone (H₂S not assessed)". A border outside the chart's pH range (4 to 12.5) is said in words in
+  the table, and its region is still shaded wherever it meets the plotted box (a large box reaches past
+  pH 12.5 or below 4).
 - **The limits are defaults, not the fish's**: NH₃-N 0.0103 mg/L (0.0125 mg/L NH₃, Piper et al. 1982,
   as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA 1986); the example water is the
   source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L, target pH 7.5 at 100 mg/L)

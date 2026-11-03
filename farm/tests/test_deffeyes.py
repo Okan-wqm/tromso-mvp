@@ -344,6 +344,16 @@ def unpixel(chart, x, y):
             (plot['bottom'] - float(y)) / plot['size'] * chart.box.alkalinity)
 
 
+def inside(polygon, point):
+    """Whether a point is inside a polygon (ray casting)."""
+    x, y = point
+    found = False
+    for (x1, y1), (x2, y2) in zip(polygon, polygon[1:] + polygon[:1]):
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            found = not found
+    return found
+
+
 def pairs(points):
     return [tuple(map(float, pair.split(','))) for pair in points.split()]
 
@@ -517,7 +527,7 @@ class GeometryTests(SimpleTestCase):
         self.assertEqual(border.status, Status.OK)
         shape = deffeyes.geometry(result)
         self.assertNotIn('nh3', shape.regions)
-        self.assertIn('NH₃: the limit is not reached between pH 4 and 12.5.', [str(text) for text in shape.notes])
+        self.assertIn('NH₃: the limit is not reached anywhere on this chart.', [str(text) for text in shape.notes])
         html = table(border)
         self.assertIn('not reached in the chart', html)
         self.assertNotIn(f'{border.ph:.3f}', html)
@@ -548,6 +558,45 @@ class GeometryTests(SimpleTestCase):
         html = table(default_analysis().nh3)
         self.assertIn('8.040', html)
         self.assertIn('+1.04', html)
+
+    def assert_shaded_where_passed(self, result, key, toxic):
+        """Points sampled over the box: a point whose pH passes the border (`toxic(ph)`) is in the region,
+        any other point is not, except within a hair of the border; returns how many were toxic."""
+        shape = deffeyes.geometry(result)
+        region, box, eq = shape.regions.get(key, []), shape.box, result.equilibria
+        passed, wrong = 0, []
+        for i in range(1, 80):
+            for j in range(1, 80):
+                dic, alkalinity = box.dic * i / 80, box.alkalinity * j / 80
+                ph = eq.ph_at(dic, alkalinity)
+                if ph is None or abs(ph - getattr(result, key).ph) < 1e-6:
+                    continue
+                passed += toxic(ph)
+                if inside(region, (dic, alkalinity)) != toxic(ph):
+                    wrong.append((dic, alkalinity, ph))
+        self.assertEqual(wrong, [])
+        return passed
+
+    def test_a_border_off_the_charts_range_is_shaded_where_it_meets_a_large_box(self):
+        # The reviewer's case, which the form accepts: in a 35 × 22 box the top-left corner reaches pH 13.3,
+        # past an NH₃ border of 13.08; the table says it in words, the chart shades the sliver.
+        result = analyse(Water(0, 0, 7.0, 1000, 0.100, 2), Limits(0.0999, 15, 2, 50, 1000))
+        self.assertTrue(result.nh3.off_chart)
+        self.assertAlmostEqual(result.nh3.ph, 13.084, places=3)
+        self.assertEqual((deffeyes.box_of(result).dic, deffeyes.box_of(result).alkalinity), (35, 22))
+        self.assertGreater(self.assert_shaded_where_passed(result, 'nh3', lambda ph: ph > result.nh3.ph), 0)
+        self.assertNotIn('NH₃: the limit is not reached anywhere on this chart.',
+                         [str(text) for text in deffeyes.geometry(result).notes])
+        # H₂S below pH 4 in a box wide in DIC: a low pH with much alkalinity, a total sulfide just above the limit.
+        result = analyse(Water(12, 0, 5.0, 1000, 0.5, 2 / H2S_PER_S / 0.9995), Limits(0.0103, 15, 2, 50, 1000))
+        self.assertTrue(result.h2s.off_chart)
+        self.assertLess(result.h2s.ph, deffeyes.PH_RANGE[0])
+        self.assertGreater(self.assert_shaded_where_passed(result, 'h2s', lambda ph: ph < result.h2s.ph), 0)
+        # A small box that the border misses: nothing to shade, and the note says so.
+        result = default_analysis(tan_mg_l=0.01031)
+        self.assertEqual(self.assert_shaded_where_passed(result, 'nh3', lambda ph: ph > result.nh3.ph), 0)
+        self.assertIn('NH₃: the limit is not reached anywhere on this chart.',
+                      [str(text) for text in deffeyes.geometry(result).notes])
 
     def test_the_isolines_take_the_sources_colours(self):
         # phIsolineColor (deffeyes-data.ts): sequentialColor(floor((pH − 5.5) / 0.5)) of shared-contracts'

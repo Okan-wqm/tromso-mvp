@@ -18,8 +18,8 @@ What works today:
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
   species, feeds, water limits, suppliers, and under Operations the production units with their fish, the
-  water chemistry and Feeding: the meal board, the records, the feeding protocols and their assignments, and
-  under Communication the messages). Each has its own overview. A
+  water chemistry, the tasks and the recurring tasks, and Feeding: the meal board, the records, the feeding
+  protocols and their assignments, and under Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
@@ -842,6 +842,104 @@ Differences from the source (details in the bug document, WQ-01 to WQ-29):
   and a site's intake water. The rations read the latest water temperature from here and keep no copy of
   their own (WQ-02; `farm/feeding/temperature.py`).
 
+### Operations › Tasks (`/operations/tasks/`) and Recurring tasks (`/operations/tasks/recurring/`)
+
+The farm's jobs: "clean the drum filter of T-01", "report the lice count to Mattilsynet", each at one place,
+for the people who do it, due on a day. Tables `tasks`, `task_assignees`, `task_checklist_items`,
+`task_notes`, and for the recurring tasks `task_series`, `task_series_assignees`,
+`task_series_checklist_items`; the app is `tasks/`.
+
+**A task** is a title, a description, a category (feeding, cleaning, maintenance, fish health, water quality,
+harvest, transport, administration, other), a priority (urgent, high, medium, low), a due date and
+optionally a due time, and:
+
+- **one place, chosen from a list**: a whole site, a production department, a system, a unit or a piece of
+  equipment, exactly one (a database check over five real links). The dialog's **Site** select narrows the
+  **Location** select, which lists every live place grouped by kind ("T-01 · Tank 1 — Hall A · Bergen");
+  **Without a site** offers the production departments without a site and what is in them. Nothing is typed;
+  the server checks the place against the site and refuses anything not offered.
+- optionally **the batch** it is about: a batch with fish at the chosen place now (from the stock ledger),
+  narrowed by the Location select (a chain: site → location → batch). A task keeps its batch after the fish
+  leave; a new choice, or a new place, is checked again.
+- **its people**: one or more user accounts, offered as the active users who can read Tasks (the platform
+  admin among them). Each of them sees it under My tasks and any of them can start and complete it. Someone
+  who can no longer be chosen (deactivated, or the role taken away) stays on the tasks they had, marked so.
+- a **checklist**, once the task exists: its lines, at most 30, edited as a list on the dialog's Checklist
+  tab until the first line is ticked; then each tick is the only change, with who and when.
+- **notes**: anyone who can read Tasks adds one in the drawer; a note is never edited or removed and is in
+  the activity log with its text (task notes are part of the work record; Messages are not, see below).
+
+**Statuses**: open, **in progress** (who started it and when), **done** (who completed it, when, and a
+note), **cancelled** (who, when and why). Start, Complete and a tick: a person the task is for, or whoever
+may edit tasks; Cancel and Reopen: whoever may edit tasks (reopening clears the completion or the
+cancellation and the start). The person who created a task has no rights of their own (owner decision 8).
+Each change is one call of `tasks/services.py`, in one transaction with the task locked, logged, and
+the database holds the rule (done exactly with who and when, cancelled exactly with a reason, in progress
+exactly with who started it).
+
+**Overdue is worked out on read**, never stored: a task that is open or in progress is overdue once its due
+date has passed, or on its due date once its due time has passed, each on the clock of its place's site
+(`farm.models.site.zone_of`; the company's for a production department without a site). A task due 3 Nov at
+23:00 on an Oslo site is due today at 23:30 UTC on 2 Nov and overdue at 22:30 UTC on 3 Nov.
+
+**The page** has three views, each a query of its own, filtered and paged on the server (50 a page):
+**Today** (the overdue first, then the ones due today by time and priority, then the ones done today),
+**Open** (every open one and in progress, by due date) and **Completed** (done and cancelled, latest first),
+with the number of each, a search, filters (site or "without a site", place, assignee or **My tasks**,
+priority, category, due from and to) and the overdue count. A row is one link: it opens **the drawer**
+(`?task=`) with the place (shown "Place deleted" once its place is deleted), batch, due date, people,
+recurring task, who started, completed or cancelled it, the checklist with a tick per line, the notes, and
+what the person may do: Start, Complete, Reopen, Edit, Cancel task, Delete. **New task** opens the dialog;
+`?place=unit:<id>` starts it at a place (for a "New task" button on a unit's drawer later). A form sent twice
+creates one task (its key, `core.crud.ENTRY_KEY`). The production overview has two tiles, the tasks due
+today and the overdue ones.
+
+**Recurring tasks** plan a task at a place for its people: **daily** every N days, **weekly** every N weeks
+on chosen weekdays, or **monthly** every N months on a day of the month (the 29th to 31st fall on a shorter
+month's last day), from a first day (and up to a last day, if it has one), with an optional due time and its
+own checklist, copied to each task. The dates are worked out from the first day on the site's calendar, so
+nothing drifts and a daylight-saving weekend moves nothing (`TaskSeries.dates`). Its tasks are **real tasks**,
+made up to `TASK_HORIZON_DAYS` (14) ahead; the first time, or after a gap, the missed days are made back to
+at most `TASK_BACKFILL_DAYS` (7), and they are overdue (owner decision 3). They are made when a recurring
+task is saved, before the Tasks pages and the overview read, and by `manage.py generate_tasks` for a cron;
+one recurring task per transaction, locked, and a unique key per recurring task and day, so each day is made
+once however often and however concurrently. A planned task that nobody touched (open, never edited, no tick,
+no note) is only the rule's projection: **changing, pausing or deleting** the recurring task replaces or
+removes those from today on and keeps every other one; a task a person deleted is not made again; resuming
+does not make the paused days. The list shows each rule in words ("Every 2 weeks on Monday, Thursday at
+08:00"), the place, the people, the next day and whether it is active.
+
+**Deleting**: a task is soft-deleted (the delete plan, restorable from the admin). Deleting a place does not
+wait for its tasks (owner decision 7): they keep the link (`DO_NOTHING`), stay in the lists showing "Place
+deleted", and show the place again when it is restored; the confirmation counts them. A recurring task goes
+with its place (`CASCADE`), taking its planned tasks nobody touched (`Task.deleted_with`); the others stay.
+
+**Who may do what**: the areas Tasks and Recurring tasks (Production · Operations), each read, create, edit
+and delete; see Statuses for start, complete, tick and notes.
+
+**Not in the MVP, and how it plugs in**: notifications (signals from `tasks/services.py`; the system
+assistant's direct message in Messages, a menu badge, an e-mail digest), auto rules (from the prototype's
+own write paths with a dedupe key, e.g. a critical water value opens a task at that unit, not the source's
+free-text conditions), maintenance (preventive maintenance as a recurring task at an equipment place, a
+repair as a task), a calendar, people without a login (with HR), and the AI assistants (reading
+`tasks/read.py`, writing through `tasks/services.py` with the person's confirmation). Task notes are not a
+Messages conversation: a conversation is for its members only and not in the activity log, while a task's
+notes are part of the farm's record that a supervisor, the next shift or an auditor reads.
+
+Differences from the source (details in the bug document, TSK-01 to TSK-23):
+
+- The place is one of five real links chosen from a list (the source's was free text, its `siteId` never
+  written); the people are user accounts (the source mixed accounts with workers who cannot sign in and
+  copied their names); every link is a foreign key (TSK-01, TSK-02, TSK-12).
+- Overdue is worked out on read on the site's clock (the source stored it on the server's clock and lost
+  "in progress"); each view is its own server query (the source showed the first 50 tasks, and its Today never
+  matched a date) (TSK-03, TSK-04, TSK-09).
+- A rule anchored to its first day with weekdays and a day of the month, made once per day in its own
+  transaction (the source's drifted, ran on UTC and shared one transaction) (TSK-06, TSK-14).
+- Every action has its page and test; the status changes only through its own actions with who and when;
+  the checklist keeps who ticked what; a form sent twice creates once (TSK-05, TSK-07, TSK-10, TSK-11, TSK-16).
+- Not ported: tags, the time estimate, auto rules, the calendar, notifications, the AI tools.
+
 ## Messages (Production › Communication, `/messages/`)
 
 People write to each other in **direct conversations** (two people) and **channels** (a name and its
@@ -978,8 +1076,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
   Feeding records (read the Meal board and Records, create = record a feeding or a meal, delete = void one),
   Feeding protocols and Protocol assignments (read, create, edit, delete), Water chemistry (read the page
-  and a unit's water, create = record a sample or a round, delete = void one), Messages (read = use Messages,
-  create = also create channels) and Activity log (read).
+  and a unit's water, create = record a sample or a round, delete = void one), Tasks and Recurring tasks
+  (read, create, edit, delete; a person a task is for also starts, ticks and completes it), Messages (read =
+  use Messages, create = also create channels) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -1021,7 +1120,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `messaging`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -1075,7 +1174,9 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   (`data-modal`), inner tabs, upper-case inputs, row lists and check boxes that need another one
   (`data-requires`, the role matrix), GET forms that leave empty fields out of the address
   (`data-omit-empty`, the database viewer's filters), choices and rows that belong to another field's
-  value (`data-depends-on`), fields that render the form again with what was entered (`data-refresh`),
+  value (`data-depends-on`; a choice cleared because it no longer fits is a change too, so a chain such as
+  site → location → batch fits itself all the way down), fields that render the form again with what was
+  entered (`data-refresh`, sent once per change however many fields it cleared),
   link lists with one primary mark (`data-links`);
 - `auth.ts` the show/hide password button;
 - `poll.ts` the parts of a page the server renders again while it is in view (`data-poll`: the open
@@ -1122,7 +1223,11 @@ down what a delete does to its neighbours: it is whatever its links say. Records
 many-to-many link (the equipment serving a system) keep their link rows; the confirmation lists them,
 and the link counts again once the record is restored. Records whose link is `DO_NOTHING` (a unit's or a
 system's water samples) stay as they are: their manager hides them while the record is deleted, the
-confirmation counts them, and they come back with it.
+confirmation counts them, and they come back with it. The confirmation counts each kept record once, however
+many of its links point at what is deleted, and says what becomes of them (the model's `kept_note`: a task
+stays in the lists, showing its place as deleted). Records that point at it through `DO_NOTHING` but are
+only a plan go with it all the same: their model says which (`AuditedModel.deleted_with`, a recurring task's
+planned tasks nobody touched).
 
 ### Shared form parts
 
@@ -1136,7 +1241,9 @@ What one tab needed and the next ones will too lives in `core/`:
   fields for one record (a pond has no diameter): the tabs show the fields it kept.
   A unique constraint among live records, on fields or on an expression (a species' scientific name
   in any case, `Lower(...)`), is checked on the form by the constraint itself, with its message on
-  the field.
+  the field. A model with an `entry_key` field gets a hidden key on its new-record form, stored with the
+  record: the same form sent twice (a double click, a retried request, two at once) creates one record and
+  the second sending opens it (`core.crud.ENTRY_KEY`, a task, a recurring task).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
@@ -1159,7 +1266,10 @@ What one tab needed and the next ones will too lives in `core/`:
   choices; the activity log keeps each as its msgid and the database viewer shows the array as
   PostgreSQL prints it (`{feed,transport}`).
 - `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of
-  check boxes with the details of each link, that belongs to another field's value.
+  check boxes with the details of each link, that belongs to another field's value. A choice that belongs
+  to none of its values (a production department without a site: `None` in `belongs_to`) belongs to
+  `core.widgets.NONE`, the value the source field offers as "Without a site" (the list filters' value for
+  "without one" too), so it can be chosen like any other.
 - `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data (a type's technical
   specifications), the form fields and the check of the stored values from one definition.
 - `TreeMixin` (`core/models.py`): records nested under records of the same kind, without loops.
@@ -1236,6 +1346,10 @@ real mail.
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
 | `/water-limits/` | Reference data › Water limits |
+| `/operations/tasks/` | Operations › Tasks: `?view=open` or `completed`, the filters, `?task=<id>` opens a task's drawer |
+| `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
+| `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
+| `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
@@ -1272,6 +1386,7 @@ real mail.
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
+| `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |

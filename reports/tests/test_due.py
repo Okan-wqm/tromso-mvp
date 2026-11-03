@@ -200,7 +200,7 @@ class TheListPageTests(DueTestCase):
 
     def test_the_page_lists_what_is_due_with_a_start_link_for_people_who_may_create(self):
         page = self.client.get(reverse('reports:report_list'))
-        self.assertContains(page, 'Due')
+        self.assertContains(page, 'Reports and notices due')
         self.assertContains(page, 'Smolt')
         self.assertContains(page, f'{reverse("reports:report_create")}?kind=smolt&amp;site={self.hatchery.pk}&amp;'
                                   'period=2026-09')

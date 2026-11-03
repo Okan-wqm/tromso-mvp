@@ -161,7 +161,7 @@ class DeliveryTests(StockTestCase):
     def test_check_stock_finds_a_delivery_without_its_destination(self):
         bare = StockOperation.objects.create(kind='delivery', date=self.day(3))
         StockMovement.objects.create(operation=bare, batch=self.batch, unit=self.t1, kind='delivery', count_delta=-5)
-        self.assertIn(f'Delivery {bare.pk} of {bare.date} has no delivery record (who received the fish).',
+        self.assertIn(f'Fish delivery {bare.pk} of {bare.date} has no delivery record (who received the fish).',
                       integrity.problems())
 
     def test_the_new_line_kinds_are_in_the_checks_of_the_database(self):

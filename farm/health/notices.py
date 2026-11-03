@@ -15,6 +15,8 @@ read as "not notified"."""
 from dataclasses import dataclass
 from datetime import datetime
 
+from django.utils.translation import gettext_noop
+
 _providers = []
 
 
@@ -59,3 +61,8 @@ def start_url(event, user):
         if url:
             return url
     return ''
+
+
+# The label the activity log's old rows carry for the column this registry replaced (the health event's "Mattilsynet notified
+# at"): kept in the catalogs so those rows stay translated.
+LEGACY_LABELS = (gettext_noop('Mattilsynet notified at'),)

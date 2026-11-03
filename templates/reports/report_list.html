@@ -33,7 +33,7 @@
 {% endif %}
 {% if due %}
 <section class="notice notice-warning" aria-labelledby="due-title">
-  <strong id="due-title">{% trans "Due" %}</strong>
+  <strong id="due-title">{% trans "Reports and notices due" %}</strong>
   <ul>
     {% for row in due %}<li>
       {{ row.kind.label }} · {{ row.place }}{% if row.period %} · {{ row.period.label }}{% endif %}{% if row.event and not row.period %} · {{ row.event }}{% endif %}

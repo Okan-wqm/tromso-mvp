@@ -73,12 +73,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='stockmovement',
             name='kind',
-            field=models.CharField(choices=[('input', 'Stocked'), ('mortality', 'Died'), ('cull', 'Culled'), ('transfer_out', 'Moved out'), ('transfer_in', 'Moved in'), ('harvest', 'Harvested'), ('delivery', 'Delivered'), ('weighing', 'Weighed'), ('adjustment', 'Count adjusted')], max_length=12, verbose_name='Line'),
+            field=models.CharField(choices=[('input', 'Stocked'), ('mortality', 'Died'), ('cull', 'Culled'), ('transfer_out', 'Moved out'), ('transfer_in', 'Moved in'), ('harvest', 'Harvested'), ('delivery', 'Delivered out'), ('weighing', 'Weighed'), ('adjustment', 'Count adjusted')], max_length=12, verbose_name='Line'),
         ),
         migrations.AlterField(
             model_name='stockoperation',
             name='kind',
-            field=models.CharField(choices=[('input', 'Stocking'), ('mortality', 'Mortality'), ('cull', 'Cull'), ('transfer', 'Transfer'), ('grading', 'Grading'), ('weighing', 'Weighing'), ('harvest', 'Harvest'), ('delivery', 'Delivery'), ('adjustment', 'Count adjustment')], max_length=12, verbose_name='Operation'),
+            field=models.CharField(choices=[('input', 'Stocking'), ('mortality', 'Mortality'), ('cull', 'Cull'), ('transfer', 'Transfer'), ('grading', 'Grading'), ('weighing', 'Weighing'), ('harvest', 'Harvest'), ('delivery', 'Fish delivery'), ('adjustment', 'Count adjustment')], max_length=12, verbose_name='Operation'),
         ),
         migrations.AddConstraint(
             model_name='stockmovement',

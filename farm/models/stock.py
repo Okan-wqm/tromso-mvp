@@ -68,7 +68,7 @@ class OperationKind(models.TextChoices):
     GRADING = 'grading', _('Grading')
     WEIGHING = 'weighing', _('Weighing')
     HARVEST = 'harvest', _('Harvest')
-    DELIVERY = 'delivery', _('Delivery')
+    DELIVERY = 'delivery', _('Fish delivery')
     ADJUSTMENT = 'adjustment', _('Count adjustment')
 
 
@@ -79,7 +79,7 @@ class MovementKind(models.TextChoices):
     TRANSFER_OUT = 'transfer_out', _('Moved out')
     TRANSFER_IN = 'transfer_in', _('Moved in')
     HARVEST = 'harvest', _('Harvested')
-    DELIVERY = 'delivery', _('Delivered')
+    DELIVERY = 'delivery', _('Delivered out')
     WEIGHING = 'weighing', _('Weighed')
     ADJUSTMENT = 'adjustment', _('Count adjusted')
 

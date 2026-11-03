@@ -18,11 +18,25 @@ SESSION_KEY = 'workspace'
 
 
 @dataclass(frozen=True)
+class Badge:
+    """A number beside a menu entry (the unread messages), and the address of a fragment that renders the
+    number again (polled by frontend/poll.ts); no address for a panel's total, which is not polled."""
+    count: int
+    url: str
+
+    @property
+    def text(self):
+        """What the badge shows: nothing for 0, the number, or 99+."""
+        return '' if self.count <= 0 else '99+' if self.count > 99 else str(self.count)
+
+
+@dataclass(frozen=True)
 class Entry:
     label: str               # translatable text
     url_name: str
     icon: str
     perm: str = ''          # empty: every signed-in user
+    badge: str = ''         # the dotted path of a function(user) -> Badge, for a number beside the entry
 
     def url(self):
         return reverse(self.url_name)
@@ -33,6 +47,9 @@ class Entry:
     def matches(self, path):
         url = self.url()
         return path == url if url == '/' else path.startswith(url)
+
+    def badge_for(self, user):
+        return import_string(self.badge)(user) if self.badge else None
 
 
 @dataclass(frozen=True)
@@ -121,7 +138,7 @@ def rail(request):
             for group in section.groups:
                 shown = [
                     {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
-                     'current': entry.matches(request.path)}
+                     'current': entry.matches(request.path), 'badge': entry.badge_for(user)}
                     for entry in group.entries if entry.allowed_for(user)
                 ]
                 if shown:
@@ -129,8 +146,11 @@ def rail(request):
             if groups:
                 sections.append({'label': section.label, 'groups': groups})
         if sections:
+            badges = [entry['badge'].count for section in sections for group in section['groups']
+                      for entry in group['entries'] if entry['badge']]
             panels.append({'key': workspace.key, 'label': workspace.label, 'sections': sections,
-                           'url': sections[0]['groups'][0]['entries'][0]['url']})
+                           'url': sections[0]['groups'][0]['entries'][0]['url'],
+                           'badge': Badge(sum(badges), '') if badges else None})
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
     return {'workspaces': panels, 'workspace': current, 'rail_sections': current['sections'] if current else []}

@@ -137,6 +137,12 @@ msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(count)s fisk blir igjen i %(unit)s: vei dem også."
 
 #, python-format
+msgid "%(count)s member"
+msgid_plural "%(count)s members"
+msgstr[0] "%(count)s medlem"
+msgstr[1] "%(count)s medlemmer"
+
+#, python-format
 msgid "%(count)s part"
 msgid_plural "%(count)s parts"
 msgstr[0] "%(count)s del"
@@ -298,6 +304,10 @@ msgid "%(name)s “%(object)s” saved."
 msgstr "%(name)s «%(object)s» ble lagret."
 
 #, python-format
+msgid "%(names)s cannot use Messages."
+msgstr "%(names)s kan ikke bruke Meldinger."
+
+#, python-format
 msgid "%(number)s deleted"
 msgstr "%(number)s slettet"
 
@@ -420,6 +430,12 @@ msgstr "0 rader samsvarer"
 msgid "9-digit Norwegian organisation number"
 msgstr "Norsk organisasjonsnummer (9 siffer)"
 
+msgid "A channel needs an owner: make another member an owner first."
+msgstr "En kanal trenger en eier: gjør først et annet medlem til eier."
+
+msgid "A channel with this name already exists."
+msgstr "Det finnes allerede en kanal med dette navnet."
+
 #, python-format
 msgid "A feed has at most %(num)d row."
 msgid_plural "A feed has at most %(num)d rows."
@@ -439,6 +455,10 @@ msgid ""
 msgstr ""
 "En membran (HDPE, PVC, EPDM) er %(low)s til %(high)s mm tykk, betong %(concrete_low)s til "
 "%(concrete_high)s mm."
+
+#, python-format
+msgid "A message has at most %(count)d characters."
+msgstr "En melding har høyst %(count)d tegn."
 
 #, python-format
 msgid "A new unit starts as one of: %(statuses)s."
@@ -555,6 +575,9 @@ msgstr ""
 msgid "Activity log"
 msgstr "Aktivitetslogg"
 
+msgid "Add"
+msgstr "Legg til"
+
 #, python-format
 msgid "Add %(name)s"
 msgstr "Legg til %(name)s"
@@ -564,6 +587,9 @@ msgstr "Legg til kalibrering"
 
 msgid "Add contact"
 msgstr "Legg til kontaktperson"
+
+msgid "Add members"
+msgstr "Legg til medlemmer"
 
 msgid "Add species"
 msgstr "Legg til art"
@@ -637,6 +663,9 @@ msgstr "Alle fiskegrupper"
 
 msgid "All categories"
 msgstr "Alle kategorier"
+
+msgid "All conversations"
+msgstr "Alle samtaler"
 
 msgid "All feed types"
 msgstr "Alle fôrtyper"
@@ -820,6 +849,9 @@ msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
 msgid "Ash (%)"
 msgstr "Aske (%)"
 
+msgid "Assistant"
+msgstr "Assistent"
+
 #, python-format
 msgid "At least %(min)s."
 msgstr "Minst %(min)s."
@@ -841,6 +873,9 @@ msgstr "Ved trykket ved havnivå: lokaliteten har ingen høyde over havet."
 
 msgid "At the deepest point, usually by the outlet."
 msgstr "På det dypeste punktet, vanligvis ved utløpet."
+
+msgid "Author"
+msgstr "Forfatter"
 
 msgid "Automatic"
 msgstr "Automatisk"
@@ -868,6 +903,9 @@ msgstr "Tilbake til oversikten"
 
 msgid "Back to sign in"
 msgstr "Tilbake til innlogging"
+
+msgid "Back to the latest messages"
+msgstr "Tilbake til de nyeste meldingene"
 
 msgid "Backup power supply."
 msgstr "Reservestrøm."
@@ -1026,6 +1064,16 @@ msgstr "Endre passord"
 msgid "Changed"
 msgstr "Endret"
 
+msgid "Channel"
+msgstr "Kanal"
+
+#, python-format
+msgid "Channel %(name)s created."
+msgstr "Kanalen %(name)s er opprettet."
+
+msgid "Channel name"
+msgstr "Kanalnavn"
+
 msgid "Check"
 msgstr "Sjekk"
 
@@ -1038,12 +1086,18 @@ msgstr "Kjemikalier"
 msgid "Chiller"
 msgstr "Kjøleaggregat"
 
+msgid "Choose a conversation"
+msgstr "Velg en samtale"
+
 #, python-format
 msgid "Choose a feeder on the site of %(unit)s."
 msgstr "Velg en fôrautomat på lokaliteten til %(unit)s."
 
 msgid "Choose a feeder: equipment of the Feeding category."
 msgstr "Velg en fôrautomat: utstyr i kategorien Fôring."
+
+msgid "Choose a person"
+msgstr "Velg en person"
 
 msgid "Choose a site to list its units and loops."
 msgstr "Velg en lokalitet for å liste enhetene og kretsløpene."
@@ -1068,6 +1122,12 @@ msgstr "Velg blant dem som tilbys."
 
 msgid "Choose at least one."
 msgstr "Velg minst én."
+
+msgid "Choose owner or member."
+msgstr "Velg eier eller medlem."
+
+msgid "Choose someone else: a conversation is with another person."
+msgstr "Velg en annen: en samtale er med en annen person."
 
 msgid "Choose the kind on the General tab; its dimensions appear here."
 msgstr "Velg typen på fanen Generelt; målene vises her."
@@ -1129,6 +1189,9 @@ msgstr "Kolonner"
 msgid "Common name"
 msgstr "Vanlig navn"
 
+msgid "Communication"
+msgstr "Kommunikasjon"
+
 msgid "Compacted clay"
 msgstr "Komprimert leire"
 
@@ -1183,6 +1246,12 @@ msgstr "Kontaktpersoner kan legges til etter at leverandøren er opprettet."
 msgid "Control type"
 msgstr "Styringstype"
 
+msgid "Conversation"
+msgstr "Samtale"
+
+msgid "Conversations"
+msgstr "Samtaler"
+
 msgid "Cooling"
 msgstr "Kjøling"
 
@@ -1216,6 +1285,9 @@ msgstr "Opprett"
 #, python-format
 msgid "Create %(name)s"
 msgstr "Opprett %(name)s"
+
+msgid "Create channel"
+msgstr "Opprett kanal"
 
 msgid "Create, Edit and Delete include Read. Roles and users are managed by the platform admin only."
 msgstr ""
@@ -1322,6 +1394,12 @@ msgstr "Slett %(name)s"
 msgid "Delete %(object)s"
 msgstr "Slett %(object)s"
 
+msgid "Delete message"
+msgstr "Slett melding"
+
+msgid "Delete this message?"
+msgstr "Slette denne meldingen?"
+
 #, python-format
 msgid "Delete “%(object)s”?"
 msgstr "Slette «%(object)s»?"
@@ -1373,6 +1451,9 @@ msgstr "Fordøyelig energi (MJ/kg)"
 
 msgid "Dimensions"
 msgstr "Mål"
+
+msgid "Direct conversation"
+msgstr "Direktesamtale"
 
 msgid "Discontinued"
 msgstr "Avviklet"
@@ -1494,6 +1575,9 @@ msgstr "Energi"
 msgid "Enter at least one value."
 msgstr "Legg inn minst én verdi."
 
+msgid "Enter sends, Shift+Enter starts a new line."
+msgstr "Enter sender, Shift+Enter gir ny linje."
+
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
 
@@ -1543,6 +1627,12 @@ msgid ""
 msgstr ""
 "Alt vann arten oppdrettes i. Laks og regnbueørret vokser opp i ferskvann og går videre i sjøvann:"
 " kryss av for begge."
+
+msgid "Everyone in the conversation sees that a message was deleted, not what it said."
+msgstr "Alle i samtalen ser at en melding ble slettet, ikke hva den sa."
+
+msgid "Everyone who can use Messages is a member already."
+msgstr "Alle som kan bruke Meldinger, er allerede medlem."
 
 msgid "Everything supplied"
 msgstr "Alt som leveres"
@@ -1890,6 +1980,9 @@ msgstr "Oppgi snittvekten eller prøven, ikke begge."
 msgid "Give the average weight, or the number of fish weighed and their weight together."
 msgstr "Oppgi snittvekten, eller antall fisk veid og samlet vekt."
 
+msgid "Give the channel a name."
+msgstr "Gi kanalen et navn."
+
 msgid "Give the sample, or the average weight."
 msgstr "Oppgi prøven eller snittvekten."
 
@@ -2119,6 +2212,9 @@ msgstr "Sist fôret"
 msgid "Last name"
 msgstr "Etternavn"
 
+msgid "Last read"
+msgstr "Sist lest"
+
 msgid "Last sign-in"
 msgstr "Sist innlogget"
 
@@ -2133,6 +2229,16 @@ msgstr "Breddegrad og lengdegrad må oppgis sammen."
 
 msgid "Latitude is required for a sea cage."
 msgstr "Breddegrad er påkrevd for en merd."
+
+msgid "Leave"
+msgstr "Forlat"
+
+#, python-format
+msgid "Leave %(channel)s?"
+msgstr "Forlate %(channel)s?"
+
+msgid "Leave channel"
+msgstr "Forlat kanalen"
 
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "La vanndybden stå tom, eller oppgi en over 0."
@@ -2218,6 +2324,12 @@ msgstr "Vedlikehold og reparasjon"
 msgid "Make and model"
 msgstr "Merke og modell"
 
+msgid "Make member"
+msgstr "Gjør til medlem"
+
+msgid "Make owner"
+msgstr "Gjør til eier"
+
 msgid "Manager"
 msgstr "Leder"
 
@@ -2285,8 +2397,27 @@ msgstr "Legemidler og vaksiner"
 msgid "Medium pressure"
 msgstr "Mellomtrykk"
 
+msgid "Member"
+msgstr "Medlem"
+
+msgid "Members"
+msgstr "Medlemmer"
+
+#, python-format
+msgid "Members of %(channel)s"
+msgstr "Medlemmer i %(channel)s"
+
 msgid "Mesh size (mm)"
 msgstr "Maskevidde (mm)"
+
+msgid "Message"
+msgstr "Melding"
+
+msgid "Message deleted"
+msgstr "Melding slettet"
+
+msgid "Messages"
+msgstr "Meldinger"
 
 msgid "Metadata"
 msgstr "Metadata"
@@ -2397,12 +2528,21 @@ msgstr "Aldri"
 msgid "Never shown"
 msgstr "Vises aldri"
 
+msgid "New"
+msgstr "Ny"
+
 #, python-format
 msgid "New %(name)s"
 msgstr "Opprett %(name)s"
 
 msgid "New batch"
 msgstr "Ny fiskegruppe"
+
+msgid "New channel"
+msgstr "Ny kanal"
+
+msgid "New message"
+msgstr "Ny melding"
 
 msgid "New password"
 msgstr "Nytt passord"
@@ -2445,6 +2585,9 @@ msgstr "Ingen endringer registrert ennå."
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad."
 
+msgid "No conversations yet."
+msgstr "Ingen samtaler ennå."
+
 msgid "No feed recorded up to the last weighing."
 msgstr "Ingen fôring registrert fram til siste veiing."
 
@@ -2474,6 +2617,12 @@ msgstr "Ingen tilvekst fram til siste veiing."
 
 msgid "No limit"
 msgstr "Ingen grense"
+
+msgid "No messages yet"
+msgstr "Ingen meldinger ennå"
+
+msgid "No messages yet: write the first one."
+msgstr "Ingen meldinger ennå: skriv den første."
 
 msgid "No other table."
 msgstr "Ingen andre tabeller."
@@ -2527,6 +2676,11 @@ msgstr "Ingen enheter ennå"
 
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
+
+msgid "Nobody else can use Messages yet: the platform admin gives it to a role (Roles, Messages: Read)."
+msgstr ""
+"Ingen andre kan bruke Meldinger ennå: plattformadministratoren gir det til en rolle (Roller, "
+"Meldinger: Les)."
 
 msgid "None"
 msgstr "Ingen"
@@ -2648,6 +2802,9 @@ msgstr ""
 msgid "Only warnings and criticals"
 msgstr "Bare advarsler og kritiske"
 
+msgid "Open conversation"
+msgstr "Åpne samtale"
+
 msgid "Open menu"
 msgstr "Åpne menyen"
 
@@ -2692,6 +2849,9 @@ msgstr "Valgfritt: tidspunktet for fôringen, eller første måltid."
 
 msgid "Optional; the batch number is given on saving."
 msgstr "Valgfritt; gruppenummeret gis ved lagring."
+
+msgid "Or start one: New message writes to one person, a channel to a group."
+msgstr "Eller start en: Ny melding skriver til én person, en kanal til en gruppe."
 
 msgid "Or, instead of a sample, the average weight as measured."
 msgstr "Eller, i stedet for en prøve, snittvekten som målt."
@@ -2743,6 +2903,12 @@ msgstr "Oversikt"
 
 msgid "Own hatchery"
 msgstr "Eget klekkeri"
+
+msgid "Owner"
+msgstr "Eier"
+
+msgid "Owners"
+msgstr "Eiere"
 
 msgid "Oxygen"
 msgstr "Oksygen"
@@ -3304,11 +3470,17 @@ msgstr "Velg en"
 msgid "Semi-automatic feeder"
 msgstr "Halvautomatisk fôrautomat"
 
+msgid "Send"
+msgstr "Send"
+
 msgid "Send reset link"
 msgstr "Send tilbakestillingslenke"
 
 msgid "Sensors"
 msgstr "Sensorer"
+
+msgid "Sent at"
+msgstr "Sendt"
 
 msgid "Serial number"
 msgstr "Serienummer"
@@ -3337,6 +3509,9 @@ msgstr "Vis alle %(plural)s"
 
 msgid "Show deleted rows"
 msgstr "Vis slettede rader"
+
+msgid "Show earlier messages"
+msgstr "Vis tidligere meldinger"
 
 msgid "Show the units"
 msgstr "Vis enhetene"
@@ -3652,6 +3827,9 @@ msgstr "Temperatursensor"
 
 msgid "Terms and notes"
 msgstr "Betingelser og notater"
+
+msgid "That message is not in this conversation."
+msgstr "Den meldingen er ikke i denne samtalen."
 
 #, python-format
 msgid ""
@@ -4392,6 +4570,9 @@ msgstr ""
 msgid "Wrasse"
 msgstr "Leppefisk"
 
+msgid "Write a message first."
+msgstr "Skriv en melding først."
+
 msgid ""
 "Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
 "third word."
@@ -4405,6 +4586,12 @@ msgstr "Ja"
 msgid "Yesterday"
 msgstr "I går"
 
+msgid "You"
+msgstr "Du"
+
+msgid "You are its owner. People who cannot use Messages are not listed."
+msgstr "Du er eieren. Personer som ikke kan bruke Meldinger, står ikke på listen."
+
 msgid "You can now sign in with your new password."
 msgstr "Du kan nå logge inn med det nye passordet ditt."
 
@@ -4413,6 +4600,15 @@ msgstr "Du kan ikke deaktivere din egen konto."
 
 msgid "You do not have permission to do this."
 msgstr "Du har ikke tillatelse til å gjøre dette."
+
+#, python-format
+msgid "You left %(channel)s."
+msgstr "Du har forlatt %(channel)s."
+
+msgid "You stop seeing its messages. Your messages stay, with your name; an owner can add you again."
+msgstr ""
+"Du ser ikke lenger meldingene. Meldingene dine blir stående med navnet ditt; en eier kan legge "
+"deg til igjen."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Det nye passordet ditt er lagret. Bruk det neste gang du logger inn."
@@ -4425,6 +4621,12 @@ msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek.
 
 msgid "as stocked"
 msgstr "som ved utsett"
+
+msgid "assistant"
+msgstr "assistent"
+
+msgid "assistants"
+msgstr "assistenter"
 
 #, python-format
 msgid "average %(weight)s"
@@ -4456,8 +4658,17 @@ msgstr "av %(name)s"
 msgid "by <strong>%(name)s</strong>"
 msgstr "av <strong>%(name)s</strong>"
 
+msgid "channel"
+msgstr "kanal"
+
 msgid "contains"
 msgstr "inneholder"
+
+msgid "conversation"
+msgstr "samtale"
+
+msgid "conversations"
+msgstr "samtaler"
 
 #, python-format
 msgid "critical above %(value)s"
@@ -4688,6 +4899,12 @@ msgstr "i %(name)s"
 msgid "masked"
 msgstr "maskert"
 
+msgid "message"
+msgstr "melding"
+
+msgid "messages"
+msgstr "meldinger"
+
 msgid "no"
 msgstr "nei"
 
@@ -4712,6 +4929,12 @@ msgstr "pH-sensor"
 #, python-format
 msgid "part of %(code)s"
 msgstr "del av %(code)s"
+
+msgid "participant"
+msgstr "deltaker"
+
+msgid "participants"
+msgstr "deltakere"
 
 msgid "primary"
 msgstr "hovedkontakt"
@@ -4793,6 +5016,9 @@ msgstr "enhet"
 msgid "units"
 msgstr "enheter"
 
+msgid "unread"
+msgstr "ulest"
+
 #, python-format
 msgid "up to %(weight)s g"
 msgstr "under %(weight)s g"
@@ -4836,6 +5062,9 @@ msgstr "regnet ut fra prøven"
 
 msgid "yes"
 msgstr "ja"
+
+msgid "you"
+msgstr "deg"
 
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."

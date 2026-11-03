@@ -26,5 +26,8 @@ AREAS = [
     # Water samples: Read is the Water chemistry page (and a unit's water in the drawer), Create records a
     # sample or a round, Delete voids a sample. Samples are never edited: a correction is a void and a new entry.
     Area(_('Water chemistry'), 'farm.WaterMeasurement', actions=('view', 'add', 'delete')),
+    # Messages: Read is the Messages page, writing in one's own conversations and starting a direct one; Create
+    # also creates channels. Only the members of a conversation read it, whatever the role (messaging/services.py).
+    Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

@@ -1,0 +1,57 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Production › Communication › Messages (messaging.views.inbox and conversation): the person's conversations
+   beside the open one, its messages and the compose form. While the page is in view the list, the open
+   conversation's new messages and the menu's badge are polled (frontend/poll.ts); the server renders every
+   fragment, the browser only puts it in place.{% endcomment %}
+{% block title %}{% if conversation %}{{ heading }} · {% endif %}{{ title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/messages.css' %}">{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="chat{% if conversation %} chat-is-open{% endif %}">
+  <aside class="chat-side" aria-label="{% trans "Conversations" %}">
+    <div class="chat-actions">
+      <a class="button button-inline" href="{% url 'messaging:start' %}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "New message" %}</a>
+      {% if may_create_channel %}<a class="button button-ghost" href="{% url 'messaging:create_channel' %}" data-modal>{% include "icons/_icon.html" with name="hash" %}{% trans "New channel" %}</a>{% endif %}
+    </div>
+    <div class="chat-list" data-poll="{{ list_url }}" data-poll-every="{{ poll_list }}">{% include "messaging/_conversation_list.html" %}</div>
+  </aside>
+
+  <section class="chat-pane" aria-label="{% if conversation %}{{ heading }}{% else %}{% trans "Conversation" %}{% endif %}">
+    {% if conversation %}
+    <header class="chat-head">
+      <a class="chat-back" href="{% url 'messaging:inbox' %}">{% trans "All conversations" %}</a>
+      <div class="chat-head-text">
+        <h2 class="chat-title">{% if conversation.is_channel %}<span class="chat-hash" aria-hidden="true">#</span>{% endif %}{{ heading }}</h2>
+        <p class="chat-sub">{% if conversation.is_channel %}{% blocktrans trimmed count count=members|length %}{{ count }} member{% plural %}{{ count }} members{% endblocktrans %}{% else %}{% trans "Direct conversation" %}{% endif %}</p>
+      </div>
+      {% if conversation.is_channel %}<a class="button button-ghost" href="{% url 'messaging:members' conversation.pk %}" data-modal>{% include "icons/_icon.html" with name="users" %}{% trans "Members" %}</a>{% endif %}
+    </header>
+    <ol class="chat-messages" {% if poll_url %}data-poll="{{ poll_url }}" data-poll-every="{{ poll_messages }}" data-poll-append {% endif %}data-scroll-end aria-live="polite">
+      {% if earlier_url %}<li class="chat-more"><a href="{{ earlier_url }}">{% trans "Show earlier messages" %}</a></li>{% endif %}
+      {% include "messaging/_messages.html" %}
+      {% if not shown %}<li class="chat-empty">{% trans "No messages yet: write the first one." %}</li>{% endif %}
+    </ol>
+    {% if latest_url %}<p class="chat-latest"><a href="{{ latest_url }}">{% trans "Back to the latest messages" %}</a></p>{% endif %}
+    <form method="post" action="{% url 'messaging:post' conversation.pk %}" class="chat-compose" id="latest" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="field{% if form.body.errors %} has-error{% endif %}">
+        <label class="sr-only" for="{{ form.body.id_for_label }}">{{ form.body.label }}</label>
+        {{ form.body }}
+        {{ form.body.errors }}
+      </div>
+      <button type="submit" class="button button-inline">{% include "icons/_icon.html" with name="send" %}{% trans "Send" %}</button>
+    </form>
+    <p class="chat-hint">{% trans "Enter sends, Shift+Enter starts a new line." %}</p>
+    {% else %}
+    <div class="empty chat-none">
+      {% include "icons/_icon.html" with name="message-square" %}
+      <h2>{% trans "Choose a conversation" %}</h2>
+      <p>{% trans "Or start one: New message writes to one person, a channel to a group." %}</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

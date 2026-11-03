@@ -10,6 +10,7 @@ from core.navigation import Entry, Group, Section, Workspace
 # Production's menu has two main headings, as in the platform: Setup (the farm's structure, its
 # reference lists and its suppliers, entered once and changed seldom) and Operations (the daily
 # production records: stocking, feeding, water chemistry, health, harvest), from Production units on.
+# A third, Communication, holds how the people running production talk to each other: Messages.
 #
 # Where an entry sits here is also where the role matrix and the tab's page heading place it.
 WORKSPACES = [
@@ -61,6 +62,15 @@ WORKSPACES = [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
                 Entry(_('Feeding records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
                 Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
+            ]),
+        ]),
+        # Messages between the people running production, direct and in channels; their AI assistants join the
+        # same conversations later (README, Messages). Neither structure nor a production record: a heading of
+        # its own. The number beside it is the person's unread messages.
+        Section(_('Communication'), [
+            Group('', [
+                Entry(_('Messages'), 'messaging:inbox', 'message-square', 'messaging.view_conversation',
+                      badge='messaging.read.unread_badge'),
             ]),
         ]),
     ]),

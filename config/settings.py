@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'core',
     'farm',
     'knowledge',
+    # Messages between people (and later their AI assistants), in the Production panel.
+    'messaging',
 ]
 
 MIDDLEWARE = [

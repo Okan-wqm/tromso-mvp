@@ -19,14 +19,10 @@ The rules, for a batch b and a treatment T with a medicine:
    the row's days (the margin applied) + 1.
 3. **Degree-days**: the daily mean water temperature of b is added up from the day after T's last day until
    the sum reaches the row's degree-days (the margin applied); the next day is the first day b may be harvested.
-   - A unit's daily mean is the mean of the live temperatures of that farm-local day measured at the unit's
-     middle point, else at its system's loop point (the water samples; the places are farm/water/read.py's
-     `water_sources`, the one definition of where a unit's water is read). With b in several units that
-     day, the lowest counts.
-   - **A past day without a measured temperature counts at the batch species' assumed water temperature**
-     (`Species.withdrawal_temperature_c`, Setup › Reference data › Species: the farm's own assumption, a low
-     value the conservative one), **and as 0 °C when the species has none**, never as unknown; the warning says
-     how many days there were and at what. Today without a temperature yet is not counted: it is projected.
+   - The batch's daily mean water temperature, a past day without one counted at the species' assumed
+     temperature (else 0 °C, said in the warning) and a day not measured yet projected, is farm/water/degree_days.py's
+     (`BatchWater`), shared with the purging fast before a harvest: one definition for both. With b in several units
+     that day, the lowest counts. Today without a temperature yet is not counted: it is projected.
 4. Days and degree-days both given: the later end wins. Several treatments: each holds b on its own, and
    the latest end decides what the page shows.
 5. Not reached by today, the rest is projected at the mean of the last 7 days with a temperature within
@@ -50,31 +46,19 @@ from django.utils.translation import gettext as _, ngettext
 
 from farm.feeding import read as feeding_read
 from farm.handling.withdrawal import WithdrawalBlock
-from farm.models import Batch, FeedingRecord, MedicineWithdrawal, Tank, Treatment
+from farm.models import Batch, FeedingRecord, MedicineWithdrawal, Treatment
 from farm.models.feed import FeedType
 from farm.models.health import TreatmentMethod
-from farm.models.water_point import local_time
-from farm.stock.dates import end_of, local_today, shown_date, start_of
+from farm.stock.dates import local_today, shown_date
 from farm.stock.read import Presence
-from farm.water import parameters
-from farm.water.read import Series, water_sources
-
-DAY = timedelta(days=1)
-TEMPERATURE = parameters.TEMPERATURE
-ZERO = Decimal(0)
-PROJECTION_DAYS = 7     # the days with a temperature a projection takes the mean of
-LOOKBACK_DAYS = 30      # how far back from today they are looked for (the water's window)
+from farm.water.degree_days import (DAY, LOOKBACK_DAYS, PENDING, ZERO, BatchWater, degree_days_text,
+                                    missing_sentence, projected_sentence)
 
 
 def _plain(value):
     """150, or 12.5: a number as the language writes it, a decimal only when it has one."""
     value = Decimal(value)
     return formats.number_format(value, decimal_pos=0 if value == value.to_integral_value() else 1)
-
-
-def _degree_days(value):
-    return ngettext('%(count)s degree-day', '%(count)s degree-days',
-                    1 if value == 1 else 2) % {'count': _plain(value)}
 
 
 def _days(value):
@@ -108,7 +92,7 @@ class Rule:
     def text(self):
         """150 degree-days + 20 % safety margin = 180 degree-days, 7 days, or both."""
         parts = []
-        for label, used, say in ((self.row.degree_days, self.degree_days, _degree_days),
+        for label, used, say in ((self.row.degree_days, self.degree_days, degree_days_text),
                                  (self.row.days, self.days, _days)):
             if label is None:
                 continue
@@ -172,54 +156,30 @@ class Withdrawal:
         return day >= self.start and (self.until is None or day < self.until)
 
 
-class Temperatures:
-    """The daily mean water temperature of units from `first` to `last`: a unit's own middle point's live
-    samples of that farm-local day, else its system loop's (a sample's day is on the clock of its point's site)."""
-
-    def __init__(self, units, first, last):
-        self.first, self.last = first, last
-        self.sources = water_sources(units, nested=False)
-        points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
-        values = defaultdict(list)
-        if points and first <= last:
-            # From the first moment of `first` to the last of `last` on the clocks of the units' sites.
-            series = Series(points.values(), TEMPERATURE, min(start_of(first, unit) for unit in units),
-                            max(end_of(last, unit) for unit in units))
-            for point_id, point in points.items():
-                for moment, value in zip(series.moments[point_id], series.values[point_id]):
-                    day = local_time(moment, point).date()
-                    if first <= day <= last:
-                        values[(point_id, day)].append(value)
-        self.means = {key: sum(found, ZERO) / len(found) for key, found in values.items()}
-
-    def of(self, unit_id, day):
-        """The unit's daily mean on `day`, else its system's; None when neither was measured."""
-        for source in self.sources.get(unit_id, []):
-            mean = self.means.get((source.point.pk, day))
-            if mean is not None:
-                return mean
-        return None
-
-
 class Reader:
     """The withdrawals of a set of batches, as they stand on `today` (the farm's today)."""
 
     def __init__(self, batch_ids, today):
         self.batch_ids, self.today = set(batch_ids), today
         self.presence = Presence.of_batches(self.batch_ids)
-        # The batches' species in one query: the assumed temperature of a day without a measured one.
-        self.batches = Batch.all_objects.select_related('species').in_bulk(self.batch_ids)
         unit_ids = {unit_id for units in self.presence.units.values() for unit_id in units}
-        self.units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
         self.treatments = list(Treatment.objects.filter(units__in=unit_ids, medicine__isnull=False).distinct()
                                .select_related('medicine').prefetch_related('units').order_by('start_date', 'pk'))
-        self.rows = defaultdict(list)                  # the withdrawal rows of the treatments' medicines, one query
-        for row in MedicineWithdrawal.objects.filter(medicine__in={each.medicine_id for each in self.treatments}):
-            self.rows[row.medicine_id].append(row)
+        self.rows = {}                                 # medicine id -> its withdrawal rows
+        self.load_rows({each.medicine_id for each in self.treatments})
         first = today - LOOKBACK_DAYS * DAY
         for treatment in self.treatments:
             first = min(first, treatment.end_date + DAY)
-        self.temperatures = Temperatures(list(self.units.values()), first, today)
+        self.water = BatchWater(self.batch_ids, today, first, presence=self.presence)
+        self.units, self.batches = self.water.units, self.water.batches
+
+    def load_rows(self, medicine_ids):
+        """Reads the withdrawal rows of the medicines not read yet, in one query: a medicine without a row is an empty
+        list, never a missing key (no withdrawal recorded is said, not assumed)."""
+        new = {pk for pk in medicine_ids if pk not in self.rows}
+        self.rows.update({pk: [] for pk in new})
+        for row in MedicineWithdrawal.objects.filter(medicine__in=new):
+            self.rows[row.medicine_id].append(row)
 
     # ---- which fish a treatment reached ---------------------------------------------------------
     def treated(self, treatment):
@@ -231,52 +191,25 @@ class Reader:
                 if any(self.presence.present_between(unit_id, batch_id, treatment.start_date, last)
                        for unit_id in unit_ids)}
 
-    # ---- the batch's water --------------------------------------------------------------------------
-    def temperature(self, batch_id, day):
-        """The batch's daily mean on `day`: the lowest of its units' that were measured; None when none was."""
-        found = [mean for mean in (self.temperatures.of(unit_id, day)
-                                   for unit_id in self.presence.units_of(batch_id, day)) if mean is not None]
-        return min(found) if found else None
-
-    def assumed(self, batch_id):
-        """The batch species' assumed water temperature; None when it has none."""
-        return self.batches[batch_id].species.withdrawal_temperature_c
-
-    def projection(self, batch_id):
-        """(the temperature a withdrawal is projected at, whether it is the species' assumed one): the mean of the
-        batch's last PROJECTION_DAYS days with a temperature, within LOOKBACK_DAYS of today; with none measured
-        the assumed temperature; None with neither."""
-        found, day = [], self.today
-        while day > self.today - LOOKBACK_DAYS * DAY and len(found) < PROJECTION_DAYS:
-            value = self.temperature(batch_id, day)
-            if value is not None:
-                found.append(value)
-            day -= DAY
-        if found:
-            return sum(found, ZERO) / len(found), False
-        return self.assumed(batch_id), True
-
+    # ---- the batch's water (farm/water/degree_days.py) ------------------------------------------------
     def degree_days(self, batch_id, end, needed):
         """(first day, estimated, days without a temperature, degree-days still to accrue, projected at the
         assumed temperature) of a withdrawal of `needed` degree-days after the last day `end` (rule 3 and 5); the
         first day is None when unknown."""
         if needed <= 0:
             return end + DAY, False, 0, ZERO, False
-        unmeasured = self.assumed(batch_id) or ZERO       # what a past day without a measured temperature counts
         total, missing, day = ZERO, 0, end
         while day < self.today:
-            value = self.temperature(batch_id, day + DAY)
-            if value is None and day + DAY == self.today:
+            counted = self.water.day(batch_id, day + DAY)
+            if counted.how == PENDING:
                 break                       # today has no temperature yet: projected, not counted
             day += DAY
-            if value is None:
-                missing += 1
-                value = unmeasured
-            total += value
+            missing += counted.missing
+            total += counted.value
             if total >= needed:
                 return day + DAY, False, missing, ZERO, False
         remaining = needed - total
-        mean, assumed = self.projection(batch_id)
+        mean, assumed = self.water.projection(batch_id)
         if mean is None or mean <= 0:
             return None, True, missing, remaining, False
         days = int((remaining / mean).to_integral_value(rounding=ROUND_CEILING))
@@ -286,6 +219,7 @@ class Reader:
     def of_treatment(self, treatment, batch_id):
         """The withdrawal of one batch from one treatment (rules 2 to 5)."""
         end, species = treatment.end_date, self.batches[batch_id].species
+        self.load_rows({treatment.medicine_id})
         rule = rule_for(self.rows[treatment.medicine_id], species.pk)
         if rule is None:                    # nothing recorded for this species: unknown, never "no withdrawal"
             return Withdrawal(batch_id, None, False, treatment, species=species)
@@ -300,7 +234,7 @@ class Reader:
         else:
             until = by_degrees
         return Withdrawal(batch_id, until, estimated, treatment, rule=rule, species=species,
-                          days_without_temperature=missing, assumed_temperature=self.assumed(batch_id),
+                          days_without_temperature=missing, assumed_temperature=self.water.assumed(batch_id),
                           projected_at_assumed=at_assumed and until == by_degrees,
                           remaining_degree_days=remaining if estimated else None)
 
@@ -416,26 +350,11 @@ def describe(withdrawal):
     if withdrawal.until is None:
         text += ' ' + _('The end cannot be worked out: record the water temperature.')
     elif withdrawal.projected_at_assumed:
-        text += ' ' + _('Projected at the assumed %(temperature)s °C (the species’ setting in Reference data): no '
-                        'water temperature was measured in the last %(days)d days.') % {
-            'temperature': formats.number_format(withdrawal.assumed_temperature, 1), 'days': LOOKBACK_DAYS}
+        text += ' ' + projected_sentence(withdrawal.assumed_temperature)
     elif withdrawal.estimated:
         text += ' ' + _('Projected at the mean water temperature of the last days measured.')
     if withdrawal.days_without_temperature:
-        params = {'count': withdrawal.days_without_temperature}
-        if withdrawal.assumed_temperature is not None:
-            params['temperature'] = formats.number_format(withdrawal.assumed_temperature, 1)
-            text += ' ' + ngettext(
-                '%(count)d day without a measured water temperature is counted at the assumed %(temperature)s °C '
-                '(the species’ setting in Reference data).',
-                '%(count)d days without a measured water temperature are counted at the assumed %(temperature)s °C '
-                '(the species’ setting in Reference data).', withdrawal.days_without_temperature) % params
-        else:
-            text += ' ' + ngettext(
-                '%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed '
-                'temperature in Reference data › Species.',
-                '%(count)d days without a measured water temperature are counted as 0 °C: set the species’ assumed '
-                'temperature in Reference data › Species.', withdrawal.days_without_temperature) % params
+        text += ' ' + missing_sentence(withdrawal.days_without_temperature, withdrawal.assumed_temperature)
     return text
 
 

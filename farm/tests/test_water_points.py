@@ -637,7 +637,7 @@ class ReadTests(PointTestCase):
         self.assertEqual((found.value_c, found.via, found.point, found.fresh), (D('9.0'), 'unit', self.t1, True))
 
     def test_the_withdrawals_daily_mean_reads_the_same_places(self):
-        from ..health.withdrawal import Temperatures
+        from ..water.degree_days import Temperatures
         from ..stock.dates import local_today
         today = local_today(self.t1)
         self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='20')
@@ -672,7 +672,7 @@ class ReadTests(PointTestCase):
         the water module reads the samples: the places a unit's water is read from are defined once."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[1]
-        for module in ('feeding/temperature.py', 'health/withdrawal.py'):
+        for module in ('feeding/temperature.py', 'water/degree_days.py'):
             self.assertIn('water_sources(', (root / module).read_text(encoding='utf-8'), module)
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
                          if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)

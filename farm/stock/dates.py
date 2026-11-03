@@ -1,7 +1,9 @@
-"""The farm's dates, one rule for every daily record (a stock operation, a feeding, a water sample): today
-is the farm's own day, on the clock of the site (farm.models.site.zone_of), never the UTC date of a
-browser; a record may be dated at most STOCK_BACKDATE_DAYS back and never in the future, and the same
-window says how old a record may be voided (owner decisions Q3 and Q-F4)."""
+"""The farm's dates, one rule for every daily record (a stock operation, a feeding, a water sample, a
+movement of the store): today is the farm's own day, on the clock of the site (farm.models.site.zone_of),
+never the UTC date of a browser; a record may be dated at most STOCK_BACKDATE_DAYS back and never in the
+future, and the same window says how old a record may be voided (owner decisions Q3 and Q-F4). A record
+of a unit is on its site's clock; a movement of the store (inventory) on the clocks of the sites of its
+storage locations."""
 from datetime import datetime, time, timedelta
 
 from django.conf import settings
@@ -24,6 +26,11 @@ def site_earliest(site):
 
 def _site(unit):
     return unit.production_department.site if unit is not None else None
+
+
+def sites_of(units):
+    """The sites whose clocks the records of these units are dated on (None for a unit without a site)."""
+    return [_site(unit) for unit in units]
 
 
 def local_today(unit=None):
@@ -53,9 +60,14 @@ def shown_date(day):
 
 def check_date(day, units):
     """Refuses a date in the future or before the backdating window of any of the units."""
-    for unit in units:
-        if day > local_today(unit):
+    check_site_date(day, sites_of(units))
+
+
+def check_site_date(day, sites):
+    """Refuses a date in the future or before the backdating window on the clock of any of the sites."""
+    for site in sites:
+        if day > site_today(site):
             raise ValidationError({'date': _('The date cannot be in the future.')})
-        if day < earliest(unit):
+        if day < site_earliest(site):
             raise ValidationError({'date': _('Operations can be dated at most %(days)d days back.')
                                    % {'days': settings.STOCK_BACKDATE_DAYS}})

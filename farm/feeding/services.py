@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from farm.models import Feed, FeedingRecord, Tank
-from farm.stock.dates import check_date, shown_date
+from farm.stock.dates import check_date, shown_date, sites_of
 from farm.stock.services import AlreadyRecorded, locked, voided
 from farm.templatetags.feeding import amount
 from farm.templatetags.stock import number
@@ -80,5 +80,5 @@ def void_feeding(user, record, reason):
     with transaction.atomic():
         record = (FeedingRecord.all_objects.select_for_update(of=('self',))
                   .select_related('unit__production_department__site', 'feed').get(pk=record.pk))
-        voided(user, record, reason, [record.unit], label(record))
+        voided(user, record, reason, sites_of([record.unit]), label(record))
         return record

@@ -6,6 +6,7 @@ from core.access import Area
 # the areas the way the menu (config/navigation.py) places their pages.
 AREAS = [
     Area(_('Sites'), 'farm.Site'),
+    Area(_('Storage locations'), 'inventory.StorageLocation'),
     Area(_('Production departments'), 'farm.ProductionDepartment'),
     Area(_('Systems'), 'farm.System'),
     Area(_('Equipment'), 'farm.Equipment'),
@@ -32,6 +33,9 @@ AREAS = [
     # Water samples: Read is the Water chemistry page (and a unit's water in the drawer), Create records a
     # sample or a round, Delete voids a sample. Samples are never edited: a correction is a void and a new entry.
     Area(_('Water chemistry'), 'farm.WaterMeasurement', actions=('view', 'add', 'delete')),
+    # The store: Read is the Storage page, Create records a delivery, an issue, a write-off, a return, a transfer
+    # or a count, Delete voids one. Operations are never edited: a correction is a void and a new entry.
+    Area(_('Storage'), 'inventory.InventoryOperation', actions=('view', 'add', 'delete')),
     # The harvests: Read is the Harvested page. A harvest is recorded and voided as a stock operation (Production
     # units: Create and Delete), with where the fish went, so nothing else is offered here.
     Area(pgettext_lazy('page', 'Harvested'), 'farm.HarvestRecord', actions=('view',)),

@@ -1,0 +1,11 @@
+{% extends "farm/stock_void.html" %}
+{% load i18n %}
+{% comment %} Voiding an operation of the store (inventory.views.void): the stock's void dialog; the operation stops
+   counting and stays in the history, struck through, with its reason.{% endcomment %}
+{% block entry %}
+<p class="confirm-question">{% blocktrans trimmed with operation=operation.get_kind_display|lower date=operation.date|date:"DATE_FORMAT" %}Void the {{ operation }} of {{ date }}?{% endblocktrans %}</p>
+<ul class="op-lines">
+  {% for line in lines %}<li>{% include "inventory/_line.html" %}</li>{% empty %}<li>{{ operation.location.code }}: {% trans "Nothing found" %}</li>{% endfor %}
+</ul>
+<p>{% trans "The store's book is worked out again without it, from its date on. A lot that only this operation brought goes with it. To correct an operation, void it and enter it again." %}</p>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends base_template %}
+{% load i18n inventory %}
+{% comment %} A lot's trace (inventory.views.lot_page): the deliveries that brought it and from whom, where it moved,
+   what left it, its counts, voided ones struck through, and the feeding estimated to have drawn it (a feeding
+   record names no lot).{% endcomment %}
+{% block title %}{{ lot.item }} · {{ lot }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{% blocktrans trimmed with item=lot.item lot=lot %}{{ item }}, lot {{ lot }}{% endblocktrans %}{% endblock %}
+{% block content %}
+<p><a href="{{ back_url }}">{% trans "Back to the stock" %}</a> · <a href="{{ item_url }}">{% trans "The item's day-by-day book" %}</a></p>
+<p>{% if lot.expiry_date %}{% blocktrans trimmed with date=lot.expiry_date|date:"DATE_FORMAT" %}Expires on {{ date }}.{% endblocktrans %}{% else %}{% trans "No expiry date recorded." %}{% endif %}{% if lot.is_deleted %} <span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</p>
+<section class="overview-block">
+  <h2>{% trans "Movements" %}</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Date" %}</th><th scope="col">{% trans "Operation" %}</th><th scope="col">{% trans "Line" %}</th><th scope="col">{% trans "Supplier" %}</th><th scope="col">{% trans "Recorded by" %}</th></tr></thead>
+      <tbody>
+        {% for line in lines %}{% with operation=line.operation %}
+        <tr{% if operation.is_deleted %} class="is-voided"{% endif %}>
+          <td class="nowrap">{{ operation.date|date:"DATE_FORMAT" }}</td>
+          <td>{{ operation.get_kind_display }}{% if operation.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=operation.void_reason %}voided: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+          <td>{% include "inventory/_line.html" %}<span class="row-sub">{{ line.location.site.name }}</span></td>
+          <td>{{ operation.supplier|default:"—" }}{% if operation.reference %}<span class="row-sub">{{ operation.reference }}</span>{% endif %}</td>
+          <td>{{ operation.created_by.get_username|default:"system" }}</td>
+        </tr>
+        {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% if fed %}
+<section class="overview-block">
+  <h2>{% trans "Feeding drawn from it (estimated)" %}</h2>
+  <ul class="warning-list">{% for day, location, kilos in fed %}<li>{{ day|date:"DATE_FORMAT" }} · {{ location.code }} ({{ location.site.name }}): {{ kilos|quantity:lot.item.get_unit_display }}</li>{% endfor %}</ul>
+  <p class="panel-help">{% trans "A feeding record names no lot: the book draws the site's lots first expired first out, so this is an estimate." %}</p>
+</section>
+{% endif %}
+{% endblock %}

@@ -1052,3 +1052,16 @@ mark { padding: 0 .125rem; border-radius: 3px; background: #FBF0D9; color: inher
 .quote { font-style: italic; }
 .review-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 .5rem; }
 .badge-reviewed { background: var(--mist); color: var(--olive); border: 1px solid var(--sage); }
+
+/* Operations › Storage: its actions in a row under the tabs, the overview's warning lists, a delivery's line
+   (feed, lot, expiry, location, kilos, cost, currency) and a location's reorder levels (feed, level, remove). */
+.storage-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.warning-list { margin: 0 0 .75rem; padding-left: 1.125rem; }
+.warning-list li + li { margin-top: .25rem; }
+.receipt-row {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, .9fr) minmax(0, .9fr) 4.5rem;
+}
+.reorder-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 5.5rem; }
+@media (max-width: 767px) {
+  .receipt-row, .reorder-row { grid-template-columns: minmax(0, 1fr); }
+}

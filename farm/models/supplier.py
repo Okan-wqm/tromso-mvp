@@ -58,18 +58,36 @@ class SupplierLink(models.ForeignKey):
       ngettext_lazy(..., 'count') whose %(count)d is the number of records and %(category)s the
       category's label.
 
+    A link whose category follows the record instead names `category_field`: the lookup from the linking
+    record to the category of each thing it was supplied for (a delivery to the store brings feed, later
+    medicines: `lines__lot__item__category`). Its list takes any live supplier, the record's own write
+    path checks the category, and the supplier keeps every category such live records still need.
+
     Migrations see a plain ForeignKey: the category is already in `limit_choices_to` and the message
     changes no column."""
 
-    def __init__(self, to=None, on_delete=None, category=None, kept=None, **kwargs):
-        self.category, self.kept = category, kept
+    def __init__(self, to=None, on_delete=None, category=None, kept=None, category_field=None, **kwargs):
+        self.category, self.kept, self.category_field = category, kept, category_field
         if category is not None:
             kwargs['limit_choices_to'] = {'is_deleted': False, 'supplies__contains': [category]}
+        elif category_field is not None:
+            kwargs['limit_choices_to'] = {'is_deleted': False}
         super().__init__(to, on_delete, **kwargs)
 
     def deconstruct(self):
         name, _path, args, kwargs = super().deconstruct()
         return name, 'django.db.models.ForeignKey', args, kwargs
+
+    def needed(self, supplier, supplies):
+        """{category: how many live records link to `supplier` for it}, for the categories not in `supplies`."""
+        records = self.model._default_manager.filter(**{self.name: supplier})
+        if self.category_field is None:
+            count = 0 if self.category in supplies else records.count()
+            return {self.category: count} if count else {}
+        missing = [category for category in SupplyCategory.values if category not in supplies]
+        rows = (records.filter(**{f'{self.category_field}__in': missing}).order_by().values(self.category_field)
+                .annotate(count=models.Count('pk', distinct=True)))
+        return {row[self.category_field]: row['count'] for row in rows}
 
 
 class Supplier(CodedMixin, AuditedModel):
@@ -167,20 +185,20 @@ class Supplier(CodedMixin, AuditedModel):
 
     def clean(self):
         """A supplier keeps a category while live records link to it for that category (equipment, which
-        can choose another supplier; feeds, made by it; batches of fish, whose origin stays as it was):
-        every SupplierLink that points at suppliers is checked, and says so in its own words."""
+        can choose another supplier; feeds, made by it; batches of fish, whose origin stays as it was; the
+        deliveries and returns of the store): every SupplierLink that points at suppliers is checked, and
+        says so in its own words."""
         super().clean()
         if self._state.adding:
             return
         supplies, errors = self.supplies or [], []
         for relation in self._meta.related_objects:
             link = relation.field
-            if not isinstance(link, SupplierLink) or link.category in supplies:
+            if not isinstance(link, SupplierLink):
                 continue
-            count = relation.related_model._default_manager.filter(**{link.name: self}).count()
-            if count:
+            for category, count in link.needed(self, supplies).items():
                 errors.append(ValidationError(link.kept, params={
-                    'count': count, 'category': SupplyCategory(link.category).label}))
+                    'count': count, 'category': SupplyCategory(category).label}))
         if errors:
             raise ValidationError({'supplies': errors})
 

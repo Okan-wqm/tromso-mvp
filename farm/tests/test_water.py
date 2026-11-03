@@ -566,7 +566,7 @@ class DeletePlanTests(WaterTestCase):
         loop = self.sample(point=self.ras, co2_mg_l='9')
         plan = plan_delete(self.t2)
         self.assertEqual((plan.can_delete, plan.cascade, plan.kept_groups()),
-                         (True, [], [{'label': 'Water samples', 'count': 2}]))
+                         (True, [], [{'label': 'Water samples', 'count': 2, 'note': WaterMeasurement.kept_note}]))
         page = self.client.get(reverse('farm:tank_delete', args=[self.t2.pk]))
         self.assertContains(page, 'Water samples kept with it <span class="count">2</span>', html=True)
         self.client.post(reverse('farm:tank_delete', args=[self.t2.pk]))

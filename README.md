@@ -677,7 +677,7 @@ are in the bug document, not in the database).
 published values):
 - **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
   converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
-  water it equals Emerson et al. (1975) within 0.002 pK. It needs the pH and the temperature of the same
+  water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
   sample; the salinity is the sample's, else the point's latest within 30 days before it, else 0 where
   every unit is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
@@ -719,12 +719,24 @@ the address, nothing is stored, and without values it shows its defaults.
   to it, the most TAN and the most total sulfide this pH allows, the oxygen solubility and saturation.
   A status follows the source: past the border critical, within 0.2 pH a warning.
 - **The chemistry** (`farm/water/chemistry.py`, one module with the ammonia and oxygen above): K1 and K2
-  of carbonic acid of Millero (2010), fresh to sea water; Kw of Millero (1995); KB of Dickson (1990)
+  of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
+  source calls them Millero 2010, WQ-39); Kw of Millero (1995); KB of Dickson (1990)
   with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
   Fernandez (1988); the Ksp of Mucci (1983); each converted to the free scale, the pH (NBS) too, as the
   source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2), CO₂ = DIC α0; NH₃-N = TAN
   K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH and an alkalinity that
   cannot go together (the hydroxide alone above the alkalinity) are refused.
+- **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
+  comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
+  would give it one; entering 0 instead of 0.3 ‰ gives 7 to 10 % more CO₂ and 6 to 9 % more NH₃ at
+  5 to 25 °C, the safe side. And a pH (NBS) is put on the seawater scale with a Davies-type activity
+  coefficient, not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two differ by
+  −0.07 pH at 0 °C, −0.058 at 5 °C, about 0 at 25 °C and +0.05 at 40 °C; at 5 °C the chart shows about
+  12 % less NH₃ and 16 % more CO₂ than CO2SYS would.
+- **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
+  the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
+  missing (a missing value is never taken for a safe one). Without a total sulfide it is drawn and named
+  "Safe zone (H₂S not assessed)". A border outside the chart's pH range (4 to 12.5) is said in words.
 - **The limits are defaults, not the fish's**: NH₃-N 0.0103 mg/L (0.0125 mg/L NH₃, Piper et al. 1982,
   as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA 1986); the example water is the
   source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L, target pH 7.5 at 100 mg/L)
@@ -736,7 +748,7 @@ the address, nothing is stored, and without values it shows its defaults.
   and H₂S within 1e−8 relative, the constants within 5e−8 pK, CO₂ within 3e−6 for the molar mass, the
   borders within 1e−6 pH, the boundaries within the source's 4-decimal points); the chart's lines and
   regions against the formulas, the point at its coordinates; the page in each language. What the source
-  did wrong is in the bug document (WQ-30 to WQ-38).
+  did wrong is in the bug document (WQ-30 to WQ-39).
 - **Not ported**: the dosing (reagents, recipes, the dosing lines and the on-demand path), the volume,
   the fish type and size (they changed nothing, WQ-37), the four small charts beside it (NH₃, H₂S and
   carbonate against pH, calcite saturation) and the printed report.
@@ -765,7 +777,7 @@ not restore them.
 columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
 email, SMS or push, no acknowledgement and no escalation. Someone has to look.
 
-Differences from the source (details in the bug document, WQ-01 to WQ-38):
+Differences from the source (details in the bug document, WQ-01 to WQ-39):
 
 - One store of limits, per species and water type, read by the one evaluator; the source had seven that
   disagreed and never applied its species limits (WQ-01, WQ-02, WQ-24).
@@ -778,10 +790,11 @@ Differences from the source (details in the bug document, WQ-01 to WQ-38):
   (WQ-14, WQ-15); a round skips empty rows (WQ-16) and is translated (WQ-17).
 - The oxygen saturation is worked out from mg/L (or the reverse) at the site's altitude (WQ-27); TGP is
   a parameter (WQ-25).
-- The calculator's chart keeps the H₂S limit in its safe zone and draws one when ammonia cannot reach its
-  limit (WQ-30); sulfide goes in as S and H₂S comes out as H₂S (WQ-31); Ω only where its constants hold
-  (WQ-32); the axes hold the point (WQ-33); CO₂ is judged against its limit (WQ-36); every input is
-  checked (WQ-37, WQ-38).
+- The calculator's chart keeps the H₂S limit in its safe zone, draws one when ammonia cannot reach its
+  limit and none when a limit it needs is missing (WQ-30); sulfide goes in as S and H₂S comes out as H₂S
+  (WQ-31); Ω only where its constants hold (WQ-32); the axes hold the point (WQ-33); a border off the chart
+  is said in words (WQ-34); CO₂ is judged against its limit (WQ-36); every input is checked (WQ-37,
+  WQ-38); K1 and K2 are cited to their paper (WQ-39).
 - Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
   notifications, the calculator's dosing, H₂S as a sample parameter, hardness and the other lab
   parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan

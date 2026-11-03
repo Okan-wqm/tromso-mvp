@@ -34,11 +34,14 @@ LOST = (MovementKind.MORTALITY, MovementKind.CULL, MovementKind.ADJUSTMENT)
 
 @dataclass(frozen=True)
 class Feeding:
-    """A feeding record as the walk needs it."""
+    """A feeding record as the walk needs it; `meals` and `order` (its place among the day's records: the time,
+    then the order of entry) for the projected growth."""
     id: object
     unit_id: object
     date: date
     amount_kg: Decimal
+    meals: int = None
+    order: tuple = ()
 
 
 class PointKind:
@@ -76,6 +79,35 @@ class Stay:
                     and (end is None or day < end or closing and day == end)), ZERO)
 
 
+def ratio(feed, gain):
+    return feed / gain if feed > 0 and gain > 0 else None
+
+
+@dataclass(frozen=True)
+class Window:
+    """A share's stay between two measured points: from its first to its last weighing (or the harvest that closed
+    it) for FCR, or between two consecutive points for a weighing's realised FCR (farm/feeding/projection.py)."""
+    start: object
+    end: object
+    feed_kg: Decimal
+
+    @property
+    def gain_kg(self):
+        """Biological gain: the biomass grown, the fish removed meanwhile credited, those added not."""
+        start, end = self.start, self.end
+        return (end.biomass_kg - start.biomass_kg + (end.removed_kg - start.removed_kg)
+                - (end.added_kg - start.added_kg))
+
+    @property
+    def economic_gain_kg(self):
+        """Economic gain: the biological gain less the fish lost (dead, culled, escaped, unaccounted)."""
+        return self.gain_kg - (self.end.lost_kg - self.start.lost_kg)
+
+    @property
+    def biological(self):
+        return ratio(self.feed_kg, self.gain_kg)
+
+
 @dataclass(frozen=True)
 class Day:
     """A unit on a day: the grams of each batch with fish at the start of the day and at its end."""
@@ -107,9 +139,10 @@ class Walk:
 
 
 class _Walker:
-    def __init__(self, feedings, days, observe):
+    def __init__(self, feedings, days, observe, projector=None):
         self.result = Walk()
         self.observe = observe
+        self.projector = projector
         self.feedings = defaultdict(list)
         wanted = defaultdict(set)
         for feeding in feedings:
@@ -144,6 +177,8 @@ class _Walker:
                     self._allocate(unit_id, day, end)
                 elif not start:
                     self.result.orphans.extend(self.feedings.get((unit_id, day), ()))
+                if self.projector is not None and end:
+                    self.projector.day(unit_id, day, shares, self.feedings.get((unit_id, day), ()), self.result.split)
             self.ended += 1
 
     def _allocate(self, unit_id, day, grams):
@@ -179,6 +214,8 @@ class _Walker:
                 stay.lost += removed
             if line.kind == MovementKind.HARVEST:
                 self.pending[key] = PointKind.CLOSE
+        if self.projector is not None:
+            self.projector.line(line, share, grams)
 
     def after(self, op, shares):
         for key, kind in self.pending.items():
@@ -188,7 +225,11 @@ class _Walker:
             stay = self.result.stays[key][-1]
             stay.points.append(Point(kind, op.date, share.grams / 1000, stay.removed / 1000, stay.lost / 1000,
                                      stay.added / 1000))
+            if self.projector is not None:
+                self.projector.weighed(key, stay, stay.points[-1])
         self.pending.clear()
+        if self.projector is not None:
+            self.projector.end_op()
         if self.observe is not None:
             self.observe(op, shares)
 
@@ -198,12 +239,13 @@ def _present(shares, unit_id):
     return {batch_id: share.grams for (unit, batch_id), share in shares.items() if unit == unit_id and share.count}
 
 
-def walk(lines, feedings=(), days=(), observe=None):
+def walk(lines, feedings=(), days=(), observe=None, projector=None):
     """Folds `lines` (farm/stock/fold.py) and walks `feedings` (Feeding) along: their split, the stays
     with their measured points and feed, the unit's book on each feeding day and on `days` ((unit id,
     day) pairs, e.g. the last week's for the feed rate), and the feedings without fish. `observe` is passed
-    on to the fold. Raises the fold's StockError."""
-    walker = _Walker(feedings, days, observe)
+    on to the fold. A `projector` (farm/feeding/projection.py) keeps the estimated weight along the same walk:
+    it sees every stock line, every weighing point and the end of every day read. Raises the fold's StockError."""
+    walker = _Walker(feedings, days, observe, projector)
     walker.result.shares = fold(lines, walker.after, before=walker.before, on_line=walker.line)
     walker.capture(walker.result.shares)
     return walker.result

@@ -938,6 +938,32 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .feeding-window { margin: 0; padding-left: 1.125rem; font-size: .9375rem; }
 
 
+/* Operations › Feeding › Meal board, Records by unit and day, Protocols and Assignments. A value that needs the
+   person's eye (a stale temperature, an estimate to weigh soon) is amber text; one to act on is rust (over-text).
+   The feeding table is a grid of small inputs, a band a row and a temperature a column. */
+.warn-text { color: #7A5410; }
+.badge-draft { background: #ECECEA; color: var(--muted); }
+.badge-retired { background: #FBF0D9; color: #7A5410; }
+.board-table th[scope="rowgroup"], .board-table td, .days-table td { vertical-align: top; }
+.board-unit + .board-unit { border-top: 2px solid var(--line); }
+.notice-cell { color: #7A5410; font-size: .9375rem; }
+.correction-row td { padding-top: 0; color: var(--muted); font-size: .875rem; }
+.correction { display: inline; }
+.ration-lines li + li { margin-top: .375rem; }
+.drawer-subhead { margin: .75rem 0 .375rem; font-size: .9375rem; }
+.estimate-line { font-weight: 500; }
+.grid-table input, .grid-table select {
+  width: 100%; min-width: 4.5rem; min-height: 38px; padding: 0 .5rem; border: 1.5px solid var(--sage);
+  border-radius: 6px; background: var(--white); color: var(--speck); font: inherit;
+}
+.grid-table select { min-width: 9rem; }
+.grid-table td { vertical-align: top; padding: .375rem .375rem; }
+.grid-table .has-error input, .grid-table .has-error select { border-color: var(--error); }
+.band-row.is-removed td { opacity: .5; }
+.duplicate-form { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1rem; }
+.assignment-group + .assignment-group { border-top: 2px solid var(--line); }
+
+
 /* Operations › Harvest (templates/farm/harvests.html, plan_item_list.html, production_plan_list.html) and the
    handling check of the harvest, transfer and grading dialogs (templates/farm/_handling_panel.html). */
 .handling-panel { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line); border-radius: 8px; }

@@ -9,6 +9,7 @@ Differences from the source schema (apply to every model here):
 from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibration
 from .feed import Feed, FeedSuitability
 from .feeding import FeedingRecord
+from .feeding_protocol import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
 from .handling import HandlingAcknowledgement, HandlingRule
 from .harvest import HandlingPlanItem, HarvestRecord, ProductionPlan, SlaughterFacility
 from .production_department import ProductionDepartment
@@ -22,7 +23,8 @@ from .water import WaterLimit, WaterMeasurement
 
 __all__ = [
     'Batch', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
-    'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
-    'ProductionDepartment', 'ProductionPlan', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
-    'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'WaterLimit', 'WaterMeasurement',
+    'FeedingProtocol', 'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
+    'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment', 'ProtocolBand', 'ProtocolRate', 'Site',
+    'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement', 'StockOperation', 'Supplier', 'SupplierContact',
+    'System', 'Tank', 'WaterLimit', 'WaterMeasurement',
 ]

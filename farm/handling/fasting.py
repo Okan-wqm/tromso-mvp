@@ -13,7 +13,7 @@ A planned harvest or transport (HandlingPlanItem, planned or overdue) asks the u
 its day less the rule's hours: every day from the one the fast starts on to the planned day is a fasting day
 in full, for the whole unit (two batches in a unit cannot be fed apart). The meal board asks `fasting_on`."""
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 from django.db.models import Q
 from django.utils import formats
@@ -22,6 +22,7 @@ from django.utils.translation import gettext as _
 from farm.models import HandlingPlanItem, HandlingRule
 from farm.models.handling import MAX_FASTING_HOURS, HandlingKind
 from farm.models.site import zone_of
+from farm.stock.dates import start_of
 
 # How far back the last feeding is looked for: longer than the longest rule (720 h), so a fish not fed in
 # that time has fasted long enough for any rule.
@@ -49,11 +50,6 @@ def rule_of(kind, species):
     on a tie); None when no rule applies."""
     found = [rule for rule in (rule_for(each, species) for each in RULES_OF[kind]) if rule is not None]
     return max(found, key=lambda rule: rule.min_fasting_hours, default=None)
-
-
-def start_of(day, unit):
-    """The start of a day on the clock of the unit's site."""
-    return datetime.combine(day, time.min, tzinfo=zone_of(unit.production_department.site))
 
 
 def shown_moment(moment, unit):

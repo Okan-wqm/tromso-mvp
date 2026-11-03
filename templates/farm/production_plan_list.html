@@ -1,9 +1,9 @@
 {% extends "crud/list.html" %}
 {% load i18n stock feeding %}
 {% comment %} Operations › Harvest › Production plans (farm.resources.harvest_plan): every batch in stock in each unit
-   it is in, its book average and its target weight; when the target is reached is the feeding protocols'
-   projection, which is not in yet, and the page says so. "Plan harvest" starts a planned harvest of the
-   share at the target weight. Plans of batches no longer in stock follow.{% endcomment %}
+   it is in, its book average, its target weight, the estimate now and the day the target is reached
+   (farm.harvest.forecast); "Plan harvest" starts a planned harvest of the share at the target weight, on that
+   day. Plans of batches no longer in stock follow.{% endcomment %}
 {% block above %}{% include "farm/_harvest_tabs.html" %}{% endblock %}
 {% block search_placeholder %}{% trans "Search unit, batch or species" %}{% endblock %}
 {% block filters %}
@@ -19,7 +19,7 @@
 </form>
 {% endif %}
 {% endblock %}
-{% block notice %}<p class="panel-help">{% trans "The target weight each batch is grown to for harvest. The estimated weight now and the day it reaches the target come from the feeding protocols’ projection; the expected harvest is the date given when the batch was stocked." %}</p>{% endblock %}
+{% block notice %}<p class="panel-help">{% trans "The target weight each batch is grown to for harvest. The estimated weight now is the feeding protocols’ estimate; the day it reaches the target walks it forward on the ration of each day, at the unit’s latest temperature held, with no growth on a fasting day. The expected harvest is the date given when the batch was stocked." %}</p>{% endblock %}
 {% block empty_text %}{% trans "The batches in stock with their target weight for harvest." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">
@@ -47,7 +47,7 @@
         <td class="num">{{ share.count|fish }}</td>
         <td class="num">{{ share.avg_weight_g|grams }}<span class="row-sub">{% if share.last_weighed %}{% blocktrans trimmed with date=share.last_weighed|date:"DATE_FORMAT" %}weighed {{ date }}{% endblocktrans %}{% else %}{% trans "as stocked" %}{% endif %}</span></td>
         <td class="num">{% if plan %}{% if can_change %}<a href="{% url 'farm:productionplan_edit' plan.pk %}" data-modal>{{ plan.target_weight_g|grams }}</a>{% else %}{{ plan.target_weight_g|grams }}{% endif %}{% elif can_add %}<a href="{% url 'farm:productionplan_create' %}?batch={{ share.batch.pk }}" data-modal>{% trans "Set target" %}</a>{% else %}—{% endif %}</td>
-        <td><span class="muted">{% trans "Needs the feeding protocols" %}</span></td>
+        <td>{% with forecast=row.forecast %}{% if forecast %}{{ forecast.now_g|grams }}{% if forecast.reached and forecast.temperature_c is not None %}<span class="row-sub">{% blocktrans trimmed with date=forecast.day|date:"DATE_FORMAT" temperature=forecast.temperature_c|floatformat:"1" %}target on {{ date }}, at {{ temperature }} °C held{% endblocktrans %}</span>{% elif forecast.reached %}<span class="row-sub">{% trans "target reached" %}</span>{% elif forecast.why %}<span class="row-sub warn-text">{{ forecast.why }}</span>{% endif %}{% else %}—{% endif %}{% endwith %}</td>
         <td class="nowrap">{{ row.expected|date:"DATE_FORMAT"|default:"—" }}</td>
         <td class="nowrap">{{ row.last_fed|fed_on:row.today }}</td>
         <td>{% if row.withdrawal is None %}<span class="muted">{% trans "Not checked" %}</span>{% elif row.withdrawal %}{% for block in row.withdrawal %}<span class="over-text">{% if block.until %}{% blocktrans trimmed with date=block.until|date:"DATE_FORMAT" %}Until {{ date }}{% endblocktrans %}{% else %}{% trans "End unknown" %}{% endif %}</span>{% endfor %}{% else %}{% trans "None" %}{% endif %}</td>

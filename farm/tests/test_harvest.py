@@ -25,6 +25,7 @@ from ..models import (
 from ..stock import integrity, services
 from .helpers import make_facility, role
 from .test_feeding import FeedingTestCase
+from .test_protocols import ProtocolTestCase
 from .test_stock import make_unit
 
 HARVEST_KEEPER = ('view_harvestrecord', 'view_handlingplanitem', 'add_handlingplanitem', 'change_handlingplanitem',
@@ -45,7 +46,7 @@ def provider(*blocks):
 
 
 class HarvestTestCase(FeedingTestCase):
-    """10,000 salmon of 50 g in T-01 (500 kg), stocked 20 days ago; the starting rules of migration 0016."""
+    """10,000 salmon of 50 g in T-01 (500 kg), stocked 20 days ago; the starting rules of migration 0017."""
 
     def setUp(self):
         super().setUp()
@@ -541,13 +542,41 @@ class FastsTests(HarvestTestCase):
         self.assertContains(response, 'A feeding can still be recorded.')
 
 
+class ForecastTests(HarvestTestCase):
+    """One band at FCR 1.00 and 1 % of the body weight a day at 10 °C: the fish grow 1 % a day from 50 g."""
+
+    def setUp(self):
+        super().setUp()
+        self.protocol = ProtocolTestCase.make_protocol(self, bands=((0, None, None),), columns=('10',), sfr=(('1.00',),))
+        self.plan = ProductionPlan.objects.create(batch=self.batch, target_weight_g=Decimal(55))
+
+    def row(self):
+        return self.client.get(reverse('farm:productionplan_list')).context['objects'][0]
+
+    def test_the_day_the_target_is_reached_on_the_ration_at_the_temperature_held(self):
+        ProtocolTestCase.assign(self, self.protocol, unit=self.t1)
+        ProtocolTestCase.water(self, '10')
+        row = self.row()                                                     # 50 × 1.01^10 = 55.2 g ≥ 55 g
+        self.assertEqual((row['forecast'].now_g, row['forecast'].day, row['forecast'].temperature_c),
+                         (Decimal(50), self.day(-10), Decimal('10.0')))
+        self.assertIn(f'date={self.day(-10).isoformat()}', row['plan_harvest_url'])
+        self.assertContains(self.client.get(reverse('farm:productionplan_list')), 'at 10.0 °C held')
+        HandlingPlanItem.objects.create(kind='transport', date=self.day(-5), unit=self.t1, batch=self.batch)
+        self.assertEqual(self.row()["forecast"].day, self.day(-12))          # its fast: the day before and the day
+
+    def test_it_stops_where_the_ration_stops_and_says_why(self):
+        self.assertEqual(self.row()['forecast'].why, 'No protocol is assigned to these fish.')
+        ProtocolTestCase.assign(self, self.protocol, unit=self.t1)
+        self.assertEqual(self.row()['forecast'].why, 'No temperature in the last 7 days: record one.')
+
+
 class ProductionPlanTests(HarvestTestCase):
     list_url = reverse('farm:productionplan_list')
 
     def test_a_target_created_read_edited_and_deleted_through_the_pages(self):
         listed = self.client.get(self.list_url)
         self.assertContains(listed, 'Set target')
-        self.assertContains(listed, 'Needs the feeding protocols')
+        self.assertEqual(listed.context['objects'][0]['forecast'].now_g, Decimal(50))
         create = reverse('farm:productionplan_create')
         self.assertEqual(self.client.get(create, {'batch': self.batch.pk}).context['form']['batch'].value(),
                          str(self.batch.pk))

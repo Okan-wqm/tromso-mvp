@@ -1,13 +1,18 @@
 {% extends base_template %}
 {% load i18n stock feeding %}
-{% comment %} Operations › Feeding records (farm.feeding.views.feeding_records): every feeding, newest first, filtered
-   by site, unit, the batch it fed, feed and dates in the address; the batches a record fed are worked out
-   from the stock ledger (the record names only the unit). Voided records, struck through with their
-   reason, are shown when asked for.{% endcomment %}
+{% comment %} Operations › Feeding › Records (farm.feeding.views.feeding_records), two views. Feeding records: every
+   feeding, newest first, filtered by site, unit, the batch it fed, feed and dates in the address; the batches a
+   record fed are worked out from the stock ledger (the record names only the unit); voided records, struck through
+   with their reason, are shown when asked for. By unit and day (?view=days): the calculated ration against the feed
+   given, the deviation, and the weighings with their correction of the estimate.{% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+<nav class="view-tabs" aria-label="{% trans "Records" %}">
+  {% for item in views %}<a class="view-tab" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+</nav>
+{% if view == "days" %}{% include "farm/_feeding_days.html" %}{% else %}
 <div class="toolbar">
   <form method="get" class="toolbar-filter feeding-filters" data-omit-empty>
     <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
@@ -87,5 +92,6 @@
   </table>
 </div>
 {% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% endif %}
 {% endif %}
 {% endblock %}

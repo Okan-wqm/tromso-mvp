@@ -29,9 +29,10 @@ from django.utils.translation import gettext as _
 from farm.feeding.read import book_on, last_fed_at
 from farm.models import Batch, HandlingAcknowledgement
 from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule
+from farm.stock.dates import start_of
 
 from . import withdrawal
-from .fasting import LOOKBACK_DAYS, rule_of, shown_moment, start_of
+from .fasting import LOOKBACK_DAYS, rule_of, shown_moment
 
 # The handlings a withdrawal matters for: the fish go to food, or are crowded and moved while held.
 WITHDRAWAL_KINDS = (HandlingKind.HARVEST, HandlingKind.TRANSPORT, HandlingKind.GRADING)

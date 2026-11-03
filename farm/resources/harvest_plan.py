@@ -4,9 +4,9 @@ page of computed rows.
 - Harvest plan: the planned harvests and transports, each with its derived status, planned against actual
   (the linked operation's lines), the fast it asks of its unit, a medicine withdrawal on its day, and
   "Record harvest" / "Record transfer", which opens the stock's dialog started from it.
-- Production plans: every batch in stock in each unit it is in, with its target weight; when it reaches it
-  is the feeding protocols' projection (not on main yet: the page says so). "Plan harvest" starts a planned
-  harvest of the share at the target weight."""
+- Production plans: every batch in stock in each unit it is in, with its target weight, its estimated weight
+  now and the day it reaches the target (farm/harvest/forecast.py, from the feeding protocols' projection).
+  "Plan harvest" starts a planned harvest of the share at the target weight, on that day."""
 from datetime import date
 from urllib.parse import urlencode
 
@@ -18,7 +18,7 @@ from core.crud import Resource
 from ..feeding import read as feeding_read
 from ..forms.harvest import FROM_ADDRESS, HandlingPlanItemForm, ProductionPlanForm, planned_kg
 from ..handling import check, fasting
-from ..harvest import views as harvest_views
+from ..harvest import forecast, views as harvest_views
 from ..models import HandlingPlanItem, ProductionPlan, Site, StockMovement, Tank
 from ..models.harvest import PlanKind, PlanStatus
 from ..models.stock import MovementKind
@@ -160,6 +160,8 @@ class ProductionPlanResource(FromAddress, Resource):
         if chosen_site not in {str(site.pk) for site in sites}:
             chosen_site = ''
         query = request.GET.get('q', '').strip().lower()
+        estimates = forecast.forecasts([(item.unit, share) for item in stock.values() for share in item.shares],
+                                       {batch_id: plan.target_weight_g for batch_id, plan in plans.items()})
         rows = []
         for unit_id, unit_stock in stock.items():
             unit = unit_stock.unit
@@ -171,7 +173,9 @@ class ProductionPlanResource(FromAddress, Resource):
                          batch.species.local_name]
                 if query and not any(query in word.lower() for word in words if word):
                     continue
-                rows.append(share_row(request, unit, share, plans.get(batch.pk), feeding.get(unit_id)))
+                row = share_row(request, unit, share, plans.get(batch.pk), feeding.get(unit_id))
+                row['forecast'] = estimates.get((unit_id, batch.pk))
+                rows.append(_plan_date(row))
         if not chosen_site and not query:
             in_stock = stock_read.batches_in_stock()
             rows += [{'plan': plan, 'share': None} for batch_id, plan in plans.items() if batch_id not in in_stock]
@@ -191,5 +195,15 @@ def share_row(request, unit, share, plan, feeding):
             prefill['planned_kg'] = planned_kg(share.count, plan.target_weight_g)
         if share.batch.expected_harvest_date and share.batch.expected_harvest_date >= today:
             prefill['date'] = share.batch.expected_harvest_date.isoformat()
+        row['prefill'] = prefill
+        row['plan_harvest_url'] = f'{reverse("farm:handlingplanitem_create")}?{urlencode(prefill)}'
+    return row
+
+
+def _plan_date(row):
+    """A planned harvest starts on the day the target is reached, else on the batch's expected harvest."""
+    reached = row.get('forecast') is not None and row['forecast'].reached
+    if reached and row.get('plan_harvest_url'):
+        prefill = {**row['prefill'], 'date': row['forecast'].day.isoformat()}
         row['plan_harvest_url'] = f'{reverse("farm:handlingplanitem_create")}?{urlencode(prefill)}'
     return row

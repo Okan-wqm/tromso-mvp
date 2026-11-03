@@ -49,7 +49,7 @@ def remove(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0015_harvest'),
+        ('farm', '0016_harvest'),
     ]
 
     operations = [migrations.RunPython(write, remove)]

@@ -1,5 +1,5 @@
 {% extends "farm/stock_operation.html" %}
-{% load i18n stock %}
+{% load i18n stock feeding %}
 {% comment %} Record feeding (farm.feeding.views.record_feeding): the stock's operation dialog with the feeding form.
    A unit with two batches says how the feed is split between them; a day in the fast before a planned harvest
    or transport says so (farm.handling.fasting).{% endcomment %}
@@ -9,5 +9,6 @@
 <p class="op-batch">{% if split.at_start %}{% blocktrans trimmed with date=split.day|date:"DATE_FORMAT" %}Split by the book biomass at the start of {{ date }}:{% endblocktrans %}{% else %}{% blocktrans trimmed with date=split.day|date:"DATE_FORMAT" %}Split by the book biomass at the end of {{ date }}:{% endblocktrans %}{% endif %}
   {% for code, share in split.parts %}{% if not forloop.first %}, {% endif %}{{ code }} {{ share|percent }}{% endfor %}</p>
 {% endif %}
+{% if meal %}<p class="op-batch">{% blocktrans trimmed with kilos=meal.amount_kg|feed_kg %}The next meal on the Meal board: {{ kilos }}, filled in below.{% endblocktrans %}</p>{% endif %}
 {% if form.suiting %}<p class="help">{% trans "The feeds that suit the species and average weight of these fish (Reference data › Feeds) come first." %}</p>{% endif %}
 {% endblock %}

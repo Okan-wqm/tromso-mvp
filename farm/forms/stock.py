@@ -11,6 +11,8 @@ from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils.translation import gettext_lazy as _, ngettext
 
+from core.crud import DRAFT
+
 from ..handling import check
 from ..models import Batch, HandlingPlanItem, SlaughterFacility, Species, Supplier, Tank
 from ..models.handling import HandlingKind
@@ -127,6 +129,9 @@ class OperationForm(ServiceErrors, forms.Form):
     service_fields = {'unit': NON_FIELD_ERRORS, 'species': NON_FIELD_ERRORS, 'destinations': NON_FIELD_ERRORS}
     rows = None          # the formset of the units the fish go into, for a transfer or a grading
     rows_label = ''
+    # Fields whose change renders the dialog again from what was entered, saving nothing (data-refresh; a weighing
+    # shows the batch's estimated weight on the day chosen and how the weight entered compares with it).
+    refresh_on = ()
 
     def __init__(self, *args, unit, present, **kwargs):
         super().__init__(*args, **kwargs)
@@ -146,6 +151,8 @@ class OperationForm(ServiceErrors, forms.Form):
                 'count': len(choices)}
         self.fields['date'].initial = services.local_today(unit)
         self.fields['token'].initial = uuid.uuid4()
+        for name in self.refresh_on:
+            self.fields[name].widget.attrs['data-refresh'] = DRAFT
 
     @property
     def only_batch(self):
@@ -200,6 +207,7 @@ class WeighingForm(OperationForm):
         help_text=_('Or, instead of a sample, the average weight as measured.'))
 
     field_order = ['batch', 'date', 'sample_count', 'sample_weight_kg', 'avg_weight_g', 'notes']
+    refresh_on = ('batch', 'date', 'sample_count', 'sample_weight_kg', 'avg_weight_g')
 
     def clean(self):
         cleaned = super().clean()

@@ -36,7 +36,7 @@ class HandlingRule(AuditedModel):
     handling, for one species or for every species (no species). The species' row wins over the row for
     every species; with neither, the fast is not checked and the dialog says so (no default is assumed).
 
-    These are the farm's own rules: the starting values the migration writes (0016) are to be checked with
+    These are the farm's own rules: the starting values the migration writes (0017) are to be checked with
     the farm's veterinarian, and each says where it comes from. Too short a fast is a warning; going on
     stores an acknowledgement and logs it as critical (farm/handling)."""
 

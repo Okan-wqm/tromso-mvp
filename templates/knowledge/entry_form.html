@@ -1,0 +1,13 @@
+{% extends "crud/form.html" %}
+{% load i18n %}
+{% comment %} The knowledge entry dialog (knowledge.forms.KnowledgeEntryForm): crud/form.html with a Review tab on an
+   existing entry, where it is reviewed (outside the entry's own form).{% endcomment %}
+{% block extra_tabs %}{% if object %}<button type="button" role="tab" class="tab" data-tab="review">{% trans "Review" %}</button>{% endif %}{% endblock %}
+{% block extra_panels %}
+{% if object %}
+<section class="tab-panel" role="tabpanel" data-panel="review">
+  <h3 class="panel-title">{% trans "Review" %}</h3>
+  {% include "knowledge/_review.html" with entry=object can_review=can_change %}
+</section>
+{% endif %}
+{% endblock %}

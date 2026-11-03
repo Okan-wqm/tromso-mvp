@@ -12,7 +12,10 @@ needs the same way:
 - languages: a tab's name, plural and group are translatable text (gettext_lazy); the pages put them
   into sentences, so write them in the lower case a noun has in the middle of a sentence;
 - rows saved as a list: a tab's `row_lists` (a site's contacts) get their URL, their formset on the
-  edit page and a logged save (RowList).
+  edit page and a logged save (RowList);
+- files: a form with a file field gets the uploaded files (a library document's PDF);
+- a read page: a tab with a `detail_template` gets a page that shows one record to everyone who may
+  read the tab (the edit form needs the change permission), e.g. a document with its citation.
 """
 import copy
 from dataclasses import dataclass, field as dataclass_field
@@ -305,6 +308,7 @@ class Resource:
     create_view = None    # the add page's view; None is CreateView (a dialog that writes several rows has its own)
     row_lists = ()        # RowList classes edited on the record's tabs (a site's contacts)
     page_size = None      # rows per page of the list; None lists every record on one page (nested lists)
+    detail_template = ''  # a read page for one record (extends crud/detail.html); '' for none
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -367,9 +371,23 @@ class Resource:
         """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
 
     @classmethod
+    def search(cls, objects, query):
+        """The records that match what was typed in the list's search box: by default those with the
+        text in one of `search_fields`. A tab with a better search (full text, ranked) overrides it."""
+        condition = Q()
+        for field in cls.search_fields:
+            condition |= Q(**{f'{field}__icontains': query})
+        return objects.filter(condition)
+
+    @classmethod
     def filter_list(cls, request, objects):
         """Narrows the list by the tab's own filters; returns the objects and context for the filter bar."""
         return objects, {}
+
+    @classmethod
+    def detail_extras(cls, request, obj):
+        """Extra context for the read page (detail_template)."""
+        return {}
 
     # --- URLs ---------------------------------------------------------------------------------
     @classmethod
@@ -384,7 +402,9 @@ class Resource:
         }
         rows = [path(f'{p}/<{pk}>/{row_list.key}/', RowListView.as_view(resource=cls, rows=row_list),
                      name=f'{n}_{row_list.key}') for row_list in cls.row_lists] if cls.allows('change') else []
-        return [route for action, route in routes.items() if action == 'list' or cls.allows(action)] + rows
+        detail = [path(f'{p}/<{pk}>/view/', DetailView.as_view(resource=cls), name=f'{n}_detail')
+                  ] if cls.detail_template else []
+        return [route for action, route in routes.items() if action == 'list' or cls.allows(action)] + rows + detail
 
 
 class ResourceView:
@@ -454,10 +474,7 @@ class ListView(ResourceView):
         query = request.GET.get('q', '').strip()
         objects = self.resource.queryset()
         if query:
-            condition = Q()
-            for field in self.resource.search_fields:
-                condition |= Q(**{f'{field}__icontains': query})
-            objects = objects.filter(condition)
+            objects = self.resource.search(objects, query)
         objects, filters = self.resource.filter_list(request, objects)
         page = None
         if self.resource.page_size:
@@ -495,7 +512,7 @@ class CreateView(FormView):
         r = self.resource
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
             return self.draft_page(r.form(request, draft=request.POST))
-        form = r.form(request, request.POST)
+        form = r.form(request, request.POST, request.FILES)
         if not form.is_valid():
             return self.page(form)
         with transaction.atomic():
@@ -524,7 +541,7 @@ class UpdateView(FormView):
         obj = self.get_object(pk)
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
             return self.draft_page(r.form(request, instance=obj, draft=request.POST), obj)
-        form = r.form(request, request.POST, instance=obj)
+        form = r.form(request, request.POST, request.FILES, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
         with transaction.atomic():
@@ -549,6 +566,18 @@ class UpdateView(FormView):
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” saved.'), r, obj)
         return done(request, reverse(r.url_name('list')))
+
+
+class DetailView(ResourceView):
+    """One record as a person who may read the tab sees it (Resource.detail_template), with links to edit
+    and delete it for those who may."""
+
+    def get(self, request, pk):
+        r = self.resource
+        obj = self.get_object(pk)
+        urls = {f'{action}_url': reverse(r.url_name(action), args=[obj.pk]) for action in ('edit', 'delete')
+                if r.allows({'edit': 'change'}.get(action, action))}
+        return render_page(request, r.detail_template, self.context(object=obj, **urls, **r.detail_extras(request, obj)))
 
 
 class DeleteView(ResourceView):

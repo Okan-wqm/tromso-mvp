@@ -34,6 +34,7 @@ in `core/`, or by not porting the feature (satellite monitoring is deliberately 
 13. [Feeding protocols and meal board](#feeding-protocols-and-meal-board)
 14. [Messaging](#messaging)
 15. [Harvest](#harvest)
+16. [Knowledge](#knowledge)
 
 ## Patterns that repeat across tabs
 
@@ -865,3 +866,38 @@ RSPCA trout standards (2025) cap it at 54 degree-days. A degree-day rule and a "
   reached is computed, never stored; the farm's wished date stays the batch's expected harvest (one fact).
 - Not ported yet: the slaughter result (gutted kg per quality class, yield) and Mattilsynet's weekly slaughter
   reports, which need it.
+
+## Knowledge
+
+The product has **no knowledge base**: no document library, no text read from an uploaded PDF (pdfkit only
+writes reports), no document chunks or embeddings, and no answer of an AI that cites a stored source. The
+"species knowledge base" is a design, `docs/architecture/ADR-010-AI-SELF-LEARNING.md` (status Proposed ✔), and
+`FARM-AI-PROGRAM-2026-09-18.md` plans embeddings for a later phase. What exists are pieces next to it, and they
+are where the entries below come from: a `knowledge_entries` table filled from chat messages by keyword, a
+semantic search over messages, farm document uploads to object storage (MinIO), and the MCP server's
+hard-coded thresholds with literature notes. The prototype ports none of them; its knowledge is a library of
+documents with their text read per page, and entries with exactly one source each (README, Knowledge;
+`knowledge/`).
+
+Paths are relative to the repository root; `ms/` is `apps/messaging-service/src`, `gw/` is
+`apps/gateway-api/src`, `fs/` is `apps/farm-service/src`, `farm-web/` is `web/modules/farm-module/src`. Entries
+marked ✔ were re-read at the cited lines; the others are as the analysis reported them. 6 High, 5 Medium, 1 Low.
+
+| ID | Sev. | Where | What is wrong | In the prototype · Fix in the source |
+|---|---|---|---|---|
+| KNW-01 | High | `ms/ai/services/knowledge-extraction.service.ts:352-359` ✔; `ms/migrations/1800000000000-Baseline.ts:65` ✔ | The only writer of `knowledge_entries` creates a row without `tenantId`, a `NOT NULL` column with no default and no subscriber that fills it: every insert fails, and inside the per-tenant transaction it takes the entity references written before it with it. The table can never hold a row. | An entry is written by its form through one model with every rule in the database (exactly one source, topics, the review), and tests create, read, edit and delete each kind through the pages. · Set `tenantId` from the message; test the writer against PostgreSQL. |
+| KNW-02 | High | `ms/ai/services/knowledge-extraction.service.ts:120-140` ✔ | "Knowledge" is taken from people's chat messages by keyword and tank-code regex, with a fixed confidence of 0.8 and no source a person can check; the consent service is injected and never called (`privacyService`, and `knowledgeRepo`, are unused ✔). The sweep is off by default because it read messages without opt-in. | Knowledge is entered by a person in their own words with its source (a document with its page and quote, a published source, or a named expert) and is a draft until a person reviews it; nothing is taken from messages. · Drop the keyword pipeline, or gate it on consent and keep its rows as unreviewed suggestions. |
+| KNW-03 | Medium | `ms/ai/entities/knowledge-entry.entity.ts:95` ✔; `ms/migrations/1800000000000-Baseline.ts` | The entity says the link to the source message is `ON DELETE SET NULL`; the analysis reports the migration's foreign key as `RESTRICT`, so the model and the database disagree on what deleting a message does. | Each link's `on_delete` is the delete plan (core.softdelete), and `makemigrations --check` is a test: an entry citing a document holds it (`PROTECT`, listed in the confirmation). · Generate the migration from the entity, or make them agree. |
+| KNW-04 | High | `ms/ai/queries/search-similar-messages.handler.ts:157` (the subject), `:126` (the filter) | The semantic search asks `request.ai.generateEmbeddings` over NATS, which no service in `apps/` answers ✔ (the AI plan calls it a dead pipe), so every call waits 30 s and returns nothing; and it reads only rows whose `embedding` is set, which nothing writes since the cron that did was removed. | Search is PostgreSQL full text over generated tsvector columns, so the index can never lag the text, with tests on real PDFs; embeddings come later as their own table, written by the save that writes a page (README, Knowledge). · Add the responder and the writer, or remove the query until they exist. |
+| KNW-05 | High | `gw/upload/upload.controller.ts:113-123` ✔; `farm-web/hooks/useChemicals.ts:613, 623` ✔; `fs/chemical/dto/add-document.input.ts:47` ✔ | Uploading a chemical's document returns no `url`; the page sends `uploadResult.url` (undefined) as the required `url` of `addChemicalDocument`, and the mutation is refused: the file is in storage with no row pointing at it. | The file is a field of the document row, stored by the same save, under a name of our own, its original name kept. · Return the stored path and send it, or create the row in the upload. |
+| KNW-06 | High | `farm-web/pages/production/components/DocumentUploadSection.tsx:129-130, 201-202` ✔; `gw/upload/upload.controller.ts` (returns `path`) | Batch documents: the page reads `result.storagePath` and `result.storageUrl`, which the upload does not return, so no `batch_documents` row is written; the analysis also reports a fixed `health_certificate` category that refuses the image types the page accepts, and `entityId` sent where the DTO expects `batchId`. | As KNW-05. · Use the returned `path`; one name for the batch id; the category from the person's choice. |
+| KNW-07 | High | `fs/scheduler/cron-jobs.service.ts:913-970` | Because of KNW-05 and KNW-06 the uploaded files have no row, and the nightly orphan sweep deletes unreferenced objects older than 24 h: people lose what they uploaded, silently. | A replaced or cleared file is removed by the save that replaced it, after the commit (a rolled-back save keeps it); a deleted document keeps its file for a restore. · Fix KNW-05/06 before the sweep runs again. |
+| KNW-08 | Medium | `fs/chemical/dto/add-document.input.ts:6` ✔ (`IsUrl` imported, never applied); `fs/batch/dto/create-batch.dto.ts:91-114` | A document's `url` is any string, rendered as a link; a batch document's storage path, URL, MIME type and size come from the client unchecked (no tenant prefix, no existence check). | A web address is validated (http or https only, a database check too); the stored file is ours, its size and type read from the file itself. · Apply `IsUrl` with the schemes; check paths against the tenant prefix and the object. |
+| KNW-09 | Medium | `gw/upload/upload.controller.ts:343, 616` ✔ (no role check on the deletes) | Any signed-in user of the tenant can delete a chemical or batch document through REST, while the GraphQL removal requires the tenant admin. | One permission per action from the role matrix: Read, Create, Edit and Delete of the Library; the file is sent only to people who may read it. · Put the permission check on the REST deletes. |
+| KNW-10 | Medium | `farm-web/hooks/useChemicals.ts` (`useGetDocumentUrl`, no callers) | The bucket is private and nothing on the pages asks for a download link: a stored document cannot be opened. | The file is sent by a view that checks the person (`knowledge.views.document_file`), shown inline or downloaded. · Call it from the document list. |
+| KNW-11 | Medium | `fs/fish-health/services/incident-media.service.ts:117` ✔ | The type of an uploaded photo is the `Content-Type` the client sent with the upload; nothing reads the file's first bytes. | A PDF must start with `%PDF-`, whatever its name and the browser say, and its name must end in `.pdf`. · Read the magic bytes on finalize. |
+| KNW-12 | Low | `mcp/farm-management/src/knowledge/correlation-map.ts:75`; `correlate-domains.ts:466` | The MCP server's correlations carry a `referenceNote` (the literature behind a threshold), and the tool returns only the mechanism: an agent's answer can never cite where a threshold comes from. | An entry carries its source and page, and the README's Rule design makes a warning cite the entry and its document. · Return the reference with the correlation. |
+
+Sound parts of the source kept in mind for later: per-type size and type policies with a magic-byte check
+(`libs/storage/src/file-upload-security.service.ts`), presigned upload paths checked for `..`, NUL and the tenant
+prefix, and a pgvector query that filters by tenant and membership before it ranks.

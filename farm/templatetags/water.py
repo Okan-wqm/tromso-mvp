@@ -6,7 +6,7 @@ from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
 
 from ..models.site import zone_of
-from ..models.water import site_of
+from ..models.water_point import site_of
 from ..water import parameters
 from ..water.evaluate import ANY_WATER, Status
 from .stock import DASH, number

@@ -47,6 +47,8 @@ WORKSPACES = [
                 Entry(_('Systems'), 'farm:system_list', 'waves', 'farm.view_system'),
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
+                # Where in the water a sample is taken: a place on a unit, a loop or a piece of equipment.
+                Entry(_('Sampling points'), 'farm:samplingpoint_list', 'droplet', 'farm.view_samplingpoint'),
             ]),
             # The reference lists the production side picks from: species, feeds, the water limits per species,
             # the medicines with their withdrawal and the fast before fish are handled (harvest, transport,

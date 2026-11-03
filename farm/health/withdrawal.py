@@ -12,8 +12,9 @@ The rules, for a batch b and a treatment T whose medicine states its withdrawal:
    the withdrawal days + 1.
 3. **Degree-days**: the daily mean water temperature of b is added up from the day after T's last day until
    the sum reaches the medicine's degree-days; the next day is the first day b may be harvested.
-   - A unit's daily mean is the mean of the live temperatures of that farm-local day measured in the unit,
-     else in its system's loop (the water samples, farm/models/water.py). With b in several units that
+   - A unit's daily mean is the mean of the live temperatures of that farm-local day measured at the unit's
+     middle point, else at its system's loop point (the water samples; the places are farm/water/read.py's
+     `water_sources`, the one definition of where a unit's water is read). With b in several units that
      day, the lowest counts.
    - **A past day without a temperature counts as 0 °C** (conservative) and the warning says how many there
      were. Today without a temperature yet is not counted: it is projected.
@@ -34,19 +35,21 @@ from dataclasses import dataclass
 from datetime import timedelta
 from decimal import ROUND_CEILING, Decimal
 
-from django.db.models import Q
 from django.utils.translation import gettext as _, ngettext
 
 from farm.feeding import read as feeding_read
 from farm.handling.withdrawal import WithdrawalBlock
-from farm.models import Batch, FeedingRecord, Tank, Treatment, WaterMeasurement
+from farm.models import Batch, FeedingRecord, Tank, Treatment
 from farm.models.feed import FeedType
 from farm.models.health import TreatmentMethod
-from farm.models.water import local_time
+from farm.models.water_point import local_time
 from farm.stock.dates import end_of, local_today, shown_date, start_of
 from farm.stock.read import Presence
+from farm.water import parameters
+from farm.water.read import Series, water_sources
 
 DAY = timedelta(days=1)
+TEMPERATURE = parameters.TEMPERATURE
 ZERO = Decimal(0)
 PROJECTION_DAYS = 7     # the days with a temperature a projection takes the mean of
 LOOKBACK_DAYS = 30      # how far back from today they are looked for (the water's window)
@@ -84,37 +87,32 @@ class Withdrawal:
 
 
 class Temperatures:
-    """The daily mean water temperature of units from `first` to `last`: a unit's own live samples of that
-    farm-local day, else its system loop's (a sample's day is on the clock of its point's site)."""
+    """The daily mean water temperature of units from `first` to `last`: a unit's own middle point's live
+    samples of that farm-local day, else its system loop's (a sample's day is on the clock of its point's site)."""
 
     def __init__(self, units, first, last):
         self.first, self.last = first, last
-        self.units = {unit.pk: unit for unit in units}
-        systems = {unit.system_id for unit in units if unit.system_id}
+        self.sources = water_sources(units, nested=False)
+        points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
         values = defaultdict(list)
-        if units and first <= last:
+        if points and first <= last:
             # From the first moment of `first` to the last of `last` on the clocks of the units' sites.
-            start = min(start_of(first, unit) for unit in units)
-            stop = max(end_of(last, unit) for unit in units)
-            samples = (WaterMeasurement.objects
-                       .filter(Q(unit__in=list(self.units)) | Q(system__in=systems), temperature_c__isnull=False,
-                               measured_at__gte=start, measured_at__lte=stop)
-                       .select_related('unit__production_department__site', 'system__site'))
-            for sample in samples:
-                day = local_time(sample.measured_at, sample.point).date()
-                if first <= day <= last:
-                    point = ('unit', sample.unit_id) if sample.unit_id else ('system', sample.system_id)
-                    values[(point, day)].append(sample.temperature_c)
+            series = Series(points.values(), TEMPERATURE, min(start_of(first, unit) for unit in units),
+                            max(end_of(last, unit) for unit in units))
+            for point_id, point in points.items():
+                for moment, value in zip(series.moments[point_id], series.values[point_id]):
+                    day = local_time(moment, point).date()
+                    if first <= day <= last:
+                        values[(point_id, day)].append(value)
         self.means = {key: sum(found, ZERO) / len(found) for key, found in values.items()}
 
     def of(self, unit_id, day):
         """The unit's daily mean on `day`, else its system's; None when neither was measured."""
-        mean = self.means.get((('unit', unit_id), day))
-        if mean is None:
-            system_id = self.units[unit_id].system_id
-            if system_id:
-                mean = self.means.get((('system', system_id), day))
-        return mean
+        for source in self.sources.get(unit_id, []):
+            mean = self.means.get((source.point.pk, day))
+            if mean is not None:
+                return mean
+        return None
 
 
 class Reader:

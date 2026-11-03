@@ -312,16 +312,16 @@ msgstr[0] "%(count)s üretim departmanı hiçbir sahada değil."
 msgstr[1] "%(count)s üretim departmanı hiçbir sahada değil."
 
 #, python-format
+msgid "%(count)s sampling point"
+msgid_plural "%(count)s sampling points"
+msgstr[0] "%(count)s numune noktası"
+msgstr[1] "%(count)s numune noktası"
+
+#, python-format
 msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s sistem hiçbir üretim departmanında değil."
 msgstr[1] "%(count)s sistem hiçbir üretim departmanında değil."
-
-#, python-format
-msgid "%(count)s unit or loop"
-msgid_plural "%(count)s units and loops"
-msgstr[0] "%(count)s birim veya döngü"
-msgstr[1] "%(count)s birim ve döngü"
 
 #, python-format
 msgid "%(count)s warning"
@@ -634,6 +634,10 @@ msgid "%(operation)s recorded: %(quantity)s %(unit)s of %(item)s from %(location
 msgstr "%(operation)s kaydedildi: %(location)s yerinden %(quantity)s %(unit)s %(item)s."
 
 #, python-format
+msgid "%(owner)s cannot have a point of this kind: %(kinds)s."
+msgstr "%(owner)s bu türde bir noktaya sahip olamaz: %(kinds)s."
+
+#, python-format
 msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d decimals."
 msgstr "%(parameter)s: sınırlar %(low)s ile %(high)s arasında, en çok %(decimals)d ondalık."
 
@@ -644,6 +648,10 @@ msgstr "%(person)s (artık seçilemez)"
 #, python-format
 msgid "%(point)s is deleted."
 msgstr "%(point)s silinmiş."
+
+#, python-format
+msgid "%(point)s is inactive: it takes no new samples."
+msgstr "%(point)s pasif: yeni numune almaz."
 
 #, python-format
 msgid "%(protocol)s, assigned to %(unit)s, is for %(protocol_species)s; these fish are %(species)s."
@@ -736,6 +744,10 @@ msgstr ""
 #, python-format
 msgid "%(unit)s holds no fish on %(date)s."
 msgstr "%(unit)s biriminde %(date)s tarihinde balık yok."
+
+#, python-format
+msgid "%(unit)s is %(depth)s m deep: the point cannot be deeper."
+msgstr "%(unit)s %(depth)s m derinliğinde: nokta bundan derin olamaz."
 
 #, python-format
 msgid "%(unit)s is deleted and would hold fish again: restore it first."
@@ -955,6 +967,12 @@ msgstr "Sayım, bir yerin o günün sonunda tuttuğunu belirler; kayıtla farkı
 msgid "A delivery puts stock into a location."
 msgstr "Teslimat bir yere stok koyar."
 
+msgid "A depth point has a depth, and no other point does."
+msgstr "Derinlik noktasının bir derinliği vardır, başka hiçbir noktanın yoktur."
+
+msgid "A depth point has a depth."
+msgstr "Derinlik noktasının bir derinliği vardır."
+
 msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
 msgstr "Bir tanı şüpheli veya doğrulanmıştır; tanı yoksa doğrulanacak bir şey yoktur."
 
@@ -991,6 +1009,9 @@ msgstr ""
 
 msgid "A feeding table has at least one band."
 msgstr "Bir yemleme tablosunda en az bir ağırlık aralığı olmalı."
+
+msgid "A flow can be stated for an inlet or an outlet only."
+msgstr "Debi yalnızca bir giriş veya çıkış için belirtilebilir."
 
 msgid "A harvest goes to a slaughter facility, a transport to a unit."
 msgstr "Hasat bir kesimhaneye, taşıma bir birime gider."
@@ -1095,6 +1116,23 @@ msgstr ""
 msgid "A planned %(plan)s is recorded as a %(operation)s."
 msgstr "Planlanmış bir %(plan)s, %(operation)s olarak kaydedilir."
 
+msgid ""
+"A point is a named place on a unit, a loop or a piece of equipment where water is sampled: its "
+"inlet, its middle, its outlets. A new unit or system gets its points when it is created."
+msgstr ""
+"Nokta, bir birimde, bir döngüde veya bir ekipman parçasında suyun örneklendiği adlandırılmış bir "
+"yerdir: girişi, ortası, çıkışları. Yeni bir birim veya sistem oluşturulduğunda noktalarını alır."
+
+msgid "A point is on one unit, one system or one piece of equipment."
+msgstr "Bir nokta bir birimde, bir sistemde veya bir ekipman parçasındadır."
+
+msgid ""
+"A point that has samples is not deleted, so its history stays: make it inactive instead. An "
+"inactive point takes no new samples."
+msgstr ""
+"Numunesi olan bir nokta silinmez, geçmişi kalır: bunun yerine pasif yapın. Pasif bir nokta yeni "
+"numune almaz."
+
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "Fiyatın bir para birimi, para biriminin de bir fiyatı olmalı."
 
@@ -1142,11 +1180,19 @@ msgstr ""
 msgid "A round takes at most %(rows)d rows."
 msgstr "Bir tur en çok %(rows)d satır alır."
 
-msgid "A sample is taken in a unit or in a system’s loop, one of the two."
-msgstr "Numune bir birimde ya da bir sistemin döngüsünde alınır; ikisinden biri."
-
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "Bir örnek, tartılan balık sayısı ile toplam ağırlıklarıdır."
+
+msgid ""
+"A sample says where it was taken: at one of these points. A unit’s water, as the rations, the "
+"withdrawal and the Production units page read it, is its middle point. The flow and the share of "
+"the outflow are the design or last-known figures a mass balance will start from; nothing here is "
+"measured."
+msgstr ""
+"Bir numune nerede alındığını söyler: bu noktalardan birinde. Bir birimin suyu, rasyonların, "
+"arınma süresinin ve Üretim birimleri sayfasının okuduğu şekliyle, orta noktasının suyudur. Debi "
+"ve çıkış payı, bir kütle dengesinin başlayacağı tasarım veya son bilinen değerlerdir; burada "
+"hiçbir şey ölçülmez."
 
 msgid "A sea cage site needs latitude and longitude."
 msgstr "Deniz kafesi sahası için enlem ve boylam gerekir."
@@ -1156,6 +1202,9 @@ msgstr "Deniz biti ilacı etken maddesini bit raporundaki adıyla belirtir; diğ
 
 msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
 msgstr "Yalnız deniz biti ilacı: etken maddesi, Mattilsynet’in haftalık bit raporundaki adıyla."
+
+msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
+msgstr "Çıkış payı, 0 ile 100 % arasında, yalnızca bir çıkış için belirtilebilir."
 
 msgid "A silo only: the feeder it fills, on the same site."
 msgstr "Yalnızca silo: beslediği yemleme makinesi, aynı sahada."
@@ -1362,6 +1411,9 @@ msgstr "Lot ekle"
 msgid "Add a note"
 msgstr "Not ekle"
 
+msgid "Add a point to it"
+msgstr "Ona bir nokta ekle"
+
 msgid "Add band"
 msgstr "Ağırlık aralığı ekle"
 
@@ -1534,14 +1586,14 @@ msgstr "Tüm yemler"
 msgid "All items"
 msgstr "Tüm kalemler"
 
+msgid "All its points"
+msgstr "Tüm noktaları"
+
 msgid "All kinds"
 msgstr "Tüm türler"
 
 msgid "All locations"
 msgstr "Tüm yerler"
-
-msgid "All loops"
-msgstr "Tüm döngüler"
 
 msgid "All manufacturers"
 msgstr "Tüm üreticiler"
@@ -1554,6 +1606,9 @@ msgstr "Tüm yöntemler"
 
 msgid "All operations"
 msgstr "Tüm işlemler"
+
+msgid "All owners"
+msgstr "Tüm sahipler"
 
 msgid "All parameters"
 msgstr "Tüm parametreler"
@@ -1607,8 +1662,8 @@ msgstr "Tüm türler"
 msgid "All units"
 msgstr "Tüm birimler"
 
-msgid "All units and systems"
-msgstr "Tüm birimler ve sistemler"
+msgid "All units, systems and equipment"
+msgstr "Tüm birimler, sistemler ve ekipman"
 
 msgid "All water environments"
 msgstr "Tüm su ortamları"
@@ -1621,6 +1676,9 @@ msgstr "Tüm yıllar"
 
 msgid "Allows"
 msgstr "İzin verir"
+
+msgid "Also list"
+msgstr "Ayrıca listele"
 
 msgid "Altitude (m)"
 msgstr "Rakım (m)"
@@ -2128,6 +2186,9 @@ msgstr "Kayıtta"
 msgid "Border %(ph)s"
 msgstr "Sınır %(ph)s"
 
+msgid "Bottom drain"
+msgstr "Alt tahliye"
+
 msgid "Bought fish have a supplier; fish of the own hatchery or caught in the wild have none."
 msgstr ""
 "Satın alınan balığın bir tedarikçisi vardır; kendi kuluçkahanemizden gelen ya da doğadan "
@@ -2382,8 +2443,11 @@ msgstr "Bir kişi seçin"
 msgid "Choose a place from the list."
 msgstr "Listeden bir yer seçin."
 
-msgid "Choose a site to list its units and loops."
-msgstr "Birimlerini ve döngülerini listelemek için bir saha seçin."
+msgid "Choose a sampling point."
+msgstr "Bir numune noktası seçin."
+
+msgid "Choose a site to list its sampling points."
+msgstr "Numune noktalarını listelemek için bir saha seçin."
 
 msgid "Choose a supplier of equipment and spare parts."
 msgstr "Bir ekipman ve yedek parça tedarikçisi seçin."
@@ -2411,9 +2475,6 @@ msgstr "Kuyulu tekne ve nakliye tedarikçisi seçin."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Genel sekmesinde bir tür seçin; teknik özellikleri burada görünür."
-
-msgid "Choose a unit or a system."
-msgstr "Bir birim veya sistem seçin."
 
 msgid "Choose a unit, a batch, or both."
 msgstr "Bir birim, bir parti ya da ikisini birden seçin."
@@ -2763,6 +2824,9 @@ msgstr "Ham selüloz (%)"
 msgid "Crude protein (%)"
 msgstr "Ham protein (%)"
 
+msgid "Cubic metres per hour."
+msgstr "Saatte metreküp."
+
 msgid "Cull"
 msgstr "İtlaf"
 
@@ -2931,8 +2995,14 @@ msgstr "Yoğunluk yönetimi"
 msgid "Density · capacity"
 msgstr "Yoğunluk · kapasite"
 
+msgid "Depth"
+msgstr "Derinlik"
+
 msgid "Depth (m)"
 msgstr "Derinlik (m)"
+
+msgid "Depth point"
+msgstr "Derinlik noktası"
 
 msgid "Description"
 msgstr "Açıklama"
@@ -3109,23 +3179,25 @@ msgstr "AB listesinde, C, D ve E kategorileri"
 msgid "EU-listed, category A"
 msgstr "AB listesinde, A kategorisi"
 
+msgid "Each point can be listed once."
+msgstr "Her nokta bir kez listelenebilir."
+
 msgid "Each temperature is a column once."
 msgstr "Her sıcaklık yalnızca bir sütun olabilir."
 
 msgid "Each unit can be listed once."
 msgstr "Her birim bir kez yazılabilir."
 
-msgid "Each unit or system can be listed once."
-msgstr "Her birim veya sistem bir kez listelenebilir."
-
 msgid ""
 "Each value is judged on read against the water limits as they are now, for the fish in the unit "
 "that day; a sample of a loop for every unit of the loop. A unit without fish shows its values "
-"with no limit. Nobody is alerted: critical values are shown here, not sent."
+"with no limit. Each value says which sampling point it was taken at; the water of a unit is that "
+"of its middle point. Nobody is alerted: critical values are shown here, not sent."
 msgstr ""
 "Her değer okunurken su sınırlarının bugünkü haline göre, o gün birimdeki balıklar için "
 "değerlendirilir; bir döngü numunesi döngünün her birimi için. Balıksız bir birim değerlerini "
-"sınırsız gösterir. Kimseye uyarı gitmez: kritik değerler burada gösterilir, gönderilmez."
+"sınırsız gösterir. Her değer hangi numune noktasında alındığını söyler; bir birimin suyu orta "
+"noktasının suyudur. Kimseye uyarı gitmez: kritik değerler burada gösterilir, gönderilmez."
 
 msgid "Earthen"
 msgstr "Toprak"
@@ -3670,6 +3742,9 @@ msgstr "Yüzer"
 msgid "Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep tanks."
 msgstr "Yüzen yem yüzeyde kalır; batan ve yavaş batan yem kafesler ve derin tanklar içindir."
 
+msgid "Flow (m³/h)"
+msgstr "Debi (m³/sa)"
+
 msgid "Flow rate"
 msgstr "Debi"
 
@@ -3700,6 +3775,15 @@ msgstr ""
 
 msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
 msgstr "Kalsit ve aragonit doygunluğu için, 5 ile 44 ‰ arasındaki suda."
+
+msgid ""
+"For the mass balance later: the design or last-known flow of the stream here, and for an outlet "
+"the share of the owner’s outflow that leaves here (a side outlet 90, a bottom drain 10). Nothing "
+"here is measured."
+msgstr ""
+"Sonraki kütle dengesi için: buradaki akımın tasarım veya son bilinen debisi ve bir çıkış için "
+"sahibinin çıkış akımından buradan ayrılan pay (yan çıkış 90, alt tahliye 10). Burada hiçbir şey "
+"ölçülmez."
 
 msgid ""
 "For the oxygen saturation and the CO₂ the air leaves in the water: the pressure of the standard "
@@ -3768,6 +3852,9 @@ msgstr "%(start)s – %(end)s."
 
 msgid "From (g)"
 msgstr "Alt sınır (g)"
+
+msgid "From 0 to 100. The shares of the owner’s outlets add up to at most 100."
+msgstr "0 ile 100 arası. Sahibinin çıkışlarının payları en çok 100 eder."
 
 msgid "From a saturometer (total dissolved gas)."
 msgstr "Bir saturometreden (toplam çözünmüş gaz)."
@@ -3878,6 +3965,9 @@ msgstr "Kanala bir ad verin."
 
 msgid "Give the citation of the source, its web address, or both."
 msgstr "Kaynağın künyesini, web adresini ya da ikisini birden yazın."
+
+msgid "Give the point a name."
+msgstr "Noktaya bir ad verin."
 
 msgid "Give the sample, or the average weight."
 msgstr "Örneği ya da ortalama ağırlığı girin."
@@ -4053,6 +4143,10 @@ msgid "History"
 msgstr "Geçmiş"
 
 #, python-format
+msgid "History of %(owner)s"
+msgstr "%(owner)s geçmişi"
+
+#, python-format
 msgid "History of %(point)s"
 msgstr "%(point)s geçmişi"
 
@@ -4189,6 +4283,9 @@ msgstr "Şirketten devral"
 msgid "Injection"
 msgstr "Enjeksiyon"
 
+msgid "Inlet"
+msgstr "Giriş"
+
 msgid ""
 "Inside the warning bounds a value is ok; outside them, a warning; outside the critical bounds, "
 "critical. A value on a bound is in the inner band. Leave a bound empty where there is none."
@@ -4217,6 +4314,12 @@ msgid ""
 msgstr ""
 "Her listeden kaybolur ama silinmez: kayıt veritabanında kalır, etkinlik günlüğü geçmişini korur "
 "ve yönetim panelinden geri yüklenebilir."
+
+#, python-format
+msgid "It has %(count)d water sample in the history: make it inactive instead."
+msgid_plural "It has %(count)d water samples in the history: make it inactive instead."
+msgstr[0] "Geçmişinde %(count)d su numunesi var: bunun yerine pasif yapın."
+msgstr[1] "Geçmişinde %(count)d su numunesi var: bunun yerine pasif yapın."
 
 msgid ""
 "It has feed calibrations, which only a feeder has: remove them on the Feed calibration tab before"
@@ -4511,9 +4614,6 @@ msgstr "Boylam"
 msgid "Longitude is required for a sea cage."
 msgstr "Deniz kafesi için boylam zorunludur."
 
-msgid "Loop"
-msgstr "Döngü"
-
 msgid "Losses"
 msgstr "Kayıplar"
 
@@ -4763,6 +4863,9 @@ msgstr "Ölçer veya test kiti"
 msgid "Method"
 msgstr "Yöntem"
 
+msgid "Middle"
+msgstr "Orta"
+
 msgid "Minimum transmittance"
 msgstr "Asgari geçirgenlik"
 
@@ -4800,8 +4903,8 @@ msgid "Monthly"
 msgstr "Aylık"
 
 #, python-format
-msgid "More than %(rows)d units and systems: choose a production department or a system."
-msgstr "%(rows)d'den fazla birim ve sistem: bir üretim departmanı veya sistem seçin."
+msgid "More than %(rows)d points: choose a production department or a system."
+msgstr "%(rows)d noktadan fazla: bir üretim bölümü veya sistem seçin."
 
 msgid "Mortality"
 msgstr "Ölüm"
@@ -5129,6 +5232,9 @@ msgstr "Henüz mesaj yok"
 msgid "No messages yet: write the first one."
 msgstr "Henüz mesaj yok: ilkini siz yazın."
 
+msgid "No middle point"
+msgstr "Orta nokta yok"
+
 msgid "No notes yet."
 msgstr "Henüz not yok."
 
@@ -5168,6 +5274,9 @@ msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizle
 
 msgid "No samples match these filters."
 msgstr "Bu filtrelere uyan numune yok."
+
+msgid "No sampling points here."
+msgstr "Burada numune noktası yok."
 
 msgid "No sea-lice count recorded yet"
 msgstr "Henüz deniz biti sayımı kaydedilmedi"
@@ -5247,9 +5356,6 @@ msgstr "Bu filtrelere uyan balıklı birim yok."
 
 msgid "No units match these filters."
 msgstr "Bu filtrelere uyan birim yok."
-
-msgid "No units or loops here."
-msgstr "Burada birim veya döngü yok."
 
 msgid "No units yet"
 msgstr "Henüz birim yok"
@@ -5753,6 +5859,9 @@ msgstr "Sonuç"
 msgid "Outdoor store"
 msgstr "Açık depo"
 
+msgid "Outlet"
+msgstr "Çıkış"
+
 msgid "Oval"
 msgstr "Oval"
 
@@ -5978,8 +6087,14 @@ msgstr "Platform yöneticisi"
 msgid "Plumbing"
 msgstr "Tesisat"
 
+msgid "Point"
+msgstr "Nokta"
+
 msgid "Pointed at by"
 msgstr "Şunlar tarafından işaret edilir"
+
+msgid "Points of equipment"
+msgstr "Ekipman noktaları"
 
 msgid "Polyester (PET)"
 msgstr "Polyester (PET)"
@@ -6540,6 +6655,16 @@ msgstr "Numuneler en çok %(days)d gün geriye tarihlenebilir."
 msgid "Samples older than %(days)d days cannot be voided."
 msgstr "%(days)d günden eski numuneler iptal edilemez."
 
+msgid "Sampling point"
+msgstr "Numune noktası"
+
+msgid "Sampling points"
+msgstr "Numune noktaları"
+
+#, python-format
+msgid "Sampling points of %(name)s"
+msgstr "%(name)s numune noktaları"
+
 msgid "Sampling weigh-in"
 msgstr "Tartım örneklemesi"
 
@@ -6670,6 +6795,9 @@ msgstr "Ad, etken madde, ruhsat numarası veya üreticiyle ara"
 msgid "Search by name, username or email"
 msgstr "Ada, kullanıcı adına veya e-postaya göre ara"
 
+msgid "Search by point or owner"
+msgstr "Nokta veya sahibe göre ara"
+
 msgid "Search by protocol, unit or batch"
 msgstr "Protokol, birim veya partiye göre ara"
 
@@ -6751,6 +6879,9 @@ msgstr "Bir yöntem seçin"
 msgid "Select a parameter"
 msgstr "Bir parametre seçin"
 
+msgid "Select a piece of equipment"
+msgstr "Bir ekipman seçin"
+
 msgid "Select a place"
 msgstr "Bir yer seçin"
 
@@ -6771,6 +6902,9 @@ msgstr "Bir balık türü seçin"
 
 msgid "Select a supplier"
 msgstr "Bir tedarikçi seçin"
+
+msgid "Select a system"
+msgstr "Bir sistem seçin"
 
 msgid "Select a type"
 msgstr "Bir tür seçin"
@@ -6836,6 +6970,13 @@ msgstr "Önem"
 msgid "Shape"
 msgstr "Şekil"
 
+#, python-format
+msgid "Share of the outflow (%%)"
+msgstr "Çıkış payı (%%)"
+
+msgid "Share of the outflow (%)"
+msgstr "Çıkış payı (%)"
+
 msgid "Shares of the total sulfide; give the total sulfide for the H₂S and its border."
 msgstr "Toplam sülfürün payları; H₂S ve sınırı için toplam sülfürü girin."
 
@@ -6844,6 +6985,9 @@ msgstr "Kısa eksen (m)"
 
 msgid "Show"
 msgstr "Göster"
+
+msgid "Show all"
+msgstr "Tümünü göster"
 
 #, python-format
 msgid "Show all %(plural)s"
@@ -6861,8 +7005,8 @@ msgstr "Boşları göster"
 msgid "Show on the chart"
 msgstr "Çizelgede göster"
 
-msgid "Show the units"
-msgstr "Birimleri göster"
+msgid "Show the points"
+msgstr "Noktaları göster"
 
 msgid "Show them"
 msgstr "Göster"
@@ -6878,6 +7022,9 @@ msgstr "Hasta"
 
 msgid "Side (m)"
 msgstr "Kenar (m)"
+
+msgid "Side outlet"
+msgstr "Yan çıkış"
 
 msgid "Sign in"
 msgstr "Giriş yap"
@@ -7173,6 +7320,15 @@ msgstr "Depolama yerleri"
 msgid "Strain"
 msgstr "Soy"
 
+msgid "Stream"
+msgstr "Akım"
+
+msgid "Stream in"
+msgstr "Giriş akımı"
+
+msgid "Stream out"
+msgstr "Çıkış akımı"
+
 msgid "Street address"
 msgstr "Sokak adresi"
 
@@ -7252,6 +7408,9 @@ msgstr "Paneli değiştir"
 
 msgid "System"
 msgstr "Sistem"
+
+msgid "System (its loop)"
+msgstr "Sistem (döngüsü)"
 
 msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
 msgstr "Sistemik Flavobacterium psychrophilum enfeksiyonu (gökkuşağı alabalığı)"
@@ -7520,6 +7679,9 @@ msgstr "Haftanın son tarih olan günleri."
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "En derin nokta ortalama derinlikten sığ olamaz."
 
+msgid "The depth of the water taken, from the surface."
+msgstr "Alınan suyun yüzeyden itibaren derinliği."
+
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Sindirilebilir enerji brüt enerjiden fazla olamaz."
 
@@ -7761,6 +7923,20 @@ msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
 msgid "The official code of %(name)s is %(code)s."
 msgstr "%(name)s için resmî kod %(code)s."
 
+#, python-format
+msgid "The outlets of %(owner)s take %(total)s %% of its outflow, not 100 %%."
+msgstr "%(owner)s çıkışları, çıkış akımının %(total)s %% kadarını alıyor, 100 %% değil."
+
+#, python-format
+msgid "The outlets of %(owner)s take %(total)s %% of its outflow: more than 100 %%. Correct the shares."
+msgstr ""
+"%(owner)s çıkışları, çıkış akımının %(total)s %% kadarını alıyor: 100 %% değerinden fazla. "
+"Payları düzeltin."
+
+#, python-format
+msgid "The outlets of %(owner)s would take %(total)s %% of its outflow: at most 100."
+msgstr "%(owner)s çıkışları, çıkış akımının %(total)s %% kadarını alırdı: en çok 100."
+
 msgid ""
 "The pH a simulator step may have, as the water limits say it: inside the warning bounds ok, "
 "outside them a warning, outside the critical bounds critical. Default 6.5 to 8.5 critical and 7.0"
@@ -7805,6 +7981,10 @@ msgstr ""
 
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Suyu dağıtım deliklerinden tanka veren boru."
+
+#, python-format
+msgid "The points of %(owner)s."
+msgstr "%(owner)s noktaları."
 
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reçeteyle verilen bir ilaç için reçetenin numarası."
@@ -8183,6 +8363,12 @@ msgstr "Bu bağlantı artık çalışmıyor"
 msgid "This operation is already voided."
 msgstr "Bu işlem zaten iptal edildi."
 
+msgid "This owner already has a point with this name."
+msgstr "Bu sahibin bu adda bir noktası zaten var."
+
+msgid "This owner already has an active middle point: it stands for its water."
+msgstr "Bu sahibin zaten aktif bir orta noktası var: suyunu o temsil eder."
+
 msgid "This place is not on the chosen site."
 msgstr "Bu yer seçilen sahada değil."
 
@@ -8241,6 +8427,9 @@ msgstr "Bu tür seçilen kategoride değil."
 
 msgid "This unit already has a count on this day: void it first to correct it."
 msgstr "Bu birimde bu gün için zaten bir sayım var: düzeltmek için önce onu iptal edin."
+
+msgid "This unit has no active middle sampling point, so no water is shown for it."
+msgstr "Bu birimin aktif bir orta numune noktası yok, bu yüzden su gösterilmez."
 
 #, python-format
 msgid "This unit holds %(count)d batch: the operation applies to the one chosen."
@@ -8440,8 +8629,8 @@ msgstr "Birim"
 msgid "Unit cost"
 msgstr "Birim maliyet"
 
-msgid "Unit or system"
-msgstr "Birim veya sistem"
+msgid "Unit, system or equipment"
+msgstr "Birim, sistem veya ekipman"
 
 msgid "Units"
 msgstr "Birimler"
@@ -8643,8 +8832,12 @@ msgstr "Su derinliği (m)"
 msgid "Water environment"
 msgstr "Su ortamı"
 
-msgid "Water is sampled in the tanks, ponds and cages of Setup, and in the loops of its systems."
-msgstr "Su, Kurulum'daki tanklarda, havuzlarda ve kafeslerde ve sistemlerinin döngülerinde örneklenir."
+msgid ""
+"Water is sampled at the sampling points of the tanks, ponds and cages of Setup, of the loops of "
+"its systems and of its equipment."
+msgstr ""
+"Su, Kurulum'daki tankların, havuzların ve kafeslerin, sistemlerinin döngülerinin ve ekipmanının "
+"numune noktalarında örneklenir."
 
 msgid "Water limits"
 msgstr "Su sınırları"
@@ -8773,6 +8966,13 @@ msgid "What the person can open and change. Without a role they see only the ove
 msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."
 
 msgid ""
+"What the point sees: the stream entering its owner, the water inside it or the stream leaving it."
+" A unit’s water, as the rations and the withdrawal read it, is its middle point."
+msgstr ""
+"Noktanın gördüğü: sahibine giren akım, içindeki su veya ondan çıkan akım. Bir birimin suyu, "
+"rasyonların ve arınma süresinin okuduğu şekliyle, orta noktasıdır."
+
+msgid ""
 "What the stock book took out for these fish: their batch’s average in the unit, the last fish the"
 " rest of the book"
 msgstr ""
@@ -8807,6 +9007,14 @@ msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pom
 msgid "Where"
 msgstr "Nerede"
 
+msgid ""
+"Where a water sample is taken: a named place on one unit, one system’s loop or one piece of "
+"equipment, of a kind that says whether it sees the stream in, the water within or the stream out."
+msgstr ""
+"Bir su numunesinin alındığı yer: bir birimde, bir sistemin döngüsünde veya bir ekipman parçasında"
+" adlandırılmış bir yer; akımın girişini, içindeki suyu veya çıkan akımı görüp görmediğini "
+"söyleyen bir türde."
+
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Belgenin neresinde, örn. 4 ya da 12–13."
 
@@ -8834,6 +9042,13 @@ msgstr "Değerlerin geldiği yer"
 
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Değerlerin nereden geldiği, örn. “veteriner, Kasım 2026” veya bir kılavuz."
+
+msgid ""
+"Where the water is taken, e.g. “Side outlet”, “After the filter” or “3 m”. Each owner’s points "
+"have different names."
+msgstr ""
+"Suyun alındığı yer, örn. “Yan çıkış”, “Filtreden sonra” veya “3 m”. Bir sahibin noktalarının "
+"adları farklıdır."
 
 #, python-format
 msgid "Where “%(query)s” is in the text"
@@ -8937,6 +9152,9 @@ msgstr "Arınma bitişi tahmini"
 msgid "Withdrawal until"
 msgstr "Arınma bitişi"
 
+msgid "Within"
+msgstr "İçinde"
+
 msgid "Within 0.2 pH"
 msgstr "0,2 pH içinde"
 
@@ -9035,6 +9253,10 @@ msgstr "asistan"
 
 msgid "assistants"
 msgstr "asistanlar"
+
+#, python-format
+msgid "at %(point)s"
+msgstr "%(point)s noktasında"
 
 #, python-format
 msgid "average %(weight)s"
@@ -9311,6 +9533,9 @@ msgstr "örn. Salmonidae"
 
 msgid "e.g. Salmosan vet."
 msgstr "örn. Salmosan vet."
+
+msgid "e.g. Side outlet"
+msgstr "örn. Yan çıkış"
 
 msgid "e.g. Site manager"
 msgstr "örn. Saha sorumlusu"
@@ -9719,6 +9944,12 @@ msgstr "rol"
 
 msgid "roles"
 msgstr "roller"
+
+msgid "sampling point"
+msgstr "numune noktası"
+
+msgid "sampling points"
+msgstr "numune noktaları"
 
 msgid "sea-lice count"
 msgstr "deniz biti sayımı"

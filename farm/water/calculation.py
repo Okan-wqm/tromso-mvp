@@ -8,8 +8,9 @@ report draw from one `Calculation`, so they never disagree; nothing is stored.
   its pH against the pH bounds, its alkalinity against the band, its CO₂ against the CO₂ limit at its
   alkalinity, its NH₃ and H₂S against their borders.
 - `offers`: what a unit or a loop gives the calculator, read from the water module (only through
-  farm/water/read.py) and never written back: the latest value of each measured field (read.latest, each with
-  its time), the site's altitude, and the limits of the fish in it today (read.limits_now): the critical high of
+  farm/water/read.py) and never written back: the latest value of each measured field at the owner's water,
+  its middle point (read.unit_water, each with its time; nothing from its loop, as on Production units), the site's
+  altitude, and the limits of the fish in it today (read.limits_now): the critical high of
   NH₃-N and of CO₂ (the calculator has one limit for each and its own 0.2 pH alert band: a species' warning
   bound for them is not used), the warning bounds of the alkalinity as the safe zone's band, and the four pH
   bounds; where several species are in it, the strictest."""
@@ -18,7 +19,7 @@ from decimal import Decimal
 
 from django.utils.translation import gettext_lazy as _
 
-from ..models.water import site_of
+from ..models.water_point import site_of
 from . import charts, chemistry, deffeyes, dosing, read
 from .evaluate import Status, judge as judge_bounds
 
@@ -181,18 +182,18 @@ def _strictest(rows, bound, pick):
     return (pick(values), tuple(row for row in rows if getattr(row, bound) is not None)) if values else (None, ())
 
 
-def offers(point):
-    """{field: Offer} of what the point gives the calculator now."""
+def offers(owner):
+    """{field: Offer} of what a unit or a loop gives the calculator now."""
     found = {}
-    water = read.latest([point])[read.key(point)]
+    water = read.owner_water([owner])[owner.pk]
     for name in MEASURED_FIELDS:
         reading = water.get(name)
         if reading is not None and reading.value is not None:
             found[name] = Offer(name, reading.value, reading=reading)
-    site = site_of(point)
+    site = site_of(owner)
     if site is not None and site.altitude is not None and 0 <= site.altitude <= ALTITUDE_HIGH:
         found['altitude_m'] = Offer('altitude_m', Decimal(round(site.altitude)))
-    limits = read.limits_now(point)
+    limits = read.limits_now(owner)
     for name, code in (('nh3_n_limit_mg_l', 'nh3_n_mg_l'), ('co2_limit_mg_l', 'co2_mg_l')):
         value, rows = _strictest(limits.get(code, []), 'critical_high', min)
         if value is not None:

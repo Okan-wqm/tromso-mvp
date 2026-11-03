@@ -1,8 +1,9 @@
 {% extends base_template %}
 {% load i18n %}
-{% comment %} A water round (farm.water.views.record_round): the units and loops of a site, a production department or
-   a system, one row each, at one time and from one source, with the columns chosen. The scope is a GET
-   form (the round's address); the rows post to the same address. Empty rows are skipped.{% endcomment %}
+{% comment %} A water round (farm.water.views.record_round): the middle points of the units and loops of a site, a
+   production department or a system, one row each (and the other points of them, or of equipment, when asked), at
+   one time and from one source, with the columns chosen. The scope is a GET form (the round's address); the rows
+   post to the same address. Empty rows are skipped.{% endcomment %}
 {% block title %}{{ heading }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}
@@ -17,7 +18,8 @@
     {% endif %}
   </div>
   {% with field=scope.columns %}{% include "registration/_field.html" %}{% endwith %}
-  <div class="form-actions"><button type="submit" class="button button-ghost">{% trans "Show the units" %}</button></div>
+  {% with field=scope.include %}{% include "registration/_field.html" %}{% endwith %}
+  <div class="form-actions"><button type="submit" class="button button-ghost">{% trans "Show the points" %}</button></div>
 </form>
 
 {% if rows %}
@@ -33,7 +35,7 @@
     <table class="data-table round-table">
       <thead>
         <tr>
-          <th scope="col">{% trans "Unit or system" %}</th>
+          <th scope="col">{% trans "Sampling point" %}</th>
           {% for parameter in columns %}<th scope="col">{{ parameter.label }}</th>{% endfor %}
           <th scope="col">{% trans "Notes" %}</th>
         </tr>
@@ -41,9 +43,9 @@
       <tbody>
         {% for row in rows %}
         <tr{% if row.errors %} class="has-error"{% endif %}>
-          <th scope="row" class="nowrap">{{ row.point.code }}<span class="row-sub">{{ row.point.name }}</span>{% if row.non_field_errors %}<span class="form-error">{{ row.non_field_errors }}</span>{% endif %}</th>
+          <th scope="row" class="nowrap">{{ row.point.owner.code }}<span class="row-sub">{{ row.point.name }} · {{ row.point.get_kind_display }}</span>{% if row.non_field_errors %}<span class="form-error">{{ row.non_field_errors }}</span>{% endif %}</th>
           {% for field in row.visible_fields %}
-          <td class="field{% if field.errors %} has-error{% endif %}"><label class="sr-only" for="{{ field.id_for_label }}">{{ row.point.code }} · {{ field.label }}</label>{{ field }}{{ field.errors }}</td>
+          <td class="field{% if field.errors %} has-error{% endif %}"><label class="sr-only" for="{{ field.id_for_label }}">{{ row.point }} · {{ field.label }}</label>{{ field }}{{ field.errors }}</td>
           {% endfor %}
         </tr>
         {% endfor %}
@@ -56,8 +58,8 @@
   </div>
 </form>
 {% elif site %}
-<p class="muted">{% trans "No units or loops here." %}</p>
+<p class="muted">{% trans "No sampling points here." %}</p>
 {% else %}
-<p class="muted">{% trans "Choose a site to list its units and loops." %}</p>
+<p class="muted">{% trans "Choose a site to list its sampling points." %}</p>
 {% endif %}
 {% endblock %}

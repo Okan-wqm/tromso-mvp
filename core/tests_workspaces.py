@@ -58,7 +58,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                    'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
+                                                    'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
+                                                    'Water limits',
                                                     'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
                                                     'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
                                                     'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
@@ -116,7 +117,8 @@ class PanelMemoryTests(WorkspaceTestCase):
         response = self.page(reverse('password_change'))
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                  'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
+                                                  'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
+                                                  'Water limits',
                                                   'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
                                                   'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
                                                   'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
@@ -194,6 +196,7 @@ class MenuPlacementTests(TestCase):
             'farm.System': 'Production · Setup · Facility structure',
             'farm.Equipment': 'Production · Setup · Facility structure',
             'farm.Tank': 'Production · Setup · Facility structure',
+            'farm.SamplingPoint': 'Production · Setup · Facility structure',
             'farm.Species': 'Production · Setup · Reference data',
             'farm.Feed': 'Production · Setup · Reference data',
             'farm.WaterLimit': 'Production · Setup · Reference data',

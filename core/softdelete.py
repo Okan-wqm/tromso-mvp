@@ -7,8 +7,10 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
 - SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
 - PROTECT / RESTRICT  they block the delete until they are dealt with;
 - DO_NOTHING  they stay as they are, still pointing at it: history that outlives the record without
-  holding it back (a deleted unit's feeding records and water samples, as its stock lines), shown again
-  with it when it is restored. The database's own foreign key still refuses a hard delete. The
+  holding it back (a deleted unit's feeding records and its sampling points, as its stock lines), shown again
+  with it when it is restored (restoring brings back only the record itself, so what must come back with it is
+  kept, not deleted with it). The database's own foreign key still refuses a hard delete. What they keep in
+  turn is kept too (a unit's points keep their water samples). The
   confirmation counts them, each record once whatever links it, and says what becomes of them
   (the model's `kept_note`). Records that point at it this way but are only a plan, not history (a
   recurring task's planned tasks nobody has touched), are deleted with it all the same: their model
@@ -132,8 +134,7 @@ def _collect(obj, plan, seen):
             _cascade(planned, plan, seen)
             pks = set(model.objects.filter(**{link: obj}).exclude(pk__in=[record.pk for record in planned])
                       .values_list('pk', flat=True))
-            if pks:
-                plan.kept_records.setdefault(model, set()).update(pks)
+            _keep(model, pks, plan)
             continue
         children = list(model.objects.filter(**{link: obj}))
         if not children:
@@ -144,6 +145,20 @@ def _collect(obj, plan, seen):
             plan.detach.extend((child, link) for child in children)
         elif action in (models.PROTECT, models.RESTRICT):
             plan.blockers.append(protected(model, len(children)))
+
+
+def _keep(model, pks, plan):
+    """Notes the records of `model` with these pks as kept, and what they keep in turn: a deleted unit keeps its
+    sampling points and they their water samples."""
+    new = pks - plan.kept_records.get(model, set())
+    if not new:
+        return
+    plan.kept_records.setdefault(model, set()).update(new)
+    for relation in model._meta.related_objects:
+        child = relation.related_model
+        if relation.one_to_many and issubclass(child, AuditedModel) and relation.on_delete is models.DO_NOTHING:
+            found = child.objects.filter(**{f'{relation.field.name}__in': new}).values_list('pk', flat=True)
+            _keep(child, set(found), plan)
 
 
 def protected(model, count):

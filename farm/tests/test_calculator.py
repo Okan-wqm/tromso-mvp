@@ -24,7 +24,7 @@ from ..models import ProductionDepartment, Site, System, WaterLimit, WaterMeasur
 from ..water import calculation, charts, chemistry, deffeyes, dosing, services
 from ..water.deffeyes import Limits, Target, Water, analyse
 from ..water.evaluate import Status
-from .helpers import make_species, role, stock_fish
+from .helpers import make_species, point_of, role, stock_fish
 from .test_deffeyes import plummer_busenberg
 from .test_stock import make_unit
 
@@ -694,9 +694,9 @@ class ValuesFromAUnitTests(TestCase):
         self.salmon = make_species()
         stock_fish(self.user, self.unit, 1000, '50', 10, species=self.salmon)
         now = timezone.now()
-        services.record(self.user, point=self.unit, measured_at=now - timedelta(hours=3), source='manual',
+        services.record(self.user, point=point_of(self.unit), measured_at=now - timedelta(hours=3), source='manual',
                         values={'temperature_c': D('9.5'), 'ph': D('7.12'), 'tan_mg_l': D('0.8')})
-        services.record(self.user, point=self.unit, measured_at=now - timedelta(days=5), source='lab',
+        services.record(self.user, point=point_of(self.unit), measured_at=now - timedelta(days=5), source='lab',
                         values={'alkalinity_mg_l': D('95'), 'salinity_ppt': D('0.3')})
         WaterLimit.objects.create(species=self.salmon, parameter='nh3_n_mg_l', warning_high=D('0.0100'),
                                   critical_high=D('0.0200'))

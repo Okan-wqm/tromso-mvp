@@ -11,6 +11,8 @@ AREAS = [
     Area(_('Systems'), 'farm.System'),
     Area(_('Equipment'), 'farm.Equipment'),
     Area(_('Tanks, ponds & cages'), 'farm.Tank'),
+    # Where a sample is taken: the points of a unit, a loop or a piece of equipment (the samples are Water chemistry).
+    Area(_('Sampling points'), 'farm.SamplingPoint'),
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),

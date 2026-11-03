@@ -5,21 +5,27 @@ Water chemistry › Calculator).
 A sample's form is one call of farm/water/services.py: the form checks what it can see (a number inside
 its parameter's range, a date and time), the service the rest (a deleted point, the backdating window),
 and its message lands on the field it concerns. Every value field is the column of the same name,
-with the parameter's label, range and precision (farm/water/parameters.py)."""
+with the parameter's label, range and precision (farm/water/parameters.py). A sample is at a sampling point
+(farm/models/water_point.py), chosen from the points grouped by their owner, and fixed when the dialog is
+opened from a unit or a loop that has one point to take it at."""
 import uuid
 from decimal import Decimal
 
 from django import forms
+from django.db.models import Q
 from django.http import QueryDict
 from django.utils import formats, timezone
+from django.utils.html import format_html_join
 from django.utils.text import format_lazy
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.crud import Fieldset, TabbedForm, tab_fields
 
-from ..models import ProductionDepartment, Site, Species, System, Tank, WaterLimit, WaterMeasurement
+from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterLimit,
+                      WaterMeasurement)
 from ..models.site import zone_of
-from ..models.water import BOUNDS, site_of
+from ..models.water import BOUNDS
+from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
 from ..templatetags.water import limit_text
 from ..water import calculation, chemistry, deffeyes, dosing, parameters, services
 from ..water.parameters import GROUPS, MEASURED
@@ -70,19 +76,33 @@ def number_field(label, low, high, decimals, help_text='', required=False):
         decimal_places=decimals, localize=True, widget=forms.TextInput(attrs=DECIMAL), help_text=help_text)
 
 
-def point_value(point):
-    """A unit or a system as one choice: tank:<id>, system:<id>."""
-    return f'{point._meta.model_name}:{point.pk}'
-
-
 def point_label(point):
-    if isinstance(point, System):
-        return gettext('%(code)s · %(name)s (loop)') % {'code': point.code, 'name': point.name}
-    return f'{point.code} · {point.name}'
+    """A point as the choices say it: "T-01 › Middle"."""
+    return str(point)
 
 
 def find_point(value):
-    """The live unit or system a choice names; None for anything else."""
+    """The live sampling point (of a live owner) a choice names, its owner loaded; None for anything else."""
+    try:
+        uuid.UUID(value or '')
+    except ValueError:
+        return None
+    return SamplingPoint.objects.with_owners().filter(pk=value).first()
+
+
+def owner_value(owner):
+    """A unit or a system as the calculator's "Values from" choice: tank:<id>, system:<id>."""
+    return f'{owner._meta.model_name}:{owner.pk}'
+
+
+def owner_label(owner):
+    if isinstance(owner, System):
+        return gettext('%(code)s · %(name)s (loop)') % {'code': owner.code, 'name': owner.name}
+    return f'{owner.code} · {owner.name}'
+
+
+def find_owner(value):
+    """The live unit or system a "Values from" choice names; None for anything else."""
     kind, _sep, pk = (value or '').partition(':')
     model = {'tank': Tank, 'system': System}.get(kind)
     try:
@@ -95,12 +115,27 @@ def find_point(value):
     return model.objects.select_related(*related).filter(pk=pk).first()
 
 
-def point_choices():
-    """The units, then the systems (a loop sample at the sump), each live."""
+def owner_choices():
+    """The units, then the systems (a loop), each live: what the calculator can take values from."""
     units = Tank.objects.select_related('production_department__site').order_by('code')
     systems = System.objects.select_related('site').order_by('code')
-    return [(_('Units'), [(point_value(unit), point_label(unit)) for unit in units]),
-            (_('Systems (loop)'), [(point_value(system), point_label(system)) for system in systems])]
+    return [(_('Units'), [(owner_value(unit), owner_label(unit)) for unit in units]),
+            (_('Systems (loop)'), [(owner_value(system), owner_label(system)) for system in systems])]
+
+
+def point_order(point):
+    """Owners by type (units, loops, equipment) and code, each owner's points in the order of the kinds."""
+    rank = {UNIT: 0, SYSTEM: 1, EQUIPMENT: 2}[point.owner_type]
+    kinds = list(PointKind.values)
+    return rank, point.owner.code, kinds.index(point.kind), point.name
+
+
+def point_groups(points):
+    """[(group label, [(point id, label)])] of the points, grouped by what owns them: units, loops, equipment."""
+    groups = {UNIT: (_('Units'), []), SYSTEM: (_('Systems (loop)'), []), EQUIPMENT: (_('Equipment'), [])}
+    for point in sorted(points, key=point_order):
+        groups[point.owner_type][1].append((str(point.pk), point_label(point)))
+    return [(label, choices) for label, choices in groups.values() if choices]
 
 
 class ValuesMixin:
@@ -121,11 +156,13 @@ class ValuesMixin:
 
 
 class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
-    """One sample at one point. The point is fixed when the dialog opens from a unit (`point`), else chosen;
-    the time defaults to now on the site's clock; each value's help shows the limits for the fish there."""
+    """One sample at one point. Opened from a unit, a loop or a piece of equipment (`owner`) it offers that owner's
+    active points, with `point` (its middle one by default) chosen, so routine entry is not slower; one point is
+    fixed. Opened from nothing it offers every active point, grouped by owner. The time defaults to now on the
+    site's clock; each value's help shows the limits for the fish there."""
 
     token = forms.UUIDField(widget=forms.HiddenInput)
-    point = forms.ChoiceField(label=_('Unit or system'))
+    point = forms.ChoiceField(label=_('Sampling point'))
     measured_at = SiteClockField(label=_('Measured at'),
                                  help_text=_('Date and time on the site’s clock.'))
     source = forms.ChoiceField(label=_('Source'), choices=WaterMeasurement.Source.choices,
@@ -134,28 +171,35 @@ class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
 
     service_fields = {}
 
-    def __init__(self, *args, point=None, limits=None, **kwargs):
+    def __init__(self, *args, owner=None, point=None, limits=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fixed = point
         for parameter in MEASURED:
             rows = (limits or {}).get(parameter.code, [])
-            help_text = ' '.join(str(part) for part in (parameter.help, *(limit_text(row) for row in rows)) if part)
+            # The form's help is shown as HTML (registration/_field.html): a species' name in a limit is a person's
+            # text, so each part is escaped as it is put in.
+            help_text = format_html_join(' ', '{}', ((part,) for part in (parameter.help, *(limit_text(row)
+                                                                                           for row in rows)) if part))
             self.fields[parameter.code] = value_field(parameter, help_text)
+        points = SamplingPoint.objects.filter(is_active=True).with_owners()
+        if owner is not None:
+            points = points.filter(**{owner_type_of(owner): owner})
+        points = list(points)
         field = self.fields['point']
+        field.choices = [('', '---------'), *point_groups(points)] if owner is None else point_groups(points)
+        self.fixed = len(points) == 1 and owner is not None
         if point is not None:
-            field.choices = [(point_value(point), point_label(point))]
-            field.initial = point_value(point)
+            field.initial = str(point.pk)
+        if self.fixed:
+            field.initial = str(points[0].pk)
             field.widget = forms.HiddenInput()
-        else:
-            field.choices = [('', '---------'), *point_choices()]
         self.fields['token'].initial = uuid.uuid4()
-        self.fields['measured_at'].initial = now_on(clock(point))
+        self.fields['measured_at'].initial = now_on(clock(point or (points[0] if self.fixed else None)))
         self.order_fields(['point', 'measured_at', 'source', *(parameter.code for parameter in MEASURED), 'notes'])
 
     def clean_point(self):
         point = find_point(self.cleaned_data['point'])
         if point is None:
-            raise forms.ValidationError(_('Choose a unit or a system.'))
+            raise forms.ValidationError(_('Choose a sampling point.'))
         return point
 
     def clean(self):
@@ -174,8 +218,16 @@ class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
 
 
 # ---- a round --------------------------------------------------------------------------------------------
+# What a round can list besides the middle points of the units and loops: the other kinds of point, and the
+# equipment's points (EQUIPMENT: all its active points, a piece of equipment having no middle one to default to).
+INCLUDE_CHOICES = [(kind.value, kind.label) for kind in PointKind if kind != PointKind.MIDDLE] + [
+    (EQUIPMENT, _('Points of equipment'))]
+
+
 class RoundScopeForm(forms.Form):
-    """Which points a round lists and which columns it shows (a GET form: the round's address)."""
+    """Which points a round lists and which columns it shows (a GET form: the round's address). A round has one
+    row per unit's middle point and per loop, and lists the other points of the same units and loops, and the
+    equipment's, when asked."""
 
     site = forms.ModelChoiceField(label=_('Site'), queryset=Site.objects.order_by('name'), required=False)
     production_department = forms.ModelChoiceField(label=_('Production department'), required=False,
@@ -184,6 +236,8 @@ class RoundScopeForm(forms.Form):
     columns = forms.MultipleChoiceField(
         label=_('Parameters'), required=False, widget=forms.CheckboxSelectMultiple,
         choices=[(parameter.code, parameter.label) for parameter in MEASURED])
+    include = forms.MultipleChoiceField(label=_('Also list'), required=False, widget=forms.CheckboxSelectMultiple,
+                                        choices=INCLUDE_CHOICES)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -202,28 +256,36 @@ class RoundScopeForm(forms.Form):
         return Site.objects.filter(pk=value).first()
 
     def scope(self):
-        """(site, department, system, columns) chosen; columns default to the morning round's."""
+        """(site, department, system, columns, include) chosen; columns default to the morning round's."""
         if not self.is_valid():
-            return None, None, None, ROUND_COLUMNS
+            return None, None, None, ROUND_COLUMNS, []
         data = self.cleaned_data
-        return data['site'], data['production_department'], data['system'], data['columns'] or ROUND_COLUMNS
+        return (data['site'], data['production_department'], data['system'], data['columns'] or ROUND_COLUMNS,
+                data['include'])
 
     @staticmethod
-    def points(site, department, system):
-        """The live units of the scope whose status is not inactive, then the systems of the scope (their
-        loops), in code order."""
+    def points(site, department, system, include=()):
+        """The active points of the scope, a round's rows: the middle point of each live unit whose status is not
+        inactive and of each system (its loop), and the other kinds of point of those owners and the points of
+        the equipment of the scope that `include` names; owners in code order, units first."""
         if site is None:
             return []
         units = Tank.objects.filter(production_department__site=site).exclude(status=Tank.Status.INACTIVE)
         systems = System.objects.filter(site=site)
+        equipment = (Equipment.objects.filter(production_department__site=site) if EQUIPMENT in include
+                     else Equipment.objects.none())
         if department is not None:
             units = units.filter(production_department=department)
             systems = systems.filter(production_department=department)
+            equipment = equipment.filter(production_department=department)
         if system is not None:
             units = units.filter(system=system)
             systems = systems.filter(pk=system.pk)
-        return [*units.select_related('production_department__site').order_by('code'),
-                *systems.select_related('site').order_by('code')]
+            equipment = equipment.filter(system_links__system=system)
+        kinds = {PointKind.MIDDLE, *(kind for kind in include if kind != EQUIPMENT)}
+        points = (SamplingPoint.objects.filter(is_active=True)
+                  .filter(Q(unit__in=units) | Q(system__in=systems) | Q(equipment__in=equipment)).with_owners())
+        return sorted((point for point in points if point.equipment_id or point.kind in kinds), key=point_order)
 
 
 class RoundForm(ServiceErrors, forms.Form):
@@ -247,12 +309,12 @@ class RoundForm(ServiceErrors, forms.Form):
 
 
 class RoundRowForm(ValuesMixin, forms.Form):
-    """One point of a round: the chosen columns and a note. Its prefix names the point (tank-<id>)."""
+    """One point of a round: the chosen columns and a note. Its prefix names the point (point-<id>)."""
 
     notes = forms.CharField(label=_('Notes'), max_length=500, required=False)
 
     def __init__(self, *args, point, columns, **kwargs):
-        super().__init__(*args, prefix=f'{point._meta.model_name}-{point.pk}', **kwargs)
+        super().__init__(*args, prefix=f'point-{point.pk}', **kwargs)
         self.point = point
         for parameter in MEASURED:
             if parameter.code in columns:
@@ -428,7 +490,7 @@ class CalculatorForm(forms.Form):
         for reagent in dosing.REAGENTS:
             self.fields[dose_name(reagent)] = number_field(
                 format_lazy('{} (g)', reagent.formula), 0, 10000000, 1, help_text=reagent.name)
-        self.fields['point'].widget.choices = [('', _('Entered here')), *point_choices()]
+        self.fields['point'].widget.choices = [('', _('Entered here')), *owner_choices()]
 
     def tabs(self):
         """[{key, label, fields, has_errors}] of the input bar, in order."""

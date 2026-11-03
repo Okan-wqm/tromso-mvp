@@ -66,6 +66,7 @@
         <td>{% if equipment.manufacturer or equipment.model %}{{ equipment.manufacturer }}{% if equipment.manufacturer and equipment.model %} · {% endif %}{{ equipment.model }}{% else %}–{% endif %}</td>
         <td>{% if equipment.supplier %}{{ equipment.supplier.name }}{% else %}–{% endif %}</td>
         <td class="row-actions">
+          {% if perms.farm.view_samplingpoint %}<a class="icon-button" href="{% url 'farm:samplingpoint_list' %}?equipment={{ equipment.pk }}" title="{% blocktrans with name=equipment.name %}Sampling points of {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="droplet" %}<span class="sr-only">{% blocktrans with name=equipment.name %}Sampling points of {{ name }}{% endblocktrans %}</span></a>{% endif %}
           {% if can_change %}<a class="icon-button" href="{% url 'farm:equipment_edit' equipment.pk %}" data-modal title="{% blocktrans with name=equipment.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=equipment.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
           {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:equipment_delete' equipment.pk %}" data-modal title="{% blocktrans with name=equipment.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=equipment.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
         </td>

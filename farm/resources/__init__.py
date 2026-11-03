@@ -14,9 +14,10 @@ from .supplier import SupplierResource
 from .system import SystemResource
 from .tank import TankResource
 from .water_limit import WaterLimitResource
+from .water_point import SamplingPointResource
 
 __all__ = ['EquipmentResource', 'FeedResource', 'FeedingProtocolResource', 'HandlingPlanItemResource',
            'HandlingRuleResource', 'HealthEventResource', 'MedicineResource', 'ProductionDepartmentResource',
-           'ProductionPlanResource', 'ProtocolAssignmentResource', 'SiteResource', 'SlaughterFacilityResource',
+           'ProductionPlanResource', 'ProtocolAssignmentResource', 'SamplingPointResource', 'SiteResource', 'SlaughterFacilityResource',
            'SpeciesResource',
            'SupplierResource', 'SystemResource', 'TankResource', 'WaterLimitResource']

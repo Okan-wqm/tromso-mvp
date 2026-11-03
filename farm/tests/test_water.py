@@ -22,15 +22,15 @@ from core.audit import message
 from core.models import AuditLog, Profile
 from core.softdelete import plan_delete, restore
 
-from ..models import ProductionDepartment, Site, System, Tank, WaterLimit, WaterMeasurement
+from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
 from ..stock.services import AlreadyRecorded
 from ..water import chemistry, parameters, read, services
 from ..water.evaluate import Limits, Status, judge, worst
-from .helpers import make_species, role, stock_fish
+from .helpers import make_species, point_of, role, stock_fish
 from .test_stock import make_unit
 
 WATER_KEEPER = ('view_watermeasurement', 'add_watermeasurement', 'delete_watermeasurement', 'view_tank',
-                'delete_tank', 'view_system', 'delete_system', 'view_species', 'delete_species', 'view_waterlimit',
+                'delete_tank', 'view_system', 'delete_system', 'view_samplingpoint', 'view_species', 'delete_species', 'view_waterlimit',
                 'add_waterlimit', 'change_waterlimit', 'delete_waterlimit', 'view_stockoperation', 'view_auditlog')
 D = Decimal
 
@@ -140,15 +140,25 @@ class WaterTestCase(TestCase):
         self.ras = System.objects.create(name='RAS 1', code='R1', site=self.bergen, production_department=self.hall)
         self.t1 = make_unit('T-01', self.hall, system=self.ras)
         self.t2 = make_unit('T-02', self.hall, system=self.ras)
+        self.mid1, self.mid2, self.loop = point_of(self.t1), point_of(self.t2), point_of(self.ras)
         self.salmon = make_species()
         self.now = timezone.now().replace(microsecond=0)
 
     def ago(self, hours=0, days=0):
         return self.now - timedelta(hours=hours, days=days)
 
+    def point(self, place):
+        """The sampling point of a place: a point as it is, the middle point of a unit or a system."""
+        return place if isinstance(place, SamplingPoint) else point_of(place)
+
     def sample(self, point=None, hours=1, source='manual', notes='', **values):
-        return services.record(self.user, point=point or self.t1, measured_at=self.ago(hours=hours), source=source,
-                               values={code: D(str(value)) for code, value in values.items()}, notes=notes)
+        """A sample at a point, or at the middle point of the unit or system given (T-01's by default)."""
+        return services.record(self.user, point=self.point(point or self.t1), measured_at=self.ago(hours=hours),
+                               source=source, values={code: D(str(value)) for code, value in values.items()},
+                               notes=notes)
+
+    def unit_water(self, unit=None):
+        return read.unit_water([unit or self.t1])[(unit or self.t1).pk]
 
     def refused(self, call, *args, **kwargs):
         with self.assertRaises(ValidationError) as caught:
@@ -202,14 +212,13 @@ class SchemaTests(WaterTestCase):
         self.assertEqual(WaterMeasurement.all_objects.get(pk=old.pk).void_reason, 'Wrong unit')
 
     def test_the_database_refuses_what_the_service_refuses(self):
-        base = {'unit': self.t1, 'measured_at': self.now, 'source': 'manual'}
+        base = {'point': self.mid1, 'measured_at': self.now, 'source': 'manual'}
         cases = [
             ({'ph': D(25)}, 'chk_water_measurements_ph'),
             ({'oxygen_mg_l': D(-3)}, 'chk_water_measurements_oxygen_mg_l'),
             ({'temperature_c': D('41')}, 'chk_water_measurements_temperature_c'),
             ({'tgp_pct': D(49)}, 'chk_water_measurements_tgp_pct'),
             ({}, 'chk_water_measurements_any_value'),
-            ({'ph': D(7), 'system': self.ras}, 'chk_water_measurements_one_point'),
             ({'ph': D(7), 'source': 'guess'}, 'chk_water_measurements_source'),
             ({'ph': D(7), 'is_deleted': True}, 'chk_water_measurements_void_reason'),
         ]
@@ -226,25 +235,25 @@ class SchemaTests(WaterTestCase):
 
 class RecordTests(WaterTestCase):
     def test_the_values_are_stored_in_their_columns_with_who_and_when(self):
-        sample = services.record(self.user, point=self.t1, measured_at=self.ago(hours=2), source='lab',
+        sample = services.record(self.user, point=self.mid1, measured_at=self.ago(hours=2), source='lab',
                                  values={'temperature_c': D('8.4'), 'oxygen_mg_l': D('10.25'), 'ph': D('7.15'),
                                          'tan_mg_l': D('0.125'), 'nitrite_n_mg_l': D('0.015'), 'turbidity_ntu': None},
                                  notes=' Morning ')
         stored = WaterMeasurement.objects.get()
-        self.assertEqual((stored.unit, stored.system, stored.measured_at, stored.source, stored.created_by,
+        self.assertEqual((stored.point, stored.point.owner, stored.measured_at, stored.source, stored.created_by,
                           stored.notes),
-                         (self.t1, None, self.ago(hours=2), 'lab', self.user, 'Morning'))
+                         (self.mid1, self.t1, self.ago(hours=2), 'lab', self.user, 'Morning'))
         self.assertEqual(stored.values(), {'temperature_c': D('8.4'), 'oxygen_mg_l': D('10.25'), 'ph': D('7.15'),
                                            'tan_mg_l': D('0.125'), 'nitrite_n_mg_l': D('0.015')})
         self.assertEqual(sample.pk, stored.pk)
 
-    def test_a_loop_sample_is_taken_in_a_system(self):
-        services.record(self.user, point=self.ras, measured_at=self.ago(hours=1), source='manual',
+    def test_a_loop_sample_is_taken_at_the_loop_point_of_a_system(self):
+        services.record(self.user, point=self.loop, measured_at=self.ago(hours=1), source='manual',
                         values={'co2_mg_l': D('12.5')})
-        self.assertEqual(WaterMeasurement.objects.get().point, self.ras)
+        self.assertEqual(WaterMeasurement.objects.get().point.owner, self.ras)
 
     def test_at_least_one_value_inside_its_range_and_precision(self):
-        record = lambda **values: services.record(self.user, point=self.t1, measured_at=self.ago(hours=1),
+        record = lambda **values: services.record(self.user, point=self.mid1, measured_at=self.ago(hours=1),
                                                   source='manual', values=values)
         self.assertEqual(self.refused(record), {'__all__': ['Enter at least one value.']})
         self.assertEqual(self.refused(record, temperature_c=None), {'__all__': ['Enter at least one value.']})
@@ -256,7 +265,7 @@ class RecordTests(WaterTestCase):
         self.bergen.timezone = 'Asia/Tokyo'
         self.bergen.save()
         self.t1.refresh_from_db()
-        record = lambda moment: services.record(self.user, point=self.t1, measured_at=moment, source='manual',
+        record = lambda moment: services.record(self.user, point=self.mid1, measured_at=moment, source='manual',
                                                 values={'ph': D(7)})
         self.assertEqual(self.refused(record, self.now + timedelta(minutes=5)),
                          {'measured_at': ['The time cannot be in the future.']})
@@ -269,7 +278,7 @@ class RecordTests(WaterTestCase):
 
     def test_a_form_sent_twice_records_once_and_a_deleted_unit_takes_none(self):
         token = uuid.uuid4()
-        values = {'point': self.t1, 'measured_at': self.ago(hours=1), 'source': 'manual', 'values': {'ph': D(7)},
+        values = {'point': self.mid1, 'measured_at': self.ago(hours=1), 'source': 'manual', 'values': {'ph': D(7)},
                   'token': token}
         first = services.record(self.user, **values)
         with self.assertRaises(AlreadyRecorded) as caught:
@@ -277,7 +286,7 @@ class RecordTests(WaterTestCase):
         self.assertEqual(caught.exception.operation, first)
         self.assertEqual(WaterMeasurement.objects.count(), 1)
         self.t2.soft_delete(self.user)
-        self.assertEqual(self.refused(services.record, self.user, point=self.t2, measured_at=self.ago(hours=1),
+        self.assertEqual(self.refused(services.record, self.user, point=self.mid2, measured_at=self.ago(hours=1),
                                       source='manual', values={'ph': D(7)}), {'point': ['T-02 is deleted.']})
 
     def test_each_sample_is_in_the_activity_log_in_english(self):
@@ -286,9 +295,10 @@ class RecordTests(WaterTestCase):
         entry = AuditLog.objects.get()
         moment = self.ago(hours=1)
         self.assertEqual((entry.action, entry.entity_type, entry.entity_label),
-                         ('create', 'water sample', f'Water sample · T-01 · {moment:%Y-%m-%d %H:%M}'))
+                         ('create', 'water sample', f'Water sample · T-01 › Middle · {moment:%Y-%m-%d %H:%M}'))
         self.assertEqual(entry.changes, {
-            'Measured at': [None, moment.isoformat()], 'Source': [None, message('Laboratory')],
+            'Measured at': [None, moment.isoformat()], 'Sampling point': [None, 'T-01 › Middle'],
+            'Source': [None, message('Laboratory')],
             'Temperature (°C)': [None, '8.0'], 'Oxygen saturation (% of air saturation)': [None, '95.5'],
             'Notes': [None, 'Before feeding']})
 
@@ -296,33 +306,33 @@ class RecordTests(WaterTestCase):
 class RoundServiceTests(WaterTestCase):
     def test_a_round_shares_its_time_and_source_skips_empty_rows_and_records_all_or_nothing(self):
         moment, token = self.ago(hours=1), uuid.uuid4()
-        rows = [(self.t1, {'temperature_c': D('8.1')}, ''), (self.t2, {'temperature_c': None}, ''),
-                (self.ras, {'oxygen_mg_l': D('9.5')}, 'Sump')]
+        rows = [(self.mid1, {'temperature_c': D('8.1')}, ''), (self.mid2, {'temperature_c': None}, ''),
+                (self.loop, {'oxygen_mg_l': D('9.5')}, 'Sump')]
         samples = services.record_round(self.user, measured_at=moment, source='manual', rows=rows, token=token)
         self.assertEqual([(sample.point, sample.measured_at, sample.source) for sample in samples],
-                         [(self.t1, moment, 'manual'), (self.ras, moment, 'manual')])
+                         [(self.mid1, moment, 'manual'), (self.loop, moment, 'manual')])
         with self.assertRaises(AlreadyRecorded):
             services.record_round(self.user, measured_at=moment, source='manual', rows=rows, token=token)
-        bad = [(self.t1, {'temperature_c': D('8.1')}, ''), (self.t2, {'temperature_c': D('99')}, '')]
+        bad = [(self.mid1, {'temperature_c': D('8.1')}, ''), (self.mid2, {'temperature_c': D('99')}, '')]
         self.assertEqual(self.refused(services.record_round, self.user, measured_at=moment, source='lab', rows=bad,
                                       token=uuid.uuid4()), {'1-temperature_c': ['Between -3 and 40: check the value.']})
         self.assertEqual(WaterMeasurement.objects.count(), 2)
         self.assertEqual(self.refused(services.record_round, self.user, measured_at=moment, source='lab',
-                                      rows=[(self.t1, {}, '')]), {'__all__': ['Enter at least one value.']})
+                                      rows=[(self.mid1, {}, '')]), {'__all__': ['Enter at least one value.']})
 
 
 class VoidTests(WaterTestCase):
     def test_a_void_hides_the_sample_keeps_its_reason_and_it_no_longer_counts_as_latest(self):
         self.sample(hours=3, oxygen_mg_l='9')
         wrong = self.sample(hours=1, oxygen_mg_l='2.1')
-        self.assertEqual(read.latest([self.t1])[read.key(self.t1)].get('oxygen_mg_l').value, D('2.10'))
+        self.assertEqual(self.unit_water().get('oxygen_mg_l').value, D('2.10'))
         self.assertEqual(self.refused(services.void, self.user, wrong, '  '), {'reason': ['Say why it is voided.']})
         services.void(self.user, wrong, 'Probe not calibrated')
         stored = WaterMeasurement.all_objects.get(pk=wrong.pk)
         self.assertEqual((stored.is_deleted, stored.void_reason, stored.deleted_by), (True, 'Probe not calibrated',
                                                                                       self.user))
         self.assertFalse(WaterMeasurement.objects.filter(pk=wrong.pk).exists())
-        self.assertEqual(read.latest([self.t1])[read.key(self.t1)].get('oxygen_mg_l').value, D('9.00'))
+        self.assertEqual(self.unit_water().get('oxygen_mg_l').value, D('9.00'))
         entry = AuditLog.objects.filter(action='void').get()
         self.assertEqual((entry.entity_type, entry.changes), ('water sample',
                                                               {'Reason for voiding': [None, 'Probe not calibrated']}))
@@ -337,9 +347,9 @@ class VoidTests(WaterTestCase):
 
 
 class LatestTests(WaterTestCase):
-    def latest(self, *points, now=None):
-        found = read.latest(list(points) or [self.t1], now=now)
-        return found[read.key(points[0] if points else self.t1)]
+    def latest(self, place=None, now=None):
+        point = self.point(place or self.t1)
+        return read.latest([point], now=now)[point.pk]
 
     def test_the_newest_value_of_each_parameter_and_a_newer_sample_without_do_does_not_hide_a_critical_do(self):
         self.stock()
@@ -388,7 +398,7 @@ class LatestTests(WaterTestCase):
         self.stock(self.t2, trout)
         self.limit('co2_mg_l', warning_high=15)
         self.limit('co2_mg_l', species=trout, warning_high=10, critical_high=12)
-        services.record(self.user, point=self.ras, measured_at=self.ago(hours=1), source='manual',
+        services.record(self.user, point=self.loop, measured_at=self.ago(hours=1), source='manual',
                         values={'co2_mg_l': D('13')})
         reading = self.latest(self.ras).get('co2_mg_l')
         self.assertEqual((reading.status, {row.species for row in reading.limits}),
@@ -397,7 +407,8 @@ class LatestTests(WaterTestCase):
 
 class DerivedTests(WaterTestCase):
     def reading(self, code, point=None):
-        return read.latest([point or self.t1])[read.key(point or self.t1)].get(code)
+        point = self.point(point or self.t1)
+        return read.latest([point])[point.pk].get(code)
 
     def test_nh3_from_the_tan_ph_and_temperature_of_the_same_sample(self):
         self.stock()
@@ -562,27 +573,33 @@ class LimitTests(WaterTestCase):
 
 
 class DeletePlanTests(WaterTestCase):
-    def test_a_unit_or_system_keeps_its_samples_out_of_sight_and_brings_them_back(self):
+    def test_a_unit_or_system_keeps_its_points_and_their_samples_out_of_sight_and_brings_them_back(self):
         self.sample(point=self.t2, ph='7')
         self.sample(point=self.t2, hours=2, ph='7.1')
         loop = self.sample(point=self.ras, co2_mg_l='9')
         plan = plan_delete(self.t2)
         self.assertEqual((plan.can_delete, plan.cascade, plan.kept_groups()),
-                         (True, [], [{'label': 'Water samples', 'count': 2, 'note': WaterMeasurement.kept_note}]))
+                         (True, [], [{'label': 'Sampling points', 'count': 4, 'note': SamplingPoint.kept_note},
+                                     {'label': 'Water samples', 'count': 2, 'note': WaterMeasurement.kept_note}]))
         page = self.client.get(reverse('farm:tank_delete', args=[self.t2.pk]))
+        self.assertContains(page, 'Sampling points kept with it <span class="count">4</span>', html=True)
         self.assertContains(page, 'Water samples kept with it <span class="count">2</span>', html=True)
         self.client.post(reverse('farm:tank_delete', args=[self.t2.pk]))
-        self.assertEqual(WaterMeasurement.objects.filter(unit=self.t2).count(), 0)
-        self.assertEqual(WaterMeasurement.all_objects.filter(unit=self.t2, is_deleted=False).count(), 2)
+        self.assertEqual(WaterMeasurement.objects.filter(point__unit=self.t2).count(), 0)
+        self.assertEqual(SamplingPoint.objects.filter(unit=self.t2).count(), 0)
+        self.assertEqual(WaterMeasurement.all_objects.filter(point__unit=self.t2, is_deleted=False).count(), 2)
+        self.assertEqual(SamplingPoint.all_objects.filter(unit=self.t2, is_deleted=False).count(), 4)
         self.assertFalse(AuditLog.objects.filter(entity_type='water sample', action='delete').exists())
+        self.assertFalse(AuditLog.objects.filter(entity_type='sampling point', action='delete').exists())
         restore(Tank.all_objects.get(pk=self.t2.pk), self.user)
-        self.assertEqual(WaterMeasurement.objects.filter(unit=self.t2).count(), 2)
+        self.assertEqual(WaterMeasurement.objects.filter(point__unit=self.t2).count(), 2)
+        self.assertEqual(SamplingPoint.objects.filter(unit=self.t2).count(), 4)
         # A system's loop samples, and those of its units, the same way.
         self.ras.soft_delete(self.user)
-        self.assertEqual(list(WaterMeasurement.objects.filter(system=self.ras)), [])
+        self.assertEqual(list(WaterMeasurement.objects.filter(point__system=self.ras)), [])
         self.ras.is_deleted = False
         self.ras.save()
-        self.assertEqual(list(WaterMeasurement.objects.filter(system=self.ras)), [loop])
+        self.assertEqual(list(WaterMeasurement.objects.filter(point__system=self.ras)), [loop])
 
 
 # ---- the pages -------------------------------------------------------------------------------------------
@@ -594,7 +611,7 @@ class PageTests(WaterTestCase):
 
     def record_data(self, **values):
         local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
-        data = {'token': str(uuid.uuid4()), 'point': f'tank:{self.t1.pk}', 'measured_at': local, 'source': 'manual',
+        data = {'token': str(uuid.uuid4()), 'point': str(self.mid1.pk), 'measured_at': local, 'source': 'manual',
                 'notes': '', **{code: '' for code in parameters.COLUMNS}}
         data.update(values)
         return data
@@ -604,14 +621,14 @@ class PageTests(WaterTestCase):
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
         self.sample(hours=2, oxygen_mg_l='6.5', temperature_c='9.5')
         response = self.client.get(self.url)
-        rows = {row['point'].code: row for row in response.context['rows']}
+        rows = {row['owner'].code: row for row in response.context['rows']}
         self.assertEqual(set(rows), {'T-01', 'T-02'})            # every unit; a loop once it has a sample
         self.assertEqual((rows['T-01']['water'].status, rows['T-02']['water'].status),
                          (Status.WARNING, Status.NOT_MEASURED))
         self.assertEqual([str(parameter.short) for parameter in response.context['columns']],
                          ['Temp. (°C)', 'O₂ (mg/L)', 'O₂ (%)'])
         html = response.content.decode()
-        for text in ('6.50', '9.5', 'wq-warning', '2 units and loops', '1 warning', 'Nobody is alerted'):
+        for text in ('6.50', '9.5', 'wq-warning', '2 sampling points', '1 warning', 'Nobody is alerted'):
             self.assertIn(text, html)
         self.assertContains(response, '<h1>Water chemistry</h1>', html=True)
 
@@ -621,7 +638,7 @@ class PageTests(WaterTestCase):
         self.sample(point=self.t1, hours=24 * 3, ph='5.8', notes='After the storm')
         self.sample(point=self.t2, hours=1, ph='7.2')
         self.sample(point=self.ras, hours=2, co2_mg_l='8')
-        history = lambda **query: [row.sample.point.code for row in 
+        history = lambda **query: [row.sample.point.owner.code for row in
                                    self.client.get(self.url, {'view': 'history', **query}).context['history']]
         self.assertEqual(history(), ['T-02', 'R1', 'T-01'])
         self.assertEqual(history(unit=self.t1.pk), ['T-01'])
@@ -656,8 +673,8 @@ class PageTests(WaterTestCase):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response['X-Modal-Redirect'], f'/operations/water/?unit={self.t1.pk}')
         sample = WaterMeasurement.objects.get()
-        self.assertEqual((sample.unit, sample.temperature_c, sample.oxygen_mg_l, sample.notes),
-                         (self.t1, D('8.5'), D('10.20'), 'Morning'))
+        self.assertEqual((sample.point, sample.temperature_c, sample.oxygen_mg_l, sample.notes),
+                         (self.mid1, D('8.5'), D('10.20'), 'Morning'))
 
     def test_the_time_is_read_on_the_sites_clock(self):
         Site.objects.filter(pk=self.bergen.pk).update(timezone='Europe/Oslo')
@@ -699,31 +716,32 @@ class PageTests(WaterTestCase):
     def test_a_round_through_its_page(self):
         url = f'{reverse("farm:water_round")}?site={self.bergen.pk}&columns=temperature_c&columns=ph'
         page = self.client.get(url)
-        self.assertEqual([row.point.code for row in page.context['rows']], ['T-01', 'T-02', 'R1'])
+        self.assertEqual([row.point.owner.code for row in page.context['rows']], ['T-01', 'T-02', 'R1'])
         local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
         data = {'token': str(uuid.uuid4()), 'measured_at': local, 'source': 'lab',
-                f'tank-{self.t1.pk}-temperature_c': '8.1', f'tank-{self.t1.pk}-ph': '',
-                f'tank-{self.t2.pk}-temperature_c': '', f'tank-{self.t2.pk}-ph': '',
-                f'system-{self.ras.pk}-temperature_c': '', f'system-{self.ras.pk}-ph': '7.4',
-                f'system-{self.ras.pk}-notes': 'Sump'}
-        response = self.client.post(url, {**data, f'tank-{self.t2.pk}-ph': '15'})
+                f'point-{self.mid1.pk}-temperature_c': '8.1', f'point-{self.mid1.pk}-ph': '',
+                f'point-{self.mid2.pk}-temperature_c': '', f'point-{self.mid2.pk}-ph': '',
+                f'point-{self.loop.pk}-temperature_c': '', f'point-{self.loop.pk}-ph': '7.4',
+                f'point-{self.loop.pk}-notes': 'Sump'}
+        response = self.client.post(url, {**data, f'point-{self.mid2.pk}-ph': '15'})
         self.assertEqual(response.status_code, 422)
         self.assertIn('ph', response.context['rows'][1].errors)
         self.assertFalse(WaterMeasurement.objects.exists())                 # one bad cell refuses all
         response = self.client.post(url, data)
         self.assertRedirects(response, f'{self.url}?site={self.bergen.pk}', fetch_redirect_response=False)
-        stored = WaterMeasurement.objects.values_list('unit__code', 'system__code', 'temperature_c', 'ph', 'source',
-                                                      'notes')
-        self.assertEqual(sorted(stored, key=str), sorted([('T-01', None, D('8.1'), None, 'lab', ''),
-                                                          (None, 'R1', None, D('7.40'), 'lab', 'Sump')], key=str))
+        stored = WaterMeasurement.objects.values_list('point__unit__code', 'point__system__code', 'point__kind',
+                                                      'temperature_c', 'ph', 'source', 'notes')
+        self.assertEqual(sorted(stored, key=str), sorted([('T-01', None, 'middle', D('8.1'), None, 'lab', ''),
+                                                          (None, 'R1', 'middle', None, D('7.40'), 'lab', 'Sump')],
+                                                         key=str))
         self.assertEqual(self.client.post(url, data).status_code, 302)      # sent twice: recorded once
         self.assertEqual(WaterMeasurement.objects.count(), 2)
 
     def test_a_round_by_department_or_system_and_without_inactive_units(self):
         Tank.objects.filter(pk=self.t2.pk).update(status=Tank.Status.INACTIVE)
         other = ProductionDepartment.objects.create(site=self.bergen, name='Hall B', code='HB')
-        make_unit('T-09', other)
-        rows = lambda **query: [row.point.code for row in self.client.get( 
+        point_of(make_unit('T-09', other))
+        rows = lambda **query: [row.point.owner.code for row in self.client.get(
             reverse('farm:water_round'), {'site': self.bergen.pk, **query}).context['rows']]
         self.assertEqual(rows(), ['T-01', 'T-09', 'R1'])
         self.assertEqual(rows(production_department=other.pk), ['T-09'])
@@ -859,7 +877,7 @@ class ProductionUnitsTests(WaterTestCase):
         self.stock()
         record = self.client.get(self.url, {'unit': self.t1.pk}).context['water_record_url']
         local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
-        data = {'token': str(uuid.uuid4()), 'point': f'tank:{self.t1.pk}', 'measured_at': local, 'source': 'manual',
+        data = {'token': str(uuid.uuid4()), 'point': str(self.mid1.pk), 'measured_at': local, 'source': 'manual',
                 'notes': '', **{code: '' for code in parameters.COLUMNS}, 'temperature_c': '9'}
         response = self.client.post(record, data, headers={'X-Modal': '1'})
         self.assertEqual(response['X-Modal-Redirect'], f'{self.url}?unit={self.t1.pk}')
@@ -905,8 +923,8 @@ class DatabaseViewerTests(TestCase):
         structure = tables['water_measurements'].structure()
         constraints = {constraint.name: constraint for constraint in structure.constraints}
         self.assertEqual(constraints['water_measurements_pkey'].definition, 'PRIMARY KEY (id, measured_at)')
-        self.assertTrue({'chk_water_measurements_ph', 'chk_water_measurements_one_point',
-                         'uq_water_measurements_entry'} <= set(constraints))
+        self.assertTrue({'chk_water_measurements_ph', 'uq_water_measurements_entry'} <= set(constraints))
+        self.assertNotIn('chk_water_measurements_one_point', constraints)      # a sample has one point: a required key
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)
         for table in ('water_measurements', 'water_limits'):

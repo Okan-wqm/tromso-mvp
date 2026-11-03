@@ -6,6 +6,7 @@ from core.crud import NONE, Resource, filter_by
 from ..forms import TankForm
 from ..models import ProductionDepartment, Site, System, Tank
 from ..models.tank import KIND_FIELDS
+from ..water import points
 
 # What the activity log compares for a unit: every field it is described by, the calculated volumes
 # and max biomass (which a change of a measure or of the density moves), and the status with its reason.
@@ -28,6 +29,12 @@ class TankResource(Resource):
     @classmethod
     def queryset(cls):
         return super().queryset().select_related('production_department__site', 'system')
+
+    @classmethod
+    def after_save(cls, request, unit, created):
+        """A new unit starts with its sampling points (farm/water/points.py), logged with it."""
+        if created:
+            points.create_defaults(request.user, unit)
 
     @classmethod
     def snapshot(cls, unit):

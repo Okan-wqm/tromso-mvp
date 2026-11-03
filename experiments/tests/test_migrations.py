@@ -14,6 +14,8 @@ COMPOSITE_KEYS = {
     'fk_experiment_group_levels_level': ('experiment_group_levels', 'experiment_levels'),
 }
 FIRST = ('experiments', '0001_initial')
+FROZEN = ('experiments', '0002_design_frozen')
+FUNCTIONS = {'owning_experiment', 'experiment_frozen', 'experiment_design_frozen', 'experiment_placement_frozen'}
 
 
 def rows(sql, params=None):
@@ -24,6 +26,14 @@ def rows(sql, params=None):
 
 def present(table):
     return rows('SELECT to_regclass(%s)', [table])[0][0] is not None
+
+
+def triggers():
+    return {name for (name,) in rows("SELECT tgname FROM pg_trigger WHERE NOT tgisinternal AND tgname ~ '^trg_experiment'")}
+
+
+def functions():
+    return {name for (name,) in rows("SELECT proname FROM pg_proc WHERE proname = ANY(%s)", [sorted(FUNCTIONS)])}
 
 
 class ExperimentMigrationTests(TransactionTestCase):
@@ -59,12 +69,21 @@ class ExperimentMigrationTests(TransactionTestCase):
         self.assertTrue(all(present(table) for table in TABLES))
         self.migrate([('experiments', None)])
         self.assertFalse(any(present(table) for table in TABLES))
+        self.assertEqual((triggers(), functions()), (set(), set()))
         self.assertEqual(rows("SELECT 1 FROM pg_extension WHERE extname = 'btree_gist'"), [(1,)])     # the farm's own
         self.assertTrue(present('feeding_protocols'))                                                 # and its tables
         self.migrate([FIRST])
         self.assertTrue(all(present(table) for table in TABLES))
         self.assertEqual({name for name, *_ in rows("SELECT conname FROM pg_constraint WHERE conname ~ "
                                                     "'^fk_experiment'")}, set(COMPOSITE_KEYS))
+
+    def test_the_triggers_come_and_go_with_their_migration_and_the_tables_stay(self):
+        self.assertEqual((len(triggers()), functions()), (7, FUNCTIONS))
+        self.migrate([FIRST])
+        self.assertEqual((triggers(), functions()), (set(), set()))
+        self.assertTrue(all(present(table) for table in TABLES))
+        self.migrate([FROZEN])
+        self.assertEqual((len(triggers()), functions()), (7, FUNCTIONS))
 
     def test_it_depends_on_the_farm_as_it_was_before_the_branches_that_add_to_it(self):
         loader = MigrationExecutor(connection).loader

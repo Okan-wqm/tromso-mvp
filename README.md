@@ -1661,7 +1661,20 @@ farm migrations does not matter):
 | a diet level has a protocol and no label or number; another level has a label and no protocol | check (else a start would silently skip a diet) |
 | one diet factor; one lead; names unique among live rows, whatever the case; replicate numbers unique in a group; a number is never reused | unique constraints (partial among live rows where a row can be deleted) |
 | a template is a draft without a start day or an allocation; a started experiment has its day 0, hypothesis, primary endpoint and allocation; the allocation method, its seed and its reason belong together | checks |
+| a started design cannot change; a placement only gets shorter | triggers (below) |
 | a protocol or tank in a trial cannot be deleted | `PROTECT` and the delete plan (a deleted draft frees its tanks) |
+
+**A started design cannot change**, for any writer (pre-registration: what was planned is what is judged): triggers of
+migration `experiments/0002_design_frozen`, tried by raw SQL and the ORM with no form or service in between. Once an
+experiment is not a draft, every column of it but the status, name, notes and bookkeeping is fixed, the status goes
+forward only (draft, running, closed: the model's `TRANSITIONS`, which a test compares with the trigger on every pair)
+and the row is never deleted or soft-deleted; its factors, levels, groups, group levels and replicates take no insert,
+update or delete; its placements are free while it is a draft, a running one may get a new placement (a replacement)
+and shorten one with a reason (`until_on` never longer), a closed one allows nothing, a started experiment's placement
+is never deleted, and a template has none. A change of `created_by`, `updated_by` or `deleted_by` alone is always let
+through, so removing a person from the system never fails on what they once created. The refusals are
+`check_violation`, so the ORM raises them as an `IntegrityError` like a constraint. The team is not the design and is
+not guarded.
 
 What PostgreSQL cannot say without copying columns (a tank on the experiment's site, a window inside the experiment's
 span, a level for every factor, a diet applied at the start) is checked by the services and says so where it is.
@@ -2326,7 +2339,7 @@ real mail.
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
-| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the constraints and composite keys (`migrations/0001_initial.py`), `templates/experiments/`, tests |
+| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

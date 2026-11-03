@@ -3597,6 +3597,13 @@ msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
 msgid "No growth up to the last weighing."
 msgstr "Son tartıma kadar büyüme yok."
 
+msgid ""
+"No in-feed treatment covers this day: record it under Health › Treatments, or the fish’s "
+"withdrawal stays unknown."
+msgstr ""
+"Bu günü kapsayan yemle tedavi yok: Sağlık › Tedaviler altında kaydedin, yoksa balıkların bekleme "
+"süresi bilinmez kalır."
+
 msgid "No limit"
 msgstr "Sınır yok"
 

@@ -220,6 +220,20 @@ class WithdrawalTests(HealthTestCase):
         [held] = self.held()
         self.assertEqual((held.until, held.feeding), (self.day(-13), None))
 
+    def test_the_feeding_dialog_says_when_medicated_feed_has_no_treatment(self):
+        self.user.groups.add(role('Feeder', 'add_feedingrecord', 'view_feedingrecord'))
+        feed = Feed.objects.create(name='Medisinfôr', code='MED-1', feed_type='medicated')
+        url = reverse('farm:feeding_record', args=[self.t1.pk])
+        data = {'token': str(uuid.uuid4()), 'date': self.day(1).isoformat(), 'feed': str(feed.pk), 'amount_kg': '2',
+                'meals': '', 'time': '', 'feeder': '', 'notes': ''}
+        page = self.client.post(url, data, follow=True)
+        self.assertContains(page, 'No in-feed treatment covers this day')
+        in_feed = self.medicine(name='Slice vet.', administration='in_feed', days=14,
+                                active_substance='emamectin benzoate', lice_report_code='EMAMECTIN_BENZOAT')
+        self.treat(in_feed, 2, 0)
+        page = self.client.post(url, {**data, 'token': str(uuid.uuid4())}, follow=True)
+        self.assertNotContains(page, 'No in-feed treatment covers this day')
+
     def test_a_treatment_without_a_medicine_holds_nothing(self):
         self.treat(None, 2, 2, method='thermal', notes='Thermolicer')
         self.assertEqual(self.held(), [])

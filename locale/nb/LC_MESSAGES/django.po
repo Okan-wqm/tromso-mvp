@@ -3590,6 +3590,13 @@ msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
 msgid "No growth up to the last weighing."
 msgstr "Ingen tilvekst fram til siste veiing."
 
+msgid ""
+"No in-feed treatment covers this day: record it under Health › Treatments, or the fish’s "
+"withdrawal stays unknown."
+msgstr ""
+"Ingen fôrbehandling dekker denne dagen: registrer den under Helse › Behandlinger, ellers forblir "
+"fiskens tilbakeholdelsestid ukjent."
+
 msgid "No limit"
 msgstr "Ingen grense"
 

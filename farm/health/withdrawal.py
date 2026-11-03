@@ -202,14 +202,10 @@ class Reader:
                        .select_related('feed', 'unit'))
         if not records:
             return []
-        in_feed = [(treatment, {unit.pk for unit in treatment.units.all()}) for treatment in self.treatments
-                   if treatment.method == TreatmentMethod.IN_FEED]
         found = []
         for record_id, parts in feeding_read.split_of(records).items():
             record = next(item for item in records if item.pk == record_id)
-            covered = any(record.unit_id in units and treatment.start_date <= record.date <= treatment.end_date
-                          for treatment, units in in_feed)
-            if not covered:
+            if not any(covers(treatment, record) for treatment in self.treatments):
                 found += [Withdrawal(batch_id, None, True, feeding=record)
                           for batch_id in sorted(parts, key=str) if batch_id in self.batch_ids]
         return found
@@ -219,6 +215,19 @@ class Reader:
         found = [self.of_treatment(treatment, batch_id) for treatment in self.treatments
                  for batch_id in sorted(self.treated(treatment), key=str)]
         return found + self.uncovered_feedings()
+
+
+def covers(treatment, record):
+    """Whether a treatment (live, its units prefetched) is an in-feed course of the feeding's unit on its day."""
+    return (treatment.method == TreatmentMethod.IN_FEED
+            and treatment.start_date <= record.date <= treatment.end_date
+            and any(unit.pk == record.unit_id for unit in treatment.units.all()))
+
+
+def covered(record):
+    """Whether a live in-feed treatment of the feeding's unit covers its day (the feeding dialog's notice)."""
+    return any(covers(treatment, record) for treatment in
+               Treatment.objects.filter(units=record.unit_id).prefetch_related('units'))
 
 
 # ---- what the pages and the handling check read --------------------------------------------------------

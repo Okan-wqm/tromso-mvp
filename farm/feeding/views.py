@@ -28,6 +28,7 @@ from core.crud import done, render_page
 
 from ..forms.feeding import FeedingForm, feed_label
 from ..forms.stock import VoidForm
+from ..health import withdrawal as health_withdrawal
 from ..models import Batch, Feed, FeedingRecord, Site, Tank
 from ..models.site import zone_of
 from ..stock import read as stock_read, views as stock_views
@@ -348,6 +349,10 @@ def record_feeding(request, pk):
                         '%(feed)s is not listed as suitable for %(species)s at %(weight)s (Reference data › Feeds).')
                         % {'feed': record.feed, 'species': stock.batches[0].species,
                            'weight': grams(stock.avg_weight_g)})
+                if record.feed.feed_type == Feed.Type.MEDICATED and not health_withdrawal.covered(record):
+                    # Medicated feed holds the fish with an unknown withdrawal until its treatment is recorded.
+                    messages.warning(request, _('No in-feed treatment covers this day: record it under Health › '
+                                                'Treatments, or the fish’s withdrawal stays unknown.'))
                 return done(request, back)
         return stock_views._refused(request, 'farm/feeding_form.html', {
             **context, 'form': form, 'split': _split(unit, form.cleaned_data.get('date') or local_today(unit))})

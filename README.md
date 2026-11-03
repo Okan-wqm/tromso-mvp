@@ -897,7 +897,8 @@ corrected temperature or a backdated transfer changes it at once:
   measured days within 30 ("about"); with none at all the end is unknown ("record the water temperature");
 - both given, the later end wins; a running course counts from its planned last day;
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
-  covers holds it with an unknown end until the treatment is recorded or the feeding voided.
+  covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
+  says so when such a feeding is recorded.
 
 Where it shows: Production units marks the unit's row **Withdrawal**, and its drawer says **"Not suitable for
 harvest — medicine withdrawal until 13 Dec 2026 (harvest from 14 Dec 2026)"** ("about" when projected, "end

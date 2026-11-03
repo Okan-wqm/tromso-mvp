@@ -333,6 +333,12 @@ class Resource:
         return cls.model._default_manager.all()
 
     @classmethod
+    def list_queryset(cls, request):
+        """The records the list starts from, before its search and filters: the live ones (queryset). A tab
+        whose records are voided rather than deleted can show the voided ones too when asked."""
+        return cls.queryset()
+
+    @classmethod
     def form(cls, request, *args, **kwargs):
         """The tab's form; override to hand it more, e.g. who is editing."""
         return cls.form_class(*args, **kwargs)
@@ -443,7 +449,7 @@ def filter_by(request, objects, param, choices, lookup, allow_none=False):
 class ListView(ResourceView):
     def get(self, request):
         query = request.GET.get('q', '').strip()
-        objects = self.resource.queryset()
+        objects = self.resource.list_queryset(request)
         if query:
             condition = Q()
             for field in self.resource.search_fields:

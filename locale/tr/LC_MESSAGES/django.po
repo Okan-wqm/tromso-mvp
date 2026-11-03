@@ -15,6 +15,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+msgid "%"
+msgstr "%"
+
 #, python-format
 msgid "%(age)s ago"
 msgstr "%(age)s önce"
@@ -69,6 +72,30 @@ msgstr[0] "%(count)d kişi kaydedildi."
 msgstr[1] "%(count)d kişi kaydedildi."
 
 #, python-format
+msgid "%(count)d count"
+msgid_plural "%(count)d counts"
+msgstr[0] "%(count)d sayım"
+msgstr[1] "%(count)d sayım"
+
+#, python-format
+msgid "%(count)d day"
+msgid_plural "%(count)d days"
+msgstr[0] "%(count)d gün"
+msgstr[1] "%(count)d gün"
+
+#, python-format
+msgid "%(count)d day without a water temperature is counted as 0 °C."
+msgid_plural "%(count)d days without a water temperature are counted as 0 °C."
+msgstr[0] "Su sıcaklığı olmayan %(count)d gün 0 °C sayıldı."
+msgstr[1] "Su sıcaklığı olmayan %(count)d gün 0 °C sayıldı."
+
+#, python-format
+msgid "%(count)d degree-day"
+msgid_plural "%(count)d degree-days"
+msgstr[0] "%(count)d gün-derece"
+msgstr[1] "%(count)d gün-derece"
+
+#, python-format
 msgid ""
 "%(count)d feed is made by it: keep “%(category)s” ticked, or choose another manufacturer for it "
 "first."
@@ -81,6 +108,24 @@ msgstr[0] ""
 msgstr[1] ""
 "%(count)d yem bu üreticinin: “%(category)s” işaretli kalsın ya da önce bu yemler için başka bir "
 "üretici seçin."
+
+#, python-format
+msgid "%(count)d health event names it as the laboratory: keep “%(category)s” ticked."
+msgid_plural "%(count)d health events name it as the laboratory: keep “%(category)s” ticked."
+msgstr[0] "%(count)d sağlık olayı onu laboratuvar olarak gösteriyor: “%(category)s” işaretli kalsın."
+msgstr[1] "%(count)d sağlık olayı onu laboratuvar olarak gösteriyor: “%(category)s” işaretli kalsın."
+
+#, python-format
+msgid "%(count)d health event names it: keep “%(category)s” ticked."
+msgid_plural "%(count)d health events name it: keep “%(category)s” ticked."
+msgstr[0] "%(count)d sağlık olayı onu gösteriyor: “%(category)s” işaretli kalsın."
+msgstr[1] "%(count)d sağlık olayı onu gösteriyor: “%(category)s” işaretli kalsın."
+
+#, python-format
+msgid "%(count)d medicine is made by it: keep “%(category)s” ticked."
+msgid_plural "%(count)d medicines are made by it: keep “%(category)s” ticked."
+msgstr[0] "%(count)d ilacı o üretiyor: “%(category)s” işaretli kalsın."
+msgstr[1] "%(count)d ilacı o üretiyor: “%(category)s” işaretli kalsın."
 
 #, python-format
 msgid ""
@@ -103,6 +148,12 @@ msgstr[0] "%(count)d kayıt"
 msgstr[1] "%(count)d kayıt"
 
 #, python-format
+msgid "%(count)d record names this event (mortality, cull or treatment): void it first."
+msgid_plural "%(count)d records name this event (mortality, cull or treatment): void them first."
+msgstr[0] "%(count)d kayıt bu olayı gösteriyor (ölüm, itlaf veya tedavi): önce onu iptal edin."
+msgstr[1] "%(count)d kayıt bu olayı gösteriyor (ölüm, itlaf veya tedavi): önce onları iptal edin."
+
+#, python-format
 msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d kayıt geri yüklendi."
@@ -113,6 +164,18 @@ msgid "%(count)d row saved."
 msgid_plural "%(count)d rows saved."
 msgstr[0] "%(count)d satır kaydedildi."
 msgstr[1] "%(count)d satır kaydedildi."
+
+#, python-format
+msgid "%(count)d treatment"
+msgid_plural "%(count)d treatments"
+msgstr[0] "%(count)d tedavi"
+msgstr[1] "%(count)d tedavi"
+
+#, python-format
+msgid "%(count)d treatment names it: keep “%(category)s” ticked."
+msgid_plural "%(count)d treatments name it: keep “%(category)s” ticked."
+msgstr[0] "%(count)d tedavi onu gösteriyor: “%(category)s” işaretli kalsın."
+msgstr[1] "%(count)d tedavi onu gösteriyor: “%(category)s” işaretli kalsın."
 
 #, python-format
 msgid "%(count)d unit"
@@ -173,6 +236,10 @@ msgstr[0] "%(count)s uyarı"
 msgstr[1] "%(count)s uyarı"
 
 #, python-format
+msgid "%(counted)s of %(stocked)s units with fish now"
+msgstr "şu an balıklı %(stocked)s birimden %(counted)s"
+
+#, python-format
 msgid "%(counter)s row"
 msgid_plural "%(counter)s rows"
 msgstr[0] "%(counter)s satır"
@@ -181,6 +248,10 @@ msgstr[1] "%(counter)s satır"
 #, python-format
 msgid "%(deaths)s dead · %(culls)s culled"
 msgstr "%(deaths)s ölü · %(culls)s itlaf"
+
+#, python-format
+msgid "%(degrees)s or %(days)s, whichever ends later"
+msgstr "%(degrees)s veya %(days)s, hangisi daha geç biterse"
 
 #, python-format
 msgid "%(density)s kg/m³"
@@ -213,6 +284,10 @@ msgid "%(feed)s · %(size)s mm"
 msgstr "%(feed)s · %(size)s mm"
 
 #, python-format
+msgid "%(females)s adult female · %(mobile)s mobile · %(attached)s attached lice per fish"
+msgstr "balık başına %(females)s ergin dişi · %(mobile)s hareketli · %(attached)s tutunmuş bit"
+
+#, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s “%(record)s” silinmiş."
 
@@ -231,6 +306,10 @@ msgstr "%(fish)s balık, %(biomass)s"
 #, python-format
 msgid "%(fish)s fish, %(biomass)s now"
 msgstr "şu an %(fish)s balık, %(biomass)s"
+
+#, python-format
+msgid "%(fish)s fish: %(females)s adult female, %(mobile)s mobile, %(attached)s attached lice"
+msgstr "%(fish)s balık: %(females)s ergin dişi, %(mobile)s hareketli, %(attached)s tutunmuş bit"
 
 #, python-format
 msgid "%(free)s kg free"
@@ -278,6 +357,22 @@ msgid "%(meals)s meal"
 msgid_plural "%(meals)s meals"
 msgstr[0] "%(meals)s öğün"
 msgstr[1] "%(meals)s öğün"
+
+#, python-format
+msgid "%(medicine)s is given as %(administration)s."
+msgstr "%(medicine)s şu şekilde uygulanır: %(administration)s."
+
+#, python-format
+msgid "%(medicine)s is inactive: a new treatment takes an active medicine."
+msgstr "%(medicine)s pasif: yeni bir tedavi aktif bir ilaç alır."
+
+#, python-format
+msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
+msgstr "%(medicine)s, %(method)s, %(start)s – %(end)s: bekleme süresi %(rule)s."
+
+#, python-format
+msgid "%(minutes)s min"
+msgstr "%(minutes)s dk"
 
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
@@ -341,8 +436,16 @@ msgid "%(species)s is %(status)s: a new batch takes an active or experimental sp
 msgstr "%(species)s durumu %(status)s: yeni bir parti yalnızca aktif veya deneysel bir balık türü alır."
 
 #, python-format
+msgid "%(start)s – %(end)s"
+msgstr "%(start)s – %(end)s"
+
+#, python-format
 msgid "%(system)s is on another site than the production department."
 msgstr "%(system)s, üretim departmanından farklı bir sahada."
+
+#, python-format
+msgid "%(unit)s already has a count on %(date)s: void it first to correct it."
+msgstr "%(unit)s için %(date)s tarihinde zaten bir sayım var: düzeltmek için önce onu iptal edin."
 
 #, python-format
 msgid ""
@@ -404,6 +507,10 @@ msgstr "%(value)s kg"
 msgid "%(value)s kg/m³"
 msgstr "%(value)s kg/m³"
 
+#, python-format
+msgid "%(value)s per fish"
+msgstr "balık başına %(value)s"
+
 #. Translators: a weight in tonnes, e.g. 3.2 t.
 #, python-format
 msgid "%(value)s t"
@@ -425,6 +532,37 @@ msgstr "0 satır eşleşiyor"
 msgid "9-digit Norwegian organisation number"
 msgstr "9 haneli Norveç kuruluş numarası"
 
+msgid "A bath, a dip or a freshwater bath only."
+msgstr "Yalnız banyo, daldırma veya tatlı su banyosu."
+
+msgid ""
+"A bath, a medicated feed, an injection or a vaccination, or a treatment without a medicine, is "
+"recorded here or from a unit’s drawer on Production units."
+msgstr ""
+"Bir banyo, ilaçlı yem, enjeksiyon veya aşılama ya da ilaçsız bir tedavi burada veya Üretim "
+"birimleri’nde bir birimin panelinden kaydedilir."
+
+msgid ""
+"A bath, medicated feed, injection or dip is given with a medicine, the way the medicine is given;"
+" the others without one."
+msgstr ""
+"Banyo, ilaçlı yem, enjeksiyon veya daldırma bir ilaçla, ilacın uygulandığı şekilde yapılır; "
+"diğerleri ilaçsız."
+
+msgid "A bath, medicated feed, injection or dip names its medicine."
+msgstr "Banyo, ilaçlı yem, enjeksiyon veya daldırma ilacını belirtir."
+
+msgid ""
+"A bath, medicated feed, injection or dip names its medicine; a treatment without a medicine names"
+" none."
+msgstr "Banyo, ilaçlı yem, enjeksiyon veya daldırma ilacını belirtir; ilaçsız bir tedavi ilaç belirtmez."
+
+msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
+msgstr "Bir tanı şüpheli veya doğrulanmıştır; tanı yoksa doğrulanacak bir şey yoktur."
+
+msgid "A dose needs its unit, and a unit its dose."
+msgstr "Doz birimiyle, birim de dozuyla girilir."
+
 #, python-format
 msgid "A feed has at most %(num)d row."
 msgid_plural "A feed has at most %(num)d rows."
@@ -436,6 +574,24 @@ msgid "A feeder has at most %(num)d calibration."
 msgid_plural "A feeder has at most %(num)d calibrations."
 msgstr[0] "Bir yemleme makinesinin en fazla %(num)d kalibrasyonu olabilir."
 msgstr[1] "Bir yemleme makinesinin en fazla %(num)d kalibrasyonu olabilir."
+
+#, python-format
+msgid "A last day older than %(date)s cannot be changed."
+msgstr "%(date)s tarihinden eski bir son gün değiştirilemez."
+
+msgid ""
+"A listed disease is notified to Mattilsynet at once, already on suspicion (dyrehelseforskriften §"
+" 7)."
+msgstr ""
+"Listelenmiş bir hastalık, daha şüphe aşamasında, hemen Mattilsynet’e bildirilir "
+"(dyrehelseforskriften § 7)."
+
+msgid ""
+"A listed disease is suspected or confirmed and Mattilsynet has not been notified: notify at once "
+"(dyrehelseforskriften § 7), then enter the time on the event."
+msgstr ""
+"Listelenmiş bir hastalıktan şüpheleniliyor veya doğrulandı ve Mattilsynet’e bildirilmedi: hemen "
+"bildirin (dyrehelseforskriften § 7), sonra saati olaya girin."
 
 #, python-format
 msgid ""
@@ -475,12 +631,39 @@ msgstr "Bir örnek, tartılan balık sayısı ile toplam ağırlıklarıdır."
 msgid "A sea cage site needs latitude and longitude."
 msgstr "Deniz kafesi sahası için enlem ve boylam gerekir."
 
+msgid "A sea-lice medicine names its substance as the lice report has it; other medicines have none."
+msgstr "Deniz biti ilacı etken maddesini bit raporundaki adıyla belirtir; diğer ilaçlarda yoktur."
+
+msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
+msgstr "Yalnız deniz biti ilacı: etken maddesi, Mattilsynet’in haftalık bit raporundaki adıyla."
+
+msgid ""
+"A site averages the averages of its units counted that week, every unit weighing the same, and "
+"must stay below the limit: 0.5 adult female lice per fish, 0.2 in the spring weeks "
+"(lakselusforskriften § 8 and Vedlegg 1). The latest count of each unit in the week counts."
+msgstr ""
+"Bir sahanın ortalaması, o hafta sayılan birimlerinin ortalamalarının ortalamasıdır, her birim "
+"aynı ağırlıkta; sınırın altında kalmalıdır: balık başına 0,5 ergin dişi bit, bahar haftalarında "
+"0,2 (lakselusforskriften § 8 ve Vedlegg 1). Her birimin o haftaki son sayımı geçerlidir."
+
 msgid ""
 "A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
 " the reports and the water it lives in."
 msgstr ""
 "Çiftliğin yetiştirdiği veya stokladığı bir balık türü, örneğin Atlantik somonu veya lompa balığı:"
 " adları, resmî bildirim kodları ve yaşadığı su."
+
+msgid "A strength needs its unit, and a unit its strength."
+msgstr "Güç birimiyle, birim de gücüyle girilir."
+
+msgid "A supplier of laboratory analyses."
+msgstr "Laboratuvar analizi tedarikçisi."
+
+msgid "A supplier of medicines and vaccines (Purchasing › Suppliers)."
+msgstr "İlaç ve aşı tedarikçisi (Satın alma › Tedarikçiler)."
+
+msgid "A supplier of veterinary and fish health services (Purchasing › Suppliers)."
+msgstr "Veteriner ve balık sağlığı hizmeti tedarikçisi (Satın alma › Tedarikçiler)."
 
 msgid "A system cannot be its own parent."
 msgstr "Bir sistem kendi üst sistemi olamaz."
@@ -496,6 +679,19 @@ msgstr "Sistem, oluşturulduğu sahada kalır."
 msgid "A tank, a pond or a cage; it cannot be changed later."
 msgstr "Tank, havuz veya kafes; sonradan değiştirilemez."
 
+msgid "A treatment is of the units of one site: record one for each site."
+msgstr "Bir tedavi tek bir sahanın birimlerine aittir: her saha için ayrı kaydedin."
+
+msgid "A treatment without a medicine names none."
+msgstr "İlaçsız bir tedavi ilaç belirtmez."
+
+msgid ""
+"A treatment without a medicine names none: choose a bath, medicated feed, injection or dip as the"
+" method."
+msgstr ""
+"İlaçsız bir tedavi ilaç belirtmez: yöntem olarak banyo, ilaçlı yem, enjeksiyon veya daldırma "
+"seçin."
+
 msgid "A unit becomes active when fish are stocked in it (Operations › Production units)."
 msgstr "Bir birim, içine balık stoklandığında aktif olur (Operasyonlar › Üretim birimleri)."
 
@@ -508,6 +704,15 @@ msgstr "Bir birim %(old)s durumundan %(new)s durumuna geçemez."
 
 msgid "A unit with fish in it cannot be made inactive: move or harvest them first."
 msgstr "İçinde balık olan bir birim pasif yapılamaz: önce balıkları taşıyın veya hasat edin."
+
+msgid "A vaccination is given with a vaccine."
+msgstr "Aşılama bir aşıyla yapılır."
+
+msgid "A vaccine is given as a vaccination, and a vaccination with a vaccine."
+msgstr "Aşı aşılama olarak verilir, aşılama da aşıyla."
+
+msgid "Abnormal swimming"
+msgstr "Anormal yüzme"
 
 msgid "Above the max density, accepted"
 msgstr "Azami yoğunluğun üstü, kabul edildi"
@@ -535,6 +740,12 @@ msgstr "İşlemler"
 
 msgid "Active"
 msgstr "Aktif"
+
+msgid "Active substance"
+msgstr "Etken madde"
+
+msgid "Active: a new treatment can use it. Inactive: kept for the treatments that used it."
+msgstr "Aktif: yeni bir tedavi onu kullanabilir. Pasif: onu kullanan tedaviler için saklanır."
 
 msgid ""
 "Active: buy from it. Inactive: not used at the moment. Suspended: on hold, e.g. during a "
@@ -598,6 +809,15 @@ msgstr "Adres"
 msgid "Administration"
 msgstr "Yönetim"
 
+msgid "Adult female lice"
+msgstr "Ergin dişi bit"
+
+msgid "Adult females"
+msgstr "Ergin dişiler"
+
+msgid "Adult females per fish"
+msgstr "Balık başına ergin dişi"
+
 msgid "Adults"
 msgstr "Ergin"
 
@@ -635,6 +855,9 @@ msgstr "Tümü"
 msgid "All actions"
 msgstr "Tüm işlemler"
 
+msgid "All adult female lice found on the fish examined, with or without egg strings."
+msgstr "İncelenen balıklarda bulunan tüm ergin dişi bitler, yumurta keseli veya kesesiz."
+
 msgid "All batches"
 msgstr "Tüm partiler"
 
@@ -660,6 +883,12 @@ msgstr "Tüm döngüler"
 msgid "All manufacturers"
 msgstr "Tüm üreticiler"
 
+msgid "All medicines"
+msgstr "Tüm ilaçlar"
+
+msgid "All methods"
+msgstr "Tüm yöntemler"
+
 msgid "All parameters"
 msgstr "Tüm parametreler"
 
@@ -680,6 +909,13 @@ msgstr "Tüm sistemler"
 
 msgid "All the energy in the feed, in MJ per kg as fed."
 msgstr "Yemdeki tüm enerji, verildiği hâliyle kg başına MJ."
+
+msgid "All treatments"
+msgstr "Tüm tedaviler"
+
+#, python-format
+msgid "All treatments of %(unit)s"
+msgstr "%(unit)s birimindeki tüm tedaviler"
 
 msgid "All types"
 msgstr "Tüm türler"
@@ -714,12 +950,30 @@ msgstr "Amonyak sensörü"
 msgid "Ammonium (mg/L NH₄⁺ as N)"
 msgstr "Amonyum (N olarak mg/L NH₄⁺)"
 
+msgid "Amoebic gill disease (AGD)"
+msgstr "Amipli solungaç hastalığı (AGD)"
+
+msgid "Amount unit"
+msgstr "Miktar birimi"
+
+msgid "Amount used"
+msgstr "Kullanılan miktar"
+
+msgid "An amount needs its unit, and a unit its amount."
+msgstr "Miktar birimiyle, birim de miktarıyla girilir."
+
 msgid ""
 "An earthen pond is bare soil or compacted clay; a lined pond has a membrane or concrete, and "
 "needs it."
 msgstr ""
 "Toprak havuz çıplak toprak veya sıkıştırılmış kildir; kaplamalı havuzun membranı veya betonu "
 "vardır ve bu gereklidir."
+
+msgid "An event is closed on or after its date."
+msgstr "Bir olay kendi tarihinde veya sonrasında kapatılır."
+
+msgid "Anaesthetic"
+msgstr "Anestezik"
 
 msgid "Analog"
 msgstr "Analog"
@@ -732,6 +986,9 @@ msgstr "Bu ad başka bir yemde zaten var."
 
 msgid "Another feed already uses this code."
 msgstr "Bu kodu başka bir yem zaten kullanıyor."
+
+msgid "Another medicine already has this name."
+msgstr "Bu ad başka bir ilaçta zaten var."
 
 msgid "Another production department already uses this code."
 msgstr "Bu kodu başka bir üretim departmanı zaten kullanıyor."
@@ -772,6 +1029,12 @@ msgstr "Bu kodu başka bir birim zaten kullanıyor."
 msgid "Another user already uses this email."
 msgstr "Bu e-postayı başka bir kullanıcı zaten kullanıyor."
 
+msgid "Antibacterial"
+msgstr "Antibakteriyel"
+
+msgid "Antifungal"
+msgstr "Antifungal"
+
 msgid "Any water"
 msgstr "Her su"
 
@@ -790,6 +1053,9 @@ msgstr "Alan"
 msgctxt "access area"
 msgid "Area"
 msgstr "Alan"
+
+msgid "Area not set: the stricter limit applies (Facility › Sites)"
+msgstr "Bölge girilmemiş: daha sıkı sınır geçerli (Tesis › Sahalar)"
 
 msgid "As a pH meter or kit reads it."
 msgstr "pH metrenin veya kitin okuduğu gibi."
@@ -810,6 +1076,23 @@ msgstr "Azot olarak. NO₂⁻ okuyan bir kit: 3,29'a bölün."
 msgid "As nitrogen. A kit that reads NO₃⁻: divide by 4.43."
 msgstr "Azot olarak. NO₃⁻ okuyan bir kit: 4,43'e bölün."
 
+msgid "As the SPC names it, e.g. azamethiphos."
+msgstr "KÜB’deki adıyla, örn. azametifos."
+
+msgid ""
+"As the SPC states it (døgngrader): the daily mean water temperatures after the last treatment day"
+" add up to this before the fish may be harvested. 0 when it has none."
+msgstr ""
+"KÜB’de yazdığı gibi (døgngrader): balık hasat edilmeden önce son tedavi gününden sonraki günlük "
+"ortalama su sıcaklıklarının toplamı buna ulaşır. Yoksa 0."
+
+msgid ""
+"As the SPC states it, in days after the last treatment day. Give it as well when the SPC gives "
+"both: the later end wins. 0 when it has none."
+msgstr ""
+"KÜB’de yazdığı gibi, son tedavi gününden sonraki gün olarak. KÜB ikisini de veriyorsa bunu da "
+"girin: daha geç biten geçerlidir. Yoksa 0."
+
 msgid ""
 "As the meter or kit reads it. With the temperature, the saturation is worked out when it is not "
 "entered."
@@ -824,6 +1107,9 @@ msgstr "Ham kül (%)"
 #, python-format
 msgid "At least %(min)s."
 msgstr "En az %(min)s."
+
+msgid "At least 10 fish a cage, 20 in the spring weeks (lakselusforskriften, Vedlegg 1)."
+msgstr "Kafes başına en az 10 balık, bahar haftalarında 20 (lakselusforskriften, Vedlegg 1)."
 
 #, python-format
 msgid "At most %(decimals)d decimals for this parameter."
@@ -842,6 +1128,15 @@ msgstr "Deniz seviyesi basıncında: sahanın rakımı yok."
 
 msgid "At the deepest point, usually by the outlet."
 msgstr "En derin noktada, genellikle çıkışın yanında."
+
+msgid "Attached"
+msgstr "Tutunmuş"
+
+msgid "Attached lice"
+msgstr "Tutunmuş bitler"
+
+msgid "Attached per fish"
+msgstr "Balık başına tutunmuş"
 
 msgid "Automatic"
 msgstr "Otomatik"
@@ -864,6 +1159,9 @@ msgstr "Kalan balıkların ortalama ağırlığı (g)"
 msgid "Avg. weight"
 msgstr "Ort. ağırlık"
 
+msgid "Azamethiphos"
+msgstr "Azametifos"
+
 msgid "Back to overview"
 msgstr "Genel bakışa dön"
 
@@ -878,6 +1176,12 @@ msgstr "Ters yıkama sıklığı"
 
 msgid "Backwash interval"
 msgstr "Ters yıkama aralığı"
+
+msgid "Bacterial disease"
+msgstr "Bakteriyel hastalık"
+
+msgid "Bacterial kidney disease (BKD)"
+msgstr "Bakteriyel böbrek hastalığı (BKD)"
 
 msgid "Basic info"
 msgstr "Temel bilgiler"
@@ -899,8 +1203,17 @@ msgstr "Parti no"
 msgid "Batches"
 msgstr "Partiler"
 
+msgid "Batches and withdrawal"
+msgstr "Partiler ve bekleme süresi"
+
 msgid "Batches fed"
 msgstr "Yemlenen partiler"
+
+msgid "Bath"
+msgstr "Banyo"
+
+msgid "Bath time (minutes)"
+msgstr "Banyo süresi (dakika)"
 
 msgid "Bead filter"
 msgstr "Boncuk filtre"
@@ -1016,6 +1329,9 @@ msgstr "Karbonhidrat, NFE (%)"
 msgid "Carbon dioxide (mg/L free CO₂)"
 msgstr "Karbondioksit (mg/L serbest CO₂)"
 
+msgid "Cardiomyopathy syndrome (CMS)"
+msgstr "Kardiyomiyopati sendromu (CMS)"
+
 msgid "Category"
 msgstr "Kategori"
 
@@ -1027,6 +1343,9 @@ msgstr "Santrifüj pompa"
 
 msgid "Change password"
 msgstr "Parolayı değiştir"
+
+msgid "Change the last day"
+msgstr "Son günü değiştir"
 
 msgid "Changed"
 msgstr "Değiştirildi"
@@ -1050,6 +1369,13 @@ msgstr "%(unit)s biriminin sahasındaki bir yemleme makinesi seçin."
 msgid "Choose a feeder: equipment of the Feeding category."
 msgstr "Bir yemleme makinesi seçin: Yemleme kategorisinden bir ekipman."
 
+#, python-format
+msgid "Choose a health event of %(unit)s."
+msgstr "%(unit)s birimine ait bir sağlık olayı seçin."
+
+msgid "Choose a health event of the site of these units."
+msgstr "Bu birimlerin sahasına ait bir sağlık olayı seçin."
+
 msgid "Choose a site to list its units and loops."
 msgstr "Birimlerini ve döngülerini listelemek için bir saha seçin."
 
@@ -1059,8 +1385,17 @@ msgstr "Bir ekipman ve yedek parça tedarikçisi seçin."
 msgid "Choose a supplier of feed."
 msgstr "Yem tedarikçisi olan birini seçin."
 
+msgid "Choose a supplier of laboratory analyses."
+msgstr "Bir laboratuvar analizi tedarikçisi seçin."
+
 msgid "Choose a supplier of live fish and eggs."
 msgstr "Canlı balık ve yumurta tedarikçisi seçin."
+
+msgid "Choose a supplier of medicines and vaccines."
+msgstr "Bir ilaç ve aşı tedarikçisi seçin."
+
+msgid "Choose a supplier of veterinary and fish health services."
+msgstr "Bir veteriner ve balık sağlığı hizmeti tedarikçisi seçin."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Genel sekmesinde bir tür seçin; teknik özellikleri burada görünür."
@@ -1080,11 +1415,20 @@ msgstr "Genel sekmesinde türü seçin; boyutları burada görünür."
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Şekli seçin; hacmin hesaplandığı ölçüler onunla birlikte görünür."
 
+msgid "Choose the site first."
+msgstr "Önce sahayı seçin."
+
+msgid "Choose the substance as the lice report names it."
+msgstr "Etken maddeyi bit raporundaki adıyla seçin."
+
 msgid "Choose the unit that was fed."
 msgstr "Yemlenen birimi seçin."
 
 msgid "Choose the unit the fish go into."
 msgstr "Balıkların gireceği birimi seçin."
+
+msgid "Choose the units that were treated."
+msgstr "Tedavi edilen birimleri seçin."
 
 msgid "Circular"
 msgstr "Dairesel"
@@ -1115,6 +1459,12 @@ msgstr "Kapat"
 
 msgid "Closed"
 msgstr "Kapalı"
+
+msgid "Closed on"
+msgstr "Kapanış tarihi"
+
+msgid "Closing"
+msgstr "Kapanış"
 
 msgid "Code"
 msgstr "Kod"
@@ -1151,6 +1501,12 @@ msgstr "Beton"
 
 msgid "Conductivity"
 msgstr "İletkenlik"
+
+msgid "Confirmation"
+msgstr "Doğrulama"
+
+msgid "Confirmed"
+msgstr "Doğrulandı"
 
 msgid "Connectivity"
 msgstr "Bağlantı"
@@ -1194,6 +1550,9 @@ msgstr "Soğutma"
 msgid "Cooling capacity"
 msgstr "Soğutma kapasitesi"
 
+msgid "Copepodids and chalimus, in total."
+msgstr "Kopepoditler ve chalimuslar, toplam."
+
 msgid "Copper alloy"
 msgstr "Bakır alaşımı"
 
@@ -1208,6 +1567,13 @@ msgstr "Sayı düzeltmesi"
 
 msgid "Count correction"
 msgstr "Sayım düzeltmesi"
+
+msgid ""
+"Count every stage on every fish examined and enter the totals; the averages per fish are worked "
+"out (lakselusforskriften, Vedlegg 1)."
+msgstr ""
+"İncelenen her balıkta her evreyi sayın ve toplamları girin; balık başına ortalamalar hesaplanır "
+"(lakselusforskriften, Vedlegg 1)."
 
 msgid "Country"
 msgstr "Ülke"
@@ -1286,6 +1652,9 @@ msgstr "Serbest alan 2"
 msgid "Custom field 3"
 msgstr "Serbest alan 3"
 
+msgid "Cypermethrin"
+msgstr "Sipermetrin"
+
 msgid "D-ended"
 msgstr "D-uçlu"
 
@@ -1301,8 +1670,14 @@ msgstr "Tarih"
 msgid "Date and time on the site’s clock."
 msgstr "Sahanın saatine göre tarih ve saat."
 
+msgid "Days"
+msgstr "Günler"
+
 msgid "Dead fish"
 msgstr "Ölü balık"
+
+msgid "Deaths"
+msgstr "Ölümler"
 
 msgid "Decommissioned"
 msgstr "Kullanımdan kaldırıldı"
@@ -1315,6 +1690,9 @@ msgstr "Tanım"
 
 msgid "Deformed"
 msgstr "Deforme"
+
+msgid "Deformity"
+msgstr "Deformite"
 
 msgid "Delete"
 msgstr "Sil"
@@ -1346,6 +1724,9 @@ msgstr "Silinmiş satır"
 msgid "Deleted rows"
 msgstr "Silinmiş satırlar"
 
+msgid "Deltamethrin"
+msgstr "Deltametrin"
+
 msgid "Demand feeder"
 msgstr "Talep yemleme makinesi"
 
@@ -1364,6 +1745,9 @@ msgstr "Açıklama"
 msgid "Details"
 msgstr "Ayrıntılar"
 
+msgid "Diagnosis"
+msgstr "Tanı"
+
 msgid "Diameter (m)"
 msgstr "Çap (m)"
 
@@ -1373,11 +1757,17 @@ msgstr "Öldü"
 msgid "Diesel"
 msgstr "Dizel"
 
+msgid "Diflubenzuron"
+msgstr "Diflubenzuron"
+
 msgid "Digestible energy (MJ/kg)"
 msgstr "Sindirilebilir enerji (MJ/kg)"
 
 msgid "Dimensions"
 msgstr "Boyutlar"
+
+msgid "Dip"
+msgstr "Daldırma"
 
 msgid "Discontinued"
 msgstr "Üretimden kaldırıldı"
@@ -1402,6 +1792,18 @@ msgstr "Dalış ve ROV"
 
 msgid "Django model"
 msgstr "Django modeli"
+
+msgid "Dose"
+msgstr "Doz"
+
+msgid "Dose and amount"
+msgstr "Doz ve miktar"
+
+msgid "Dose unit"
+msgstr "Doz birimi"
+
+msgid "Dose · amount"
+msgstr "Doz · miktar"
 
 #, python-format
 msgid "Download the rows below as CSV, up to %(limit)s rows"
@@ -1428,6 +1830,12 @@ msgstr "Örn. “yanlış birime girildi”. Numune geçmişte üstü çizili ol
 
 msgid "EPDM"
 msgstr "EPDM"
+
+msgid "EU-listed, categories C, D and E"
+msgstr "AB listesinde, C, D ve E kategorileri"
+
+msgid "EU-listed, category A"
+msgstr "AB listesinde, A kategorisi"
 
 msgid "Each unit can be listed once."
 msgstr "Her birim bir kez yazılabilir."
@@ -1479,6 +1887,9 @@ msgstr "Elektrik"
 msgid "Email"
 msgstr "E-posta"
 
+msgid "Emamectin benzoate"
+msgstr "Emamektin benzoat"
+
 msgid "Empty"
 msgstr "Boş"
 
@@ -1500,6 +1911,9 @@ msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
 "göndereceğiz."
 
+msgid "Epizootic haematopoietic necrosis (EHN)"
+msgstr "Epizootik hematopoietik nekroz (EHN)"
+
 msgid "Equipment"
 msgstr "Ekipman"
 
@@ -1517,6 +1931,9 @@ msgstr "Kaçış"
 
 msgid "Established"
 msgstr "Kuruluş tarihi"
+
+msgid "Event"
+msgstr "Olay"
 
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
@@ -1548,6 +1965,9 @@ msgstr ""
 "Balık türünün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, "
 "sonra deniz suyunda yetiştirilir: ikisini de işaretleyin."
 
+msgid "Every way of giving"
+msgstr "Tüm uygulama şekilleri"
+
 msgid "Everything supplied"
 msgstr "Tedarik edilen her şey"
 
@@ -1558,8 +1978,17 @@ msgstr ""
 "Çiftliğin ondan aldığı her şey, mallar ve hizmetler. Ekipman yalnızca bir ekipman ve yedek parça "
 "tedarikçisinden alınabilir."
 
+msgid "Examination"
+msgstr "Muayene"
+
+msgid "Examined by"
+msgstr "Muayene eden"
+
 msgid "Exclusion"
 msgstr "Dışlama"
+
+msgid "Exophthalmia"
+msgstr "Ekzoftalmi"
 
 msgid "Expand menu"
 msgstr "Menüyü genişlet"
@@ -1691,6 +2120,10 @@ msgstr "Yemler"
 msgid "Feeds when the fish trigger it."
 msgstr "Balıklar tetiklediğinde yem verir."
 
+#, python-format
+msgid "Fewer than %(fish)s fish examined in:"
+msgstr "%(fish)s balıktan az incelenen birimler:"
+
 msgid "Fibreglass (GRP)"
 msgstr "Cam elyaf (CTP)"
 
@@ -1714,6 +2147,12 @@ msgstr "Filtrasyon"
 msgid "Filtration size"
 msgstr "Filtrasyon boyutu"
 
+msgid "Fin damage"
+msgstr "Yüzgeç hasarı"
+
+msgid "Findings"
+msgstr "Bulgular"
+
 msgid "Fingerlings"
 msgstr "Parmak boy"
 
@@ -1722,6 +2161,9 @@ msgstr "Bitirme yemi"
 
 msgid "First"
 msgstr "İlk"
+
+msgid "First day"
+msgstr "İlk gün"
 
 msgid "First name"
 msgstr "Ad"
@@ -1741,6 +2183,9 @@ msgstr "Birimde balık var, bu yüzden %(status)s olamaz: önce balıkları taş
 
 msgid "Fish arriving"
 msgstr "Gelen balık"
+
+msgid "Fish examined"
+msgstr "İncelenen balık"
 
 msgid "Fish farm"
 msgstr "Balık çiftliği"
@@ -1776,6 +2221,15 @@ msgid "Fluidised bed"
 msgstr "Akışkan yatak"
 
 msgid ""
+"For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 from Nord-"
+"Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark (lakselusforskriften § "
+"8)."
+msgstr ""
+"Salmonidli bir deniz sahası için: baharın düşük deniz biti sınırı Nord-Trøndelag ve güneyinde "
+"16–21. haftalarda, Nordland, Troms ve Finnmark’ta 21–26. haftalarda geçerlidir "
+"(lakselusforskriften § 8)."
+
+msgid ""
 "For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 "
 "rows. They are saved separately from the equipment details."
 msgstr ""
@@ -1795,6 +2249,9 @@ msgstr "Parolanızı mı unuttunuz?"
 msgid "Frame"
 msgstr "Çerçeve"
 
+msgid "Francisellosis"
+msgstr "Francisellozis"
+
 msgid "Free carbon dioxide, from a CO₂ probe or a titration."
 msgstr "Serbest karbondioksit; bir CO₂ probundan veya titrasyonla."
 
@@ -1806,6 +2263,9 @@ msgstr "Tatlı su"
 
 msgid "Freshwater"
 msgstr "Tatlı su"
+
+msgid "Freshwater bath"
+msgstr "Tatlı su banyosu"
 
 msgid "From"
 msgstr "Başlangıç"
@@ -1852,6 +2312,12 @@ msgstr "Yakıt tipi"
 msgid "Full name of the site manager"
 msgstr "Saha sorumlusunun tam adı"
 
+msgid "Fungal disease"
+msgstr "Mantar hastalığı"
+
+msgid "Furunculosis"
+msgstr "Furunkuloz"
+
 msgid "Galvanised steel"
 msgstr "Galvanizli çelik"
 
@@ -1860,6 +2326,9 @@ msgstr "Gaz"
 
 msgid "Gas and other"
 msgstr "Gaz ve diğer"
+
+msgid "Gasping at the surface"
+msgstr "Yüzeyde soluma"
 
 msgid "General"
 msgstr "Genel"
@@ -1886,6 +2355,9 @@ msgstr ""
 msgid "Genus: %(genus)s (the first word of the scientific name)."
 msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
 
+msgid "Gill disease"
+msgstr "Solungaç hastalığı"
+
 msgid "Give at least one bound."
 msgstr "En az bir sınır girin."
 
@@ -1897,6 +2369,9 @@ msgstr "Ortalama ağırlığı ya da tartılan balık sayısını ve toplam ağ�
 
 msgid "Give the sample, or the average weight."
 msgstr "Örneği ya da ortalama ağırlığı girin."
+
+msgid "Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none)."
+msgstr "Bekleme süresini KÜB’de yazdığı gibi gün-derece, gün ya da ikisiyle girin (yoksa 0)."
 
 msgid "Grading"
 msgstr "Boylama"
@@ -1917,8 +2392,14 @@ msgstr "Büyütme yemi"
 msgid "Growth stage"
 msgstr "Büyüme evresi"
 
+msgid "Gyrodactylus salaris infection"
+msgstr "Gyrodactylus salaris enfeksiyonu"
+
 msgid "HDPE"
 msgstr "HDPE"
+
+msgid "Haemorrhage"
+msgstr "Kanama"
 
 msgid "Handling"
 msgstr "Elleçleme"
@@ -1950,6 +2431,19 @@ msgstr "Basma yüksekliği"
 
 msgid "Health"
 msgstr "Sağlık"
+
+msgid "Health event"
+msgstr "Sağlık olayı"
+
+#, python-format
+msgid "Health event “%(event)s” voided."
+msgstr "“%(event)s” sağlık olayı iptal edildi."
+
+msgid "Health events"
+msgstr "Sağlık olayları"
+
+msgid "Heart and skeletal muscle inflammation (HSMI)"
+msgstr "Kalp ve iskelet kası iltihabı (HSMI)"
 
 msgid "Heat exchanger"
 msgstr "Isı eşanjörü"
@@ -1983,6 +2477,12 @@ msgstr "%(point)s geçmişi"
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
+msgid "How it is given; a treatment with it uses the same method."
+msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
+
+msgid "Hydrogen peroxide"
+msgstr "Hidrojen peroksit"
+
 msgid ""
 "If an account uses this address, a reset link is on its way. If it has not arrived in a few "
 "minutes, check your spam folder."
@@ -1993,17 +2493,38 @@ msgstr ""
 msgid "If you did not ask for this, you can ignore this email."
 msgstr "Bunu siz istemediyseniz bu e-postayı yok sayabilirsiniz."
 
+msgid "Imidacloprid"
+msgstr "İmidakloprid"
+
+msgid "In feed"
+msgstr "Yemle"
+
 msgid "Inactive"
 msgstr "Pasif"
 
 msgid "Inactive people cannot sign in."
 msgstr "Pasif kişiler giriş yapamaz."
 
+msgid "Increased mortality"
+msgstr "Artan ölüm"
+
 msgid "Indexes"
 msgstr "Dizinler"
 
+msgid "Infectious haematopoietic necrosis (IHN)"
+msgstr "Enfeksiyöz hematopoietik nekroz (IHN)"
+
+msgid "Infectious pancreatic necrosis (IPN)"
+msgstr "Enfeksiyöz pankreas nekrozu (IPN)"
+
+msgid "Infectious salmon anaemia (ISA)"
+msgstr "Enfeksiyöz somon anemisi (ISA)"
+
 msgid "Inherit from company"
 msgstr "Şirketten devral"
+
+msgid "Injection"
+msgstr "Enjeksiyon"
 
 msgid ""
 "Inside the warning bounds a value is ok; outside them, a warning; outside the critical bounds, "
@@ -2014,6 +2535,9 @@ msgstr ""
 
 msgid "Installation date"
 msgstr "Kurulum tarihi"
+
+msgid "Is the diagnosis suspected or confirmed?"
+msgstr "Tanı şüpheli mi, doğrulanmış mı?"
 
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
@@ -2036,6 +2560,13 @@ msgid "It holds fish: move or harvest them first."
 msgstr "İçinde balık var: önce taşıyın veya hasat edin."
 
 msgid ""
+"It stops counting and stays in the history with its reason. An event that was right but is over "
+"is closed on its form instead."
+msgstr ""
+"Artık sayılmaz ve gerekçesiyle geçmişte kalır. Doğru olup sona eren bir olay bunun yerine "
+"formunda kapatılır."
+
+msgid ""
 "It stops counting: the latest values and statuses are worked out again without it. To correct a "
 "sample, void it and enter it again."
 msgstr ""
@@ -2055,6 +2586,13 @@ msgstr ""
 #, python-format
 msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
 msgstr "Silinmiş sistemlere bağlantıları (%(systems)s) kaydedildiğinde kaldırılır."
+
+msgid ""
+"Its medicine withdrawal is lifted at once. Void only a treatment that was not given as recorded: "
+"to correct one, void it and record it again."
+msgstr ""
+"İlaç bekleme süresi hemen kalkar. Yalnızca kaydedildiği gibi yapılmamış bir tedaviyi iptal edin: "
+"düzeltmek için iptal edip yeniden kaydedin."
 
 msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
 msgstr "Resmî makamlara yapılan bildirimlerdeki numarası (kar veya merd numarası), koddan farklıysa."
@@ -2081,6 +2619,12 @@ msgstr "Anahtar"
 msgid "Kind"
 msgstr "Tür"
 
+msgid "L"
+msgstr "L"
+
+msgid "Lab result"
+msgstr "Laboratuvar sonucu"
+
 msgid "Label"
 msgstr "Etiket"
 
@@ -2089,6 +2633,9 @@ msgstr "Laboratuvar"
 
 msgid "Laboratory analyses"
 msgstr "Laboratuvar analizleri"
+
+msgid "Laboratory reference"
+msgstr "Laboratuvar referansı"
 
 msgid "Lake or reservoir"
 msgstr "Göl veya baraj gölü"
@@ -2120,6 +2667,9 @@ msgstr "Son 7 gün"
 msgid "Last calibration"
 msgstr "Son kalibrasyon"
 
+msgid "Last day"
+msgstr "Son gün"
+
 msgid "Last fed"
 msgstr "Son yemleme"
 
@@ -2132,6 +2682,10 @@ msgstr "Son giriş"
 msgid "Latest"
 msgstr "Son değerler"
 
+#, python-format
+msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
+msgstr "Son deniz biti sayımı %(date)s, %(fish)s balık incelendi"
+
 msgid "Latitude"
 msgstr "Enlem"
 
@@ -2141,6 +2695,9 @@ msgstr "Enlem ve boylam birlikte girilmelidir."
 msgid "Latitude is required for a sea cage."
 msgstr "Deniz kafesi için enlem zorunludur."
 
+msgid "Leave all unticked when it concerns the whole site."
+msgstr "Tüm sahayı ilgilendiriyorsa hiçbirini işaretlemeyin."
+
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
 
@@ -2149,6 +2706,11 @@ msgstr "Uzunluk (m)"
 
 msgid "Level sensor"
 msgstr "Seviye sensörü"
+
+msgid ""
+"Lice are counted at least every 7 days at 4 °C or above, every 14 days below (lakselusforskriften"
+" § 6)."
+msgstr "Bitler 4 °C ve üstünde en az 7 günde bir, altında 14 günde bir sayılır (lakselusforskriften § 6)."
 
 msgid "Life stage"
 msgstr "Yaşam evresi"
@@ -2234,8 +2796,20 @@ msgstr "Üretici"
 msgid "Mark which one is the primary one."
 msgstr "Hangisinin birincil olduğunu işaretleyin."
 
+msgid "Marketing authorisation number"
+msgstr "Ruhsat numarası"
+
 msgid "Material"
 msgstr "Malzeme"
+
+msgid "Mattilsynet"
+msgstr "Mattilsynet"
+
+msgid "Mattilsynet is notified on or after the date of the event."
+msgstr "Mattilsynet olay tarihinde veya sonrasında bilgilendirilir."
+
+msgid "Mattilsynet notified at"
+msgstr "Mattilsynet’e bildirim zamanı"
 
 #, python-format
 msgid "Max %(density)s kg/m³, %(biomass)s"
@@ -2277,6 +2851,9 @@ msgstr "Ölçülen parametreler"
 msgid "Measurement range"
 msgstr "Ölçüm aralığı"
 
+msgid "Mechanical delousing"
+msgstr "Mekanik bitten arındırma"
+
 msgid "Mechanical filter"
 msgstr "Mekanik filtre"
 
@@ -2285,6 +2862,20 @@ msgstr "Ortam hacmi"
 
 msgid "Medicated feed"
 msgstr "İlaçlı yem"
+
+#, python-format
+msgid ""
+"Medicated feed %(feed)s was fed in %(unit)s on %(date)s and no in-feed treatment covers that day:"
+" the withdrawal end is unknown. Record the treatment under Health › Treatments."
+msgstr ""
+"%(feed)s ilaçlı yemi %(date)s tarihinde %(unit)s biriminde verildi ve o günü kapsayan yemle "
+"tedavi yok: bekleme süresinin sonu bilinmiyor. Tedaviyi Sağlık › Tedaviler altında kaydedin."
+
+msgid "Medicine"
+msgstr "İlaç"
+
+msgid "Medicines"
+msgstr "İlaçlar"
 
 msgid "Medicines and vaccines"
 msgstr "İlaçlar ve aşılar"
@@ -2301,6 +2892,9 @@ msgstr "Üstveri"
 msgid "Meter or test kit"
 msgstr "Ölçer veya test kiti"
 
+msgid "Method"
+msgstr "Yöntem"
+
 msgid "Minimum transmittance"
 msgstr "Asgari geçirgenlik"
 
@@ -2309,6 +2903,15 @@ msgstr "Eksik"
 
 msgid "Mixed"
 msgstr "Karışık"
+
+msgid "Mobile"
+msgstr "Hareketli"
+
+msgid "Mobile lice"
+msgstr "Hareketli bitler"
+
+msgid "Mobile per fish"
+msgstr "Balık başına hareketli"
 
 msgid "Model"
 msgstr "Model"
@@ -2452,6 +3055,12 @@ msgstr "Henüz kaydedilmiş değişiklik yok."
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Henüz kişi yok. Satır eklemek için “Kişi ekle” düğmesini kullanın."
 
+msgid "No count matches these filters."
+msgstr "Bu filtrelere uyan sayım yok."
+
+msgid "No diagnosis"
+msgstr "Tanı yok"
+
 msgid "No feed recorded up to the last weighing."
 msgstr "Son tartıma kadar yem kaydedilmedi."
 
@@ -2467,6 +3076,9 @@ msgstr "Henüz yemleme kaydedilmedi"
 #, python-format
 msgid "No fish are in %(unit)s."
 msgstr "%(unit)s içinde balık yok."
+
+msgid "No fish found in these units on these days"
+msgstr "Bu günlerde bu birimlerde balık bulunamadı"
 
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s to weigh."
@@ -2504,6 +3116,9 @@ msgstr "Eşleşen satır yok. <a href=\"%(url)s\">Aramayı ve filtreleri temizle
 msgid "No samples match these filters."
 msgstr "Bu filtrelere uyan numune yok."
 
+msgid "No sea-lice count recorded yet"
+msgstr "Henüz deniz biti sayımı kaydedilmedi"
+
 msgid "No site"
 msgstr "Saha yok"
 
@@ -2518,8 +3133,23 @@ msgid ""
 "chosen."
 msgstr "Seçilecek sistem yok: üretim departmanının sahasında sistem yok ya da üretim departmanı seçilmedi."
 
+msgid "No treatment in this unit in the last 90 days."
+msgstr "Son 90 günde bu birimde tedavi yok."
+
+msgid "No treatment matches these filters."
+msgstr "Bu filtrelere uyan tedavi yok."
+
+msgid "No treatment recorded yet"
+msgstr "Henüz tedavi kaydedilmedi"
+
 msgid "No unit holds fish: a feeding needs fish in its unit."
 msgstr "Hiçbir birimde balık yok: bir yemleme için biriminde balık olmalı."
+
+msgid "No unit holds fish: a treatment needs fish in its units on its first day."
+msgstr "Hiçbir birimde balık yok: bir tedavi, ilk gününde birimlerinde balık gerektirir."
+
+msgid "No unit holds fish: lice are counted on the fish of a unit."
+msgstr "Hiçbir birimde balık yok: bitler bir birimin balıklarında sayılır."
 
 msgid "No units match these filters."
 msgstr "Bu filtrelere uyan birim yok."
@@ -2545,8 +3175,23 @@ msgstr "Yok."
 msgid "None: not a part of other equipment"
 msgstr "Yok: başka bir ekipmanın parçası değil"
 
+msgid "Nord-Trøndelag and southwards"
+msgstr "Nord-Trøndelag ve güneyi"
+
+msgid "Nordland, Troms and Finnmark"
+msgstr "Nordland, Troms ve Finnmark"
+
+msgid "Norwegian list, category F"
+msgstr "Norveç listesi, F kategorisi"
+
+msgid "Norwegian list, category G"
+msgstr "Norveç listesi, G kategorisi"
+
 msgid "Not a cleaner fish"
 msgstr "Temizleyici balık değil"
+
+msgid "Not a sea-lice medicine"
+msgstr "Deniz biti ilacı değil"
 
 msgid "Not given"
 msgstr "Belirtilmedi"
@@ -2557,14 +3202,24 @@ msgstr "Bir sistemde değil"
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
 
+msgid "Not listed"
+msgstr "Listede değil"
+
 msgid "Not measured"
 msgstr "Ölçülmedi"
 
 msgid "Not rated"
 msgstr "Puanlanmadı"
 
+msgid "Not set"
+msgstr "Girilmedi"
+
 msgid "Not stated"
 msgstr "Belirtilmedi"
+
+#, python-format
+msgid "Not suitable for harvest — medicine withdrawal %(until)s"
+msgstr "Hasada uygun değil — ilaç bekleme süresi %(until)s"
 
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
@@ -2581,6 +3236,19 @@ msgstr "Henüz kayıt yok."
 msgid "Nothing yet"
 msgstr "Henüz yok"
 
+msgid "Notifiable diagnosis"
+msgstr "Bildirimi zorunlu tanı"
+
+#, python-format
+msgid "Notified %(moment)s"
+msgstr "Bildirildi: %(moment)s"
+
+msgid "Notify Mattilsynet"
+msgstr "Mattilsynet’e bildirin"
+
+msgid "Notify at once"
+msgstr "Hemen bildirin"
+
 msgid "Nullable"
 msgstr "Boş olabilir"
 
@@ -2595,6 +3263,9 @@ msgstr "Naylon"
 
 msgid "OK"
 msgstr "Normal"
+
+msgid "Observation"
+msgstr "Gözlem"
 
 msgid "Offered"
 msgstr "Sunuluyor"
@@ -2611,6 +3282,9 @@ msgstr "Fuel-oil"
 msgid "Older"
 msgstr "Daha eski"
 
+msgid "On the site’s clock."
+msgstr "Sahanın saatine göre."
+
 msgid "One probe that measures several water parameters."
 msgstr "Birden çok su parametresini ölçen tek prob."
 
@@ -2618,8 +3292,14 @@ msgstr "Birden çok su parametresini ölçen tek prob."
 msgid "Only %(available)s fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s partisinden yalnızca %(available)s balık var."
 
+msgid "Only a bath, a dip or a freshwater bath has a bath time."
+msgstr "Yalnızca banyo, daldırma veya tatlı su banyosunun banyo süresi vardır."
+
 msgid "Only a feeder has feed calibrations."
 msgstr "Yem kalibrasyonu yalnızca yemleme makinelerinde olur."
+
+msgid "Only a sea-lice medicine has a substance in the lice report."
+msgstr "Bit raporunda etken maddesi yalnızca deniz biti ilacının olur."
 
 msgid "Only bought fish have a supplier."
 msgstr "Yalnızca satın alınan balığın tedarikçisi olur."
@@ -2652,6 +3332,15 @@ msgstr ""
 
 msgid "Only warnings and criticals"
 msgstr "Yalnızca uyarılar ve kritikler"
+
+msgid "Open"
+msgstr "Açık"
+
+msgid "Open and closed"
+msgstr "Açık ve kapalı"
+
+msgid "Open health events"
+msgstr "Açık sağlık olayları"
 
 msgid "Open menu"
 msgstr "Menüyü aç"
@@ -2692,6 +3381,13 @@ msgstr "İsteğe bağlı: kaç öğünde verildiği."
 msgid "Optional: the feeder that gave it, on the unit’s site."
 msgstr "İsteğe bağlı: birimin sahasında onu veren yemleme makinesi."
 
+msgid ""
+"Optional: the health event (Operations › Health events) these fish died or were culled under; it "
+"counts them."
+msgstr ""
+"İsteğe bağlı: bu balıkların altında öldüğü veya itlaf edildiği sağlık olayı (Operasyonlar › "
+"Sağlık olayları); onları sayar."
+
 msgid "Optional: the time of the feeding, or of its first meal."
 msgstr "İsteğe bağlı: yemlemenin ya da ilk öğünün saati."
 
@@ -2719,6 +3415,15 @@ msgstr "Diğer"
 msgid "Other active feeds"
 msgstr "Diğer aktif yemler"
 
+msgid "Other active substance"
+msgstr "Diğer etken madde"
+
+msgid "Other antiparasitic"
+msgstr "Diğer antiparaziter"
+
+msgid "Other diagnosis"
+msgstr "Diğer tanı"
+
 msgid "Other equipment"
 msgstr "Diğer ekipman"
 
@@ -2728,8 +3433,17 @@ msgstr "Bu seri numarası başka bir ekipmanda zaten var."
 msgid "Other equipment already uses this code."
 msgstr "Bu kodu başka bir ekipman zaten kullanıyor."
 
+msgid "Other parasites (e.g. AGD)"
+msgstr "Diğer parazitler (örn. AGD)"
+
+msgid "Other, without a medicine"
+msgstr "Diğer, ilaçsız"
+
 msgid "Out of service"
 msgstr "Hizmet dışı"
+
+msgid "Outcome"
+msgstr "Sonuç"
 
 msgid "Oval"
 msgstr "Oval"
@@ -2739,6 +3453,9 @@ msgstr "Aşım"
 
 msgid "Over capacity"
 msgstr "Kapasite üstü"
+
+msgid "Over the limit"
+msgstr "Sınırın üstünde"
 
 msgid "Overall length (m)"
 msgstr "Toplam uzunluk (m)"
@@ -2784,6 +3501,12 @@ msgstr "Sayfa %(number)s / %(total)s"
 msgid "Pages"
 msgstr "Sayfalar"
 
+msgid "Pale gills"
+msgstr "Solgun solungaçlar"
+
+msgid "Pancreas disease (PD)"
+msgstr "Pankreas hastalığı (PD)"
+
 msgid "Panel"
 msgstr "Panel"
 
@@ -2807,6 +3530,9 @@ msgstr "Parçalar"
 
 msgid "Password saved"
 msgstr "Parola kaydedildi"
+
+msgid "Pasteurellosis"
+msgstr "Pasteurellozis"
 
 msgid "Payment terms"
 msgstr "Ödeme koşulları"
@@ -2857,6 +3583,9 @@ msgstr "Fosfor külün bir parçasıdır: külden fazla olamaz."
 
 msgid "Pipe size"
 msgstr "Boru çapı"
+
+msgid "Piscirickettsiosis"
+msgstr "Piscirickettsiozis"
 
 msgid "Place"
 msgstr "Yer"
@@ -2909,11 +3638,26 @@ msgstr "Çıkış gücü"
 msgid "Prawn"
 msgstr "Tatlı su karidesi"
 
+msgid "Pre-adult lice and adult males, in total."
+msgstr "Ergin öncesi bitler ve ergin erkekler, toplam."
+
 msgid "Predation"
 msgstr "Yırtıcı"
 
 msgid "Preparing"
 msgstr "Hazırlanıyor"
+
+msgid "Prescribed by"
+msgstr "Reçeteyi yazan"
+
+msgid "Prescription"
+msgstr "Reçete"
+
+msgid "Prescription number"
+msgstr "Reçete numarası"
+
+msgid "Prescription only"
+msgstr "Reçeteyle verilir"
 
 msgid "Pressure"
 msgstr "Basınç"
@@ -2963,6 +3707,9 @@ msgstr "Üretim genel bakışı"
 
 msgid "Production units"
 msgstr "Üretim birimleri"
+
+msgid "Projected at the mean water temperature of the last days measured."
+msgstr "Son ölçülen günlerin ortalama su sıcaklığıyla öngörüldü."
 
 msgid "Propane"
 msgstr "Propan"
@@ -3043,6 +3790,9 @@ msgstr "Son işlemler"
 msgid "Recirculating aquaculture system"
 msgstr "Devridaimli yetiştiricilik sistemi (RAS)"
 
+msgid "Recommendations"
+msgstr "Öneriler"
+
 msgid "Record"
 msgstr "Kayıt"
 
@@ -3052,14 +3802,23 @@ msgstr "İtlaf kaydet"
 msgid "Record feeding"
 msgstr "Yemleme kaydet"
 
+msgid "Record health event"
+msgstr "Sağlık olayı kaydet"
+
 msgid "Record mortality"
 msgstr "Ölüm kaydet"
 
 msgid "Record sample"
 msgstr "Numune kaydet"
 
+msgid "Record sea-lice count"
+msgstr "Deniz biti sayımı kaydet"
+
 msgid "Record the round"
 msgstr "Turu kaydet"
+
+msgid "Record treatment"
+msgstr "Tedavi kaydet"
 
 msgid "Record type"
 msgstr "Kayıt türü"
@@ -3072,6 +3831,9 @@ msgstr "Kaydeden"
 
 msgid "Rectangular"
 msgstr "Dikdörtgen"
+
+msgid "Reduced appetite"
+msgstr "Azalmış iştah"
 
 msgid "Reference data"
 msgstr "Referans verileri"
@@ -3156,6 +3918,9 @@ msgstr "Satır %(first)s–%(last)s / %(total)s"
 msgid "Rows %(first)s–%(last)s of %(total)s match"
 msgstr "Satır %(first)s–%(last)s / %(total)s eşleşiyor"
 
+msgid "Running"
+msgstr "Sürüyor"
+
 msgid "Safety"
 msgstr "Güvenlik"
 
@@ -3185,6 +3950,9 @@ msgstr "%(days)d günden eski numuneler iptal edilemez."
 msgid "Sampling weigh-in"
 msgstr "Tartım örneklemesi"
 
+msgid "Saprolegniosis"
+msgstr "Saprolegniozis"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Kaydet: %(name)s"
@@ -3204,11 +3972,17 @@ msgstr "Uygunluğu kaydet"
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Önce ekipmanı bu yemleme makinesi türüyle kaydedin; ardından kalibrasyonları buraya eklenebilir."
 
+msgid "Say what it was: the method or the reason is “other”."
+msgstr "Ne olduğunu yazın: yöntem veya neden “diğer”."
+
 msgid "Say what it was: the reason is “other”."
 msgstr "Ne olduğunu yazın: neden “diğer”."
 
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
+
+msgid "Scale loss"
+msgstr "Pul kaybı"
 
 msgid "Scientific name"
 msgstr "Bilimsel ad"
@@ -3219,11 +3993,34 @@ msgstr "Elek açıklığı"
 msgid "Sea cage"
 msgstr "Deniz kafesi"
 
+msgid "Sea lice"
+msgstr "Deniz biti"
+
 msgid "Sea or estuary"
 msgstr "Deniz veya haliç"
 
 msgid "Sea water"
 msgstr "Deniz suyu"
+
+msgid "Sea-lice count"
+msgstr "Deniz biti sayımı"
+
+#, python-format
+msgid "Sea-lice count of %(date)s in %(unit)s voided."
+msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımı iptal edildi."
+
+#, python-format
+msgid "Sea-lice count recorded: %(unit)s on %(date)s."
+msgstr "Deniz biti sayımı kaydedildi: %(unit)s, %(date)s."
+
+msgid "Sea-lice counts"
+msgstr "Deniz biti sayımları"
+
+msgid "Sea-lice limit area"
+msgstr "Deniz biti sınır bölgesi"
+
+msgid "Sea-lice medicine"
+msgstr "Deniz biti ilacı"
 
 #, python-format
 msgid "Search %(plural)s"
@@ -3253,6 +4050,9 @@ msgstr "Ad, kod, kuruluş numarası, e-posta ya da yere göre ara"
 msgid "Search by name, scientific name or code"
 msgstr "Ad, bilimsel ad veya koda göre ara"
 
+msgid "Search by name, substance, MT number or manufacturer"
+msgstr "Ad, etken madde, ruhsat numarası veya üreticiyle ara"
+
 msgid "Search by name, username or email"
 msgstr "Ada, kullanıcı adına veya e-postaya göre ara"
 
@@ -3262,11 +4062,17 @@ msgstr "Balık türüne veya kaynağa göre ara"
 msgid "Search every column"
 msgstr "Tüm sütunlarda ara"
 
+msgid "Search findings, units, site or vet"
+msgstr "Bulgu, birim, saha veya veterinerde ara"
+
 msgid "Search unit, batch or species"
 msgstr "Birim, parti veya balık türü ara"
 
 msgid "Seaweed"
 msgstr "Deniz yosunu"
+
+msgid "Sedation"
+msgstr "Sedasyon"
 
 msgid "See all in the activity log"
 msgstr "Etkinlik günlüğünde tümünü gör"
@@ -3283,11 +4089,17 @@ msgstr "Bir tür seçin"
 msgid "Select a life stage"
 msgstr "Bir yaşam evresi seçin"
 
+msgid "Select a method"
+msgstr "Bir yöntem seçin"
+
 msgid "Select a parameter"
 msgstr "Bir parametre seçin"
 
 msgid "Select a production department"
 msgstr "Bir üretim departmanı seçin"
+
+msgid "Select a reason"
+msgstr "Bir neden seçin"
 
 msgid "Select a site"
 msgstr "Bir saha seçin"
@@ -3300,6 +4112,9 @@ msgstr "Bir tür seçin"
 
 msgid "Select a water type"
 msgstr "Bir su tipi seçin"
+
+msgid "Select how it is given"
+msgstr "Nasıl uygulandığını seçin"
 
 msgid "Select one"
 msgstr "Birini seçin"
@@ -3364,6 +4179,9 @@ msgstr "Giriş yap"
 
 msgid "Sign out"
 msgstr "Çıkış yap"
+
+msgid "Signs"
+msgstr "Belirtiler"
 
 msgid "Silo capacity (kg)"
 msgstr "Silo kapasitesi (kg)"
@@ -3557,6 +4375,12 @@ msgstr "Soy"
 msgid "Street address"
 msgstr "Sokak adresi"
 
+msgid "Strength"
+msgstr "Güç"
+
+msgid "Strength unit"
+msgstr "Güç birimi"
+
 msgid "Stress"
 msgstr "Stres"
 
@@ -3568,6 +4392,9 @@ msgstr "Batırılabilir"
 
 msgid "Submersible pump"
 msgstr "Dalgıç pompa"
+
+msgid "Substance in the lice report"
+msgstr "Bit raporundaki etken madde"
 
 msgid "Suitable for"
 msgstr "Uygunluk"
@@ -3593,6 +4420,9 @@ msgstr "Yüzey alanı (m²)"
 msgid "Survival"
 msgstr "Yaşama"
 
+msgid "Suspected"
+msgstr "Şüpheli"
+
 msgid "Suspended"
 msgstr "Askıda"
 
@@ -3601,6 +4431,9 @@ msgstr "Paneli değiştir"
 
 msgid "System"
 msgstr "Sistem"
+
+msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
+msgstr "Sistemik Flavobacterium psychrophilum enfeksiyonu (gökkuşağı alabalığı)"
 
 msgid "Systems"
 msgstr "Sistemler"
@@ -3638,6 +4471,9 @@ msgstr "Tanklar, havuzlar ve kafesler"
 msgid "Technical specifications"
 msgstr "Teknik özellikler"
 
+msgid "Teflubenzuron"
+msgstr "Teflubenzuron"
+
 msgid "Temp. (°C)"
 msgstr "Sıc. (°C)"
 
@@ -3653,6 +4489,9 @@ msgstr "Sıcaklık ve oksijen"
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
 
+msgid "Tenacibaculosis"
+msgstr "Tenacibakülozis"
+
 msgid "Terms and notes"
 msgstr "Koşullar ve notlar"
 
@@ -3667,8 +4506,14 @@ msgstr ""
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "İngilizce adı, örn. Atlantic salmon."
 
+msgid "The MT number, when the medicine has one."
+msgstr "İlacın varsa ruhsat (MT) numarası."
+
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Siparişler ve sorular için adres; kişilerin kendi adresleri aşağıdadır."
+
+msgid "The amount of the medicine used, as the lice report asks for it."
+msgstr "Kullanılan ilaç miktarı, bit raporunun istediği gibi."
 
 msgid ""
 "The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
@@ -3718,6 +4563,9 @@ msgstr "En derin nokta ortalama derinlikten sığ olamaz."
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Sindirilebilir enerji brüt enerjiden fazla olamaz."
 
+msgid "The end cannot be worked out: record the water temperature."
+msgstr "Sonu hesaplanamıyor: su sıcaklığını kaydedin."
+
 msgid "The equipment is linked to this system already."
 msgstr "Ekipman bu sisteme zaten bağlı."
 
@@ -3743,11 +4591,22 @@ msgstr ""
 "Çiftliğin kullandığı yemler: kimin ürettiği, peleti ve analizi, her birinin uygun olduğu balık "
 "türleri ve balık ağırlıkları."
 
+msgid "The first day of the course."
+msgstr "Kürün ilk günü."
+
 msgid "The fish cannot move into the unit they leave."
 msgstr "Balıklar çıktıkları birime taşınamaz."
 
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Yarım göz: bir düğümden ötekine; gerilmiş tam göz bunun iki katıdır."
+
+#, python-format
+msgid "The health event is dated %(date)s, after this operation."
+msgstr "Sağlık olayının tarihi %(date)s, bu işlemden sonra."
+
+#, python-format
+msgid "The health event is dated %(date)s, after this treatment."
+msgstr "Sağlık olayının tarihi %(date)s, bu tedaviden sonra."
 
 msgid "The invitation to set a password is sent here."
 msgstr "Parola belirleme daveti buraya gönderilir."
@@ -3758,8 +4617,28 @@ msgid ""
 msgstr "Konsolun ve bu kişinin aldığı e-postaların dili. Boş bırakılırsa tarayıcısının dilini izler."
 
 #, python-format
+msgid "The last day can be planned at most %(days)d days ahead."
+msgstr "Son gün en fazla %(days)d gün ileriye planlanabilir."
+
+msgid "The last day cannot be before the first."
+msgstr "Son gün ilk günden önce olamaz."
+
+msgid "The last day of the course, planned up to 28 days ahead. The withdrawal counts from it."
+msgstr "Kürün son günü, en fazla 28 gün ileriye planlanabilir. Bekleme süresi ondan sayılır."
+
+#, python-format
+msgid "The last day of the treatment is now %(date)s."
+msgstr "Tedavinin son günü artık %(date)s."
+
+#, python-format
 msgid "The latest changes to this %(name)s."
 msgstr "Bu kaydın (%(name)s) son değişiklikleri."
+
+#, python-format
+msgid "The latest week of counts, per site."
+msgid_plural "The latest %(weeks)s weeks of counts, per site."
+msgstr[0] "Saha başına son haftanın sayımları."
+msgstr[1] "Saha başına son %(weeks)s haftanın sayımları."
 
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
@@ -3769,6 +4648,9 @@ msgstr "Elipsin en uzun çapı."
 
 msgid "The lower weight must be below the upper weight."
 msgstr "Alt ağırlık üst ağırlıktan küçük olmalı."
+
+msgid "The medicines and vaccines the farm uses, with their withdrawal before harvest."
+msgstr "Çiftliğin kullandığı ilaçlar ve aşılar, hasattan önceki bekleme süreleriyle."
 
 #, python-format
 msgid ""
@@ -3824,8 +4706,14 @@ msgstr ""
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Suyu dağıtım deliklerinden tanka veren boru."
 
+msgid "The prescription’s number, for a prescription-only medicine."
+msgstr "Reçeteyle verilen bir ilaç için reçetenin numarası."
+
 msgid "The product name, as on the bag, e.g. Nutra Olympic 3 mm."
 msgstr "Ürün adı, torbada yazdığı gibi, örn. Nutra Olympic 3 mm."
+
+msgid "The product name, as on the pack, e.g. Salmosan vet."
+msgstr "Ambalajdaki ürün adı, örn. Salmosan vet."
 
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
@@ -3835,6 +4723,10 @@ msgstr "Üretim departmanı hiçbir sahada değil, bu yüzden birimleri bir sist
 
 msgid "The production figures will appear here."
 msgstr "Üretim rakamları burada görünecek."
+
+#, python-format
+msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
+msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımının balığı kalmaz: önce onu iptal edin."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Uzun eksene dik en kısa çap."
@@ -3851,6 +4743,13 @@ msgid ""
 msgstr ""
 "Sahanın operasyonel iletişim kişileri. En fazla biri birincil kişi olabilir. Kişiler saha "
 "ayrıntılarından ayrı kaydedilir."
+
+msgid ""
+"The site’s weekly average is worked out again without it. To correct a count, void it and record "
+"it again."
+msgstr ""
+"Sahanın haftalık ortalaması o olmadan yeniden hesaplanır. Bir sayımı düzeltmek için iptal edip "
+"yeniden kaydedin."
 
 msgid ""
 "The species and life stages it is made for, and the fish weights in grams: from the lower weight "
@@ -3900,6 +4799,10 @@ msgstr ""
 msgid "The time cannot be in the future."
 msgstr "Zaman gelecekte olamaz."
 
+#, python-format
+msgid "The treatment of %(date)s in %(unit)s would have no fish: void it first."
+msgstr "%(unit)s birimindeki %(date)s tarihli tedavinin balığı kalmaz: önce onu iptal edin."
+
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
 "for a few days before a split."
@@ -3921,6 +4824,9 @@ msgstr "Tam derinliğin altındaysa olağan ortalama su derinliği; havuz dolu t
 
 msgid "The usual water level when it is below the rim; empty when the tank is filled to its depth."
 msgstr "Kenarın altındaysa olağan su seviyesi; tank tam derinliğine kadar doluysa boş."
+
+msgid "The vet or fish-health biologist, or who observed it."
+msgstr "Veteriner veya balık sağlığı biyoloğu ya da gözlemleyen kişi."
 
 msgid "The volume cannot be negative."
 msgstr "Hacim negatif olamaz."
@@ -3962,6 +4868,25 @@ msgstr "%(unit)s içindeki %(date)s tarihli tartım %(batch)s balığı bulamazd
 msgid "The width cannot be more than the length."
 msgstr "Genişlik uzunluktan fazla olamaz."
 
+msgid ""
+"The withdrawal counts from the last day of the course, with the medicine’s degree-days or days "
+"(Reference data › Medicines), and follows the fish wherever they are moved."
+msgstr ""
+"Bekleme süresi kürün son gününden, ilacın gün-derece veya günleriyle sayılır (Referans verileri ›"
+" İlaçlar) ve balıklar nereye taşınırsa onları izler."
+
+msgid "The withdrawal counts from the new last day; the change is logged."
+msgstr "Bekleme süresi yeni son günden sayılır; değişiklik günlüğe yazılır."
+
+msgid ""
+"The withdrawal is the product’s, as its SPC states it, in degree-days, days or both; nothing is "
+"filled in for you. A treatment counts it from its last day, on the water temperature of the "
+"fish’s units (Operations › Treatments)."
+msgstr ""
+"Bekleme süresi ürünün KÜB’de yazdığı gibidir; gün-derece, gün ya da ikisi; sizin yerinize hiçbir "
+"şey doldurulmaz. Bir tedavi onu son gününden, balıkların birimlerinin su sıcaklığıyla sayar "
+"(Operasyonlar › Tedaviler)."
+
 msgid "Their weight (kg)"
 msgstr "Toplam ağırlıkları (kg)"
 
@@ -3971,6 +4896,9 @@ msgid ""
 msgstr ""
 "Hasatta tartılan ağırlıkları. Stok balıkları kayıttaki ağırlıklarıyla düşer; fark işlemde "
 "gösterilir."
+
+msgid "Thermal delousing"
+msgstr "Termal bitten arındırma"
 
 #, python-format
 msgid ""
@@ -4031,11 +4959,17 @@ msgstr "Bu sistem silinmiş."
 msgid "This table points at"
 msgstr "Bu tablonun işaret ettikleri"
 
+msgid "This treatment is voided."
+msgstr "Bu tedavi iptal edildi."
+
 msgid "This type has no technical specifications."
 msgstr "Bu türün teknik özelliği yok."
 
 msgid "This type is not in the chosen category."
 msgstr "Bu tür seçilen kategoride değil."
+
+msgid "This unit already has a count on this day: void it first to correct it."
+msgstr "Bu birimde bu gün için zaten bir sayım var: düzeltmek için önce onu iptal edin."
 
 #, python-format
 msgid "This unit holds %(count)d batch: the operation applies to the one chosen."
@@ -4105,6 +5039,23 @@ msgstr "Transfer kaydedildi: %(batch)s partisinden %(count)s balık %(unit)s bir
 msgid "Transport"
 msgstr "Taşıma"
 
+msgid "Treatment"
+msgstr "Tedavi"
+
+#, python-format
+msgid "Treatment of %(date)s voided."
+msgstr "%(date)s tarihli tedavi iptal edildi."
+
+#, python-format
+msgid "Treatment recorded: %(what)s in %(units)s from %(start)s to %(end)s."
+msgstr "Tedavi kaydedildi: %(what)s, %(units)s, %(start)s – %(end)s."
+
+msgid "Treatments"
+msgstr "Tedaviler"
+
+msgid "Treatments, last 90 days"
+msgstr "Tedaviler, son 90 gün"
+
 msgid "Try another search."
 msgstr "Başka bir arama deneyin."
 
@@ -4144,6 +5095,9 @@ msgstr "Açıklanamayan kayıp"
 msgid "Under maintenance"
 msgstr "Bakımda"
 
+msgid "Under withdrawal today"
+msgstr "Bugün bekleme süresinde"
+
 msgid "Unique"
 msgstr "Benzersiz"
 
@@ -4158,6 +5112,9 @@ msgstr "Birimler"
 
 msgid "Units by kind"
 msgstr "Türe göre birimler"
+
+msgid "Units counted"
+msgstr "Sayılan birimler"
 
 #, python-format
 msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
@@ -4196,11 +5153,32 @@ msgstr "Kullanıcı adı"
 msgid "Users"
 msgstr "Kullanıcılar"
 
+msgid "Vaccination"
+msgstr "Aşılama"
+
+msgid "Vaccinations"
+msgstr "Aşılamalar"
+
+msgid "Vaccine"
+msgstr "Aşı"
+
 msgid "Version"
 msgstr "Sürüm"
 
+msgid "Vet or fish-health service"
+msgstr "Veteriner veya balık sağlığı hizmeti"
+
+msgid "Vet or fish-health visit"
+msgstr "Veteriner veya balık sağlığı ziyareti"
+
 msgid "Veterinary and fish health"
 msgstr "Veteriner ve balık sağlığı"
+
+msgid "Viral haemorrhagic septicaemia (VHS)"
+msgstr "Viral hemorajik septisemi (VHS)"
+
+msgid "Viral nervous necrosis (VNN/VER)"
+msgstr "Viral sinir nekrozu (VNN/VER)"
 
 msgid "Void"
 msgstr "İptal et"
@@ -4208,8 +5186,14 @@ msgstr "İptal et"
 msgid "Void feeding"
 msgstr "Yemlemeyi iptal et"
 
+msgid "Void health event"
+msgstr "Sağlık olayını iptal et"
+
 msgid "Void operation"
 msgstr "İşlemi iptal et"
+
+msgid "Void sea-lice count"
+msgstr "Deniz biti sayımını iptal et"
 
 #, python-format
 msgid "Void the %(operation)s of %(date)s?"
@@ -4220,8 +5204,23 @@ msgid "Void the feeding of %(date)s in %(unit)s?"
 msgstr "%(unit)s biriminin %(date)s tarihli yemlemesi iptal edilsin mi?"
 
 #, python-format
+msgid "Void the health event “%(event)s” of %(site)s?"
+msgstr "%(site)s sahasının “%(event)s” sağlık olayı iptal edilsin mi?"
+
+#, python-format
 msgid "Void the sample of %(point)s at %(moment)s?"
 msgstr "%(point)s birimindeki %(moment)s numunesi iptal edilsin mi?"
+
+#, python-format
+msgid "Void the sea-lice count of %(date)s in %(unit)s?"
+msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımı iptal edilsin mi?"
+
+#, python-format
+msgid "Void the treatment with %(what)s of %(date)s?"
+msgstr "%(date)s tarihli %(what)s tedavisi iptal edilsin mi?"
+
+msgid "Void treatment"
+msgstr "Tedaviyi iptal et"
 
 msgid "Void water sample"
 msgstr "Su numunesini iptal et"
@@ -4300,6 +5299,16 @@ msgstr "Su hacmi (m³)"
 msgid "Website"
 msgstr "Web sitesi"
 
+msgid "Week"
+msgstr "Hafta"
+
+#, python-format
+msgid "Week %(week)s, %(year)s"
+msgstr "%(year)s, %(week)s. hafta"
+
+msgid "Weekly averages"
+msgstr "Haftalık ortalamalar"
+
 msgid "Weighed"
 msgstr "Tartıldı"
 
@@ -4338,8 +5347,21 @@ msgstr "Çiftliğin kg başına ödediği, para birimiyle."
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."
 
+msgid "What was given"
+msgstr "Ne verildi"
+
+msgid ""
+"What was seen, found or advised about the fish's health: observations, vet and fish-health "
+"visits, lab results and rises in mortality."
+msgstr ""
+"Balıkların sağlığı hakkında görülen, bulunan veya önerilenler: gözlemler, veteriner ve balık "
+"sağlığı ziyaretleri, laboratuvar sonuçları ve ölüm artışları."
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
+
+msgid "Where"
+msgstr "Nerede"
 
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Değerlerin nereden geldiği, örn. “veteriner, Kasım 2026” veya bir kılavuz."
@@ -4352,6 +5374,12 @@ msgstr "Her kullanıcının hangi rollere sahip olduğu."
 
 msgid "Which sites each supplier delivers to or works at."
 msgstr "Her tedarikçinin teslimat yaptığı ya da çalıştığı sahalar."
+
+msgid "Which units each health event concerns; none for the whole site."
+msgstr "Her sağlık olayının ilgilendirdiği birimler; tüm saha için hiçbiri."
+
+msgid "Which units each treatment was given in."
+msgstr "Her tedavinin uygulandığı birimler."
 
 msgid "Who it was bought from: a supplier of equipment and spare parts (Purchasing › Suppliers)."
 msgstr "Kimden satın alındığı: bir ekipman ve yedek parça tedarikçisi (Satın alma › Tedarikçiler)."
@@ -4366,6 +5394,9 @@ msgstr ""
 msgid "Who sold the fish?"
 msgstr "Balığı kim sattı?"
 
+msgid "Whole site"
+msgstr "Tüm saha"
+
 msgid ""
 "Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
 " it was is cleared."
@@ -4378,6 +5409,21 @@ msgstr "Genişlik (m)"
 
 msgid "Wild-caught"
 msgstr "Doğadan yakalandı"
+
+msgid "Winter ulcer"
+msgstr "Kış ülseri"
+
+msgid "Withdrawal"
+msgstr "Bekleme süresi"
+
+msgid "Withdrawal (days)"
+msgstr "Bekleme süresi (gün)"
+
+msgid "Withdrawal (degree-days)"
+msgstr "Bekleme süresi (gün-derece)"
+
+msgid "Without a diagnosis there is nothing to confirm."
+msgstr "Tanı yoksa doğrulanacak bir şey yoktur."
 
 msgid "Without a production department"
 msgstr "Üretim departmanı olmayanlar"
@@ -4392,6 +5438,9 @@ msgstr ""
 "Birim her kaydedildiğinde boyutlardan ve azami yoğunluktan hesaplanır; son kaydedildiği hâliyle "
 "gösterilir. Azami biyokütle, varsa su hacmini, yoksa hacmi kullanır."
 
+msgid "Wounds or ulcers"
+msgstr "Yara veya ülser"
+
 msgid "Wrasse"
 msgstr "Lapin"
 
@@ -4401,6 +5450,9 @@ msgid ""
 msgstr ""
 "Cinsi ve türü Latin harfleriyle yazın, örn. Salmo salar; üçüncü kelime olarak bir alt tür "
 "gelebilir."
+
+msgid "Yersiniosis"
+msgstr "Yersiniozis"
 
 msgid "Yes"
 msgstr "Evet"
@@ -4597,6 +5649,9 @@ msgstr "örn. Salmo salar"
 msgid "e.g. Salmonidae"
 msgstr "örn. Salmonidae"
 
+msgid "e.g. Salmosan vet."
+msgstr "örn. Salmosan vet."
+
 msgid "e.g. Site manager"
 msgstr "örn. Saha sorumlusu"
 
@@ -4640,6 +5695,9 @@ msgstr "boş"
 msgid "empty, %(max)s kg max"
 msgstr "boş, azami %(max)s kg"
 
+msgid "end unknown"
+msgstr "sonu bilinmiyor"
+
 msgid "equals"
 msgstr "eşittir"
 
@@ -4678,8 +5736,24 @@ msgid "feeds"
 msgstr "yemler"
 
 #, python-format
+msgid "from %(start)s to %(end)s"
+msgstr "%(start)s – %(end)s"
+
+#, python-format
 msgid "from %(weight)s g"
 msgstr "%(weight)s g ve üstü"
+
+msgid "g"
+msgstr "g"
+
+msgid "g/kg"
+msgstr "g/kg"
+
+msgid "health event"
+msgstr "sağlık olayı"
+
+msgid "health events"
+msgstr "sağlık olayları"
 
 msgid "https:// is added when it is left out."
 msgstr "Yazılmazsa https:// eklenir."
@@ -4688,8 +5762,35 @@ msgstr "Yazılmazsa https:// eklenir."
 msgid "in %(name)s"
 msgstr "%(name)s içinde"
 
+msgid "kg"
+msgstr "kg"
+
+msgid "mL per fish"
+msgstr "balık başına mL"
+
 msgid "masked"
 msgstr "gizli"
+
+msgid "medicine"
+msgstr "ilaç"
+
+msgid "medicines"
+msgstr "ilaçlar"
+
+msgid "mg/L"
+msgstr "mg/L"
+
+msgid "mg/g"
+msgstr "mg/g"
+
+msgid "mg/kg"
+msgstr "mg/kg"
+
+msgid "mg/kg biomass per day"
+msgstr "günde biyokütlenin kg’ı başına mg"
+
+msgid "mg/mL"
+msgstr "mg/mL"
 
 msgid "no"
 msgstr "hayır"
@@ -4730,6 +5831,12 @@ msgstr "rol"
 
 msgid "roles"
 msgstr "roller"
+
+msgid "sea-lice count"
+msgstr "deniz biti sayımı"
+
+msgid "sea-lice counts"
+msgstr "deniz biti sayımları"
 
 #, python-format
 msgid "since %(date)s"
@@ -4790,11 +5897,32 @@ msgstr "sistem bağlantıları"
 msgid "systems"
 msgstr "sistemler"
 
+msgid "t"
+msgstr "t"
+
+#, python-format
+msgid "to %(date)s"
+msgstr "%(date)s tarihine kadar"
+
+msgid "treatment"
+msgstr "tedavi"
+
+msgid "treatments"
+msgstr "tedaviler"
+
 msgid "unit"
 msgstr "birim"
 
 msgid "units"
 msgstr "birimler"
+
+#, python-format
+msgid "until %(last)s (harvest from %(first)s)"
+msgstr "%(last)s tarihine kadar (hasat %(first)s tarihinden itibaren)"
+
+#, python-format
+msgid "until about %(last)s (harvest from about %(first)s)"
+msgstr "yaklaşık %(last)s tarihine kadar (hasat yaklaşık %(first)s tarihinden itibaren)"
 
 #, python-format
 msgid "up to %(weight)s g"
@@ -4833,6 +5961,10 @@ msgstr "su numuneleri"
 #, python-format
 msgid "weighed %(date)s"
 msgstr "%(date)s tartıldı"
+
+#, python-format
+msgid "withdrawal %(rule)s"
+msgstr "bekleme süresi %(rule)s"
 
 msgid "worked out from the sample"
 msgstr "numuneden hesaplandı"

@@ -25,5 +25,7 @@ VIEWER = Viewer(
         'auth_user_groups': _('Which roles each user has.'),
         'auth_user_user_permissions': _('Permissions given to one user directly instead of through a role.'),
         'supplier_sites': _('Which sites each supplier delivers to or works at.'),
+        'treatment_units': _('Which units each treatment was given in.'),
+        'health_event_units': _('Which units each health event concerns; none for the whole site.'),
     },
 )

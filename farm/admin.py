@@ -2,7 +2,9 @@ from django.contrib import admin
 
 from core.admin import AuditedModelAdmin, ReadOnlyAdmin, register_audited
 
-from .models import Batch, EquipmentType, FeedingRecord, StockOperation, WaterMeasurement
+from .models import (
+    Batch, EquipmentType, FeedingRecord, HealthEvent, LiceCount, StockOperation, Treatment, WaterMeasurement,
+)
 
 register_audited('farm')
 
@@ -17,14 +19,15 @@ class EquipmentTypeAdmin(ReadOnlyAdmin):
 
 
 class StockRecordAdmin(AuditedModelAdmin):
-    """Stock operations, batches and feedings, voided ones too, to look at. A voided operation (and the
-    batch of a voided stocking) or feeding does not come back by a restore, which would skip the checks
-    (the timeline, the fish a feeding needs): it is entered again on its page, where they run."""
+    """Stock operations, batches, feedings and the health records, voided ones too, to look at. A voided
+    operation (and the batch of a voided stocking), feeding or health record does not come back by a restore,
+    which would skip the checks (the timeline, the fish a feeding needs): it is entered again on its page,
+    where they run."""
 
     actions = []
 
 
-admin.site.unregister([Batch, FeedingRecord, StockOperation, WaterMeasurement])
+admin.site.unregister([Batch, FeedingRecord, HealthEvent, LiceCount, StockOperation, Treatment, WaterMeasurement])
 
 
 @admin.register(Batch)
@@ -54,3 +57,24 @@ class WaterMeasurementAdmin(StockRecordAdmin):
     list_display = ['__str__', 'source', 'created_by', 'is_deleted', 'void_reason']
     list_filter = ['is_deleted', 'source']
     list_select_related = ['unit__production_department__site', 'system__site', 'created_by']
+
+
+@admin.register(Treatment)
+class TreatmentAdmin(StockRecordAdmin):
+    """Treatments, voided ones too, to look at. A voided treatment is recorded again on Operations › Treatments:
+    a restore would skip its checks and put its withdrawal back unseen."""
+
+    list_display = ['__str__', 'method', 'start_date', 'end_date', 'created_by', 'is_deleted', 'void_reason']
+    list_filter = ['is_deleted', 'method']
+
+
+@admin.register(HealthEvent)
+class HealthEventAdmin(StockRecordAdmin):
+    list_display = ['__str__', 'site', 'kind', 'created_by', 'is_deleted', 'void_reason']
+    list_filter = ['is_deleted', 'kind']
+
+
+@admin.register(LiceCount)
+class LiceCountAdmin(StockRecordAdmin):
+    list_display = ['__str__', 'fish_counted', 'adult_females', 'created_by', 'is_deleted', 'void_reason']
+    list_filter = ['is_deleted']

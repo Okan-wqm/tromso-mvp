@@ -1,0 +1,44 @@
+{% extends "farm/health_form.html" %}
+{% load i18n %}
+{% comment %} Record treatment (farm.health.views.record_treatment): the units with fish (of the drawer unit's site when
+   opened from a drawer), how and with what, the course's days, dose and amount, prescription and vet.{% endcomment %}
+{% block intro %}
+{% if unit %}<p class="op-context"><strong>{{ unit.code }}</strong> · {{ unit.name }}</p>{% endif %}
+{% if not form.fields.units.queryset.exists %}<p class="notice notice-warning">{% trans "No unit holds fish: a treatment needs fish in its units on its first day." %}</p>{% endif %}
+<p class="help">{% trans "The withdrawal counts from the last day of the course, with the medicine’s degree-days or days (Reference data › Medicines), and follows the fish wherever they are moved." %}</p>
+{% endblock %}
+{% block fields %}
+<div class="form-grid">
+  {% with field=form.units %}{% include "registration/_field.html" %}{% endwith %}
+</div>
+<fieldset class="form-fieldset">
+  <legend>{% trans "What was given" %}</legend>
+  <div class="form-grid">
+    {% with field=form.method %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.medicine %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.reason %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.start_date %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.end_date %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.bath_minutes %}{% include "registration/_field.html" %}{% endwith %}
+  </div>
+</fieldset>
+<fieldset class="form-fieldset">
+  <legend>{% trans "Dose and amount" %}</legend>
+  <div class="form-grid">
+    {% with field=form.dose_value %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.dose_unit %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.amount_value %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.amount_unit %}{% include "registration/_field.html" %}{% endwith %}
+  </div>
+</fieldset>
+<fieldset class="form-fieldset">
+  <legend>{% trans "Prescription" %}</legend>
+  <div class="form-grid">
+    {% with field=form.prescribed_by %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.prescription_ref %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.vet %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.health_event %}{% include "registration/_field.html" %}{% endwith %}
+  </div>
+</fieldset>
+{% with field=form.notes %}{% include "registration/_field.html" %}{% endwith %}
+{% endblock %}

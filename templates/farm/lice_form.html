@@ -1,0 +1,7 @@
+{% extends "farm/health_form.html" %}
+{% load i18n %}
+{# Record a sea-lice count (farm.health.views.record_lice_count): the lice of each stage on the fish examined, in total. #}
+{% block intro %}
+{% if not form.fields.unit.queryset.exists %}<p class="notice notice-warning">{% trans "No unit holds fish: lice are counted on the fish of a unit." %}</p>{% endif %}
+<p class="help">{% trans "Count every stage on every fish examined and enter the totals; the averages per fish are worked out (lakselusforskriften, Vedlegg 1)." %}</p>
+{% endblock %}

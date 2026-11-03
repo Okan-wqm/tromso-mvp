@@ -1,7 +1,7 @@
-{% load i18n stock feeding %}
-{% comment %} The drawer of the unit picked on Production units (?unit=): its fish, its feeding, its water, the
-   operations that make sense for it (Record feeding first), and its recent operations and feedings. Closing
-   it is a link to the page without the unit.{% endcomment %}
+{% load i18n stock feeding health %}
+{% comment %} The drawer of the unit picked on Production units (?unit=): the medicine withdrawal of its fish, its fish,
+   its feeding, its water, its health, the operations that make sense for it (Record feeding first), and its
+   recent operations and feedings. Closing it is a link to the page without the unit.{% endcomment %}
 {% with unit=drawer stock=drawer_stock %}
 <aside class="drawer" aria-labelledby="drawer-title">
   <div class="drawer-head">
@@ -12,6 +12,7 @@
       {% if stock %}
       <p class="drawer-line"><strong>{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %}</strong> · {% with species=stock.batches.0.species %}{{ species.local_name|default:species.common_name }}{% endwith %} · {% blocktrans trimmed count days=drawer_days %}Stocked · {{ days }} day{% plural %}Stocked · {{ days }} days{% endblocktrans %}</p>
       {% endif %}
+      {% if drawer_withdrawal %}<p class="notice notice-error withdrawal-line" role="status">{{ drawer_withdrawal|withdrawal_line }}</p>{% endif %}
     </div>
     <a class="icon-button" href="{{ close_url }}" title="{% trans "Close" %}">{% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Close" %}</span></a>
   </div>
@@ -102,6 +103,8 @@
     {% endif %}
 
     {% if water_history_url %}{% include "farm/_unit_water.html" %}{% endif %}
+
+    {% if health_withdrawals or health_shown or health_actions %}{% include "farm/_unit_health.html" %}{% endif %}
 
     {% if feeding_list_url %}
     <section class="drawer-section">

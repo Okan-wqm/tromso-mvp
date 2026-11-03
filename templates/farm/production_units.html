@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock feeding %}
+{% load i18n stock feeding health %}
 {% comment %} Operations › Production units (farm.stock.views.production_units): the platform's /sites/tanks. One
    table of every unit with its fish now, computed from the stock ledger, and a drawer for the unit
    picked (?unit=). Filters and the drawer live in the address; a row is one link (its code stretched
@@ -86,7 +86,7 @@
           {% for row in rows %}{% with unit=row.unit stock=row.stock %}
           <tr class="unit-row{% if row.selected %} is-selected{% endif %}{% if stock.over_capacity %} is-over{% endif %}"{% if row.selected %} aria-current="true"{% endif %}>
             <td>
-              <a class="unit-code row-link" href="{{ row.href }}">{{ unit.code }}</a>{% if row.water %} {% include "farm/_water_dot.html" with status=row.water.status %}{% endif %}
+              <a class="unit-code row-link" href="{{ row.href }}">{{ unit.code }}</a>{% if row.water %} {% include "farm/_water_dot.html" with status=row.water.status %}{% endif %}{% if row.withdrawal %} <span class="over-badge" title="{{ row.withdrawal|withdrawal_line }}">{% trans "Withdrawal" %}</span>{% endif %}
               <span class="row-sub nowrap">{{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</span>
             </td>
             <td>

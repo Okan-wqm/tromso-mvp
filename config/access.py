@@ -13,6 +13,7 @@ AREAS = [
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),
+    Area(_('Medicines'), 'farm.Medicine'),
     Area(_('Suppliers'), 'farm.Supplier'),
     # The stock: Read is the Production units page, Create records an operation (a stocking, a mortality,
     # a weighing), Delete voids one. Operations are never edited: a correction is a void and a new entry.
@@ -23,5 +24,12 @@ AREAS = [
     # Water samples: Read is the Water chemistry page (and a unit's water in the drawer), Create records a
     # sample or a round, Delete voids a sample. Samples are never edited: a correction is a void and a new entry.
     Area(_('Water chemistry'), 'farm.WaterMeasurement', actions=('view', 'add', 'delete')),
+    # Treatments: Read the list (and a unit's health in the drawer), Create records one, Edit changes its last
+    # day (logged), Delete voids one, which lifts its withdrawal. Nothing else of a treatment is edited.
+    Area(_('Treatments'), 'farm.Treatment'),
+    # Health events: Read, Create, Edit on the event's form (logged), Delete voids one with its reason.
+    Area(_('Health events'), 'farm.HealthEvent'),
+    # Sea-lice counts: Read the page with the site's weekly averages, Create records a count, Delete voids one.
+    Area(_('Sea-lice counts'), 'farm.LiceCount', actions=('view', 'add', 'delete')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

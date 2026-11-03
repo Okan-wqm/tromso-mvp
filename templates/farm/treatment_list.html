@@ -1,0 +1,97 @@
+{% extends base_template %}
+{% load i18n health %}
+{% comment %} Operations › Treatments (farm.health.views.treatments): every treatment, newest first, filtered in the
+   address. Each row names the batches it reached, worked out from the stock ledger, and the withdrawal it
+   puts on each. Voided treatments, struck through with their reason, are shown when asked for.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <form method="get" class="toolbar-filter feeding-filters" data-omit-empty>
+    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <select id="site-filter" name="site" data-autosubmit>
+      <option value="">{% trans "All sites" %}</option>
+      {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="unit-filter">{% trans "Unit" %}</label>
+    <select id="unit-filter" name="unit" data-autosubmit>
+      <option value="">{% trans "All units" %}</option>
+      {% for unit in choices.unit %}<option value="{{ unit.pk }}"{% if params.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="batch-filter">{% trans "Batch" %}</label>
+    <select id="batch-filter" name="batch" data-autosubmit>
+      <option value="">{% trans "All batches" %}</option>
+      {% for batch in choices.batch %}<option value="{{ batch.pk }}"{% if params.batch == batch.pk|stringformat:"s" %} selected{% endif %}>{{ batch.code }}{% if batch.name %} · {{ batch.name }}{% endif %}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="method-filter">{% trans "Method" %}</label>
+    <select id="method-filter" name="method" data-autosubmit>
+      <option value="">{% trans "All methods" %}</option>
+      {% for value, label in choices.method %}<option value="{{ value }}"{% if params.method == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="medicine-filter">{% trans "Medicine" %}</label>
+    <select id="medicine-filter" name="medicine" data-autosubmit>
+      <option value="">{% trans "All medicines" %}</option>
+      {% for medicine in choices.medicine %}<option value="{{ medicine.pk }}"{% if params.medicine == medicine.pk|stringformat:"s" %} selected{% endif %}>{{ medicine.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="show-filter">{% trans "Show" %}</label>
+    <select id="show-filter" name="show" data-autosubmit>
+      <option value="">{% trans "All treatments" %}</option>
+      <option value="{{ under_withdrawal }}"{% if params.show == under_withdrawal %} selected{% endif %}>{% trans "Under withdrawal today" %}</option>
+      <option value="{{ vaccinations }}"{% if params.show == vaccinations %} selected{% endif %}>{% trans "Vaccinations" %}</option>
+    </select>
+    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
+    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
+    <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
+  </form>
+  {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record treatment" %}</a>{% endif %}
+</div>
+
+<p class="units-count">{{ count_line }}</p>
+
+{% if not rows %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="syringe" %}
+  {% if filtered %}
+  <h2>{% trans "No treatment matches these filters." %}</h2>
+  <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+  {% else %}
+  <h2>{% trans "No treatment recorded yet" %}</h2>
+  <p>{% trans "A bath, a medicated feed, an injection or a vaccination, or a treatment without a medicine, is recorded here or from a unit’s drawer on Production units." %}</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data-table treatment-table">
+    <thead>
+      <tr>
+        <th scope="col">{% trans "Days" %}</th>
+        <th scope="col">{% trans "Units" %}</th>
+        <th scope="col">{% trans "Treatment" %}</th>
+        <th scope="col">{% trans "Dose · amount" %}</th>
+        <th scope="col">{% trans "Batches and withdrawal" %}</th>
+        <th scope="col">{% trans "Prescription" %}</th>
+        <th scope="col">{% trans "Recorded by" %}</th>
+        <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}{% with treatment=row.treatment %}
+      <tr{% if treatment.is_deleted %} class="is-voided"{% endif %}>
+        <td class="nowrap"><time datetime="{{ treatment.start_date|date:'Y-m-d' }}">{{ treatment.start_date|date:"DATE_FORMAT" }}</time>{% if treatment.end_date != treatment.start_date %}<span class="row-sub">{% blocktrans trimmed with date=treatment.end_date|date:"DATE_FORMAT" %}to {{ date }}{% endblocktrans %}</span>{% endif %}{% if treatment.end_date > today %}<span class="row-sub">{% trans "Running" %}</span>{% endif %}</td>
+        <td>{% for unit in treatment.units.all %}<span class="row-line">{{ unit.code }}{% if forloop.first and unit.production_department.site %}<span class="row-sub">{{ unit.production_department.site.name }}</span>{% endif %}</span>{% endfor %}</td>
+        <td><span class="row-title">{% if treatment.medicine %}{{ treatment.medicine.name }}{% else %}{{ treatment.get_method_display }}{% endif %}</span><span class="row-sub">{% if treatment.medicine %}{{ treatment.get_method_display }} · {{ treatment.medicine.active_substance }} · {% endif %}{{ treatment.get_reason_display }}{% if treatment.bath_minutes %} · {% blocktrans trimmed with minutes=treatment.bath_minutes %}{{ minutes }} min{% endblocktrans %}{% endif %}</span>{% if treatment.health_event %}<span class="row-sub">{{ treatment.health_event }}</span>{% endif %}</td>
+        <td class="nowrap">{% if treatment.dose_value is not None %}{{ treatment.dose_value|floatformat:"-3" }} {{ treatment.get_dose_unit_display }}{% else %}—{% endif %}{% if treatment.amount_value is not None %}<span class="row-sub">{{ treatment.amount_value|floatformat:"-3" }} {{ treatment.get_amount_unit_display }}</span>{% endif %}</td>
+        <td>{% for batch, found in row.batches %}<span class="row-line"><strong>{{ batch.code }}</strong>{% if found %} · <span{% if found.until is None or found.until > today %} class="over-text"{% endif %} title="{{ found|withdrawal_reason }}">{{ found|withdrawal_until }}</span>{% endif %}</span>{% empty %}<span class="muted">{% trans "No fish found in these units on these days" %}</span>{% endfor %}</td>
+        <td>{{ treatment.prescribed_by|default:"—" }}{% if treatment.prescription_ref %}<span class="row-sub">{{ treatment.prescription_ref }}</span>{% endif %}{% if treatment.vet %}<span class="row-sub">{{ treatment.vet.name }}</span>{% endif %}</td>
+        <td>{{ treatment.created_by.get_username|default:"system" }}<span class="row-sub">{{ treatment.created_at|date:"DATETIME_FORMAT" }}</span>{% if treatment.notes %}<span class="row-sub">{{ treatment.notes }}</span>{% endif %}{% if treatment.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=treatment.void_reason name=treatment.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td class="row-actions">{% if treatment.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% else %}{% if row.last_day_url %}<a class="op-void" href="{{ row.last_day_url }}" data-modal>{% trans "Last day" %}</a>{% endif %}{% if row.void_url and treatment|unit_voidable %} <a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}{% endif %}</td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% endif %}
+{% endblock %}

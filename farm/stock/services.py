@@ -13,7 +13,8 @@ code that changes a unit's status for stock reasons. In one transaction it:
    first line, and checks the whole timeline, not only today: no share ever below 0 fish, a weighing
    only where there are fish, one species per unit (owner decision Q1), and every feeding recorded
    in its units from its date on still finds fish there at the start or the end of its day (the
-   feeding records, farm/feeding). A backdated operation is placed where it belongs and accepted only
+   feeding records, farm/feeding), as every treatment on its first day and every sea-lice count (the
+   health records, farm/health). A backdated operation is placed where it belongs and accepted only
    if every later day stays valid;
 5. checks the capacity of the units fish arrive in, on the operation's date: above the max biomass
    only with the person's acknowledgement, stored on the operation (owner decision Q4);
@@ -26,7 +27,11 @@ operation (or the feeding) that depends on it, when later operations need its fi
 one void of the farm's daily records, a stock operation's and a feeding's.
 
 Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 'notes',
-'avg_weight_g', 'measured_weight_kg', 'destinations', 'over_capacity_ack' and NON_FIELD_ERRORS.
+'avg_weight_g', 'measured_weight_kg', 'destinations', 'over_capacity_ack', 'health_event' and
+NON_FIELD_ERRORS.
+
+A mortality or a cull may name the health event its fish died or were culled under (a live event of the
+unit's site that covers the unit and is not dated after the operation).
 
 Operations: a stocking (a new batch into one or several units), a mortality, a cull, a weighing, a
 transfer (out of one unit into one or several: a split is a transfer into several), a grading (a
@@ -46,7 +51,8 @@ from core import audit
 from core.models import AuditLog
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
-from farm.models import Batch, Species, StockMovement, StockOperation, Tank
+from farm.health import read as health_read
+from farm.models import Batch, HealthEvent, Species, StockMovement, StockOperation, Tank
 from farm.models.stock import (
     ARRIVAL_STATUSES, REASONS, AdjustmentReason, MovementKind, OperationKind, TransferReason,
 )
@@ -55,7 +61,7 @@ from farm.templatetags.stock import number
 
 from . import read
 # The farm's dates are one rule for every daily record; services.local_today and the others stay here.
-from .dates import check_date, earliest, local_today, shown_date  # noqa: F401
+from .dates import check_date, earliest, local_today, shown_date, site_earliest  # noqa: F401
 from .fold import StockError
 
 Status = Tank.Status
@@ -123,13 +129,15 @@ def _next_code(year):
     return f'{prefix}{(last or 0) + 1:03d}'
 
 
-def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None):
+def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None, health_event=None):
     """Writes an operation and its lines (see the module's docstring); returns the operation."""
     with transaction.atomic():
         batches = locked(Batch, {entry.batch.pk for entry in entries if entry.batch is not None})
         units = locked(Tank, {entry.unit.pk for entry in entries})
         _already(token)
         _check_static(kind, day, entries, batches, units, new_batch)
+        if health_event is not None:
+            _check_event(health_event, day, units.values())
         before = read.unit_counts(list(units))
         if new_batch is not None:
             batch = Batch(**new_batch.fields, code=_next_code(day.year), input_date=day, created_by=user,
@@ -142,7 +150,7 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
             with audit.source_language():
                 audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
         operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, entry_key=token,
-                                                  created_by=user, updated_by=user)
+                                                  health_event=health_event, created_by=user, updated_by=user)
         StockMovement.objects.bulk_create([
             StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
                           kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,
@@ -189,6 +197,19 @@ def _check_static(kind, day, entries, batches, units, new_batch):
                                    % {'species': species, 'status': str(species.get_status_display()).lower()}})
 
 
+def _check_event(event, day, units):
+    """The health event a mortality or a cull names: live, of the unit's site, covering the unit (or the whole
+    site), and not dated after the operation."""
+    event = HealthEvent.all_objects.prefetch_related('units').get(pk=event.pk)
+    for unit in units:
+        covered = not event.units.all() or unit in event.units.all()
+        if event.is_deleted or event.site_id != unit.production_department.site_id or not covered:
+            raise ValidationError({'health_event': _('Choose a health event of %(unit)s.') % {'unit': unit.code}})
+    if event.date > day:
+        raise ValidationError({'health_event': _('The health event is dated %(date)s, after this operation.') % {
+            'date': shown_date(event.date)}})
+
+
 def _check_timeline(operation, batches, units):
     """Folds every batch of the operation and every batch ever in its units (step 4); returns the
     capacity messages of the units the operation brings fish into, empty when none is above its max."""
@@ -220,8 +241,10 @@ def _validate(batch_ids, unit_ids, day, new_op_id=None, arriving=()):
     lines_of = {}
     for line in lines:
         lines_of.setdefault(line.op.id, []).append(line)
+    health = health_read.dated_records(unit_ids, since=day)
     try:
-        walked = walk(lines, feeding_read.feedings(unit_ids, since=day), observe=observe)
+        walked = walk(lines, feeding_read.feedings(unit_ids, since=day),
+                      days=[(unit_id, record_day) for _kind, _record, unit_id, record_day in health], observe=observe)
     except StockError as error:
         raise _explain(error, new_op_id) from None
     if walked.orphans:
@@ -230,6 +253,12 @@ def _validate(batch_ids, unit_ids, day, new_op_id=None, arriving=()):
         raise ValidationError({NON_FIELD_ERRORS: _(
             'The feeding of %(date)s in %(unit)s would have no fish: void it first.') % {
             'date': shown_date(feeding.date), 'unit': unit}})
+    for kind, _record, unit_id, record_day in sorted(health, key=lambda item: item[3]):
+        if not walked.days[(unit_id, record_day)].has_fish:
+            unit, _batch, _species = _names(unit_id)
+            text = (_('The treatment of %(date)s in %(unit)s would have no fish: void it first.') if kind == 'treatment'
+                    else _('The sea-lice count of %(date)s in %(unit)s would have no fish: void it first.'))
+            raise ValidationError({NON_FIELD_ERRORS: text % {'date': shown_date(record_day), 'unit': unit}})
     return _over_capacity(grams_after, new_op_id)
 
 
@@ -352,27 +381,29 @@ def label(operation, lines=None):
 def _log(user, action, operation):
     lines = list(operation.movements.select_related('unit', 'batch'))
     with audit.source_language():
-        names = ['kind', 'date', 'notes', *(['over_capacity_ack'] if operation.over_capacity_ack else [])]
+        names = ['kind', 'date', 'notes', *(['over_capacity_ack'] if operation.over_capacity_ack else []),
+                 *(['health_event'] if operation.health_event_id else [])]
         changes = {label_: [None, value] for label_, value in audit.snapshot(operation, names).items()
                    if value is not None}
         changes[str(_('Stock lines'))] = [None, '; '.join(_describe(line) for line in lines)]
         audit.record(user, action, operation, changes, label=label(operation, lines))
 
 
-def voided(user, entry, reason, units, label, check=None):
-    """The void of a daily record, a stock operation or a feeding: one rule for both. It needs its reason,
-    is refused when the record is voided already or dated before the backdating window of one of its
-    units, then stops counting (soft-deleted, with its reason), `check()` runs without it, and the activity
-    log says "Voided" with the reason. Inside the caller's transaction, with the record locked."""
+def voided(user, entry, reason, units, label, check=None, sites=()):
+    """The void of a daily record, a stock operation, a feeding or a health record: one rule for all. It needs
+    its reason, is refused when the record is voided already or dated (`entry.date`) before the backdating
+    window of one of its units, or of one of `sites` (a health event of a whole site), then stops counting
+    (soft-deleted, with its reason), `check()` runs without it, and the activity log says "Voided" with the
+    reason. Inside the caller's transaction, with the record locked."""
     reason = reason.strip()
     if not reason:
         raise ValidationError({'reason': _('Say why it is voided.')})
     if entry.is_deleted:
         raise ValidationError({NON_FIELD_ERRORS: _('This operation is already voided.')})
-    for unit in units:
-        if entry.date < earliest(unit):
-            raise ValidationError({NON_FIELD_ERRORS: _(
-                'Operations older than %(days)d days cannot be voided.') % {'days': settings.STOCK_BACKDATE_DAYS}})
+    firsts = [earliest(unit) for unit in units] + [site_earliest(site) for site in sites]
+    if any(entry.date < first for first in firsts):
+        raise ValidationError({NON_FIELD_ERRORS: _(
+            'Operations older than %(days)d days cannot be voided.') % {'days': settings.STOCK_BACKDATE_DAYS}})
     entry.void_reason = reason
     entry.soft_delete(user)
     if check is not None:
@@ -406,19 +437,21 @@ def _needs_notes(reason, notes):
         raise ValidationError({'notes': _('Say what it was: the reason is “other”.')})
 
 
-def record_mortality(user, *, unit, batch, day, count, cause, measured_weight_kg=None, notes='', token=None):
+def record_mortality(user, *, unit, batch, day, count, cause, measured_weight_kg=None, notes='', health_event=None,
+                     token=None):
     """Fish found dead. They leave the book at the share's average; their weighed weight, when given,
-    is kept as a separate fact."""
+    is kept as a separate fact. `health_event`: the event they died under, if any."""
     _needs_notes(cause, notes)
     entry = Entry(unit, batch, MovementKind.MORTALITY, -count, reason=cause, measured_weight_kg=measured_weight_kg)
-    return _commit(user, OperationKind.MORTALITY, day, [entry], notes=notes, token=token)
+    return _commit(user, OperationKind.MORTALITY, day, [entry], notes=notes, token=token, health_event=health_event)
 
 
-def record_cull(user, *, unit, batch, day, count, reason, notes='', token=None):
-    """Fish taken out and killed (too small, deformed, sick), at the share's average."""
+def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event=None, token=None):
+    """Fish taken out and killed (too small, deformed, sick), at the share's average. `health_event`: the
+    event they were culled under, if any."""
     _needs_notes(reason, notes)
     entry = Entry(unit, batch, MovementKind.CULL, -count, reason=reason)
-    return _commit(user, OperationKind.CULL, day, [entry], notes=notes, token=token)
+    return _commit(user, OperationKind.CULL, day, [entry], notes=notes, token=token, health_event=health_event)
 
 
 def record_weighing(user, *, unit, batch, day, avg_weight_g=None, sample_count=None, sample_weight_kg=None,

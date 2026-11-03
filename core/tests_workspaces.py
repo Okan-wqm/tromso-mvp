@@ -53,12 +53,13 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
-        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Activity log', 'Roles', 'Users', 'Database'])
+        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Activity log', 'Roles',
+                                                'Users', 'Database'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                    'Suppliers', 'Production units', 'Water chemistry',
+                                                    'Suppliers', 'Production units', 'Water chemistry', 'Storage',
                                                     'Meal board', 'Records', 'Protocols', 'Assignments', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
@@ -114,8 +115,8 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                  'Suppliers', 'Production units', 'Water chemistry', 'Meal board',
-                                                  'Records', 'Protocols', 'Assignments', 'Messages'])
+                                                  'Suppliers', 'Production units', 'Water chemistry', 'Storage',
+                                                  'Meal board', 'Records', 'Protocols', 'Assignments', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -182,6 +183,7 @@ class MenuPlacementTests(TestCase):
         groups = {area.model: str(area.group) for area in access.areas()}
         self.assertEqual(groups, {
             'farm.Site': 'Company · Facility',
+            'inventory.StorageLocation': 'Company · Facility',
             'farm.ProductionDepartment': 'Production · Setup · Facility structure',
             'farm.System': 'Production · Setup · Facility structure',
             'farm.Equipment': 'Production · Setup · Facility structure',
@@ -195,6 +197,7 @@ class MenuPlacementTests(TestCase):
             'farm.FeedingProtocol': 'Production · Operations · Feeding',
             'farm.ProtocolAssignment': 'Production · Operations · Feeding',
             'farm.WaterMeasurement': 'Production · Operations',
+            'inventory.InventoryOperation': 'Production · Operations',
             'messaging.Conversation': 'Production · Communication',
             'core.AuditLog': 'Company · Administration',
         })

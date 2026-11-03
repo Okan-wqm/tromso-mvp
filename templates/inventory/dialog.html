@@ -1,0 +1,35 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} A dialog of Operations › Storage (inventory.views): a delivery with its lines, or a lot leaving a location
+   (issue, write-off, return to the supplier, transfer). In the dialog or as a page; the server's reasons appear on
+   the field they concern.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+{% if empty %}<p class="notice notice-warning">{{ empty }}</p>{% endif %}
+<form method="post" action="{{ request.get_full_path }}" class="record-form" novalidate>
+  {% csrf_token %}
+  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    {% for field in form.visible_fields %}{% include "registration/_field.html" %}{% endfor %}
+  </div>
+  {% if rows %}
+  <fieldset class="form-fieldset" data-formset>
+    <legend>{{ rows_label }}</legend>
+    {{ rows.management_form }}
+    {% if rows.non_form_errors %}<div class="form-error" role="alert">{{ rows.non_form_errors }}</div>{% endif %}
+    <div class="contact-rows" data-rows>
+      {% for row in rows %}{% include "inventory/_row.html" with kind="receipt-row" legend=rows_label %}{% endfor %}
+    </div>
+    <template data-row-template>{% with row=rows.empty_form %}{% include "inventory/_row.html" with kind="receipt-row" legend=rows_label %}{% endwith %}</template>
+    <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{{ add_label }}</button>
+  </fieldset>
+  {% endif %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{{ heading }}</button>
+  </div>
+</form>
+{% endblock %}

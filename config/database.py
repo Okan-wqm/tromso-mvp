@@ -8,6 +8,7 @@ from core.database import Section, Viewer
 VIEWER = Viewer(
     sections=[
         Section(_('Facility'), ('farm',)),
+        Section(_('Storage'), ('inventory',)),
         Section(_('Messages'), ('messaging',)),
         Section(_('Administration'), ('core', 'auth')),
     ],

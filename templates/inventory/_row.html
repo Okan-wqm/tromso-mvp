@@ -1,0 +1,13 @@
+{% comment %} A row of a store dialog's list: a delivery's line, a lot found by a count. `kind` gives the row its
+   columns, `legend` names it for a screen reader.{% endcomment %}<fieldset class="contact-row {{ kind }}" data-row>
+  <legend class="sr-only">{{ legend }}</legend>
+  {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
+  {% for field in row.visible_fields %}
+  <div class="field{% if field.errors %} has-error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {{ field.errors }}
+  </div>
+  {% endfor %}
+  {% if row.non_field_errors %}<div class="form-error row-error">{{ row.non_field_errors }}</div>{% endif %}
+</fieldset>

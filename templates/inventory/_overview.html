@@ -1,0 +1,72 @@
+{% load i18n inventory %}
+{% comment %} The Storage overview: per site and item the stock, the feed of the last week and the days it covers; the
+   warnings (feeding beyond the book, expired lots fed, low stock, over capacity, expiring and expired lots) and
+   the value per currency, never added across currencies.{% endcomment %}
+{% with summary as s %}
+{% if not s.site_items and not s.low %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="package" %}
+  <h2>{% trans "Nothing in the store yet" %}</h2>
+  <p>{% trans "Record a delivery to put feed into a storage location (Company › Facility › Storage locations). The feed fed is read from the feeding records." %}</p>
+</div>
+{% else %}
+{% for record in s.site_items %}{% if record.uncovered %}
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed with kilos=record.uncovered|quantity item=record.item site=record.site.name date=record.uncovered_since|date:"DATE_FORMAT" %}{{ kilos }} of {{ item }} fed at {{ site }} beyond the recorded stock since {{ date }}: record the missing delivery, dated on or before that day.{% endblocktrans %} <a href="{% url 'inventory:item' record.item.pk %}?site={{ record.site.pk }}">{% trans "See the day-by-day book" %}</a></p>
+{% endif %}{% if record.expired_used %}
+<p class="notice notice-warning">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed with kilos=record.expired_used|quantity item=record.item site=record.site.name %}The book says {{ kilos }} of {{ item }} of an expired lot were fed at {{ site }}.{% endblocktrans %}</p>
+{% endif %}{% endfor %}
+
+<section class="overview-block">
+  <h2>{% trans "On hand per site" %}</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Item" %}</th><th scope="col" class="num">{% trans "On hand" %}</th><th scope="col" class="num">{% trans "Fed, last 7 days" %}</th><th scope="col" class="num">{% trans "Days of cover" %}</th></tr></thead>
+      <tbody>
+        {% for record in s.site_items %}
+        <tr>
+          <td>{{ record.site.name }}</td>
+          <td><a href="{% url 'inventory:item' record.item.pk %}?site={{ record.site.pk }}">{{ record.item }}</a></td>
+          <td class="num">{{ record.on_hand|quantity:record.item.get_unit_display }}</td>
+          <td class="num">{% if record.fed_week %}{{ record.fed_week|quantity }}{% else %}—{% endif %}</td>
+          <td class="num">{{ record.cover_days|days }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="panel-help">{% trans "Days of cover: what is on hand at the site divided by the kilos fed a day there over the last 7 days." %}</p>
+</section>
+
+{% if s.low %}
+<section class="overview-block">
+  <h2>{% trans "Low stock" %}</h2>
+  <ul class="warning-list">{% for location, item, held, level in s.low %}<li>{% blocktrans trimmed with location=location.code site=location.site.name held=held|quantity:item.get_unit_display level=level|quantity:item.get_unit_display %}{{ item }} in {{ location }} ({{ site }}): {{ held }}, below the reorder level of {{ level }}.{% endblocktrans %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if s.over %}
+<section class="overview-block">
+  <h2>{% trans "Over capacity" %}</h2>
+  <ul class="warning-list">{% for location, held, capacity in s.over %}<li>{% blocktrans trimmed with location=location.code site=location.site.name held=held|quantity:location.get_capacity_unit_display capacity=capacity|quantity:location.get_capacity_unit_display %}{{ location }} ({{ site }}) holds {{ held }}, above its capacity of {{ capacity }}.{% endblocktrans %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if s.expired %}
+<section class="overview-block">
+  <h2>{% trans "Expired lots with stock" %}</h2>
+  <ul class="warning-list">{% for row in s.expired %}<li><a href="{% url 'inventory:lot' row.lot.pk %}">{{ row.item }} · {{ row.lot }}</a> {% blocktrans trimmed with location=row.location.code date=row.lot.expiry_date|date:"DATE_FORMAT" held=row.quantity|quantity:row.item.get_unit_display %}in {{ location }}: {{ held }}, expired on {{ date }}.{% endblocktrans %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if s.expiring %}
+<section class="overview-block">
+  <h2>{% trans "Expiring within 30 days" %}</h2>
+  <ul class="warning-list">{% for row in s.expiring %}<li><a href="{% url 'inventory:lot' row.lot.pk %}">{{ row.item }} · {{ row.lot }}</a> {% blocktrans trimmed with location=row.location.code date=row.lot.expiry_date|date:"DATE_FORMAT" held=row.quantity|quantity:row.item.get_unit_display %}in {{ location }}: {{ held }}, expires on {{ date }}.{% endblocktrans %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if s.values %}
+<section class="overview-block">
+  <h2>{% trans "Value on hand" %}</h2>
+  <ul class="warning-list">{% for site, money in s.values.items %}<li>{{ site.name }}: {% for currency, value in money.items %}{% if not forloop.first %} · {% endif %}{{ value|money:currency }}{% endfor %}</li>{% endfor %}</ul>
+  <p class="panel-help">{% trans "On hand times what each lot cost when it was delivered, per currency; lots delivered without a cost are not counted." %}</p>
+</section>
+{% endif %}
+{% endif %}
+{% endwith %}

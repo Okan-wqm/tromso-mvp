@@ -17,7 +17,12 @@ WORKSPACES = [
     Workspace('company', _('Company'), always=True, sections=[
         Section('', [
             Group('', [Entry(_('Overview'), 'home', 'home')]),
-            Group(_('Facility'), [Entry(_('Sites'), 'farm:site_list', 'building', 'farm.view_site')]),
+            Group(_('Facility'), [
+                Entry(_('Sites'), 'farm:site_list', 'building', 'farm.view_site'),
+                # Where stock is kept on each site: feed stores, silos, cold rooms, medicine cabinets.
+                Entry(_('Storage locations'), 'inventory:storagelocation_list', 'warehouse',
+                      'inventory.view_storagelocation'),
+            ]),
             Group(_('Administration'), [
                 Entry(_('Activity log'), 'core:activity_log', 'history', 'core.view_auditlog'),
                 Entry(_('Roles'), 'core:group_list', 'shield', 'auth.view_group'),
@@ -55,6 +60,9 @@ WORKSPACES = [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
                 Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
+                # The store: what is on hand where, deliveries, moves, write-offs and counts; the feed fed is read
+                # from the feeding records.
+                Entry(_('Storage'), 'inventory:storage', 'package', 'inventory.view_inventoryoperation'),
             ]),
             Group(_('Feeding'), [
                 Entry(_('Meal board'), 'farm:meal_board', 'utensils', 'farm.view_feedingrecord'),

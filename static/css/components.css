@@ -959,3 +959,17 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .band-row.is-removed td { opacity: .5; }
 .duplicate-form { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1rem; }
 .assignment-group + .assignment-group { border-top: 2px solid var(--line); }
+
+
+/* Operations › Storage: its actions in a row under the tabs, the overview's warning lists, a delivery's line
+   (feed, lot, expiry, location, kilos, cost, currency) and a location's reorder levels (feed, level, remove). */
+.storage-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.warning-list { margin: 0 0 .75rem; padding-left: 1.125rem; }
+.warning-list li + li { margin-top: .25rem; }
+.receipt-row {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, .9fr) minmax(0, .9fr) 4.5rem;
+}
+.reorder-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 5.5rem; }
+@media (max-width: 767px) {
+  .receipt-row, .reorder-row { grid-template-columns: minmax(0, 1fr); }
+}

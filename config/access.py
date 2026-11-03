@@ -1,4 +1,4 @@
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, pgettext_lazy
 
 from core.access import Area
 
@@ -14,6 +14,8 @@ AREAS = [
     Area(_('Species'), 'farm.Species'),
     Area(_('Feeds'), 'farm.Feed'),
     Area(_('Water limits'), 'farm.WaterLimit'),
+    Area(_('Slaughter facilities'), 'farm.SlaughterFacility'),
+    Area(_('Handling rules'), 'farm.HandlingRule'),
     Area(_('Suppliers'), 'farm.Supplier'),
     Area(_('Library'), 'knowledge.Document'),
     # Edit also reviews an entry (marks it reviewed, or takes it back to draft).
@@ -34,6 +36,12 @@ AREAS = [
     # The store: Read is the Storage page, Create records a delivery, an issue, a write-off, a return, a transfer
     # or a count, Delete voids one. Operations are never edited: a correction is a void and a new entry.
     Area(_('Storage'), 'inventory.InventoryOperation', actions=('view', 'add', 'delete')),
+    # The harvests: Read is the Harvested page. A harvest is recorded and voided as a stock operation (Production
+    # units: Create and Delete), with where the fish went, so nothing else is offered here.
+    Area(pgettext_lazy('page', 'Harvested'), 'farm.HarvestRecord', actions=('view',)),
+    # The planned harvests and transports, and the target weight per batch: read, plan, change, delete.
+    Area(_('Harvest plan'), 'farm.HandlingPlanItem'),
+    Area(_('Production plans'), 'farm.ProductionPlan'),
     # Messages: Read is the Messages page, writing in one's own conversations and starting a direct one; Create
     # also creates channels. Only the members of a conversation read it, whatever the role (messaging/services.py).
     Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),

@@ -423,6 +423,9 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .audit-action { font-weight: 700; }
 .audit-delete .audit-action { color: var(--error); }
 .audit-void .audit-action { color: #7A5410; }
+/* An entry where someone went on past a handling warning (core.models.AuditSeverity): red edge and badge. */
+.audit-entry.is-critical { border-left-color: var(--error); background: #FDF5F5; }
+.badge-critical { background: #F7E6E6; color: var(--error); font-weight: 700; }
 .audit-record { font-weight: 500; }
 .audit-meta { color: var(--muted); font-size: .875rem; }
 .audit-meta strong { color: var(--speck); font-weight: 600; }
@@ -959,6 +962,23 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .band-row.is-removed td { opacity: .5; }
 .duplicate-form { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1rem; }
 .assignment-group + .assignment-group { border-top: 2px solid var(--line); }
+
+
+/* Operations › Harvest (templates/farm/harvests.html, plan_item_list.html, production_plan_list.html) and the
+   handling check of the harvest, transfer and grading dialogs (templates/farm/_handling_panel.html). */
+.handling-panel { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line); border-radius: 8px; }
+.handling-title { margin: 0 0 .5rem; font-size: .9375rem; font-weight: 700; color: var(--speck); }
+.handling-notes { margin: 0 0 .5rem; padding-left: 1.125rem; color: var(--muted); font-size: .9375rem; }
+.handling-warnings ul, ul.handling-warnings { margin: 0 0 .5rem; padding-left: 1.125rem; }
+.handling-warnings .field { margin: .5rem 0 0; }
+.op-plan { margin: 0 0 1rem; color: var(--muted); }
+.harvest-table td, .plan-table td { vertical-align: top; }
+.harvest-totals { display: grid; gap: 1.25rem; margin-top: 1.5rem; }
+.totals-table caption { margin-bottom: .5rem; text-align: left; font-weight: 700; color: var(--speck); }
+.badge-plan-planned { background: var(--mist); color: var(--olive); border: 1px solid var(--sage); }
+.badge-plan-overdue { background: #FBF0D9; color: #7A5410; }
+.badge-plan-done { background: #ECECEA; color: var(--muted); }
+.badge-plan-cancelled { background: #ECECEA; color: var(--muted); text-decoration: line-through; }
 
 /* A read page (templates/crud/detail.html) and Company › Knowledge (templates/knowledge/): a document's reference,
    its file and text, a search's passages with the words found, a knowledge entry and its review. */

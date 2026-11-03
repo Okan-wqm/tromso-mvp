@@ -1,8 +1,10 @@
 {% extends "farm/stock_operation.html" %}
 {% load i18n stock feeding %}
 {% comment %} Record feeding (farm.feeding.views.record_feeding): the stock's operation dialog with the feeding form.
-   A unit with two batches says how the feed is split between them.{% endcomment %}
+   A unit with two batches says how the feed is split between them; a day in the fast before a planned harvest
+   or transport says so (farm.handling.fasting).{% endcomment %}
 {% block intro %}
+{% if fasting %}<p class="notice notice-warning">{{ fasting }} {% trans "A feeding can still be recorded." %}</p>{% endif %}
 {% if split %}
 <p class="op-batch">{% if split.at_start %}{% blocktrans trimmed with date=split.day|date:"DATE_FORMAT" %}Split by the book biomass at the start of {{ date }}:{% endblocktrans %}{% else %}{% blocktrans trimmed with date=split.day|date:"DATE_FORMAT" %}Split by the book biomass at the end of {{ date }}:{% endblocktrans %}{% endif %}
   {% for code, share in split.parts %}{% if not forloop.first %}, {% endif %}{{ code }} {{ share|percent }}{% endfor %}</p>

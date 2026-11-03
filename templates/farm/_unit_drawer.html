@@ -1,7 +1,8 @@
-{% load i18n stock feeding %}
+{% load i18n stock feeding harvest %}
 {% comment %} The drawer of the unit picked on Production units (?unit=): its fish, its feeding, its water, the
-   operations that make sense for it (Record feeding first), and its recent operations and feedings. Closing
-   it is a link to the page without the unit.{% endcomment %}
+   handling check of a harvest today and its planned harvests and transports, the operations that make sense
+   for it (Record feeding first), and its recent operations and feedings; a harvest shows the book against the
+   scale and where it went. Closing it is a link to the page without the unit.{% endcomment %}
 {% with unit=drawer stock=drawer_stock %}
 <aside class="drawer" aria-labelledby="drawer-title">
   <div class="drawer-head">
@@ -90,6 +91,8 @@
     </section>
     {% endif %}
 
+    {% if handling %}{% include "farm/_unit_handling.html" %}{% endif %}
+
     {% if actions %}
     <section class="drawer-section">
       <h3>{% trans "Operations" %}</h3>
@@ -154,9 +157,11 @@
           </div>
           <ul class="op-lines" role="list">
             {% for line in item.lines %}
-            <li>{% if line.unit_id != unit.pk %}{{ line.unit.code }} · {% endif %}{{ line.batch.code }}: {% if line.kind == "weighing" %}{% blocktrans trimmed with weight=line.avg_weight_g|grams %}average {{ weight }}{% endblocktrans %}{% else %}{% blocktrans trimmed with fish=line.count_delta|signed %}{{ fish }} fish{% endblocktrans %}{% if line.avg_weight_g %} · {{ line.avg_weight_g|grams }}{% endif %}{% if line.size_class %} · {{ line.size_class }}{% endif %}{% if line.reason %} · {{ line.reason_label }}{% endif %}{% if line.measured_weight_kg %} · {% blocktrans trimmed with kilos=line.measured_weight_kg|kilos %}{{ kilos }} weighed{% endblocktrans %}{% endif %}{% endif %}</li>
+            <li>{% if line.unit_id != unit.pk %}{{ line.unit.code }} · {% endif %}{{ line.batch.code }}: {% if line.kind == "weighing" %}{% blocktrans trimmed with weight=line.avg_weight_g|grams %}average {{ weight }}{% endblocktrans %}{% else %}{% blocktrans trimmed with fish=line.count_delta|signed %}{{ fish }} fish{% endblocktrans %}{% if line.avg_weight_g %} · {{ line.avg_weight_g|grams }}{% endif %}{% if line.size_class %} · {{ line.size_class }}{% endif %}{% if line.reason %} · {{ line.reason_label }}{% endif %}{% if line.measured_weight_kg %} · {% blocktrans trimmed with kilos=line.measured_weight_kg|kilos %}{{ kilos }} weighed{% endblocktrans %}{% endif %}{% if line.kind == "harvest" and line.book %} · {% blocktrans trimmed with book=line.book.kg|kilos difference=line.book.difference_kg|signed_kilos percent=line.book.difference_pct|signed_percent %}book {{ book }} · {{ difference }} ({{ percent }}){% endblocktrans %}{% endif %}{% endif %}</li>
             {% endfor %}
           </ul>
+          {% if item.record %}<p class="op-meta">{% blocktrans trimmed with facility=item.record.facility %}To {{ facility }}{% endblocktrans %}{% if item.record.transport %} · {{ item.record.transport.name }}{% endif %}{% if item.record.vessel %} · {{ item.record.vessel }}{% endif %}</p>{% endif %}
+          {% if operation.acknowledgements.all %}<p class="op-meta"><span class="badge badge-critical">{% trans "Handling warning acknowledged" %}</span></p>{% endif %}
           {% for found in item.corrections %}<p class="op-meta">{% include "farm/_correction.html" with correction=found.correction batch=found.batch %}</p>{% endfor %}
           <p class="op-meta">{% blocktrans trimmed with name=operation.created_by.get_username|default:"system" %}by {{ name }}{% endblocktrans %}{% if operation.notes %} · {{ operation.notes }}{% endif %}{% if operation.is_deleted %} · {% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}{% endif %}</p>
         </li>

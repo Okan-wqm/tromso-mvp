@@ -121,6 +121,12 @@ msgid "%(count)d h"
 msgstr "%(count)d t"
 
 #, python-format
+msgid "%(count)d harvest"
+msgid_plural "%(count)d harvests"
+msgstr[0] "%(count)d høsting"
+msgstr[1] "%(count)d høstinger"
+
+#, python-format
 msgid "%(count)d min"
 msgstr "%(count)d min"
 
@@ -137,6 +143,12 @@ msgstr[0] ""
 msgstr[1] ""
 "%(count)d utstyrsenheter er kjøpt fra den: behold «%(category)s» avkrysset, eller velg en annen "
 "leverandør for dem først."
+
+#, python-format
+msgid "%(count)d planned harvest or transport names it: keep “%(category)s” ticked."
+msgid_plural "%(count)d planned harvests or transports name it: keep “%(category)s” ticked."
+msgstr[0] "%(count)d planlagt høsting eller transport viser til den: la «%(category)s» stå avkrysset."
+msgstr[1] "%(count)d planlagte høstinger eller transporter viser til den: la «%(category)s» stå avkrysset."
 
 #, python-format
 msgid "%(count)d record"
@@ -245,6 +257,10 @@ msgstr[0] "%(counter)s rad"
 msgstr[1] "%(counter)s rader"
 
 #, python-format
+msgid "%(date)s, no time recorded: counted from the end of the day"
+msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
+
+#, python-format
 msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "%(days)s dag siden siste målte vekt"
@@ -331,6 +347,10 @@ msgstr "%(free)s kg ledig"
 #, python-format
 msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
+
+#, python-format
+msgid "%(hours)s h"
+msgstr "%(hours)s t"
 
 #, python-format
 msgid "%(item)s in %(location)s (%(site)s): %(held)s, below the reorder level of %(level)s."
@@ -630,6 +650,10 @@ msgid "%(volume)s m³"
 msgstr "%(volume)s m³"
 
 #, python-format
+msgid "%(weighed)s round weight, %(book)s in the book"
+msgstr "%(weighed)s rund vekt, %(book)s i beholdningen"
+
+#, python-format
 msgid "%(weight)s as stocked"
 msgstr "%(weight)s ved utsett"
 
@@ -666,6 +690,9 @@ msgstr "0 rader"
 
 msgid "0 rows match"
 msgstr "0 rader samsvarer"
+
+msgid "1 to 6 letters or digits, as Mattilsynet gives it."
+msgstr "1 til 6 bokstaver eller sifre, slik Mattilsynet gir det."
 
 msgid "9-digit Norwegian organisation number"
 msgstr "Norsk organisasjonsnummer (9 siffer)"
@@ -719,6 +746,9 @@ msgid_plural "A feeder has at most %(num)d calibrations."
 msgstr[0] "En fôrautomat har høyst %(num)d kalibrering."
 msgstr[1] "En fôrautomat har høyst %(num)d kalibreringer."
 
+msgid "A feeding can still be recorded."
+msgstr "En fôring kan likevel registreres."
+
 msgid ""
 "A feeding record names no lot: the book draws the site's lots first expired first out, so this is"
 " an estimate."
@@ -728,6 +758,12 @@ msgstr ""
 
 msgid "A feeding table has at least one band."
 msgstr "En fôringstabell har minst én vektklasse."
+
+msgid "A harvest goes to a slaughter facility, a transport to a unit."
+msgstr "En høsting går til et slakteri, en transport til en enhet."
+
+msgid "A harvest is recorded from its unit’s drawer on Production units, or from its plan."
+msgstr "En høsting registreres fra enhetens panel under Produksjonsenheter, eller fra planen."
 
 #, python-format
 msgid "A location has at most %(num)d reorder level."
@@ -780,6 +816,23 @@ msgid ""
 msgstr ""
 "En kunnskap med dine egne ord, med kilden: et dokument i biblioteket, en annen publisert kilde, "
 "eller en eksperts eller din egen observasjon."
+
+#, python-format
+msgid "A plan can be dated at most %(days)d days back."
+msgstr "En plan kan dateres høyst %(days)d dager tilbake."
+
+msgid ""
+"A plan is done when the harvest or transfer recorded from it counts; voiding that operation plans"
+" it again. The fast a plan asks of its unit starts at the start of its day less the handling "
+"rule’s hours."
+msgstr ""
+"En plan er utført når høstingen eller flyttingen registrert fra den teller; annulleres "
+"operasjonen, er planen planlagt igjen. Sultingen en plan krever av enheten starter ved starten av"
+" dagen minus timene i håndteringsregelen."
+
+#, python-format
+msgid "A planned %(plan)s is recorded as a %(operation)s."
+msgstr "En planlagt %(plan)s registreres som %(operation)s."
 
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "En pris trenger sin valuta, og en valuta trenger en pris."
@@ -866,6 +919,13 @@ msgstr "En temperaturkolonne har høyst én desimal: %(value)s."
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
 
+msgid ""
+"A transfer is a transport. A grading is checked against its own rule and the transport rule; the "
+"longer applies."
+msgstr ""
+"En flytting er en transport. En sortering kontrolleres mot sin egen regel og transportregelen; "
+"den lengste gjelder."
+
 msgid "A unit becomes active when fish are stocked in it (Operations › Production units)."
 msgstr "En enhet blir aktiv når det settes ut fisk i den (Drift › Produksjonsenheter)."
 
@@ -933,8 +993,14 @@ msgstr ""
 "Aktiv: fôres nå eller klar til å fôres. Inaktiv: brukes ikke for øyeblikket. Avviklet: lages "
 "eller kjøpes ikke lenger."
 
+msgid "Active: harvests can go to it. Inactive: kept for the harvests that went there."
+msgstr "Aktiv: høstinger kan gå dit. Inaktiv: beholdes for høstingene som gikk dit."
+
 msgid "Activity log"
 msgstr "Aktivitetslogg"
+
+msgid "Actual"
+msgstr "Faktisk"
 
 msgid "Add"
 msgstr "Legg til"
@@ -1091,8 +1157,14 @@ msgstr "Alle produksjonsavdelinger"
 msgid "All protocols"
 msgstr "Alle protokoller"
 
+msgid "All rules"
+msgstr "Alle regler"
+
 msgid "All sites"
 msgstr "Alle lokaliteter"
+
+msgid "All slaughter facilities"
+msgstr "Alle slakterier"
 
 msgid "All sources"
 msgstr "Alle kilder"
@@ -1229,6 +1301,12 @@ msgstr "Dette lokalitetsnummeret brukes allerede av en annen lokalitet."
 msgid "Another site already uses this name."
 msgstr "Dette navnet brukes allerede av en annen lokalitet."
 
+msgid "Another slaughter facility already has this approval number."
+msgstr "Et annet slakteri har allerede dette godkjenningsnummeret."
+
+msgid "Another slaughter facility already has this name."
+msgstr "Et annet slakteri har allerede dette navnet."
+
 msgid "Another species already has this scientific name."
 msgstr "En annen art har allerede dette vitenskapelige navnet."
 
@@ -1262,6 +1340,9 @@ msgstr "Denne e-postadressen brukes allerede av en annen bruker."
 msgid "Any active location, on this site or another."
 msgstr "Hvilken som helst aktiv lagerplass, på denne lokaliteten eller en annen."
 
+msgid "Any severity"
+msgstr "Alle alvorlighetsgrader"
+
 msgid "Any species"
 msgstr "Alle arter"
 
@@ -1279,6 +1360,13 @@ msgstr "Gjelder for"
 
 msgid "Apply"
 msgstr "Bruk"
+
+msgid "Approval number"
+msgstr "Godkjenningsnummer"
+
+#, python-format
+msgid "Approval number %(number)s"
+msgstr "Godkjenningsnummer %(number)s"
 
 msgid "Aquaponics"
 msgstr "Akvaponi"
@@ -1349,6 +1437,9 @@ msgstr "Høyst %(decimals)d desimaler."
 #, python-format
 msgid "At most %(max)s."
 msgstr "Høyst %(max)s."
+
+msgid "At most 720 hours (30 days)."
+msgstr "Høyst 720 timer (30 dager)."
 
 msgid "At sea-level pressure: the site has no altitude."
 msgstr "Ved trykket ved havnivå: lokaliteten har ingen høyde over havet."
@@ -1454,6 +1545,9 @@ msgstr "Perlevolum"
 msgid "Bed type"
 msgstr "Biomedietype"
 
+msgid "Before handling"
+msgstr "Før håndtering"
+
 msgid ""
 "Below the reorder level of a feed in this location, the Storage overview says the stock is low. "
 "One row per feed. They are saved separately from the location details."
@@ -1490,7 +1584,7 @@ msgid "Blower"
 msgstr "Luftblåser"
 
 msgid "Book"
-msgstr "Registeret"
+msgstr "Beholdning"
 
 msgid "Bought fish have a supplier; fish of the own hatchery or caught in the wild have none."
 msgstr "Kjøpt fisk har en leverandør; fisk fra eget klekkeri eller villfanget fisk har ingen."
@@ -1553,11 +1647,20 @@ msgstr "Kalibreringer kan legges til når utstyret er opprettet."
 msgid "Cancel"
 msgstr "Avbryt"
 
+msgid "Cancelled"
+msgstr "Avlyst"
+
+msgid "Cancelled because"
+msgstr "Avlyst fordi"
+
 msgid "Cannibalism"
 msgstr "Kannibalisme"
 
 msgid "Capacity"
 msgstr "Kapasitet"
+
+msgid "Capacity (t a day)"
+msgstr "Kapasitet (t per dag)"
 
 msgid "Capacity and notes"
 msgstr "Kapasitet og notater"
@@ -1639,6 +1742,12 @@ msgstr "Velg en leverandør av fôr."
 msgid "Choose a supplier of live fish and eggs."
 msgstr "Velg en leverandør av levende fisk og rogn."
 
+msgid "Choose a supplier of slaughter and processing."
+msgstr "Velg en leverandør av slakting og foredling."
+
+msgid "Choose a supplier of wellboat and transport."
+msgstr "Velg en leverandør av brønnbåt og transport."
+
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Velg en type på fanen Generelt; spesifikasjonene vises her."
 
@@ -1653,6 +1762,10 @@ msgstr "Velg blant dem som tilbys."
 
 msgid "Choose an active feed."
 msgstr "Velg et aktivt fôr."
+
+#, python-format
+msgid "Choose an active slaughter facility that takes %(species)s."
+msgstr "Velg et aktivt slakteri som tar imot %(species)s."
 
 msgid "Choose another location than the one it leaves."
 msgstr "Velg en annen lagerplass enn den det tas fra."
@@ -2087,7 +2200,7 @@ msgid "Diesel"
 msgstr "Diesel"
 
 msgid "Difference"
-msgstr "Avvik"
+msgstr "Differanse"
 
 msgid "Digestible energy (MJ/kg)"
 msgstr "Fordøyelig energi (MJ/kg)"
@@ -2124,6 +2237,9 @@ msgstr "Django-modell"
 
 msgid "Document"
 msgstr "Dokument"
+
+msgid "Done"
+msgstr "Utført"
 
 msgid "Download"
 msgstr "Last ned"
@@ -2204,6 +2320,9 @@ msgstr "Rediger"
 msgid "Edit %(name)s"
 msgstr "Rediger %(name)s"
 
+msgid "Edit or cancel"
+msgstr "Rediger eller avlys"
+
 msgid "Edit the entry"
 msgstr "Rediger oppføringen"
 
@@ -2234,6 +2353,12 @@ msgstr "Tom · %(status)s"
 
 msgid "Empty — ready to stock"
 msgstr "Tom – klar for utsett"
+
+msgid "Empty: the rule for every species. A species’ own rule wins over it."
+msgstr "Tom: regelen for alle arter. En arts egen regel går foran."
+
+msgid "End unknown"
+msgstr "Slutt ukjent"
 
 msgid "Ended"
 msgstr "Avsluttet"
@@ -2284,6 +2409,9 @@ msgstr[1] "Ufullstendig estimat: %(days)s fôringsdager uten forventet FCR"
 msgid "Estimated %(weight)s on %(date)s"
 msgstr "Estimert %(weight)s %(date)s"
 
+msgid "Estimated now · target reached"
+msgstr "Anslått nå · mål nådd"
+
 msgid "Estimated: the measured weight and the feed since, divided by the expected FCR"
 msgstr "Estimert: den målte vekten og fôret siden, delt på forventet FCR"
 
@@ -2294,10 +2422,16 @@ msgstr ""
 "Alle endringer som er gjort: hvem, når, hvilken post og gamle og nye verdier. Oppføringer kan "
 "ikke redigeres eller slettes."
 
+msgid "Every handling"
+msgstr "All håndtering"
+
 msgid "Every permission that exists: view, add, change and delete of each model, and the custom ones."
 msgstr ""
 "Alle tillatelser som finnes: visning, tillegg, endring og sletting for hver modell, og egne "
 "tillatelser."
+
+msgid "Every species"
+msgstr "Alle arter"
 
 msgid "Every stage"
 msgstr "Alle stadier"
@@ -2405,6 +2539,20 @@ msgstr "Familie"
 
 msgid "Farm console for tanks, water quality and stock records."
 msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
+
+msgid "Fasting"
+msgstr "Sulting"
+
+msgid "Fasting before it (hours)"
+msgstr "Sulting før (timer)"
+
+#, python-format
+msgid "Fasting before the harvest of %(date)s: from %(start)s (%(hours)d h)."
+msgstr "Sulting før høstingen %(date)s: fra %(start)s (%(hours)d t)."
+
+#, python-format
+msgid "Fasting before the transport of %(date)s: from %(start)s (%(hours)d h)."
+msgstr "Sulting før transporten %(date)s: fra %(start)s (%(hours)d t)."
 
 msgid "Fed"
 msgstr "Fôret"
@@ -2537,6 +2685,9 @@ msgstr "Filstørrelse (byte)"
 msgid "Fill in its feeding table first: a protocol without one cannot be active."
 msgstr "Fyll ut fôringstabellen først: en protokoll uten tabell kan ikke være aktiv."
 
+msgid "Fill it in to cancel the plan; clear it to plan it again."
+msgstr "Fyll ut for å avlyse planen; tøm for å planlegge den igjen."
+
 #, python-format
 msgid "Filled in from the species catalogue: %(values)s."
 msgstr "Fylt ut fra artskatalogen: %(values)s."
@@ -2593,6 +2744,13 @@ msgstr "Høstet fisk"
 
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Fisk beholdningen fortsatt har utover tellingen, registreres da som uforklart svinn."
+
+msgid ""
+"Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown here "
+"and logged as critical."
+msgstr ""
+"Fisk med tilbakeholdelsestid for legemidler skal ikke gå til mat. Å fortsette lagres med det som "
+"vises her og logges som kritisk."
 
 msgid "Fish weighed"
 msgstr "Fisk veid"
@@ -2689,6 +2847,10 @@ msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
 msgid "From the floor to the rim."
 msgstr "Fra bunnen til kanten."
 
+#, python-format
+msgid "From the plan of %(date)s: it is linked to the plan when it is recorded."
+msgstr "Fra planen for %(date)s: den knyttes til planen når den registreres."
+
 msgid "From the water surface to the bottom of the net."
 msgstr "Fra vannflaten til bunnen av nota."
 
@@ -2775,6 +2937,9 @@ msgstr "Gitt"
 msgid "Given %(given)s"
 msgstr "Gitt %(given)s"
 
+msgid "Go on despite these warnings"
+msgstr "Fortsett tross disse advarslene"
+
 msgid "Grading"
 msgstr "Sortering"
 
@@ -2803,8 +2968,26 @@ msgstr "HDPE"
 msgid "Handling"
 msgstr "Håndtering"
 
+msgid "Handling rule"
+msgstr "Håndteringsregel"
+
+msgid "Handling rules"
+msgstr "Håndteringsregler"
+
+msgid "Handling warning acknowledged"
+msgstr "Håndteringsadvarsel bekreftet"
+
+msgid "Handling warnings acknowledged"
+msgstr "Bekreftede håndteringsadvarsler"
+
 msgid "Harvest"
 msgstr "Høsting"
+
+msgid "Harvest and handling"
+msgstr "Høsting og håndtering"
+
+msgid "Harvest plan"
+msgstr "Høsteplan"
 
 msgid "Harvest preparation"
 msgstr "Forberedelse til høsting"
@@ -2816,8 +2999,25 @@ msgstr "Høsting registrert: %(count)s fisk av %(batch)s fra %(unit)s, %(kilos)s
 msgid "Harvested"
 msgstr "Høstet"
 
+msgctxt "page"
+msgid "Harvested"
+msgstr "Høstet"
+
 msgid "Harvesting"
 msgstr "Høsting"
+
+msgid "Harvests"
+msgstr "Høstinger"
+
+msgid "Harvests and transports"
+msgstr "Høstinger og transporter"
+
+msgid ""
+"Harvests and transports planned per unit and batch: the fish and kilos meant, where they go, and "
+"the fast before them."
+msgstr ""
+"Høstinger og transporter planlagt per enhet og fiskegruppe: fisk og kilo som er ment, hvor de "
+"går, og sultingen før."
 
 msgid "Hatchery"
 msgstr "Klekkeri"
@@ -2858,8 +3058,27 @@ msgstr "Historikk"
 msgid "History of %(point)s"
 msgstr "Historikk for %(point)s"
 
+msgid "Hours fasted"
+msgstr "Timer sultet"
+
+msgid "Hours the rule asks for"
+msgstr "Timer regelen krever"
+
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
+
+msgid ""
+"How long fish must have been without feed before they are harvested, transported, graded or "
+"treated, counted from their last feeding to the start of that day. A species’ own rule wins over "
+"the rule for every species; a grading takes the longer of its rule and the transport rule. Too "
+"short a fast is a warning, never a block: going on is recorded and logged as critical. These are "
+"the farm’s own rules: the starting values are to be checked with your veterinarian."
+msgstr ""
+"Hvor lenge fisken må ha vært uten fôr før den høstes, transporteres, sorteres eller behandles, "
+"regnet fra siste fôring til starten av den dagen. En arts egen regel går foran regelen for alle "
+"arter; en sortering tar den lengste av sin egen regel og transportregelen. For kort sulting er en"
+" advarsel, aldri en sperre: å fortsette registreres og logges som kritisk. Dette er anleggets "
+"egne regler: startverdiene skal sjekkes med veterinæren."
 
 msgid "Icelandic"
 msgstr "Islandsk"
@@ -2870,6 +3089,9 @@ msgid ""
 msgstr ""
 "Hvis en konto bruker denne adressen, er en tilbakestillingslenke på vei. Hvis den ikke har kommet"
 " om noen minutter, sjekk søppelpostmappen."
+
+msgid "If the fish were harvested today:"
+msgstr "Hvis fisken ble høstet i dag:"
 
 msgid "If you did not ask for this, you can ignore this email."
 msgstr "Hvis du ikke ba om dette, kan du se bort fra denne e-posten."
@@ -2908,6 +3130,12 @@ msgstr "Installasjonsdato"
 msgid "Issue"
 msgstr "Hefte"
 
+#, python-format
+msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
+msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
+msgstr[0] "Den fraktet %(count)d høsting: la «%(category)s» stå avkrysset."
+msgstr[1] "Den fraktet %(count)d høstinger: la «%(category)s» stå avkrysset."
+
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
 "log keeps its history, and it can be restored from the admin."
@@ -2942,6 +3170,15 @@ msgstr "Den er tildelt for i dag eller senere: avslutt disse tildelingene først
 
 msgid "It is assigned: it cannot go back to draft."
 msgstr "Den er tildelt: den kan ikke gå tilbake til utkast."
+
+msgid "It is done: void the operation that recorded it first."
+msgstr "Den er utført: annuller først operasjonen som registrerte den."
+
+#, python-format
+msgid "It operates %(count)d slaughter facility: keep “%(category)s” ticked."
+msgid_plural "It operates %(count)d slaughter facilities: keep “%(category)s” ticked."
+msgstr[0] "Den driver %(count)d slakteri: la «%(category)s» stå avkrysset."
+msgstr[1] "Den driver %(count)d slakterier: la «%(category)s» stå avkrysset."
 
 msgid ""
 "It stops counting: the latest values and statuses are worked out again without it. To correct a "
@@ -3045,6 +3282,14 @@ msgstr "Siste kalibrering"
 
 msgid "Last fed"
 msgstr "Sist fôret"
+
+#, python-format
+msgid "Last fed %(moment)s, %(hours)s h before %(day)s: the %(kind)s rule asks for %(required)d h."
+msgstr "Sist fôret %(moment)s, %(hours)s t før %(day)s: regelen for %(kind)s krever %(required)d t."
+
+#, python-format
+msgid "Last fed %(when)s: %(hours)s h before %(day)s."
+msgstr "Sist fôret %(when)s: %(hours)s t før %(day)s."
 
 msgid "Last movement"
 msgstr "Siste bevegelse"
@@ -3225,6 +3470,11 @@ msgstr "Merket som gjennomgått av deg."
 msgid "Material"
 msgstr "Materiale"
 
+msgid ""
+"Mattilsynet’s approval number of the slaughterhouse (godkjenningsnummer), as the slaughter "
+"reports name it."
+msgstr "Slakteriets godkjenningsnummer fra Mattilsynet, slik slakterapportene oppgir det."
+
 #, python-format
 msgid "Max %(density)s kg/m³, %(biomass)s"
 msgstr "Maks. %(density)s kg/m³, %(biomass)s"
@@ -3282,6 +3532,27 @@ msgstr "Medisinfôr"
 
 msgid "Medicine cabinet"
 msgstr "Medisinskap"
+
+msgid "Medicine withdrawal"
+msgstr "Tilbakeholdelsestid"
+
+msgid "Medicine withdrawal not checked"
+msgstr "Tilbakeholdelsestid ikke kontrollert"
+
+msgid "Medicine withdrawal not checked: the health records are not in yet."
+msgstr "Tilbakeholdelsestid ikke kontrollert: helseregistreringene er ikke på plass ennå."
+
+#, python-format
+msgid "Medicine withdrawal of %(batch)s until %(date)s."
+msgstr "Tilbakeholdelsestid for %(batch)s til %(date)s."
+
+#, python-format
+msgid "Medicine withdrawal of %(batch)s until about %(date)s."
+msgstr "Tilbakeholdelsestid for %(batch)s til omtrent %(date)s."
+
+#, python-format
+msgid "Medicine withdrawal of %(batch)s, its end unknown."
+msgstr "Tilbakeholdelsestid for %(batch)s, slutten ukjent."
 
 msgid "Medicines and vaccines"
 msgstr "Legemidler og vaksiner"
@@ -3363,6 +3634,9 @@ msgstr "Bevegelig medium (MBBR)"
 
 msgid "Multiparameter probe"
 msgstr "Multiparametersonde"
+
+msgid "Municipality"
+msgstr "Kommune"
 
 msgid ""
 "NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
@@ -3510,6 +3784,12 @@ msgstr "Ingen fôring registrert fram til siste veiing."
 msgid "No feeding matches these filters."
 msgstr "Ingen fôring passer disse filtrene."
 
+#, python-format
+msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
+msgstr ""
+"Ingen fôring av denne fisken er registrert de %(days)d dagene før %(day)s: sultingen er ikke "
+"kontrollert."
+
 msgid "No feeding recorded for these filters."
 msgstr "Ingen fôring registrert for disse filtrene."
 
@@ -3533,6 +3813,10 @@ msgid "No fish at the end of the day"
 msgstr "Ingen fisk ved slutten av dagen"
 
 #, python-format
+msgid "No fish of %(batch)s are in %(unit)s now."
+msgstr "Ingen fisk fra %(batch)s er i %(unit)s nå."
+
+#, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s to weigh."
 msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 
@@ -3543,14 +3827,35 @@ msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
 msgid "No growth up to the last weighing."
 msgstr "Ingen tilvekst fram til siste veiing."
 
+#, python-format
+msgid "No handling rule for %(kind)s: the fast is not checked (Reference data › Handling rules)."
+msgstr ""
+"Ingen håndteringsregel for %(kind)s: sultingen er ikke kontrollert (Referansedata › "
+"Håndteringsregler)."
+
+msgid "No harvest matches these filters."
+msgstr "Ingen høsting passer til disse filtrene."
+
+msgid "No harvest or transport is planned for this unit."
+msgstr "Ingen høsting eller transport er planlagt for denne enheten."
+
+msgid "No harvest recorded yet"
+msgstr "Ingen høsting registrert ennå"
+
 msgid "No knowledge entry cites it yet."
 msgstr "Ingen kunnskapsoppføring viser til det ennå."
 
 msgid "No limit"
 msgstr "Ingen grense"
 
+msgid "No longer in stock"
+msgstr "Ikke lenger i beholdningen"
+
 msgid "No lot number"
 msgstr "Uten partinummer"
+
+msgid "No medicine withdrawal in force."
+msgstr "Ingen tilbakeholdelsestid gjelder."
 
 msgid "No messages yet"
 msgstr "Ingen meldinger ennå"
@@ -3672,11 +3977,20 @@ msgstr "Ingen."
 msgid "None: not a part of other equipment"
 msgstr "Ingen: ikke en del av annet utstyr"
 
+msgid "Normal"
+msgstr "Normal"
+
 msgid "Norwegian"
 msgstr "Norsk"
 
 msgid "Not a cleaner fish"
 msgstr "Ikke rensefisk"
+
+msgid "Not checked"
+msgstr "Ikke kontrollert"
+
+msgid "Not chosen yet"
+msgstr "Ikke valgt ennå"
 
 msgid "Not given"
 msgstr "Ikke oppgitt"
@@ -3696,11 +4010,27 @@ msgstr "Ikke målt"
 msgid "Not rated"
 msgstr "Ikke vurdert"
 
+#, python-format
+msgid "Not reached within %(days)d days at this rate."
+msgstr "Nås ikke innen %(days)d dager i dette tempoet."
+
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
 
 msgid "Not stated"
 msgstr "Ikke oppgitt"
+
+#, python-format
+msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s."
+msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til %(date)s."
+
+#, python-format
+msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s."
+msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til omtrent %(date)s."
+
+#, python-format
+msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
+msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s, slutten ukjent."
 
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
@@ -3905,6 +4235,9 @@ msgstr "Operasjoner kan dateres høyst %(days)d dager tilbake."
 msgid "Operations older than %(days)d days cannot be voided."
 msgstr "Operasjoner eldre enn %(days)d dager kan ikke annulleres."
 
+msgid "Operator"
+msgstr "Driftsselskap"
+
 msgid "Optional"
 msgstr "Valgfritt"
 
@@ -3917,6 +4250,9 @@ msgstr ""
 
 msgid "Optional. Above it the overview warns; nothing is refused. Feed is counted in kg."
 msgstr "Valgfritt. Over den varsler oversikten; ingenting avvises. Fôr telles i kg."
+
+msgid "Optional: how many fish."
+msgstr "Valgfritt: hvor mange fisk."
 
 msgid "Optional: how many meals it was given in."
 msgstr "Valgfritt: hvor mange måltider det ble gitt i."
@@ -3935,6 +4271,15 @@ msgstr "Valgfritt: nummeret på returseddelen."
 
 msgid "Optional: the time of the feeding, or of its first meal."
 msgstr "Valgfritt: tidspunktet for fôringen, eller første måltid."
+
+msgid "Optional: the wellboat or haulage company that carries them."
+msgstr "Valgfritt: brønnbåt- eller transportselskapet som frakter dem."
+
+msgid "Optional: the wellboat or haulage company."
+msgstr "Valgfritt: brønnbåt- eller transportselskapet."
+
+msgid "Optional: their round (live) weight, in kg."
+msgstr "Valgfritt: rund (levende) vekt, i kg."
 
 msgid "Optional; the batch number is given on saving."
 msgstr "Valgfritt; gruppenummeret gis ved lagring."
@@ -3995,6 +4340,9 @@ msgstr "Over kapasitet"
 
 msgid "Overall length (m)"
 msgstr "Total lengde (m)"
+
+msgid "Overdue"
+msgstr "Forfalt"
 
 msgid "Overview"
 msgstr "Oversikt"
@@ -4095,6 +4443,12 @@ msgstr "Pelletstørrelse (mm)"
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Personer som kan logge inn: kontoopplysninger og en hash av passordet."
 
+msgid "Per batch"
+msgstr "Per fiskegruppe"
+
+msgid "Per site"
+msgstr "Per lokalitet"
+
 msgid ""
 "Percent of the feed as delivered, as the feed declaration states it. Protein, fat, carbohydrate, "
 "fibre, ash and moisture together are at most 100; phosphorus is part of the ash."
@@ -4135,6 +4489,28 @@ msgstr "Rørdimensjon"
 
 msgid "Place"
 msgstr "Sted"
+
+msgid "Plan"
+msgstr "Plan"
+
+msgid "Plan harvest"
+msgstr "Planlegg høsting"
+
+msgid "Plan transport"
+msgstr "Planlegg transport"
+
+msgid "Planned"
+msgstr "Planlagt"
+
+msgid "Planned fish"
+msgstr "Planlagt antall fisk"
+
+#, python-format
+msgid "Planned for %(date)s"
+msgstr "Planlagt til %(date)s"
+
+msgid "Planned round weight (kg)"
+msgstr "Planlagt rund vekt (kg)"
 
 msgid "Platform admin"
 msgstr "Plattformadministrator"
@@ -4240,6 +4616,12 @@ msgstr ""
 
 msgid "Production overview"
 msgstr "Produksjonsoversikt"
+
+msgid "Production plan"
+msgstr "Produksjonsplan"
+
+msgid "Production plans"
+msgstr "Produksjonsplaner"
 
 msgid "Production units"
 msgstr "Produksjonsenheter"
@@ -4372,6 +4754,9 @@ msgstr "Registrer utsortering"
 msgid "Record feeding"
 msgstr "Registrer fôring"
 
+msgid "Record harvest"
+msgstr "Registrer høsting"
+
 msgid "Record meal"
 msgstr "Registrer måltid"
 
@@ -4384,11 +4769,17 @@ msgstr "Registrer prøve"
 msgid "Record the round"
 msgstr "Registrer runden"
 
+msgid "Record transfer"
+msgstr "Registrer flytting"
+
 msgid "Record type"
 msgstr "Posttype"
 
 msgid "Record water sample"
 msgstr "Registrer vannprøve"
+
+msgid "Recorded as"
+msgstr "Registrert som"
 
 msgid "Recorded by"
 msgstr "Registrert av"
@@ -4526,6 +4917,15 @@ msgstr "Roller: et navn og tillatelsene det gir."
 msgid "Round"
 msgstr "Runde"
 
+msgid "Round weight"
+msgstr "Rund vekt"
+
+msgid "Round weight (kg)"
+msgstr "Rund vekt (kg)"
+
+msgid "Round weight it can take a day, in tonnes."
+msgstr "Rund vekt det kan ta imot per dag, i tonn."
+
 msgid "Row"
 msgstr "Rad"
 
@@ -4539,6 +4939,9 @@ msgstr "Rader %(first)s–%(last)s av %(total)s"
 #, python-format
 msgid "Rows %(first)s–%(last)s of %(total)s match"
 msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
+
+msgid "Rule"
+msgstr "Regel"
 
 msgid "SFR"
 msgstr "SFR"
@@ -4638,6 +5041,9 @@ msgstr "Søk etter navn"
 msgid "Search by name or code"
 msgstr "Søk etter navn eller kode"
 
+msgid "Search by name, approval number, place or operator"
+msgstr "Søk på navn, godkjenningsnummer, sted eller driftsselskap"
+
 msgid "Search by name, code or manufacturer"
 msgstr "Søk etter navn, kode eller produsent"
 
@@ -4668,6 +5074,9 @@ msgstr "Søk etter protokoll, enhet eller fiskegruppe"
 msgid "Search by species or source"
 msgstr "Søk etter art eller kilde"
 
+msgid "Search by unit, batch, facility or vessel"
+msgstr "Søk på enhet, fiskegruppe, slakteri eller fartøy"
+
 msgid "Search every column"
 msgstr "Søk i alle kolonner"
 
@@ -4695,6 +5104,9 @@ msgstr "Se alt i aktivitetsloggen"
 msgid "See the day-by-day book"
 msgstr "Se registeret dag for dag"
 
+msgid "Select a batch"
+msgstr "Velg en fiskegruppe"
+
 msgid "Select a category"
 msgstr "Velg en kategori"
 
@@ -4703,6 +5115,9 @@ msgstr "Velg et fôr"
 
 msgid "Select a feed type"
 msgstr "Velg en fôrtype"
+
+msgid "Select a handling"
+msgstr "Velg en håndtering"
 
 msgid "Select a kind"
 msgstr "Velg en type"
@@ -4725,6 +5140,9 @@ msgstr "Velg en produksjonsavdeling"
 msgid "Select a site"
 msgstr "Velg en lokalitet"
 
+msgid "Select a slaughter facility"
+msgstr "Velg et slakteri"
+
 msgid "Select a species"
 msgstr "Velg en art"
 
@@ -4733,6 +5151,9 @@ msgstr "Velg en leverandør"
 
 msgid "Select a type"
 msgstr "Velg en type"
+
+msgid "Select a unit"
+msgstr "Velg en enhet"
 
 msgid "Select a water type"
 msgstr "Velg en vanntype"
@@ -4771,11 +5192,20 @@ msgstr "Serienummer"
 msgid "Set a new password"
 msgstr "Velg nytt passord"
 
+msgid "Set it inactive instead."
+msgstr "Sett det heller inaktivt."
+
+msgid "Set target"
+msgstr "Sett mål"
+
 msgid "Settings"
 msgstr "Innstillinger"
 
 msgid "Setup"
 msgstr "Oppsett"
+
+msgid "Severity"
+msgstr "Alvorlighet"
 
 msgid "Shape"
 msgstr "Form"
@@ -4871,6 +5301,15 @@ msgstr "Størrelsesklasser"
 msgid "Skip to content"
 msgstr "Hopp til innholdet"
 
+msgid "Slaughter and processing"
+msgstr "Slakting og foredling"
+
+msgid "Slaughter facilities"
+msgstr "Slakterier"
+
+msgid "Slaughter facility"
+msgstr "Slakteri"
+
 msgid "Slow sinking"
 msgstr "Saktesynkende"
 
@@ -4909,6 +5348,9 @@ msgstr "Sorter etter %(name)s"
 msgid "Source"
 msgstr "Kilde"
 
+msgid "Source of the value"
+msgstr "Kilde for verdien"
+
 msgid "Source of the values"
 msgstr "Kilde for verdiene"
 
@@ -4930,8 +5372,14 @@ msgctxt "singular"
 msgid "Species"
 msgstr "Art"
 
+msgid "Species and capacity"
+msgstr "Arter og kapasitet"
+
 msgid "Species and fish weights can be added once the feed is created."
 msgstr "Arter og fiskevekter kan legges til når fôret er opprettet."
+
+msgid "Species it takes"
+msgstr "Arter det tar imot"
 
 msgid "Specific feeding rate: the share of the body weight fed a day"
 msgstr "Spesifikk fôringsrate: andelen av kroppsvekten som fôres per dag"
@@ -5147,6 +5595,12 @@ msgstr "Kar"
 msgid "Tanks, ponds & cages"
 msgstr "Kar, dammer og merder"
 
+msgid "Target weight"
+msgstr "Målvekt"
+
+msgid "Target weight (g)"
+msgstr "Målvekt (g)"
+
 msgid "Technical specifications"
 msgstr "Tekniske spesifikasjoner"
 
@@ -5194,6 +5648,10 @@ msgid "That message is not in this conversation."
 msgstr "Den meldingen er ikke i denne samtalen."
 
 #, python-format
+msgid "The %(kind)s rule for %(species)s asks for %(hours)d h."
+msgstr "Regelen for %(kind)s for %(species)s krever %(hours)d t."
+
+#, python-format
 msgid ""
 "The %(operation)s of %(date)s from %(location)s would be left without its stock: only "
 "%(available)s %(unit)s of %(item)s, lot %(lot)s, would be there. Void that operation first, or "
@@ -5229,12 +5687,22 @@ msgstr ""
 msgid "The average depth of the water when the pond is full."
 msgstr "Gjennomsnittlig vanndybde når dammen er full."
 
+msgid ""
+"The average weight the fish are grown to for harvest, in grams. When they reach it is worked out "
+"from the feeding protocols’ projection."
+msgstr ""
+"Gjennomsnittsvekten fisken vokser til før høsting, i gram. Når den nås, regnes ut fra "
+"fôringsprotokollenes framskrivning."
+
 #, python-format
 msgid "The bands must meet: one starts at %(start)s g, the band before it ends at %(end)s g."
 msgstr "Vektklassene må møtes: én starter på %(start)s g, vektklassen før den slutter på %(end)s g."
 
 msgid "The batch number is given on saving."
 msgstr "Gruppenummeret gis ved lagring."
+
+msgid "The batches in stock with their target weight for harvest."
+msgstr "Fiskegruppene i beholdningen med målvekt for høsting."
 
 msgid "The biomass cannot be negative."
 msgstr "Biomassen kan ikke være negativ."
@@ -5277,6 +5745,9 @@ msgstr ""
 "Selskapene anlegget kjøper fra: fôr, levende fisk og rogn, utstyr, legemidler og tjenester som "
 "veterinærer, dykkere og brønnbåter."
 
+msgid "The company that runs it: a supplier of slaughter and processing (Purchasing › Suppliers)."
+msgstr "Selskapet som driver det: en leverandør av slakting og foredling (Innkjøp › Leverandører)."
+
 msgid "The criticality is from 1 to 5."
 msgstr "Kritikaliteten er fra 1 til 5."
 
@@ -5309,6 +5780,13 @@ msgstr[1] "Estimatet er ufullstendig: %(days)s fôringsdager uten forventet FCR.
 
 msgid "The expected harvest comes after the stocking date."
 msgstr "Forventet høsting kommer etter utsettsdatoen."
+
+msgid ""
+"The fast before each kind of handling, per species or for every species. Without a rule the fast "
+"is not checked."
+msgstr ""
+"Sultingen før hver type håndtering, per art eller for alle arter. Uten regel kontrolleres ikke "
+"sultingen."
 
 msgid ""
 "The feed fed is read from the feeding records of the site's units and drawn from its lots first "
@@ -5369,8 +5847,22 @@ msgstr "Første dag det fôres etter den, etter anleggets klokke."
 msgid "The fish cannot move into the unit they leave."
 msgstr "Fisken kan ikke flyttes til enheten den forlater."
 
+msgid "The fish go to another unit."
+msgstr "Fisken går til en annen enhet."
+
+msgid ""
+"The fish must have had no feed for at least this long before the handling, counted to the start "
+"of its day. 0 to 720."
+msgstr ""
+"Fisken må ha vært uten fôr minst så lenge før håndteringen, regnet til starten av dagen. 0 til "
+"720."
+
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
+
+#, python-format
+msgid "The harvest plan of %(unit)s"
+msgstr "Høsteplanen for %(unit)s"
 
 msgid "The invitation to set a password is sent here."
 msgstr "Invitasjonen til å velge passord sendes hit."
@@ -5419,6 +5911,16 @@ msgstr "De siste endringene i denne posten (%(name)s)."
 
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
+
+msgid "The live weight as weighed at the harvest, before bleeding and gutting"
+msgstr "Levende vekt som veid ved høsting, før bløgging og sløying"
+
+msgid ""
+"The live weight as weighed at the harvest, before bleeding and gutting. The stock takes the fish "
+"out at their book weight; the difference is shown with the harvest."
+msgstr ""
+"Levende vekt som veid ved høsting, før bløgging og sløying. Beholdningen tar ut fisken med "
+"beholdningens vekt; differansen vises med høstingen."
 
 msgid "The longest distance across the ellipse."
 msgstr "Den lengste avstanden over ellipsen."
@@ -5538,6 +6040,13 @@ msgstr ""
 "Lokalitetens operative kontaktpersoner. Maksimalt én kan være hovedkontakt. Kontaktpersoner "
 "lagres separat fra lokalitetsdetaljene."
 
+msgid ""
+"The slaughterhouses harvested fish go to, with Mattilsynet’s approval number: every harvest names"
+" its facility."
+msgstr ""
+"Slakteriene høstet fisk går til, med godkjenningsnummer fra Mattilsynet: hver høsting oppgir sitt"
+" slakteri."
+
 msgid "The source as a reference list cites it: authors, year, title, where it was published."
 msgstr "Kilden slik en referanseliste oppgir den: forfattere, år, tittel, hvor den er publisert."
 
@@ -5558,6 +6067,9 @@ msgstr "Artene det gjelder for; ingen når det gjelder alle."
 
 msgid "The species it is about, if any."
 msgstr "Artene det handler om, om noen."
+
+msgid "The species it takes. None ticked: it takes every species."
+msgstr "Artene det tar imot. Ingen avkrysset: det tar imot alle arter."
 
 msgid "The species the table is for: it is assigned only to fish of this species."
 msgstr "Arten tabellen er for: den tildeles bare fisk av denne arten."
@@ -5607,6 +6119,16 @@ msgstr ""
 "et system."
 
 msgid ""
+"The target weight each batch is grown to for harvest. The estimated weight now is the feeding "
+"protocols’ estimate; the day it reaches the target walks it forward on the ration of each day, at"
+" the unit’s latest temperature held, with no growth on a fasting day. The expected harvest is the"
+" date given when the batch was stocked."
+msgstr ""
+"Målvekten hver fiskegruppe vokser til før høsting. Anslått vekt nå er fôringsprotokollenes "
+"anslag; dagen målet nås, regnes fram med rasjonen for hver dag, ved enhetens siste temperatur "
+"holdt fast, uten vekst på en sultedag. Forventet høsting er datoen som ble gitt ved utsett."
+
+msgid ""
 "The text as it was read from the PDF, without its layout. It is what the search finds and what "
 "the AI agents will read; a page without text is an image."
 msgstr ""
@@ -5651,6 +6173,11 @@ msgid ""
 " is saved."
 msgstr "Volumet, vannvolumet og maks. biomasse beregnes ut fra målene når enheten lagres."
 
+msgid "The warnings changed since the form was shown: read them again, and tick the box to go on."
+msgstr ""
+"Advarslene har endret seg siden skjemaet ble vist: les dem igjen, og kryss av i boksen for å "
+"fortsette."
+
 msgid "The warranty cannot end before the purchase date."
 msgstr "Garantien kan ikke slutte før kjøpsdatoen."
 
@@ -5692,12 +6219,8 @@ msgstr "Året det ble publisert."
 msgid "Their weight (kg)"
 msgstr "Samlet vekt (kg)"
 
-msgid ""
-"Their weight as weighed at the harvest. The stock takes the fish out at their book weight; the "
-"difference is shown on the operation."
-msgstr ""
-"Vekten som veid ved høstingen. Beholdningen trekker fisken ut med bokført vekt; differansen vises"
-" på operasjonen."
+msgid "There is already a rule for this handling and species."
+msgstr "Det finnes allerede en regel for denne håndteringen og arten."
 
 #, python-format
 msgid ""
@@ -5721,6 +6244,9 @@ msgstr "De blir stående som de er, skjult mens denne er slettet, og kommer tilb
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 
+msgid "This batch already has a production plan."
+msgstr "Denne fiskegruppen har allerede en produksjonsplan."
+
 msgid "This empties the unit of this batch"
 msgstr "Dette tømmer enheten for fiskegruppen"
 
@@ -5739,6 +6265,19 @@ msgstr "Denne lenken fungerer ikke lenger"
 
 msgid "This operation is already voided."
 msgstr "Denne operasjonen er allerede annullert."
+
+msgid "This plan is cancelled."
+msgstr "Denne planen er avlyst."
+
+#, python-format
+msgid "This plan is for %(batch)s in %(unit)s."
+msgstr "Denne planen gjelder %(batch)s i %(unit)s."
+
+msgid "This plan is recorded already: void that operation first."
+msgstr "Denne planen er allerede registrert: annuller først den operasjonen."
+
+msgid "This plan was deleted."
+msgstr "Denne planen er slettet."
 
 msgid "This production department is not on any site; choose one that is."
 msgstr "Denne produksjonsavdelingen er ikke på noen lokalitet; velg en som er det."
@@ -5794,6 +6333,9 @@ msgstr "Kryss av for minst ett vannmiljø."
 msgid "Tick it only when the amount is right, e.g. for fry that are fed more."
 msgstr "Kryss av bare når mengden er riktig, f.eks. for yngel som fôres mer."
 
+msgid "Tick the box to go on despite these warnings."
+msgstr "Kryss av i boksen for å fortsette tross disse advarslene."
+
 msgid "Time"
 msgstr "Tidspunkt"
 
@@ -5809,8 +6351,15 @@ msgstr "Tittel"
 msgid "To"
 msgstr "Til"
 
+#, python-format
+msgid "To %(facility)s"
+msgstr "Til %(facility)s"
+
 msgid "To location"
 msgstr "Til lagerplass"
+
+msgid "To unit"
+msgstr "Til enhet"
 
 msgid "To units"
 msgstr "Til enheter"
@@ -5942,6 +6491,10 @@ msgstr "Ukjent"
 
 msgid "Until"
 msgstr "Til og med"
+
+#, python-format
+msgid "Until %(date)s"
+msgstr "Til %(date)s"
 
 msgid "Up to (g)"
 msgstr "Opp til (g)"
@@ -6136,6 +6689,9 @@ msgstr "Brønn (grunnvann)"
 msgid "Wellboat and transport"
 msgstr "Brønnbåt og transport"
 
+msgid "Wellboat or vehicle"
+msgstr "Brønnbåt eller kjøretøy"
+
 msgid "What it holds"
 msgstr "Hva den inneholder"
 
@@ -6153,6 +6709,13 @@ msgstr "Det anlegget betaler per kg, med valuta."
 
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
+
+msgid ""
+"What the stock book took out for these fish: their batch’s average in the unit, the last fish the"
+" rest of the book"
+msgstr ""
+"Det beholdningen tok ut for denne fisken: fiskegruppens snitt i enheten, den siste fisken resten "
+"av beholdningen"
 
 msgid "What was delivered"
 msgstr "Det som ble levert"
@@ -6176,8 +6739,16 @@ msgstr ""
 "Hvor det kan leses, når det ikke har DOI eller DOI-en ikke er nok. https:// legges til når det "
 "mangler."
 
+msgid ""
+"Where the fish go: an active facility that takes this species (Reference data › Slaughter "
+"facilities)."
+msgstr "Hvor fisken går: et aktivt slakteri som tar imot denne arten (Referansedata › Slakterier)."
+
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."
+
+msgid "Where the value comes from, e.g. “the vet, November 2026”."
+msgstr "Hvor verdien kommer fra, f.eks. «veterinæren, november 2026»."
 
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Hvor verdiene kommer fra, f.eks. «veterinæren, november 2026» eller en veileder."
@@ -6203,6 +6774,9 @@ msgstr "Hvilke arter hver kunnskapsoppføring gjelder for."
 
 msgid "Which species each library document is about."
 msgstr "Hvilke arter hvert dokument i biblioteket handler om."
+
+msgid "Which species each slaughter facility takes."
+msgstr "Hvilke arter hvert slakteri tar imot."
 
 msgid "Who it goes back to."
 msgstr "Hvem det går tilbake til."
@@ -6243,6 +6817,15 @@ msgstr "Bredde (m)"
 
 msgid "Wild-caught"
 msgstr "Villfanget"
+
+msgid "Withdrawal"
+msgstr "Tilbakeholdelse"
+
+msgid "Withdrawal end estimated"
+msgstr "Slutt på tilbakeholdelse anslått"
+
+msgid "Withdrawal until"
+msgstr "Tilbakeholdelse til"
 
 msgid "Without a production department"
 msgstr "Uten produksjonsavdeling"
@@ -6348,6 +6931,10 @@ msgid "biomass as weighed %(days)s day ago"
 msgid_plural "biomass as weighed %(days)s days ago"
 msgstr[0] "biomasse som veid for %(days)s dag siden"
 msgstr[1] "biomasse som veid for %(days)s dager siden"
+
+#, python-format
+msgid "book %(book)s · %(difference)s (%(percent)s)"
+msgstr "beholdning %(book)s · %(difference)s (%(percent)s)"
 
 #, python-format
 msgid "by %(name)s"
@@ -6481,6 +7068,9 @@ msgstr "f.eks. 5,3221"
 msgid "e.g. 50"
 msgstr "f.eks. 50"
 
+msgid "e.g. 5000"
+msgstr "f.eks. 5000"
+
 msgid "e.g. 50000"
 msgstr "f.eks. 50000"
 
@@ -6511,6 +7101,9 @@ msgstr "f.eks. Fôrlager 1"
 msgid "e.g. Fjord Feed AS"
 msgstr "f.eks. Fjord Feed AS"
 
+msgid "e.g. Fjord Slakteri"
+msgstr "f.eks. Fjord Slakteri"
+
 msgid "e.g. HAT-A"
 msgstr "f.eks. HAT-A"
 
@@ -6526,8 +7119,14 @@ msgstr "f.eks. Laks"
 msgid "e.g. Large, > 250 g"
 msgstr "f.eks. Stor, > 250 g"
 
+msgid "e.g. M123"
+msgstr "f.eks. M123"
+
 msgid "e.g. MPS-001"
 msgstr "f.eks. MPS-001"
+
+msgid "e.g. MS Ronja Harvest"
+msgstr "f.eks. MS Ronja Harvest"
 
 msgid "e.g. Main Production Site"
 msgstr "f.eks. Hovedproduksjonslokalitet"
@@ -6627,6 +7226,9 @@ msgstr "utstyrstyper"
 msgid "estimated %(estimated)s (measured %(measured)s)"
 msgstr "estimert %(estimated)s (målt %(measured)s)"
 
+msgid "every species"
+msgstr "alle arter"
+
 #, python-format
 msgid "fed %(fed)s, %(remaining)s to go"
 msgstr "fôret %(fed)s, %(remaining)s gjenstår"
@@ -6677,6 +7279,24 @@ msgstr "fôr"
 #, python-format
 msgid "from %(weight)s g"
 msgstr "fra %(weight)s g"
+
+msgid "handling acknowledgement"
+msgstr "håndteringsbekreftelse"
+
+msgid "handling acknowledgements"
+msgstr "håndteringsbekreftelser"
+
+msgid "handling rule"
+msgstr "håndteringsregel"
+
+msgid "handling rules"
+msgstr "håndteringsregler"
+
+msgid "harvest record"
+msgstr "høsteregistrering"
+
+msgid "harvest records"
+msgstr "høsteregistreringer"
 
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."
@@ -6739,6 +7359,13 @@ msgstr "maskert"
 
 msgid "meals done"
 msgstr "måltidene er gitt"
+
+#, python-format
+msgid "medicine withdrawal until %(date)s"
+msgstr "tilbakeholdelsestid til %(date)s"
+
+msgid "medicine withdrawal, end unknown"
+msgstr "tilbakeholdelsestid, slutt ukjent"
 
 msgid "message"
 msgstr "melding"
@@ -6804,6 +7431,12 @@ msgstr "deltaker"
 msgid "participants"
 msgstr "deltakere"
 
+msgid "planned harvest or transport"
+msgstr "planlagt høsting eller transport"
+
+msgid "planned harvests and transports"
+msgstr "planlagte høstinger og transporter"
+
 msgid "primary"
 msgstr "hovedkontakt"
 
@@ -6812,6 +7445,12 @@ msgstr "produksjonsavdeling"
 
 msgid "production departments"
 msgstr "produksjonsavdelinger"
+
+msgid "production plan"
+msgstr "produksjonsplan"
+
+msgid "production plans"
+msgstr "produksjonsplaner"
 
 msgid "protocol assignment"
 msgstr "protokolltildeling"
@@ -6849,6 +7488,12 @@ msgstr "lokalitetskontakter"
 
 msgid "sites"
 msgstr "lokaliteter"
+
+msgid "slaughter facilities"
+msgstr "slakterier"
+
+msgid "slaughter facility"
+msgstr "slakteri"
 
 msgid "species"
 msgstr "art"
@@ -6904,6 +7549,17 @@ msgstr "systemkoblinger"
 
 msgid "systems"
 msgstr "systemer"
+
+#, python-format
+msgid "target on %(date)s, at %(temperature)s °C held"
+msgstr "målet nås %(date)s, ved %(temperature)s °C holdt fast"
+
+msgid "target reached"
+msgstr "målet er nådd"
+
+#, python-format
+msgid "to %(unit)s"
+msgstr "til %(unit)s"
 
 msgid "unit"
 msgstr "enhet"

@@ -1,0 +1,79 @@
+{% extends "crud/detail.html" %}
+{% load i18n knowledge %}
+{% comment %} A library document's read page (knowledge.resources.DocumentResource.detail_extras): its reference,
+   abstract and details, its file and what reading its text gave, the pages where a search's words are found
+   (?q=), and the knowledge entries taken from it.{% endcomment %}
+{% block details %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Reference" %}</h2>
+  <p class="reference">{{ object.reference }}</p>
+  <p class="muted">{% blocktrans trimmed with cite=object.short_citation %}Cited in a text as {{ cite }}.{% endblocktrans %}</p>
+</section>
+
+{% if object.abstract %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Abstract" %}</h2>
+  <p class="abstract">{{ object.abstract|linebreaksbr }}</p>
+</section>
+{% endif %}
+
+<section class="detail-section">
+  <dl class="facts">
+    <div><dt>{% trans "Topics" %}</dt><dd>{{ object.topic_labels|join:", "|default:"–" }}</dd></div>
+    <div><dt>{% trans "Species" context "plural" %}</dt><dd>{% for species in object.species.all %}{{ species }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</dd></div>
+    <div><dt>{% trans "Language" %}</dt><dd>{{ object.get_language_display|default:"–" }}</dd></div>
+    <div><dt>{% trans "DOI" %}</dt><dd>{% if object.doi %}<a href="https://doi.org/{{ object.doi|urlencode:'/' }}" rel="noopener noreferrer">{{ object.doi }}</a>{% else %}–{% endif %}</dd></div>
+    <div><dt>{% trans "Web address" %}</dt><dd>{% if object.url %}<a href="{{ object.url }}" rel="noopener noreferrer">{{ object.url }}</a>{% else %}–{% endif %}</dd></div>
+    <div><dt>{% trans "Added" %}</dt><dd>{% blocktrans trimmed with when=object.created_at|date:"DATETIME_FORMAT" who=object.created_by|default:"–" %}{{ when }} by {{ who }}{% endblocktrans %}</dd></div>
+  </dl>
+</section>
+
+<section class="detail-section">
+  <h2 class="section-title">{% trans "File" %}</h2>
+  {% if object.file %}
+  <p class="file-line">
+    <a class="button button-ghost" href="{% url 'knowledge:document_file' object.pk %}" target="_blank" rel="noopener">{% include "icons/_icon.html" with name="file-text" %}{% trans "Open the PDF" %}</a>
+    <a class="button button-ghost" href="{% url 'knowledge:document_file' object.pk %}?download">{% include "icons/_icon.html" with name="download" %}{% trans "Download" %}</a>
+    <span class="muted">{{ object.file_name }} · {{ object.file_size|filesizeformat }}</span>
+  </p>
+  <p class="text-{{ object.text_status }}">{{ object.text_summary }}</p>
+  {% if object.page_count %}<p><a href="{% url 'knowledge:document_text' object.pk %}">{% trans "Read the text, page by page" %}</a></p>{% endif %}
+  {% else %}
+  <p class="muted">{% trans "No PDF: the document is known by its reference only." %}</p>
+  {% endif %}
+</section>
+
+{% if query %}
+<section class="detail-section">
+  <h2 class="section-title">{% blocktrans trimmed %}Where “{{ query }}” is in the text{% endblocktrans %}</h2>
+  {% if matches %}
+  <ol class="hits">
+    {% for page in matches %}
+    <li><a class="hit-page" href="{% url 'knowledge:document_text' object.pk %}?page={{ page.screen }}#page-{{ page.number }}">{% blocktrans with page=page.shown_number %}p. {{ page }}{% endblocktrans %}</a> {{ page.passage|highlight }}</li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="muted">{% trans "Not in the text of the PDF: the words are in the reference or the abstract." %}</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if can_read_entries %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Knowledge taken from it" %}</h2>
+  {% if entries %}
+  <ul class="entry-list">
+    {% for entry in entries %}
+    <li>
+      <a href="{% url 'knowledge:knowledgeentry_detail' entry.pk %}">{{ entry.statement }}</a>
+      <span class="row-sub">{% if entry.pages %}{% blocktrans with page=entry.pages %}p. {{ page }}{% endblocktrans %} · {% endif %}<span class="badge badge-{{ entry.status }}">{{ entry.get_status_display }}</span></span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">{% trans "No knowledge entry cites it yet." %}</p>
+  {% endif %}
+  {% if add_entry_url %}<p><a class="button button-ghost" href="{{ add_entry_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Add knowledge from this document" %}</a></p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.forms',
     'core',
     'farm',
+    'knowledge',
     # Messages between people (and later their AI assistants), in the Production panel.
     'messaging',
 ]
@@ -156,6 +157,17 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 
+# Uploaded files (a library document's PDF), kept by Django's default storage under MEDIA_ROOT. There is
+# no MEDIA_URL route: a file is never a public static file, it is sent by the view that checks who asks
+# (knowledge.views.document_file). Set DJANGO_MEDIA_ROOT to a folder outside the checkout anywhere else.
+MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', BASE_DIR / 'media'))
+
+# The largest PDF the library takes (knowledge.models.document). The web server in front of Django must cap a
+# request's body too (e.g. nginx client_max_body_size 25m): Django streams a large upload to a temporary
+# file before the form can refuse it.
+KNOWLEDGE_MAX_FILE_BYTES = 20 * 1024 * 1024
+
+
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
@@ -190,3 +202,12 @@ STOCK_BACKDATE_DAYS = 31
 # A feeding above this % of the unit's book biomass a day asks for an acknowledgement, stored on the record
 # (farm/feeding/services.py; owner decision Q-F5): a kilo typed for a gram is caught, fry may be fed more.
 FEEDING_ACK_PERCENT = 10
+
+# A ration reads the latest temperature of the unit or its loop measured at most this many days before (owner
+# decision Q5): stale after the temperature's 24 hours, no ration after this (farm/feeding/temperature.py).
+TEMPERATURE_USABLE_DAYS = 7
+
+# The estimated weight between weighings (farm/feeding/projection.py) is marked "weigh soon" after this many days
+# since the last measured point, and "weigh now: the estimate is unreliable" after the second (owner decision Q6).
+WEIGH_SOON_DAYS = 14
+WEIGH_NOW_DAYS = 28

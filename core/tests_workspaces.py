@@ -53,13 +53,14 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
-        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Activity log', 'Roles', 'Users', 'Database'])
+        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Library', 'Knowledge entries', 'Activity log',
+                                                 'Roles', 'Users', 'Database'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                    'Suppliers', 'Production units', 'Feeding records',
-                                                    'Water chemistry', 'Messages'])
+                                                    'Suppliers', 'Production units', 'Water chemistry',
+                                                    'Meal board', 'Records', 'Protocols', 'Assignments', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -114,8 +115,8 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                  'Suppliers', 'Production units', 'Feeding records',
-                                                  'Water chemistry', 'Messages'])
+                                                  'Suppliers', 'Production units', 'Water chemistry', 'Meal board',
+                                                  'Records', 'Protocols', 'Assignments', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -147,7 +148,7 @@ class MainHeadingTests(WorkspaceTestCase):
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Purchasing']),
-                          ('Operations', ['']), ('Communication', [''])])
+                          ('Operations', ['', 'Feeding']), ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
@@ -157,7 +158,7 @@ class MainHeadingTests(WorkspaceTestCase):
     def test_company_has_no_main_headings(self):
         self.sign_in(self.admin)
         response = self.page(reverse('home'))
-        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Administration'])])
+        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration'])])
         self.assertNotContains(response, 'rail-section')
 
     def test_a_heading_with_nothing_the_person_may_read_is_not_shown(self):
@@ -191,9 +192,13 @@ class MenuPlacementTests(TestCase):
             'farm.WaterLimit': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
-            'farm.FeedingRecord': 'Production · Operations',
+            'farm.FeedingRecord': 'Production · Operations · Feeding',
+            'farm.FeedingProtocol': 'Production · Operations · Feeding',
+            'farm.ProtocolAssignment': 'Production · Operations · Feeding',
             'farm.WaterMeasurement': 'Production · Operations',
             'messaging.Conversation': 'Production · Communication',
+            'knowledge.Document': 'Company · Knowledge',
+            'knowledge.KnowledgeEntry': 'Company · Knowledge',
             'core.AuditLog': 'Company · Administration',
         })
 

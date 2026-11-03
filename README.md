@@ -15,15 +15,21 @@ What works today:
 - Roles (`/roles/`) and users (`/users/`), managed by the platform admin only (see Roles and users).
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
-- Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
+- Two panels, switched from the top left: **Company** (overview, Facility › Sites, Knowledge,
+  Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, water limits, suppliers, under Operations the production units with their fish, the
-  feeding records and the water chemistry, and under Communication the messages). Each has its own overview. A
+  species, feeds, water limits, suppliers, and under Operations the production units with their fish, the
+  water chemistry and Feeding: the meal board, the records, the feeding protocols and their assignments, and
+  under Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
   menu, in the Production panel; built so that AI assistants join the same conversations later (see
   Messages).
+- Knowledge (`/knowledge/`), in the Company panel: a **Library** of articles and reports with their reference,
+  their PDF (sent only to people who may read it) and its text read page by page and searched, and **Knowledge
+  entries**, each a statement with exactly one source and a review, which AI agents will later watch the farm
+  with and cite (see Knowledge).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
   user menu and on the sign-in pages (see Languages).
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
@@ -331,8 +337,8 @@ many-to-many link through them): the species' confirmation lists the feeds linke
 feed's list leaves those rows alone, and restoring the species brings them back.
 
 Not on this tab, each with a tab of its own later: the feed stock (lots, quantities, expiry, storage
-conditions, where it is kept), purchase orders, feeding tables and curves (feeding rate and FCR per
-temperature and fish weight) and the feeding records.
+conditions, where it is kept), purchase orders and the feeding records; the feeding tables (feeding rate per fish
+weight and temperature, FCR) are Operations › Feeding › Protocols, built from these feeds.
 
 What the feeding tabs can rely on: a feed is `farm.Feed` (UUID, live ones through `Feed.objects`), with
 `status` active, inactive or discontinued (offer active ones for new feeding plans; a record keeps its
@@ -522,7 +528,119 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   medicine-withdrawal block on harvest (**it must come back with the health module before real
   harvests**), batch documents and costs, count adjustments as a dialog (their lines and checks exist).
 
-### Operations › Feeding records (`/operations/feeding/`)
+### Operations › Feeding: Meal board, Records, Protocols and Assignments
+
+The Feeding group of Operations has four pages: the **Meal board** (`/operations/feeding/board/`), **Records**
+(`/operations/feeding/`, the feeding records below and, by unit and day, the calculated ration against the feed
+given), **Protocols** (`/operations/feeding/protocols/`, the feeding tables) and **Assignments**
+(`/operations/feeding/assignments/`, which protocol feeds which fish from which day). Only protocols and
+assignments are stored; every ration, estimate and deviation is computed on read, so none can drift
+(`farm/feeding/ration.py`, `projection.py`, `temperature.py`). Owner decisions Q1–Q9 are in the bug document
+(Feeding protocols and meal board).
+
+**A protocol** (table `feeding_protocols`) is a feeding table for one species: weight bands
+(`feeding_protocol_bands`), each from its lower weight up to, not including, its upper one (only the last may be
+open), with its feed (the pellet is the feed's), its meals a day (1–48) and optionally its expected FCR, and per band
+the SFR, % of the body weight a day (0–15; 0 is "do not feed at this temperature"), at each temperature column
+(`feeding_protocol_rates`, −3 to 40 °C). The protocol's own expected FCR (0.50–3.00) is the fallback of a band without
+one, always shown with its source. The bands meet without gaps (checked when the table is saved) and never overlap
+(an exclusion constraint, `btree_gist`, created by migration 0015); every cell is filled (the grid is saved whole).
+The dialog has a General tab (name, unique among live protocols in any case; species; status; expected FCR;
+notes), the **Feeding table** tab, a grid of the bands by the temperature columns: the columns are typed as
+"4 8 12 16", and changing them renders the grid again with what was entered (`data-refresh`, nothing saved); the
+whole table is saved at once, replacing the stored bands and cells, guarded by the protocol's version and logged on
+the protocol as one change ("Feeding table", before and after). A band whose feed is not listed as suitable for the
+species at its weights is noticed, not refused. Status: a new protocol is a draft; it is set active once it has a
+table; a retired one keeps the days it fed and takes no new assignment, and it cannot be retired while an
+assignment covers today or later. **Once a protocol is assigned its table, species and expected FCR are fixed**
+(owner decision Q3): the rations of past days are read from it; **Duplicate** makes a draft copy ("… (copy)") with
+its table, to change and assign from a date.
+
+**An assignment** (table `protocol_assignments`) is one row per target: a unit (the protocol feeds whatever is in
+it), a whole batch (it follows the batch into every unit it is moved to, through transfers and splits) or a batch in
+one unit, from a day and optionally until a day (both included). The dialog offers the three as units and a batch to
+choose: units alone, a batch alone, or a batch and units; it writes a row per unit with one `group_id`, each logged,
+and says when a batch has not been in a chosen unit yet (a planned move is allowed). The database keeps one row in
+force per unit, per batch and per batch in a unit on any day (three exclusion constraints among live rows; the form
+checks them by the constraint itself and says which unit clashes). For a batch in a unit on a day the most specific
+row wins: batch in unit, then unit, then whole batch (owner decision Q8); a unit's row for another species is read
+past with its reason. Only active protocols are assigned, a batch only with its species; a first day may be at most
+`STOCK_BACKDATE_DAYS` back. Before its first day a row may change or be deleted; from then on only its last day
+(yesterday at the earliest) and notes change, and it is ended, not deleted: the days it fed keep their protocol.
+The list groups the rows of one dialog, filters by site, unit, batch, protocol and in force / starting later /
+ended, and counts the fish each row feeds today after the more specific rows.
+
+**The ration** of a batch in a unit on a day (`farm/feeding/ration.py`): the protocol by the rule above; the band
+by the fish's **estimated** average (owner decision Q7); the **temperature** of the unit, else of its system's loop,
+then of the systems that system is nested in (`farm/feeding/temperature.py`, the water samples' series of
+`farm/water/read.py`): the unit's own fresh value wins, else the nearest loop's fresh value, else the newest stale
+one, marked stale; fresh is the temperature parameter's 24 h, and nothing within `TEMPERATURE_USABLE_DAYS` (7,
+owner decision Q5) gives no ration; the moment is now for today and the end of the day for a past day. The SFR is
+the band's cell at that temperature, **interpolated linearly between two columns and never extrapolated** (owner
+decision Q1): outside the first and last column, or a fish outside the bands, there is no ration and the page says
+why; never a default temperature or rate. The day's ration R = estimated biomass × SFR / 100, a meal R ÷ the band's
+meals a day, at full precision (rounded only for display).
+
+**The estimated weight** (`farm/feeding/projection.py`, kept by the feeding walk itself, `farm/feeding/fold.py`, never
+written back: bFCR, eFCR, density, capacity and the 10 % acknowledgement read the measured book only). It restarts at
+the measured value at every stocking, weighing (a grading's remainder too) and fish graded in. Fish that leave take
+the estimate's own average; fish moved by a plain transfer carry their estimated grams and the day of their last
+measured point; graded fish carry their measured weight. **After each feeding** (in the day's order: its time, then
+the order of entry) the batch gains its part of the feed (the record's split by book biomass) × 1000 ÷ the expected
+FCR at its estimated weight then, and the next meal is worked out again from the new estimate (owner decision Q9),
+but growth is credited only up to the day's calculated ration (Q4): feed above it is shown as "over the ration" and
+not counted. Feed of fish without an expected FCR (no protocol, outside the bands) adds nothing and the estimate says
+"incomplete: N feeding days without an expected FCR". A day without a temperature has no ration to cap with, so its
+feed is credited as given. The estimate is marked "weigh soon" after `WEIGH_SOON_DAYS` (14) since its measured point
+and "weigh now: the estimate is unreliable" after `WEIGH_NOW_DAYS` (28) (owner decision Q6).
+
+**The day's calculated ration** (Records) follows the same rule: each recorded meal counts R ÷ M at the estimate just
+before it (a record's meals, or one when it does not say, counted up to the band's M meals a day), and the meals
+still to come count R ÷ M at the current estimate; **the next meal** is R ÷ M at the current estimate, **remaining**
+the meals still to come at it. It is computed on read (owner decision Q2): a change of the stock, a record or a
+water sample computes it again; the table itself does not change once assigned.
+
+**A weighing is a correction point**: just before it restarts the estimate, the walk keeps the estimated and the
+measured average, the difference (g, %, and kg over the fish), the days since the previous measured point, the
+realised bFCR between that point and this one (the FCR window rule) and the expected FCR of the feed given meanwhile
+(Σ feed ÷ Σ feed ÷ FCR). The weighing dialog shows it before saving ("Estimated 97.5 g on 2 Nov (15 days since the
+last measured weight); you entered 94.0 g: −3.5 g, −3.6 %"), rendered again when the batch, the date or the weight
+changes; the drawer shows it next to the weighing in its operations, and Records next to the day.
+
+**The Meal board** lists today, on each site's clock, the units with fish (filters site, production department,
+system), a line per batch: fish and estimated biomass, the estimated and the measured average (weighed when, drift
+mark), the temperature with its age and whether it is the unit's or a loop's (Record water sample), the protocol and
+which row applied ("via unit T-01", "via batch B-2026-001", "via B-2026-001 in T-01"), the band, feed and pellet,
+the expected FCR, the SFR (the two cells read, in its title), the ration and meals × kg, fed today, remaining and the
+next meal; a unit without a ration says why in the row. **Record meal** opens the existing feeding dialog with today,
+now on the site's clock, the band's feed, the next meal's kilos and one meal, posts the existing feeding record path
+unchanged (`farm.feeding.services.record_feeding`) and comes back to the board. No new column on `feeding_records`.
+The unit's drawer on Production units has the same per batch under Feeding (Today's ration).
+
+**Records** has two views: the feeding records (the list below) and **By unit and day** (`?view=days`; site, unit,
+batch, from and to, the last 7 days by default, at most 31 a page): per unit and day the batches with their estimated
+weight and the basis of the ration (protocol, SFR at the temperature, meals) or why there is none, the calculated
+ration, the feed given, the deviation (given − calculated, kg and %), and the weighings' correction lines.
+
+**Who may do what:** Feeding records (Read = Meal board and Records, Create = record a feeding or a meal, Delete =
+void one), Feeding protocols and Protocol assignments (read, create, edit, delete) in the role matrix (Production ·
+Operations · Feeding). A feed in a live protocol's table is not deleted (its `PROTECT`, said by `Feed.delete_blockers`
+since a band is a plain row of its protocol); a species with a protocol is not deleted (`PROTECT`); a protocol with
+assignments is not deleted (`PROTECT`: end and keep them, or delete those not started); an empty unit can be deleted
+and a voided batch stays voided, and both keep their assignment rows (`DO_NOTHING`, as their feeding records): they
+come back with a restored unit, and the list marks them.
+
+Not in the MVP (feeding-protocols §6.12): **over- and underfeeding alarms**, postponed by the owner; the proposal is
+ready: per day a deviation within ±10 % is noise (hand weighing and feeder calibration ±5–10 %, appetite ±10–15 % in
+salmonids), ±10–20 % a warning, beyond ±20 % critical, and underfeeding below −20 % on two days running critical
+(appetite loss is an early sign of disease, low oxygen or a temperature drop); per meal ±20 % a warning, ±35 %
+critical; judged only after the day's last meal or once a meal's time has passed; shown on the board, Records and
+Production units, nobody notified. Also later: sensors as temperature sources, an oxygen gate before a meal, meal
+times and feeding windows, fasting and medication calendars, catch-up of missed meals, stored day plans and pours,
+hysteresis and manual band pins, rate adjustments and FCR overrides per assignment, a learned FCR from the realised
+intervals, forecasts and the production plan.
+
+### Operations › Feeding › Records: the feeding records (`/operations/feeding/`)
 
 Table `feeding_records`: feed given to one unit on one day, the farm's daily feeding record. A record is
 the unit, the day, the feed (an active feed of Reference data › Feeds) and the kilos given, to the gram,
@@ -585,8 +703,9 @@ notes, and **Void** while allowed.
   feed in use, each batch's window ("1 Oct – 15 Oct, 168 kg fed, 196 kg grown") and its last 10 records.
 - The production overview: feed today and over the last 7 days on the whole farm.
 
-**Who may do what:** the area Feeding records in the role matrix (Production · Operations): Read the list
-and the feeding part of a unit's drawer, Create records a feeding, Delete voids one. A feed or a feeder
+**Who may do what:** the area Feeding records in the role matrix (Production · Operations · Feeding): Read
+the Meal board, Records and the feeding part of a unit's drawer, Create records a feeding or a meal, Delete voids
+one. A feed or a feeder
 with live records cannot be deleted (`PROTECT`: set the feed to discontinued, the feeder to
 decommissioned); an empty unit with feeding records can be, as with its stock history (owner decision
 Q-F3), and its records stay with it (`DO_NOTHING`, see the delete plan). `manage.py check_stock` reports a
@@ -605,10 +724,10 @@ Differences from the source (details in the bug document, FDR-01 to FDR-41):
 - Recording never depends on the feed store (FDR-08); records are kept, no 800-day retention (FDR-18);
   one date rule, farm-local (FDR-20, FDR-36); void with reason instead of a partial edit (FDR-13, FDR-30,
   FDR-37); who recorded is the person signed in (FDR-11); amounts to the gram (FDR-35, FDR-40).
-- Not ported: planned amounts and variance, waste, cost and currency, method, environment, behaviour,
-  duration, verified-by, the meal board, day plans, protocols and feeding tables, feed stock (lots,
-  deductions), the feeder's shots and calibrations (the feeder is recorded, the kilos are typed), a
-  daily feeding sheet for all units of a department, the batch page's FCR, SGR and alerts.
+- Not ported: planned amounts and variance stored on a record (the ration is computed on read, see the Meal
+  board and Records above), waste, cost and currency, method, environment, behaviour, duration, verified-by,
+  stored day plans and meal rows, feed stock (lots, deductions), the feeder's shots and calibrations (the feeder
+  is recorded, the kilos are typed), the batch page's FCR, SGR and alerts.
 
 ### Operations › Water chemistry (`/operations/water/`) and Reference data › Water limits (`/water-limits/`)
 
@@ -798,8 +917,8 @@ Differences from the source (details in the bug document, WQ-01 to WQ-39):
 - Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
   notifications, the calculator's dosing, H₂S as a sample parameter, hardness and the other lab
   parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
-  per unit, and a site's intake water. The feeding tab is to read the latest water temperature from here
-  and keep no copy of its own (WQ-02).
+  per unit, and a site's intake water. The rations read the latest water temperature from here and keep
+  no copy of their own (WQ-02; `farm/feeding/temperature.py`).
 
 ## Messages (Production › Communication, `/messages/`)
 
@@ -926,6 +1045,158 @@ document, MSG-01 to MSG-21):
   and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
   NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
 
+## Knowledge (Company › Knowledge: Library `/knowledge/library/`, Knowledge entries `/knowledge/entries/`)
+
+The place where people record what the company knows, so that AI agents can later watch the farm with it and
+cite it: "in salmon under 50 g, CO₂ above 15 mg/L causes disease" (from an article) is to warn the person
+when a unit's live values match and name the article and its page; "a feed order is at least 20 t and arrives
+in 3 days" (from a supplier's terms) is to let an agent propose a purchase order. Knowledge is not only about
+fish, and it belongs to the organisation, so it sits in the **Company** panel, in the group **Knowledge**. App
+`knowledge`, tables `documents`, `document_pages`, `document_species`, `knowledge_entries` and
+`knowledge_entry_species`. What is built now is the recording; the agents are designed for (below), not built.
+
+**The Library** holds documents: articles, reports, books, guidelines, regulations. A document has its
+reference (title; authors, one per line, family name first, in their order; year; where it was published;
+volume, issue and pages; DOI and web address), its abstract, language, topics, species and optionally its
+PDF. The list (50 a page) shows each document with how a text cites it ("Olsen & Hansen (2019)"), its year,
+topics, species, the PDF with its page count and whether its text was found, and how many knowledge entries
+cite it; filters by topic, species and year; a search over everything, PDFs included. The read page
+(`/knowledge/library/<id>/view/`, for everyone who may read the library) shows the full reference in APA 7 form
+(`knowledge/citation.py`: "Olsen, B. E., & Hansen, K. (2019). Title. *Aquaculture*, *512*(3), 45–67.
+https://doi.org/…"; a document without authors is cited by its title, one without a year with "n.d."), the
+abstract and details, **Open the PDF** and **Download**, what reading its text gave, after a search the pages
+where the words are with their passages, and the knowledge entries taken from it with **Add knowledge from this
+document**. **Read the text, page by page** shows what was read from the PDF, 20 pages a screen.
+
+The rules, each a database check as well: a title; authors without empty lines (spaces trimmed on save); a
+year from 1500 to 2100 (and the form refuses one later than next year); a DOI that starts with `10.` and has no
+spaces, stored without its link (`https://doi.org/` or `doi:` typed before it are removed) and unique among
+live documents whatever its case, so the same article is not added twice; a web address with http or https
+only; topics from the list; the file and what is known about it come together (below).
+
+**The file.** A PDF of at most `KNOWLEDGE_MAX_FILE_BYTES` (20 MB, `config/settings.py`), its name ending in
+`.pdf` and its first bytes `%PDF-` (the browser's word for its type is not trusted). It is stored by Django's
+storage under `MEDIA_ROOT` (`DJANGO_MEDIA_ROOT`, by default `media/` in the checkout, not committed) under a
+name of our own (`knowledge/documents/<random>.pdf`); the uploaded file's name is kept on the document for the
+person and the download. **There is no public address**: no `MEDIA_URL` route exists, and the file is sent only
+by `knowledge.views.document_file` (`/knowledge/library/<id>/file/`, `?download` for an attachment) to a
+signed-in person with the Library's read permission, for a live document, `private` for caches. Replacing or
+removing the file (the File tab's **Remove the file**) deletes the old one from the storage once the change is
+committed (a rolled-back save keeps it); a deleted document keeps its file and text, for a restore. Django
+streams a large upload to a temporary file before the form can refuse it, so the web server in front must cap
+a request's body too (e.g. nginx `client_max_body_size 25m`).
+
+**Its text** is read when a new file is saved (`Document.save`, `knowledge/extraction.py`, pypdf): page by page
+into `document_pages` (the page's number and, when the PDF labels its pages as the journal does, its printed
+number, so a citation can say "p. 237"), normalised to NFKC (the ligatures of PDFs, "ﬁ", read as "fi"; "CO₂" as
+"CO2") and without control characters. The outcome is on the document: **Text found** (with the page count),
+**No text found** (a scan: pages that are images; not an error, its text needs OCR, which is not done yet), or
+**Could not be read** with the reason (a damaged PDF; one protected by a password; one with only an owner
+password is read, with `cryptography`). The PDF is kept whatever the outcome. The reading runs in the request
+(fine for the MVP's articles; a worker with a time limit is the place for it when books and scans come).
+
+**Searching** (`knowledge/search.py`). Every searchable text is a `tsvector` in a **generated column**, so the
+database keeps it in step with the text whatever writes the row, each with a GIN index: a document's own
+(title weighted A, authors B, abstract C, venue D), one per page of its PDF (so no vector meets PostgreSQL's 1 MB
+limit and a hit names its page), and an entry's (statement A, quote B, section and citation C, person D). The
+stored texts are analysed with the **`simple`** configuration: lower case, every word as written, whatever the
+language. The library holds English, Norwegian and Turkish texts, often mixed in one document (a Norwegian
+report with an English abstract, a Turkish thesis with an English one), so no single language's stemmer suits
+the stored side, and a per-document language would stem half of such a document wrongly. The stemming is
+done on the **query** side instead: each word typed is analysed with the `english`, `norwegian` and `turkish`
+stemmers and with `simple`, and each stem is a prefix, so "diseases" finds "disease", "fisken" finds
+"fiskehelse", "balıklar" finds "balıklarda"; stems shorter than three letters and numbers match whole ("pH" is
+not "phosphorus", "15" is not "150"). Every word must be in the document, in its own vector or on any of its
+pages ("Olsen nephrocalcinosis" finds Olsen's article that speaks of it on page 4); an entry matches by its own
+words or those of the document it cites. Results are ranked by `ts_rank` (a title hit above an abstract hit
+above a hit in the text), the best page's passage shown with the words marked. What is typed is turned into
+quoted lexemes, never read as query syntax.
+
+**Knowledge entries.** An entry is a statement in the person's own words (at most 2000 characters), its topics
+(at least one: water quality, feeding, health, growth, welfare, harvest, procurement and logistics, equipment,
+regulation, other), the species it holds for (none: any), and **its source, exactly one kind**:
+
+- **A document in the library**, with the page(s), the section and the quote (the document's own words);
+- **Another published source**: its citation as a reference list gives it, its web address, or both, and
+  optionally a quote;
+- **An expert or our own observation**: the person ("Kari Nordmann, fish health vet") and optionally when.
+
+The form shows the fields of the kind chosen (choosing another renders the form again, `refresh_on`), and saving
+empties the fields of the other kinds (`KnowledgeEntry.clean`). The database holds it whatever writes the row:
+one check per kind says that kind has what it needs and that the other kinds' fields are empty, a check keeps
+the kind in its list and the quote away from an observation. The list (50 a page) shows each statement with its
+source in a line ("Olsen & Hansen (2019), p. 4, 3.2 Results") and its status; filters by topic, species, kind of
+source and status; the read page shows the statement, the source (the document's full reference, linked to it
+for people who may read the library) and the quote.
+
+**The review.** An entry is a **draft** until someone with the Edit permission marks it **reviewed**
+(**Mark as reviewed** on its read page or on the Review tab of its dialog, `knowledge.views.review_entry`): the
+reviewer is the person signed in and the time is now, never typed, and a database check keeps the status, the
+reviewer and the time together. The review is refused when the entry changed since the reviewer opened it (its
+version), and **Back to draft** undoes it. Editing the statement, topics, species or source of a reviewed entry
+takes it back to draft and says so, so a review always covers the words as they are. AI agents will act on
+reviewed entries only.
+
+**Who may do what:** the areas Library and Knowledge entries (Company · Knowledge) with read, create, edit and
+delete; for entries, Edit also reviews. Reading the PDF and its text needs the Library's read.
+
+**Deleting.** A document cited by a live entry **cannot be deleted** (`PROTECT`): the entry *is* its source, an
+entry pointing at nothing would say nothing anyone could check, and the "exactly one source" check would refuse
+the detached row anyway. The confirmation says how many entries cite it; re-point or delete them first. A
+deleted entry's document can then go; restoring the entry waits for its document (core.softdelete.restore).
+Deleting a species keeps the documents' and entries' links to it, out of sight, as for feeds. Both are soft
+deletes, restored from the admin.
+
+**The activity log** records a document's metadata as for every tab, its file by its own name (never the
+storage's), and what reading the text gave (Text, Number of pages): **never the text itself**. An entry's log
+has its fields and its review (Status, Reviewed by, Reviewed at). **The database viewer** (section Knowledge)
+shows the extracted text and the search vectors as it shows any long text: cut to 80 characters in the grid, at
+most 5,000 on click, whole only in the CSV export.
+
+### AI agents: how they plug in (designed for, not built)
+
+Nothing below exists yet; the tables above are shaped so it can be added without rewriting them.
+
+**The Rule** (a table of its own, `knowledge_rules`, one entry to many rules): the structured form of an entry
+that a program can apply. It **cites its entry** (`entry`, `PROTECT`), so every warning or proposal it makes
+names the entry, and through it the document, page and quote.
+
+| Field | What it holds |
+|---|---|
+| `entry` | The knowledge entry it applies (its source, its review). |
+| `subject` | What it is about: a production unit's water, a batch, a species, a supplier's orders. |
+| `species`, `stage`, `weight_min_g`, `weight_max_g` | Scope: the species (none: any), the life stage (`InputStage`), the band of average weight (`FeedSuitability.suits` semantics, lower included, upper excluded). |
+| conditions (rows of `knowledge_rule_conditions`) | Each a metric, an operator and a value in the metric's unit, all to hold: a water parameter of `farm/water/parameters.py` by its key (`co2_mg_l`, `oxygen_mg_l`, `tan_mg_l`, …, and the worked-out NH₃-N and O₂ saturation), the average weight, the density, the days since stocking, a supplier's or feed's terms (minimum order in kg, lead time in days). The metric list is code, like the water parameters, so a value is never compared in another unit. |
+| `consequence` | What follows, in words, and its kind: a warning, a proposed action (a purchase order, a water exchange). |
+| `severity` | Information, warning or critical, as the water limits' bands. |
+| `status` | Proposed (by an agent), accepted, retired; who accepted it and when. |
+
+Example: entry "In Atlantic salmon under 50 g, free CO₂ above 15 mg/L leads to nephrocalcinosis" (Olsen et al.
+2019, p. 4) → rule: subject unit water, species Atlantic salmon, weight below 50 g, condition `co2_mg_l > 15`,
+consequence "risk of nephrocalcinosis", severity warning.
+
+**Extraction proposes, a person decides.** An agent reads a document's pages (`document_pages`, page by page;
+for long ones, chunks of pages with an embedding each in a table of their own written by the same save that
+writes the page, pgvector, so they can never disagree with the text) and **proposes** entries, as drafts
+whose source is the document with the page and the exact quote, and rules for them, as proposed. Nothing
+proposed is used until a person reviews the entry and accepts the rule. The quote is checked against the
+page's text before it is shown, so an agent cannot cite words the document does not have.
+
+**Warnings cite their source.** An evaluator, next to the water's (`farm/water/evaluate.py`), applies the
+accepted rules of reviewed entries to the values read now (a unit's latest water, its batches' average weight
+from the stock ledger): a match is a warning on the unit and in the drawer, "CO₂ 17 mg/L: risk of
+nephrocalcinosis in salmon under 50 g. Olsen et al. (2019), p. 4", linked to the entry. As for the water,
+nothing is sent yet; the MVP alerts nobody. A proposed action (the purchase order) is a proposal a person
+accepts, written through the tab's own write path as that person, as the Messages' assistants will do.
+
+**Owner decision open:** whether a person may review their own entry (four eyes). Today anyone with Edit may;
+a check `reviewed_by <> created_by` and a Review column of its own in the role matrix are the two changes it
+would take.
+
+Not built now: OCR of scanned PDFs, other file types (Word, images), reading the text in a background worker,
+embeddings, the rules and their evaluator, exporting references (BibTeX, RIS), fetching a reference from its
+DOI (Crossref), versions of a document's file, phrase search ("…" in the query).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -935,9 +1206,11 @@ only one who manages roles and users; everyone else gets exactly what their role
   can be given, one line each, with the actions each offers: Sites, Production departments,
   Systems, Equipment, Tanks, ponds & cages, Species, Feeds, Water limits and Suppliers (read, create,
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
-  Feeding records (read, create = record a feeding, delete = void one), Water chemistry (read the page
+  Feeding records (read the Meal board and Records, create = record a feeding or a meal, delete = void one),
+  Feeding protocols and Protocol assignments (read, create, edit, delete), Water chemistry (read the page
   and a unit's water, create = record a sample or a round, delete = void one), Messages (read = use Messages,
-  create = also create channels) and Activity log (read).
+  create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit also reviews
+  an entry) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -979,7 +1252,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `knowledge`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -1005,7 +1278,9 @@ C:\Python312\python.exe -m venv .venv
 ```
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
-defaults match the local container in `docker-compose.yml`.
+defaults match the local container in `docker-compose.yml`. Uploaded files (the library's PDFs) go to
+`MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
+checkout anywhere but a developer's machine, and back it up with the database.
 
 ## Languages
 
@@ -1099,6 +1374,13 @@ What one tab needed and the next ones will too lives in `core/`:
   disabled field so a posted value is never read.
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
   "Tanks, ponds & cages" lists units.
+- `Resource.search`: what the list's search box does; by default the text in one of `search_fields`, a
+  full-text search where a tab needs one (the library, `knowledge/search.py`).
+- `Resource.detail_template`: a read page for one record (`<prefix>/<id>/view/`, `templates/crud/detail.html`)
+  for everyone who may read the tab, with Edit and Delete for those who may; the edit form needs the change
+  permission, so a reader would otherwise see only the list (a library document, a knowledge entry).
+- Files: a form with a file field gets the uploaded files and posts as multipart, in the dialog too (a
+  document's PDF). A file is never served from a public address: a view that checks the permission sends it.
 - `Resource.page_size`: the list is paged on the server, after the search and the filters, and the
   page links keep both (`templates/crud/_pager.html`). Lists that nest records (systems, equipment)
   stay on one page.
@@ -1182,8 +1464,12 @@ real mail.
 | `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |
 | `/operations/units/void/<id>/` | Voids a stock operation |
 | `/operations/units/<id>/feeding/` | Records a feeding of a unit (`?next=` goes back to the page it came from) |
-| `/operations/feeding/` | Operations › Feeding records |
+| `/operations/feeding/board/` | Operations › Feeding › Meal board |
+| `/operations/feeding/` | Operations › Feeding › Records: the feeding records; `?view=days` by unit and day |
 | `/operations/feeding/new/` | Record feeding from the list: the units with fish |
+| `/operations/units/<id>/feeding/?meal=next` | Record meal from the Meal board: the next meal filled in |
+| `/operations/feeding/protocols/` | Operations › Feeding › Protocols; `<id>/table/` saves a protocol's feeding table, `<id>/duplicate/` copies it |
+| `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
 | `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart of the water in the address (a GET form) |
@@ -1197,6 +1483,13 @@ real mail.
 | `/messages/<id>/members/` | A channel's members; `add/`, `<participant>/remove/`, `<participant>/role/` change them |
 | `/messages/<id>/leave/`, `/messages/<id>/messages/<message>/delete/` | Leave a channel; delete one's own message |
 | `/messages/list/`, `/messages/unread/` | Fragments the page polls: the list of conversations, the menu's unread number |
+| `/knowledge/library/` | Knowledge › Library (`?q=` searches, `topic`, `species`, `year` filter) |
+| `/knowledge/library/<id>/view/` | A document's read page (`?q=` shows the pages where the words are) |
+| `/knowledge/library/<id>/file/` | A document's PDF, to people who may read the library (`?download` as an attachment) |
+| `/knowledge/library/<id>/text/` | The text read from a document's PDF, page by page |
+| `/knowledge/entries/` | Knowledge › Knowledge entries; `<id>/view/` an entry's read page |
+| `/knowledge/entries/new/?document=<id>` | A new entry whose source is that document |
+| `/knowledge/entries/<id>/review/` | Marks an entry reviewed, or takes it back to draft (POST) |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -1223,9 +1516,11 @@ real mail.
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
-| `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the list and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
+| `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
+| `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
+| `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |

@@ -43,14 +43,17 @@ WORKSPACES = [
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
-            # The reference lists the production side picks from: species, feeds, the water limits per species,
-            # the medicines with their withdrawal, where harvested fish go and the fast before handling;
-            # chemicals as their tab arrives.
+            # The reference lists the production side picks from: species, feeds, the water limits per species
+            # and the medicines with their withdrawal; chemicals as their tab arrives.
             Group(_('Reference data'), [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
                 Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
                 Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
+            ]),
+            # Harvest and logistics: the outside facilities harvested fish go to, and the fast before fish are
+            # handled (harvest, transport, grading, treatment). Wellboats join it when they get their own records.
+            Group(_('Harvest and logistics'), [
                 Entry(_('Slaughter facilities'), 'farm:slaughterfacility_list', 'factory',
                       'farm.view_slaughterfacility'),
                 Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),

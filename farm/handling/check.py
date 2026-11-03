@@ -168,8 +168,8 @@ def _fasting(result, batches):
     rule = rule_of(result.kind, species)
     label = str(HandlingKind(result.kind).label).lower()
     if rule is None:
-        result.notes.append(_('No handling rule for %(kind)s: the fast is not checked (Reference data › Handling '
-                              'rules).') % {'kind': label})
+        result.notes.append(_('No handling rule for %(kind)s: the fast is not checked (Harvest and logistics › '
+                              'Handling rules).') % {'kind': label})
     fed = last_fed_at(unit, day, batch=result.batch, since=day - timedelta(days=LOOKBACK_DAYS))
     if fed is None:
         result.notes.append(_('No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast '

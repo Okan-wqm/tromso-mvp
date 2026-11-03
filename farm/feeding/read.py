@@ -33,6 +33,7 @@ from django.db.models import Max, Prefetch, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from farm.handling import fasting
 from farm.models import Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank
 from farm.models.site import zone_of
 from farm.stock.dates import end_of, local_today, start_of
@@ -120,7 +121,10 @@ def policy(units, batch_ids, first, now):
             found[(unit_id, day)] = book.at(unit, now if day >= today[unit_id] else end_of(day, unit))
         return found[(unit_id, day)]
 
-    return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature)
+    # The fasts planned harvests and transports ask for, from `first` to the units' today (one query).
+    fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first))
+    return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature,
+                  fasting=lambda unit_id, day: fasts.get((unit_id, day)))
 
 
 @dataclass

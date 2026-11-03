@@ -50,7 +50,7 @@ def make_species(code='SAL', common_name='Atlantic salmon', scientific_name='Sal
 
 
 def make_facility(name='Fjord Slakteri', approval_number='M123', **fields):
-    """An active slaughter facility that takes every species (Reference data › Slaughter facilities)."""
+    """An active slaughter facility that takes every species (Harvest and logistics › Slaughter facilities)."""
     from ..models import SlaughterFacility
     return SlaughterFacility.objects.create(name=name, approval_number=approval_number, **fields)
 

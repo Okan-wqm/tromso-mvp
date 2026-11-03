@@ -87,8 +87,8 @@ def sfr_at(cells, temperature_c):
 
 
 # Why a share has no ration (Basis.missing); Basis.why() says it in the person's language.
-NO_PROTOCOL, SPECIES, OUTSIDE_BANDS, NO_TEMPERATURE, OUTSIDE_TABLE = (
-    'no_protocol', 'species', 'outside_bands', 'no_temperature', 'outside_table')
+NO_PROTOCOL, SPECIES, OUTSIDE_BANDS, NO_TEMPERATURE, OUTSIDE_TABLE, FASTING = (
+    'no_protocol', 'species', 'outside_bands', 'no_temperature', 'outside_table', 'fasting')
 
 
 @dataclass(frozen=True)
@@ -104,6 +104,7 @@ class Basis:
     sfr: Sfr = None
     missing: str = ''
     skipped: object = None        # a unit's row for another species, read past
+    fast: object = None           # the fast a planned harvest or transport asks for (farm.handling.fasting.Fast)
 
     @property
     def protocol(self):
@@ -146,6 +147,8 @@ class Basis:
                                             'protocol_species': protocol.species,
                                             'species': batch.species if batch is not None else '—'}
             return _('No protocol is assigned to these fish.')
+        if self.missing == FASTING:
+            return self.fast.why()
         if self.missing == OUTSIDE_BANDS:
             bands = self.table.bands
             upper = bands[-1].max_weight_g
@@ -179,6 +182,7 @@ class Policy:
     tables: dict                  # protocol id -> Table
     species: dict                 # batch id -> species id
     temperature: object
+    fasting: object = None        # (unit id, day) -> the Fast of a planned harvest or transport, or None
     _rows: dict = field(default_factory=lambda: defaultdict(list))
     _resolved: dict = field(default_factory=dict)
 
@@ -215,6 +219,11 @@ class Policy:
         band = table.band_for(weight_g)
         if band is None:
             return Basis(weight_g, table, assignment, missing=OUTSIDE_BANDS)
+        # A fasting day before a planned harvest or transport has no ration; the band stays, so a feeding given
+        # anyway is still credited at the band's expected FCR.
+        fast = self.fasting(unit_id, day) if self.fasting is not None else None
+        if fast is not None:
+            return Basis(weight_g, table, assignment, band, missing=FASTING, fast=fast)
         temperature = self.temperature(unit_id, day)
         if temperature is None:
             return Basis(weight_g, table, assignment, band, missing=NO_TEMPERATURE)

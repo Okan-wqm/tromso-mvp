@@ -857,7 +857,7 @@ Differences from the source (details in the bug document, WQ-01 to WQ-29):
   and a site's intake water. The rations read the latest water temperature from here and keep no copy of
   their own (WQ-02; `farm/feeding/temperature.py`).
 
-### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Reference data › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
+### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
 
 What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
 `slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
@@ -969,10 +969,13 @@ long enough? Nothing is blocked (owner decision): both are warnings.
   `HandlingAcknowledgement` per warning with what the person was shown (the withdrawal's end, estimated or not,
   and reason; or the last feeding, the hours fasted, the hours asked and the rule), and the operation's
   activity-log entry is **critical**, with the warnings. Who and when are the operation's.
-- *The meal board* asks `farm.handling.fasting.fasting_on(unit, day)`: the reason when the day is in the fast a
-  planned harvest or transport asks for (every day from the one the fast starts on to the planned day, in full,
-  for the whole unit; where two overlap the one that starts first wins), else None. The feeding dialog says so
-  on such a day ("A feeding can still be recorded").
+- *The meal board* gives **no ration on a fasting day**: the ration's policy (`farm/feeding/read.policy`) loads
+  the fasts planned harvests and transports ask for (`farm.handling.fasting.fasts`, every day from the one the
+  fast starts on to the planned day, in full, for the whole unit; where two overlap the one that starts first
+  wins) and `ration.Policy.basis` answers `FASTING` with the reason, e.g. "Fasting before the harvest of 15 Nov
+  2026: from 12 Nov 2026, 00:00 (72 h)". The band stays, so a feeding recorded anyway is still credited at its
+  expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
+  The feeding dialog says so on such a day ("A feeding can still be recorded").
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 
@@ -1034,8 +1037,8 @@ sedation, other; a vaccination uses a vaccine and a vaccine is a vaccination), t
 first day follows the date rule of every daily record, the last may be planned up to 28 days ahead), the dose
 and the amount used with their units (the report's units), the bath time, who prescribed it and the
 prescription number, the vet (a supplier of veterinary and fish health services) and the health event it
-answers. **The fast before it** is the shared handling check's (kind treatment; Reference data › Handling rules,
-24 h to start with): the dialog shows when the fish of each unit were last fed against the rule, and too short a
+answers. **The fast before it** is the shared handling check's (kind treatment; Setup › Harvest and logistics ›
+Handling rules, 24 h to start with): the dialog shows when the fish of each unit were last fed against the rule, and too short a
 fast is a warning; going on stores a handling acknowledgement on the treatment (`HandlingAcknowledgement`, which
 belongs to a stock operation or a treatment, exactly one, a database check) and makes its log entry critical. A
 medicated feed is not checked: it is the feeding itself. Every unit must hold fish on the first day; the other
@@ -1697,8 +1700,8 @@ real mail.
 | `/operations/harvest-plan/` | Operations › Harvest › Harvest plan: planned harvests and transports; `?unit=<id>` one unit's |
 | `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
-| `/slaughter-facilities/` | Reference data › Slaughter facilities |
-| `/handling-rules/` | Reference data › Handling rules |
+| `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
+| `/handling-rules/` | Harvest and logistics › Handling rules |
 | `/medicines/` | Reference data › Medicines |
 | `/operations/health/treatments/` | Operations › Treatments; `new/` records one (`?unit=<id>` ticks a unit), `<id>/last-day/` changes its last day, `<id>/void/` voids it |
 | `/operations/health/events/` | Operations › Health events; `<id>/void/` voids one |

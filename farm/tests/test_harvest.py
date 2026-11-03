@@ -111,7 +111,7 @@ class FastingTests(HarvestTestCase):
         self.fed(1, at=clock(18, 0))
         result = self.assess()
         self.assertEqual(result.warnings, [])
-        self.assertIn('No handling rule for harvest: the fast is not checked (Reference data › Handling rules).',
+        self.assertIn('No handling rule for harvest: the fast is not checked (Harvest and logistics › Handling rules).',
                       result.notes)
 
     def test_a_grading_takes_the_longer_of_the_grading_and_the_transport_rule(self):
@@ -757,8 +757,8 @@ class PermissionTests(HarvestTestCase):
         self.assertEqual(self.client.post(reverse('farm:handlingplanitem_create'), {}).status_code, 403)
         self.assertEqual([str(navigation.place(perm).path) for perm in pages], [
             'Production · Operations · Harvest', 'Production · Operations · Harvest',
-            'Production · Operations · Harvest', 'Production · Setup · Reference data',
-            'Production · Setup · Reference data'])
+            'Production · Operations · Harvest', 'Production · Setup · Harvest and logistics',
+            'Production · Setup · Harvest and logistics'])
         areas = {area.model: area.actions for area in access.areas()}
         self.assertEqual((areas['farm.HarvestRecord'], areas['farm.HandlingPlanItem'], areas['farm.HandlingRule']),
                          (('view',), ('view', 'add', 'change', 'delete'), ('view', 'add', 'change', 'delete')))

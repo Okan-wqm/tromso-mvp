@@ -46,7 +46,7 @@ def compute(site, period):
             problems.append(_('%(unit)s held more than one species in the month.') % {'unit': unit.code})
         kind = sorted(species, key=lambda item: item.code)[0]
         if unit.pk in closing:
-            count, grams = closing[unit.pk].count, closing[unit.pk].grams
+            count, grams = stock.held(closing[unit.pk])
         elif unit.pk in emptied:
             count, grams = emptied[unit.pk].count, emptied[unit.pk].grams
             warnings.append(_('%(unit)s was emptied on %(date)s: the fish and the average weight just before are '

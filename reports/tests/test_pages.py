@@ -100,7 +100,7 @@ class DraftTests(ReportPagesTestCase):
         self.assertEqual(response.context['form'].errors['period_start'], ['The period has not begun yet.'])
         response, _report = self.start(kind='slaughter_planned', facility='')
         self.assertIn('facility', response.context['form'].errors)
-        response, _report = self.start(kind='sea_lice')         # not built until the health records are in
+        response, _report = self.start(kind='nonsense')         # a report that does not exist
         self.assertIn('kind', response.context['form'].errors)
         self.assertFalse(Report.objects.exists())
 

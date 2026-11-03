@@ -8,7 +8,7 @@ from django.db.models import F, Q
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
-from farm.models import SlaughterFacility, Site, Tank
+from farm.models import SlaughterFacility, Site, Tank, Treatment
 
 from . import periods
 from .kinds import BY_FACILITY, EVENTS, KINDS, PERIODIC, ReportKind, info
@@ -315,6 +315,7 @@ class SensitivityTest(ReportRow):
     tested_on = models.DateField(_('Tested on'))
     laboratory = models.CharField(_('Laboratory'), max_length=255)
     substance = models.CharField(_('Substance'), max_length=30, choices=LiceSubstance.choices)
+    other_substance = models.CharField(_('Other: which'), max_length=255, blank=True)
     result = models.CharField(_('Result'), max_length=20, choices=TestResult.choices)
 
     class Meta:
@@ -326,10 +327,44 @@ class SensitivityTest(ReportRow):
             models.CheckConstraint(condition=Q(substance__in=LiceSubstance.values),
                                    name='chk_sensitivity_tests_substance'),
             models.CheckConstraint(condition=Q(result__in=TestResult.values), name='chk_sensitivity_tests_result'),
+            models.CheckConstraint(
+                condition=Q(substance=LiceSubstance.OTHER, other_substance__gt='')
+                | (~Q(substance=LiceSubstance.OTHER) & Q(other_substance='')),
+                name='chk_sensitivity_tests_other_substance',
+                violation_error_message=_('Say which substance when it is another one, and only then.')),
         ]
 
     def __str__(self):
         return f'{self.tested_on.isoformat()} · {self.laboratory} · {self.get_substance_display()}'
+
+
+class TreatmentAnswer(ReportRow):
+    """What a sea-lice treatment's record does not say, for the week's report: whether it was given before the count
+    (the records carry dates, no times, so a treatment that ended on the day of a count cannot be told) and which
+    treatments were given together (the same combination number)."""
+
+    report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='treatment_answers',
+                               verbose_name=_('Report'))
+    treatment = models.ForeignKey(Treatment, on_delete=models.PROTECT, related_name='+', verbose_name=_('Treatment'))
+    done_before_count = models.BooleanField(_('Given before the count'), default=False)
+    combination = models.PositiveSmallIntegerField(_('Given together with others, combination'), null=True,
+                                                   blank=True)
+
+    class Meta:
+        db_table = 'regulatory_report_treatment_answers'
+        ordering = ['treatment__start_date', 'id']
+        verbose_name = _('treatment answer')
+        verbose_name_plural = _('treatment answers')
+        constraints = [
+            models.UniqueConstraint(fields=['report', 'treatment'], name='uq_treatment_answers_treatment',
+                                    violation_error_message=_('Each treatment can be listed once.')),
+            models.CheckConstraint(condition=Q(combination__isnull=True) | Q(combination__gte=1, combination__lte=9),
+                                   name='chk_treatment_answers_combination',
+                                   violation_error_message=_('A combination is numbered 1 to 9.')),
+        ]
+
+    def __str__(self):
+        return str(self.treatment)
 
 
 class UnitAnswer(ReportRow):

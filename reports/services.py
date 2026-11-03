@@ -16,10 +16,11 @@ IDENTITY_LEAVES = ('/number', '/species', '/organisation_number', '/lokalitetsnu
 
 # The answers a correction starts from: the report's own (the row lists are copied too).
 CARRIED = ('contact_name', 'contact_email', 'contact_phone', *NARRATIVE, 'notes')
-ROW_LISTS = ('resistance_suspicions', 'sensitivity_tests', 'unit_answers')
+ROW_LISTS = ('treatment_answers', 'resistance_suspicions', 'sensitivity_tests', 'unit_answers')
 ROW_FIELDS = {
+    'treatment_answers': ('treatment_id', 'done_before_count', 'combination'),
     'resistance_suspicions': ('substance', 'other_substance', 'cause', 'other_cause'),
-    'sensitivity_tests': ('tested_on', 'laboratory', 'substance', 'result'),
+    'sensitivity_tests': ('tested_on', 'laboratory', 'substance', 'other_substance', 'result'),
     'unit_answers': ('unit_id', 'reduced_capacity'),
 }
 

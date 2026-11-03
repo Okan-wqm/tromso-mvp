@@ -9,7 +9,10 @@ from core.crud import Resource, RowList, filter_by
 from farm.models import SlaughterFacility, Site
 
 from . import compute, periods, services
-from .forms import ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, UnitAnswerFormSet
+from .forms import (
+    ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
+    UnitAnswerFormSet,
+)
 from .kinds import ReportKind
 from .models import Report
 
@@ -24,6 +27,21 @@ class ReportRows(RowList):
     @classmethod
     def applies_to(cls, report):
         return report.kind in cls.kinds and report.submitted_at is None
+
+
+class TreatmentAnswers(ReportRows):
+    key, tab, label = 'treatments', 'treatments', _('Treatments')
+    formset = TreatmentAnswerFormSet
+    kinds = (ReportKind.SEA_LICE,)
+
+    @classmethod
+    def describe(cls, row):
+        """e.g. "Bath, 12 Nov · before the count · combination 1"."""
+        parts = [str(row.treatment), audit.english(_('before the count')) if row.done_before_count
+                 else audit.english(_('after the count'))]
+        if row.combination:
+            parts.append(f'{audit.english(_("combination"))} {row.combination}')
+        return ' · '.join(parts)
 
 
 class ResistanceSuspicions(ReportRows):
@@ -73,7 +91,7 @@ class ReportResource(Resource):
     form_template = 'reports/report_form.html'
     icon = 'file-text'
     page_size = 50
-    row_lists = (ResistanceSuspicions, SensitivityTests, UnitAnswers)
+    row_lists = (TreatmentAnswers, ResistanceSuspicions, SensitivityTests, UnitAnswers)
 
     @classmethod
     def queryset(cls):

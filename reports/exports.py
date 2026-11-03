@@ -26,10 +26,59 @@ def _number(text):
     return int(value) if value == int(value) else value
 
 
+def _non_medicinal(item):
+    return {'type': item['type'], 'beskrivelse': item['description'], 'gjennomførtFørTelling': item['before_count'],
+            'heleLokaliteten': item['whole_site'], 'antallMerder': item['cages']}
+
+
+def _medicinal(item):
+    substance = item['substance']
+    return {'type': item['type'], 'beskrivelse': item['description'], 'gjennomførtFørTelling': item['before_count'],
+            'heleLokaliteten': item['whole_site'], 'antallMerder': item['cages'],
+            'virkestoff': {
+                'type': substance['type'], 'annetVirkestoff': substance['other'],
+                'styrke': {'verdi': _number(substance['strength']['value']), 'enhet': substance['strength']['unit']},
+                'mengde': {'verdi': _number(substance['amount']['value']), 'enhet': substance['amount']['unit']}}}
+
+
+def _lice(report, content, base):
+    """The weekly lice report as LakselusrapporteringDto: the treatments given together are a combination each, the
+    rest are listed on their own."""
+    year, week = report.period.iso
+    identity = content['identity']
+    alone = [item for item in content['treatments'] if item['combination'] is None]
+    together = {}
+    for item in content['treatments']:
+        if item['combination'] is not None:
+            together.setdefault(item['combination'], []).append(item)
+    counts = content['counts']
+    body = {**base, 'organisasjonsnummer': identity['organisation_number'], 'lokalitetsnummer': identity['lokalitetsnummer'],
+            'rapporteringsår': year, 'rapporteringsuke': week, 'sjøtemperatur': _number(content['temperature_c']),
+            'lusetelling': None if counts is None else {
+                'voksneHunnlus': _number(counts['adult_females']), 'bevegeligeLus': _number(counts['mobile']),
+                'fastsittendeLus': _number(counts['attached'])},
+            'ikkeMedikamentelleBehandlinger': [_non_medicinal(item) for item in alone if not item['medicinal']],
+            'medikamentelleBehandlinger': [_medicinal(item) for item in alone if item['medicinal']],
+            'kombinasjonsbehandlinger': [{
+                'ikkeMedikamentelleBehandlinger': [_non_medicinal(item) for item in items if not item['medicinal']],
+                'medikamentelleBehandlinger': [_medicinal(item) for item in items if item['medicinal']],
+            } for _number_of, items in sorted(together.items())],
+            'resistensMistanker': [{
+                'resistens': row['substance'], 'annenResistens': row['other_substance'], 'årsak': row['cause'],
+                'annenÅrsak': row['other_cause']} for row in content['resistance_suspicions']],
+            'følsomhetsundersøkelser': [{
+                'utførtDato': f'{row["tested_on"]}T00:00:00Z', 'laboratorium': row['laboratory'],
+                'resistens': row['substance'], 'annenResistens': row['other_substance'],
+                'testresultat': row['result']} for row in content['sensitivity_tests']]}
+    return body
+
+
 def api_json(report, content):
     """The report as Mattilsynet's reporting API takes it, or None for a kind the API has no endpoint for."""
     identity = content.get('identity', {})
     base = {'klientReferanse': str(report.pk), 'kontaktperson': contact(report)}
+    if report.kind == ReportKind.SEA_LICE:
+        return _lice(report, content, base)
     if report.kind == ReportKind.SMOLT:
         year, month = report.period.iso
         return {**base, 'organisasjonsnummer': identity['organisation_number'], 'rapporteringsmåned': month,

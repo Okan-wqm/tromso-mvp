@@ -8,10 +8,11 @@ from farm.models import SlaughterFacility, Site, Tank
 from farm.models.harvest import FacilityStatus
 
 from . import periods
-from .compute import COMPUTE
+from .compute import COMPUTE, lice
 from .kinds import BY_FACILITY, EVENTS, PERIODIC, info
 from .models import (
-    NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, UnitAnswer,
+    NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, TreatmentAnswer,
+    UnitAnswer,
 )
 
 REPORT_FORM_TABS = [
@@ -126,7 +127,7 @@ class ResistanceSuspicionForm(forms.ModelForm):
 class SensitivityTestForm(forms.ModelForm):
     class Meta:
         model = SensitivityTest
-        fields = ['tested_on', 'laboratory', 'substance', 'result']
+        fields = ['tested_on', 'laboratory', 'substance', 'other_substance', 'result']
         widgets = {'tested_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')}
 
     def clean_tested_on(self):
@@ -134,6 +135,32 @@ class SensitivityTestForm(forms.ModelForm):
         if day > periods.oslo_today():
             raise ValidationError(_('The day cannot be in the future.'))
         return day
+
+
+class TreatmentAnswerForm(forms.ModelForm):
+    class Meta:
+        model = TreatmentAnswer
+        fields = ['treatment', 'done_before_count', 'combination']
+
+
+class TreatmentAnswerFormSet(RowFormSet):
+    """The week's sea-lice treatments of the report's site, to answer what their records do not say."""
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        if 'treatment' in form.fields and self.instance.period is not None:
+            form.fields['treatment'].queryset = lice.week_treatments(self.instance.site, self.instance.period)
+
+    def clean(self):
+        super().clean()
+        rows = [row for row in self.kept_rows() if row.get('treatment')]
+        if len({row['treatment'] for row in rows}) != len(rows):
+            raise ValidationError(_('Each treatment can be listed once.'))
+        together = [row['combination'] for row in rows if row.get('combination')]
+        for number in sorted(set(together)):
+            if together.count(number) < 2:
+                raise ValidationError(_('Combination %(number)d is of one treatment: a combination is of at least '
+                                        'two.') % {'number': number})
 
 
 class UnitAnswerForm(forms.ModelForm):
@@ -163,5 +190,7 @@ ResistanceSuspicionFormSet = forms.inlineformset_factory(
     Report, ResistanceSuspicion, form=ResistanceSuspicionForm, formset=RowFormSet, **ROW_OPTIONS)
 SensitivityTestFormSet = forms.inlineformset_factory(
     Report, SensitivityTest, form=SensitivityTestForm, formset=RowFormSet, **ROW_OPTIONS)
+TreatmentAnswerFormSet = forms.inlineformset_factory(
+    Report, TreatmentAnswer, form=TreatmentAnswerForm, formset=TreatmentAnswerFormSet, **ROW_OPTIONS)
 UnitAnswerFormSet = forms.inlineformset_factory(
     Report, UnitAnswer, form=UnitAnswerForm, formset=UnitAnswerFormSet, **ROW_OPTIONS)

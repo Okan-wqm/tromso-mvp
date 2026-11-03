@@ -12,6 +12,13 @@ from farm.stock.fold import fold
 ZERO = Decimal(0)
 
 
+def held(unit_stock):
+    """(fish, grams) of every batch in a unit (farm.stock.read.UnitStock), cleaner fish included: a unit's own figures
+    are its production fish's, but a report of a hatchery's tank, whatever species it holds, reports all its fish."""
+    return (sum(share.count for share in unit_stock.shares),
+            sum((share.grams for share in unit_stock.shares), ZERO))
+
+
 def site_units(site):
     """Every unit of the site, deleted ones too (a deleted unit keeps its records)."""
     return list(Tank.all_objects.filter(production_department__site=site)

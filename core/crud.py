@@ -506,6 +506,11 @@ class ListView(ResourceView):
         if query:
             objects = self.resource.search(objects, query)
         objects, filters = self.resource.filter_list(request, objects)
+        if isinstance(objects, models.QuerySet) and not objects.ordered:
+            # A filter that counts with a GROUP BY drops the model's ordering (Django leaves Meta.ordering
+            # out of such queries); the list is read and paged in it all the same, the key last. (A tab that
+            # returns a list, e.g. in tree order, has put it in its order itself.)
+            objects = objects.order_by(*self.resource.model._meta.ordering, 'pk')
         page = None
         if self.resource.page_size:
             # Paged on the server, after the search and the filters; the page links keep both.

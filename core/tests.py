@@ -1,9 +1,11 @@
 import io
 import re
+import warnings
 from importlib import import_module
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
+from django.core.paginator import UnorderedObjectListWarning
 from django.conf import settings
 from django.core import mail
 from django.core.management import call_command
@@ -410,6 +412,21 @@ class AccessTests(AdminTestCase):
         self.assertEqual(self.client.get(reverse('core:activity_log')).status_code, 403)
         site.refresh_from_db()
         self.assertEqual((site.name, site.is_deleted), ('Site A', False))
+
+
+class ListOrderTests(TestCase):
+    """Every tab's list is read and paged in a fixed order. A filter that counts with a GROUP BY (an
+    annotated Count) drops the model's ordering, since Django leaves Meta.ordering out of such queries; a
+    page of an unordered list can show a record twice and another never."""
+
+    def test_every_list_page_is_paged_in_order(self):
+        import_module(settings.ROOT_URLCONF)    # declares every resource
+        self.client.force_login(get_user_model().objects.create_superuser('root', 'root@example.com', 'x-123-y'))
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', UnorderedObjectListWarning)
+            for tab in Resource.registry:
+                if tab.page_size:
+                    self.assertEqual(self.client.get(reverse(tab.url_name('list'))).status_code, 200, tab.__name__)
 
 
 class TabRulesTests(TestCase):

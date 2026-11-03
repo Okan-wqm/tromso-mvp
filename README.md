@@ -824,35 +824,78 @@ default), one row per unit that is not inactive and per loop, one time and one s
 skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right (at
 most 200 rows).
 
-**The calculator** (the third tab, `/operations/water/calculator/`) draws a water on the **Water
-Quality Management Chart**, the source's Deffeyes diagram, server-rendered as SVG without JavaScript
-(`farm/water/deffeyes.py`, `templates/farm/_deffeyes_chart.html`). It is a GET form: the values live in
-the address, nothing is stored, and without values it shows its defaults.
-- **In**: temperature, pH (NBS, 4 to 12), salinity, alkalinity (mg/L as CaCO₃), each with its
-  parameter's label, range and precision; optionally TAN, total sulfide (µg/L as S, as laboratories and
-  methylene-blue kits report it), dissolved oxygen with an altitude, calcium; a target pH and
-  alkalinity; the alkalinity band of the safe zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S
-  (µg/L as H₂S); and which layers to draw.
+**The calculator** (the third tab, `/operations/water/calculator/`) is laid out as the source's: where the
+values come from, the input bar, the dosing simulator, the row of charts [NH₃ and H₂S against pH | the **Water
+Quality Management Chart**, larger | the carbonate species and the calcite saturation against pH] and the
+results row [ammonia | hydrogen sulfide | worked out | dosing recipes]; on a phone one column, the big chart
+first. Every chart is SVG drawn on the server without a chart library (`farm/water/deffeyes.py`,
+`farm/water/charts.py`); one `Calculation` (`farm/water/calculation.py`) feeds the page, its live parts and
+its report, so they never disagree. It is a GET form: the values live in the address, nothing is stored, and
+without values it shows its defaults.
+- **Interactive**: the results follow the form. Ticking or unticking a layer redraws the chart at once;
+  typing redraws the charts and the results after a 0.3 s pause; no button. The browser asks the server for
+  the calculator's live parts (`/operations/water/calculator/results/`, each part a `data-live-part`) and
+  swaps them in; a request still on its way is dropped, the fields are never replaced (focus and caret
+  stay), the wrong values come back under their fields and in a list that links to them, and the address
+  follows the form, so a link opens the same view. The server is the one source of every number and of the
+  SVG: the browser code (`frontend/poll.ts`, the live form, usable by any GET form) has no chemistry. Without
+  the script the form has a Calculate button and the page is drawn again.
+- **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in its latest value
+  of each measured field (temperature, pH, salinity, alkalinity, TAN, dissolved oxygen: `read.latest`, each
+  with its age, stale ones marked), its site's altitude, and the limits of the fish in it today
+  (`read.limits_now`: the critical high of NH₃-N and of CO₂, the warning bounds of alkalinity as the safe
+  zone's band; with several species the strictest), and sends the address with them. They can be changed for
+  this calculation (marked "changed here"); nothing is written back. A field the point has no value for keeps
+  what was entered, and the bar says which.
+- **In** (tabs Water, System, Target, Limits, Reagents, Simulator): temperature, pH (NBS, 4 to 12),
+  salinity, alkalinity (mg/L as CaCO₃), each with its parameter's label, range and precision; optionally
+  TAN, total sulfide (µg/L as S, as laboratories and methylene-blue kits report it), dissolved oxygen; the
+  volume (m³), the calcium and the altitude; a target pH and alkalinity and the alkalinity band of the safe
+  zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S (µg/L as H₂S); the reagents to dose with (the
+  source's nine; NaHCO₃, NaOH, CO₂ added and CO₂ stripped to start with); the simulator's grams of each; and
+  the chart's layers.
 - **The chart**: DIC (mmol/L) across, alkalinity (meq/L) up, 0 to 6 each and wider when the point, the
-  target or the band needs it; pH isolines every 0.25 from 4.25 to 12.5 (every 0.5 labelled); the
-  regions where NH₃ (above its border's isoline), H₂S (below its border's isoline) and CO₂ (below the
-  curve where CO₂ = the limit) pass their limits; the safe zone (the band, between the NH₃ border and
-  the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium given, from 5
-  to 44 ‰ (Mucci's range); the water (a star) and the target (a cross). A note says why a layer asked
-  for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its tooltip and the
-  legend.
-- **Out**, in a table next to the chart: alkalinity (meq/L), DIC, CO₂ and its status, target DIC and
-  CO₂, NH₃-N and its status, H₂S (µg/L as H₂S) and its status, each limit's pH border and the pH margin
-  to it, the most TAN and the most total sulfide this pH allows, the oxygen solubility and saturation.
-  A status follows the source: past the border critical, within 0.2 pH a warning.
+  target, the band, the dosing waypoint or a simulator step needs it; pH isolines every 0.25 from 4.25 to
+  12.5 (every 0.5 labelled); the regions where NH₃ (above its border's isoline), H₂S (below its border's
+  isoline) and CO₂ (below the curve where CO₂ = the limit) pass their limits; the safe zone (the band, between
+  the NH₃ border and the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium
+  given, from 5 to 44 ‰ (Mucci's range); the water (a star) and the target (a cross); the dosing layer (one
+  reagent chosen: its direction from the water; two: both, the wedge between them and their path to the
+  target through the waypoint; more: a note) and the simulator's path, an arrow at each step. A note says
+  why a layer asked for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its
+  tooltip and the legend.
+- **The small charts**: NH₃-N (TAN × the NH₃ share) from pH 6 to 9.5 with the limit, the H₂S and HS⁻ shares
+  of the total sulfide from 4 to 12.5, the CO₂, HCO₃⁻ and CO₃²⁻ shares of the DIC from 4 to 12, and the
+  calcite and aragonite saturation index at the water's DIC from 6 to 9.5 (5 to 44 ‰ with the calcium only);
+  the NH₃ and H₂S charts carry the safe, alert (0.2 pH) and danger bands of their borders, none when the value
+  or its limit is missing; an axis widens to hold the water.
+- **Out**: ammonia (NH₃-N and its status, the most TAN this pH allows, the border and the margin, NH₃'s share
+  at the border), hydrogen sulfide (H₂S as H₂S and its status, the most total sulfide, the border and the
+  margin), worked out (CO₂ and its status, border and margin; the CO₂ the air leaves in the water; alkalinity
+  in meq/L, DIC, target DIC and CO₂; oxygen solubility and saturation). A status follows the source: past the
+  border critical, within 0.2 pH a warning.
+- **Dosing** (`farm/water/dosing.py`): each reagent moves the water along its own direction on the chart,
+  per mmol: NaHCO₃ +1 DIC +1 alkalinity, Na₂CO₃ and CaCO₃ +1 +2, NaOH 0 +1, Ca(OH)₂ and CaO 0 +2, CO₂ +1 0,
+  stripping −1 0, HCl 0 −1 (Deffeyes 1965; Stumm & Morgan 1996). A **recipe** reaches the target with two
+  reagents: the move is split on their directions with both amounts ≥ 0; every pair of the chosen reagents,
+  ranked as the source ranks them (sodium bicarbonate first), an overshoot-and-correct pair only when nothing
+  else reaches, at most six; grams for the volume and g/m³. The **simulator** adds the grams in turn and shows
+  each step's pH, alkalinity, DIC, CO₂, NH₃-N and H₂S, each judged as the water is, the change from the water
+  to the last step, and its path on the chart. Amounts are of the pure substance (a product of 31 % HCl
+  weighs about three times as much). Stripping below the CO₂ of water in equilibrium with the air (Weiss
+  1974, 420 µmol/mol, the site's pressure) is flagged; acid past the alkalinity is shown as acid, and more
+  CO₂ stripped than there is carbon stops the simulation (the source clamped both, WQ-41).
+- **Print report** opens `/operations/water/calculator/report/` with the same address: the values, the
+  values worked out, every chart with every layer drawn (as the source's report forces its safety layers
+  on), the simulator and the recipes, on a page of its own for A4 across.
 - **The chemistry** (`farm/water/chemistry.py`, one module with the ammonia and oxygen above): K1 and K2
   of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
   source calls them Millero 2010, WQ-39); Kw of Millero (1995); KB of Dickson (1990)
   with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
-  Fernandez (1988); the Ksp of Mucci (1983); each converted to the free scale, the pH (NBS) too, as the
-  source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2), CO₂ = DIC α0; NH₃-N = TAN
-  K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH and an alkalinity that
-  cannot go together (the hydroxide alone above the alkalinity) are refused.
+  Fernandez (1988); the Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
+  scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
+  CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
+  and an alkalinity that cannot go together (the hydroxide alone above the alkalinity) are refused.
 - **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
   comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
   would give it one; entering 0 instead of 0.3 ‰ gives 7 to 13 % more CO₂ and 5 to 9 % more NH₃ at 5 to
@@ -866,32 +909,33 @@ the address, nothing is stored, and without values it shows its defaults.
   "Safe zone (H₂S not assessed)". A border outside the chart's pH range (4 to 12.5) is said in words in
   the table, and its region is still shaded wherever it meets the plotted box (a large box reaches past
   pH 12.5 or below 4).
-- **The limits are defaults, not the fish's**: NH₃-N 0.0103 mg/L (0.0125 mg/L NH₃, Piper et al. 1982,
-  as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA 1986); the example water is the
-  source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L, target pH 7.5 at 100 mg/L)
-  with 2 µg/L sulfide as S.
-- **Checked** (`farm/tests/test_deffeyes.py`): the constants against their papers' published values;
-  CO₂ against Standard Methods 4500-CO₂ D; the source's own TypeScript, copied unchanged from its
-  engine, run over 689 waters and 24 charts (`farm/tests/deffeyes_reference/driver.ts` makes
-  `reference.json`, how is in its header): every value agrees within the table's rounding (DIC, NH₃
-  and H₂S within 1e−8 relative, the constants within 5e−8 pK, CO₂ within 3e−6 for the molar mass, the
-  borders within 1e−6 pH, the boundaries within the source's 4-decimal points); the chart's lines and
-  regions against the formulas, the point at its coordinates; the page in each language. What the source
-  did wrong is in the bug document (WQ-30 to WQ-39).
-- **Not ported**: the dosing (reagents, recipes, the dosing lines and the on-demand path), the volume,
-  the fish type and size (they changed nothing, WQ-37), the four small charts beside it (NH₃, H₂S and
-  carbonate against pH, calcite saturation) and the printed report.
+- **The limits are defaults, not the fish's**, unless the values come from a unit: NH₃-N 0.0103 mg/L
+  (0.0125 mg/L NH₃, Piper et al. 1982, as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA
+  1986); the example water is the source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L,
+  target pH 7.5 at 100 mg/L, 1 m³) with 2 µg/L sulfide as S.
+- **Checked** (`farm/tests/test_deffeyes.py`, `farm/tests/test_calculator.py`): the constants against their
+  papers' published values; CO₂ against Standard Methods 4500-CO₂ D; the source's own TypeScript, copied
+  unchanged from its engine, run over 689 waters and 24 charts, 798 dosing cases, 36 simulator runs and
+  the small charts' data (`farm/tests/deffeyes_reference/driver.ts` makes `reference.json`, how is in its
+  header): every value agrees within the table's rounding (DIC, NH₃ and H₂S within 1e−8 relative, the
+  constants within 5e−8 pK, CO₂ within 3e−6 for the molar mass, the borders within 1e−6 pH, the boundaries
+  within the source's 4-decimal points, the doses within 2e−5 for the molar masses); every recipe, added
+  by the simulator, ends at its target; the simulator's pH after NaHCO₃ and NaOH against Plummer &
+  Busenberg's constants solved on their own; the alkalinity a gram of each base gives against the
+  stoichiometry (1.68 kg NaHCO₃ per kg as CaCO₃ ...); Weiss's K0 against Dickson et al.'s check value and
+  Plummer & Busenberg; the chart's lines and regions against the formulas, the point at its coordinates;
+  the page, its live parts, the report and the values of a unit in each language. What the source did
+  wrong is in the bug document (WQ-30 to WQ-46).
+- **Not ported**: the fish type and size (they changed nothing, WQ-37: here the fish come with a unit),
+  the measurement points' reading sources and sensor sets of the values bar (no sensors here yet).
 
-**Next: a chart per unit or loop.** The chart takes a `Water`, `Limits` and a `Target`, not a form, so a
-unit's or a loop's own chart needs no change to `deffeyes.py`: `Water` comes from the point's latest
-values (`read.latest`: temperature, pH, alkalinity, TAN, dissolved oxygen, and the salinity as
-`Context.salinity_for` finds it), `Limits` from the water limits of the fish in it today
-(`read.limits_now`: the critical high of NH₃-N and CO₂, the warning bounds of alkalinity as the band),
-the pressure from the site's altitude, and the drawer or the history includes
-`farm/_deffeyes_chart.html`. Three things come with it: total sulfide, calcium and H₂S become parameters
-(a column each, a migration, a limit parameter for H₂S); the pH and the alkalinity are taken from the
-same sample, or their age difference is shown, since the latest value of each may come from different
-samples; and a point's history can draw its samples as a track.
+**Next: a chart per unit or loop.** The chart and the calculation take a `Water`, `Limits` and a `Target`,
+not a form, and the calculator already fills them from a point (`calculation.offers`), so a unit's or a
+loop's own chart in the drawer or its history needs no change to them. Three things come with it: total
+sulfide, calcium and H₂S become parameters (a column each, a migration, a limit parameter for H₂S); the pH
+and the alkalinity are taken from the same sample, or their age difference is shown, since the latest value
+of each may come from different samples (the calculator shows each value's age); and a point's history can
+draw its samples as a track.
 
 **Who may do what**: the area Water chemistry (Production · Operations): Read the page (the calculator
 too), Create records a sample or a round, Delete voids one; the area Water limits (Production · Setup ·
@@ -923,9 +967,12 @@ Differences from the source (details in the bug document, WQ-01 to WQ-39):
   limit and none when a limit it needs is missing (WQ-30); sulfide goes in as S and H₂S comes out as H₂S
   (WQ-31); Ω only where its constants hold (WQ-32); the axes hold the point (WQ-33); a border off the chart
   is said in words (WQ-34); CO₂ is judged against its limit (WQ-36); every input is checked (WQ-37,
-  WQ-38); K1 and K2 are cited to their paper (WQ-39).
+  WQ-38); K1 and K2 are cited to their paper (WQ-39). Its dosing finds the base-and-stripping recipes
+  (WQ-40), shows an acid overdose as acid (WQ-41), judges each step as the water is (WQ-43), says the
+  amounts are of the pure substance (WQ-44) and flags stripping below the air's CO₂ (WQ-45); its small
+  charts keep the water on them (WQ-42).
 - Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
-  notifications, the calculator's dosing, H₂S as a sample parameter, hardness and the other lab
+  notifications, H₂S as a sample parameter, hardness and the other lab
   parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
   per unit, and a site's intake water. The rations read the latest water temperature from here and keep
   no copy of their own (WQ-02; `farm/feeding/temperature.py`).
@@ -1602,10 +1649,13 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   (`data-requires`, the role matrix), GET forms that leave empty fields out of the address
   (`data-omit-empty`, the database viewer's filters), choices and rows that belong to another field's
   value (`data-depends-on`), fields that render the form again with what was entered (`data-refresh`),
-  link lists with one primary mark (`data-links`);
+  link lists with one primary mark (`data-links`), a print button (`data-print`), and a link to a field
+  in a hidden tab opens the tab;
 - `auth.ts` the show/hide password button;
 - `poll.ts` the parts of a page the server renders again while it is in view (`data-poll`: the open
-  conversation, the list of conversations, a menu entry's number), a list that follows new rows
+  conversation, the list of conversations, a menu entry's number), a GET form whose results the server
+  draws again as it is filled in (`data-live`: its `data-live-part`s are swapped, its fields' errors put
+  under them, the address kept in step; the water calculator), a list that follows new rows
   (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`).
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
@@ -1765,7 +1815,9 @@ real mail.
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
-| `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart of the water in the address (a GET form) |
+| `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
+| `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
+| `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |
 | `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
@@ -1823,7 +1875,7 @@ real mail.
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
-| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |

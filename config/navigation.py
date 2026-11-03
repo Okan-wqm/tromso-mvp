@@ -55,13 +55,19 @@ WORKSPACES = [
                 Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
             ]),
         ]),
-        # The daily production records: the fish in each unit and what happens to them, their feeding and the
-        # water they are in; health and harvest join as their tabs arrive.
+        # The daily production records: the fish in each unit and what happens to them, the water they are in and
+        # their feeding; health and harvest join as their tabs arrive. Feeding has four pages: today's meals per
+        # unit, what was fed against the ration, the feeding tables and where each applies.
         Section(_('Operations'), [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
-                Entry(_('Feeding records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
                 Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
+            ]),
+            Group(_('Feeding'), [
+                Entry(_('Meal board'), 'farm:meal_board', 'utensils', 'farm.view_feedingrecord'),
+                Entry(_('Records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
+                Entry(_('Protocols'), 'farm:feedingprotocol_list', 'table', 'farm.view_feedingprotocol'),
+                Entry(_('Assignments'), 'farm:protocolassignment_list', 'link', 'farm.view_protocolassignment'),
             ]),
         ]),
         # Messages between the people running production, direct and in channels; their AI assistants join the

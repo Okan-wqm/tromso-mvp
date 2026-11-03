@@ -1,0 +1,84 @@
+{% load i18n stock feeding %}{% comment %} Records by unit and day (farm.feeding.views._by_day): per unit and day the calculated
+   ration, the feed given and the deviation (given − calculated), each batch's estimated weight and the basis of its
+   ration, or why there is none; a weighing's line compares the estimate with what was weighed. Computed on read.{% endcomment %}
+<div class="toolbar">
+  <form method="get" class="toolbar-filter feeding-filters" data-omit-empty>
+    <input type="hidden" name="view" value="days">
+    {% if choices.site|length > 1 %}
+    <label class="sr-only" for="days-site-filter">{% trans "Site" %}</label>
+    <select id="days-site-filter" name="site" data-autosubmit>
+      <option value="">{% trans "All sites" %}</option>
+      {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <label class="sr-only" for="days-unit-filter">{% trans "Unit" %}</label>
+    <select id="days-unit-filter" name="unit" data-autosubmit>
+      <option value="">{% trans "All units" %}</option>
+      {% for unit in choices.unit %}<option value="{{ unit.pk }}"{% if params.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="days-batch-filter">{% trans "Batch" %}</label>
+    <select id="days-batch-filter" name="batch" data-autosubmit>
+      <option value="">{% trans "All batches" %}</option>
+      {% for batch in choices.batch %}<option value="{{ batch.pk }}"{% if params.batch == batch.pk|stringformat:"s" %} selected{% endif %}>{{ batch.code }}{% if batch.name %} · {{ batch.name }}{% endif %}</option>{% endfor %}
+    </select>
+    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
+    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
+  </form>
+  {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record feeding" %}</a>{% endif %}
+</div>
+
+<p class="panel-help">{% trans "The calculated ration of a day counts each recorded meal at the ration it had when it was given (the estimated weight then), and the meals still to come at the estimate now; a record that does not say its meals counts as one. The deviation is the feed given less the calculated ration. It is worked out again from the records, the stock and the water samples as they are now." %}</p>
+{% if clipped %}<p class="notice notice-warning">{% blocktrans trimmed count days=span %}A page shows at most {{ days }} day: the first day was moved.{% plural %}A page shows at most {{ days }} days: the first day was moved.{% endblocktrans %}</p>{% endif %}
+<p class="units-count">{% blocktrans trimmed with given=given_kg|feed_kg %}Given {{ given }}{% endblocktrans %}{% if calculated_kg is not None %} · {% blocktrans trimmed with calculated=calculated_kg|feed_kg %}calculated {{ calculated }}{% endblocktrans %}{% endif %}</p>
+
+{% if not day_rows %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="clipboard-list" %}
+  {% if filtered %}
+  <h2>{% trans "No unit held fish on these days with these filters." %}</h2>
+  <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+  {% else %}
+  <h2>{% trans "No unit held fish on these days." %}</h2>
+  {% endif %}
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data-table days-table">
+    <thead>
+      <tr>
+        <th scope="col">{% trans "Date" %}</th>
+        <th scope="col">{% trans "Unit" %}</th>
+        <th scope="col">{% trans "Batches" %}</th>
+        <th scope="col" class="num">{% trans "Calculated" %}</th>
+        <th scope="col" class="num">{% trans "Given" %}</th>
+        <th scope="col" class="num">{% trans "Deviation" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in day_rows %}{% with unit_day=row.unit_day %}
+      <tr>
+        <td class="nowrap"><time datetime="{{ row.day|date:'Y-m-d' }}">{{ row.day|date:"DATE_FORMAT" }}</time></td>
+        <td><span class="row-title">{{ row.unit.code }}</span><span class="row-sub nowrap">{{ row.unit.production_department.name }}{% if row.unit.production_department.site %} · {{ row.unit.production_department.site.name }}{% endif %}</span></td>
+        <td>
+          {% for item in row.shares %}{% with share=item.share basis=item.share.end %}
+          <span class="row-line"><strong>{{ item.batch.code }}</strong> · {% blocktrans trimmed with weight=share.end_g|grams fish=share.fish|fish %}{{ fish }} fish at {{ weight }} est.{% endblocktrans %}
+          {% if item.why %}<span class="row-sub warn-text">{{ item.why }}</span>{% else %}<span class="row-sub">{% blocktrans trimmed with protocol=basis.protocol.name sfr=basis.sfr.value|percent:2 temperature=basis.temperature.value_c|celsius count meals=share.planned_meals %}{{ protocol }}: {{ sfr }} at {{ temperature }}, {{ meals }} meal{% plural %}{{ protocol }}: {{ sfr }} at {{ temperature }}, {{ meals }} meals{% endblocktrans %}{% if share.over_kg > 0 %} · <span class="over-text">{% blocktrans trimmed with kilos=share.over_kg|feed_kg %}{{ kilos }} over the ration{% endblocktrans %}</span>{% endif %}</span>{% endif %}</span>
+          {% endwith %}{% empty %}<span class="muted">{% trans "No fish at the end of the day" %}</span>{% endfor %}
+        </td>
+        <td class="num">{% if unit_day.calculated_kg is not None %}{{ unit_day.calculated_kg|feed_kg }}{% else %}—{% endif %}</td>
+        <td class="num">{{ row.given_kg|feed_kg }}</td>
+        <td class="num">{% if unit_day.deviation_kg is not None %}<strong>{{ unit_day.deviation_kg|feed_kg }}</strong>{% if unit_day.deviation_pct is not None %}<span class="row-sub">{{ unit_day.deviation_pct|percent:1 }}</span>{% endif %}{% else %}—{% endif %}</td>
+      </tr>
+      {% for item in row.corrections %}
+      <tr class="correction-row">
+        <td></td>
+        <td colspan="5">{% include "farm/_correction.html" with correction=item.correction batch=item.batch %}</td>
+      </tr>
+      {% endfor %}
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% endif %}

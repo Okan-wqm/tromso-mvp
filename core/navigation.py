@@ -115,6 +115,18 @@ def place(perm):
     raise ImproperlyConfigured(f'No menu entry in {settings.RAIL_MENU} is read with {perm!r}: add one.')
 
 
+def page(url_name):
+    """Where the page with this URL name sits in the menu: for pages read with one permission (the meal board and
+    the feeding records are both read with farm.view_feedingrecord), whose `place` is the first of them."""
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                for entry in group.entries:
+                    if entry.url_name == url_name:
+                        return Place(workspace, section, group, entry)
+    raise ImproperlyConfigured(f'No menu entry in {settings.RAIL_MENU} opens {url_name!r}: add one.')
+
+
 def workspace_of(path):
     """The key of the workspace that has an entry for this page, or None for a page that has none."""
     for workspace in workspaces():
@@ -128,6 +140,9 @@ def rail(request):
     user = getattr(request, 'user', None)
     if not user or not user.is_authenticated:
         return {}
+    # One entry is current: the one whose address is the longest start of the page's (Records at /operations/feeding/
+    # is not current on its sibling /operations/feeding/protocols/).
+    current_url = max((entry.url() for entry in entries() if entry.matches(request.path)), key=len, default=None)
     panels = []
     for workspace in workspaces():
         if not workspace.offered_to(user):
@@ -138,7 +153,7 @@ def rail(request):
             for group in section.groups:
                 shown = [
                     {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
-                     'current': entry.matches(request.path), 'badge': entry.badge_for(user)}
+                     'current': entry.url() == current_url, 'badge': entry.badge_for(user)}
                     for entry in group.entries if entry.allowed_for(user)
                 ]
                 if shown:

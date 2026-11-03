@@ -1,0 +1,113 @@
+{% extends base_template %}
+{% load i18n stock feeding %}
+{% comment %} Operations › Feeding › Meal board (farm.feeding.views.meal_board): today on the farm's clock, a row per unit
+   with fish and a line per batch in it. The ration is computed on read from the estimated weight (the measured one
+   plus the feed since, farm/feeding/projection.py), the unit's temperature and the protocol that applies; a unit whose
+   ration cannot be computed says why. Record meal opens the feeding dialog with the next meal filled in.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <form method="get" class="toolbar-filter" data-omit-empty>
+    {% if choices.site|length > 1 %}
+    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <select id="site-filter" name="site" data-autosubmit>
+      <option value="">{% trans "All sites" %}</option>
+      {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <label class="sr-only" for="department-filter">{% trans "Production department" %}</label>
+    <select id="department-filter" name="department" data-autosubmit>
+      <option value="">{% trans "All production departments" %}</option>
+      {% for department in choices.department %}<option value="{{ department.pk }}"{% if params.department == department.pk|stringformat:"s" %} selected{% endif %}>{{ department.name }}</option>{% endfor %}
+    </select>
+    {% if choices.system %}
+    <label class="sr-only" for="system-filter">{% trans "System" %}</label>
+    <select id="system-filter" name="system" data-autosubmit>
+      <option value="">{% trans "All systems" %}</option>
+      {% for system in choices.system %}<option value="{{ system.pk }}"{% if params.system == system.pk|stringformat:"s" %} selected{% endif %}>{{ system.name }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+  </form>
+</div>
+
+<p class="panel-help">{% trans "The ration is the estimated biomass times the SFR of the protocol’s band at the unit’s temperature, read between the table’s columns. The estimated weight is the last measured one plus the feed given since, divided by the expected FCR (feed above a day’s ration is not counted as growth); after each meal the next one is worked out again. Over- and underfeeding are not flagged yet: compare the fed and remaining amounts." %}</p>
+
+{% if not rows %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="utensils" %}
+  {% if filtered %}
+  <h2>{% trans "No unit with fish matches these filters." %}</h2>
+  <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+  {% else %}
+  <h2>{% trans "No unit holds fish" %}</h2>
+  <p>{% trans "The board lists the units with fish, from Production units." %}</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data-table board-table">
+    <thead>
+      <tr>
+        <th scope="col">{% trans "Unit" %}</th>
+        <th scope="col">{% trans "Batch" %}</th>
+        <th scope="col" class="num">{% trans "Avg. weight" %}</th>
+        <th scope="col">{% trans "Water" %}</th>
+        <th scope="col">{% trans "Protocol" %}</th>
+        <th scope="col" class="num"><abbr title="{% trans "Specific feeding rate: the share of the body weight fed a day" %}">{% trans "SFR" %}</abbr></th>
+        <th scope="col" class="num">{% trans "Ration" %}</th>
+        <th scope="col" class="num">{% trans "Fed today" %}</th>
+        <th scope="col" class="num">{% trans "Remaining" %}</th>
+        <th scope="col" class="num">{% trans "Next meal" %}</th>
+        <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
+      </tr>
+    </thead>
+    {% for row in rows %}{% with unit=row.unit day=row.day count=row.lines|length %}
+    <tbody class="board-unit">
+      {% for line in row.lines %}{% with share=line.share basis=line.share.end %}
+      <tr>
+        {% if forloop.first %}
+        <th scope="rowgroup" rowspan="{{ count }}"><span class="row-title">{{ unit.code }}</span><span class="row-sub nowrap">{{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</span></th>
+        {% endif %}
+        <td><span class="nowrap">{{ line.batch.code }}</span><span class="row-sub">{% blocktrans trimmed with fish=share.fish|fish biomass=share.biomass_kg|kilos %}{{ fish }} fish · {{ biomass }} est.{% endblocktrans %}</span></td>
+        <td class="num">
+          <strong title="{% trans "Estimated: the measured weight and the feed since, divided by the expected FCR" %}">{{ share.end_g|grams }}</strong>
+          <span class="row-sub nowrap">{% if share.last_weighed %}{% blocktrans trimmed with weight=share.measured_g|grams date=share.last_weighed|date:"DATE_FORMAT" %}{{ weight }} weighed {{ date }}{% endblocktrans %}{% else %}{% blocktrans trimmed with weight=share.measured_g|grams %}{{ weight }} as stocked{% endblocktrans %}{% endif %}</span>
+          {% if line.drift == "now" %}<span class="row-sub over-text">{% blocktrans trimmed count days=line.estimate_days %}Weigh now: the estimate is {{ days }} day old{% plural %}Weigh now: the estimate is {{ days }} days old{% endblocktrans %}</span>
+          {% elif line.drift == "soon" %}<span class="row-sub warn-text">{% blocktrans trimmed count days=line.estimate_days %}Weigh soon: {{ days }} day since the last measured weight{% plural %}Weigh soon: {{ days }} days since the last measured weight{% endblocktrans %}</span>{% endif %}
+          {% if share.blind_days %}<span class="row-sub warn-text">{% blocktrans trimmed count days=share.blind_days %}Estimate incomplete: {{ days }} feeding day without an expected FCR{% plural %}Estimate incomplete: {{ days }} feeding days without an expected FCR{% endblocktrans %}</span>{% endif %}
+        </td>
+        {% if forloop.first %}
+        <td rowspan="{{ count }}">{% with temperature=row.temperature %}{% if temperature %}<span class="nowrap">{{ temperature.value_c|celsius }}</span><span class="row-sub nowrap">{% if temperature.via == "unit" %}{% blocktrans trimmed with age=temperature.age|age %}unit, {{ age }} ago{% endblocktrans %}{% else %}{% blocktrans trimmed with system=temperature.point.code age=temperature.age|age %}loop {{ system }}, {{ age }} ago{% endblocktrans %}{% endif %}</span>{% if not temperature.fresh %}<span class="row-sub warn-text">{% trans "stale" %}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}{% if row.water_url %}<span class="row-sub"><a href="{{ row.water_url }}" data-modal>{% trans "Record water sample" %}</a></span>{% endif %}{% endwith %}</td>
+        {% endif %}
+        <td>
+          {% if basis.protocol %}
+          <span class="row-title">{{ basis.protocol.name }}</span>
+          <span class="row-sub">{% if basis.scope == "batch_in_unit" %}{% blocktrans trimmed with batch=line.batch.code unit=unit.code %}via {{ batch }} in {{ unit }}{% endblocktrans %}{% elif basis.scope == "unit" %}{% blocktrans trimmed with unit=unit.code %}via unit {{ unit }}{% endblocktrans %}{% else %}{% blocktrans trimmed with batch=line.batch.code %}via batch {{ batch }}{% endblocktrans %}{% endif %}</span>
+          {% if basis.band %}<span class="row-sub">{{ basis.band|weights }} · {{ basis.band.feed.code }}{% if basis.band.feed.pellet_size_mm %} · {% blocktrans trimmed with size=basis.band.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %} · {% blocktrans trimmed with fcr=basis.fcr|fcr %}FCR {{ fcr }}{% endblocktrans %}</span>{% endif %}
+          {% endif %}
+        </td>
+        {% if line.why %}
+        <td colspan="2" class="notice-cell">{{ line.why }}</td>
+        {% else %}
+        <td class="num"{% if basis.sfr.interpolated %} title="{% blocktrans trimmed with low=basis.sfr.low.sfr_pct|percent:2 low_t=basis.sfr.low.temperature_c|celsius high=basis.sfr.high.sfr_pct|percent:2 high_t=basis.sfr.high.temperature_c|celsius %}{{ low }} at {{ low_t }}, {{ high }} at {{ high_t }}{% endblocktrans %}"{% endif %}>{{ basis.sfr.value|percent:2 }}</td>
+        <td class="num"><strong>{{ share.ration_kg|feed_kg }}</strong><span class="row-sub nowrap">{% blocktrans trimmed with meals=share.planned_meals meal=share.meal_kg|feed_kg %}{{ meals }} × {{ meal }}{% endblocktrans %}</span></td>
+        {% endif %}
+        {% if forloop.first %}
+        <td class="num" rowspan="{{ count }}">{{ day.fed_kg|feed_kg }}{% if day.feedings %}<span class="row-sub">{% blocktrans trimmed count meals=day.meals_done %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</span>{% endif %}</td>
+        {% endif %}
+        <td class="num">{% if share.remaining_kg is not None %}{{ share.remaining_kg|feed_kg }}{% if share.over_kg > 0 %}<span class="row-sub over-text">{% blocktrans trimmed with kilos=share.over_kg|feed_kg %}{{ kilos }} over the ration{% endblocktrans %}</span>{% endif %}{% else %}—{% endif %}</td>
+        <td class="num">{% if share.next_meal_kg is not None %}<strong>{{ share.next_meal_kg|feed_kg }}</strong>{% elif share.remaining_kg is not None %}<span class="muted">{% trans "meals done" %}</span>{% else %}—{% endif %}</td>
+        {% if forloop.first %}
+        <td rowspan="{{ count }}">{% if row.record_url %}<a class="button button-inline" href="{{ row.record_url }}" data-modal>{% trans "Record meal" %}</a>{% endif %}</td>
+        {% endif %}
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+    {% endwith %}{% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

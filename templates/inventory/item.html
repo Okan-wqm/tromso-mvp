@@ -1,0 +1,38 @@
+{% extends base_template %}
+{% load i18n inventory %}
+{% comment %} An item's day-by-day book at one site (inventory.views.item_page): what arrived and left, the feed drawn
+   from the book and fed beyond it, the counts' variance and the stock at the end of each day, newest first.{% endcomment %}
+{% block title %}{{ item }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ item }}{% endblock %}
+{% block content %}
+<p><a href="{{ back_url }}">{% trans "Back to the stock" %}</a></p>
+{% if sites|length > 1 %}
+<nav class="view-tabs" aria-label="{% trans "Site" %}">
+  {% for choice in sites %}<a class="view-tab" href="?site={{ choice.pk }}"{% if choice == site %} aria-current="page"{% endif %}>{{ choice.name }}</a>{% endfor %}
+</nav>
+{% endif %}
+{% if not days %}
+<div class="empty">{% include "icons/_icon.html" with name="package" %}<h2>{% trans "Nothing recorded for this item yet" %}</h2></div>
+{% else %}
+<p class="panel-help">{% trans "The feed fed is read from the feeding records of the site's units and drawn from its lots first expired first out; what the book could not cover is fed beyond the recorded stock." %}</p>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Date" %}</th><th scope="col" class="num">{% trans "In" %}</th><th scope="col" class="num">{% trans "Out" %}</th><th scope="col" class="num">{% trans "Fed from the book" %}</th><th scope="col" class="num">{% trans "Fed beyond the book" %}</th><th scope="col" class="num">{% trans "Count difference" %}</th><th scope="col" class="num">{% trans "At the end of the day" %}</th></tr></thead>
+    <tbody>
+      {% for day in days %}
+      <tr>
+        <td class="nowrap">{{ day.day|date:"DATE_FORMAT" }}</td>
+        <td class="num">{% if day.arrived %}{{ day.arrived|quantity:item.get_unit_display }}{% endif %}</td>
+        <td class="num">{% if day.left %}{{ day.left|quantity:item.get_unit_display }}{% endif %}</td>
+        <td class="num">{% if day.fed %}{{ day.fed|quantity:item.get_unit_display }}{% if day.expired_used %}<span class="row-sub warn-text">{% blocktrans trimmed with kilos=day.expired_used|quantity:item.get_unit_display %}{{ kilos }} of an expired lot{% endblocktrans %}</span>{% endif %}{% endif %}</td>
+        <td class="num">{% if day.uncovered %}<span class="warn-text">{{ day.uncovered|quantity:item.get_unit_display }}</span>{% endif %}</td>
+        <td class="num">{% if day.counted %}{% if day.variance %}{{ day.variance|delta:item.get_unit_display }}{% else %}{% trans "none" %}{% endif %}{% endif %}</td>
+        <td class="num">{{ day.closing|quantity:item.get_unit_display }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

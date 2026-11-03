@@ -1,0 +1,22 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Operations › Storage (inventory.views.storage): four tabs in the address, Overview, Stock, Movements and
+   Counts, every figure worked out on read from the store's lines and the feeding records (inventory/read.py);
+   the dialogs open from the buttons and from a stock row's actions.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<nav class="view-tabs" aria-label="{{ title }}">
+  {% for item in tabs %}<a class="view-tab" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+</nav>
+{% if actions %}
+<div class="storage-actions">
+  {% for action in actions %}<a class="button {% if action.primary %}button-inline{% else %}button-ghost{% endif %}" href="{{ action.url }}" data-modal>{% if action.primary %}{% include "icons/_icon.html" with name="plus" %}{% endif %}{{ action.label }}</a>{% endfor %}
+</div>
+{% endif %}
+{% if tab == "overview" %}{% include "inventory/_overview.html" %}
+{% elif tab == "stock" %}{% include "inventory/_stock.html" %}
+{% elif tab == "movements" %}{% include "inventory/_movements.html" %}
+{% else %}{% include "inventory/_counts.html" %}{% endif %}
+{% endblock %}

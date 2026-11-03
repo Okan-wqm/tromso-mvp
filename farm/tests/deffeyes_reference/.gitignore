@@ -1,0 +1,4 @@
+out/
+src/*
+!src/index.ts
+!src/shared-contracts.ts

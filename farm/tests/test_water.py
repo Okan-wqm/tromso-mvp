@@ -50,10 +50,12 @@ def weiss_1970(temp_c, salinity):
 
 class ChemistryTests(SimpleTestCase):
     def test_the_ammonium_constant_is_emersons_in_fresh_water(self):
-        # Emerson et al. (1975), J. Fish. Res. Board Can. 32: 2379: pK = 0.09018 + 2729.92 / T.
-        for temp_c in range(0, 31):
+        # Emerson et al. (1975), J. Fish. Res. Board Can. 32: 2379: pK = 0.09018 + 2729.92 / T; within 0.002 up to
+        # 30 °C and 0.003 up to 40 °C, the top of the temperature's range (the two drift apart as it warms).
+        for temp_c in range(0, 41):
             with self.subTest(temp_c=temp_c):
-                self.assertAlmostEqual(chemistry.pk_nh4(temp_c, 0), 0.09018 + 2729.92 / (temp_c + 273.15), delta=0.002)
+                self.assertAlmostEqual(chemistry.pk_nh4(temp_c, 0), 0.09018 + 2729.92 / (temp_c + 273.15),
+                                       delta=0.002 if temp_c <= 30 else 0.003)
         self.assertAlmostEqual(chemistry.pk_nh4(10, 0), 9.7314, delta=0.002)
         self.assertAlmostEqual(chemistry.pk_nh4(25, 0), 9.2464, delta=0.002)
 

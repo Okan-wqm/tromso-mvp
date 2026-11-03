@@ -51,28 +51,62 @@ class SupplierStatus(models.TextChoices):
 
 
 class SupplierLink(models.ForeignKey):
-    """A link to a supplier of one category: equipment to a supplier of equipment and spare parts, a feed
-    to its manufacturer, a supplier of feed. Both sides of the rule are declared here, once per link:
+    """A link to a supplier for what it supplies: equipment to a supplier of equipment and spare parts, a feed
+    to its manufacturer (a supplier of feed), bought fish to a supplier of live fish, a harvest's transport to a
+    supplier of transport, a delivery to the store to a supplier of what it brought. Every side of the rule is
+    declared here, once per link, and the supplier reads its links (Supplier.links) instead of naming them:
 
     - the link takes only a live supplier of the category (`limit_choices_to`, which is part of the
       model's validation and narrows the form's list);
-    - the supplier keeps the category while live records link to it this way: Supplier.clean reads
-      every SupplierLink that points at suppliers and refuses to untick its category, saying `kept`, an
-      ngettext_lazy(..., 'count') whose %(count)d is the number of records and %(category)s the
-      category's label.
+    - the supplier keeps the category while live records link to it this way (`needed`): Supplier.clean
+      refuses to untick it, saying `kept`, an ngettext_lazy(..., 'count') whose %(count)d is the number of
+      records and %(category)s the category's label;
+    - a PROTECT link from a plain row, which core.softdelete does not follow (a harvest's transport on its
+      HarvestRecord), blocks deleting the supplier (`blocker`, read by Supplier.delete_blockers); a link from a
+      farm record is in the delete plan already.
+
+    A link whose category follows the record names `category_field` instead of one `category`: the lookup
+    from the linking record to the category of each thing it was supplied for (a delivery to the store brings
+    feed, later medicines: `lines__lot__item__category`). Its list takes any live supplier, the record's own
+    write path checks the category, and the supplier keeps every category such live records still need.
 
     Migrations see a plain ForeignKey: the category is already in `limit_choices_to` and the message
     changes no column."""
 
-    def __init__(self, to=None, on_delete=None, category=None, kept=None, **kwargs):
-        self.category, self.kept = category, kept
+    def __init__(self, to=None, on_delete=None, category=None, kept=None, category_field=None, **kwargs):
+        self.category, self.kept, self.category_field = category, kept, category_field
         if category is not None:
             kwargs['limit_choices_to'] = {'is_deleted': False, 'supplies__contains': [category]}
+        elif category_field is not None:
+            kwargs['limit_choices_to'] = {'is_deleted': False}
         super().__init__(to, on_delete, **kwargs)
 
     def deconstruct(self):
         name, _path, args, kwargs = super().deconstruct()
         return name, 'django.db.models.ForeignKey', args, kwargs
+
+    def records(self, supplier):
+        """The live records that link to `supplier` this way (the linking model's default manager)."""
+        return self.model._default_manager.filter(**{self.name: supplier})
+
+    def needed(self, supplier, supplies):
+        """{category: how many live records link to `supplier` for it}, for the categories not in `supplies`."""
+        records = self.records(supplier)
+        if self.category_field is None:
+            count = 0 if self.category in supplies else records.count()
+            return {self.category: count} if count else {}
+        missing = [category for category in SupplyCategory.values if category not in supplies]
+        rows = (records.filter(**{f'{self.category_field}__in': missing}).order_by().values(self.category_field)
+                .annotate(count=models.Count('pk', distinct=True)))
+        return {row[self.category_field]: row['count'] for row in rows}
+
+    def blocker(self, supplier):
+        """Why deleting `supplier` is blocked by this link, or None: only a PROTECT link from a plain row, which
+        the delete plan does not follow; a farm record's link is in the plan (core.softdelete)."""
+        if issubclass(self.model, AuditedModel) or self.remote_field.on_delete is not models.PROTECT:
+            return None
+        count = self.records(supplier).count()
+        return protected(self.model, count) if count else None
 
 
 class Supplier(CodedMixin, AuditedModel):
@@ -170,37 +204,30 @@ class Supplier(CodedMixin, AuditedModel):
 
     def clean(self):
         """A supplier keeps a category while live records link to it for that category (equipment, which
-        can choose another supplier; feeds, made by it; batches of fish, whose origin stays as it was):
-        every SupplierLink that points at suppliers is checked, and says so in its own words."""
+        can choose another supplier; feeds, made by it; batches of fish, whose origin stays as it was; the
+        deliveries and returns of the store): every SupplierLink that points at suppliers is checked, and
+        says so in its own words."""
         super().clean()
         if self._state.adding:
             return
         supplies, errors = self.supplies or [], []
-        for relation in self._meta.related_objects:
-            link = relation.field
-            if not isinstance(link, SupplierLink) or link.category in supplies:
-                continue
-            count = relation.related_model._default_manager.filter(**{link.name: self}).count()
-            if count:
+        for link in self.links():
+            for category, count in link.needed(self, supplies).items():
                 errors.append(ValidationError(link.kept, params={
-                    'count': count, 'category': SupplyCategory(link.category).label}))
+                    'count': count, 'category': SupplyCategory(category).label}))
         if errors:
             raise ValidationError({'supplies': errors})
+
+    @classmethod
+    def links(cls):
+        """Every SupplierLink that points at suppliers, whatever app its record is in."""
+        return [relation.field for relation in cls._meta.related_objects if isinstance(relation.field, SupplierLink)]
 
     def delete_blockers(self):
         """A PROTECT link from a record that is not a farm record of its own (a harvest's transport, kept on
         the harvest operation's HarvestRecord) blocks the delete too: core.softdelete follows only farm
-        records, so every such SupplierLink is read here, by its live rows (its model's default manager)."""
-        blockers = []
-        for relation in self._meta.related_objects:
-            link = relation.field
-            if (not isinstance(link, SupplierLink) or issubclass(relation.related_model, AuditedModel)
-                    or relation.on_delete is not models.PROTECT):
-                continue
-            count = relation.related_model._default_manager.filter(**{link.name: self}).count()
-            if count:
-                blockers.append(protected(relation.related_model, count))
-        return blockers
+        records, so each SupplierLink says whether it blocks (SupplierLink.blocker)."""
+        return [reason for reason in (link.blocker(self) for link in self.links()) if reason]
 
     def save(self, *args, **kwargs):
         self.organisation_number = normalise_organisation_number(self.organisation_number)

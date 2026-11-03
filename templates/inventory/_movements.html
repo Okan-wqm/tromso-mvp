@@ -1,0 +1,79 @@
+{% load i18n inventory feeding %}
+{% comment %} The Movements tab: the store's operations, newest first, each with its lines, supplier, who recorded it
+   and Void while allowed; or, with the kind "Feeding (from the records)", the feed given per site, feed and day,
+   which the book draws, each linked to its feeding records.{% endcomment %}
+<div class="toolbar">
+  <form method="get" class="toolbar-filter" data-omit-empty>
+    <input type="hidden" name="tab" value="movements">
+    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <select id="site-filter" name="site" data-autosubmit>
+      <option value="">{% trans "All sites" %}</option>
+      {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="location-filter">{% trans "Location" %}</label>
+    <select id="location-filter" name="location" data-autosubmit>
+      <option value="">{% trans "All locations" %}</option>
+      {% for location in choices.location %}<option value="{{ location.pk }}"{% if params.location == location.pk|stringformat:"s" %} selected{% endif %}>{{ location.code }} · {{ location.name }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="kind-filter">{% trans "Operation" %}</label>
+    <select id="kind-filter" name="kind" data-autosubmit>
+      <option value="">{% trans "All operations" %}</option>
+      {% for value, label in kinds %}<option value="{{ value }}"{% if params.kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="item-filter">{% trans "Item" %}</label>
+    <select id="item-filter" name="item" data-autosubmit>
+      <option value="">{% trans "All items" %}</option>
+      {% for item in choices.item %}<option value="{{ item.pk }}"{% if params.item == item.pk|stringformat:"s" %} selected{% endif %}>{{ item }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="supplier-filter">{% trans "Supplier" %}</label>
+    <select id="supplier-filter" name="supplier" data-autosubmit>
+      <option value="">{% trans "All suppliers" %}</option>
+      {% for supplier in choices.supplier %}<option value="{{ supplier.pk }}"{% if params.supplier == supplier.pk|stringformat:"s" %} selected{% endif %}>{{ supplier }}</option>{% endfor %}
+    </select>
+    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
+    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
+    <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
+  </form>
+</div>
+{% if feeding_rows is not None %}
+{% if not feeding_rows %}
+<div class="empty">{% include "icons/_icon.html" with name="clipboard-list" %}<h2>{% trans "No feeding recorded for these filters." %}</h2></div>
+{% else %}
+<p class="panel-help">{% trans "The feed given, read from the feeding records: the store's book draws it from the site's lots, first expired first out." %}</p>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Date" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Feed" %}</th><th scope="col" class="num">{% trans "Feed given" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for row in feeding_rows %}<tr><td class="nowrap">{{ row.date|date:"DATE_FORMAT" }}</td><td>{{ row.site.name }}</td><td>{{ row.feed }}</td><td class="num">{{ row.kilos|feed_kg }}</td><td><a href="{{ row.url }}">{% trans "Feeding records" %}</a></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% elif not operations %}
+<div class="empty">
+  {% include "icons/_icon.html" with name="package" %}
+  {% if filtered %}<h2>{% trans "No operation matches these filters." %}</h2><p><a href="?tab=movements">{% trans "Clear filters" %}</a></p>
+  {% else %}<h2>{% trans "No operation recorded yet" %}</h2>{% endif %}
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Date" %}</th><th scope="col">{% trans "Operation" %}</th><th scope="col">{% trans "Lines" %}</th><th scope="col">{% trans "Supplier" %}</th><th scope="col">{% trans "Recorded by" %}</th><th scope="col">{% trans "Notes" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for row in operations %}{% with operation=row.operation %}
+      <tr{% if operation.is_deleted %} class="is-voided"{% endif %}>
+        <td class="nowrap">{{ operation.date|date:"DATE_FORMAT" }}</td>
+        <td>{{ operation.get_kind_display }}{% if operation.reason %}<span class="row-sub">{{ operation.reason_label }}</span>{% endif %}{% if operation.location %}<span class="row-sub">{{ operation.location.code }}</span>{% endif %}</td>
+        <td><ul class="op-lines">{% for line in row.lines %}<li>{% include "inventory/_line.html" %}</li>{% empty %}<li>{% trans "Nothing found" %}</li>{% endfor %}</ul></td>
+        <td>{{ operation.supplier|default:"—" }}{% if operation.reference %}<span class="row-sub">{{ operation.reference }}</span>{% endif %}</td>
+        <td>{{ operation.created_by.get_username|default:"system" }}<span class="row-sub">{{ operation.created_at|date:"DATETIME_FORMAT" }}</span></td>
+        <td>{{ operation.notes }}{% if operation.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% elif operation.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% endif %}

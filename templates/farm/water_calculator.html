@@ -1,0 +1,73 @@
+{% extends base_template %}
+{% load i18n stock water %}
+{% comment %} Operations › Water chemistry › Calculator (farm.water.views.calculator): a water's values, a target and
+   the limits in a GET form, the Water Quality Management Chart (farm/_deffeyes_chart.html) and the values
+   worked out next to it, each limit as the pH where it is reached. Nothing is stored: the address holds the
+   values, and without them the form shows its defaults.{% endcomment %}
+{% block title %}{% trans "Calculator" %} · {{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+{% include "farm/_water_tabs.html" with current="calculator" %}
+
+<p class="panel-help">{% blocktrans trimmed %}A water on the Water Quality Management Chart: its alkalinity against its dissolved inorganic carbon, with the pH where each limit is reached. The limits start as defaults, not as the limits of your fish. Nothing is stored.{% endblocktrans %}</p>
+
+<div class="calculator">
+  <form method="get" action="{{ calculator_url }}" class="calculator-form" novalidate>
+    <input type="hidden" name="{{ form.DRAWN }}" value="1">
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% for label, fields in form.groups %}
+    <fieldset class="form-fieldset">
+      <legend>{{ label }}</legend>
+      <div class="form-grid">{% for field in fields %}{% include "registration/_field.html" %}{% endfor %}</div>
+    </fieldset>
+    {% endfor %}
+    {% with field=form.layers %}{% include "registration/_field.html" %}{% endwith %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ calculator_url }}">{% trans "Defaults" %}</a>
+      <button type="submit" class="button button-inline">{% trans "Draw the chart" %}</button>
+    </div>
+  </form>
+
+  {% if analysis %}
+  <div class="calculator-result">
+    {% include "farm/_deffeyes_chart.html" %}
+    <div class="table-wrap">
+      <table class="data-table calculator-values">
+        <caption>{% trans "Worked out from the values" %}</caption>
+        <thead>
+          <tr><th scope="col">{% trans "Value" %}</th><th scope="col" class="num">{% trans "Amount" %}</th><th scope="col">{% trans "Status" %}</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group-row"><th scope="colgroup" colspan="3">{% trans "Carbonate system" %}</th></tr>
+          <tr><th scope="row">{% trans "Alkalinity" %}</th><td class="num">{{ analysis.alkalinity_meq|amount:3 }} meq/L</td><td></td></tr>
+          <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td><td></td></tr>
+          <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L</td><td>{% include "farm/_water_status.html" with status=analysis.co2.status %}</td></tr>
+          {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
+          {% if analysis.target %}
+          <tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td><td></td></tr>
+          <tr><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td><td></td></tr>
+          {% endif %}
+
+          <tr class="group-row"><th scope="colgroup" colspan="3">{% trans "Ammonia" %}</th></tr>
+          <tr><th scope="row">{% trans "Un-ionised ammonia (NH₃-N)" %}</th><td class="num wq-value wq-{{ analysis.nh3.status }}">{{ analysis.nh3_n_mg_l|amount:4 }}{% if analysis.nh3_n_mg_l is not None %} mg/L{% endif %}</td><td>{% include "farm/_water_status.html" with status=analysis.nh3.status %}</td></tr>
+          {% include "farm/_deffeyes_border.html" with border=analysis.nh3 %}
+          <tr><th scope="row">{% trans "Most TAN at this pH" %}</th><td class="num">{% if analysis.safe_tan_mg_l is None %}—{% elif analysis.safe_tan_mg_l > 100 %}&gt; 100 mg/L{% else %}{{ analysis.safe_tan_mg_l|amount:2 }} mg/L{% endif %}</td><td></td></tr>
+          <tr><th scope="row">{% trans "NH₃ share of TAN at the border" %}</th><td class="num">{{ analysis.nh3_share_at_border_pct|percent:3 }}</td><td></td></tr>
+
+          <tr class="group-row"><th scope="colgroup" colspan="3">{% trans "Hydrogen sulfide" %}</th></tr>
+          <tr><th scope="row">{% trans "H₂S (as H₂S)" %}</th><td class="num wq-value wq-{{ analysis.h2s.status }}">{{ analysis.h2s_ug_l|amount:2 }}{% if analysis.h2s_ug_l is not None %} µg/L{% endif %}</td><td>{% include "farm/_water_status.html" with status=analysis.h2s.status %}</td></tr>
+          {% include "farm/_deffeyes_border.html" with border=analysis.h2s %}
+          <tr><th scope="row">{% trans "Most total sulfide at this pH (as S)" %}</th><td class="num">{% if analysis.safe_total_sulfide_ug_l is None %}—{% elif analysis.safe_total_sulfide_ug_l > 10000 %}&gt; 10000 µg/L{% else %}{{ analysis.safe_total_sulfide_ug_l|amount:1 }} µg/L{% endif %}</td><td></td></tr>
+
+          <tr class="group-row"><th scope="colgroup" colspan="3">{% trans "Oxygen" %}</th></tr>
+          <tr><th scope="row">{% trans "Oxygen solubility (air)" %}</th><td class="num">{{ analysis.oxygen_solubility_mg_l|amount:2 }} mg/L</td><td></td></tr>
+          <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="panel-help calculator-sources">{% blocktrans trimmed %}Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); boric acid: Dickson (1990); ammonium: Millero (1995); hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning.{% endblocktrans %}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

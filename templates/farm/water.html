@@ -2,15 +2,13 @@
 {% load i18n stock water %}
 {% comment %} Operations › Water chemistry (farm.water.views.water_page): the latest water of every unit and loop
    with its status, or the history of the samples (?view=history, or one point's with ?unit= / ?system=),
-   each value judged on read against the limits as they are now. Filters live in the address.{% endcomment %}
+   each value judged on read against the limits as they are now. Filters live in the address. The third
+   tab, the calculator, is its own page (water_calculator.html).{% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<nav class="view-tabs" aria-label="{% trans "Water chemistry" %}">
-  <a class="view-tab" href="{{ latest_url }}"{% if not showing_history %} aria-current="page"{% endif %}>{% trans "Latest" %}</a>
-  <a class="view-tab" href="{{ history_tab_url }}"{% if showing_history %} aria-current="page"{% endif %}>{% trans "History" %}</a>
-</nav>
+{% include "farm/_water_tabs.html" with current=showing_history|yesno:"history,latest" %}
 
 <div class="toolbar">
   {% if showing_history %}

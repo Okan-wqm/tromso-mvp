@@ -32,6 +32,7 @@ urlpatterns = [
     path('', include('farm.urls')),
     path('', include('knowledge.urls')),
     path('messages/', include('messaging.urls')),
+    path('', include('inventory.urls')),
     path('', include('tasks.urls')),
     path('', include('core.urls')),
     path('admin/', admin.site.urls),

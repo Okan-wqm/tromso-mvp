@@ -1,0 +1,43 @@
+{% load i18n %}
+{% comment %} The Water Quality Management Chart (farm.water.deffeyes.draw): a Deffeyes diagram, DIC across and
+   alkalinity up, drawn on the server, no script. `chart` is a deffeyes.Chart: every coordinate is in pixels
+   with a dot decimal whatever the language, so it is printed as it is. A region's name is its <title>, which
+   a browser shows on hover; the legend and the values table say the same in text. {% endcomment %}
+<figure class="deffeyes">
+  <figcaption class="deffeyes-title" id="deffeyes-title">{% trans "Water Quality Management Chart" %}</figcaption>
+  <svg class="deffeyes-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-labelledby="deffeyes-title deffeyes-desc" xmlns="http://www.w3.org/2000/svg">
+    <desc id="deffeyes-desc">{% blocktrans trimmed %}A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values are in the table next to it.{% endblocktrans %}</desc>
+    <g class="deffeyes-grid">
+      {% for tick in chart.x_ticks %}<line x1="{{ tick.at }}" y1="{{ chart.plot.top }}" x2="{{ tick.at }}" y2="{{ chart.plot.bottom }}"/>{% endfor %}
+      {% for tick in chart.y_ticks %}<line x1="{{ chart.plot.left }}" y1="{{ tick.at }}" x2="{{ chart.plot.right }}" y2="{{ tick.at }}"/>{% endfor %}
+    </g>
+    {% for region in chart.regions %}<polygon class="deffeyes-zone deffeyes-zone-{{ region.key }}" data-layer="{{ region.key }}" points="{{ region.points }}"><title>{{ region.name }}</title></polygon>
+    {% endfor %}
+    {% for line in chart.boundaries %}<polyline class="deffeyes-border deffeyes-border-{{ line.key }}" data-layer="{{ line.key }}" points="{{ line.points }}"/>
+    {% endfor %}
+    <g class="deffeyes-isolines" data-layer="isolines">
+      {% for isoline in chart.isolines %}<polyline class="deffeyes-isoline{% if isoline.labelled %} is-labelled{% endif %}" data-ph="{{ isoline.ph }}" stroke="{{ isoline.colour }}" points="{{ isoline.points }}"/>
+      {% endfor %}
+      {% for isoline in chart.isolines %}{% if isoline.label %}<text class="deffeyes-ph" fill="{{ isoline.colour }}" transform="translate({{ isoline.label.x }} {{ isoline.label.y }}) rotate({{ isoline.label.angle }})">{{ isoline.label.text }}</text>{% endif %}{% endfor %}
+    </g>
+    {% for line in chart.omega %}<polyline class="deffeyes-omega deffeyes-omega-{{ line.key }}" data-layer="omega" points="{{ line.points }}"><title>{{ line.name }}</title></polyline>
+    {% endfor %}
+    {% if chart.path %}<polyline class="deffeyes-path" data-layer="target" points="{{ chart.path }}"/>{% endif %}
+    {% if chart.target %}<g class="deffeyes-target" data-layer="target" data-x="{{ chart.target.x }}" data-y="{{ chart.target.y }}"><title>{% trans "Target" %}</title>{% for line in chart.target.lines %}<line x1="{{ line.0 }}" y1="{{ line.1 }}" x2="{{ line.2 }}" y2="{{ line.3 }}"/>{% endfor %}</g>{% endif %}
+    <polygon class="deffeyes-point" data-x="{{ chart.point.x }}" data-y="{{ chart.point.y }}" points="{{ chart.point.star }}"><title>{% trans "The water" %}</title></polygon>
+    <rect class="deffeyes-frame" x="{{ chart.plot.left }}" y="{{ chart.plot.top }}" width="{{ chart.plot.size }}" height="{{ chart.plot.size }}"/>
+    <g class="deffeyes-ticks">
+      {% for tick in chart.x_ticks %}<text x="{{ tick.at }}" y="{{ chart.plot.x_tick_y }}" text-anchor="middle">{{ tick.label }}</text>{% endfor %}
+      {% for tick in chart.y_ticks %}<text x="{{ chart.plot.y_tick_x }}" y="{{ tick.at }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>{% endfor %}
+    </g>
+    <text class="deffeyes-axis" x="{{ chart.plot.centre_x }}" y="{{ chart.plot.x_title_y }}" text-anchor="middle">{% trans "DIC (mmol/L)" %}</text>
+    <text class="deffeyes-axis" transform="translate({{ chart.plot.y_title_x }} {{ chart.plot.centre_y }}) rotate(-90)" text-anchor="middle">{% trans "Alkalinity (meq/L)" %}</text>
+  </svg>
+  <ul class="deffeyes-legend">
+    <li><svg class="deffeyes-key" viewBox="0 0 16 16" aria-hidden="true"><polygon class="deffeyes-point" points="8,0.5 9.8,5.6 15.1,5.7 10.9,9 12.4,14.1 8,11.1 3.6,14.1 5.1,9 0.9,5.7 6.2,5.6"/></svg>{% trans "The water" %}</li>
+    {% if chart.target %}<li><svg class="deffeyes-key" viewBox="0 0 16 16" aria-hidden="true"><g class="deffeyes-target"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></g></svg>{% trans "Target" %}</li>{% endif %}
+    {% if chart.isolines %}<li><span class="deffeyes-swatch deffeyes-swatch-isolines" aria-hidden="true"></span>{% trans "pH isolines" %}</li>{% endif %}
+    {% for item in chart.legend %}<li><span class="deffeyes-swatch deffeyes-swatch-{{ item.key }}" aria-hidden="true"></span>{{ item.name }}</li>{% endfor %}
+  </ul>
+  {% if chart.notes %}<ul class="deffeyes-notes">{% for note in chart.notes %}<li>{{ note }}</li>{% endfor %}</ul>{% endif %}
+</figure>

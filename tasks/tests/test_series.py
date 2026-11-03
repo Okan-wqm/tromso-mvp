@@ -79,6 +79,20 @@ class SeriesPagesTests(TasksTestCase):
                 self.assertTrue(TaskSeries.all_objects.get(pk=series.pk).is_deleted)
                 self.assertFalse(Task.objects.filter(series=series).exists())
 
+    def test_a_recurring_task_at_every_kind_of_place_plans_its_tasks_there(self):
+        for place in (self.bergen, self.hall, self.ras, self.t1, self.pump, self.loose, self.t9):
+            with self.subTest(place=places.token(place)):
+                title = f'Round at {places.label(place)}'
+                response = self.client.post(NEW, series_data(place, title=title, starts_on=self.today.isoformat(),
+                                                             assignees=[self.ali.pk]))
+                self.assertEqual(response.status_code, 302)
+                series = TaskSeries.objects.get(title=title)
+                self.assertEqual(series.place, place)
+                planned = Task.objects.filter(series=series)
+                self.assertEqual(planned.count(), HORIZON + 1)
+                self.assertTrue(all(task.place == place for task in planned))
+                self.assertEqual(AuditLog.objects.filter(entity_id=str(series.pk), action='create').count(), 1)
+
     def test_the_rule_form_shows_the_fields_of_its_rule_and_clears_the_others(self):
         form = self.client.get(NEW).context['form']
         self.assertIn('weekdays', form.fields)

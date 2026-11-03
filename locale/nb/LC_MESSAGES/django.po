@@ -2687,6 +2687,9 @@ msgstr "Høsting"
 msgid "Harvest and handling"
 msgstr "Høsting og håndtering"
 
+msgid "Harvest and logistics"
+msgstr "Høsting og logistikk"
+
 msgid "Harvest plan"
 msgstr "Høsteplan"
 
@@ -3468,9 +3471,9 @@ msgid "No growth up to the last weighing."
 msgstr "Ingen tilvekst fram til siste veiing."
 
 #, python-format
-msgid "No handling rule for %(kind)s: the fast is not checked (Reference data › Handling rules)."
+msgid "No handling rule for %(kind)s: the fast is not checked (Harvest and logistics › Handling rules)."
 msgstr ""
-"Ingen håndteringsregel for %(kind)s: sultingen er ikke kontrollert (Referansedata › "
+"Ingen håndteringsregel for %(kind)s: sultingen er ikke kontrollert (Høsting og logistikk › "
 "Håndteringsregler)."
 
 msgid "No harvest matches these filters."
@@ -6156,9 +6159,9 @@ msgstr ""
 "mangler."
 
 msgid ""
-"Where the fish go: an active facility that takes this species (Reference data › Slaughter "
+"Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
 "facilities)."
-msgstr "Hvor fisken går: et aktivt slakteri som tar imot denne arten (Referansedata › Slakterier)."
+msgstr "Hvor fisken går: et aktivt slakteri som tar imot denne arten (Høsting og logistikk › Slakterier)."
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."

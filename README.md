@@ -977,7 +977,7 @@ document, MSG-01 to MSG-21):
   and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
   NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
 
-### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Reference data › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
+### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
 
 What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
 `slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
@@ -1563,8 +1563,8 @@ real mail.
 | `/operations/harvest-plan/` | Operations › Harvest › Harvest plan: planned harvests and transports; `?unit=<id>` one unit's |
 | `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
-| `/slaughter-facilities/` | Reference data › Slaughter facilities |
-| `/handling-rules/` | Reference data › Handling rules |
+| `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
+| `/handling-rules/` | Harvest and logistics › Handling rules |
 | `/water-limits/` | Reference data › Water limits |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |

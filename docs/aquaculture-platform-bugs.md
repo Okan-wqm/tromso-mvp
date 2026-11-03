@@ -839,7 +839,7 @@ STK-27 to STK-37 and STK-57 (Stock and production units › Harvest) are not rep
 | HRV-22 | Gap | `feeding-protocol/dto/feeding-protocol-v2.inputs.ts:326-345` ✔; `feeding-protocol/services/meal-plan-generator.service.ts:210-219` ✔; `feeding-protocol/entities/feeding-protocol-v2.entity.ts:163` ✔; `feeding-protocol/migration/legacy-protocol-conversion.ts:405` ✔ | **No fasting is tied to handling**: fasting is only a hand-entered suspension on an assignment; `preMedicationFastingHours` is written by the legacy conversion and read by nothing; no dialog shows when the fish were last fed. | Handling rules per kind and species; the harvest, transfer and grading dialogs (and the treatment's) check the hours since the fish's last feeding, warn, and store the acknowledgement; planned harvests and transports ask their unit to fast (`fasting_on`). · One fasting rule read by every handling. |
 | HRV-23 | Gap | `production-plan/query-handlers/get-tank-growth-projection.handler.ts:156-157` ✔, `:167` ✔, `:187` ✔, `:226-228` ✔, `:245-259` ✔; `batch/entities/tank-batch.entity.ts:100` ✔ | The production plan cannot say when a batch reaches harvest weight: no target weight and no date; the fish count is never reduced; it projects the per-tank aggregate, so a mixed tank is one blended population with no per-batch answer; site and department names are empty (relations not loaded). | `ProductionPlan.target_weight_g` per batch; the day it is reached walks the protocols' estimate forward per batch in each unit on the ration of each day, at the latest temperature held, with no growth on fasting days (`farm/harvest/forecast.py`), computed on read. · Add the target; project per batch. |
 
-### The fasting starting values (migration `0017`, Reference data › Handling rules)
+### The fasting starting values (migration `0017`, Harvest and logistics › Handling rules)
 
 Hours from the last feeding to the start of the handling's day; the farm's own rules, to be checked with its
 veterinarian. Read 2026-11-03.
@@ -860,7 +860,7 @@ RSPCA trout standards (2025) cap it at 54 degree-days. A degree-day rule and a "
 - Nothing is blocked: a medicine withdrawal in force and too short a fast are warnings; going on stores an
   acknowledgement per warning (what was shown) and logs the operation as critical.
 - A grading is checked against the grading and the transport rule; the longer applies.
-- The fasting rules are editable data per kind and species (Setup › Reference data › Handling rules).
+- The fasting rules are editable data per kind and species (Setup › Harvest and logistics › Handling rules).
 - The slaughter facility is its own model; every harvest names one; no default facility.
 - Harvest plans and production plans are in the MVP; a plan item's status is derived; the date a target is
   reached is computed, never stored; the farm's wished date stays the batch's expected harvest (one fact).

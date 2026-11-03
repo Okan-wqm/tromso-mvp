@@ -2695,6 +2695,9 @@ msgstr "Hasat"
 msgid "Harvest and handling"
 msgstr "Hasat ve elleçleme"
 
+msgid "Harvest and logistics"
+msgstr "Hasat ve lojistik"
+
 msgid "Harvest plan"
 msgstr "Hasat planı"
 
@@ -3477,9 +3480,9 @@ msgid "No growth up to the last weighing."
 msgstr "Son tartıma kadar büyüme yok."
 
 #, python-format
-msgid "No handling rule for %(kind)s: the fast is not checked (Reference data › Handling rules)."
+msgid "No handling rule for %(kind)s: the fast is not checked (Harvest and logistics › Handling rules)."
 msgstr ""
-"%(kind)s için elleçleme kuralı yok: aç bırakma denetlenmedi (Referans verileri › Elleçleme "
+"%(kind)s için elleçleme kuralı yok: aç bırakma denetlenmedi (Hasat ve lojistik › Elleçleme "
 "kuralları)."
 
 msgid "No harvest matches these filters."
@@ -6163,9 +6166,9 @@ msgid ""
 msgstr "DOI’si yoksa ya da DOI yetmiyorsa okunabileceği yer. Yazılmazsa https:// eklenir."
 
 msgid ""
-"Where the fish go: an active facility that takes this species (Reference data › Slaughter "
+"Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
 "facilities)."
-msgstr "Balıkların gittiği yer: bu türü alan aktif bir kesimhane (Referans verileri › Kesimhaneler)."
+msgstr "Balıkların gittiği yer: bu türü alan aktif bir kesimhane (Hasat ve lojistik › Kesimhaneler)."
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Bilginin geldiği yer: her kaydın tam olarak bir kaynağı vardır."

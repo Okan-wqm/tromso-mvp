@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0020_reports_fields'),
+        ('farm', '0021_reports_fields'),
         ('reports', '0002_filed_reports_frozen'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

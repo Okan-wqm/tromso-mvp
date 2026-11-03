@@ -1,6 +1,6 @@
 """A notice is about a health event (D-4): the disease notice's event, a welfare notice's optional one, and one notice per
 event. That Mattilsynet was told of a health event is the filing of such a notice; the times the events kept are moved into
-filed notices by the next migration, before farm migration 0021 drops the column."""
+filed notices by the next migration, before farm migration 0022 drops the column."""
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0020_reports_fields'),
+        ('farm', '0021_reports_fields'),
         ('reports', '0003_sea_lice_answers'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

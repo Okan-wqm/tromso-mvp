@@ -256,9 +256,9 @@ class EscapeNoticeTests(NoticeTestCase):
 
 
 class TimesMovedIntoNoticesTests(TransactionTestCase):
-    """Reports migration 0005 and its reverse (farm migration 0021 drops the column after it)."""
+    """Reports migration 0005 and its reverse (farm migration 0022 drops the column after it)."""
 
-    before = [('farm', '0020_reports_fields'), ('reports', '0003_sea_lice_answers')]
+    before = [('farm', '0021_reports_fields'), ('reports', '0003_sea_lice_answers')]
 
     def setUp(self):
         self.executor = MigrationExecutor(connection)

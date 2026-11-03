@@ -1,6 +1,6 @@
 """A notice is about a health event (D-4): the disease notice's event, a welfare notice's optional one. That Mattilsynet
 was told of a health event is the filing of such a notice, so the times recorded on the events (`authority_notified_at`,
-which farm migration 0021 drops) become filed notices here, before the column goes:
+which farm migration 0022 drops) become filed notices here, before the column goes:
 
 - every event with a time, deleted ones too (the authority was told of it all the same), gets one: a disease notice for
   an event with a diagnosis, a welfare notice for one without, filed at that time, through "other", with no receipt;
@@ -9,7 +9,7 @@ which farm migration 0021 drops) become filed notices here, before the column go
 - its content is the little the event held, in format 0 (the page says "recorded before notices existed" and never
   compares it with the records), with its hash, and its filing is written in the activity log as a filing is.
 
-The reverse copies each filed notice's time back into its event's column (farm migration 0021's reverse brings the column
+The reverse copies each filed notice's time back into its event's column (farm migration 0022's reverse brings the column
 back first) and then undoes the move: the notices this migration made (the ones in format 0, whose only content is that
 time) are deleted with their snapshots, the freezing triggers stepping aside for it, and the activity log keeps the
 entries of the move. A notice filed by a person since is never touched: rolling back past reports 0004 with such a
@@ -111,12 +111,12 @@ def told(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0020_reports_fields'),
+        ('farm', '0021_reports_fields'),
         ('core', '0007_audit_severity'),
         ('reports', '0004_event_notices'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
-    # The column is read here before farm migration 0021 drops it (and written back here after its reverse).
-    run_before = [('farm', '0021_health_notified_at_removed')]
+    # The column is read here before farm migration 0022 drops it (and written back here after its reverse).
+    run_before = [('farm', '0022_health_notified_at_removed')]
 
     operations = [migrations.RunPython(notified, told)]

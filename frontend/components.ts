@@ -10,6 +10,8 @@
 //   data-omit-empty       a GET form that leaves its empty fields out of the address it builds (the database viewer's filters)
 //   data-formset          a list of rows with "add row" and, for [data-primary], one ticked box
 //   data-requires="<id>"  a check box that needs another one (e.g. Edit needs Read in the role matrix)
+//   data-print            a button, hidden without this script, that prints the page (the browser's Print does
+//                         the same without it)
 // The code has no UI text of its own: the templates render every text into a data attribute (e.g. the
 // dialog's data-forbidden), translated by the server, and `label()` reads it.
 // Everything is set up on the page and again on whatever the dialog loads.
@@ -44,6 +46,18 @@ function initTabs(root: ParentNode & Element | Document): void {
   });
   const firstError = panels.find((panel) => panel.hasAttribute('data-has-errors'));
   select(tablist.dataset.open || firstError?.dataset.panel || tabs[0].dataset.tab || '');
+
+  // A link to a field in a hidden panel (a form's list of wrong values) opens that panel first.
+  root.addEventListener('click', (event) => {
+    const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
+    if (!(link instanceof HTMLAnchorElement) || link.hash.length < 2) return;
+    const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+    const panel = target?.closest<HTMLElement>('[data-panel]');
+    if (!target || !panel || !panels.includes(panel)) return;
+    event.preventDefault();
+    select(panel.dataset.panel ?? '');
+    target.focus();
+  });
 }
 
 // ---- upper-case inputs ---------------------------------------------------------------------
@@ -214,6 +228,14 @@ function initLinkLists(root: ParentNode): void {
   });
 }
 
+// ---- printing ------------------------------------------------------------------------------------------
+function initPrint(root: ParentNode): void {
+  root.querySelectorAll<HTMLButtonElement>('button[data-print]').forEach((button) => {
+    button.hidden = false;
+    button.addEventListener('click', () => window.print());
+  });
+}
+
 // ---- GET forms with many optional fields -----------------------------------------------------------
 function initOmitEmpty(root: ParentNode): void {
   root.querySelectorAll<HTMLFormElement>('form[data-omit-empty]').forEach((form) => {
@@ -235,6 +257,7 @@ function init(root: Element | Document): void {
   initRefresh(root);   // after initDependents: a choice that no longer fits is cleared before the form is sent
   initLinkLists(root);
   initOmitEmpty(root);
+  initPrint(root);
 }
 
 // ---- dialog --------------------------------------------------------------------------------

@@ -3,12 +3,15 @@ created, read, edited, paused and deleted; the planned tasks made up to the hori
 window, once per day however often they are made; a change, a pause or a delete replacing only the tasks nobody
 touched; deleting the place deleting the recurring task with its planned tasks; the checklist copied."""
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.urls import reverse
 
 from core import softdelete
 from core.models import AuditLog
+from farm.stock.dates import site_today
 from farm.tests.helpers import rows_data
 
 from .. import places, services
@@ -89,7 +92,10 @@ class SeriesPagesTests(TasksTestCase):
                 series = TaskSeries.objects.get(title=title)
                 self.assertEqual(series.place, place)
                 planned = Task.objects.filter(series=series)
-                self.assertEqual(planned.count(), HORIZON + 1)
+                # From the first day (today on the first site's clock) to the horizon on the place's own clock: a place
+                # without a site is on the company's (UTC), a day behind in the first two hours after midnight in Oslo.
+                last = site_today(series.place_site) + timedelta(days=HORIZON)
+                self.assertEqual(planned.count(), (last - self.today).days + 1)
                 self.assertTrue(all(task.place == place for task in planned))
                 self.assertEqual(AuditLog.objects.filter(entity_id=str(series.pk), action='create').count(), 1)
 

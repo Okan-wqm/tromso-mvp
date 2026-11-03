@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'django.forms',
     'core',
     'farm',
+    # Messages between people (and later their AI assistants), in the Production panel.
+    'messaging',
 ]
 
 MIDDLEWARE = [

@@ -17,10 +17,13 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, water limits, suppliers, and under Operations the production units with their fish, the
-  feeding records and the water chemistry). Each has its own overview. A
+  species, feeds, water limits, suppliers, under Operations the production units with their fish, the
+  feeding records and the water chemistry, and under Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
+- Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
+  menu, in the Production panel; built so that AI assistants join the same conversations later (see
+  Messages).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
   user menu and on the sign-in pages (see Languages).
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
@@ -785,6 +788,131 @@ Differences from the source (details in the bug document, WQ-01 to WQ-38):
   per unit, and a site's intake water. The feeding tab is to read the latest water temperature from here
   and keep no copy of its own (WQ-02).
 
+## Messages (Production › Communication, `/messages/`)
+
+People write to each other in **direct conversations** (two people) and **channels** (a name and its
+members). It sits in the Production panel under a main heading of its own, **Communication**: it is neither
+the farm's structure (Setup) nor a production record (Operations), and it is where the AI assistants will
+join the people running production (below). The menu entry shows the person's unread messages, and the
+panel switcher a panel's total. App `messaging`, tables `conversations`, `conversation_participants`,
+`messages` and `assistants`.
+
+**The page** has the person's conversations on the left, the latest activity first, each with its last
+message ("You: …" for one's own) and its unread count, and the open conversation on the right: its latest 50
+messages (earlier ones a link away), a "New" line above the first one not read before, the compose box
+(Enter sends, Shift+Enter starts a new line) and, for a channel, its member count and **Members**. **New
+message** asks for a person and opens your direct conversation with them, the one you already have if there
+is one; **New channel** asks for a name and the first members. On a phone one of the two columns shows.
+Times are on the company's clock (`settings.TIME_ZONE`), as in the activity log.
+
+**The rules**, each where it can be held:
+
+- A direct conversation is one per pair, whoever starts it: the conversation's `direct_key` (`user:3
+  user:7`, sorted) is unique in the database, and when both people start it at the same moment the second
+  insert fails on that key and is answered with the first one. A direct conversation is never left and has
+  no members to manage.
+- A participant is a person **or** an assistant, exactly one (a database check), once per conversation,
+  left or not: leaving or being removed is a soft delete (who and when kept), the name stays on one's
+  messages, and adding the person again brings the same row back.
+- A message's author is a participant of the message's own conversation, and a participant's read pointer
+  is a message of their own conversation: two foreign keys on two columns each, added by migration
+  `messaging/0001` (Django cannot declare them). A message has text (not only spaces) and at most 4000
+  characters (a check and the column's length); a deleted one says when.
+- Only the members of a conversation read and write it: to anyone else it does not exist (404 on every
+  page and fragment, also for the platform admin, who is not a member of other people's conversations).
+- A channel's owners add people, remove members and make members owners or owners members; anyone leaves.
+  A channel with members keeps an owner: the last one cannot leave, be removed or step down while others
+  remain. Channel names are unique among live channels, whatever their case.
+- Messages are never edited: a correction is a new message, as a void and a new entry is for the records.
+  The author deletes a message: the row stays with who deleted it and when, and everyone sees "Message
+  deleted", never the text again (in the conversation, the list, the polls).
+- Only people who may use Messages (an active account with the area's Read) are offered or accepted as the
+  other party or as members; they could never read what is written to them otherwise.
+
+**Unread** for a participant: the messages of the conversation after their read pointer, written by someone
+else, not deleted. Opening a conversation (and each poll of it) moves the pointer to the last message it
+shows; the pointer only moves forward (one `UPDATE … WHERE last_read < n`). A new member starts with the
+conversation's latest message as read, so joining a channel brings no history in as unread. The pointer is a
+message number, not a time: posting locks the conversation, so its messages are numbered in the order they
+are committed and a reader's pointer never passes a message that was still being written (the source's
+time-based pointer could, MSG-21).
+
+**Live updates** are polled for the MVP, by `frontend/poll.ts` and only while the page is in view: the open
+conversation asks every 5 s for the messages after the last one it shows (`/messages/<id>/new/?after=`,
+rows to add, 204 when there are none, the next address in `X-Poll-Next`), the list of conversations renders
+itself again every 15 s and the menu's badge every 30 s. The server renders every fragment; the browser only
+puts it in place. **What replaces it:** a push channel (server-sent events under ASGI, or a WebSocket with
+Django Channels and Redis for several processes) that listens to `messaging.events.message_posted`, sent once
+a message is committed, and tells the members' open pages and the mobile app which conversation changed;
+they fetch the same fragments (or the API's rows) they poll today, so the server side stays as it is. A
+message deleted after it was shown stays on an open page until it is reloaded (the push will carry deletions).
+
+**The activity log** records the channels: created (name, members, owners), members added and removed,
+owners changed, each with the lists before and after, under the record type "channel". It records no message
+and no direct conversation: the log is read by roles that are not members (Activity log: Read), would show
+them what was written or who writes to whom, and a message already keeps its author, time and who deleted it
+on its own row. **The database viewer** masks `messages.body` (`config/database.py`): the platform admin sees
+who wrote in which conversation when, the read pointers and the deletions, enough to check the unread counts
+against the rows, but not what people wrote to each other, which is for the members (they read it on the
+page). Whoever runs the database itself can still read the column: that is an operations matter (access to
+the server and its backups), not the application's. The Django admin does not list the messaging tables.
+
+**Who may do what:** the area Messages in the role matrix (Production · Communication): Read is the Messages
+page, writing in one's own conversations and starting a direct conversation; Create also creates channels.
+Owning a channel is the channel's own role, not the matrix's. The platform admin has both but, like everyone,
+reads only the conversations they are a member of.
+
+**The code**: the one write path `messaging/services.py` (start or get a direct conversation, create a channel,
+add and remove members, change a role, leave, post, delete a message, mark read), the reads
+`messaging/read.py` (the list with unread counts and last messages, the unread total, a conversation's
+messages), the pages `messaging/views.py` (they only call those two), the event `messaging/events.py`.
+Services raise ValidationError for what was entered, PermissionDenied for what the person may not do and
+Http404 for a conversation they are not in, so a REST API for the mobile app (Django REST framework) calls
+the same functions and maps the same three answers; none of the rules is in the views.
+
+### AI assistants (designed for, not built)
+
+Every person will get one or more AI assistants, and assistants will watch the farm's systems; they take part
+in the same conversations as the people. What exists now is the shape: `Assistant` (a name and an owner,
+none for an assistant that watches systems; no rows, no screen) and a participant that is a person or an
+assistant. How the AI work plugs in:
+
+- **Who writes an assistant's message:** a worker, never the browser. It calls `services.post(participant,
+  body)` with the assistant's participant row: the same write path, numbering, unread counts and polls as a
+  person's message. A person can never post as an assistant: the pages only post as the person signed in
+  (`post_as`).
+- **How a message reaches an assistant:** a listener on `events.message_posted` (sent after the commit)
+  finds the assistants taking part in the conversation, decides whether the message is for one (a direct
+  conversation with it, its name mentioned in a channel) and queues the work; the listener only queues. The
+  worker builds the context from the conversation's messages (the assistant's own as the model's turns, the
+  others' with their authors' names) and replies. A watching assistant posts on its own schedule, the same
+  way, in a channel set up for it.
+- **Its rights:** an assistant reads only the conversations it is a participant of, like a person; a person's
+  assistant acts with no more rights than its owner (the worker checks the owner's permissions).
+- **Tool calls and proposed actions, later:** a message can carry a proposed action (record a feeding, a water
+  sample) in a table of its own linked to the message, with a status (proposed, accepted, refused, done) and
+  who decided. A person with the right permission accepts it, and it runs through the tab's own write path
+  (`farm/feeding/services.py`, `farm/water/services.py`) as that person, so every check and activity-log row
+  stays as it is. Nothing an assistant proposes is written without a person.
+- To come with it: the assistant's settings (model, instructions, which systems it watches) on `assistants`,
+  and the direct key of a person–assistant pair (`assistant:<id> user:<id>`, `services.direct_key`).
+
+Differences from the source (`apps/messaging-service`, `web/modules/messaging-module`; details in the bug
+document, MSG-01 to MSG-21):
+
+- One model. The web's messaging uses the messaging service's channels; the auth service's `message_threads`
+  are SuperAdmin ↔ tenant-admin support tickets, a separate model with its own unread counters, not ported.
+- Unread is one rule everywhere, without one's own and deleted messages and only in live conversations
+  (MSG-05, MSG-06); the pointer is a commit-ordered message number, not a time (MSG-21), and is only ever a
+  message of its conversation (MSG-10).
+- A direct conversation started twice at once returns the one conversation (MSG-07); a deleted message's text
+  is never served again (MSG-02); only a member deletes, and only their own message (MSG-03); a channel keeps
+  an owner, and owners can hand over (MSG-15); names fit their column (MSG-14).
+- Screens to start a direct conversation, create a channel and manage its members (the source's web had none).
+- Not ported: attachments (MSG-01), reactions, pins, threads (MSG-16), forwarding, editing, typing indicators
+  and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
+  NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -795,7 +923,8 @@ only one who manages roles and users; everyone else gets exactly what their role
   Systems, Equipment, Tanks, ponds & cages, Species, Feeds, Water limits and Suppliers (read, create,
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
   Feeding records (read, create = record a feeding, delete = void one), Water chemistry (read the page
-  and a unit's water, create = record a sample or a round, delete = void one) and Activity log (read).
+  and a unit's water, create = record a sample or a round, delete = void one), Messages (read = use Messages,
+  create = also create channels) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -837,12 +966,13 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
 
-**Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`). A masked
+**Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`, and
+`messages.body`: what people write to each other, see Messages). A masked
 column is never read from the database: its cells show a placeholder, it cannot be sorted, filtered or
 searched (that would reveal it a character at a time) and the export leaves it out. A column that
 holds a secret belongs in that list; a test fails when a column named like a password, secret, token
@@ -892,7 +1022,10 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   (`data-omit-empty`, the database viewer's filters), choices and rows that belong to another field's
   value (`data-depends-on`), fields that render the form again with what was entered (`data-refresh`),
   link lists with one primary mark (`data-links`);
-- `auth.ts` the show/hide password button.
+- `auth.ts` the show/hide password button;
+- `poll.ts` the parts of a page the server renders again while it is in view (`data-poll`: the open
+  conversation, the list of conversations, a menu entry's number), a list that follows new rows
+  (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`).
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
 compiled modules are reached through an import map (`{% module_map %}`), so a browser never shows a
@@ -910,11 +1043,11 @@ model for each page (the platform admin has all of them), every change is writte
 log in the same transaction, an outdated `version` is refused, models with soft delete are hidden
 rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
 opened directly, as a page. The menu is data (`config/navigation.py`: panels, main headings, groups,
-entries) and shows each entry only to people allowed to read it. Production's menu has two main
-headings, as in the platform: **Setup** (the farm's structure under Facility structure, the
+entries) and shows each entry only to people allowed to read it; an entry can carry a number (a `Badge`, the
+unread messages) that the page polls. Production's menu has two main headings, as in the platform: **Setup** (the farm's structure under Facility structure, the
 reference lists the production side picks from under Reference data, and the suppliers under
 Purchasing) and **Operations** (the daily
-production records; it appears with its first tab). The source calls the reference lists "Records";
+production records; it appears with its first tab), and a third, **Communication** (Messages). The source calls the reference lists "Records";
 the prototype does not, because Operations holds the daily records. The menu is the one place that says
 where a page sits: the role matrix and the small heading above a tab's title follow it
 (`core.navigation.place`). There are no built-in roles: the platform admin creates roles
@@ -1045,6 +1178,12 @@ real mail.
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
 | `/water-limits/` | Reference data › Water limits |
+| `/messages/` | Communication › Messages: the person's conversations |
+| `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
+| `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
+| `/messages/<id>/members/` | A channel's members; `add/`, `<participant>/remove/`, `<participant>/role/` change them |
+| `/messages/<id>/leave/`, `/messages/<id>/messages/<message>/delete/` | Leave a channel; delete one's own message |
+| `/messages/list/`, `/messages/unread/` | Fragments the page polls: the list of conversations, the menu's unread number |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -1073,6 +1212,7 @@ real mail.
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the list and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |

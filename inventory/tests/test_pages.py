@@ -289,7 +289,8 @@ class LocationTabTests(StoreTestCase):
 
     def test_reorder_levels_are_saved_as_a_list(self):
         url = reverse('inventory:storagelocation_reorder', args=[self.store.pk])
-        response = self.client.post(url, rows_data('reorder', [{'feed': str(self.feed.pk), 'level': '2000'}]),
+        response = self.client.post(url, rows_data('reorder', [{'feed': str(self.feed.pk), 'level': '2000'}],
+                                                   record=self.store),
                                     headers=MODAL)
         self.assertEqual(response.status_code, 204)
         level = ReorderLevel.objects.get()
@@ -297,10 +298,11 @@ class LocationTabTests(StoreTestCase):
         edit = self.client.get(reverse('inventory:storagelocation_edit', args=[self.store.pk]))
         self.assertEqual(edit.context['reorder'].forms[0]['feed'].value(), self.feed.pk)
         twice = self.client.post(url, rows_data('reorder', [{'feed': str(self.feed.pk), 'level': '1'},
-                                                            {'feed': str(self.feed.pk), 'level': '2'}]))
+                                                            {'feed': str(self.feed.pk), 'level': '2'}],
+                                                 record=self.store))
         self.assertEqual(twice.status_code, 200)
         self.assertContains(twice, 'One reorder level per feed.')
-        self.client.post(url, rows_data('reorder', [], initial=0))
+        self.client.post(url, rows_data('reorder', [], initial=0, record=self.store))
         self.assertFalse(ReorderLevel.objects.exists())
         changes = [entry.changes for entry in AuditLog.objects.filter(entity_type='storage location',
                                                                       entity_id=str(self.store.pk))]

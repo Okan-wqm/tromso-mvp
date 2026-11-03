@@ -255,9 +255,10 @@ three wrasses). When a species is created under one of these scientific names, o
 the fields left blank are filled in from it (local name in Norwegian, family, water environments
 when none is ticked, cleaner-fish type, official code) and the message after saving lists them;
 a typed value is never replaced, and an edit that keeps the name fills nothing, so every field can
-be cleared. Official codes are filled in only for the nine grow-out species (FAO ASFIS, e.g. SAL);
-the four cleaner-fish codes of the source are unverified and never filled in (SPC-32). A catalogue
-species cannot be given an official code other than its verified one. No species rows are seeded
+be cleared. Official codes are the FAO ASFIS 3-alpha codes Mattilsynet's reports ask for, for the nine
+grow-out species (e.g. SAL) and the five cleaner fish (LUM lumpfish, USB ballan wrasse, YFM corkwing, TBR
+goldsinny, ENX rock cook; the source's map had them wrong, SPC-32, REP-51). A catalogue species cannot be
+given an official code other than its own. No species rows are seeded
 and there is no "add from catalogue" action.
 
 Deleting a species: a batch links to it with `on_delete=PROTECT`, so a species with batches is set
@@ -1245,7 +1246,7 @@ temperature, held constant and shown) and grow by it ÷ the band's expected FCR;
 harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
 reason, never a default, and so does two years without reaching it. Nothing is stored.
 
-**Slaughter facilities** (Setup › Reference data): name, Mattilsynet's approval number (godkjenningsnummer, 1
+**Slaughter facilities** (Setup › Harvest and logistics): name, Mattilsynet's approval number (godkjenningsnummer, 1
 to 6 letters or digits, stored in capitals, unique among live facilities; the format is the source's and is not
 verified with Mattilsynet), the operator (a supplier of the new category **Slaughter and processing**, which
 keeps that category while it operates a facility), address, municipality, coordinates (both or neither), the

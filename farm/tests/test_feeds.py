@@ -37,8 +37,8 @@ def feed_data(**overrides):
     return data
 
 
-def suitability_data(rows, initial=0):
-    return rows_data('suitability', rows, initial)
+def suitability_data(rows, initial=0, record=None):
+    return rows_data('suitability', rows, initial, record)
 
 
 def stored(record, *names):
@@ -374,7 +374,7 @@ class FeedSuitabilityTests(FeedTestCase):
              'notes': ''},
             {'species': str(self.salmon.pk), 'growth_stage': 'adults', 'min_weight_g': '1000', 'max_weight_g': ''},
             {'species': '', 'growth_stage': '', 'min_weight_g': '', 'max_weight_g': '', 'notes': ''},   # left blank
-        ]))
+        ], record=self.feed))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.rows(), [
             ('SAL', 'smolt', Decimal('50.00'), Decimal('150.00'), 'in fresh water'),
@@ -401,7 +401,7 @@ class FeedSuitabilityTests(FeedTestCase):
             {'id': str(adults.pk), 'species': str(self.salmon.pk), 'growth_stage': 'adults', 'DELETE': True},
             {'id': str(trout.pk), 'species': str(self.trout.pk), 'growth_stage': 'juveniles', 'min_weight_g': '',
              'max_weight_g': '0.5'},
-        ], initial=3))
+        ], initial=3, record=self.feed))
         self.assertEqual(self.rows(), [('SAL', 'smolt', Decimal('60.00'), None, ''),
                                        ('RBT', 'juveniles', None, Decimal('0.50'), '')])
 
@@ -411,7 +411,7 @@ class FeedSuitabilityTests(FeedTestCase):
             {'species': str(self.salmon.pk), 'growth_stage': 'fry', 'min_weight_g': '-1', 'max_weight_g': '0'},
             {'species': str(self.salmon.pk), 'growth_stage': 'smolt', 'min_weight_g': '150', 'max_weight_g': '150'},
             {'species': str(self.trout.pk), 'growth_stage': 'grower', 'min_weight_g': '', 'max_weight_g': '1000001'},
-        ]))
+        ], record=self.feed))
         formset = response.context['suitability']
         self.assertEqual(set(formset.forms[0].errors), {'species', 'growth_stage'})
         self.assertEqual(set(formset.forms[1].errors), {'min_weight_g', 'max_weight_g'})
@@ -424,7 +424,7 @@ class FeedSuitabilityTests(FeedTestCase):
         response = self.client.post(self.url, suitability_data([
             {'species': str(self.salmon.pk), 'growth_stage': 'smolt', 'max_weight_g': '100'},
             {'species': str(self.salmon.pk), 'growth_stage': 'smolt', 'min_weight_g': '100'},
-        ]))
+        ], record=self.feed))
         self.assertIn('Two rows have the same species and life stage.', response.context['suitability'].non_form_errors())
         self.assertFalse(FeedSuitability.all_objects.exists())
         FeedSuitability.objects.create(feed=self.feed, species=self.salmon, growth_stage='smolt')
@@ -435,7 +435,7 @@ class FeedSuitabilityTests(FeedTestCase):
         self.client.post(self.url, suitability_data([
             {'id': str(row.pk), 'species': str(self.salmon.pk), 'growth_stage': 'smolt', 'DELETE': True},
             {'species': str(self.salmon.pk), 'growth_stage': 'smolt', 'min_weight_g': '80'},
-        ], initial=1))
+        ], initial=1, record=self.feed))
         self.assertEqual(self.rows(), [('SAL', 'smolt', Decimal('80.00'), None, '')])
 
     def test_the_database_checks_the_rows(self):
@@ -447,7 +447,7 @@ class FeedSuitabilityTests(FeedTestCase):
 
     def test_at_most_fifty(self):
         rows = [{'species': str(self.salmon.pk), 'growth_stage': 'all', 'min_weight_g': str(n)} for n in range(51)]
-        response = self.client.post(self.url, suitability_data(rows))
+        response = self.client.post(self.url, suitability_data(rows, record=self.feed))
         self.assertIn('A feed has at most 50 rows.', response.context['suitability'].non_form_errors())
 
     def test_a_deleted_species_is_not_offered(self):
@@ -455,7 +455,7 @@ class FeedSuitabilityTests(FeedTestCase):
         page = self.client.get(reverse('farm:feed_edit', args=[self.feed.pk]))
         self.assertEqual(list(page.context['suitability'].empty_form.fields['species'].queryset), [self.salmon])
         response = self.client.post(self.url, suitability_data([
-            {'species': str(self.trout.pk), 'growth_stage': 'all'}]))
+            {'species': str(self.trout.pk), 'growth_stage': 'all'}], record=self.feed))
         self.assertIn('species', response.context['suitability'].forms[0].errors)
 
     def test_the_weight_band_runs_up_to_but_not_including_its_upper_weight(self):
@@ -470,7 +470,7 @@ class FeedSuitabilityTests(FeedTestCase):
             {'species': str(self.salmon.pk), 'growth_stage': 'smolt', 'min_weight_g': '50', 'max_weight_g': '150.5',
              'notes': 'in fresh water'},
             {'species': str(self.trout.pk), 'growth_stage': 'fry', 'max_weight_g': '5'},
-        ]))
+        ], record=self.feed))
         entry = AuditLog.objects.get()
         self.assertEqual((entry.action, entry.entity_type, entry.entity_id, entry.changes), (
             'update', 'feed', str(self.feed.pk),
@@ -480,7 +480,7 @@ class FeedSuitabilityTests(FeedTestCase):
     def test_saving_rows_needs_the_change_permission(self):
         self.as_role('view_feed')
         self.assertEqual(self.client.post(self.url, suitability_data([
-            {'species': str(self.salmon.pk), 'growth_stage': 'all'}])).status_code, 403)
+            {'species': str(self.salmon.pk), 'growth_stage': 'all'}], record=self.feed)).status_code, 403)
         self.assertFalse(FeedSuitability.all_objects.exists())
 
     def test_deleting_a_species_keeps_its_rows_out_of_sight_until_it_is_restored(self):
@@ -497,7 +497,7 @@ class FeedSuitabilityTests(FeedTestCase):
         salmon_row = self.feed.suitability.get()
         self.client.post(self.url, suitability_data([
             {'id': str(salmon_row.pk), 'species': str(self.salmon.pk), 'growth_stage': 'smolt', 'max_weight_g': '90'},
-        ], initial=1))
+        ], initial=1, record=self.feed))
         softdelete.restore(Species.all_objects.get(pk=self.trout.pk), self.user)
         self.assertEqual(self.rows(), [('SAL', 'smolt', None, Decimal('90.00'), ''), ('RBT', 'fry', None, None, '')])
 

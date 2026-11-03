@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel, CodedMixin
 
@@ -84,6 +84,14 @@ class Site(CodedMixin, AuditedModel):
     settings = models.JSONField(_('Settings'), null=True, blank=True)
     notes = models.TextField(_('Notes'), blank=True)
     metadata = models.JSONField(_('Metadata'), null=True, blank=True)
+
+    def delete_blockers(self):
+        """A site whose units have stock records is closed, not deleted: deleting it would leave its production
+        departments without a site and its past figures without their locality."""
+        from .stock import StockMovement
+        if StockMovement.objects.filter(unit__production_department__site=self, operation__is_deleted=False).exists():
+            return [gettext('Its units have stock records: set its status to Closed instead.')]
+        return []
 
     class Meta:
         db_table = 'sites'

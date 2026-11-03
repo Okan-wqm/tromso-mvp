@@ -71,7 +71,7 @@ class SiteRoundTripTests(SiteTestCase):
         # Create
         self.client.post(url, contacts_data([
             {'name': 'Kari', 'role': 'Manager', 'email': 'kari@example.com', 'phone': '+47 1', 'is_primary': True},
-        ]))
+        ], record=site))
         kari = site.contacts.get()
         self.assertEqual((kari.name, kari.role, kari.email, kari.phone, kari.is_primary, kari.created_by),
                          ('Kari', 'Manager', 'kari@example.com', '+47 1', True, self.user))
@@ -81,12 +81,13 @@ class SiteRoundTripTests(SiteTestCase):
         # Edit
         self.client.post(url, contacts_data([
             {'id': str(kari.pk), 'name': 'Kari N.', 'role': 'Vet', 'email': '', 'phone': '', 'is_primary': False},
-        ], initial=1))
+        ], initial=1, record=site))
         self.assertEqual(list(site.contacts.values_list('name', 'role', 'email', 'is_primary')),
                          [('Kari N.', 'Vet', '', False)])
         # Delete
         edited = site.contacts.get()
-        self.client.post(url, contacts_data([{'id': str(edited.pk), 'name': 'Kari N.', 'DELETE': True}], initial=1))
+        self.client.post(url, contacts_data([{'id': str(edited.pk), 'name': 'Kari N.', 'DELETE': True}], initial=1,
+                                            record=site))
         self.assertFalse(site.contacts.exists())
 
 
@@ -100,7 +101,7 @@ class SiteAuditTests(SiteTestCase):
         self.client.post(reverse('farm:site_edit', args=[site.pk]),
                          site_data(name='Bergen', code='bh', area_m2='250', status='maintenance', version='1'))
         self.client.post(reverse('farm:site_contacts', args=[site.pk]),
-                         contacts_data([{'name': 'Kari', 'role': 'Vet', 'is_primary': True}]))
+                         contacts_data([{'name': 'Kari', 'role': 'Vet', 'is_primary': True}], record=site))
         self.client.post(reverse('farm:site_delete', args=[site.pk]))
 
         created, edited, contacts, deleted = self.log()
@@ -219,6 +220,19 @@ class SiteCreateTests(SiteTestCase):
         self.assertEqual(form.errors['name'], ['Another site already uses this name.'])
         self.assertEqual(Site.objects.count(), 1)
 
+    def test_a_clash_only_the_database_catches_is_told_on_the_form(self):
+        # Two people creating the same site at once both pass the form's checks; the second save is refused by
+        # the database's constraint and comes back as the form's error, not a server error (OUR-23).
+        from unittest import mock
+
+        from core.crud import TabbedForm
+        self.make_site(name='Other', code='MPS-001')
+        with mock.patch.object(TabbedForm, '_check_conditional_constraints'):
+            response = self.client.post(reverse('farm:site_create'), site_data())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].errors['code'], ['Another site already uses this code.'])
+        self.assertEqual(Site.objects.count(), 1)
+
     def test_deleted_site_frees_its_code_and_name(self):
         self.make_site(name='Main Production Site', code='MPS-001').soft_delete(self.user)
         self.client.post(reverse('farm:site_create'), site_data())
@@ -317,14 +331,14 @@ class SiteContactTests(SiteTestCase):
         self.client.post(self.url, contacts_data([
             {'name': 'Kari', 'role': 'Manager', 'email': 'kari@example.com', 'is_primary': True},
             {'name': 'Ola', 'phone': '+47 123 45 678'},
-        ]))
+        ], record=self.site))
         contacts = list(self.site.contacts.values_list('name', 'is_primary'))
         self.assertEqual(contacts, [('Kari', True), ('Ola', False)])
 
     def test_two_primaries_are_rejected(self):
         response = self.client.post(self.url, contacts_data([
             {'name': 'Kari', 'is_primary': True}, {'name': 'Ola', 'is_primary': True},
-        ]))
+        ], record=self.site))
         self.assertContains(response, 'Only one contact can be the primary contact; 2 are marked.')
         self.assertFalse(self.site.contacts.exists())
 
@@ -336,12 +350,12 @@ class SiteContactTests(SiteTestCase):
             {'id': str(kari.pk), 'name': 'Kari', 'is_primary': False},
             {'id': str(ola.pk), 'name': 'Ola', 'is_primary': True},
             {'id': str(per.pk), 'name': 'Per', 'DELETE': True},
-        ], initial=3))
+        ], initial=3, record=self.site))
         contacts = list(self.site.contacts.values_list('name', 'is_primary'))
         self.assertEqual(contacts, [('Ola', True), ('Kari', False)])
 
     def test_blank_name_is_rejected(self):
-        response = self.client.post(self.url, contacts_data([{'name': '', 'role': 'Vet'}]))
+        response = self.client.post(self.url, contacts_data([{'name': '', 'role': 'Vet'}], record=self.site))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['open_tab'], 'contact')
         self.assertFalse(self.site.contacts.exists())

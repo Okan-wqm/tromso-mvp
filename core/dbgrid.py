@@ -31,6 +31,12 @@ UUID_SHOWN = 8
 BOOLEANS = {'true': True, 't': True, '1': True, 'false': False, 'f': False, '0': False}
 FORMULA_STARTS = ('=', '+', '-', '@', '\t', '\r')
 
+
+def formula_safe(text):
+    """Text as a CSV cell may hold it: text a spreadsheet would run as a formula is marked with a leading
+    apostrophe. For free text only: a number keeps its sign (a temperature of -0.4 °C stays a number)."""
+    return f"'{text}" if text.startswith(FORMULA_STARTS) else text
+
 # Numbers, identifiers, booleans and links are matched whole; everything else by the text it is stored as.
 EXACT_FIELDS = (models.UUIDField, models.IntegerField, models.DecimalField, models.FloatField, models.BooleanField)
 NUMERIC_FIELDS = (models.IntegerField, models.DecimalField, models.FloatField)
@@ -261,6 +267,6 @@ class Grid:
         if value is None:
             return ''
         text = raw(column, value)
-        if isinstance(column.field, (models.CharField, models.TextField)) and text.startswith(FORMULA_STARTS):
-            return f"'{text}"
+        if isinstance(column.field, (models.CharField, models.TextField)):
+            return formula_safe(text)
         return text

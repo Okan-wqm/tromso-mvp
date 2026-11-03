@@ -60,10 +60,14 @@ class AdminTests(RestoreTestCase):
         super().setUp()
         self.client.force_login(self.admin_user)
 
-    def test_every_farm_record_type_is_in_the_admin_without_being_listed_by_hand(self):
-        farm_records = [m for m in apps.get_app_config('farm').get_models() if issubclass(m, AuditedModel)]
-        self.assertGreaterEqual(len(farm_records), 3)
-        for model in farm_records:
+    def test_every_record_type_of_every_app_is_in_the_admin_without_being_listed_by_hand(self):
+        # Every app's records, not only the farm's: a new app's deleted records can be restored, or this fails (OUR-25).
+        # Messages are the one exception, on purpose: the platform admin is not a member of other people's
+        # conversations, and the Django admin does not list the messaging tables (README, Messages).
+        records = [model for config in apps.get_app_configs() for model in config.get_models()
+                   if issubclass(model, AuditedModel) and config.label != 'messaging']
+        self.assertGreaterEqual(len({model._meta.app_label for model in records}), 4)
+        for model in records:
             self.assertIn(model, admin.site._registry, model.__name__)
 
     def test_the_admin_shows_deleted_records_but_cannot_edit_or_delete_anything(self):

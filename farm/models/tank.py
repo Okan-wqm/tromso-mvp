@@ -448,6 +448,25 @@ class Tank(CodedMixin, AuditedModel):
             fish=Sum('count_delta'))['fish']
         return (total or 0) > 0
 
+    def has_history(self):
+        """Whether the stock ledger has live lines in the unit, now or in the past: its figures belong to its site
+        (the reports to the authorities are per locality)."""
+        if self._state.adding:
+            return False
+        from .stock import StockMovement
+        return StockMovement.objects.filter(unit=self, operation__is_deleted=False).exists()
+
+    def _check_site(self, errors):
+        """A unit with stock lines stays on its site: moved to a production department of another site, its past
+        stock, feedings and counts would be reported for the other locality."""
+        if self._state.adding or not self.production_department_id or 'production_department' in errors:
+            return
+        site_now = (type(self).all_objects.filter(pk=self.pk)
+                    .values_list('production_department__site_id', flat=True).first())
+        if site_now != self.production_department.site_id and self.has_history():
+            errors['production_department'] = ValidationError(
+                _('It has stock records on its site: it can only move to a production department of the same site.'))
+
     def delete_blockers(self):
         if self.has_stock():
             return [gettext('It holds fish: move or harvest them first.')]
@@ -542,6 +561,7 @@ class Tank(CodedMixin, AuditedModel):
         self._check_measures(errors)
         if stored and self.has_stock() and any(getattr(self, name) != stored[name] for name in VOLUME_FIELDS):
             errors[NON_FIELD_ERRORS] = _('Fish are in it, so its size cannot change: move or harvest them first.')
+        self._check_site(errors)
         if errors:
             raise ValidationError(errors)
 

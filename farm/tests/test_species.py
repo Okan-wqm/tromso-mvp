@@ -264,8 +264,11 @@ class SpeciesValidationTests(SpeciesTestCase):
         response = self.create(common_name='Atlantic salmon', scientific_name='Salmo salar', code='SAL',
                                official_code='TRR')
         self.assertEqual(self.errors(response)['official_code'], ['The official code of Salmo salar is SAL.'])
-        # The cleaner fish's codes are not verified: any well-formed code is accepted.
-        self.create(common_name='Lumpfish', scientific_name='Cyclopterus lumpus', code='LUM', official_code='LUM')
+        # A cleaner fish's too: the source sent USB for the lumpfish, which is the ballan wrasse in ASFIS (REP-51).
+        response = self.create(common_name='Lumpfish', scientific_name='Cyclopterus lumpus', code='LUMP',
+                               official_code='USB')
+        self.assertEqual(self.errors(response)['official_code'], ['The official code of Cyclopterus lumpus is LUM.'])
+        self.create(common_name='Lumpfish', scientific_name='Cyclopterus lumpus', code='LUMP', official_code='LUM')
         self.assertEqual(Species.objects.get().official_code, 'LUM')
 
     def test_lengths_are_the_columns(self):
@@ -301,14 +304,14 @@ class SpeciesCatalogueTests(SpeciesTestCase):
                          ('Atlantisk laks', 'Salmonids', False, True, False))
         self.assertFalse(any('catalogue' in text for text in self.messages(response)))
 
-    def test_the_cleaner_fish_codes_are_never_filled_in(self):
+    def test_a_cleaner_fish_gets_its_asfis_code_and_its_type(self):
         response = self.client.post(reverse('farm:species_create'), species_data(
             common_name='Lumpfish', scientific_name='Cyclopterus lumpus', code='LUMP', freshwater=False), follow=True)
         self.assertEqual(stored(Species.objects.get(), 'local_name', 'family', 'saltwater', 'official_code',
                                 'cleaner_fish_type'),
-                         ('Rognkjeks', 'Cyclopteridae', True, '', 'lumpfish'))
+                         ('Rognkjeks', 'Cyclopteridae', True, 'LUM', 'lumpfish'))
         self.assertIn('Filled in from the species catalogue: Local name: Rognkjeks; Family: Cyclopteridae; Water '
-                      'environment: Sea water; Cleaner fish: Lumpfish.', self.messages(response))
+                      'environment: Sea water; Official code: LUM; Cleaner fish: Lumpfish.', self.messages(response))
 
     def test_renaming_to_a_catalogue_species_fills_its_blank_fields_and_keeps_the_waters_ticked(self):
         species = self.make()
@@ -322,18 +325,21 @@ class SpeciesCatalogueTests(SpeciesTestCase):
         self.assertFalse(Species.objects.exists())
 
     def test_the_catalogue_is_consistent_with_the_model(self):
-        verified = {entry.scientific_name for entry in species_catalog.CATALOGUE if entry.official_code_verified}
-        self.assertEqual(len(species_catalog.CATALOGUE), 13)
-        self.assertEqual(verified, {'Salmo salar', 'Oncorhynchus mykiss', 'Salmo trutta', 'Salvelinus alpinus',
-                                    'Gadus morhua', 'Hippoglossus hippoglossus', 'Scophthalmus maximus',
-                                    'Dicentrarchus labrax', 'Sparus aurata'})
+        self.assertEqual(len(species_catalog.CATALOGUE), 14)
+        self.assertTrue(all(entry.official_code_verified for entry in species_catalog.CATALOGUE))
+        # The cleaner fish's FAO ASFIS codes (docs/regulatory-reports.md, 3.4).
+        self.assertEqual({entry.scientific_name: entry.official_code for entry in species_catalog.CATALOGUE
+                          if entry.cleaner_fish_type},
+                         {'Cyclopterus lumpus': 'LUM', 'Labrus bergylta': 'USB', 'Symphodus melops': 'YFM',
+                          'Ctenolabrus rupestris': 'TBR', 'Centrolabrus exoletus': 'ENX'})
+        codes = [entry.official_code for entry in species_catalog.CATALOGUE]
+        self.assertEqual(len(codes), len(set(codes)))
         for entry in species_catalog.CATALOGUE:
             with self.subTest(entry=entry.scientific_name):
                 self.assertTrue(re.match(SCIENTIFIC_NAME, entry.scientific_name))
                 self.assertEqual(normalise_scientific_name(entry.scientific_name), entry.scientific_name)
                 self.assertRegex(entry.official_code, r'^[A-Z]{3}$')
                 self.assertIn(entry.cleaner_fish_type, Species.CleanerFishType.values)
-                self.assertEqual(bool(entry.cleaner_fish_type), not entry.official_code_verified)
                 self.assertTrue(any(getattr(entry, name) for name in WATERS))
                 self.assertIs(species_catalog.find(f'  {entry.scientific_name.upper()} '), entry)
         self.assertIsNone(species_catalog.find('Oreochromis niloticus'))

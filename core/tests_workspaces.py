@@ -58,8 +58,9 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                    'Suppliers', 'Production units', 'Water chemistry',
-                                                    'Meal board', 'Records', 'Protocols', 'Assignments', 'Messages'])
+                                                    'Suppliers', 'Production units', 'Water chemistry', 'Tasks',
+                                                    'Recurring tasks', 'Meal board', 'Records', 'Protocols',
+                                                    'Assignments', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -114,8 +115,9 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                  'Suppliers', 'Production units', 'Water chemistry', 'Meal board',
-                                                  'Records', 'Protocols', 'Assignments', 'Messages'])
+                                                  'Suppliers', 'Production units', 'Water chemistry', 'Tasks',
+                                                  'Recurring tasks', 'Meal board', 'Records', 'Protocols',
+                                                  'Assignments', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -196,6 +198,8 @@ class MenuPlacementTests(TestCase):
             'farm.ProtocolAssignment': 'Production · Operations · Feeding',
             'farm.WaterMeasurement': 'Production · Operations',
             'messaging.Conversation': 'Production · Communication',
+            'tasks.Task': 'Production · Operations',
+            'tasks.TaskSeries': 'Production · Operations',
             'core.AuditLog': 'Company · Administration',
         })
 

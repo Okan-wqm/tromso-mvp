@@ -6,6 +6,7 @@ from farm.models import Equipment, ProductionDepartment, Site, System, Tank
 from farm.feeding.views import overview_tiles as feeding_tiles
 from farm.stock.views import overview_tiles
 from farm.water.views import overview_tiles as water_tiles
+from tasks.views import overview_tiles as task_tiles
 
 
 def _counts(user, *tiles):
@@ -26,11 +27,13 @@ def home(request):
 
 def production_home(request):
     """The production overview: the stock now (units with fish, fish, biomass, from the ledger), the feed
-    given (today, the last 7 days) and the units with a critical water value, then the farm's structure."""
+    given (today, the last 7 days), the units with a critical water value and the tasks due today and overdue,
+    then the farm's structure."""
     return render(request, 'production_home.html', {
         'stock_tiles': overview_tiles(request.user),
         'feeding_tiles': feeding_tiles(request.user),
         'water_tiles': water_tiles(request.user),
+        'task_tiles': task_tiles(request.user),
         'tiles': _counts(request.user,
                          (_('Production departments'), ProductionDepartment, 'farm:productiondepartment_list'),
                          (_('Systems'), System, 'farm:system_list'),

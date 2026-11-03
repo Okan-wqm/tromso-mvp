@@ -1,0 +1,80 @@
+{% load i18n tasks %}
+{% comment %} The drawer of the task picked on Operations › Tasks (?task=): what, where, when and for whom, its
+   checklist with a tick per line, its notes, and what the person may do with it. Every button is a form posted
+   to the task's own address, which comes back here (next).{% endcomment %}
+{% with task=drawer place=drawer_place %}
+<aside class="drawer" aria-labelledby="drawer-title">
+  <div class="drawer-head">
+    <div>
+      <h2 class="drawer-title" id="drawer-title">{{ task.title }}</h2>
+      <p class="drawer-sub"><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>{% if task.overdue %} <span class="badge badge-overdue">{% trans "Overdue" %}</span>{% endif %} · {{ task.get_category_display }} · <span class="priority-{{ task.priority }}">{{ task.get_priority_display }}</span></p>
+    </div>
+    <a class="icon-button" href="{{ close_url }}" title="{% trans "Close" %}">{% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Close" %}</span></a>
+  </div>
+
+  <div class="drawer-body">
+    <dl class="facts">
+      <div><dt>{% trans "Location" %}</dt><dd>{{ place|place_label }}{% if place.is_deleted %} <span class="badge badge-voided">{% trans "Place deleted" %}</span>{% endif %}<span class="row-sub">{{ place|place_kind }} · {{ place|place_context }}</span></dd></div>
+      {% if task.batch %}<div><dt>{% trans "Batch" %}</dt><dd>{{ task.batch.code }}{% if task.batch.is_deleted %} <span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</dd></div>{% endif %}
+      <div><dt>{% trans "Due" %}</dt><dd>{{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"H:i" }}{% endif %}</dd></div>
+      <div><dt>{% trans "Assignees" %}</dt><dd>{% with names=task.assignees.all|people %}{% if names %}{{ names }}{% else %}<span class="over-text">{% trans "Nobody" %}</span>{% endif %}{% endwith %}</dd></div>
+      {% if task.series %}<div><dt>{% trans "Recurring task" %}</dt><dd>{{ task.series.title }}{% if task.series.is_deleted %} <span class="badge badge-voided">{% trans "Deleted" %}</span>{% endif %}<span class="row-sub">{% blocktrans trimmed with date=task.occurrence_date|date:"DATE_FORMAT" %}planned for {{ date }}{% endblocktrans %}</span></dd></div>{% endif %}
+      {% if task.started_at %}<div><dt>{% trans "Started" %}</dt><dd>{{ task.started_by|person }} · {{ task.started_at|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}
+      {% if task.completed_at %}<div><dt>{% trans "Completed" %}</dt><dd>{{ task.completed_by|person }} · {{ task.completed_at|date:"DATETIME_FORMAT" }}{% if task.completion_note %}<span class="row-sub">{{ task.completion_note }}</span>{% endif %}</dd></div>{% endif %}
+      {% if task.cancelled_at %}<div><dt>{% trans "Cancelled" %}</dt><dd>{{ task.cancelled_by|person }} · {{ task.cancelled_at|date:"DATETIME_FORMAT" }}<span class="row-sub">{{ task.cancel_reason }}</span></dd></div>{% endif %}
+      <div><dt>{% trans "Created" %}</dt><dd>{% if task.created_by %}{{ task.created_by|person }}{% else %}{% trans "by its recurring task" %}{% endif %} · {{ task.created_at|date:"DATETIME_FORMAT" }}</dd></div>
+    </dl>
+    {% if task.description %}<p class="task-description">{{ task.description|linebreaksbr }}</p>{% endif %}
+
+    {% if actions.start or actions.complete or actions.cancel or actions.reopen or actions.edit or actions.delete %}
+    <div class="drawer-actions">
+      {% if actions.start %}<form method="post" action="{{ actions.start }}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Start" %}</button></form>{% endif %}
+      {% if actions.complete %}<a class="button button-inline" href="{{ actions.complete }}" data-modal>{% trans "Complete" %}</a>{% endif %}
+      {% if actions.reopen %}<form method="post" action="{{ actions.reopen }}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Reopen" %}</button></form>{% endif %}
+      {% if actions.edit %}<a class="button button-ghost" href="{{ actions.edit }}" data-modal>{% trans "Edit" %}</a>{% endif %}
+      {% if actions.cancel %}<a class="button button-ghost" href="{{ actions.cancel }}" data-modal>{% trans "Cancel task" %}</a>{% endif %}
+      {% if actions.delete %}<a class="button button-ghost button-danger-text" href="{{ actions.delete }}" data-modal>{% trans "Delete" %}</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <section class="drawer-section">
+      <h3>{% trans "Checklist" %}</h3>
+      {% if drawer_lines %}
+      <ul class="task-checklist">
+        {% for line in drawer_lines %}
+        <li class="{% if line.done_at %}is-done{% endif %}">
+          {% if may_tick %}
+          <form method="post" action="{% url 'tasks:task_tick' task.pk line.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="done" value="{% if line.done_at %}0{% else %}1{% endif %}"><button type="submit" class="tick" aria-pressed="{% if line.done_at %}true{% else %}false{% endif %}" title="{% if line.done_at %}{% trans "Mark as not done" %}{% else %}{% trans "Mark as done" %}{% endif %}"><span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}</button></form>
+          {% else %}
+          <span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}
+          {% endif %}
+          {% if line.done_at %}<span class="row-sub">{{ line.done_by|person }} · {{ line.done_at|date:"DATETIME_FORMAT" }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">{% trans "No checklist." %}</p>
+      {% endif %}
+    </section>
+
+    <section class="drawer-section">
+      <h3>{% trans "Notes" %}</h3>
+      {% if drawer_notes %}
+      <ul class="op-history">
+        {% for note in drawer_notes %}
+        <li class="op-entry"><p class="op-head"><strong>{{ note.author|person }}</strong> <time datetime="{{ note.created_at|date:'c' }}">{{ note.created_at|date:"DATETIME_FORMAT" }}</time></p><p class="task-note">{{ note.body|linebreaksbr }}</p></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">{% trans "No notes yet." %}</p>
+      {% endif %}
+      <form method="post" action="{{ note_url }}" class="task-note-form">
+        {% csrf_token %}
+        <label for="note-body">{% trans "Add a note" %}</label>
+        <textarea id="note-body" name="body" rows="2" maxlength="4000" required></textarea>
+        <button type="submit" class="button button-ghost">{% trans "Add note" %}</button>
+      </form>
+    </section>
+  </div>
+</aside>
+{% endwith %}

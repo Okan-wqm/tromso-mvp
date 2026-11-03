@@ -55,6 +55,9 @@ WORKSPACES = [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
                 Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
+                # The farm's jobs, each at one place for its people, and the recurring tasks that plan them.
+                Entry(_('Tasks'), 'tasks:task_list', 'list-checks', 'tasks.view_task'),
+                Entry(_('Recurring tasks'), 'tasks:taskseries_list', 'repeat', 'tasks.view_taskseries'),
             ]),
             Group(_('Feeding'), [
                 Entry(_('Meal board'), 'farm:meal_board', 'utensils', 'farm.view_feedingrecord'),

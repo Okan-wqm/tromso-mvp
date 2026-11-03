@@ -257,6 +257,13 @@ class RowList:
         return '; '.join(cls.describe(row) for row in cls.rows(obj)) or None
 
     @classmethod
+    def values(cls, user, row, fields):
+        """The stored row's values from one cleaned row: the form's model fields as they are. A list whose
+        rows choose something the stored row reaches through another record (a storage location's reorder
+        levels choose a feed and store its item of the store) maps it here, as `user`."""
+        return {name: row[name] for name in fields}
+
+    @classmethod
     def save(cls, user, obj, rows, entity_type):
         """Replaces the stored rows with `rows` (cleaned data) and logs the change on `obj`."""
         model, link = cls.formset.model, cls.formset.fk.name
@@ -266,7 +273,7 @@ class RowList:
             before = cls.summary(obj)
             cls.rows(obj).delete()
             model.objects.bulk_create([
-                model(**{link: obj, 'created_by': user}, **{name: row[name] for name in fields}) for row in rows
+                model(**{link: obj, 'created_by': user}, **cls.values(user, row, fields)) for row in rows
             ])
             after = cls.summary(obj)
             if before != after:

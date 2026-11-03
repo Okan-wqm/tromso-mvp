@@ -124,11 +124,17 @@ def _collect(obj, plan, seen):
         elif action is models.SET_NULL:
             plan.detach.extend((child, link) for child in children)
         elif action in (models.PROTECT, models.RESTRICT):
-            # Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
-            plan.blockers.append(ngettext(
-                '%(count)d %(name)s still belongs to it.', '%(count)d %(plural)s still belong to it.',
-                len(children)) % {'count': len(children), 'name': model._meta.verbose_name,
-                                  'plural': model._meta.verbose_name_plural})
+            plan.blockers.append(protected(model, len(children)))
+
+
+def protected(model, count):
+    """Why a delete is blocked by `count` live records of `model` that point at it with PROTECT. A model
+    whose PROTECT links come from records the plan does not follow (a plain row such as a harvest's record)
+    says it in its own delete_blockers() with this sentence."""
+    # Translators: %(name)s is the kind of record in the singular, %(plural)s in the plural.
+    return ngettext('%(count)d %(name)s still belongs to it.', '%(count)d %(plural)s still belong to it.',
+                    count) % {'count': count, 'name': model._meta.verbose_name,
+                              'plural': model._meta.verbose_name_plural}
 
 
 def execute(plan, user):

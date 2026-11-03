@@ -79,7 +79,9 @@ def entity_type_of(model):
     return english(model._meta.verbose_name)
 
 
-def record(user, action, instance, changes=None, entity_type=None, label=None):
+def record(user, action, instance, changes=None, entity_type=None, label=None, severity=AuditLog.Severity.NORMAL):
+    """One entry. `severity` critical marks someone going on past a warning that protects fish or food
+    (farm/handling): the activity log shows it apart and the later alarms read it."""
     return AuditLog.objects.create(
         user=user if user and user.is_authenticated else None,
         user_name=user.get_username() if user and user.is_authenticated else 'system',
@@ -88,6 +90,7 @@ def record(user, action, instance, changes=None, entity_type=None, label=None):
         entity_id=str(instance.pk),
         entity_label=label or str(instance),
         changes=changes or {},
+        severity=severity,
     )
 
 

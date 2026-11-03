@@ -133,7 +133,9 @@ class TabbedForm(forms.ModelForm):
         unique among live records whatever its case" (a constraint on an expression, Lower(...)).
         Django leaves them out of form validation when the condition uses a field the form does not
         edit (is_deleted), so check them here: the record as the form would save it, by the constraint
-        itself. The error goes on the constraint's last field the form shows, with its message."""
+        itself. The error goes on the constraint's last field the form shows, with its message. An empty value
+        cannot clash, unless the constraint counts empty values as equal (`nulls_distinct=False`: one rule
+        for every species, the one with no species)."""
         model = self._meta.model
         for constraint in model._meta.constraints:
             if not isinstance(constraint, models.UniqueConstraint) or constraint.condition is None:
@@ -142,7 +144,7 @@ class TabbedForm(forms.ModelForm):
             candidate = copy.copy(self.instance)
             for name in names:
                 value = cleaned.get(name) if name in self.fields else getattr(self.instance, name, None)
-                if value in (None, ''):
+                if value in (None, '') and constraint.nulls_distinct is not False:
                     break
                 setattr(candidate, name, value)
             else:

@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _, ngettext
 from core.crud import DRAFT
 
 from ..handling import check
-from ..models import Batch, HandlingPlanItem, SlaughterFacility, Species, Supplier, Tank
+from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Species, Supplier, Tank
 from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
 from ..models.stock import ARRIVAL_STATUSES, CullReason, InputStage, MortalityCause, Origin, TransferReason
@@ -87,6 +87,14 @@ class AcknowledgeInput(forms.CheckboxInput):
         return data.get(name, '')
 
 
+def handling_ack_field():
+    """The box to go on past the handling warnings shown; its value is their fingerprint (AcknowledgeInput)."""
+    return forms.CharField(
+        label=_('Go on despite these warnings'), required=False, widget=AcknowledgeInput,
+        help_text=_('Fish under a medicine withdrawal must not go to food. Going on is stored with what is '
+                    'shown here and logged as critical.'))
+
+
 class HandlingChecked:
     """A dialog whose save runs the handling check (a harvest, a transfer, a grading): the panel shows what the
     check finds for the date and batch of the form (`handling`), and, with warnings, the box to go on past
@@ -96,10 +104,7 @@ class HandlingChecked:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['handling_ack'] = forms.CharField(
-            label=_('Go on despite these warnings'), required=False, widget=AcknowledgeInput,
-            help_text=_('Fish under a medicine withdrawal must not go to food. Going on is stored with what is '
-                        'shown here and logged as critical.'))
+        self.fields['handling_ack'] = handling_ack_field()
         self._handling = None
 
     @property
@@ -133,9 +138,15 @@ class OperationForm(ServiceErrors, forms.Form):
     # shows the batch's estimated weight on the day chosen and how the weight entered compares with it).
     refresh_on = ()
 
-    def __init__(self, *args, unit, present, **kwargs):
+    def __init__(self, *args, unit, present, events=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.unit = unit
+        if 'health_event' in self.fields:
+            # The health events the deaths may belong to (`events`), for people who may read them; else none.
+            if events is None:
+                del self.fields['health_event']
+            else:
+                self.fields['health_event'].queryset = events
         self.present = {str(share.batch.pk): share for share in present}
         field = self.fields['batch']
         choices = [(pk, share_label(share)) for pk, share in self.present.items()]
@@ -163,6 +174,19 @@ class OperationForm(ServiceErrors, forms.Form):
         return self.present[self.cleaned_data['batch']].batch
 
 
+class EventChoice(forms.ModelChoiceField):
+    """A health event in a list: what and when, and its site."""
+
+    def label_from_instance(self, event):
+        return f'{event} · {event.site}'
+
+
+def event_field():
+    return EventChoice(label=_('Health event'), queryset=HealthEvent.objects.none(), required=False,
+                       help_text=_('Optional: the health event (Operations › Health events) these fish died or were '
+                                   'culled under; it counts them.'))
+
+
 class MortalityForm(OperationForm):
     count = forms.IntegerField(label=_('Dead fish'), min_value=1)
     cause = forms.ChoiceField(label=_('Cause'), choices=MortalityCause.choices, initial=MortalityCause.UNKNOWN)
@@ -171,27 +195,30 @@ class MortalityForm(OperationForm):
         required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),
         help_text=_('Optional, when they were weighed. The stock takes them out at the average weight of the '
                     'batch in this unit; the weighed figure is kept beside it.'))
+    health_event = event_field()
 
-    field_order = ['batch', 'date', 'count', 'cause', 'measured_weight_kg', 'notes']
+    field_order = ['batch', 'date', 'count', 'cause', 'measured_weight_kg', 'health_event', 'notes']
 
     def save(self, user, rows=None):
         data = self.cleaned_data
         return services.record_mortality(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], cause=data['cause'],
-            measured_weight_kg=data['measured_weight_kg'], notes=data['notes'], token=data['token'])
+            measured_weight_kg=data['measured_weight_kg'], notes=data['notes'],
+            health_event=data.get('health_event'), token=data['token'])
 
 
 class CullForm(OperationForm):
     count = forms.IntegerField(label=_('Culled fish'), min_value=1)
     reason = forms.ChoiceField(label=_('Reason'), choices=CullReason.choices, initial=CullReason.GRADING)
+    health_event = event_field()
 
-    field_order = ['batch', 'date', 'count', 'reason', 'notes']
+    field_order = ['batch', 'date', 'count', 'reason', 'health_event', 'notes']
 
     def save(self, user, rows=None):
         data = self.cleaned_data
         return services.record_cull(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], reason=data['reason'],
-            notes=data['notes'], token=data['token'])
+            notes=data['notes'], health_event=data.get('health_event'), token=data['token'])
 
 
 class WeighingForm(OperationForm):

@@ -88,15 +88,18 @@ def _shape():
 
 
 class HandlingAcknowledgement(models.Model):
-    """One warning a person went on past when recording a handling (a harvest, a transfer, a grading): a
-    medicine withdrawal in force, or too short a fast. It keeps what they were shown, the withdrawal's end
-    and reason, or the hours fasted against the hours the rule asked for, so the record says what was known
-    at the time. Who and when are the operation's (it is written in the same transaction); the operation's
-    activity-log entry is critical. Rows are never edited; voiding the operation leaves them as history."""
+    """One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a
+    treatment): a medicine withdrawal in force, or too short a fast. It keeps what they were shown, the
+    withdrawal's end and reason, or the hours fasted against the hours the rule asked for, so the record says
+    what was known at the time. It belongs to the stock operation or to the treatment it was given for, exactly
+    one (a database check). Who and when are that record's (it is written in the same transaction); its
+    activity-log entry is critical. Rows are never edited; voiding the record leaves them as history."""
 
     id = models.BigAutoField(primary_key=True)
-    operation = models.ForeignKey(StockOperation, on_delete=models.PROTECT, related_name='acknowledgements',
-                                  verbose_name=_('Operation'))
+    operation = models.ForeignKey(StockOperation, null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='acknowledgements', verbose_name=_('Operation'))
+    treatment = models.ForeignKey('Treatment', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='acknowledgements', verbose_name=_('Treatment'))
     warning = models.CharField(_('Warning'), max_length=12, choices=AcknowledgedWarning.choices)
     withdrawal_until = models.DateField(_('Withdrawal until'), null=True, blank=True)   # None: unknown
     withdrawal_approximate = models.BooleanField(_('Withdrawal end estimated'), default=False)
@@ -118,15 +121,21 @@ class HandlingAcknowledgement(models.Model):
             models.CheckConstraint(condition=_shape(), name='chk_handling_acknowledgements_shape'),
             models.CheckConstraint(condition=Q(fasted_hours__isnull=True) | Q(fasted_hours__gte=0),
                                    name='chk_handling_acknowledgements_fasted'),
+            models.CheckConstraint(
+                condition=Q(operation__isnull=False, treatment__isnull=True)
+                | Q(operation__isnull=True, treatment__isnull=False),
+                name='chk_handling_acknowledgements_one_record'),
             # A handling has one fast: the fish's last feeding against the longest rule that applies.
             models.UniqueConstraint(fields=['operation'], condition=Q(warning=AcknowledgedWarning.FASTING),
                                     name='uq_handling_acknowledgements_one_fast'),
         ]
 
     def __str__(self):
-        return f'{self.get_warning_display()} · {self.operation}'
+        return f'{self.get_warning_display()} · {self.operation if self.operation_id else self.treatment}'
 
     @property
     def kind(self):
-        """The handling it was given for: the operation's kind."""
+        """The handling it was given for: the operation's kind, or a treatment."""
+        if self.treatment_id:
+            return HandlingKind.TREATMENT
         return KIND_OF_OPERATION.get(self.operation.kind)

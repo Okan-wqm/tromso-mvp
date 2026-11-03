@@ -59,10 +59,10 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                    'Handling rules', 'Slaughter facilities', 'Suppliers',
-                                                    'Production units', 'Water chemistry', 'Storage', 'Meal board',
-                                                    'Records', 'Protocols', 'Assignments', 'Harvested',
-                                                    'Harvest plan', 'Production plans', 'Messages'])
+                                                    'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
+                                                    'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                                    'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
+                                                    'Sea-lice counts', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -117,10 +117,10 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                  'Handling rules', 'Slaughter facilities', 'Suppliers',
-                                                  'Production units', 'Water chemistry', 'Storage', 'Meal board',
-                                                  'Records', 'Protocols', 'Assignments', 'Harvested',
-                                                  'Harvest plan', 'Production plans', 'Messages'])
+                                                  'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
+                                                  'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                                  'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
+                                                  'Sea-lice counts', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -151,8 +151,9 @@ class MainHeadingTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
-                         [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics', 'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest']), ('Communication', [''])])
+                         [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
+                                                 'Purchasing']),
+                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
@@ -196,6 +197,7 @@ class MenuPlacementTests(TestCase):
             'farm.Species': 'Production · Setup · Reference data',
             'farm.Feed': 'Production · Setup · Reference data',
             'farm.WaterLimit': 'Production · Setup · Reference data',
+            'farm.Medicine': 'Production · Setup · Reference data',
             'farm.SlaughterFacility': 'Production · Setup · Harvest and logistics',
             'farm.HandlingRule': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
@@ -208,6 +210,9 @@ class MenuPlacementTests(TestCase):
             'farm.HarvestRecord': 'Production · Operations · Harvest',
             'farm.HandlingPlanItem': 'Production · Operations · Harvest',
             'farm.ProductionPlan': 'Production · Operations · Harvest',
+            'farm.Treatment': 'Production · Operations · Health',
+            'farm.HealthEvent': 'Production · Operations · Health',
+            'farm.LiceCount': 'Production · Operations · Health',
             'messaging.Conversation': 'Production · Communication',
             'knowledge.Document': 'Company · Knowledge',
             'knowledge.KnowledgeEntry': 'Company · Knowledge',

@@ -48,13 +48,14 @@ WORKSPACES = [
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
-            # The reference lists the production side picks from: species, feeds, the water limits per species and
-            # the fast before fish are handled (harvest, transport, grading, treatment); chemicals and fish-health
-            # substances as their tabs arrive.
+            # The reference lists the production side picks from: species, feeds, the water limits per species,
+            # the medicines with their withdrawal and the fast before fish are handled (harvest, transport,
+            # grading, treatment); chemicals as their tab arrives.
             Group(_('Reference data'), [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
                 Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
+                Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
                 Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
             ]),
             # Harvest and logistics: the outside facilities harvested fish go to; wellboats join it when they get
@@ -69,9 +70,9 @@ WORKSPACES = [
             ]),
         ]),
         # The daily production records: the fish in each unit and what happens to them, the water they are in,
-        # their feeding and their harvest; health joins as its tab arrives. Feeding has four pages: today's meals per
-        # unit, what was fed against the ration, the feeding tables and where each applies. Harvest has three: what
-        # was harvested, what is planned, and the target weight per batch.
+        # their feeding, their harvest and their health. Feeding has four pages: today's meals per unit, what was
+        # fed against the ration, the feeding tables and where each applies. Harvest has three: what was harvested,
+        # what is planned, and the target weight per batch.
         Section(_('Operations'), [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
@@ -90,6 +91,12 @@ WORKSPACES = [
                 Entry(pgettext_lazy('page', 'Harvested'), 'farm:harvests', 'package-check', 'farm.view_harvestrecord'),
                 Entry(_('Harvest plan'), 'farm:handlingplanitem_list', 'calendar', 'farm.view_handlingplanitem'),
                 Entry(_('Production plans'), 'farm:productionplan_list', 'target', 'farm.view_productionplan'),
+            ]),
+            # The fish's health: what was given them, what was seen and found, and the sea lice counted.
+            Group(_('Health'), [
+                Entry(_('Treatments'), 'farm:treatments', 'syringe', 'farm.view_treatment'),
+                Entry(_('Health events'), 'farm:healthevent_list', 'stethoscope', 'farm.view_healthevent'),
+                Entry(_('Sea-lice counts'), 'farm:lice_counts', 'bug', 'farm.view_licecount'),
             ]),
         ]),
         # Messages between the people running production, direct and in channels; their AI assistants join the

@@ -23,11 +23,12 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from decimal import ROUND_DOWN, Decimal
 
+from django.core.exceptions import ValidationError
 from django.utils import formats
 from django.utils.translation import gettext as _
 
 from farm.feeding.read import book_on, last_fed_at
-from farm.models import Batch, HandlingAcknowledgement
+from farm.models import Batch, HandlingAcknowledgement, Treatment
 from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule
 from farm.stock.dates import start_of
 
@@ -189,18 +190,32 @@ def _fasting(result, batches):
                                                last_fed_at=fed.moment, fasted_hours=hours, rule=rule))
 
 
-def acknowledge(operation, assessment):
-    """Stores the warnings a person went on past, one row each, with what they were shown."""
+def require_acknowledged(assessment, seen):
+    """Refuses a save with warnings the person has not gone on past exactly as they are now (`seen`: the
+    fingerprint the form's box carried); they are asked, or asked again. `assessment` has `warnings` and a
+    `fingerprint` (an Assessment, or the treatment's over its units)."""
+    if assessment.warnings and seen != assessment.fingerprint:
+        if not seen:
+            message = _('Tick the box to go on despite these warnings.')
+        else:
+            message = _('The warnings changed since the form was shown: read them again, and tick the box to go on.')
+        raise ValidationError({'handling_ack': message})
+
+
+def acknowledge(record, assessment):
+    """Stores the warnings a person went on past, one row each, with what they were shown, on the stock
+    operation or the treatment (`record`) they were given for."""
+    link = {'treatment': record} if isinstance(record, Treatment) else {'operation': record}
     rows = []
     for warning in assessment.warnings:
         if warning.warning == AcknowledgedWarning.WITHDRAWAL:
             block = warning.block
             rows.append(HandlingAcknowledgement(
-                operation=operation, warning=warning.warning, withdrawal_until=block.until,
+                **link, warning=warning.warning, withdrawal_until=block.until,
                 withdrawal_approximate=block.approximate, withdrawal_reason=block.reason[:500]))
         else:
             rows.append(HandlingAcknowledgement(
-                operation=operation, warning=warning.warning, last_fed_at=warning.last_fed_at,
+                **link, warning=warning.warning, last_fed_at=warning.last_fed_at,
                 fasted_hours=warning.fasted_hours, required_hours=warning.required_hours, rule=warning.rule))
     HandlingAcknowledgement.objects.bulk_create(rows)
     return rows

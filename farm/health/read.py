@@ -1,0 +1,142 @@
+"""Reading the health records: the days they need fish on (for the stock's own check), the deaths recorded
+under a health event, and the sea-lice weeks of a site with their statutory limit. Everything is worked out
+from the stored rows on read; nothing here writes.
+
+The site's week (lakselusforskriften Vedlegg 1 point 6): for each unit counted in the ISO week, its latest
+live count of that week; per stage, the unit's average is its lice / its fish examined, and the site's
+average is the sum of the units' averages divided by the number of units counted, every unit weighing the
+same. The limit is § 8's for the site's area and that week (farm/health/lice.py)."""
+from collections import defaultdict
+from dataclasses import dataclass, field
+from decimal import Decimal
+
+from django.db.models import OuterRef, Subquery, Sum
+from django.db.models.functions import Coalesce
+
+from farm.models import LiceCount, StockMovement, Treatment
+from farm.models.stock import MovementKind
+
+from . import lice
+
+STAGES = ('adult_females', 'mobile', 'attached')
+ZERO = Decimal(0)
+
+
+def dated_records(unit_ids, since=None):
+    """[(kind, record, unit id, day)] of the live health records that need fish in a unit on a day: a
+    treatment on its first day in each of its units, a lice count on its day; `since` leaves out older ones.
+    The stock service refuses an operation that would leave one without fish, as it does for a feeding."""
+    found = []
+    treatments = Treatment.objects.filter(units__in=unit_ids).distinct().prefetch_related('units')
+    counts = LiceCount.objects.filter(unit_id__in=unit_ids)
+    if since is not None:
+        treatments, counts = treatments.filter(start_date__gte=since), counts.filter(date__gte=since)
+    wanted = set(unit_ids)
+    for treatment in treatments:
+        found += [('treatment', treatment, unit.pk, treatment.start_date) for unit in treatment.units.all()
+                  if unit.pk in wanted]
+    found += [('lice_count', count, count.unit_id, count.date) for count in counts]
+    return found
+
+
+def with_deaths(events):
+    """The events (a queryset) with `deaths`: the fish that died or were culled under each, from the lines of
+    the live mortality and cull operations that name it (0 when none)."""
+    lines = (StockMovement.objects.filter(operation__health_event=OuterRef('pk'), operation__is_deleted=False,
+                                          kind__in=[MovementKind.MORTALITY, MovementKind.CULL])
+             .order_by().values('operation__health_event').annotate(fish=Sum('count_delta')).values('fish'))
+    return events.annotate(deaths=Coalesce(-Subquery(lines), 0))
+
+
+# ---- sea-lice weeks ---------------------------------------------------------------------------------
+def iso_week(day):
+    year, week, _weekday = day.isocalendar()
+    return year, week
+
+
+@dataclass
+class LiceWeek:
+    """A site's sea lice in one ISO week: the latest count of each unit counted, the site's averages per
+    stage, the limit and the sample the regulation asks for."""
+    site: object
+    year: int
+    week: int
+    counts: list = field(default_factory=list)    # the latest live count of each unit counted that week
+    stocked: int = None                            # units of the site holding fish now (for "3 of 4 counted")
+
+    @property
+    def area(self):
+        return self.site.lice_area if self.site is not None else ''
+
+    def average(self, stage):
+        """The site's average of a stage per fish: the mean of the units' averages (Vedlegg 1 point 6)."""
+        if not self.counts:
+            return None
+        return sum((count.per_fish(stage) for count in self.counts), ZERO) / len(self.counts)
+
+    @property
+    def adult_females(self):
+        return self.average('adult_females')
+
+    @property
+    def mobile(self):
+        return self.average('mobile')
+
+    @property
+    def attached(self):
+        return self.average('attached')
+
+    @property
+    def limit(self):
+        return lice.limit(self.area, self.week)
+
+    @property
+    def over_limit(self):
+        return bool(self.counts) and lice.over(self.adult_females, self.area, self.week)
+
+    @property
+    def area_unknown(self):
+        return self.area not in lice.AREAS
+
+    @property
+    def minimum_fish(self):
+        return lice.minimum_fish(self.area, self.week)
+
+    @property
+    def small_samples(self):
+        """The counts that examined fewer fish than the regulation asks for that week."""
+        return [count for count in self.counts if count.fish_counted < self.minimum_fish]
+
+
+def lice_weeks(counts):
+    """[LiceWeek] of the live counts given (a queryset), newest week first, sites by name."""
+    latest = {}
+    for count in counts.filter(is_deleted=False).select_related('unit__production_department__site').order_by(
+            'date', 'created_at'):
+        site = count.unit.production_department.site
+        latest[(site.pk if site else None, iso_week(count.date), count.unit_id)] = count
+    weeks = {}
+    for (site_id, (year, week), _unit_id), count in latest.items():
+        key = (site_id, year, week)
+        if key not in weeks:
+            weeks[key] = LiceWeek(count.unit.production_department.site, year, week)
+        weeks[key].counts.append(count)
+    for item in weeks.values():
+        item.counts.sort(key=lambda count: count.unit.code)
+    return sorted(weeks.values(), key=lambda item: (-item.year, -item.week, item.site.name if item.site else ''))
+
+
+def latest_counts(unit_ids):
+    """{unit id: its latest live lice count}."""
+    found = {}
+    for count in LiceCount.objects.filter(unit_id__in=unit_ids).order_by('date', 'created_at'):
+        found[count.unit_id] = count
+    return found
+
+
+def stocked_by_site(units_with_fish):
+    """{site id: units holding fish}, for "N of M units counted"."""
+    found = defaultdict(int)
+    for unit in units_with_fish:
+        found[unit.production_department.site_id] += 1
+    return found

@@ -1,0 +1,11 @@
+{% extends "farm/stock_void.html" %}
+{% load i18n health %}
+{% comment %} Voiding a treatment (farm.health.views.void_treatment): the stock's void dialog; the treatment stops counting,
+   its withdrawal is lifted, and it stays in the history, struck through, with its reason.{% endcomment %}
+{% block entry %}
+<p class="confirm-question">{% blocktrans trimmed with what=treatment.medicine|default:treatment.get_method_display date=treatment.start_date|date:"DATE_FORMAT" %}Void the treatment with {{ what }} of {{ date }}?{% endblocktrans %}</p>
+<ul class="op-lines">
+  <li>{% for unit in treatment.units.all %}{% if not forloop.first %}, {% endif %}{{ unit.code }}{% endfor %} · {% blocktrans trimmed with start=treatment.start_date|date:"DATE_FORMAT" end=treatment.end_date|date:"DATE_FORMAT" %}from {{ start }} to {{ end }}{% endblocktrans %}</li>
+</ul>
+<p>{% trans "Its medicine withdrawal is lifted at once. Void only a treatment that was not given as recorded: to correct one, void it and record it again." %}</p>
+{% endblock %}

@@ -15,6 +15,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+msgid "%"
+msgstr "%"
+
 #, python-format
 msgid "%(age)s ago"
 msgstr "%(age)s siden"
@@ -93,8 +96,32 @@ msgstr[0] "%(count)d kontaktperson lagret."
 msgstr[1] "%(count)d kontaktpersoner lagret."
 
 #, python-format
+msgid "%(count)d count"
+msgid_plural "%(count)d counts"
+msgstr[0] "%(count)d telling"
+msgstr[1] "%(count)d tellinger"
+
+#, python-format
 msgid "%(count)d d"
 msgstr "%(count)d d"
+
+#, python-format
+msgid "%(count)d day"
+msgid_plural "%(count)d days"
+msgstr[0] "%(count)d dag"
+msgstr[1] "%(count)d dager"
+
+#, python-format
+msgid "%(count)d day without a water temperature is counted as 0 °C."
+msgid_plural "%(count)d days without a water temperature are counted as 0 °C."
+msgstr[0] "%(count)d dag uten vanntemperatur er regnet som 0 °C."
+msgstr[1] "%(count)d dager uten vanntemperatur er regnet som 0 °C."
+
+#, python-format
+msgid "%(count)d degree-day"
+msgid_plural "%(count)d degree-days"
+msgstr[0] "%(count)d døgngrad"
+msgstr[1] "%(count)d døgngrader"
 
 #, python-format
 msgid "%(count)d delivery or return of the store names it for “%(category)s”: keep it ticked."
@@ -127,6 +154,24 @@ msgstr[0] "%(count)d høsting"
 msgstr[1] "%(count)d høstinger"
 
 #, python-format
+msgid "%(count)d health event names it as the laboratory: keep “%(category)s” ticked."
+msgid_plural "%(count)d health events name it as the laboratory: keep “%(category)s” ticked."
+msgstr[0] "%(count)d helsehendelse viser til den som laboratorium: la «%(category)s» være krysset av."
+msgstr[1] "%(count)d helsehendelser viser til den som laboratorium: la «%(category)s» være krysset av."
+
+#, python-format
+msgid "%(count)d health event names it: keep “%(category)s” ticked."
+msgid_plural "%(count)d health events name it: keep “%(category)s” ticked."
+msgstr[0] "%(count)d helsehendelse viser til den: la «%(category)s» være krysset av."
+msgstr[1] "%(count)d helsehendelser viser til den: la «%(category)s» være krysset av."
+
+#, python-format
+msgid "%(count)d medicine is made by it: keep “%(category)s” ticked."
+msgid_plural "%(count)d medicines are made by it: keep “%(category)s” ticked."
+msgstr[0] "%(count)d legemiddel er laget av den: la «%(category)s» være krysset av."
+msgstr[1] "%(count)d legemidler er laget av den: la «%(category)s» være krysset av."
+
+#, python-format
 msgid "%(count)d min"
 msgstr "%(count)d min"
 
@@ -157,6 +202,16 @@ msgstr[0] "%(count)d registrering"
 msgstr[1] "%(count)d registreringer"
 
 #, python-format
+msgid "%(count)d record names this event (mortality, cull or treatment): void it first."
+msgid_plural "%(count)d records name this event (mortality, cull or treatment): void them first."
+msgstr[0] ""
+"%(count)d registrering viser til denne hendelsen (dødelighet, utsortering eller behandling): "
+"annuller den først."
+msgstr[1] ""
+"%(count)d registreringer viser til denne hendelsen (dødelighet, utsortering eller behandling): "
+"annuller dem først."
+
+#, python-format
 msgid "%(count)d record restored."
 msgid_plural "%(count)d records restored."
 msgstr[0] "%(count)d post gjenopprettet."
@@ -173,6 +228,18 @@ msgid "%(count)d row saved."
 msgid_plural "%(count)d rows saved."
 msgstr[0] "%(count)d rad lagret."
 msgstr[1] "%(count)d rader lagret."
+
+#, python-format
+msgid "%(count)d treatment"
+msgid_plural "%(count)d treatments"
+msgstr[0] "%(count)d behandling"
+msgstr[1] "%(count)d behandlinger"
+
+#, python-format
+msgid "%(count)d treatment names it: keep “%(category)s” ticked."
+msgid_plural "%(count)d treatments name it: keep “%(category)s” ticked."
+msgstr[0] "%(count)d behandling viser til den: la «%(category)s» være krysset av."
+msgstr[1] "%(count)d behandlinger viser til den: la «%(category)s» være krysset av."
 
 #, python-format
 msgid "%(count)d unit"
@@ -251,6 +318,10 @@ msgstr[0] "%(count)s advarsel"
 msgstr[1] "%(count)s advarsler"
 
 #, python-format
+msgid "%(counted)s of %(stocked)s units with fish now"
+msgstr "%(counted)s av %(stocked)s enheter med fisk nå"
+
+#, python-format
 msgid "%(counter)s row"
 msgid_plural "%(counter)s rows"
 msgstr[0] "%(counter)s rad"
@@ -275,6 +346,10 @@ msgstr[1] "%(days)s fôringsdager uten forventet FCR"
 #, python-format
 msgid "%(deaths)s dead · %(culls)s culled"
 msgstr "%(deaths)s døde · %(culls)s utsortert"
+
+#, python-format
+msgid "%(degrees)s or %(days)s, whichever ends later"
+msgstr "%(degrees)s eller %(days)s, det som slutter sist"
 
 #, python-format
 msgid "%(density)s kg/m³"
@@ -313,6 +388,10 @@ msgid "%(feed)s · %(size)s mm"
 msgstr "%(feed)s · %(size)s mm"
 
 #, python-format
+msgid "%(females)s adult female · %(mobile)s mobile · %(attached)s attached lice per fish"
+msgstr "%(females)s voksne hunnlus · %(mobile)s bevegelige · %(attached)s fastsittende lus per fisk"
+
+#, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s «%(record)s» er slettet."
 
@@ -343,6 +422,10 @@ msgstr "%(fish)s fisk, %(biomass)s"
 #, python-format
 msgid "%(fish)s fish, %(biomass)s now"
 msgstr "%(fish)s fisk, %(biomass)s nå"
+
+#, python-format
+msgid "%(fish)s fish: %(females)s adult female, %(mobile)s mobile, %(attached)s attached lice"
+msgstr "%(fish)s fisk: %(females)s voksne hunnlus, %(mobile)s bevegelige, %(attached)s fastsittende lus"
 
 #, python-format
 msgid "%(formula)s only"
@@ -480,6 +563,22 @@ msgstr[1] "%(meals)s måltider"
 msgid "%(meals)s × %(meal)s"
 msgstr "%(meals)s × %(meal)s"
 
+#, python-format
+msgid "%(medicine)s is given as %(administration)s."
+msgstr "%(medicine)s gis som %(administration)s."
+
+#, python-format
+msgid "%(medicine)s is inactive: a new treatment takes an active medicine."
+msgstr "%(medicine)s er inaktivt: en ny behandling bruker et aktivt legemiddel."
+
+#, python-format
+msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
+msgstr "%(medicine)s, %(method)s fra %(start)s til %(end)s: tilbakeholdelsestid %(rule)s."
+
+#, python-format
+msgid "%(minutes)s min"
+msgstr "%(minutes)s min"
+
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
 #, python-format
@@ -564,6 +663,10 @@ msgid "%(species)s is %(status)s: a new batch takes an active or experimental sp
 msgstr "%(species)s er %(status)s: en ny fiskegruppe må være av en aktiv art eller en forsøksart."
 
 #, python-format
+msgid "%(start)s – %(end)s"
+msgstr "%(start)s – %(end)s"
+
+#, python-format
 msgid "%(supplier)s is deleted."
 msgstr "%(supplier)s er slettet."
 
@@ -586,6 +689,10 @@ msgstr "%(temperature)s °C er utenfor denne tabellen (%(low)s–%(high)s °C)."
 #, python-format
 msgid "%(temperature)s °C, %(salinity)s ‰"
 msgstr "%(temperature)s °C, %(salinity)s ‰"
+
+#, python-format
+msgid "%(unit)s already has a count on %(date)s: void it first to correct it."
+msgstr "%(unit)s har allerede en telling %(date)s: annuller den først for å rette den."
 
 #, python-format
 msgid ""
@@ -654,6 +761,10 @@ msgstr "%(value)s kg"
 #, python-format
 msgid "%(value)s kg/m³"
 msgstr "%(value)s kg/m³"
+
+#, python-format
+msgid "%(value)s per fish"
+msgstr "%(value)s per fisk"
 
 #. Translators: a weight in tonnes, e.g. 3.2 t.
 #, python-format
@@ -744,6 +855,31 @@ msgstr ""
 msgid "A batch alone: the protocol follows it into every unit it is moved to."
 msgstr "Bare en fiskegruppe: protokollen følger den til hver enhet den flyttes til."
 
+msgid "A bath, a dip or a freshwater bath only."
+msgstr "Bare bad, dypp eller ferskvannsbad."
+
+msgid ""
+"A bath, a medicated feed, an injection or a vaccination, or a treatment without a medicine, is "
+"recorded here or from a unit’s drawer on Production units."
+msgstr ""
+"Et bad, medisinfôr, en injeksjon eller vaksinasjon, eller en behandling uten legemiddel, "
+"registreres her eller fra en enhets panel under Produksjonsenheter."
+
+msgid ""
+"A bath, medicated feed, injection or dip is given with a medicine, the way the medicine is given;"
+" the others without one."
+msgstr "Bad, medisinfôr, injeksjon eller dypp gis med et legemiddel, slik legemiddelet gis; de andre uten."
+
+msgid "A bath, medicated feed, injection or dip names its medicine."
+msgstr "Bad, medisinfôr, injeksjon eller dypp oppgir sitt legemiddel."
+
+msgid ""
+"A bath, medicated feed, injection or dip names its medicine; a treatment without a medicine names"
+" none."
+msgstr ""
+"Bad, medisinfôr, injeksjon eller dypp oppgir sitt legemiddel; en behandling uten legemiddel "
+"oppgir ingen."
+
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "En kapasitet trenger sin enhet, og en enhet sin kapasitet."
 
@@ -761,8 +897,14 @@ msgstr "En telling setter hva en lagerplass har ved dagens slutt; avviket fra re
 msgid "A delivery puts stock into a location."
 msgstr "Et varemottak legger beholdning inn på en lagerplass."
 
+msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
+msgstr "En diagnose er mistenkt eller bekreftet; uten diagnose er det ingenting å bekrefte."
+
 msgid "A document in the library"
 msgstr "Et dokument i biblioteket"
+
+msgid "A dose needs its unit, and a unit its dose."
+msgstr "En dose trenger sin enhet, og en enhet sin dose."
 
 msgid "A draft copy with this table, to change and assign from a date."
 msgstr "En utkastkopi med denne tabellen, som kan endres og tildeles fra en dato."
@@ -797,6 +939,24 @@ msgstr "En høsting går til et slakteri, en transport til en enhet."
 
 msgid "A harvest is recorded from its unit’s drawer on Production units, or from its plan."
 msgstr "En høsting registreres fra enhetens panel under Produksjonsenheter, eller fra planen."
+
+#, python-format
+msgid "A last day older than %(date)s cannot be changed."
+msgstr "En siste dag eldre enn %(date)s kan ikke endres."
+
+msgid ""
+"A listed disease is notified to Mattilsynet at once, already on suspicion (dyrehelseforskriften §"
+" 7)."
+msgstr ""
+"En listeført sykdom meldes straks til Mattilsynet, allerede ved mistanke (dyrehelseforskriften § "
+"7)."
+
+msgid ""
+"A listed disease is suspected or confirmed and Mattilsynet has not been notified: notify at once "
+"(dyrehelseforskriften § 7), then enter the time on the event."
+msgstr ""
+"En listeført sykdom er mistenkt eller bekreftet og Mattilsynet er ikke varslet: varsle straks "
+"(dyrehelseforskriften § 7), og før så inn tidspunktet på hendelsen."
 
 #, python-format
 msgid "A location has at most %(num)d reorder level."
@@ -912,8 +1072,23 @@ msgstr "En prøve er antall fisk veid og samlet vekt."
 msgid "A sea cage site needs latitude and longitude."
 msgstr "En merdlokalitet må ha breddegrad og lengdegrad."
 
+msgid "A sea-lice medicine names its substance as the lice report has it; other medicines have none."
+msgstr "Et lakselusmiddel oppgir virkestoffet slik luserapporten har det; andre legemidler har ingen."
+
+msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
+msgstr "Bare lakselusmiddel: virkestoffet slik Mattilsynets ukentlige luserapport kaller det."
+
 msgid "A silo only: the feeder it fills, on the same site."
 msgstr "Bare for silo: fôrautomaten den fyller, på samme lokalitet."
+
+msgid ""
+"A site averages the averages of its units counted that week, every unit weighing the same, and "
+"must stay below the limit: 0.5 adult female lice per fish, 0.2 in the spring weeks "
+"(lakselusforskriften § 8 and Vedlegg 1). The latest count of each unit in the week counts."
+msgstr ""
+"En lokalitet er snittet av snittene til enhetene som ble telt den uken, der hver enhet teller "
+"likt, og må holde seg under grensen: 0,5 voksne hunnlus per fisk, 0,2 i vårukene "
+"(lakselusforskriften § 8 og vedlegg 1). Den siste tellingen av hver enhet i uken gjelder."
 
 msgid ""
 "A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
@@ -928,6 +1103,18 @@ msgid ""
 msgstr ""
 "En lagerplass er et sted på en lokalitet der beholdning oppbevares: et fôrlager, en silo, et "
 "kjølerom, et medisinskap."
+
+msgid "A strength needs its unit, and a unit its strength."
+msgstr "En styrke trenger sin enhet, og en enhet sin styrke."
+
+msgid "A supplier of laboratory analyses."
+msgstr "En leverandør av laboratorieanalyser."
+
+msgid "A supplier of medicines and vaccines (Purchasing › Suppliers)."
+msgstr "En leverandør av legemidler og vaksiner (Innkjøp › Leverandører)."
+
+msgid "A supplier of veterinary and fish health services (Purchasing › Suppliers)."
+msgstr "En leverandør av veterinær- og fiskehelsetjenester (Innkjøp › Leverandører)."
 
 msgid "A system cannot be its own parent."
 msgstr "Et system kan ikke være sitt eget overordnede system."
@@ -962,6 +1149,17 @@ msgstr ""
 "En flytting er en transport. En sortering kontrolleres mot sin egen regel og transportregelen; "
 "den lengste gjelder."
 
+msgid "A treatment is of the units of one site: record one for each site."
+msgstr "En behandling gjelder enhetene på én lokalitet: registrer én for hver lokalitet."
+
+msgid "A treatment without a medicine names none."
+msgstr "En behandling uten legemiddel oppgir ingen."
+
+msgid ""
+"A treatment without a medicine names none: choose a bath, medicated feed, injection or dip as the"
+" method."
+msgstr "En behandling uten legemiddel oppgir ingen: velg bad, medisinfôr, injeksjon eller dypp som metode."
+
 msgid "A unit becomes active when fish are stocked in it (Operations › Production units)."
 msgstr "En enhet blir aktiv når det settes ut fisk i den (Drift › Produksjonsenheter)."
 
@@ -978,6 +1176,12 @@ msgstr "En enhetskostnad trenger sin valuta, og en valuta en enhetskostnad."
 msgid "A unit with fish in it cannot be made inactive: move or harvest them first."
 msgstr "En enhet med fisk i kan ikke gjøres inaktiv: flytt eller høst fisken først."
 
+msgid "A vaccination is given with a vaccine."
+msgstr "En vaksinasjon gis med en vaksine."
+
+msgid "A vaccine is given as a vaccination, and a vaccination with a vaccine."
+msgstr "En vaksine gis som vaksinasjon, og en vaksinasjon med en vaksine."
+
 msgid ""
 "A water on the Water Quality Management Chart and against the pH, the pH where each limit is "
 "reached, and what to dose to reach a target. The limits start as defaults, not as the limits of "
@@ -988,6 +1192,9 @@ msgstr ""
 " må doseres for å nå et mål. Grensene starter som standardverdier, ikke som grensene for fisken "
 "din, med mindre verdiene kommer fra en enhet. Resultatene følger verdiene mens du endrer dem. "
 "Ingenting lagres."
+
+msgid "Abnormal swimming"
+msgstr "Unormal svømming"
 
 msgid "Above the max density, accepted"
 msgstr "Over maks. tetthet, godtatt"
@@ -1018,6 +1225,12 @@ msgstr "Handlinger"
 
 msgid "Active"
 msgstr "Aktiv"
+
+msgid "Active substance"
+msgstr "Virkestoff"
+
+msgid "Active: a new treatment can use it. Inactive: kept for the treatments that used it."
+msgstr "Aktiv: en ny behandling kan bruke det. Inaktiv: beholdt for behandlingene som brukte det."
 
 msgid ""
 "Active: buy from it. Inactive: not used at the moment. Suspended: on hold, e.g. during a "
@@ -1117,6 +1330,15 @@ msgstr "Adresse"
 msgid "Administration"
 msgstr "Administrasjon"
 
+msgid "Adult female lice"
+msgstr "Voksne hunnlus"
+
+msgid "Adult females"
+msgstr "Voksne hunnlus"
+
+msgid "Adult females per fish"
+msgstr "Voksne hunnlus per fisk"
+
 msgid "Adults"
 msgstr "Voksen fisk"
 
@@ -1190,6 +1412,9 @@ msgstr "Alle %(plural)s"
 msgid "All actions"
 msgstr "Alle handlinger"
 
+msgid "All adult female lice found on the fish examined, with or without egg strings."
+msgstr "Alle voksne hunnlus funnet på fisken som ble undersøkt, med eller uten eggstrenger."
+
 msgid "All batches"
 msgstr "Alle fiskegrupper"
 
@@ -1223,6 +1448,12 @@ msgstr "Alle kretsløp"
 
 msgid "All manufacturers"
 msgstr "Alle produsenter"
+
+msgid "All medicines"
+msgstr "Alle legemidler"
+
+msgid "All methods"
+msgstr "Alle metoder"
 
 msgid "All operations"
 msgstr "Alle operasjoner"
@@ -1266,6 +1497,13 @@ msgstr "All energien i fôret, i MJ per kg slik det fôres."
 msgid "All topics"
 msgstr "Alle emner"
 
+msgid "All treatments"
+msgstr "Alle behandlinger"
+
+#, python-format
+msgid "All treatments of %(unit)s"
+msgstr "Alle behandlinger i %(unit)s"
+
 msgid "All types"
 msgstr "Alle typer"
 
@@ -1302,6 +1540,15 @@ msgstr "Ammoniakksensor"
 msgid "Ammonium (mg/L NH₄⁺ as N)"
 msgstr "Ammonium (mg/L NH₄⁺ som N)"
 
+msgid "Amoebic gill disease (AGD)"
+msgstr "Amøbegjellesykdom (AGD)"
+
+msgid "Amount unit"
+msgstr "Mengdeenhet"
+
+msgid "Amount used"
+msgstr "Brukt mengde"
+
 msgid ""
 "Amounts of the pure substance, for the volume (System tab); a solution or a technical grade "
 "weighs more (divide by its strength). Dose in parts and measure the pH again: a strong base or "
@@ -1313,6 +1560,9 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "En aktiv protokoll har en tabell."
+
+msgid "An amount needs its unit, and a unit its amount."
+msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
 
 msgid ""
 "An article, report, book or regulation the company relies on: its reference, its abstract and its"
@@ -1332,6 +1582,9 @@ msgstr ""
 "En jorddam er bar jord eller komprimert leire; en dam med duk har membran eller betong, og må ha "
 "det."
 
+msgid "An event is closed on or after its date."
+msgstr "En hendelse avsluttes på eller etter datoen sin."
+
 msgid "An expected FCR is between 0.50 and 3.00."
 msgstr "En forventet FCR er mellom 0,50 og 3,00."
 
@@ -1340,6 +1593,9 @@ msgstr "En ekspert eller vår egen observasjon"
 
 msgid "An inactive location takes no new stock; what it holds still shows and can leave."
 msgstr "En inaktiv lagerplass tar ikke imot ny beholdning; det den har vises fortsatt og kan tas ut."
+
+msgid "Anaesthetic"
+msgstr "Bedøvelsesmiddel"
 
 msgid "Analog"
 msgstr "Analog"
@@ -1358,6 +1614,9 @@ msgstr "Et annet fôr bruker allerede denne koden."
 
 msgid "Another feeding protocol already has this name."
 msgstr "En annen fôringsprotokoll har allerede dette navnet."
+
+msgid "Another medicine already has this name."
+msgstr "Et annet legemiddel har allerede dette navnet."
 
 msgid "Another production department already uses this code."
 msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
@@ -1425,6 +1684,12 @@ msgstr "Denne koden brukes allerede av en annen enhet."
 msgid "Another user already uses this email."
 msgstr "Denne e-postadressen brukes allerede av en annen bruker."
 
+msgid "Antibacterial"
+msgstr "Antibakterielt"
+
+msgid "Antifungal"
+msgstr "Soppmiddel"
+
 msgid "Any active location, on this site or another."
 msgstr "Hvilken som helst aktiv lagerplass, på denne lokaliteten eller en annen."
 
@@ -1469,6 +1734,9 @@ msgctxt "access area"
 msgid "Area"
 msgstr "Område"
 
+msgid "Area not set: the stricter limit applies (Facility › Sites)"
+msgstr "Område ikke satt: den strengeste grensen gjelder (Anlegg › Lokaliteter)"
+
 msgid "As a pH meter or kit reads it."
 msgstr "Slik et pH-meter eller et sett leser den."
 
@@ -1487,6 +1755,23 @@ msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,29."
 
 msgid "As nitrogen. A kit that reads NO₃⁻: divide by 4.43."
 msgstr "Som nitrogen. Et sett som leser NO₃⁻: del på 4,43."
+
+msgid "As the SPC names it, e.g. azamethiphos."
+msgstr "Slik preparatomtalen kaller det, f.eks. azametifos."
+
+msgid ""
+"As the SPC states it (døgngrader): the daily mean water temperatures after the last treatment day"
+" add up to this before the fish may be harvested. 0 when it has none."
+msgstr ""
+"Slik preparatomtalen oppgir det (døgngrader): døgnmiddeltemperaturene i vannet etter siste "
+"behandlingsdag summeres til dette før fisken kan høstes. 0 når den ikke har noen."
+
+msgid ""
+"As the SPC states it, in days after the last treatment day. Give it as well when the SPC gives "
+"both: the later end wins. 0 when it has none."
+msgstr ""
+"Slik preparatomtalen oppgir det, i dager etter siste behandlingsdag. Oppgi den også når "
+"preparatomtalen gir begge: den seneste slutten gjelder. 0 når den ikke har noen."
 
 msgid "As the document itself gives it."
 msgstr "Slik dokumentet selv oppgir den."
@@ -1516,6 +1801,9 @@ msgstr "Assistent"
 #, python-format
 msgid "At least %(min)s."
 msgstr "Minst %(min)s."
+
+msgid "At least 10 fish a cage, 20 in the spring weeks (lakselusforskriften, Vedlegg 1)."
+msgstr "Minst 10 fisk per merd, 20 i vårukene (lakselusforskriften, vedlegg 1)."
 
 #, python-format
 msgid "At most %(decimals)d decimals for this parameter."
@@ -1557,6 +1845,15 @@ msgstr ""
 "Ved denne pH-en er alkaliteten over %(floor)s mg/L som CaCO₃: hydroksid og borat alene utgjør så "
 "mye."
 
+msgid "Attached"
+msgstr "Fastsittende"
+
+msgid "Attached lice"
+msgstr "Fastsittende lus"
+
+msgid "Attached per fish"
+msgstr "Fastsittende per fisk"
+
 msgid "Author"
 msgstr "Forfatter"
 
@@ -1583,6 +1880,9 @@ msgstr "Snittvekt for fisken som blir igjen (g)"
 
 msgid "Avg. weight"
 msgstr "Snittvekt"
+
+msgid "Azamethiphos"
+msgstr "Azametifos"
 
 msgid "Back to draft"
 msgstr "Tilbake til utkast"
@@ -1611,6 +1911,12 @@ msgstr "Tilbakespylingsfrekvens"
 msgid "Backwash interval"
 msgstr "Tilbakespylingsintervall"
 
+msgid "Bacterial disease"
+msgstr "Bakteriell sykdom"
+
+msgid "Bacterial kidney disease (BKD)"
+msgstr "Bakteriell nyresyke (BKD)"
+
 msgid "Band"
 msgstr "Vektklasse"
 
@@ -1637,8 +1943,17 @@ msgstr "Gruppenummer"
 msgid "Batches"
 msgstr "Fiskegrupper"
 
+msgid "Batches and withdrawal"
+msgstr "Fiskegrupper og tilbakeholdelsestid"
+
 msgid "Batches fed"
 msgstr "Fôrede fiskegrupper"
+
+msgid "Bath"
+msgstr "Bad"
+
+msgid "Bath time (minutes)"
+msgstr "Badetid (minutter)"
 
 msgid "Bead filter"
 msgstr "Perlefilter"
@@ -1857,6 +2172,9 @@ msgstr ""
 "(1988); kalsitt og aragonitt: Mucci (1983); oksygen: Benson og Krause (1984). pH er slik en måler"
 " leser den (NBS-skala). En grense nærmere enn 0,2 pH er en advarsel."
 
+msgid "Cardiomyopathy syndrome (CMS)"
+msgstr "Kardiomyopatisyndrom (CMS)"
+
 msgid "Category"
 msgstr "Kategori"
 
@@ -1868,6 +2186,9 @@ msgstr "Sentrifugalpumpe"
 
 msgid "Change password"
 msgstr "Endre passord"
+
+msgid "Change the last day"
+msgstr "Endre siste dag"
 
 msgid "Changed"
 msgstr "Endret"
@@ -1910,6 +2231,13 @@ msgstr "Velg en fôrautomat på lagerplassens lokalitet."
 msgid "Choose a feeder: equipment of the Feeding category."
 msgstr "Velg en fôrautomat: utstyr i kategorien Fôring."
 
+#, python-format
+msgid "Choose a health event of %(unit)s."
+msgstr "Velg en helsehendelse i %(unit)s."
+
+msgid "Choose a health event of the site of these units."
+msgstr "Velg en helsehendelse på lokaliteten til disse enhetene."
+
 msgid "Choose a person"
 msgstr "Velg en person"
 
@@ -1922,11 +2250,20 @@ msgstr "Velg en leverandør av utstyr og reservedeler."
 msgid "Choose a supplier of feed."
 msgstr "Velg en leverandør av fôr."
 
+msgid "Choose a supplier of laboratory analyses."
+msgstr "Velg en leverandør av laboratorieanalyser."
+
 msgid "Choose a supplier of live fish and eggs."
 msgstr "Velg en leverandør av levende fisk og rogn."
 
+msgid "Choose a supplier of medicines and vaccines."
+msgstr "Velg en leverandør av legemidler og vaksiner."
+
 msgid "Choose a supplier of slaughter and processing."
 msgstr "Velg en leverandør av slakting og foredling."
+
+msgid "Choose a supplier of veterinary and fish health services."
+msgstr "Velg en leverandør av veterinær- og fiskehelsetjenester."
 
 msgid "Choose a supplier of wellboat and transport."
 msgstr "Velg en leverandør av brønnbåt og transport."
@@ -1974,11 +2311,20 @@ msgstr "Velg lagerplassen som skal telles."
 msgid "Choose the shape; the measures it is worked out from appear with it."
 msgstr "Velg formen; målene volumet beregnes ut fra, vises sammen med den."
 
+msgid "Choose the site first."
+msgstr "Velg lokaliteten først."
+
+msgid "Choose the substance as the lice report names it."
+msgstr "Velg virkestoffet slik luserapporten kaller det."
+
 msgid "Choose the unit that was fed."
 msgstr "Velg enheten som ble fôret."
 
 msgid "Choose the unit the fish go into."
 msgstr "Velg enheten fisken skal i."
+
+msgid "Choose the units that were treated."
+msgstr "Velg enhetene som ble behandlet."
 
 msgid "Choose units, a batch, or a batch and units."
 msgstr "Velg enheter, en fiskegruppe, eller en fiskegruppe og enheter."
@@ -2019,6 +2365,12 @@ msgstr "Lukk"
 
 msgid "Closed"
 msgstr "Stengt"
+
+msgid "Closed on"
+msgstr "Avsluttet"
+
+msgid "Closing"
+msgstr "Avslutning"
 
 msgid "Code"
 msgstr "Kode"
@@ -2061,6 +2413,12 @@ msgstr "Betong"
 
 msgid "Conductivity"
 msgstr "Ledningsevne"
+
+msgid "Confirmation"
+msgstr "Bekreftelse"
+
+msgid "Confirmed"
+msgstr "Bekreftet"
 
 msgid "Connectivity"
 msgstr "Tilkobling"
@@ -2116,6 +2474,9 @@ msgstr "Kjøling"
 msgid "Cooling capacity"
 msgstr "Kjølekapasitet"
 
+msgid "Copepodids and chalimus, in total."
+msgstr "Kopepoditter og chalimus, totalt."
+
 #, python-format
 msgid "Copied as “%(protocol)s”, a draft: change it, set it active and assign it."
 msgstr "Kopiert som «%(protocol)s», et utkast: endre den, gjør den aktiv og tildel den."
@@ -2149,6 +2510,13 @@ msgstr "Tellingskorrigering"
 
 msgid "Count difference"
 msgstr "Tellingsavvik"
+
+msgid ""
+"Count every stage on every fish examined and enter the totals; the averages per fish are worked "
+"out (lakselusforskriften, Vedlegg 1)."
+msgstr ""
+"Tell hvert stadium på hver fisk som undersøkes og før inn summene; snittet per fisk regnes ut "
+"(lakselusforskriften, vedlegg 1)."
 
 msgid ""
 "Count everything in the location. A count is what it holds at the end of the day: every lot "
@@ -2254,6 +2622,9 @@ msgstr "Egendefinert felt 2"
 msgid "Custom field 3"
 msgstr "Egendefinert felt 3"
 
+msgid "Cypermethrin"
+msgstr "Cypermetrin"
+
 msgid "D-ended"
 msgstr "D-ende"
 
@@ -2281,6 +2652,9 @@ msgstr "Dato"
 msgid "Date and time on the site’s clock."
 msgstr "Dato og klokkeslett etter lokalitetens klokke."
 
+msgid "Days"
+msgstr "Dager"
+
 msgid "Days of cover"
 msgstr "Dager dekning"
 
@@ -2291,6 +2665,9 @@ msgstr "Dager dekning: beholdningen på lokaliteten delt på kiloene fôret der 
 
 msgid "Dead fish"
 msgstr "Dødfisk"
+
+msgid "Deaths"
+msgstr "Døde"
 
 msgid "Decommissioned"
 msgstr "Utrangert"
@@ -2315,6 +2692,9 @@ msgstr "Definisjon"
 
 msgid "Deformed"
 msgstr "Deformert"
+
+msgid "Deformity"
+msgstr "Deformitet"
 
 msgid "Delete"
 msgstr "Slett"
@@ -2367,6 +2747,9 @@ msgid_plural "Delivery from %(supplier)s recorded: %(count)d lines."
 msgstr[0] "Varemottak fra %(supplier)s registrert: %(count)d linje."
 msgstr[1] "Varemottak fra %(supplier)s registrert: %(count)d linjer."
 
+msgid "Deltamethrin"
+msgstr "Deltametrin"
+
 msgid "Demand feeder"
 msgstr "Behovsfôrer"
 
@@ -2388,6 +2771,9 @@ msgstr "Detaljer"
 msgid "Deviation"
 msgstr "Avvik"
 
+msgid "Diagnosis"
+msgstr "Diagnose"
+
 msgid "Diameter (m)"
 msgstr "Diameter (m)"
 
@@ -2400,11 +2786,17 @@ msgstr "Diesel"
 msgid "Difference"
 msgstr "Differanse"
 
+msgid "Diflubenzuron"
+msgstr "Diflubenzuron"
+
 msgid "Digestible energy (MJ/kg)"
 msgstr "Fordøyelig energi (MJ/kg)"
 
 msgid "Dimensions"
 msgstr "Mål"
+
+msgid "Dip"
+msgstr "Dypp"
 
 msgid "Direct conversation"
 msgstr "Direktesamtale"
@@ -2441,6 +2833,18 @@ msgstr "Dokument"
 
 msgid "Done"
 msgstr "Utført"
+
+msgid "Dose"
+msgstr "Dose"
+
+msgid "Dose and amount"
+msgstr "Dose og mengde"
+
+msgid "Dose unit"
+msgstr "Doseenhet"
+
+msgid "Dose · amount"
+msgstr "Dose · mengde"
 
 msgid "Dosing path"
 msgstr "Doseringsbane"
@@ -2510,6 +2914,12 @@ msgstr ""
 msgid "EPDM"
 msgstr "EPDM"
 
+msgid "EU-listed, categories C, D and E"
+msgstr "EU-listeført, kategori C, D og E"
+
+msgid "EU-listed, category A"
+msgstr "EU-listeført, kategori A"
+
 msgid "Each temperature is a column once."
 msgstr "Hver temperatur kan bare være én kolonne."
 
@@ -2569,6 +2979,9 @@ msgstr "Elektrisk"
 msgid "Email"
 msgstr "E-post"
 
+msgid "Emamectin benzoate"
+msgstr "Emamektinbenzoat"
+
 msgid "Empty"
 msgstr "Tom"
 
@@ -2609,6 +3022,9 @@ msgstr "Lagt inn her"
 msgid "Entries"
 msgstr "Oppføringer"
 
+msgid "Epizootic haematopoietic necrosis (EHN)"
+msgstr "Epizootisk hematopoetisk nekrose (EHN)"
+
 msgid "Equipment"
 msgstr "Utstyr"
 
@@ -2642,6 +3058,9 @@ msgstr "Anslått nå · mål nådd"
 
 msgid "Estimated: the measured weight and the feed since, divided by the expected FCR"
 msgstr "Estimert: den målte vekten og fôret siden, delt på forventet FCR"
+
+msgid "Event"
+msgstr "Hendelse"
 
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
@@ -2678,6 +3097,9 @@ msgstr ""
 "Alt vann arten oppdrettes i. Laks og regnbueørret vokser opp i ferskvann og går videre i sjøvann:"
 " kryss av for begge."
 
+msgid "Every way of giving"
+msgstr "Alle måter å gi på"
+
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Alle i samtalen ser at en melding ble slettet, ikke hva den sa."
 
@@ -2694,8 +3116,17 @@ msgstr ""
 "Alt anlegget kjøper fra den, varer og tjenester. Utstyr kan bare kjøpes fra en leverandør av "
 "utstyr og reservedeler."
 
+msgid "Examination"
+msgstr "Undersøkelse"
+
+msgid "Examined by"
+msgstr "Undersøkt av"
+
 msgid "Exclusion"
 msgstr "Eksklusjon"
+
+msgid "Exophthalmia"
+msgstr "Eksoftalmus"
 
 msgid "Expand menu"
 msgstr "Vis menyen"
@@ -2898,6 +3329,10 @@ msgstr "Fôrer nå"
 msgid "Feeds when the fish trigger it."
 msgstr "Fôrer når fisken utløser den."
 
+#, python-format
+msgid "Fewer than %(fish)s fish examined in:"
+msgstr "Færre enn %(fish)s fisk undersøkt i:"
+
 msgid "Fibreglass (GRP)"
 msgstr "Glassfiber (GRP)"
 
@@ -2936,6 +3371,12 @@ msgstr "Filtrering"
 msgid "Filtration size"
 msgstr "Filtreringsfinhet"
 
+msgid "Fin damage"
+msgstr "Finneskader"
+
+msgid "Findings"
+msgstr "Funn"
+
 msgid "Fingerlings"
 msgstr "Fingerlinger"
 
@@ -2944,6 +3385,9 @@ msgstr "Sluttfôr"
 
 msgid "First"
 msgstr "Første"
+
+msgid "First day"
+msgstr "Første dag"
 
 msgid "First name"
 msgstr "Fornavn"
@@ -2963,6 +3407,9 @@ msgstr "Det er fisk i enheten, så den kan ikke være %(status)s: flytt eller h�
 
 msgid "Fish arriving"
 msgstr "Fisk som kommer"
+
+msgid "Fish examined"
+msgstr "Undersøkte fisk"
 
 msgid "Fish farm"
 msgstr "Fiskeoppdrett"
@@ -3011,6 +3458,14 @@ msgid "Fluidised bed"
 msgstr "Fluidisert sjikt"
 
 msgid ""
+"For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 from Nord-"
+"Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark (lakselusforskriften § "
+"8)."
+msgstr ""
+"For en sjølokalitet med laksefisk: den lavere lusegrensen om våren gjelder i uke 16–21 fra Nord-"
+"Trøndelag og sørover og i uke 21–26 i Nordland, Troms og Finnmark (lakselusforskriften § 8)."
+
+msgid ""
 "For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 "
 "rows. They are saved separately from the equipment details."
 msgstr ""
@@ -3046,6 +3501,9 @@ msgstr "Funnet, ikke i registeret"
 msgid "Frame"
 msgstr "Ramme"
 
+msgid "Francisellosis"
+msgstr "Francisellose"
+
 msgid "Free carbon dioxide, from a CO₂ probe or a titration."
 msgstr "Fri karbondioksid, fra en CO₂-sonde eller en titrering."
 
@@ -3060,6 +3518,9 @@ msgstr "Ferskvann"
 
 msgid "Freshwater"
 msgstr "Ferskvann"
+
+msgid "Freshwater bath"
+msgstr "Ferskvannsbad"
 
 msgid "From"
 msgstr "Fra"
@@ -3113,6 +3574,12 @@ msgstr "Drivstofftype"
 msgid "Full name of the site manager"
 msgstr "Lokalitetslederens fulle navn"
 
+msgid "Fungal disease"
+msgstr "Soppsykdom"
+
+msgid "Furunculosis"
+msgstr "Furunkulose"
+
 msgid "Galvanised steel"
 msgstr "Galvanisert stål"
 
@@ -3121,6 +3588,9 @@ msgstr "Gass"
 
 msgid "Gas and other"
 msgstr "Gass og annet"
+
+msgid "Gasping at the surface"
+msgstr "Gisper i overflaten"
 
 msgid "General"
 msgstr "Generelt"
@@ -3149,6 +3619,9 @@ msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
 
 msgid "German"
 msgstr "Tysk"
+
+msgid "Gill disease"
+msgstr "Gjellesykdom"
 
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Oppgi en mål-pH og en målalkalitet for oppskriftene."
@@ -3186,6 +3659,11 @@ msgstr "Oppgi temperaturkolonnene først: rutenettet følger dem."
 msgid "Give the volume to follow the amounts."
 msgstr "Oppgi volumet for å følge mengdene."
 
+msgid "Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none)."
+msgstr ""
+"Oppgi tilbakeholdelsestiden i døgngrader, dager eller begge, slik preparatomtalen oppgir den (0 "
+"når den ikke har noen)."
+
 msgid "Given"
 msgstr "Gitt"
 
@@ -3218,6 +3696,9 @@ msgstr "Vekst"
 msgid "Growth stage"
 msgstr "Vekststadium"
 
+msgid "Gyrodactylus salaris infection"
+msgstr "Infeksjon med Gyrodactylus salaris"
+
 msgid "HCO₃⁻"
 msgstr "HCO₃⁻"
 
@@ -3226,6 +3707,9 @@ msgstr "HDPE"
 
 msgid "HS⁻"
 msgstr "HS⁻"
+
+msgid "Haemorrhage"
+msgstr "Blødninger"
 
 msgid "Handling"
 msgstr "Håndtering"
@@ -3294,6 +3778,19 @@ msgstr "Løftehøyde"
 msgid "Health"
 msgstr "Helse"
 
+msgid "Health event"
+msgstr "Helsehendelse"
+
+#, python-format
+msgid "Health event “%(event)s” voided."
+msgstr "Helsehendelsen «%(event)s» er annullert."
+
+msgid "Health events"
+msgstr "Helsehendelser"
+
+msgid "Heart and skeletal muscle inflammation (HSMI)"
+msgstr "Hjerte- og skjelettmuskelbetennelse (HSMB)"
+
 msgid "Heat exchanger"
 msgstr "Varmeveksler"
 
@@ -3332,6 +3829,9 @@ msgstr "Timer regelen krever"
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
 
+msgid "How it is given; a treatment with it uses the same method."
+msgstr "Hvordan det gis; en behandling med det bruker samme metode."
+
 msgid ""
 "How long fish must have been without feed before they are harvested, transported, graded or "
 "treated, counted from their last feeding to the start of that day. A species’ own rule wins over "
@@ -3347,6 +3847,9 @@ msgstr ""
 
 msgid "Hydrochloric acid"
 msgstr "Saltsyre"
+
+msgid "Hydrogen peroxide"
+msgstr "Hydrogenperoksid"
 
 msgid "Hydrogen sulfide"
 msgstr "Hydrogensulfid"
@@ -3404,8 +3907,14 @@ msgstr "Hvis fisken ble høstet i dag:"
 msgid "If you did not ask for this, you can ignore this email."
 msgstr "Hvis du ikke ba om dette, kan du se bort fra denne e-posten."
 
+msgid "Imidacloprid"
+msgstr "Imidakloprid"
+
 msgid "In"
 msgstr "Inn"
+
+msgid "In feed"
+msgstr "I fôr"
 
 msgid "In force today"
 msgstr "Gjelder i dag"
@@ -3419,11 +3928,26 @@ msgstr "Inaktiv"
 msgid "Inactive people cannot sign in."
 msgstr "Inaktive personer kan ikke logge inn."
 
+msgid "Increased mortality"
+msgstr "Økt dødelighet"
+
 msgid "Indexes"
 msgstr "Indekser"
 
+msgid "Infectious haematopoietic necrosis (IHN)"
+msgstr "Infeksiøs hematopoetisk nekrose (IHN)"
+
+msgid "Infectious pancreatic necrosis (IPN)"
+msgstr "Infeksiøs pankreasnekrose (IPN)"
+
+msgid "Infectious salmon anaemia (ISA)"
+msgstr "Infeksiøs lakseanemi (ILA)"
+
 msgid "Inherit from company"
 msgstr "Arv fra selskapet"
+
+msgid "Injection"
+msgstr "Injeksjon"
 
 msgid ""
 "Inside the warning bounds a value is ok; outside them, a warning; outside the critical bounds, "
@@ -3434,6 +3958,9 @@ msgstr ""
 
 msgid "Installation date"
 msgstr "Installasjonsdato"
+
+msgid "Is the diagnosis suspected or confirmed?"
+msgstr "Er diagnosen mistenkt eller bekreftet?"
 
 msgid "Issue"
 msgstr "Hefte"
@@ -3489,6 +4016,13 @@ msgstr[0] "Den driver %(count)d slakteri: la «%(category)s» stå avkrysset."
 msgstr[1] "Den driver %(count)d slakterier: la «%(category)s» stå avkrysset."
 
 msgid ""
+"It stops counting and stays in the history with its reason. An event that was right but is over "
+"is closed on its form instead."
+msgstr ""
+"Den slutter å telle og blir i historikken med sin begrunnelse. En hendelse som var riktig men er "
+"over, avsluttes i stedet i skjemaet sitt."
+
+msgid ""
 "It stops counting: the latest values and statuses are worked out again without it. To correct a "
 "sample, void it and enter it again."
 msgstr ""
@@ -3514,6 +4048,13 @@ msgstr ""
 #, python-format
 msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
 msgstr "Koblingene til slettede systemer (%(systems)s) fjernes når det lagres."
+
+msgid ""
+"Its medicine withdrawal is lifted at once. Void only a treatment that was not given as recorded: "
+"to correct one, void it and record it again."
+msgstr ""
+"Tilbakeholdelsestiden for legemiddelet oppheves straks. Annuller bare en behandling som ikke ble "
+"gitt slik den er registrert: for å rette en, annuller den og registrer den på nytt."
 
 msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
 msgstr "Nummeret i rapporter til myndighetene (kar- eller merdnummeret), når det ikke er koden."
@@ -3549,6 +4090,12 @@ msgstr "Kunnskapsoppføringer"
 msgid "Knowledge taken from it"
 msgstr "Kunnskap hentet fra det"
 
+msgid "L"
+msgstr "L"
+
+msgid "Lab result"
+msgstr "Laboratoriesvar"
+
 msgid "Label"
 msgstr "Etikett"
 
@@ -3557,6 +4104,9 @@ msgstr "Laboratorium"
 
 msgid "Laboratory analyses"
 msgstr "Laboratorieanalyser"
+
+msgid "Laboratory reference"
+msgstr "Laboratoriets referanse"
 
 msgid "Lake or reservoir"
 msgstr "Innsjø eller magasin"
@@ -3588,6 +4138,9 @@ msgstr "Siste 7 dager"
 msgid "Last calibration"
 msgstr "Siste kalibrering"
 
+msgid "Last day"
+msgstr "Siste dag"
+
 msgid "Last fed"
 msgstr "Sist fôret"
 
@@ -3614,6 +4167,10 @@ msgstr "Sist innlogget"
 msgid "Latest"
 msgstr "Siste"
 
+#, python-format
+msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
+msgstr "Siste lusetelling %(date)s, %(fish)s fisk undersøkt"
+
 msgid "Latitude"
 msgstr "Breddegrad"
 
@@ -3630,6 +4187,9 @@ msgstr "Forlat"
 msgid "Leave %(channel)s?"
 msgstr "Forlate %(channel)s?"
 
+msgid "Leave all unticked when it concerns the whole site."
+msgstr "La alle stå uten kryss når den gjelder hele lokaliteten."
+
 msgid "Leave channel"
 msgstr "Forlat kanalen"
 
@@ -3644,6 +4204,11 @@ msgstr "Nivåsensor"
 
 msgid "Library"
 msgstr "Bibliotek"
+
+msgid ""
+"Lice are counted at least every 7 days at 4 °C or above, every 14 days below (lakselusforskriften"
+" § 6)."
+msgstr "Lus telles minst hver 7. dag ved 4 °C eller over, hver 14. dag under (lakselusforskriften § 6)."
 
 msgid "Life stage"
 msgstr "Livsstadium"
@@ -3778,8 +4343,20 @@ msgstr "Merk hvilken som er den primære."
 msgid "Marked as reviewed by you."
 msgstr "Merket som gjennomgått av deg."
 
+msgid "Marketing authorisation number"
+msgstr "MT-nummer"
+
 msgid "Material"
 msgstr "Materiale"
+
+msgid "Mattilsynet"
+msgstr "Mattilsynet"
+
+msgid "Mattilsynet is notified on or after the date of the event."
+msgstr "Mattilsynet varsles på eller etter datoen for hendelsen."
+
+msgid "Mattilsynet notified at"
+msgstr "Mattilsynet varslet"
 
 msgid ""
 "Mattilsynet’s approval number of the slaughterhouse (godkjenningsnummer), as the slaughter "
@@ -3832,6 +4409,9 @@ msgstr "Målte parametere"
 msgid "Measurement range"
 msgstr "Måleområde"
 
+msgid "Mechanical delousing"
+msgstr "Mekanisk avlusing"
+
 msgid "Mechanical filter"
 msgstr "Mekanisk filter"
 
@@ -3840,6 +4420,17 @@ msgstr "Medievolum"
 
 msgid "Medicated feed"
 msgstr "Medisinfôr"
+
+#, python-format
+msgid ""
+"Medicated feed %(feed)s was fed in %(unit)s on %(date)s and no in-feed treatment covers that day:"
+" the withdrawal end is unknown. Record the treatment under Health › Treatments."
+msgstr ""
+"Medisinfôret %(feed)s ble gitt i %(unit)s %(date)s, og ingen fôrbehandling dekker den dagen: "
+"slutten på tilbakeholdelsestiden er ukjent. Registrer behandlingen under Helse › Behandlinger."
+
+msgid "Medicine"
+msgstr "Legemiddel"
 
 msgid "Medicine cabinet"
 msgstr "Medisinskap"
@@ -3864,6 +4455,9 @@ msgstr "Tilbakeholdelsestid for %(batch)s til omtrent %(date)s."
 #, python-format
 msgid "Medicine withdrawal of %(batch)s, its end unknown."
 msgstr "Tilbakeholdelsestid for %(batch)s, slutten ukjent."
+
+msgid "Medicines"
+msgstr "Legemidler"
 
 msgid "Medicines and vaccines"
 msgstr "Legemidler og vaksiner"
@@ -3899,6 +4493,9 @@ msgstr "Metadata"
 msgid "Meter or test kit"
 msgstr "Måler eller testsett"
 
+msgid "Method"
+msgstr "Metode"
+
 msgid "Minimum transmittance"
 msgstr "Minste transmittans"
 
@@ -3907,6 +4504,15 @@ msgstr "Mangler"
 
 msgid "Mixed"
 msgstr "Blandet"
+
+msgid "Mobile"
+msgstr "Bevegelige"
+
+msgid "Mobile lice"
+msgstr "Bevegelige lus"
+
+msgid "Mobile per fish"
+msgstr "Bevegelige per fisk"
 
 msgid "Model"
 msgstr "Modell"
@@ -4126,8 +4732,14 @@ msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legg
 msgid "No conversations yet."
 msgstr "Ingen samtaler ennå."
 
+msgid "No count matches these filters."
+msgstr "Ingen telling samsvarer med disse filtrene."
+
 msgid "No count recorded yet"
 msgstr "Ingen telling registrert ennå"
+
+msgid "No diagnosis"
+msgstr "Ingen diagnose"
 
 msgid "No expiry date recorded."
 msgstr "Ingen utløpsdato registrert."
@@ -4166,6 +4778,9 @@ msgstr "Det er ingen fisk i %(unit)s."
 msgid "No fish at the end of the day"
 msgstr "Ingen fisk ved slutten av dagen"
 
+msgid "No fish found in these units on these days"
+msgstr "Ingen fisk i disse enhetene på disse dagene"
+
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s now."
 msgstr "Ingen fisk fra %(batch)s er i %(unit)s nå."
@@ -4195,6 +4810,13 @@ msgstr "Ingen høsting eller transport er planlagt for denne enheten."
 
 msgid "No harvest recorded yet"
 msgstr "Ingen høsting registrert ennå"
+
+msgid ""
+"No in-feed treatment covers this day: record it under Health › Treatments, or the fish’s "
+"withdrawal stays unknown."
+msgstr ""
+"Ingen fôrbehandling dekker denne dagen: registrer den under Helse › Behandlinger, ellers forblir "
+"fiskens tilbakeholdelsestid ukjent."
 
 msgid "No knowledge entry cites it yet."
 msgstr "Ingen kunnskapsoppføring viser til det ennå."
@@ -4251,6 +4873,9 @@ msgstr "Ingen rader samsvarer. <a href=\"%(url)s\">Fjern søket og filtrene</a>.
 msgid "No samples match these filters."
 msgstr "Ingen prøver samsvarer med disse filtrene."
 
+msgid "No sea-lice count recorded yet"
+msgstr "Ingen lusetelling registrert ennå"
+
 msgid "No site"
 msgstr "Ingen lokalitet"
 
@@ -4287,6 +4912,15 @@ msgstr ""
 msgid "No text on this page."
 msgstr "Ingen tekst på denne siden."
 
+msgid "No treatment in this unit in the last 90 days."
+msgstr "Ingen behandling i denne enheten de siste 90 dagene."
+
+msgid "No treatment matches these filters."
+msgstr "Ingen behandling samsvarer med disse filtrene."
+
+msgid "No treatment recorded yet"
+msgstr "Ingen behandling registrert ennå"
+
 msgid "No two of the chosen reagents reach the target: choose others."
 msgstr "Ingen to av de valgte kjemikaliene når målet: velg andre."
 
@@ -4301,6 +4935,12 @@ msgstr "Ingen enhet har fisk"
 
 msgid "No unit holds fish: a feeding needs fish in its unit."
 msgstr "Ingen enhet har fisk: en fôring trenger fisk i enheten."
+
+msgid "No unit holds fish: a treatment needs fish in its units on its first day."
+msgstr "Ingen enhet har fisk: en behandling trenger fisk i enhetene sine på første dag."
+
+msgid "No unit holds fish: lice are counted on the fish of a unit."
+msgstr "Ingen enhet har fisk: lus telles på fisken i en enhet."
 
 msgid "No unit with fish matches these filters."
 msgstr "Ingen enhet med fisk passer disse filtrene."
@@ -4337,14 +4977,29 @@ msgstr "Ingen."
 msgid "None: not a part of other equipment"
 msgstr "Ingen: ikke en del av annet utstyr"
 
+msgid "Nord-Trøndelag and southwards"
+msgstr "Nord-Trøndelag og sørover"
+
+msgid "Nordland, Troms and Finnmark"
+msgstr "Nordland, Troms og Finnmark"
+
 msgid "Normal"
 msgstr "Normal"
 
 msgid "Norwegian"
 msgstr "Norsk"
 
+msgid "Norwegian list, category F"
+msgstr "Nasjonal liste, kategori F"
+
+msgid "Norwegian list, category G"
+msgstr "Nasjonal liste, kategori G"
+
 msgid "Not a cleaner fish"
 msgstr "Ikke rensefisk"
+
+msgid "Not a sea-lice medicine"
+msgstr "Ikke et lakselusmiddel"
 
 msgid "Not checked"
 msgstr "Ikke kontrollert"
@@ -4364,6 +5019,9 @@ msgstr "Ikke i PDF-ens tekst: ordene står i referansen eller sammendraget."
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
 
+msgid "Not listed"
+msgstr "Ikke listeført"
+
 msgid "Not measured"
 msgstr "Ikke målt"
 
@@ -4379,6 +5037,9 @@ msgstr "Nås ikke innen %(days)d dager i dette tempoet."
 
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
+
+msgid "Not set"
+msgstr "Ikke satt"
 
 msgid "Not stated"
 msgstr "Ikke oppgitt"
@@ -4431,6 +5092,19 @@ msgstr "Ingenting var der, og registeret hadde ingenting."
 msgid "Nothing yet"
 msgstr "Ingenting ennå"
 
+msgid "Notifiable diagnosis"
+msgstr "Meldepliktig diagnose"
+
+#, python-format
+msgid "Notified %(moment)s"
+msgstr "Varslet %(moment)s"
+
+msgid "Notify Mattilsynet"
+msgstr "Varsle Mattilsynet"
+
+msgid "Notify at once"
+msgstr "Varsle straks"
+
 msgid "Nullable"
 msgstr "Kan være tom"
 
@@ -4448,6 +5122,9 @@ msgstr "Nylon"
 
 msgid "OK"
 msgstr "OK"
+
+msgid "Observation"
+msgstr "Observasjon"
 
 msgid "Observed on"
 msgstr "Observert"
@@ -4482,6 +5159,9 @@ msgid ""
 msgstr ""
 "Beholdningen ganger det hvert parti kostet ved mottak, per valuta; partier mottatt uten kostnad "
 "regnes ikke med."
+
+msgid "On the site’s clock."
+msgstr "På lokalitetens klokke."
 
 msgid ""
 "One author per line, in the order of the document, family name first: “Olsen, Bjørn Erik”. An "
@@ -4521,8 +5201,14 @@ msgstr "Bare %(available)s %(unit)s %(item)s, parti %(lot)s, er på %(location)s
 msgid "Only %(available)s fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er bare %(available)s fisk av %(batch)s i %(unit)s %(date)s."
 
+msgid "Only a bath, a dip or a freshwater bath has a bath time."
+msgstr "Bare bad, dypp eller ferskvannsbad har badetid."
+
 msgid "Only a feeder has feed calibrations."
 msgstr "Bare en fôrautomat har fôrkalibreringer."
+
+msgid "Only a sea-lice medicine has a substance in the lice report."
+msgstr "Bare et lakselusmiddel har et virkestoff i luserapporten."
 
 msgid "Only a silo fills a feeder."
 msgstr "Bare en silo fyller en fôrautomat."
@@ -4569,8 +5255,17 @@ msgstr ""
 msgid "Only warnings and criticals"
 msgstr "Bare advarsler og kritiske"
 
+msgid "Open"
+msgstr "Åpen"
+
+msgid "Open and closed"
+msgstr "Åpne og avsluttede"
+
 msgid "Open conversation"
 msgstr "Åpne samtale"
+
+msgid "Open health events"
+msgstr "Åpne helsehendelser"
 
 msgid "Open menu"
 msgstr "Åpne menyen"
@@ -4623,6 +5318,13 @@ msgstr "Valgfritt: hvor mange måltider det ble gitt i."
 msgid "Optional: the feeder that gave it, on the unit’s site."
 msgstr "Valgfritt: fôrautomaten som ga det, på enhetens lokalitet."
 
+msgid ""
+"Optional: the health event (Operations › Health events) these fish died or were culled under; it "
+"counts them."
+msgstr ""
+"Valgfritt: helsehendelsen (Drift › Helsehendelser) fisken døde eller ble utsortert under; den "
+"teller dem."
+
 msgid "Optional: the last day. Empty: until it is ended."
 msgstr "Valgfritt: siste dag. Tom: til den avsluttes."
 
@@ -4671,6 +5373,15 @@ msgstr "Annet"
 msgid "Other active feeds"
 msgstr "Annet aktivt fôr"
 
+msgid "Other active substance"
+msgstr "Annet virkestoff"
+
+msgid "Other antiparasitic"
+msgstr "Annet antiparasittmiddel"
+
+msgid "Other diagnosis"
+msgstr "Annen diagnose"
+
 msgid "Other equipment"
 msgstr "Annet utstyr"
 
@@ -4683,11 +5394,20 @@ msgstr "Annet utstyr bruker allerede denne koden."
 msgid "Other language"
 msgstr "Annet språk"
 
+msgid "Other parasites (e.g. AGD)"
+msgstr "Andre parasitter (f.eks. AGD)"
+
+msgid "Other, without a medicine"
+msgstr "Annen, uten legemiddel"
+
 msgid "Out"
 msgstr "Ut"
 
 msgid "Out of service"
 msgstr "Ute av tjeneste"
+
+msgid "Outcome"
+msgstr "Utfall"
 
 msgid "Outdoor store"
 msgstr "Utelager"
@@ -4700,6 +5420,9 @@ msgstr "Over"
 
 msgid "Over capacity"
 msgstr "Over kapasitet"
+
+msgid "Over the limit"
+msgstr "Over grensen"
 
 msgid "Overall length (m)"
 msgstr "Total lengde (m)"
@@ -4776,6 +5499,12 @@ msgstr "Side(r)"
 msgid "Pages"
 msgstr "Sider"
 
+msgid "Pale gills"
+msgstr "Bleke gjeller"
+
+msgid "Pancreas disease (PD)"
+msgstr "Pankreassykdom (PD)"
+
 msgid "Panel"
 msgstr "Panel"
 
@@ -4802,6 +5531,9 @@ msgstr "Passordet er lagret"
 
 msgid "Past the limit"
 msgstr "Over grensen"
+
+msgid "Pasteurellosis"
+msgstr "Pasteurellose"
 
 msgid "Payment terms"
 msgstr "Betalingsbetingelser"
@@ -4858,6 +5590,9 @@ msgstr "Fosfor er en del av asken: det kan ikke være mer enn asken."
 
 msgid "Pipe size"
 msgstr "Rørdimensjon"
+
+msgid "Piscirickettsiosis"
+msgstr "Piscirickettsiose"
 
 msgid "Place"
 msgstr "Sted"
@@ -4932,11 +5667,26 @@ msgstr "Utgangseffekt"
 msgid "Prawn"
 msgstr "Ferskvannsreke"
 
+msgid "Pre-adult lice and adult males, in total."
+msgstr "Preadulte lus og voksne hannlus, totalt."
+
 msgid "Predation"
 msgstr "Predasjon"
 
 msgid "Preparing"
 msgstr "Klargjøres"
+
+msgid "Prescribed by"
+msgstr "Forskrevet av"
+
+msgid "Prescription"
+msgstr "Resept"
+
+msgid "Prescription number"
+msgstr "Reseptnummer"
+
+msgid "Prescription only"
+msgstr "Reseptpliktig"
 
 msgid "Pressure"
 msgstr "Trykk"
@@ -5003,6 +5753,9 @@ msgstr "Produksjonsplaner"
 
 msgid "Production units"
 msgstr "Produksjonsenheter"
+
+msgid "Projected at the mean water temperature of the last days measured."
+msgstr "Fremskrevet med middeltemperaturen i vannet de siste målte dagene."
 
 msgid "Propane"
 msgstr "Propan"
@@ -5119,6 +5872,9 @@ msgstr "Siste operasjoner"
 msgid "Recirculating aquaculture system"
 msgstr "Resirkulerende akvakultursystem (RAS)"
 
+msgid "Recommendations"
+msgstr "Anbefalinger"
+
 msgid "Record"
 msgstr "Post"
 
@@ -5141,6 +5897,9 @@ msgstr "Registrer fôring"
 msgid "Record harvest"
 msgstr "Registrer høsting"
 
+msgid "Record health event"
+msgstr "Registrer helsehendelse"
+
 msgid "Record meal"
 msgstr "Registrer måltid"
 
@@ -5150,11 +5909,17 @@ msgstr "Registrer dødfisk"
 msgid "Record sample"
 msgstr "Registrer prøve"
 
+msgid "Record sea-lice count"
+msgstr "Registrer lusetelling"
+
 msgid "Record the round"
 msgstr "Registrer runden"
 
 msgid "Record transfer"
 msgstr "Registrer flytting"
+
+msgid "Record treatment"
+msgstr "Registrer behandling"
 
 msgid "Record type"
 msgstr "Posttype"
@@ -5173,6 +5938,9 @@ msgstr "Registreringer"
 
 msgid "Rectangular"
 msgstr "Rektangulær"
+
+msgid "Reduced appetite"
+msgstr "Nedsatt appetitt"
 
 msgid "Reference"
 msgstr "Referanse"
@@ -5327,6 +6095,9 @@ msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
 msgid "Rule"
 msgstr "Regel"
 
+msgid "Running"
+msgstr "Pågår"
+
 msgid "SFR"
 msgstr "SFR"
 
@@ -5402,6 +6173,9 @@ msgstr "Prøver eldre enn %(days)d dager kan ikke annulleres."
 msgid "Sampling weigh-in"
 msgstr "Prøveveiing"
 
+msgid "Saprolegniosis"
+msgstr "Saprolegniose"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Lagre %(name)s"
@@ -5427,11 +6201,17 @@ msgstr "Lagre tabell"
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Lagre utstyret med denne fôrautomattypen først; deretter kan kalibreringene legges til her."
 
+msgid "Say what it was: the method or the reason is “other”."
+msgstr "Si hva det var: metoden eller årsaken er «annen»."
+
 msgid "Say what it was: the reason is “other”."
 msgstr "Skriv hva det var: årsaken er «annet»."
 
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
+
+msgid "Scale loss"
+msgstr "Skjelltap"
 
 msgid "Scientific name"
 msgstr "Vitenskapelig navn"
@@ -5442,11 +6222,34 @@ msgstr "Duksåpning"
 msgid "Sea cage"
 msgstr "Merd"
 
+msgid "Sea lice"
+msgstr "Lakselus"
+
 msgid "Sea or estuary"
 msgstr "Sjø eller elvemunning"
 
 msgid "Sea water"
 msgstr "Sjøvann"
+
+msgid "Sea-lice count"
+msgstr "Lusetelling"
+
+#, python-format
+msgid "Sea-lice count of %(date)s in %(unit)s voided."
+msgstr "Lusetellingen %(date)s i %(unit)s er annullert."
+
+#, python-format
+msgid "Sea-lice count recorded: %(unit)s on %(date)s."
+msgstr "Lusetelling registrert: %(unit)s %(date)s."
+
+msgid "Sea-lice counts"
+msgstr "Lusetellinger"
+
+msgid "Sea-lice limit area"
+msgstr "Område for lusegrense"
+
+msgid "Sea-lice medicine"
+msgstr "Lakselusmiddel"
 
 #, python-format
 msgid "Search %(plural)s"
@@ -5482,6 +6285,9 @@ msgstr "Søk etter navn, vitenskapelig navn eller kode"
 msgid "Search by name, species or notes"
 msgstr "Søk etter navn, art eller notater"
 
+msgid "Search by name, substance, MT number or manufacturer"
+msgstr "Søk på navn, virkestoff, MT-nummer eller produsent"
+
 msgid "Search by name, username or email"
 msgstr "Søk etter navn, brukernavn eller e-post"
 
@@ -5496,6 +6302,9 @@ msgstr "Søk på enhet, fiskegruppe, slakteri eller fartøy"
 
 msgid "Search every column"
 msgstr "Søk i alle kolonner"
+
+msgid "Search findings, units, site or vet"
+msgstr "Søk i funn, enheter, lokalitet eller veterinær"
 
 msgid "Search the statements, quotes and sources"
 msgstr "Søk i utsagn, sitater og kilder"
@@ -5514,6 +6323,9 @@ msgstr "Tang og tare"
 
 msgid "Section"
 msgstr "Avsnitt"
+
+msgid "Sedation"
+msgstr "Sedering"
 
 msgid "See all in the activity log"
 msgstr "Se alt i aktivitetsloggen"
@@ -5548,11 +6360,17 @@ msgstr "Velg en lagerplass"
 msgid "Select a lot in a location"
 msgstr "Velg et parti på en lagerplass"
 
+msgid "Select a method"
+msgstr "Velg en metode"
+
 msgid "Select a parameter"
 msgstr "Velg en parameter"
 
 msgid "Select a production department"
 msgstr "Velg en produksjonsavdeling"
+
+msgid "Select a reason"
+msgstr "Velg en årsak"
 
 msgid "Select a site"
 msgstr "Velg en lokalitet"
@@ -5577,6 +6395,9 @@ msgstr "Velg en vanntype"
 
 msgid "Select an active protocol"
 msgstr "Velg en aktiv protokoll"
+
+msgid "Select how it is given"
+msgstr "Velg hvordan det gis"
 
 msgid "Select one"
 msgstr "Velg en"
@@ -5675,6 +6496,9 @@ msgstr "Logg inn"
 
 msgid "Sign out"
 msgstr "Logg ut"
+
+msgid "Signs"
+msgstr "Symptomer"
 
 msgid "Silo"
 msgstr "Silo"
@@ -5952,6 +6776,12 @@ msgstr "Stamme"
 msgid "Street address"
 msgstr "Gateadresse"
 
+msgid "Strength"
+msgstr "Styrke"
+
+msgid "Strength unit"
+msgstr "Styrkeenhet"
+
 msgid "Stress"
 msgstr "Stress"
 
@@ -5967,6 +6797,9 @@ msgstr "Nedsenkbar"
 
 msgid "Submersible pump"
 msgstr "Dykkpumpe"
+
+msgid "Substance in the lice report"
+msgstr "Virkestoff i luserapporten"
 
 msgid "Suitable for"
 msgstr "Egnet for"
@@ -6002,6 +6835,9 @@ msgstr "Overflateareal (m²)"
 msgid "Survival"
 msgstr "Overlevelse"
 
+msgid "Suspected"
+msgstr "Mistenkt"
+
 msgid "Suspended"
 msgstr "Suspendert"
 
@@ -6013,6 +6849,9 @@ msgstr "Bytt panel"
 
 msgid "System"
 msgstr "System"
+
+msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
+msgstr "Systemisk infeksjon med Flavobacterium psychrophilum (regnbueørret)"
 
 msgid "Systems"
 msgstr "Systemer"
@@ -6074,6 +6913,9 @@ msgstr "Målvekt (g)"
 msgid "Technical specifications"
 msgstr "Tekniske spesifikasjoner"
 
+msgid "Teflubenzuron"
+msgstr "Teflubenzuron"
+
 msgid "Temp. (°C)"
 msgstr "Temp. (°C)"
 
@@ -6094,6 +6936,9 @@ msgstr "Temperatursensor"
 
 msgid "Temperatures"
 msgstr "Temperaturer"
+
+msgid "Tenacibaculosis"
+msgstr "Tenacibakulose"
 
 msgid "Terms and notes"
 msgstr "Betingelser og notater"
@@ -6144,11 +6989,17 @@ msgstr ""
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "Det engelske navnet, f.eks. Atlantic salmon."
 
+msgid "The MT number, when the medicine has one."
+msgstr "MT-nummeret, når legemiddelet har et."
+
 msgid "The abstract or summary, as the document gives it."
 msgstr "Sammendraget slik dokumentet gir det."
 
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Adressen for bestillinger og spørsmål; kontaktpersonene har sine egne nedenfor."
+
+msgid "The amount of the medicine used, as the lice report asks for it."
+msgstr "Mengden legemiddel som ble brukt, slik luserapporten ber om den."
 
 msgid ""
 "The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
@@ -6254,6 +7105,9 @@ msgstr "Den fordøyelige energien kan ikke være mer enn bruttoenergien."
 msgid "The document in the library the knowledge comes from."
 msgstr "Dokumentet i biblioteket kunnskapen kommer fra."
 
+msgid "The end cannot be worked out: record the water temperature."
+msgstr "Slutten kan ikke regnes ut: registrer vanntemperaturen."
+
 msgid "The equipment is linked to this system already."
 msgstr "Utstyret er allerede knyttet til dette systemet."
 
@@ -6329,6 +7183,9 @@ msgstr "Filen er %(size)s; biblioteket tar PDF-er på opptil %(limit)s."
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Første dag det fôres etter den, etter anleggets klokke."
 
+msgid "The first day of the course."
+msgstr "Første dag i behandlingen."
+
 msgid "The fish cannot move into the unit they leave."
 msgstr "Fisken kan ikke flyttes til enheten den forlater."
 
@@ -6348,6 +7205,14 @@ msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
 #, python-format
 msgid "The harvest plan of %(unit)s"
 msgstr "Høsteplanen for %(unit)s"
+
+#, python-format
+msgid "The health event is dated %(date)s, after this operation."
+msgstr "Helsehendelsen er datert %(date)s, etter denne operasjonen."
+
+#, python-format
+msgid "The health event is dated %(date)s, after this treatment."
+msgstr "Helsehendelsen er datert %(date)s, etter denne behandlingen."
 
 msgid "The invitation to set a password is sent here."
 msgstr "Invitasjonen til å velge passord sendes hit."
@@ -6387,8 +7252,22 @@ msgstr ""
 "Språket i konsollen og i e-postene denne personen får. Hvis feltet er tomt, følges nettleserens "
 "språk."
 
+#, python-format
+msgid "The last day can be planned at most %(days)d days ahead."
+msgstr "Siste dag kan planlegges høyst %(days)d dager frem."
+
+msgid "The last day cannot be before the first."
+msgstr "Siste dag kan ikke være før første."
+
 msgid "The last day comes on or after the first day."
 msgstr "Siste dag er på eller etter første dag."
+
+msgid "The last day of the course, planned up to 28 days ahead. The withdrawal counts from it."
+msgstr "Siste dag i behandlingen, planlagt inntil 28 dager frem. Tilbakeholdelsestiden regnes fra den."
+
+#, python-format
+msgid "The last day of the treatment is now %(date)s."
+msgstr "Siste dag i behandlingen er nå %(date)s."
 
 #, python-format
 msgid "The latest changes to this %(name)s."
@@ -6401,6 +7280,12 @@ msgid ""
 msgstr ""
 "De siste verdiene for %(point)s, bare for denne beregningen: endre hvilken som helst av dem her, "
 "ingenting skrives tilbake."
+
+#, python-format
+msgid "The latest week of counts, per site."
+msgid_plural "The latest %(weeks)s weeks of counts, per site."
+msgstr[0] "Den siste uken med tellinger, per lokalitet."
+msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
 
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
@@ -6420,6 +7305,9 @@ msgstr "Den lengste avstanden over ellipsen."
 
 msgid "The lower weight must be below the upper weight."
 msgstr "Den nedre vekten må være under den øvre vekten."
+
+msgid "The medicines and vaccines the farm uses, with their withdrawal before harvest."
+msgstr "Legemidlene og vaksinene anlegget bruker, med tilbakeholdelsestiden før høsting."
 
 #, python-format
 msgid ""
@@ -6482,8 +7370,14 @@ msgstr ""
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
 
+msgid "The prescription’s number, for a prescription-only medicine."
+msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
+
 msgid "The product name, as on the bag, e.g. Nutra Olympic 3 mm."
 msgstr "Produktnavnet, slik det står på sekken, f.eks. Nutra Olympic 3 mm."
+
+msgid "The product name, as on the pack, e.g. Salmosan vet."
+msgstr "Produktnavnet slik det står på pakningen, f.eks. Salmosan vet."
 
 msgid "The production department belongs to another site."
 msgstr "Produksjonsavdelingen hører til en annen lokalitet."
@@ -6527,6 +7421,10 @@ msgstr ""
 msgid "The safe zone lies in this band."
 msgstr "Den trygge sonen ligger i dette båndet."
 
+#, python-format
+msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
+msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
+
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
 
@@ -6542,6 +7440,13 @@ msgid ""
 msgstr ""
 "Lokalitetens operative kontaktpersoner. Maksimalt én kan være hovedkontakt. Kontaktpersoner "
 "lagres separat fra lokalitetsdetaljene."
+
+msgid ""
+"The site’s weekly average is worked out again without it. To correct a count, void it and record "
+"it again."
+msgstr ""
+"Lokalitetens ukesnitt regnes ut på nytt uten den. For å rette en telling, annuller den og "
+"registrer den på nytt."
 
 msgid ""
 "The slaughterhouses harvested fish go to, with Mattilsynet’s approval number: every harvest names"
@@ -6645,6 +7550,10 @@ msgstr "Teksten kunne ikke leses: %(reason)s"
 msgid "The time cannot be in the future."
 msgstr "Tidspunktet kan ikke være fram i tid."
 
+#, python-format
+msgid "The treatment of %(date)s in %(unit)s would have no fish: void it first."
+msgstr "Behandlingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
+
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
 "for a few days before a split."
@@ -6667,6 +7576,9 @@ msgstr "Vanlig gjennomsnittlig vanndybde når den er under full dybde; tom når 
 
 msgid "The usual water level when it is below the rim; empty when the tank is filled to its depth."
 msgstr "Vanlig vannstand når den er under kanten; tom når karet er fylt til full dybde."
+
+msgid "The vet or fish-health biologist, or who observed it."
+msgstr "Veterinæren eller fiskehelsebiologen, eller den som observerte det."
 
 msgid "The volume cannot be negative."
 msgstr "Volumet kan ikke være negativt."
@@ -6729,6 +7641,25 @@ msgstr "Veiingen %(date)s i %(unit)s ville ikke funnet fisk av %(batch)s. Annull
 msgid "The width cannot be more than the length."
 msgstr "Bredden kan ikke være større enn lengden."
 
+msgid ""
+"The withdrawal counts from the last day of the course, with the medicine’s degree-days or days "
+"(Reference data › Medicines), and follows the fish wherever they are moved."
+msgstr ""
+"Tilbakeholdelsestiden regnes fra siste behandlingsdag, med legemiddelets døgngrader eller dager "
+"(Referansedata › Legemidler), og følger fisken uansett hvor den flyttes."
+
+msgid "The withdrawal counts from the new last day; the change is logged."
+msgstr "Tilbakeholdelsestiden regnes fra den nye siste dagen; endringen logges."
+
+msgid ""
+"The withdrawal is the product’s, as its SPC states it, in degree-days, days or both; nothing is "
+"filled in for you. A treatment counts it from its last day, on the water temperature of the "
+"fish’s units (Operations › Treatments)."
+msgstr ""
+"Tilbakeholdelsestiden er produktets, slik preparatomtalen oppgir den, i døgngrader, dager eller "
+"begge; ingenting fylles inn for deg. En behandling regner den fra siste dag, på vanntemperaturen "
+"i fiskens enheter (Drift › Behandlinger)."
+
 msgid "The year cannot be later than next year (in press)."
 msgstr "Året kan ikke være senere enn neste år (i trykken)."
 
@@ -6740,6 +7671,9 @@ msgstr "Samlet vekt (kg)"
 
 msgid "There is already a rule for this handling and species."
 msgstr "Det finnes allerede en regel for denne håndteringen og arten."
+
+msgid "Thermal delousing"
+msgstr "Termisk avlusing"
 
 #, python-format
 msgid ""
@@ -6822,11 +7756,17 @@ msgstr "Dette systemet er slettet."
 msgid "This table points at"
 msgstr "Denne tabellen peker på"
 
+msgid "This treatment is voided."
+msgstr "Denne behandlingen er annullert."
+
 msgid "This type has no technical specifications."
 msgstr "Denne typen har ingen tekniske spesifikasjoner."
 
 msgid "This type is not in the chosen category."
 msgstr "Denne typen er ikke i den valgte kategorien."
+
+msgid "This unit already has a count on this day: void it first to correct it."
+msgstr "Denne enheten har allerede en telling denne dagen: annuller den først for å rette den."
 
 #, python-format
 msgid "This unit holds %(count)d batch: the operation applies to the one chosen."
@@ -6933,6 +7873,20 @@ msgstr "Transport"
 msgid "Treatment"
 msgstr "Behandling"
 
+#, python-format
+msgid "Treatment of %(date)s voided."
+msgstr "Behandlingen %(date)s er annullert."
+
+#, python-format
+msgid "Treatment recorded: %(what)s in %(units)s from %(start)s to %(end)s."
+msgstr "Behandling registrert: %(what)s i %(units)s fra %(start)s til %(end)s."
+
+msgid "Treatments"
+msgstr "Behandlinger"
+
+msgid "Treatments, last 90 days"
+msgstr "Behandlinger, siste 90 dager"
+
 msgid "Try another search."
 msgstr "Prøv et annet søk."
 
@@ -6984,6 +7938,9 @@ msgstr "Uforklart svinn"
 msgid "Under maintenance"
 msgstr "Under vedlikehold"
 
+msgid "Under withdrawal today"
+msgstr "Under tilbakeholdelsestid i dag"
+
 msgid "Unique"
 msgstr "Unik"
 
@@ -7001,6 +7958,9 @@ msgstr "Enheter"
 
 msgid "Units by kind"
 msgstr "Enheter etter type"
+
+msgid "Units counted"
+msgstr "Telte enheter"
 
 #, python-format
 msgid "Units of another production department are in it: %(units)s. Take them out of the system first."
@@ -7051,6 +8011,15 @@ msgstr "Brukernavn"
 msgid "Users"
 msgstr "Brukere"
 
+msgid "Vaccination"
+msgstr "Vaksinasjon"
+
+msgid "Vaccinations"
+msgstr "Vaksinasjoner"
+
+msgid "Vaccine"
+msgstr "Vaksine"
+
 msgid "Value"
 msgstr "Verdi"
 
@@ -7066,8 +8035,20 @@ msgstr "Verdier fra"
 msgid "Version"
 msgstr "Versjon"
 
+msgid "Vet or fish-health service"
+msgstr "Veterinær eller fiskehelsetjeneste"
+
+msgid "Vet or fish-health visit"
+msgstr "Veterinær- eller fiskehelsebesøk"
+
 msgid "Veterinary and fish health"
 msgstr "Veterinær og fiskehelse"
+
+msgid "Viral haemorrhagic septicaemia (VHS)"
+msgstr "Viral hemoragisk septikemi (VHS)"
+
+msgid "Viral nervous necrosis (VNN/VER)"
+msgstr "Viral nervøs nekrose (VNN/VER)"
 
 msgid "Void"
 msgstr "Annuller"
@@ -7075,8 +8056,14 @@ msgstr "Annuller"
 msgid "Void feeding"
 msgstr "Annuller fôring"
 
+msgid "Void health event"
+msgstr "Annuller helsehendelse"
+
 msgid "Void operation"
 msgstr "Annuller operasjon"
+
+msgid "Void sea-lice count"
+msgstr "Annuller lusetelling"
 
 #, python-format
 msgid "Void the %(operation)s of %(date)s?"
@@ -7087,8 +8074,23 @@ msgid "Void the feeding of %(date)s in %(unit)s?"
 msgstr "Annullere fôringen %(date)s i %(unit)s?"
 
 #, python-format
+msgid "Void the health event “%(event)s” of %(site)s?"
+msgstr "Annullere helsehendelsen «%(event)s» på %(site)s?"
+
+#, python-format
 msgid "Void the sample of %(point)s at %(moment)s?"
 msgstr "Annullere prøven fra %(point)s kl. %(moment)s?"
+
+#, python-format
+msgid "Void the sea-lice count of %(date)s in %(unit)s?"
+msgstr "Annullere lusetellingen %(date)s i %(unit)s?"
+
+#, python-format
+msgid "Void the treatment with %(what)s of %(date)s?"
+msgstr "Annullere behandlingen med %(what)s %(date)s?"
+
+msgid "Void treatment"
+msgstr "Annuller behandling"
 
 msgid "Void water sample"
 msgstr "Annuller vannprøve"
@@ -7182,6 +8184,16 @@ msgstr "Nettadresse"
 msgid "Website"
 msgstr "Nettsted"
 
+msgid "Week"
+msgstr "Uke"
+
+#, python-format
+msgid "Week %(week)s, %(year)s"
+msgstr "Uke %(week)s, %(year)s"
+
+msgid "Weekly averages"
+msgstr "Ukesnitt"
+
 #, python-format
 msgid "Weigh now: the estimate is %(days)s day old"
 msgid_plural "Weigh now: the estimate is %(days)s days old"
@@ -7260,6 +8272,16 @@ msgstr ""
 msgid "What was delivered"
 msgstr "Det som ble levert"
 
+msgid "What was given"
+msgstr "Hva som ble gitt"
+
+msgid ""
+"What was seen, found or advised about the fish's health: observations, vet and fish-health "
+"visits, lab results and rises in mortality."
+msgstr ""
+"Det som ble sett, funnet eller anbefalt om fiskens helse: observasjoner, veterinær- og "
+"fiskehelsebesøk, laboratoriesvar og økt dødelighet."
+
 msgid "When"
 msgstr "Når"
 
@@ -7268,6 +8290,9 @@ msgstr "Når det ble observert eller sagt, om det betyr noe."
 
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
+
+msgid "Where"
+msgstr "Hvor"
 
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Hvor i dokumentet, f.eks. 4 eller 12–13."
@@ -7321,6 +8346,12 @@ msgstr "Hvilke arter hvert dokument i biblioteket handler om."
 msgid "Which species each slaughter facility takes."
 msgstr "Hvilke arter hvert slakteri tar imot."
 
+msgid "Which units each health event concerns; none for the whole site."
+msgstr "Hvilke enheter hver helsehendelse gjelder; ingen for hele lokaliteten."
+
+msgid "Which units each treatment was given in."
+msgstr "Hvilke enheter hver behandling ble gitt i."
+
 msgid "Who it goes back to."
 msgstr "Hvem det går tilbake til."
 
@@ -7339,6 +8370,9 @@ msgstr "Hvem solgte fisken?"
 
 msgid "Whole batch"
 msgstr "Hele fiskegruppen"
+
+msgid "Whole site"
+msgstr "Hele lokaliteten"
 
 msgid "Whose observation or advice it is, e.g. “Kari Nordmann, fish health vet” or your own name."
 msgstr ""
@@ -7361,8 +8395,17 @@ msgstr "Bredde (m)"
 msgid "Wild-caught"
 msgstr "Villfanget"
 
+msgid "Winter ulcer"
+msgstr "Vintersår"
+
 msgid "Withdrawal"
 msgstr "Tilbakeholdelse"
+
+msgid "Withdrawal (days)"
+msgstr "Tilbakeholdelsestid (dager)"
+
+msgid "Withdrawal (degree-days)"
+msgstr "Tilbakeholdelsestid (døgngrader)"
 
 msgid "Withdrawal end estimated"
 msgstr "Slutt på tilbakeholdelse anslått"
@@ -7372,6 +8415,9 @@ msgstr "Tilbakeholdelse til"
 
 msgid "Within 0.2 pH"
 msgstr "Innenfor 0,2 pH"
+
+msgid "Without a diagnosis there is nothing to confirm."
+msgstr "Uten diagnose er det ingenting å bekrefte."
 
 msgid "Without a production department"
 msgstr "Uten produksjonsavdeling"
@@ -7388,6 +8434,9 @@ msgstr ""
 
 msgid "Worked out from the values"
 msgstr "Regnet ut fra verdiene"
+
+msgid "Wounds or ulcers"
+msgstr "Sår eller byller"
 
 msgid "Wrasse"
 msgstr "Leppefisk"
@@ -7410,6 +8459,9 @@ msgstr "Kassering"
 
 msgid "Year"
 msgstr "År"
+
+msgid "Yersiniosis"
+msgstr "Yersiniose"
 
 msgid "Yes"
 msgstr "Ja"
@@ -7720,6 +8772,9 @@ msgstr "f.eks. Salmo salar"
 msgid "e.g. Salmonidae"
 msgstr "f.eks. Salmonidae"
 
+msgid "e.g. Salmosan vet."
+msgstr "f.eks. Salmosan vet."
+
 msgid "e.g. Site manager"
 msgstr "f.eks. Lokalitetsleder"
 
@@ -7762,6 +8817,9 @@ msgstr "tom"
 #, python-format
 msgid "empty, %(max)s kg max"
 msgstr "tom, maks. %(max)s kg"
+
+msgid "end unknown"
+msgstr "slutt ukjent"
 
 msgid "ended"
 msgstr "avsluttet"
@@ -7833,8 +8891,18 @@ msgid "feeds"
 msgstr "fôr"
 
 #, python-format
+msgid "from %(start)s to %(end)s"
+msgstr "fra %(start)s til %(end)s"
+
+#, python-format
 msgid "from %(weight)s g"
 msgstr "fra %(weight)s g"
+
+msgid "g"
+msgstr "g"
+
+msgid "g/kg"
+msgstr "g/kg"
 
 msgid "handling acknowledgement"
 msgstr "håndteringsbekreftelse"
@@ -7853,6 +8921,12 @@ msgstr "høsteregistrering"
 
 msgid "harvest records"
 msgstr "høsteregistreringer"
+
+msgid "health event"
+msgstr "helsehendelse"
+
+msgid "health events"
+msgstr "helsehendelser"
 
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."
@@ -7910,11 +8984,17 @@ msgstr "parti %(lot)s"
 msgid "lots"
 msgstr "partier"
 
+msgid "mL per fish"
+msgstr "mL per fisk"
+
 msgid "masked"
 msgstr "maskert"
 
 msgid "meals done"
 msgstr "måltidene er gitt"
+
+msgid "medicine"
+msgstr "legemiddel"
 
 #, python-format
 msgid "medicine withdrawal until %(date)s"
@@ -7923,11 +9003,29 @@ msgstr "tilbakeholdelsestid til %(date)s"
 msgid "medicine withdrawal, end unknown"
 msgstr "tilbakeholdelsestid, slutt ukjent"
 
+msgid "medicines"
+msgstr "legemidler"
+
 msgid "message"
 msgstr "melding"
 
 msgid "messages"
 msgstr "meldinger"
+
+msgid "mg/L"
+msgstr "mg/L"
+
+msgid "mg/g"
+msgstr "mg/g"
+
+msgid "mg/kg"
+msgstr "mg/kg"
+
+msgid "mg/kg biomass per day"
+msgstr "mg/kg biomasse per dag"
+
+msgid "mg/mL"
+msgstr "mg/mL"
 
 msgid "n.d."
 msgstr "u.å."
@@ -8053,6 +9151,12 @@ msgstr "rolle"
 msgid "roles"
 msgstr "roller"
 
+msgid "sea-lice count"
+msgstr "lusetelling"
+
+msgid "sea-lice counts"
+msgstr "lusetellinger"
+
 #, python-format
 msgid "since %(date)s"
 msgstr "siden %(date)s"
@@ -8130,6 +9234,9 @@ msgstr "systemkoblinger"
 msgid "systems"
 msgstr "systemer"
 
+msgid "t"
+msgstr "t"
+
 #, python-format
 msgid "target on %(date)s, at %(temperature)s °C held"
 msgstr "målet nås %(date)s, ved %(temperature)s °C holdt fast"
@@ -8141,12 +9248,22 @@ msgid "the site’s altitude"
 msgstr "lokalitetens høyde over havet"
 
 #, python-format
+msgid "to %(date)s"
+msgstr "til %(date)s"
+
+#, python-format
 msgid "to %(unit)s"
 msgstr "til %(unit)s"
 
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"
 msgstr "totalt sulfid %(value)s µg/L som S"
+
+msgid "treatment"
+msgstr "behandling"
+
+msgid "treatments"
+msgstr "behandlinger"
 
 msgid "unit"
 msgstr "enhet"
@@ -8160,6 +9277,14 @@ msgstr "enheter"
 
 msgid "unread"
 msgstr "ulest"
+
+#, python-format
+msgid "until %(last)s (harvest from %(first)s)"
+msgstr "til og med %(last)s (høsting fra %(first)s)"
+
+#, python-format
+msgid "until about %(last)s (harvest from about %(first)s)"
+msgstr "til og med omtrent %(last)s (høsting fra omtrent %(first)s)"
 
 #, python-format
 msgid "up to %(weight)s g"
@@ -8220,6 +9345,10 @@ msgstr "alt som er i den"
 
 msgid "wherever it is"
 msgstr "uansett hvor den er"
+
+#, python-format
+msgid "withdrawal %(rule)s"
+msgstr "tilbakeholdelsestid %(rule)s"
 
 msgid "worked out from the sample"
 msgstr "regnet ut fra prøven"

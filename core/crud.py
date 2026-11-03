@@ -353,6 +353,12 @@ class Resource:
         return cls.model._default_manager.all()
 
     @classmethod
+    def list_queryset(cls, request):
+        """The records the list starts from, before its search and filters: the live ones (queryset). A tab
+        whose records are voided rather than deleted can show the voided ones too when asked."""
+        return cls.queryset()
+
+    @classmethod
     def form(cls, request, *args, **kwargs):
         """The tab's form; override to hand it more, e.g. who is editing."""
         return cls.form_class(*args, **kwargs)
@@ -479,10 +485,15 @@ def filter_by(request, objects, param, choices, lookup, allow_none=False):
 class ListView(ResourceView):
     def get(self, request):
         query = request.GET.get('q', '').strip()
-        objects = self.resource.queryset()
+        objects = self.resource.list_queryset(request)
         if query:
             objects = self.resource.search(objects, query)
         objects, filters = self.resource.filter_list(request, objects)
+        if isinstance(objects, models.QuerySet) and not objects.ordered:
+            # A filter that counts with a GROUP BY drops the model's ordering (Django leaves Meta.ordering
+            # out of such queries); the list is read and paged in it all the same, the key last. (A tab that
+            # returns a list, e.g. in tree order, has put it in its order itself.)
+            objects = objects.order_by(*self.resource.model._meta.ordering, 'pk')
         page = None
         if self.resource.page_size:
             # Paged on the server, after the search and the filters; the page links keep both.

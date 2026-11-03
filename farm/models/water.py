@@ -1,6 +1,7 @@
 """Water chemistry: the samples people take (Operations › Water chemistry) and the owner's limits per
 species (Setup › Reference data › Water limits). Which parameters there are, with their units and
-plausible ranges, is farm/water/parameters.py; how a value is judged is farm/water/evaluate.py, on read."""
+plausible ranges, is farm/water/parameters.py; how a value is judged is farm/water/evaluate.py, on read;
+where a sample was taken is its sampling point (farm/models/water_point.py)."""
 from functools import reduce
 from operator import or_
 
@@ -15,10 +16,9 @@ from core.models import ActiveManager, AuditedModel
 from ..water import parameters
 from ..water.evaluate import ANY_WATER
 from ..water.parameters import COLUMNS, LIMIT_CHOICES, LIMITED, MEASURED
-from .site import zone_of
 from .species import Species
-from .system import System
-from .tank import Tank, WaterType
+from .tank import WaterType
+from .water_point import SamplingPoint, live_owner, local_time
 
 
 class Source(models.TextChoices):
@@ -26,23 +26,14 @@ class Source(models.TextChoices):
     LAB = 'lab', _('Laboratory')
 
 
-def site_of(point):
-    """The site of a unit (through its production department, which may have none) or of a system."""
-    return point.site if isinstance(point, System) else point.production_department.site
-
-
-def local_time(moment, point):
-    """A moment on the clock of the point's site (farm.models.site.zone_of)."""
-    return moment.astimezone(zone_of(site_of(point)))
-
-
-# The samples of live points. A deleted unit or system keeps its samples, out of sight, and they come back
-# with it when it is restored (core.softdelete: the link keeps them, DO_NOTHING).
-LIVE_POINT = (Q(unit__isnull=True) | Q(unit__is_deleted=False)) & (Q(system__isnull=True) | Q(system__is_deleted=False))
+# The samples of live points of live owners. A deleted unit, system or piece of equipment keeps its points, and
+# a point its samples, out of sight, and they come back with the owner when it is restored (core.softdelete:
+# the links keep them, DO_NOTHING).
+LIVE_POINT = Q(point__is_deleted=False) & live_owner('point__')
 
 
 class SampleManager(ActiveManager):
-    """Live samples of live points (LIVE_POINT); a voided sample is out, as a deleted record is."""
+    """Live samples of live points of live owners (LIVE_POINT); a voided sample is out, as a deleted record is."""
 
     def get_queryset(self):
         return super().get_queryset().filter(LIVE_POINT)
@@ -54,10 +45,6 @@ def _any(conditions):
 
 def _sample_checks():
     checks = [
-        models.CheckConstraint(
-            condition=Q(unit__isnull=False, system__isnull=True) | Q(unit__isnull=True, system__isnull=False),
-            name='chk_water_measurements_one_point',
-            violation_error_message=_('A sample is taken in a unit or in a system’s loop, one of the two.')),
         models.CheckConstraint(condition=_any(Q(**{f'{column}__isnull': False}) for column in COLUMNS),
                                name='chk_water_measurements_any_value',
                                violation_error_message=_('Enter at least one value.')),
@@ -75,8 +62,9 @@ def _sample_checks():
 
 
 class WaterMeasurement(AuditedModel):
-    """A water sample: what a person measured at one point, a unit or a system's loop, at one moment, with
-    a typed column per parameter (empty when not measured). Source table: farm.water_quality_measurements.
+    """A water sample: what a person measured at one sampling point (a place on a unit, on a system's loop or
+    on a piece of equipment) at one moment, with a typed column per parameter (empty when not measured). Source
+    table: farm.water_quality_measurements.
 
     One row per sample (wide), not per parameter: each column keeps its own unit, precision and plausible
     range (a database check), and the values worked out from a sample, the un-ionised ammonia and the
@@ -89,6 +77,10 @@ class WaterMeasurement(AuditedModel):
     operation is. created_by is who recorded it (never a value from the form, WQ-11). The only writer is
     farm/water/services.py.
 
+    The unit, the system or the equipment a sample belongs to is not stored on it: it is the point's owner
+    (`point.owner`), so the two can never disagree (the source kept a column for each of a tank, a pond, an
+    equipment and a system, WQ-40). A sample has exactly one point, a required foreign key.
+
     The table is a TimescaleDB hypertable on `measured_at` (migration 0014), so its primary key in the
     database is (id, measured_at) while the model keeps `id`. That has rules:
     - every unique constraint includes `measured_at` (the form's key below does);
@@ -97,11 +89,10 @@ class WaterMeasurement(AuditedModel):
 
     Source = Source
 
-    # A deleted unit or system keeps its samples (they come back with it): DO_NOTHING, read by SampleManager.
-    unit = models.ForeignKey(Tank, null=True, blank=True, on_delete=models.DO_NOTHING, related_name='water_samples',
-                             verbose_name=_('Unit'))
-    system = models.ForeignKey(System, null=True, blank=True, on_delete=models.DO_NOTHING,
-                               related_name='water_samples', verbose_name=_('System'))
+    # A point keeps its samples (they come back with it, and with its owner): DO_NOTHING, read by SampleManager.
+    # No index of its own: the one on (point, -measured_at) serves it.
+    point = models.ForeignKey(SamplingPoint, null=True, on_delete=models.DO_NOTHING, related_name="samples", db_index=False,
+                              verbose_name=_('Sampling point'))
     measured_at = models.DateTimeField(_('Measured at'))
     source = models.CharField(_('Source'), max_length=10, choices=Source.choices)
     temperature_c = parameters.get('temperature_c').field()
@@ -134,16 +125,10 @@ class WaterMeasurement(AuditedModel):
             # A hypertable's unique constraints include its time column; the form posts its time with its key.
             models.UniqueConstraint(fields=['entry_key', 'measured_at'], name='uq_water_measurements_entry'),
         ]
-        indexes = [models.Index(fields=['unit', '-measured_at'], name='water_meas_unit_time_idx'),
-                   models.Index(fields=['system', '-measured_at'], name='water_meas_system_time_idx')]
+        indexes = [models.Index(fields=['point', '-measured_at'], name='water_meas_point_time_idx')]
 
     def __str__(self):
-        return f'{self.point.code} · {local_time(self.measured_at, self.point):%Y-%m-%d %H:%M}'
-
-    @property
-    def point(self):
-        """Where it was taken: the unit, or the system whose loop (sump) was sampled."""
-        return self.unit if self.unit_id else self.system
+        return f'{self.point} · {local_time(self.measured_at, self.point):%Y-%m-%d %H:%M}'
 
     def values(self):
         """{code: value} of the parameters measured."""

@@ -2,9 +2,10 @@
 every void: the forms call these functions and the views show what they refuse on the field it concerns.
 
 - `record` writes one sample, `record_round` the samples of a round (the morning round of a hall),
-  all of them or none. Each locks its points (the units and systems sampled) in primary-key order,
-  refuses a form sent twice (its key), checks the time and every value, writes the rows and their
-  activity-log rows.
+  all of them or none. A sample is at a sampling point (farm/models/water_point.py): a place on a unit, on a
+  system's loop or on a piece of equipment. Each locks the owners of its points and the points in
+  primary-key order, refuses a point that is deleted, inactive or on a deleted owner, refuses a form sent twice
+  (its key), checks the time and every value, writes the rows and their activity-log rows.
 - The time: not in the future and at most STOCK_BACKDATE_DAYS back, on the clock of the point's site, the
   rule of every daily record (farm/stock/dates.py; WQ-10).
 - A value: inside its parameter's plausible range and at its precision (farm/water/parameters.py); the
@@ -25,17 +26,20 @@ from django.utils.translation import gettext as _
 
 from core import audit
 from core.models import AuditLog
-from farm.models import System, Tank, WaterMeasurement
-from farm.models.water import local_time, site_of
+from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
+from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
 from farm.stock.services import AlreadyRecorded
 
 from . import parameters
+from .read import POINT_RELATED
 
-# What the activity log shows of a sample besides its point and time.
-LOGGED = ['source', *parameters.COLUMNS, 'notes']
-# The most rows a round takes (a hall's units and its loops; the form shows them all on one page).
+# What the activity log shows of a sample: where it was taken, its source, its values and its notes (and its
+# time, which the entry carries).
+LOGGED = ['point', 'source', *parameters.COLUMNS, 'notes']
+# The most rows a round takes (a hall's points; the form shows them all on one page).
 ROUND_ROWS = 200
+OWNERS = ((UNIT, Tank), (SYSTEM, System), (EQUIPMENT, Equipment))
 
 
 def earliest(point):
@@ -67,32 +71,37 @@ def value_errors(values):
 
 
 def _locked_points(points):
-    """The points, locked for this transaction in primary-key order (units, then systems)."""
-    locked = {}
-    for model in (Tank, System):
-        pks = sorted(point.pk for point in points if isinstance(point, model))
-        locked.update({(model, pk): row for pk, row in
-                       model.all_objects.select_for_update(of=('self',)).in_bulk(pks).items()})
-    for (_model, _pk), row in locked.items():
-        if row.is_deleted:
-            raise ValidationError({'point': _('%(point)s is deleted.') % {'point': row.code}})
-    return [locked[(type(point), point.pk)] for point in points]
+    """The points, locked for this transaction with their owners, in primary-key order (the owners first: units,
+    systems, equipment; then the points). A point that is deleted or inactive, or whose owner is deleted, takes no
+    sample: the reason is on 'point'. Returns the locked rows, owners loaded, in the order given."""
+    owners = {}
+    for owner_type, model in OWNERS:
+        pks = sorted({getattr(point, f'{owner_type}_id') for point in points if getattr(point, f'{owner_type}_id')})
+        owners.update(model.all_objects.select_for_update(of=('self',)).in_bulk(pks))
+    related = [path.removeprefix('point__') for path in POINT_RELATED]
+    locked = SamplingPoint.all_objects.select_for_update(of=('self',)).select_related(*related).in_bulk(
+        sorted(point.pk for point in points))
+    found = [locked[point.pk] for point in points]
+    for point in found:
+        owner = owners[getattr(point, f'{point.owner_type}_id')]
+        if owner.is_deleted:
+            raise ValidationError({'point': _('%(point)s is deleted.') % {'point': owner.code}})
+        if point.is_deleted:
+            raise ValidationError({'point': _('%(point)s is deleted.') % {'point': point}})
+        if not point.is_active:
+            raise ValidationError({'point': _('%(point)s is inactive: it takes no new samples.') % {'point': point}})
+    return found
 
 
 def _sample(user, point, measured_at, source, values, notes, key):
-    sample = WaterMeasurement(measured_at=measured_at, source=source, notes=notes.strip(), entry_key=key,
-                              created_by=user, updated_by=user, **values)
-    if isinstance(point, System):
-        sample.system = point
-    else:
-        sample.unit = point
-    return sample
+    return WaterMeasurement(point=point, measured_at=measured_at, source=source, notes=notes.strip(), entry_key=key,
+                            created_by=user, updated_by=user, **values)
 
 
 def label(sample):
     """How the activity log names a sample: where and when, on the site's clock, so a search for a unit's
     code finds it."""
-    return f'{audit.english(WaterMeasurement._meta.verbose_name).capitalize()} · {sample.point.code} · ' \
+    return f'{audit.english(WaterMeasurement._meta.verbose_name).capitalize()} · {sample.point} · ' \
            f'{local_time(sample.measured_at, sample.point):%Y-%m-%d %H:%M}'
 
 
@@ -117,7 +126,8 @@ def _values(values):
 
 
 def record(user, *, point, measured_at, source, values, notes='', token=None):
-    """One sample at one point: a unit, or a system (its loop, at the sump). Returns the sample."""
+    """One sample at one sampling point (a place on a unit, a system's loop or a piece of equipment). Returns the
+    sample."""
     values = _values(values)
     with transaction.atomic():
         (point,) = _locked_points([point])
@@ -138,7 +148,7 @@ def record(user, *, point, measured_at, source, values, notes='', token=None):
 def row_key(token, point):
     """The key of one row of a round: the round's key and the point, so the same round sent twice records
     each of its samples once (a hypertable's unique key includes the time, which a round shares)."""
-    return uuid.uuid5(token, f'{point._meta.model_name}:{point.pk}')
+    return uuid.uuid5(token, f'point:{point.pk}')
 
 
 def record_round(user, *, measured_at, source, rows, token=None):
@@ -148,8 +158,8 @@ def record_round(user, *, measured_at, source, rows, token=None):
     rows = [(point, values, notes) for point, values, notes in rows if values]
     if not rows:
         raise ValidationError({NON_FIELD_ERRORS: _('Enter at least one value.')})
-    if len({(type(point), point.pk) for point, _values_, _notes in rows}) != len(rows):
-        raise ValidationError({NON_FIELD_ERRORS: _('Each unit or system can be listed once.')})
+    if len({point.pk for point, _values_, _notes in rows}) != len(rows):
+        raise ValidationError({NON_FIELD_ERRORS: _('Each point can be listed once.')})
     if len(rows) > ROUND_ROWS:
         raise ValidationError({NON_FIELD_ERRORS: _('A round takes at most %(rows)d rows.')
                                % {'rows': ROUND_ROWS}})
@@ -178,7 +188,8 @@ def void(user, sample, reason):
     if not reason:
         raise ValidationError({'reason': _('Say why it is voided.')})
     with transaction.atomic():
-        sample = WaterMeasurement.all_objects.select_for_update().get(pk=sample.pk)
+        sample = (WaterMeasurement.all_objects.select_for_update(of=('self',)).select_related(*POINT_RELATED)
+                  .get(pk=sample.pk))
         if sample.is_deleted:
             raise ValidationError({NON_FIELD_ERRORS: _('This sample is already voided.')})
         if local_time(sample.measured_at, sample.point).date() < earliest(sample.point):

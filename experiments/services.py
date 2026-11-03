@@ -6,24 +6,30 @@ experiment, not on which table). A failure raises `ValidationError` on NON_FIELD
 nothing is written.
 
 - `save_design`: the factors, groups, levels and replicates of a draft, saved as a whole, the grid's rows matched to the
-  stored ones by their id (a renamed group keeps its replicates and the tanks placed in them)."""
+  stored ones by their id (a renamed group keeps its replicates and the tanks placed in them);
+- `save_places`, `randomise`, `move_span`: the tanks of a draft's replicates and the days they are booked to them."""
+import itertools
 import uuid
 from dataclasses import dataclass, field
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit, softdelete
 from core.models import AuditLog
-from farm.models import FeedingProtocol
+from farm.models import FeedingProtocol, Tank
 from farm.models.feeding_protocol import ProtocolStatus
+from farm.stock.services import locked as stock_locked
 
+from . import allocation, read
 from . import design as design_module
 from .models import (
-    Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level, ReplicateUnit, Replicate, Status,
+    AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level, Replicate,
+    ReplicateUnit, Status,
 )
 
 DESIGN = gettext_lazy('Design')
@@ -308,3 +314,280 @@ def _slots(user, group, count):
             raise _refused(_('Replicate %(group)s R%(number)d holds tanks: take them out on the Places tab before '
                              'removing it.') % {'group': group.name, 'number': number})
         _remove(user, stored[number])
+
+
+# ---- the places -----------------------------------------------------------------------------------
+PLACES = gettext_lazy('Places')
+ALLOCATION = gettext_lazy('Allocation')
+SEED_LIMIT = 2 ** 63                       # the seed is a bigint
+
+
+@dataclass
+class Place:
+    """The tanks of one replicate and the days they are booked to it (both included); no days: the whole span."""
+    replicate: object
+    tanks: list = field(default_factory=list)
+    first: object = None
+    last: object = None
+
+
+def span_of(starts_on, duration_days):
+    """(day 0, last day): the baseline weighing and the final one, on the site's clock; None without a day 0."""
+    if starts_on is None or duration_days is None:
+        return None
+    return starts_on, starts_on + timedelta(days=duration_days)
+
+
+def span(experiment):
+    """The span of an experiment (`span_of` its day 0 and duration)."""
+    return span_of(experiment.starts_on, experiment.duration_days)
+
+
+def tanks_of(item):
+    """The tanks of a pool item: a tank is itself, a system the live tanks of it and of every system nested in it (a
+    system is only a shortcut: what is stored is its tanks, because `Tank.system` changes and keeps no history)."""
+    if isinstance(item, Tank):
+        return [item]
+    systems = [item, *item.descendants()]
+    return list(Tank.objects.filter(system__in=systems).select_related('production_department__site').order_by('code'))
+
+
+def describe_places(experiment):
+    """The placements as the activity log keeps them, in English: one line a replicate with tanks."""
+    lines = []
+    for replicate, rows in itertools.groupby(read.cells(experiment), key=lambda cell: cell.replicate):
+        rows = list(rows)
+        windows = {(row.first, row.last) for row in rows}
+        days = f' ({rows[0].first.isoformat()} to {rows[0].last.isoformat()})' if len(windows) == 1 else ''
+        tanks = ', '.join(row.unit.code if len(windows) == 1 else
+                          f'{row.unit.code} ({row.first.isoformat()} to {row.last.isoformat()})' for row in rows)
+        lines.append(f'{replicate.group.name} R{replicate.number}: {tanks}{days}')
+    return '\n'.join(lines) or None
+
+
+def describe_allocation(experiment):
+    if experiment.allocation_method == AllocationMethod.RANDOMISED:
+        return f'Randomised, seed {experiment.allocation_seed}'
+    if experiment.allocation_method == AllocationMethod.MANUAL:
+        return f'Placed by hand: {experiment.allocation_note}'
+    return None
+
+
+def _wanted(experiment, places):
+    """[(replicate, tank, first, last)] of the places, each checked: the replicate is the experiment's, the tank is
+    live and on its site, the days are inside the span and in order, and no tank is in two places on one day. Every fault
+    at once; the booking by another experiment is checked by `_check_booked`."""
+    errors, wanted = [], []
+    window = span(experiment)
+    if window is None:
+        raise _refused(_('Set day 0 on the Details tab first: a tank is booked for days.'))
+    replicates = {replicate.pk: replicate for replicate in Replicate.objects.filter(group__experiment=experiment)}
+    for place in places:
+        replicate = replicates.get(place.replicate.pk)
+        if replicate is None:
+            errors.append(_('A replicate was removed meanwhile: reload the page.'))
+            continue
+        first, last = place.first or window[0], place.last or window[1]
+        label = f'{replicate.group.name} R{replicate.number}'
+        if first > last:
+            errors.append(_('%(replicate)s: the last day comes on or after the first day.') % {'replicate': label})
+        elif first < window[0] or last > window[1]:
+            errors.append(_('%(replicate)s: the days are outside the experiment (%(first)s to %(last)s).') % {
+                'replicate': label, 'first': window[0].isoformat(), 'last': window[1].isoformat()})
+        for tank in place.tanks:
+            if tank.is_deleted:
+                errors.append(_('%(tank)s was deleted meanwhile.') % {'tank': tank.code})
+            elif tank.production_department.site_id != experiment.site_id:
+                errors.append(_('%(tank)s is not on the site of the experiment (%(site)s).') % {
+                    'tank': tank.code, 'site': experiment.site.name})
+            wanted.append((replicate, tank, first, last))
+    seen = {}
+    for replicate, tank, first, last in wanted:
+        for other_first, other_last, other in seen.get(tank.pk, []):
+            if first <= other_last and other_first <= last:
+                errors.append(_('%(tank)s is placed twice on some of the same days (%(first)s, %(second)s).') % {
+                    'tank': tank.code, 'first': other, 'second': f'{replicate.group.name} R{replicate.number}'})
+        seen.setdefault(tank.pk, []).append((first, last, f'{replicate.group.name} R{replicate.number}'))
+    if errors:
+        raise _refused(*dict.fromkeys(errors))
+    return wanted
+
+
+def _check_booked(experiment, wanted):
+    """No tank is booked to another experiment on a day it is asked for here (named by its number); the exclusion
+    constraint holds it for any writer, this says which experiment."""
+    errors = []
+    for replicate, tank, first, last in wanted:
+        other = read.booked([tank.pk], first, last, exclude=experiment).get(tank.pk)
+        if other is not None:
+            errors.append(_('%(tank)s is booked to %(experiment)s on some of these days.') % {
+                'tank': tank.code, 'experiment': other.code})
+    if errors:
+        raise _refused(*dict.fromkeys(errors))
+
+
+def _write_places(user, experiment, wanted):
+    """Replaces the draft's placements with `wanted`: those already there are kept, the others removed and the new
+    ones made. A draft's placements are not evidence (the trigger lets a draft delete them): they are removed for good,
+    and the change is the one "Places" row on the experiment."""
+    current = {(row.replicate_id, row.unit_id, row.from_on, row.until_on): row
+               for row in ReplicateUnit.objects.filter(replicate__group__experiment=experiment)}
+    keep = {(replicate.pk, tank.pk, first, last) for replicate, tank, first, last in wanted}
+    ReplicateUnit.objects.filter(pk__in=[row.pk for key, row in current.items() if key not in keep]).delete()
+    fresh = [ReplicateUnit(replicate=replicate, unit=tank, from_on=first, until_on=last, created_by=user,
+                           updated_by=user)
+             for replicate, tank, first, last in wanted if (replicate.pk, tank.pk, first, last) not in current]
+    try:
+        with transaction.atomic():
+            ReplicateUnit.objects.bulk_create(fresh)
+    except IntegrityError:
+        raise _refused(_('A tank was booked to another experiment meanwhile: look at the places and try again.'))
+
+
+def _lock_tanks(places):
+    """The tanks of the places locked in primary-key order (the order of every writer: the stock service's), so that two
+    experiments enrolling one tank take turns and the second is told whose it is; deleted ones too."""
+    pks = {tank.pk for place in places for tank in place.tanks}
+    locked = stock_locked(Tank, pks)
+    for place in places:
+        place.tanks = [locked.get(tank.pk, tank) for tank in place.tanks]
+    return locked
+
+
+def save_places(user, experiment, places, version, note=''):
+    """Places the tanks of a draft: `places` are the `Place`s of its replicates (a replicate not named has none), saved as
+    a whole. A system in the form is the tanks of it and of the systems nested in it (`tanks_of`), expanded before the
+    call. The tanks and the experiment are locked (tanks first, in primary-key order, the experiment last), the sites,
+    the span, the days and the bookings are checked and named, and the allocation becomes "placed by hand" with its
+    reason `note`, which is needed (unless nothing changed, or nothing is placed). Logged on the experiment as "Places"
+    and "Allocation", before and after."""
+    with transaction.atomic():
+        _lock_tanks(places)
+        locked = locked_draft(experiment, version)
+        if locked.is_template:
+            raise _refused(_('A template has no tanks: it is a design to copy.'))
+        wanted = _wanted(locked, places)
+        _check_booked(locked, wanted)
+        note = note.strip()
+        with audit.source_language():
+            before, before_allocation = describe_places(locked), describe_allocation(locked)
+            changed = {(r.pk, t.pk, f, l) for r, t, f, l in wanted} != {
+                (row.replicate_id, row.unit_id, row.from_on, row.until_on)
+                for row in ReplicateUnit.objects.filter(replicate__group__experiment=locked)}
+            if changed and wanted and not note:
+                raise _refused(_('Say why the tanks are placed by hand: a placement that is not randomised is '
+                                 'registered with its reason.'))
+            if changed:
+                _write_places(user, locked, wanted)
+                _set_allocation(locked, AllocationMethod.MANUAL if wanted else AllocationMethod.NONE,
+                                note=note if wanted else '')
+            elif note and locked.allocation_method == AllocationMethod.MANUAL:
+                _set_allocation(locked, AllocationMethod.MANUAL, note=note)          # the reason, put better
+            return _log_places(user, locked, before, before_allocation)
+
+
+def _set_allocation(experiment, method, seed=None, note=''):
+    experiment.allocation_method, experiment.allocation_seed, experiment.allocation_note = method, seed, note
+
+
+def _log_places(user, experiment, before, before_allocation):
+    """Bumps the version and logs "Places" and "Allocation", when either changed; returns the experiment."""
+    after, after_allocation = describe_places(experiment), describe_allocation(experiment)
+    changes = {}
+    if before != after:
+        changes[str(PLACES)] = [before, after]
+    if before_allocation != after_allocation:
+        changes[str(ALLOCATION)] = [before_allocation, after_allocation]
+    if changes:
+        experiment.version += 1
+        experiment.updated_by = user
+        experiment.save(update_fields=['allocation_method', 'allocation_seed', 'allocation_note', 'version',
+                                       'updated_by', 'updated_at'])
+        audit.record(user, AuditLog.Action.UPDATE, experiment, changes)
+    return experiment
+
+
+def randomise(user, experiment, pool, seed, version):
+    """Deals the tanks of `pool` (tanks and systems of the site) to the replicates of a draft by the seeded method
+    `sha256_v1` (experiments/allocation.py): as many items as replicates, each item the tanks of a tank or a system,
+    booked for the whole span; the method and the seed are stored with the placements, so the deal can be repeated and
+    checked. The same checks and locks as `save_places`."""
+    if not isinstance(seed, int) or not 0 <= seed < SEED_LIMIT:
+        raise _refused(_('The seed is a whole number from 0 to %(top)d.') % {'top': SEED_LIMIT - 1})
+    items = {}
+    errors = []
+    for item in pool:
+        code = item.code
+        if code in items:
+            errors.append(_('Two items of the pool have the code %(code)s.') % {'code': code})
+        items[code] = item
+    if errors:
+        raise _refused(*errors)
+    tanks = {code: tanks_of(item) for code, item in items.items()}
+    for code, found in tanks.items():
+        if not found:
+            errors.append(_('%(code)s has no tank.') % {'code': code})
+    counted = [tank.pk for found in tanks.values() for tank in found]
+    errors += [_('%(tank)s is in the pool twice (alone and through a system).') % {'tank': tank.code}
+               for tank in {tank.pk: tank for found in tanks.values() for tank in found}.values()
+               if counted.count(tank.pk) > 1]
+    if errors:
+        raise _refused(*errors)
+    with transaction.atomic():
+        places = [Place(None, found) for found in tanks.values()]
+        _lock_tanks(places)
+        locked = locked_draft(experiment, version)
+        if locked.is_template:
+            raise _refused(_('A template has no tanks: it is a design to copy.'))
+        slots = [(group, replicate) for group in ExperimentGroup.objects.filter(experiment=locked)
+                 .order_by('position', 'name') for replicate in Replicate.objects.filter(group=group)
+                 .order_by('number')]
+        if not slots:
+            raise _refused(_('The design has no replicate to place tanks in.'))
+        if len(items) != len(slots):
+            raise _refused(_('The pool has %(items)d items for %(slots)d replicates: choose as many tanks or systems as '
+                             'there are replicates.') % {'items': len(items), 'slots': len(slots)})
+        dealt = allocation.deal(list(items), [replicate for _group, replicate in slots], seed)
+        by_code = {code: place for code, place in zip(tanks, places)}
+        for replicate, code in dealt:
+            by_code[code].replicate = replicate
+        wanted = _wanted(locked, places)
+        _check_booked(locked, wanted)
+        with audit.source_language():
+            before, before_allocation = describe_places(locked), describe_allocation(locked)
+            _write_places(user, locked, wanted)
+            _set_allocation(locked, AllocationMethod.RANDOMISED, seed=seed)
+            return _log_places(user, locked, before, before_allocation)
+
+
+def move_span(user, experiment, old_span):
+    """After a draft's day 0 or duration changed (inside the saving transaction): the windows that equalled the old span
+    move to the new one, the others stay (a window of its own days is the person's; the design says when it is outside the
+    span). Logged on the experiment as "Places". `old_span` is (first, last) before the change, or None."""
+    new = span(experiment)
+    if old_span is None or new is None or old_span == new or experiment.status != Status.DRAFT:
+        return
+    rows = list(ReplicateUnit.objects.filter(replicate__group__experiment=experiment, from_on=old_span[0],
+                                             until_on=old_span[1]))
+    if not rows:
+        return
+    with audit.source_language():
+        before = describe_places(experiment)
+        ReplicateUnit.objects.filter(pk__in=[row.pk for row in rows]).update(
+            from_on=new[0], until_on=new[1], updated_by=user, updated_at=timezone.now())
+        audit.record(user, AuditLog.Action.UPDATE, experiment, {str(PLACES): [before, describe_places(experiment)]})
+
+
+def clashes_when_moved(experiment, old_span, new):
+    """{tank: the experiment that holds it} for the placements that would move with the span (they equal the old one) and
+    meet another experiment's booking on the new days: what the form says on the field before it saves."""
+    if old_span is None or new is None or old_span == new:
+        return {}
+    units = list(ReplicateUnit.objects.filter(replicate__group__experiment=experiment, from_on=old_span[0],
+                                              until_on=old_span[1]).select_related('unit'))
+    found = {}
+    for row in units:
+        other = read.booked([row.unit_id], new[0], new[1], exclude=experiment).get(row.unit_id)
+        if other is not None:
+            found[row.unit] = other
+    return found

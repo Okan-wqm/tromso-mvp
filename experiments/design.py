@@ -7,6 +7,7 @@ read from the stored design: nothing about them is stored.
 (ethics, permits, welfare) append theirs, so a permit can block Start without this module knowing it."""
 import hashlib
 from dataclasses import dataclass, field
+from datetime import timedelta
 
 from django.conf import settings
 from django.utils.translation import gettext as _
@@ -15,7 +16,9 @@ from farm.feeding.read import tables as protocol_tables
 from farm.models.feeding_protocol import ProtocolStatus
 from farm.stock.dates import site_earliest
 
-from .models import Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, Level, Member, Replicate, ReplicateUnit
+from .models import (
+    AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, Level, Member, Replicate, ReplicateUnit,
+)
 
 ERROR, WARNING = 'error', 'warning'
 
@@ -206,7 +209,45 @@ def check_balance(design):
         yield Finding(WARNING, 'unequal_replicates', _('The groups have different numbers of replicates.'))
 
 
-CHECKS = [check_experiment, check_groups, check_protocols, check_balance]
+def check_places(design):
+    """The tanks: allocated, a tank in every replicate, on the experiment's site and inside its days; and the water they
+    share (a system's water carries one tank's treatment to another)."""
+    experiment = design.experiment
+    if experiment.allocation_method == AllocationMethod.NONE:
+        yield Finding(ERROR, 'no_allocation', _('The tanks are not allocated: randomise them or place them by hand.'))
+    window = None if experiment.starts_on is None else (
+        experiment.starts_on, experiment.starts_on + timedelta(days=experiment.duration_days))
+    systems = {}
+    for group, replicate in design.slots():
+        label = f'{group.name} R{replicate.number}'
+        rows = design.placements.get(replicate.pk, [])
+        if not rows:
+            yield Finding(ERROR, 'slot_without_tank', _('%(replicate)s has no tank.') % {'replicate': label}, label)
+        for row in rows:
+            if row.unit.production_department.site_id != experiment.site_id:
+                yield Finding(ERROR, 'tank_off_site', _('%(tank)s of %(replicate)s is not on the site of the '
+                                                        'experiment.') % {'tank': row.unit.code, 'replicate': label},
+                              f'{label}/{row.unit.code}')
+            if window is not None and (row.from_on < window[0] or row.until_on > window[1]):
+                yield Finding(ERROR, 'window_outside_span', _('%(tank)s of %(replicate)s is booked outside the days '
+                                                              'of the experiment.') % {
+                    'tank': row.unit.code, 'replicate': label}, f'{label}/{row.unit.code}')
+        in_replicate = {row.unit.system_id for row in rows if row.unit.system_id}
+        if len(in_replicate) > 1:
+            yield Finding(WARNING, 'replicate_in_systems', _('The tanks of %(replicate)s are in different systems: the '
+                                                             'water they share is not the replicate’s own.') % {
+                'replicate': label}, label)
+        for row in rows:
+            if row.unit.system is not None:
+                systems.setdefault(row.unit.system, set()).add(group.name)
+    for system, names in systems.items():
+        if len(names) > 1:
+            yield Finding(WARNING, 'system_confounding', _('System %(system)s holds tanks of different groups (%(groups)s): '
+                                                           'its water, and a treatment in it, is shared between them.') % {
+                'system': system.name, 'groups': ', '.join(sorted(names))}, system.name)
+
+
+CHECKS = [check_experiment, check_groups, check_protocols, check_balance, check_places]
 
 
 def problems(experiment, design=None):

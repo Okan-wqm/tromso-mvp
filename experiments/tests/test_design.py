@@ -1,6 +1,7 @@
 """The design of an experiment: `services.save_design` (rows matched by id, levels made from cells, replicates equal to
 their count, the log), what is wrong with a design (`design.problems`, one test per finding) and the Design tab's
 page against the stored rows."""
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -308,6 +309,11 @@ class ProblemsTests(DesignTestCase):
         groups = [self.group_row('Control', 'control', 2, [services.Cell(protocol=self.low)]),
                   self.group_row('High feed', 'test', 2, [services.Cell(protocol=self.high)])]
         self.save(factors, groups)
+        self.trial.refresh_from_db()
+        slots = design.load(self.trial).slots()
+        services.save_places(self.user, self.trial, [services.Place(replicate, [tank])
+                                                     for tank, (_group, replicate) in zip(self.tanks, slots)],
+                             self.trial.version, 'Tanks 1 to 4 stand in one row')
         for protocol, unit in ((self.low, self.tanks[6]), (self.high, self.tanks[7])):
             ProtocolAssignment.objects.create(protocol=protocol, unit=unit, valid_from=self.day(1),
                                               valid_until=self.day(1))        # assigned: its table is fixed
@@ -321,17 +327,20 @@ class ProblemsTests(DesignTestCase):
 
     def test_a_design_with_nothing_to_say(self):
         self.good()
-        self.assertEqual(design.problems(self.trial), [])
+        self.assertEqual(self.found(), [])
         self.assertEqual(design.assess(self.trial).fingerprint, '')
 
     def test_what_the_experiment_says_of_itself(self):
-        self.assertEqual(self.codes(), ['no_hypothesis', 'no_endpoint', 'no_start_day', 'no_lead', 'no_group'])
+        self.assertEqual(self.codes(), ['no_hypothesis', 'no_endpoint', 'no_start_day', 'no_lead', 'no_group',
+                                        'no_allocation'])
         self.good()
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(32))
+        ReplicateUnit.objects.update(from_on=self.day(32), until_on=self.day(32) + timedelta(days=56))   # the days move too
         self.assertEqual(self.codes(), ['day_0_too_old'])
         self.assertEqual(self.found()[0].text, 'Day 0 is further back than records can be dated: an '
                                                               'experiment is registered at most 31 days after it begins.')
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(31))
+        ReplicateUnit.objects.update(from_on=self.day(31), until_on=self.day(31) + timedelta(days=56))
         self.assertEqual(self.codes(), [])
 
     def test_the_groups_have_replicates_and_a_level_of_every_factor_and_none_repeats_another(self):
@@ -401,6 +410,45 @@ class ProblemsTests(DesignTestCase):
             self.assertEqual(design.assess(self.trial).fingerprint, one)
         Replicate.objects.filter(group=stored.groups[0], number=2).delete()
         self.assertNotEqual(design.assess(self.trial).fingerprint, one)
+
+    def test_the_tanks_are_allocated_in_every_replicate_on_the_site_and_inside_the_days(self):
+        self.good()
+        stored = design.load(self.trial)
+        first, second = stored.replicates[stored.groups[0].pk]
+        placement = stored.placements[first.pk][0]
+        ReplicateUnit.objects.filter(pk=placement.pk).update(from_on=self.day(1), until_on=self.today + timedelta(days=57))
+        self.assertEqual(self.codes('error'), ['window_outside_span'])
+        ReplicateUnit.objects.filter(pk=placement.pk).update(from_on=self.today, until_on=self.today + timedelta(days=56))
+        ReplicateUnit.objects.filter(replicate=second).delete()
+        self.assertEqual(self.codes('error'), ['slot_without_tank'])
+        self.assertEqual(self.found()[0].text, 'Control R2 has no tank.')
+        ReplicateUnit.objects.create(replicate=second, unit=self.p1, from_on=self.today,
+                                     until_on=self.today + timedelta(days=56))
+        self.assertEqual(self.codes('error'), ['tank_off_site'])
+        ReplicateUnit.objects.filter(replicate=second).delete()
+        ReplicateUnit.objects.create(replicate=second, unit=self.tanks[5], from_on=self.today,
+                                     until_on=self.today + timedelta(days=56))
+        Experiment.objects.filter(pk=self.trial.pk).update(allocation_method='', allocation_note='')
+        self.assertEqual(self.codes('error'), ['no_allocation'])
+
+    def test_the_water_the_tanks_share_is_a_warning_by_replicate_and_by_group(self):
+        from farm.models import System
+        self.good()
+        stored = design.load(self.trial)
+        first, second = stored.replicates[stored.groups[0].pk]
+        other = stored.replicates[stored.groups[1].pk][0]
+        ras = System.objects.create(site=self.bergen, name='RAS 1', code='R1')
+        Tank = type(self.t1)
+        Tank.objects.filter(pk__in=[stored.placements[first.pk][0].unit_id,
+                                    stored.placements[other.pk][0].unit_id]).update(system=ras)
+        self.assertEqual(self.codes('warning'), ['system_confounding'])
+        self.assertEqual(self.found()[0].text, 'System RAS 1 holds tanks of different groups (Control, High feed): its '
+                                               'water, and a treatment in it, is shared between them.')
+        second_system = System.objects.create(site=self.bergen, name='RAS 2', code='R2')
+        ReplicateUnit.objects.create(replicate=first, unit=self.tanks[5], from_on=self.today,
+                                     until_on=self.today + timedelta(days=56))
+        Tank.objects.filter(pk=self.tanks[5].pk).update(system=second_system)
+        self.assertEqual(sorted(self.codes('warning')), ['replicate_in_systems', 'system_confounding'])
 
     def test_the_checks_are_a_list_other_areas_can_add_to(self):
         self.good()

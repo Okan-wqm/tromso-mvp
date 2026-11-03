@@ -1,11 +1,11 @@
 {% extends "crud/form.html" %}
 {% load i18n %}
 {% comment %} An experiment: its details (crud/form.html), its design on a tab of its own (a grid of factors and a grid of groups, saved
-   as a whole: _design.html) and its team on another, saved as a list (core.crud.RowList). The places are a grid of their own too.
+   as a whole: _design.html) and its team on another, saved as a list (core.crud.RowList). The places (the seeded deal and the rows by hand) are a form of their own too.
    A started experiment's design is fixed, and the page says so beside its fields.{% endcomment %}
-{% block extra_tabs %}{% if object %}<button type="button" role="tab" class="tab{% if design_form.errors or factors.non_form_errors or factors.errors or groups.non_form_errors or groups.errors %} tab-error{% endif %}" data-tab="design">{% trans "Design" %}</button>{% endif %}<button type="button" role="tab" class="tab{% if team.non_form_errors %} tab-error{% endif %}" data-tab="team">{% trans "Team" %}</button>{% endblock %}
+{% block extra_tabs %}{% if object %}<button type="button" role="tab" class="tab{% if design_form.errors or factors.non_form_errors or factors.errors or groups.non_form_errors or groups.errors %} tab-error{% endif %}" data-tab="design">{% trans "Design" %}</button>{% if not object.is_template %}<button type="button" role="tab" class="tab{% if places_form.errors or places.non_form_errors or places.errors %} tab-error{% endif %}" data-tab="places">{% trans "Places" %}</button>{% endif %}{% endif %}<button type="button" role="tab" class="tab{% if team.non_form_errors %} tab-error{% endif %}" data-tab="team">{% trans "Team" %}</button>{% endblock %}
 {% block extra_panels %}
-{% if object %}{% include "experiments/_design.html" %}{% endif %}
+{% if object %}{% include "experiments/_design.html" %}{% if not object.is_template %}{% include "experiments/_places.html" %}{% endif %}{% endif %}
 {% trans "Team" as panel_title %}
 {% trans "The people of the experiment and their part; exactly one is the lead. Only people who can read Experiments are offered. The team is saved separately from the details." as help %}
 {% trans "No one in the team yet. Use “Add person” to add a row." as empty %}

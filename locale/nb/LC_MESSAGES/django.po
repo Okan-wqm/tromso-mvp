@@ -61,6 +61,10 @@ msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: ikke veid siden den kom inn, så ingen fôrfaktor ennå"
 
 #, python-format
+msgid "%(code)s has no tank."
+msgstr "%(code)s har ikke noe kar."
+
+#, python-format
 msgid "%(code)s · %(name)s (loop)"
 msgstr "%(code)s · %(name)s (kretsløp)"
 
@@ -685,6 +689,18 @@ msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s ble ikke gjenopprettet: %(reasons)s"
 
 #, python-format
+msgid "%(replicate)s has no tank."
+msgstr "%(replicate)s har ikke noe kar."
+
+#, python-format
+msgid "%(replicate)s: the days are outside the experiment (%(first)s to %(last)s)."
+msgstr "%(replicate)s: dagene ligger utenfor forsøket (%(first)s til %(last)s)."
+
+#, python-format
+msgid "%(replicate)s: the last day comes on or after the first day."
+msgstr "%(replicate)s: siste dag kommer på eller etter første dag."
+
+#, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
 
@@ -719,6 +735,38 @@ msgstr "%(supplier)s er ikke leverandør av %(category)s (Innkjøp › Leverand�
 #, python-format
 msgid "%(system)s is on another site than the production department."
 msgstr "%(system)s er på en annen lokalitet enn produksjonsavdelingen."
+
+#, python-format
+msgid "%(tank)s is booked to %(experiment)s on some of these days."
+msgstr "%(tank)s er booket til %(experiment)s noen av disse dagene."
+
+#, python-format
+msgid "%(tank)s is in the pool twice (alone and through a system)."
+msgstr "%(tank)s er med i utvalget to ganger (alene og gjennom et system)."
+
+#, python-format
+msgid "%(tank)s is not on the site of the experiment (%(site)s)."
+msgstr "%(tank)s er ikke på forsøkets lokalitet (%(site)s)."
+
+#, python-format
+msgid "%(tank)s is placed twice on some of the same days (%(first)s, %(second)s)."
+msgstr "%(tank)s er plassert to ganger noen av de samme dagene (%(first)s, %(second)s)."
+
+#, python-format
+msgid "%(tank)s of %(replicate)s is booked outside the days of the experiment."
+msgstr "%(tank)s i %(replicate)s er booket utenfor forsøkets dager."
+
+#, python-format
+msgid "%(tank)s of %(replicate)s is not on the site of the experiment."
+msgstr "%(tank)s i %(replicate)s er ikke på forsøkets lokalitet."
+
+#, python-format
+msgid "%(tank)s was deleted meanwhile."
+msgstr "%(tank)s ble slettet i mellomtiden."
+
+#, python-format
+msgid "%(tank)s would be booked to %(experiment)s on those days."
+msgstr "%(tank)s ville vært booket til %(experiment)s de dagene."
 
 #, python-format
 msgid "%(temperature)s °C"
@@ -1208,6 +1256,9 @@ msgstr ""
 "href=\"%(url)s\">Oppgaver</a>. Å endre eller sette den på pause planlegger på nytt oppgavene fra "
 "i dag som ingen har rørt; de andre blir som de er."
 
+msgid "A replicate was removed meanwhile: reload the page."
+msgstr "Et replikat ble fjernet i mellomtiden: last siden på nytt."
+
 #, python-format
 msgid "A round takes at most %(rows)d rows."
 msgstr "En runde tar høyst %(rows)d rader."
@@ -1294,6 +1345,9 @@ msgstr "Et system blir værende på lokaliteten det ble opprettet på."
 msgid "A table has at most %(count)d temperature columns."
 msgstr "En tabell har høyst %(count)d temperaturkolonner."
 
+msgid "A tank was booked to another experiment meanwhile: look at the places and try again."
+msgstr "Et kar ble booket til et annet forsøk i mellomtiden: se på plasseringene og prøv igjen."
+
 msgid "A tank, a pond or a cage; it cannot be changed later."
 msgstr "Kar, dam eller merd; kan ikke endres senere."
 
@@ -1313,6 +1367,9 @@ msgstr "En temperaturkolonne har høyst én desimal: %(value)s."
 #, python-format
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
+
+msgid "A template has no tanks: it is a design to copy."
+msgstr "En mal har ingen kar: den er et design som skal kopieres."
 
 msgid "A template is a draft design without a start day or an allocation."
 msgstr "En mal er et utkast til design uten startdag eller fordeling."
@@ -1379,6 +1436,9 @@ msgstr ""
 
 msgid "A weekly task repeats on at least one weekday; the others on none."
 msgstr "En ukentlig oppgave gjentas på minst én ukedag; de andre på ingen."
+
+msgid "A whole number: the same pool and seed always give the same placements."
+msgstr "Et helt tall: det samme utvalget og frøet gir alltid de samme plasseringene."
 
 msgid "Abnormal swimming"
 msgstr "Unormal svømming"
@@ -1518,6 +1578,9 @@ msgstr ""
 
 msgid "Add the first user; they get an email to set their password."
 msgstr "Legg til den første brukeren; vedkommende får en e-post for å velge passord."
+
+msgid "Add the tanks of a system"
+msgstr "Legg til karene i et system"
 
 msgid "Add them in Setup › Tanks, ponds & cages."
 msgstr "Legg dem til i Oppsett › Kar, dammer og merder."
@@ -2007,6 +2070,9 @@ msgstr ""
 msgid "As given, to the gram (0.035 for 35 g)."
 msgstr "Som gitt, på grammet (0,035 for 35 g)."
 
+msgid "As many tanks or systems as replicates; a system gives all its tanks to one replicate."
+msgstr "Like mange kar eller systemer som replikater; et system gir alle karene sine til ett replikat."
+
 msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
 msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,29."
 
@@ -2323,6 +2389,9 @@ msgstr "Flyteevne"
 msgid "By"
 msgstr "Av"
 
+msgid "By hand"
+msgstr "Manuelt"
+
 msgid "By unit and day"
 msgstr "Per enhet og dag"
 
@@ -2590,6 +2659,15 @@ msgstr "Velg et aktivt slakteri som tar imot %(species)s."
 
 msgid "Choose another location than the one it leaves."
 msgstr "Velg en annen lagerplass enn den det tas fra."
+
+msgid ""
+"Choose as many tanks or systems as there are replicates and a seed: they are dealt to the "
+"replicates by a fixed method, so the deal can be repeated and checked. The seed is kept with the "
+"placements."
+msgstr ""
+"Velg like mange kar eller systemer som det er replikater, og et frø: de fordeles på replikatene "
+"med en fast metode, slik at fordelingen kan gjentas og kontrolleres. Frøet lagres sammen med "
+"plasseringene."
 
 msgid "Choose at least one."
 msgstr "Velg minst én."
@@ -4149,6 +4227,9 @@ msgstr "Gi punktet et navn."
 msgid "Give the sample, or the average weight."
 msgstr "Oppgi prøven eller snittvekten."
 
+msgid "Give the seed: a whole number the deal is repeated from."
+msgstr "Oppgi frøet: et helt tall fordelingen kan gjentas fra."
+
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Oppgi temperaturkolonnene først: rutenettet følger dem."
 
@@ -5534,6 +5615,9 @@ msgstr "Ingen protokoll er tildelt denne fisken."
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Ingen bestillingspunkter ennå. Bruk «Legg til fôr» for å legge til en rad."
 
+msgid "No replicate yet: design the groups on the Design tab first."
+msgstr "Ingen replikater ennå: design gruppene under fanen Design først."
+
 msgid "No rows match."
 msgstr "Ingen rader samsvarer."
 
@@ -5568,6 +5652,9 @@ msgstr ""
 
 msgid "No table yet"
 msgstr "Ingen tabell ennå"
+
+msgid "No tank is placed."
+msgstr "Ingen kar er plassert."
 
 msgid "No task completed or cancelled yet"
 msgstr "Ingen oppgaver fullført eller avlyst ennå"
@@ -6345,6 +6432,17 @@ msgstr "Sted slettet"
 msgid "Placed by hand"
 msgstr "Plassert manuelt"
 
+#, python-format
+msgid "Placed by hand: %(reason)s"
+msgstr "Plassert manuelt: %(reason)s"
+
+msgid "Places"
+msgstr "Plassering"
+
+#, python-format
+msgid "Places of “%(experiment)s” saved."
+msgstr "Plasseringene til «%(experiment)s» er lagret."
+
 msgid "Plan"
 msgstr "Plan"
 
@@ -6405,6 +6503,9 @@ msgstr "Damtype"
 
 msgid "Ponds"
 msgstr "Dammer"
+
+msgid "Pool"
+msgstr "Utvalg"
 
 msgid "Poor growth"
 msgstr "Dårlig vekst"
@@ -6597,8 +6698,15 @@ msgstr "Raceway (strømkanal)"
 msgid "Rain and run-off"
 msgstr "Regn og overvann"
 
+msgid "Randomise"
+msgstr "Randomiser"
+
 msgid "Randomised"
 msgstr "Randomisert"
+
+#, python-format
+msgid "Randomised, seed %(seed)d."
+msgstr "Randomisert, frø %(seed)d."
 
 msgid "Rating"
 msgstr "Vurdering"
@@ -7020,6 +7128,9 @@ msgstr "Lagre designet"
 msgid "Save password"
 msgstr "Lagre passord"
 
+msgid "Save places"
+msgstr "Lagre plasseringene"
+
 msgid "Save reorder levels"
 msgstr "Lagre bestillingspunkter"
 
@@ -7046,6 +7157,13 @@ msgstr "Skriv hvorfor den avlyses."
 
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
+
+msgid ""
+"Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
+"reason."
+msgstr ""
+"Si hvorfor karene er plassert manuelt: en plassering som ikke er randomisert registreres med "
+"begrunnelsen."
 
 msgid "Scale loss"
 msgstr "Skjelltap"
@@ -7182,6 +7300,9 @@ msgstr "Se alt i aktivitetsloggen"
 msgid "See the day-by-day book"
 msgstr "Se registeret dag for dag"
 
+msgid "Seed"
+msgstr "Frø"
+
 msgid "Select a batch"
 msgstr "Velg en fiskegruppe"
 
@@ -7287,6 +7408,9 @@ msgstr "Serienummer"
 
 msgid "Set a new password"
 msgstr "Velg nytt passord"
+
+msgid "Set day 0 on the Details tab first: a tank is booked for days."
+msgstr "Sett dag 0 under fanen Detaljer først: et kar bookes for dager."
 
 msgid "Set it inactive instead."
 msgstr "Sett det heller inaktivt."
@@ -7758,6 +7882,14 @@ msgstr "Bytt panel"
 msgid "System"
 msgstr "System"
 
+#, python-format
+msgid ""
+"System %(system)s holds tanks of different groups (%(groups)s): its water, and a treatment in it,"
+" is shared between them."
+msgstr ""
+"Systemet %(system)s har kar fra ulike grupper (%(groups)s): vannet, og en behandling i det, deles"
+" mellom dem."
+
 msgid "System (its loop)"
 msgstr "System (kretsløpet)"
 
@@ -8049,6 +8181,9 @@ msgstr "Designet har ingen kontrollgruppe."
 msgid "The design has no group."
 msgstr "Designet har ingen gruppe."
 
+msgid "The design has no replicate to place tanks in."
+msgstr "Designet har ingen replikater å plassere kar i."
+
 msgid "The design has one group: there is nothing to compare it with."
 msgstr "Designet har én gruppe: det er ingenting å sammenligne den med."
 
@@ -8092,6 +8227,13 @@ msgstr ""
 
 msgid "The experiment has started: its design is fixed. Copy it to change the design."
 msgstr "Forsøket er startet: designet er låst. Kopier det for å endre designet."
+
+msgid ""
+"The experiment has started: its tanks and days are fixed. A tank that has to leave, or be "
+"replaced, is released from its page."
+msgstr ""
+"Forsøket er startet: karene og dagene er låst. Et kar som må gå ut, eller byttes, frigjøres fra "
+"siden."
 
 #, python-format
 msgid "The factor name %(name)s is too long."
@@ -8424,6 +8566,14 @@ msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
 msgid "The points of %(owner)s."
 msgstr "Punktene på %(owner)s."
 
+#, python-format
+msgid ""
+"The pool has %(items)d items for %(slots)d replicates: choose as many tanks or systems as there "
+"are replicates."
+msgstr ""
+"Utvalget har %(items)d elementer for %(slots)d replikater: velg like mange kar eller systemer som"
+" det er replikater."
+
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
 
@@ -8485,6 +8635,10 @@ msgstr "Den trygge sonen ligger i dette båndet."
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
+
+#, python-format
+msgid "The seed is a whole number from 0 to %(top)d."
+msgstr "Frøet er et helt tall fra 0 til %(top)d."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
@@ -8596,6 +8750,23 @@ msgid ""
 msgstr ""
 "Systemene det betjener, på produksjonsavdelingens lokalitet: minst ett, og ett av dem dets "
 "primære system. Kritikalitet er hvor mye systemet er avhengig av det, fra 1 (lite) til 5 (helt)."
+
+#, python-format
+msgid ""
+"The tanks are booked for the days of the experiment, %(first)s to %(last)s, unless a row gives "
+"days of its own. The error degrees of freedom the design leaves are %(error_df)s."
+msgstr ""
+"Karene er booket for forsøkets dager, %(first)s til %(last)s, med mindre en rad gir egne dager. "
+"Feilfrihetsgradene designet gir er %(error_df)s."
+
+msgid "The tanks are not allocated: randomise them or place them by hand."
+msgstr "Karene er ikke fordelt: randomiser dem eller plasser dem manuelt."
+
+#, python-format
+msgid ""
+"The tanks of %(replicate)s are in different systems: the water they share is not the replicate’s "
+"own."
+msgstr "Karene i %(replicate)s er i ulike systemer: vannet de deler er ikke replikatets eget."
 
 msgid ""
 "The tanks, ponds and cages fish are held in, each in a production department and, when it has "
@@ -9058,6 +9229,10 @@ msgstr "To faktorer heter %(name)s."
 #, python-format
 msgid "Two groups are called %(name)s."
 msgstr "To grupper heter %(name)s."
+
+#, python-format
+msgid "Two items of the pool have the code %(code)s."
+msgstr "To elementer i utvalget har koden %(code)s."
 
 msgid "Two rows have the same feed size."
 msgstr "To rader har samme fôrstørrelse."
@@ -10056,6 +10231,9 @@ msgstr "f.eks. kari.nordmann"
 
 msgid "e.g. sand, cartridge"
 msgstr "f.eks. sand, patron"
+
+msgid "e.g. tanks 1 to 4 share a drain"
+msgstr "t.eks. kar 1 til 4 deler et avløp"
 
 msgid "e.g. the vet, November 2026"
 msgstr "f.eks. veterinæren, november 2026"

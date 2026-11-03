@@ -1690,7 +1690,7 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   Delete beside it for those who may (a started experiment has no Delete). The counts are of the live groups and
   replicates.
 - **The form** has the tabs **Details** (name, species and site, chosen once; hypothesis; primary endpoint; day 0;
-  duration; notes), **Design**, **Team** and History. Creating opens the details only, then opens the new experiment: its number is
+  duration; notes), **Design**, **Places**, **Team** and History. Creating opens the details only, then opens the new experiment: its number is
   given on saving, inside the creating transaction (`core.codes.next_code`, `E-<year of the site's clock>-<n>`), its
   creator is its lead (logged as a change of its team), and a form sent twice creates one. Once the experiment has
   started its hypothesis, endpoint, day 0 and duration are fixed beside their fields ("Copy it to change the design"),
@@ -1716,6 +1716,30 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   until Start; feeding tables that differ in more than the feed). It is derived on read: nothing about it is stored. `CHECKS`
   is a list other areas append to, so a permit can block Start without this module knowing it. The warnings carry a
   fingerprint, as the handling check's, so a start whose warnings changed meanwhile is asked again.
+- **The Places tab** (`ExperimentPlacesView`, `<id>/places/`; `services.save_places` and `randomise`) gives the replicates their
+  tanks, for the days of the experiment (day 0 to day 0 plus the duration, both included, on the site's clock) unless a row gives
+  days of its own. Either **Randomise**: a pool of tanks and systems of the site (as many as replicates, a system giving all its
+  tanks to one replicate) and a seed, dealt by the fixed method `sha256_v1` (`experiments/allocation.py`: the items sorted by the
+  SHA-256 of "seed:code", the i-th taking the i-th replicate in the order of the groups and the replicate numbers; fixed test
+  vectors guard it, and it is not `random.shuffle(seed)`, which only `random()` of Python's generators keeps stable across
+  versions); the method and the seed are stored with the placements, so the deal can be repeated and checked. Or **by hand**: a row
+  a replicate with its tanks (a multiple choice), "add the tanks of a system" (the tanks of the system and of the systems nested in
+  it are added; a system is never stored, only a shortcut, because `Tank.system` changes and keeps no history) and a reason, which is
+  needed (a placement that is not randomised is registered as "placed by hand: why"). A banner says which. A tank another
+  experiment holds on those days (drafts included: a draft reserves its tanks) is shown with that experiment's number and cannot
+  be chosen. Both are one transaction that locks the tanks (primary-key order) and then the experiment, refuses a stale version, a
+  started experiment, a template, a tank off the site, days outside the experiment, a tank in two places on one day and a booking by
+  another experiment (named by its number; the exclusion constraint holds it for any writer, and a booking that comes in between
+  is told the same way), and writes one row on the experiment ("Places", and "Allocation" when it changed). A draft's placements
+  are not evidence: the ones replaced are removed for good and the change is that one row. Changing a draft's day 0 or duration
+  moves the placements that equalled the old span (a placement with days of its own stays; the design says when it is outside the
+  span), and the form refuses a move onto days another experiment holds the tank, on the field that moved it. A template has no
+  tanks; a started experiment shows where its tanks stand.
+- **The design's warnings and errors about the tanks** (`design.problems`): errors, the tanks not allocated, a replicate without a
+  tank, a tank off the site, a placement outside the experiment's days; warnings, the tanks of one replicate in different systems,
+  and one system holding tanks of different groups (water-borne confounding, from the current `Tank.system`). The reads
+  (`experiments/read.py`): `cells` is the one definition of what belongs to the trial (each placement with its replicate, group,
+  tank and days), `booked` says which experiment holds which tanks on some days, and `error_df` is the replicates less the groups.
 - **The team** is a list saved as a whole (`RowList`, logged on the experiment as "Team"): a person and their part,
   exactly one lead; only people who can read Experiments are offered, and one kept from before stays in the list.
 - **The read page** (`<id>/view/`) shows the details and the team to everyone who may read the tab.
@@ -1726,7 +1750,7 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   be deleted while it does.
 
 **Who may do what**: the area Experiments (Production · Research): Read the list and the read pages, Create makes an
-experiment, Edit changes it, saves its design and its team, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
+experiment, Edit changes it, saves its design, its places and its team, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
 student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
 deleted ones too, and restores an experiment (not its parts).
@@ -2337,7 +2361,7 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
-| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/team/` saves the team, `<id>/delete/` |
+| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/team/` saves the team, `<id>/delete/` |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
@@ -2389,7 +2413,7 @@ real mail.
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
-| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the write path of the design (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests |
+| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads (`read.py`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

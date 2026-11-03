@@ -505,7 +505,11 @@ weigh-in (fish weighed and their weight together, or a measured average); transf
 several units, a reason); grading (per size class a unit, fish and measured average, and the average of
 the fish that stay); harvest (fish and their round kilos as weighed, the slaughter facility, the transport and
 vessel; "this empties the unit of this batch" records the fish the book still holds as an unaccounted loss; see
-Operations › Harvest). A harvest, a transfer and a grading show the handling check (fasting and medicine
+Operations › Harvest); **delivery** (live fish out of the company: fish, their weighed kilos if known, who received them and
+the receiving site's lokalitetsnummer if it has one; it is a transport, so the handling check runs; it is the smolt report's fish
+moved out of the site); **escape** (fish escaped or only suspected, the cause, when found, the health status of the fish and the
+fish recaptured: a count adjustment of the reason escape with its record, from which Fiskeridirektoratet's notice is started; an
+escape from several units is recorded for each). A harvest, a transfer, a grading and a delivery show the handling check (fasting and medicine
 withdrawal) and ask for an acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
 (`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored on the operation).
@@ -569,7 +573,7 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   harvest dialog's warning and acknowledgement are the handling check's (farm/handling).
 - Not ported: a cleaner-fish tab of its own (the announced one; their figures are on the unit's line and drawer
   for now), sensors (the water comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
-  count adjustments as a dialog (their lines and checks exist). Harvest plans and the handling check are on
+  a dialog for a count correction (an escape is the one count adjustment with a dialog). Harvest plans and the handling check are on
   Operations › Harvest; the medicine withdrawal they check is the health records' (Operations › Health),
   through the registry of farm/handling/withdrawal.py.
 
@@ -1495,11 +1499,14 @@ deleted): the site (chosen once) and some of its units or the whole site, the da
 fish-health visit, lab result, increased mortality), the signs (several of a fixed list), a diagnosis from a
 reviewed catalogue (`farm/health/diseases.py`: the EU-listed and the Norwegian category F and G diseases of
 dyrehelseforskriften §§ 5–6, each with whether it must be notified, and common unlisted ones), suspected or
-confirmed (with a diagnosis, a database check), **Mattilsynet notified at** (on the site's clock), who examined,
+confirmed (with a diagnosis, a database check), who examined,
 the vet and the laboratory (suppliers) with its reference, findings, recommendations, closed on and the outcome.
-A notifiable diagnosis, suspected or confirmed, without the time Mattilsynet was told raises the red **Notify
-Mattilsynet** banner on the list and in the unit's drawer (§ 7: at once, already on suspicion; sea lice are
-reported weekly with the counts instead). A mortality or a cull may be recorded under an event (the dialogs offer
+That Mattilsynet was told is not a field of the event: it is the filing of a disease notice (Production › Reports), which the
+health records read through a registry (`farm/health/notices.py`). A notifiable diagnosis, suspected or confirmed, that no
+filed notice tells Mattilsynet of raises the red **Notify Mattilsynet** banner on the list and in the unit's drawer, with a link
+to start the notice filled in from the event for people who may (§ 7: at once, already on suspicion; sea lice are reported
+weekly with the counts instead); the list's Mattilsynet column shows when it was told. With no notices registered it says
+nothing about it, never "not notified". A mortality or a cull may be recorded under an event (the dialogs offer
 the events of the unit's site that concern it, open or closed within the backdating window, to people who may
 read them; `StockOperation.health_event`, a database check
 keeps it to those two kinds) and the event counts its **deaths** from those lines; mortality has the cause
@@ -1645,6 +1652,90 @@ Differences from the source (details in the bug document, TSK-01 to TSK-23):
 - Every action has its page and test; the status changes only through its own actions with who and when;
   the checklist keeps who ticked what; a form sent twice creates once (TSK-05, TSK-07, TSK-10, TSK-11, TSK-16).
 - Not ported: tags, the time estimate, auto rules, the calendar, notifications, the AI tools.
+
+## Regulatory reports (Production › Reports, `/reports/`)
+
+The reports the farm owes Mattilsynet and Fiskeridirektoratet, made from the records and filed by people. Its own app
+(`reports/`, tables `regulatory_reports`, `regulatory_report_snapshots` and the rows of a report's answers); it reads the
+farm's records through the farm's own reads (the stock fold, the feeding walk, the health records, the water read) and the farm
+never reads it, except through the one registry of `farm/health/notices.py`. `docs/regulatory-reports.md` has every field of
+every report, where it comes from, the design and the owner's decisions D-1 to D-15; the source's bugs are in the bug document.
+
+**What it does not do.** It sends nothing: no Altinn, Maskinporten or Mattilsynet API call, no scheduler, no e-mail. A person
+files the report where the authority takes it, then records here **when, how and with which receipt**. What was filed is
+frozen: its content, with a hash that is also in the activity log, and the hash of the records it was made from. If the
+records change afterwards (a void, a backdated record, a unit moved to another site) its page says "the records no longer give
+what was filed: a correction is needed", figure by figure; a correction is a new report of the same key that replaces it.
+
+**The reports** (`reports/kinds.py`: authority, basis, period, deadline, where it is filed):
+
+| Report | For | Deadline |
+|---|---|---|
+| Sea lice (lakselusforskriften § 10) | a sea site, an ISO week | Tuesday of the next week |
+| Smolt (akvakulturdriftsforskriften § 58) | a juvenile site, a month | the 7th of the next month |
+| Cleaner fish (§ 44, § 3 h) | a food-fish sea site, a month | the 7th of the next month |
+| Monthly biomass (§ 44; Fiskeridirektoratet's form is to be confirmed) | a sea site of food fish or broodstock, a month | the 7th of the next month |
+| Planned slaughter (restkontrollforskriften § 9a) | a slaughter facility, a week | Thursday 24:00 before, or when the fish start fasting if earlier |
+| A land site's yearly stock, a site taken into use, a site emptied (§ 44a) | a food-fish or broodstock site on land | 7 January, when it happens |
+| Escape (§ 38), disease (dyrehelseforskriften § 7), welfare (§ 14) | a notice, started by a person from the escape or the health event | at once |
+
+**Due** (`reports/due.py`, read from the records, never stored). Which reports a site owes follows its **production form**
+(Facility › Sites, Reports tab), its type and the fish it held in the period (a week or month without fish of the kind owes
+nothing); it is listed from its **reports-from** date to the last closed period, minus the filed ones, a draft staying listed
+with its deadline and an **Overdue** mark. A site that holds fish and has no reports-from date or no production form is listed
+as "Not set up for reports" with a link to its form, never hidden. Planned slaughters come from the harvest plan (a facility and
+a week), escapes and listed diseases from their records until a notice of each is filed. The days are Oslo's calendar, whatever
+clock the site keeps, and the ISO week of 28 December to 3 January is 2026-W53. The page also lists the **filed reports whose
+records changed** (read again only for the last 31 days, the backdating window).
+
+**A report** has a kind, a site (a slaughter facility for the planned slaughter), a period or the day of the event, its health
+event or escape for a notice, the contact person (the person who starts it, as the authority asks for one on every report), and for
+a notice the person's account of what happened (what, when found, cause, fish dead, injured and involved, the situation, the
+measures; filled in from the event when it is started from one). The key (kind, site, period, event) is fixed once it exists and
+one live original is allowed for each; a draft can be edited and discarded (the delete plan, restorable in the admin), a filed
+report never. A report page shows the figures as the records give them now, what keeps it from being **ready** (a species without
+its official code, a site without its organisation number, a cage that was due a count and has none, a treatment without an
+amount: each with where to put it right) and what is worth a look.
+
+**The answers no record holds** are rows on the report's form while it is a draft: for the sea-lice week, whether each treatment was
+given before the count and which were given together (the records carry dates, no times), the suspicions of resistance and the
+sensitivity tests; for the biomass report, the units used for production of reduced capacity. They are frozen with the filing.
+
+**Recording the filing** (Edit): when, through what (Altinn, the reporting API from another system, e-mail, telephone, other)
+and the receipt or reference (none for a call). In one transaction the report is locked, its version checked, its content computed
+and stored with its hashes, and the filing logged with the hash. A report that is not ready is refused, except a **notice given
+by telephone**, which is recorded as it was told, what was missing kept in the log entry. A database trigger keeps a filed report,
+its content and its answers unchanged whatever writes them.
+
+**Exports** (Read): a printable page, CSV (section, the authority's field name, value; text guarded against spreadsheet formulas,
+numbers left numbers) and, for sea lice, smolt, cleaner fish and planned slaughter, **JSON in the shape of Mattilsynet's reporting
+API**, validated in the tests against its OpenAPI. They are built from the frozen content once the report is filed, else from
+the records now, and say which.
+
+**What each computes** (nothing is typed but the contact person and the answers above):
+- *Sea lice*: the week's counts per cage and the site's average per stage (the mean of the cages' averages, as the regulation
+  says), the cages that held salmonids and were due a count (7 days, 14 below 4 °C; none for broodstock below 4 °C, nor when every
+  fish is planned for slaughter within 14 days), the sea temperature (the mean of the week's samples at the site's depth points of
+  3 m, from Water chemistry), the week's lice treatments with substance, strength and amount from their records.
+- *Smolt*: per tank that held fish, its number, species, the fish and average weight at the month's end (a tank emptied in the month
+  reports the fish just before), and the fish dead, culled and moved out of the site, deliveries included.
+- *Cleaner fish*: per unit, species and origin the fish at the end of the month before, those stocked and moved in, those taken out
+  by the six causes, dead and moved out, the month's count adjustments netted, and the dry and wet feed of the cleaner fish.
+- *Monthly biomass*: per production unit the fish stocked, the stock and its biomass at the month's end with how it was worked out
+  (the last weighing, the feeding projection, or the last weighing marked stale), the harvest, the live fish moved to another
+  site, the losses by cause and the feed; the day the site was left fallow.
+- *Planned slaughter*: per locality, species and weekday the whole kilos of the open harvest plans.
+
+**`manage.py check_reports`** checks every report from scratch (a filed one has its content and the content its hash, a draft has
+none, a correction corrects a filed report of the same key, a notice is of its event's site); the tests run it after their writes.
+
+**Roles.** The area **Regulatory reports** (Production · Reports): Read the page, a report and its exports; Create starts a report, a
+notice or a correction; Edit fills in a draft and records the filing; Delete discards a draft.
+
+**Differences from the source.** Nothing is filed by the system and no draft is made behind anyone's back; the figures are never
+stored beside the records; the source's wrong cleaner-fish codes (USB for lumpfish, BER, GRO, BNB), unknown origin, unit counts by
+weight and missing dry and wet feed are not ported; the source's per-tab wizards, thresholds tables and scheduler are not ported.
+The bugs found in it (REP-01 to REP-62) are in the bug document.
 
 ## Messages (Production › Communication, `/messages/`)
 
@@ -1940,7 +2031,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   is for also starts, ticks and completes it), Slaughter facilities and Handling rules (read, create, edit,
   delete), Harvested (read), Harvest plan and Production plans (read, create, edit, delete), Medicines (read,
   create, edit, delete), Treatments (read, create, edit = change the last day, delete = void one), Health events
-  (read, create, edit, delete = void one), Sea-lice counts (read, create, delete = void one), Messages (read =
+  (read, create, edit, delete = void one), Sea-lice counts (read, create, delete = void one), Regulatory reports
+  (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
+  record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
   also reviews an entry) and Activity log (read).
   A new tab appears in the matrix by
@@ -1984,7 +2077,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `inventory`, `knowledge`, `messaging`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `inventory`, `knowledge`, `messaging`, `reports`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -2072,7 +2165,7 @@ entries) and shows each entry only to people allowed to read it; an entry can ca
 unread messages) that the page polls. Production's menu has two main headings, as in the platform: **Setup** (the farm's structure under Facility structure, the
 reference lists the production side picks from under Reference data, and the suppliers under
 Purchasing) and **Operations** (the daily
-production records; it appears with its first tab), and a third, **Communication** (Messages). The source calls the reference lists "Records";
+production records; it appears with its first tab), then **Reports** (Regulatory reports) and **Communication** (Messages). The source calls the reference lists "Records";
 the prototype does not, because Operations holds the daily records. The menu is the one place that says
 where a page sits: the role matrix and the small heading above a tab's title follow it
 (`core.navigation.place`). There are no built-in roles: the platform admin creates roles
@@ -2246,6 +2339,9 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
+| `/reports/` | Production › Reports › Regulatory reports: what is due, the filed reports whose records changed, the reports and notices; `?kind=`, `site=`, `status=` filter, `new/?kind=&site=&period=2026-W45` (or `&facility=`, `&health_event=`, `&escape=`) starts one |
+| `/reports/<id>/view/`, `<id>/`, `<id>/delete/` | A report's page (the figures as filed, or as the records give them now, and the differences), its form, discarding a draft; `<id>/treatments/`, `resistance/`, `sensitivity/`, `units/` save the answers of its kind |
+| `/reports/<id>/submit/`, `correct/`, `export.<csv or json>`, `print/` | Records the filing (POST); starts a correction (POST); the exports; the printable page |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
@@ -2293,6 +2389,7 @@ real mail.
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
+| `reports/` | Regulatory reports (its own app): the models (`models.py`), the kinds (`kinds.py`) and periods (`periods.py`), each report's computation from the records (`compute/`), the filing and corrections (`services.py`), what is due (`due.py`), the exports (`exports.py`), the check (`integrity.py`) and the provider the health records read (`health.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |

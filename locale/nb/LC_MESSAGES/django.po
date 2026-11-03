@@ -116,6 +116,12 @@ msgstr[0] "%(count)d dag"
 msgstr[1] "%(count)d dager"
 
 #, python-format
+msgid "%(count)d day (%(hours)d h)"
+msgid_plural "%(count)d days (%(hours)d h)"
+msgstr[0] "%(count)d dag (%(hours)d t)"
+msgstr[1] "%(count)d dager (%(hours)d t)"
+
+#, python-format
 msgid ""
 "%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed "
 "temperature in Reference data › Species."
@@ -486,6 +492,10 @@ msgstr "%(grams)s g"
 #, python-format
 msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
+
+#, python-format
+msgid "%(hours)s and %(degrees)s"
+msgstr "%(hours)s og %(degrees)s"
 
 #, python-format
 msgid "%(hours)s h"
@@ -2967,6 +2977,18 @@ msgstr "Deformert"
 msgid "Deformity"
 msgstr "Deformitet"
 
+msgid "Degree-days are for the harvest only: fish that are moved or graded are not purged."
+msgstr "Døgngrader gjelder bare høsting: fisk som flyttes eller sorteres renses ikke."
+
+msgid "Degree-days fasted"
+msgstr "Døgngrader sultet"
+
+msgid "Degree-days the rule asks for"
+msgstr "Døgngrader regelen krever"
+
+msgid "Degree-days unknown: no temperature."
+msgstr "Døgngrader ukjent: ingen temperatur."
+
 msgid "Delete"
 msgstr "Slett"
 
@@ -3528,16 +3550,27 @@ msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
 msgid "Fasting"
 msgstr "Sulting"
 
+msgid "Fasting before it"
+msgstr "Sulting før"
+
 msgid "Fasting before it (hours)"
 msgstr "Sulting før (timer)"
 
 #, python-format
-msgid "Fasting before the harvest of %(date)s: from %(start)s (%(hours)d h)."
-msgstr "Sulting før høstingen %(date)s: fra %(start)s (%(hours)d t)."
+msgid "Fasting before the harvest of %(date)s: %(asks)s."
+msgstr "Sulting før høstingen %(date)s: %(asks)s."
 
 #, python-format
-msgid "Fasting before the transport of %(date)s: from %(start)s (%(hours)d h)."
-msgstr "Sulting før transporten %(date)s: fra %(start)s (%(hours)d t)."
+msgid "Fasting before the harvest of %(date)s: from %(start)s (%(asks)s)."
+msgstr "Sulting før høstingen %(date)s: fra %(start)s (%(asks)s)."
+
+#, python-format
+msgid "Fasting before the transport of %(date)s: %(asks)s."
+msgstr "Sulting før transporten %(date)s: %(asks)s."
+
+#, python-format
+msgid "Fasting before the transport of %(date)s: from %(start)s (%(asks)s)."
+msgstr "Sulting før transporten %(date)s: fra %(start)s (%(asks)s)."
 
 msgid "Fed"
 msgstr "Fôret"
@@ -4002,6 +4035,9 @@ msgstr "Gi kanalen et navn."
 msgid "Give the citation of the source, its web address, or both."
 msgstr "Oppgi kildehenvisningen, nettadressen eller begge."
 
+msgid "Give the fast in hours or days, in degree-days, or both."
+msgstr "Oppgi sultingen i timer eller dager, i døgngrader eller begge deler."
+
 msgid "Give the point a name."
 msgstr "Gi punktet et navn."
 
@@ -4203,16 +4239,20 @@ msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 
 msgid ""
 "How long fish must have been without feed before they are harvested, transported, graded or "
-"treated, counted from their last feeding to the start of that day. A species’ own rule wins over "
+"treated, counted from their last feeding to the start of that day, in hours or days. A harvest "
+"can also ask for purging in degree-days: the fish are held without feed, in clean water, so that "
+"any off-flavour clears; both must be reached when both are given. A species’ own rule wins over "
 "the rule for every species; a grading takes the longer of its rule and the transport rule. Too "
 "short a fast is a warning, never a block: going on is recorded and logged as critical. These are "
 "the farm’s own rules: the starting values are to be checked with your veterinarian."
 msgstr ""
 "Hvor lenge fisken må ha vært uten fôr før den høstes, transporteres, sorteres eller behandles, "
-"regnet fra siste fôring til starten av den dagen. En arts egen regel går foran regelen for alle "
-"arter; en sortering tar den lengste av sin egen regel og transportregelen. For kort sulting er en"
-" advarsel, aldri en sperre: å fortsette registreres og logges som kritisk. Dette er anleggets "
-"egne regler: startverdiene skal sjekkes med veterinæren."
+"regnet fra siste fôring til starten av den dagen, i timer eller dager. En høsting kan også kreve "
+"rensing i døgngrader: fisken holdes uten fôr i rent vann slik at smaksavvik forsvinner; begge må "
+"nås når begge er oppgitt. En arts egen regel går foran regelen for alle arter; en sortering tar "
+"den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
+" fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
+"kontrolleres med veterinæren din."
 
 msgid "Hydrochloric acid"
 msgstr "Saltsyre"
@@ -4533,12 +4573,12 @@ msgid "Last fed"
 msgstr "Sist fôret"
 
 #, python-format
-msgid "Last fed %(moment)s, %(hours)s h before %(day)s: the %(kind)s rule asks for %(required)d h."
-msgstr "Sist fôret %(moment)s, %(hours)s t før %(day)s: regelen for %(kind)s krever %(required)d t."
+msgid "Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s."
+msgstr "Sist fôret %(moment)s, %(fasted)s før %(day)s: regelen for %(kind)s krever %(asked)s."
 
 #, python-format
-msgid "Last fed %(when)s: %(hours)s h before %(day)s."
-msgstr "Sist fôret %(when)s: %(hours)s t før %(day)s."
+msgid "Last fed %(when)s: %(fasted)s before %(day)s."
+msgstr "Sist fôret %(when)s: %(fasted)s før %(day)s."
 
 msgid "Last movement"
 msgstr "Siste bevegelse"
@@ -6322,6 +6362,20 @@ msgstr "Kjøpsdato"
 msgid "Purchasing"
 msgstr "Innkjøp"
 
+msgid "Purging before it (degree-days)"
+msgstr "Rensing før (døgngrader)"
+
+msgid ""
+"Purging: the fish are held without feed, in clean water, so that any off-flavour clears, for this"
+" many degree-days (the daily mean water temperatures added up over the full days since the last "
+"feeding). Only for fish that are harvested and sent to the factory. Given with hours or days, "
+"both must be reached."
+msgstr ""
+"Rensing: fisken holdes uten fôr i rent vann, slik at smaksavvik forsvinner, i så mange døgngrader"
+" (de daglige gjennomsnittlige vanntemperaturene lagt sammen over hele døgn siden siste fôring). "
+"Bare for fisk som høstes og sendes til slakteriet. Oppgis den sammen med timer eller dager, må "
+"begge nås."
+
 msgid "Quality"
 msgstr "Kvalitet"
 
@@ -7597,8 +7651,8 @@ msgid "That unit or system is no longer there: the values are as entered."
 msgstr "Den enheten eller det systemet finnes ikke lenger: verdiene er som lagt inn."
 
 #, python-format
-msgid "The %(kind)s rule for %(species)s asks for %(hours)d h."
-msgstr "Regelen for %(kind)s for %(species)s krever %(hours)d t."
+msgid "The %(kind)s rule for %(species)s asks for %(asked)s."
+msgstr "Regelen for %(kind)s for %(species)s krever %(asked)s."
 
 #, python-format
 msgid ""
@@ -7736,6 +7790,10 @@ msgstr "Ukedagene den har frist."
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
 
+#, python-format
+msgid "The degree-days are not reached in %(days)d days at these temperatures."
+msgstr "Døgngradene nås ikke på %(days)d dager ved disse temperaturene."
+
 msgid ""
 "The degree-days one day counts for when no water temperature was measured: a past day without "
 "one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
@@ -7843,10 +7901,12 @@ msgstr "Fisken går til en annen enhet."
 
 msgid ""
 "The fish must have had no feed for at least this long before the handling, counted to the start "
-"of its day. 0 to 720."
+"of its day: hours or days (5 days is stored as 120 hours). 0 to 720 hours (30 days). For a "
+"harvest it can be left empty when the purging is given in degree-days."
 msgstr ""
-"Fisken må ha vært uten fôr minst så lenge før håndteringen, regnet til starten av dagen. 0 til "
-"720."
+"Fisken må ha vært uten fôr minst så lenge før håndteringen, regnet til starten av dagen: timer "
+"eller dager (5 dager lagres som 120 timer). 0 til 720 timer (30 dager). For en høsting kan feltet"
+" stå tomt når rensingen oppgis i døgngrader."
 
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
@@ -9429,6 +9489,9 @@ msgstr "kritisk under %(value)s"
 msgid "criticality %(level)d"
 msgstr "kritikalitet %(level)d"
 
+msgid "days"
+msgstr "dager"
+
 msgid "deleted"
 msgstr "slettet"
 
@@ -9525,6 +9588,9 @@ msgstr "f.eks. 5000"
 
 msgid "e.g. 50000"
 msgstr "f.eks. 50000"
+
+msgid "e.g. 60"
+msgstr "f.eks. 60"
 
 msgid "e.g. 60.3913"
 msgstr "f.eks. 60,3913"
@@ -9793,6 +9859,9 @@ msgstr "helsehendelse"
 
 msgid "health events"
 msgstr "helsehendelser"
+
+msgid "hours"
+msgstr "timer"
 
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."

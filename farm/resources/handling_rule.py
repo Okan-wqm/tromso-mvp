@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
+from core import audit
 from core.crud import NONE, Resource, filter_by
 
 from ..forms.handling import HandlingRuleForm
@@ -20,6 +21,12 @@ class HandlingRuleResource(Resource):
     @classmethod
     def queryset(cls):
         return super().queryset().select_related('species')
+
+    @classmethod
+    def snapshot(cls, obj):
+        """What the log compares: the model's columns. The form types the fast as an amount and a unit; what is stored,
+        and logged, is the hours (and a harvest's degree-days)."""
+        return audit.snapshot(obj, ['kind', 'species', 'min_fasting_hours', 'min_fasting_degree_days', 'note'], {})
 
     @classmethod
     def filter_list(cls, request, objects):

@@ -16,6 +16,7 @@ from django.db.models import ProtectedError
 from django.test import SimpleTestCase
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import translation
 
 from core import access, database, navigation, softdelete
 from core.models import AuditLog, Profile
@@ -213,6 +214,7 @@ class WithdrawalTests(HealthTestCase):
         self.assertEqual((held.until, held.projected_at_assumed), (None, False))
 
     def test_the_assumed_temperature_texts_are_in_turkish_and_norwegian(self):
+        self.addCleanup(translation.activate, 'en')
         self.treat(self.medicine(degree_days=50), 6, 6)        # five past days, none measured
         words = {
             'tr': ('Ölçülmüş su sıcaklığı olmayan 5 gün 0 °C sayıldı: Referans verileri › Balık türleri altında '

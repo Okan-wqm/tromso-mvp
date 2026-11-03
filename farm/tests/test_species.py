@@ -265,6 +265,7 @@ class SpeciesValidationTests(SpeciesTestCase):
                     withdrawal_temperature_c=Decimal('41')).full_clean()
 
     def test_the_assumed_withdrawal_temperature_is_in_turkish_and_norwegian(self):
+        self.addCleanup(translation.activate, 'en')
         species = self.make(withdrawal_temperature_c=Decimal('8.5'))
         for language, label, value, legend in (
                 ('tr', 'Bekleme süresi için varsayılan su sıcaklığı (°C)', '8,5', 'İlaç bekleme süresi'),

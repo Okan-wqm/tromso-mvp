@@ -116,6 +116,12 @@ msgstr[0] "%(count)d gün"
 msgstr[1] "%(count)d gün"
 
 #, python-format
+msgid "%(count)d day (%(hours)d h)"
+msgid_plural "%(count)d days (%(hours)d h)"
+msgstr[0] "%(count)d gün (%(hours)d sa)"
+msgstr[1] "%(count)d gün (%(hours)d sa)"
+
+#, python-format
 msgid ""
 "%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed "
 "temperature in Reference data › Species."
@@ -486,6 +492,10 @@ msgstr "%(grams)s g"
 #, python-format
 msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%%%(percent)s, %(kilos)s kg)"
+
+#, python-format
+msgid "%(hours)s and %(degrees)s"
+msgstr "%(hours)s ve %(degrees)s"
 
 #, python-format
 msgid "%(hours)s h"
@@ -2968,6 +2978,18 @@ msgstr "Deforme"
 msgid "Deformity"
 msgstr "Deformite"
 
+msgid "Degree-days are for the harvest only: fish that are moved or graded are not purged."
+msgstr "Gün-derece yalnızca hasat içindir: taşınan veya boylanan balıklar arındırılmaz."
+
+msgid "Degree-days fasted"
+msgstr "Aç kalınan gün-derece"
+
+msgid "Degree-days the rule asks for"
+msgstr "Kuralın istediği gün-derece"
+
+msgid "Degree-days unknown: no temperature."
+msgstr "Gün-derece bilinmiyor: sıcaklık yok."
+
 msgid "Delete"
 msgstr "Sil"
 
@@ -3527,16 +3549,27 @@ msgstr "Tanklar, su kalitesi ve stok kayıtları için çiftlik konsolu."
 msgid "Fasting"
 msgstr "Aç bırakma"
 
+msgid "Fasting before it"
+msgstr "Öncesinde aç bırakma"
+
 msgid "Fasting before it (hours)"
 msgstr "Öncesinde aç bırakma (saat)"
 
 #, python-format
-msgid "Fasting before the harvest of %(date)s: from %(start)s (%(hours)d h)."
-msgstr "%(date)s hasadı öncesi aç bırakma: %(start)s itibarıyla (%(hours)d sa)."
+msgid "Fasting before the harvest of %(date)s: %(asks)s."
+msgstr "%(date)s hasadı öncesi aç bırakma: %(asks)s."
 
 #, python-format
-msgid "Fasting before the transport of %(date)s: from %(start)s (%(hours)d h)."
-msgstr "%(date)s taşıması öncesi aç bırakma: %(start)s itibarıyla (%(hours)d sa)."
+msgid "Fasting before the harvest of %(date)s: from %(start)s (%(asks)s)."
+msgstr "%(date)s hasadı öncesi aç bırakma: %(start)s itibarıyla (%(asks)s)."
+
+#, python-format
+msgid "Fasting before the transport of %(date)s: %(asks)s."
+msgstr "%(date)s taşıması öncesi aç bırakma: %(asks)s."
+
+#, python-format
+msgid "Fasting before the transport of %(date)s: from %(start)s (%(asks)s)."
+msgstr "%(date)s taşıması öncesi aç bırakma: %(start)s itibarıyla (%(asks)s)."
 
 msgid "Fed"
 msgstr "Yemlenen"
@@ -4002,6 +4035,9 @@ msgstr "Kanala bir ad verin."
 msgid "Give the citation of the source, its web address, or both."
 msgstr "Kaynağın künyesini, web adresini ya da ikisini birden yazın."
 
+msgid "Give the fast in hours or days, in degree-days, or both."
+msgstr "Aç bırakmayı saat veya gün olarak, gün-derece olarak ya da ikisiyle girin."
+
 msgid "Give the point a name."
 msgstr "Noktaya bir ad verin."
 
@@ -4203,17 +4239,20 @@ msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
 
 msgid ""
 "How long fish must have been without feed before they are harvested, transported, graded or "
-"treated, counted from their last feeding to the start of that day. A species’ own rule wins over "
+"treated, counted from their last feeding to the start of that day, in hours or days. A harvest "
+"can also ask for purging in degree-days: the fish are held without feed, in clean water, so that "
+"any off-flavour clears; both must be reached when both are given. A species’ own rule wins over "
 "the rule for every species; a grading takes the longer of its rule and the transport rule. Too "
 "short a fast is a warning, never a block: going on is recorded and logged as critical. These are "
 "the farm’s own rules: the starting values are to be checked with your veterinarian."
 msgstr ""
-"Balıkların hasat, taşıma, boylama veya tedaviden önce ne kadar süre yemsiz kalması gerektiği; son"
-" yemlemeden o günün başlangıcına kadar sayılır. Bir türün kendi kuralı, her tür için olan "
-"kuraldan önce gelir; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Fazla kısa aç "
-"bırakma bir uyarıdır, asla engel değildir: devam etmek kaydedilir ve kritik olarak günlüğe "
-"yazılır. Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol "
-"edilmelidir."
+"Balıkların hasat, taşıma, boylama veya tedaviden önce yemsiz kalması gereken süre, son "
+"yemlemelerinden o günün başlangıcına kadar sayılır; saat veya gün olarak. Hasat ayrıca gün-derece"
+" cinsinden arındırma da isteyebilir: balıklar temiz suda yemsiz tutulur, böylece tat bozukluğu "
+"geçer; ikisi de verilmişse ikisine de ulaşılmalıdır. Bir balık türünün kendi kuralı, her tür için"
+" olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
+"aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
+"Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
 
 msgid "Hydrochloric acid"
 msgstr "Hidroklorik asit"
@@ -4534,12 +4573,12 @@ msgid "Last fed"
 msgstr "Son yemleme"
 
 #, python-format
-msgid "Last fed %(moment)s, %(hours)s h before %(day)s: the %(kind)s rule asks for %(required)d h."
-msgstr "Son yemleme %(moment)s, %(day)s öncesinden %(hours)s sa: %(kind)s kuralı %(required)d sa istiyor."
+msgid "Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s."
+msgstr "Son yemleme %(moment)s, %(day)s öncesinden %(fasted)s: %(kind)s kuralı %(asked)s istiyor."
 
 #, python-format
-msgid "Last fed %(when)s: %(hours)s h before %(day)s."
-msgstr "Son yemleme %(when)s: %(day)s öncesinden %(hours)s sa."
+msgid "Last fed %(when)s: %(fasted)s before %(day)s."
+msgstr "Son yemleme %(when)s: %(day)s öncesinden %(fasted)s."
 
 msgid "Last movement"
 msgstr "Son hareket"
@@ -6317,6 +6356,20 @@ msgstr "Satın alma tarihi"
 msgid "Purchasing"
 msgstr "Satın alma"
 
+msgid "Purging before it (degree-days)"
+msgstr "Öncesinde arındırma (gün-derece)"
+
+msgid ""
+"Purging: the fish are held without feed, in clean water, so that any off-flavour clears, for this"
+" many degree-days (the daily mean water temperatures added up over the full days since the last "
+"feeding). Only for fish that are harvested and sent to the factory. Given with hours or days, "
+"both must be reached."
+msgstr ""
+"Arındırma: balıklar, tat bozukluğu geçsin diye temiz suda, bu kadar gün-derece boyunca yemsiz "
+"tutulur (son yemlemeden bu yana geçen tam günlerin günlük ortalama su sıcaklıklarının toplamı). "
+"Yalnızca hasat edilip fabrikaya gönderilen balıklar için. Saat veya günle birlikte verilirse "
+"ikisine de ulaşılmalıdır."
+
 msgid "Quality"
 msgstr "Kalite"
 
@@ -7593,8 +7646,8 @@ msgid "That unit or system is no longer there: the values are as entered."
 msgstr "O birim ya da sistem artık yok: değerler girildiği gibidir."
 
 #, python-format
-msgid "The %(kind)s rule for %(species)s asks for %(hours)d h."
-msgstr "%(species)s için %(kind)s kuralı %(hours)d sa istiyor."
+msgid "The %(kind)s rule for %(species)s asks for %(asked)s."
+msgstr "%(species)s için %(kind)s kuralı %(asked)s istiyor."
 
 #, python-format
 msgid ""
@@ -7735,6 +7788,10 @@ msgstr "Haftanın son tarih olan günleri."
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "En derin nokta ortalama derinlikten sığ olamaz."
 
+#, python-format
+msgid "The degree-days are not reached in %(days)d days at these temperatures."
+msgstr "Bu sıcaklıklarda gün-derece %(days)d günde ulaşılamıyor."
+
 msgid ""
 "The degree-days one day counts for when no water temperature was measured: a past day without "
 "one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
@@ -7842,10 +7899,12 @@ msgstr "Balıklar başka bir birime gider."
 
 msgid ""
 "The fish must have had no feed for at least this long before the handling, counted to the start "
-"of its day. 0 to 720."
+"of its day: hours or days (5 days is stored as 120 hours). 0 to 720 hours (30 days). For a "
+"harvest it can be left empty when the purging is given in degree-days."
 msgstr ""
-"Balıklar elleçlemeden önce en az bu kadar süre yemsiz kalmış olmalı; elleçleme gününün "
-"başlangıcına kadar sayılır. 0 ile 720 arası."
+"Balıklar, elleçlemeden önce o günün başlangıcına kadar sayılarak en az bu kadar süre yemsiz "
+"kalmış olmalıdır: saat veya gün (5 gün, 120 saat olarak saklanır). 0 ile 720 saat (30 gün). "
+"Hasatta, arındırma gün-derece olarak verilmişse boş bırakılabilir."
 
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Yarım göz: bir düğümden ötekine; gerilmiş tam göz bunun iki katıdır."
@@ -9428,6 +9487,9 @@ msgstr "%(value)s altı kritik"
 msgid "criticality %(level)d"
 msgstr "kritiklik %(level)d"
 
+msgid "days"
+msgstr "gün"
+
 msgid "deleted"
 msgstr "silindi"
 
@@ -9524,6 +9586,9 @@ msgstr "örn. 5000"
 
 msgid "e.g. 50000"
 msgstr "örn. 50000"
+
+msgid "e.g. 60"
+msgstr "örn. 60"
 
 msgid "e.g. 60.3913"
 msgstr "örn. 60,3913"
@@ -9792,6 +9857,9 @@ msgstr "sağlık olayı"
 
 msgid "health events"
 msgstr "sağlık olayları"
+
+msgid "hours"
+msgstr "saat"
 
 msgid "https:// is added when it is left out."
 msgstr "Yazılmazsa https:// eklenir."

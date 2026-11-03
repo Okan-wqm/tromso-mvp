@@ -48,19 +48,20 @@ WORKSPACES = [
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
-            # The reference lists the production side picks from: species, feeds, the water limits per species;
-            # chemicals and fish-health substances as their tabs arrive.
+            # The reference lists the production side picks from: species, feeds, the water limits per species and
+            # the fast before fish are handled (harvest, transport, grading, treatment); chemicals and fish-health
+            # substances as their tabs arrive.
             Group(_('Reference data'), [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
                 Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
+                Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
             ]),
-            # Harvest and logistics: the outside facilities harvested fish go to, and the fast before fish are
-            # handled (harvest, transport, grading, treatment). Wellboats join it when they get their own records.
+            # Harvest and logistics: the outside facilities harvested fish go to; wellboats join it when they get
+            # records of their own.
             Group(_('Harvest and logistics'), [
                 Entry(_('Slaughter facilities'), 'farm:slaughterfacility_list', 'factory',
                       'farm.view_slaughterfacility'),
-                Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
             ]),
             # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
             Group(_('Purchasing'), [

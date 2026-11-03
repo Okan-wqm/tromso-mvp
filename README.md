@@ -1283,7 +1283,7 @@ document, MSG-01 to MSG-21):
   and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
   NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
 
-### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
+### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Setup › Reference data › Handling rules (`/handling-rules/`)
 
 What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
 `slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
@@ -1885,7 +1885,7 @@ real mail.
 | `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
 | `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
-| `/handling-rules/` | Harvest and logistics › Handling rules |
+| `/handling-rules/` | Reference data › Handling rules |
 | `/water-limits/` | Reference data › Water limits |
 | `/storage-locations/` | Company › Facility › Storage locations; `<id>/reorder/` saves a location's reorder levels |
 | `/operations/storage/` | Operations › Storage; `?tab=stock`, `movements` or `counts` |

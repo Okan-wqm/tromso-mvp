@@ -1,7 +1,7 @@
 """Fasting before handling: which rule applies, how long the fish have been without feed, and the fasts the
 planned harvests and transports ask for.
 
-The rule (HandlingRule, Setup › Harvest and logistics › Handling rules): for a kind of handling, the species' row,
+The rule (HandlingRule, Setup › Reference data › Handling rules): for a kind of handling, the species' row,
 else the row for every species, else none ("not checked", never a default). A grading moves the fish too, so it
 takes the longer of its own rule and the transport rule (owner decision).
 

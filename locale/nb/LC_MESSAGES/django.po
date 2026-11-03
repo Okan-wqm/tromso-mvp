@@ -4306,9 +4306,9 @@ msgid "No growth up to the last weighing."
 msgstr "Ingen tilvekst fram til siste veiing."
 
 #, python-format
-msgid "No handling rule for %(kind)s: the fast is not checked (Harvest and logistics › Handling rules)."
+msgid "No handling rule for %(kind)s: the fast is not checked (Reference data › Handling rules)."
 msgstr ""
-"Ingen håndteringsregel for %(kind)s: sultingen er ikke kontrollert (Høsting og logistikk › "
+"Ingen håndteringsregel for %(kind)s: sultingen er ikke kontrollert (Referansedata › "
 "Håndteringsregler)."
 
 msgid "No harvest matches these filters."

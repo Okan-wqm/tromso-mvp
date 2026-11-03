@@ -7,7 +7,7 @@ from ..models import HandlingRule, Species
 
 
 class HandlingRuleResource(Resource):
-    """Setup › Harvest and logistics › Handling rules: the fast before each kind of handling, per species or for all."""
+    """Setup › Reference data › Handling rules: the fast before each kind of handling, per species or for all."""
 
     model = HandlingRule
     form_class = HandlingRuleForm

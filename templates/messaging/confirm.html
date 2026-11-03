@@ -1,0 +1,22 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} A question before a change that cannot be taken back by the person alone: leaving a channel
+   (messaging.views.leave), deleting one of your messages (messaging.views.delete_message).{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<div class="confirm">
+  <p class="confirm-question">{{ question }}</p>
+  {% if quote %}<blockquote class="chat-quote">{{ quote|linebreaksbr }}</blockquote>{% endif %}
+  <p>{{ detail }}</p>
+  {% if error %}<div class="form-error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ request.get_full_path }}">
+    {% csrf_token %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline{% if danger %} button-danger{% endif %}">{{ action_label }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

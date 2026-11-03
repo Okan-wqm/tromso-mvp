@@ -8,14 +8,16 @@ from core.database import Section, Viewer
 VIEWER = Viewer(
     sections=[
         Section(_('Facility'), ('farm',)),
+        Section(_('Messages'), ('messaging',)),
         Section(_('Administration'), ('core', 'auth')),
     ],
     # Tables of a listed app that stay hidden, by table name.
     excluded=(),
     # Columns never read from the database: their cells show a placeholder, they cannot be sorted or
     # filtered (that would reveal them), and the CSV export leaves them out. Every column that holds
-    # a secret belongs here.
-    masked={'auth_user': ('password',)},
+    # a secret belongs here, and so does what people write to each other: a message's text is for the
+    # members of its conversation, which the platform admin reading the database is not (README, Messages).
+    masked={'auth_user': ('password',), 'messages': ('body',)},
     # One line per table where the model's docstring does not say it in the project's words.
     descriptions={
         'auth_user': _('People who can sign in: account details and a hash of the password.'),

@@ -53,6 +53,37 @@ def key(point):
     return point._meta.model_name, point.pk
 
 
+class Series:
+    """One parameter's values over time at a set of points (units and loops), read in one query per kind of point:
+    what "the latest value at a moment" is looked up in, for a sample without a salinity here and for a unit's
+    temperature on the day of its ration (farm/feeding/temperature.py). Live samples of live points only."""
+
+    def __init__(self, points, code, since, until=None):
+        self.moments = defaultdict(list)    # point key -> [measured at], in time order
+        self.values = defaultdict(list)     # point key -> [value], in the same order
+        for field_name, model in (('unit', Tank), ('system', System)):
+            chosen = [point.pk for point in points if isinstance(point, model)]
+            if not chosen:
+                continue
+            rows = WaterMeasurement.objects.filter(**{f'{field_name}__in': chosen, f'{code}__isnull': False},
+                                                   measured_at__gte=since)
+            if until is not None:
+                rows = rows.filter(measured_at__lte=until)
+            for point_id, moment, value in rows.order_by('measured_at').values_list(f'{field_name}_id', 'measured_at',
+                                                                                    code):
+                self.moments[(model._meta.model_name, point_id)].append(moment)
+                self.values[(model._meta.model_name, point_id)].append(value)
+
+    def latest(self, point_key, moment, window):
+        """(measured at, value) of the point's newest value at or before `moment` and at most `window` older than
+        it; None when there is none."""
+        moments = self.moments.get(point_key, [])
+        index = bisect_right(moments, moment) - 1
+        if index >= 0 and moment - moments[index] <= window:
+            return moments[index], self.values[point_key][index]
+        return None
+
+
 # ---- what a reading is -----------------------------------------------------------------------------------
 @dataclass
 class Reading:
@@ -126,13 +157,7 @@ class Context:
         self.book = SpeciesBook({unit.pk for unit in all_units})
         species = set(self.book.species.values())
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
-        self.salinity = defaultdict(list)          # point key -> [(time, salinity)] in time order
-        for field_name, model, chosen in (('unit', Tank, units), ('system', System, systems)):
-            rows = (WaterMeasurement.objects.filter(**{f'{field_name}__in': chosen}, salinity_ppt__isnull=False,
-                                                    measured_at__gte=since - WINDOW)
-                    .order_by('measured_at').values_list(f'{field_name}_id', 'measured_at', 'salinity_ppt'))
-            for point_id, moment, salinity in rows:
-                self.salinity[(model._meta.model_name, point_id)].append((moment, salinity))
+        self.salinity = Series(points, parameters.SALINITY, since - WINDOW)
 
     # -- the water a sample was taken in --
     def water_types(self, point):
@@ -149,10 +174,9 @@ class Context:
         """The sample's salinity, else the point's latest within WINDOW before it, else 0 in fresh water."""
         if sample.salinity_ppt is not None:
             return sample.salinity_ppt
-        series = self.salinity.get(key(sample.point), [])
-        index = bisect_right([moment for moment, _value in series], sample.measured_at) - 1
-        if index >= 0 and sample.measured_at - series[index][0] <= WINDOW:
-            return series[index][1]
+        found = self.salinity.latest(key(sample.point), sample.measured_at, WINDOW)
+        if found is not None:
+            return found[1]
         if self.water_types(sample.point) == {Tank.WaterType.FRESHWATER}:
             return Decimal(0)
         return None

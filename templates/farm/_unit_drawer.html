@@ -76,6 +76,18 @@
         {% endwith %}{% endfor %}
       </ul>
       <p class="capacity-note">{% trans "FCR runs from stocking to the last weighing, on weighed biomass only. Dead fish leave at the last weighed average, so their growth since is not credited: bFCR reads a little high when many die." %}</p>
+      {% if ration_rows %}
+      <h4 class="drawer-subhead">{% trans "Today’s ration" %}</h4>
+      <ul class="feeding-window ration-lines" role="list">
+        {% for batch, share, why in ration_rows %}{% with basis=share.end %}
+        <li><strong>{{ batch.code }}</strong>: {% blocktrans trimmed with estimated=share.end_g|grams measured=share.measured_g|grams %}estimated {{ estimated }} (measured {{ measured }}){% endblocktrans %}{% if basis.protocol %} · {{ basis.protocol.name }} {% if basis.scope == "batch_in_unit" %}{% trans "(batch in unit)" %}{% elif basis.scope == "unit" %}{% trans "(unit)" %}{% else %}{% trans "(whole batch)" %}{% endif %}{% endif %}
+          {% if why %}<span class="row-sub warn-text">{{ why }}</span>{% else %}<span class="row-sub">{% blocktrans trimmed with sfr=basis.sfr.value|percent:2 temperature=basis.temperature.value_c|celsius ration=share.ration_kg|feed_kg meals=share.planned_meals meal=share.meal_kg|feed_kg %}{{ sfr }} at {{ temperature }}: {{ ration }} a day, {{ meals }} × {{ meal }}{% endblocktrans %} · {% blocktrans trimmed with fed=share.fed_kg|feed_kg remaining=share.remaining_kg|feed_kg %}fed {{ fed }}, {{ remaining }} to go{% endblocktrans %}{% if share.next_meal_kg is not None %} · {% blocktrans trimmed with meal=share.next_meal_kg|feed_kg %}next meal {{ meal }}{% endblocktrans %}{% endif %}</span>{% endif %}
+          {% if share.blind_days %}<span class="row-sub warn-text">{% blocktrans trimmed count days=share.blind_days %}Estimate incomplete: {{ days }} feeding day without an expected FCR{% plural %}Estimate incomplete: {{ days }} feeding days without an expected FCR{% endblocktrans %}</span>{% endif %}
+        </li>
+        {% endwith %}{% endfor %}
+      </ul>
+      <p class="capacity-note"><a href="{% url 'farm:meal_board' %}">{% trans "Meal board" %}</a></p>
+      {% endif %}
     </section>
     {% endif %}
 
@@ -148,6 +160,7 @@
             <li>{% if line.unit_id != unit.pk %}{{ line.unit.code }} · {% endif %}{{ line.batch.code }}: {% if line.kind == "weighing" %}{% blocktrans trimmed with weight=line.avg_weight_g|grams %}average {{ weight }}{% endblocktrans %}{% else %}{% blocktrans trimmed with fish=line.count_delta|signed %}{{ fish }} fish{% endblocktrans %}{% if line.avg_weight_g %} · {{ line.avg_weight_g|grams }}{% endif %}{% if line.size_class %} · {{ line.size_class }}{% endif %}{% if line.reason %} · {{ line.reason_label }}{% endif %}{% if line.measured_weight_kg %} · {% blocktrans trimmed with kilos=line.measured_weight_kg|kilos %}{{ kilos }} weighed{% endblocktrans %}{% endif %}{% endif %}</li>
             {% endfor %}
           </ul>
+          {% for found in item.corrections %}<p class="op-meta">{% include "farm/_correction.html" with correction=found.correction batch=found.batch %}</p>{% endfor %}
           <p class="op-meta">{% blocktrans trimmed with name=operation.created_by.get_username|default:"system" %}by {{ name }}{% endblocktrans %}{% if operation.notes %} · {{ operation.notes }}{% endif %}{% if operation.is_deleted %} · {% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}{% endif %}</p>
         </li>
         {% endwith %}{% endfor %}

@@ -1,0 +1,23 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} New message (messaging.views.start): choose a person; your direct conversation with them opens, the one
+   you already have if there is one. Only people who can use Messages are offered.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+{% if form.fields.person.queryset.exists %}
+<form method="post" action="{% url 'messaging:start' %}" class="narrow-form" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% with field=form.person %}{% include "registration/_field.html" %}{% endwith %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{% url 'messaging:inbox' %}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{% trans "Open conversation" %}</button>
+  </div>
+</form>
+{% else %}
+<p class="notice notice-warning">{% trans "Nobody else can use Messages yet: the platform admin gives it to a role (Roles, Messages: Read)." %}</p>
+<div class="form-actions"><a class="button button-ghost" href="{% url 'messaging:inbox' %}" data-modal-close>{% trans "Close" %}</a></div>
+{% endif %}
+{% endblock %}

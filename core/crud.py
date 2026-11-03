@@ -19,6 +19,7 @@ from dataclasses import dataclass, field as dataclass_field
 
 from django import forms
 from django.contrib import messages
+from django.contrib.postgres.constraints import ExclusionConstraint
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import models, transaction
@@ -125,24 +126,27 @@ class TabbedForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        self._check_conditional_unique(cleaned)
+        self._check_conditional_constraints(cleaned)
         return cleaned
 
-    def _check_conditional_unique(self, cleaned):
-        """Conditional unique constraints, e.g. "code unique among live records", or "scientific name
-        unique among live records whatever its case" (a constraint on an expression, Lower(...)).
-        Django leaves them out of form validation when the condition uses a field the form does not
-        edit (is_deleted), so check them here: the record as the form would save it, by the constraint
-        itself. The error goes on the constraint's last field the form shows, with its message."""
+    def _check_conditional_constraints(self, cleaned):
+        """Conditional unique and exclusion constraints, e.g. "code unique among live records", "scientific
+        name unique among live records whatever its case" (a constraint on an expression, Lower(...)), or "one
+        protocol in force per unit among live assignments" (days that overlap). Django leaves them out of form
+        validation when the condition uses a field the form does not edit (is_deleted), so check them here:
+        the record as the form would save it, by the constraint itself. The error goes on the constraint's
+        last field the form shows, with its message. An empty value never clashes in a unique constraint; in
+        an exclusion constraint it may mean something (an open end of a period), so it is checked too."""
         model = self._meta.model
         for constraint in model._meta.constraints:
-            if not isinstance(constraint, models.UniqueConstraint) or constraint.condition is None:
+            unique = isinstance(constraint, models.UniqueConstraint)
+            if not (unique or isinstance(constraint, ExclusionConstraint)) or constraint.condition is None:
                 continue
             names = constrained_fields(constraint)
             candidate = copy.copy(self.instance)
             for name in names:
                 value = cleaned.get(name) if name in self.fields else getattr(self.instance, name, None)
-                if value in (None, ''):
+                if unique and value in (None, ''):
                     break
                 setattr(candidate, name, value)
             else:
@@ -205,12 +209,14 @@ def tab_fields(tabs):
 
 
 def constrained_fields(constraint):
-    """The fields a unique constraint covers: its `fields`, or the fields its expressions read
-    (Lower('scientific_name') covers scientific_name)."""
-    if constraint.fields:
+    """The fields a unique or exclusion constraint covers: its `fields`, or the fields its expressions read
+    (Lower('scientific_name') covers scientific_name; an assignment's daterange its first and last day)."""
+    if getattr(constraint, 'fields', None):
         return list(constraint.fields)
-    return [node.name for expression in constraint.expressions for node in expression.flatten()
-            if isinstance(node, F)]
+    expressions = [item[0] if isinstance(item, tuple) else item for item in constraint.expressions]
+    nodes = [node for expression in expressions
+             for node in ([expression] if isinstance(expression, F) else expression.flatten())]
+    return list(dict.fromkeys(node.name for node in nodes if isinstance(node, F)))
 
 
 class RowFormSet(forms.BaseInlineFormSet):
@@ -294,6 +300,7 @@ class Resource:
     icon = 'plus'         # shown in the empty list
     namespace = ''        # URL namespace; defaults to the model's app label
     actions = ('add', 'change', 'delete')   # what this tab offers besides the list
+    create_view = None    # the add page's view; None is CreateView (a dialog that writes several rows has its own)
     row_lists = ()        # RowList classes edited on the record's tabs (a site's contacts)
     page_size = None      # rows per page of the list; None lists every record on one page (nested lists)
 
@@ -375,7 +382,7 @@ class Resource:
         pk = 'uuid:pk' if isinstance(cls.model._meta.pk, models.UUIDField) else 'int:pk'
         routes = {
             'list': path(f'{p}/', ListView.as_view(resource=cls), name=f'{n}_list'),
-            'add': path(f'{p}/new/', CreateView.as_view(resource=cls), name=f'{n}_create'),
+            'add': path(f'{p}/new/', (cls.create_view or CreateView).as_view(resource=cls), name=f'{n}_create'),
             'change': path(f'{p}/<{pk}>/', UpdateView.as_view(resource=cls), name=f'{n}_edit'),
             'delete': path(f'{p}/<{pk}>/delete/', DeleteView.as_view(resource=cls), name=f'{n}_delete'),
         }

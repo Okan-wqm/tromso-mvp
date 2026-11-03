@@ -25,7 +25,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgettext
 
 from core import navigation
-from core.crud import done, render_page
+from core.crud import DRAFT, done, render_page
 
 from ..feeding import read as feeding_read, views as feeding_views
 from ..health import views as health_views, withdrawal
@@ -190,10 +190,19 @@ def _drawer(request, unit, stock, feeding, params, held):
                   .prefetch_related(Prefetch('movements', StockMovement.objects.select_related('unit', 'batch')))
                   .order_by('-date', '-created_at')[:HISTORY])
     earliest = services.earliest(unit)
-    history = [{'operation': operation, 'lines': list(operation.movements.all()),
-                'void_url': reverse('farm:stock_void', args=[operation.pk]) + query
-                if can_void and not operation.is_deleted and operation.date >= earliest else ''}
-               for operation in operations]
+    # A weighing's line compares the estimate it replaced with what was weighed (farm/feeding/projection.py).
+    corrections = ({(correction.batch_id, correction.day): correction for correction in feeding.corrections}
+                   if feeding else {})
+    history = []
+    for operation in operations:
+        lines = list(operation.movements.all())
+        history.append({
+            'operation': operation, 'lines': lines,
+            'corrections': [{'correction': corrections[(line.batch_id, operation.date)], 'batch': line.batch}
+                            for line in lines if line.kind == 'weighing' and line.unit_id == unit.pk
+                            and not operation.is_deleted and (line.batch_id, operation.date) in corrections],
+            'void_url': reverse('farm:stock_void', args=[operation.pk]) + query
+            if can_void and not operation.is_deleted and operation.date >= earliest else ''})
     takes_fish = unit.status in ARRIVAL_STATUSES
     actions = []
     if stock is not None and request.user.has_perm(feeding_views.RECORD):
@@ -213,6 +222,8 @@ def _drawer(request, unit, stock, feeding, params, held):
         'feeding': feeding,
         # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares).
         'batch_rows': list(zip(stock.shares, feeding.shares)) if stock is not None else [],
+        # Today's ration of each batch, at its estimated weight (farm/feeding/projection.py).
+        'ration_rows': _ration_rows(stock, feeding),
         'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,
         'drawer_days': stock.days(services.local_today(unit)) if stock else None,
         'stock_url': reverse('farm:stock_input') + query if can_record and takes_fish else '',
@@ -220,6 +231,15 @@ def _drawer(request, unit, stock, feeding, params, held):
         'takes_fish': takes_fish,
         'edit_unit_url': reverse('farm:tank_edit', args=[unit.pk]) if request.user.has_perm('farm.change_tank') else '',
     }
+
+
+def _ration_rows(stock, feeding):
+    """[(batch, projection.ShareDay, why there is no ration)] of the drawer's unit today."""
+    if stock is None or feeding is None or feeding.ration is None:
+        return []
+    batches = {share.batch.pk: share.batch for share in stock.shares}
+    return [(batches[share.batch_id], share, share.end.why(batches[share.batch_id]))
+            for share in feeding.ration.shares if share.batch_id in batches]
 
 
 # ---- the dialogs ---------------------------------------------------------------------------------
@@ -382,6 +402,11 @@ def record_operation(request, pk, kind):
     if not present:
         return render_page(request, 'farm/stock_operation.html', context)
     row_kwargs = {'form_kwargs': _unit_choices(stockable_units().exclude(pk=unit.pk)), 'prefix': 'rows'}
+    if request.method == 'POST' and DRAFT in request.POST and form_class.refresh_on:
+        # A weighing's batch, date or weight changed: the dialog again with the estimate for them, nothing saved.
+        form = form_class(initial=request.POST.dict(), unit=unit, present=present)
+        return render_page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': None,
+                                                                  'estimate': _estimate(unit, form)})
     if request.method == 'POST':
         form = form_class(request.POST, unit=unit, present=present, events=_events(request, unit))
         rows = form_class.rows(request.POST, **row_kwargs) if form_class.rows else None
@@ -396,12 +421,43 @@ def record_operation(request, pk, kind):
             else:
                 messages.success(request, _recorded(operation))
                 return done(request, _back(request, unit))
-        return _refused(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows})
+        return _refused(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows,
+                                                               'estimate': _estimate(unit, form)})
     form = form_class(unit=unit, present=present, events=_events(request, unit))
     if request.GET.get('batch') in form.present:
         form.initial['batch'] = request.GET['batch']
     rows = form_class.rows(**row_kwargs) if form_class.rows else None
-    return render_page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows})
+    return render_page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows,
+                                                              'estimate': _estimate(unit, form)})
+
+
+def _value(form, name):
+    """A field's value as the dialog has it (posted, drafted or its default), parsed; None when it is not valid."""
+    try:
+        return form.fields[name].clean(form[name].value())
+    except ValidationError:
+        return None
+
+
+def _estimate(unit, form):
+    """The weighing dialog's line: the batch's estimated average on the day chosen, before the weighing (the walk's
+    projection, farm/feeding/projection.py), and how the weight entered compares with it. None for another
+    operation, or when the batch and day give none."""
+    if not form.refresh_on:
+        return None
+    day, batch_id = _value(form, 'date'), str(form['batch'].value() or '')
+    if day is None or batch_id not in form.present or day > services.local_today(unit):
+        return None
+    unit_day = feeding_read.project([unit.pk], [(unit.pk, day)]).days.get((unit.pk, day))
+    share = next((share for share in (unit_day.shares if unit_day else []) if str(share.batch_id) == batch_id), None)
+    if share is None:
+        return None
+    average, count, kilos = (_value(form, name) for name in ('avg_weight_g', 'sample_count', 'sample_weight_kg'))
+    entered = average if average is not None else kilos * 1000 / count if count and kilos else None
+    return {'day': day, 'estimated_g': share.start_g, 'since': share.measured_on, 'blind_days': share.blind_days,
+            'days': (day - share.measured_on).days if share.measured_on else None, 'entered_g': entered,
+            'difference_g': entered - share.start_g if entered is not None else None,
+            'difference_pct': 100 * (entered - share.start_g) / share.start_g if entered is not None else None}
 
 
 @permission_required(VOID, raise_exception=True)

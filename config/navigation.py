@@ -10,6 +10,7 @@ from core.navigation import Entry, Group, Section, Workspace
 # Production's menu has two main headings, as in the platform: Setup (the farm's structure, its
 # reference lists and its suppliers, entered once and changed seldom) and Operations (the daily
 # production records: stocking, feeding, water chemistry, health, harvest), from Production units on.
+# A third, Communication, holds how the people running production talk to each other: Messages.
 #
 # Where an entry sits here is also where the role matrix and the tab's page heading place it.
 WORKSPACES = [
@@ -48,19 +49,34 @@ WORKSPACES = [
                 Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
             ]),
         ]),
-        # The daily production records: the fish in each unit and what happens to them, their feeding, the water
-        # they are in and their health; harvest joins as its tab arrives.
+        # The daily production records: the fish in each unit and what happens to them, the water they are in,
+        # their feeding and their health; harvest joins as its tab arrives. Feeding has four pages: today's meals
+        # per unit, what was fed against the ration, the feeding tables and where each applies.
         Section(_('Operations'), [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
-                Entry(_('Feeding records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
                 Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
+            ]),
+            Group(_('Feeding'), [
+                Entry(_('Meal board'), 'farm:meal_board', 'utensils', 'farm.view_feedingrecord'),
+                Entry(_('Records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
+                Entry(_('Protocols'), 'farm:feedingprotocol_list', 'table', 'farm.view_feedingprotocol'),
+                Entry(_('Assignments'), 'farm:protocolassignment_list', 'link', 'farm.view_protocolassignment'),
             ]),
             # The fish's health: what was given them, what was seen and found, and the sea lice counted.
             Group(_('Health'), [
                 Entry(_('Treatments'), 'farm:treatments', 'syringe', 'farm.view_treatment'),
                 Entry(_('Health events'), 'farm:healthevent_list', 'stethoscope', 'farm.view_healthevent'),
                 Entry(_('Sea-lice counts'), 'farm:lice_counts', 'bug', 'farm.view_licecount'),
+            ]),
+        ]),
+        # Messages between the people running production, direct and in channels; their AI assistants join the
+        # same conversations later (README, Messages). Neither structure nor a production record: a heading of
+        # its own. The number beside it is the person's unread messages.
+        Section(_('Communication'), [
+            Group('', [
+                Entry(_('Messages'), 'messaging:inbox', 'message-square', 'messaging.view_conversation',
+                      badge='messaging.read.unread_badge'),
             ]),
         ]),
     ]),

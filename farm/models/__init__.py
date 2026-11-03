@@ -9,6 +9,7 @@ Differences from the source schema (apply to every model here):
 from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibration
 from .feed import Feed, FeedSuitability
 from .feeding import FeedingRecord
+from .feeding_protocol import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
 from .health import HealthEvent, LiceCount, Medicine, Treatment
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
@@ -21,7 +22,7 @@ from .water import WaterLimit, WaterMeasurement
 
 __all__ = [
     'Batch', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
-    'FeedingRecord', 'HealthEvent', 'LiceCount', 'Medicine', 'ProductionDepartment', 'Site', 'SiteContact',
-    'Species', 'StockMovement', 'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment',
-    'WaterLimit', 'WaterMeasurement',
+    'FeedingProtocol', 'FeedingRecord', 'HealthEvent', 'LiceCount', 'Medicine', 'ProductionDepartment',
+    'ProtocolAssignment', 'ProtocolBand', 'ProtocolRate', 'Site', 'SiteContact', 'Species', 'StockMovement',
+    'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterLimit', 'WaterMeasurement',
 ]

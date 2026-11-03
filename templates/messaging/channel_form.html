@@ -1,0 +1,19 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} New channel (messaging.views.create_channel): a name and its first members; the person creating it is its
+   owner and can add and remove members later.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<form method="post" action="{% url 'messaging:create_channel' %}" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% with field=form.name %}{% include "registration/_field.html" %}{% endwith %}
+  {% with field=form.members %}{% include "registration/_field.html" %}{% endwith %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{% url 'messaging:inbox' %}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{% trans "Create channel" %}</button>
+  </div>
+</form>
+{% endblock %}

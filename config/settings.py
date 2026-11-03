@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.forms',
     'core',
     'farm',
+    'knowledge',
 ]
 
 MIDDLEWARE = [
@@ -152,6 +153,17 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+
+# Uploaded files (a library document's PDF), kept by Django's default storage under MEDIA_ROOT. There is
+# no MEDIA_URL route: a file is never a public static file, it is sent by the view that checks who asks
+# (knowledge.views.document_file). Set DJANGO_MEDIA_ROOT to a folder outside the checkout anywhere else.
+MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', BASE_DIR / 'media'))
+
+# The largest PDF the library takes (knowledge.models.document). The web server in front of Django must cap a
+# request's body too (e.g. nginx client_max_body_size 25m): Django streams a large upload to a temporary
+# file before the form can refuse it.
+KNOWLEDGE_MAX_FILE_BYTES = 20 * 1024 * 1024
 
 
 # Email

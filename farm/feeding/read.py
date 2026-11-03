@@ -22,13 +22,14 @@ fold's book biomass (measured weights only), in kg:
 Known bias, said on the page: dead fish between weighings leave at the last measured average, so their
 growth since is not credited (bFCR slightly high when mortality is heavy)."""
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.db.models import Max
 from django.utils.translation import gettext_lazy as _
 
 from farm.models import FeedingRecord, StockMovement
+from farm.models.site import zone_of
 from farm.stock.dates import local_today
 from farm.stock.read import batches_ever_in, ledger
 
@@ -78,6 +79,54 @@ def records_of_batch(batch, records):
                    .values_list('unit_id', flat=True))
     candidates = list(records.filter(unit_id__in=unit_ids, date__gte=batch.input_date))
     return [pk for pk, parts in split_of(candidates).items() if batch.pk in parts]
+
+
+# ---- the last feeding of the fish ----------------------------------------------------------------
+@dataclass(frozen=True)
+class LastFed:
+    """When fish were last fed: the moment on the clock of the feeding's site (its date and time; a record
+    without a time counts from the end of its day, so a fast is never overstated) and the record."""
+    moment: datetime
+    record: FeedingRecord
+
+    @property
+    def timed(self):
+        return self.record.time is not None
+
+
+def fed_moment(record):
+    """A feeding's moment on its site's clock: its date and time, or the end of its day without a time."""
+    zone = zone_of(record.unit.production_department.site)
+    if record.time is None:
+        return datetime.combine(record.date + timedelta(days=1), time.min, tzinfo=zone)
+    return datetime.combine(record.date, record.time, tzinfo=zone)
+
+
+def last_fed_at(unit, day, batch=None, since=None):
+    """The latest feeding (LastFed) of the fish on or before `day`, back to `since`: the fish of `batch`
+    wherever they were (fish moved in were fed in their old unit), or, without a batch, of every batch in
+    `unit` at the start of `day` (at its end when it was empty then). Which batches a record fed is the
+    feeding walk's split, so a record of the unit before these fish came in does not count. None when no
+    record fed them."""
+    if batch is not None:
+        batch_ids = {batch.pk}
+    else:
+        batch_ids = set(book_on(unit, day).weights)
+    if not batch_ids:
+        return None
+    unit_ids = set(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False)
+                   .values_list('unit_id', flat=True))
+    records = (FeedingRecord.objects.filter(unit_id__in=unit_ids, date__lte=day)
+               .select_related('unit__production_department__site'))
+    if since is not None:
+        records = records.filter(date__gte=since)
+    records = list(records)
+    fed = split_of(records)
+    moments = [(fed_moment(record), record) for record in records if batch_ids & set(fed.get(record.pk, {}))]
+    if not moments:
+        return None
+    moment, record = max(moments, key=lambda item: (item[0], item[1].created_at))
+    return LastFed(moment, record)
 
 
 # ---- FCR -----------------------------------------------------------------------------------------

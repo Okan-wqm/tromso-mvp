@@ -11,8 +11,12 @@ from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils.translation import gettext_lazy as _, ngettext
 
-from ..models import Batch, Species, Supplier, Tank
+from ..handling import check
+from ..models import Batch, HandlingPlanItem, SlaughterFacility, Species, Supplier, Tank
+from ..models.handling import HandlingKind
+from ..models.harvest import offered_facilities
 from ..models.stock import ARRIVAL_STATUSES, CullReason, InputStage, MortalityCause, Origin, TransferReason
+from ..models.supplier import SupplyCategory
 from ..stock import services
 from ..templatetags.stock import number
 
@@ -63,6 +67,52 @@ class Acknowledged:
     @property
     def needs_ack(self):
         return self.ack_field in self.errors or bool(self.ack.value())
+
+
+class AcknowledgeInput(forms.CheckboxInput):
+    """The box that acknowledges the handling warnings shown (farm/handling/check.py). Its value is the
+    warnings' fingerprint, so a save whose warnings changed meanwhile is not taken as acknowledged; it shows
+    ticked only when what was posted is what is shown now."""
+
+    fingerprint = ''
+
+    def get_context(self, name, value, attrs):
+        if value and value == self.fingerprint:
+            attrs = {**(attrs or {}), 'checked': True}
+        return super(forms.CheckboxInput, self).get_context(name, self.fingerprint, attrs)
+
+    def value_from_datadict(self, data, files, name):
+        return data.get(name, '')
+
+
+class HandlingChecked:
+    """A dialog whose save runs the handling check (a harvest, a transfer, a grading): the panel shows what the
+    check finds for the date and batch of the form (`handling`), and, with warnings, the box to go on past
+    them, which the service reads (`handling_ack`)."""
+
+    handling_kind = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['handling_ack'] = forms.CharField(
+            label=_('Go on despite these warnings'), required=False, widget=AcknowledgeInput,
+            help_text=_('Fish under a medicine withdrawal must not go to food. Going on is stored with what is '
+                        'shown here and logged as critical.'))
+        self._handling = None
+
+    @property
+    def handling(self):
+        """The check for the form's date and batch as entered (else as offered): farm.handling.check.assess."""
+        if self._handling is None:
+            data = getattr(self, 'cleaned_data', {})
+            day = data.get('date') or self.initial.get('date') or self.fields['date'].initial
+            batch = data.get('batch')
+            if batch is None:
+                share = self.present.get(str(self.initial.get('batch', ''))) or self.only_batch
+                batch = share.batch if share is not None else None
+            self._handling = check.assess(self.handling_kind, self.unit, day, batch)
+            self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
+        return self._handling
 
 
 class OperationForm(ServiceErrors, forms.Form):
@@ -304,13 +354,35 @@ def kept_rows(formset):
     return [row.cleaned_data for row in formset.forms if row.cleaned_data and row.cleaned_data.get('unit')]
 
 
-class TransferForm(Acknowledged, OperationForm):
+class PlannedForm:
+    """A dialog that can fulfil a plan (Operations › Harvest › Harvest plan): the plan's id travels hidden, and
+    the service links the operation to it."""
+
+    plan_kind = None
+
+    def __init__(self, *args, plan=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.plan = plan
+        self.fields['plan_item'] = forms.ModelChoiceField(
+            queryset=HandlingPlanItem.objects.filter(kind=self.plan_kind, unit=self.unit), required=False,
+            widget=forms.HiddenInput)
+        if plan is not None:
+            # Recorded on the planned day, or today when it is done before it.
+            self.initial.update({'plan_item': plan.pk, 'batch': str(plan.batch_id),
+                                 'date': min(plan.date, self.fields['date'].initial)})
+
+
+class TransferForm(PlannedForm, HandlingChecked, Acknowledged, OperationForm):
     """Fish of one batch moved to one or several units (a split is a transfer into several). They leave at
-    the batch's average in this unit and keep their batch."""
+    the batch's average in this unit and keep their batch. A transfer is a transport: the handling check
+    runs its rule."""
 
     reason = forms.ChoiceField(label=_('Reason'), choices=TransferReason.choices, initial=TransferReason.DENSITY)
     over_capacity_ack = acknowledgement()
 
+    handling_kind = HandlingKind.TRANSPORT
+    plan_kind = HandlingPlanItem.Kind.TRANSPORT
+    service_fields = {**OperationForm.service_fields, 'plan_item': NON_FIELD_ERRORS}
     rows = LegFormSet
     rows_label = _('To units')
     field_order = ['batch', 'date', 'reason', 'notes', 'over_capacity_ack']
@@ -320,12 +392,14 @@ class TransferForm(Acknowledged, OperationForm):
         return services.record_transfer(
             user, source=self.unit, batch=data['batch'], day=data['date'],
             legs=[(row['unit'], row['count']) for row in rows], reason=data['reason'], notes=data['notes'],
-            ack=data['over_capacity_ack'], token=data['token'])
+            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], plan_item=data['plan_item'],
+            token=data['token'])
 
 
-class GradingForm(Acknowledged, OperationForm):
+class GradingForm(HandlingChecked, Acknowledged, OperationForm):
     """The fish of one batch graded by size into other units, each size class with its measured average;
-    the fish that stay are weighed too."""
+    the fish that stay are weighed too. A grading moves the fish: the handling check takes the longer of
+    the grading and the transport rules."""
 
     remainder_avg_weight_g = forms.DecimalField(
         label=_('Average weight of the fish that stay (g)'), max_digits=12, decimal_places=4,
@@ -333,6 +407,7 @@ class GradingForm(Acknowledged, OperationForm):
         help_text=_('Required when fish stay in this unit: the grading weighs them too.'))
     over_capacity_ack = acknowledgement()
 
+    handling_kind = HandlingKind.GRADING
     service_fields = {**OperationForm.service_fields, 'avg_weight_g': 'remainder_avg_weight_g'}
     rows = OutputFormSet
     rows_label = _('Size classes')
@@ -344,30 +419,68 @@ class GradingForm(Acknowledged, OperationForm):
             user, source=self.unit, batch=data['batch'], day=data['date'],
             outputs=[(row['unit'], row['count'], row['avg_weight_g'], row['size_class'].strip()) for row in rows],
             remainder_avg_weight_g=data['remainder_avg_weight_g'], notes=data['notes'],
-            ack=data['over_capacity_ack'], token=data['token'])
+            ack=data['over_capacity_ack'], handling_ack=data['handling_ack'], token=data['token'])
 
 
-class HarvestForm(OperationForm):
-    """Fish harvested: their count and their weighed kilos."""
+class TransportChoice(forms.ModelChoiceField):
+    """The suppliers of wellboat and transport, with the status of those not active."""
+
+    def label_from_instance(self, supplier):
+        if supplier.status == Supplier.Status.ACTIVE:
+            return str(supplier)
+        return f'{supplier} · {supplier.get_status_display()}'
+
+
+def transport_suppliers():
+    return Supplier.objects.filter(supplies__contains=[SupplyCategory.TRANSPORT]).order_by('name')
+
+
+class HarvestForm(PlannedForm, HandlingChecked, OperationForm):
+    """Fish harvested: their count and their round (live) kilos as weighed, and where they went: the
+    slaughter facility, and who carried them."""
 
     count = forms.IntegerField(label=_('Fish harvested'), min_value=1)
     measured_weight_kg = forms.DecimalField(
-        label=_('Weighed (kg)'), max_digits=14, decimal_places=3, min_value=Decimal('0.001'), localize=True,
+        label=_('Round weight (kg)'), max_digits=14, decimal_places=3, min_value=Decimal('0.001'), localize=True,
         widget=forms.TextInput(attrs=DECIMAL),
-        help_text=_('Their weight as weighed at the harvest. The stock takes the fish out at their book weight; '
-                    'the difference is shown on the operation.'))
+        help_text=_('The live weight as weighed at the harvest, before bleeding and gutting. The stock takes the '
+                    'fish out at their book weight; the difference is shown with the harvest.'))
     everything = forms.BooleanField(
         label=_('This empties the unit of this batch'), required=False,
         help_text=_('Fish the book still holds beyond the count are then recorded as an unaccounted loss.'))
+    facility = forms.ModelChoiceField(
+        label=_('Slaughter facility'), queryset=SlaughterFacility.objects.none(),
+        help_text=_('Where the fish go: an active facility that takes this species (Reference data › Slaughter '
+                    'facilities).'))
+    transport = TransportChoice(label=_('Transport'), queryset=Supplier.objects.none(), required=False,
+                                help_text=_('Optional: the wellboat or haulage company that carries them.'))
+    vessel = forms.CharField(label=_('Wellboat or vehicle'), max_length=100, required=False,
+                             widget=forms.TextInput(attrs={'placeholder': _('e.g. MS Ronja Harvest')}))
 
-    field_order = ['batch', 'date', 'count', 'measured_weight_kg', 'everything', 'notes']
+    handling_kind = HandlingKind.HARVEST
+    plan_kind = HandlingPlanItem.Kind.HARVEST
+    service_fields = {**OperationForm.service_fields, 'plan_item': NON_FIELD_ERRORS}
+    field_order = ['batch', 'date', 'count', 'measured_weight_kg', 'everything', 'facility', 'transport', 'vessel',
+                   'notes']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        species = next(iter(self.present.values())).batch.species if self.present else None
+        self.fields['facility'].queryset = offered_facilities(species)
+        self.fields['facility'].empty_label = _('Select a slaughter facility')
+        self.fields['transport'].queryset = transport_suppliers()
+        self.fields['transport'].empty_label = _('None')
+        if self.plan is not None:
+            self.initial.update({'count': self.plan.planned_count, 'facility': self.plan.facility_id,
+                                 'transport': self.plan.transport_id, 'vessel': self.plan.vessel})
 
     def save(self, user, rows=None):
         data = self.cleaned_data
         return services.record_harvest(
             user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'],
-            measured_weight_kg=data['measured_weight_kg'], everything=data['everything'], notes=data['notes'],
-            token=data['token'])
+            measured_weight_kg=data['measured_weight_kg'], facility=data['facility'], transport=data['transport'],
+            vessel=data['vessel'], everything=data['everything'], notes=data['notes'],
+            handling_ack=data['handling_ack'], plan_item=data['plan_item'], token=data['token'])
 
 
 class VoidForm(ServiceErrors, forms.Form):

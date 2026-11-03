@@ -30,6 +30,7 @@ from ..forms.stock import VoidForm
 from ..handling.fasting import fasting_on
 from ..health import withdrawal as health_withdrawal
 from ..models import Batch, Feed, FeedingRecord, Site, Tank
+from ..models.feeding import FeedTarget
 from ..models.site import zone_of
 from ..stock import read as stock_read, views as stock_views
 from ..stock.dates import earliest, local_today, shown_date
@@ -286,7 +287,7 @@ def next_meal(unit):
     unit_day = read.project([unit.pk], [(unit.pk, today)]).days.get((unit.pk, today))
     if unit_day is None or unit_day.next_meal_kg is None:
         return None
-    feeds = {share.end.band.feed for share in unit_day.shares if share.next_meal_kg is not None}
+    feeds = {share.end.band.feed for share in unit_day.production if share.next_meal_kg is not None}
     now = timezone.localtime(timezone.now(), zone_of(unit.production_department.site))
     return {'amount_kg': unit_day.next_meal_kg.quantize(GRAM, ROUND_HALF_UP), 'meals': 1,
             'time': time(now.hour, now.minute),
@@ -307,9 +308,10 @@ def choose_unit(request):
                for unit in units if unit.pk in stock]))
 
 
-def _split(unit, day):
-    """The batches a feeding of `unit` on `day` would feed and their parts in %, when there are several."""
-    book = read.book_on(unit, day)
+def _split(unit, day, target=FeedTarget.PRODUCTION):
+    """The batches a feeding of `unit` on `day` for `target` would feed and their parts in %, when there are
+    several."""
+    book = read.book_on(unit, day).of(target)
     weights = book.weights
     if len(weights) < 2:
         return None
@@ -340,12 +342,13 @@ def record_feeding(request, pk):
                 messages.success(request, _('Feeding recorded: %(kilos)s kg of %(feed)s in %(unit)s on %(date)s.') % {
                     'kilos': amount(record.amount_kg), 'feed': feed_label(record.feed), 'unit': unit.code,
                     'date': shown_date(record.date)})
-                if form.suiting and record.feed.pk not in form.suiting:
+                suiting = form.suiting_for.get(record.target)
+                if suiting and record.feed.pk not in suiting:
                     # A feed among "Other active feeds" while some suit these fish: a notice, not a refusal.
                     messages.warning(request, _(
                         '%(feed)s is not listed as suitable for %(species)s at %(weight)s (Reference data › Feeds).')
-                        % {'feed': record.feed, 'species': stock.batches[0].species,
-                           'weight': grams(stock.avg_weight_g)})
+                        % {'feed': record.feed, 'species': form.species_for[record.target],
+                           'weight': grams(stock.of(record.target).avg_weight_g)})
                 if record.feed.feed_type == Feed.Type.MEDICATED and not health_withdrawal.covered(record):
                     # Medicated feed holds the fish with an unknown withdrawal until its treatment is recorded.
                     messages.warning(request, _('No in-feed treatment covers this day: record it under Health › '
@@ -353,7 +356,7 @@ def record_feeding(request, pk):
                 return done(request, back)
         day = form.cleaned_data.get('date') or local_today(unit)
         return stock_views._refused(request, 'farm/feeding_form.html', {
-            **context, 'form': form, 'split': _split(unit, day), 'fasting': fasting_on(unit, day)})
+            **context, 'form': form, 'split': _split(unit, day, form.fed_to), 'fasting': fasting_on(unit, day)})
     form = FeedingForm(unit=unit, stock=stock)
     meal = next_meal(unit) if request.GET.get('meal') == 'next' else None
     if meal is not None:

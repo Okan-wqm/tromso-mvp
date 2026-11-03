@@ -35,6 +35,7 @@ from django.utils.translation import gettext_lazy as _
 
 from farm.handling import fasting
 from farm.models import Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank
+from farm.models.feeding import FeedTarget
 from farm.models.site import zone_of
 from farm.stock.dates import end_of, local_today, start_of
 from farm.stock.read import batches_ever_in, ledger
@@ -61,9 +62,9 @@ def feedings(unit_ids=None, since=None):
         rows = rows.filter(unit_id__in=unit_ids)
     if since is not None:
         rows = rows.filter(date__gte=since)
-    return [Feeding(pk, unit_id, day, kilos, meals, (clock is None, clock or time.min, created))
-            for pk, unit_id, day, kilos, meals, clock, created
-            in rows.values_list('pk', 'unit_id', 'date', 'amount_kg', 'meals', 'time', 'created_at')]
+    return [Feeding(pk, unit_id, day, kilos, meals, (clock is None, clock or time.min, created), target)
+            for pk, unit_id, day, kilos, meals, clock, created, target
+            in rows.values_list('pk', 'unit_id', 'date', 'amount_kg', 'meals', 'time', 'created_at', 'target')]
 
 
 def _walk(unit_ids, records, days=()):
@@ -168,7 +169,7 @@ def split_of(records):
     unit_ids = {record.unit_id for record in records}
     if not unit_ids:
         return {}
-    return _walk(unit_ids, [Feeding(record.pk, record.unit_id, record.date, record.amount_kg)
+    return _walk(unit_ids, [Feeding(record.pk, record.unit_id, record.date, record.amount_kg, target=record.target)
                             for record in records]).split
 
 
@@ -218,13 +219,13 @@ def fed_moment(record):
 def last_fed_at(unit, day, batch=None, since=None):
     """The latest feeding (LastFed) of the fish on or before `day`, back to `since`: the fish of `batch`
     wherever they were (fish moved in were fed in their old unit), or, without a batch, of every batch in
-    `unit` at the start of `day` (at its end when it was empty then). Which batches a record fed is the
-    feeding walk's split, so a record of the unit before these fish came in does not count. None when no
-    record fed them."""
+    `unit` at the start of `day` (at its end when it was empty then), its production fish (the ones handled; a
+    cleaner fish's feeding is not theirs). Which batches a record fed is the feeding walk's split, so a record of
+    the unit before these fish came in does not count. None when no record fed them."""
     if batch is not None:
         batch_ids = {batch.pk}
     else:
-        batch_ids = set(book_on(unit, day).weights)
+        batch_ids = set(book_on(unit, day).production.weights)
     if not batch_ids:
         return None
     unit_ids = set(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False)
@@ -301,6 +302,7 @@ class ShareFeeding:
     batch: object
     stay: object
     window: Window = None
+    cleaner: bool = False
 
     @property
     def fed_kg(self):
@@ -339,13 +341,13 @@ class UnitFeeding:
 
     @property
     def conversion(self):
-        """Over the windows of its shares; a share without one is left out of both sums."""
-        return Conversion([share.window for share in self.shares if share.window])
+        """Over the windows of its production fish's shares; a share without one is left out of both sums."""
+        return Conversion([share.window for share in self.shares if share.window and not share.cleaner])
 
     @property
     def unweighed(self):
-        """The batches without a window (named in the drawer)."""
-        return [share.batch for share in self.shares if not share.window]
+        """The production batches without a window (named in the drawer)."""
+        return [share.batch for share in self.shares if not share.window and not share.cleaner]
 
 
 def figures(stock, detail=None):
@@ -364,15 +366,15 @@ def figures(stock, detail=None):
         since = min(since, first)
     projection = project(unit_ids, days) if days else None
     walked = projection.walked if projection else _walk(unit_ids, feedings(unit_ids, since), days)
-    last = dict(FeedingRecord.objects.filter(unit_id__in=unit_ids).order_by().values('unit_id')
-                .annotate(last=Max('date')).values_list('unit_id', 'last'))
+    last = dict(FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION).order_by()
+                .values('unit_id').annotate(last=Max('date')).values_list('unit_id', 'last'))
     result = {}
     for unit_id, item in stock.items():
         fed = last.get(unit_id)
         unit = result[unit_id] = UnitFeeding(today[unit_id], fed if fed and fed >= item.since else None)
         for share in item.shares:
             stay = walked.stays[(unit_id, share.batch.pk)][-1]
-            unit.shares.append(ShareFeeding(share.batch, stay, window(stay)))
+            unit.shares.append(ShareFeeding(share.batch, stay, window(stay), share.cleaner))
     if days:
         drawer = result[detail.pk]
         drawer.week = _week(detail, stock[detail.pk], today[detail.pk], days, walked)
@@ -383,15 +385,18 @@ def figures(stock, detail=None):
 
 def _week(unit, stock, today, days, walked):
     first = days[0][1]
-    records = list(FeedingRecord.objects.filter(unit=unit, date__gte=first).select_related('feed'))
+    # The production fish's feed against their biomass; the cleaner fish's feedings are theirs (D-1, D-2).
+    records = list(FeedingRecord.objects.filter(unit=unit, date__gte=first, target=FeedTarget.PRODUCTION)
+                   .select_related('feed'))
     of_today = [record for record in records if record.date == today]
     meals = [record.meals for record in of_today]
-    latest = (FeedingRecord.objects.filter(unit=unit, date__gte=stock.since).select_related('feed').first())
+    latest = (FeedingRecord.objects.filter(unit=unit, date__gte=stock.since, target=FeedTarget.PRODUCTION)
+              .select_related('feed').first()) if stock.since else None
     return Week(
         first=first,
         today_kg=sum((record.amount_kg for record in of_today), ZERO),
         today_meals=sum(meals) if meals and None not in meals else None,
         kg=sum((record.amount_kg for record in records if record.date <= today), ZERO),
-        biomass_days_kg=sum((walked.days[key].biomass_kg for key in days), ZERO),
+        biomass_days_kg=sum((walked.days[key].production.biomass_kg for key in days), ZERO),
         feed=latest.feed if latest else None,
     )

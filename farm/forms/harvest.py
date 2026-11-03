@@ -170,7 +170,7 @@ class HandlingPlanItemForm(TabbedForm):
         self.fields['unit'].empty_label = _('Select a unit')
         homes = {}
         for unit_id, unit_stock in stock.items():
-            for share in unit_stock.shares:
+            for share in unit_stock.counted:          # a cleaner fish is culled, not harvested
                 homes.setdefault(str(share.batch.pk), []).append(unit_id)
         if item.batch_id:
             homes.setdefault(str(item.batch_id), []).append(item.unit_id)

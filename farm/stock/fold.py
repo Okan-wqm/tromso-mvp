@@ -50,6 +50,9 @@ class Line:
     measured_weight_kg: Decimal = None
     # The line's reason (a mortality's cause, a cull's reason): never in the fold, read by the reports.
     reason: str = ''
+    # Its batch is of a cleaner-fish species (D-1): never in the fold, read by the feeding walk, which feeds the
+    # cleaner fish and the production fish of a unit apart.
+    cleaner: bool = False
 
 
 class StockError(Exception):

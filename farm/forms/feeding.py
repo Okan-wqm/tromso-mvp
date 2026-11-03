@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from ..feeding import services
 from ..models import Equipment, Feed, FeedingRecord
-from ..models.feeding import feeders_for
+from ..models.feeding import FeedTarget, feeders_for
 from ..stock.dates import local_today
 from ..templatetags.feeding import amount
 from .stock import DATE, DECIMAL, NOTES, Acknowledged, ServiceErrors
@@ -44,6 +44,10 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
     high_rate_ack = forms.BooleanField(
         label=_('Feed above the usual rate'), required=False,
         help_text=_('Tick it only when the amount is right, e.g. for fry that are fed more.'))
+    target = forms.ChoiceField(
+        label=_('Fed to'), required=False,
+        help_text=_('The production fish or the cleaner fish beside them: each feed goes to its own fish. Left as '
+                    'the feed suits, it is the cleaner fish’s when the feed suits only them.'))
 
     ack_field = 'high_rate_ack'
     service_fields = {'unit': NON_FIELD_ERRORS}
@@ -68,15 +72,25 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         self.fields['feed'].queryset = Feed.objects.filter(status=Feed.Status.ACTIVE).prefetch_related('suitability')
         self.fields['feed'].choices = self._feed_choices(stock)
         self.fields['feeder'].queryset = feeders_for(unit).order_by('name')
+        if stock is not None and stock.cleaner:
+            # Cleaner fish beside the production fish (D-1): the person says whose feed it is, or leaves it to the feed.
+            self.fields['target'].choices = [('', _('As the feed suits')), *FeedTarget.choices]
+        else:
+            del self.fields['target']
 
     def _feed_choices(self, stock):
         """The active feeds; when the unit holds fish, those that suit their species and average weight
-        first, the others under "Other active feeds" (a choice among them is allowed: the page says so)."""
+        first (of its production fish and of its cleaner fish), the others under "Other active feeds" (a choice
+        among them is allowed: the page says so)."""
         feeds = list(self.fields['feed'].queryset)
-        self.suiting = set()
-        if stock is not None:
-            species = stock.batches[0].species
-            self.suiting = {feed.pk for feed in feeds if suits(feed, species, stock.avg_weight_g)}
+        self.suiting_for = {}       # target -> the feeds that suit those fish
+        self.species_for = {}       # target -> their species
+        for target in FeedTarget.values:
+            fish = stock.of(target) if stock is not None else None
+            if fish is not None and fish.batches:
+                species = self.species_for[target] = fish.batches[0].species
+                self.suiting_for[target] = {feed.pk for feed in feeds if suits(feed, species, fish.avg_weight_g)}
+        self.suiting = set().union(*self.suiting_for.values())
         choices = [('', '---------')]
         if not self.suiting:
             return choices + [(feed.pk, feed_label(feed)) for feed in feeds]
@@ -85,9 +99,28 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         return choices + [(group, [(feed.pk, feed_label(feed)) for feed in members]) for group, members in groups
                           if members]
 
+    def clean(self):
+        cleaned = super().clean()
+        if 'target' not in self.fields:
+            cleaned['target'] = FeedTarget.PRODUCTION
+        elif not cleaned.get('target'):
+            # Left to the feed: the cleaner fish's when it suits them and not the production fish (D-1), and when
+            # the unit holds no production fish for it to be for.
+            feed = cleaned.get('feed')
+            ours = feed is not None and feed.pk in self.suiting_for.get(FeedTarget.CLEANER_FISH, ())
+            theirs = feed is not None and feed.pk in self.suiting_for.get(FeedTarget.PRODUCTION, ())
+            alone = FeedTarget.PRODUCTION not in self.species_for
+            cleaned['target'] = FeedTarget.CLEANER_FISH if alone or ours and not theirs else FeedTarget.PRODUCTION
+        return cleaned
+
+    @property
+    def fed_to(self):
+        """The fish the feeding is for, as entered (production fish until it is known)."""
+        return getattr(self, 'cleaned_data', {}).get('target') or FeedTarget.PRODUCTION
+
     def save(self, user):
         data = self.cleaned_data
         return services.record_feeding(
             user, unit=self.unit, day=data['date'], feed=data['feed'], amount_kg=data['amount_kg'],
             time=data['time'], meals=data['meals'], feeder=data['feeder'], notes=data['notes'],
-            ack=data['high_rate_ack'], token=data['token'])
+            ack=data['high_rate_ack'], target=data['target'], token=data['token'])

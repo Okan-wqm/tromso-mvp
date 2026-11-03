@@ -216,6 +216,25 @@ class CullForm(OperationForm):
 
     field_order = ['batch', 'date', 'count', 'reason', 'health_event', 'notes']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # A cleaner fish's reasons are Mattilsynet's causes, a production fish's the others (services.cull_reasons);
+        # with both in the unit, each list under its own heading.
+        groups = {}
+        for share in self.present.values():
+            groups[share.batch.species.is_cleaner_fish] = services.cull_reasons(share.batch)
+        field = self.fields['reason']
+        if len(groups) == 1:
+            reasons, = groups.values()
+            field.choices = [(reason.value, reason.label) for reason in reasons]
+            if field.initial not in [reason.value for reason in reasons]:
+                field.initial = None
+        elif groups:
+            field.choices = [('', '---------')] + [
+                (heading, [(reason.value, reason.label) for reason in groups[cleaner]])
+                for cleaner, heading in ((False, _('Production fish')), (True, _('Cleaner fish')))]
+            field.initial = None
+
     def save(self, user, rows=None):
         data = self.cleaned_data
         return services.record_cull(

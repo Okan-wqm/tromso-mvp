@@ -4,7 +4,7 @@ locked as the stock service locks it (so a feeding and a harvest of one unit tak
 dates (farm/stock/dates.py), the form's token, and one void for every daily record
 (farm.stock.services.voided).
 
-A failure raises ValidationError (a dict of field to message: 'unit', 'date', 'feed', 'feeder',
+A failure raises ValidationError (a dict of field to message: 'unit', 'date', 'feed', 'feeder', 'target',
 'amount_kg', 'meals', 'high_rate_ack', 'reason' or NON_FIELD_ERRORS) and nothing is written."""
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from farm.models import Feed, FeedingRecord, Tank
+from farm.models.feeding import FeedTarget
 from farm.stock.dates import check_date, shown_date, sites_of
 from farm.stock.services import AlreadyRecorded, locked, voided
 from farm.templatetags.feeding import amount
@@ -21,7 +22,7 @@ from farm.templatetags.stock import number
 from . import read
 
 # The fields the activity log shows for a feeding.
-LOGGED = ['unit', 'date', 'time', 'feed', 'amount_kg', 'meals', 'feeder', 'notes']
+LOGGED = ['unit', 'date', 'time', 'feed', 'target', 'amount_kg', 'meals', 'feeder', 'notes']
 
 
 def label(record):
@@ -32,11 +33,11 @@ def label(record):
 
 
 def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, feeder=None, notes='', ack=False,
-                   token=None):
-    """Feed given to `unit` on `day`. It needs fish in the unit at the start or the end of that day (the
-    stock ledger), a feed that is active, and, above FEEDING_ACK_PERCENT of the unit's book biomass, the
-    person's acknowledgement (stored on the record; owner decision Q-F5): a kilo typed for a gram is caught
-    here, a hatchery's fry may well be fed more."""
+                   target=FeedTarget.PRODUCTION, token=None):
+    """Feed given to `unit` on `day`, for its production fish or for the cleaner fish beside them (`target`, D-1).
+    It needs fish of its target in the unit at the start or the end of that day (the stock ledger), a feed that is
+    active, and, above FEEDING_ACK_PERCENT of their book biomass, the person's acknowledgement (stored on the record;
+    owner decision Q-F5): a kilo typed for a gram is caught here, a hatchery's fry may well be fed more."""
     with transaction.atomic():
         unit = locked(Tank, {unit.pk})[unit.pk]
         if token is not None:
@@ -50,12 +51,15 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
         if feed.is_deleted or feed.status != Feed.Status.ACTIVE:
             raise ValidationError({'feed': _('%(feed)s is %(status)s: a new feeding takes an active feed.') % {
                 'feed': feed, 'status': _('deleted') if feed.is_deleted else str(feed.get_status_display()).lower()}})
-        book = read.book_on(unit, day)
+        book = read.book_on(unit, day).of(target)
         if not book.has_fish:
-            raise ValidationError({'date': _('%(unit)s holds no fish on %(date)s.') % {
+            text = (_('%(unit)s holds no cleaner fish on %(date)s.') if target == FeedTarget.CLEANER_FISH
+                    else _('%(unit)s holds no fish on %(date)s.'))
+            raise ValidationError({'target' if read.book_on(unit, day).has_fish else 'date': text % {
                 'unit': unit.code, 'date': shown_date(day)}})
-        record = FeedingRecord(unit=unit, date=day, time=time, feed=feed, amount_kg=amount_kg, meals=meals,
-                               feeder=feeder, notes=notes, entry_key=token, created_by=user, updated_by=user)
+        record = FeedingRecord(unit=unit, date=day, time=time, feed=feed, target=target, amount_kg=amount_kg,
+                               meals=meals, feeder=feeder, notes=notes, entry_key=token, created_by=user,
+                               updated_by=user)
         record.full_clean()
         rate = 100 * amount_kg / book.biomass_kg
         if rate > settings.FEEDING_ACK_PERCENT:

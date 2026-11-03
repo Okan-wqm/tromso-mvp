@@ -118,8 +118,9 @@ class Assessment:
 
 
 def _batches_in(unit, day):
-    """The batches in the unit at the start of the day (at its end when it was empty then)."""
-    return list(Batch.all_objects.filter(pk__in=book_on(unit, day).weights).select_related('species'))
+    """The production batches in the unit at the start of the day (at its end when it was empty then): the fish a
+    harvest, a transport or a grading of the unit handles; the cleaner fish beside them are not slaughtered."""
+    return list(Batch.all_objects.filter(pk__in=book_on(unit, day).production.weights).select_related('species'))
 
 
 def assess(kind, unit, day, batch=None):

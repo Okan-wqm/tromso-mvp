@@ -39,6 +39,13 @@ def dated_records(unit_ids, since=None):
     return found
 
 
+def has_fish_for(kind, day):
+    """Whether a health record of `kind` ('treatment', 'lice_count') finds the fish it needs in a unit on a day of the
+    feeding walk (fold.Day): a sea-lice count, production fish (the lice are counted on the salmon, not on the cleaner
+    fish beside them, D-1); a treatment, any fish."""
+    return (day.production if kind == 'lice_count' else day).has_fish
+
+
 def with_deaths(events):
     """The events (a queryset) with `deaths`: the fish that died or were culled under each, from the lines of
     the live mortality and cull operations that name it (0 when none)."""

@@ -160,14 +160,14 @@ class ProductionPlanResource(FromAddress, Resource):
         if chosen_site not in {str(site.pk) for site in sites}:
             chosen_site = ''
         query = request.GET.get('q', '').strip().lower()
-        estimates = forecast.forecasts([(item.unit, share) for item in stock.values() for share in item.shares],
+        estimates = forecast.forecasts([(item.unit, share) for item in stock.values() for share in item.counted],
                                        {batch_id: plan.target_weight_g for batch_id, plan in plans.items()})
         rows = []
         for unit_id, unit_stock in stock.items():
             unit = unit_stock.unit
             if chosen_site and str(unit.production_department.site_id) != chosen_site:
                 continue
-            for share in unit_stock.shares:
+            for share in unit_stock.counted:          # the harvest targets are the production fish's
                 batch = share.batch
                 words = [unit.code, unit.name, batch.code, batch.name, batch.species.common_name,
                          batch.species.local_name]

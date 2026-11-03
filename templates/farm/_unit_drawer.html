@@ -11,7 +11,10 @@
       <p class="drawer-sub">{{ unit.name }} · {{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</p>
       <p class="drawer-sub"><span class="badge badge-{{ unit.status }}">{{ unit.get_status_display }}</span>{% if unit.status_changed_at %} {% blocktrans trimmed with date=unit.status_changed_at|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% endif %}</p>
       {% if stock %}
+      {% if stock.batches %}
       <p class="drawer-line"><strong>{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %}</strong> · {% with species=stock.batches.0.species %}{{ species.local_name|default:species.common_name }}{% endwith %} · {% blocktrans trimmed count days=drawer_days %}Stocked · {{ days }} day{% plural %}Stocked · {{ days }} days{% endblocktrans %}</p>
+      {% endif %}
+      {% if stock.cleaner %}<p class="drawer-line">{% blocktrans trimmed with fish=stock.cleaner_stock.count|fish biomass=stock.cleaner_stock.biomass_kg|kilos %}Cleaner fish: {{ fish }} fish, {{ biomass }}: not in the figures below, which are the production fish's.{% endblocktrans %}</p>{% endif %}
       {% endif %}
     </div>
     <a class="icon-button" href="{{ close_url }}" title="{% trans "Close" %}">{% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Close" %}</span></a>
@@ -44,7 +47,7 @@
           <tbody>
             {% for share, fed in batch_rows %}
             <tr>
-              <td><span class="row-title">{{ share.batch.code }}</span><span class="row-sub">{{ share.batch.get_input_stage_display }} · {% blocktrans trimmed with date=share.since|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% if stock.shares|length > 1 %} · {{ share.percent_of_unit|percent }}{% endif %}</span></td>
+              <td><span class="row-title">{{ share.batch.code }}</span><span class="row-sub">{{ share.batch.get_input_stage_display }} · {% blocktrans trimmed with date=share.since|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% if share.cleaner %} · {% trans "cleaner fish" %}{% endif %}{% if share.siblings > 1 %} · {{ share.percent_of_unit|percent }}{% endif %}</span></td>
               <td class="num">{{ share.count|fish }}</td>
               <td class="num">{{ share.avg_weight_g|grams }}<span class="row-sub">{% if share.last_weighed %}{% blocktrans trimmed with date=share.last_weighed|date:"DATE_FORMAT" %}weighed {{ date }}{% endblocktrans %}{% else %}{% trans "as stocked" %}{% endif %}</span></td>
               <td class="num">{{ share.biomass_kg|kilos }}</td>

@@ -95,7 +95,7 @@ def _matches(unit, stock, params):
     if query:
         words = [unit.code, unit.name]
         if stock is not None:
-            for batch in stock.batches:
+            for batch in (share.batch for share in stock.shares):
                 words += [batch.code, batch.name, batch.species.common_name, batch.species.local_name,
                           batch.species.scientific_name]
         return any(query.lower() in word.lower() for word in words if word)
@@ -415,6 +415,8 @@ def record_operation(request, pk, kind):
     form_class, heading = OPERATIONS[kind]
     stock = read.stock_of([unit]).get(unit.pk)
     present = stock.shares if stock else []
+    if form_class is HarvestForm:
+        present = [share for share in present if not share.cleaner]      # cleaner fish are culled, not harvested
     plan = _plan(request, unit, form_class)
     context = _context(unit=unit, stock=stock, heading=heading, back_url=_back(request, unit), plan=plan)
     if not present:

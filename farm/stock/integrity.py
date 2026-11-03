@@ -13,7 +13,7 @@ from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.health import read as health_read
 from farm.models import (
-    Batch, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, StockMovement, StockOperation, Tank,
+    Batch, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, Species, StockMovement, StockOperation, Tank,
 )
 from farm.models.handling import KIND_OF_OPERATION
 from farm.models.harvest import FULFILLED_BY
@@ -107,7 +107,7 @@ def problems():
             found.append(f'Feeding {feeding.id} of {feeding.date} in unit {codes[feeding.unit_id]}: no fish in '
                          f'the unit at the start or the end of that day.')
         for kind, record, unit_id, day in health:
-            if not walked.days[(unit_id, day)].has_fish:
+            if not health_read.has_fish_for(kind, walked.days[(unit_id, day)]):
                 found.append(f'{kind.replace("_", " ").capitalize()} {record.pk} of {day} in unit {codes[unit_id]}: '
                              f'no fish in the unit at the start or the end of that day.')
     sums = (StockMovement.objects.filter(operation__is_deleted=False).values('unit_id', 'batch_id')
@@ -125,6 +125,8 @@ def problems():
     for (unit_id, batch_id), share in shares.items():
         if share.count:
             species[unit_id].add(batches[batch_id].species_id)
+    cleaner = set(Species.all_objects.exclude(cleaner_fish_type='').values_list('pk', flat=True))
+    sea = read.sea_units(list(species))
     for unit in Tank.all_objects.all():
         fish = counts.get(unit.pk, 0)
         if fish and unit.is_deleted:
@@ -133,7 +135,7 @@ def problems():
             found.append(f'Unit {unit.code} is {unit.status} but holds {fish} fish.')
         if not fish and unit.status in NEEDS_FISH and not unit.is_deleted:
             found.append(f'Unit {unit.code} is {unit.status} but holds no fish.')
-        if len(species[unit.pk]) > 1:
+        if read.mixed(species[unit.pk], cleaner, unit.pk in sea):
             found.append(f'Unit {unit.code} holds {len(species[unit.pk])} species.')
     return found
 

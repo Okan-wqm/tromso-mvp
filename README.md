@@ -46,8 +46,8 @@ and delete through the pages and check what is stored in the database.
 
 ### Facility › Sites (`/sites/`)
 
-Tables `sites` and `site_contacts`. Cards with search by name, code or region; a form with three
-inner tabs (Basic info, Location, Contact); contacts saved as a whole list on the Contact tab;
+Tables `sites` and `site_contacts`. Cards with search by name, code or region; a form with four
+inner tabs (Basic info, Location, Contact, Reports); contacts saved as a whole list on the Contact tab;
 delete is a soft delete. Differences from the source:
 
 - Single company: no `tenantId`, no row-level security.
@@ -62,6 +62,11 @@ delete is a soft delete. Differences from the source:
   join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).
+- The Reports tab has what the regulatory reports need of the site (see Production › Reports): its **organisation
+  number** (the permit holder's, which owns the fish: nine digits, typed with or without spaces and stored as
+  digits, a database check; it replaces the source's free-text override), its **production form** (juveniles,
+  food fish or broodstock, which decides the reports it owes) and **reports from**, the day its reports are listed
+  as due from (the periods before were filed elsewhere).
 
 ### Production departments (`/production-departments/`)
 
@@ -222,7 +227,10 @@ Differences from the source:
   are in it; deleting a system takes its units out of it, logged.
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
-- Code and regulatory unit ID are unique among live units, as database constraints; a deleted unit can
+- The code is unique among live units. The regulatory unit ID is the locality's own number (merd 1 on two sites
+  is two units): unique among the live units of a site, held by the database per production department and by the
+  form across the site. A unit with stock records stays on its site, and so does a production department whose
+  units have some, since moved, their past figures would be reported for another locality. A deleted unit can
   be restored from the admin.
 - Deleting a site leaves its production departments, with their units, without a site (as for
   equipment); the source deactivated their tanks.
@@ -304,8 +312,9 @@ type, manufacturer, species it suits and status, 50 feeds a page, a form in the 
 form has four inner tabs:
 
 - **Basic info**: name (as on the bag), code, manufacturer (a supplier of feed), feed type (larval,
-  starter, fry, grower, finisher, broodstock, medicated, other), pellet size in mm, buoyancy (floating,
-  slow sinking, sinking, or not stated), status (active, inactive, discontinued).
+  starter, fry, grower, finisher, broodstock, medicated, other), dry or wet (the cleaner-fish report gives the
+  month's kilos of each), pellet size in mm, buoyancy (floating, slow sinking, sinking, or not stated),
+  status (active, inactive, discontinued).
 - **Analysis**: the composition as fed, in % of the feed as delivered (crude protein, crude fat,
   carbohydrate as NFE, crude fibre, ash, moisture, phosphorus), and the gross and digestible energy in
   MJ/kg.
@@ -481,9 +490,12 @@ their reason, each with **Void** while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
 service, with the server's reason on the field it concerns: a new batch (species, stage at input,
-stocking date, fish arriving and their average weight, origin, supplier and its batch number, strain,
-name, expected harvest, notes, and the units the fish go into, whose fish must add up to the fish
-arriving); mortality (fish, cause, the weighed kilos if known); cull (fish, reason); a sampling
+stocking date, fish arriving and their average weight, origin, farmed or wild-caught (the origin says it
+for the own hatchery's fish and the farm's catch; bought fish say it, which a cleaner fish requires), supplier
+and its batch number, strain, year class, name, expected harvest, notes, and the units the fish go into, whose
+fish must add up to the fish arriving); mortality (fish, cause, the weighed kilos if known); cull (fish,
+reason: a cleaner fish's are the six causes of Mattilsynet's cleaner-fish report, a production fish's the
+others, each batch offered its own); a sampling
 weigh-in (fish weighed and their weight together, or a measured average); transfer / split (to one or
 several units, a reason); grading (per size class a unit, fish and measured average, and the average of
 the fish that stay); harvest (fish and their round kilos as weighed, the slaughter facility, the transport and
@@ -503,13 +515,27 @@ the whole lot. Only measured weights enter the book. Nothing is stored that can 
 
 **One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
 date, the units' status (a unit takes fish while active, preparing or fallow), the species (one per unit,
-several batches of it), then writes and folds every batch involved from its first line, so a backdated
+several batches of it; on a sea site cleaner fish may join the production species, see Cleaner fish below), then
+writes and folds every batch involved from its first line, so a backdated
 operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
 recorded in the unit still finds fish there on its day: "The feeding of 2 Nov in T-01 would have no fish:
 void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The unit's status follows its fish:
 the first fish make a preparing or fallow unit active, the last fish out make an active one fallow and
 a harvesting or quarantined one due for cleaning; a void that brings fish back makes the unit active.
 Every operation, every void and every status change is in the activity log ("Voided", with the reason).
+
+**Cleaner fish** (lumpfish, wrasse: a species with a cleaner-fish type) are batches like any other, in the same
+ledger, with the same operations, and on a sea site they share the production fish's cage: a unit holds one
+species of production fish, beside any cleaner fish; elsewhere one species (a hatchery's tank has one `artskode`
+in the smolt report). They are not part of the unit's fish: its count, biomass, average, density, capacity,
+survival, bFCR and feed rate are the production fish's (cleaner fish are outside the biomass and capacity rules,
+docs/regulatory-reports.md, D-2; the capacity check of an arrival asks about the production fish's biomass only), and
+the cleaner fish get a line of their own in the row and the drawer ("Cleaner fish: B-2026-004 · 10,000 fish"),
+marked in the drawer's batch table. A cleaner fish is not harvested (it is culled at the end of its use, for
+the cause "healthy, no longer to be used"), so the harvest dialog, the harvest plan and the harvest targets
+leave it out; a sea-lice count needs production fish in the unit (the lice are counted on the salmon); the
+medicine withdrawal and the water judging still see every fish. Which of the two a feeding is for is on the
+record (see Feeding records). `check_stock` holds the species rule with the same function as the service.
 
 **Void** is the undo: the operation stops counting, the stock is folded again without it, and it is
 refused when later operations need its fish (the message names them). A correction is a void and a new
@@ -536,8 +562,8 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
 - The medicine withdrawal of a unit's fish is on its row and in its drawer (see Operations › Health); the
   harvest dialog's warning and acknowledgement are the handling check's (farm/handling).
-- Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
-  comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
+- Not ported: a cleaner-fish tab of its own (the announced one; their figures are on the unit's line and drawer
+  for now), sensors (the water comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
   count adjustments as a dialog (their lines and checks exist). Harvest plans and the handling check are on
   Operations › Harvest; the medicine withdrawal they check is the health records' (Operations › Health),
   through the registry of farm/handling/withdrawal.py.
@@ -661,7 +687,9 @@ the unit, the day, the feed (an active feed of Reference data › Feeds) and the
 and optionally the time, the number of meals, the feeder and notes; several a day are fine (meals, a feed
 change mid-day). **No batch is stored**: the batches a record fed are the batches the stock ledger has in
 the unit that day, the feed split between them by their book biomass at the start of the day (at its
-end when the unit was empty that morning, the day it was stocked). A backdated stock operation therefore
+end when the unit was empty that morning, the day it was stocked). A record is for the unit's production
+fish or for the cleaner fish beside them (its **target**, stored): the feed is split among the batches of
+its target only, so salmon feed is never booked to lumpfish. A backdated stock operation therefore
 never leaves a stored batch wrong, and nothing is written back into the stock: feed never changes a count
 or a gram of the book (only measured weights enter it).
 
@@ -669,17 +697,19 @@ or a gram of the book (only measured weights enter it).
 units, or **Record feeding** on the list (it lists the units with fish). The dialog has the date (the
 farm's today), the feed (the active feeds; those whose suitability rows suit the fish's species and
 average weight first, the others under "Other active feeds": choosing one of those is allowed and
-noticed), the kilos (`0.035` for 35 g), meals, time, feeder (a feeder of the unit's site) and notes. A
-unit with two batches says how the feed is split ("Split by the book biomass at the start of 2 Nov:
+noticed), the kilos (`0.035` for 35 g), meals, time, feeder (a feeder of the unit's site) and notes; in a unit
+that holds cleaner fish also **Fed to** (production fish, cleaner fish, or "as the feed suits": the cleaner
+fish's when the feed suits only them or the unit has no production fish). A unit with two batches of the
+target says how the feed is split ("Split by the book biomass at the start of 2 Nov:
 B-2026-001 71 %, B-2026-004 29 %"). The rules, in one write path (`farm/feeding/services.py`), each with
 the server's reason on its field:
 
 - the date as for the stock: the farm's today at the latest, at most `STOCK_BACKDATE_DAYS` (31) back;
-- the unit must hold fish at the start or the end of that day (from the stock ledger); and the other way
-  round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
+- the unit must hold fish of the target at the start or the end of that day (from the stock ledger; the
+  reason is on the target when the unit holds the other kind); and the other way round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
   fish) is refused while a recorded feeding would be left without fish, naming it;
 - a new record takes an active feed; a record keeps its feed whatever the feed's status becomes;
-- above `FEEDING_ACK_PERCENT` (10 %) of the unit's book biomass in a day, the person is asked to confirm,
+- above `FEEDING_ACK_PERCENT` (10 %) of the book biomass of the target's fish in a day, the person is asked to confirm,
   and the confirmation is stored on the record (a kilo typed for a gram is caught; fry may be fed more);
 - a form sent twice records once; the unit is locked as a stock operation locks it, so a feeding and a
   harvest of one unit take turns.

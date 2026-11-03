@@ -1,13 +1,30 @@
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _now, gettext_lazy as _, ngettext_lazy
 
-from core.crud import Resource, filter_by
+from core.crud import Resource, RowList, filter_by
 
-from ..forms.health import MedicineForm
+from ..forms.health import MedicineForm, MedicineWithdrawalFormSet
+from ..health.withdrawal import Rule
 from ..models import Medicine
 
 
+class MedicineWithdrawalList(RowList):
+    """A medicine's withdrawal per species (and for every species without a row of its own), saved as a whole list
+    on its Withdrawal tab, like a feed's suitability."""
+
+    key, tab, label = 'withdrawals', 'withdrawal', _('Withdrawal')
+    formset = MedicineWithdrawalFormSet
+    saved = ngettext_lazy('%(count)d withdrawal row saved.', '%(count)d withdrawal rows saved.', 'count')
+
+    @classmethod
+    def describe(cls, row):
+        """e.g. "Atlantic salmon: 150 degree-days + 20 % safety margin = 180 degree-days (SPC 2024)", in English."""
+        text = f'{row.species.common_name if row.species_id else _now("Every species")}: {Rule.of(row).text()}'
+        return f'{text} ({row.note})' if row.note else text
+
+
 class MedicineResource(Resource):
-    """Setup › Reference data › Medicines: the medicines and vaccines the farm uses, with their withdrawal."""
+    """Setup › Reference data › Medicines: the medicines and vaccines the farm uses, with their withdrawal per
+    species."""
 
     model = Medicine
     form_class = MedicineForm
@@ -15,12 +32,14 @@ class MedicineResource(Resource):
     url_prefix = 'medicines'
     search_fields = ['name', 'active_substance', 'marketing_authorisation', 'manufacturer__name']
     list_template = 'farm/medicine_list.html'
+    form_template = 'farm/medicine_form.html'
     icon = 'pill'
+    row_lists = (MedicineWithdrawalList,)
     page_size = 50
 
     @classmethod
     def queryset(cls):
-        return super().queryset().select_related('manufacturer')
+        return super().queryset().select_related('manufacturer').prefetch_related('withdrawals__species')
 
     @classmethod
     def filter_list(cls, request, objects):

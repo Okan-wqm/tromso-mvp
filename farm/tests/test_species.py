@@ -267,7 +267,7 @@ class SpeciesValidationTests(SpeciesTestCase):
     def test_the_assumed_withdrawal_temperature_is_in_turkish_and_norwegian(self):
         species = self.make(withdrawal_temperature_c=Decimal('8.5'))
         for language, label, value, legend in (
-                ('tr', 'Bekleme süresi için varsayılan su sıcaklığı (°C)', '8,5', 'İlaç arınma süresi'),
+                ('tr', 'Bekleme süresi için varsayılan su sıcaklığı (°C)', '8,5', 'İlaç bekleme süresi'),
                 ('nb', 'Antatt vanntemperatur for tilbakeholdelsestid (°C)', '8,5', 'Tilbakeholdelsestid')):
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})
             page = self.client.get(reverse('farm:species_edit', args=[species.pk]))

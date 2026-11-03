@@ -144,12 +144,6 @@ msgstr[1] ""
 "verilerindeki türün ayarı)."
 
 #, python-format
-msgid "%(count)d degree-day"
-msgid_plural "%(count)d degree-days"
-msgstr[0] "%(count)d gün-derece"
-msgstr[1] "%(count)d gün-derece"
-
-#, python-format
 msgid "%(count)d delivery or return of the store names it for “%(category)s”: keep it ticked."
 msgid_plural "%(count)d deliveries and returns of the store name it for “%(category)s”: keep it ticked."
 msgstr[0] "Deponun %(count)d teslimatı ya da iadesi onu “%(category)s” için gösteriyor: işaretli bırakın."
@@ -282,6 +276,12 @@ msgstr[0] "%(count)d su numunesi kaydedildi."
 msgstr[1] "%(count)d su numunesi kaydedildi."
 
 #, python-format
+msgid "%(count)d withdrawal row saved."
+msgid_plural "%(count)d withdrawal rows saved."
+msgstr[0] "%(count)d bekleme süresi satırı kaydedildi."
+msgstr[1] "%(count)d bekleme süresi satırı kaydedildi."
+
+#, python-format
 msgid "%(count)s column"
 msgid_plural "%(count)s columns"
 msgstr[0] "%(count)s sütun"
@@ -292,6 +292,12 @@ msgid "%(count)s critical"
 msgid_plural "%(count)s critical"
 msgstr[0] "%(count)s kritik"
 msgstr[1] "%(count)s kritik"
+
+#, python-format
+msgid "%(count)s degree-day"
+msgid_plural "%(count)s degree-days"
+msgstr[0] "%(count)s gün-derece"
+msgstr[1] "%(count)s gün-derece"
 
 #, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
@@ -531,6 +537,10 @@ msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
 
 #, python-format
+msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
+msgstr "%(label)s + %(margin)s %% güvenlik payı = %(used)s"
+
+#, python-format
 msgid "%(label)s deleted with it"
 msgstr "%(label)s da birlikte silinir"
 
@@ -609,6 +619,10 @@ msgstr "%(medicine)s şu şekilde uygulanır: %(administration)s."
 #, python-format
 msgid "%(medicine)s is inactive: a new treatment takes an active medicine."
 msgstr "%(medicine)s pasif: yeni bir tedavi aktif bir ilaç alır."
+
+#, python-format
+msgid "%(medicine)s, %(method)s from %(start)s to %(end)s."
+msgstr "%(medicine)s, %(method)s, %(start)s – %(end)s."
 
 #, python-format
 msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
@@ -1076,6 +1090,12 @@ msgid "A lot of %(category)s needs its number and its expiry date."
 msgstr "%(category)s lotunun numarası ve son kullanma tarihi olmalı."
 
 #, python-format
+msgid "A medicine has at most %(num)d row."
+msgid_plural "A medicine has at most %(num)d rows."
+msgstr[0] "Bir ilacın en fazla %(num)d satırı olabilir."
+msgstr[1] "Bir ilacın en fazla %(num)d satırı olabilir."
+
+#, python-format
 msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."
@@ -1212,7 +1232,7 @@ msgid ""
 "measured."
 msgstr ""
 "Bir numune nerede alındığını söyler: bu noktalardan birinde. Bir birimin suyu, rasyonların, "
-"arınma süresinin ve Üretim birimleri sayfasının okuduğu şekliyle, orta noktasının suyudur. Debi "
+"bekleme süresinin ve Üretim birimleri sayfasının okuduğu şekliyle, orta noktasının suyudur. Debi "
 "ve çıkış payı, bir kütle dengesinin başlayacağı tasarım veya son bilinen değerlerdir; burada "
 "hiçbir şey ölçülmez."
 
@@ -1302,6 +1322,11 @@ msgstr ""
 
 msgid "A treatment is of the units of one site: record one for each site."
 msgstr "Bir tedavi tek bir sahanın birimlerine aittir: her saha için ayrı kaydedin."
+
+msgid "A treatment with it holds the fish with an unknown end until a withdrawal is added."
+msgstr ""
+"Bununla yapılan bir tedavi, bekleme süresi eklenene kadar balıkları bitişi bilinmeyen bir bekleme"
+" süresinde tutar."
 
 msgid "A treatment without a medicine names none."
 msgstr "İlaçsız bir tedavi ilaç belirtmez."
@@ -1944,20 +1969,6 @@ msgstr "Azot olarak. NO₃⁻ okuyan bir kit: 4,43'e bölün."
 
 msgid "As the SPC names it, e.g. azamethiphos."
 msgstr "KÜB’deki adıyla, örn. azametifos."
-
-msgid ""
-"As the SPC states it (døgngrader): the daily mean water temperatures after the last treatment day"
-" add up to this before the fish may be harvested. 0 when it has none."
-msgstr ""
-"KÜB’de yazdığı gibi (døgngrader): balık hasat edilmeden önce son tedavi gününden sonraki günlük "
-"ortalama su sıcaklıklarının toplamı buna ulaşır. Yoksa 0."
-
-msgid ""
-"As the SPC states it, in days after the last treatment day. Give it as well when the SPC gives "
-"both: the later end wins. 0 when it has none."
-msgstr ""
-"KÜB’de yazdığı gibi, son tedavi gününden sonraki gün olarak. KÜB ikisini de veriyorsa bunu da "
-"girin: daha geç biten geçerlidir. Yoksa 0."
 
 msgid "As the document itself gives it."
 msgstr "Belgenin kendisinde yazdığı gibi."
@@ -3746,8 +3757,8 @@ msgid ""
 "Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown here "
 "and logged as critical."
 msgstr ""
-"İlaç arınma süresindeki balık gıdaya gidemez. Devam etmek, burada gösterilenle birlikte saklanır "
-"ve kritik olarak günlüğe yazılır."
+"İlaç bekleme süresindeki balık gıdaya gidemez. Devam etmek, burada gösterilenle birlikte saklanır"
+" ve kritik olarak günlüğe yazılır."
 
 msgid "Fish weighed"
 msgstr "Tartılan balık"
@@ -4828,13 +4839,13 @@ msgid "Medicine cabinet"
 msgstr "İlaç dolabı"
 
 msgid "Medicine withdrawal"
-msgstr "İlaç arınma süresi"
+msgstr "İlaç bekleme süresi"
 
 msgid "Medicine withdrawal not checked"
-msgstr "İlaç arınma süresi denetlenmedi"
+msgstr "İlaç bekleme süresi denetlenmedi"
 
 msgid "Medicine withdrawal not checked: the health records are not in yet."
-msgstr "İlaç arınma süresi denetlenmedi: sağlık kayıtları henüz yok."
+msgstr "İlaç bekleme süresi denetlenmedi: sağlık kayıtları henüz yok."
 
 msgid "Medicines"
 msgstr "İlaçlar"
@@ -5240,7 +5251,7 @@ msgid "No lot number"
 msgstr "Lot numarası yok"
 
 msgid "No medicine withdrawal in force."
-msgstr "Yürürlükte ilaç arınma süresi yok."
+msgstr "Yürürlükte ilaç bekleme süresi yok."
 
 msgid "No messages yet"
 msgstr "Henüz mesaj yok"
@@ -5382,6 +5393,15 @@ msgstr "Hacim yok: yalnızca m³ başına dozlar."
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
 
+#, python-format
+msgid "No withdrawal is recorded for %(species)s of %(medicine)s: add it in Reference data › Medicines."
+msgstr ""
+"%(medicine)s için %(species)s bekleme süresi kaydedilmemiş: Referans verileri › İlaçlar altında "
+"ekleyin."
+
+msgid "No withdrawal yet. Use “Add species” to add a row."
+msgstr "Henüz bekleme süresi yok. Satır eklemek için “Balık türü ekle”yi kullanın."
+
 msgid "Nobody"
 msgstr "Kimse"
 
@@ -5460,6 +5480,9 @@ msgstr "Puanlanmadı"
 msgid "Not reached within %(days)d days at this rate."
 msgstr "Bu hızla %(days)d gün içinde ulaşılmıyor."
 
+msgid "Not recorded"
+msgstr "Kaydedilmedi"
+
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Henüz incelenmedi. Yapay zekâ ajanları yalnızca incelenmiş kayıtlara göre hareket edecek."
 
@@ -5471,15 +5494,15 @@ msgstr "Belirtilmedi"
 
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s."
-msgstr "Hasada uygun değil — %(batch)s için ilaç arınma süresi %(date)s tarihine kadar."
+msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi %(date)s tarihine kadar."
 
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "Hasada uygun değil — %(batch)s için ilaç arınma süresi yaklaşık %(date)s tarihine kadar."
+msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi yaklaşık %(date)s tarihine kadar."
 
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
-msgstr "Hasada uygun değil — %(batch)s için ilaç arınma süresi, bitişi bilinmiyor."
+msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi, bitişi bilinmiyor."
 
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
@@ -5859,6 +5882,9 @@ msgstr "Başka bir dil"
 
 msgid "Other parasites (e.g. AGD)"
 msgstr "Diğer parazitler (örn. AGD)"
+
+msgid "Other species"
+msgstr "Diğer balık türleri"
 
 msgid "Other, without a medicine"
 msgstr "Diğer, ilaçsız"
@@ -6653,6 +6679,9 @@ msgstr "Güvenli bölge: çizilmez, alkalinite aralığı boş (üst ucu alt ucu
 msgid "Safety"
 msgstr "Güvenlik"
 
+msgid "Safety margin (%)"
+msgstr "Güvenlik payı (%)"
+
 msgid "Salinity"
 msgstr "Tuzluluk"
 
@@ -6725,6 +6754,9 @@ msgstr "Tabloyu kaydet"
 
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Önce ekipmanı bu yemleme makinesi türüyle kaydedin; ardından kalibrasyonları buraya eklenebilir."
+
+msgid "Save withdrawal"
+msgstr "Bekleme süresini kaydet"
 
 msgid "Say what it was: the method or the reason is “other”."
 msgstr "Ne olduğunu yazın: yöntem veya neden “diğer”."
@@ -8313,24 +8345,46 @@ msgstr "%(unit)s içindeki %(date)s tarihli tartım %(batch)s balığı bulamazd
 msgid "The width cannot be more than the length."
 msgstr "Genişlik uzunluktan fazla olamaz."
 
+#, python-format
 msgid ""
-"The withdrawal counts from the last day of the course, with the medicine’s degree-days or days "
-"(Reference data › Medicines), and follows the fish wherever they are moved."
+"The withdrawal after the last treatment day, as the SPC states it: degree-days (døgngrader) and "
+"days, one or both, per species; leave the species empty for every species without a row of its "
+"own. Give both when the SPC gives both: the later end wins. 0 means none. The safety margin is "
+"your own, on top of the SPC’s value: the value used is rounded up, e.g. 150 degree-days and 20 %%"
+" is 180. Fish of a species with no row (and no row for every species) are held with an unknown "
+"end. One row per species, at most 50. They are saved separately from the medicine details."
 msgstr ""
-"Bekleme süresi kürün son gününden, ilacın gün-derece veya günleriyle sayılır (Referans verileri ›"
-" İlaçlar) ve balıklar nereye taşınırsa onları izler."
+"Son tedavi gününden sonraki bekleme süresi, KÜB’de yazdığı gibi: balık türü başına gün-derece "
+"(døgngrader) ve gün, biri ya da ikisi; kendi satırı olmayan her balık türü için balık türünü boş "
+"bırakın. KÜB ikisini de veriyorsa ikisini de girin: daha geç biten geçerlidir. 0 hiçbiri "
+"demektir. Güvenlik payı sizin kendi payınızdır, KÜB değerinin üstüne eklenir: kullanılan değer "
+"yukarı yuvarlanır, örn. 150 gün-derece ve %%20 pay 180 eder. Balık türü için satırı olmayan (ve "
+"her tür için satırı da olmayan) balıklar bitişi bilinmeyen bir bekleme süresinde tutulur. Balık "
+"türü başına tek satır, en fazla 50. İlaç ayrıntılarından ayrı kaydedilir."
+
+msgid "The withdrawal can be added once the medicine is created."
+msgstr "Bekleme süresi, ilaç oluşturulduktan sonra eklenebilir."
+
+msgid ""
+"The withdrawal counts from the last day of the course, with the medicine’s withdrawal for the "
+"fish’s species (Reference data › Medicines), and follows the fish wherever they are moved."
+msgstr ""
+"Bekleme süresi kürün son gününden, ilacın balık türü için bekleme süresiyle (Referans verileri › "
+"İlaçlar) sayılır ve balıklar nereye taşınırsa onları izler."
 
 msgid "The withdrawal counts from the new last day; the change is logged."
 msgstr "Bekleme süresi yeni son günden sayılır; değişiklik günlüğe yazılır."
 
 msgid ""
-"The withdrawal is the product’s, as its SPC states it, in degree-days, days or both; nothing is "
-"filled in for you. A treatment counts it from its last day, on the water temperature of the "
-"fish’s units (Operations › Treatments)."
+"The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
+"with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
+"last day, on the water temperature of the fish’s units (Operations › Treatments). Fish of a "
+"species with no withdrawal recorded are held with an unknown end."
 msgstr ""
-"Bekleme süresi ürünün KÜB’de yazdığı gibidir; gün-derece, gün ya da ikisi; sizin yerinize hiçbir "
-"şey doldurulmaz. Bir tedavi onu son gününden, balıkların birimlerinin su sıcaklığıyla sayar "
-"(Operasyonlar › Tedaviler)."
+"Bekleme süresi ürünün KÜB’de balık türü başına yazdığı gibidir; gün-derece, gün ya da ikisi, "
+"üstüne kendi güvenlik payınızla; sizin yerinize hiçbir şey doldurulmaz. Bir tedavi onu son "
+"gününden, balıkların birimlerinin su sıcaklığıyla sayar (Operasyonlar › Tedaviler). Bekleme "
+"süresi kaydedilmemiş bir türün balıkları bitişi bilinmeyen bir bekleme süresinde tutulur."
 
 msgid "The year cannot be later than next year (in press)."
 msgstr "Yıl gelecek yıldan (baskıda) sonra olamaz."
@@ -8610,6 +8664,9 @@ msgstr "Bulanıklık (NTU)"
 
 msgid "Turkish"
 msgstr "Türkçe"
+
+msgid "Two rows are for the same species."
+msgstr "İki satır aynı balık türü için."
 
 msgid "Two rows have the same feed size."
 msgstr "İki satır aynı yem boyutuna sahip."
@@ -9003,7 +9060,7 @@ msgid ""
 " A unit’s water, as the rations and the withdrawal read it, is its middle point."
 msgstr ""
 "Noktanın gördüğü: sahibine giren akım, içindeki su veya ondan çıkan akım. Bir birimin suyu, "
-"rasyonların ve arınma süresinin okuduğu şekliyle, orta noktasıdır."
+"rasyonların ve bekleme süresinin okuduğu şekliyle, orta noktasıdır."
 
 msgid ""
 "What the stock book took out for these fish: their batch’s average in the unit, the last fish the"
@@ -9171,7 +9228,7 @@ msgid "Winter ulcer"
 msgstr "Kış ülseri"
 
 msgid "Withdrawal"
-msgstr "Arınma süresi"
+msgstr "Bekleme süresi"
 
 msgid "Withdrawal (days)"
 msgstr "Bekleme süresi (gün)"
@@ -9180,10 +9237,10 @@ msgid "Withdrawal (degree-days)"
 msgstr "Bekleme süresi (gün-derece)"
 
 msgid "Withdrawal end estimated"
-msgstr "Arınma bitişi tahmini"
+msgstr "Bekleme süresi bitişi tahmini"
 
 msgid "Withdrawal until"
-msgstr "Arınma bitişi"
+msgstr "Bekleme süresi bitişi"
 
 msgid "Within"
 msgstr "İçinde"
@@ -9426,6 +9483,9 @@ msgstr "örn. 150"
 msgid "e.g. 1–10 kg/h"
 msgstr "örn. 1–10 kg/h"
 
+msgid "e.g. 20"
+msgstr "örn. 20"
+
 msgid "e.g. 2000"
 msgstr "ör. 2000"
 
@@ -9467,6 +9527,9 @@ msgstr "örn. 50000"
 
 msgid "e.g. 60.3913"
 msgstr "örn. 60,3913"
+
+msgid "e.g. 7"
+msgstr "örn. 7"
 
 msgid "e.g. 8"
 msgstr "örn. 8"
@@ -9801,12 +9864,18 @@ msgstr "öğünler tamamlandı"
 msgid "medicine"
 msgstr "ilaç"
 
+msgid "medicine withdrawal"
+msgstr "ilaç bekleme süresi"
+
 #, python-format
 msgid "medicine withdrawal until %(date)s"
-msgstr "%(date)s tarihine kadar ilaç arınma süresi"
+msgstr "%(date)s tarihine kadar ilaç bekleme süresi"
 
 msgid "medicine withdrawal, end unknown"
-msgstr "ilaç arınma süresi, bitişi bilinmiyor"
+msgstr "ilaç bekleme süresi, bitişi bilinmiyor"
+
+msgid "medicine withdrawals"
+msgstr "ilaç bekleme süreleri"
 
 msgid "medicines"
 msgstr "ilaçlar"

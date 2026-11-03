@@ -8,13 +8,14 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
-from core.crud import TabbedForm, tab_fields
+from core.crud import RowFormSet, TabbedForm, tab_fields
 
 from ..health import services
-from ..health.withdrawal import rule
-from ..models import HealthEvent, LiceCount, Medicine, Site, Supplier, Tank, Treatment
+from ..health.withdrawal import rules_text
+from ..models import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species, Supplier, Tank, Treatment
+from ..models.health import SAME_SPECIES_MESSAGE
 from ..models.handling import HandlingKind
 from ..models.site import zone_of
 from ..stock.dates import local_today, site_earliest, site_today
@@ -52,13 +53,13 @@ MEDICINE_FORM_TABS = [
     ('basic', _('Basic info'), ['name', 'marketing_authorisation', 'kind', 'administration', 'active_substance',
                                 'lice_report_code', 'strength_value', 'strength_unit', 'manufacturer',
                                 'prescription_only', 'status']),
-    ('withdrawal', _('Withdrawal'), ['withdrawal_degree_days', 'withdrawal_days']),
     ('notes', _('Notes'), ['notes']),
 ]
 
 
 class MedicineForm(TabbedForm):
-    """The medicine dialog. The withdrawal is the product's, as its SPC states it."""
+    """The medicine dialog. Its withdrawal is a list of rows of its own, per species, on the Withdrawal tab
+    (MedicineWithdrawalFormSet, saved separately once the medicine exists)."""
 
     tabs = MEDICINE_FORM_TABS
 
@@ -75,11 +76,6 @@ class MedicineForm(TabbedForm):
                                   'names it.'),
             'manufacturer': _('A supplier of medicines and vaccines (Purchasing › Suppliers).'),
             'status': _('Active: a new treatment can use it. Inactive: kept for the treatments that used it.'),
-            'withdrawal_degree_days': _('As the SPC states it (døgngrader): the daily mean water temperatures '
-                                        'after the last treatment day add up to this before the fish may be '
-                                        'harvested. 0 when it has none.'),
-            'withdrawal_days': _('As the SPC states it, in days after the last treatment day. Give it as well '
-                                 'when the SPC gives both: the later end wins. 0 when it has none.'),
         }
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': _('e.g. Salmosan vet.')}),
@@ -98,6 +94,65 @@ class MedicineForm(TabbedForm):
         manufacturer = self.fields['manufacturer']
         manufacturer.empty_label = _('None')
         manufacturer.label_from_instance = supplier_label
+
+
+class MedicineWithdrawalForm(forms.ModelForm):
+    """One row of a medicine's withdrawal: the species (empty: every species without a row of its own), the
+    degree-days and the days as the SPC states them, the farm's safety margin on top and a note."""
+
+    class Meta:
+        model = MedicineWithdrawal
+        fields = ['species', 'degree_days', 'days', 'safety_margin_pct', 'note']
+        localized_fields = ['degree_days', 'safety_margin_pct']
+        widgets = {
+            'degree_days': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('e.g. 150')}),
+            'days': forms.NumberInput(attrs={'min': 0, 'placeholder': _('e.g. 7')}),
+            'safety_margin_pct': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('e.g. 20')}),
+            'note': forms.TextInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['species'].queryset = Species.objects.order_by('common_name')
+        self.fields['species'].empty_label = _('All species')
+        self.fields['safety_margin_pct'].required = False      # empty is none: 0 %
+        self.fields['safety_margin_pct'].initial = None         # (the column's default of 0 is not shown on a new row)
+        if self.instance._state.adding:
+            self.initial.pop('safety_margin_pct', None)         # a new row's margin is empty: left alone, it is blank
+
+    def clean_safety_margin_pct(self):
+        margin = self.cleaned_data['safety_margin_pct']
+        return 0 if margin is None else margin
+
+    def validate_constraints(self):
+        # One row per species spans the whole list, which is saved as a full replace; the formset checks it and the
+        # database constraint backs it up. Checking each row against the stored rows would reject keeping a species
+        # while replacing its row.
+        pass
+
+
+class BaseMedicineWithdrawalFormSet(RowFormSet):
+    default_error_messages = {
+        'too_many_forms': ngettext_lazy('A medicine has at most %(num)d row.', 'A medicine has at most %(num)d rows.',
+                                        'num'),
+    }
+
+    def get_unique_error_message(self, unique_check):
+        return str(SAME_SPECIES_MESSAGE)
+
+    def clean(self):
+        if not any(self.errors):
+            species = [form.cleaned_data.get('species') for form in self.forms
+                       if form.cleaned_data and not form.cleaned_data.get('DELETE')]
+            if len(species) != len(set(species)):          # the one for every species is None: one only, too
+                raise ValidationError(SAME_SPECIES_MESSAGE)
+        super().clean()
+
+
+MedicineWithdrawalFormSet = forms.inlineformset_factory(
+    Medicine, MedicineWithdrawal, form=MedicineWithdrawalForm, formset=BaseMedicineWithdrawalFormSet,
+    extra=0, can_delete=True, max_num=50, validate_max=True,
+)
 
 
 # ---- health events ------------------------------------------------------------------------------------
@@ -188,7 +243,7 @@ class MedicineChoice(forms.ModelChoiceField):
     def label_from_instance(self, medicine):
         """Salmosan vet. · azamethiphos · bath · 150 degree-days"""
         return ' · '.join([str(medicine), medicine.active_substance,
-                           str(medicine.get_administration_display()).lower(), rule(medicine)])
+                           str(medicine.get_administration_display()).lower(), rules_text(medicine)])
 
 
 class TreatmentForm(ServiceErrors, forms.ModelForm):
@@ -231,7 +286,8 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
         self.initial.update({'start_date': today, 'end_date': today})
         if unit is not None:
             self.initial['units'] = [unit.pk]
-        self.fields['medicine'].queryset = Medicine.objects.filter(status=Medicine.Status.ACTIVE)
+        self.fields['medicine'].queryset = Medicine.objects.filter(status=Medicine.Status.ACTIVE).prefetch_related(
+            'withdrawals__species')
         site_ids = {each.production_department.site_id for each in units}
         self.fields['health_event'].queryset = (HealthEvent.objects.filter(site_id__in=site_ids, closed_on__isnull=True)
                                                 .select_related('site'))

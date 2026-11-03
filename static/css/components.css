@@ -309,6 +309,9 @@
 .suitability-row {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, .7fr) minmax(0, 1.2fr) 5.5rem;
 }
+.withdrawal-row {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, .8fr) minmax(0, 1.2fr) 5.5rem;
+}
 
 .check {
   display: inline-flex;

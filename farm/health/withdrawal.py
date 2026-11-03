@@ -3,15 +3,22 @@ a medicine, the stock ledger and the water samples (health-maturity §4b). Nothi
 treatment, correcting a temperature or a backdated transfer changes the answer at once (the source stored a
 date that started at the click and survived a resolved disease, HLT-01, HLT-02).
 
-The rules, for a batch b and a treatment T whose medicine states its withdrawal:
+The rules, for a batch b and a treatment T with a medicine:
 
+0. **The withdrawal is per species** (the rows of MedicineWithdrawal, Setup › Reference data › Medicines): the row
+   for b's species, else the row for every species, else none, and `resolve` is the one place that says which
+   (`row_for`). A row states days, degree-days or both, as the SPC does, and the farm's safety margin on top:
+   used = value × (1 + margin ÷ 100), rounded up (`Rule`); with no margin the label value is used as it is.
+   **No row for b's species, and none for every species: the end is unknown** (`until` None) and the warning says
+   "no withdrawal is recorded for <species> of <medicine>: add it in Reference data › Medicines": never silently
+   no withdrawal, never silently zero.
 1. **It follows the fish.** T reached b when b had fish in one of T's units on a day from T's first day to its
    last (today at the latest; farm.stock.read.Presence). Wherever b is now, it is held; if only some of b's
    units were treated, the whole batch is held (conservative).
 2. **Days**: day 1 is the day after T's last day, so the first day b may be harvested is the last day +
-   the withdrawal days + 1.
+   the row's days (the margin applied) + 1.
 3. **Degree-days**: the daily mean water temperature of b is added up from the day after T's last day until
-   the sum reaches the medicine's degree-days; the next day is the first day b may be harvested.
+   the sum reaches the row's degree-days (the margin applied); the next day is the first day b may be harvested.
    - A unit's daily mean is the mean of the live temperatures of that farm-local day measured at the unit's
      middle point, else at its system's loop point (the water samples; the places are farm/water/read.py's
      `water_sources`, the one definition of where a unit's water is read). With b in several units that
@@ -43,7 +50,7 @@ from django.utils.translation import gettext as _, ngettext
 
 from farm.feeding import read as feeding_read
 from farm.handling.withdrawal import WithdrawalBlock
-from farm.models import Batch, FeedingRecord, Tank, Treatment
+from farm.models import Batch, FeedingRecord, MedicineWithdrawal, Tank, Treatment
 from farm.models.feed import FeedType
 from farm.models.health import TreatmentMethod
 from farm.models.water_point import local_time
@@ -59,16 +66,88 @@ PROJECTION_DAYS = 7     # the days with a temperature a projection takes the mea
 LOOKBACK_DAYS = 30      # how far back from today they are looked for (the water's window)
 
 
+def _plain(value):
+    """150, or 12.5: a number as the language writes it, a decimal only when it has one."""
+    value = Decimal(value)
+    return formats.number_format(value, decimal_pos=0 if value == value.to_integral_value() else 1)
+
+
+def _degree_days(value):
+    return ngettext('%(count)s degree-day', '%(count)s degree-days',
+                    1 if value == 1 else 2) % {'count': _plain(value)}
+
+
+def _days(value):
+    return ngettext('%(count)d day', '%(count)d days', value) % {'count': value}
+
+
+@dataclass(frozen=True)
+class Rule:
+    """What a medicine's withdrawal row asks of fish of its species, the farm's safety margin applied: used =
+    value × (1 + margin ÷ 100), rounded up; the label value is kept beside it, as the SPC states it. With no margin
+    the label value is used as it is."""
+    row: MedicineWithdrawal
+    degree_days: Decimal | None = None      # used
+    days: int | None = None                 # used
+
+    @classmethod
+    def of(cls, row):
+        factor = 1 + row.safety_margin_pct / 100
+
+        def used(value):
+            if value is None or not row.safety_margin_pct:
+                return value
+            return (Decimal(value) * factor).to_integral_value(rounding=ROUND_CEILING)
+
+        return cls(row, used(row.degree_days), None if row.days is None else int(used(row.days)))
+
+    @property
+    def margin(self):
+        return self.row.safety_margin_pct
+
+    def text(self):
+        """150 degree-days + 20 % safety margin = 180 degree-days, 7 days, or both."""
+        parts = []
+        for label, used, say in ((self.row.degree_days, self.degree_days, _degree_days),
+                                 (self.row.days, self.days, _days)):
+            if label is None:
+                continue
+            said = say(label)
+            if self.margin:
+                said = _('%(label)s + %(margin)s %% safety margin = %(used)s') % {
+                    'label': said, 'margin': _plain(self.margin), 'used': say(used)}
+            parts.append(said)
+        if len(parts) == 2:
+            return _('%(degrees)s or %(days)s, whichever ends later') % {'degrees': parts[0], 'days': parts[1]}
+        return parts[0]
+
+
+def row_for(rows, species_id):
+    """THE resolution of a medicine's withdrawal for a species: its own row, else the row for every species, else
+    None. Every reader (the withdrawal, the Medicines pages, the treatment dialog) asks here."""
+    found = {row.species_id: row for row in rows}
+    return found.get(species_id) or found.get(None)
+
+
+def rule_for(rows, species_id):
+    """The Rule of the row `row_for` finds, or None: the medicine has no withdrawal for this species."""
+    row = row_for(rows, species_id)
+    return Rule.of(row) if row is not None else None
+
+
 @dataclass(frozen=True)
 class Withdrawal:
     """The withdrawal of one batch from one cause: a treatment, or a medicated feeding no in-feed treatment
-    covers (`feeding`, with an unknown end)."""
+    covers (`feeding`, with an unknown end). A treatment whose medicine has no withdrawal for the batch's species
+    has no `rule` and an unknown end."""
     batch_id: object
     until: object                         # the first day the batch may be harvested; None: unknown
     estimated: bool = False               # projected: degree-days still accruing
     treatment: Treatment = None
     feeding: FeedingRecord = None
     days_without_temperature: int = 0     # past days without a measured temperature
+    rule: Rule = None                     # the medicine's withdrawal for the batch's species; None: not recorded
+    species: object = None                # the batch's species, for the text of a withdrawal that has no rule
     assumed_temperature: Decimal = None   # the batch species' assumed temperature those days were counted at; None:
                                           # it has none and they were counted as 0 °C
     projected_at_assumed: bool = False    # no temperature was measured lately: projected at the assumed one
@@ -134,6 +213,9 @@ class Reader:
         self.units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
         self.treatments = list(Treatment.objects.filter(units__in=unit_ids, medicine__isnull=False).distinct()
                                .select_related('medicine').prefetch_related('units').order_by('start_date', 'pk'))
+        self.rows = defaultdict(list)                  # the withdrawal rows of the treatments' medicines, one query
+        for row in MedicineWithdrawal.objects.filter(medicine__in={each.medicine_id for each in self.treatments}):
+            self.rows[row.medicine_id].append(row)
         first = today - LOOKBACK_DAYS * DAY
         for treatment in self.treatments:
             first = min(first, treatment.end_date + DAY)
@@ -203,20 +285,22 @@ class Reader:
     # ---- the withdrawals ----------------------------------------------------------------------------
     def of_treatment(self, treatment, batch_id):
         """The withdrawal of one batch from one treatment (rules 2 to 5)."""
-        medicine, end = treatment.medicine, treatment.end_date
-        by_days = end + (medicine.withdrawal_days + 1) * DAY if medicine.withdrawal_days is not None else None
-        if medicine.withdrawal_degree_days is None:
-            return Withdrawal(batch_id, by_days, treatment=treatment)
-        by_degrees, estimated, missing, remaining, at_assumed = self.degree_days(
-            batch_id, end, Decimal(medicine.withdrawal_degree_days))
+        end, species = treatment.end_date, self.batches[batch_id].species
+        rule = rule_for(self.rows[treatment.medicine_id], species.pk)
+        if rule is None:                    # nothing recorded for this species: unknown, never "no withdrawal"
+            return Withdrawal(batch_id, None, False, treatment, species=species)
+        by_days = end + (rule.days + 1) * DAY if rule.days is not None else None
+        if rule.degree_days is None:
+            return Withdrawal(batch_id, by_days, treatment=treatment, rule=rule, species=species)
+        by_degrees, estimated, missing, remaining, at_assumed = self.degree_days(batch_id, end, rule.degree_days)
         if by_degrees is None:
             until, estimated = None, True
         elif by_days is not None and by_days > by_degrees:
             until, estimated = by_days, False
         else:
             until = by_degrees
-        return Withdrawal(batch_id, until, estimated, treatment, days_without_temperature=missing,
-                          assumed_temperature=self.assumed(batch_id),
+        return Withdrawal(batch_id, until, estimated, treatment, rule=rule, species=species,
+                          days_without_temperature=missing, assumed_temperature=self.assumed(batch_id),
                           projected_at_assumed=at_assumed and until == by_degrees,
                           remaining_degree_days=remaining if estimated else None)
 
@@ -287,17 +371,30 @@ def of_units(units, day=None):
     return found
 
 
-def rule(medicine):
-    """The medicine's withdrawal as the pages say it: 7 days, 150 degree-days, or both."""
-    days, degrees = medicine.withdrawal_days, medicine.withdrawal_degree_days
-    parts = []
-    if degrees is not None:
-        parts.append(ngettext('%(count)d degree-day', '%(count)d degree-days', degrees) % {'count': degrees})
-    if days is not None:
-        parts.append(ngettext('%(count)d day', '%(count)d days', days) % {'count': days})
-    if len(parts) == 2:
-        return _('%(degrees)s or %(days)s, whichever ends later') % {'degrees': parts[0], 'days': parts[1]}
-    return parts[0]
+def _rows(medicine):
+    """A medicine's withdrawal rows, the one for every species first (its `withdrawals`: prefetch them for a list)."""
+    return sorted(medicine.withdrawals.all(), key=lambda row: (row.species_id is not None,
+                                                                row.species.common_name if row.species_id else ''))
+
+
+def rule_lines(medicine):
+    """[(who it is for, Rule)] of a medicine's withdrawal rows as the Medicines page says them: "Every species"
+    when that is the only row, else "Other species" for the one for every species, and the species' names."""
+    rows = _rows(medicine)
+    others = len(rows) > 1 and rows[0].species_id is None
+    return [(row.species.common_name if row.species_id else (_('Other species') if others else _('Every species')),
+             Rule.of(row)) for row in rows]
+
+
+def rules_text(medicine):
+    """A medicine's withdrawal as one line: "150 degree-days" when it is the same for every species, else
+    "Atlantic salmon: 150 degree-days; Other species: 7 days"; "Not recorded" without a row."""
+    rows = _rows(medicine)
+    if not rows:
+        return _('Not recorded')
+    if len(rows) == 1 and rows[0].species_id is None:
+        return Rule.of(rows[0]).text()
+    return '; '.join(f'{who}: {rule.text()}' for who, rule in rule_lines(medicine))
 
 
 def describe(withdrawal):
@@ -308,10 +405,14 @@ def describe(withdrawal):
                  'day: the withdrawal end is unknown. Record the treatment under Health › Treatments.') % {
             'feed': record.feed, 'unit': record.unit.code, 'date': shown_date(record.date)}
     treatment = withdrawal.treatment
+    params = {'medicine': treatment.medicine, 'method': str(treatment.get_method_display()).lower(),
+              'start': shown_date(treatment.start_date), 'end': shown_date(treatment.end_date)}
+    if withdrawal.rule is None:
+        return (_('%(medicine)s, %(method)s from %(start)s to %(end)s.') % params + ' '
+                + _('No withdrawal is recorded for %(species)s of %(medicine)s: add it in Reference data › '
+                    'Medicines.') % {'species': withdrawal.species.common_name, 'medicine': treatment.medicine})
     text = _('%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s.') % {
-        'medicine': treatment.medicine, 'method': str(treatment.get_method_display()).lower(),
-        'start': shown_date(treatment.start_date), 'end': shown_date(treatment.end_date),
-        'rule': rule(treatment.medicine)}
+        **params, 'rule': withdrawal.rule.text()}
     if withdrawal.until is None:
         text += ' ' + _('The end cannot be worked out: record the water temperature.')
     elif withdrawal.projected_at_assumed:

@@ -1414,10 +1414,24 @@ antiparasitic, antifungal, vaccine, anaesthetic, other), how it is given (bath, 
 active substance, for a sea-lice medicine its substance as Mattilsynet's weekly lice report names it (the
 official value is stored, e.g. `EMAMECTIN_BENZOAT`; other medicines have none), the strength with its unit
 (both or neither), the manufacturer (a supplier of medicines and vaccines, a `SupplierLink`), prescription only,
-status, notes, and **the withdrawal in degree-days, in days or both, at least one** (a database check; 0 means
-none; both given, the later end wins). Nothing is seeded: the values are the product's SPC, entered by the farm
-and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer (`PROTECT`): set it
-inactive.
+status, notes. **Its withdrawal is a list of rows per species** (the **Withdrawal** tab, saved apart from the
+medicine details once it exists, like a feed's suitability; table `medicine_withdrawals`): a row is for a species or,
+with no species, for every species that has no row of its own (the SPC states it per species), with **degree-days,
+days or both, at least one** (a database check; 0 means none; both given, the later end wins), the farm's own
+**safety margin** in percent (0 to 200, 0 when empty) on top of the label value, and a note. One row per species and
+one for every species (a database check, checked on the form too), at most 50. The label value stays stored as the SPC
+states it; the value used is `value × (1 + margin ÷ 100)` rounded up (150 degree-days and 20 % is 180, 7 days and 20 %
+is 9; with no margin the label value is used as it is), and the pages say both: "150 degree-days + 20 % safety margin
+= 180 degree-days". **Fish of a species that has no row and no row for every species are held with an unknown end**:
+"No withdrawal is recorded for Atlantic salmon of Salmosan vet.: add it in Reference data › Medicines." Never
+silently no withdrawal. The list shows each medicine's rows per species, "Not recorded" with none. The rows are owned by
+their medicine as a site's contacts are: they stay with it when it is deleted and come back when it is restored; a
+species keeps its rows out of sight while it is deleted, and cannot be erased from the database while a row names it.
+`farm/health/withdrawal.py`'s `row_for` is the one place that says which row applies to a species; the withdrawal, the
+Medicines pages and the treatment dialog's choice all ask it. Nothing is seeded: the values are the product's SPC,
+entered by the farm and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer
+(`PROTECT`): set it inactive. Migration `0021` copies each medicine's old two columns into a row for every species, and
+goes back when every medicine has one (it says why when it cannot).
 
 **Treatments** (a read page with dialogs, like Feeding records): one course given to the fish of one or more
 units of a site: the method (bath, in feed, injection, dip with a medicine; thermal, mechanical, freshwater or
@@ -1445,10 +1459,12 @@ corrected temperature or a backdated transfer changes it at once:
 
 - it **follows the fish**: every live treatment with a medicine whose treated batches include the batch holds
   it, wherever it is now; if only some of its units were treated, the whole batch is held;
+- **per species**: the medicine's row for the batch's species, else its row for every species, else the end is
+  unknown (see Medicines); the margin is applied to both values;
 - **days**: day 1 is the day after the last treatment day, the first day the fish may be harvested is the last
   day + the days + 1;
 - **degree-days**: the batch's daily mean water temperature is added up from the day after the last day until
-  it reaches the medicine's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
+  it reaches the row's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
   of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
   copy); with the batch in several units that day, the lowest counts. **A past day without a measured
   temperature counts at the batch species' assumed water temperature** (Reference data › Species; one query reads

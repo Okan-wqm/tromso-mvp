@@ -3,13 +3,14 @@ the exports, the filing and the "still matches?" check all call, so they cannot 
 from django.utils.translation import gettext as _
 
 from ..kinds import ReportKind
-from . import biomass, lice, notices, slaughter, smolt
+from . import biomass, cleaner, lice, notices, slaughter, smolt
 from .common import FORMAT_VERSION, Result, content_hash, fingerprint, flatten  # noqa: F401
 
 # The kinds whose computation is built; a report of another kind cannot be started yet.
 COMPUTE = {
     ReportKind.SEA_LICE: lambda report: lice.compute(report.site, report.period, report),
     ReportKind.SMOLT: lambda report: smolt.compute(report.site, report.period),
+    ReportKind.CLEANER_FISH: lambda report: cleaner.compute(report.site, report.period),
     ReportKind.BIOMASS: lambda report: biomass.compute(report.site, report.period, report),
     ReportKind.SLAUGHTER_PLANNED: lambda report: slaughter.compute(report.facility, report.period),
     ReportKind.LAND_STOCK: notices.land_stock,

@@ -10,6 +10,10 @@ from core.dbgrid import formula_safe
 
 from .kinds import ReportKind
 
+CULL_FIELDS = {'sick': 'antallAvlivetSykdom', 'injured': 'antallAvlivetSkader', 'emaciated': 'antallAvlivetAvmagret',
+               'salmon_handling': 'antallAvlivetForeståendeHåndteringAvLaksen',
+               'poor_environment': 'antallAvlivetForeståendeUgunstigLevemiljø', 'not_used': 'antallAvlivetSkalIkkeBrukes'}
+ORIGINS = {'farmed': 'OPPDRETTET', 'wild_caught': 'VILLFANGET'}
 WEEKDAY_FIELDS = {'monday': 'mandagKg', 'tuesday': 'tirsdagKg', 'wednesday': 'onsdagKg', 'thursday': 'torsdagKg',
                   'friday': 'fredagKg', 'saturday': 'lørdagKg', 'sunday': 'søndagKg'}
 
@@ -79,6 +83,22 @@ def api_json(report, content):
     base = {'klientReferanse': str(report.pk), 'kontaktperson': contact(report)}
     if report.kind == ReportKind.SEA_LICE:
         return _lice(report, content, base)
+    if report.kind == ReportKind.CLEANER_FISH:
+        year, month = report.period.iso
+        return {**base, 'organisasjonsnummer': identity['organisation_number'], 'rapporteringsmåned': month,
+                'rapporteringsår': year, 'lokalitetsnummer': identity['lokalitetsnummer'],
+                'tørrforKg': content['feed']['dry_kg'], 'våtforKg': content['feed']['wet_kg'],
+                'produksjonsenheter': [{
+                    'merdId': unit['number'],
+                    'arter': [{
+                        'artskode': found['species'], 'opprinnelse': ORIGINS.get(found['origin']),
+                        'beholdningVedForrigeMånedsslutt': found['opening'],
+                        'utsett': {'antallNy': found['stocked'], 'antallFlyttetInn': found['moved_in']},
+                        'uttak': {**{CULL_FIELDS[cause]: fish for cause, fish in found['culled'].items()},
+                                  'antallSelvdød': found['died'], 'antallFlyttetUt': found['moved_out'],
+                                  'antallKanIkkeGjøresRedeFor': found['unaccounted']},
+                    } for found in unit['species']],
+                } for unit in sorted(content['units'].values(), key=lambda unit: unit['number'])]}
     if report.kind == ReportKind.SMOLT:
         year, month = report.period.iso
         return {**base, 'organisasjonsnummer': identity['organisation_number'], 'rapporteringsmåned': month,

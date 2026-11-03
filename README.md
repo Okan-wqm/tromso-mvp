@@ -2004,6 +2004,13 @@ What one tab needed and the next ones will too lives in `core/`:
 - `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data (a type's technical
   specifications), the form fields and the check of the stored values from one definition.
 - `TreeMixin` (`core/models.py`): records nested under records of the same kind, without loops.
+- `next_code(model, prefix)` (`core/codes.py`): the next generated code of a kind of record (a batch's
+  `B-2026-001`, an experiment's `E-2026-001`): one more than the highest number under the prefix, deleted
+  records counted, so a number is never given twice; an advisory lock keyed on the table makes two creators
+  take turns, so call it inside the saving transaction.
+- `check.require_acknowledged(assessment, seen, field)` (`farm/handling/check.py`): a save with warnings
+  is refused until the person has ticked the box for exactly the warnings as they are now; the stock forms'
+  box is `handling_ack`, another form (an experiment's start) names its own.
 
 ### Restoring
 
@@ -2136,6 +2143,7 @@ real mail.
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |
+| `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |

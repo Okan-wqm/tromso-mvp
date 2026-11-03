@@ -167,7 +167,7 @@ def _checks():
         models.CheckConstraint(condition=~Q(name=''), name='chk_water_sampling_points_name',
                                violation_error_message=_('Give the point a name.')),
         models.CheckConstraint(
-            condition=(Q(kind=PointKind.DEPTH, depth_m__gte=0, depth_m__lte=MAX_DEPTH_M)
+            condition=(Q(kind=PointKind.DEPTH, depth_m__isnull=False, depth_m__gte=0, depth_m__lte=MAX_DEPTH_M)
                        | (~Q(kind=PointKind.DEPTH) & Q(depth_m__isnull=True))),
             name='chk_water_sampling_points_depth',
             violation_error_message=_('A depth point has a depth, and no other point does.')),

@@ -141,7 +141,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='samplingpoint',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('depth_m__gte', 0), ('depth_m__lte', 200), ('kind', 'depth')), models.Q(models.Q(('kind', 'depth'), _negated=True), ('depth_m__isnull', True)), _connector='OR'), name='chk_water_sampling_points_depth', violation_error_message='A depth point has a depth, and no other point does.'),
+            constraint=models.CheckConstraint(condition=models.Q(models.Q(('depth_m__gte', 0), ('depth_m__isnull', False), ('depth_m__lte', 200), ('kind', 'depth')), models.Q(models.Q(('kind', 'depth'), _negated=True), ('depth_m__isnull', True)), _connector='OR'), name='chk_water_sampling_points_depth', violation_error_message='A depth point has a depth, and no other point does.'),
         ),
         migrations.AddConstraint(
             model_name='samplingpoint',

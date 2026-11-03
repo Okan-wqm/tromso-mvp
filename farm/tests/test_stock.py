@@ -24,7 +24,7 @@ from ..models import (
 )
 from ..stock import integrity, read, services
 from ..stock.fold import Line, Op, StockError, fold
-from .helpers import make_species, role, stock_fish
+from .helpers import make_facility, make_species, role, stock_fish
 
 Status = Tank.Status
 
@@ -656,10 +656,11 @@ class HarvestTests(StockTestCase):
     def setUp(self):
         super().setUp()
         self.batch = self.stock(count=2000, weight='125')           # 250 kg in the book
+        self.facility = make_facility()
 
     def harvest(self, count, kilos, **fields):
         return services.record_harvest(self.user, unit=self.t1, batch=self.batch, day=self.day(1), count=count,
-                                       measured_weight_kg=Decimal(kilos), **fields)
+                                       measured_weight_kg=Decimal(kilos), facility=self.facility, **fields)
 
     def test_a_harvest_keeps_its_weighed_kilos_beside_the_book(self):
         self.harvest(500, '70')
@@ -698,7 +699,7 @@ class HarvestTests(StockTestCase):
     def test_through_the_dialog(self):
         url = reverse('farm:stock_harvest', args=[self.t1.pk])
         data = {'token': str(uuid.uuid4()), 'batch': str(self.batch.pk), 'date': self.day(1).isoformat(),
-                'count': '2000', 'measured_weight_kg': '', 'notes': ''}
+                'count': '2000', 'measured_weight_kg': '', 'facility': str(self.facility.pk), 'notes': ''}
         self.assertIn('measured_weight_kg', self.client.post(url, data).context['form'].errors)
         response = self.client.post(url, {**data, 'measured_weight_kg': '262.4', 'everything': 'on'},
                                     headers={'X-Modal': '1'})

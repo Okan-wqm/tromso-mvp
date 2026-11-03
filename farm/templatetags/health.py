@@ -35,7 +35,7 @@ def _date(day):
 
 @register.filter
 def withdrawal_until(item):
-    """A Withdrawal's or a Summary's end as the pages write it: until 13 Dec 2026 (harvest from 14 Dec 2026),
+    """A Withdrawal's end as the treatments list writes it: until 13 Dec 2026 (harvest from 14 Dec 2026),
     "about" when projected, or that it is unknown."""
     if item is None:
         return DASH
@@ -45,13 +45,6 @@ def withdrawal_until(item):
     if item.estimated:
         return _('until about %(last)s (harvest from about %(first)s)') % params
     return _('until %(last)s (harvest from %(first)s)') % params
-
-
-@register.filter
-def withdrawal_line(item):
-    """The line a unit with fish under a withdrawal shows everywhere: Not suitable for harvest — medicine
-    withdrawal until 13 Dec 2026 (harvest from 14 Dec 2026)."""
-    return _('Not suitable for harvest — medicine withdrawal %(until)s') % {'until': withdrawal_until(item)}
 
 
 @register.filter

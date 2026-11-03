@@ -18,17 +18,17 @@ from core import access, database, navigation
 from core.models import AuditLog
 from core.softdelete import plan_delete
 
-from ..handling import withdrawal as registry
+from ..handling import check as handling_check, withdrawal as registry
 from ..health import diseases, lice, services, withdrawal
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
-    Feed, HealthEvent, LiceCount, Medicine, Site, StockOperation, Supplier, System, Tank, Treatment,
-    WaterMeasurement,
+    Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, Site, StockOperation, Supplier,
+    System, Tank, Treatment, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
 from ..feeding import services as feeding_services
-from .helpers import role
+from .helpers import make_facility, role
 from .test_stock import StockTestCase, make_unit
 
 
@@ -174,8 +174,10 @@ class WithdrawalTests(HealthTestCase):
         # day of the move counts the lower; after it, T-02's water. 12 + 6 + 6 = 24 by yesterday, 6 to go at
         # the mean 8 °C (12, 6, 6), about tomorrow. With T-01's water alone it would have been 36: free today.
         self.treat(self.medicine(degree_days=30), 4, 4)
+        moving = handling_check.assess('transport', self.t1, self.day(2), self.batch)
+        self.assertEqual([warning.warning for warning in moving.warnings], ['withdrawal'])
         stock_services.record_transfer(self.user, source=self.t1, batch=self.batch, day=self.day(2),
-                                       legs=[(self.t2, 2000)], reason='density')
+                                       legs=[(self.t2, 2000)], reason='density', handling_ack=moving.fingerprint)
         for days_ago, unit, value in ((3, self.t1, '12'), (2, self.t1, '12'), (2, self.t2, '6'), (1, self.t1, '12'),
                                       (1, self.t2, '6')):
             self.temperature(unit, days_ago, value)
@@ -408,8 +410,10 @@ class TreatmentServiceTests(HealthTestCase):
 
     def test_the_stock_refuses_to_leave_a_treatment_without_fish(self):
         self.treat(self.medicine(days=7), 3, 3)
+        self.assertEqual(registry.blocks(self.t1, self.day(5)), [])        # before the treatment: not held
         refused = self.refused(stock_services.record_harvest, self.user, unit=self.t1, batch=self.batch,
-                               day=self.day(5), count=2000, measured_weight_kg=Decimal('250'), everything=True)
+                               day=self.day(5), count=2000, measured_weight_kg=Decimal('250'),
+                               facility=make_facility(), everything=True)
         self.assertEqual(refused['__all__'],
                          [f'The treatment of {stock_services.shown_date(self.day(3))} in T-01 would have no fish: '
                           'void it first.'])
@@ -771,21 +775,23 @@ class LicePageTests(HealthTestCase):
 
 
 class ProductionUnitsHealthTests(HealthTestCase):
-    def test_a_unit_under_withdrawal_says_so_on_its_row_and_in_its_drawer(self):
-        self.treat(self.medicine(days=7), 3, 3)
+    def test_the_registry_puts_the_withdrawal_on_the_row_and_in_the_harvest_section_once(self):
+        treatment = self.treat(self.medicine(days=7), 3, 3)
         page = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
         row = next(row for row in page.context['rows'] if row['unit'] == self.t1)
-        self.assertEqual(row['withdrawal'].until, self.day(-5))
-        last, first = (stock_services.shown_date(self.day(-4)), stock_services.shown_date(self.day(-5)))
-        self.assertContains(page, f'Not suitable for harvest — medicine withdrawal until {last} (harvest from '
-                                  f'{first})')
+        [block] = row['withdrawal']
+        self.assertEqual((block.batch, block.until, block.approximate, block.source),
+                         (self.batch, self.day(-5), False, treatment))
+        line = (f'Not suitable for harvest — medicine withdrawal of {self.batch.code} until '
+                f'{stock_services.shown_date(self.day(-5))}.')
+        self.assertContains(page, line, count=1)
         self.assertContains(page, 'Record treatment')
         self.assertContains(page, 'Record sea-lice count')
         self.assertContains(page, 'Treatments, last 90 days')
         other = next(row for row in page.context['rows'] if row['unit'] == self.t2)
         self.assertIsNone(other['withdrawal'])
 
-    def test_the_withdrawal_line_shows_without_a_health_permission(self):
+    def test_the_withdrawal_shows_without_a_health_permission(self):
         self.treat(self.medicine(days=7), 3, 3)
         stock_keeper = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')
         stock_keeper.groups.add(role('Units only', 'view_stockoperation'))
@@ -795,10 +801,86 @@ class ProductionUnitsHealthTests(HealthTestCase):
         self.assertNotContains(page, 'Record treatment')
         self.assertNotContains(page, 'Treatments, last 90 days')
 
-    def test_an_estimated_or_unknown_end_says_so(self):
+    def test_an_unknown_end_says_so(self):
         self.treat(self.medicine(degree_days=50), 2, 2)
         page = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
-        self.assertContains(page, 'Not suitable for harvest — medicine withdrawal end unknown')
+        self.assertContains(page, f'Not suitable for harvest — medicine withdrawal of {self.batch.code}, its end '
+                                  'unknown.')
+
+    def test_a_harvest_during_the_withdrawal_warns_and_keeps_what_was_shown(self):
+        self.treat(self.medicine(days=7), 3, 3)
+        warnings = handling_check.check('harvest', self.t1, self.today)
+        self.assertEqual([(warning.warning, warning.block.until) for warning in warnings],
+                         [('withdrawal', self.day(-5))])
+        self.assertEqual(handling_check.check('harvest', self.t1, self.day(-5)), [])
+
+
+class TreatmentHandlingTests(HealthTestCase):
+    """The fast before a treatment: the shared handling check (kind treatment, the starting rule of 24 h)."""
+
+    def fed(self, days_ago, hour):
+        feed = Feed.objects.get_or_create(name='Grower 3 mm', code='GROWER-3', feed_type='grower')[0]
+        return feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(days_ago), feed=feed,
+                                               amount_kg=Decimal('2'), time=time(hour))
+
+    def test_too_short_a_fast_asks_and_the_answer_is_kept_on_the_treatment(self):
+        self.fed(2, 18)                      # 6 h before the first day of the treatment
+        bath = self.medicine(days=7)
+        refused = self.refused(self.treat, bath, 1, 1)
+        self.assertEqual(refused, {'handling_ack': ['Tick the box to go on despite these warnings.']})
+        checked = services.handling([self.t1], self.day(1), 'bath')
+        self.assertEqual([(warning.warning, warning.fasted_hours, warning.required_hours) for warning in checked.warnings],
+                         [('fasting', Decimal('6.0'), 24)])
+        self.assertEqual(self.refused(self.treat, bath, 1, 1, handling_ack='old')['handling_ack'],
+                         ['The warnings changed since the form was shown: read them again, and tick the box to go on.'])
+        treatment = self.treat(bath, 1, 1, handling_ack=checked.fingerprint)
+        [row] = HandlingAcknowledgement.objects.all()
+        self.assertEqual((row.treatment, row.operation, row.warning, row.fasted_hours, row.required_hours, row.kind),
+                         (treatment, None, 'fasting', Decimal('6.0'), 24, 'treatment'))
+        log = AuditLog.objects.get(entity_type='treatment', action='create')
+        self.assertEqual(log.severity, AuditLog.Severity.CRITICAL)
+        self.assertIn('Last fed', log.changes['Handling warnings acknowledged'][1])
+
+    def test_a_fast_long_enough_or_medicated_feed_asks_nothing(self):
+        self.fed(3, 6)                       # 42 h before
+        treatment = self.treat(self.medicine(days=7), 1, 1)
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
+        self.assertEqual(AuditLog.objects.get(entity_id=str(treatment.pk)).severity, AuditLog.Severity.NORMAL)
+        self.fed(1, 20)
+        in_feed = self.medicine(name='Slice vet.', administration='in_feed', days=14,
+                                active_substance='emamectin benzoate', lice_report_code='EMAMECTIN_BENZOAT')
+        self.treat(in_feed, 0, 0)            # fed the same day: the medicated feed is the feeding itself
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
+
+    def test_the_dialog_shows_the_check_and_takes_its_box(self):
+        self.fed(2, 18)
+        bath = self.medicine(days=7)
+        url = f"{reverse('farm:treatment_record')}?unit={self.t1.pk}"
+        page = self.client.get(url)
+        self.assertContains(page, 'Before handling')
+        self.assertEqual(page.context['form']['start_date'].value(), self.today)
+        self.assertContains(page, 'The treatment rule for Atlantic salmon asks for 24 h.')
+        data = treatment_data([self.t1], method='bath', medicine=str(bath.pk), start_date=self.day(1).isoformat(),
+                              end_date=self.day(1).isoformat())
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 422)
+        self.assertIn('handling_ack', response.context['form'].errors)
+        fingerprint = services.handling([self.t1], self.day(1), 'bath').fingerprint
+        self.assertEqual(self.client.post(url, {**data, 'handling_ack': fingerprint}).status_code, 302)
+        self.assertEqual(HandlingAcknowledgement.objects.get().treatment, Treatment.objects.get())
+        self.assertContains(self.client.get(reverse('farm:treatments')), 'Handling warning acknowledged')
+
+    def test_an_acknowledgement_belongs_to_one_record(self):
+        rule = HandlingRule.objects.get(kind='treatment', species__isnull=True)
+        operation = StockOperation.objects.first()
+        treatment = self.treat(None, 1, 1, method='thermal', notes='Thermolicer')
+        fasting = {'warning': 'fasting', 'last_fed_at': datetime(2026, 1, 1, 12, tzinfo=zone_of(self.bergen)),
+                   'fasted_hours': Decimal('1'), 'required_hours': 24, 'rule': rule}
+        for links in ({}, {'operation': operation, 'treatment': treatment}):
+            with self.subTest(links=links), self.assertRaises(IntegrityError), transaction.atomic():
+                HandlingAcknowledgement.objects.create(**links, **fasting)
+        HandlingAcknowledgement.objects.create(treatment=treatment, **fasting)
+        self.assertEqual(integrity.problems(), [])
 
 
 class AccessTests(HealthTestCase):

@@ -13,8 +13,9 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
-from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, HealthEvent, LiceCount,
-                         Medicine, ProductionDepartment, Site, SiteContact, Species, System, Tank, Treatment, WaterLimit,
+from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, HandlingRule, HealthEvent,
+                         LiceCount, Medicine, ProductionDepartment, Site, SiteContact, SlaughterFacility,
+                         Species, System, Tank, Treatment, WaterLimit,
                          WaterMeasurement)
 from farm.tests.helpers import SITE_MANAGER, contacts_data, role, site_data
 
@@ -157,6 +158,8 @@ class PagesInEveryLanguageTests(TestCase):
                                                confirmation='suspected', signs=['pale_gills'])
         cls.lice_count = LiceCount.objects.create(unit=cls.unit, date=day, fish_counted=20, adult_females=3, mobile=5,
                                                   attached=1)
+        cls.facility = SlaughterFacility.objects.create(name='Fjord Slakteri', approval_number='M123')
+        cls.rule = HandlingRule.objects.get(kind='harvest', species__isnull=True)
         cls.role = Group.objects.create(name='Feeder')
         cls.role.permissions.set(Permission.objects.filter(codename='view_site'))
         cls.admin.groups.add(cls.role)
@@ -185,9 +188,13 @@ class PagesInEveryLanguageTests(TestCase):
                   reverse('farm:healthevent_void', args=[self.event.pk]),
                   reverse('farm:lice_counts'), reverse('farm:lice_record'),
                   reverse('farm:lice_void', args=[self.lice_count.pk])]
+        pages += [reverse('farm:harvests'), reverse('farm:handlingplanitem_list'),
+                  reverse('farm:handlingplanitem_create'), f"{reverse('farm:handlingplanitem_create')}?kind=transport",
+                  reverse('farm:productionplan_list'), reverse('farm:productionplan_create')]
         for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system),
                                  ('equipment', self.feeder), ('tank', self.unit), ('species', self.species),
-                                 ('waterlimit', self.water_limit), ('medicine', self.medicine)):
+                                 ('waterlimit', self.water_limit), ('slaughterfacility', self.facility),
+                                 ('handlingrule', self.rule), ('medicine', self.medicine)):
             pages += [reverse(f'farm:{resource}_list'), reverse(f'farm:{resource}_create'),
                       reverse(f'farm:{resource}_edit', args=[record.pk]),
                       reverse(f'farm:{resource}_delete', args=[record.pk])]

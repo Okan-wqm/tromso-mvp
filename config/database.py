@@ -32,5 +32,6 @@ VIEWER = Viewer(
         'health_event_units': _('Which units each health event concerns; none for the whole site.'),
         'document_species': _('Which species each library document is about.'),
         'knowledge_entry_species': _('Which species each knowledge entry holds for.'),
+        'slaughter_facility_species': _('Which species each slaughter facility takes.'),
     },
 )

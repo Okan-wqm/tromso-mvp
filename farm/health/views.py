@@ -106,7 +106,7 @@ def treated_batches(treatments, today):
 
 def _filtered_treatments(params, today):
     treatments = Treatment.all_objects.select_related('medicine', 'vet', 'health_event', 'created_by', 'deleted_by')\
-        .prefetch_related('units__production_department__site')
+        .prefetch_related('units__production_department__site', 'acknowledgements')
     if params['voided'] != '1':
         params['voided'] = ''
         treatments = treatments.filter(is_deleted=False)
@@ -368,13 +368,12 @@ def void_event(request, pk):
 
 
 # ---- what Production units shows --------------------------------------------------------------------
-def drawer(request, unit, back, held):
-    """The Health part of a unit's drawer: the withdrawal of each batch under one (`held`, its Withdrawals), and,
-    for people who may read them, its open health events, its treatments of the last RECENT_DAYS days, its
-    latest sea-lice count, and the dialogs with the unit chosen."""
+def drawer(request, unit, back):
+    """The Health part of a unit's drawer, for people who may read them: its open health events, its treatments of
+    the last RECENT_DAYS days, its latest sea-lice count, and the dialogs with the unit chosen. The withdrawal of
+    its fish is the drawer's Harvest and handling section (the registry, farm/handling)."""
     user = request.user
-    batches = Batch.all_objects.in_bulk({found.batch_id for found in held})
-    context = {'health_withdrawals': [(batches[found.batch_id], found) for found in held]}
+    context = {}
     shown = False
     if user.has_perm(TREATMENTS['view']):
         since = local_today(unit) - timedelta(days=RECENT_DAYS)

@@ -22,7 +22,7 @@ from ..feeding.fold import Feeding, Point, PointKind, walk
 from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, Tank
 from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.fold import Line, Op
-from .helpers import role
+from .helpers import make_facility, role
 from .test_stock import StockTestCase, make_unit
 
 
@@ -308,8 +308,10 @@ class SplitTests(FeedingTestCase):
 class FishRuleTests(FeedingTestCase):
     def test_a_backdated_harvest_cannot_leave_a_feeding_without_fish(self):
         feeding = self.record(days_ago=1)
+        facility = make_facility()
         harvest = lambda: stock_services.record_harvest(self.user, unit=self.t1, batch=self.batch, day=self.day(2),
-                                                        count=10000, measured_weight_kg=Decimal(510))
+                                                        count=10000, measured_weight_kg=Decimal(510),
+                                                        facility=facility)
         self.assertEqual(self.refused(harvest), {'__all__': [
             f'The feeding of {stock_services.shown_date(self.day(1))} in T-01 would have no fish: void it first.']})
         services.void_feeding(self.user, feeding, 'Fed the wrong unit')

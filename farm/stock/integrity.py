@@ -1,7 +1,8 @@
-"""Every rule of the stock, checked from scratch over the whole ledger (stock-db §6.5), and the one rule
+"""Every rule of the stock, checked from scratch over the whole ledger (stock-db §6.5), the one rule
 the feeding and health records share with it: every live feeding finds fish in its unit at the start or the
-end of its day, as every live treatment on its first day and every sea-lice count on its day. The stock,
-feeding and health services hold these on every write; this finds a row that got past them (a hand edit in
+end of its day, as every live treatment on its first day and every sea-lice count on its day, and the rows a
+harvest adds (its record, the plan it fulfils, the warnings acknowledged). The stock, feeding and health
+services hold these on every write; this finds a row that got past them (a hand edit in
 the database, a bug). `manage.py check_stock` prints what it finds; the test suite runs
 it after its stock tests. Its messages are for the developer, in English."""
 from collections import Counter, defaultdict
@@ -11,7 +12,11 @@ from django.db.models import Sum
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.health import read as health_read
-from farm.models import Batch, StockMovement, StockOperation, Tank
+from farm.models import (
+    Batch, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, StockMovement, StockOperation, Tank,
+)
+from farm.models.handling import KIND_OF_OPERATION
+from farm.models.harvest import FULFILLED_BY
 from farm.models.stock import MovementKind, OperationKind
 from farm.models.tank import NEEDS_FISH, NEEDS_NO_FISH
 
@@ -113,6 +118,8 @@ def problems():
             found.append(f'Unit {row["unit_id"]}, batch {row["batch_id"]}: the fold has {share.count} fish, '
                          f'the lines add up to {row["fish"]}.')
 
+    found += _harvest_problems(operations, lines_of)
+
     counts = read.unit_counts(list(Tank.all_objects.values_list('pk', flat=True)))
     species = defaultdict(set)
     for (unit_id, batch_id), share in shares.items():
@@ -128,4 +135,32 @@ def problems():
             found.append(f'Unit {unit.code} is {unit.status} but holds no fish.')
         if len(species[unit.pk]) > 1:
             found.append(f'Unit {unit.code} holds {len(species[unit.pk])} species.')
+    return found
+
+
+def _harvest_problems(operations, lines_of):
+    """What the harvest adds to an operation, checked across rows: every live harvest names where its fish
+    went (one HarvestRecord) and no other kind of operation has a record; a plan item is fulfilled by an
+    operation of its kind, of its unit and batch; an acknowledgement belongs to a handling."""
+    found = []
+    records = HarvestRecord.all_objects.select_related('operation').in_bulk()
+    for operation in operations.values():
+        if operation.kind == OperationKind.HARVEST and operation.pk not in records:
+            found.append(f'Harvest {operation.pk} of {operation.date} has no harvest record (slaughter facility).')
+    for record in records.values():
+        if record.operation.kind != OperationKind.HARVEST:
+            found.append(f'{record.operation.get_kind_display()} {record.operation_id} has a harvest record.')
+    for item in HandlingPlanItem.all_objects.filter(is_deleted=False, operation__isnull=False).select_related(
+            'operation'):
+        operation = item.operation
+        if operation.kind != FULFILLED_BY[item.kind]:
+            found.append(f'Plan item {item.pk} ({item.kind}) is fulfilled by a {operation.kind}.')
+            continue
+        source = next((line for line in lines_of.get(operation.pk, []) if line.count_delta < 0), None)
+        if source is not None and (source.unit_id, source.batch_id) != (item.unit_id, item.batch_id):
+            found.append(f'Plan item {item.pk} names other fish than the {operation.kind} that fulfils it.')
+    handled = set(KIND_OF_OPERATION)
+    for row in HandlingAcknowledgement.objects.filter(operation__isnull=False).select_related('operation'):
+        if row.operation.kind not in handled:
+            found.append(f'Acknowledgement {row.pk} belongs to a {row.operation.kind}, which is not a handling.')
     return found

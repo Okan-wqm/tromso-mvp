@@ -26,12 +26,12 @@ The rules, for a batch b and a treatment T whose medicine states its withdrawal:
    covers holds b with an unknown end until such a treatment is recorded or the feeding is voided.
 7. A voided treatment holds nothing (it is not live).
 
-`until` is the first day b may be harvested; a withdrawal holds on every day before it. The health module
+`until` is the first day b may be harvested; a withdrawal holds from the treatment's first day (or the
+medicated feeding's day) to the day before `until`: a day before the treatment is not held. The health module
 gives the harvest side these blocks through the registry of farm/handling/withdrawal.py (`provider`)."""
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
-from datetime import timezone as dt_timezone
+from datetime import timedelta
 from decimal import ROUND_CEILING, Decimal
 
 from django.db.models import Q
@@ -43,7 +43,7 @@ from farm.models import Batch, FeedingRecord, Tank, Treatment, WaterMeasurement
 from farm.models.feed import FeedType
 from farm.models.health import TreatmentMethod
 from farm.models.water import local_time
-from farm.stock.dates import local_today, shown_date
+from farm.stock.dates import end_of, local_today, shown_date, start_of
 from farm.stock.read import Presence
 
 DAY = timedelta(days=1)
@@ -73,8 +73,14 @@ class Withdrawal:
         """The last day of the withdrawal: the day before the batch may be harvested."""
         return self.until - DAY if self.until is not None else None
 
+    @property
+    def start(self):
+        """The first day it holds: the treatment's first day, or the day of the medicated feeding."""
+        return self.treatment.start_date if self.treatment is not None else self.feeding.date
+
     def holds_on(self, day):
-        return self.until is None or day < self.until
+        """From its first day (fish under treatment are held too) to the day before `until`."""
+        return day >= self.start and (self.until is None or day < self.until)
 
 
 class Temperatures:
@@ -87,11 +93,12 @@ class Temperatures:
         systems = {unit.system_id for unit in units if unit.system_id}
         values = defaultdict(list)
         if units and first <= last:
-            start = datetime.combine(first - DAY, time.min, tzinfo=dt_timezone.utc)
-            stop = datetime.combine(last + 2 * DAY, time.min, tzinfo=dt_timezone.utc)
+            # From the first moment of `first` to the last of `last` on the clocks of the units' sites.
+            start = min(start_of(first, unit) for unit in units)
+            stop = max(end_of(last, unit) for unit in units)
             samples = (WaterMeasurement.objects
                        .filter(Q(unit__in=list(self.units)) | Q(system__in=systems), temperature_c__isnull=False,
-                               measured_at__gte=start, measured_at__lt=stop)
+                               measured_at__gte=start, measured_at__lte=stop)
                        .select_related('unit__production_department__site', 'system__site'))
             for sample in samples:
                 day = local_time(sample.measured_at, sample.point).date()
@@ -259,29 +266,6 @@ def of_units(units, day=None):
             if withdrawals:
                 found[unit.pk] = withdrawals
     return found
-
-
-@dataclass(frozen=True)
-class Summary:
-    """What a unit or a batch shows: the latest end of the withdrawals that hold it (None when one of them is
-    unknown), whether it is projected, and the reasons of the unknown ones."""
-    until: object
-    estimated: bool
-    unknown: tuple
-
-    @property
-    def last_day(self):
-        return self.until - DAY if self.until is not None else None
-
-
-def summary(withdrawals):
-    if not withdrawals:
-        return None
-    unknown = tuple(withdrawal for withdrawal in withdrawals if withdrawal.until is None)
-    if unknown:
-        return Summary(None, True, unknown)
-    latest = max(withdrawals, key=lambda withdrawal: (withdrawal.until, withdrawal.estimated))
-    return Summary(latest.until, latest.estimated, ())
 
 
 def rule(medicine):

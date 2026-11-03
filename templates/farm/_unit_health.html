@@ -1,14 +1,9 @@
-{% load i18n stock health %}
-{% comment %} The Health section of a unit's drawer (farm.health.views.drawer): the withdrawal of each batch under one, with
-   why; and, for people who may read them, the open health events that concern the unit, its treatments of
-   the last 90 days, its latest sea-lice count and the dialogs with the unit chosen.{% endcomment %}
+{% load i18n health %}
+{% comment %} The Health section of a unit's drawer (farm.health.views.drawer), for people who may read them: the open
+   health events that concern the unit, its treatments of the last 90 days, its latest sea-lice count and the
+   dialogs with the unit chosen. The withdrawal of its fish is in the Harvest and handling section.{% endcomment %}
 <section class="drawer-section">
   <h3>{% trans "Health" %}</h3>
-  {% if health_withdrawals %}
-  <ul class="op-lines" role="list">
-    {% for batch, found in health_withdrawals %}<li><strong>{{ batch.code }}</strong> · <span class="over-text">{{ found|withdrawal_until }}</span><span class="row-sub">{{ found|withdrawal_reason }}</span></li>{% endfor %}
-  </ul>
-  {% endif %}
   {% if health_events %}
   <p class="op-meta">{% trans "Open health events" %}</p>
   <ul class="op-lines" role="list">

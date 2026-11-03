@@ -45,6 +45,14 @@ def ledger(batch_ids):
     return lines
 
 
+def moved_grams(batch_ids):
+    """{line id: the grams it moved} for every live line of these batches: what the fold took out (a harvest
+    line's book kilos, beside its weighed kilos) or brought in; None for a weighing, which sets the grams."""
+    moved = {}
+    fold(ledger(batch_ids), on_line=lambda line, share, grams: moved.__setitem__(line.id, grams))
+    return moved
+
+
 def share_on(unit_id, batch_id, day):
     """The batch in the unit at the end of `day` (after every operation dated that day or before)."""
     lines = [line for line in ledger([batch_id]) if line.op.date <= day]
@@ -56,6 +64,20 @@ def unit_counts(unit_ids):
     rows = (StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False)
             .values('unit_id').annotate(fish=Sum('count_delta')))
     return {row['unit_id']: row['fish'] for row in rows}
+
+
+def fish_of_batch(batch_id):
+    """{unit id: fish of the batch in it now} from the live lines (units it has left are left out)."""
+    rows = (StockMovement.objects.filter(batch_id=batch_id, operation__is_deleted=False)
+            .values('unit_id').annotate(fish=Sum('count_delta')).filter(fish__gt=0))
+    return {row['unit_id']: row['fish'] for row in rows}
+
+
+def batches_in_stock():
+    """The ids of the batches with fish in a unit now."""
+    rows = (StockMovement.objects.filter(operation__is_deleted=False).values('batch_id')
+            .annotate(fish=Sum('count_delta')).filter(fish__gt=0))
+    return {row['batch_id'] for row in rows}
 
 
 def batches_ever_in(unit_ids):

@@ -14,7 +14,15 @@ way the medicine is (its administration), so the lice report's method follows fr
 medicine names none; "other" (method or reason) says what it was in the notes; a vaccination uses a vaccine
 and a vaccine is a vaccination; a dose and an amount come with their units (the model's checks). All units on
 one site, each holding fish on the first day; the first day follows the date rule of every daily record, the
-last day may be planned up to PLANNED_DAYS ahead."""
+last day may be planned up to PLANNED_DAYS ahead.
+
+Before a treatment the fish fast (the shared handling check, farm/handling/check.py, kind treatment: a
+withdrawal is no reason to warn before one): every unit is checked on the first day, except for medicated feed,
+which is the feeding itself. Too short a fast is a warning; the person goes on by acknowledging the warnings they
+were shown, which are stored on the treatment (HandlingAcknowledgement) and make its log entry critical (owner
+decision: warn, never block)."""
+import hashlib
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -22,8 +30,11 @@ from django.db import transaction
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import audit
+from core.models import AuditLog
 from farm.feeding import read as feeding_read
+from farm.handling import check
 from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
+from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
 from farm.stock.dates import check_date, earliest, local_today, shown_date
 from farm.stock.services import AlreadyRecorded, locked, voided
@@ -115,10 +126,46 @@ def _check_event(event, units, day):
 
 
 # ---- treatments ---------------------------------------------------------------------------------------
+@dataclass
+class TreatmentHandling:
+    """The handling check of a treatment over its units (farm.handling.check.assess for each), as one: the
+    warnings, the notes (named by unit when there are several) and one fingerprint for the form's box."""
+    assessments: list = field(default_factory=list)
+
+    @property
+    def warnings(self):
+        return [warning for assessment in self.assessments for warning in assessment.warnings]
+
+    @property
+    def notes(self):
+        if len(self.assessments) == 1:
+            return self.assessments[0].notes
+        return [f'{assessment.unit.code}: {note}' for assessment in self.assessments for note in assessment.notes]
+
+    @property
+    def fingerprint(self):
+        keys = [f'{assessment.unit.pk}:{assessment.fingerprint}' for assessment in self.assessments
+                if assessment.warnings]
+        return hashlib.sha256('|'.join(keys).encode()).hexdigest()[:20] if keys else ''
+
+    def messages(self):
+        return [warning.message() for warning in self.warnings]
+
+
+def handling(units, day, method):
+    """The fast before a treatment of `units` starting on `day` (TreatmentHandling); nothing to check for
+    medicated feed or before a day is chosen."""
+    if method == TreatmentMethod.IN_FEED or day is None:
+        return TreatmentHandling()
+    return TreatmentHandling([check.assess(HandlingKind.TREATMENT, unit, day)
+                              for unit in sorted(units, key=lambda unit: unit.code)])
+
+
 def record_treatment(user, *, units, method, reason, start_date, end_date, medicine=None, dose_value=None,
                      dose_unit='', amount_value=None, amount_unit='', bath_minutes=None, prescribed_by='',
-                     prescription_ref='', vet=None, health_event=None, notes='', token=None):
-    """A course given to the fish of `units` from `start_date` to `end_date` (see the module's rules)."""
+                     prescription_ref='', vet=None, health_event=None, notes='', handling_ack=None, token=None):
+    """A course given to the fish of `units` from `start_date` to `end_date` (see the module's rules);
+    `handling_ack` is the fingerprint of the handling warnings the person went on past."""
     if not units:
         raise ValidationError({'units': _('Choose the units that were treated.')})
     if len({unit.pk for unit in units}) != len(units):
@@ -144,6 +191,8 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
         for unit in sorted(locked_units, key=lambda item: item.code):
             if not _has_fish(unit, start_date):
                 raise ValidationError({'units': _no_fish(unit, start_date)})
+        checked = handling(locked_units, start_date, method)
+        check.require_acknowledged(checked, handling_ack)
         treatment = Treatment(
             method=method, medicine=medicine, reason=reason, start_date=start_date, end_date=end_date,
             dose_value=dose_value, dose_unit=dose_unit, amount_value=amount_value, amount_unit=amount_unit,
@@ -152,9 +201,16 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
         treatment.full_clean()
         treatment.save()
         treatment.units.set(locked_units)
+        for assessment in checked.assessments:
+            if assessment.warnings:
+                check.acknowledge(treatment, assessment)
         with audit.source_language():
-            audit.record_create(user, treatment, audit.snapshot(treatment, TREATMENT_FIELDS),
-                                label=treatment_label(treatment, locked_units))
+            values = audit.snapshot(treatment, TREATMENT_FIELDS)
+            critical = bool(checked.warnings)
+            if critical:
+                values[str(gettext_lazy('Handling warnings acknowledged'))] = ' '.join(checked.messages())
+            audit.record_create(user, treatment, values, label=treatment_label(treatment, locked_units),
+                                severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
         return treatment
 
 

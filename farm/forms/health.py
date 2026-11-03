@@ -17,7 +17,7 @@ from ..health.withdrawal import rule
 from ..models import HealthEvent, LiceCount, Medicine, Site, Supplier, Tank, Treatment
 from ..models.site import zone_of
 from ..stock.dates import local_today, site_earliest, site_today
-from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors
+from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
 from .water import SiteClockField
 
 
@@ -223,9 +223,11 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
         super().__init__(*args, instance=Treatment(), **kwargs)
         self.fields['token'].initial = uuid.uuid4()
         self.fields['units'].queryset = units
+        self.fields['handling_ack'] = handling_ack_field()
+        self._handling = None
         today = local_today(unit)
-        self.initial.setdefault('start_date', today)
-        self.initial.setdefault('end_date', today)
+        # A new record's own empty dates would win over the farm's today (as the feeding form says).
+        self.initial.update({'start_date': today, 'end_date': today})
         if unit is not None:
             self.initial['units'] = [unit.pk]
         self.fields['medicine'].queryset = Medicine.objects.filter(status=Medicine.Status.ACTIVE)
@@ -239,6 +241,29 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
         self.fields['vet'].empty_label = _('None')
         self.fields['vet'].label_from_instance = supplier_label
 
+    @property
+    def handling(self):
+        """The fast before the treatment, for the units, first day and method as entered (else as offered):
+        farm.health.services.handling, shown by the handling panel with its box."""
+        if self._handling is None:
+            data = getattr(self, 'cleaned_data', {})
+            units = data.get('units')
+            if units is None:
+                chosen = {str(pk) for pk in (self['units'].value() or [])}
+                units = [unit for unit in self.fields['units'].queryset if str(unit.pk) in chosen]
+            day = data.get('start_date') or self.current('start_date')
+            method = data.get('method') or self['method'].value()
+            self._handling = services.handling(list(units), day, method)
+            self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
+        return self._handling
+
+    def current(self, name):
+        """A field's value as the form has it now (posted or offered), cleaned; None when it is not valid."""
+        try:
+            return self.fields[name].clean(self[name].value())
+        except ValidationError:
+            return None
+
     def save(self, user):
         data = self.cleaned_data
         return services.record_treatment(
@@ -247,7 +272,7 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
             dose_value=data['dose_value'], dose_unit=data['dose_unit'], amount_value=data['amount_value'],
             amount_unit=data['amount_unit'], bath_minutes=data['bath_minutes'], prescribed_by=data['prescribed_by'],
             prescription_ref=data['prescription_ref'], vet=data['vet'], health_event=data['health_event'],
-            notes=data['notes'], token=data['token'])
+            notes=data['notes'], handling_ack=data['handling_ack'], token=data['token'])
 
 
 class LastDayForm(ServiceErrors, forms.Form):

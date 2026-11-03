@@ -71,7 +71,7 @@ from farm.templatetags.stock import number
 
 from . import read
 # The farm's dates are one rule for every daily record; services.local_today and the others stay here.
-from .dates import check_date, earliest, local_today, shown_date, site_earliest  # noqa: F401
+from .dates import check_date, earliest, local_today, shown_date, site_earliest, sites_of  # noqa: F401
 from .fold import StockError
 
 Status = Tank.Status
@@ -467,10 +467,10 @@ def _log(user, action, operation, assessment=None):
                      severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
 
 
-def voided(user, entry, reason, units, label, check=None, sites=()):
-    """The void of a daily record, a stock operation, a feeding or a health record: one rule for all. It needs
-    its reason, is refused when the record is voided already or dated (`entry.date`) before the backdating
-    window of one of its units, or of one of `sites` (a health event of a whole site), then stops counting
+def voided(user, entry, reason, sites, label, check=None):
+    """The void of a daily record, a stock operation, a feeding or a movement of the store: one rule for
+    all. It needs its reason, is refused when the record is voided already or dated before the backdating
+    window on the clock of one of its sites (dates.sites_of gives a unit's), then stops counting
     (soft-deleted, with its reason), `check()` runs without it, and the activity log says "Voided" with the
     reason. Inside the caller's transaction, with the record locked."""
     reason = reason.strip()
@@ -478,10 +478,10 @@ def voided(user, entry, reason, units, label, check=None, sites=()):
         raise ValidationError({'reason': _('Say why it is voided.')})
     if entry.is_deleted:
         raise ValidationError({NON_FIELD_ERRORS: _('This operation is already voided.')})
-    firsts = [earliest(unit) for unit in units] + [site_earliest(site) for site in sites]
-    if any(entry.date < first for first in firsts):
-        raise ValidationError({NON_FIELD_ERRORS: _(
-            'Operations older than %(days)d days cannot be voided.') % {'days': settings.STOCK_BACKDATE_DAYS}})
+    for site in sites:
+        if entry.date < site_earliest(site):
+            raise ValidationError({NON_FIELD_ERRORS: _(
+                'Operations older than %(days)d days cannot be voided.') % {'days': settings.STOCK_BACKDATE_DAYS}})
     entry.void_reason = reason
     entry.soft_delete(user)
     if check is not None:
@@ -510,7 +510,7 @@ def record_input(user, *, species, input_stage, origin, day, lines, supplier=Non
     return _commit(user, OperationKind.INPUT, day, entries, ack=ack, token=token, new_batch=batch)
 
 
-def _needs_notes(reason, notes):
+def needs_notes(reason, notes):
     if reason == 'other' and not notes.strip():
         raise ValidationError({'notes': _('Say what it was: the reason is “other”.')})
 
@@ -519,7 +519,7 @@ def record_mortality(user, *, unit, batch, day, count, cause, measured_weight_kg
                      token=None):
     """Fish found dead. They leave the book at the share's average; their weighed weight, when given,
     is kept as a separate fact. `health_event`: the event they died under, if any."""
-    _needs_notes(cause, notes)
+    needs_notes(cause, notes)
     entry = Entry(unit, batch, MovementKind.MORTALITY, -count, reason=cause, measured_weight_kg=measured_weight_kg)
     return _commit(user, OperationKind.MORTALITY, day, [entry], notes=notes, token=token, health_event=health_event)
 
@@ -527,7 +527,7 @@ def record_mortality(user, *, unit, batch, day, count, cause, measured_weight_kg
 def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event=None, token=None):
     """Fish taken out and killed (too small, deformed, sick), at the share's average. `health_event`: the
     event they were culled under, if any."""
-    _needs_notes(reason, notes)
+    needs_notes(reason, notes)
     entry = Entry(unit, batch, MovementKind.CULL, -count, reason=reason)
     return _commit(user, OperationKind.CULL, day, [entry], notes=notes, token=token, health_event=health_event)
 
@@ -566,7 +566,7 @@ def record_transfer(user, *, source, batch, day, legs, reason, notes='', ack=Fal
     whose fish add up to 0; the fish leave at the batch's average in the source and arrive with exactly
     the grams that left, so biomass is conserved too. The batch stays the same (owner decision Q7)."""
     _destinations(source, [unit for unit, _count in legs])
-    _needs_notes(reason, notes)
+    needs_notes(reason, notes)
     entries = []
     for pair, (unit, count) in enumerate(legs, start=1):
         entries.append(Entry(source, batch, MovementKind.TRANSFER_OUT, -count, pair=pair, reason=reason))
@@ -638,7 +638,7 @@ def void(user, operation, reason):
         batches = locked(Batch, {line.batch_id for line in lines})
         units = locked(Tank, {line.unit_id for line in lines})
         before = read.unit_counts(list(units))
-        voided(user, operation, reason, units.values(), label(operation, lines),
+        voided(user, operation, reason, sites_of(units.values()), label(operation, lines),
                check=lambda: _validate(set(batches), set(units), operation.date))
         _follow_status(user, units, before)
         if operation.kind == OperationKind.INPUT:

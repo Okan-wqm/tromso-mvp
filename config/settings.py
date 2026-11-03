@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'knowledge',
     # Messages between people (and later their AI assistants), in the Production panel.
     'messaging',
+    # The store: storage locations, the items and lots they hold and their ledger (Operations › Storage).
+    'inventory',
 ]
 
 MIDDLEWARE = [

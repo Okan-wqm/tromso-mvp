@@ -16,14 +16,13 @@ What works today:
 - Roles (`/roles/`) and users (`/users/`), managed by the platform admin only (see Roles and users).
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
-- Two panels, switched from the top left: **Company** (overview, Facility › Sites, Knowledge,
-  Administration)
-  and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and under
-  Operations the production units with their fish, the water chemistry, Feeding: the meal board, the
-  records, the feeding protocols and their assignments, Harvest: harvested, harvest plan, production plans,
-  and Health: treatments, health events and sea-lice counts; and under Communication the messages). Each
-  has its own overview. A
+- Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
+  Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
+  ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
+  under Operations the production units with their fish, the water chemistry, the store (Storage), Feeding:
+  the meal board, the records, the feeding protocols and their assignments, Harvest: harvested, harvest plan,
+  production plans, and Health: treatments, health events and sea-lice counts; and under Communication the
+  messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
@@ -417,11 +416,15 @@ where fish came from must stay traceable, so a supplier fish were bought from ke
 is set inactive rather than deleted.
 
 A feed links to its manufacturer the same way (`Feed.manufacturer`, a live supplier of feed, see
-Reference data › Feeds), and like bought fish, a supplier that makes live feeds cannot be deleted. The
-three links are each a `SupplierLink` (`farm/models/supplier.py`): one declaration per link holds the
-category it takes (`limit_choices_to`, the model's validation and the form's list) and the words the
-supplier's form says when the category must stay ticked; `Supplier.clean` checks every such link, so a
-new link adds no code to the supplier.
+Reference data › Feeds), and like bought fish, a supplier that makes live feeds cannot be deleted. Every
+link to a supplier is a `SupplierLink` (`farm/models/supplier.py`): equipment, a feed's manufacturer, bought
+fish, a slaughter facility's operator, a harvest's transport, a delivery or return of the store. One
+declaration per link holds the category it takes (`limit_choices_to`, the model's validation and the form's
+list; or, for the store, `category_field`: the category of each item it brought), the words the supplier's
+form says when the category must stay ticked (`needed`, checked by `Supplier.clean`), and, for a `PROTECT`
+link from a plain row the delete plan does not follow, why the supplier cannot be deleted (`blocker`, read by
+`Supplier.delete_blockers`). The supplier reads its links (`Supplier.links`), so a new link adds no code to the
+supplier.
 
 Differences from the source:
 
@@ -806,7 +809,7 @@ are in the bug document, not in the database).
 published values):
 - **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
   converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
-  water it equals Emerson et al. (1975) within 0.002 pK. It needs the pH and the temperature of the same
+  water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
   sample; the salinity is the sample's, else the point's latest within 30 days before it, else 0 where
   every unit is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
@@ -814,20 +817,90 @@ published values):
   mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
   kept and flagged.
 
-**The page** has two views: **Latest** (every unit and every loop with a sample in the last 30 days, its
+**The page** has three tabs: **Latest** (every unit and every loop with a sample in the last 30 days, its
 status and the latest value of each parameter, coloured by status, its time and age on hover; a filter by
-site) and **History** (the samples, newest first, 50 a page, filtered by site, unit or loop, dates, and
+site), **History** (the samples, newest first, 50 a page, filtered by site, unit or loop, dates, and
 "only warnings and criticals"; each value coloured as judged now, worked-out values in italics; Void
-while the sample is in the window). **Record sample** opens the dialog (date and time on the site's
-clock, source, the twelve values in four groups, notes; from a unit's history the unit is fixed and each
-field's help shows its species' limits). **Round** is the morning round: a site and optionally a
-production department or a system, the columns to fill (temperature and oxygen by default), one row per
-unit that is not inactive and per loop, one time and one source; empty rows are skipped, a value out of
-range is shown in its cell and nothing is recorded until every cell is right (at most 200 rows).
+while the sample is in the window) and **Calculator** (below). **Record sample** opens the dialog (date
+and time on the site's clock, source, the twelve values in four groups, notes; from a unit's history the
+unit is fixed and each field's help shows its species' limits). **Round** is the morning round: a site
+and optionally a production department or a system, the columns to fill (temperature and oxygen by
+default), one row per unit that is not inactive and per loop, one time and one source; empty rows are
+skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right (at
+most 200 rows).
 
-**Who may do what**: the area Water chemistry (Production · Operations): Read the page, Create records
-a sample or a round, Delete voids one; the area Water limits (Production · Setup · Reference data) with
-read, create, edit and delete.
+**The calculator** (the third tab, `/operations/water/calculator/`) draws a water on the **Water
+Quality Management Chart**, the source's Deffeyes diagram, server-rendered as SVG without JavaScript
+(`farm/water/deffeyes.py`, `templates/farm/_deffeyes_chart.html`). It is a GET form: the values live in
+the address, nothing is stored, and without values it shows its defaults.
+- **In**: temperature, pH (NBS, 4 to 12), salinity, alkalinity (mg/L as CaCO₃), each with its
+  parameter's label, range and precision; optionally TAN, total sulfide (µg/L as S, as laboratories and
+  methylene-blue kits report it), dissolved oxygen with an altitude, calcium; a target pH and
+  alkalinity; the alkalinity band of the safe zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S
+  (µg/L as H₂S); and which layers to draw.
+- **The chart**: DIC (mmol/L) across, alkalinity (meq/L) up, 0 to 6 each and wider when the point, the
+  target or the band needs it; pH isolines every 0.25 from 4.25 to 12.5 (every 0.5 labelled); the
+  regions where NH₃ (above its border's isoline), H₂S (below its border's isoline) and CO₂ (below the
+  curve where CO₂ = the limit) pass their limits; the safe zone (the band, between the NH₃ border and
+  the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium given, from 5
+  to 44 ‰ (Mucci's range); the water (a star) and the target (a cross). A note says why a layer asked
+  for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its tooltip and the
+  legend.
+- **Out**, in a table next to the chart: alkalinity (meq/L), DIC, CO₂ and its status, target DIC and
+  CO₂, NH₃-N and its status, H₂S (µg/L as H₂S) and its status, each limit's pH border and the pH margin
+  to it, the most TAN and the most total sulfide this pH allows, the oxygen solubility and saturation.
+  A status follows the source: past the border critical, within 0.2 pH a warning.
+- **The chemistry** (`farm/water/chemistry.py`, one module with the ammonia and oxygen above): K1 and K2
+  of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
+  source calls them Millero 2010, WQ-39); Kw of Millero (1995); KB of Dickson (1990)
+  with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
+  Fernandez (1988); the Ksp of Mucci (1983); each converted to the free scale, the pH (NBS) too, as the
+  source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2), CO₂ = DIC α0; NH₃-N = TAN
+  K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH and an alkalinity that
+  cannot go together (the hydroxide alone above the alkalinity) are refused.
+- **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
+  comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
+  would give it one; entering 0 instead of 0.3 ‰ gives 7 to 13 % more CO₂ and 5 to 9 % more NH₃ at 5 to
+  25 °C and pH 6.5 to 8.5, the safe side. And a pH (NBS) is put on the seawater scale with a Davies-type
+  activity coefficient, not CO2SYS's apparent coefficient of Takahashi et al. (1982): at 35 ‰ the two
+  differ by −0.07 pH at 0 °C, −0.058 at 5 °C, about 0 at 25 °C and +0.05 at 40 °C; at 5 °C the chart
+  shows about 12 % less NH₃ and 16 % more CO₂ than CO2SYS would.
+- **The safe zone needs every limit it is bounded by**: without the TAN, the NH₃ limit, the CO₂ limit or
+  the alkalinity band, or with a total sulfide but no H₂S limit, it is not drawn and a note says what is
+  missing (a missing value is never taken for a safe one). Without a total sulfide it is drawn and named
+  "Safe zone (H₂S not assessed)". A border outside the chart's pH range (4 to 12.5) is said in words in
+  the table, and its region is still shaded wherever it meets the plotted box (a large box reaches past
+  pH 12.5 or below 4).
+- **The limits are defaults, not the fish's**: NH₃-N 0.0103 mg/L (0.0125 mg/L NH₃, Piper et al. 1982,
+  as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA 1986); the example water is the
+  source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L, target pH 7.5 at 100 mg/L)
+  with 2 µg/L sulfide as S.
+- **Checked** (`farm/tests/test_deffeyes.py`): the constants against their papers' published values;
+  CO₂ against Standard Methods 4500-CO₂ D; the source's own TypeScript, copied unchanged from its
+  engine, run over 689 waters and 24 charts (`farm/tests/deffeyes_reference/driver.ts` makes
+  `reference.json`, how is in its header): every value agrees within the table's rounding (DIC, NH₃
+  and H₂S within 1e−8 relative, the constants within 5e−8 pK, CO₂ within 3e−6 for the molar mass, the
+  borders within 1e−6 pH, the boundaries within the source's 4-decimal points); the chart's lines and
+  regions against the formulas, the point at its coordinates; the page in each language. What the source
+  did wrong is in the bug document (WQ-30 to WQ-39).
+- **Not ported**: the dosing (reagents, recipes, the dosing lines and the on-demand path), the volume,
+  the fish type and size (they changed nothing, WQ-37), the four small charts beside it (NH₃, H₂S and
+  carbonate against pH, calcite saturation) and the printed report.
+
+**Next: a chart per unit or loop.** The chart takes a `Water`, `Limits` and a `Target`, not a form, so a
+unit's or a loop's own chart needs no change to `deffeyes.py`: `Water` comes from the point's latest
+values (`read.latest`: temperature, pH, alkalinity, TAN, dissolved oxygen, and the salinity as
+`Context.salinity_for` finds it), `Limits` from the water limits of the fish in it today
+(`read.limits_now`: the critical high of NH₃-N and CO₂, the warning bounds of alkalinity as the band),
+the pressure from the site's altitude, and the drawer or the history includes
+`farm/_deffeyes_chart.html`. Three things come with it: total sulfide, calcium and H₂S become parameters
+(a column each, a migration, a limit parameter for H₂S); the pH and the alkalinity are taken from the
+same sample, or their age difference is shown, since the latest value of each may come from different
+samples; and a point's history can draw its samples as a track.
+
+**Who may do what**: the area Water chemistry (Production · Operations): Read the page (the calculator
+too), Create records a sample or a round, Delete voids one; the area Water limits (Production · Setup ·
+Reference data) with read, create, edit and delete.
 
 **Deleting**: a unit or a system keeps its samples, out of sight while it is deleted (the link is
 `DO_NOTHING`; the confirmation counts them) and back when it is restored, as its stock lines are; a
@@ -838,7 +911,7 @@ not restore them.
 columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
 email, SMS or push, no acknowledgement and no escalation. Someone has to look.
 
-Differences from the source (details in the bug document, WQ-01 to WQ-29):
+Differences from the source (details in the bug document, WQ-01 to WQ-39):
 
 - One store of limits, per species and water type, read by the one evaluator; the source had seven that
   disagreed and never applied its species limits (WQ-01, WQ-02, WQ-24).
@@ -851,11 +924,145 @@ Differences from the source (details in the bug document, WQ-01 to WQ-29):
   (WQ-14, WQ-15); a round skips empty rows (WQ-16) and is translated (WQ-17).
 - The oxygen saturation is worked out from mg/L (or the reverse) at the site's altitude (WQ-27); TGP is
   a parameter (WQ-25).
+- The calculator's chart keeps the H₂S limit in its safe zone, draws one when ammonia cannot reach its
+  limit and none when a limit it needs is missing (WQ-30); sulfide goes in as S and H₂S comes out as H₂S
+  (WQ-31); Ω only where its constants hold (WQ-32); the axes hold the point (WQ-33); a border off the chart
+  is said in words (WQ-34); CO₂ is judged against its limit (WQ-36); every input is checked (WQ-37,
+  WQ-38); K1 and K2 are cited to their paper (WQ-39).
 - Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
-  notifications, the Deffeyes calculator and dosing, H₂S, hardness and the other lab parameters,
-  detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan per unit,
-  and a site's intake water. The rations read the latest water temperature from here and keep no copy of
-  their own (WQ-02; `farm/feeding/temperature.py`).
+  notifications, the calculator's dosing, H₂S as a sample parameter, hardness and the other lab
+  parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
+  per unit, and a site's intake water. The rations read the latest water temperature from here and keep
+  no copy of their own (WQ-02; `farm/feeding/temperature.py`).
+
+### Operations › Storage (`/operations/storage/`) and Facility › Storage locations (`/storage-locations/`)
+
+The store: where the farm keeps feed (medicines once the health module's `Medicine` is in; chemicals and
+consumables when their records are ported), the lots it holds, and what came in and went out. Its own app,
+`inventory`, with its own tables and migrations: `storage_locations`, `inventory_items`, `inventory_lots`,
+`inventory_operations`, `inventory_lines` and `inventory_reorder_levels`.
+
+**Storage locations** (Company › Facility, a `core.crud` tab): a place on a site where stock is kept, a
+warehouse, a silo, a cold room, a chemical store, a medicine cabinet or an outdoor store. A table (location
+with its code, site, kind, feeder, capacity, **on hand now** worked out from the book with its number of
+lots, status), search by name or code, filters by site, kind and status, a form in the dialog with two inner
+tabs (General: site, name, code, kind, status, feeder; Capacity and notes) and a third, **Reorder levels**,
+saved as a list (one row per feed: the quantity below which the overview says the stock is low). The site is
+chosen once, at creation. A silo is a location, not equipment, and may name the feeder it fills (a feeder of
+its site; only a silo has one). The capacity is optional, in kg or in units counted (owner decision Q-S2):
+above it the overview warns and nothing is refused. An inactive location takes no new stock; what it holds
+still shows and can leave. Code unique among live locations, name unique within its site, capacity and its
+unit together, the feeder only on a silo: database checks, with the message on the field. Every optional
+field can be cleared.
+
+**The ledger.** An item (`InventoryItem`) has exactly one link, to a feed now (a database check); the person
+never picks an item, they pick a feed and the write path finds or makes its item. A lot (`InventoryLot`) is
+its number and expiry as printed on the bag, optional for feed and required for medicines (owner decision
+Q-S5): a delivery that names a known lot reuses it (any case), a different expiry for it is refused, feed
+without a printed number is one lot per expiry. An operation (`InventoryOperation`) is what a person did,
+with its date on the clock of the sites of its locations: a **delivery** from a supplier (lines of lots into
+locations, a cost per kg with its currency, the supplier's own document number, the one free text: a number,
+not a link), an **issue** (taken out for something other than feeding: a treatment, samples, maintenance), a
+**write-off** (expired, damaged, contaminated, spilled), a **return to the supplier** (it leaves the store), a
+**transfer** (one lot from one location to another, on the same site or another, owner decision Q-S6) or a
+**count** (one location at the end of a day). Its lines (`InventoryLine`) say how much of which lot came into
+(+) or left (−) which location, or was counted there. Nothing about the quantity is stored anywhere else.
+
+**Feeding never waits for the store.** The feed given is read from the feeding records of the units of a
+site (the unit's production department's site), per feed and day, and drawn on read from the site's lots,
+first expired first out (lots not expired that day by expiry, a lot without one last, then the day it first
+arrived, its number, the location's code; then expired lots, which the overview reports). What the book
+cannot cover is **feeding beyond the book**, per site and day: shown on the overview and the item's page,
+never refused, and never filled by a later delivery (owner decision Q-S1): it is fixed by recording the
+missing delivery, dated on or before the day (within the backdating window). Units without a site feed
+from no store.
+
+**The fold** (`inventory/fold.py`, pure; `inventory/read.py` loads it), per item over every location of every
+site, day by day: arrivals, departures, the feeding's draw, counts. The lines are facts and the feeding is an
+estimate of which lots were fed (a record names no lot), so a departure is checked against the book of the
+lines alone (it may never take a lot in a location below 0, on its day or later), and the feeding draws only
+what no later departure of the same lot needs. A count sets every lot of its location to the quantity
+counted (0 for one it does not list) at the end of its day; its variance is the counted quantity less the
+book just before it, feeding of that day included, **worked out on read, never stored** (owner decision
+Q-S7). One person records a count; there is no approval step.
+
+**One write path** (`inventory/services.py`, `_commit`): it locks the items, then the locations, each in
+primary-key order (a feeding takes no lock), refuses a form sent twice (its token), checks the date on the
+clock of every site it touches (`farm.stock.dates.check_site_date`: the farm's today at the latest, at most
+`STOCK_BACKDATE_DAYS` back), live locations, arrivals into active locations only, a live supplier that
+supplies the item's category (feed), lot number and expiry where the category needs them, then writes the
+operation and its lines and folds every item it touches from its first line: a backdated operation is placed
+where it belongs and accepted only if every later day stays right ("The write-off of 3 Nov from WH-1 would be
+left without its stock: … Void that operation first, or correct this one."). A supplier keeps the categories
+its live deliveries and returns need (`SupplierLink.category_field`). Every operation, void and new lot is in
+the activity log.
+
+**Void** is the farm's one void (`farm.stock.services.voided`, on the clock of the operation's sites): a
+reason, within the backdating window, struck through in the history, "Voided" in the log; refused when a
+later departure needs its stock (the message names it), or when a deleted location would hold stock again. A
+lot left without live lines is voided with it, so its number can be delivered again with another expiry. A
+correction is a void and a new entry; nothing is edited.
+
+**The page** has four tabs in the address (`?tab=`) and the actions Receive delivery, Transfer, Issue, Write
+off, Return to supplier and Count a location, each a dialog (the shared dialog or a page, the server's
+reasons on their fields, back to the page it came from):
+
+- **Overview**: feeding beyond the book (per site and feed, since when, a link to the day-by-day book) and
+  expired lots fed; per site and item the stock on hand, the feed of the last 7 days and the **days of
+  cover** (on hand ÷ the kilos fed a day there over the last 7 days); low stock (on hand of an item in a
+  location below its reorder level, owner decision Q-S4: what a purchasing agent will read to propose
+  orders); over capacity; lots expiring within 30 days and expired lots with stock; the value on hand per
+  site and currency (on hand × what the lot cost when delivered), never added across currencies.
+- **Stock**: a row per lot in a location (location, item, lot, expiry with an Expired badge, on hand, last
+  movement, value) with Transfer, Issue, Write off and Return, each with the lot and its location already
+  chosen; filters site, location, item and Show empty; totals per site and item. The item's day-by-day book
+  (`items/<id>/?site=`: in, out, fed from the book, fed beyond it, the count difference, the stock at the end
+  of each day) and the lot's trace (`lots/<id>/`: its deliveries and supplier, moves, departures and counts,
+  voided ones struck through, and the feeding estimated to have drawn it) are pages of their own.
+- **Movements**: the operations, newest first, 50 a page, each with its lines, supplier and document number,
+  who recorded it and when, notes, and Void while allowed; filters site, location, operation, item, supplier,
+  from and to (whole farm days), Show voided. The operation "Feeding (from the records)" lists the feed given
+  per site, feed and day, each linked to its feeding records.
+- **Counts**: each count with its variance per lot (book, counted, difference), who counted, Void while
+  allowed, and Count a location. The count dialog lists the lots the book has in the location at the end of
+  the chosen day (changing the location or the day renders it again, nothing saved); each must be filled in,
+  0 when none is left; lots found that the book did not have there are added as rows (a feed, a lot number
+  and expiry: a known lot is reused, an unknown one is made, its supplier unknown).
+
+**Who may do what:** the area Storage (Production · Operations): Read the page, Create records a delivery,
+an issue, a write-off, a return, a transfer or a count, Delete voids one; the area Storage locations (Company
+· Facility) with read, create, edit and delete (editing includes the reorder levels). **Deleting**: a location
+that holds stock cannot be deleted, so neither can its site; an empty one goes with its site. Deleting the
+feeder leaves the silo without one (logged). A feed with an item of the store, and a supplier named by a live
+delivery or return, cannot be deleted (`PROTECT`: traceability one step back). A deleted location keeps its
+lines and counts. `manage.py check_inventory` checks the whole store from scratch (operations made of their
+lines, transfer pairs, the suppliers' categories, lots that need a number and expiry, no departure below 0 in
+the book of the lines, no deleted location with stock) and the tests run it. The admin shows voided operations
+and lots and does not restore them.
+
+**For the health module (Medicine):** the second link of `InventoryItem` (`medicine`, `PROTECT`, null), the
+exactly-one check (`feed` xor `medicine`) and the `category` expression (a medicine → `medicines`) change in
+one migration of `inventory`; `LOT_REQUIRED` already requires a medicine lot's number and expiry; the
+delivery line and the count's found rows offer the medicine beside the feed, and `STOCKED` in
+`inventory/forms.py` gains `medicines` so the suppliers of medicines are offered; a medicine's unit is then
+chosen from `Unit`. Consumption from a treatment is read like the feeding (storage §3.8).
+
+Differences from the source (details in the bug document, STR-01 to STR-28):
+
+- One ledger and quantities on read, instead of a projection, a log and a total on each product that the
+  master forms could overwrite (STR-08, STR-15); feeding is read from the records and never refused (STR-01,
+  STR-10), per site, never from another site's store (STR-11).
+- Every reference is a foreign key: item, lot, location, site, supplier (STR-12, STR-13); a return takes stock
+  out (STR-03); a count corrects the book, there is no "adjustment" (STR-02); a count's variance is read
+  against the book of its day (STR-05); a departure names its lot in its location from a list (STR-06,
+  STR-07, STR-18); a transfer is one operation through the one write path, with the form's token (STR-07).
+- Every movement is dated on its day on the site's clock (STR-17, STR-26), the overview never adds kilos to
+  units or one currency to another and has no fake fill rate (STR-20), a location keeps its site (STR-21).
+- Not ported: purchase orders (phase 2, owner decision Q-S3: the delivery keeps its supplier and the
+  supplier's document number, and an order line link can be added to the delivered line later), chemicals,
+  consumables and healthcare without a master (STR-04), lot-mix relabelling (STR-19), temperature and humidity
+  ranges, the `hazmat` kind, count approval, a feeding record's lot, silo-first draw through the feeder, spare
+  parts (STR-28), barcode scanning.
 
 ### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
 
@@ -925,8 +1132,8 @@ keeps that category while it operates a facility), address, municipality, coordi
 species it takes (none: every species), capacity in tonnes a day, active or inactive, notes. There is no
 "default" facility (HRV-09): every harvest names its own (HRV-08). A facility harvests went to is not deleted
 ("1 harvest record still belongs to it. Set it inactive instead."), and a supplier named as a harvest's transport
-keeps its category and is not deleted either (`Supplier.delete_blockers` reads every SupplierLink of a record
-the delete plan does not follow).
+keeps its category and is not deleted either (`Supplier.delete_blockers` asks every SupplierLink, and a link from
+a record the delete plan does not follow says it blocks, `SupplierLink.blocker`).
 
 **Handling rules** (Setup › Reference data): per kind of handling (harvest, transport, grading, treatment) and
 species, or for every species (no species), how many hours the fish must have been without feed, 0 to 720, and
@@ -1426,12 +1633,14 @@ only one who manages roles and users; everyone else gets exactly what their role
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
   Feeding records (read the Meal board and Records, create = record a feeding or a meal, delete = void one),
   Feeding protocols and Protocol assignments (read, create, edit, delete), Water chemistry (read the page
-  and a unit's water, create = record a sample or a round, delete = void one), Slaughter facilities and
-  Handling rules (read, create, edit, delete), Harvested (read), Harvest plan and Production plans (read,
-  create, edit, delete), Medicines (read, create, edit, delete), Treatments (read, create, edit = change the
-  last day, delete = void one), Health events (read, create, edit, delete = void one), Sea-lice counts (read,
-  create, delete = void one), Messages (read = use Messages, create = also create channels), Library and
-  Knowledge entries (read, create, edit, delete; Edit also reviews an entry) and Activity log (read).
+  and a unit's water, create = record a sample or a round, delete = void one), Storage (read the page,
+  create = record a delivery, issue, write-off, return, transfer or count, delete = void one), Storage
+  locations (read, create, edit, delete), Slaughter facilities and Handling rules (read, create, edit, delete),
+  Harvested (read), Harvest plan and Production plans (read, create, edit, delete), Medicines (read, create,
+  edit, delete), Treatments (read, create, edit = change the last day, delete = void one), Health events
+  (read, create, edit, delete = void one), Sea-lice counts (read, create, delete = void one), Messages (read =
+  use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete;
+  Edit also reviews an entry) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -1473,7 +1682,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `knowledge`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `inventory`, `knowledge`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -1693,6 +1902,7 @@ real mail.
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
+| `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart of the water in the address (a GET form) |
 | `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
@@ -1707,6 +1917,12 @@ real mail.
 | `/operations/health/events/` | Operations › Health events; `<id>/void/` voids one |
 | `/operations/health/lice/` | Operations › Sea-lice counts; `new/` records one (`?unit=<id>` chooses the unit), `<id>/void/` voids it |
 | `/water-limits/` | Reference data › Water limits |
+| `/storage-locations/` | Company › Facility › Storage locations; `<id>/reorder/` saves a location's reorder levels |
+| `/operations/storage/` | Operations › Storage; `?tab=stock`, `movements` or `counts` |
+| `/operations/storage/receive/`, `issue/`, `write-off/`, `return/`, `transfer/` | Receive a delivery; a lot leaving a location (`?location=<id>&lot=<id>` chooses it) |
+| `/operations/storage/count/` | Count a location (`?location=<id>` chooses it) |
+| `/operations/storage/void/<id>/` | Voids an operation of the store |
+| `/operations/storage/items/<id>/`, `/operations/storage/lots/<id>/` | An item's day-by-day book (`?site=<id>`), a lot's trace |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
@@ -1749,9 +1965,10 @@ real mail.
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
-| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
+| `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |

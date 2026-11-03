@@ -1,0 +1,13 @@
+{% load i18n water %}{# A limit's pH border and the water's margin to it: two rows of the calculator's values. #}
+{% comment %} A border is a number only inside the chart's pH range (4 to 12.5); beyond it, and when the limit
+   cannot be reached at all, it is said in words (WQ-34), and there is no margin to show.{% endcomment %}
+<tr>
+  <th scope="row">{% if border.toxic_above %}{% trans "pH border, toxic above" %}{% else %}{% trans "pH border, toxic below" %}{% endif %}</th>
+  {% if border.on_chart %}<td class="num">{{ border.ph|amount:3 }}</td>{% elif border.everywhere %}<td>{% trans "passed at every pH of the chart's range (4 to 12.5)" %}</td>{% elif border.off_chart %}<td>{% trans "not reached in the chart's range (4 to 12.5)" %}</td>{% elif border.status == "ok" %}<td>{% trans "not reached at any pH" %}</td>{% else %}<td class="num">—</td>{% endif %}
+  <td></td>
+</tr>
+<tr>
+  <th scope="row">{% trans "pH margin to the border" %}</th>
+  <td class="num">{% if border.on_chart %}{{ border.margin|ph_margin }}{% else %}—{% endif %}</td>
+  <td></td>
+</tr>

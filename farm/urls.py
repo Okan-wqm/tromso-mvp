@@ -29,6 +29,7 @@ urlpatterns += [
     path('operations/feeding/new/', feeding.choose_unit, name='feeding_new'),
     path('operations/feeding/void/<uuid:pk>/', feeding.void_feeding, name='feeding_void'),
     path('operations/water/', water.water_page, name='water'),
+    path('operations/water/calculator/', water.calculator, name='water_calculator'),
     path('operations/water/record/', water.record_sample, name='water_record'),
     path('operations/water/round/', water.record_round, name='water_round'),
     path('operations/water/void/<uuid:pk>/', water.void_sample, name='water_void'),

@@ -1,0 +1,56 @@
+{% extends base_template %}
+{% load i18n inventory %}
+{% comment %} Count a location (inventory.views.count): the location and the day, the lots the book has there at the
+   end of that day, each to be filled in, and the lots found that the book did not have there. Changing the
+   location or the day renders the form again; the variance is worked out on read, never stored.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<form method="post" action="{{ request.get_full_path }}" class="record-form" novalidate>
+  {% csrf_token %}
+  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    {% for field in form.visible_fields %}{% include "registration/_field.html" %}{% endfor %}
+  </div>
+  {{ lines.management_form }}
+  {% if location %}
+  <p class="panel-help">{% trans "Count everything in the location. A count is what it holds at the end of the day: every lot listed must be filled in, 0 when none is left; anything else the book has there counts as 0." %}</p>
+  {% if pairs %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Item" %}</th><th scope="col">{% trans "Lot" %}</th><th scope="col">{% trans "Expiry date" %}</th><th scope="col" class="num">{% trans "Book" %}</th><th scope="col">{% trans "Counted" %}</th></tr></thead>
+      <tbody>
+        {% for line, lot, book in pairs %}
+        <tr>
+          <td>{{ lot.item }}</td><td>{{ lot }}</td><td class="nowrap">{% if lot.expiry_date %}{{ lot.expiry_date|date:"DATE_FORMAT" }}{% else %}—{% endif %}</td>
+          <td class="num">{{ book|quantity:lot.item.get_unit_display }}</td>
+          <td class="field{% if line.quantity.errors %} has-error{% endif %}">{{ line.lot }}<label class="sr-only" for="{{ line.quantity.id_for_label }}">{% trans "Counted" %}</label>{{ line.quantity }}{{ line.quantity.errors }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>{% trans "The book has nothing in this location at the end of that day." %}</p>
+  {% endif %}
+  {% else %}
+  <p class="panel-help">{% trans "Choose the location to count." %}</p>
+  {% endif %}
+  <fieldset class="form-fieldset" data-formset>
+    <legend>{{ rows_label }}</legend>
+    {{ rows.management_form }}
+    {% if rows.non_form_errors %}<div class="form-error" role="alert">{{ rows.non_form_errors }}</div>{% endif %}
+    <div class="contact-rows" data-rows>
+      {% for row in rows %}{% include "inventory/_row.html" with kind="input-row-4" legend=rows_label %}{% endfor %}
+    </div>
+    <template data-row-template>{% with row=rows.empty_form %}{% include "inventory/_row.html" with kind="input-row-4" legend=rows_label %}{% endwith %}</template>
+    <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{{ add_label }}</button>
+  </fieldset>
+  <div class="form-actions">
+    <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{% trans "Record count" %}</button>
+  </div>
+</form>
+{% endblock %}

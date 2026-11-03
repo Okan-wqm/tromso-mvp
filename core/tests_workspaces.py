@@ -53,16 +53,16 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
-        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Library', 'Knowledge entries', 'Activity log',
-                                                 'Roles', 'Users', 'Database'])
+        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
+                                                 'Activity log', 'Roles', 'Users', 'Database'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
                                                     'Medicines', 'Slaughter facilities', 'Handling rules', 'Suppliers', 'Production units',
-                                                    'Water chemistry', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
-                                                    'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
-                                                    'Messages'])
+                                                    'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                                    'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
+                                                    'Sea-lice counts', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -118,9 +118,9 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
                                                   'Medicines', 'Slaughter facilities', 'Handling rules', 'Suppliers', 'Production units',
-                                                  'Water chemistry', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
-                                                  'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
-                                                  'Messages'])
+                                                  'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                                  'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
+                                                  'Sea-lice counts', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -189,6 +189,7 @@ class MenuPlacementTests(TestCase):
         groups = {area.model: str(area.group) for area in access.areas()}
         self.assertEqual(groups, {
             'farm.Site': 'Company · Facility',
+            'inventory.StorageLocation': 'Company · Facility',
             'farm.ProductionDepartment': 'Production · Setup · Facility structure',
             'farm.System': 'Production · Setup · Facility structure',
             'farm.Equipment': 'Production · Setup · Facility structure',
@@ -205,6 +206,7 @@ class MenuPlacementTests(TestCase):
             'farm.FeedingProtocol': 'Production · Operations · Feeding',
             'farm.ProtocolAssignment': 'Production · Operations · Feeding',
             'farm.WaterMeasurement': 'Production · Operations',
+            'inventory.InventoryOperation': 'Production · Operations',
             'farm.HarvestRecord': 'Production · Operations · Harvest',
             'farm.HandlingPlanItem': 'Production · Operations · Harvest',
             'farm.ProductionPlan': 'Production · Operations · Harvest',

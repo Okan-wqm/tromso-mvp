@@ -1,0 +1,53 @@
+{% extends "crud/list.html" %}
+{% load i18n inventory %}
+{% comment %} Company › Facility › Storage locations (inventory.resources.StorageLocationResource): where stock is kept
+   on each site, with what each holds now, worked out from the store's book (inventory/read.py).{% endcomment %}
+{% block search_placeholder %}{% trans "Search by name or code" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <select id="site-filter" name="site" data-autosubmit>
+    <option value="">{% trans "All sites" %}</option>
+    {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="kind-filter">{% trans "Kind" %}</label>
+  <select id="kind-filter" name="kind" data-autosubmit>
+    <option value="">{% trans "All kinds" %}</option>
+    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "All statuses" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block empty_text %}{% trans "A storage location is a place on a site where stock is kept: a feed store, a silo, a cold room, a medicine cabinet." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Location" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col">{% trans "Feeder" %}</th><th scope="col" class="num">{% trans "Capacity" %}</th><th scope="col" class="num">{% trans "On hand now" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for location in objects %}{% with on_hand=held|of:location.pk %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'inventory:storagelocation_edit' location.pk %}" data-modal>{{ location.name }}</a>{% else %}<span class="row-title">{{ location.name }}</span>{% endif %}<span class="row-sub">{{ location.code }}</span></td>
+        <td>{{ location.site.name }}</td>
+        <td>{{ location.get_kind_display }}</td>
+        <td>{{ location.feeder.name|default:"—" }}</td>
+        <td class="num">{% if location.capacity is not None %}{{ location.capacity|quantity:location.get_capacity_unit_display }}{% else %}—{% endif %}</td>
+        <td class="num">{% if on_hand %}{{ on_hand.0|quantity }}<span class="row-sub">{% blocktrans trimmed count lots=on_hand.1 %}{{ lots }} lot{% plural %}{{ lots }} lots{% endblocktrans %}</span>{% else %}—{% endif %}</td>
+        <td><span class="badge badge-{{ location.status }}">{{ location.get_status_display }}</span></td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'inventory:storagelocation_edit' location.pk %}" data-modal title="{% blocktrans with name=location.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=location.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'inventory:storagelocation_delete' location.pk %}" data-modal title="{% blocktrans with name=location.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=location.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

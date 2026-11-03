@@ -36,7 +36,7 @@ from farm.handling import check
 from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
-from farm.stock.dates import check_date, earliest, local_today, shown_date
+from farm.stock.dates import check_date, earliest, local_today, shown_date, sites_of
 from farm.stock.services import AlreadyRecorded, locked, voided
 
 # The fields the activity log shows for a new treatment and a new lice count.
@@ -247,7 +247,7 @@ def void_treatment(user, treatment, reason):
         treatment = (Treatment.all_objects.select_for_update(of=('self',)).select_related('medicine')
                      .get(pk=treatment.pk))
         units = list(treatment.units.select_related('production_department__site'))
-        voided(user, treatment, reason, units, treatment_label(treatment, units))
+        voided(user, treatment, reason, sites_of(units), treatment_label(treatment, units))
         return treatment
 
 
@@ -279,7 +279,7 @@ def void_lice_count(user, count, reason):
     with transaction.atomic():
         count = (LiceCount.all_objects.select_for_update(of=('self',))
                  .select_related('unit__production_department__site').get(pk=count.pk))
-        voided(user, count, reason, [count.unit], count_label(count))
+        voided(user, count, reason, sites_of([count.unit]), count_label(count))
         return count
 
 
@@ -296,6 +296,5 @@ def void_event(user, event, reason):
                 '%(count)d record names this event (mortality, cull or treatment): void it first.',
                 '%(count)d records name this event (mortality, cull or treatment): void them first.',
                 operations + treatments) % {'count': operations + treatments}})
-        units = list(event.units.select_related('production_department__site'))
-        voided(user, event, reason, units, event_label(event), sites=[event.site])
+        voided(user, event, reason, [event.site], event_label(event))
         return event

@@ -7,9 +7,10 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
 - SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
 - PROTECT / RESTRICT  they block the delete until they are dealt with;
 - DO_NOTHING  they stay as they are, still pointing at it: history that outlives the record without
-  holding it back (a deleted unit's feeding records and water samples, as its stock lines), shown again
-  with it when it is restored. The database's own foreign key still refuses a hard delete. The
-  confirmation counts them.
+  holding it back (a deleted unit's feeding records and its sampling points, as its stock lines), shown again
+  with it when it is restored (restoring brings back only the record itself, so what must come back with it is
+  kept, not deleted with it). The database's own foreign key still refuses a hard delete. What they keep in
+  turn is kept too (a unit's points keep their water samples). The confirmation counts them all.
 
 Records linked to it through a many-to-many link (the equipment serving a system) keep the link row:
 the link only stops counting while the record is deleted, so restoring it brings the link back. The
@@ -108,9 +109,7 @@ def _collect(obj, plan, seen):
         link = relation.field.name
         action = relation.on_delete
         if action is models.DO_NOTHING:
-            count = model.objects.filter(**{link: obj}).count()
-            if count:
-                plan.kept[model] = plan.kept.get(model, 0) + count
+            _keep(model, model.objects.filter(**{link: obj}), plan)
             continue
         children = list(model.objects.filter(**{link: obj}))
         if not children:
@@ -125,6 +124,28 @@ def _collect(obj, plan, seen):
             plan.detach.extend((child, link) for child in children)
         elif action in (models.PROTECT, models.RESTRICT):
             plan.blockers.append(protected(model, len(children)))
+
+
+def _keeps_more(model):
+    """The links through which other farm records point at this kind of record with DO_NOTHING."""
+    return [relation for relation in model._meta.related_objects
+            if relation.one_to_many and issubclass(relation.related_model, AuditedModel)
+            and relation.on_delete is models.DO_NOTHING]
+
+
+def _keep(model, rows, plan):
+    """Counts the records of `rows` (a queryset) that stay as they are, out of sight, and what they keep in turn: a
+    deleted unit keeps its sampling points and they their water samples. Only a kind that keeps something is read
+    (a unit's points, a few); the rest are counted (a point's samples, thousands)."""
+    links = _keeps_more(model)
+    records = list(rows) if links else []
+    count = len(records) if links else rows.count()
+    if not count:
+        return
+    plan.kept[model] = plan.kept.get(model, 0) + count
+    for relation in links:
+        child = relation.related_model
+        _keep(child, child.objects.filter(**{f'{relation.field.name}__in': records}), plan)
 
 
 def protected(model, count):

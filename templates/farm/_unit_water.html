@@ -1,9 +1,12 @@
 {% load i18n water %}
 {% comment %} The Water section of a unit's drawer (farm.water.views.drawer): the latest value of every parameter
-   measured in the last 30 days, worked-out values in italics, its time and age, its status for the fish
-   in the unit now and the limits that judged it; Record water sample and the unit's water history.{% endcomment %}
+   measured in the last 30 days at the unit's middle sampling point (the point that stands for its water),
+   worked-out values in italics, its time and age, its status for the fish in the unit now and the limits that
+   judged it; Record water sample and the unit's water history.{% endcomment %}
 <section class="drawer-section">
   <h3>{% trans "Water" %} {% include "farm/_water_status.html" with status=water_point.status %}</h3>
+  {% if water_point.point %}<p class="row-sub">{% blocktrans trimmed with point=water_point.point %}at {{ point }}{% endblocktrans %}</p>
+  {% else %}<p class="muted">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}{% if water_points_url %} <a href="{{ water_points_url }}">{% trans "Sampling points" %}</a>{% endif %}</p>{% endif %}
   {% if water_readings %}
   <div class="table-wrap">
     <table class="data-table drawer-table water-drawer">

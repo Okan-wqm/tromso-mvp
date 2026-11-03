@@ -30,11 +30,18 @@ LOGGED = ['unit', 'system', 'equipment', 'name', 'kind', 'depth_m', 'flow_m3_h',
           'description']
 
 
-def default_points(owner):
-    """[(kind, name)] a new owner starts with; none for a piece of equipment."""
-    if owner_type_of(owner) == EQUIPMENT:
+def template_for(owner_type, unit_kind=''):
+    """[(kind, name)] a new owner of that type starts with (for a unit, of that kind of unit); none for a piece of
+    equipment. Plain values, no models: migration farm/0019 reads it for the units and systems that existed before
+    the points did, so keep its shape."""
+    if owner_type == EQUIPMENT:
         return []
-    return DEFAULTS[owner.kind if owner_type_of(owner) == UNIT else SYSTEM]
+    return DEFAULTS[unit_kind if owner_type == UNIT else SYSTEM]
+
+
+def default_points(owner):
+    """[(kind, name)] a new owner starts with."""
+    return template_for(owner_type_of(owner), getattr(owner, 'kind', ''))
 
 
 def snapshot(point):

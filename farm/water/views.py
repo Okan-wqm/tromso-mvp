@@ -4,10 +4,18 @@ dialogs that record a sample, a round or a void. A read page with dialogs, as Pr
 (farm/stock/views.py): each dialog renders in the shared dialog or as a page, posts to itself and goes
 back where it was opened (`next`).
 
+A sample is at a sampling point (farm/models/water_point.py). The address names where a page or a dialog is
+about: `?point=<id>` one point, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner (every point of it
+in the history; its middle point, the one that stands for its water, where one is to be chosen), or `?owner=`
+with `unit:<id>`, `system:<id>` or `equipment:<id>` (what the history's filter sends).
+
 Who may do what (config/access.py, area Water chemistry): reading needs view on the samples (the
 calculator too: it stores nothing), recording a sample or a round add, voiding one delete. The buttons a
 person cannot use are not shown, and the views refuse them too. The page judges every value on read
 (farm/water/read.py) and alerts nobody: critical values are shown, not sent."""
+import uuid
+from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 
 from django.contrib import messages
@@ -26,10 +34,10 @@ from core import navigation
 from core.crud import done, render_page
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
-                           find_point)
-from ..models import Site, System, Tank, WaterMeasurement
+                           find_point, point_order)
+from ..models import Equipment, SamplingPoint, Site, System, Tank, WaterMeasurement
 from ..models.site import zone_of
-from ..models.water import LIVE_POINT, local_time, site_of
+from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, owner_type_of, site_of
 from ..stock.services import AlreadyRecorded
 from . import deffeyes, parameters, read, services
 from .evaluate import ALERTS, Status
@@ -39,6 +47,8 @@ VIEW, RECORD, VOID = 'farm.view_watermeasurement', 'farm.add_watermeasurement', 
 HISTORY = 'history'
 PAGE_SIZE = 50
 HISTORY_DAYS = 30      # the history's default span, back from today
+OWNER_MODELS = {UNIT: Tank, SYSTEM: System, EQUIPMENT: Equipment}
+OWNER_RELATED = {UNIT: ('production_department__site',), SYSTEM: ('site',), EQUIPMENT: ('production_department__site',)}
 
 
 def _context(**extra):
@@ -51,13 +61,52 @@ def page_url(**query):
     return reverse('farm:water') + (f'?{urlencode(query)}' if query else '')
 
 
-def point_query(point):
-    """The query string key and value of a unit's or a system's history."""
-    return ('system', str(point.pk)) if isinstance(point, System) else ('unit', str(point.pk))
+@dataclass
+class Place:
+    """What an address names: an owner (a unit, a loop, a piece of equipment) and, when it names one, a point."""
+    owner: object = None
+    point: object = None
+
+    @property
+    def target(self):
+        """What the page is about: the point when one is named, else the owner."""
+        return self.point or self.owner
 
 
-def history_url(point):
-    return page_url(**dict([point_query(point)]))
+def target_query(target):
+    """The query string key and value that name a point (?point=) or an owner (?unit=, ?system=, ?equipment=)."""
+    if isinstance(target, SamplingPoint):
+        return 'point', str(target.pk)
+    return owner_type_of(target), str(target.pk)
+
+
+def history_url(target):
+    """The history of a point, or of an owner (every point of it)."""
+    return page_url(**dict([target_query(target)]))
+
+
+def _owner(owner_type, value):
+    """The live owner of that type the id names; None when it names none."""
+    try:
+        uuid.UUID(value)
+    except ValueError:
+        return None
+    return OWNER_MODELS[owner_type].objects.select_related(*OWNER_RELATED[owner_type]).filter(pk=value).first()
+
+
+def _place(request):
+    """Where the address says the page or dialog is about (see the module's docstring); Place() when nothing."""
+    point = find_point(request.GET.get('point', ''))
+    if point is not None:
+        return Place(point.owner, point)
+    kind, _sep, value = request.GET.get('owner', '').partition(':')
+    asked = ([(kind, value)] if kind in OWNER_MODELS else []) + [(name, request.GET.get(name, ''))
+                                                                  for name in OWNER_MODELS]
+    for owner_type, value in asked:
+        owner = _owner(owner_type, value) if value else None
+        if owner is not None:
+            return Place(owner)
+    return Place()
 
 
 def _next(request, default):
@@ -97,74 +146,83 @@ def _site_param(request, sites):
 def water_page(request):
     sites = list(Site.objects.order_by('name'))
     site = _site_param(request, sites)
-    point = _point(request)
-    showing_history = point is not None or request.GET.get('view') == HISTORY
+    place = _place(request)
+    showing_history = place.owner is not None or request.GET.get('view') == HISTORY
     context = _context(
-        sites=sites, site=site, point=point, showing_history=showing_history,
+        sites=sites, site=site, place=place, owner=place.owner, point=place.point, showing_history=showing_history,
         latest_url=page_url(site=site.pk if site else ''),
         history_tab_url=page_url(view=HISTORY, site=site.pk if site else ''),
         calculator_url=reverse('farm:water_calculator'),
         can_record=request.user.has_perm(RECORD), can_void=request.user.has_perm(VOID),
-        record_url=_dialog_url('farm:water_record', request, point),
+        record_url=_dialog_url('farm:water_record', request, place.target),
         round_url=reverse('farm:water_round') + (f'?{urlencode({"site": site.pk})}' if site else ''),
     )
-    context.update(_history(request, site, point) if showing_history else _latest(site))
+    context.update(_history(request, site, place) if showing_history else _latest(site))
     return render_page(request, 'farm/water.html', context)
 
 
-def _dialog_url(name, request, point=None, args=()):
-    """A dialog's address: it goes back to this page, and is about `point` when one is given."""
+def _dialog_url(name, request, target=None, args=()):
+    """A dialog's address: it goes back to this page, and is about `target` (a point or an owner) when given."""
     query = {'next': request.get_full_path()}
-    if point is not None:
-        query.update([point_query(point)])
+    if target is not None:
+        query.update([target_query(target)])
     return f'{reverse(name, args=args)}?{urlencode(query)}'
 
 
-def _point(request):
-    """The unit or system the address names (?unit= or ?system=), live; None when it names none."""
-    if request.GET.get('unit'):
-        return find_point(f"tank:{request.GET['unit']}")
-    if request.GET.get('system'):
-        return find_point(f"system:{request.GET['system']}")
-    return None
-
-
 def _latest(site):
+    """One row per point: the middle point of every unit (a unit without one is a row of its own, to say so), and
+    every other point of an owner that has a sample within the window (loops and equipment show only then)."""
     units = Tank.objects.select_related('production_department__site', 'system')
-    systems = System.objects.select_related('site').filter(
-        water_samples__is_deleted=False, water_samples__measured_at__gte=timezone.now() - read.WINDOW).distinct()
     if site is not None:
         units = units.filter(production_department__site=site)
-        systems = systems.filter(site=site)
-    points = [*units.order_by('production_department__site__name', 'production_department__name', 'code'),
-              *systems.order_by('site__name', 'code')]
-    water = read.latest(points)
-    columns = _columns([water[read.key(point)].readings for point in points])
-    rows = [{'point': point, 'loop': isinstance(point, System), 'water': water[read.key(point)],
-             'history_url': history_url(point),
-             'cells': [water[read.key(point)].get(parameter.code) for parameter in columns]}
-            for point in points]
+    units = list(units.order_by('production_department__site__name', 'production_department__name', 'code'))
+    since = timezone.now() - read.WINDOW
+    recent = (SamplingPoint.objects.filter(is_active=True, samples__is_deleted=False, samples__measured_at__gte=since)
+              .with_owners().distinct())
+    if site is not None:
+        recent = recent.filter(Q(unit__production_department__site=site) | Q(system__site=site)
+                               | Q(equipment__production_department__site=site))
+    middles = read.middle_points(units)
+    points = {point.pk: point for point in [*middles.values(), *recent]}
+    by_owner = defaultdict(list)
+    for point in points.values():
+        by_owner[point.owner.pk].append(point)
+    water = read.latest(list(points.values()))
+    entries = []
+    for unit in units:
+        if unit.pk not in middles:
+            entries.append((unit, None))
+        entries += [(unit, point) for point in sorted(by_owner.pop(unit.pk, []), key=point_order)]
+    entries += [(point.owner, point) for point in sorted((p for found in by_owner.values() for p in found),
+                                                         key=point_order)]
+    rows = []
+    for owner, point in entries:
+        point_water = water[point.pk] if point is not None else read.PointWater(None)
+        rows.append({'owner': owner, 'point': point, 'loop': isinstance(owner, System), 'water': point_water,
+                     'history_url': history_url(point or owner)})
+    columns = _columns([row['water'].readings for row in rows])
+    for row in rows:
+        row['cells'] = [row['water'].get(parameter.code) for parameter in columns]
     counts = {status: sum(1 for row in rows if row['water'].status == status) for status in ALERTS}
-    return {'rows': rows, 'columns': columns, 'critical_count': counts[Status.CRITICAL],
-            'warning_count': counts[Status.WARNING], 'now': timezone.now()}
+    return {'rows': rows, 'columns': columns, 'point_count': sum(1 for row in rows if row['point'] is not None),
+            'critical_count': counts[Status.CRITICAL], 'warning_count': counts[Status.WARNING],
+            'now': timezone.now()}
 
 
 def _day(request, name, default):
     return parse_date(request.GET.get(name, '')) or default
 
 
-def _history(request, site, point):
-    zone = zone_of(site if point is None else site_of(point))
+def _history(request, site, place):
+    zone = zone_of(site if place.owner is None else site_of(place.owner))
     today = timezone.localdate(timezone=zone)
     start, end = _day(request, 'from', today - timedelta(days=HISTORY_DAYS)), _day(request, 'to', today)
-    samples = (WaterMeasurement.all_objects.filter(LIVE_POINT)
-               .filter(measured_at__gte=timezone.make_aware(datetime.combine(start, time.min), zone),
-                       measured_at__lt=timezone.make_aware(datetime.combine(end + timedelta(days=1), time.min), zone))
-               .select_related('unit__production_department__site', 'system__site', 'created_by', 'deleted_by'))
-    if point is not None:
-        samples = samples.filter(**{'system' if isinstance(point, System) else 'unit': point})
-    elif site is not None:
-        samples = samples.filter(Q(unit__production_department__site=site) | Q(system__site=site))
+    samples = read.samples_of(
+        points=[place.point] if place.point is not None else None,
+        owner=None if place.point is not None else place.owner,
+        site=site if place.owner is None else None,
+        since=timezone.make_aware(datetime.combine(start, time.min), zone),
+        before=timezone.make_aware(datetime.combine(end + timedelta(days=1), time.min), zone))
     rows = read.history(list(samples))
     alerts_only = request.GET.get('alerts') == '1'
     if alerts_only:
@@ -175,23 +233,39 @@ def _history(request, site, point):
     for row in page.object_list:
         sample = row.sample
         row.cells = [row.readings.get(parameter.code) for parameter in columns]
+        row.history_url = history_url(sample.point)
         if request.user.has_perm(VOID) and not sample.is_deleted:
-            first = earliest.setdefault(read.key(sample.point), services.earliest(sample.point))
+            first = earliest.setdefault(sample.point_id, services.earliest(sample.point))
             if local_time(sample.measured_at, sample.point).date() >= first:
                 row.void_url = _dialog_url('farm:water_void', request, args=[sample.pk])
     kept = request.GET.copy()
     kept.pop('page', None)
     return {'history': page.object_list, 'page': page, 'pager_query': kept.urlencode(), 'columns': columns,
             'start': start, 'end': end, 'alerts_only': alerts_only, 'zone': zone,
-            'point_choices': _point_filter(site)}
+            'owner_groups': _owner_groups(site, place.owner),
+            'point_choices': _owner_points(place.owner)}
 
 
-def _point_filter(site):
-    units = Tank.objects.order_by('code')
-    systems = System.objects.order_by('code')
-    if site is not None:
-        units, systems = units.filter(production_department__site=site), systems.filter(site=site)
-    return {'units': list(units), 'systems': list(systems)}
+def _owner_groups(site, chosen):
+    """[(group label, [(value, label, selected)])] of the owners the history can be narrowed to, `type:<id>`."""
+    groups = []
+    for label, model, owner_type in ((_('Units'), Tank, UNIT), (_('Systems (loop)'), System, SYSTEM),
+                                     (_('Equipment'), Equipment, EQUIPMENT)):
+        owners = model.objects.order_by('code')
+        if site is not None:
+            owners = owners.filter(**{('site' if owner_type == SYSTEM else 'production_department__site'): site})
+        options = [(f'{owner_type}:{owner.pk}', f'{owner.code} · {owner.name}',
+                    chosen is not None and chosen.pk == owner.pk) for owner in owners]
+        if options:
+            groups.append((label, options))
+    return groups
+
+
+def _owner_points(owner):
+    """The points of the owner the history is narrowed to, each can be chosen in turn; none without an owner."""
+    if owner is None:
+        return []
+    return sorted(SamplingPoint.objects.filter(**{owner_type_of(owner): owner}), key=point_order)
 
 
 # ---- the calculator ------------------------------------------------------------------------------------
@@ -214,14 +288,18 @@ def calculator(request):
 # ---- the dialogs ---------------------------------------------------------------------------------------
 @permission_required(RECORD, raise_exception=True)
 def record_sample(request):
-    """Record water sample: at the unit or loop named in the address (from the unit drawer or a history),
-    else at the unit or system chosen."""
-    point = _point(request)
-    back = _next(request, history_url(point) if point is not None else page_url())
+    """Record water sample: at the point named in the address, or at the middle point of the unit, loop or piece
+    of equipment named (from the unit drawer or a history), the others of the owner one choice away; else at the
+    point chosen."""
+    place = _place(request)
+    point = place.point
+    if point is None and place.owner is not None:
+        point = read.middle_points([place.owner]).get(place.owner.pk)
+    back = _next(request, history_url(place.target) if place.owner is not None else page_url())
     limits = read.limits_now(point) if point is not None else {}
-    context = _context(heading=_('Record water sample'), point=point, back_url=back)
+    context = _context(heading=_('Record water sample'), owner=place.owner, point=point, back_url=back)
     if request.method == 'POST':
-        form = WaterSampleForm(request.POST, point=point, limits=limits)
+        form = WaterSampleForm(request.POST, owner=place.owner, point=point, limits=limits)
         if form.is_valid():
             try:
                 sample = form.save(request.user)
@@ -230,23 +308,24 @@ def record_sample(request):
             except ValidationError as error:
                 form.add_service_error(error)
             else:
-                messages.success(request, _('Water sample recorded at %(point)s.') % {'point': sample.point.code})
+                messages.success(request, _('Water sample recorded at %(point)s.') % {'point': sample.point})
                 return done(request, back)
         return _refused(request, 'farm/water_record.html', {**context, 'form': form})
-    form = WaterSampleForm(point=point, limits=limits)
+    form = WaterSampleForm(owner=place.owner, point=point, limits=limits)
     return render_page(request, 'farm/water_record.html', {**context, 'form': form})
 
 
 @permission_required(RECORD, raise_exception=True)
 def record_round(request):
-    """A round: the units (and loops) of a site, a production department or a system, one row each, at one
-    time and from one source. Empty rows are skipped; the rest are recorded together or not at all."""
+    """A round: the middle points of the units and loops of a site, a production department or a system, one row
+    each, and the other points of them or of the equipment when asked, at one time and from one source. Empty rows
+    are skipped; the rest are recorded together or not at all."""
     scope = RoundScopeForm(request.GET)
-    site, department, system, columns = scope.scope()
-    points = scope.points(site, department, system)
+    site, department, system, columns, include = scope.scope()
+    points = scope.points(site, department, system, include)
     if len(points) > services.ROUND_ROWS:
         points = []
-        scope.add_error(None, _('More than %(rows)d units and systems: choose a production department or a system.')
+        scope.add_error(None, _('More than %(rows)d points: choose a production department or a system.')
                         % {'rows': services.ROUND_ROWS})
     data = request.POST if request.method == 'POST' else None
     header = RoundForm(data, site=site)
@@ -289,8 +368,7 @@ def _round_errors(error, header, entered):
 @permission_required(VOID, raise_exception=True)
 def void_sample(request, pk):
     """Voids a sample, with the reason."""
-    sample = get_object_or_404(WaterMeasurement.objects.select_related(
-        'unit__production_department__site', 'system__site'), pk=pk)
+    sample = get_object_or_404(WaterMeasurement.objects.select_related(*read.POINT_RELATED), pk=pk)
     back = _next(request, history_url(sample.point))
     context = _context(heading=_('Void water sample'), sample=sample, back_url=back,
                        values=[(parameters.get(code), value) for code, value in sample.values().items()])
@@ -302,7 +380,7 @@ def void_sample(request, pk):
             except ValidationError as error:
                 form.add_service_error(error)
             else:
-                messages.success(request, _('Water sample of %(point)s voided.') % {'point': sample.point.code})
+                messages.success(request, _('Water sample of %(point)s voided.') % {'point': sample.point})
                 return done(request, back)
         return _refused(request, 'farm/water_void.html', {**context, 'form': form})
     return render_page(request, 'farm/water_void.html', {**context, 'form': SampleVoidForm()})
@@ -311,11 +389,10 @@ def void_sample(request, pk):
 # ---- Production units and the overview ------------------------------------------------------------------
 def unit_water(user, units):
     """The latest water of each unit on Production units, by unit id (its Temp. and O₂ columns and its
-    status dot); nothing for a person who may not read the water."""
+    status dot): its middle point's (farm/water/read.py); nothing for a person who may not read the water."""
     if not user.has_perm(VIEW):
         return {}
-    water = read.latest(units)
-    return {unit.pk: water[read.key(unit)] for unit in units}
+    return read.unit_water(units)
 
 
 def critical_count(water):
@@ -333,15 +410,18 @@ def _drawer_order(point_water):
 
 
 def drawer(request, unit):
-    """The Water section of a unit's drawer on Production units: the latest value of every parameter with its
-    age, status and limits, the values worked out from it, Record water sample and the unit's history."""
+    """The Water section of a unit's drawer on Production units: the latest value of every parameter of its middle
+    point with its age, status and limits, the values worked out from it, Record water sample and the unit's
+    history."""
     if not request.user.has_perm(VIEW):
         return {}
-    point_water = read.latest([unit])[read.key(unit)]
+    point_water = read.unit_water([unit])[unit.pk]
     return {
         'water_point': point_water, 'water_readings': _drawer_order(point_water),
         'water_history_url': history_url(unit),
         'water_record_url': _dialog_url('farm:water_record', request, unit) if request.user.has_perm(RECORD) else '',
+        'water_points_url': f'{reverse("farm:samplingpoint_list")}?{urlencode({"unit": unit.pk})}'
+        if request.user.has_perm('farm.view_samplingpoint') else '',
     }
 
 

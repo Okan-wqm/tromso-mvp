@@ -273,37 +273,46 @@ class SamplingPoint(AuditedModel):
                                            flow_share_pct__isnull=False).exclude(pk=self.pk)
         return others.aggregate(total=models.Sum('flow_share_pct'))['total'] or Decimal(0)
 
+    def tidy(self):
+        """Empties what the kind does not use, as a unit's kind-dependent fields are (Tank.tidy): the depth of a point
+        that is not a depth point, the flow of one that is on no stream, the share of one that is not an outlet.
+        `clean` does it, so a form that drops those fields for a kind never stores what an earlier kind had."""
+        if self.kind != PointKind.DEPTH:
+            self.depth_m = None
+        if self.kind not in STREAM_KINDS:
+            self.flow_m3_h = None
+        if self.kind not in OUTLET_KINDS:
+            self.flow_share_pct = None
+
     def clean(self):
         super().clean()
+        self.tidy()
         errors = {}
         owner = self.owner
         if self.kind in PointKind.values and owner is not None and PointKind(self.kind) not in kinds_for(owner):
             errors['kind'] = ValidationError(
                 _('%(owner)s cannot have a point of this kind: %(kinds)s.'),
                 params={'owner': owner.code, 'kinds': ', '.join(str(kind.label) for kind in kinds_for(owner))})
+        if self.kind == PointKind.MIDDLE and self.is_active and owner is not None:
+            others = type(self).objects.filter(**{self.owner_type: owner}, kind=PointKind.MIDDLE, is_active=True)
+            if others.exclude(pk=self.pk).exists():
+                errors['kind'] = _('This owner already has an active middle point: it stands for its water.')
         if self.kind == PointKind.DEPTH:
             if self.depth_m is None:
                 errors['depth_m'] = _('A depth point has a depth.')
-            elif owner is not None and isinstance(owner, Tank):
+            elif isinstance(owner, Tank):
                 deepest = max((value for value in (owner.depth, owner.max_depth, owner.max_submersion_depth)
                                if value is not None), default=None)
                 if deepest is not None and self.depth_m > deepest:
                     errors['depth_m'] = ValidationError(
                         _('%(unit)s is %(depth)s m deep: the point cannot be deeper.'),
                         params={'unit': owner.code, 'depth': deepest.normalize()})
-        elif self.depth_m is not None:
-            errors['depth_m'] = _('Only a depth point has a depth.')
-        if self.flow_m3_h is not None and self.kind not in STREAM_KINDS:
-            errors['flow_m3_h'] = _('A flow can be stated for an inlet or an outlet only.')
-        if self.flow_share_pct is not None:
-            if self.kind not in OUTLET_KINDS:
-                errors['flow_share_pct'] = _('A share of the outflow can be stated for an outlet only.')
-            elif self.is_active and owner is not None:
-                total = self.other_shares() + self.flow_share_pct
-                if total > 100:
-                    errors['flow_share_pct'] = ValidationError(
-                        _('The outlets of %(owner)s would take %(total)s %% of its outflow: at most 100.'),
-                        params={'owner': owner.code, 'total': total.normalize()})
+        if self.flow_share_pct is not None and self.is_active and owner is not None:
+            total = self.other_shares() + self.flow_share_pct
+            if total > 100:
+                errors['flow_share_pct'] = ValidationError(
+                    _('The outlets of %(owner)s would take %(total)s %% of its outflow: at most 100.'),
+                    params={'owner': owner.code, 'total': total.normalize()})
         if errors:
             raise ValidationError(errors)
 

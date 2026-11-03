@@ -1,20 +1,21 @@
 {% extends base_template %}
 {% load i18n %}
-{% comment %} Record water sample (farm.water.views.record_sample): one sample at a unit or a loop, its values grouped,
-   each labelled with its unit and basis and, for a unit with fish, the limits of their species. In the
-   dialog or as a page; the server's reasons appear on the field they concern.{% endcomment %}
-{% block title %}{{ heading }}{% if point %} · {{ point.code }}{% endif %}{% endblock %}
+{% comment %} Record water sample (farm.water.views.record_sample): one sample at a sampling point, its values
+   grouped, each labelled with its unit and basis and, for a unit with fish, the limits of their species. From a
+   unit, a loop or a piece of equipment the point chosen is its middle one, the others a choice away (one point
+   alone is fixed). In the dialog or as a page; the server's reasons appear on the field they concern.{% endcomment %}
+{% block title %}{{ heading }}{% if owner %} · {{ owner.code }}{% endif %}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}
 {% block content %}
-{% if point %}<p class="op-context"><strong>{{ point.code }}</strong> · {{ point.name }}</p>{% endif %}
+{% if owner %}<p class="op-context"><strong>{{ owner.code }}</strong> · {{ owner.name }}</p>{% endif %}
 <form method="post" action="{{ request.get_full_path }}" class="record-form" novalidate>
   {% csrf_token %}
   {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
   {% for hidden in form.hidden_fields %}{% if hidden.errors %}<div class="form-error" role="alert">{{ hidden.errors }}</div>{% endif %}{% endfor %}
   <div class="form-grid">
-    {% if not point %}{% with field=form.point %}{% include "registration/_field.html" %}{% endwith %}{% endif %}
+    {% if not form.fixed %}{% with field=form.point %}{% include "registration/_field.html" %}{% endwith %}{% endif %}
     {% with field=form.measured_at %}{% include "registration/_field.html" %}{% endwith %}
     {% with field=form.source %}{% include "registration/_field.html" %}{% endwith %}
   </div>

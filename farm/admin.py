@@ -56,7 +56,8 @@ class WaterMeasurementAdmin(StockRecordAdmin):
 
     list_display = ['__str__', 'source', 'created_by', 'is_deleted', 'void_reason']
     list_filter = ['is_deleted', 'source']
-    list_select_related = ['unit__production_department__site', 'system__site', 'created_by']
+    list_select_related = ['point__unit__production_department__site', 'point__system__site',
+                           'point__equipment__production_department__site', 'created_by']
 
 
 @admin.register(Treatment)

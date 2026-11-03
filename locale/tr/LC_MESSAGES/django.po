@@ -1119,15 +1119,15 @@ msgid "Carbonate system"
 msgstr "Karbonat sistemi"
 
 msgid ""
-"Carbonic acid: Millero (2010); water: Millero (1995); boric acid: Dickson (1990); ammonium: "
-"Millero (1995); hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: "
-"Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border"
-" nearer than 0.2 pH is a warning."
+"Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); "
+"boric acid: Dickson (1990); ammonium: Millero (1995); hydrogen sulfide: Millero, Plese and "
+"Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is "
+"as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning."
 msgstr ""
-"Karbonik asit: Millero (2010); su: Millero (1995); borik asit: Dickson (1990); amonyum: Millero "
-"(1995); hidrojen sülfür: Millero, Plese ve Fernandez (1988); kalsit ve aragonit: Mucci (1983); "
-"oksijen: Benson ve Krause (1984). pH, bir ölçerin okuduğu gibidir (NBS ölçeği). 0,2 pH'den yakın "
-"bir sınır uyarıdır."
+"Karbonik asit: Millero, Graham, Huang, Bustos-Serrano ve Pierrot (2006); su: Millero (1995); "
+"borik asit: Dickson (1990); amonyum: Millero (1995); hidrojen sülfür: Millero, Plese ve Fernandez"
+" (1988); kalsit ve aragonit: Mucci (1983); oksijen: Benson ve Krause (1984). pH, bir ölçerin "
+"okuduğu gibidir (NBS ölçeği). 0,2 pH'den yakın bir sınır uyarıdır."
 
 msgid "Category"
 msgstr "Kategori"
@@ -2196,6 +2196,9 @@ msgstr "H₂S sınırı (µg/L H₂S)"
 msgid "H₂S toxic"
 msgstr "H₂S toksik"
 
+msgid "H₂S toxic (at every pH of the chart)"
+msgstr "H₂S toksik (çizelgenin her pH'sinde)"
+
 #, python-format
 msgid "H₂S toxic (pH < %(ph)s)"
 msgstr "H₂S toksik (pH < %(ph)s)"
@@ -2205,6 +2208,9 @@ msgstr "H₂S: toplam sülfürü verin."
 
 msgid "H₂S: no limit given."
 msgstr "H₂S: sınır verilmedi."
+
+msgid "H₂S: the limit is not reached between pH 4 and 12.5."
+msgstr "H₂S: sınıra pH 4 ile 12,5 arasında ulaşılmaz."
 
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: toplam sülfür hiçbir pH'de sınıra ulaşamaz."
@@ -2635,6 +2641,9 @@ msgstr "Sınırda TAN içindeki NH₃ payı"
 msgid "NH₃ toxic"
 msgstr "NH₃ toksik"
 
+msgid "NH₃ toxic (at every pH of the chart)"
+msgstr "NH₃ toksik (çizelgenin her pH'sinde)"
+
 #, python-format
 msgid "NH₃ toxic (pH > %(ph)s)"
 msgstr "NH₃ toksik (pH > %(ph)s)"
@@ -2653,6 +2662,9 @@ msgstr "NH₃: sınır verilmedi."
 
 msgid "NH₃: the TAN cannot give the limit at any pH (the limit is not below the TAN)."
 msgstr "NH₃: TAN hiçbir pH'de sınıra ulaşamaz (sınır TAN'ın altında değil)."
+
+msgid "NH₃: the limit is not reached between pH 4 and 12.5."
+msgstr "NH₃: sınıra pH 4 ile 12,5 arasında ulaşılmaz."
 
 msgid "NH₄-N (mg/L)"
 msgstr "NH₄-N (mg/L)"
@@ -3498,11 +3510,32 @@ msgstr "Satır %(first)s–%(last)s / %(total)s eşleşiyor"
 msgid "Safe zone"
 msgstr "Güvenli bölge"
 
-msgid "Safe zone: give the alkalinity band."
-msgstr "Güvenli bölge: alkalinite aralığını verin."
+msgid "Safe zone (H₂S not assessed)"
+msgstr "Güvenli bölge (H₂S değerlendirilmedi)"
+
+msgid "Safe zone: H₂S not assessed, no total sulfide given."
+msgstr "Güvenli bölge: H₂S değerlendirilmedi, toplam sülfür verilmedi."
 
 msgid "Safe zone: no pH in the alkalinity band is inside every limit."
 msgstr "Güvenli bölge: alkalinite aralığında her sınırın içinde kalan bir pH yok."
+
+msgid "Safe zone: not drawn without the CO₂ limit."
+msgstr "Güvenli bölge: CO₂ sınırı olmadan çizilmez."
+
+msgid "Safe zone: not drawn without the H₂S limit, a total sulfide being given."
+msgstr "Güvenli bölge: toplam sülfür verildiğinde H₂S sınırı olmadan çizilmez."
+
+msgid "Safe zone: not drawn without the NH₃ limit."
+msgstr "Güvenli bölge: NH₃ sınırı olmadan çizilmez."
+
+msgid "Safe zone: not drawn without the TAN."
+msgstr "Güvenli bölge: TAN olmadan çizilmez."
+
+msgid "Safe zone: not drawn without the alkalinity band."
+msgstr "Güvenli bölge: alkalinite aralığı olmadan çizilmez."
+
+msgid "Safe zone: not drawn, the alkalinity band is empty (its high end is not above its low end)."
+msgstr "Güvenli bölge: çizilmez, alkalinite aralığı boş (üst ucu alt ucunun üstünde değil)."
 
 msgid "Safety"
 msgstr "Güvenlik"
@@ -4068,8 +4101,8 @@ msgstr ""
 msgid "The average depth of the water when the pond is full."
 msgstr "Havuz doluyken suyun ortalama derinliği."
 
-msgid "The band goes up: the high end is not below the low end."
-msgstr "Aralık yukarı gider: üst uç alt ucun altında olamaz."
+msgid "The band goes up: its high end is above its low end."
+msgstr "Aralık yukarı gider: üst ucu alt ucunun üstündedir."
 
 msgid "The batch number is given on saving."
 msgstr "Parti numarası kaydedilirken verilir."
@@ -5152,8 +5185,11 @@ msgstr "veritabanı tarafından zorunlu kılınmıyor"
 msgid "not in the model"
 msgstr "modelde yok"
 
-msgid "not reached"
-msgstr "ulaşılmaz"
+msgid "not reached at any pH"
+msgstr "hiçbir pH'de ulaşılmaz"
+
+msgid "not reached in the chart's range (4 to 12.5)"
+msgstr "çizelgenin aralığında ulaşılmaz (4 ile 12,5)"
 
 msgid "pH"
 msgstr "pH"
@@ -5185,6 +5221,9 @@ msgstr "katılımcı"
 
 msgid "participants"
 msgstr "katılımcılar"
+
+msgid "passed at every pH of the chart's range (4 to 12.5)"
+msgstr "çizelgenin aralığındaki her pH'de aşılır (4 ile 12,5)"
 
 msgid "primary"
 msgstr "birincil"

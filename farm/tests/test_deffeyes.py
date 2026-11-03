@@ -49,8 +49,9 @@ def plummer_busenberg(temp_c):
 # ---- the constants against the published values ---------------------------------------------------------------
 class ConstantTests(SimpleTestCase):
     def test_carbonic_acid_in_fresh_water_is_plummer_and_busenbergs(self):
-        # Millero (2010)'s pure-water terms against Plummer & Busenberg (1982), 0 to 40 °C: both are fits of
-        # Harned's measurements; they agree within 0.002 pK.
+        # The pure-water terms of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), Mar. Chem. 100: 80,
+        # against Plummer & Busenberg (1982), 0 to 40 °C: both are fits of Harned's measurements; they agree
+        # within 0.002 pK.
         for temp_c in range(0, 41, 5):
             pk1, pk2 = plummer_busenberg(temp_c)
             with self.subTest(temp_c=temp_c):
@@ -63,7 +64,8 @@ class ConstantTests(SimpleTestCase):
     def test_carbonic_acid_in_sea_water_agrees_with_lueker(self):
         # Lueker, Dickson & Keeling (2000), Mar. Chem. 70: 105, the check values of Dickson, Sabine & Christian
         # (2007), Guide to Best Practices for Ocean CO2 Measurements, ch. 5, at S 35 and 25 °C, total scale:
-        # pK1 5.8472, pK2 8.9660. Millero (2010) is another fit (seawater scale, converted here): within 0.01.
+        # pK1 5.8472, pK2 8.9660. Millero et al. (2006) is another fit (seawater scale, converted here): within
+        # 0.01.
         to_total = chemistry._free_to_total(25, 35) / chemistry._free_to_sws(25, 35)
         self.assertAlmostEqual(-math.log10(chemistry.k1_sws(25, 35) * to_total), 5.8472, delta=0.01)
         self.assertAlmostEqual(-math.log10(chemistry.k2_sws(25, 35) * to_total), 8.9660, delta=0.01)
@@ -463,6 +465,99 @@ class GeometryTests(SimpleTestCase):
         self.assertEqual(deffeyes.geometry(analyse(Water(25, 1, 8.1, 115, calcium_mg_l=412))).omega, {})
         self.assertEqual(deffeyes.geometry(analyse(Water(25, 35, 8.1, 115))).omega, {})
 
+    def test_no_safe_zone_without_a_value_or_a_limit_it_needs(self):
+        # A missing value is never taken for a safe one: no zone, and a note that names what is missing.
+        water = {'temperature_c': 12, 'salinity_ppt': 1, 'ph': 7.0, 'alkalinity_mg_l': 80, 'tan_mg_l': 0.5,
+                 'total_sulfide_ug_l': 2}
+        limits = {'nh3_n_mg_l': 0.0103, 'co2_mg_l': 15, 'h2s_ug_l': 2, 'alkalinity_low_mg_l': 50,
+                  'alkalinity_high_mg_l': 100}
+        self.assertTrue(deffeyes.geometry(analyse(Water(**water), Limits(**limits))).regions['safe'])
+        for missing_water, missing_limits, note in (
+            ({'tan_mg_l': None}, {}, 'Safe zone: not drawn without the TAN.'),
+            ({}, {'nh3_n_mg_l': None}, 'Safe zone: not drawn without the NH₃ limit.'),
+            ({}, {'co2_mg_l': None}, 'Safe zone: not drawn without the CO₂ limit.'),
+            ({}, {'h2s_ug_l': None}, 'Safe zone: not drawn without the H₂S limit, a total sulfide being given.'),
+            ({}, {'alkalinity_low_mg_l': None, 'alkalinity_high_mg_l': None},
+             'Safe zone: not drawn without the alkalinity band.'),
+            ({}, {'alkalinity_low_mg_l': 80, 'alkalinity_high_mg_l': 80},
+             'Safe zone: not drawn, the alkalinity band is empty (its high end is not above its low end).'),
+        ):
+            result = analyse(Water(**{**water, **missing_water}), Limits(**{**limits, **missing_limits}))
+            shape = deffeyes.geometry(result)
+            with self.subTest(note=note):
+                self.assertNotIn('safe', shape.regions)
+                self.assertEqual(deffeyes.safe_zone(result, shape.box), [])
+                self.assertIn(note, [str(text) for text in shape.notes])
+        # The reviewer's case: no TAN; the source draws no zone either.
+        result = analyse(Water(12, 1, 7.0, 80, None, 2), Limits(0.0103, 15, 2, 50, 100))
+        self.assertNotIn('safe', deffeyes.geometry(result).regions)
+
+    def test_without_a_total_sulfide_the_zone_is_drawn_and_says_h2s_is_not_assessed(self):
+        limits = Limits(0.0103, 15, 2, 50, 100)
+        unassessed = analyse(Water(12, 1, 7.0, 80, 0.5, None), limits)
+        shape = deffeyes.geometry(unassessed)
+        self.assertIn('Safe zone: H₂S not assessed, no total sulfide given.', [str(text) for text in shape.notes])
+        chart = deffeyes.draw(unassessed)
+        self.assertIn({'key': 'safe', 'name': 'Safe zone (H₂S not assessed)'}, chart.legend)
+        # Its zone is the one of a sulfide too little to reach the limit at any pH: H₂S does not narrow it.
+        harmless = analyse(Water(12, 1, 7.0, 80, 0.5, 1), limits)
+        self.assertIsNone(harmless.h2s.ph)
+        self.assertEqual(shape.regions['safe'], deffeyes.geometry(harmless).regions['safe'])
+        self.assertIn({'key': 'safe', 'name': 'Safe zone'}, deffeyes.draw(harmless).legend)
+
+    def test_a_border_off_the_charts_ph_range_is_said_in_words(self):
+        def table(border):
+            return render_to_string('farm/_deffeyes_border.html', {'border': border})
+
+        # TAN just above its limit: NH₃ passes it only above pH 12.5. Not a number, no region, a note; ok.
+        result = default_analysis(tan_mg_l=0.01031)
+        border = result.nh3
+        self.assertGreater(border.ph, deffeyes.PH_RANGE[1])
+        self.assertTrue(border.off_chart)
+        self.assertEqual(border.status, Status.OK)
+        shape = deffeyes.geometry(result)
+        self.assertNotIn('nh3', shape.regions)
+        self.assertIn('NH₃: the limit is not reached between pH 4 and 12.5.', [str(text) for text in shape.notes])
+        html = table(border)
+        self.assertIn('not reached in the chart', html)
+        self.assertNotIn(f'{border.ph:.3f}', html)
+        self.assertNotIn('+', html)
+        # Total sulfide just above the limit: H₂S passes it only below pH 4.
+        result = default_analysis(total_sulfide_ug_l=2 / H2S_PER_S / 0.9999)
+        self.assertLess(result.h2s.ph, deffeyes.PH_RANGE[0])
+        self.assertTrue(result.h2s.off_chart)
+        self.assertNotIn('h2s', deffeyes.geometry(result).regions)
+        self.assertIn('not reached in the chart', table(result.h2s))
+        # Much sulfide against a small limit: H₂S passes it at every pH of the chart. Shaded, said, critical.
+        result = analyse(Water(12, 1, 7.0, 80, 0.5, 10000), Limits(0.0103, 15, 0.01, 50, 100))
+        self.assertGreater(result.h2s.ph, deffeyes.PH_RANGE[1])
+        self.assertTrue(result.h2s.everywhere)
+        self.assertEqual(result.h2s.status, Status.CRITICAL)
+        chart = deffeyes.draw(result)
+        self.assertIn({'key': 'h2s', 'name': 'H₂S toxic (at every pH of the chart)'}, chart.legend)
+        html = table(result.h2s)
+        self.assertIn('passed at every pH of the chart', html)
+        self.assertNotIn(f'{result.h2s.ph:.3f}', html)
+        # Much TAN against a small limit: NH₃ passes it at every pH of the chart.
+        result = default_analysis(tan_mg_l=100, ph=7.0)
+        result = analyse(result.water, Limits(0.0001, 15, 2, 50, 100))
+        self.assertLess(result.nh3.ph, deffeyes.PH_RANGE[0])
+        self.assertTrue(result.nh3.everywhere)
+        self.assertIn({'key': 'nh3', 'name': 'NH₃ toxic (at every pH of the chart)'}, deffeyes.draw(result).legend)
+        # Inside the range the border is a number with its margin.
+        html = table(default_analysis().nh3)
+        self.assertIn('8.040', html)
+        self.assertIn('+1.04', html)
+
+    def test_the_isolines_take_the_sources_colours(self):
+        # phIsolineColor (deffeyes-data.ts): sequentialColor(floor((pH − 5.5) / 0.5)) of shared-contracts'
+        # domainScale.sequential, clamped to its ten steps.
+        for ph, colour in ((4.25, '#DC2626'), (5.75, '#DC2626'), (6.0, '#EF4444'), (6.5, '#F97316'),
+                           (7.0, '#EAB308'), (7.5, '#22C55E'), (8.0, '#06B6D4'), (8.5, '#3B82F6'),
+                           (9.0, '#6366F1'), (9.75, '#A855F7'), (10.0, '#7C3AED'), (12.5, '#7C3AED')):
+            with self.subTest(ph=ph):
+                self.assertEqual(deffeyes.isoline_colour(ph), colour)
+
     def test_a_layer_left_out_is_not_drawn(self):
         chart = deffeyes.draw(default_analysis(), layers={'nh3'})
         self.assertEqual([region['key'] for region in chart.regions], ['nh3'])
@@ -536,6 +631,11 @@ class CalculatorPageTests(TestCase):
         errors = response.context['form'].errors
         self.assertIn('the hydroxide and borate alone', errors['alkalinity_mg_l'][0])
         self.assertEqual(errors['target_alkalinity_mg_l'], ['Give both or neither.'])
+        response = self.client.get(self.url, {'temperature_c': '12', 'ph': '7', 'salinity_ppt': '0',
+                                              'alkalinity_mg_l': '80', 'alkalinity_low_mg_l': '80',
+                                              'alkalinity_high_mg_l': '80', 'drawn': '1'})
+        self.assertEqual(response.context['form'].errors['alkalinity_high_mg_l'],
+                         ['The band goes up: its high end is above its low end.'])
         response = self.client.get(self.url, {'temperature_c': '12', 'ph': '25', 'salinity_ppt': '0',
                                               'alkalinity_mg_l': '', 'drawn': '1'})
         self.assertEqual(set(response.context['form'].errors), {'ph', 'alkalinity_mg_l'})

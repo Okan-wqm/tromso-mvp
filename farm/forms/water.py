@@ -400,8 +400,8 @@ class CalculatorForm(forms.Form):
             if len(given) == 1 and not any(name in self.errors for name in pair):
                 self.add_error(next(name for name in pair if name not in given), _('Give both or neither.'))
         low, high = data.get('alkalinity_low_mg_l'), data.get('alkalinity_high_mg_l')
-        if low is not None and high is not None and low > high:
-            self.add_error('alkalinity_high_mg_l', _('The band goes up: the high end is not below the low end.'))
+        if low is not None and high is not None and low >= high:
+            self.add_error('alkalinity_high_mg_l', _('The band goes up: its high end is above its low end.'))
         self._possible(data)
         return data
 

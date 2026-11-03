@@ -11,13 +11,16 @@ water (S = 0) every scale factor is 1. Constants on the seawater (SWS) scale are
 1 + ST/KS + FT/KF, those on the total scale by 1 + ST/KS (KS Dickson 1990, KF Dickson & Riley 1979; ST
 Morris & Riley 1966, FT Riley 1965).
 
-- Carbonic acid: K1 and K2 of Millero (2010), Mar. Freshw. Res. 61: 139, seawater scale, valid from fresh
-  to sea water (S 0–50, 0–50 °C); the pure-water terms reproduce Harned's freshwater constants.
+- Carbonic acid: K1 and K2 of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), Mar. Chem. 100:
+  80, seawater scale, from fresh to sea water; the pure-water terms reproduce Harned's freshwater
+  constants. (The source calls them Millero 2010; the coefficients are the 2006 ones, PyCO2SYS's
+  kH2CO3_SWS_MGH06: WQ-39.)
 - Water: Kw of Millero (1995), Geochim. Cosmochim. Acta 59: 661, total scale. Boric acid: KB of Dickson
   (1990), Deep-Sea Res. 37: 755, total scale, with total boron of Uppström (1974), 0.000232 g/kg per ‰
   chlorinity (S / 1.80655).
 - Ammonium: K of Millero (1995), seawater scale; in fresh water pK equals Emerson et al. (1975),
-  pK = 0.09018 + 2729.92 / T, within 0.002 (farm/tests/test_water.py pins both). NH₃ comes out as N, as
+  pK = 0.09018 + 2729.92 / T, within 0.002 up to 30 °C and 0.003 up to 40 °C (farm/tests/test_water.py
+  pins both). NH₃ comes out as N, as
   TAN goes in.
 - Hydrogen sulfide (H₂S ⇌ HS⁻ + H⁺): K of Millero, Plese & Fernandez (1988), Limnol. Oceanogr. 33: 269,
   total scale (as in Millero 1995): pK 6.98 in fresh water and 6.51 in sea water at 25 °C.
@@ -125,7 +128,7 @@ def ph_free(ph_nbs, temp_c, salinity):
 
 # ---- the constants, each on the scale of its source ---------------------------------------------------------
 def k1_sws(temp_c, salinity):
-    """First dissociation constant of carbonic acid, Millero (2010), seawater scale, mol/kg."""
+    """First dissociation constant of carbonic acid, Millero et al. (2006), seawater scale, mol/kg."""
     t, root = temp_c + KELVIN, math.sqrt(salinity)
     pk = (-126.34048 + 6320.813 / t + 19.568224 * math.log(t)
           + 13.4191 * root + 0.0331 * salinity - 5.33e-5 * salinity ** 2
@@ -134,7 +137,7 @@ def k1_sws(temp_c, salinity):
 
 
 def k2_sws(temp_c, salinity):
-    """Second dissociation constant of carbonic acid, Millero (2010), seawater scale, mol/kg."""
+    """Second dissociation constant of carbonic acid, Millero et al. (2006), seawater scale, mol/kg."""
     t, root = temp_c + KELVIN, math.sqrt(salinity)
     pk = (-90.18333 + 5143.692 / t + 14.613358 * math.log(t)
           + 21.0894 * root + 0.1248 * salinity - 3.687e-4 * salinity ** 2

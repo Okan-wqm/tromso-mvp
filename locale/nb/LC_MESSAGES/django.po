@@ -1116,15 +1116,15 @@ msgid "Carbonate system"
 msgstr "Karbonatsystemet"
 
 msgid ""
-"Carbonic acid: Millero (2010); water: Millero (1995); boric acid: Dickson (1990); ammonium: "
-"Millero (1995); hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: "
-"Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border"
-" nearer than 0.2 pH is a warning."
+"Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); "
+"boric acid: Dickson (1990); ammonium: Millero (1995); hydrogen sulfide: Millero, Plese and "
+"Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is "
+"as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning."
 msgstr ""
-"Karbonsyre: Millero (2010); vann: Millero (1995); borsyre: Dickson (1990); ammonium: Millero "
-"(1995); hydrogensulfid: Millero, Plese og Fernandez (1988); kalsitt og aragonitt: Mucci (1983); "
-"oksygen: Benson og Krause (1984). pH er slik en måler leser den (NBS-skala). En grense nærmere "
-"enn 0,2 pH er en advarsel."
+"Karbonsyre: Millero, Graham, Huang, Bustos-Serrano og Pierrot (2006); vann: Millero (1995); "
+"borsyre: Dickson (1990); ammonium: Millero (1995); hydrogensulfid: Millero, Plese og Fernandez "
+"(1988); kalsitt og aragonitt: Mucci (1983); oksygen: Benson og Krause (1984). pH er slik en måler"
+" leser den (NBS-skala). En grense nærmere enn 0,2 pH er en advarsel."
 
 msgid "Category"
 msgstr "Kategori"
@@ -2191,6 +2191,9 @@ msgstr "H₂S-grense (µg/L H₂S)"
 msgid "H₂S toxic"
 msgstr "H₂S giftig"
 
+msgid "H₂S toxic (at every pH of the chart)"
+msgstr "H₂S giftig (ved hver pH i diagrammet)"
+
 #, python-format
 msgid "H₂S toxic (pH < %(ph)s)"
 msgstr "H₂S giftig (pH < %(ph)s)"
@@ -2200,6 +2203,9 @@ msgstr "H₂S: oppgi totalt sulfid."
 
 msgid "H₂S: no limit given."
 msgstr "H₂S: ingen grense oppgitt."
+
+msgid "H₂S: the limit is not reached between pH 4 and 12.5."
+msgstr "H₂S: grensen nås ikke mellom pH 4 og 12,5."
 
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: det totale sulfidet kan ikke gi grensen ved noen pH."
@@ -2630,6 +2636,9 @@ msgstr "NH₃-andelen av TAN ved grensen"
 msgid "NH₃ toxic"
 msgstr "NH₃ giftig"
 
+msgid "NH₃ toxic (at every pH of the chart)"
+msgstr "NH₃ giftig (ved hver pH i diagrammet)"
+
 #, python-format
 msgid "NH₃ toxic (pH > %(ph)s)"
 msgstr "NH₃ giftig (pH > %(ph)s)"
@@ -2648,6 +2657,9 @@ msgstr "NH₃: ingen grense oppgitt."
 
 msgid "NH₃: the TAN cannot give the limit at any pH (the limit is not below the TAN)."
 msgstr "NH₃: TAN kan ikke gi grensen ved noen pH (grensen er ikke under TAN)."
+
+msgid "NH₃: the limit is not reached between pH 4 and 12.5."
+msgstr "NH₃: grensen nås ikke mellom pH 4 og 12,5."
 
 msgid "NH₄-N (mg/L)"
 msgstr "NH₄-N (mg/L)"
@@ -3497,11 +3509,32 @@ msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
 msgid "Safe zone"
 msgstr "Trygg sone"
 
-msgid "Safe zone: give the alkalinity band."
-msgstr "Trygg sone: oppgi alkalitetsbåndet."
+msgid "Safe zone (H₂S not assessed)"
+msgstr "Trygg sone (H₂S ikke vurdert)"
+
+msgid "Safe zone: H₂S not assessed, no total sulfide given."
+msgstr "Trygg sone: H₂S ikke vurdert, ikke oppgitt totalt sulfid."
 
 msgid "Safe zone: no pH in the alkalinity band is inside every limit."
 msgstr "Trygg sone: ingen pH i alkalitetsbåndet er innenfor alle grensene."
+
+msgid "Safe zone: not drawn without the CO₂ limit."
+msgstr "Trygg sone: tegnes ikke uten CO₂-grensen."
+
+msgid "Safe zone: not drawn without the H₂S limit, a total sulfide being given."
+msgstr "Trygg sone: tegnes ikke uten H₂S-grensen når et totalt sulfid er oppgitt."
+
+msgid "Safe zone: not drawn without the NH₃ limit."
+msgstr "Trygg sone: tegnes ikke uten NH₃-grensen."
+
+msgid "Safe zone: not drawn without the TAN."
+msgstr "Trygg sone: tegnes ikke uten TAN."
+
+msgid "Safe zone: not drawn without the alkalinity band."
+msgstr "Trygg sone: tegnes ikke uten alkalitetsbåndet."
+
+msgid "Safe zone: not drawn, the alkalinity band is empty (its high end is not above its low end)."
+msgstr "Trygg sone: tegnes ikke, alkalitetsbåndet er tomt (den øvre enden er ikke over den nedre)."
 
 msgid "Safety"
 msgstr "Sikkerhet"
@@ -4067,8 +4100,8 @@ msgstr ""
 msgid "The average depth of the water when the pond is full."
 msgstr "Gjennomsnittlig vanndybde når dammen er full."
 
-msgid "The band goes up: the high end is not below the low end."
-msgstr "Båndet går oppover: den øvre enden er ikke under den nedre."
+msgid "The band goes up: its high end is above its low end."
+msgstr "Båndet går oppover: den øvre enden er over den nedre."
 
 msgid "The batch number is given on saving."
 msgstr "Gruppenummeret gis ved lagring."
@@ -5153,8 +5186,11 @@ msgstr "ikke håndhevet av databasen"
 msgid "not in the model"
 msgstr "ikke i modellen"
 
-msgid "not reached"
-msgstr "nås ikke"
+msgid "not reached at any pH"
+msgstr "nås ikke ved noen pH"
+
+msgid "not reached in the chart's range (4 to 12.5)"
+msgstr "nås ikke i diagrammets område (4 til 12,5)"
 
 msgid "pH"
 msgstr "pH"
@@ -5186,6 +5222,9 @@ msgstr "deltaker"
 
 msgid "participants"
 msgstr "deltakere"
+
+msgid "passed at every pH of the chart's range (4 to 12.5)"
+msgstr "overskredet ved hver pH i diagrammets område (4 til 12,5)"
 
 msgid "primary"
 msgstr "hovedkontakt"

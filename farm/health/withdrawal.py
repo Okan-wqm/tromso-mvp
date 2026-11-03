@@ -38,7 +38,6 @@ medicated feeding's day) to the day before `until`: a day before the treatment i
 gives the harvest side these blocks through the registry of farm/handling/withdrawal.py (`provider`)."""
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import timedelta
 from decimal import ROUND_CEILING, Decimal
 
 from django.utils import formats

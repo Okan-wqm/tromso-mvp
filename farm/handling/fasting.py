@@ -41,7 +41,7 @@ from farm.models import HandlingPlanItem, HandlingRule
 from farm.models.handling import HandlingKind
 from farm.models.site import zone_of
 from farm.stock.dates import local_today, start_of
-from farm.water.degree_days import PENDING, ZERO, BatchWater, degree_days_text, missing_sentence, projected_sentence
+from farm.water.degree_days import PENDING, BatchWater, degree_days_text, missing_sentence, projected_sentence
 
 # How far back the last feeding is looked for: longer than the longest rule (720 h), so a fish not fed in
 # that time has fasted long enough for any rule.

@@ -32,6 +32,13 @@
     </select>
   </div>
   <div class="field">
+    <label for="f-severity">{% trans "Severity" %}</label>
+    <select id="f-severity" name="severity">
+      <option value="">{% trans "Any severity" %}</option>
+      {% for value, label in severities %}<option value="{{ value }}"{% if value == filters.severity %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
     <label for="f-from">{% trans "From" %}</label>
     <input id="f-from" type="date" name="from" value="{{ filters.from }}">
   </div>

@@ -13,8 +13,9 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
-from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Site,
-                         SiteContact, Species, System, Tank, WaterLimit, WaterMeasurement)
+from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, HandlingRule,
+                         ProductionDepartment, SiteContact, Site, SlaughterFacility, Species, System, Tank, WaterLimit,
+                         WaterMeasurement)
 from farm.tests.helpers import SITE_MANAGER, contacts_data, role, site_data
 
 from .audit import message
@@ -145,6 +146,8 @@ class PagesInEveryLanguageTests(TestCase):
         cls.sample = WaterMeasurement.objects.create(unit=cls.unit, measured_at=cls.unit.created_at, source='manual',
                                                      ph=Decimal('7.25'), tan_mg_l=Decimal('0.5'),
                                                      temperature_c=Decimal('9.5'), oxygen_mg_l=Decimal('10.5'))
+        cls.facility = SlaughterFacility.objects.create(name='Fjord Slakteri', approval_number='M123')
+        cls.rule = HandlingRule.objects.get(kind='harvest', species__isnull=True)
         cls.role = Group.objects.create(name='Feeder')
         cls.role.permissions.set(Permission.objects.filter(codename='view_site'))
         cls.admin.groups.add(cls.role)
@@ -165,9 +168,13 @@ class PagesInEveryLanguageTests(TestCase):
                   f'{sample}?unit={self.unit.pk}',
                   f"{reverse('farm:water_round')}?site={self.site.pk}",
                   reverse('farm:water_void', args=[self.sample.pk])]
+        pages += [reverse('farm:harvests'), reverse('farm:handlingplanitem_list'),
+                  reverse('farm:handlingplanitem_create'), f"{reverse('farm:handlingplanitem_create')}?kind=transport",
+                  reverse('farm:productionplan_list'), reverse('farm:productionplan_create')]
         for resource, record in (('site', self.site), ('productiondepartment', self.department), ('system', self.system),
                                  ('equipment', self.feeder), ('tank', self.unit), ('species', self.species),
-                                 ('waterlimit', self.water_limit)):
+                                 ('waterlimit', self.water_limit), ('slaughterfacility', self.facility),
+                                 ('handlingrule', self.rule)):
             pages += [reverse(f'farm:{resource}_list'), reverse(f'farm:{resource}_create'),
                       reverse(f'farm:{resource}_edit', args=[record.pk]),
                       reverse(f'farm:{resource}_delete', args=[record.pk])]

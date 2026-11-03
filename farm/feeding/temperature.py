@@ -11,13 +11,12 @@ will be one more source of the same lookup; the ration only ever sees a Temperat
 
 The moment is now for the meal board and today, and the end of the day for a past day (farm/feeding/ration.py)."""
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.conf import settings
 
 from farm.models import System
-from farm.models.site import zone_of
 from farm.water import parameters
 from farm.water.evaluate import is_fresh
 from farm.water.read import Series, key
@@ -41,12 +40,6 @@ class Temperature:
     via: str
     age: timedelta
     fresh: bool
-
-
-def end_of(day, unit):
-    """The last moment of `day` on the clock of the unit's site."""
-    zone = zone_of(unit.production_department.site)
-    return datetime.combine(day + timedelta(days=1), time.min, tzinfo=zone) - timedelta(microseconds=1)
 
 
 def chain(unit, systems):

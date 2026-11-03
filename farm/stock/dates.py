@@ -2,7 +2,7 @@
 is the farm's own day, on the clock of the site (farm.models.site.zone_of), never the UTC date of a
 browser; a record may be dated at most STOCK_BACKDATE_DAYS back and never in the future, and the same
 window says how old a record may be voided (owner decisions Q3 and Q-F4)."""
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -34,6 +34,17 @@ def local_today(unit=None):
 def earliest(unit=None):
     """The first day a record of the unit may be dated (and the oldest one that may be voided)."""
     return site_earliest(_site(unit))
+
+
+def start_of(day, unit):
+    """The first moment of `day` on the clock of the unit's site (a handling's day starts its fast count; the day
+    after a feeding without a time is when that feeding counts)."""
+    return datetime.combine(day, time.min, tzinfo=zone_of(_site(unit)))
+
+
+def end_of(day, unit):
+    """The last moment of `day` on the clock of the unit's site."""
+    return start_of(day + timedelta(days=1), unit) - timedelta(microseconds=1)
 
 
 def shown_date(day):

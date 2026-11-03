@@ -1,0 +1,45 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% block search_placeholder %}{% trans "Search by species or source" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="kind-filter">{% trans "Handling" %}</label>
+  <select id="kind-filter" name="kind" data-autosubmit>
+    <option value="">{% trans "Every handling" %}</option>
+    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="species-filter">{% trans "Species" context "singular" %}</label>
+  <select id="species-filter" name="species" data-autosubmit>
+    <option value="">{% trans "All rules" %}</option>
+    <option value="{{ none_value }}"{% if chosen_species == none_value %} selected{% endif %}>{% trans "Every species" %}</option>
+    {% for species in species_list %}<option value="{{ species.pk }}"{% if chosen_species == species.pk|stringformat:"s" %} selected{% endif %}>{{ species.common_name }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}<p class="panel-help">{% trans "How long fish must have been without feed before they are harvested, transported, graded or treated, counted from their last feeding to the start of that day. A species’ own rule wins over the rule for every species; a grading takes the longer of its rule and the transport rule. Too short a fast is a warning, never a block: going on is recorded and logged as critical. These are the farm’s own rules: the starting values are to be checked with your veterinarian." %}</p>{% endblock %}
+{% block empty_text %}{% trans "The fast before each kind of handling, per species or for every species. Without a rule the fast is not checked." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Handling" %}</th><th scope="col">{% trans "Species" context "singular" %}</th><th scope="col" class="num">{% trans "Fasting before it (hours)" %}</th><th scope="col">{% trans "Source of the value" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for rule in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'farm:handlingrule_edit' rule.pk %}" data-modal>{{ rule.get_kind_display }}</a>{% else %}<span class="row-title">{{ rule.get_kind_display }}</span>{% endif %}</td>
+        <td>{% if rule.species %}{{ rule.species.common_name }}{% else %}{% trans "Every species" %}{% endif %}</td>
+        <td class="num">{% blocktrans trimmed with hours=rule.min_fasting_hours %}{{ hours }} h{% endblocktrans %}</td>
+        <td>{{ rule.note|default:"—" }}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:handlingrule_edit' rule.pk %}" data-modal title="{% blocktrans with name=rule %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=rule %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:handlingrule_delete' rule.pk %}" data-modal title="{% blocktrans with name=rule %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=rule %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

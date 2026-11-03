@@ -1,0 +1,22 @@
+{% load i18n stock harvest %}{# The live harvests of the filtered rows added up per batch or per site (farm.harvest.read.totals). #}
+<div class="table-wrap">
+  <table class="data-table totals-table">
+    <caption>{{ caption }}</caption>
+    <thead>
+      <tr><th scope="col"><span class="sr-only">{{ caption }}</span></th><th scope="col" class="num">{% trans "Harvests" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col" class="num">{% trans "Round weight" %}</th><th scope="col" class="num">{% trans "Avg. weight" %}</th><th scope="col" class="num">{% trans "Book" %}</th><th scope="col" class="num">{% trans "Difference" %}</th></tr>
+    </thead>
+    <tbody>
+      {% for total in totals %}
+      <tr>
+        <th scope="row">{{ total.label }}</th>
+        <td class="num">{{ total.harvests }}</td>
+        <td class="num">{{ total.fish|fish }}</td>
+        <td class="num">{{ total.weighed_kg|kilos }}</td>
+        <td class="num">{{ total.avg_weight_g|grams }}</td>
+        <td class="num">{{ total.book_kg|kilos }}</td>
+        <td class="num nowrap">{{ total.difference_kg|signed_kilos }}<span class="row-sub">{{ total.difference_pct|signed_percent }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

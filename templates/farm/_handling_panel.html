@@ -1,0 +1,24 @@
+{% load i18n %}
+{% comment %} The handling check of a harvest, transfer or grading dialog (farm.handling.check.assess, through the
+   form's `handling`): what it says, its warnings, and the box to go on past them, whose value is their
+   fingerprint, so changed warnings are asked again. Nothing here blocks the save.{% endcomment %}
+{% with handling=form.handling %}
+<section class="handling-panel" aria-labelledby="handling-title">
+  <h3 class="handling-title" id="handling-title">{% trans "Before handling" %}</h3>
+  {% if handling.notes %}<ul class="handling-notes" role="list">{% for note in handling.notes %}<li>{{ note }}</li>{% endfor %}</ul>{% endif %}
+  {% if handling.warnings %}
+  <div class="notice notice-warning handling-warnings" role="alert">
+    <ul role="list">{% for warning in handling.warnings %}<li>{{ warning.message }}</li>{% endfor %}</ul>
+    {% with field=form.handling_ack %}
+    <div class="field{% if field.errors %} has-error{% endif %}">
+      <label class="check">{{ field }} {{ field.label }}</label>
+      <div class="help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>
+      {{ field.errors }}
+    </div>
+    {% endwith %}
+  </div>
+  {% elif form.handling_ack.errors %}
+  <div class="notice notice-warning" role="alert">{{ form.handling_ack.errors }}</div>
+  {% endif %}
+</section>
+{% endwith %}

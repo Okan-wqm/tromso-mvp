@@ -1,12 +1,14 @@
 {% extends base_template %}
 {% load i18n %}
-{% comment %} The list page of a tab (core.crud.ListView). A tab's own template extends this and fills `items`.
+{% comment %} The list page of a tab (core.crud.ListView). A tab's own template extends this and fills `items`
+   (and `above` the toolbar, e.g. the tabs of a group of pages).
    The heading is the menu entry's label (Resource.title); the nouns (name, plural) come from the tab and
    each sentence puts them where its language wants them.{% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ group }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+{% block above %}{% endblock %}
 <div class="toolbar">
   <form method="get" class="search" role="search">
     {% for key, value in request.GET.items %}{% if key != "q" and key != "page" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}

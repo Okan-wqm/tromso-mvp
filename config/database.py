@@ -30,5 +30,6 @@ VIEWER = Viewer(
         'supplier_sites': _('Which sites each supplier delivers to or works at.'),
         'document_species': _('Which species each library document is about.'),
         'knowledge_entry_species': _('Which species each knowledge entry holds for.'),
+        'slaughter_facility_species': _('Which species each slaughter facility takes.'),
     },
 )

@@ -1,4 +1,4 @@
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, pgettext_lazy
 
 from core.navigation import Entry, Group, Section, Workspace
 
@@ -43,21 +43,26 @@ WORKSPACES = [
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
             ]),
-            # The reference lists the production side picks from: species, feeds and the water limits per species
-            # now; chemicals, fish-health substances and slaughter facilities as their tabs arrive.
+            # The reference lists the production side picks from: species, feeds, the water limits per species,
+            # where harvested fish go and the fast before handling; chemicals and fish-health substances as their
+            # tabs arrive.
             Group(_('Reference data'), [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
                 Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
+                Entry(_('Slaughter facilities'), 'farm:slaughterfacility_list', 'factory',
+                      'farm.view_slaughterfacility'),
+                Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
             ]),
             # Who the farm buys from: goods, live fish and services. Purchase orders join it later.
             Group(_('Purchasing'), [
                 Entry(_('Suppliers'), 'farm:supplier_list', 'truck', 'farm.view_supplier'),
             ]),
         ]),
-        # The daily production records: the fish in each unit and what happens to them, the water they are in and
-        # their feeding; health and harvest join as their tabs arrive. Feeding has four pages: today's meals per
-        # unit, what was fed against the ration, the feeding tables and where each applies.
+        # The daily production records: the fish in each unit and what happens to them, the water they are in,
+        # their feeding and their harvest; health joins as its tab arrives. Feeding has four pages: today's meals per
+        # unit, what was fed against the ration, the feeding tables and where each applies. Harvest has three: what
+        # was harvested, what is planned, and the target weight per batch.
         Section(_('Operations'), [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
@@ -68,6 +73,11 @@ WORKSPACES = [
                 Entry(_('Records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
                 Entry(_('Protocols'), 'farm:feedingprotocol_list', 'table', 'farm.view_feedingprotocol'),
                 Entry(_('Assignments'), 'farm:protocolassignment_list', 'link', 'farm.view_protocolassignment'),
+            ]),
+            Group(_('Harvest'), [
+                Entry(pgettext_lazy('page', 'Harvested'), 'farm:harvests', 'package-check', 'farm.view_harvestrecord'),
+                Entry(_('Harvest plan'), 'farm:handlingplanitem_list', 'calendar', 'farm.view_handlingplanitem'),
+                Entry(_('Production plans'), 'farm:productionplan_list', 'target', 'farm.view_productionplan'),
             ]),
         ]),
         # Messages between the people running production, direct and in channels; their AI assistants join the

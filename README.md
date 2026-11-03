@@ -10,7 +10,8 @@ What works today:
   validators, CSRF protection and sign-out by POST only.
 - An activity log (`/activity/`): who created, changed or deleted which record, when, with the old
   and new value of every changed field. Rows are written in the same transaction as the change and a
-  database trigger refuses to update or delete them. Each record's form has a History tab.
+  database trigger refuses to update or delete them. Each record's form has a History tab. An entry where
+  someone went on past a handling warning is marked critical.
 - Every page needs a signed-in user (`LoginRequiredMiddleware`) unless its view opts out.
 - Roles (`/roles/`) and users (`/users/`), managed by the platform admin only (see Roles and users).
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
@@ -18,9 +19,10 @@ What works today:
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Knowledge,
   Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, water limits, suppliers, and under Operations the production units with their fish, the
-  water chemistry and Feeding: the meal board, the records, the feeding protocols and their assignments, and
-  under Communication the messages). Each has its own overview. A
+  species, feeds, water limits, slaughter facilities, handling rules, suppliers, and under Operations the
+  production units with their fish, the water chemistry, Feeding: the meal board, the records, the feeding
+  protocols and their assignments, and Harvest: harvested, harvest plan, production plans; and under
+  Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
@@ -477,8 +479,10 @@ name, expected harvest, notes, and the units the fish go into, whose fish must a
 arriving); mortality (fish, cause, the weighed kilos if known); cull (fish, reason); a sampling
 weigh-in (fish weighed and their weight together, or a measured average); transfer / split (to one or
 several units, a reason); grading (per size class a unit, fish and measured average, and the average of
-the fish that stay); harvest (fish and their weighed kilos; "this empties the unit of this batch"
-records the fish the book still holds as an unaccounted loss). A unit holding two batches asks which one.
+the fish that stay); harvest (fish and their round kilos as weighed, the slaughter facility, the transport and
+vessel; "this empties the unit of this batch" records the fish the book still holds as an unaccounted loss; see
+Operations › Harvest). A harvest, a transfer and a grading show the handling check (fasting and medicine
+withdrawal) and ask for an acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
 (`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored on the operation).
 
@@ -524,9 +528,10 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
 - Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
 - Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
-  comes from the samples, see Water chemistry), harvest plans, lot numbers, buyers and prices, the
-  medicine-withdrawal block on harvest (**it must come back with the health module before real
-  harvests**), batch documents and costs, count adjustments as a dialog (their lines and checks exist).
+  comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
+  count adjustments as a dialog (their lines and checks exist). Harvest plans and the handling check are on
+  Operations › Harvest; **the medicine withdrawal is checked once the health records register their provider:
+  until then the dialogs say it is not checked, and real harvests must wait for it**.
 
 ### Operations › Feeding: Meal board, Records, Protocols and Assignments
 
@@ -1045,6 +1050,154 @@ document, MSG-01 to MSG-21):
   and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
   NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
 
+### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Reference data › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
+
+What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
+`slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
+`handling_plan_items`, `handling_rules` and `handling_acknowledgements`.
+
+**One ledger, no second stock.** A harvest is still the stock operation of Production units (`record_harvest`
+through `_commit`): its fish, its round kilos and its date stay on its line and the operation. What a harvest
+adds is its `HarvestRecord`, 1:1 with the operation (its primary key): the **slaughter facility**, required,
+the **transport** supplier (a supplier of wellboat and transport) and the **wellboat or vehicle**. It is written
+in the same transaction and never edited: voiding the harvest voids it with it (every read goes through the
+live operation). `check_stock` reports a live harvest without its record and a record on another kind of
+operation. Harvests recorded before the record existed have none: check_stock lists them as data from
+before the rule (their facility is unknown).
+
+**The harvest dialog** (a unit's drawer, or "Record harvest" on a plan) asks the fish, the **round weight
+(kg)**, the live weight as weighed before bleeding and gutting (the old label "Weighed (kg)" did not say which
+weight it was), "this empties the unit", the facility (active ones that take the batch's species, or that
+list no species), the transport and the vessel, and shows the handling check (below). After saving, the drawer
+shows the harvest as "520 kg weighed · book 500 kg · +20 kg (+4.0 %)" and "To Fjord Slakteri (M123) ·
+Brønnbåt AS · MS Ronja".
+
+**Harvested** (`/operations/harvests/`): one row per harvest, newest first: date, unit with its production
+department and site, batch and species, fish, round weight, average weight (round kilos × 1000 ÷ fish), the
+**book** kilos (what the fold took out for the harvest line: the batch's average in the unit, the last fish the
+rest of the book), the **difference** in kg and % of the book, the unaccounted loss of a harvest that emptied
+the unit (its fish and book kilos), facility and approval number, transport and vessel, who recorded it, the
+plan it fulfilled and a badge when a handling warning was acknowledged. Filters in the address: site,
+production department, unit, batch, species, facility, from and to, and "Show voided" (struck through with
+the reason, counted nowhere); 50 a page; the count line ("2 harvests · 510 kg round weight, 490 kg in the
+book") and **totals per batch and per site** of the filtered rows (harvests, fish, round weight, average, book,
+difference). Everything is computed on read (`farm/harvest/read.py`).
+
+**Harvest plan** (`/operations/harvest-plan/`): planned harvests (to a slaughter facility) and planned
+transports (to another unit) of one batch's fish in one unit on a day, with the fish and round kilos meant, the
+transport and vessel and notes. The kind is chosen once; the batches follow the unit and the facilities the
+batch's species. The **status is derived**, never set: cancelled when it has a reason ("Cancelled because";
+clearing it plans it again), done when the operation that fulfils it counts, overdue when its day has passed,
+planned otherwise. **Record harvest / Record transfer** on an open item opens the stock's dialog started from
+it (unit, batch, date, fish, facility, transport, vessel, the destination unit) and the service links the
+operation to the item in the same transaction; it is refused for a deleted or cancelled item, one recorded
+already, another kind of operation or other fish. Voiding that operation plans the item again with nothing to
+change. Planned against actual: the fish and kilos of the linked operation (a harvest's round kilos, a
+transfer's book kilos). Each open item shows the fast it asks of its unit ("Fasting before the harvest of 15 Nov
+2026: from 12 Nov 2026, 00:00 (72 h)") and a medicine withdrawal on its day. A plan names fish that are in the
+unit, a day inside the backdating window at the earliest, and, for a harvest, an active facility that takes the
+species; a done item cannot be cancelled (void its operation first). Nothing requires a plan: a harvest is
+never refused for lacking one (the source's HRV-05).
+
+**Production plans** (`/operations/production-plans/`): every batch in stock in each unit it is in, with its
+fish, book average and when it was weighed, its **target weight** (one live plan per batch; "Set target" or the
+weight, to edit), the batch's expected harvest (entered at stocking: one fact, one place), when the fish were
+last fed and a medicine withdrawal; **Plan harvest** starts a planned harvest of the share at the target weight
+(fish = the share's count, round kilos = fish × target, on the day the target is reached). Plans of batches no
+longer in stock follow. **The estimated weight now** is the feeding protocols' estimate (Operations › Feeding);
+**the day the target is reached** walks it forward a day at a time (`farm/harvest/forecast.py`): each day the fish
+eat that day's ration (the protocol in force, the band at the weight reached, its SFR at the unit's latest
+temperature, held constant and shown) and grow by it ÷ the band's expected FCR; a fasting day before a planned
+harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
+reason, never a default, and so does two years without reaching it. Nothing is stored.
+
+**Slaughter facilities** (Setup › Reference data): name, Mattilsynet's approval number (godkjenningsnummer, 1
+to 6 letters or digits, stored in capitals, unique among live facilities; the format is the source's and is not
+verified with Mattilsynet), the operator (a supplier of the new category **Slaughter and processing**, which
+keeps that category while it operates a facility), address, municipality, coordinates (both or neither), the
+species it takes (none: every species), capacity in tonnes a day, active or inactive, notes. There is no
+"default" facility (HRV-09): every harvest names its own (HRV-08). A facility harvests went to is not deleted
+("1 harvest record still belongs to it. Set it inactive instead."), and a supplier named as a harvest's transport
+keeps its category and is not deleted either (`Supplier.delete_blockers` reads every SupplierLink of a record
+the delete plan does not follow).
+
+**Handling rules** (Setup › Reference data): per kind of handling (harvest, transport, grading, treatment) and
+species, or for every species (no species), how many hours the fish must have been without feed, 0 to 720, and
+where the value comes from. One live rule per kind and species, and one for every species (the database's
+`NULLS NOT DISTINCT`, checked on the form too). **These are the farm's own rules; the starting values are to be
+checked with your veterinarian.** Migration `0017` writes four general rules, each with its source:
+
+| Handling | Hours | Why |
+|---|---|---|
+| harvest | 72 | Mattilsynet asks for no feed left in stomach and gut at slaughter (an outcome, no hours). Gut-clearing feed withdrawal is typically 48–72 h ([Hvas et al. 2024, *Reviews in Aquaculture*](https://munin.uit.no/handle/10037/33239)), slower in cold water; [BIM 2024](https://bim.ie/wp-content/uploads/2024/05/BIM-Fish-Welfare-During-Handling.pdf) and RSPCA (2015) advise no more than 72 h before harvest. |
+| transport | 24 | BIM 2024: feed withdrawal at least 24 to 48 h before crowding, by water temperature and fish size. RSPCA (2015, T 2.9) caps pre-transport fasting at 48 h unless a vet specifies it: a maximum, not a minimum. |
+| grading | 24 | BIM 2024: at least 24 to 48 h before grading; RSPCA (2015, FW 6.2): not above 48 h. A grading is also checked against the transport rule; the longer applies (owner). |
+| treatment | 24 | BIM 2024: commonly 24 to 48 h before handling; RSPCA (2024): at most 48 h before physical delousing, 72 h before a freshwater bath. The medicine's product information wins. |
+
+**The handling check** (`farm/handling/`, one for every dialog): before fish are harvested, transported (a
+transfer), graded or treated (the health tab's dialog), is a medicine withdrawal in force, and have they fasted
+long enough? Nothing is blocked (owner decision): both are warnings.
+
+- *Fasting*: the hours from the fish's **last feeding** to the **start of the handling's day** on the site's
+  clock (an operation has a date and no time). The last feeding is of the fish themselves, wherever they were
+  fed: the feeding walk's split says which batches a record fed, so fish moved in yesterday bring their last
+  meal in the old unit with them (`farm.feeding.read.last_fed_at`). A record without a time counts from the end
+  of its day and a feeding on the day gives 0 h, so **the fast is never overstated**. The rule is the species'
+  own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
+  rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
+- *Medicine withdrawal* (harvest, transport, grading; a treatment during a withdrawal harms nobody): every block
+  a registered provider gives for the batch whose end is after the day, or unknown (unknown is a warning, never
+  clear). The health records register their provider (`farm/handling/withdrawal.py`: `register(provider)`,
+  `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`). **Until they do, every
+  dialog says "Medicine withdrawal not checked: the health records are not in yet"** and nothing is warned.
+  Before a harvest it reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026".
+- *The dialogs* (harvest, transfer, grading) show the check for the form's date and batch under "Before
+  handling": the last feeding and its hours, the rule, the withdrawal, and with warnings the box "Go on despite
+  these warnings" ("Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown
+  here and logged as critical."). The box carries the warnings' fingerprint.
+- *The save* runs the check again after the locks (a feeding of the unit takes turns with it). With warnings it
+  needs the box ticked on exactly these warnings: a feeding recorded meanwhile, a treatment entered or another
+  date asks again ("The warnings changed since the form was shown"). Going on stores one
+  `HandlingAcknowledgement` per warning with what the person was shown (the withdrawal's end, estimated or not,
+  and reason; or the last feeding, the hours fasted, the hours asked and the rule), and the operation's
+  activity-log entry is **critical**, with the warnings. Who and when are the operation's.
+- *The meal board* asks `farm.handling.fasting.fasting_on(unit, day)`: the reason when the day is in the fast a
+  planned harvest or transport asks for (every day from the one the fast starts on to the planned day, in full,
+  for the whole unit; where two overlap the one that starts first wins), else None. The feeding dialog says so
+  on such a day ("A feeding can still be recorded").
+- *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
+  **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
+
+**The activity log** has a severity: normal, or critical for an operation someone went on with past a handling
+warning (`AuditLog.severity`, a database check, a partial index); critical entries have a red edge and a
+Critical badge, and the log filters by severity. Nobody is alerted yet: the later alarms read these entries.
+
+**Who may do what** (Production · Operations · Harvest, and Setup · Reference data): Harvested (read; a harvest
+is recorded and voided as a stock operation, Production units' Create and Delete), Harvest plan and Production
+plans (read, create, edit, delete; recording from a plan also needs Production units' Create), Slaughter
+facilities and Handling rules (read, create, edit, delete).
+
+**Deleting:** a unit keeps its plans out of sight while it is deleted (`DO_NOTHING`, counted in the
+confirmation, back with it); a deleted destination unit is cleared from its planned transports; a species takes
+its handling rules with it and keeps its facilities' link rows; a facility or a supplier a harvest names stays.
+
+Differences from the source (details in the bug document, HRV-01 to HRV-23):
+
+- A harvest is the stock operation, so a harvest empties its unit on every path (the web's "Complete Harvest"
+  never moved a fish, HRV-06), and a void is the only undo (edit could cancel without moving stock, HRV-07).
+- Every harvest names its slaughter facility; there is no default facility to lose (HRV-08, HRV-09). Round weight
+  is labelled as round; gutted kilos and the quality-class split come with the slaughter result, never as a
+  default class (HRV-03, HRV-04).
+- The withdrawal is a provider's computed end, never an episode's status (HRV-01), read inside the save's
+  transaction (HRV-10); the plan shows the check, not "harvest allowed" (HRV-11).
+- Fasting is tied to every handling and to the plans (HRV-22); a plan names its unit (HRV-13), its kilos are
+  prefilled from the book or the target (HRV-14), and nothing needs a plan (HRV-05); a production plan has a
+  target weight (HRV-23).
+- Not ported: the slaughter result (gutted kilos per quality class, yield) and Mattilsynet's weekly slaughter
+  reports, lot numbers, buyers and prices, customer deliveries, size-grade distribution, an approval workflow for
+  plans, temperature scenarios and a degree-day fasting rule, a "fasted too long" warning (6 days in a slaughter
+  pen, akvakulturdriftsforskriften § 54), and alarms.
+
 ## Knowledge (Company › Knowledge: Library `/knowledge/library/`, Knowledge entries `/knowledge/entries/`)
 
 The place where people record what the company knows, so that AI agents can later watch the farm with it and
@@ -1208,9 +1361,10 @@ only one who manages roles and users; everyone else gets exactly what their role
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
   Feeding records (read the Meal board and Records, create = record a feeding or a meal, delete = void one),
   Feeding protocols and Protocol assignments (read, create, edit, delete), Water chemistry (read the page
-  and a unit's water, create = record a sample or a round, delete = void one), Messages (read = use Messages,
-  create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit also reviews
-  an entry) and Activity log (read).
+  and a unit's water, create = record a sample or a round, delete = void one), Slaughter facilities and
+  Handling rules (read, create, edit, delete), Harvested (read), Harvest plan and Production plans (read,
+  create, edit, delete), Messages (read = use Messages, create = also create channels), Library and Knowledge
+  entries (read, create, edit, delete; Edit also reviews an entry) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -1476,6 +1630,12 @@ real mail.
 | `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
+| `/operations/harvests/` | Operations › Harvest › Harvested: every harvest, the book against the scale, totals per batch and site |
+| `/operations/harvest-plan/` | Operations › Harvest › Harvest plan: planned harvests and transports; `?unit=<id>` one unit's |
+| `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
+| `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
+| `/slaughter-facilities/` | Reference data › Slaughter facilities |
+| `/handling-rules/` | Reference data › Handling rules |
 | `/water-limits/` | Reference data › Water limits |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
@@ -1519,6 +1679,8 @@ real mail.
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
+| `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |

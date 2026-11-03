@@ -16,6 +16,7 @@ COMPUTE = {
     ReportKind.LAND_STOCK: notices.land_stock,
     ReportKind.SITE_IN_USE: notices.site_change,
     ReportKind.SITE_EMPTIED: notices.site_change,
+    ReportKind.ESCAPE: notices.event,
     ReportKind.DISEASE: notices.event,
     ReportKind.WELFARE: notices.event,
 }

@@ -31,8 +31,8 @@ from core.crud import DRAFT, done, render_page
 from ..feeding import read as feeding_read, views as feeding_views
 from ..health import views as health_views
 from ..forms.stock import (
-    BatchInputForm, CullForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm, PlannedForm, TransferForm,
-    VoidForm, WeighingForm, kept_rows, stockable_units,
+    BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
+    PlannedForm, TransferForm, VoidForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
 from ..models import HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
@@ -187,7 +187,7 @@ def _drawer(request, unit, stock, feeding, params):
     can_record, can_void = request.user.has_perm(RECORD), request.user.has_perm(VOID)
     operations = list(StockOperation.all_objects.filter(movements__unit=unit).distinct()
                       .select_related('created_by', 'deleted_by', 'harvest_record__facility',
-                                      'harvest_record__transport')
+                                      'harvest_record__transport', 'escape_record', 'delivery_record')
                       .prefetch_related(Prefetch('movements', StockMovement.objects.select_related('unit', 'batch')),
                                         'acknowledgements')
                       .order_by('-date', '-created_at')[:HISTORY])
@@ -201,6 +201,8 @@ def _drawer(request, unit, stock, feeding, params):
         lines = list(operation.movements.all())
         history.append({
             'operation': operation, 'lines': lines, 'record': getattr(operation, 'harvest_record', None),
+            'escape': getattr(operation, 'escape_record', None),
+            'delivery': getattr(operation, 'delivery_record', None),
             'corrections': [{'correction': corrections[(line.batch_id, operation.date)], 'batch': line.batch}
                             for line in lines if line.kind == 'weighing' and line.unit_id == unit.pk
                             and not operation.is_deleted and (line.batch_id, operation.date) in corrections],
@@ -356,6 +358,8 @@ OPERATIONS = {
     'grading': (GradingForm, gettext_lazy('Grading')),
     'cull': (CullForm, gettext_lazy('Record cull')),
     'harvest': (HarvestForm, gettext_lazy('Harvest')),
+    'delivery': (DeliveryForm, gettext_lazy('Deliver fish')),
+    'escape': (EscapeForm, gettext_lazy('Record escape')),
 }
 
 
@@ -375,6 +379,11 @@ def _recorded(operation):
                 _('Grading recorded: %(count)s fish of %(batch)s from %(unit)s to %(units)s.'))
         return text % {**params, 'count': number(sum(item.count_delta for item in moved)),
                        'units': ', '.join(item.unit.code for item in moved)}
+    if operation.kind == 'delivery':
+        return _('Delivery recorded: %(count)s fish of %(batch)s from %(unit)s to %(destination)s.') % {
+            **params, 'destination': operation.delivery_record.destination}
+    if operation.kind == 'adjustment':
+        return _('Escape recorded: %(count)s fish of %(batch)s from %(unit)s.') % params
     if operation.kind == 'harvest':
         harvest = next(item for item in lines if item.kind == 'harvest')
         return _('Harvest recorded: %(count)s fish of %(batch)s from %(unit)s, %(kilos)s kg weighed.') % {

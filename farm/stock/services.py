@@ -30,7 +30,7 @@ one void of the farm's daily records, a stock operation's and a feeding's.
 
 Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 'provenance', 'notes',
 'avg_weight_g', 'measured_weight_kg', 'destinations', 'over_capacity_ack', 'handling_ack', 'facility',
-'transport', 'vessel', 'plan_item', 'health_event' and NON_FIELD_ERRORS.
+'transport', 'vessel', 'plan_item', 'health_event', 'cause', 'destination' and NON_FIELD_ERRORS.
 
 A harvest, a transfer and a grading run the handling check (farm/handling/check.py) after the locks: a
 medicine withdrawal in force or too short a fast is a warning, and the person goes on by acknowledging the
@@ -42,8 +42,9 @@ operation).
 
 Operations: a stocking (a new batch into one or several units), a mortality, a cull, a weighing, a
 transfer (out of one unit into one or several: a split is a transfer into several), a grading (a
-transfer whose fish are weighed per size class, the fish that stay weighed too) and a harvest; each is
-voidable. Count adjustments have their line kind and checks but no dialog yet."""
+transfer whose fish are weighed per size class, the fish that stay weighed too), a harvest, a delivery of live
+fish out of the company (with who received them, DeliveryRecord) and an escape (a count adjustment with its cause,
+EscapeRecord); each is voidable."""
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -61,7 +62,8 @@ from farm.feeding.fold import walk
 from farm.handling import check
 from farm.health import read as health_read
 from farm.models import (
-    Batch, HandlingPlanItem, HarvestRecord, HealthEvent, Species, StockMovement, StockOperation, Tank,
+    Batch, DeliveryRecord, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, Species, StockMovement,
+    StockOperation, Tank,
 )
 from farm.models.handling import KIND_OF_OPERATION
 from farm.models.harvest import FULFILLED_BY
@@ -143,12 +145,13 @@ def _next_code(year):
 
 
 def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None, handling_ack=None,
-            harvest=None, plan_item=None, health_event=None):
+            harvest=None, plan_item=None, health_event=None, escape=None, delivery=None):
     """Writes an operation and its lines (see the module's docstring); returns the operation. A harvest,
     transfer or grading is checked for a medicine withdrawal and the fast first (`handling_ack` is the
     fingerprint of the warnings the person went on past); a harvest writes its record (`harvest`: its
     facility, transport and vessel); `plan_item` is the planned harvest or transport it fulfils; a mortality
-    or cull may name its `health_event`."""
+    or cull may name its `health_event`; an escape (a count adjustment) writes its `escape` record and a delivery
+    its `delivery` record, the way a harvest writes its own."""
     with transaction.atomic():
         batches = locked(Batch, {entry.batch.pk for entry in entries if entry.batch is not None})
         units = locked(Tank, {entry.unit.pk for entry in entries})
@@ -189,6 +192,14 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
             record = HarvestRecord(operation=operation, **harvest)
             record.full_clean()
             record.save()
+        for given, model, wanted in ((escape, EscapeRecord, OperationKind.ADJUSTMENT),
+                                     (delivery, DeliveryRecord, OperationKind.DELIVERY)):
+            if (given is not None) != (kind == wanted):
+                raise ValueError(f'An operation of kind {kind} and its {model.__name__} go together.')
+            if given is not None:
+                record = model(operation=operation, **given)
+                record.full_clean()
+                record.save()
         if assessment is not None and assessment.warnings:
             check.acknowledge(operation, assessment)
         _log(user, AuditLog.Action.CREATE, operation, assessment)
@@ -471,10 +482,13 @@ def _log(user, action, operation, assessment=None):
         changes = {label_: [None, value] for label_, value in audit.snapshot(operation, names).items()
                    if value is not None}
         changes[str(_('Stock lines'))] = [None, '; '.join(_describe(line) for line in lines)]
-        record = HarvestRecord.all_objects.filter(operation=operation).first()
-        if record is not None:
-            changes.update({label_: [None, value] for label_, value in audit.snapshot(
-                record, ['facility', 'transport', 'vessel']).items() if value is not None})
+        for model, names in ((HarvestRecord, ['facility', 'transport', 'vessel']),
+                             (EscapeRecord, ['found_time', 'suspected', 'cause', 'health_status', 'recaptured']),
+                             (DeliveryRecord, ['destination', 'destination_site_number'])):
+            record = model.all_objects.filter(operation=operation).first()
+            if record is not None:
+                changes.update({label_: [None, value] for label_, value in audit.snapshot(record, names).items()
+                                if value is not None})
         critical = assessment is not None and bool(assessment.warnings)
         if critical:
             changes[str(_('Handling warnings acknowledged'))] = [None, ' '.join(assessment.messages())]
@@ -658,6 +672,32 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facilit
         return _commit(user, OperationKind.HARVEST, day, entries, notes=notes, token=token,
                        handling_ack=handling_ack, plan_item=plan_item,
                        harvest={'facility': facility, 'transport': transport, 'vessel': vessel.strip()})
+
+
+def record_escape(user, *, unit, batch, day, count, cause, suspected=False, found_time=None, health_status='',
+                  recaptured=None, notes='', token=None):
+    """Fish of `batch` escaped from `unit` (or are suspected to have: the count is then an estimate): `count` fish leave
+    the book at the share's average, as a count adjustment of the reason escape, with its record: the cause (required),
+    the time found, the health status of the fish and the fish recaptured as known now. Fiskeridirektoratet's notice is a
+    report that reads the record (akvakulturdriftsforskriften § 38)."""
+    if not cause.strip():
+        raise ValidationError({'cause': _('Say what caused it, or what is thought to have.')})
+    entry = Entry(unit, batch, MovementKind.ADJUSTMENT, -count, reason=AdjustmentReason.ESCAPE)
+    return _commit(user, OperationKind.ADJUSTMENT, day, [entry], notes=notes, token=token, escape={
+        'found_time': found_time, 'suspected': suspected, 'cause': cause.strip(),
+        'health_status': health_status.strip(), 'recaptured': recaptured})
+
+
+def record_delivery(user, *, unit, batch, day, count, destination, destination_site_number=None,
+                    measured_weight_kg=None, handling_ack=None, notes='', token=None):
+    """Live fish delivered out of the company, to `destination` (a customer, with the receiving site's lokalitetsnummer
+    when it has one): they leave at the batch's average in the unit, their weighed kilos kept beside the book as a harvest's
+    are. Moving fish alive is a transport, so the handling check runs (a medicine withdrawal in force, too short a fast)."""
+    if not destination.strip():
+        raise ValidationError({'destination': _('Say who received the fish.')})
+    entry = Entry(unit, batch, MovementKind.DELIVERY, -count, measured_weight_kg=measured_weight_kg)
+    return _commit(user, OperationKind.DELIVERY, day, [entry], notes=notes, token=token, handling_ack=handling_ack,
+                   delivery={'destination': destination.strip(), 'destination_site_number': destination_site_number})
 
 
 def void(user, operation, reason):

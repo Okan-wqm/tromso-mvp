@@ -27,6 +27,7 @@ class HandlingKind(models.TextChoices):
 KIND_OF_OPERATION = {
     OperationKind.HARVEST: HandlingKind.HARVEST,
     OperationKind.TRANSFER: HandlingKind.TRANSPORT,
+    OperationKind.DELIVERY: HandlingKind.TRANSPORT,
     OperationKind.GRADING: HandlingKind.GRADING,
 }
 

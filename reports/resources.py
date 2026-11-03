@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _, ngettext_lazy
 from core import audit
 from core.crud import Resource, RowList, filter_by
 from farm.health.read import with_deaths
-from farm.models import HealthEvent, SlaughterFacility, Site
+from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site
 
 from . import compute, exports, periods, services
 from .forms import (
@@ -121,6 +121,10 @@ class ReportResource(Resource):
                 else None
             if event is not None:
                 initial.update(_from_event(event, kind))
+            escape = EscapeRecord.objects.select_related('operation').filter(
+                pk=request.GET.get('escape', '')).first() if _is_uuid(request.GET.get('escape', '')) else None
+            if escape is not None:
+                initial.update(_from_escape(escape))
             kwargs['initial'] = initial
         return cls.form_class(*args, **kwargs)
 
@@ -183,6 +187,20 @@ def _from_event(event, kind):
         ReportKind.DISEASE if event.notifiable else ReportKind.WELFARE),
         'site': event.site_id, 'health_event': event.pk, 'occurred_on': event.date, 'what_happened': what,
         'cause': event.get_diagnosis_display() if event.diagnosis else '', 'fish_dead': deaths or None}
+
+
+def _from_escape(escape):
+    """What an escape notice started from an escape begins with: its site and day, what it says of the fish, the cause
+    and the number (the person's text from there on)."""
+    line = escape.operation.movements.select_related('unit__production_department', 'batch__species').first()
+    fish = -line.count_delta
+    what = _('%(fish)d fish of %(species)s escaped from %(unit)s.') % {
+        'fish': fish, 'species': line.batch.species, 'unit': line.unit.code}
+    if escape.suspected:
+        what = _('Suspected: %(what)s') % {'what': what}
+    return {'kind': ReportKind.ESCAPE, 'site': line.unit.production_department.site_id, 'escape': escape.pk,
+            'occurred_on': escape.operation.date, 'what_happened': what, 'cause': escape.cause,
+            'fish_involved': fish, 'situation': escape.health_status}
 
 
 def _is_uuid(value):

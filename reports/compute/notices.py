@@ -8,12 +8,12 @@ emptied (the day its last fish left), and in continuous operation the stock by s
 from django.utils.translation import gettext as _
 
 from farm.health.read import with_deaths
-from farm.models import Batch, HealthEvent, StockOperation
+from farm.models import Batch, EscapeRecord, HealthEvent, StockOperation
 from farm.models.stock import MovementKind
 from farm.stock import read
 
 from . import stock
-from .common import Result, identity, species_code, unit_number, year_class
+from .common import Result, identity, species_code, text, unit_number, year_class
 
 NARRATIVE = ('what_happened', 'cause', 'fish_dead', 'fish_injured', 'fish_involved', 'situation', 'measures')
 
@@ -36,11 +36,36 @@ def event(report):
             'units': sorted(unit_number(unit) for unit in event.units.all())}
         scope = [('health_events', HealthEvent.all_objects.filter(pk=event.pk)),
                  ('stock_operations', StockOperation.all_objects.filter(health_event=event))]
+    if report.escape_id:
+        found, escape_scope = _escape(report.escape, problems)
+        content['escape'] = found
+        scope += escape_scope
     if not report.what_happened.strip():
         problems.append(_('Say what happened.'))
-    if report.found_at is None:
+    if report.found_at is None and not report.escape_id:       # an escape has its day and time on its record
         problems.append(_('Say when it was found.'))
     return Result(content, problems, [], scope)
+
+
+def _escape(escape, problems):
+    """What the escape record and its line say of the fish that escaped: the day (and time found), the unit, the species,
+    the fish and their average weight (the fold's), the cause, their health status and the fish recaptured."""
+    operation = StockOperation.all_objects.get(pk=escape.operation_id)
+    line = operation.movements.select_related('unit', 'batch__species').get()
+    moved = next((item for item in read.movements([line.unit], operation.date, operation.date)
+                  if item.line_id == line.pk), None)         # none once the escape is voided
+    if operation.is_deleted:
+        problems.append(_('The escape was voided: the stock no longer says these fish escaped.'))
+    fish = -line.count_delta
+    found = {
+        'id': str(operation.pk), 'date': operation.date.isoformat(),
+        'found_time': escape.found_time.strftime('%H:%M') if escape.found_time else None,
+        'suspected': escape.suspected, 'unit': unit_number(line.unit),
+        'species': species_code(line.batch.species, problems), 'fish': fish,
+        'avg_weight_g': text(abs(moved.grams) / fish, 1) if moved is not None and moved.grams is not None else None,
+        'cause': escape.cause, 'health_status': escape.health_status or None, 'recaptured': escape.recaptured}
+    return found, [('stock_operations', StockOperation.all_objects.filter(pk=operation.pk)),
+                   ('escape_records', EscapeRecord.all_objects.filter(pk=escape.pk))]
 
 
 def site_change(report):

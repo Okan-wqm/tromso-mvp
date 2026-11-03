@@ -8,7 +8,7 @@ from django.db.models import F, Q
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
-from farm.models import HealthEvent, SlaughterFacility, Site, Tank, Treatment
+from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site, Tank, Treatment
 
 from . import periods
 from .kinds import BY_FACILITY, EVENTS, KINDS, PERIODIC, ReportKind, info
@@ -69,6 +69,9 @@ class Report(AuditedModel):
     # Mattilsynet was told of the event is this notice's filing, which the health records read).
     health_event = models.ForeignKey(HealthEvent, null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='notices', verbose_name=_('Health event'))
+    # The escape an escape notice reports (farm/models/stock.py EscapeRecord).
+    escape = models.ForeignKey(EscapeRecord, null=True, blank=True, on_delete=models.PROTECT,
+                               related_name='notices', verbose_name=_('Escape'))
     occurred_on = models.DateField(_('Happened on'), null=True, blank=True)
 
     contact_name = models.CharField(_('Contact person'), max_length=255, blank=True)
@@ -112,6 +115,9 @@ class Report(AuditedModel):
             _check('month', ~Q(kind__in=MONTHLY) | Q(period_start__day=1)),
             _check('year', ~Q(kind__in=YEARLY) | Q(period_start__day=1, period_start__month=1)),
             _check('site_notice', ~Q(kind__in=SITE_NOTICES) | Q(occurred_on__isnull=False)),
+            _check('escape', Q(kind=ReportKind.ESCAPE, escape__isnull=False)
+                   | (~Q(kind=ReportKind.ESCAPE) & Q(escape__isnull=True)),
+                   _('An escape notice is about an escape, and no other report is.')),
             _check('health_event', Q(kind=ReportKind.DISEASE, health_event__isnull=False)
                    | (~Q(kind=ReportKind.DISEASE) & (Q(kind=ReportKind.WELFARE) | Q(health_event__isnull=True))),
                    _('A disease notice is about a health event; a welfare notice may be; no other report is.')),
@@ -143,6 +149,10 @@ class Report(AuditedModel):
                 condition=Q(is_deleted=False, corrects__isnull=True, health_event__isnull=False),
                 name='uq_regulatory_reports_event_notice',
                 violation_error_message=_('This health event has a notice already: open it from the list.')),
+            models.UniqueConstraint(
+                fields=['kind', 'escape'], condition=Q(is_deleted=False, corrects__isnull=True, escape__isnull=False),
+                name='uq_regulatory_reports_escape_notice',
+                violation_error_message=_('This escape has a notice already: open it from the list.')),
             models.UniqueConstraint(
                 fields=['corrects'], condition=Q(is_deleted=False, corrects__isnull=False),
                 name='uq_regulatory_reports_correction',
@@ -200,6 +210,10 @@ class Report(AuditedModel):
                 raise ValidationError(gettext('It was filed and cannot change: start a correction instead.'))
         if self.health_event_id and self.site_id and self.health_event.site_id != self.site_id:
             raise ValidationError({'health_event': gettext('Choose a health event of the site.')})
+        if self.escape_id and self.site_id:
+            unit = self.escape.operation.movements.select_related('unit__production_department').first().unit
+            if unit.production_department.site_id != self.site_id:
+                raise ValidationError({'escape': gettext('Choose an escape from a unit of the site.')})
 
     def delete_blockers(self):
         if self.submitted_at is not None:

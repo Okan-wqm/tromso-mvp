@@ -64,7 +64,7 @@ def compute(site, period):
             figures['stocked'] += line.count
         elif line.kind == MovementKind.TRANSFER_IN:
             figures['moved_in'] += line.count
-        elif line.kind == MovementKind.TRANSFER_OUT:
+        elif line.kind in (MovementKind.TRANSFER_OUT, MovementKind.DELIVERY):
             figures['moved_out'] -= line.count
         elif line.kind == MovementKind.MORTALITY:
             figures['died'] -= line.count

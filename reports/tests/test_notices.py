@@ -4,7 +4,7 @@ telephone recorded though its figures are not all ready, a notice recorded befor
 times the health events kept into filed notices (reports migration 0005) both ways."""
 import hashlib
 import json
-from datetime import datetime, timezone as utc
+from datetime import datetime, time, timezone as utc
 from decimal import Decimal
 
 from django.conf import settings
@@ -197,11 +197,67 @@ class RecordedBeforeNoticesExistedTests(NoticeTestCase):
         self.assertIn(self.event.pk, notices.told([self.event]))
 
 
+class EscapeNoticeTests(NoticeTestCase):
+    def setUp(self):
+        super().setUp()
+        self.batch = self.stock(self.m1, 3000, '200', day(9, 25))
+        self.operation = services.record_escape(
+            self.user, unit=self.m1, batch=self.batch, day=day(10, 25), count=300, cause='A net tore in the storm',
+            found_time=time(6, 15), health_status='Healthy', recaptured=12)
+        self.record = self.operation.escape_record
+
+    def escape_notice(self, **overrides):
+        data = report_data(**{'kind': 'escape', 'site': str(self.sea.pk), 'period_start': '', 'occurred_on': '2026-10-25',
+                              'escape': str(self.record.pk), 'what_happened': '300 fish escaped from M-01',
+                              **overrides})
+        return self.client.post(reverse('reports:report_create'), data), Report.objects.order_by('-created_at').first()
+
+    def test_a_notice_started_from_an_escape_begins_with_what_it_says(self):
+        form = self.client.get(reverse('reports:report_create'), {'escape': self.record.pk}).context['form']
+        self.assertEqual((form.initial['kind'], form.initial['site'], form.initial['escape'],
+                          form.initial['occurred_on'], form.initial['cause'], form.initial['fish_involved'],
+                          form.initial['situation']),
+                         ('escape', self.sea.pk, self.record.pk, day(10, 25), 'A net tore in the storm', 300, 'Healthy'))
+        self.assertEqual(form.initial['what_happened'], '300 fish of Atlantic salmon (SAL) escaped from M-01.')
+
+    def test_the_notice_reads_the_escape_record_and_the_fold(self):
+        response, report = self.escape_notice()
+        self.assertEqual(response.status_code, 302)
+        result = compute.compute(report)
+        self.assertEqual(result.problems, [])                  # no time-found of its own: the record has it
+        self.assertEqual(result.content['escape'], {
+            'id': str(self.operation.pk), 'date': '2026-10-25', 'found_time': '06:15', 'suspected': False,
+            'unit': '1', 'species': 'SAL', 'fish': 300, 'avg_weight_g': '200.0',
+            'cause': 'A net tore in the storm', 'health_status': 'Healthy', 'recaptured': 12})
+
+    def test_what_the_form_refuses_and_the_database_holds(self):
+        response, _report = self.escape_notice(escape='')
+        self.assertIn('escape', response.context['form'].errors)
+        other = self.stock(self.k1, 500, '5', day(10, 1))
+        elsewhere = services.record_escape(self.user, unit=self.k1, batch=other, day=day(10, 20), count=10,
+                                           cause='Left open').escape_record
+        response, _report = self.escape_notice(escape=str(elsewhere.pk))
+        self.assertEqual(response.context['form'].errors['escape'], ['Choose an escape from a unit of the site.'])
+        self.escape_notice()
+        response, _report = self.escape_notice()
+        self.assertEqual(response.context['form'].errors['escape'],
+                         ['This escape has a notice already: open it from the list.'])
+        for fields in ({'kind': 'escape', 'escape': None}, {'kind': 'welfare', 'escape': self.record}):
+            with self.subTest(fields), self.assertRaises(IntegrityError), transaction.atomic():
+                Report.objects.create(site=self.sea, occurred_on=day(10, 26), **fields)
+
+    def test_a_void_of_the_escape_after_the_filing_is_told(self):
+        _response, report = self.escape_notice()
+        self.file(report, channel='altinn', reference='AR-9')
+        services.void(self.user, self.operation, 'Counted in the wrong cage')
+        page = self.client.get(reverse('reports:report_detail', args=[report.pk]))
+        self.assertTrue(page.context['differences']['figures'])
+
+
 class TimesMovedIntoNoticesTests(TransactionTestCase):
     """Reports migration 0005 and its reverse (farm migration 0021 drops the column after it)."""
 
     before = [('farm', '0020_reports_fields'), ('reports', '0003_sea_lice_answers')]
-    after = [('farm', '0021_health_notified_at_removed'), ('reports', '0005_notified_moved_into_notices')]
 
     def setUp(self):
         self.executor = MigrationExecutor(connection)
@@ -224,7 +280,7 @@ class TimesMovedIntoNoticesTests(TransactionTestCase):
 
     def migrate(self):
         executor = MigrationExecutor(connection)
-        executor.migrate(self.after)
+        executor.migrate(executor.loader.graph.leaf_nodes())
 
     def test_each_time_becomes_a_filed_notice_by_the_person_who_recorded_it_and_the_reverse_brings_it_back(self):
         OldLog = self.old.get_model('core', 'AuditLog')

@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
-from farm.models import HealthEvent, SlaughterFacility, Site, Tank
+from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site, Tank
 from farm.models.harvest import FacilityStatus
 
 from . import periods
@@ -16,11 +16,17 @@ from .models import (
 )
 
 REPORT_FORM_TABS = [
-    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'occurred_on']),
+    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on']),
     ('contact', _('Contact person'), ['contact_name', 'contact_email', 'contact_phone']),
     ('event', _('What happened'), list(NARRATIVE)),
     ('notes', _('Notes'), ['notes']),
 ]
+
+
+def escape_label(escape):
+    """An escape in a list: its day, unit and fish, 2026-10-30 · M-01 · 300 fish · A net tore."""
+    line = escape.operation.movements.select_related('unit').first()
+    return f'{escape.operation.date.isoformat()} · {line.unit.code} · {-line.count_delta} · {escape.cause[:50]}'
 
 
 class ReportForm(TabbedForm):
@@ -29,7 +35,7 @@ class ReportForm(TabbedForm):
     the narrative of a notice. A day of the period is enough: the report is for its week, month or year."""
 
     tabs = REPORT_FORM_TABS
-    fixed_after_creation = ('kind', 'site', 'facility', 'period_start', 'health_event', 'occurred_on')
+    fixed_after_creation = ('kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on')
     refresh_on = ('kind',)
 
     class Meta:
@@ -69,6 +75,10 @@ class ReportForm(TabbedForm):
                 '-date', '-created_at')
             self.fields['health_event'].label_from_instance = lambda event: f'{event} · {event.site}'
             self.fields['health_event'].empty_label = _('None')
+        if 'escape' in self.fields:
+            self.fields['escape'].queryset = EscapeRecord.objects.select_related('operation').order_by(
+                '-operation__date', '-operation__created_at')
+            self.fields['escape'].label_from_instance = escape_label
         kind = self.chosen_kind()
         if not kind:
             return
@@ -79,6 +89,8 @@ class ReportForm(TabbedForm):
             keep.update(NARRATIVE)
         if kind in HEALTH_EVENT_KINDS:
             keep.add('health_event')
+        if kind == Report.Kind.ESCAPE:
+            keep.add('escape')
         for name in list(self.fields):
             if name not in keep and name != 'version':
                 del self.fields[name]
@@ -87,6 +99,8 @@ class ReportForm(TabbedForm):
                 self.fields[name].required = True
         if kind == Report.Kind.DISEASE and 'health_event' in self.fields:
             self.fields['health_event'].required = True
+        if kind == Report.Kind.ESCAPE and 'escape' in self.fields:
+            self.fields['escape'].required = True
         if kind in SITE_NOTICES or kind in EVENTS and 'occurred_on' in self.fields and not self.fields[
                 'occurred_on'].disabled:
             self.fields['occurred_on'].required = True

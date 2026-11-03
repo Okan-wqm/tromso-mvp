@@ -54,8 +54,10 @@ def compute(site, period):
                 'unit': unit.code, 'date': emptied[unit.pk].day.isoformat()})
         else:
             count, grams = 0, None
-        out_of_site = [line for line in unit_lines if line.kind == MovementKind.TRANSFER_OUT
-                       and others[line.other_unit_id].production_department.site_id != site.pk]
+        # Fish moved to another site, and fish delivered out of the company (D-10).
+        out_of_site = [line for line in unit_lines if line.kind == MovementKind.DELIVERY or (
+            line.kind == MovementKind.TRANSFER_OUT
+            and others[line.other_unit_id].production_department.site_id != site.pk)]
         rows[str(unit.pk)] = {
             'number': unit_number(unit),
             'species': species_code(kind, problems),

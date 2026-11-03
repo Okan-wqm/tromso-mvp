@@ -561,6 +561,62 @@ class HarvestForm(PlannedForm, HandlingChecked, OperationForm):
             handling_ack=data['handling_ack'], plan_item=data['plan_item'], token=data['token'])
 
 
+class EscapeForm(OperationForm):
+    """Fish that escaped, or are suspected to have: how many (an estimate when only suspected), the cause, when it was
+    found, their health status and the fish caught again so far. The fish leave the book at the batch's average;
+    Fiskeridirektoratet's notice is started from the escape (Production › Reports)."""
+
+    count = forms.IntegerField(label=_('Fish escaped'), min_value=1)
+    suspected = forms.BooleanField(
+        label=_('Only suspected'), required=False,
+        help_text=_('Tick it when an escape is suspected but not confirmed: the number is then an estimate.'))
+    found_time = forms.TimeField(label=_('Time found'), required=False, widget=forms.TimeInput(
+        attrs={'type': 'time'}, format='%H:%M'), help_text=_('Optional, on the site’s clock.'))
+    cause = forms.CharField(label=_('Cause'), max_length=2000, widget=NOTES,
+                            help_text=_('What caused it, or what is thought to have.'))
+    health_status = forms.CharField(label=_('Health status of the fish'), max_length=1000, required=False,
+                                    help_text=_('Optional: their state of health, e.g. treated or free of disease.'))
+    recaptured = forms.IntegerField(label=_('Fish recaptured'), min_value=0, required=False,
+                                    help_text=_('Optional: the fish caught again so far.'))
+
+    field_order = ['batch', 'date', 'count', 'suspected', 'found_time', 'cause', 'health_status', 'recaptured', 'notes']
+
+    def save(self, user, rows=None):
+        data = self.cleaned_data
+        return services.record_escape(
+            user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], cause=data['cause'],
+            suspected=data['suspected'], found_time=data['found_time'], health_status=data['health_status'],
+            recaptured=data['recaptured'], notes=data['notes'], token=data['token'])
+
+
+class DeliveryForm(HandlingChecked, OperationForm):
+    """Live fish delivered out of the company, to whom and where. Moving fish alive is a transport: the handling check
+    runs (a medicine withdrawal in force, a fast too short)."""
+
+    count = forms.IntegerField(label=_('Fish delivered'), min_value=1)
+    measured_weight_kg = forms.DecimalField(
+        label=_('Weight of the fish (kg)'), max_digits=14, decimal_places=3, min_value=Decimal('0.001'),
+        required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),
+        help_text=_('Optional, when they were weighed. The stock takes them out at the average weight of the batch in '
+                    'this unit; the weighed figure is kept beside it.'))
+    destination = forms.CharField(label=_('Delivered to'), max_length=200,
+                                  help_text=_('Who received them: the customer or the receiving site.'))
+    destination_site_number = forms.IntegerField(
+        label=_('Receiving site’s lokalitetsnummer'), min_value=10000, max_value=99999, required=False,
+        help_text=_('Optional: the receiving site’s locality number (5 digits).'))
+
+    handling_kind = HandlingKind.TRANSPORT
+    field_order = ['batch', 'date', 'count', 'measured_weight_kg', 'destination', 'destination_site_number', 'notes']
+
+    def save(self, user, rows=None):
+        data = self.cleaned_data
+        return services.record_delivery(
+            user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'],
+            destination=data['destination'], destination_site_number=data['destination_site_number'],
+            measured_weight_kg=data['measured_weight_kg'], handling_ack=data['handling_ack'], notes=data['notes'],
+            token=data['token'])
+
+
 class VoidForm(ServiceErrors, forms.Form):
     reason = forms.CharField(label=_('Reason for voiding'), max_length=500, widget=forms.Textarea(attrs={'rows': 3}),
                              help_text=_('E.g. “typed 1000 instead of 100”. The operation stays in the history, '

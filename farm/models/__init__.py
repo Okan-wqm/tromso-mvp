@@ -16,14 +16,14 @@ from .health import HealthEvent, LiceCount, Medicine, Treatment
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
-from .stock import Batch, StockMovement, StockOperation
+from .stock import Batch, DeliveryRecord, EscapeRecord, StockMovement, StockOperation
 from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
 from .water import WaterLimit, WaterMeasurement
 
 __all__ = [
-    'Batch', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
+    'Batch', 'DeliveryRecord', 'EscapeRecord', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
     'FeedingProtocol', 'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
     'HealthEvent', 'LiceCount', 'Medicine', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
     'ProtocolBand', 'ProtocolRate', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',

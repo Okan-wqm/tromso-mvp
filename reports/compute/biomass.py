@@ -13,7 +13,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from farm.feeding import read as feeding_read
-from farm.models import Batch, Feed, FeedingRecord, Tank
+from farm.models import Batch, DeliveryRecord, Feed, FeedingRecord, Tank
 from farm.models.stock import AdjustmentReason, MovementKind
 from farm.stock import read
 
@@ -59,6 +59,8 @@ def compute(site, period, report=None):
     fed = {key: kilos for key, kilos in feeding_read.fed(units, period.start, period.end).items()
            if is_production(batches[key[1]])}
     feeds = Feed.all_objects.in_bulk({feed_id for _unit, _batch, feed_id in fed})
+    deliveries = DeliveryRecord.all_objects.in_bulk({line.operation_id for line in lines
+                                                     if line.kind == MovementKind.DELIVERY})
     reduced = set(report.unit_answers.filter(reduced_capacity=True).values_list('unit_id', flat=True)
                   ) if report else set()
 
@@ -85,6 +87,9 @@ def compute(site, period, report=None):
             elif line.kind == MovementKind.HARVEST:
                 row['harvested'].append({'species': code, 'fish': -line.count, 'slaughter_weight_kg': text(
                     line.kilos, 1), 'condition': 'round'})
+            elif line.kind == MovementKind.DELIVERY:
+                row['moved_out'].append({'species': code, 'fish': -line.count, 'kg': text(line.kilos, 1),
+                                         'to_lokalitetsnummer': deliveries[line.operation_id].destination_site_number})
             elif line.kind == MovementKind.TRANSFER_OUT and other_site != site:
                 row['moved_out'].append({'species': code, 'fish': -line.count, 'kg': text(line.kilos, 1),
                                          'to_lokalitetsnummer': other_site.lokalitetsnummer if other_site else None})

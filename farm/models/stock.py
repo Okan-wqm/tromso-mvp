@@ -59,8 +59,8 @@ PROVENANCE_OF_ORIGIN = {Origin.OWN_HATCHERY: Provenance.FARMED, Origin.WILD: Pro
 
 
 class OperationKind(models.TextChoices):
-    """What a person did. Every kind has its dialog except the count adjustment, whose lines a harvest
-    that empties a unit writes (fish the book holds beyond the count) and which a dialog can offer later."""
+    """What a person did. Every kind has its dialog; a count adjustment is an escape's (its dialog), and a harvest
+    that empties a unit writes one too (fish the book holds beyond the count)."""
     INPUT = 'input', _('Stocking')
     MORTALITY = 'mortality', _('Mortality')
     CULL = 'cull', _('Cull')
@@ -68,6 +68,7 @@ class OperationKind(models.TextChoices):
     GRADING = 'grading', _('Grading')
     WEIGHING = 'weighing', _('Weighing')
     HARVEST = 'harvest', _('Harvest')
+    DELIVERY = 'delivery', _('Delivery')
     ADJUSTMENT = 'adjustment', _('Count adjustment')
 
 
@@ -78,6 +79,7 @@ class MovementKind(models.TextChoices):
     TRANSFER_OUT = 'transfer_out', _('Moved out')
     TRANSFER_IN = 'transfer_in', _('Moved in')
     HARVEST = 'harvest', _('Harvested')
+    DELIVERY = 'delivery', _('Delivered')
     WEIGHING = 'weighing', _('Weighed')
     ADJUSTMENT = 'adjustment', _('Count adjusted')
 
@@ -151,7 +153,8 @@ ARRIVAL_STATUSES = (Tank.Status.ACTIVE, Tank.Status.PREPARING, Tank.Status.FALLO
 # Operations that bring fish into a unit: the ones the capacity acknowledgement can belong to.
 ARRIVING_OPERATIONS = (OperationKind.INPUT, OperationKind.TRANSFER, OperationKind.GRADING,
                        OperationKind.ADJUSTMENT)
-REMOVALS = (MovementKind.MORTALITY, MovementKind.CULL, MovementKind.TRANSFER_OUT, MovementKind.HARVEST)
+REMOVALS = (MovementKind.MORTALITY, MovementKind.CULL, MovementKind.TRANSFER_OUT, MovementKind.HARVEST,
+            MovementKind.DELIVERY)
 ARRIVALS = (MovementKind.INPUT, MovementKind.TRANSFER_IN)
 PAIRED = (MovementKind.TRANSFER_OUT, MovementKind.TRANSFER_IN)
 # The reason list of each kind of line that has one; the other kinds have none.
@@ -371,7 +374,7 @@ class StockMovement(models.Model):
             _check('pair', Q(kind__in=PAIRED, pair__isnull=False) | (~Q(kind__in=PAIRED) & Q(pair__isnull=True))),
             _check('measured', Q(measured_weight_kg__isnull=True)
                    | Q(measured_weight_kg__gt=0, kind__in=[MovementKind.HARVEST, MovementKind.MORTALITY,
-                                                           MovementKind.CULL])),
+                                                           MovementKind.CULL, MovementKind.DELIVERY])),
             _check('reason', _reason_rule()),
             _check('size_class', Q(size_class='') | Q(kind__in=PAIRED)),
             # A harvest is weighed: its kilos are the farm's own fact beside the book (STK-29, STK-30).
@@ -389,3 +392,78 @@ class StockMovement(models.Model):
         """The reason as its list names it (a mortality's cause, a cull's reason...)."""
         choices = REASONS.get(self.kind)
         return choices(self.reason).label if choices and self.reason else self.reason
+
+
+# ---- what an escape and a delivery add to their operation -------------------------------------------------
+class LiveOperations(models.Manager):
+    """The records whose operation counts: it is not voided."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(operation__is_deleted=False)
+
+
+class EscapeRecord(models.Model):
+    """What a line cannot say of an escape (akvakulturdriftsforskriften § 38, § 41 c, § 57 b): the cause, whether it is
+    only suspected, the time it was found (the day is the operation's), the health status of the fish and the fish
+    recaptured, as known when it is recorded. One per escape operation (its primary key), written with it by the stock
+    service, never edited: voiding the escape voids it with it. The fish escaped, their species, unit and average
+    weight are the operation's line and the fold's; the notice to Fiskeridirektoratet is a regulatory report that reads
+    this record (Production › Reports). An escape from several units is recorded for each."""
+
+    operation = models.OneToOneField(StockOperation, primary_key=True, on_delete=models.PROTECT,
+                                     related_name='escape_record', limit_choices_to={'kind': OperationKind.ADJUSTMENT},
+                                     verbose_name=_('Operation'))
+    found_time = models.TimeField(_('Time found'), null=True, blank=True)    # on the site's clock
+    suspected = models.BooleanField(_('Only suspected'), default=False)
+    cause = models.CharField(_('Cause'), max_length=2000)
+    health_status = models.CharField(_('Health status of the fish'), max_length=1000, blank=True)
+    recaptured = models.PositiveIntegerField(_('Fish recaptured'), null=True, blank=True)
+
+    objects = LiveOperations()
+    all_objects = models.Manager()
+
+    class Meta:
+        db_table = 'escape_records'
+        base_manager_name = 'all_objects'
+        verbose_name = _('escape record')
+        verbose_name_plural = _('escape records')
+        constraints = [models.CheckConstraint(condition=~Q(cause=''), name='chk_escape_records_cause')]
+
+    def __str__(self):
+        return f'{self.operation} · {self.cause[:60]}'
+
+
+SITE_NUMBER = [MinValueValidator(10000), MaxValueValidator(99999)]
+
+
+class DeliveryRecord(models.Model):
+    """Where live fish were delivered out of the company (a customer's site, a sale of smolt): who received them and, when
+    it has one, the receiving site's lokalitetsnummer. One per delivery operation (its primary key), written with it by
+    the stock service, never edited, voided with it. It is the smolt report's fish moved out of the site and the monthly
+    biomass report's fish moved to another site (docs/regulatory-reports.md, D-10)."""
+
+    operation = models.OneToOneField(StockOperation, primary_key=True, on_delete=models.PROTECT,
+                                     related_name='delivery_record', limit_choices_to={'kind': OperationKind.DELIVERY},
+                                     verbose_name=_('Operation'))
+    destination = models.CharField(_('Delivered to'), max_length=200)
+    destination_site_number = models.PositiveIntegerField(_('Receiving site’s lokalitetsnummer'), null=True,
+                                                          blank=True, validators=SITE_NUMBER)
+
+    objects = LiveOperations()
+    all_objects = models.Manager()
+
+    class Meta:
+        db_table = 'delivery_records'
+        base_manager_name = 'all_objects'
+        verbose_name = _('delivery record')
+        verbose_name_plural = _('delivery records')
+        constraints = [
+            models.CheckConstraint(condition=~Q(destination=''), name='chk_delivery_records_destination'),
+            models.CheckConstraint(
+                condition=Q(destination_site_number__isnull=True)
+                | Q(destination_site_number__gte=10000, destination_site_number__lte=99999),
+                name='chk_delivery_records_site_number'),
+        ]
+
+    def __str__(self):
+        return f'{self.operation} → {self.destination}'

@@ -97,7 +97,8 @@ class Accrual:
 
 
 class BatchWater:
-    """The water of a set of batches on the farm's `today`, with the samples read from `first`. `presence` (farm.stock.read
+    """The water of a set of batches on the farm's `today`, with the samples read from `first` (and the 30 days before
+    today, whichever is earlier). `presence` (farm.stock.read
     .Presence of the batches) can be handed in by a caller that has it already."""
 
     def __init__(self, batch_ids, today, first, presence=None):
@@ -107,7 +108,8 @@ class BatchWater:
         self.units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
         # The batches' species in one query: the assumed temperature of a day without a measured one.
         self.batches = Batch.all_objects.select_related('species').in_bulk(self.batch_ids)
-        self.temperatures = Temperatures(list(self.units.values()), min(first, today), today)
+        # From `first`, and at least LOOKBACK_DAYS back: a projection takes the last measured days within them.
+        self.temperatures = Temperatures(list(self.units.values()), min(first, today - LOOKBACK_DAYS * DAY), today)
         self._projections = {}
 
     def assumed(self, batch_id):

@@ -203,7 +203,7 @@ def _handling(kind, day, entries, batches, units, seen):
     if handling is None:
         return None
     source = next(entry for entry in entries if entry.count_delta < 0)
-    assessment = check.assess(handling, units[source.unit.pk], day, batches[source.batch.pk])
+    assessment = check.assess(handling, units[source.unit.pk], day, batches[source.batch.pk], with_earliest=False)
     check.require_acknowledged(assessment, seen)
     return assessment
 

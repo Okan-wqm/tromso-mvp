@@ -3262,6 +3262,13 @@ msgstr ""
 "grense. Hver verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets. "
 "Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
 
+#, python-format
+msgid "Earliest suitable harvest date: %(date)s."
+msgstr "Tidligste egnede høstedato: %(date)s."
+
+msgid "Earliest suitable harvest date: not known."
+msgstr "Tidligste egnede høstedato: ukjent."
+
 msgid "Earthen"
 msgstr "Jord"
 
@@ -4880,6 +4887,17 @@ msgstr "Medisinskap"
 msgid "Medicine withdrawal"
 msgstr "Tilbakeholdelsestid"
 
+msgid "Medicine withdrawal decides: its end is unknown."
+msgstr "Tilbakeholdelsestiden avgjør: slutten er ukjent."
+
+#, python-format
+msgid "Medicine withdrawal decides: until %(date)s."
+msgstr "Tilbakeholdelsestiden avgjør: til %(date)s."
+
+#, python-format
+msgid "Medicine withdrawal decides: until about %(date)s."
+msgstr "Tilbakeholdelsestiden avgjør: til omtrent %(date)s."
+
 msgid "Medicine withdrawal not checked"
 msgstr "Tilbakeholdelsestid ikke kontrollert"
 
@@ -6364,6 +6382,13 @@ msgstr "Innkjøp"
 
 msgid "Purging before it (degree-days)"
 msgstr "Rensing før (døgngrader)"
+
+msgid "Purging decides."
+msgstr "Rensingen avgjør."
+
+#, python-format
+msgid "Purging decides: feeding must stop by %(date)s."
+msgstr "Rensingen avgjør: fôringen må stoppe senest %(date)s."
 
 msgid ""
 "Purging: the fish are held without feed, in clean water, so that any off-flavour clears, for this"

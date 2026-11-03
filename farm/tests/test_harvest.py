@@ -826,6 +826,120 @@ class PurgingFastsTests(PurgingBase):
         self.assertContains(response, '(60 degree-days)')
 
 
+class EarliestTests(PurgingBase):
+    """The earliest suitable harvest date: the later of the end of the medicine withdrawal and the first day the purge can
+    be complete from the last feeding, and which decides."""
+
+    def setUp(self):
+        super().setUp()
+        self.purge(hours=72)                                     # a plain 72 h purge
+        self.fed(1, at=clock(18, 0))                             # last fed yesterday at 18:00: complete from 3 days ahead
+
+    def block(self, days_ahead, **fields):
+        return WithdrawalBlock(self.batch, None if days_ahead is None else self.day(-days_ahead),
+                               fields.pop('approximate', False), fields.pop('reason', ''), None)
+
+    def earliest(self, *blocks):
+        with provider(*blocks):
+            return check.earliest(self.t1, self.batch)
+
+    def test_the_purge_decides_when_it_ends_after_the_withdrawal_and_says_when_feeding_must_stop(self):
+        found = self.earliest(self.block(1))                     # the withdrawal ends tomorrow
+        self.assertEqual((found.decides, found.day, found.until), ('purging', self.day(-3), self.day(-1)))
+        self.assertEqual(found.stop_by, self.day(1))             # fed yesterday, the last day it may be
+        self.assertEqual(found.text(), f'Earliest suitable harvest date: {services.shown_date(self.day(-3))}. '
+                                       f'Purging decides: feeding must stop by {services.shown_date(self.day(1))}.')
+        self.assertTrue(found.holds(self.day(-2)))
+        self.assertFalse(found.holds(self.day(-3)))
+
+    def test_the_medicine_withdrawal_decides_when_it_ends_after_the_purge(self):
+        found = self.earliest(self.block(10))
+        self.assertEqual((found.decides, found.day, found.stop_by), ('withdrawal', self.day(-10), None))
+        self.assertEqual(found.text(), f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}. '
+                                       f'Medicine withdrawal decides: until {services.shown_date(self.day(-10))}.')
+        approximate = self.earliest(self.block(10, approximate=True))
+        self.assertIn('Medicine withdrawal decides: until about', approximate.text())
+        # A tie goes to the withdrawal: food safety first.
+        self.assertEqual(self.earliest(self.block(3)).decides, 'withdrawal')
+
+    def test_an_unknown_withdrawal_end_has_no_date(self):
+        found = self.earliest(self.block(None))
+        self.assertEqual((found.decides, found.day, found.unknown), ('withdrawal', None, True))
+        self.assertEqual(found.text(), 'Earliest suitable harvest date: not known. Medicine withdrawal decides: its '
+                                       'end is unknown.')
+        self.assertTrue(found.holds(self.day(-400)))
+
+    def test_with_nothing_holding_the_fish_there_is_no_date(self):
+        found = self.earliest(self.block(-5))                    # a block that ended 5 days ago is not in force
+        self.assertEqual(found.decides, 'purging')               # the 72 h purge still holds: fed yesterday
+        self.purge(hours=1)                                      # 6 h have gone since the last feeding: complete
+        found = self.earliest()
+        self.assertEqual((found.decides, found.text(), found.holds(self.today)), ('', '', False))
+        HandlingRule.objects.filter(kind='harvest').delete()     # no rule: no purge to wait for
+        self.assertEqual(self.earliest().decides, '')
+
+    def test_degree_days_decide_the_purge_day_through_the_projection(self):
+        self.purge(degrees=30)
+        self.warm(1, 2, 3, 4, 5)
+        found = self.earliest()
+        # Last fed yesterday: the days counted from the day after it, today (no sample yet, projected at 10 °C), and
+        # the next two days: 30 degree-days are complete by the start of the 4th day after today... exactly 3 days ahead.
+        self.assertEqual((found.decides, found.day), ('purging', self.day(-3)))
+        self.assertEqual(found.stop_by, self.day(1))
+
+    def test_the_harvest_dialog_and_the_drawer_say_it_and_a_harvest_before_it_still_goes_on_when_acknowledged(self):
+        with provider(self.block(10)):
+            form = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
+            drawer = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
+            self.assertContains(form, f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}.')
+            self.assertContains(form, f'Medicine withdrawal decides: until {services.shown_date(self.day(-10))}.')
+            self.assertContains(drawer, 'Earliest suitable harvest date:')
+            self.assertIsNotNone(form.context['form'].handling.earliest)
+            fingerprint = self.assess().fingerprint
+            operation = self.harvest(handling_ack=fingerprint)
+        self.assertEqual(AuditLog.objects.get(entity_type='stock operation', entity_id=str(operation.pk),
+                                              action='create').severity, 'critical')
+
+    def test_a_transfer_and_a_grading_do_not_say_it(self):
+        with provider(self.block(10)):
+            for kind in ('transport', 'grading'):
+                result = self.assess(kind)
+                self.assertIsNone(result.earliest)
+                self.assertFalse([note for note in result.notes if 'Earliest suitable' in note])
+
+    def test_the_plan_pages_show_it_and_mark_a_plan_dated_before_it(self):
+        early = HandlingPlanItem.objects.create(kind='harvest', date=self.day(-1), unit=self.t1, batch=self.batch,
+                                                facility=self.facility)
+        late = HandlingPlanItem.objects.create(kind='harvest', date=self.day(-20), unit=self.t1, batch=self.batch,
+                                               facility=self.facility)
+        with provider(self.block(10)):
+            page = self.client.get(reverse('farm:handlingplanitem_list'))
+            rows = {row['item'].pk: row for row in page.context['objects']}
+            self.assertTrue(rows[early.pk]['earliest'].holds(early.date))
+            self.assertFalse(rows[late.pk]['earliest'].holds(late.date))
+            self.assertContains(page, f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}.')
+            self.assertContains(page, 'class="row-sub over-text">Earliest suitable harvest date', count=1)
+            plans = self.client.get(reverse('farm:productionplan_list'))
+            self.assertContains(plans, f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}.')
+
+    def test_the_texts_are_in_turkish_and_norwegian(self):
+        self.addCleanup(translation.activate, 'en')
+        words = {'tr': ('En erken uygun hasat tarihi: ', 'İlaç bekleme süresi belirler: ',
+                        'Arındırma belirler: yemleme en geç '),
+                 'nb': ('Tidligste egnede høstedato: ', 'Tilbakeholdelsestiden avgjør: til ',
+                        'Rensingen avgjør: fôringen må stoppe senest ')}
+        for language, (earliest, withdrawal_decides, purging_decides) in words.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            with provider(self.block(10)):
+                page = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
+            self.assertContains(page, earliest, msg_prefix=language)
+            self.assertContains(page, withdrawal_decides, msg_prefix=language)
+            with provider(self.block(1)):
+                page = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
+            self.assertContains(page, purging_decides, msg_prefix=language)
+            self.assertNotContains(page, 'Earliest suitable', msg_prefix=language)
+
+
 class ForecastTests(HarvestTestCase):
     """One band at FCR 1.00 and 1 % of the body weight a day at 10 °C: the fish grow 1 % a day from 50 g."""
 

@@ -3257,6 +3257,13 @@ msgstr ""
 "sınırsız gösterir. Her değer hangi numune noktasında alındığını söyler; bir birimin suyu orta "
 "noktasının suyudur. Kimseye uyarı gitmez: kritik değerler burada gösterilir, gönderilmez."
 
+#, python-format
+msgid "Earliest suitable harvest date: %(date)s."
+msgstr "En erken uygun hasat tarihi: %(date)s."
+
+msgid "Earliest suitable harvest date: not known."
+msgstr "En erken uygun hasat tarihi: bilinmiyor."
+
 msgid "Earthen"
 msgstr "Toprak"
 
@@ -4880,6 +4887,17 @@ msgstr "İlaç dolabı"
 msgid "Medicine withdrawal"
 msgstr "İlaç bekleme süresi"
 
+msgid "Medicine withdrawal decides: its end is unknown."
+msgstr "İlaç bekleme süresi belirler: bitişi bilinmiyor."
+
+#, python-format
+msgid "Medicine withdrawal decides: until %(date)s."
+msgstr "İlaç bekleme süresi belirler: %(date)s tarihine kadar."
+
+#, python-format
+msgid "Medicine withdrawal decides: until about %(date)s."
+msgstr "İlaç bekleme süresi belirler: yaklaşık %(date)s tarihine kadar."
+
 msgid "Medicine withdrawal not checked"
 msgstr "İlaç bekleme süresi denetlenmedi"
 
@@ -6358,6 +6376,13 @@ msgstr "Satın alma"
 
 msgid "Purging before it (degree-days)"
 msgstr "Öncesinde arındırma (gün-derece)"
+
+msgid "Purging decides."
+msgstr "Arındırma belirler."
+
+#, python-format
+msgid "Purging decides: feeding must stop by %(date)s."
+msgstr "Arındırma belirler: yemleme en geç %(date)s tarihinde durmalı."
 
 msgid ""
 "Purging: the fish are held without feed, in clean water, so that any off-flavour clears, for this"

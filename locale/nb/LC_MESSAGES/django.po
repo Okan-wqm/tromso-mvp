@@ -116,10 +116,32 @@ msgstr[0] "%(count)d dag"
 msgstr[1] "%(count)d dager"
 
 #, python-format
-msgid "%(count)d day without a water temperature is counted as 0 °C."
-msgid_plural "%(count)d days without a water temperature are counted as 0 °C."
-msgstr[0] "%(count)d dag uten vanntemperatur er regnet som 0 °C."
-msgstr[1] "%(count)d dager uten vanntemperatur er regnet som 0 °C."
+msgid ""
+"%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed "
+"temperature in Reference data › Species."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted as 0 °C: set the species’ assumed"
+" temperature in Reference data › Species."
+msgstr[0] ""
+"%(count)d dag uten målt vanntemperatur telles som 0 °C: legg inn artens antatte temperatur i "
+"Referansedata › Arter."
+msgstr[1] ""
+"%(count)d dager uten målt vanntemperatur telles som 0 °C: legg inn artens antatte temperatur i "
+"Referansedata › Arter."
+
+#, python-format
+msgid ""
+"%(count)d day without a measured water temperature is counted at the assumed %(temperature)s °C "
+"(the species’ setting in Reference data)."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted at the assumed %(temperature)s °C"
+" (the species’ setting in Reference data)."
+msgstr[0] ""
+"%(count)d dag uten målt vanntemperatur telles med den antatte %(temperature)s °C (artens "
+"innstilling i Referansedata)."
+msgstr[1] ""
+"%(count)d dager uten målt vanntemperatur telles med den antatte %(temperature)s °C (artens "
+"innstilling i Referansedata)."
 
 #, python-format
 msgid "%(count)d degree-day"
@@ -1966,6 +1988,9 @@ msgstr "Tildelinger"
 
 msgid "Assistant"
 msgstr "Assistent"
+
+msgid "Assumed water temperature for withdrawal (°C)"
+msgstr "Antatt vanntemperatur for tilbakeholdelsestid (°C)"
 
 #, python-format
 msgid "At least %(min)s."
@@ -3993,6 +4018,9 @@ msgstr "Gitt %(given)s"
 msgid "Go on despite these warnings"
 msgstr "Fortsett tross disse advarslene"
 
+msgid "Going on is stored with what is shown here and logged as critical."
+msgstr "Å fortsette lagres med det som vises her og logges som kritisk."
+
 msgid "Grading"
 msgstr "Sortering"
 
@@ -4806,18 +4834,6 @@ msgstr "Tilbakeholdelsestid ikke kontrollert"
 
 msgid "Medicine withdrawal not checked: the health records are not in yet."
 msgstr "Tilbakeholdelsestid ikke kontrollert: helseregistreringene er ikke på plass ennå."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s until %(date)s."
-msgstr "Tilbakeholdelsestid for %(batch)s til %(date)s."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "Tilbakeholdelsestid for %(batch)s til omtrent %(date)s."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s, its end unknown."
-msgstr "Tilbakeholdelsestid for %(batch)s, slutten ukjent."
 
 msgid "Medicines"
 msgstr "Legemidler"
@@ -6227,6 +6243,14 @@ msgstr "Produksjonsplaner"
 
 msgid "Production units"
 msgstr "Produksjonsenheter"
+
+#, python-format
+msgid ""
+"Projected at the assumed %(temperature)s °C (the species’ setting in Reference data): no water "
+"temperature was measured in the last %(days)d days."
+msgstr ""
+"Anslått med den antatte %(temperature)s °C (artens innstilling i Referansedata): ingen "
+"vanntemperatur ble målt de siste %(days)d dagene."
 
 msgid "Projected at the mean water temperature of the last days measured."
 msgstr "Fremskrevet med middeltemperaturen i vannet de siste målte dagene."
@@ -7679,6 +7703,15 @@ msgstr "Ukedagene den har frist."
 
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
+
+msgid ""
+"The degree-days one day counts for when no water temperature was measured: a past day without "
+"one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
+" low value is the conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C."
+msgstr ""
+"Døgngradene én dag teller for når ingen vanntemperatur er målt: en dag i fortiden uten måling, og"
+" en tilbakeholdelsestid som anslås når ingenting er målt. Det er driftens egen antakelse: en lav "
+"verdi er det forsiktige valget. Tom: en slik dag telles som 0 °C. 0 til 40 °C."
 
 msgid "The depth of the water taken, from the surface."
 msgstr "Dybden vannet tas fra, regnet fra overflaten."
@@ -9436,6 +9469,9 @@ msgstr "f.eks. 50000"
 
 msgid "e.g. 60.3913"
 msgstr "f.eks. 60,3913"
+
+msgid "e.g. 8"
+msgstr "f.eks. 8"
 
 msgid "e.g. 923456789"
 msgstr "f.eks. 923456789"

@@ -1,5 +1,6 @@
 """Fish health: the medicine withdrawal worked out on read (days, degree-days with known temperatures, a missing
-day counted as 0 °C, a running course, a void, the fish followed into another unit, medicated feed), the
+day counted at the species' assumed temperature or as 0 °C, a running course, a void, the fish followed into another
+unit, medicated feed, a withdrawal asked before a harvest only), the
 registry the harvest side reads, the statutory sea-lice limits, the write paths, and every page and dialog
 (medicines, treatments, health events, sea-lice counts, Production units) checked against the stored rows."""
 import io
@@ -10,20 +11,21 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from core import access, database, navigation
-from core.models import AuditLog
+from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
 
 from ..handling import check as handling_check, withdrawal as registry
 from ..health import diseases, lice, services, withdrawal
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
-    Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, Site, StockOperation, Supplier,
-    System, Tank, Treatment, WaterMeasurement,
+    Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, Site, Species, StockOperation,
+    Supplier, System, Tank, Treatment, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
@@ -117,7 +119,7 @@ class WithdrawalTests(HealthTestCase):
         [held] = self.held()
         self.assertEqual((held.until, held.estimated, held.remaining_degree_days), (self.day(-2), True, Decimal(10)))
 
-    def test_a_day_without_a_temperature_counts_as_zero_and_is_said(self):
+    def test_a_day_without_a_temperature_counts_as_zero_when_the_species_has_no_assumption_and_is_said(self):
         # 45 degree-days; 10 °C on four of the five days since the last day, the fourth day back not measured:
         # 40 by yesterday, 5 to go, about tomorrow. Had the missing day been filled in with 10 °C the sum
         # would have been 50 by yesterday and the fish free today.
@@ -125,15 +127,124 @@ class WithdrawalTests(HealthTestCase):
         for days_ago in (5, 3, 2, 1):
             self.temperature(self.t1, days_ago, '10')
         [held] = self.held()
-        self.assertEqual((held.until, held.estimated, held.days_without_temperature), (self.day(-1), True, 1))
-        self.assertIn('1 day without a water temperature is counted as 0 °C.', withdrawal.describe(held))
+        self.assertEqual((held.until, held.estimated, held.days_without_temperature, held.assumed_temperature),
+                         (self.day(-1), True, 1, None))
+        self.assertIn('1 day without a measured water temperature is counted as 0 °C: set the species’ assumed '
+                      'temperature in Reference data › Species.', withdrawal.describe(held))
 
-    def test_without_any_temperature_the_end_is_unknown(self):
+    def test_a_missing_day_counts_at_the_species_assumed_temperature_exactly_as_if_it_was_measured_there(self):
+        # 55 degree-days; 10 °C on four of the five days since the last day, the fourth day back not measured.
+        self.treat(self.medicine(degree_days=55), 6, 6)
+        for days_ago in (5, 3, 2, 1):
+            self.temperature(self.t1, days_ago, '10')
+        [unset] = self.held()
+        self.assertEqual((unset.until, unset.remaining_degree_days, unset.days_without_temperature),
+                         (self.day(-2), Decimal(15), 1))                 # 40 by yesterday, 15 to go at 10: 2 days
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('10.0'))
+        [assumed] = self.held()
+        self.assertEqual((assumed.until, assumed.estimated, assumed.remaining_degree_days,
+                          assumed.days_without_temperature, assumed.assumed_temperature),
+                         (self.day(-1), True, Decimal(5), 1, Decimal('10.0')))    # 50 by yesterday, 5 to go: 1 day
+        self.assertIn('1 day without a measured water temperature is counted at the assumed 10.0 °C (the species’ '
+                      'setting in Reference data).', withdrawal.describe(assumed))
+        self.assertNotIn('set the species’ assumed temperature', withdrawal.describe(assumed))
+        # A lower assumption is the conservative one: 4 °C for the missing day is 44 by yesterday, 11 to go.
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('4.0'))
+        [lower] = self.held()
+        self.assertEqual((lower.until, lower.remaining_degree_days, lower.assumed_temperature),
+                         (self.day(-2), Decimal(11), Decimal('4.0')))
+        self.assertIn('1 day without a measured water temperature is counted at the assumed 4.0 °C',
+                      withdrawal.describe(lower))
+        self.temperature(self.t1, 4, '10')                               # the same day, measured at that value
+        [measured] = self.held()
+        self.assertEqual((measured.until, measured.estimated, measured.remaining_degree_days),
+                         (assumed.until, assumed.estimated, assumed.remaining_degree_days))
+        self.assertEqual((measured.days_without_temperature, measured.until), (0, self.day(-1)))
+
+    def test_a_species_assumption_of_zero_is_a_value_not_an_absence(self):
+        self.treat(self.medicine(degree_days=45), 6, 6)
+        for days_ago in (5, 3, 2, 1):
+            self.temperature(self.t1, days_ago, '10')
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('0.0'))
+        [held] = self.held()
+        self.assertEqual((held.until, held.assumed_temperature), (self.day(-1), Decimal('0.0')))
+        self.assertIn('is counted at the assumed 0.0 °C (the species’ setting in Reference data)',
+                      withdrawal.describe(held))
+
+    def test_without_any_temperature_the_end_is_unknown_unless_the_species_has_an_assumption(self):
         self.treat(self.medicine(degree_days=50), 6, 6)
         [held] = self.held()
-        self.assertEqual((held.until, held.estimated, held.days_without_temperature), (None, True, 5))
+        self.assertEqual((held.until, held.estimated, held.days_without_temperature, held.projected_at_assumed),
+                         (None, True, 5, False))
         self.assertTrue(held.holds_on(self.day(-400)))
         self.assertIn('record the water temperature', withdrawal.describe(held))
+        self.assertIn('5 days without a measured water temperature are counted as 0 °C: set the species’ assumed '
+                      'temperature in Reference data › Species.', withdrawal.describe(held))
+        # The assumption fills the five past days (40) and projects the 10 left at 8 °C a day: 2 days, about the
+        # day after tomorrow.
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('8.0'))
+        [held] = self.held()
+        self.assertEqual((held.until, held.estimated, held.days_without_temperature, held.projected_at_assumed,
+                          held.remaining_degree_days), (self.day(-2), True, 5, True, Decimal(10)))
+        text = withdrawal.describe(held)
+        self.assertIn('Projected at the assumed 8.0 °C (the species’ setting in Reference data): no water '
+                      'temperature was measured in the last 30 days.', text)
+        self.assertIn('5 days without a measured water temperature are counted at the assumed 8.0 °C (the '
+                      'species’ setting in Reference data).', text)
+        self.assertNotIn('record the water temperature', text)
+        # A measured temperature in the window is projected at, not the assumption.
+        self.temperature(self.t1, 1, '10')
+        [held] = self.held()
+        self.assertFalse(held.projected_at_assumed)
+        self.assertIn('Projected at the mean water temperature of the last days measured.', withdrawal.describe(held))
+        # An assumed 0 °C cannot project an end.
+        WaterMeasurement.objects.all().delete()
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('0.0'))
+        [held] = self.held()
+        self.assertEqual((held.until, held.projected_at_assumed), (None, False))
+
+    def test_the_assumed_temperature_texts_are_in_turkish_and_norwegian(self):
+        self.treat(self.medicine(degree_days=50), 6, 6)        # five past days, none measured
+        words = {
+            'tr': ('Ölçülmüş su sıcaklığı olmayan 5 gün 0 °C sayıldı: Referans verileri › Balık türleri altında '
+                   'türün varsayılan sıcaklığını girin.',
+                   'Ölçülmüş su sıcaklığı olmayan 5 gün, varsayılan 8,0 °C ile sayıldı (Referans verilerindeki türün '
+                   'ayarı).',
+                   'Varsayılan 8,0 °C ile öngörüldü (Referans verilerindeki türün ayarı): son 30 günde su sıcaklığı '
+                   'ölçülmedi.'),
+            'nb': ('5 dager uten målt vanntemperatur telles som 0 °C: legg inn artens antatte temperatur i '
+                   'Referansedata › Arter.',
+                   '5 dager uten målt vanntemperatur telles med den antatte 8,0 °C (artens innstilling i '
+                   'Referansedata).',
+                   'Anslått med den antatte 8,0 °C (artens innstilling i Referansedata): ingen vanntemperatur ble '
+                   'målt de siste 30 dagene.'),
+        }
+        for language, (zero, assumed, projected) in words.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=None)
+            self.assertContains(self.client.get(reverse('farm:treatments')), zero, msg_prefix=language)
+            Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('8.0'))
+            page = self.client.get(reverse('farm:treatments'))
+            self.assertContains(page, assumed, msg_prefix=language)
+            self.assertContains(page, projected, msg_prefix=language)
+            self.assertNotContains(page, zero, msg_prefix=language)
+        # The same words in the harvest section of the unit's drawer, whose warning carries the reason.
+        page = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
+        self.assertContains(page, 'Ikke egnet for høsting')
+        self.assertContains(page, 'Anslått med den antatte 8,0 °C')
+
+    def test_the_species_of_the_batches_are_read_in_one_query_whatever_their_number(self):
+        other = self.stock(self.t2, count=500, species=self.trout)
+        third = self.stock(make_unit('T-03', self.hall), count=500)
+        self.treat(self.medicine(degree_days=50), 6, 6, units=[self.t1, self.t2])
+        counts = []
+        for ids in ({self.batch.pk}, {self.batch.pk, other.pk, third.pk}):
+            with CaptureQueriesContext(connection) as queries:
+                reader = withdrawal.Reader(ids, self.today)
+                reader.withdrawals()
+            counts.append(sum('FROM "batches"' in query['sql'] for query in queries.captured_queries))
+            self.assertEqual(set(reader.batches), ids)
+        self.assertEqual(counts, [1, 1])
 
     def test_the_later_of_days_and_degree_days_wins(self):
         for days_ago in range(1, 6):
@@ -174,9 +285,9 @@ class WithdrawalTests(HealthTestCase):
         # the mean 8 °C (12, 6, 6), about tomorrow. With T-01's water alone it would have been 36: free today.
         self.treat(self.medicine(degree_days=30), 4, 4)
         moving = handling_check.assess('transport', self.t1, self.day(2), self.batch)
-        self.assertEqual([warning.warning for warning in moving.warnings], ['withdrawal'])
+        self.assertEqual(moving.warnings, [])           # live fish moved: a meat withdrawal is not asked
         stock_services.record_transfer(self.user, source=self.t1, batch=self.batch, day=self.day(2),
-                                       legs=[(self.t2, 2000)], reason='density', handling_ack=moving.fingerprint)
+                                       legs=[(self.t2, 2000)], reason='density')
         for days_ago, unit, value in ((3, self.t1, '12'), (2, self.t1, '12'), (2, self.t2, '6'), (1, self.t1, '12'),
                                       (1, self.t2, '6')):
             self.temperature(unit, days_ago, value)
@@ -190,6 +301,28 @@ class WithdrawalTests(HealthTestCase):
         self.t1.refresh_from_db()
         self.stock(self.t1, count=500, days_ago=1)
         self.assertEqual(self.held(self.t1), [])
+
+    def test_only_a_harvest_is_warned_of_a_withdrawal_a_transport_and_a_grading_are_not(self):
+        # The same batch and treatment: held 3 days after its last, with 7 days of withdrawal.
+        self.treat(self.medicine(days=7), 3, 3)
+        harvest = handling_check.assess('harvest', self.t1, self.today, self.batch)
+        self.assertEqual([(warning.warning, warning.block.until) for warning in harvest.warnings],
+                         [('withdrawal', self.day(-5))])
+        self.assertTrue(harvest.messages()[0].startswith('Not suitable for harvest — medicine withdrawal of '))
+        for kind in ('transport', 'grading', 'treatment'):
+            with self.subTest(kind=kind):
+                result = handling_check.assess(kind, self.t1, self.today, self.batch)
+                self.assertEqual(result.warnings, [])
+                self.assertFalse([note for note in result.notes if 'withdrawal' in note.lower()])
+        # Through the stock service: a grading goes ahead unasked, a harvest is asked for its box.
+        stock_services.record_grading(self.user, source=self.t1, batch=self.batch, day=self.today,
+                                      outputs=[(self.t2, 500, Decimal(140), 'Large')],
+                                      remainder_avg_weight_g=Decimal(120))
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
+        self.assertEqual(self.refused(stock_services.record_harvest, self.user, unit=self.t1, batch=self.batch,
+                                      day=self.today, count=100, measured_weight_kg=Decimal(12),
+                                      facility=make_facility()),
+                         {'handling_ack': ['Tick the box to go on despite these warnings.']})
 
     def test_a_unit_without_its_own_sample_takes_its_loops(self):
         loop = System.objects.create(name='RAS 1', code='R1', site=self.bergen, production_department=self.hall)

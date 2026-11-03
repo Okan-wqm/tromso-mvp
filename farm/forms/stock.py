@@ -87,12 +87,15 @@ class AcknowledgeInput(forms.CheckboxInput):
         return data.get(name, '')
 
 
-def handling_ack_field():
-    """The box to go on past the handling warnings shown; its value is their fingerprint (AcknowledgeInput)."""
-    return forms.CharField(
-        label=_('Go on despite these warnings'), required=False, widget=AcknowledgeInput,
-        help_text=_('Fish under a medicine withdrawal must not go to food. Going on is stored with what is '
-                    'shown here and logged as critical.'))
+def handling_ack_field(kind):
+    """The box to go on past the handling warnings shown; its value is their fingerprint (AcknowledgeInput). Only a
+    harvest can be warned of a medicine withdrawal, so only its box says that fish under one must not go to food."""
+    stored = _('Going on is stored with what is shown here and logged as critical.')
+    if kind == HandlingKind.HARVEST:
+        stored = _('Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown '
+                   'here and logged as critical.')
+    return forms.CharField(label=_('Go on despite these warnings'), required=False, widget=AcknowledgeInput,
+                           help_text=stored)
 
 
 class HandlingChecked:
@@ -104,7 +107,7 @@ class HandlingChecked:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['handling_ack'] = handling_ack_field()
+        self.fields['handling_ack'] = handling_ack_field(self.handling_kind)
         self._handling = None
 
     @property

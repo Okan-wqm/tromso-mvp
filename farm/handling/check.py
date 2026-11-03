@@ -1,5 +1,5 @@
-"""The one handling check: before fish are harvested, transported, graded or treated, is a medicine
-withdrawal in force, and have they fasted long enough?
+"""The one handling check: before fish are harvested, is a medicine withdrawal in force, and before fish are
+harvested, transported, graded or treated, have they fasted long enough?
 
     check(kind, unit, day, batch=None) -> [HandlingWarning]      the warnings, for the save and the pages
     assess(kind, unit, day, batch=None) -> Assessment            the warnings and what the dialog says besides
@@ -8,9 +8,12 @@ withdrawal in force, and have they fasted long enough?
 Without a batch, every batch in the unit that day counts. Pure reads of stored facts, inside the caller's
 transaction: the stock service runs it after its locks (a feeding of the unit takes turns with it).
 
-- Withdrawal (harvest, transport, grading; a treatment during a withdrawal harms nobody): every block the
-  registry gives (farm/handling/withdrawal.py) for the batch whose `until` is after the day, or unknown. With
-  no provider the dialog says "Medicine withdrawal not checked" and nothing is warned.
+- Withdrawal (a harvest only: the fish go to food, to the slaughter facility the harvest names; a medicine
+  withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, and a treatment during
+  a withdrawal harms nobody): every block the registry gives (farm/handling/withdrawal.py) for the batch whose
+  `until` is after the day, or unknown. With no provider the harvest dialog says "Medicine withdrawal not
+  checked" and nothing is warned. A transfer or a grading is checked for the fast and the live-transfer facts
+  alone.
 - Fasting: the hours since the fish's last feeding against the rule (farm/handling/fasting.py). No rule, or
   no feeding found in the 31 days before, is said, not warned.
 
@@ -35,8 +38,9 @@ from farm.stock.dates import start_of
 from . import withdrawal
 from .fasting import LOOKBACK_DAYS, rule_of, shown_moment
 
-# The handlings a withdrawal matters for: the fish go to food, or are crowded and moved while held.
-WITHDRAWAL_KINDS = (HandlingKind.HARVEST, HandlingKind.TRANSPORT, HandlingKind.GRADING)
+# The one handling a medicine withdrawal matters for: the fish go to food (a harvest names the slaughter facility).
+# Live fish that are moved or graded are not eaten: their medicine is no concern of the handling check.
+WITHDRAWAL_KIND = HandlingKind.HARVEST
 HOUR = Decimal('0.1')
 
 
@@ -44,20 +48,15 @@ def _date(day):
     return formats.date_format(day, 'DATE_FORMAT')
 
 
-def withdrawal_text(block, harvest=False):
-    """The withdrawal as a sentence; before a harvest it starts "Not suitable for harvest" (owner's words)."""
+def withdrawal_text(block):
+    """The withdrawal as a sentence, starting "Not suitable for harvest" (owner's words): it is only ever said
+    for a harvest."""
     params = {'batch': block.batch.code, 'date': _date(block.until) if block.until else ''}
-    if harvest:
-        if block.until is None:
-            return _('Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown.') % params
-        if block.approximate:
-            return _('Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s.') % params
-        return _('Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s.') % params
     if block.until is None:
-        return _('Medicine withdrawal of %(batch)s, its end unknown.') % params
+        return _('Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown.') % params
     if block.approximate:
-        return _('Medicine withdrawal of %(batch)s until about %(date)s.') % params
-    return _('Medicine withdrawal of %(batch)s until %(date)s.') % params
+        return _('Not suitable for harvest — medicine withdrawal of %(batch)s until about %(date)s.') % params
+    return _('Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s.') % params
 
 
 @dataclass(frozen=True)
@@ -86,7 +85,7 @@ class HandlingWarning:
     def message(self):
         """The warning in the person's language (the activity log builds it in English)."""
         if self.warning == AcknowledgedWarning.WITHDRAWAL:
-            text = withdrawal_text(self.block, harvest=self.kind == HandlingKind.HARVEST)
+            text = withdrawal_text(self.block)
             return f'{text} {self.block.reason}' if self.block.reason else text
         return _('Last fed %(moment)s, %(hours)s h before %(day)s: the %(kind)s rule asks for %(required)d h.') % {
             'moment': shown_moment(self.last_fed_at, self.unit), 'hours': formats.number_format(self.fasted_hours, 1),
@@ -126,7 +125,7 @@ def assess(kind, unit, day, batch=None):
     """The warnings and notes of handling the fish of `batch` (or every batch) in `unit` on `day`."""
     result = Assessment(kind, unit, day, batch)
     batches = [batch] if batch is not None else _batches_in(unit, day)
-    if kind in WITHDRAWAL_KINDS:
+    if kind == WITHDRAWAL_KIND:
         _withdrawal(result, batches)
     _fasting(result, batches)
     return result

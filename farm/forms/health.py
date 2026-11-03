@@ -15,6 +15,7 @@ from core.crud import TabbedForm, tab_fields
 from ..health import services
 from ..health.withdrawal import rule
 from ..models import HealthEvent, LiceCount, Medicine, Site, Supplier, Tank, Treatment
+from ..models.handling import HandlingKind
 from ..models.site import zone_of
 from ..stock.dates import local_today, site_earliest, site_today
 from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
@@ -223,7 +224,7 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
         super().__init__(*args, instance=Treatment(), **kwargs)
         self.fields['token'].initial = uuid.uuid4()
         self.fields['units'].queryset = units
-        self.fields['handling_ack'] = handling_ack_field()
+        self.fields['handling_ack'] = handling_ack_field(HandlingKind.TREATMENT)
         self._handling = None
         today = local_today(unit)
         # A new record's own empty dates would win over the farm's today (as the feeding form says).

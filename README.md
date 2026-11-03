@@ -253,7 +253,12 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   scientific name, code, description.
 - **Classification**: category, family and the water environment: fresh, brackish and sea water,
   at least one. The genus is shown on an existing species; it is the first word of the scientific name.
-- **Regulatory**: the official code (artskode), and the cleaner-fish type (lumpfish or wrasse).
+- **Regulatory**: the official code (artskode), the cleaner-fish type (lumpfish or wrasse) and, under
+  **Medicine withdrawal**, the **assumed water temperature for withdrawal** (°C, 0 to 40, a database check, empty
+  allowed): the degree-days one day counts for when no water temperature was measured, so a past day without a
+  measurement and a withdrawal projected when none was measured at all do not silently count as nothing (see
+  Operations › Health). It is the farm's own assumption, never filled in from the catalogue; a low value is the
+  conservative choice, and empty keeps such a day at 0 °C.
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
   experimental species are the ones a new batch can take (Production units).
 
@@ -539,7 +544,8 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
 - Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
 - The medicine withdrawal of a unit's fish is on its row and in its drawer (see Operations › Health); the
-  harvest dialog's warning and acknowledgement are the handling check's (farm/handling).
+  harvest dialog's warning and acknowledgement are the handling check's (farm/handling). A transfer or a grading
+  moves live fish: it is not warned of a medicine withdrawal.
 - Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
   comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
   count adjustments as a dialog (their lines and checks exist). Harvest plans and the handling check are on
@@ -851,8 +857,8 @@ fish and shown, but it never moves the unit's status. Nothing of a unit's DO, pH
 loop (the source passes on only what is the same all round a loop, and so does this). Its **temperature** is the
 one value that may come from a loop: the ration (`farm/feeding/temperature.py`) reads the unit's middle point, else
 the loop point of its system and of the systems that system is nested in, and the withdrawal's daily mean
-(`farm/health/withdrawal.py`) the unit's, else its own system's loop (a day without one counts as 0 °C and says so,
-the safe side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
+(`farm/health/withdrawal.py`) the unit's, else its own system's loop (a day without one counts at the species'
+assumed temperature, else as 0 °C, and says so: the safe side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
 and a test fails when another module reads the samples.
 
 **The calculator** (the third tab, `/operations/water/calculator/`) is laid out as the source's: where the
@@ -1321,9 +1327,9 @@ checked with your veterinarian.** Migration `0017` writes four general rules, ea
 | grading | 24 | BIM 2024: at least 24 to 48 h before grading; RSPCA (2015, FW 6.2): not above 48 h. A grading is also checked against the transport rule; the longer applies (owner). |
 | treatment | 24 | BIM 2024: commonly 24 to 48 h before handling; RSPCA (2024): at most 48 h before physical delousing, 72 h before a freshwater bath. The medicine's product information wins. |
 
-**The handling check** (`farm/handling/`, one for every dialog): before fish are harvested, transported (a
-transfer), graded or treated (the health tab's dialog), is a medicine withdrawal in force, and have they fasted
-long enough? Nothing is blocked (owner decision): both are warnings.
+**The handling check** (`farm/handling/`, one for every dialog): before fish are harvested, is a medicine
+withdrawal in force, and before they are harvested, transported (a transfer), graded or treated (the health tab's
+dialog), have they fasted long enough? Nothing is blocked (owner decision): both are warnings.
 
 - *Fasting*: the hours from the fish's **last feeding** to the **start of the handling's day** on the site's
   clock (an operation has a date and no time). The last feeding is of the fish themselves, wherever they were
@@ -1332,16 +1338,20 @@ long enough? Nothing is blocked (owner decision): both are warnings.
   of its day and a feeding on the day gives 0 h, so **the fast is never overstated**. The rule is the species'
   own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
   rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
-- *Medicine withdrawal* (harvest, transport, grading; a treatment during a withdrawal harms nobody): every block
+- *Medicine withdrawal* (**a harvest only**: the fish go to food, to the slaughter facility the harvest names; a
+  medicine withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, where the
+  fast and the live-transfer facts are what matter, and a treatment during a withdrawal harms nobody): every block
   a registered provider gives for the batch whose end is after the day, or unknown (unknown is a warning, never
   clear). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
   `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
-  Operations › Health). With no provider registered a dialog would say "Medicine withdrawal not checked" and warn
-  nothing.
-  Before a harvest it reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026".
+  Operations › Health). With no provider registered the harvest dialog would say "Medicine withdrawal not
+  checked" and warn nothing.
+  It reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026". The informational
+  badges (Production units rows, the drawer's Harvest and handling section, the plans) say the same and stay.
 - *The dialogs* (harvest, transfer, grading) show the check for the form's date and batch under "Before
-  handling": the last feeding and its hours, the rule, the withdrawal, and with warnings the box "Go on despite
-  these warnings" ("Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown
+  handling": the last feeding and its hours, the rule, for a harvest the withdrawal, and with warnings the box "Go
+  on despite these warnings" (the harvest's: "Fish under a medicine withdrawal must not go to food. Going on is
+  stored with what is shown here and logged as critical."; the others': "Going on is stored with what is shown
   here and logged as critical."). The box carries the warnings' fingerprint.
 - *The save* runs the check again after the locks (a feeding of the unit takes turns with it). With warnings it
   needs the box ticked on exactly these warnings: a feeding recorded meanwhile, a treatment entered or another
@@ -1440,9 +1450,15 @@ corrected temperature or a backdated transfer changes it at once:
 - **degree-days**: the batch's daily mean water temperature is added up from the day after the last day until
   it reaches the medicine's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
   of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
-  copy); with the batch in several units that day, the lowest counts. **A past day without a temperature counts
-  as 0 °C** and the warning says how many; not reached by today, the rest is projected at the mean of the last 7
-  measured days within 30 ("about"); with none at all the end is unknown ("record the water temperature");
+  copy); with the batch in several units that day, the lowest counts. **A past day without a measured
+  temperature counts at the batch species' assumed water temperature** (Reference data › Species; one query reads
+  the species of all the batches), **and as 0 °C when the species has none**, and the warning says how many days
+  and at what ("3 days without a measured water temperature are counted at the assumed 8.0 °C (the species'
+  setting in Reference data)", or "... are counted as 0 °C: set the species' assumed temperature in Reference data
+  › Species."); not reached by today, the rest is projected at the mean of the last 7 measured days within 30
+  ("about"); with none measured, at the species' assumed temperature when it has one ("Projected at the assumed
+  8.0 °C ... no water temperature was measured in the last 30 days"), else the end is unknown ("record the water
+  temperature");
 - both given, the later end wins; a running course counts from its planned last day;
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
@@ -1456,8 +1472,8 @@ Where it shows: the health records give it to the shared handling check through 
 may be harvested; the provider is registered in `farm/apps.py`). From there Production units marks the unit's
 row **Withdrawal** and the drawer's Harvest and handling section says **"Not suitable for harvest — medicine
 withdrawal of B-2026-001 until 14 Dec 2026."** ("about" when projected, "its end unknown") with why, to everyone
-who sees the page; the harvest, transfer and grading dialogs warn, never block (owner decision), and keep the
-acknowledgement. The Treatments list shows each batch's end as "until 13 Dec 2026 (harvest from 14 Dec 2026)".
+who sees the page; the harvest dialog warns, never blocks (owner decision), and keeps the acknowledgement (the
+transfer and grading dialogs are not asked for a withdrawal: live fish are not eaten). The Treatments list shows each batch's end as "until 13 Dec 2026 (harvest from 14 Dec 2026)".
 
 **Health events** (a tab: created and edited on their form, every change logged, voided with a reason instead of
 deleted): the site (chosen once) and some of its units or the whole site, the date, the kind (observation, vet or

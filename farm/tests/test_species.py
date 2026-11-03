@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 from itertools import product
 from string import ascii_lowercase
 
@@ -30,7 +31,8 @@ def species_data(**overrides):
     data = {
         'common_name': 'Nile tilapia', 'local_name': '', 'scientific_name': 'Oreochromis niloticus', 'code': 'tln',
         'description': '', 'category': 'fish', 'family': '', 'freshwater': True, 'brackish': False,
-        'saltwater': False, 'official_code': '', 'cleaner_fish_type': '', 'status': 'active', 'notes': '',
+        'saltwater': False, 'official_code': '', 'cleaner_fish_type': '', 'withdrawal_temperature_c': '',
+        'status': 'active', 'notes': '',
     }
     data.update(overrides)
     return {key: 'on' if value is True else value for key, value in data.items() if value is not False}
@@ -68,14 +70,14 @@ class SpeciesRoundTripTests(SpeciesTestCase):
         self.create(common_name=' Nile tilapia ', local_name='Tilapia', scientific_name='  oreochromis  NILOTICUS ',
                     code=' tln-1 ', description='Warm-water cichlid', category='fish', family='Cichlidae',
                     freshwater=True, brackish=True, official_code=' tln ', cleaner_fish_type='',
-                    status='experimental', notes='Trial in RAS 2')
+                    withdrawal_temperature_c='8.5', status='experimental', notes='Trial in RAS 2')
         species = Species.objects.get()
         self.assertEqual(
             stored(species, 'common_name', 'local_name', 'scientific_name', 'code', 'description', 'category', 'family',
-                   'freshwater', 'brackish', 'saltwater', 'official_code', 'cleaner_fish_type', 'status', 'notes',
-                   'created_by', 'version'),
+                   'freshwater', 'brackish', 'saltwater', 'official_code', 'cleaner_fish_type',
+                   'withdrawal_temperature_c', 'status', 'notes', 'created_by', 'version'),
             ('Nile tilapia', 'Tilapia', 'Oreochromis niloticus', 'TLN-1', 'Warm-water cichlid', 'fish', 'Cichlidae',
-             True, True, False, 'TLN', '', 'experimental', 'Trial in RAS 2', self.user, 1))
+             True, True, False, 'TLN', '', Decimal('8.5'), 'experimental', 'Trial in RAS 2', self.user, 1))
 
         # Read: listed, and the edit form is filled from the database
         self.assertEqual(list(self.client.get(reverse('farm:species_list')).context['objects']), [species])
@@ -83,23 +85,25 @@ class SpeciesRoundTripTests(SpeciesTestCase):
         self.assertEqual(
             {name: form[name].value() for name in (
                 'common_name', 'local_name', 'scientific_name', 'code', 'description', 'family', 'freshwater',
-                'brackish', 'saltwater', 'official_code', 'cleaner_fish_type', 'status', 'notes', 'version')},
+                'brackish', 'saltwater', 'official_code', 'cleaner_fish_type', 'withdrawal_temperature_c', 'status',
+                'notes', 'version')},
             {'common_name': 'Nile tilapia', 'local_name': 'Tilapia', 'scientific_name': 'Oreochromis niloticus',
              'code': 'TLN-1', 'description': 'Warm-water cichlid', 'family': 'Cichlidae', 'freshwater': True,
              'brackish': True, 'saltwater': False, 'official_code': 'TLN', 'cleaner_fish_type': '',
-             'status': 'experimental', 'notes': 'Trial in RAS 2', 'version': 1})
+             'withdrawal_temperature_c': Decimal('8.5'), 'status': 'experimental', 'notes': 'Trial in RAS 2',
+             'version': 1})
 
         # Edit: every field changed
         self.edit(species, common_name='Tilapia', local_name='Tilapiya', scientific_name='Oreochromis aureus',
                   code='TLA', description='Blue tilapia', category='other', family='Cichlids', freshwater=False,
-                  brackish=False, saltwater=True, official_code='TLP', cleaner_fish_type='wrasse', status='inactive',
-                  notes='Moved to sea')
+                  brackish=False, saltwater=True, official_code='TLP', cleaner_fish_type='wrasse',
+                  withdrawal_temperature_c='12', status='inactive', notes='Moved to sea')
         self.assertEqual(
             stored(species, 'common_name', 'local_name', 'scientific_name', 'code', 'description', 'category', 'family',
-                   'freshwater', 'brackish', 'saltwater', 'official_code', 'cleaner_fish_type', 'status', 'notes',
-                   'updated_by', 'version'),
+                   'freshwater', 'brackish', 'saltwater', 'official_code', 'cleaner_fish_type',
+                   'withdrawal_temperature_c', 'status', 'notes', 'updated_by', 'version'),
             ('Tilapia', 'Tilapiya', 'Oreochromis aureus', 'TLA', 'Blue tilapia', 'other', 'Cichlids', False, False,
-             True, 'TLP', 'wrasse', 'inactive', 'Moved to sea', self.user, 2))
+             True, 'TLP', 'wrasse', Decimal('12.0'), 'inactive', 'Moved to sea', self.user, 2))
 
         # Delete: hidden, not erased
         self.client.post(reverse('farm:species_delete', args=[species.pk]))
@@ -111,16 +115,16 @@ class SpeciesRoundTripTests(SpeciesTestCase):
         # A species of the catalogue: an edit that keeps its name fills nothing back in.
         salmon = self.make('Atlantic salmon', 'Salmo salar', 'SAL', local_name='Laks', description='Grow-out',
                            family='Salmonidae', saltwater=True, official_code='SAL', cleaner_fish_type='lumpfish',
-                           notes='Main species')
+                           withdrawal_temperature_c=Decimal('8.5'), notes='Main species')
         self.edit(salmon, common_name='Atlantic salmon', scientific_name='Salmo salar', code='SAL', saltwater=True)
         self.assertEqual(
-            stored(salmon, 'local_name', 'description', 'family', 'official_code', 'cleaner_fish_type', 'notes',
-                   'freshwater', 'saltwater'),
-            ('', '', '', '', '', '', True, True))
+            stored(salmon, 'local_name', 'description', 'family', 'official_code', 'cleaner_fish_type',
+                   'withdrawal_temperature_c', 'notes', 'freshwater', 'saltwater'),
+            ('', '', '', '', '', None, '', True, True))
         self.assertEqual(AuditLog.objects.get().changes, {
             'Local name': ['Laks', None], 'Description': ['Grow-out', None], 'Family': ['Salmonidae', None],
             'Official code': ['SAL', None], 'Cleaner fish': [message('Lumpfish'), None],
-            'Notes': ['Main species', None],
+            'Assumed water temperature for withdrawal (°C)': ['8.5', None], 'Notes': ['Main species', None],
         })
 
     def test_the_form_opens_in_the_dialog_with_its_tabs(self):
@@ -131,7 +135,15 @@ class SpeciesRoundTripTests(SpeciesTestCase):
                            ('regulatory', 'Regulatory'), ('status', 'Status and notes')):
             self.assertContains(response, f'data-tab="{key}">{label}</button>')
         self.assertContains(response, '<legend>Water environment</legend>', html=True)
+        self.assertContains(response, '<legend>Medicine withdrawal</legend>', html=True)
+        self.assertContains(response, 'Assumed water temperature for withdrawal (°C)')
+        self.assertContains(response, 'a low value is the conservative choice')
         self.assertNotContains(response, 'Genus:')
+        # On the Regulatory tab, under the official code and the cleaner-fish type.
+        form = response.context['form']
+        regulatory = next(tab for tab in form.tabs if tab[0] == 'regulatory')
+        self.assertEqual([getattr(item, 'names', item) for item in regulatory[2]],
+                         ['official_code', 'cleaner_fish_type', ['withdrawal_temperature_c']])
 
     def test_the_genus_is_shown_on_the_edit_form_and_follows_the_scientific_name(self):
         species = self.make()
@@ -224,6 +236,46 @@ class SpeciesValidationTests(SpeciesTestCase):
             with self.subTest(database=code), self.assertRaises(IntegrityError), transaction.atomic():
                 Species.objects.filter(pk=species.pk).update(official_code=code)
         Species.objects.filter(pk=species.pk).update(official_code='')
+
+    def test_the_assumed_withdrawal_temperature_is_between_0_and_40_or_empty(self):
+        for value in ('41', '-1', '40.1', 'abc', '8.55'):
+            with self.subTest(value=value):
+                self.assertIn('withdrawal_temperature_c', self.errors(self.create(withdrawal_temperature_c=value)))
+        self.assertFalse(Species.objects.exists())
+        for value, expected in (('0', Decimal('0.0')), ('40', Decimal('40.0')), ('', None)):
+            with self.subTest(value=value):
+                Species.objects.all().delete()
+                self.create(withdrawal_temperature_c=value)
+                self.assertEqual(Species.objects.get().withdrawal_temperature_c, expected)
+        Profile.objects.create(user=self.user, language='nb')
+        Species.objects.all().delete()
+        self.create(withdrawal_temperature_c='8,5')            # typed the way the language writes it
+        self.assertEqual(Species.objects.get().withdrawal_temperature_c, Decimal('8.5'))
+
+    def test_the_assumed_withdrawal_temperature_is_a_database_check(self):
+        species = self.make()
+        for value in (Decimal('41'), Decimal('-1'), Decimal('40.1')):
+            with self.subTest(database=value), self.assertRaises(IntegrityError), transaction.atomic():
+                Species.objects.filter(pk=species.pk).update(withdrawal_temperature_c=value)
+        for value in (Decimal('0'), Decimal('40'), None):         # the bounds are in, empty is allowed
+            Species.objects.filter(pk=species.pk).update(withdrawal_temperature_c=value)
+        self.assertIsNone(stored(species, 'withdrawal_temperature_c')[0])
+        with self.assertRaises(ValidationError):
+            Species(common_name='Blue tilapia', scientific_name='Oreochromis aureus', code='TLA', freshwater=True,
+                    withdrawal_temperature_c=Decimal('41')).full_clean()
+
+    def test_the_assumed_withdrawal_temperature_is_in_turkish_and_norwegian(self):
+        species = self.make(withdrawal_temperature_c=Decimal('8.5'))
+        for language, label, value, legend in (
+                ('tr', 'Bekleme süresi için varsayılan su sıcaklığı (°C)', '8,5', 'İlaç arınma süresi'),
+                ('nb', 'Antatt vanntemperatur for tilbakeholdelsestid (°C)', '8,5', 'Tilbakeholdelsestid')):
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            page = self.client.get(reverse('farm:species_edit', args=[species.pk]))
+            self.assertContains(page, label, msg_prefix=language)
+            self.assertContains(page, f'<legend>{legend}</legend>', html=True, msg_prefix=language)
+            self.assertContains(page, f'value="{value}"', msg_prefix=language)
+            self.assertNotContains(page, 'Assumed water temperature', msg_prefix=language)
+            self.assertNotContains(page, 'a low value is the conservative choice', msg_prefix=language)
 
     def test_the_official_code_is_not_unique(self):
         self.make(code='TLN', official_code='TLN')

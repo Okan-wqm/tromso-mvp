@@ -116,10 +116,32 @@ msgstr[0] "%(count)d gün"
 msgstr[1] "%(count)d gün"
 
 #, python-format
-msgid "%(count)d day without a water temperature is counted as 0 °C."
-msgid_plural "%(count)d days without a water temperature are counted as 0 °C."
-msgstr[0] "Su sıcaklığı olmayan %(count)d gün 0 °C sayıldı."
-msgstr[1] "Su sıcaklığı olmayan %(count)d gün 0 °C sayıldı."
+msgid ""
+"%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed "
+"temperature in Reference data › Species."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted as 0 °C: set the species’ assumed"
+" temperature in Reference data › Species."
+msgstr[0] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün 0 °C sayıldı: Referans verileri › Balık türleri "
+"altında türün varsayılan sıcaklığını girin."
+msgstr[1] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün 0 °C sayıldı: Referans verileri › Balık türleri "
+"altında türün varsayılan sıcaklığını girin."
+
+#, python-format
+msgid ""
+"%(count)d day without a measured water temperature is counted at the assumed %(temperature)s °C "
+"(the species’ setting in Reference data)."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted at the assumed %(temperature)s °C"
+" (the species’ setting in Reference data)."
+msgstr[0] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün, varsayılan %(temperature)s °C ile sayıldı (Referans "
+"verilerindeki türün ayarı)."
+msgstr[1] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün, varsayılan %(temperature)s °C ile sayıldı (Referans "
+"verilerindeki türün ayarı)."
 
 #, python-format
 msgid "%(count)d degree-day"
@@ -1965,6 +1987,9 @@ msgstr "Atamalar"
 
 msgid "Assistant"
 msgstr "Asistan"
+
+msgid "Assumed water temperature for withdrawal (°C)"
+msgstr "Bekleme süresi için varsayılan su sıcaklığı (°C)"
 
 #, python-format
 msgid "At least %(min)s."
@@ -3991,6 +4016,9 @@ msgstr "Verilen %(given)s"
 msgid "Go on despite these warnings"
 msgstr "Bu uyarılara rağmen devam et"
 
+msgid "Going on is stored with what is shown here and logged as critical."
+msgstr "Devam etmek, burada gösterilenle birlikte saklanır ve kritik olarak günlüğe yazılır."
+
 msgid "Grading"
 msgstr "Boylama"
 
@@ -4807,18 +4835,6 @@ msgstr "İlaç arınma süresi denetlenmedi"
 
 msgid "Medicine withdrawal not checked: the health records are not in yet."
 msgstr "İlaç arınma süresi denetlenmedi: sağlık kayıtları henüz yok."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s until %(date)s."
-msgstr "%(batch)s için ilaç arınma süresi %(date)s tarihine kadar."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "%(batch)s için ilaç arınma süresi yaklaşık %(date)s tarihine kadar."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s, its end unknown."
-msgstr "%(batch)s için ilaç arınma süresi, bitişi bilinmiyor."
 
 msgid "Medicines"
 msgstr "İlaçlar"
@@ -6222,6 +6238,14 @@ msgstr "Üretim planları"
 
 msgid "Production units"
 msgstr "Üretim birimleri"
+
+#, python-format
+msgid ""
+"Projected at the assumed %(temperature)s °C (the species’ setting in Reference data): no water "
+"temperature was measured in the last %(days)d days."
+msgstr ""
+"Varsayılan %(temperature)s °C ile öngörüldü (Referans verilerindeki türün ayarı): son %(days)d "
+"günde su sıcaklığı ölçülmedi."
 
 msgid "Projected at the mean water temperature of the last days measured."
 msgstr "Son ölçülen günlerin ortalama su sıcaklığıyla öngörüldü."
@@ -7678,6 +7702,15 @@ msgstr "Haftanın son tarih olan günleri."
 
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "En derin nokta ortalama derinlikten sığ olamaz."
+
+msgid ""
+"The degree-days one day counts for when no water temperature was measured: a past day without "
+"one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
+" low value is the conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C."
+msgstr ""
+"Su sıcaklığı ölçülmediğinde bir günün saydığı gün-derece: sıcaklığı olmayan geçmiş bir gün ve hiç"
+" ölçüm yokken öngörülen bekleme süresi. Çiftliğin kendi varsayımıdır: düşük bir değer temkinli "
+"seçimdir. Boş: böyle bir gün 0 °C sayılır. 0 ila 40 °C."
 
 msgid "The depth of the water taken, from the surface."
 msgstr "Alınan suyun yüzeyden itibaren derinliği."
@@ -9434,6 +9467,9 @@ msgstr "örn. 50000"
 
 msgid "e.g. 60.3913"
 msgstr "örn. 60,3913"
+
+msgid "e.g. 8"
+msgstr "örn. 8"
 
 msgid "e.g. 923456789"
 msgstr "örn. 923456789"

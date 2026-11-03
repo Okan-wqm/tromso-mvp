@@ -1,6 +1,6 @@
 """Handling fish: the farm's fasting rules (Setup › Reference data › Handling rules) and the acknowledgements
-people give when they go on past a handling warning (a medicine withdrawal, too short a fast). The check
-itself is farm/handling/; nothing here blocks anything (owner decision: warn, never block)."""
+people give when they go on past a handling warning (a medicine withdrawal before a harvest, too short a fast).
+The check itself is farm/handling/; nothing here blocks anything (owner decision: warn, never block)."""
 from django.core.validators import MaxValueValidator
 from django.db import models
 from django.db.models import Q

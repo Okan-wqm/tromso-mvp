@@ -1,5 +1,5 @@
-"""Harvest and handling: the handling check (fasting and medicine withdrawal, the acknowledgement and the
-critical log entry), the harvest's record, the Harvested list with the book against the scale, the plans and
+"""Harvest and handling: the handling check (fasting, and the medicine withdrawal asked before a harvest only, the
+acknowledgement and the critical log entry), the harvest's record, the Harvested list with the book against the scale, the plans and
 the fasts they ask for, and every new tab created, read, edited and deleted through its pages, each checked
 against the stored rows."""
 import uuid
@@ -175,11 +175,35 @@ class WithdrawalTests(HarvestTestCase):
             f'{services.shown_date(until)}.',
             f'Not suitable for harvest — medicine withdrawal of {self.batch.code}, its end unknown. No temperature '
             'recorded.'])
-        with provider(held):
-            self.assertTrue(self.assess('transport').messages()[0].startswith(
-                f'Medicine withdrawal of {self.batch.code} until'))
         with provider():
             self.assertIn('No medicine withdrawal in force.', self.assess().notes)
+
+    def test_live_fish_moved_or_graded_are_not_asked_for_a_withdrawal(self):
+        held = WithdrawalBlock(self.batch, self.day(-14), False, 'Treated with Slice until 20 Oct.', None)
+        unknown = WithdrawalBlock(self.batch, None, False, 'No temperature recorded.', None)
+        with provider(held, unknown):
+            self.assertEqual(len(self.assess('harvest').warnings), 2)              # the same blocks and batch
+            for kind in ('transport', 'grading', 'treatment'):
+                with self.subTest(kind=kind):
+                    result = self.assess(kind)
+                    self.assertEqual(result.warnings, [])
+                    self.assertEqual(result.fingerprint, '')
+                    self.assertFalse([note for note in result.notes if 'withdrawal' in note.lower()])
+        with no_provider():
+            for kind in ('transport', 'grading'):
+                self.assertFalse([note for note in self.assess(kind).notes if 'withdrawal' in note.lower()])
+            self.assertIn('Medicine withdrawal not checked: the health records are not in yet.',
+                          self.assess('harvest').notes)
+
+    def test_only_the_harvest_box_speaks_of_a_medicine_withdrawal(self):
+        words = 'Fish under a medicine withdrawal must not go to food. Going on is stored'
+        for name, speaks in (('farm:stock_harvest', True), ('farm:stock_transfer', False),
+                             ('farm:stock_grading', False)):
+            with self.subTest(dialog=name):
+                form = self.client.get(reverse(name, args=[self.t1.pk])).context['form']
+                text = str(form.fields['handling_ack'].help_text)
+                self.assertEqual(words in text, speaks)
+                self.assertIn('Going on is stored with what is shown here and logged as critical.', text)
 
     def test_the_dialog_shows_the_blocks_and_the_drawer_and_row_badge_too(self):
         held = WithdrawalBlock(self.batch, self.day(-14), False, '', None)

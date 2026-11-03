@@ -31,7 +31,7 @@ Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 
 'transport', 'vessel', 'plan_item', 'health_event' and NON_FIELD_ERRORS.
 
 A harvest, a transfer and a grading run the handling check (farm/handling/check.py) after the locks: a
-medicine withdrawal in force or too short a fast is a warning, and the person goes on by acknowledging the
+medicine withdrawal in force (a harvest only) or too short a fast is a warning, and the person goes on by acknowledging the
 warnings they were shown (stored, one row each, and the operation's log entry is critical; owner decision:
 warn, never block). A harvest names where the fish went (HarvestRecord); a harvest or transfer recorded from
 a plan links it, in the same transaction. A mortality or a cull may name the health event its fish died or
@@ -141,8 +141,8 @@ def _next_code(year):
 
 def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None, handling_ack=None,
             harvest=None, plan_item=None, health_event=None):
-    """Writes an operation and its lines (see the module's docstring); returns the operation. A harvest,
-    transfer or grading is checked for a medicine withdrawal and the fast first (`handling_ack` is the
+    """Writes an operation and its lines (see the module's docstring); returns the operation. A harvest is
+    checked for a medicine withdrawal, and a harvest, transfer or grading for the fast, first (`handling_ack` is the
     fingerprint of the warnings the person went on past); a harvest writes its record (`harvest`: its
     facility, transport and vessel); `plan_item` is the planned harvest or transport it fulfils; a mortality
     or cull may name its `health_event`."""

@@ -285,6 +285,10 @@ msgid "%(department)s (no site)"
 msgstr "%(department)s (uten lokalitet)"
 
 #, python-format
+msgid "%(dose)s g/m³"
+msgstr "%(dose)s g/m³"
+
+#, python-format
 msgid "%(energy)s MJ/kg digestible"
 msgstr "%(energy)s MJ/kg fordøyelig"
 
@@ -341,8 +345,16 @@ msgid "%(fish)s fish, %(biomass)s now"
 msgstr "%(fish)s fisk, %(biomass)s nå"
 
 #, python-format
+msgid "%(formula)s only"
+msgstr "%(formula)s alene"
+
+#, python-format
 msgid "%(free)s kg free"
 msgstr "%(free)s kg ledig"
+
+#, python-format
+msgid "%(grams)s g"
+msgstr "%(grams)s g"
 
 #, python-format
 msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
@@ -359,6 +371,10 @@ msgstr "%(item)s i %(location)s (%(site)s): %(held)s, under bestillingspunktet p
 #, python-format
 msgid "%(item)s, lot %(lot)s"
 msgstr "%(item)s, parti %(lot)s"
+
+#, python-format
+msgid "%(kilos)s kg"
+msgstr "%(kilos)s kg"
 
 #, python-format
 msgid ""
@@ -568,6 +584,10 @@ msgid "%(temperature)s °C is outside this table (%(low)s–%(high)s °C)."
 msgstr "%(temperature)s °C er utenfor denne tabellen (%(low)s–%(high)s °C)."
 
 #, python-format
+msgid "%(temperature)s °C, %(salinity)s ‰"
+msgstr "%(temperature)s °C, %(salinity)s ‰"
+
+#, python-format
 msgid ""
 "%(unit)s has the status %(status)s, so it cannot take fish: it can when it is active, preparing "
 "or fallow."
@@ -669,6 +689,10 @@ msgstr "%(weight)s veid %(date)s"
 msgid "%(when)s by %(who)s"
 msgstr "%(when)s av %(who)s"
 
+#, python-format
+msgid "(%(dose)s g/m³)"
+msgstr "(%(dose)s g/m³)"
+
 msgid "(batch in unit)"
 msgstr "(fiskegruppe i enhet)"
 
@@ -703,11 +727,11 @@ msgstr "En DOI begynner med 10. og har ingen mellomrom, f.eks. 10.1016/j.aquacul
 msgid ""
 "A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the "
 "regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values"
-" are in the table next to it."
+" are in the results under the charts."
 msgstr ""
 "Et Deffeyes-diagram: løst uorganisk karbon bortover, alkalitet oppover, linjer med lik pH, "
 "områdene der CO₂, NH₃ og H₂S går over grensene sine, den trygge sonen og vannets punkt. Verdiene "
-"står i tabellen ved siden av."
+"står i resultatene under diagrammene."
 
 #, python-format
 msgid ""
@@ -872,6 +896,9 @@ msgstr ""
 "enhet, så hel fiskegruppe. En rad kan endres eller slettes før første dag; etterpå avsluttes den "
 "ved å sette siste dag."
 
+msgid "A recipe takes two reagents: choose at least two (the Reagents tab)."
+msgstr "En oppskrift bruker to kjemikalier: velg minst to (fanen Kjemikalier)."
+
 #, python-format
 msgid "A round takes at most %(rows)d rows."
 msgstr "En runde tar høyst %(rows)d rader."
@@ -952,12 +979,14 @@ msgid "A unit with fish in it cannot be made inactive: move or harvest them firs
 msgstr "En enhet med fisk i kan ikke gjøres inaktiv: flytt eller høst fisken først."
 
 msgid ""
-"A water on the Water Quality Management Chart: its alkalinity against its dissolved inorganic "
-"carbon, with the pH where each limit is reached. The limits start as defaults, not as the limits "
-"of your fish. Nothing is stored."
+"A water on the Water Quality Management Chart and against the pH, the pH where each limit is "
+"reached, and what to dose to reach a target. The limits start as defaults, not as the limits of "
+"your fish, unless the values come from a unit. The results follow the values as you change them. "
+"Nothing is stored."
 msgstr ""
-"Et vann i diagrammet for styring av vannkvalitet: alkaliteten mot løst uorganisk karbon, med pH-"
-"en der hver grense nås. Grensene starter som standardverdier, ikke som grensene for fisken din. "
+"Et vann i diagrammet for styring av vannkvalitet og mot pH, pH-en der hver grense nås, og hva som"
+" må doseres for å nå et mål. Grensene starter som standardverdier, ikke som grensene for fisken "
+"din, med mindre verdiene kommer fra en enhet. Resultatene følger verdiene mens du endrer dem. "
 "Ingenting lagres."
 
 msgid "Above the max density, accepted"
@@ -1096,6 +1125,26 @@ msgstr "Lufting"
 
 msgid "Aerator"
 msgstr "Lufter"
+
+#, python-format
+msgid "After %(formula)s no pH from 0 to 14 gives this DIC and alkalinity. The simulation stops there."
+msgstr "Etter %(formula)s gir ingen pH fra 0 til 14 denne DIC-en og alkaliteten. Simuleringen stopper der."
+
+#, python-format
+msgid ""
+"After %(formula)s no water is left with this DIC: more CO₂ is stripped than the water holds. The "
+"simulation stops there."
+msgstr ""
+"Etter %(formula)s finnes det ikke vann med denne DIC-en: mer CO₂ luftes ut enn vannet inneholder."
+" Simuleringen stopper der."
+
+#, python-format
+msgid ""
+"After %(formula)s the CO₂ is below the %(air)s mg/L a water keeps in equilibrium with the air: "
+"stripping cannot take it there."
+msgstr ""
+"Etter %(formula)s er CO₂ under de %(air)s mg/L et vann holder i likevekt med luften: lufting kan "
+"ikke få det dit."
 
 msgid "Air"
 msgstr "Luft"
@@ -1253,8 +1302,14 @@ msgstr "Ammoniakksensor"
 msgid "Ammonium (mg/L NH₄⁺ as N)"
 msgstr "Ammonium (mg/L NH₄⁺ som N)"
 
-msgid "Amount"
-msgstr "Mengde"
+msgid ""
+"Amounts of the pure substance, for the volume (System tab); a solution or a technical grade "
+"weighs more (divide by its strength). Dose in parts and measure the pH again: a strong base or "
+"acid moves the pH fast where it goes in."
+msgstr ""
+"Mengder av rent stoff, for volumet (fanen System); en løsning eller en teknisk kvalitet veier mer"
+" (del på styrken). Doser i porsjoner og mål pH igjen: en sterk base eller syre flytter pH raskt "
+"der den tilsettes."
 
 msgid "An active protocol has a table."
 msgstr "En aktiv protokoll har en tabell."
@@ -1404,6 +1459,9 @@ msgstr "Godkjenningsnummer %(number)s"
 msgid "Aquaponics"
 msgstr "Akvaponi"
 
+msgid "Aragonite"
+msgstr "Aragonitt"
+
 msgid "Area"
 msgstr "Areal"
 
@@ -1482,6 +1540,14 @@ msgstr "På det dypeste punktet, vanligvis ved utløpet."
 
 msgid "At the end of the day"
 msgstr "Ved dagens slutt"
+
+#, python-format
+msgid ""
+"At the water’s DIC, %(dic)s mmol/L, and %(calcium)s mg/L calcium; Mucci (1983); 0 is saturation, "
+"above it CaCO₃ can form."
+msgstr ""
+"Ved vannets DIC, %(dic)s mmol/L, og %(calcium)s mg/L kalsium; Mucci (1983); 0 er metning, over "
+"den kan CaCO₃ felles ut."
 
 #, python-format
 msgid ""
@@ -1604,6 +1670,9 @@ msgstr "Mellom %(low)s og %(high)s for denne parameteren."
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "Mellom %(low)s og %(high)s: kontroller verdien."
 
+msgid "Between the two doses"
+msgstr "Mellom de to dosene"
+
 msgid "Biofloc"
 msgstr "Biofloc"
 
@@ -1626,6 +1695,10 @@ msgstr "Luftblåser"
 
 msgid "Book"
 msgstr "Beholdning"
+
+#, python-format
+msgid "Border %(ph)s"
+msgstr "Grense %(ph)s"
 
 msgid "Bought fish have a supplier; fish of the own hatchery or caught in the wild have none."
 msgstr "Kjøpt fisk har en leverandør; fisk fra eget klekkeri eller villfanget fisk har ingen."
@@ -1667,11 +1740,17 @@ msgstr "Per enhet og dag"
 msgid "COP (efficiency)"
 msgstr "COP (virkningsgrad)"
 
+msgid "CO₂"
+msgstr "CO₂"
+
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
 msgid "CO₂ limit (mg/L)"
 msgstr "CO₂-grense (mg/L)"
+
+msgid "CO₂ the air leaves in it"
+msgstr "CO₂ luften etterlater i vannet"
 
 msgid "CO₂ toxic"
 msgstr "CO₂ giftig"
@@ -1680,8 +1759,14 @@ msgstr "CO₂ giftig"
 msgid "CO₂ toxic (> %(limit)s mg/L)"
 msgstr "CO₂ giftig (> %(limit)s mg/L)"
 
+msgid "CO₂, HCO₃⁻ and CO₃²⁻ against pH"
+msgstr "CO₂, HCO₃⁻ og CO₃²⁻ mot pH"
+
 msgid "CO₂: no limit given."
 msgstr "CO₂: ingen grense oppgitt."
+
+msgid "CO₃²⁻"
+msgstr "CO₃²⁻"
 
 msgid "Cage"
 msgstr "Merd"
@@ -1692,8 +1777,26 @@ msgstr "Merdtype"
 msgid "Cages"
 msgstr "Merder"
 
+msgid "Calcite"
+msgstr "Kalsitt"
+
+msgid "Calcite and aragonite saturation against pH"
+msgstr "Kalsitt- og aragonittmetning mot pH"
+
 msgid "Calcium (mg/L Ca²⁺)"
 msgstr "Kalsium (mg/L Ca²⁺)"
+
+msgid "Calcium carbonate"
+msgstr "Kalsiumkarbonat"
+
+msgid "Calcium hydroxide"
+msgstr "Kalsiumhydroksid"
+
+msgid "Calcium oxide"
+msgstr "Kalsiumoksid"
+
+msgid "Calculate"
+msgstr "Beregn"
 
 msgid "Calculated"
 msgstr "Beregnet"
@@ -1737,8 +1840,11 @@ msgstr "Karbondioksid (CO₂)"
 msgid "Carbon dioxide (mg/L free CO₂)"
 msgstr "Karbondioksid (mg/L fri CO₂)"
 
-msgid "Carbonate system"
-msgstr "Karbonatsystemet"
+msgid "Carbon dioxide, added"
+msgstr "Karbondioksid, tilsatt"
+
+msgid "Carbon dioxide, stripped"
+msgstr "Karbondioksid, luftet ut"
 
 msgid ""
 "Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); "
@@ -2336,6 +2442,30 @@ msgstr "Dokument"
 msgid "Done"
 msgstr "Utført"
 
+msgid "Dosing path"
+msgstr "Doseringsbane"
+
+msgid "Dosing path: these two reagents cannot reach the target."
+msgstr "Doseringsbane: disse to kjemikaliene kan ikke nå målet."
+
+msgid "Dosing path: tick one reagent to draw its line, or two to draw their path to the target."
+msgstr ""
+"Doseringsbane: kryss av ett kjemikalie for å tegne linjen dets, eller to for å tegne banen deres "
+"til målet."
+
+msgid "Dosing recipes"
+msgstr "Doseringsoppskrifter"
+
+msgid "Dosing simulator"
+msgstr "Doseringssimulator"
+
+msgid ""
+"Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ "
+"the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air."
+msgstr ""
+"Dosering: hvert kjemikalie flytter vannet i sin egen retning i diagrammet (Deffeyes 1965); CO₂ "
+"luften etterlater i vannet: Weiss (1974), med 420 µmol/mol CO₂ i luften."
+
 msgid "Download"
 msgstr "Last ned"
 
@@ -2350,9 +2480,6 @@ msgid "Draft: being built. Active: can be assigned. Retired: kept for the days i
 msgstr ""
 "Utkast: under arbeid. Aktiv: kan tildeles. Utfaset: beholdes for dagene den fôret, tildeles ikke "
 "lenger."
-
-msgid "Draw the chart"
-msgstr "Tegn diagrammet"
 
 msgid "Drum diameter"
 msgstr "Trommeldiameter"
@@ -2475,6 +2602,9 @@ msgstr "Enter sender, Shift+Enter gir ny linje."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+msgid "Entered here"
+msgstr "Lagt inn her"
 
 msgid "Entries"
 msgstr "Oppføringer"
@@ -2887,14 +3017,18 @@ msgstr ""
 "For hver fôrstørrelse: hvor mye fôr ett skudd gir og hvor mye siloen rommer; høyst 50 rader. De "
 "lagres separat fra utstyrsdetaljene."
 
-msgid "For the calcite and aragonite saturation lines, in water of 5 to 44 ‰."
-msgstr "For metningslinjene for kalsitt og aragonitt, i vann på 5 til 44 ‰."
+msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
+msgstr "For kalsitt- og aragonittmetningen, i vann på 5 til 44 ‰."
+
+msgid ""
+"For the oxygen saturation and the CO₂ the air leaves in the water: the pressure of the standard "
+"atmosphere there. Empty is sea level."
+msgstr ""
+"For oksygenmetningen og CO₂-en luften etterlater i vannet: trykket i standardatmosfæren der. Tomt"
+" er havnivå."
 
 msgid "For the oxygen saturation."
 msgstr "For oksygenmetningen."
-
-msgid "For the oxygen saturation: the pressure of the standard atmosphere there. Empty is sea level."
-msgstr "For oksygenmetningen: trykket i standardatmosfæren der. Tomt er havnivå."
 
 msgid "Foreign key"
 msgstr "Fremmednøkkel"
@@ -2961,6 +3095,9 @@ msgstr "Fra planen for %(date)s: den knyttes til planen når den registreres."
 msgid "From the water surface to the bottom of the net."
 msgstr "Fra vannflaten til bunnen av nota."
 
+msgid "From the water to the last step:"
+msgstr "Fra vannet til siste trinn:"
+
 msgid "Fry"
 msgstr "Yngel"
 
@@ -3013,6 +3150,9 @@ msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
 msgid "German"
 msgstr "Tysk"
 
+msgid "Give a target pH and alkalinity for the recipes."
+msgstr "Oppgi en mål-pH og en målalkalitet for oppskriftene."
+
 msgid "Give at least one bound."
 msgstr "Oppgi minst én grense."
 
@@ -3021,6 +3161,9 @@ msgstr "Oppgi minst én temperaturkolonne."
 
 msgid "Give both or neither."
 msgstr "Oppgi begge eller ingen."
+
+msgid "Give the TAN to draw the NH₃ it holds."
+msgstr "Oppgi TAN for å tegne NH₃-en den inneholder."
 
 msgid "Give the average or the sample, not both."
 msgstr "Oppgi snittvekten eller prøven, ikke begge."
@@ -3039,6 +3182,9 @@ msgstr "Oppgi prøven eller snittvekten."
 
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Oppgi temperaturkolonnene først: rutenettet følger dem."
+
+msgid "Give the volume to follow the amounts."
+msgstr "Oppgi volumet for å følge mengdene."
 
 msgid "Given"
 msgstr "Gitt"
@@ -3072,8 +3218,14 @@ msgstr "Vekst"
 msgid "Growth stage"
 msgstr "Vekststadium"
 
+msgid "HCO₃⁻"
+msgstr "HCO₃⁻"
+
 msgid "HDPE"
 msgstr "HDPE"
+
+msgid "HS⁻"
+msgstr "HS⁻"
 
 msgid "Handling"
 msgstr "Håndtering"
@@ -3193,11 +3345,23 @@ msgstr ""
 " advarsel, aldri en sperre: å fortsette registreres og logges som kritisk. Dette er anleggets "
 "egne regler: startverdiene skal sjekkes med veterinæren."
 
+msgid "Hydrochloric acid"
+msgstr "Saltsyre"
+
 msgid "Hydrogen sulfide"
 msgstr "Hydrogensulfid"
 
+msgid "H₂S"
+msgstr "H₂S"
+
 msgid "H₂S (as H₂S)"
 msgstr "H₂S (som H₂S)"
+
+msgid "H₂S (µg/L)"
+msgstr "H₂S (µg/L)"
+
+msgid "H₂S and HS⁻ against pH"
+msgstr "H₂S og HS⁻ mot pH"
 
 msgid "H₂S limit (µg/L H₂S)"
 msgstr "H₂S-grense (µg/L H₂S)"
@@ -3815,6 +3979,9 @@ msgstr "NH₃ giftig (ved hver pH i diagrammet)"
 msgid "NH₃ toxic (pH > %(ph)s)"
 msgstr "NH₃ giftig (pH > %(ph)s)"
 
+msgid "NH₃-N"
+msgstr "NH₃-N"
+
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
 
@@ -3859,6 +4026,9 @@ msgstr "Snevrer inn listen over typer."
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
+msgstr "Trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (1983)."
 
 msgid "Needs the pH and the temperature of the same sample."
 msgstr "Trenger pH og temperatur fra samme prøve."
@@ -4117,6 +4287,9 @@ msgstr ""
 msgid "No text on this page."
 msgstr "Ingen tekst på denne siden."
 
+msgid "No two of the chosen reagents reach the target: choose others."
+msgstr "Ingen to av de valgte kjemikaliene når målet: velg andre."
+
 msgid "No unit held fish on these days with these filters."
 msgstr "Ingen enhet hadde fisk disse dagene med disse filtrene."
 
@@ -4140,6 +4313,9 @@ msgstr "Ingen enheter eller kretsløp her."
 
 msgid "No units yet"
 msgstr "Ingen enheter ennå"
+
+msgid "No volume: the doses per m³ only."
+msgstr "Uten volum: bare dosene per m³."
 
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
@@ -4190,6 +4366,9 @@ msgstr "Ikke knyttet til noe system"
 
 msgid "Not measured"
 msgstr "Ikke målt"
+
+msgid "Not measured there in the last 30 days, as entered:"
+msgstr "Ikke målt der de siste 30 dagene, som lagt inn:"
 
 msgid "Not rated"
 msgstr "Ikke vurdert"
@@ -4621,6 +4800,9 @@ msgstr "Deler"
 msgid "Password saved"
 msgstr "Passordet er lagret"
 
+msgid "Past the limit"
+msgstr "Over grensen"
+
 msgid "Payment terms"
 msgstr "Betalingsbetingelser"
 
@@ -4784,6 +4966,12 @@ msgstr "Primærnøkkel"
 msgid "Primary system"
 msgstr "Primært system"
 
+msgid "Print"
+msgstr "Skriv ut"
+
+msgid "Print report"
+msgstr "Skriv ut rapport"
+
 msgid "Processing"
 msgstr "Bearbeiding"
 
@@ -4903,6 +5091,12 @@ msgstr ""
 
 msgid "Read the text, page by page"
 msgstr "Les teksten side for side"
+
+msgid "Reagents"
+msgstr "Kjemikalier"
+
+msgid "Reagents to dose with"
+msgstr "Kjemikalier å dosere med"
 
 msgid "Reason"
 msgstr "Årsak"
@@ -5142,6 +5336,9 @@ msgstr "SFR (% per dag)"
 #, python-format
 msgid "SFR at %(temperature)s"
 msgstr "SFR ved %(temperature)s"
+
+msgid "Safe"
+msgstr "Trygt"
 
 msgid "Safe zone"
 msgstr "Trygg sone"
@@ -5430,6 +5627,9 @@ msgstr "Alvorlighet"
 msgid "Shape"
 msgstr "Form"
 
+msgid "Shares of the total sulfide; give the total sulfide for the H₂S and its border."
+msgstr "Andeler av totalt sulfid; oppgi totalt sulfid for H₂S og grensen."
+
 msgid "Short axis (m)"
 msgstr "Kort akse (m)"
 
@@ -5484,6 +5684,12 @@ msgstr "Silokapasitet (kg)"
 
 msgid "Silo volume"
 msgstr "Silovolum"
+
+msgid "Simulator"
+msgstr "Simulator"
+
+msgid "Simulator path"
+msgstr "Simulatorbane"
 
 msgid "Single-phase"
 msgstr "Enfase"
@@ -5542,8 +5748,20 @@ msgstr "Små fisk"
 msgid "Smolt"
 msgstr "Smolt"
 
+msgid "Sodium bicarbonate"
+msgstr "Natriumbikarbonat"
+
+msgid "Sodium carbonate"
+msgstr "Natriumkarbonat"
+
+msgid "Sodium hydroxide"
+msgstr "Natriumhydroksid"
+
 msgid "Solar"
 msgstr "Sol"
+
+msgid "Some values are not right; the results show again once they are:"
+msgstr "Noen verdier er ikke riktige; resultatene vises igjen når de er det:"
 
 msgid "Someone changed this entry while you were reading it. Read it again before you review it."
 msgstr "Noen endret denne oppføringen mens du leste den. Les den igjen før du gjennomgår den."
@@ -5675,6 +5893,9 @@ msgstr "Status siden"
 msgid "Steel"
 msgstr "Stål"
 
+msgid "Step"
+msgstr "Trinn"
+
 msgid "Stock"
 msgstr "Beholdning"
 
@@ -5733,6 +5954,10 @@ msgstr "Gateadresse"
 
 msgid "Stress"
 msgstr "Stress"
+
+#, python-format
+msgid "Strips the CO₂ below the %(air)s mg/L the air leaves in the water: aeration cannot do that."
+msgstr "Lufter CO₂ ned under de %(air)s mg/L luften etterlater i vannet: lufting kan ikke gjøre det."
 
 msgid "Structure"
 msgstr "Struktur"
@@ -5837,9 +6062,6 @@ msgstr "Mål-DIC"
 msgid "Target alkalinity (mg/L as CaCO₃)"
 msgstr "Målalkalitet (mg/L som CaCO₃)"
 
-msgid "Target and alkalinity band"
-msgstr "Mål og alkalitetsbånd"
-
 msgid "Target pH (NBS scale)"
 msgstr "Mål-pH (NBS-skala)"
 
@@ -5894,6 +6116,9 @@ msgstr "Tekst i %(name)s"
 
 msgid "That message is not in this conversation."
 msgstr "Den meldingen er ikke i denne samtalen."
+
+msgid "That unit or system is no longer there: the values are as entered."
+msgstr "Den enheten eller det systemet finnes ikke lenger: verdiene er som lagt inn."
 
 #, python-format
 msgid "The %(kind)s rule for %(species)s asks for %(hours)d h."
@@ -5968,6 +6193,9 @@ msgstr "Registeret har ingenting på denne lagerplassen ved slutten av den dagen
 msgid "The book says %(kilos)s of %(item)s of an expired lot were fed at %(site)s."
 msgstr "Ifølge registeret er %(kilos)s %(item)s fra et utløpt parti fôret på %(site)s."
 
+msgid "The border"
+msgstr "Grensen"
+
 msgid ""
 "The bounds a water value is judged by, per species and parameter: a warning outside one pair, "
 "critical outside the other."
@@ -5988,6 +6216,12 @@ msgstr ""
 "(den estimerte vekten da), og måltidene som gjenstår med estimatet nå; en registrering som ikke "
 "oppgir måltider, teller som ett. Avviket er fôr gitt minus beregnet rasjon. Det regnes ut på nytt"
 " fra registreringene, beholdningen og vannprøvene slik de er nå."
+
+msgid "The calculator's values"
+msgstr "Kalkulatorens verdier"
+
+msgid "The charts and the values show again once every value is right."
+msgstr "Diagrammene og verdiene vises igjen når alle verdiene er riktige."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
@@ -6160,6 +6394,14 @@ msgstr "Siste dag er på eller etter første dag."
 msgid "The latest changes to this %(name)s."
 msgstr "De siste endringene i denne posten (%(name)s)."
 
+#, python-format
+msgid ""
+"The latest values of %(point)s, for this calculation only: change any of them here, nothing is "
+"written back."
+msgstr ""
+"De siste verdiene for %(point)s, bare for denne beregningen: endre hvilken som helst av dem her, "
+"ingenting skrives tilbake."
+
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
 
@@ -6274,6 +6516,13 @@ msgstr ""
 "delt på forventet FCR (fôr utover en dags rasjon regnes ikke som tilvekst); etter hvert måltid "
 "regnes det neste ut på nytt. Over- og underfôring flagges ikke ennå: sammenlign mengdene som er "
 "fôret og som gjenstår."
+
+msgid ""
+"The recipes take two of them at a time; on the chart, one draws its direction, two their path to "
+"the target."
+msgstr ""
+"Oppskriftene bruker to av dem om gangen; i diagrammet tegner ett retningen sin, to banen sin til "
+"målet."
 
 msgid "The safe zone lies in this band."
 msgstr "Den trygge sonen ligger i dette båndet."
@@ -6438,6 +6687,13 @@ msgstr "Garantien kan ikke slutte før kjøpsdatoen."
 msgid "The water"
 msgstr "Vannet"
 
+msgid ""
+"The water after each amount, added in the order of the list, mixed through and closed to the air "
+"while it mixes. Amounts are of the pure substance."
+msgstr ""
+"Vannet etter hver mengde, tilsatt i listens rekkefølge, gjennomblandet og lukket mot luften mens "
+"det blandes. Mengdene er av rent stoff."
+
 msgid "The water cannot stand higher than the depth."
 msgstr "Vannet kan ikke stå høyere enn dybden."
 
@@ -6452,6 +6708,9 @@ msgstr ""
 "foran raden for alt vann. Ingenting fylles inn for deg: legg inn verdiene veterinæren eller "
 "veilederen din gir, og oppgi hvor de kommer fra."
 
+msgid "The water is at its target."
+msgstr "Vannet er ved målet sitt."
+
 msgid ""
 "The water of the units it applies to. A row for a unit’s water type wins over the row for any "
 "water."
@@ -6459,6 +6718,9 @@ msgstr "Vannet i enhetene den gjelder for. En rad for enhetens vanntype går for
 
 msgid "The water surface when the pond is full."
 msgstr "Vannflaten når dammen er full."
+
+msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
+msgstr "Vannet mengdene gjelder: et kar eller et kretsløp. Tomt: bare dosene per m³."
 
 #, python-format
 msgid "The weighing of %(date)s in %(unit)s would find no fish of %(batch)s. Void that weighing first."
@@ -6713,6 +6975,9 @@ msgstr "Uionisert ammoniakk (NH₃-N)"
 msgid "Un-ionised ammonia (mg/L NH₃ as N)"
 msgstr "Uionisert ammoniakk (mg/L NH₃ som N)"
 
+msgid "Un-ionised ammonia against pH"
+msgstr "Uionisert ammoniakk mot pH"
+
 msgid "Unaccounted loss"
 msgstr "Uforklart svinn"
 
@@ -6792,6 +7057,12 @@ msgstr "Verdi"
 msgid "Value on hand"
 msgstr "Verdi på lager"
 
+msgid "Values"
+msgstr "Verdier"
+
+msgid "Values from"
+msgstr "Verdier fra"
+
 msgid "Version"
 msgstr "Versjon"
 
@@ -6860,6 +7131,9 @@ msgstr "Vannkapasitet (m³)"
 
 msgid "Water chemistry"
 msgstr "Vannkjemi"
+
+msgid "Water chemistry report"
+msgstr "Vannkjemirapport"
 
 msgid "Water depth (m)"
 msgstr "Vanndybde (m)"
@@ -7016,6 +7290,9 @@ msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Hvor verdien kommer fra, f.eks. «veterinæren, november 2026»."
 
+msgid "Where the values come from"
+msgstr "Hvor verdiene kommer fra"
+
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Hvor verdiene kommer fra, f.eks. «veterinæren, november 2026» eller en veileder."
 
@@ -7092,6 +7369,9 @@ msgstr "Slutt på tilbakeholdelse anslått"
 
 msgid "Withdrawal until"
 msgstr "Tilbakeholdelse til"
+
+msgid "Within 0.2 pH"
+msgstr "Innenfor 0,2 pH"
 
 msgid "Without a production department"
 msgstr "Uten produksjonsavdeling"
@@ -7206,6 +7486,10 @@ msgid "book %(book)s · %(difference)s (%(percent)s)"
 msgstr "beholdning %(book)s · %(difference)s (%(percent)s)"
 
 #, python-format
+msgid "border pH %(ph)s, margin %(margin)s"
+msgstr "grense pH %(ph)s, margin %(margin)s"
+
+#, python-format
 msgid "by %(name)s"
 msgstr "av %(name)s"
 
@@ -7220,6 +7504,9 @@ msgstr "av <strong>%(name)s</strong>"
 #, python-format
 msgid "calculated %(calculated)s"
 msgstr "beregnet %(calculated)s"
+
+msgid "changed here"
+msgstr "endret her"
 
 msgid "channel"
 msgstr "kanal"
@@ -7693,6 +7980,9 @@ msgstr "pH"
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"
 
+msgid "pH (NBS)"
+msgstr "pH (NBS)"
+
 msgid "pH border, toxic above"
 msgstr "pH-grense, giftig over"
 
@@ -7847,9 +8137,16 @@ msgstr "målet nås %(date)s, ved %(temperature)s °C holdt fast"
 msgid "target reached"
 msgstr "målet er nådd"
 
+msgid "the site’s altitude"
+msgstr "lokalitetens høyde over havet"
+
 #, python-format
 msgid "to %(unit)s"
 msgstr "til %(unit)s"
+
+#, python-format
+msgid "total sulfide %(value)s µg/L as S"
+msgstr "totalt sulfid %(value)s µg/L som S"
 
 msgid "unit"
 msgstr "enhet"
@@ -7936,6 +8233,25 @@ msgstr "deg"
 #, python-format
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "du la inn %(weight)s: %(grams)s g, %(percent)s %%"
+
+#, python-format
+msgid "ΔCO₂ %(value)s mg/L"
+msgstr "ΔCO₂ %(value)s mg/L"
+
+#, python-format
+msgid "ΔDIC %(value)s mmol/L"
+msgstr "ΔDIC %(value)s mmol/L"
+
+#, python-format
+msgid "Δalk %(alkalinity)s, ΔDIC %(dic)s"
+msgstr "Δalk %(alkalinity)s, ΔDIC %(dic)s"
+
+#, python-format
+msgid "Δalkalinity %(value)s meq/L"
+msgstr "Δalkalitet %(value)s meq/L"
+
+msgid "Ω = 1"
+msgstr "Ω = 1"
 
 msgid "Ω aragonite = 1"
 msgstr "Ω aragonitt = 1"

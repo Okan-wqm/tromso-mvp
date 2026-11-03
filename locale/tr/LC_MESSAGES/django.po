@@ -285,6 +285,10 @@ msgid "%(department)s (no site)"
 msgstr "%(department)s (sahasız)"
 
 #, python-format
+msgid "%(dose)s g/m³"
+msgstr "%(dose)s g/m³"
+
+#, python-format
 msgid "%(energy)s MJ/kg digestible"
 msgstr "%(energy)s MJ/kg sindirilebilir"
 
@@ -345,8 +349,16 @@ msgid "%(fish)s fish, %(biomass)s now"
 msgstr "şu an %(fish)s balık, %(biomass)s"
 
 #, python-format
+msgid "%(formula)s only"
+msgstr "Yalnızca %(formula)s"
+
+#, python-format
 msgid "%(free)s kg free"
 msgstr "%(free)s kg boş yer"
+
+#, python-format
+msgid "%(grams)s g"
+msgstr "%(grams)s g"
 
 #, python-format
 msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
@@ -363,6 +375,10 @@ msgstr "%(location)s (%(site)s) içinde %(item)s: %(held)s, %(level)s yeniden si
 #, python-format
 msgid "%(item)s, lot %(lot)s"
 msgstr "%(item)s, lot %(lot)s"
+
+#, python-format
+msgid "%(kilos)s kg"
+msgstr "%(kilos)s kg"
 
 #, python-format
 msgid ""
@@ -573,6 +589,10 @@ msgid "%(temperature)s °C is outside this table (%(low)s–%(high)s °C)."
 msgstr "%(temperature)s °C bu tablonun dışında (%(low)s–%(high)s °C)."
 
 #, python-format
+msgid "%(temperature)s °C, %(salinity)s ‰"
+msgstr "%(temperature)s °C, %(salinity)s ‰"
+
+#, python-format
 msgid ""
 "%(unit)s has the status %(status)s, so it cannot take fish: it can when it is active, preparing "
 "or fallow."
@@ -676,6 +696,10 @@ msgstr "%(date)s tarihinde %(weight)s tartıldı"
 msgid "%(when)s by %(who)s"
 msgstr "%(when)s, %(who)s"
 
+#, python-format
+msgid "(%(dose)s g/m³)"
+msgstr "(%(dose)s g/m³)"
+
 msgid "(batch in unit)"
 msgstr "(birimdeki parti)"
 
@@ -710,11 +734,11 @@ msgstr "DOI 10. ile başlar ve boşluk içermez, örn. 10.1016/j.aquaculture.201
 msgid ""
 "A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the "
 "regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values"
-" are in the table next to it."
+" are in the results under the charts."
 msgstr ""
 "Bir Deffeyes diyagramı: yatayda çözünmüş inorganik karbon, dikeyde alkalinite, eşit pH çizgileri,"
-" CO₂, NH₃ ve H₂S'nin sınırlarını aştığı bölgeler, güvenli bölge ve suyun noktası. Değerler "
-"yanındaki tabloda."
+" CO₂, NH₃ ve H₂S’nin sınırlarını aştığı bölgeler, güvenli bölge ve suyun noktası. Değerler "
+"çizelgelerin altındaki sonuçlardadır."
 
 #, python-format
 msgid ""
@@ -880,6 +904,9 @@ msgstr ""
 "parti. Bir satır ilk gününden önce değiştirilebilir ya da silinebilir; sonrasında son günü "
 "girilerek sona erdirilir."
 
+msgid "A recipe takes two reagents: choose at least two (the Reagents tab)."
+msgstr "Bir reçete iki kimyasal ister: en az ikisini seçin (Kimyasallar sekmesi)."
+
 #, python-format
 msgid "A round takes at most %(rows)d rows."
 msgstr "Bir tur en çok %(rows)d satır alır."
@@ -958,13 +985,14 @@ msgid "A unit with fish in it cannot be made inactive: move or harvest them firs
 msgstr "İçinde balık olan bir birim pasif yapılamaz: önce balıkları taşıyın veya hasat edin."
 
 msgid ""
-"A water on the Water Quality Management Chart: its alkalinity against its dissolved inorganic "
-"carbon, with the pH where each limit is reached. The limits start as defaults, not as the limits "
-"of your fish. Nothing is stored."
+"A water on the Water Quality Management Chart and against the pH, the pH where each limit is "
+"reached, and what to dose to reach a target. The limits start as defaults, not as the limits of "
+"your fish, unless the values come from a unit. The results follow the values as you change them. "
+"Nothing is stored."
 msgstr ""
-"Su Kalitesi Yönetim Çizelgesinde bir su: alkalinitesi çözünmüş inorganik karbonuna karşı, her "
-"sınıra ulaşılan pH ile. Sınırlar varsayılan değerlerle başlar, balıklarınızın sınırlarıyla değil."
-" Hiçbir şey kaydedilmez."
+"Bir su, Su Kalitesi Yönetim Çizelgesinde ve pH’ye göre: her sınıra ulaşılan pH ve bir hedefe "
+"ulaşmak için ne dozlanacağı. Değerler bir birimden gelmedikçe sınırlar balıklarınızın sınırları "
+"değil, varsayılanlardır. Sonuçlar değerleri değiştirdikçe güncellenir. Hiçbir şey kaydedilmez."
 
 msgid "Above the max density, accepted"
 msgstr "Azami yoğunluğun üstü, kabul edildi"
@@ -1100,6 +1128,28 @@ msgstr "Havalandırma"
 
 msgid "Aerator"
 msgstr "Havalandırıcı"
+
+#, python-format
+msgid "After %(formula)s no pH from 0 to 14 gives this DIC and alkalinity. The simulation stops there."
+msgstr ""
+"%(formula)s sonrasında 0 ile 14 arasındaki hiçbir pH bu DIC ve alkaliniteyi vermez. Simülasyon "
+"orada durur."
+
+#, python-format
+msgid ""
+"After %(formula)s no water is left with this DIC: more CO₂ is stripped than the water holds. The "
+"simulation stops there."
+msgstr ""
+"%(formula)s sonrasında bu DIC ile bir su kalmaz: suyun taşıdığından fazla CO₂ sıyrılıyor. "
+"Simülasyon orada durur."
+
+#, python-format
+msgid ""
+"After %(formula)s the CO₂ is below the %(air)s mg/L a water keeps in equilibrium with the air: "
+"stripping cannot take it there."
+msgstr ""
+"%(formula)s sonrasında CO₂, havayla dengedeki bir suyun tuttuğu %(air)s mg/L’nin altında: sıyırma"
+" onu oraya indiremez."
 
 msgid "Air"
 msgstr "Hava"
@@ -1257,8 +1307,14 @@ msgstr "Amonyak sensörü"
 msgid "Ammonium (mg/L NH₄⁺ as N)"
 msgstr "Amonyum (N olarak mg/L NH₄⁺)"
 
-msgid "Amount"
-msgstr "Miktar"
+msgid ""
+"Amounts of the pure substance, for the volume (System tab); a solution or a technical grade "
+"weighs more (divide by its strength). Dose in parts and measure the pH again: a strong base or "
+"acid moves the pH fast where it goes in."
+msgstr ""
+"Saf maddenin miktarları, hacim için (Sistem sekmesi); bir çözelti ya da teknik kalite daha fazla "
+"tartılır (derişimine bölün). Parça parça dozlayın ve pH’yi yeniden ölçün: güçlü bir baz ya da "
+"asit girdiği yerde pH’yi hızla değiştirir."
 
 msgid "An active protocol has a table."
 msgstr "Aktif bir protokolün tablosu olmalı."
@@ -1408,6 +1464,9 @@ msgstr "Onay numarası %(number)s"
 msgid "Aquaponics"
 msgstr "Akuaponik"
 
+msgid "Aragonite"
+msgstr "Aragonit"
+
 msgid "Area"
 msgstr "Alan"
 
@@ -1484,6 +1543,14 @@ msgstr "En derin noktada, genellikle çıkışın yanında."
 
 msgid "At the end of the day"
 msgstr "Gün sonunda"
+
+#, python-format
+msgid ""
+"At the water’s DIC, %(dic)s mmol/L, and %(calcium)s mg/L calcium; Mucci (1983); 0 is saturation, "
+"above it CaCO₃ can form."
+msgstr ""
+"Suyun DIC’sinde, %(dic)s mmol/L, ve %(calcium)s mg/L kalsiyumda; Mucci (1983); 0 doygunluktur, "
+"üstünde CaCO₃ oluşabilir."
 
 #, python-format
 msgid ""
@@ -1604,6 +1671,9 @@ msgstr "Bu parametre için %(low)s ile %(high)s arasında."
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "%(low)s ile %(high)s arasında: değeri kontrol edin."
 
+msgid "Between the two doses"
+msgstr "İki doz arasında"
+
 msgid "Biofloc"
 msgstr "Biyoflok"
 
@@ -1628,6 +1698,10 @@ msgstr "Hava üfleyici (blower)"
 
 msgid "Book"
 msgstr "Kayıtta"
+
+#, python-format
+msgid "Border %(ph)s"
+msgstr "Sınır %(ph)s"
 
 msgid "Bought fish have a supplier; fish of the own hatchery or caught in the wild have none."
 msgstr ""
@@ -1671,11 +1745,17 @@ msgstr "Birim ve güne göre"
 msgid "COP (efficiency)"
 msgstr "COP (verim)"
 
+msgid "CO₂"
+msgstr "CO₂"
+
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
 
 msgid "CO₂ limit (mg/L)"
 msgstr "CO₂ sınırı (mg/L)"
+
+msgid "CO₂ the air leaves in it"
+msgstr "Havanın suda bıraktığı CO₂"
 
 msgid "CO₂ toxic"
 msgstr "CO₂ toksik"
@@ -1684,8 +1764,14 @@ msgstr "CO₂ toksik"
 msgid "CO₂ toxic (> %(limit)s mg/L)"
 msgstr "CO₂ toksik (> %(limit)s mg/L)"
 
+msgid "CO₂, HCO₃⁻ and CO₃²⁻ against pH"
+msgstr "pH’ye göre CO₂, HCO₃⁻ ve CO₃²⁻"
+
 msgid "CO₂: no limit given."
 msgstr "CO₂: sınır verilmedi."
+
+msgid "CO₃²⁻"
+msgstr "CO₃²⁻"
 
 msgid "Cage"
 msgstr "Kafes"
@@ -1696,8 +1782,26 @@ msgstr "Kafes tipi"
 msgid "Cages"
 msgstr "Kafesler"
 
+msgid "Calcite"
+msgstr "Kalsit"
+
+msgid "Calcite and aragonite saturation against pH"
+msgstr "pH’ye göre kalsit ve aragonit doygunluğu"
+
 msgid "Calcium (mg/L Ca²⁺)"
 msgstr "Kalsiyum (mg/L Ca²⁺)"
+
+msgid "Calcium carbonate"
+msgstr "Kalsiyum karbonat"
+
+msgid "Calcium hydroxide"
+msgstr "Kalsiyum hidroksit"
+
+msgid "Calcium oxide"
+msgstr "Kalsiyum oksit"
+
+msgid "Calculate"
+msgstr "Hesapla"
 
 msgid "Calculated"
 msgstr "Hesaplanan"
@@ -1741,8 +1845,11 @@ msgstr "Karbondioksit (CO₂)"
 msgid "Carbon dioxide (mg/L free CO₂)"
 msgstr "Karbondioksit (mg/L serbest CO₂)"
 
-msgid "Carbonate system"
-msgstr "Karbonat sistemi"
+msgid "Carbon dioxide, added"
+msgstr "Karbondioksit, eklenen"
+
+msgid "Carbon dioxide, stripped"
+msgstr "Karbondioksit, sıyrılan"
 
 msgid ""
 "Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); "
@@ -2340,6 +2447,30 @@ msgstr "Belge"
 msgid "Done"
 msgstr "Tamamlandı"
 
+msgid "Dosing path"
+msgstr "Dozlama yolu"
+
+msgid "Dosing path: these two reagents cannot reach the target."
+msgstr "Dozlama yolu: bu iki kimyasal hedefe ulaşamaz."
+
+msgid "Dosing path: tick one reagent to draw its line, or two to draw their path to the target."
+msgstr ""
+"Dozlama yolu: çizgisini çizmek için bir kimyasal, hedefe giden yolu çizmek için iki kimyasal "
+"işaretleyin."
+
+msgid "Dosing recipes"
+msgstr "Dozlama reçeteleri"
+
+msgid "Dosing simulator"
+msgstr "Dozlama simülatörü"
+
+msgid ""
+"Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ "
+"the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air."
+msgstr ""
+"Dozlama: her kimyasal suyu çizelgede kendi yönünde hareket ettirir (Deffeyes 1965); havanın suda "
+"bıraktığı CO₂: Weiss (1974), havada 420 µmol/mol CO₂ ile."
+
 msgid "Download"
 msgstr "İndir"
 
@@ -2354,9 +2485,6 @@ msgid "Draft: being built. Active: can be assigned. Retired: kept for the days i
 msgstr ""
 "Taslak: hazırlanıyor. Aktif: atanabilir. Kullanımdan kaldırıldı: yemlediği günler için saklanır, "
 "artık atanmaz."
-
-msgid "Draw the chart"
-msgstr "Çizelgeyi çiz"
 
 msgid "Drum diameter"
 msgstr "Tambur çapı"
@@ -2477,6 +2605,9 @@ msgid "Enter the email address on your account. We will send you a link to set a
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
 "göndereceğiz."
+
+msgid "Entered here"
+msgstr "Burada girilen"
 
 msgid "Entries"
 msgstr "Kayıtlar"
@@ -2891,14 +3022,18 @@ msgstr ""
 "Her yem boyutu için bir atışın ne kadar yem verdiği ve silonun ne kadar aldığı; en fazla 50 "
 "satır. Ekipman ayrıntılarından ayrı kaydedilir."
 
-msgid "For the calcite and aragonite saturation lines, in water of 5 to 44 ‰."
-msgstr "Kalsit ve aragonit doygunluk çizgileri için, 5 ile 44 ‰ arasındaki suda."
+msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
+msgstr "Kalsit ve aragonit doygunluğu için, 5 ile 44 ‰ arasındaki suda."
+
+msgid ""
+"For the oxygen saturation and the CO₂ the air leaves in the water: the pressure of the standard "
+"atmosphere there. Empty is sea level."
+msgstr ""
+"Oksijen doygunluğu ve havanın suda bıraktığı CO₂ için: oradaki standart atmosfer basıncı. Boş "
+"bırakılırsa deniz seviyesi."
 
 msgid "For the oxygen saturation."
 msgstr "Oksijen doygunluğu için."
-
-msgid "For the oxygen saturation: the pressure of the standard atmosphere there. Empty is sea level."
-msgstr "Oksijen doygunluğu için: oradaki standart atmosfer basıncı. Boş bırakılırsa deniz seviyesi."
 
 msgid "Foreign key"
 msgstr "Yabancı anahtar"
@@ -2965,6 +3100,9 @@ msgstr "%(date)s planından: kaydedildiğinde plana bağlanır."
 msgid "From the water surface to the bottom of the net."
 msgstr "Su yüzeyinden ağın dibine kadar."
 
+msgid "From the water to the last step:"
+msgstr "Sudan son adıma:"
+
 msgid "Fry"
 msgstr "Yavru"
 
@@ -3017,6 +3155,9 @@ msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
 msgid "German"
 msgstr "Almanca"
 
+msgid "Give a target pH and alkalinity for the recipes."
+msgstr "Reçeteler için bir hedef pH ve alkalinite girin."
+
 msgid "Give at least one bound."
 msgstr "En az bir sınır girin."
 
@@ -3025,6 +3166,9 @@ msgstr "En az bir sıcaklık sütunu girin."
 
 msgid "Give both or neither."
 msgstr "İkisini birden verin ya da hiçbirini."
+
+msgid "Give the TAN to draw the NH₃ it holds."
+msgstr "İçerdiği NH₃’ü çizmek için TAN’ı girin."
 
 msgid "Give the average or the sample, not both."
 msgstr "Ortalamayı ya da örneği girin, ikisini birden değil."
@@ -3043,6 +3187,9 @@ msgstr "Örneği ya da ortalama ağırlığı girin."
 
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Önce sıcaklık sütunlarını girin: tablo onlara göre oluşur."
+
+msgid "Give the volume to follow the amounts."
+msgstr "Miktarları izlemek için hacmi girin."
 
 msgid "Given"
 msgstr "Verilen"
@@ -3076,8 +3223,14 @@ msgstr "Büyüme"
 msgid "Growth stage"
 msgstr "Büyüme evresi"
 
+msgid "HCO₃⁻"
+msgstr "HCO₃⁻"
+
 msgid "HDPE"
 msgstr "HDPE"
+
+msgid "HS⁻"
+msgstr "HS⁻"
 
 msgid "Handling"
 msgstr "Elleçleme"
@@ -3200,11 +3353,23 @@ msgstr ""
 "yazılır. Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol "
 "edilmelidir."
 
+msgid "Hydrochloric acid"
+msgstr "Hidroklorik asit"
+
 msgid "Hydrogen sulfide"
 msgstr "Hidrojen sülfür"
 
+msgid "H₂S"
+msgstr "H₂S"
+
 msgid "H₂S (as H₂S)"
 msgstr "H₂S (H₂S olarak)"
+
+msgid "H₂S (µg/L)"
+msgstr "H₂S (µg/L)"
+
+msgid "H₂S and HS⁻ against pH"
+msgstr "pH’ye göre H₂S ve HS⁻"
 
 msgid "H₂S limit (µg/L H₂S)"
 msgstr "H₂S sınırı (µg/L H₂S)"
@@ -3822,6 +3987,9 @@ msgstr "NH₃ toksik (çizelgenin her pH'sinde)"
 msgid "NH₃ toxic (pH > %(ph)s)"
 msgstr "NH₃ toksik (pH > %(ph)s)"
 
+msgid "NH₃-N"
+msgstr "NH₃-N"
+
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
 
@@ -3866,6 +4034,9 @@ msgstr "Tür listesini daraltır."
 
 msgid "Natural gas"
 msgstr "Doğal gaz"
+
+msgid "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
+msgstr "Kalsiyum ve 5 ile 44 ‰ arasında bir tuzluluk gerekir, Mucci’nin (1983) aralığı."
 
 msgid "Needs the pH and the temperature of the same sample."
 msgstr "Aynı numunenin pH'ı ve sıcaklığı gerekir."
@@ -4120,6 +4291,9 @@ msgstr ""
 msgid "No text on this page."
 msgstr "Bu sayfada metin yok."
 
+msgid "No two of the chosen reagents reach the target: choose others."
+msgstr "Seçilen kimyasallardan hiçbir ikisi hedefe ulaşmıyor: başkalarını seçin."
+
 msgid "No unit held fish on these days with these filters."
 msgstr "Bu günlerde bu filtrelere uyan balıklı birim yoktu."
 
@@ -4143,6 +4317,9 @@ msgstr "Burada birim veya döngü yok."
 
 msgid "No units yet"
 msgstr "Henüz birim yok"
+
+msgid "No volume: the doses per m³ only."
+msgstr "Hacim yok: yalnızca m³ başına dozlar."
 
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
@@ -4193,6 +4370,9 @@ msgstr "Hiçbir sisteme bağlı değil"
 
 msgid "Not measured"
 msgstr "Ölçülmedi"
+
+msgid "Not measured there in the last 30 days, as entered:"
+msgstr "Orada son 30 günde ölçülmemiş, girildiği gibi:"
 
 msgid "Not rated"
 msgstr "Puanlanmadı"
@@ -4624,6 +4804,9 @@ msgstr "Parçalar"
 msgid "Password saved"
 msgstr "Parola kaydedildi"
 
+msgid "Past the limit"
+msgstr "Sınırın ötesinde"
+
 msgid "Payment terms"
 msgstr "Ödeme koşulları"
 
@@ -4787,6 +4970,12 @@ msgstr "Birincil anahtar"
 msgid "Primary system"
 msgstr "Birincil sistem"
 
+msgid "Print"
+msgstr "Yazdır"
+
+msgid "Print report"
+msgstr "Raporu yazdır"
+
 msgid "Processing"
 msgstr "İşleme"
 
@@ -4904,6 +5093,12 @@ msgstr ""
 
 msgid "Read the text, page by page"
 msgstr "Metni sayfa sayfa oku"
+
+msgid "Reagents"
+msgstr "Kimyasallar"
+
+msgid "Reagents to dose with"
+msgstr "Dozlanacak kimyasallar"
 
 msgid "Reason"
 msgstr "Neden"
@@ -5144,6 +5339,9 @@ msgstr "SFR (günlük %)"
 #, python-format
 msgid "SFR at %(temperature)s"
 msgstr "%(temperature)s sıcaklıkta SFR"
+
+msgid "Safe"
+msgstr "Güvenli"
 
 msgid "Safe zone"
 msgstr "Güvenli bölge"
@@ -5432,6 +5630,9 @@ msgstr "Önem"
 msgid "Shape"
 msgstr "Şekil"
 
+msgid "Shares of the total sulfide; give the total sulfide for the H₂S and its border."
+msgstr "Toplam sülfürün payları; H₂S ve sınırı için toplam sülfürü girin."
+
 msgid "Short axis (m)"
 msgstr "Kısa eksen (m)"
 
@@ -5486,6 +5687,12 @@ msgstr "Silo kapasitesi (kg)"
 
 msgid "Silo volume"
 msgstr "Silo hacmi"
+
+msgid "Simulator"
+msgstr "Simülatör"
+
+msgid "Simulator path"
+msgstr "Simülatör yolu"
 
 msgid "Single-phase"
 msgstr "Tek faz"
@@ -5544,8 +5751,20 @@ msgstr "Küçük boy"
 msgid "Smolt"
 msgstr "Smolt"
 
+msgid "Sodium bicarbonate"
+msgstr "Sodyum bikarbonat"
+
+msgid "Sodium carbonate"
+msgstr "Sodyum karbonat"
+
+msgid "Sodium hydroxide"
+msgstr "Sodyum hidroksit"
+
 msgid "Solar"
 msgstr "Güneş"
+
+msgid "Some values are not right; the results show again once they are:"
+msgstr "Bazı değerler doğru değil; düzeltildiklerinde sonuçlar yeniden görünür:"
 
 msgid "Someone changed this entry while you were reading it. Read it again before you review it."
 msgstr "Siz okurken biri bu kaydı değiştirdi. İncelemeden önce yeniden okuyun."
@@ -5677,6 +5896,9 @@ msgstr "Durum başlangıcı"
 msgid "Steel"
 msgstr "Çelik"
 
+msgid "Step"
+msgstr "Adım"
+
 msgid "Stock"
 msgstr "Stok"
 
@@ -5735,6 +5957,10 @@ msgstr "Sokak adresi"
 
 msgid "Stress"
 msgstr "Stres"
+
+#, python-format
+msgid "Strips the CO₂ below the %(air)s mg/L the air leaves in the water: aeration cannot do that."
+msgstr "CO₂’yi havanın suda bıraktığı %(air)s mg/L’nin altına sıyırır: havalandırma bunu yapamaz."
 
 msgid "Structure"
 msgstr "Yapı"
@@ -5839,9 +6065,6 @@ msgstr "Hedef DIC"
 msgid "Target alkalinity (mg/L as CaCO₃)"
 msgstr "Hedef alkalinite (mg/L CaCO₃ olarak)"
 
-msgid "Target and alkalinity band"
-msgstr "Hedef ve alkalinite aralığı"
-
 msgid "Target pH (NBS scale)"
 msgstr "Hedef pH (NBS ölçeği)"
 
@@ -5896,6 +6119,9 @@ msgstr "%(name)s metni"
 
 msgid "That message is not in this conversation."
 msgstr "Bu mesaj bu konuşmada değil."
+
+msgid "That unit or system is no longer there: the values are as entered."
+msgstr "O birim ya da sistem artık yok: değerler girildiği gibidir."
 
 #, python-format
 msgid "The %(kind)s rule for %(species)s asks for %(hours)d h."
@@ -5973,6 +6199,9 @@ msgstr "Kayıtta o günün sonunda bu yerde hiçbir şey yok."
 msgid "The book says %(kilos)s of %(item)s of an expired lot were fed at %(site)s."
 msgstr "Kayda göre %(site)s sahasında süresi geçmiş bir lottan %(kilos)s %(item)s yemlendi."
 
+msgid "The border"
+msgstr "Sınır"
+
 msgid ""
 "The bounds a water value is judged by, per species and parameter: a warning outside one pair, "
 "critical outside the other."
@@ -5993,6 +6222,12 @@ msgstr ""
 "ağırlıkla), henüz verilecek öğünleri ise şimdiki tahminle sayar; öğün sayısını belirtmeyen bir "
 "kayıt tek öğün sayılır. Sapma, verilen yemden hesaplanan rasyonun çıkarılmasıyla bulunur. "
 "Kayıtların, stokun ve su numunelerinin şimdiki hâlinden yeniden hesaplanır."
+
+msgid "The calculator's values"
+msgstr "Hesaplayıcının değerleri"
+
+msgid "The charts and the values show again once every value is right."
+msgstr "Her değer doğru olduğunda çizelgeler ve değerler yeniden görünür."
 
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
@@ -6163,6 +6398,14 @@ msgstr "Son gün, ilk günle aynı gün ya da ondan sonra olmalı."
 msgid "The latest changes to this %(name)s."
 msgstr "Bu kaydın (%(name)s) son değişiklikleri."
 
+#, python-format
+msgid ""
+"The latest values of %(point)s, for this calculation only: change any of them here, nothing is "
+"written back."
+msgstr ""
+"%(point)s için son değerler, yalnızca bu hesap için: herhangi birini burada değiştirin, hiçbir "
+"şey geri yazılmaz."
+
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
 
@@ -6277,6 +6520,13 @@ msgstr ""
 "ağırlık artı o zamandan beri verilen yemin beklenen FCR’ye bölümüdür (bir günün rasyonunu aşan "
 "yem büyüme sayılmaz); her öğünden sonra sonraki öğün yeniden hesaplanır. Fazla ve eksik yemleme "
 "henüz işaretlenmiyor: verilen ve kalan miktarları karşılaştırın."
+
+msgid ""
+"The recipes take two of them at a time; on the chart, one draws its direction, two their path to "
+"the target."
+msgstr ""
+"Reçeteler bunlardan ikisini birlikte kullanır; çizelgede biri kendi yönünü, ikisi hedefe giden "
+"yolunu çizer."
 
 msgid "The safe zone lies in this band."
 msgstr "Güvenli bölge bu aralıktadır."
@@ -6443,6 +6693,13 @@ msgstr "Garanti satın alma tarihinden önce bitemez."
 msgid "The water"
 msgstr "Su"
 
+msgid ""
+"The water after each amount, added in the order of the list, mixed through and closed to the air "
+"while it mixes. Amounts are of the pure substance."
+msgstr ""
+"Listedeki sırayla eklenen her miktardan sonra su, tümüyle karışmış ve karışırken havaya kapalı. "
+"Miktarlar saf maddenindir."
+
 msgid "The water cannot stand higher than the depth."
 msgstr "Su, derinlikten yüksek olamaz."
 
@@ -6457,6 +6714,9 @@ msgstr ""
 "için olan satırdan önce gelir. Sizin yerinize hiçbir şey doldurulmaz: veterinerinizin veya "
 "kılavuzunuzun verdiği değerleri girin ve nereden geldiklerini yazın."
 
+msgid "The water is at its target."
+msgstr "Su hedefinde."
+
 msgid ""
 "The water of the units it applies to. A row for a unit’s water type wins over the row for any "
 "water."
@@ -6464,6 +6724,9 @@ msgstr "Uygulandığı birimlerin suyu. Birimin su tipine ait satır, her su iç
 
 msgid "The water surface when the pond is full."
 msgstr "Havuz doluyken su yüzeyi."
+
+msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
+msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
 
 #, python-format
 msgid "The weighing of %(date)s in %(unit)s would find no fish of %(batch)s. Void that weighing first."
@@ -6718,6 +6981,9 @@ msgstr "İyonize olmamış amonyak (NH₃-N)"
 msgid "Un-ionised ammonia (mg/L NH₃ as N)"
 msgstr "İyonize olmamış amonyak (N olarak mg/L NH₃)"
 
+msgid "Un-ionised ammonia against pH"
+msgstr "pH’ye göre iyonlaşmamış amonyak"
+
 msgid "Unaccounted loss"
 msgstr "Açıklanamayan kayıp"
 
@@ -6797,6 +7063,12 @@ msgstr "Değer"
 msgid "Value on hand"
 msgstr "Eldeki değer"
 
+msgid "Values"
+msgstr "Değerler"
+
+msgid "Values from"
+msgstr "Değerlerin kaynağı"
+
 msgid "Version"
 msgstr "Sürüm"
 
@@ -6865,6 +7137,9 @@ msgstr "Su kapasitesi (m³)"
 
 msgid "Water chemistry"
 msgstr "Su kimyası"
+
+msgid "Water chemistry report"
+msgstr "Su kimyası raporu"
 
 msgid "Water depth (m)"
 msgstr "Su derinliği (m)"
@@ -7019,6 +7294,9 @@ msgstr "Bilginin geldiği yer: her kaydın tam olarak bir kaynağı vardır."
 msgid "Where the value comes from, e.g. “the vet, November 2026”."
 msgstr "Değerin kaynağı, örn. “veteriner, Kasım 2026”."
 
+msgid "Where the values come from"
+msgstr "Değerlerin geldiği yer"
+
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Değerlerin nereden geldiği, örn. “veteriner, Kasım 2026” veya bir kılavuz."
 
@@ -7095,6 +7373,9 @@ msgstr "Arınma bitişi tahmini"
 
 msgid "Withdrawal until"
 msgstr "Arınma bitişi"
+
+msgid "Within 0.2 pH"
+msgstr "0,2 pH içinde"
 
 msgid "Without a production department"
 msgstr "Üretim departmanı olmayanlar"
@@ -7207,6 +7488,10 @@ msgid "book %(book)s · %(difference)s (%(percent)s)"
 msgstr "kayıtta %(book)s · %(difference)s (%(percent)s)"
 
 #, python-format
+msgid "border pH %(ph)s, margin %(margin)s"
+msgstr "sınır pH %(ph)s, pay %(margin)s"
+
+#, python-format
 msgid "by %(name)s"
 msgstr "%(name)s tarafından"
 
@@ -7221,6 +7506,9 @@ msgstr "<strong>%(name)s</strong> tarafından"
 #, python-format
 msgid "calculated %(calculated)s"
 msgstr "hesaplanan %(calculated)s"
+
+msgid "changed here"
+msgstr "burada değiştirildi"
 
 msgid "channel"
 msgstr "kanal"
@@ -7694,6 +7982,9 @@ msgstr "pH"
 msgid "pH (NBS scale)"
 msgstr "pH (NBS ölçeği)"
 
+msgid "pH (NBS)"
+msgstr "pH (NBS)"
+
 msgid "pH border, toxic above"
 msgstr "pH sınırı, üstünde toksik"
 
@@ -7848,9 +8139,16 @@ msgstr "hedefe %(date)s tarihinde, %(temperature)s °C sabit"
 msgid "target reached"
 msgstr "hedefe ulaşıldı"
 
+msgid "the site’s altitude"
+msgstr "sahanın rakımı"
+
 #, python-format
 msgid "to %(unit)s"
 msgstr "%(unit)s birimine"
+
+#, python-format
+msgid "total sulfide %(value)s µg/L as S"
+msgstr "toplam sülfür %(value)s µg/L S olarak"
 
 msgid "unit"
 msgstr "birim"
@@ -7937,6 +8235,25 @@ msgstr "siz"
 #, python-format
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "girdiğiniz %(weight)s: %(grams)s g, %%%(percent)s"
+
+#, python-format
+msgid "ΔCO₂ %(value)s mg/L"
+msgstr "ΔCO₂ %(value)s mg/L"
+
+#, python-format
+msgid "ΔDIC %(value)s mmol/L"
+msgstr "ΔDIC %(value)s mmol/L"
+
+#, python-format
+msgid "Δalk %(alkalinity)s, ΔDIC %(dic)s"
+msgstr "Δalk %(alkalinity)s, ΔDIC %(dic)s"
+
+#, python-format
+msgid "Δalkalinity %(value)s meq/L"
+msgstr "Δalkalinite %(value)s meq/L"
+
+msgid "Ω = 1"
+msgstr "Ω = 1"
 
 msgid "Ω aragonite = 1"
 msgstr "Ω aragonit = 1"

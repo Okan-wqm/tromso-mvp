@@ -206,7 +206,7 @@ class SamplingPoint(AuditedModel):
     """A place a water sample is taken: a named point of one unit, one system's loop or one piece of equipment,
     of a kind that says whether it sees the stream in, the water within or the stream out (Setup › Facility
     structure › Sampling points). New table; the source's measurement point was the owner itself, with a
-    position and a depth that only its sensor bindings kept (WQ-40).
+    position and a depth that only its sensor bindings kept (WQ-47).
 
     `flow_m3_h` is the design or last-known flow of the stream at an inlet or an outlet and `flow_share_pct` the
     share of the owner's outflow that leaves at an outlet (a side outlet 90, a bottom drain 10); neither is

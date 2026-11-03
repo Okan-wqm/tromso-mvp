@@ -15,6 +15,7 @@ from django import forms
 from django.db.models import Q
 from django.http import QueryDict
 from django.utils import formats, timezone
+from django.utils.html import format_html_join
 from django.utils.text import format_lazy
 from django.utils.translation import gettext, gettext_lazy as _
 
@@ -174,7 +175,10 @@ class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
         super().__init__(*args, **kwargs)
         for parameter in MEASURED:
             rows = (limits or {}).get(parameter.code, [])
-            help_text = ' '.join(str(part) for part in (parameter.help, *(limit_text(row) for row in rows)) if part)
+            # The form's help is shown as HTML (registration/_field.html): a species' name in a limit is a person's
+            # text, so each part is escaped as it is put in.
+            help_text = format_html_join(' ', '{}', ((part,) for part in (parameter.help, *(limit_text(row)
+                                                                                           for row in rows)) if part))
             self.fields[parameter.code] = value_field(parameter, help_text)
         points = SamplingPoint.objects.filter(is_active=True).with_owners()
         if owner is not None:

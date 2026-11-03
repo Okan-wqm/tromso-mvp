@@ -756,6 +756,16 @@ class DialogTests(PointTestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(WaterMeasurement.objects.count(), 1)
 
+    def test_a_species_name_in_a_limits_help_is_text_not_markup(self):
+        """The dialog's help is shown as HTML, so the species' name in a limit (a person's text) is escaped."""
+        self.salmon.common_name = '<script>alert(1)</script> salmon'
+        self.salmon.save()
+        self.stock()
+        self.limit('ph', warning_low='6.8')
+        response = self.client.get(reverse('farm:water_record'), {'unit': self.t1.pk})
+        self.assertContains(response, '&lt;script&gt;alert(1)&lt;/script&gt; salmon: warning below 6.80')
+        self.assertNotContains(response, '<script>alert(1)')
+
     def test_a_sample_at_the_middle_point_is_as_quick_as_before(self):
         """Opened from a unit the form needs the same fields as before: the point is already chosen."""
         url = f'{reverse("farm:water_record")}?unit={self.t1.pk}'

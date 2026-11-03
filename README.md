@@ -90,7 +90,8 @@ The bugs found in the source while porting are listed in
 Table `systems`: a table (system, type, status, site, production department, volume, max biomass), nested
 systems shown under their parent, search by name or code, filters by site and by production department
 (including "without a production department"), a form in the dialog and delete. A system belongs to a site
-(chosen once) and optionally to a production department of that site and to a parent system of that site.
+(chosen once) and optionally to a production department of that site and to a parent system of that site. A new
+system starts with its loop point (a sampling point of the kind middle, named "Loop"); each row links to its points.
 Differences from the source:
 
 - The links are checked on every save, not on create only: the production department must be on the system's
@@ -111,7 +112,8 @@ Differences from the source:
 ### Facility › Equipment (`/equipment/`)
 
 Tables `equipment`, `equipment_systems`, `feeder_calibrations` and the catalogue `equipment_types`.
-Pumps, filters, feeders, heaters, sensors, generators: a table (equipment, type, production department
+Pumps, filters, feeders, heaters, sensors, generators (equipment has no sampling points until its inlet and
+outlets are added under Setup › Facility structure › Sampling points; each row links there): a table (equipment, type, production department
 and site, systems, parts, status, make and model) with parts listed under the equipment they belong to,
 search by name, code or serial number, filters by site, production department, system (or "not linked
 to any system", with a notice that counts them), category, type and status, a form in the dialog and
@@ -175,7 +177,10 @@ Differences from the source:
 Table `tanks`: the units fish are held in, a tank, a pond or a cage, each in a production department and
 optionally in one system. The model keeps the source's name (`Tank`, table `tanks`) because its later
 tables point at `tankId`; a person reads "unit". Master data only: the fish in a unit (count, biomass,
-batches) are on Operations › Production units. A table (unit, kind with its shape or type, production department
+batches) are on Operations › Production units. A new unit starts with its **sampling points** (where its water
+is sampled, Setup › Facility structure › Sampling points: a tank an inlet, a middle, a side outlet and a bottom
+drain, a pond an inlet, a middle and an outlet, a cage its middle), made in the same transaction and logged; each
+row links to its points. A table (unit, kind with its shape or type, production department
 and site, system, volume, water volume, max density, max biomass, water type, status), search by name,
 code or regulatory unit ID, filters by site, production department, system (or "not in a system"), kind,
 status and water type, a form in the dialog and delete. The form has five inner tabs:
@@ -462,8 +467,8 @@ different. The filters and the open unit are in the address, so a view can be li
 button works; a row is one link. Two empty states: no units at all (with a link to Setup) and no match
 (with "Clear filters"). The column chooser and sorting come next.
 For people who may read the water (see Water chemistry), the table also has **Temp. (°C)** and **O₂ (mg/L)**
-after survival, each the unit's latest value coloured by its status, stale ones grey (time and age on
-hover), a status dot by the unit's code (its worst fresh status), and the count line says how many units
+after survival, each the latest value of the unit's middle sampling point coloured by its status, stale ones grey
+(time and age on hover), a status dot by the unit's code (its worst fresh status), and the count line says how many units
 shown are critical ("14 units · 3.2 t · 2 critical"); the production overview has a tile "Units with a
 critical water value".
 
@@ -744,8 +749,9 @@ Differences from the source (details in the bug document, FDR-01 to FDR-41):
 
 ### Operations › Water chemistry (`/operations/water/`) and Reference data › Water limits (`/water-limits/`)
 
-The water samples people take, in a unit or in a system's loop (at the sump), and the limits the owner
-sets per species. Tables `water_measurements` (a TimescaleDB hypertable) and `water_limits`.
+The water samples people take, each at a **sampling point** (a place on a unit, on a system's loop or on a piece
+of equipment, next section), and the limits the owner sets per species. Tables `water_measurements` (a
+TimescaleDB hypertable) and `water_limits`; the points are `water_sampling_points`.
 
 **The parameters** are a fixed list in code (`farm/water/parameters.py`), each with one unit and one
 basis in its label and its column's name, so a value can never be relabelled into another unit and
@@ -769,20 +775,23 @@ database check (the ranges are argued in the bug document), its precision and ho
 | `turbidity_ntu` | Turbidity (NTU) | 1 | 0 … 4000 | 7 days |
 
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
-parameter, empty when not measured, at least one value (a database check). The point is a unit or a
-system, exactly one (a database check). The time is on the clock of the point's site, never in the
+parameter, empty when not measured, at least one value (a database check). The point is one sampling point
+(`point`, a required foreign key; the table has no unit or system column: the unit, loop or equipment is the
+point's owner, so the two cannot disagree). The time is on the clock of the point's site, never in the
 future and at most 31 days back (`STOCK_BACKDATE_DAYS`, `farm/stock/dates.py`), the rule of every daily
 record; the source is a meter or kit, or a laboratory; the person is the one signed in. A form sent twice
 records once (its key, stored with the time). Samples are never edited: **Void** (with a reason, logged as
 "Voided" like a stock operation) and a new entry correct one; a voided sample stays in the history, struck
-through. The only writer is `farm/water/services.py`.
+through. The only writer is `farm/water/services.py`, which also refuses a point that is inactive, deleted or on a
+deleted owner.
 
 **The hypertable.** `water_measurements` is a TimescaleDB hypertable on `measured_at` (90-day chunks),
 made by one `RunSQL` in migration `farm/0014_water`, which depends on `core/0001_timescaledb` (the
 migration that runs `CREATE EXTENSION IF NOT EXISTS timescaledb`). Its primary key in the database is
 `(id, measured_at)`, as a hypertable's must be, while Django's model keeps `id`, so `makemigrations
 --check` stays clean (a test runs it). The rules that follow are in the model's docstring: every unique
-constraint includes `measured_at`, no foreign key points at the table, compression is left for later.
+constraint includes `measured_at`, no foreign key points at the table (the table's own key to its point is
+fine: it points the other way), compression is left for later.
 
 **Limits** (Setup › Reference data › Water limits) are rows per species, parameter (every measured one,
 and the un-ionised ammonia NH₃-N) and water type, or any water: critical below, warning below, warning
@@ -810,24 +819,41 @@ published values):
 - **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
   converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
   water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
-  sample; the salinity is the sample's, else the point's latest within 30 days before it, else 0 where
-  every unit is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
+  sample; the salinity is the sample's, else its point's latest within 30 days before it, else its owner's middle
+  point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none). From
   mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
   kept and flagged.
 
-**The page** has three tabs: **Latest** (every unit and every loop with a sample in the last 30 days, its
-status and the latest value of each parameter, coloured by status, its time and age on hover; a filter by
-site), **History** (the samples, newest first, 50 a page, filtered by site, unit or loop, dates, and
-"only warnings and criticals"; each value coloured as judged now, worked-out values in italics; Void
-while the sample is in the window) and **Calculator** (below). **Record sample** opens the dialog (date
-and time on the site's clock, source, the twelve values in four groups, notes; from a unit's history the
-unit is fixed and each field's help shows its species' limits). **Round** is the morning round: a site
-and optionally a production department or a system, the columns to fill (temperature and oxygen by
-default), one row per unit that is not inactive and per loop, one time and one source; empty rows are
-skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right (at
-most 200 rows).
+**The page** has three tabs: **Latest** (one row per point: the middle point of every unit (a unit without one
+has a row that says so) and every other point, of a loop, a unit or a piece of equipment, that has a sample in the
+last 30 days; its status and the latest value of each parameter, coloured by status, its time and age on hover;
+a filter by site), **History** (the samples, newest first, 50 a page, filtered by site, by unit, loop or
+equipment and then by one of its points, dates, and "only warnings and criticals"; each value says which point
+it was taken at, coloured as judged now, worked-out values in italics; Void while the sample is in the window)
+and **Calculator** (below). **Record sample** opens the dialog (a sampling point chosen from the points grouped
+by what owns them, "T-01 › Middle"; date and time on the site's clock, source, the twelve values in four
+groups, notes). Opened from a unit, a loop or a piece of equipment (`?unit=`, `?system=`, `?equipment=`) it
+offers that owner's active points with its middle point chosen, so a routine sample takes no more fields than
+before, and when the owner has only one point it is fixed; each field's help shows the limits of the fish
+there. `?point=<id>` names one point. **Round** is the morning round: a site and optionally a production
+department or a system, the columns to fill (temperature and oxygen by default), one row per unit's middle
+point (a unit that is not inactive) and per loop, and, when asked ("Also list": inlets, outlets, side outlets,
+bottom drains, depth points, the points of equipment), the other points of them, one time and one source; empty
+rows are skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right
+(at most 200 rows).
+
+**A unit's water** is the latest samples at its middle point, and only there (`read.middle_points`, the one
+definition; `read.unit_water`): what Production units, its drawer, the overview tile, the status dot and the
+calculator show of it. An inlet's or an outlet's sample is the stream's, not the fish's: it is judged for the same
+fish and shown, but it never moves the unit's status. Nothing of a unit's DO, pH or nitrogen is taken from its
+loop (the source passes on only what is the same all round a loop, and so does this). Its **temperature** is the
+one value that may come from a loop: the ration (`farm/feeding/temperature.py`) reads the unit's middle point, else
+the loop point of its system and of the systems that system is nested in, and the withdrawal's daily mean
+(`farm/health/withdrawal.py`) the unit's, else its own system's loop (a day without one counts as 0 °C and says so,
+the safe side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
+and a test fails when another module reads the samples.
 
 **The calculator** (the third tab, `/operations/water/calculator/`) is laid out as the source's: where the
 values come from, the input bar, the dosing simulator, the row of charts [NH₃ and H₂S against pH | the **Water
@@ -845,8 +871,9 @@ without values it shows its defaults.
   follows the form, so a link opens the same view. The server is the one source of every number and of the
   SVG: the browser code (`frontend/poll.ts`, the live form, usable by any GET form) has no chemistry. Without
   the script the form has a Calculate button and the page is drawn again.
-- **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in its latest value
-  of each measured field (temperature, pH, salinity, alkalinity, TAN, dissolved oxygen: `read.latest`, each
+- **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in the latest value
+  of each measured field of its water, its middle point's (temperature, pH, salinity, alkalinity, TAN,
+  dissolved oxygen: `read.owner_water`, each
   with its age, stale ones marked), its site's altitude, and the limits of the fish in it today
   (`read.limits_now`: the critical high of NH₃-N and of CO₂, the warning bounds of alkalinity as the safe
   zone's band, the four pH bounds; with several species the strictest), and sends the address with them. They
@@ -956,18 +983,20 @@ draw its samples as a track.
 
 **Who may do what**: the area Water chemistry (Production · Operations): Read the page (the calculator
 too), Create records a sample or a round, Delete voids one; the area Water limits (Production · Setup ·
-Reference data) with read, create, edit and delete.
+Reference data) with read, create, edit and delete; the area Sampling points (Production · Setup · Facility
+structure) with read, create, edit and delete.
 
-**Deleting**: a unit or a system keeps its samples, out of sight while it is deleted (the link is
-`DO_NOTHING`; the confirmation counts them) and back when it is restored, as its stock lines are; a
-species takes its water limits with it, each listed and logged. The admin shows voided samples but does
-not restore them.
+**Deleting**: a unit, a system or a piece of equipment keeps its sampling points, and they their samples, out of
+sight while it is deleted (the links are `DO_NOTHING`; the confirmation counts both) and back when it is restored,
+as its stock lines are: points are not deleted with their owner because restoring a record brings back only that
+record, so points deleted with it would never return. A species takes its water limits with it, each listed and
+logged. The admin shows voided samples but does not restore them.
 
 **The MVP alerts nobody.** A critical value is shown on the page, on the unit in Production units (its
 columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
 email, SMS or push, no acknowledgement and no escalation. Someone has to look.
 
-Differences from the source (details in the bug document, WQ-01 to WQ-39):
+Differences from the source (details in the bug document, WQ-01 to WQ-49):
 
 - One store of limits, per species and water type, read by the one evaluator; the source had seven that
   disagreed and never applied its species limits (WQ-01, WQ-02, WQ-24).
@@ -980,6 +1009,8 @@ Differences from the source (details in the bug document, WQ-01 to WQ-39):
   (WQ-14, WQ-15); a round skips empty rows (WQ-16) and is translated (WQ-17).
 - The oxygen saturation is worked out from mg/L (or the reverse) at the site's altitude (WQ-27); TGP is
   a parameter (WQ-25).
+- A sample is at a sampling point of a fixed kind, with the flow and the share of the outflow of the points on a
+  stream, never at "nowhere" and never with an owner spread over loose columns (WQ-47, WQ-48, WQ-49).
 - The calculator's chart keeps the H₂S limit in its safe zone, draws one when ammonia cannot reach its
   limit and none when a limit it needs is missing (WQ-30); sulfide goes in as S and H₂S comes out as H₂S
   (WQ-31); Ω only where its constants hold (WQ-32); the axes hold the point (WQ-33); a border off the chart
@@ -988,11 +1019,94 @@ Differences from the source (details in the bug document, WQ-01 to WQ-39):
   (WQ-40), shows an acid overdose as acid (WQ-41), judges each step as the water is (WQ-43), says the
   amounts are of the pure substance (WQ-44) and flags stripping below the air's CO₂ (WQ-45); its small
   charts keep the water on them (WQ-42).
-- Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
+- Not ported: sensors and their reading sources (their channels, the priority of a primary and a backup source,
+  the inheritance of a site's values), charts and daily means,
   notifications, H₂S as a sample parameter, hardness and the other lab
   parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
   per unit, and a site's intake water. The rations read the latest water temperature from here and keep
   no copy of their own (WQ-02; `farm/feeding/temperature.py`).
+
+### Setup › Facility structure › Sampling points (`/sampling-points/`)
+
+Table `water_sampling_points`: **where in the water a sample is taken**, so that every sample says exactly where and
+a mass balance can later be run on it (concentration × flow at every inlet and outlet of a unit, a loop or a piece
+of equipment). A point is owned by **exactly one** of a unit (a tank, pond or cage), a system (its loop) or a piece
+of equipment (a biofilter, a degasser, a drum filter, a pump): three nullable keys and a database check that one of
+them is set. It has a name, unique among its owner's live points whatever the case (a deleted point frees its name),
+and a **kind** from a fixed list in code (`farm/models/water_point.py`; not reference data, because the balance must
+know what each kind means). Each kind has one **flow role**, the one place that says it (`FLOW_ROLE`, `flow_role`):
+
+| Kind | Role | Meaning |
+|---|---|---|
+| Inlet | stream in | the water entering the owner |
+| Middle | within | the owner's own water: a unit's bulk, a loop's sump, the inside of a piece of equipment |
+| Depth point | within | water taken at a depth (`depth_m`: a cage or a pond) |
+| Outlet | stream out | the water leaving the owner |
+| Side outlet | stream out | a tank's sidewall outflow |
+| Bottom drain | stream out | a tank's bottom-drain outflow |
+
+What each owner can have (`kinds_for`; checked on the form): a tank all six, a pond an inlet, a middle, depth points
+and an outlet, a cage a middle and depth points, a loop an inlet (make-up water), a middle (the sump) and an outlet
+(discharge), a piece of equipment an inlet, a middle and outlets (a drum filter two: the clean water and the backwash).
+An owner has **one active middle point**, the one that stands for its water (a partial unique index per owner).
+
+The optional figures, each a column and a database check: `flow_m3_h`, the design or last-known flow of the stream
+(0 to 100,000 m³/h), on the points on a stream only (inlets and outlets); `flow_share_pct`, 0 to 100, the share of the
+owner's outflow that leaves at this outlet (a side outlet 90, a bottom drain 10), on outlets only; `depth_m`, 0 to
+200 m, on a depth point only, which must have one (and the form refuses one deeper than its unit). A kind's form
+hides what it does not use, and what it did use before is emptied when the kind changes (as a unit's kind-dependent
+fields are). Nothing here is measured.
+
+**The rule no check can hold.** An owner's active outlet shares add up to **at most 100 %**, which spans rows: the
+form refuses a share that would take them past 100 (`SamplingPoint.clean`, run by the form and by a restore) and
+the list says so when the shares an owner states do not add up to 100 % (less is allowed: a stream not yet described).
+Two people saving two outlets in the same second can pass 100 together, since nothing locks the owner there; the
+list then reports it ("more than 100 %") until someone corrects it. An owner whose outlets state no share is not
+reported: nothing is claimed about it.
+
+**Status.** A point is active or inactive. A point that has samples (voided ones too) cannot be deleted, with a
+message that says so: they stay in the history, so it is made inactive instead, which keeps them and takes no new
+sample (the sample dialog does not offer it, the service refuses it). A point without samples is deleted like any
+record (soft, logged, its name freed). Inactive points are left out of the water rounds, the dialog and the sources
+of a unit's water; the history shows them.
+
+**The default points** (`farm/water/points.py`: the one template and the one service, `create_defaults`): a tank an
+inlet, a middle, a side outlet and a bottom drain; a pond an inlet, a middle and an outlet; a cage its middle; a
+system "Loop" (kind middle); a piece of equipment none. The Tanks and Systems tabs call it when a record is created,
+in the same transaction, so each point has its row in the activity log. The names are stored as written (English, like
+any name a person types; the kinds are translated). A unit or system made by another route (a script, a test) has no
+points until the function is called: Production units says so on its drawer and Latest has a row for it. Migration
+`farm/0019_water_points` made them for the units and systems that existed, and put every existing sample on the
+middle point of its unit or loop ("Middle" or "Loop").
+
+**The tab**: a table (owner, point, kind with its flow role, flow, share of the outflow, depth, status), search by
+point or owner, filters by site, owner type and kind, and `?unit=`, `?system=` or `?equipment=` to show one
+owner's points (the units, systems and equipment lists link to them); the form asks for the owner first (chosen once,
+the form is drawn again with that kind of owner's choice and kinds), then the name, kind, status, description and, for
+the kinds that have them, the depth, the flow and the share. A point's History link opens its samples on Water
+chemistry. The activity log names it "sampling point" and records every field. The admin lists every point, deleted
+ones too, and restores one (the restore checks it like a new one: its name and its single active middle point).
+
+**Deleting an owner** keeps its points out of sight with it (see Water chemistry, Deleting); the delete
+confirmation of a point is the one of any record and says why a point with samples cannot go.
+
+**Preparing for a mass balance.** What is stored: for every owner, its points with their kind and so their flow
+role, a design or last-known flow on each inlet and outlet, and the share of the outflow of each outlet, all of them
+tied to the samples taken there (concentration at the point). What a future balance still needs, none of it built here:
+- **Stream links**: which outlet feeds which inlet (a tank's side outlet to the drum filter's inlet, the filter's
+  clean outlet to the biofilter's inlet, a loop's make-up inlet to the supply), a table of point to point rows, so
+  that the streams between pieces of equipment form a graph the balance walks. A point on a unit and a point on
+  equipment need no change; the link is a new table pointing at two points.
+- **Measured flows**: a flow over time at a point (from a flow meter or a pump's curve), read where the design flow
+  is now; `flow_m3_h` stays the figure to use when none was measured.
+- **Sensor channels assigned to points**: a sensor's channel belongs to a point (the source binds a channel to a
+  point, a position and a depth: WQ-47), so that a continuous series stands beside the manual samples at the
+  same place and the balance can use either.
+- **What a point's water is at a moment**: the latest sample at or before it (`read.Series`, `read.samples_of`), the
+  mass flow being concentration × flow; the loss of a piece of equipment its inlet less its outlets, per parameter.
+
+**Who may do what**: the area Sampling points (Production · Setup · Facility structure): read, create, edit and delete,
+each for the tab; recording a sample at a point is the Water chemistry area's.
 
 ### Operations › Storage (`/operations/storage/`) and Facility › Storage locations (`/storage-locations/`)
 
@@ -1785,8 +1899,8 @@ only one who manages roles and users; everyone else gets exactly what their role
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
-  Systems, Equipment, Tanks, ponds & cages, Species, Feeds, Water limits and Suppliers (read, create,
-  edit, delete), Production units (read the page, create = record an operation, delete = void one),
+  Systems, Equipment, Tanks, ponds & cages, Sampling points, Species, Feeds, Water limits and Suppliers (read,
+  create, edit, delete), Production units (read the page, create = record an operation, delete = void one),
   Feeding records (read the Meal board and Records, create = record a feeding or a meal, delete = void one),
   Feeding protocols and Protocol assignments (read, create, edit, delete), Water chemistry (read the page
   and a unit's water, create = record a sample or a round, delete = void one), Storage (read the page,
@@ -2072,12 +2186,13 @@ real mail.
 | `/operations/feeding/protocols/` | Operations › Feeding › Protocols; `<id>/table/` saves a protocol's feeding table, `<id>/duplicate/` copies it |
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
-| `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
+| `/sampling-points/` | Setup › Facility structure › Sampling points: the points of the units, loops and equipment; `?unit=<id>`, `?system=<id>` or `?equipment=<id>` one owner's, filters by site, owner and kind |
+| `/operations/water/` | Operations › Water chemistry: the latest water per point; `?view=history` the samples, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner's history (every point of it), `?point=<id>` one point's |
 | `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
 | `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
 | `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |
-| `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
-| `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
+| `/operations/water/record/` | Record a water sample (`?unit=<id>`, `?system=<id>` or `?equipment=<id>` offers that owner's points with its middle one chosen; `?point=<id>` names one) |
+| `/operations/water/round/` | A water round: the middle points of the units and loops of a site, production department or system (`include=` adds other kinds of point, or the equipment's) |
 | `/operations/water/void/<id>/` | Voids a water sample |
 | `/operations/harvests/` | Operations › Harvest › Harvested: every harvest, the book against the scale, totals per batch and site |
 | `/operations/harvest-plan/` | Operations › Harvest › Harvest plan: planned harvests and transports; `?unit=<id>` one unit's |
@@ -2142,7 +2257,8 @@ real mail.
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
-| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `farm/models/water_point.py`, `farm/water/points.py`, `farm/forms/water_point.py`, `farm/resources/water_point.py` | Sampling points: the model with its kinds, flow roles and rules, the default points and the share report, the form and the tab |
+| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |

@@ -79,7 +79,7 @@ class WaterMeasurement(AuditedModel):
 
     The unit, the system or the equipment a sample belongs to is not stored on it: it is the point's owner
     (`point.owner`), so the two can never disagree (the source kept a column for each of a tank, a pond, an
-    equipment and a system, WQ-40). A sample has exactly one point, a required foreign key.
+    equipment and a system, WQ-48). A sample has exactly one point, a required foreign key.
 
     The table is a TimescaleDB hypertable on `measured_at` (migration 0014), so its primary key in the
     database is (id, measured_at) while the model keeps `id`. That has rules:

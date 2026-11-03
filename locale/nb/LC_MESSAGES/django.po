@@ -57,10 +57,6 @@ msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: ikke veid siden den kom inn, så ingen fôrfaktor ennå"
 
 #, python-format
-msgid "%(code)s · %(name)s (loop)"
-msgstr "%(code)s · %(name)s (kretsløp)"
-
-#, python-format
 msgid "%(cost)s each"
 msgstr "%(cost)s per stk."
 
@@ -300,16 +296,16 @@ msgstr[0] "%(count)s produksjonsavdeling tilhører ingen lokalitet."
 msgstr[1] "%(count)s produksjonsavdelinger tilhører ingen lokalitet."
 
 #, python-format
+msgid "%(count)s sampling point"
+msgid_plural "%(count)s sampling points"
+msgstr[0] "%(count)s prøvepunkt"
+msgstr[1] "%(count)s prøvepunkter"
+
+#, python-format
 msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s system tilhører ingen produksjonsavdeling."
 msgstr[1] "%(count)s systemer tilhører ingen produksjonsavdeling."
-
-#, python-format
-msgid "%(count)s unit or loop"
-msgid_plural "%(count)s units and loops"
-msgstr[0] "%(count)s enhet eller kretsløp"
-msgstr[1] "%(count)s enheter og kretsløp"
 
 #, python-format
 msgid "%(count)s warning"
@@ -601,12 +597,20 @@ msgid "%(operation)s recorded: %(quantity)s %(unit)s of %(item)s from %(location
 msgstr "%(operation)s registrert: %(quantity)s %(unit)s %(item)s fra %(location)s."
 
 #, python-format
+msgid "%(owner)s cannot have a point of this kind: %(kinds)s."
+msgstr "%(owner)s kan ikke ha et punkt av denne typen: %(kinds)s."
+
+#, python-format
 msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d decimals."
 msgstr "%(parameter)s: grenser fra %(low)s til %(high)s, høyst %(decimals)d desimaler."
 
 #, python-format
 msgid "%(point)s is deleted."
 msgstr "%(point)s er slettet."
+
+#, python-format
+msgid "%(point)s is inactive: it takes no new samples."
+msgstr "%(point)s er inaktivt: det tar ikke nye prøver."
 
 #, python-format
 msgid "%(protocol)s, assigned to %(unit)s, is for %(protocol_species)s; these fish are %(species)s."
@@ -691,6 +695,10 @@ msgstr ""
 #, python-format
 msgid "%(unit)s holds no fish on %(date)s."
 msgstr "%(unit)s har ingen fisk %(date)s."
+
+#, python-format
+msgid "%(unit)s is %(depth)s m deep: the point cannot be deeper."
+msgstr "%(unit)s er %(depth)s m dyp: punktet kan ikke ligge dypere."
 
 #, python-format
 msgid "%(unit)s is deleted and would hold fish again: restore it first."
@@ -873,6 +881,12 @@ msgstr "En telling setter hva en lagerplass har ved dagens slutt; avviket fra re
 msgid "A delivery puts stock into a location."
 msgstr "Et varemottak legger beholdning inn på en lagerplass."
 
+msgid "A depth point has a depth, and no other point does."
+msgstr "Et dybdepunkt har en dybde, og ingen andre punkter har det."
+
+msgid "A depth point has a depth."
+msgstr "Et dybdepunkt har en dybde."
+
 msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
 msgstr "En diagnose er mistenkt eller bekreftet; uten diagnose er det ingenting å bekrefte."
 
@@ -909,6 +923,9 @@ msgstr ""
 
 msgid "A feeding table has at least one band."
 msgstr "En fôringstabell har minst én vektklasse."
+
+msgid "A flow can be stated for an inlet or an outlet only."
+msgstr "En vannføring kan bare oppgis for et innløp eller et utløp."
 
 msgid "A harvest goes to a slaughter facility, a transport to a unit."
 msgstr "En høsting går til et slakteri, en transport til en enhet."
@@ -1003,6 +1020,23 @@ msgstr ""
 msgid "A planned %(plan)s is recorded as a %(operation)s."
 msgstr "En planlagt %(plan)s registreres som %(operation)s."
 
+msgid ""
+"A point is a named place on a unit, a loop or a piece of equipment where water is sampled: its "
+"inlet, its middle, its outlets. A new unit or system gets its points when it is created."
+msgstr ""
+"Et punkt er et navngitt sted på en enhet, et kretsløp eller et utstyr der det tas vannprøver: "
+"innløpet, midten, utløpene. En ny enhet eller et nytt system får punktene sine når det opprettes."
+
+msgid "A point is on one unit, one system or one piece of equipment."
+msgstr "Et punkt ligger på én enhet, ett system eller ett utstyr."
+
+msgid ""
+"A point that has samples is not deleted, so its history stays: make it inactive instead. An "
+"inactive point takes no new samples."
+msgstr ""
+"Et punkt som har prøver slettes ikke, slik at historikken blir stående: gjør det inaktivt i "
+"stedet. Et inaktivt punkt tar ikke nye prøver."
+
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "En pris trenger sin valuta, og en valuta trenger en pris."
 
@@ -1036,11 +1070,19 @@ msgstr ""
 msgid "A round takes at most %(rows)d rows."
 msgstr "En runde tar høyst %(rows)d rader."
 
-msgid "A sample is taken in a unit or in a system’s loop, one of the two."
-msgstr "En prøve tas i en enhet eller i et systems kretsløp, ett av de to."
-
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "En prøve er antall fisk veid og samlet vekt."
+
+msgid ""
+"A sample says where it was taken: at one of these points. A unit’s water, as the rations, the "
+"withdrawal and the Production units page read it, is its middle point. The flow and the share of "
+"the outflow are the design or last-known figures a mass balance will start from; nothing here is "
+"measured."
+msgstr ""
+"En prøve sier hvor den ble tatt: på ett av disse punktene. Vannet i en enhet, slik fôringen, "
+"tilbakeholdelsen og siden Produksjonsenheter leser det, er midtpunktet. Vannføringen og andelen "
+"av utstrømmen er dimensjonerende eller sist kjente tall en massebalanse skal starte fra; "
+"ingenting her er målt."
 
 msgid "A sea cage site needs latitude and longitude."
 msgstr "En merdlokalitet må ha breddegrad og lengdegrad."
@@ -1050,6 +1092,9 @@ msgstr "Et lakselusmiddel oppgir virkestoffet slik luserapporten har det; andre 
 
 msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
 msgstr "Bare lakselusmiddel: virkestoffet slik Mattilsynets ukentlige luserapport kaller det."
+
+msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
+msgstr "En andel av utstrømmen, fra 0 til 100 %, kan bare oppgis for et utløp."
 
 msgid "A silo only: the feeder it fills, on the same site."
 msgstr "Bare for silo: fôrautomaten den fyller, på samme lokalitet."
@@ -1243,6 +1288,9 @@ msgstr "Legg til %(name)s"
 msgid "Add a lot"
 msgstr "Legg til parti"
 
+msgid "Add a point to it"
+msgstr "Legg til et punkt"
+
 msgid "Add band"
 msgstr "Legg til vektklasse"
 
@@ -1388,14 +1436,14 @@ msgstr "Alt fôr"
 msgid "All items"
 msgstr "Alle varer"
 
+msgid "All its points"
+msgstr "Alle punktene"
+
 msgid "All kinds"
 msgstr "Alle typer"
 
 msgid "All locations"
 msgstr "Alle lagerplasser"
-
-msgid "All loops"
-msgstr "Alle kretsløp"
 
 msgid "All manufacturers"
 msgstr "Alle produsenter"
@@ -1408,6 +1456,9 @@ msgstr "Alle metoder"
 
 msgid "All operations"
 msgstr "Alle operasjoner"
+
+msgid "All owners"
+msgstr "Alle eiere"
 
 msgid "All parameters"
 msgstr "Alle parametere"
@@ -1461,8 +1512,8 @@ msgstr "Alle typer"
 msgid "All units"
 msgstr "Alle enheter"
 
-msgid "All units and systems"
-msgstr "Alle enheter og systemer"
+msgid "All units, systems and equipment"
+msgstr "Alle enheter, systemer og utstyr"
 
 msgid "All water environments"
 msgstr "Alle vannmiljøer"
@@ -1475,6 +1526,9 @@ msgstr "Alle år"
 
 msgid "Allows"
 msgstr "Tillater"
+
+msgid "Also list"
+msgstr "List også"
 
 msgid "Altitude (m)"
 msgstr "Høyde over havet (m)"
@@ -1942,6 +1996,9 @@ msgstr "Luftblåser"
 msgid "Book"
 msgstr "Beholdning"
 
+msgid "Bottom drain"
+msgstr "Bunnavløp"
+
 msgid "Bought fish have a supplier; fish of the own hatchery or caught in the wild have none."
 msgstr "Kjøpt fisk har en leverandør; fisk fra eget klekkeri eller villfanget fisk har ingen."
 
@@ -2135,8 +2192,11 @@ msgstr "Velg en helsehendelse på lokaliteten til disse enhetene."
 msgid "Choose a person"
 msgstr "Velg en person"
 
-msgid "Choose a site to list its units and loops."
-msgstr "Velg en lokalitet for å liste enhetene og kretsløpene."
+msgid "Choose a sampling point."
+msgstr "Velg et prøvepunkt."
+
+msgid "Choose a site to list its sampling points."
+msgstr "Velg en lokalitet for å vise prøvepunktene."
 
 msgid "Choose a supplier of equipment and spare parts."
 msgstr "Velg en leverandør av utstyr og reservedeler."
@@ -2164,9 +2224,6 @@ msgstr "Velg en leverandør av brønnbåt og transport."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Velg en type på fanen Generelt; spesifikasjonene vises her."
-
-msgid "Choose a unit or a system."
-msgstr "Velg en enhet eller et system."
 
 msgid "Choose a unit, a batch, or both."
 msgstr "Velg en enhet, en fiskegruppe eller begge."
@@ -2491,6 +2548,9 @@ msgstr "Trevler (%)"
 msgid "Crude protein (%)"
 msgstr "Råprotein (%)"
 
+msgid "Cubic metres per hour."
+msgstr "Kubikkmeter per time."
+
 msgid "Cull"
 msgstr "Utsortering"
 
@@ -2653,8 +2713,14 @@ msgstr "Tetthetsstyring"
 msgid "Density · capacity"
 msgstr "Tetthet · kapasitet"
 
+msgid "Depth"
+msgstr "Dybde"
+
 msgid "Depth (m)"
 msgstr "Dybde (m)"
+
+msgid "Depth point"
+msgstr "Dybdepunkt"
 
 msgid "Description"
 msgstr "Beskrivelse"
@@ -2793,23 +2859,25 @@ msgstr "EU-listeført, kategori C, D og E"
 msgid "EU-listed, category A"
 msgstr "EU-listeført, kategori A"
 
+msgid "Each point can be listed once."
+msgstr "Hvert punkt kan bare listes én gang."
+
 msgid "Each temperature is a column once."
 msgstr "Hver temperatur kan bare være én kolonne."
 
 msgid "Each unit can be listed once."
 msgstr "Hver enhet kan bare stå én gang."
 
-msgid "Each unit or system can be listed once."
-msgstr "Hver enhet eller hvert system kan stå én gang."
-
 msgid ""
 "Each value is judged on read against the water limits as they are now, for the fish in the unit "
 "that day; a sample of a loop for every unit of the loop. A unit without fish shows its values "
-"with no limit. Nobody is alerted: critical values are shown here, not sent."
+"with no limit. Each value says which sampling point it was taken at; the water of a unit is that "
+"of its middle point. Nobody is alerted: critical values are shown here, not sent."
 msgstr ""
 "Hver verdi vurderes ved lesing mot vanngrensene slik de er nå, for fisken i enheten den dagen; en"
 " prøve fra et kretsløp for hver enhet i kretsløpet. En enhet uten fisk viser verdiene uten "
-"grense. Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
+"grense. Hver verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets. "
+"Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
 
 msgid "Earthen"
 msgstr "Jord"
@@ -3315,6 +3383,9 @@ msgstr "Flytende"
 msgid "Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep tanks."
 msgstr "Flytende fôr blir liggende i overflaten; synkende og saktesynkende fôr er for merder og dype kar."
 
+msgid "Flow (m³/h)"
+msgstr "Vannføring (m³/t)"
+
 msgid "Flow rate"
 msgstr "Vannmengde"
 
@@ -3344,6 +3415,15 @@ msgstr ""
 
 msgid "For the calcite and aragonite saturation lines, in water of 5 to 44 ‰."
 msgstr "For metningslinjene for kalsitt og aragonitt, i vann på 5 til 44 ‰."
+
+msgid ""
+"For the mass balance later: the design or last-known flow of the stream here, and for an outlet "
+"the share of the owner’s outflow that leaves here (a side outlet 90, a bottom drain 10). Nothing "
+"here is measured."
+msgstr ""
+"Til massebalansen senere: den dimensjonerende eller sist kjente vannføringen i strømmen her, og "
+"for et utløp andelen av eierens utstrømning som forlater her (sideutløp 90, bunnavløp 10). "
+"Ingenting her er målt."
 
 msgid "For the oxygen saturation."
 msgstr "For oksygenmetningen."
@@ -3405,6 +3485,9 @@ msgstr "Fra %(start)s til %(end)s."
 
 msgid "From (g)"
 msgstr "Fra (g)"
+
+msgid "From 0 to 100. The shares of the owner’s outlets add up to at most 100."
+msgstr "Fra 0 til 100. Andelene til eierens utløp summerer seg til høyst 100."
 
 msgid "From a saturometer (total dissolved gas)."
 msgstr "Fra et saturometer (total løst gass)."
@@ -3506,6 +3589,9 @@ msgstr "Gi kanalen et navn."
 
 msgid "Give the citation of the source, its web address, or both."
 msgstr "Oppgi kildehenvisningen, nettadressen eller begge."
+
+msgid "Give the point a name."
+msgstr "Gi punktet et navn."
 
 msgid "Give the sample, or the average weight."
 msgstr "Oppgi prøven eller snittvekten."
@@ -3665,6 +3751,10 @@ msgid "History"
 msgstr "Historikk"
 
 #, python-format
+msgid "History of %(owner)s"
+msgstr "Historikk for %(owner)s"
+
+#, python-format
 msgid "History of %(point)s"
 msgstr "Historikk for %(point)s"
 
@@ -3785,6 +3875,9 @@ msgstr "Arv fra selskapet"
 msgid "Injection"
 msgstr "Injeksjon"
 
+msgid "Inlet"
+msgstr "Innløp"
+
 msgid ""
 "Inside the warning bounds a value is ok; outside them, a warning; outside the critical bounds, "
 "critical. A value on a bound is in the inner band. Leave a bound empty where there is none."
@@ -3813,6 +3906,12 @@ msgid ""
 msgstr ""
 "Den forsvinner fra alle lister, men blir ikke slettet: posten blir i databasen, aktivitetsloggen "
 "beholder historikken, og den kan gjenopprettes fra administrasjonspanelet."
+
+#, python-format
+msgid "It has %(count)d water sample in the history: make it inactive instead."
+msgid_plural "It has %(count)d water samples in the history: make it inactive instead."
+msgstr[0] "Det har %(count)d vannprøve i historikken: gjør det inaktivt i stedet."
+msgstr[1] "Det har %(count)d vannprøver i historikken: gjør det inaktivt i stedet."
 
 msgid ""
 "It has feed calibrations, which only a feeder has: remove them on the Feed calibration tab before"
@@ -4100,9 +4199,6 @@ msgstr "Lengdegrad"
 msgid "Longitude is required for a sea cage."
 msgstr "Lengdegrad er påkrevd for en merd."
 
-msgid "Loop"
-msgstr "Kretsløp"
-
 msgid "Losses"
 msgstr "Tap"
 
@@ -4332,6 +4428,9 @@ msgstr "Måler eller testsett"
 msgid "Method"
 msgstr "Metode"
 
+msgid "Middle"
+msgstr "Midten"
+
 msgid "Minimum transmittance"
 msgstr "Minste transmittans"
 
@@ -4363,8 +4462,8 @@ msgid "Mollusc"
 msgstr "Bløtdyr"
 
 #, python-format
-msgid "More than %(rows)d units and systems: choose a production department or a system."
-msgstr "Flere enn %(rows)d enheter og systemer: velg en produksjonsavdeling eller et system."
+msgid "More than %(rows)d points: choose a production department or a system."
+msgstr "Mer enn %(rows)d punkter: velg en produksjonsavdeling eller et system."
 
 msgid "Mortality"
 msgstr "Dødelighet"
@@ -4669,6 +4768,9 @@ msgstr "Ingen meldinger ennå"
 msgid "No messages yet: write the first one."
 msgstr "Ingen meldinger ennå: skriv den første."
 
+msgid "No middle point"
+msgstr "Ingen midtpunkt"
+
 msgid "No operation matches these filters."
 msgstr "Ingen operasjon passer med disse filtrene."
 
@@ -4702,6 +4804,9 @@ msgstr "Ingen rader samsvarer. <a href=\"%(url)s\">Fjern søket og filtrene</a>.
 
 msgid "No samples match these filters."
 msgstr "Ingen prøver samsvarer med disse filtrene."
+
+msgid "No sampling points here."
+msgstr "Ingen prøvepunkter her."
 
 msgid "No sea-lice count recorded yet"
 msgstr "Ingen lusetelling registrert ennå"
@@ -4774,9 +4879,6 @@ msgstr "Ingen enhet med fisk passer disse filtrene."
 
 msgid "No units match these filters."
 msgstr "Ingen enheter passer til disse filtrene."
-
-msgid "No units or loops here."
-msgstr "Ingen enheter eller kretsløp her."
 
 msgid "No units yet"
 msgstr "Ingen enheter ennå"
@@ -5233,6 +5335,9 @@ msgstr "Utfall"
 msgid "Outdoor store"
 msgstr "Utelager"
 
+msgid "Outlet"
+msgstr "Utløp"
+
 msgid "Oval"
 msgstr "Oval"
 
@@ -5443,8 +5548,14 @@ msgstr "Plattformadministrator"
 msgid "Plumbing"
 msgstr "Rør og ventiler"
 
+msgid "Point"
+msgstr "Punkt"
+
 msgid "Pointed at by"
 msgstr "Det pekes på av"
+
+msgid "Points of equipment"
+msgstr "Punkter på utstyr"
 
 msgid "Polyester (PET)"
 msgstr "Polyester (PET)"
@@ -5973,6 +6084,16 @@ msgstr "Prøver kan dateres høyst %(days)d dager tilbake."
 msgid "Samples older than %(days)d days cannot be voided."
 msgstr "Prøver eldre enn %(days)d dager kan ikke annulleres."
 
+msgid "Sampling point"
+msgstr "Prøvepunkt"
+
+msgid "Sampling points"
+msgstr "Prøvepunkter"
+
+#, python-format
+msgid "Sampling points of %(name)s"
+msgstr "Prøvepunkter på %(name)s"
+
 msgid "Sampling weigh-in"
 msgstr "Prøveveiing"
 
@@ -6094,6 +6215,9 @@ msgstr "Søk på navn, virkestoff, MT-nummer eller produsent"
 msgid "Search by name, username or email"
 msgstr "Søk etter navn, brukernavn eller e-post"
 
+msgid "Search by point or owner"
+msgstr "Søk etter punkt eller eier"
+
 msgid "Search by protocol, unit or batch"
 msgstr "Søk etter protokoll, enhet eller fiskegruppe"
 
@@ -6169,6 +6293,9 @@ msgstr "Velg en metode"
 msgid "Select a parameter"
 msgstr "Velg en parameter"
 
+msgid "Select a piece of equipment"
+msgstr "Velg et utstyr"
+
 msgid "Select a production department"
 msgstr "Velg en produksjonsavdeling"
 
@@ -6186,6 +6313,9 @@ msgstr "Velg en art"
 
 msgid "Select a supplier"
 msgstr "Velg en leverandør"
+
+msgid "Select a system"
+msgstr "Velg et system"
 
 msgid "Select a type"
 msgstr "Velg en type"
@@ -6251,11 +6381,21 @@ msgstr "Alvorlighet"
 msgid "Shape"
 msgstr "Form"
 
+#, python-format
+msgid "Share of the outflow (%%)"
+msgstr "Andel av utstrømmen (%%)"
+
+msgid "Share of the outflow (%)"
+msgstr "Andel av utstrømmen (%)"
+
 msgid "Short axis (m)"
 msgstr "Kort akse (m)"
 
 msgid "Show"
 msgstr "Vis"
+
+msgid "Show all"
+msgstr "Vis alle"
 
 #, python-format
 msgid "Show all %(plural)s"
@@ -6273,8 +6413,8 @@ msgstr "Vis tomme"
 msgid "Show on the chart"
 msgstr "Vis i diagrammet"
 
-msgid "Show the units"
-msgstr "Vis enhetene"
+msgid "Show the points"
+msgstr "Vis punktene"
 
 msgid "Show them"
 msgstr "Vis dem"
@@ -6290,6 +6430,9 @@ msgstr "Syk"
 
 msgid "Side (m)"
 msgstr "Side (m)"
+
+msgid "Side outlet"
+msgstr "Sideutløp"
 
 msgid "Sign in"
 msgstr "Logg inn"
@@ -6552,6 +6695,15 @@ msgstr "Lagerplasser"
 msgid "Strain"
 msgstr "Stamme"
 
+msgid "Stream"
+msgstr "Strøm"
+
+msgid "Stream in"
+msgstr "Strøm inn"
+
+msgid "Stream out"
+msgstr "Strøm ut"
+
 msgid "Street address"
 msgstr "Gateadresse"
 
@@ -6624,6 +6776,9 @@ msgstr "Bytt panel"
 
 msgid "System"
 msgstr "System"
+
+msgid "System (its loop)"
+msgstr "System (kretsløpet)"
 
 msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
 msgstr "Systemisk infeksjon med Flavobacterium psychrophilum (regnbueørret)"
@@ -6865,6 +7020,9 @@ msgstr "Dagene før i går beholder protokollen sin: siste dag er tidligst i gå
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
 
+msgid "The depth of the water taken, from the surface."
+msgstr "Dybden vannet tas fra, regnet fra overflaten."
+
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Den fordøyelige energien kan ikke være mer enn bruttoenergien."
 
@@ -7097,6 +7255,18 @@ msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
 msgid "The official code of %(name)s is %(code)s."
 msgstr "Artskoden for %(name)s er %(code)s."
 
+#, python-format
+msgid "The outlets of %(owner)s take %(total)s %% of its outflow, not 100 %%."
+msgstr "Utløpene på %(owner)s tar %(total)s %% av utstrømmen, ikke 100 %%."
+
+#, python-format
+msgid "The outlets of %(owner)s take %(total)s %% of its outflow: more than 100 %%. Correct the shares."
+msgstr "Utløpene på %(owner)s tar %(total)s %% av utstrømmen: mer enn 100 %%. Rett opp andelene."
+
+#, python-format
+msgid "The outlets of %(owner)s would take %(total)s %% of its outflow: at most 100."
+msgstr "Utløpene på %(owner)s ville tatt %(total)s %% av utstrømmen: høyst 100."
+
 msgid "The pages in the journal or book, e.g. 45–67."
 msgstr "Sidene i tidsskriftet eller boka, f.eks. 45–67."
 
@@ -7127,6 +7297,10 @@ msgstr ""
 
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
+
+#, python-format
+msgid "The points of %(owner)s."
+msgstr "Punktene på %(owner)s."
 
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
@@ -7457,6 +7631,12 @@ msgstr "Denne lenken fungerer ikke lenger"
 msgid "This operation is already voided."
 msgstr "Denne operasjonen er allerede annullert."
 
+msgid "This owner already has a point with this name."
+msgstr "Denne eieren har allerede et punkt med dette navnet."
+
+msgid "This owner already has an active middle point: it stands for its water."
+msgstr "Denne eieren har allerede et aktivt midtpunkt: det står for vannet dens."
+
 msgid "This plan is cancelled."
 msgstr "Denne planen er avlyst."
 
@@ -7505,6 +7685,9 @@ msgstr "Denne typen er ikke i den valgte kategorien."
 
 msgid "This unit already has a count on this day: void it first to correct it."
 msgstr "Denne enheten har allerede en telling denne dagen: annuller den først for å rette den."
+
+msgid "This unit has no active middle sampling point, so no water is shown for it."
+msgstr "Denne enheten har ikke noe aktivt midtre prøvepunkt, så det vises ikke vann for den."
 
 #, python-format
 msgid "This unit holds %(count)d batch: the operation applies to the one chosen."
@@ -7685,8 +7868,8 @@ msgstr "Enhet"
 msgid "Unit cost"
 msgstr "Enhetskostnad"
 
-msgid "Unit or system"
-msgstr "Enhet eller system"
+msgid "Unit, system or equipment"
+msgstr "Enhet, system eller utstyr"
 
 msgid "Units"
 msgstr "Enheter"
@@ -7869,8 +8052,12 @@ msgstr "Vanndybde (m)"
 msgid "Water environment"
 msgstr "Vannmiljø"
 
-msgid "Water is sampled in the tanks, ponds and cages of Setup, and in the loops of its systems."
-msgstr "Vann tas prøver av i karene, dammene og merdene i Oppsett, og i kretsløpene til systemene."
+msgid ""
+"Water is sampled at the sampling points of the tanks, ponds and cages of Setup, of the loops of "
+"its systems and of its equipment."
+msgstr ""
+"Vann prøvetas ved prøvepunktene til karene, dammene og merdene i Oppsett, til kretsløpene til "
+"systemene og til utstyret."
 
 msgid "Water limits"
 msgstr "Vanngrenser"
@@ -7989,6 +8176,13 @@ msgid "What the person can open and change. Without a role they see only the ove
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
 
 msgid ""
+"What the point sees: the stream entering its owner, the water inside it or the stream leaving it."
+" A unit’s water, as the rations and the withdrawal read it, is its middle point."
+msgstr ""
+"Det punktet ser: strømmen inn til eieren, vannet inne i den eller strømmen ut. Vannet i en enhet,"
+" slik fôringen og tilbakeholdelsen leser det, er midtpunktet."
+
+msgid ""
 "What the stock book took out for these fish: their batch’s average in the unit, the last fish the"
 " rest of the book"
 msgstr ""
@@ -8020,6 +8214,13 @@ msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 msgid "Where"
 msgstr "Hvor"
 
+msgid ""
+"Where a water sample is taken: a named place on one unit, one system’s loop or one piece of "
+"equipment, of a kind that says whether it sees the stream in, the water within or the stream out."
+msgstr ""
+"Hvor en vannprøve tas: et navngitt sted på én enhet, ett systems kretsløp eller ett utstyr, av en"
+" type som sier om det ser strømmen inn, vannet inni eller strømmen ut."
+
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Hvor i dokumentet, f.eks. 4 eller 12–13."
 
@@ -8043,6 +8244,13 @@ msgstr "Hvor verdien kommer fra, f.eks. «veterinæren, november 2026»."
 
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Hvor verdiene kommer fra, f.eks. «veterinæren, november 2026» eller en veileder."
+
+msgid ""
+"Where the water is taken, e.g. “Side outlet”, “After the filter” or “3 m”. Each owner’s points "
+"have different names."
+msgstr ""
+"Hvor vannet tas, f.eks. “Sideutløp”, “Etter filteret” eller “3 m”. Hver eiers punkter har ulike "
+"navn."
 
 #, python-format
 msgid "Where “%(query)s” is in the text"
@@ -8135,6 +8343,9 @@ msgstr "Slutt på tilbakeholdelse anslått"
 
 msgid "Withdrawal until"
 msgstr "Tilbakeholdelse til"
+
+msgid "Within"
+msgstr "Innenfor"
 
 msgid "Without a diagnosis there is nothing to confirm."
 msgstr "Uten diagnose er det ingenting å bekrefte."
@@ -8230,6 +8441,10 @@ msgstr "assistent"
 
 msgid "assistants"
 msgstr "assistenter"
+
+#, python-format
+msgid "at %(point)s"
+msgstr "ved %(point)s"
 
 #, python-format
 msgid "average %(weight)s"
@@ -8487,6 +8702,9 @@ msgstr "f.eks. Salmonidae"
 
 msgid "e.g. Salmosan vet."
 msgstr "f.eks. Salmosan vet."
+
+msgid "e.g. Side outlet"
+msgstr "f.eks. Sideutløp"
 
 msgid "e.g. Site manager"
 msgstr "f.eks. Lokalitetsleder"
@@ -8860,6 +9078,12 @@ msgstr "rolle"
 
 msgid "roles"
 msgstr "roller"
+
+msgid "sampling point"
+msgstr "prøvepunkt"
+
+msgid "sampling points"
+msgstr "prøvepunkter"
 
 msgid "sea-lice count"
 msgstr "lusetelling"

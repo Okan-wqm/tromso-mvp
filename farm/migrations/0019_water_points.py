@@ -15,6 +15,7 @@ and the point table is dropped, with the points the people added. A sample on a 
 name, any point of a piece of equipment or a point of a unit or system other than its middle one (an inlet, an
 outlet, a depth), cannot go back: the migration then stops with the count, before changing anything, and those
 samples have to be voided or moved to a middle point first."""
+import django.core.validators
 import django.db.models.deletion
 import django.db.models.functions.text
 import uuid
@@ -83,9 +84,9 @@ class Migration(migrations.Migration):
                 ('deleted_at', models.DateTimeField(blank=True, null=True, verbose_name='Deleted at')),
                 ('name', models.CharField(max_length=100, verbose_name='Name')),
                 ('kind', models.CharField(choices=[('inlet', 'Inlet'), ('middle', 'Middle'), ('depth', 'Depth point'), ('outlet', 'Outlet'), ('side_outlet', 'Side outlet'), ('bottom_drain', 'Bottom drain')], max_length=20, verbose_name='Kind')),
-                ('depth_m', models.DecimalField(blank=True, decimal_places=1, max_digits=4, null=True, verbose_name='Depth (m)')),
-                ('flow_m3_h', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True, verbose_name='Flow (m³/h)')),
-                ('flow_share_pct', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True, verbose_name='Share of the outflow (%)')),
+                ('depth_m', models.DecimalField(blank=True, decimal_places=1, max_digits=4, null=True, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(200)], verbose_name='Depth (m)')),
+                ('flow_m3_h', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100000)], verbose_name='Flow (m³/h)')),
+                ('flow_share_pct', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)], verbose_name='Share of the outflow (%)')),
                 ('is_active', models.BooleanField(default=True, verbose_name='Active')),
                 ('description', models.CharField(blank=True, max_length=300, verbose_name='Description')),
             ],

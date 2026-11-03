@@ -39,15 +39,17 @@ from django.utils.translation import gettext as _, ngettext
 
 from farm.feeding import read as feeding_read
 from farm.handling.withdrawal import WithdrawalBlock
-from farm.models import Batch, FeedingRecord, Tank, Treatment, WaterMeasurement
+from farm.models import Batch, FeedingRecord, Tank, Treatment
 from farm.models.feed import FeedType
 from farm.models.health import TreatmentMethod
 from farm.models.water_point import local_time
 from farm.stock.dates import end_of, local_today, shown_date, start_of
 from farm.stock.read import Presence
-from farm.water.read import POINT_RELATED, water_sources
+from farm.water import parameters
+from farm.water.read import Series, water_sources
 
 DAY = timedelta(days=1)
+TEMPERATURE = parameters.TEMPERATURE
 ZERO = Decimal(0)
 PROJECTION_DAYS = 7     # the days with a temperature a projection takes the mean of
 LOOKBACK_DAYS = 30      # how far back from today they are looked for (the water's window)
@@ -91,20 +93,17 @@ class Temperatures:
     def __init__(self, units, first, last):
         self.first, self.last = first, last
         self.sources = water_sources(units, nested=False)
-        points = {source.point.pk for sources in self.sources.values() for source in sources}
+        points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
         values = defaultdict(list)
         if points and first <= last:
             # From the first moment of `first` to the last of `last` on the clocks of the units' sites.
-            start = min(start_of(first, unit) for unit in units)
-            stop = max(end_of(last, unit) for unit in units)
-            samples = (WaterMeasurement.objects
-                       .filter(point__in=points, temperature_c__isnull=False, measured_at__gte=start,
-                               measured_at__lte=stop)
-                       .select_related(*POINT_RELATED))
-            for sample in samples:
-                day = local_time(sample.measured_at, sample.point).date()
-                if first <= day <= last:
-                    values[(sample.point_id, day)].append(sample.temperature_c)
+            series = Series(points.values(), TEMPERATURE, min(start_of(first, unit) for unit in units),
+                            max(end_of(last, unit) for unit in units))
+            for point_id, point in points.items():
+                for moment, value in zip(series.moments[point_id], series.values[point_id]):
+                    day = local_time(moment, point).date()
+                    if first <= day <= last:
+                        values[(point_id, day)].append(value)
         self.means = {key: sum(found, ZERO) / len(found) for key, found in values.items()}
 
     def of(self, unit_id, day):

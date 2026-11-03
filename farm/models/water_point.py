@@ -21,6 +21,7 @@ point per owner (the point that stands for "the owner's water": farm/water/read.
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
@@ -225,10 +226,12 @@ class SamplingPoint(AuditedModel):
                                   related_name='sampling_points', verbose_name=_('Equipment'))
     name = models.CharField(_('Name'), max_length=100)
     kind = models.CharField(_('Kind'), max_length=20, choices=PointKind.choices)
-    depth_m = models.DecimalField(_('Depth (m)'), max_digits=4, decimal_places=1, null=True, blank=True)
-    flow_m3_h = models.DecimalField(_('Flow (m³/h)'), max_digits=8, decimal_places=2, null=True, blank=True)
+    depth_m = models.DecimalField(_('Depth (m)'), max_digits=4, decimal_places=1, null=True, blank=True,
+                                  validators=[MinValueValidator(0), MaxValueValidator(MAX_DEPTH_M)])
+    flow_m3_h = models.DecimalField(_('Flow (m³/h)'), max_digits=8, decimal_places=2, null=True, blank=True,
+                                    validators=[MinValueValidator(0), MaxValueValidator(MAX_FLOW_M3_H)])
     flow_share_pct = models.DecimalField(_('Share of the outflow (%)'), max_digits=5, decimal_places=2, null=True,
-                                         blank=True)
+                                         blank=True, validators=[MinValueValidator(0), MaxValueValidator(100)])
     is_active = models.BooleanField(_('Active'), default=True)
     description = models.CharField(_('Description'), max_length=300, blank=True)
 
@@ -306,13 +309,13 @@ class SamplingPoint(AuditedModel):
                 if deepest is not None and self.depth_m > deepest:
                     errors['depth_m'] = ValidationError(
                         _('%(unit)s is %(depth)s m deep: the point cannot be deeper.'),
-                        params={'unit': owner.code, 'depth': deepest.normalize()})
+                        params={'unit': owner.code, 'depth': format(deepest.normalize(), 'f')})
         if self.flow_share_pct is not None and self.is_active and owner is not None:
             total = self.other_shares() + self.flow_share_pct
             if total > 100:
                 errors['flow_share_pct'] = ValidationError(
                     _('The outlets of %(owner)s would take %(total)s %% of its outflow: at most 100.'),
-                    params={'owner': owner.code, 'total': total.normalize()})
+                    params={'owner': owner.code, 'total': format(total.normalize(), 'f')})
         if errors:
             raise ValidationError(errors)
 

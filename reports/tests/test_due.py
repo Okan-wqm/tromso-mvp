@@ -5,19 +5,21 @@ import hashlib
 import io
 from datetime import date, datetime, timezone as utc
 from decimal import Decimal
+from unittest import mock
 
 from django.core.management import call_command
 from django.test import override_settings
 from django.urls import reverse
 
-from farm.models import HandlingPlanItem, HealthEvent, Site
+from farm.feeding import services as feeding
+from farm.models import Feed, HandlingPlanItem, HealthEvent, Site
 from farm.stock import services as stock
 from farm.tests.helpers import role
 
 from .. import compute, due, integrity, services
 from ..kinds import ReportKind
 from ..models import Report, ReportSnapshot
-from ..periods import MONTH, WEEK, Period
+from ..periods import MONTH, WEEK, YEAR, Period
 from .helpers import OCTOBER, ReportTestCase, day
 
 TODAY = date(2026, 11, 3)             # a Tuesday
@@ -119,6 +121,17 @@ class NotSetUpTests(DueTestCase):
         self.assertEqual(self.rows(ReportKind.SMOLT), [])                          # nothing is guessed for it
         self.assertTrue(self.rows(ReportKind.SEA_LICE))                            # a sea site's lice follow its fish
 
+    def test_a_species_without_an_official_code_is_named_where_it_is_missed(self):
+        self.salmon.official_code = ''
+        self.salmon.save()
+        self.stock(self.m1, 1000, '100', day(10, 5))
+        found = due.due(TODAY)
+        self.assertEqual([(item.site, item.species, item.reports_from, item.production_form)
+                          for item in found.not_set_up], [(self.sea, [str(self.salmon)], False, False)])
+        self.assertEqual(self.rows(ReportKind.SEA_LICE), [])               # not known to be a salmonid
+        page = self.client.get(reverse('reports:report_list'))
+        self.assertContains(page, f'no official code for {self.salmon}')
+
     def test_a_site_without_fish_is_not_listed(self):
         self.hatchery.reports_from = None
         self.hatchery.save()
@@ -128,16 +141,29 @@ class NotSetUpTests(DueTestCase):
 class NoticesTests(DueTestCase):
     def test_a_planned_slaughter_of_this_week_or_later_is_owed_per_facility_and_week(self):
         batch = self.stock(self.m1, 1000, '4000', day(10, 1))
-        HandlingPlanItem.objects.create(kind='harvest', date=date(2026, 11, 5), unit=self.m1, batch=batch,
-                                        planned_kg=Decimal(2500), facility=self.facility, created_by=self.user)
-        HandlingPlanItem.objects.create(kind='harvest', date=date(2026, 10, 20), unit=self.m1, batch=batch,
-                                        planned_kg=Decimal(100), facility=self.facility, created_by=self.user)
+        agreed = datetime(2026, 10, 20, 9, 0, tzinfo=utc.utc)             # long before this week's Thursday
+        for on, kilos in ((date(2026, 11, 5), 2500), (date(2026, 10, 20), 100)):
+            item = HandlingPlanItem.objects.create(kind='harvest', date=on, unit=self.m1, batch=batch,
+                                                   planned_kg=Decimal(kilos), facility=self.facility,
+                                                   created_by=self.user)
+            HandlingPlanItem.objects.filter(pk=item.pk).update(created_at=agreed)
         rows = self.rows(ReportKind.SLAUGHTER_PLANNED)
         self.assertEqual([(row.place, row.period.key, row.overdue) for row in rows],
                          [(self.facility, '2026-W45', True)])                 # Thursday 29 October has passed
         self.assertEqual(rows[0].deadline, date(2026, 10, 29))
         self.assertEqual(rows[0].start_query, {'kind': 'slaughter_planned', 'facility': self.facility.pk,
                                                 'period': '2026-W45'})
+
+    def test_a_slaughter_agreed_after_its_deadline_is_owed_from_the_day_it_was_agreed(self):
+        batch = self.stock(self.m1, 1000, '4000', day(10, 1))
+        item = HandlingPlanItem.objects.create(kind='harvest', date=date(2026, 11, 5), unit=self.m1, batch=batch,
+                                               planned_kg=Decimal(2500), facility=self.facility, created_by=self.user)
+        HandlingPlanItem.objects.filter(pk=item.pk).update(created_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc))
+        row, = self.rows(ReportKind.SLAUGHTER_PLANNED)
+        self.assertEqual((row.deadline, row.overdue), (date(2026, 11, 2), True))      # Thursday 29 October had passed
+        HandlingPlanItem.objects.filter(pk=item.pk).update(created_at=datetime(2026, 11, 3, 9, 0, tzinfo=utc.utc))
+        row, = self.rows(ReportKind.SLAUGHTER_PLANNED)
+        self.assertEqual((row.deadline, row.overdue), (date(2026, 11, 3), False))     # agreed today: due today
 
     def test_an_escape_and_a_listed_disease_are_owed_until_a_notice_is_filed(self):
         batch = self.stock(self.m1, 3000, '200', day(9, 25))
@@ -155,6 +181,28 @@ class NoticesTests(DueTestCase):
         filed(ReportKind.ESCAPE, self.sea, escape=escape, occurred_on=day(10, 25), **self.filed_by())
         filed(ReportKind.DISEASE, self.sea, health_event=event, occurred_on=day(10, 20), **self.filed_by())
         self.assertEqual((self.rows(ReportKind.ESCAPE), self.rows(ReportKind.DISEASE)), ([], []))
+
+    def test_a_notice_of_a_day_before_the_sites_reports_from_date_or_of_a_site_with_none_is_not_owed(self):
+        batch = self.stock(self.m1, 3000, '200', day(9, 25))
+        stock.record_escape(self.user, unit=self.m1, batch=batch, day=day(9, 28), count=30, cause='A net tore')
+        HealthEvent.objects.create(site=self.sea, date=day(9, 28), kind='vet_visit', diagnosis='isa',
+                                   confirmation='suspected')
+        self.assertEqual((self.rows(ReportKind.ESCAPE), self.rows(ReportKind.DISEASE)), ([], []))   # from 1 October
+        stock.record_escape(self.user, unit=self.m1, batch=batch, day=day(10, 25), count=30, cause='A net tore')
+        HealthEvent.objects.create(site=self.sea, date=day(10, 20), kind='vet_visit', diagnosis='isa',
+                                   confirmation='suspected')
+        self.assertEqual((len(self.rows(ReportKind.ESCAPE)), len(self.rows(ReportKind.DISEASE))), (1, 1))
+        self.sea.reports_from = None
+        self.sea.save()
+        self.assertEqual((self.rows(ReportKind.ESCAPE), self.rows(ReportKind.DISEASE)), ([], []))
+
+    def test_a_disease_told_through_a_telephone_filing_is_not_owed(self):
+        event = HealthEvent.objects.create(site=self.sea, date=day(10, 20), kind='vet_visit', diagnosis='isa',
+                                           confirmation='suspected')
+        self.assertEqual([row.event for row in self.rows(ReportKind.DISEASE)], [event])
+        filed(ReportKind.DISEASE, self.sea, health_event=event, occurred_on=day(10, 20), channel='telephone',
+              reference='', **self.filed_by())
+        self.assertEqual(self.rows(ReportKind.DISEASE), [])
 
     def test_a_draft_notice_stays_owed(self):
         event = HealthEvent.objects.create(site=self.sea, date=day(10, 20), kind='vet_visit', diagnosis='isa',
@@ -182,6 +230,45 @@ class ChangedSinceFilingTests(DueTestCase):
             stock.void(self.user, self.out, 'Wrong unit')
             self.assertEqual(due.no_longer_match(TODAY), [Report.objects.get(pk=report.pk)])
 
+    def test_the_list_reads_the_rows_a_report_reads_and_never_folds_a_ledger(self):
+        self.october()
+        report = self.report(Report.Kind.SMOLT, OCTOBER)
+        with override_settings(STOCK_BACKDATE_DAYS=3650):
+            services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
+                            channel='altinn', reference='AR-2', version=report.version)
+            stock.void(self.user, self.out, 'Wrong unit')
+            with mock.patch.object(compute, 'compute', side_effect=AssertionError('the list folded a ledger')):
+                self.assertEqual(len(due.no_longer_match(TODAY)), 1)
+
+    def test_a_report_a_filed_correction_replaced_is_not_listed(self):
+        self.october()
+        report = self.report(Report.Kind.SMOLT, OCTOBER)
+        with override_settings(STOCK_BACKDATE_DAYS=3650):
+            services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
+                            channel='altinn', reference='AR-2', version=report.version)
+            stock.void(self.user, self.out, 'Wrong unit')
+            self.assertEqual([found.pk for found in due.no_longer_match(TODAY)], [report.pk])
+            correction = services.start_correction(self.user, Report.objects.get(pk=report.pk))
+            self.assertEqual([found.pk for found in due.no_longer_match(TODAY)], [report.pk])   # a draft replaces nothing
+            services.submit(self.user, correction, submitted_at=datetime(2026, 11, 3, 9, 0, tzinfo=utc.utc),
+                            channel='altinn', reference='AR-3', version=correction.version)
+            self.assertEqual(due.no_longer_match(TODAY), [])
+
+    def test_a_notice_is_read_again_whatever_its_day(self):
+        batch = self.stock(self.m1, 3000, '200', day(9, 25))
+        operation = stock.record_escape(self.user, unit=self.m1, batch=batch, day=day(10, 25), count=300,
+                                        cause='A net tore')
+        notice = self.report(Report.Kind.ESCAPE, site=self.sea, escape=operation.escape_record,
+                             occurred_on=day(10, 25), what_happened='A net tore',
+                             found_at=datetime(2026, 10, 25, 8, 0, tzinfo=utc.utc))
+        with override_settings(STOCK_BACKDATE_DAYS=3650):
+            services.submit(self.user, notice, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
+                            channel='altinn', reference='AR-4', version=notice.version)
+            self.assertEqual(due.no_longer_match(TODAY), [])
+            stock.void(self.user, operation, 'Entered twice')
+        with override_settings(STOCK_BACKDATE_DAYS=31):
+            self.assertEqual([found.pk for found in due.no_longer_match(date(2027, 3, 1))], [notice.pk])
+
     def test_a_report_of_a_period_older_than_the_backdating_window_is_not_read_again(self):
         self.october()
         report = self.report(Report.Kind.SMOLT, OCTOBER)
@@ -191,6 +278,56 @@ class ChangedSinceFilingTests(DueTestCase):
             stock.void(self.user, self.out, 'Wrong unit')
         with override_settings(STOCK_BACKDATE_DAYS=31):
             self.assertEqual(due.no_longer_match(date(2027, 3, 1)), [])
+
+
+class ScopeTests(DueTestCase):
+    def test_every_kinds_scope_is_the_one_its_computation_reads(self):
+        self.october()
+        operation = stock.record_escape(self.user, unit=self.m1, batch=self.first, day=day(10, 26), count=10,
+                                        cause='A net tore')
+        event = HealthEvent.objects.create(site=self.sea, date=day(10, 20), kind='vet_visit', diagnosis='isa',
+                                           confirmation='suspected')
+        HandlingPlanItem.objects.create(kind='harvest', date=day(11, 18), unit=self.m1, batch=self.first,
+                                        planned_kg=Decimal(2500), facility=self.facility, created_by=self.user)
+        reports = [
+            self.report(Report.Kind.SMOLT, OCTOBER),
+            self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea),
+            self.report(Report.Kind.CLEANER_FISH, OCTOBER, site=self.sea),
+            self.report(Report.Kind.SEA_LICE, Period(WEEK, date(2026, 10, 19)), site=self.sea),
+            self.report(Report.Kind.SLAUGHTER_PLANNED, Period(WEEK, date(2026, 11, 16))),
+            self.report(Report.Kind.LAND_STOCK, Period(YEAR, date(2026, 1, 1)), site=self.hatchery),
+            self.report(Report.Kind.SITE_IN_USE, site=self.sea, occurred_on=day(10, 15)),
+            self.report(Report.Kind.SITE_EMPTIED, site=self.hatchery, occurred_on=day(10, 25)),
+            self.report(Report.Kind.ESCAPE, site=self.sea, escape=operation.escape_record, occurred_on=day(10, 26)),
+            self.report(Report.Kind.DISEASE, site=self.sea, health_event=event, occurred_on=day(10, 20)),
+            self.report(Report.Kind.WELFARE, site=self.sea, health_event=event, occurred_on=day(10, 20)),
+        ]
+        self.assertEqual({report.kind for report in reports}, set(compute.COMPUTE))
+        self.assertEqual(set(compute.SCOPE), set(compute.COMPUTE))
+        for report in reports:
+            with self.subTest(kind=report.kind):
+                self.assertEqual(compute.fingerprint(compute.scope(report)),
+                                 compute.fingerprint(compute.compute(report).scope))
+
+    def test_a_feeding_up_to_the_months_end_changes_the_biomass_fingerprint_and_a_later_one_does_not(self):
+        self.october()
+        report = self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea)
+        before = compute.fingerprint(compute.scope(report))
+        feed = Feed.objects.create(name='Pellet', code='P1', feed_type='grower')
+        feeding.record_feeding(self.user, unit=self.m1, day=day(11, 2), feed=feed, amount_kg=Decimal('0.3'),
+                               target='production')
+        self.assertEqual(compute.fingerprint(compute.scope(report)), before)
+        feeding.record_feeding(self.user, unit=self.m1, day=day(10, 28), feed=feed, amount_kg=Decimal('0.3'),
+                               target='production')
+        self.assertNotEqual(compute.fingerprint(compute.scope(report)), before)
+
+
+    def test_giving_a_batch_its_year_class_changes_the_fingerprint_of_the_reports_that_read_it(self):
+        self.october()
+        report = self.report(Report.Kind.SMOLT, OCTOBER)
+        before = compute.fingerprint(compute.scope(report))
+        stock.correct_batch(self.user, batch=self.first, year_class=2025, provenance='')
+        self.assertNotEqual(compute.fingerprint(compute.scope(report)), before)
 
 
 class TheListPageTests(DueTestCase):

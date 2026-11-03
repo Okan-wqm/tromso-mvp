@@ -114,9 +114,8 @@ def api_json(report, content):
     if report.kind == ReportKind.SLAUGHTER_PLANNED:
         year, week = report.period.iso
         localities = sorted(content['localities'].values(), key=lambda locality: locality['site'])
-        organisations = {locality['organisation_number'] for locality in localities}
         return {**base, 'uke': week, 'år': year,
-                'organisasjonsnummer': organisations.pop() if len(organisations) == 1 else None,
+                'organisasjonsnummer': content['facility']['organisation_number'],
                 'godkjenningsnummer': content['facility']['approval_number'],
                 'planlagteLokaliteter': [{
                     'organisasjonsnummer': locality['organisation_number'],

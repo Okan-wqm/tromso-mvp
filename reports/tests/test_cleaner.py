@@ -66,6 +66,7 @@ class CleanerFishTestCase(ReportTestCase):
 
 class FiguresTests(CleanerFishTestCase):
     def test_the_month_per_unit_species_and_origin_from_the_ledger(self):
+        self.feed_cleaner(self.dry, '1', day(10, 3))
         result = self.result()
         self.assertEqual((result.problems, result.warnings), ([], []))
         units = {unit['number']: unit for unit in result.content['units'].values()}
@@ -89,6 +90,13 @@ class FiguresTests(CleanerFishTestCase):
         self.assertEqual(self.result(self.hatchery).problems,
                          ['No unit of the site held cleaner fish in the month: the report has nothing to file.'])
 
+    def test_no_feed_recorded_for_the_cleaner_fish_is_said(self):
+        warning = ('No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg '
+                   '(Operations › Feeding: choose the cleaner fish as the target).')
+        self.assertIn(warning, self.result().warnings)
+        self.feed_cleaner(self.dry, '6.6', day(10, 3))
+        self.assertNotIn(warning, self.result().warnings)
+
     def test_the_feed_is_the_cleaner_fishs_in_whole_kilos_dry_and_wet(self):
         self.feed_cleaner(self.dry, '6.6', day(10, 3))
         self.feed_cleaner(self.dry, '1', day(10, 4))
@@ -101,6 +109,7 @@ class FiguresTests(CleanerFishTestCase):
                                          {'feed': 'Lumpfish pellets', 'form': 'dry', 'kg': '7.6'}])
 
     def test_a_recount_up_is_a_warning_a_cull_of_another_reason_and_a_harvest_are_problems(self):
+        self.feed_cleaner(self.dry, '1', day(10, 3))
         self.adjust(self.m1, self.farmed, day(10, 21), 10, 'count_correction')      # nets to a loss of 30
         result = self.result()
         farmed = next(unit for unit in result.content['units'].values() if unit['number'] == '1')['species'][0]
@@ -108,9 +117,11 @@ class FiguresTests(CleanerFishTestCase):
         self.adjust(self.m1, self.wild, day(10, 22), 15, 'count_correction')
         result = self.result()
         self.assertEqual(result.problems, [])
-        self.assertEqual(result.warnings, ['Unit 1: 15 more fish of LUM are in the count than the month’s lines '
-                                           'explain (a recount up). The report has no field for it: file it as '
-                                           'Mattilsynet accepts, or correct the count.'])
+        self.assertEqual(result.warnings, [
+            'Unit 1: count adjustments of both signs in the month net to -30 fish of LUM, though 40 fish left by an '
+            'escape or a recount down: check that the figure filed is the one meant.',
+            'Unit 1: 15 more fish of LUM are in the count than the month’s lines explain (a recount up). The report '
+            'has no field for it: file it as Mattilsynet accepts, or correct the count.'])
         operation = StockOperation.objects.create(kind='cull', date=day(10, 23), created_by=self.user)
         StockMovement.objects.create(operation=operation, batch=self.farmed, unit=self.m1, kind='cull',
                                      count_delta=-5, reason='grading')

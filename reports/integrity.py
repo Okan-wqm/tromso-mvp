@@ -46,7 +46,8 @@ def problems():
                 'unit__production_department').first()
             if line is None or line.unit.production_department.site_id != report.site_id:
                 found.append(f'{name} is of a site other than its escape’s.')
+    report_ids = {report.pk for report in reports}
     for report_id in snapshots:
-        if report_id not in {report.pk for report in reports}:
+        if report_id not in report_ids:
             found.append(f'A frozen content belongs to no report ({report_id}).')
     return found

@@ -9,11 +9,12 @@ from unittest import mock
 from django.urls import reverse
 
 from farm.health import services as health
-from farm.models import Batch, HandlingPlanItem, Medicine, SamplingPoint, Site
+from farm.models import Batch, HandlingPlanItem, Medicine, SamplingPoint, Site, Treatment
 from farm.models.site import zone_of
-from farm.water import services as water_services
-from farm.tests.helpers import rows_data
+from farm.stock import services as stock_services
+from farm.tests.helpers import make_species, rows_data
 from farm.tests.test_stock import make_unit
+from farm.water import services as water_services
 
 from .. import compute, exports
 from ..compute import lice
@@ -24,6 +25,8 @@ from .schema import errors
 
 WEEK_44 = Period(WEEK, date(2026, 10, 26))         # Monday 26 October to Sunday 1 November
 WARM, COLD = (Decimal('8.5'), []), (Decimal('3.0'), [])
+AMOUNT_WARNING = ('The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the '
+                  'amount of the active substance: confirm which it wants.')
 
 
 def temperature(value):
@@ -34,6 +37,7 @@ class LiceTestCase(ReportTestCase):
     def setUp(self):
         super().setUp()
         self.sea.lice_area = Site.LiceArea.SOUTH
+        self.sea.timezone = 'Europe/Oslo'             # the authority's clock: no warning of another one
         self.sea.save()
         self.m2 = make_unit('M-02', self.bay, regulatory_unit_id='2')
         self.stock(self.m1, 5000, '200', day(10, 1))
@@ -132,6 +136,15 @@ class CountsTests(LiceTestCase):
         water_services.void(self.user, second, 'Wrong unit')
         self.assertNotEqual(compute.fingerprint(compute.compute(self.draft).scope), before)
 
+    def test_a_site_on_another_clock_than_oslos_is_told_that_the_authoritys_week_is_oslos(self):
+        self.count(self.m1, 10, 27)
+        self.count(self.m2, 10, 27)
+        self.assertFalse(any('another clock' in warning for warning in self.result().warnings))
+        self.sea.timezone = 'Asia/Tokyo'
+        self.sea.save()
+        self.assertIn('Fjord (FJ) keeps another clock than Oslo’s: the week and its samples are the site’s, the '
+                      'authority’s week is Oslo’s.', self.result().warnings)
+
     def test_a_week_without_salmonids_has_nothing_to_file(self):
         report = self.report(Report.Kind.SEA_LICE, Period(WEEK, date(2026, 9, 7)), site=self.sea)
         self.assertEqual(self.result(report=report).problems[0],
@@ -167,6 +180,16 @@ class CoverageTests(LiceTestCase):
                                            'without counts.'])
         self.assertIsNone(exports.api_json(report, result.content)['lusetelling'])
 
+    def test_a_count_after_a_longer_gap_than_the_regulation_allows_is_warned(self):
+        self.count(self.m1, 10, 15)
+        self.count(self.m1, 10, 27)                   # 12 days later: the count was late
+        self.count(self.m2, 10, 20)
+        self.count(self.m2, 10, 27)                   # 7 days later: in time
+        warnings = self.result().warnings
+        self.assertIn('M-01 was counted on 2026-10-27 and before that on 2026-10-15: the regulation asks for a count '
+                      'at least every 7 days (§ 6).', warnings)
+        self.assertFalse(any('M-02 was counted' in warning for warning in warnings))
+
     def test_broodstock_below_4_degrees_is_not_counted(self):
         self.sea.production_form = Site.ProductionForm.STAMFISK
         self.sea.save()
@@ -185,6 +208,57 @@ class CoverageTests(LiceTestCase):
         self.assertEqual(result.problems, [])
         self.assertEqual(result.warnings, ['Every fish of the site is planned for slaughter within 14 days of the day '
                                            'the count fell due: no count is needed (lakselusforskriften § 6).'])
+
+
+    def harvest(self, unit, on, count, kilos):
+        batch = Batch.objects.get(movements__unit=unit, species=self.salmon)
+        return stock_services.record_harvest(self.user, unit=unit, batch=batch, day=on, count=count,
+                                             measured_weight_kg=Decimal(kilos), facility=self.facility)
+
+    def test_harvests_already_recorded_keep_the_exception_and_one_voided_does_not(self):
+        self.count(self.m1, 10, 22)             # due again on 29 October
+        self.count(self.m2, 10, 22)
+        items = []
+        for unit, fish in ((self.m1, 5000), (self.m2, 3000)):
+            batch = Batch.objects.get(movements__unit=unit)
+            items.append(HandlingPlanItem.objects.create(kind='harvest', date=day(10, 31), unit=unit, batch=batch,
+                                                         planned_count=fish, facility=self.facility,
+                                                         created_by=self.user))
+        self.assertEqual(self.result().problems, [])                                  # planned
+        operations = []
+        for item in items:                                                            # recorded on 31 October
+            operation = self.harvest(item.unit, day(10, 31), item.planned_count, 800)
+            HandlingPlanItem.objects.filter(pk=item.pk).update(operation=operation)
+            operations.append(operation)
+        self.assertEqual(self.result().problems, [])                                  # the exception does not lapse
+        stock_services.void(self.user, operations[0], 'Wrong cage')
+        HandlingPlanItem.objects.filter(pk=items[0].pk).update(operation=None)
+        self.assertEqual(self.result().problems, [])                                  # planned again
+        HandlingPlanItem.objects.filter(pk=items[0].pk).update(cancelled_reason='Weather')
+        self.assertEqual(len(self.result().problems), 2)           # not every fish is planned: both cages are due
+
+    def test_a_cage_emptied_before_its_count_fell_due_needs_none(self):
+        self.count(self.m1, 10, 27)
+        self.count(self.m2, 10, 22)             # M-02 is due on 29 October
+        self.assertEqual(len(self.result().problems), 1)
+        self.harvest(self.m2, day(10, 27), 3000, 600)
+        self.assertEqual(self.result().problems, [])
+
+    def test_cleaner_fish_in_a_cage_are_not_harvested_and_do_not_keep_the_exemption_away(self):
+        lump = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='Rognkjeks', freshwater=False,
+                            official_code='LUM', cleaner_fish_type='lumpfish')
+        stock_services.record_input(self.user, species=lump, input_stage='fry', origin='own_hatchery', day=day(10, 1),
+                                    lines=[(self.m1, 2000, Decimal(50))])
+        self.count(self.m1, 10, 22)
+        self.count(self.m2, 10, 22)
+        for unit, fish in ((self.m1, 5000), (self.m2, 3000)):           # every salmon of the site, no lumpfish
+            batch = Batch.objects.get(movements__unit=unit, species=self.salmon)
+            HandlingPlanItem.objects.create(kind='harvest', date=day(11, 5), unit=unit, batch=batch, planned_count=fish,
+                                            facility=self.facility, created_by=self.user)
+        result = self.result()
+        self.assertEqual(result.problems, [])
+        self.assertIn('Every fish of the site is planned for slaughter within 14 days of the day the count fell due: '
+                      'no count is needed (lakselusforskriften § 6).', result.warnings)
 
 
 class TreatmentTests(LiceTestCase):
@@ -242,6 +316,26 @@ class TreatmentTests(LiceTestCase):
         rows = {row['type']: row for row in self.treatments()}
         self.assertEqual((rows['FERSKVANNSBEHANDLING']['description'], rows['ANNEN_BEHANDLING']['description']),
                          (None, 'Brushing'))
+
+    def test_the_amount_of_a_medicinal_treatment_is_flagged_as_the_products_and_a_plain_one_is_not(self):
+        self.treat([self.m1], day(10, 30), day(10, 30), method='thermal')
+        self.assertNotIn(AMOUNT_WARNING, self.result().warnings)
+        self.treat([self.m1, self.m2], day(10, 26), day(10, 26))
+        self.assertEqual(self.result().warnings.count(AMOUNT_WARNING), 1)
+
+    def test_other_is_described_and_a_treatment_of_no_cage_with_salmonids_is_a_problem(self):
+        # The treatment dialog refuses an undescribed "other"; a record written another way is told here.
+        other = self.treat([self.m1, self.m2], day(10, 26), day(10, 26), method='other', notes='Brushing')
+        Treatment.objects.filter(pk=other.pk).update(notes='')
+        self.assertIn('Describe the treatment of 2026-10-26 (Operations › Health): “other” is described in the report.',
+                      self.result().problems)
+        cod = make_species('COD', 'Cod', 'Gadus morhua', local_name='Torsk', official_code='COD')
+        cages = make_unit('M-03', self.bay, regulatory_unit_id='3')
+        stock_services.record_input(self.user, species=cod, input_stage='smolt', origin='own_hatchery', day=day(10, 1),
+                                    lines=[(cages, 100, Decimal(50))])
+        self.treat([cages], day(10, 27), day(10, 27), method='thermal')
+        self.assertIn('The treatment of 2026-10-27 was of no unit that held salmonids: the report cannot say how many '
+                      'cages were treated.', self.result().problems)
 
     def test_injections_baths_and_feed_are_the_reports_types(self):
         for method, kind in (('in_feed', 'FORBEHANDLING'), ('dip', 'BADEBEHANDLING'), ('injection', 'ANNEN_BEHANDLING')):
@@ -344,6 +438,57 @@ class AnswersAndExportTests(LiceTestCase):
         self.client.post(url, {**rows_data('treatments', [{'id': str(answer.pk), 'DELETE': True}], initial=1),
                                'version': version})
         self.assertFalse(TreatmentAnswer.objects.exists())
+
+    def test_a_resistance_suspicion_is_stored_read_edited_and_removed_through_its_page(self):
+        url = reverse('reports:report_resistance', args=[self.report_.pk])
+
+        def version():
+            return str(Report.objects.get(pk=self.report_.pk).version)
+        row = {'substance': 'AZAMETHIPHOS', 'other_substance': '', 'cause': 'BIOESSAY', 'other_cause': ''}
+        self.client.post(url, {**rows_data('resistance', [row]), 'version': version()})
+        suspicion = ResistanceSuspicion.objects.get()
+        self.assertEqual((suspicion.report, suspicion.substance, suspicion.cause, suspicion.other_substance,
+                          suspicion.created_by), (self.report_, 'AZAMETHIPHOS', 'BIOESSAY', '', self.user))
+        form = self.client.get(reverse('reports:report_edit', args=[self.report_.pk]))
+        self.assertContains(form, 'data-panel="resistance"')
+        self.assertContains(form, 'value="AZAMETHIPHOS" selected')
+        # Another substance or reason is named where it is entered, and only then.
+        other = {'id': str(suspicion.pk), **row, 'substance': 'ANNEN_RESISTENS'}
+        response = self.client.post(url, {**rows_data('resistance', [other], initial=1), 'version': version()})
+        self.assertEqual((response.status_code, ResistanceSuspicion.objects.get().substance), (200, 'AZAMETHIPHOS'))
+        other.update(other_substance='Ivermectin', cause='ANNEN_ÅRSAK', other_cause='Seen in the area')
+        self.client.post(url, {**rows_data('resistance', [other], initial=1), 'version': version()})
+        suspicion = ResistanceSuspicion.objects.get()           # a list is saved as a whole: its rows are new rows
+        self.assertEqual((suspicion.substance, suspicion.other_substance, suspicion.cause, suspicion.other_cause),
+                         ('ANNEN_RESISTENS', 'Ivermectin', 'ANNEN_ÅRSAK', 'Seen in the area'))
+        self.client.post(url, {**rows_data('resistance', [{'id': str(suspicion.pk), 'DELETE': True}], initial=1),
+                               'version': version()})
+        self.assertFalse(ResistanceSuspicion.objects.exists())
+
+    def test_a_sensitivity_test_is_read_edited_and_removed_through_its_page(self):
+        url = reverse('reports:report_sensitivity', args=[self.report_.pk])
+
+        def version():
+            return str(Report.objects.get(pk=self.report_.pk).version)
+        row = {'tested_on': '2026-10-20', 'laboratory': 'FiskLab', 'substance': 'DELTAMETHRIN', 'other_substance': '',
+               'result': 'FØLSOM'}
+        self.client.post(url, {**rows_data('sensitivity', [row]), 'version': version()})
+        test = SensitivityTest.objects.get()
+        self.assertEqual((test.tested_on, test.laboratory, test.substance, test.result, test.created_by),
+                         (day(10, 20), 'FiskLab', 'DELTAMETHRIN', 'FØLSOM', self.user))
+        self.assertContains(self.client.get(reverse('reports:report_edit', args=[self.report_.pk])),
+                            'data-panel="sensitivity"')
+        row.update(id=str(test.pk), result='RESISTENS', laboratory='Another lab')
+        self.client.post(url, {**rows_data('sensitivity', [row], initial=1), 'version': version()})
+        test = SensitivityTest.objects.get()                     # a list is saved as a whole: its rows are new rows
+        self.assertEqual((test.result, test.laboratory), ('RESISTENS', 'Another lab'))
+        # A test cannot be of a day to come.
+        row.update(id=str(test.pk), tested_on='2099-01-01')
+        response = self.client.post(url, {**rows_data('sensitivity', [row], initial=1), 'version': version()})
+        self.assertEqual((response.status_code, SensitivityTest.objects.get().tested_on), (200, day(10, 20)))
+        self.client.post(url, {**rows_data('sensitivity', [{'id': str(test.pk), 'DELETE': True}], initial=1),
+                               'version': version()})
+        self.assertFalse(SensitivityTest.objects.exists())
 
     def test_a_treatment_of_another_week_is_not_offered(self):
         other = self.treat([self.m1, self.m2], day(10, 12), day(10, 12))

@@ -122,6 +122,8 @@ class ShareDay:
     credited_kg: Decimal = ZERO
     meals: int = 0                # recorded meals counted toward the band's meals
     portions_kg: Decimal = ZERO   # what those meals count in the calculated ration
+    fed_since_kg: Decimal = ZERO  # the feed with an expected FCR since its measured point, its fish's part: 0 when the
+    #                               estimate is still the measured weight
 
     @property
     def biomass_kg(self):
@@ -255,6 +257,7 @@ def feed(track, fish, measured_g, last_weighed, day, parts, basis_of):
         track.feed_kg += part
         track.feed_per_fcr += part / basis.fcr
     result.grams = track.grams
+    result.fed_since_kg = track.feed_kg
     result.end_g = track.grams / fish
     result.end = basis_of(result.end_g)
     result.blind_days = len(track.blind_days)

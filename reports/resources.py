@@ -1,5 +1,6 @@
 import uuid
 
+from django.db.models import Exists, OuterRef
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
@@ -96,7 +97,8 @@ class ReportResource(Resource):
 
     @classmethod
     def queryset(cls):
-        return Report.objects.select_related('site', 'facility', 'submitted_by', 'corrects')
+        return Report.objects.select_related('site', 'facility', 'submitted_by', 'corrects').annotate(
+            has_filed_correction=Exists(Report.objects.filter(corrects=OuterRef('pk'), submitted_at__isnull=False)))
 
     @classmethod
     def form(cls, request, *args, **kwargs):
@@ -171,7 +173,8 @@ class ReportResource(Resource):
         }
         if extras['can_submit']:
             extras['submit_form'] = SubmitForm(initial={
-                'submitted_at': timezone.localtime().replace(second=0, microsecond=0), 'version': report.version})
+                'submitted_at': timezone.localtime(timezone.now(), periods.OSLO).replace(
+                    tzinfo=None, second=0, microsecond=0), 'version': report.version})
             extras['submit_url'] = reverse('reports:report_submit', args=[report.pk])
         if extras['can_correct']:
             extras['correct_url'] = reverse('reports:report_correct', args=[report.pk])

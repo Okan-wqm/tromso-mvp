@@ -15,13 +15,15 @@ from datetime import date, timedelta
 
 from django.conf import settings
 
-from farm.health import diseases
+from django.db.models import Exists, OuterRef, Q
+
+from farm.health import diseases, notices
 from farm.models import Batch, EscapeRecord, HandlingPlanItem, HealthEvent, Site, StockMovement, Tank
 from farm.models.harvest import PlanKind
+from farm.models.species import SALMONID_CODES
 from farm.stock.read import Presence
 
 from . import compute, periods
-from .compute.lice import SALMONIDS
 from .kinds import KINDS, ReportKind
 from .models import Report
 
@@ -61,10 +63,12 @@ class DueRow:
 
 @dataclass
 class SetUp:
-    """A site that holds fish and is not set up for its reports: what is missing."""
+    """A site that holds fish and is not set up for its reports: what is missing (its reports-from date, its production
+    form, the official code of the species it holds: a species without one is not known to be a salmonid)."""
     site: object
     reports_from: bool = False
     production_form: bool = False
+    species: list = field(default_factory=list)
 
 
 @dataclass
@@ -83,16 +87,21 @@ def owed(site):
     found = [(ReportKind.SEA_LICE, SALMONID)] if sea else []
     if form == PRODUCTION_FORM.SETTEFISK:
         found.append((ReportKind.SMOLT, ANY))
-    if form == PRODUCTION_FORM.MATFISK and sea:
+    if sea:
+        # The cleaner-fish report is owed by every sea site whatever its permit (Altinn: "Gjelder alle typer
+        # akvakulturtillatelser ... for fisk med produksjon i sjøvann").
         found.append((ReportKind.CLEANER_FISH, CLEANER))
     if form in (PRODUCTION_FORM.MATFISK, PRODUCTION_FORM.STAMFISK):
         found.append((ReportKind.BIOMASS, PRODUCTION) if sea else (ReportKind.LAND_STOCK, ANY))
+    elif form == PRODUCTION_FORM.SETTEFISK and not sea:
+        # Cleaner-fish juveniles and broodstock on land are under § 44a too (§ 3 i).
+        found.append((ReportKind.LAND_STOCK, CLEANER))
     return found
 
 
 def _category(batch):
     species = batch.species
-    return {SALMONID: species.official_code in SALMONIDS, CLEANER: species.is_cleaner_fish,
+    return {SALMONID: species.official_code in SALMONID_CODES, CLEANER: species.is_cleaner_fish,
             PRODUCTION: not species.is_cleaner_fish, ANY: True}
 
 
@@ -120,7 +129,7 @@ def _existing():
     return index
 
 
-def _row(kind, place, period, today, existing, event=None):
+def _row(kind, place, period, today, existing, event=None, agreed=None):
     """The row of a report owed, or None when it was filed already."""
     key = (kind, place.pk if isinstance(place, Site) else None,
            place.pk if kind == ReportKind.SLAUGHTER_PLANNED else None, period.start if period else None,
@@ -132,6 +141,8 @@ def _row(kind, place, period, today, existing, event=None):
     deadline = rule(period) if rule and period else None
     if kind == ReportKind.SLAUGHTER_PLANNED:
         deadline = compute.slaughter.deadline(place, period, deadline)
+        if agreed is not None:
+            deadline = max(deadline, agreed)      # a slaughter agreed late is reported as soon as it is agreed
     return DueRow(kind, place, period, deadline, deadline is not None and today > deadline, report, event)
 
 
@@ -141,14 +152,15 @@ def _site(site, today, existing, found):
     kinds = owed(site)
     units = list(Tank.all_objects.filter(production_department__site=site))
     holds = bool(units) and StockMovement.objects.filter(unit__in=units, operation__is_deleted=False).exists()
-    if site.reports_from is None or not site.production_form:
-        if holds:
-            found.not_set_up.append(SetUp(site, reports_from=site.reports_from is None,
-                                          production_form=not site.production_form))
-        if site.reports_from is None or not kinds:
-            return
     presence = Presence.of_units([unit.pk for unit in units])
     batches = Batch.all_objects.select_related('species').in_bulk({batch for _unit, batch in presence.timelines})
+    uncoded = sorted({str(batch.species) for batch in batches.values() if not batch.species.official_code})
+    if site.reports_from is None or not site.production_form or uncoded:
+        if holds:
+            found.not_set_up.append(SetUp(site, reports_from=site.reports_from is None,
+                                          production_form=not site.production_form, species=uncoded))
+        if site.reports_from is None or not kinds:
+            return
     for kind, fish in kinds:
         grain = KINDS[kind].grain
         first = site.reports_from
@@ -168,19 +180,30 @@ def _slaughter(today, existing, rows):
     items = HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', operation__isnull=True,
                                             facility__isnull=False, date__gte=periods.week_start(today)
                                             ).select_related('facility')
-    weeks = {(item.facility_id, periods.Period.of(periods.WEEK, item.date)): item.facility for item in items}
+    weeks = {}
+    agreed = {}
+    for item in items:
+        key = (item.facility_id, periods.Period.of(periods.WEEK, item.date))
+        weeks[key] = item.facility
+        day = periods.oslo_today(item.created_at)
+        agreed[key] = min(agreed.get(key, day), day)
     for (_facility, period), facility in weeks.items():
-        row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing)
+        row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing,
+                   agreed=agreed[(_facility, period)])
         if row is not None:
             rows.append(row)
 
 
 def _escapes(today, existing, rows):
-    """An escape with no filed notice."""
-    for escape in EscapeRecord.objects.select_related('operation'):
-        line = escape.operation.movements.select_related('unit__production_department__site').first()
-        site = line.unit.production_department.site if line else None
-        if site is None:
+    """An escape since its site's reports-from date (D-6) with no filed notice."""
+    escapes = list(EscapeRecord.objects.select_related('operation'))
+    lines = {}
+    for line in (StockMovement.objects.filter(operation__in=[escape.operation_id for escape in escapes])
+                 .select_related('unit__production_department__site').order_by('id')):
+        lines.setdefault(line.operation_id, line)
+    for escape in escapes:
+        site = lines[escape.operation_id].unit.production_department.site if escape.operation_id in lines else None
+        if site is None or site.reports_from is None or escape.operation.date < site.reports_from:
             continue
         row = _row(ReportKind.ESCAPE, site, None, today, existing, escape)
         if row is not None:
@@ -188,10 +211,11 @@ def _escapes(today, existing, rows):
 
 
 def _diseases(today, existing, rows):
-    """A health event of a listed disease, suspected or confirmed, with no filed notice."""
-    for event in HealthEvent.objects.filter(diagnosis__in=diseases.NOTIFIABLE).select_related('site'):
-        told = Report.objects.filter(health_event=event, submitted_at__isnull=False).exists()
-        if told:
+    """A health event of a listed disease, suspected or confirmed, since its site's reports-from date with no filed notice
+    (the health records' own rule, farm/health/notices.py: asked once for all the events)."""
+    events = list(HealthEvent.objects.filter(diagnosis__in=diseases.NOTIFIABLE).select_related('site'))
+    for event in notices.pending(events) or []:
+        if event.site.reports_from is None or event.date < event.site.reports_from:
             continue
         row = _row(ReportKind.DISEASE, event.site, None, today, existing, event)
         if row is not None:
@@ -199,16 +223,21 @@ def _diseases(today, existing, rows):
 
 
 def no_longer_match(today=None):
-    """The filed reports, not replaced by a correction, whose records have changed since they were filed: read again for
-    the reports of the last STOCK_BACKDATE_DAYS days only (older records cannot change, and those without a window, the
-    health events and the escapes, are read as long as their day is that recent)."""
+    """The filed reports, not replaced by a correction, whose records have changed since they were filed. Only the rows a
+    report reads are compared (compute.scope), never its figures; a report of a period that closed before the
+    STOCK_BACKDATE_DAYS window cannot change and is not read again, a notice (it has no period) always is."""
     today = today or periods.oslo_today()
     recent = today - timedelta(days=settings.STOCK_BACKDATE_DAYS)
+    filed = (Report.objects.filter(submitted_at__isnull=False).exclude(snapshot__format_version=0)
+             .filter(Q(period_start__isnull=True) | Q(period_start__gte=recent - timedelta(days=366)))   # a year at most
+             .annotate(has_filed_correction=Exists(Report.objects.filter(corrects=OuterRef('pk'),
+                                                                         submitted_at__isnull=False)))
+             .select_related('snapshot', 'site', 'facility').defer('snapshot__content'))
     found = []
-    for report in Report.objects.filter(submitted_at__isnull=False).select_related('snapshot', 'site', 'facility'):
-        day = report.period.end if report.period else report.occurred_on
-        if day is None or day < recent or report.snapshot.format_version == 0 or report.is_superseded:
+    for report in filed:
+        # A period older than the backdating window cannot change; a notice has no window and is always read again.
+        if report.is_superseded or report.period and report.period.end < recent:
             continue
-        if compute.fingerprint(compute.compute(report).scope) != report.snapshot.sources_fingerprint:
+        if compute.fingerprint(compute.scope(report)) != report.snapshot.sources_fingerprint:
             found.append(report)
     return found

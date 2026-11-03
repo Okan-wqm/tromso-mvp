@@ -55,6 +55,21 @@ class EscapeTests(StockTestCase):
         self.assertIn('count', self.refused(self.escape, count=5000))
         self.assertFalse(StockOperation.objects.filter(kind='adjustment').exists())
 
+    def test_the_count_is_at_least_one_and_an_escape_never_puts_fish_in(self):
+        for count in (0, -50):
+            with self.subTest(count=count):
+                self.assertEqual(self.refused(self.escape, count=count)['count'],
+                                 ['Give the number of fish: at least 1.'])
+        self.assertFalse(StockOperation.objects.filter(kind='adjustment').exists())
+        # Whatever writes the line, the database takes an escape only as fish out; a recount up is another reason.
+        operation = StockOperation.objects.create(kind='adjustment', date=self.day(3))
+        line = {'operation': operation, 'batch': self.batch, 'unit': self.t1, 'kind': 'adjustment'}
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            StockMovement.objects.create(**line, count_delta=5, reason='escape')
+        StockMovement.objects.create(**line, count_delta=5, reason='count_correction')
+        other = StockOperation.objects.create(kind='adjustment', date=self.day(3))
+        StockMovement.objects.create(**{**line, 'operation': other}, count_delta=-5, reason='escape')
+
     def test_a_void_brings_the_fish_back_and_the_record_goes_with_it(self):
         operation = self.escape()
         services.void(self.user, operation, 'Counted twice')
@@ -93,6 +108,14 @@ class EscapeTests(StockTestCase):
                       'is an escape).', found)
         self.assertIn(f'Mortality {mortality.pk} has an escape record.', found)
 
+    def test_check_stock_finds_an_escape_with_a_line_that_is_not_fish_leaving_by_escape(self):
+        operation = StockOperation.objects.create(kind='adjustment', date=self.day(3))
+        EscapeRecord.all_objects.create(operation=operation, cause='x')
+        StockMovement.objects.create(operation=operation, batch=self.batch, unit=self.t1, kind='adjustment',
+                                     count_delta=5, reason='count_correction')
+        self.assertIn(f'Count adjustment {operation.pk} of {operation.date} has an escape record and a line that is '
+                      'not fish leaving by escape.', integrity.problems())
+
     def test_the_database_wants_a_cause(self):
         operation = StockOperation.objects.create(kind='adjustment', date=self.day(3))
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -122,6 +145,13 @@ class DeliveryTests(StockTestCase):
         self.assertEqual(AuditLog.objects.filter(entity_type='stock operation').latest('created_at').changes['Delivered to'],
                          [None, 'Nordic Smolt AS'])
         self.assertStockAddsUp()
+
+    def test_the_count_is_at_least_one(self):
+        for count in (0, -50):
+            with self.subTest(count=count):
+                self.assertEqual(self.refused(self.deliver, count=count)['count'],
+                                 ['Give the number of fish: at least 1.'])
+        self.assertFalse(StockOperation.objects.filter(kind='delivery').exists())
 
     def test_the_last_fish_out_empty_the_unit_and_a_void_puts_them_back(self):
         operation = self.deliver(count=2000)

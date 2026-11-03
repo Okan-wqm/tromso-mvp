@@ -154,8 +154,8 @@ def _record_problems(operations, lines_of):
         if operation.kind == OperationKind.ADJUSTMENT:
             if operation.pk not in escapes:
                 found.append(f'{name} has no escape record (a count adjustment on its own is an escape).')
-            elif any(line.reason != 'escape' for line in lines_of.get(operation.pk, [])):
-                found.append(f'{name} has an escape record and a line of another reason.')
+            elif any(line.reason != 'escape' or line.count_delta >= 0 for line in lines_of.get(operation.pk, [])):
+                found.append(f'{name} has an escape record and a line that is not fish leaving by escape.')
         if operation.kind == OperationKind.DELIVERY and operation.pk not in deliveries:
             found.append(f'{name} has no delivery record (who received the fish).')
     for records, kind, what in ((escapes, OperationKind.ADJUSTMENT, 'an escape record'),

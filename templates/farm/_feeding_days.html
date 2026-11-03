@@ -30,7 +30,7 @@
 
 <p class="panel-help">{% trans "The calculated ration of a day counts each recorded meal at the ration it had when it was given (the estimated weight then), and the meals still to come at the estimate now; a record that does not say its meals counts as one. The deviation is the feed given less the calculated ration. It is worked out again from the records, the stock and the water samples as they are now." %}</p>
 {% if clipped %}<p class="notice notice-warning">{% blocktrans trimmed count days=span %}A page shows at most {{ days }} day: the first day was moved.{% plural %}A page shows at most {{ days }} days: the first day was moved.{% endblocktrans %}</p>{% endif %}
-<p class="units-count">{% blocktrans trimmed with given=given_kg|feed_kg %}Given {{ given }}{% endblocktrans %}{% if calculated_kg is not None %} · {% blocktrans trimmed with calculated=calculated_kg|feed_kg %}calculated {{ calculated }}{% endblocktrans %}{% endif %}</p>
+<p class="units-count">{% blocktrans trimmed with given=given_kg|feed_kg %}Given {{ given }}{% endblocktrans %}{% if calculated_kg is not None %} · {% blocktrans trimmed with calculated=calculated_kg|feed_kg %}calculated {{ calculated }}{% endblocktrans %}{% endif %}{% if cleaner_kg %} · {% blocktrans trimmed with kilos=cleaner_kg|feed_kg %}to the cleaner fish {{ kilos }}{% endblocktrans %}{% endif %}</p>
 
 {% if not day_rows %}
 <div class="empty">
@@ -67,7 +67,7 @@
           {% endwith %}{% empty %}<span class="muted">{% trans "No fish at the end of the day" %}</span>{% endfor %}
         </td>
         <td class="num">{% if unit_day.calculated_kg is not None %}{{ unit_day.calculated_kg|feed_kg }}{% else %}—{% endif %}</td>
-        <td class="num">{{ row.given_kg|feed_kg }}</td>
+        <td class="num">{{ row.given_kg|feed_kg }}{% if row.cleaner_kg %}<span class="row-sub">{% blocktrans trimmed with kilos=row.cleaner_kg|feed_kg %}and {{ kilos }} to the cleaner fish{% endblocktrans %}</span>{% endif %}</td>
         <td class="num">{% if unit_day.deviation_kg is not None %}<strong>{{ unit_day.deviation_kg|feed_kg }}</strong>{% if unit_day.deviation_pct is not None %}<span class="row-sub">{{ unit_day.deviation_pct|percent:1 }}</span>{% endif %}{% else %}—{% endif %}</td>
       </tr>
       {% for item in row.corrections %}

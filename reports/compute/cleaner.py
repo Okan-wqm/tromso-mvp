@@ -24,15 +24,13 @@ from .common import Result, identity, note, species_code, text, unit_number, who
 
 ZERO = Decimal(0)
 CAUSES = tuple(reason.value for reason in CLEANER_CULL_REASONS)
-FARMED, WILD, BOTH = 'farmed', 'wild_caught', 'both'
+FARMED, WILD = 'farmed', 'wild_caught'
 
 
 def compute(site, period):
     problems, warnings = [], []
     units = stock.site_units(site)
-    opening = read.stock_on(units, stock.day_before(period))
-    closing = read.stock_on(units, period.end)
-    lines = read.movements(units, period.start, period.end)
+    opening, closing, lines = read.in_period(units, period.start, period.end)
     batches = Batch.all_objects.select_related('species').in_bulk(
         {line.batch_id for line in lines} | {share.batch.pk for found in (opening, closing) for unit_stock in
                                              found.values() for share in unit_stock.shares})
@@ -49,7 +47,8 @@ def compute(site, period):
         unit_row = rows.setdefault(str(unit.pk), {'number': unit_number(unit), 'species': {}, 'lines': []})
         return unit_row['species'].setdefault((species or '', batch.provenance), {
             'species': species, 'origin': batch.provenance or None, 'opening': 0, 'stocked': 0, 'moved_in': 0,
-            'culled': dict.fromkeys(CAUSES, 0), 'died': 0, 'moved_out': 0, 'adjusted': 0, 'closing': 0})
+            'culled': dict.fromkeys(CAUSES, 0), 'died': 0, 'moved_out': 0, 'adjusted': 0, 'adjusted_down': 0,
+            'closing': 0})
 
     by_id = {unit.pk: unit for unit in units}
     for found, field in ((opening, 'opening'), (closing, 'closing')):
@@ -77,6 +76,7 @@ def compute(site, period):
                     'batch': batches[line.batch_id].code, 'date': line.date.isoformat(), 'reason': line.reason})
         elif line.kind == MovementKind.ADJUSTMENT:
             figures['adjusted'] += line.count
+            figures['adjusted_down'] += min(line.count, 0)
         elif line.kind == MovementKind.HARVEST:
             problems.append(_('%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvested.') % {
                 'batch': batches[line.batch_id].code, 'date': line.date.isoformat()})
@@ -92,6 +92,13 @@ def compute(site, period):
         for (_code, _origin), figures in sorted(unit_row['species'].items(), key=str):
             lost = -figures['adjusted'] if figures['adjusted'] < 0 else 0
             gained = figures['adjusted'] if figures['adjusted'] > 0 else 0
+            if figures['adjusted_down'] < 0 and figures['adjusted'] > figures['adjusted_down']:
+                # An escape and a recount up in one month net to less than the escape: the netting must not hide it.
+                warnings.append(_('Unit %(unit)s: count adjustments of both signs in the month net to %(net)+d fish of '
+                                  '%(species)s, though %(down)d fish left by an escape or a recount down: check that the '
+                                  'figure filed is the one meant.') % {
+                    'unit': unit_row['number'], 'net': figures['adjusted'], 'species': figures['species'],
+                    'down': -figures['adjusted_down']})
             if gained:
                 warnings.append(_('Unit %(unit)s: %(fish)d more fish of %(species)s are in the count than the month’s '
                                   'lines explain (a recount up). The report has no field for it: file it as '
@@ -103,15 +110,23 @@ def compute(site, period):
     if not content_rows:
         problems.append(_('No unit of the site held cleaner fish in the month: the report has nothing to file.'))
     feed = _feed(units, period, batches, cleaner)
+    if rows and not feed['feeds']:
+        warnings.append(_('No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg '
+                          '(Operations › Feeding: choose the cleaner fish as the target).'))
     content = {'kind': 'cleaner_fish', 'period': period.key, 'identity': identity(site, problems), 'feed': feed,
                'units': content_rows}
-    scope = stock.scope_rows(units, period.end) + [
+    return Result(content, problems, warnings, scope(site, period, units))
+
+
+def scope(site, period, units=None):
+    """The rows the month's figures are read from (for the fingerprint), without computing them."""
+    units = units if units is not None else stock.site_units(site)
+    return stock.scope_rows(units, period.end) + [
         ('feeding_records', FeedingRecord.all_objects.filter(unit__in=units, date__gte=period.start,
                                                              date__lte=period.end)),
         ('feeds', Feed.all_objects.filter(feedings__unit__in=units, feedings__date__gte=period.start,
                                           feedings__date__lte=period.end).distinct()),
     ]
-    return Result(content, problems, warnings, scope)
 
 
 def _feed(units, period, batches, cleaner):

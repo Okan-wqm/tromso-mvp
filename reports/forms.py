@@ -1,11 +1,14 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db.models import Prefetch
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
-from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site, Tank
+from farm.forms.water import SiteClockField
+from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site, StockMovement, Tank
 from farm.models.harvest import FacilityStatus
+from farm.models.site import zone_of
 
 from . import periods
 from .compute import COMPUTE, lice
@@ -24,8 +27,9 @@ REPORT_FORM_TABS = [
 
 
 def escape_label(escape):
-    """An escape in a list: its day, unit and fish, 2026-10-30 · M-01 · 300 fish · A net tore."""
-    line = escape.operation.movements.select_related('unit').first()
+    """An escape in a list: its day, unit and fish, 2026-10-30 · M-01 · 300 · A net tore (its line was loaded with the
+    list: `ReportForm.__init__`)."""
+    line = escape.operation.movements.all()[0]
     return f'{escape.operation.date.isoformat()} · {line.unit.code} · {-line.count_delta} · {escape.cause[:50]}'
 
 
@@ -38,6 +42,8 @@ class ReportForm(TabbedForm):
     fixed_after_creation = ('kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on')
     refresh_on = ('kind',)
 
+    found_at = SiteClockField(label=_('Found at'), required=False, help_text=_('When it was found, on the site’s clock.'))
+
     class Meta:
         model = Report
         fields = tab_fields(REPORT_FORM_TABS)
@@ -47,12 +53,10 @@ class ReportForm(TabbedForm):
             'occurred_on': _('The day it happened (for a site taken into use or emptied: the day its first fish came '
                              'in or its last fish left).'),
             'contact_name': _('The person the authority can ask about the report. Needed before it is filed.'),
-            'found_at': _('When it was found, on the site’s clock.'),
         }
         widgets = {
             'period_start': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'occurred_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'found_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'what_happened': forms.Textarea(attrs={'rows': 4}),
             'situation': forms.Textarea(attrs={'rows': 3}),
             'measures': forms.Textarea(attrs={'rows': 3}),
@@ -76,9 +80,12 @@ class ReportForm(TabbedForm):
             self.fields['health_event'].label_from_instance = lambda event: f'{event} · {event.site}'
             self.fields['health_event'].empty_label = _('None')
         if 'escape' in self.fields:
-            self.fields['escape'].queryset = EscapeRecord.objects.select_related('operation').order_by(
-                '-operation__date', '-operation__created_at')
+            lines = Prefetch('operation__movements', StockMovement.objects.select_related('unit'))
+            self.fields['escape'].queryset = EscapeRecord.objects.select_related('operation').prefetch_related(
+                lines).order_by('-operation__date', '-operation__created_at')
             self.fields['escape'].label_from_instance = escape_label
+        if 'found_at' in self.fields and self.instance.found_at and not self.is_bound:
+            self.initial['found_at'] = timezone.localtime(self.instance.found_at, self.zone()).replace(tzinfo=None)
         kind = self.chosen_kind()
         if not kind:
             return
@@ -105,6 +112,10 @@ class ReportForm(TabbedForm):
                 'occurred_on'].disabled:
             self.fields['occurred_on'].required = True
 
+    def zone(self, site=None):
+        """The clock `found_at` is typed on: the site's (the one chosen, else the record's, else the company's)."""
+        return zone_of(site or (self.instance.site if self.instance.site_id else None))
+
     def chosen_kind(self):
         """The kind the form is for: the record's, else the one posted, drafted or given as the initial value."""
         if not self.instance._state.adding:
@@ -125,16 +136,17 @@ class ReportForm(TabbedForm):
         if occurred and occurred > periods.oslo_today():
             self.add_error('occurred_on', _('The day cannot be in the future.'))
         found = cleaned.get('found_at')
-        if found and found > timezone.now():
-            self.add_error('found_at', _('The time cannot be in the future.'))
+        if found:
+            found = cleaned['found_at'] = timezone.make_aware(found, self.zone(cleaned.get('site')))
+            if found > timezone.now():
+                self.add_error('found_at', _('The time cannot be in the future.'))
         return cleaned
 
 
 class SubmitForm(forms.Form):
     """Recording that a person filed the report: when, how, and the receipt or reference the authority gave."""
 
-    submitted_at = forms.DateTimeField(label=_('Filed at'), widget=forms.DateTimeInput(
-        attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'))
+    submitted_at = SiteClockField(label=_('Filed at'), help_text=_('Oslo time, as the authority keeps it.'))
     channel = forms.ChoiceField(label=_('Filed through'), choices=Channel.choices)
     reference = forms.CharField(label=_('Receipt or reference'), max_length=200, required=False,
                                 help_text=_('Not needed for a notice given by telephone.'))

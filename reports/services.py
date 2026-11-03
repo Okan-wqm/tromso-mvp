@@ -54,6 +54,10 @@ def submit(user, report, *, submitted_at, channel, reference, version):
         phoned = channel == Channel.TELEPHONE and current.kind in EVENTS
         if result.problems and not phoned:
             _refuse(_('It is not ready: %(problems)s') % {'problems': ' '.join(result.problems)})
+        logged = result.problems
+        if logged:
+            with audit.source_language():      # the log is English at rest, whoever records the filing
+                logged = compute.compute(current).problems
         digest = compute.content_hash(result.content)
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
                                       content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope))
@@ -69,7 +73,7 @@ def submit(user, report, *, submitted_at, channel, reference, version):
                 str(Report._meta.get_field('channel').verbose_name): [None, audit.message(current.get_channel_display())],
                 str(Report._meta.get_field('reference').verbose_name): [None, current.reference or None],
                 str(_('Content hash')): [None, digest],
-                **({str(_('Not ready when filed')): [None, ' '.join(result.problems)]} if result.problems else {}),
+                **({str(_('Not ready when filed')): [None, ' '.join(logged)]} if logged else {}),
             }
             audit.record(user, AuditLog.Action.UPDATE, current, changes, entity_type=Report._meta.verbose_name)
     return current
@@ -86,7 +90,8 @@ def start_correction(user, report):
         if original.corrections.filter(is_deleted=False).exists():
             _refuse(_('This report already has a correction: open it from the list.'))
         draft = Report(kind=original.kind, site=original.site, facility=original.facility,
-                       period_start=original.period_start, occurred_on=original.occurred_on, corrects=original,
+                       period_start=original.period_start, occurred_on=original.occurred_on,
+                       health_event=original.health_event, escape=original.escape, corrects=original,
                        created_by=user, updated_by=user, **{name: getattr(original, name) for name in CARRIED})
         draft.full_clean()
         draft.save()

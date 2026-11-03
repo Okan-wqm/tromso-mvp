@@ -53,6 +53,10 @@ msgid "%(batch)s weighed at %(measured)s, estimated %(estimated)s"
 msgstr "%(batch)s tartımı %(measured)s, tahmini %(estimated)s"
 
 #, python-format
+msgid "%(batch)s · %(species)s · stocked %(date)s."
+msgstr "%(batch)s · %(species)s · %(date)s tarihinde stoklandı."
+
+#, python-format
 msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s balık · %(weight)s g"
 
@@ -384,6 +388,14 @@ msgid "%(energy)s MJ/kg digestible"
 msgstr "%(energy)s MJ/kg sindirilebilir"
 
 #, python-format
+msgid ""
+"%(facility)s has no company that files for it with a 9-digit organisation number (Purchasing › "
+"Suppliers, the operator of Slaughter facilities)."
+msgstr ""
+"%(facility)s için rapor veren, 9 haneli kuruluş numarasına sahip bir şirket yok (Satın alma › "
+"Tedarikçiler, Kesimhaneler’in işletmecisi)."
+
+#, python-format
 msgid "%(feed)s fed, %(gain)s grown"
 msgstr "%(feed)s yem, %(gain)s büyüme"
 
@@ -426,6 +438,14 @@ msgstr "%(first)s–%(last)s / %(total)s"
 #, python-format
 msgid "%(fish)d fish of %(species)s escaped from %(unit)s."
 msgstr "%(unit)s biriminden %(fish)d adet %(species)s kaçtı."
+
+#, python-format
+msgid ""
+"%(fish)d of the fish of %(unit)s were moved on %(date)s to other units of the site: they are in "
+"those units’ counts, not in this one’s (its average weight is the one just before)."
+msgstr ""
+"%(unit)s biriminin %(fish)d balığı %(date)s tarihinde lokasyonun diğer birimlerine taşındı: bu "
+"birimin değil, o birimlerin sayımındalar (ortalama ağırlık hemen öncekidir)."
 
 #, python-format
 msgid "%(fish)s fish"
@@ -736,6 +756,14 @@ msgstr ""
 " uygulanır."
 
 #, python-format
+msgid ""
+"%(site)s keeps another clock than Oslo’s: the week and its samples are the site’s, the "
+"authority’s week is Oslo’s."
+msgstr ""
+"%(site)s, Oslo’dan başka bir saat kullanıyor: hafta ve numuneleri lokasyonunkidir, kurumun "
+"haftası ise Oslo’nundur."
+
+#, python-format
 msgid "%(size)s mm"
 msgstr "%(size)s mm"
 
@@ -806,8 +834,12 @@ msgstr ""
 "durumuna alın."
 
 #, python-format
-msgid "%(unit)s held more than one species in the month."
-msgstr "%(unit)s biriminde ay içinde birden fazla tür vardı."
+msgid ""
+"%(unit)s held more than one species in the month and is listed once for each: confirm that "
+"Mattilsynet takes one tank number twice."
+msgstr ""
+"%(unit)s ay içinde birden fazla tür barındırdı ve her tür için bir kez listelendi: Mattilsynet’in"
+" aynı kar numarasını iki kez kabul ettiğini doğrulayın."
 
 #, python-format
 msgid ""
@@ -840,6 +872,14 @@ msgstr "%(unit)s silinmiş."
 #, python-format
 msgid "%(unit)s is on no site."
 msgstr "%(unit)s hiçbir sahada değil."
+
+#, python-format
+msgid ""
+"%(unit)s was counted on %(date)s and before that on %(last)s: the regulation asks for a count at "
+"least every %(days)d days (§ 6)."
+msgstr ""
+"%(unit)s %(date)s tarihinde sayıldı, bundan önce %(last)s tarihinde: yönetmelik en az %(days)d "
+"günde bir sayım ister (§ 6)."
 
 #, python-format
 msgid ""
@@ -1025,6 +1065,16 @@ msgstr "Yalnızca parti: protokol, parti hangi birime taşınırsa onunla birlik
 
 msgid "A batch goes with a unit, a system, a production department or a site, not with equipment."
 msgstr "Bir parti bir birimle, sistemle, üretim departmanıyla veya sahayla gider, ekipmanla değil."
+
+#, python-format
+msgid ""
+"A batch’s biomass is its last measured average from %(date)s: no weighing in the %(days)d days "
+"before the month’s end, and no feeding with a feeding table was recorded since to project it "
+"from."
+msgstr ""
+"Bir partinin biyokütlesi, %(date)s tarihli son ölçülen ortalamasıdır: ay sonundan önceki %(days)d"
+" günde tartım yok ve ondan tahmin yürütmek için o günden beri besleme tablosuyla yapılmış bir "
+"besleme kaydedilmedi."
 
 #, python-format
 msgid ""
@@ -2359,6 +2409,17 @@ msgstr "%(batch)s partisi stoklandı: %(units)s içine %(count)s balık."
 msgid "Batch %(batch)s: %(fish)s fish at %(weight)s"
 msgstr "Parti %(batch)s: %(fish)s balık, %(weight)s"
 
+msgid "Batch details"
+msgstr "Parti ayrıntıları"
+
+#, python-format
+msgid "Batch details saved: %(batch)s."
+msgstr "Parti ayrıntıları kaydedildi: %(batch)s."
+
+#, python-format
+msgid "Batch details: %(batch)s"
+msgstr "Parti ayrıntıları: %(batch)s"
+
 msgid "Batch in unit"
 msgstr "Birimdeki parti"
 
@@ -2473,6 +2534,16 @@ msgstr "Damızlık (stamfisk)"
 
 msgid "Broodstock feed"
 msgstr "Damızlık yemi"
+
+msgid ""
+"Broodstock of salmon, trout and rainbow trout at sea state whether they were put out in spring or"
+" autumn, and a site shared with a food-fish permit says which permit the report is for "
+"(akvakulturdriftsforskriften § 44 second paragraph): this report has no field for it yet."
+msgstr ""
+"Denizdeki somon, alabalık ve gökkuşağı alabalığı damızlıkları bahar mı sonbahar mı "
+"bırakıldıklarını bildirir ve besi balığı izniyle paylaşılan bir lokasyon raporun hangi izin için "
+"olduğunu belirtir (akvakulturdriftsforskriften § 44 ikinci fıkra): bu raporda henüz bunun için "
+"bir alan yok."
 
 msgid "Browser default"
 msgstr "Tarayıcı varsayılanı"
@@ -3339,6 +3410,10 @@ msgstr "Derinlik (m)"
 msgid "Depth point"
 msgstr "Derinlik noktası"
 
+#, python-format
+msgid "Describe the treatment of %(date)s (Operations › Health): “other” is described in the report."
+msgstr "%(date)s tarihli tedaviyi açıklayın (İşlemler › Sağlık): “diğer” raporda açıklanır."
+
 msgid "Description"
 msgstr "Açıklama"
 
@@ -3749,6 +3824,13 @@ msgstr ""
 "sayılır."
 
 msgid ""
+"Every unit that held fish is listed, eggs and larvae included; § 58 asks for the units of start-"
+"feeding fry or older (D-8): leave out those that were not."
+msgstr ""
+"Balık barındıran her birim listelenir, yumurta ve larvalar dahil; § 58 ilk yemlemeli yavru veya "
+"daha büyük balıkların birimlerini ister (D-8): olmayanları çıkarın."
+
+msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
 "and are farmed on in sea water: tick both."
 msgstr ""
@@ -3873,6 +3955,9 @@ msgstr "Yetiştirilmiş"
 
 msgid "Farmed or wild-caught"
 msgstr "Yetiştirilmiş veya doğadan yakalanmış"
+
+msgid "Farmed or wild-caught not given"
+msgstr "Yetiştirilmiş mi doğadan yakalanmış mı belirtilmedi"
 
 msgid "Farmed or wild-caught? The cleaner-fish report asks it of every cleaner fish."
 msgstr ""
@@ -4185,6 +4270,9 @@ msgstr ""
 msgid "Fixed bed"
 msgstr "Sabit yatak"
 
+msgid "Fixed: fish of this species have been stocked, so whether it is a cleaner fish cannot change."
+msgstr "Sabit: bu türün balıkları stoklandı, bu yüzden temizleyici balık olup olmadığı değiştirilemez."
+
 msgid "Fixed: the protocol is assigned. Duplicate it to change it."
 msgstr "Kilitli: protokol atanmış. Değiştirmek için kopyalayın."
 
@@ -4449,6 +4537,9 @@ msgstr "Kaynağın künyesini, web adresini ya da ikisini birden yazın."
 
 msgid "Give the contact person’s name, e-mail and telephone (the Contact person tab)."
 msgstr "İletişim kişisinin adını, e-postasını ve telefonunu girin (İletişim kişisi sekmesi)."
+
+msgid "Give the number of fish: at least 1."
+msgstr "Balık sayısını girin: en az 1."
 
 msgid "Give the point a name."
 msgstr "Noktaya bir ad verin."
@@ -5707,6 +5798,13 @@ msgstr "Son tartıma kadar yem kaydedilmedi."
 msgid "No feeding matches these filters."
 msgstr "Bu filtrelere uyan yemleme yok."
 
+msgid ""
+"No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg "
+"(Operations › Feeding: choose the cleaner fish as the target)."
+msgstr ""
+"Ay içinde temizleyici balıklar için besleme kaydedilmedi, bu yüzden yemleri 0 kg olarak "
+"bildirilir (İşlemler › Besleme: hedef olarak temizleyici balığı seçin)."
+
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
 msgstr "%(day)s öncesindeki %(days)d günde bu balıkların yemlemesi kaydedilmemiş: aç bırakma denetlenmedi."
@@ -5957,6 +6055,9 @@ msgstr "Hacim yok: yalnızca m³ başına dozlar."
 
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
+
+msgid "No year class"
+msgstr "Yıl sınıfı yok"
 
 msgid "Nobody"
 msgstr "Kimse"
@@ -6431,6 +6532,9 @@ msgstr "Kuruluş numarası"
 
 msgid "Origin"
 msgstr "Köken"
+
+msgid "Oslo time, as the authority keeps it."
+msgstr "Oslo saati, kurumun tuttuğu gibi."
 
 msgid "Other"
 msgstr "Diğer"
@@ -7377,6 +7481,9 @@ msgstr "Saprolegniozis"
 msgid "Saturday"
 msgstr "Cumartesi"
 
+msgid "Save"
+msgstr "Kaydet"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Kaydet: %(name)s"
@@ -7445,6 +7552,9 @@ msgstr "Başka bir etken maddeyse hangisi olduğunu yazın, yalnızca o zaman."
 
 msgid "Say who received the fish."
 msgstr "Balığı kimin teslim aldığını yazın."
+
+msgid "Say whom the feed is for: the production fish or the cleaner fish."
+msgstr "Yemin kime verildiğini belirtin: üretim balığı mı temizleyici balık mı."
 
 msgid "Say why it is cancelled."
 msgstr "Neden iptal edildiğini yazın."
@@ -8359,6 +8469,13 @@ msgstr "Belgenin verdiği haliyle özet."
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Siparişler ve sorular için adres; kişilerin kendi adresleri aşağıdadır."
 
+msgid ""
+"The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
+"amount of the active substance: confirm which it wants."
+msgstr ""
+"İlaçlı bir tedavinin miktarı, ürünün kullanılan miktarıdır; Mattilsynet etken maddenin miktarını "
+"ister: hangisini istediğini doğrulayın."
+
 msgid "The amount of the medicine used, as the lice report asks for it."
 msgstr "Kullanılan ilaç miktarı, bit raporunun istediği gibi."
 
@@ -9071,6 +9188,14 @@ msgstr "%(date)s tarihli tedavide kullanılan miktar yok (Operasyonlar › Sağl
 msgid "The treatment of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "%(unit)s birimindeki %(date)s tarihli tedavinin balığı kalmaz: önce onu iptal edin."
 
+#, python-format
+msgid ""
+"The treatment of %(date)s was of no unit that held salmonids: the report cannot say how many "
+"cages were treated."
+msgstr ""
+"%(date)s tarihli tedavi, salmonid barındıran hiçbir birime yapılmadı: rapor kaç kafesin tedavi "
+"edildiğini söyleyemez."
+
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
 "for a few days before a split."
@@ -9196,6 +9321,13 @@ msgstr ""
 "Raporlarda verilen yıl sınıfı (årsklasse), örneğin 2026. Yumurtadan çıkış yılı mı denize çıkış "
 "yılı mı olduğu kurumlarla teyit edilmedi: çiftliğin saydığı gibi girin."
 
+msgid ""
+"The year class and whether the fish are farmed or wild-caught are what the reports ask of a "
+"batch. A change is logged on the batch."
+msgstr ""
+"Yıl sınıfı ve balıkların yetiştirilmiş mi doğadan yakalanmış mı olduğu, raporların bir partiden "
+"istediği bilgilerdir. Değişiklik partide kaydedilir."
+
 msgid "The year it was published."
 msgstr "Yayımlandığı yıl."
 
@@ -9237,6 +9369,9 @@ msgstr "Bu kayıt (%(name)s) henüz silinemez."
 
 msgid "This batch already has a production plan."
 msgstr "Bu partinin zaten bir üretim planı var."
+
+msgid "This batch has been voided."
+msgstr "Bu parti iptal edildi."
 
 msgid "This empties the unit of this batch"
 msgstr "Bu, birimi bu partiden boşaltır"
@@ -9560,6 +9695,16 @@ msgstr ""
 "%(unit)s birimi: sayımda ayın kayıtlarının açıkladığından %(fish)d adet daha fazla %(species)s "
 "var (yukarı yönlü sayım düzeltmesi). Raporda bunun için alan yok: Mattilsynet’in kabul ettiği "
 "şekilde sunun veya sayımı düzeltin."
+
+#, python-format
+msgid ""
+"Unit %(unit)s: count adjustments of both signs in the month net to %(net)+d fish of %(species)s, "
+"though %(down)d fish left by an escape or a recount down: check that the figure filed is the one "
+"meant."
+msgstr ""
+"%(unit)s birimi: ay içindeki her iki işaretli sayım düzeltmesi %(species)s için net %(net)+d "
+"balık tutuyor, oysa %(down)d balık kaçışla veya aşağı yönlü bir yeniden sayımla ayrıldı: "
+"bildirilen rakamın istenen olduğunu kontrol edin."
 
 #, python-format
 msgid ""
@@ -10249,6 +10394,10 @@ msgstr "bir düzeltme"
 msgid "after the count"
 msgstr "sayımdan sonra"
 
+#, python-format
+msgid "and %(kilos)s to the cleaner fish"
+msgstr "ve temizleyici balığa %(kilos)s"
+
 msgid "as stocked"
 msgstr "stoklandığı gibi"
 
@@ -10858,6 +11007,10 @@ msgstr "numarasız"
 msgid "no number, expiring %(date)s"
 msgstr "numarasız, son kullanma %(date)s"
 
+#, python-format
+msgid "no official code for %(species)s"
+msgstr "%(species)s için resmî kod yok"
+
 msgid "no production form"
 msgstr "üretim biçimi yok"
 
@@ -11138,6 +11291,10 @@ msgstr "%(date)s tarihine kadar"
 #, python-format
 msgid "to %(unit)s"
 msgstr "%(unit)s birimine"
+
+#, python-format
+msgid "to the cleaner fish %(kilos)s"
+msgstr "temizleyici balığa %(kilos)s"
 
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"

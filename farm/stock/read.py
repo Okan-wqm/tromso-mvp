@@ -17,10 +17,11 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
+from typing import NamedTuple
 
 from django.db.models import Sum
 
-from farm.models import Batch, StockMovement, Tank
+from farm.models import Batch, Site, StockMovement, Tank
 from farm.models.feeding import FeedTarget
 
 from .fold import Line, Op, Share, fold
@@ -72,7 +73,7 @@ def mixed(species_ids, cleaner, sea):
 
 def sea_units(unit_ids):
     """The ids of these units on a sea site (Site type sea cage), deleted units included."""
-    return set(Tank.all_objects.filter(pk__in=unit_ids, production_department__site__type='sea_cage')
+    return set(Tank.all_objects.filter(pk__in=unit_ids, production_department__site__type=Site.Type.SEA_CAGE)
                .values_list('pk', flat=True))
 
 
@@ -356,6 +357,19 @@ def _unit_stocks(units, shares, batch_ids):
             share.unit_count = kinds[share.target].count
             share.siblings = len(kinds[share.target].shares)
     return stock
+
+
+class InPeriod(NamedTuple):
+    """What a monthly or weekly report reads of its units: the stock at the end of the day before the period
+    (`opening`) and at its last day (`closing`), as `stock_on` gives them, and the live lines dated in it (`lines`)."""
+    opening: dict
+    closing: dict
+    lines: list
+
+
+def in_period(units, first, last):
+    """The InPeriod of `units` from the day `first` to the day `last`, both included."""
+    return InPeriod(stock_on(units, first - DAY), stock_on(units, last), movements(units, first, last))
 
 
 @dataclass(frozen=True)

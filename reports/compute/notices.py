@@ -26,7 +26,6 @@ def event(report):
                'identity': identity(report.site, problems),
                'found_at': report.found_at.isoformat() if report.found_at else None,
                **{name: getattr(report, name) or None for name in NARRATIVE}}
-    scope = []
     if report.health_event_id:
         event = with_deaths(HealthEvent.all_objects.filter(pk=report.health_event_id)).prefetch_related(
             'units').get()
@@ -34,17 +33,26 @@ def event(report):
             'id': str(event.pk), 'date': event.date.isoformat(), 'diagnosis': event.diagnosis or None,
             'confirmation': event.confirmation or None, 'deaths': event.deaths,
             'units': sorted(unit_number(unit) for unit in event.units.all())}
-        scope = [('health_events', HealthEvent.all_objects.filter(pk=event.pk)),
-                 ('stock_operations', StockOperation.all_objects.filter(health_event=event))]
     if report.escape_id:
-        found, escape_scope = _escape(report.escape, problems)
-        content['escape'] = found
-        scope += escape_scope
+        content['escape'] = _escape(report.escape, problems)
     if not report.what_happened.strip():
         problems.append(_('Say what happened.'))
     if report.found_at is None and not report.escape_id:       # an escape has its day and time on its record
         problems.append(_('Say when it was found.'))
-    return Result(content, problems, [], scope)
+    return Result(content, problems, [], event_scope(report))
+
+
+def event_scope(report):
+    """The rows an event notice reads (for the fingerprint), without computing it: the health event and the operations
+    that name it, the escape and its operation."""
+    scope = []
+    if report.health_event_id:
+        scope += [('health_events', HealthEvent.all_objects.filter(pk=report.health_event_id)),
+                  ('stock_operations', StockOperation.all_objects.filter(health_event_id=report.health_event_id))]
+    if report.escape_id:
+        scope += [('stock_operations', StockOperation.all_objects.filter(pk=report.escape_id)),
+                  ('escape_records', EscapeRecord.all_objects.filter(pk=report.escape_id))]
+    return scope
 
 
 def _escape(escape, problems):
@@ -64,8 +72,7 @@ def _escape(escape, problems):
         'species': species_code(line.batch.species, problems), 'fish': fish,
         'avg_weight_g': text(abs(moved.grams) / fish, 1) if moved is not None and moved.grams is not None else None,
         'cause': escape.cause, 'health_status': escape.health_status or None, 'recaptured': escape.recaptured}
-    return found, [('stock_operations', StockOperation.all_objects.filter(pk=operation.pk)),
-                   ('escape_records', EscapeRecord.all_objects.filter(pk=escape.pk))]
+    return found
 
 
 def site_change(report):
@@ -84,7 +91,11 @@ def site_change(report):
         content['species'] = species
     elif read.stock_on(units, day):
         problems.append(_('The site still holds fish at the end of that day.'))
-    return Result(content, problems, [], stock.scope_rows(units, day))
+    return Result(content, problems, [], site_change_scope(report))
+
+
+def site_change_scope(report):
+    return stock.scope_rows(stock.site_units(report.site), report.occurred_on)
 
 
 def land_stock(report):
@@ -101,4 +112,8 @@ def land_stock(report):
     content = {'kind': report.kind, 'period': period.key, 'identity': identity(site, problems),
                'stock': [{'species': code, 'year_class': year, 'fish': fish}
                          for (code, year), fish in sorted(totals.items(), key=str)]}
-    return Result(content, problems, [], stock.scope_rows(units, period.end))
+    return Result(content, problems, [], land_stock_scope(report))
+
+
+def land_stock_scope(report):
+    return stock.scope_rows(stock.site_units(report.site), report.period.end)

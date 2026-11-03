@@ -510,17 +510,18 @@ not set up, decision D-13) beside its type, and a **reports-from date** (D-6).
 `reports/due.py` lists, per kind, the (site or facility, period) pairs owed between the site's reports-from date
 and the last closed period, minus the periods that have a **submitted** report; a started draft stays on its due
 row with its deadline and overdue mark (E4). A site that owes reports by its form and fish but has no
-reports-from date is listed as "not set up for reports" rather than hidden (E4).
+reports-from date, no production form or a species with no official code (not known to be a salmonid) is listed as "not set up
+for reports" with what is missing, rather than hidden (E4).
 
 | Kind | Owed for | Applies when | Deadline |
 |---|---|---|---|
 | Sea lice | site, ISO week | a sea site (`Site.type = sea_cage`) held fish of salmon, trout or rainbow trout (`official_code` SAL, TRS, TRR; D-11) at any time in the week | Tuesday of the next week, end of the day ("i løpet av tirsdag") |
 | Smolt | site, month | a settefisk site (cleaner-fish hatcheries included, § 3 i ✔) held fish of start-feeding stage or older at any time in the month (D-8) | the 7th of the next month |
-| Cleaner fish | site, month | a matfisk sea site held cleaner fish (a species with `cleaner_fish_type`) at any time in the month | the 7th of the next month |
+| Cleaner fish | site, month | **every sea site**, whatever its production form or permit (Altinn: "gjelder alle typer akvakulturtillatelser ... for fisk med produksjon i sjøvann"), that held cleaner fish (a species with `cleaner_fish_type`) at any time in the month; a land hatchery of cleaner-fish juveniles reports them in the yearly stock instead (§ 44a, § 3 i) | the 7th of the next month |
 | Monthly biomass | site, month | a matfisk or stamfisk sea site held production fish (not cleaner fish: they may stay through fallowing, § 40 fifth paragraph ✔) at any time in the month | the 7th of the next month |
 | Planned slaughter | slaughter facility, ISO week | live planned harvests (`HandlingPlanItem` kind harvest, not cancelled) to the facility in the week (D-3) | the earlier of Thursday 24:00 of the week before and the day the fish start fasting for it (restkontrollforskriften § 9a ✔; the fast's start is `fast_of(item)`, `farm/handling/fasting.py:12-14`, `:119-122` ✔); a slaughter agreed later: at once; corrections until Tuesday 09:00 of the slaughter week (E1) |
-| Escape | an escape record | every escape record with no live notice | at once ("straks") |
-| Disease | a health event | a health event with a listed diagnosis, suspected or confirmed, with no live notice; and a mortality event whose cause is still unexplained 14 days after the first assessment (dyrehelseforskriften § 7, E1) | at once ("umiddelbart"); the second case "så snart som praktisk mulig" |
+| Escape | an escape record | every escape record dated on or after its site's reports-from date (D-6) with no filed notice (a draft stays owed) | at once ("straks") |
+| Disease | a health event | a health event with a listed diagnosis, suspected or confirmed, dated on or after its site's reports-from date, that the health records' registry (`farm/health/notices.py`) does not know to be told of; and a mortality event whose cause is still unexplained 14 days after the first assessment (dyrehelseforskriften § 7, E1) | at once ("umiddelbart"); the second case "så snart som praktisk mulig" |
 | Welfare | started by a person | — | at once ("umiddelbart") |
 
 The window's eligibility is read from summed live `count_delta`: one query per kind for each site's net count of
@@ -763,7 +764,31 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
 - **The answers no record holds** are rows of the report: a lice treatment's "given before the count" and "given together" (the
   records have dates, no times: a treatment that ended on the day of a count must be answered), resistance suspicions,
   sensitivity tests (with the other substance) and the biomass report's units of reduced capacity.
-- **Not built:** the executed slaughter report and the slaughter result (D-3, OUR-18); the disease notice for a mortality
+- **What the list compares** is the scope of a report (`compute.scope`, one function per kind that `compute` itself returns the
+  result of): the rows it reads, never the figures, so "the records no longer give what was filed" never folds a ledger; the
+  biomass report's scope includes every feeding to the month's end and the feeding protocol assignments its projection reads.
+- **Times:** the time of a filing is Oslo's (the authority's clock); a notice's time found is typed on the site's clock (the water
+  module's `SiteClockField`) and stored as the moment it was. A correction of a notice keeps its health event or escape.
+- **The planned slaughter is filed by the slaughterhouse's operator** (its nine-digit organisation number from the supplier
+  record), never by a farm whose fish it slaughters (the source took the farms'; REP bug in the bug document).
+- **Smolt per unit and species (gate 2):** a tank that held two species one after the other in the month is listed once for each
+  (rows keyed unit/species code; one tank number twice is warned and unverified with Mattilsynet). A tank emptied by moving its
+  fish to another tank of the site reports the average weight just before and the fish that left the site only (the moved ones are
+  in the other tank's count: counting them twice put them in the site's total twice, D-8).
+- **The projected biomass basis** needs feed credited since the last measured point (`ShareDay.fed_since_kg` > 0): fish unfed
+  since a 40-day-old measurement are filed as that measurement, marked stale, never as a projection.
+- **The 14-day slaughter exception** (lice) is judged on the production fish a cage held on the day its count fell due and accepts
+  a harvest that is already recorded (not voided): it no longer lapses when the fish are slaughtered; a cage emptied before its
+  count fell due needs none.
+- **A species' cleaner flag is fixed** once a batch of it exists (model `clean`, as an assigned protocol's species is fixed): the
+  database cannot hold a cross-table rule as a check, so a write that bypasses the forms is not stopped; `check_stock` reports its
+  effect (an orphan feeding, a unit with two production species).
+- **Batch year class and provenance** have a logged dialog (Production units drawer › Batch details) for the fish stocked before
+  the reports asked for them.
+- **Unverified:** whether § 10 c's amount of a medicinal treatment is the product's or the active substance's (the report says
+  which it holds and warns); which year Mattilsynet expects in the ISO week-year of 28 December to 3 January.
+- **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
+  (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the disease notice for a mortality
   left unexplained 14 days (5.2); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.
 

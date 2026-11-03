@@ -543,6 +543,37 @@ def record_input(user, *, species, input_stage, origin, day, lines, supplier=Non
     return _commit(user, OperationKind.INPUT, day, entries, ack=ack, token=token, new_batch=batch)
 
 
+def correct_batch(user, *, batch, year_class=None, provenance=''):
+    """Gives a batch its year class and whether its fish are farmed or wild-caught: the two facts of a batch the reports
+    ask for, which fish stocked before they were asked for do not have (stock is never edited, so there is no other way
+    to set them). Logged as an update of the batch, whose version moves on, so a report filed from it is told to need a
+    correction. The provenance follows the origin where the origin says it, and is required for a bought cleaner fish."""
+    with transaction.atomic():
+        found = locked(Batch, {batch.pk}).get(batch.pk)
+        if found is None or found.is_deleted:
+            raise ValidationError({'batch': _('This batch has been voided.')})
+        said = PROVENANCE_OF_ORIGIN.get(found.origin)
+        if said is not None:
+            if provenance not in ('', said):
+                raise ValidationError({'provenance': _('Fish of the own hatchery are farmed, fish caught in the wild '
+                                                       'wild-caught.')})
+            provenance = said
+        elif found.species.is_cleaner_fish and not provenance:
+            raise ValidationError({'provenance': _('Farmed or wild-caught? The cleaner-fish report asks it of every '
+                                                   'cleaner fish.')})
+        with audit.source_language():
+            before = audit.snapshot(found, ['provenance', 'year_class'])
+            if (found.provenance, found.year_class) == (provenance, year_class):
+                return found
+            found.provenance, found.year_class = provenance, year_class
+            found.full_clean(exclude=['code'])
+            found.version += 1
+            found.updated_by = user
+            found.save()
+            audit.record_update(user, found, before, audit.snapshot(found, ['provenance', 'year_class']))
+    return found
+
+
 def needs_notes(reason, notes):
     if reason == 'other' and not notes.strip():
         raise ValidationError({'notes': _('Say what it was: the reason is “other”.')})
@@ -674,6 +705,12 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facilit
                        harvest={'facility': facility, 'transport': transport, 'vessel': vessel.strip()})
 
 
+def _positive(count):
+    """The fish an escape or a delivery takes out: at least one (a negative count would put fish in)."""
+    if count < 1:
+        raise ValidationError({'count': _('Give the number of fish: at least 1.')})
+
+
 def record_escape(user, *, unit, batch, day, count, cause, suspected=False, found_time=None, health_status='',
                   recaptured=None, notes='', token=None):
     """Fish of `batch` escaped from `unit` (or are suspected to have: the count is then an estimate): `count` fish leave
@@ -682,6 +719,7 @@ def record_escape(user, *, unit, batch, day, count, cause, suspected=False, foun
     report that reads the record (akvakulturdriftsforskriften § 38)."""
     if not cause.strip():
         raise ValidationError({'cause': _('Say what caused it, or what is thought to have.')})
+    _positive(count)
     entry = Entry(unit, batch, MovementKind.ADJUSTMENT, -count, reason=AdjustmentReason.ESCAPE)
     return _commit(user, OperationKind.ADJUSTMENT, day, [entry], notes=notes, token=token, escape={
         'found_time': found_time, 'suspected': suspected, 'cause': cause.strip(),
@@ -695,6 +733,7 @@ def record_delivery(user, *, unit, batch, day, count, destination, destination_s
     are. Moving fish alive is a transport, so the handling check runs (a medicine withdrawal in force, too short a fast)."""
     if not destination.strip():
         raise ValidationError({'destination': _('Say who received the fish.')})
+    _positive(count)
     entry = Entry(unit, batch, MovementKind.DELIVERY, -count, measured_weight_kg=measured_weight_kg)
     return _commit(user, OperationKind.DELIVERY, day, [entry], notes=notes, token=token, handling_ack=handling_ack,
                    delivery={'destination': destination.strip(), 'destination_site_number': destination_site_number})

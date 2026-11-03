@@ -53,6 +53,10 @@ msgid "%(batch)s weighed at %(measured)s, estimated %(estimated)s"
 msgstr "%(batch)s veide %(measured)s, estimert %(estimated)s"
 
 #, python-format
+msgid "%(batch)s · %(species)s · stocked %(date)s."
+msgstr "%(batch)s · %(species)s · satt ut %(date)s."
+
+#, python-format
 msgid "%(batch)s — %(count)s fish · %(weight)s g"
 msgstr "%(batch)s — %(count)s fisk · %(weight)s g"
 
@@ -388,6 +392,14 @@ msgid "%(energy)s MJ/kg digestible"
 msgstr "%(energy)s MJ/kg fordøyelig"
 
 #, python-format
+msgid ""
+"%(facility)s has no company that files for it with a 9-digit organisation number (Purchasing › "
+"Suppliers, the operator of Slaughter facilities)."
+msgstr ""
+"%(facility)s har ikke noe selskap som rapporterer for det, med organisasjonsnummer på 9 siffer "
+"(Innkjøp › Leverandører, operatøren under Slakteanlegg)."
+
+#, python-format
 msgid "%(feed)s fed, %(gain)s grown"
 msgstr "%(feed)s fôret, %(gain)s tilvekst"
 
@@ -426,6 +438,14 @@ msgstr "%(first)s–%(last)s av %(total)s"
 #, python-format
 msgid "%(fish)d fish of %(species)s escaped from %(unit)s."
 msgstr "%(fish)d fisk av %(species)s rømte fra %(unit)s."
+
+#, python-format
+msgid ""
+"%(fish)d of the fish of %(unit)s were moved on %(date)s to other units of the site: they are in "
+"those units’ counts, not in this one’s (its average weight is the one just before)."
+msgstr ""
+"%(fish)d av fisken i %(unit)s ble flyttet %(date)s til andre enheter på lokaliteten: de er med i "
+"disse enhetenes antall, ikke i denne (gjennomsnittsvekten er den like før)."
 
 #, python-format
 msgid "%(fish)s fish"
@@ -735,6 +755,14 @@ msgstr ""
 "utvalget brukes."
 
 #, python-format
+msgid ""
+"%(site)s keeps another clock than Oslo’s: the week and its samples are the site’s, the "
+"authority’s week is Oslo’s."
+msgstr ""
+"%(site)s bruker en annen klokke enn Oslos: uken og prøvene er lokalitetens, myndighetens uke er "
+"Oslos."
+
+#, python-format
 msgid "%(size)s mm"
 msgstr "%(size)s mm"
 
@@ -805,8 +833,12 @@ msgstr ""
 "fisk i den."
 
 #, python-format
-msgid "%(unit)s held more than one species in the month."
-msgstr "%(unit)s hadde mer enn én art i måneden."
+msgid ""
+"%(unit)s held more than one species in the month and is listed once for each: confirm that "
+"Mattilsynet takes one tank number twice."
+msgstr ""
+"%(unit)s hadde mer enn én art i måneden og er oppført én gang for hver: bekreft at Mattilsynet "
+"tar imot samme karnummer to ganger."
 
 #, python-format
 msgid ""
@@ -839,6 +871,14 @@ msgstr "%(unit)s er slettet."
 #, python-format
 msgid "%(unit)s is on no site."
 msgstr "%(unit)s er ikke på noen lokalitet."
+
+#, python-format
+msgid ""
+"%(unit)s was counted on %(date)s and before that on %(last)s: the regulation asks for a count at "
+"least every %(days)d days (§ 6)."
+msgstr ""
+"%(unit)s ble telt %(date)s og før det %(last)s: forskriften krever telling minst hver %(days)d. "
+"dag (§ 6)."
 
 #, python-format
 msgid ""
@@ -1026,6 +1066,15 @@ msgid "A batch goes with a unit, a system, a production department or a site, no
 msgstr ""
 "En fiskegruppe hører til en enhet, et system, en produksjonsavdeling eller en lokalitet, ikke til"
 " utstyr."
+
+#, python-format
+msgid ""
+"A batch’s biomass is its last measured average from %(date)s: no weighing in the %(days)d days "
+"before the month’s end, and no feeding with a feeding table was recorded since to project it "
+"from."
+msgstr ""
+"En gruppes biomasse er siste målte gjennomsnitt fra %(date)s: ingen veiing de %(days)d dagene før"
+" månedens slutt, og ingen fôring med fôringstabell er registrert siden som anslaget kan bygge på."
 
 #, python-format
 msgid ""
@@ -2364,6 +2413,17 @@ msgstr "Fiskegruppe %(batch)s satt ut: %(count)s fisk i %(units)s."
 msgid "Batch %(batch)s: %(fish)s fish at %(weight)s"
 msgstr "Fiskegruppe %(batch)s: %(fish)s fisk på %(weight)s"
 
+msgid "Batch details"
+msgstr "Gruppedetaljer"
+
+#, python-format
+msgid "Batch details saved: %(batch)s."
+msgstr "Gruppedetaljer lagret: %(batch)s."
+
+#, python-format
+msgid "Batch details: %(batch)s"
+msgstr "Gruppedetaljer: %(batch)s"
+
 msgid "Batch in unit"
 msgstr "Fiskegruppe i enhet"
 
@@ -2474,6 +2534,15 @@ msgstr "Stamfisk"
 
 msgid "Broodstock feed"
 msgstr "Stamfiskfôr"
+
+msgid ""
+"Broodstock of salmon, trout and rainbow trout at sea state whether they were put out in spring or"
+" autumn, and a site shared with a food-fish permit says which permit the report is for "
+"(akvakulturdriftsforskriften § 44 second paragraph): this report has no field for it yet."
+msgstr ""
+"Stamfisk av laks, ørret og regnbueørret i sjø oppgir om de ble satt ut vår eller høst, og en "
+"lokalitet som deles med en matfisktillatelse oppgir hvilken tillatelse rapporten gjelder "
+"(akvakulturdriftsforskriften § 44 andre ledd): denne rapporten har ennå ikke noe felt for det."
 
 msgid "Browser default"
 msgstr "Nettleserens standard"
@@ -3336,6 +3405,10 @@ msgstr "Dybde (m)"
 msgid "Depth point"
 msgstr "Dybdepunkt"
 
+#, python-format
+msgid "Describe the treatment of %(date)s (Operations › Health): “other” is described in the report."
+msgstr "Beskriv behandlingen %(date)s (Drift › Helse): «annen» beskrives i rapporten."
+
 msgid "Description"
 msgstr "Beskrivelse"
 
@@ -3747,6 +3820,13 @@ msgstr ""
 "poster er bare merket som slettet, så de ligger fortsatt i tabellene og telles her."
 
 msgid ""
+"Every unit that held fish is listed, eggs and larvae included; § 58 asks for the units of start-"
+"feeding fry or older (D-8): leave out those that were not."
+msgstr ""
+"Alle enheter som hadde fisk er oppført, også egg og larver; § 58 gjelder enheter med startfôret "
+"yngel eller eldre fisk (D-8): ta bort de som ikke var det."
+
+msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
 "and are farmed on in sea water: tick both."
 msgstr ""
@@ -3870,6 +3950,9 @@ msgstr "Oppdrett"
 
 msgid "Farmed or wild-caught"
 msgstr "Oppdrett eller villfanget"
+
+msgid "Farmed or wild-caught not given"
+msgstr "Oppdrett eller villfanget er ikke oppgitt"
 
 msgid "Farmed or wild-caught? The cleaner-fish report asks it of every cleaner fish."
 msgstr "Oppdrett eller villfanget? Rensefiskrapporten spør om dette for all rensefisk."
@@ -4178,6 +4261,9 @@ msgstr "Fiskeridirektoratets månedlige biomasserapport i Altinn; bekreft skjema
 msgid "Fixed bed"
 msgstr "Fastmedium"
 
+msgid "Fixed: fish of this species have been stocked, so whether it is a cleaner fish cannot change."
+msgstr "Låst: fisk av denne arten er satt ut, så om den er rensefisk kan ikke endres."
+
 msgid "Fixed: the protocol is assigned. Duplicate it to change it."
 msgstr "Låst: protokollen er tildelt. Dupliser den for å endre den."
 
@@ -4440,6 +4526,9 @@ msgstr "Oppgi kildehenvisningen, nettadressen eller begge."
 
 msgid "Give the contact person’s name, e-mail and telephone (the Contact person tab)."
 msgstr "Oppgi kontaktpersonens navn, e-post og telefon (fanen Kontaktperson)."
+
+msgid "Give the number of fish: at least 1."
+msgstr "Oppgi antall fisk: minst 1."
 
 msgid "Give the point a name."
 msgstr "Gi punktet et navn."
@@ -5697,6 +5786,13 @@ msgstr "Ingen fôring registrert fram til siste veiing."
 msgid "No feeding matches these filters."
 msgstr "Ingen fôring passer disse filtrene."
 
+msgid ""
+"No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg "
+"(Operations › Feeding: choose the cleaner fish as the target)."
+msgstr ""
+"Ingen fôring av rensefisken er registrert i måneden, så fôret rapporteres som 0 kg (Drift › "
+"Fôring: velg rensefisken som mottaker)."
+
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
 msgstr ""
@@ -5951,6 +6047,9 @@ msgstr "Uten volum: bare dosene per m³."
 
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
+
+msgid "No year class"
+msgstr "Ingen årsklasse"
 
 msgid "Nobody"
 msgstr "Ingen"
@@ -6425,6 +6524,9 @@ msgstr "Organisasjonsnummer"
 
 msgid "Origin"
 msgstr "Opprinnelse"
+
+msgid "Oslo time, as the authority keeps it."
+msgstr "Oslo-tid, slik myndigheten fører den."
 
 msgid "Other"
 msgstr "Annet"
@@ -7372,6 +7474,9 @@ msgstr "Saprolegniose"
 msgid "Saturday"
 msgstr "Lørdag"
 
+msgid "Save"
+msgstr "Lagre"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Lagre %(name)s"
@@ -7440,6 +7545,9 @@ msgstr "Si hvilket virkestoff når det er et annet, og bare da."
 
 msgid "Say who received the fish."
 msgstr "Si hvem som mottok fisken."
+
+msgid "Say whom the feed is for: the production fish or the cleaner fish."
+msgstr "Oppgi hvem fôret er til: produksjonsfisken eller rensefisken."
 
 msgid "Say why it is cancelled."
 msgstr "Skriv hvorfor den avlyses."
@@ -8353,6 +8461,13 @@ msgstr "Sammendraget slik dokumentet gir det."
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Adressen for bestillinger og spørsmål; kontaktpersonene har sine egne nedenfor."
 
+msgid ""
+"The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
+"amount of the active substance: confirm which it wants."
+msgstr ""
+"Mengden ved en medisinsk behandling er mengden brukt av produktet; Mattilsynet ber om mengden "
+"virkestoff: bekreft hva de vil ha."
+
 msgid "The amount of the medicine used, as the lice report asks for it."
 msgstr "Mengden legemiddel som ble brukt, slik luserapporten ber om den."
 
@@ -9063,6 +9178,14 @@ msgstr "Behandlingen %(date)s har ingen brukt mengde (Drift › Helse): rapporte
 msgid "The treatment of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Behandlingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
 
+#, python-format
+msgid ""
+"The treatment of %(date)s was of no unit that held salmonids: the report cannot say how many "
+"cages were treated."
+msgstr ""
+"Behandlingen %(date)s gjaldt ingen enhet som hadde laksefisk: rapporten kan ikke si hvor mange "
+"merder som ble behandlet."
+
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
 "for a few days before a split."
@@ -9187,6 +9310,13 @@ msgstr ""
 "Årsklassen rapportene oppgir, for eksempel 2026. Om det er klekkeåret eller året fisken kom i "
 "sjøen, er ikke bekreftet med myndighetene: oppgi det slik anlegget regner det."
 
+msgid ""
+"The year class and whether the fish are farmed or wild-caught are what the reports ask of a "
+"batch. A change is logged on the batch."
+msgstr ""
+"Årsklasse og om fisken er oppdrett eller villfanget er det rapportene spør om for en gruppe. En "
+"endring logges på gruppen."
+
 msgid "The year it was published."
 msgstr "Året det ble publisert."
 
@@ -9228,6 +9358,9 @@ msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 
 msgid "This batch already has a production plan."
 msgstr "Denne fiskegruppen har allerede en produksjonsplan."
+
+msgid "This batch has been voided."
+msgstr "Denne gruppen er annullert."
 
 msgid "This empties the unit of this batch"
 msgstr "Dette tømmer enheten for fiskegruppen"
@@ -9551,6 +9684,16 @@ msgstr ""
 "Enhet %(unit)s: %(fish)d flere fisk av %(species)s i telling enn månedens linjer forklarer (en "
 "opptelling opp). Rapporten har ikke felt for det: send den inn slik Mattilsynet godtar, eller "
 "korriger tellingen."
+
+#, python-format
+msgid ""
+"Unit %(unit)s: count adjustments of both signs in the month net to %(net)+d fish of %(species)s, "
+"though %(down)d fish left by an escape or a recount down: check that the figure filed is the one "
+"meant."
+msgstr ""
+"Enhet %(unit)s: telleendringer med begge fortegn i måneden gir netto %(net)+d fisk av "
+"%(species)s, selv om %(down)d fisk forsvant ved rømming eller nedtelling: kontroller at tallet "
+"som rapporteres er det som er ment."
 
 #, python-format
 msgid ""
@@ -10242,6 +10385,10 @@ msgstr "en korrigering"
 msgid "after the count"
 msgstr "etter tellingen"
 
+#, python-format
+msgid "and %(kilos)s to the cleaner fish"
+msgstr "og %(kilos)s til rensefisken"
+
 msgid "as stocked"
 msgstr "som ved utsett"
 
@@ -10851,6 +10998,10 @@ msgstr "uten nummer"
 msgid "no number, expiring %(date)s"
 msgstr "uten nummer, utløper %(date)s"
 
+#, python-format
+msgid "no official code for %(species)s"
+msgstr "ingen offisiell kode for %(species)s"
+
 msgid "no production form"
 msgstr "ingen produksjonsform"
 
@@ -11131,6 +11282,10 @@ msgstr "til %(date)s"
 #, python-format
 msgid "to %(unit)s"
 msgstr "til %(unit)s"
+
+#, python-format
+msgid "to the cleaner fish %(kilos)s"
+msgstr "til rensefisken %(kilos)s"
 
 #, python-format
 msgid "total sulfide %(value)s µg/L as S"

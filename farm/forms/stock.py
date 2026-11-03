@@ -378,6 +378,26 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
             token=data['token'])
 
 
+class BatchDetailsForm(ServiceErrors, forms.ModelForm):
+    """The year class and whether the fish are farmed or wild-caught of a batch stocked without them
+    (farm/stock/services.py `correct_batch`)."""
+
+    service_fields = {'batch': NON_FIELD_ERRORS}
+
+    class Meta:
+        model = Batch
+        fields = ['year_class', 'provenance']
+        help_texts = {field: BatchInputForm.Meta.help_texts[field] for field in ('year_class', 'provenance')}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['provenance'].choices = [('', _('Not given')), *self.fields['provenance'].choices[1:]]
+
+    def save(self, user):
+        return services.correct_batch(user, batch=self.instance, year_class=self.cleaned_data['year_class'],
+                                      provenance=self.cleaned_data['provenance'])
+
+
 class UnitChoice(forms.ModelChoiceField):
     def __init__(self, *args, labels=None, **kwargs):
         super().__init__(*args, **kwargs)

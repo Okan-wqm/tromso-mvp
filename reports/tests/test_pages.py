@@ -4,7 +4,7 @@ database), corrections, the exports, the permissions, the activity log, the data
 import csv
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone as dt_tz
 from decimal import Decimal
 
 from django.contrib import admin
@@ -18,11 +18,14 @@ from core import database
 from core.audit import message
 from core.models import AuditLog
 from core.softdelete import plan_delete
+from farm.models import Supplier
+from farm.models.site import zone_of
 from farm.stock import services as stock_services
 from farm.tests.helpers import role, rows_data
 
 from .. import compute, services
 from ..models import Report, ReportSnapshot, ResistanceSuspicion, UnitAnswer
+from ..periods import OSLO
 from .helpers import OCTOBER, ReportTestCase, day
 from .schema import errors
 
@@ -120,6 +123,24 @@ class DraftTests(ReportPagesTestCase):
         result = compute.compute(report)
         self.assertEqual((result.problems, result.content['cause']), ([], 'A blower stopped'))
 
+    def test_the_time_found_is_typed_on_the_sites_clock_and_shown_back_on_it(self):
+        self.sea.timezone = 'Asia/Tokyo'                                      # nine hours ahead of UTC
+        self.sea.save()
+        values = dict(kind='welfare', site=str(self.sea.pk), period_start='', occurred_on='2026-10-30',
+                      what_happened='Oxygen fell')
+        _response, report = self.start(found_at='2026-10-30T06:15', **values)
+        self.assertEqual(report.found_at, datetime(2026, 10, 30, 6, 15, tzinfo=zone_of(self.sea)))
+        self.assertEqual(report.found_at.astimezone(dt_tz.utc), datetime(2026, 10, 29, 21, 15, tzinfo=dt_tz.utc))
+        edit = self.client.get(reverse('reports:report_edit', args=[report.pk]))
+        self.assertEqual(edit.context['form'].initial['found_at'], datetime(2026, 10, 30, 6, 15))
+        self.assertContains(edit, 'value="2026-10-30T06:15"')
+        self.assertEqual(compute.compute(report).content['found_at'], '2026-10-29T21:15:00+00:00')
+        # The future is the site's future: a time that is past in UTC may still be to come in Tokyo.
+        soon = timezone.localtime(timezone.now(), zone_of(self.sea)) + timedelta(hours=2)
+        response, _again = self.start(found_at=soon.strftime('%Y-%m-%dT%H:%M'), **{
+            **values, 'occurred_on': soon.date().isoformat()})
+        self.assertEqual(response.context['form'].errors['found_at'], ['The time cannot be in the future.'])
+
     def test_the_answers_of_a_biomass_report_are_a_list_of_their_own(self):
         _response, report = self.start(kind='biomass', site=str(self.sea.pk))
         url = reverse('reports:report_units', args=[report.pk])
@@ -137,6 +158,28 @@ class DraftTests(ReportPagesTestCase):
         self.assertEqual(self.client.post(reverse('reports:report_units', args=[smolt.pk]),
                                           rows_data('units', [])).status_code, 404)
 
+    def test_a_unit_answer_is_read_edited_and_removed_through_its_page(self):
+        _response, report = self.start(kind='biomass', site=str(self.sea.pk))
+        url = reverse('reports:report_units', args=[report.pk])
+
+        def version():
+            return str(Report.objects.get(pk=report.pk).version)
+        self.client.post(url, {**rows_data('units', [{'unit': str(self.m1.pk), 'reduced_capacity': True}]),
+                               'version': version()})
+        answer = UnitAnswer.objects.get()
+        self.assertContains(self.client.get(reverse('reports:report_edit', args=[report.pk])), 'data-panel="units"')
+        self.client.post(url, {**rows_data('units', [{'id': str(answer.pk), 'unit': str(self.m1.pk),
+                                                      'reduced_capacity': False}], initial=1), 'version': version()})
+        self.assertEqual(list(UnitAnswer.objects.values_list('unit__code', 'reduced_capacity')), [('M-01', False)])
+        # The unit is listed once.
+        response = self.client.post(url, {**rows_data('units', [
+            {'id': str(answer.pk), 'unit': str(self.m1.pk)}, {'unit': str(self.m1.pk)}], initial=1),
+                                          'version': version()})
+        self.assertEqual((response.status_code, UnitAnswer.objects.count()), (200, 1))
+        self.client.post(url, {**rows_data('units', [{'id': str(answer.pk), 'DELETE': True}], initial=1),
+                               'version': version()})
+        self.assertFalse(UnitAnswer.objects.exists())
+
 
 class FilingTests(ReportPagesTestCase):
     def test_recording_the_filing_freezes_the_content_and_logs_its_hash(self):
@@ -146,7 +189,7 @@ class FilingTests(ReportPagesTestCase):
         self.assertContains(response, 'Recorded as filed.')
         report.refresh_from_db()
         self.assertEqual((report.submitted_at, report.submitted_by, report.channel, report.reference, report.status),
-                         (datetime.fromisoformat(FILED_AT).replace(tzinfo=timezone.get_current_timezone()), self.user,
+                         (datetime.fromisoformat(FILED_AT).replace(tzinfo=OSLO), self.user,
                           'altinn', 'AR123456', 'submitted'))
         snapshot = ReportSnapshot.objects.get(report=report)
         self.assertEqual(snapshot.content, compute.compute(report).content)
@@ -158,6 +201,20 @@ class FilingTests(ReportPagesTestCase):
         self.assertContains(page, 'As filed')
         self.assertContains(page, 'The records still give what was filed.')
         self.assertReportsAddUp()
+
+    def test_the_filing_time_is_oslos_whatever_zone_the_browser_is_in(self):
+        self.october()
+        _response, report = self.start()
+        with timezone.override('Pacific/Auckland'):
+            self.file(report)
+        report.refresh_from_db()
+        self.assertEqual(report.submitted_at, datetime(2026, 11, 3, 9, 30, tzinfo=OSLO))
+        self.assertEqual(report.submitted_at.astimezone(dt_tz.utc), datetime(2026, 11, 3, 8, 30, tzinfo=dt_tz.utc))
+        _response, draft = self.start(period_start='2026-09-15')
+        with timezone.override('Pacific/Auckland'):
+            form = self.client.get(reverse('reports:report_detail', args=[draft.pk])).context['submit_form']
+        now = timezone.localtime(timezone.now(), OSLO).replace(tzinfo=None)
+        self.assertLess(abs(form.initial['submitted_at'] - now), timedelta(minutes=2))      # Oslo's wall clock
 
     def test_what_the_filing_refuses(self):
         _response, report = self.start()                       # no fish in October: not ready
@@ -255,6 +312,10 @@ class ExportTests(ReportPagesTestCase):
         self.assertNotIn('not-filed', filed['Content-Disposition'])
 
     def test_the_planned_slaughter_as_mattilsynets_api_takes_it(self):
+        operator = Supplier.objects.create(name='Fjord Slakteri AS', code='FSL', supplies=['slaughter'],
+                                           organisation_number='NO912345678MVA')
+        self.facility.operator = operator
+        self.facility.save()
         batch = self.stock(self.m1, 1000, '4000', day(10, 1))
         from farm.models import HandlingPlanItem
         HandlingPlanItem.objects.create(kind='harvest', date=day(11, 18), unit=self.m1, batch=batch,
@@ -265,6 +326,25 @@ class ExportTests(ReportPagesTestCase):
         self.assertEqual(errors(body, 'PlanlagtSlaktRapportDto'), [])
         self.assertEqual((body['uke'], body['år'], body['godkjenningsnummer'],
                           body['planlagteLokaliteter'][0]['ukeplanPerArt'][0]['onsdagKg']), (47, 2026, 'M123', 2501))
+        # The company that files is the slaughterhouse's operator, never a farm whose fish it slaughters.
+        self.assertEqual(body['organisasjonsnummer'], '912345678')
+        self.assertEqual(body['planlagteLokaliteter'][0]['organisasjonsnummer'], '987654321')
+
+    def test_a_planned_slaughter_of_a_facility_without_an_operator_is_not_ready(self):
+        batch = self.stock(self.m1, 1000, '4000', day(10, 1))
+        from farm.models import HandlingPlanItem
+        HandlingPlanItem.objects.create(kind='harvest', date=day(11, 18), unit=self.m1, batch=batch,
+                                        planned_kg=Decimal('2500.6'), facility=self.facility, created_by=self.user)
+        _response, report = self.start(kind='slaughter_planned', site='', facility=str(self.facility.pk),
+                                       period_start='2026-11-16')
+        problem = (f'{self.facility} has no company that files for it with a 9-digit organisation number (Purchasing '
+                   '› Suppliers, the operator of Slaughter facilities).')
+        self.assertIn(problem, compute.compute(report).problems)
+        self.assertContains(self.file(report), 'It is not ready:')
+        self.facility.operator = Supplier.objects.create(name='Fjord Slakteri AS', code='FSL', supplies=['slaughter'],
+                                                         organisation_number='ABC-1')
+        self.facility.save()
+        self.assertIn(problem, compute.compute(report).problems)            # not nine digits
 
     def test_the_csv_guards_free_text_and_keeps_numbers(self):
         self.october()
@@ -314,7 +394,8 @@ class IntegrationTests(ReportPagesTestCase):
     def test_the_database_viewer_shows_the_tables(self):
         tables = {table.name for _section, found in database.sections() for table in found}
         self.assertTrue({'regulatory_reports', 'regulatory_report_snapshots', 'regulatory_report_unit_answers',
-                         'regulatory_report_resistance_suspicions', 'regulatory_report_sensitivity_tests'} <= tables)
+                         'regulatory_report_resistance_suspicions', 'regulatory_report_sensitivity_tests',
+                         'regulatory_report_treatment_answers'} <= tables)
 
     def test_a_discarded_draft_comes_back_from_the_admin_unless_another_was_started(self):
         _response, report = self.start()

@@ -10,16 +10,17 @@ import django.core.validators
 
 from django.db import migrations, models
 
-NINE_DIGITS = re.compile(r'[0-9]{9}')
+# What a person typed for a company number: nine digits, in groups or with hyphens, with the VAT form's NO and MVA.
+NINE_DIGITS = re.compile(r'(?:NO)?([0-9]{9})(?:MVA)?')
 
 
 def organisation_numbers(apps, schema_editor):
     Site = apps.get_model('farm', 'Site')
     for site in Site._base_manager.exclude(organisation_number_override=''):
         typed = site.organisation_number_override
-        digits = ''.join(typed.split())
-        if NINE_DIGITS.fullmatch(digits):
-            site.organisation_number_override = digits
+        found = NINE_DIGITS.fullmatch(re.sub(r'[\s.-]', '', typed).upper())
+        if found:
+            site.organisation_number_override = found.group(1)
         else:
             note = f'Organisation number override before 2026-11-03, not 9 digits: {typed}'
             site.notes = f'{site.notes}\n{note}' if site.notes else note

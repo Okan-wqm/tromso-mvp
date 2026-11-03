@@ -6,6 +6,7 @@ The planned kilos are the plan's round kilos (whether Mattilsynet's planned kilo
 a plan's day is the day the fish leave the unit, which can differ from the slaughter day when they wait in a wellboat
 or the slaughterhouse's pens: the page shows the days for the person to check (D-3). The deadline is the earlier of
 Thursday 24:00 of the week before and the day the fish start fasting for the first harvest of the week."""
+import re
 from collections import defaultdict
 from decimal import Decimal
 
@@ -14,7 +15,7 @@ from django.utils.translation import gettext as _
 from farm.handling.fasting import fast_of
 from farm.models import HandlingPlanItem, Site, SlaughterFacility, Tank
 
-from .common import Result, identity, species_code, whole
+from .common import Result, identity, note, species_code, whole
 
 WEEKDAYS = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
 ZERO = Decimal(0)
@@ -55,19 +56,38 @@ def compute(facility, period):
     if not items:
         problems.append(_('No harvest to this facility is planned in the week.'))
     warnings.append(_('The days are the days the fish leave their units: check they are the slaughter days.'))
+    filer = _filer(facility)
+    if filer is None:
+        note(problems, _('%(facility)s has no company that files for it with a 9-digit organisation number (Purchasing › '
+                         'Suppliers, the operator of Slaughter facilities).') % {'facility': facility})
     content = {
         'kind': 'slaughter_planned', 'period': period.key,
-        'facility': {'name': facility.name, 'approval_number': facility.approval_number},
+        'facility': {'name': facility.name, 'approval_number': facility.approval_number, 'organisation_number': filer},
         'localities': localities, 'items': [str(item.pk) for item in items],
     }
-    scope = [
+    return Result(content, problems, warnings, scope(facility, period, items))
+
+
+def scope(facility, period, items=None):
+    """The rows the week's figures are read from (for the fingerprint), without computing them."""
+    items = items if items is not None else items_of(facility, period)
+    sites = {item.unit.production_department.site_id for item in items if item.unit.production_department.site_id}
+    return [
         ('plan_items', HandlingPlanItem.all_objects.filter(kind=HandlingPlanItem.Kind.HARVEST, facility=facility,
                                                            date__gte=period.start, date__lte=period.end)),
         ('facility', SlaughterFacility.all_objects.filter(pk=facility.pk)),
         ('sites', Site.all_objects.filter(pk__in=sites)),
         ('units', Tank.all_objects.filter(pk__in={item.unit_id for item in items})),
     ]
-    return Result(content, problems, warnings, scope)
+
+
+def _filer(facility):
+    """The organisation number of the company that files for the slaughterhouse (the report's own
+    `organisasjonsnummer`: "selskapet som rapporterer planlagt slakt"): its operator's, nine digits; never taken from the
+    farms whose fish it slaughters. None when the facility has no operator or its number is not nine digits."""
+    operator = facility.operator
+    found = re.fullmatch(r'(?:NO)?([0-9]{9})(?:MVA)?', operator.organisation_number) if operator else None
+    return found.group(1) if found else None
 
 
 def deadline(facility, period, rule_deadline):

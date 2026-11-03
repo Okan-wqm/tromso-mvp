@@ -31,11 +31,11 @@ from core.crud import DRAFT, done, render_page
 from ..feeding import read as feeding_read, views as feeding_views
 from ..health import views as health_views
 from ..forms.stock import (
-    BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
+    BatchDetailsForm, BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
     PlannedForm, TransferForm, VoidForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
-from ..models import HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
+from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
 from ..models.stock import ARRIVAL_STATUSES
 from ..templatetags.stock import fish, number, tonnes
 from ..water import views as water_views
@@ -491,6 +491,29 @@ def _estimate(unit, form):
             'days': (day - share.measured_on).days if share.measured_on else None, 'entered_g': entered,
             'difference_g': entered - share.start_g if entered is not None else None,
             'difference_pct': 100 * (entered - share.start_g) / share.start_g if entered is not None else None}
+
+
+@permission_required(RECORD, raise_exception=True)
+def batch_details(request, pk):
+    """A batch's year class and whether its fish are farmed or wild-caught, for fish stocked before the reports asked
+    for them (who may record stock may give them; logged on the batch)."""
+    batch = get_object_or_404(Batch.objects.select_related('species'), pk=pk)
+    chosen = _params(request)['unit']
+    unit = Tank.objects.filter(pk=chosen).first() if _is_uuid(chosen) else None
+    context = _context(batch=batch, heading=_('Batch details: %(batch)s') % {'batch': batch.code},
+                       back_url=_back(request, unit))
+    if request.method == 'POST':
+        form = BatchDetailsForm(request.POST, instance=batch)
+        if form.is_valid():
+            try:
+                form.save(request.user)
+            except ValidationError as error:
+                form.add_service_error(error)
+            else:
+                messages.success(request, _('Batch details saved: %(batch)s.') % {'batch': batch.code})
+                return done(request, _back(request, unit))
+        return _refused(request, 'farm/stock_batch.html', {**context, 'form': form})
+    return render_page(request, 'farm/stock_batch.html', {**context, 'form': BatchDetailsForm(instance=batch)})
 
 
 @permission_required(VOID, raise_exception=True)

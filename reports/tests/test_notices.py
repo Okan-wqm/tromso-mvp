@@ -23,6 +23,7 @@ from farm.tests.helpers import role
 
 from .. import compute
 from ..models import Report, ReportSnapshot
+from ..periods import OSLO
 from .helpers import REPORTER, ReportTestCase, day
 from .test_pages import FILED_AT, ReportPagesTestCase, report_data
 
@@ -138,7 +139,7 @@ class TheFilingTellsTheHealthRecordsTests(NoticeTestCase):
         self.assertContains(page, f'{reverse("reports:report_create")}?health_event={self.event.pk}')
         self.file(report, channel='altinn', reference='AR-7')
         told = notices.told([self.event])[self.event.pk]
-        self.assertEqual((told.reference, told.at), ('AR-7', tz.make_aware(datetime.fromisoformat(FILED_AT))))
+        self.assertEqual((told.reference, told.at), ('AR-7', datetime.fromisoformat(FILED_AT).replace(tzinfo=OSLO)))
         self.assertEqual(notices.pending([self.event]), [])
         page = self.client.get(reverse('farm:healthevent_list'))
         self.assertContains(page, 'Notified')
@@ -163,6 +164,25 @@ class TheFilingTellsTheHealthRecordsTests(NoticeTestCase):
         logged = AuditLog.objects.filter(entity_type='regulatory report', action='update').latest('created_at')
         self.assertEqual(logged.changes['Not ready when filed'], [None, ' '.join(problems)])
         self.assertEqual(notices.pending([self.event]), [])
+
+    def test_the_log_of_a_filing_is_english_at_rest_whoever_records_it(self):
+        Site.objects.filter(pk=self.sea.pk).update(organisation_number='')
+        _response, report = self.notice()
+        english = compute.compute(report).problems
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = 'nb'
+        response = self.file(report, channel='telephone', reference='')
+        self.assertContains(response, 'Registrert som innsendt')        # the page is in Norwegian
+        logged = AuditLog.objects.filter(entity_type='regulatory report', action='update').latest('created_at')
+        self.assertEqual(logged.changes['Not ready when filed'], [None, ' '.join(english)])
+
+    def test_a_correction_of_a_notice_keeps_the_event_it_is_about(self):
+        _response, report = self.notice()
+        self.file(report, channel='altinn', reference='AR-1')
+        self.client.post(reverse('reports:report_correct', args=[report.pk]))
+        correction = Report.objects.get(corrects=report)
+        self.assertEqual((correction.health_event, correction.escape, correction.kind, correction.site),
+                         (self.event, None, 'disease', self.sea))
+        self.assertEqual(compute.compute(correction).content['health_event']['id'], str(self.event.pk))
 
     def test_the_telephone_exception_is_for_notices_not_for_the_monthly_reports(self):
         Site.objects.filter(pk=self.hatchery.pk).update(organisation_number='')
@@ -246,6 +266,19 @@ class EscapeNoticeTests(NoticeTestCase):
         for fields in ({'kind': 'escape', 'escape': None}, {'kind': 'welfare', 'escape': self.record}):
             with self.subTest(fields), self.assertRaises(IntegrityError), transaction.atomic():
                 Report.objects.create(site=self.sea, occurred_on=day(10, 26), **fields)
+
+    def test_a_correction_of_an_escape_notice_keeps_the_escape(self):
+        _response, report = self.escape_notice()
+        self.file(report, channel='altinn', reference='AR-9')
+        self.client.post(reverse('reports:report_correct', args=[report.pk]))
+        correction = Report.objects.get(corrects=report)
+        self.assertEqual((correction.escape, correction.health_event, correction.kind), (self.record, None, 'escape'))
+        self.assertEqual(compute.compute(correction).content['escape']['fish'], 300)
+
+    def test_the_time_found_of_an_escape_is_the_records_not_a_second_one(self):
+        _response, report = self.escape_notice()
+        self.assertEqual(compute.compute(report).content['escape']['found_time'], '06:15')
+        self.assertIsNone(report.found_at)
 
     def test_a_void_of_the_escape_after_the_filing_is_told(self):
         _response, report = self.escape_notice()

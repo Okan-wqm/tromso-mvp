@@ -1,0 +1,23 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} A batch's year class and whether its fish are farmed or wild-caught (farm.stock.views.batch_details): the two
+   facts the reports ask of a batch, for fish stocked before they were asked for. Logged on the batch.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<div class="confirm">
+  <p>{% blocktrans trimmed with batch=batch.code species=batch.species date=batch.input_date|date:"DATE_FORMAT" %}{{ batch }} · {{ species }} · stocked {{ date }}.{% endblocktrans %}</p>
+  <p>{% trans "The year class and whether the fish are farmed or wild-caught are what the reports ask of a batch. A change is logged on the batch." %}</p>
+  <form method="post" action="{{ request.get_full_path }}" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% with field=form.year_class %}{% include "registration/_field.html" %}{% endwith %}
+    {% with field=form.provenance %}{% include "registration/_field.html" %}{% endwith %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline">{% trans "Save" %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

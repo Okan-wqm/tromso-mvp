@@ -11,7 +11,7 @@ slaughter within 14 days of the day it fell due, § 6). A week in which no count
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 
-from django.db.models import Max
+from django.db.models import Max, Q
 from django.utils.translation import gettext as _
 
 from farm.health import read as health_read
@@ -19,14 +19,15 @@ from farm.models import Batch, HandlingPlanItem, LiceCount, Medicine, Site, Spec
 from farm.models.harvest import PlanKind
 from farm.models.health import MEDICINAL, TreatmentMethod, TreatmentReason
 from farm.models.site import zone_of
+from farm.models.species import SALMONID_CODES
 from farm.models.water_point import PointKind
 from farm.stock import read
 from farm.water import read as water
 
+from ..periods import OSLO
 from . import stock
 from .common import Result, identity, note, text, unit_number
 
-SALMONIDS = ('SAL', 'TRS', 'TRR')       # D-11: Mattilsynet's own "Laks, Ørret, Regnbueørret"
 TEMPERATURE_DEPTH_M = Decimal(3)         # § 6: the sea temperature is measured at 3 m depth
 WARM_DAYS, COLD_DAYS, COLD = 7, 14, Decimal(4)
 SLAUGHTER_DAYS = 14
@@ -76,14 +77,17 @@ def sea_temperature(site, period, problems):
 def compute(site, period, report):
     problems, warnings = [], []
     units = stock.site_units(site)
-    salmonids = set(Species.all_objects.filter(official_code__in=SALMONIDS).values_list('pk', flat=True))
+    salmonids = set(Species.all_objects.filter(official_code__in=SALMONID_CODES).values_list('pk', flat=True))
     held, holders = _held(units, period, salmonids)
     if not held:
         problems.append(_('No unit of the site held salmonids in the week: the report has nothing to file.'))
     temperature, samples = sea_temperature(site, period, problems)
+    if zone_of(site) != OSLO:
+        warnings.append(_('%(site)s keeps another clock than Oslo’s: the week and its samples are the site’s, the '
+                          'authority’s week is Oslo’s.') % {'site': site})
     counts = _counts(site, units, period, problems, warnings)
     _coverage(site, units, held, counts, temperature, period, problems, warnings)
-    treatments = _treatments(site, units, report, counts, problems, period, salmonids)
+    treatments = _treatments(site, units, report, counts, problems, warnings, period, salmonids)
     content = {
         'kind': 'sea_lice', 'period': period.key, 'identity': identity(site, problems),
         'temperature_c': text(temperature, 1), 'samples': samples, 'counts': counts['content'],
@@ -96,7 +100,13 @@ def compute(site, period, report):
              'other_substance': row.other_substance or None, 'result': row.result}
             for row in report.sensitivity_tests.all()],
     }
-    scope = stock.scope_rows(units, period.end) + [
+    return Result(content, problems, warnings, scope(site, period, units))
+
+
+def scope(site, period, units=None):
+    """The rows the week's figures are read from (for the fingerprint), without computing them."""
+    units = units if units is not None else stock.site_units(site)
+    return stock.scope_rows(units, period.end) + [
         ('lice_counts', LiceCount.all_objects.filter(unit__in=units, date__gte=period.start, date__lte=period.end)),
         ('treatments', Treatment.all_objects.filter(reason=TreatmentReason.SEA_LICE,
                                                     units__production_department__site=site,
@@ -105,16 +115,13 @@ def compute(site, period, report):
         ('medicines', Medicine.all_objects.filter(treatments__in=week_treatments(site, period)).distinct()),
         ('water_samples', depth_samples(site, period)),
     ]
-    return Result(content, problems, warnings, scope)
 
 
 # ---- which cages held salmonids ---------------------------------------------------------------------------
 def _held(units, period, salmonids):
     """({unit id: the first day of its salmonids' stay as far as known}, the units): the cages that held salmonids on
     any day of the week."""
-    opening = read.stock_on(units, stock.day_before(period))
-    closing = read.stock_on(units, period.end)
-    lines = read.movements(units, period.start, period.end)
+    opening, closing, lines = read.in_period(units, period.start, period.end)
     species = dict(Batch.all_objects.filter(pk__in={line.batch_id for line in lines}).values_list('pk', 'species_id'))
     held = {}
     for found in (opening, closing):
@@ -161,44 +168,59 @@ def _coverage(site, units, held, counts, temperature, period, problems, warnings
     last = dict(LiceCount.objects.filter(unit__in=held, date__lt=period.start).values('unit_id')
                 .annotate(last=Max('date')).values_list('unit_id', 'last'))
     interval = timedelta(days=COLD_DAYS if temperature is not None and temperature < COLD else WARM_DAYS)
+    names = {unit.pk: unit for unit in units}
     due = {}
     for unit_id, first in held.items():
         if unit_id in counts['units']:
+            counted = {count.unit_id: count.date for count in counts['week'].counts}[unit_id]
+            if unit_id in last and counted - last[unit_id] > interval:
+                warnings.append(_('%(unit)s was counted on %(date)s and before that on %(last)s: the regulation asks for '
+                                  'a count at least every %(days)d days (§ 6).') % {
+                    'unit': names[unit_id].code, 'date': counted.isoformat(), 'last': last[unit_id].isoformat(),
+                    'days': interval.days})
             continue
         day = last.get(unit_id, first) + interval
         if day <= period.end:
             due[unit_id] = day
+    # A cage with no production fish left on the day its count fell due (harvested, culled or moved out before it)
+    # has none to count.
+    fish_on = {day: {unit_id: unit_stock.count for unit_id, unit_stock in read.stock_on(units, day).items()}
+               for day in set(due.values())}
+    due = {unit_id: day for unit_id, day in due.items() if fish_on[day].get(unit_id, 0) > 0}
     if not due:
         if counts['content'] is None:
             warnings.append(_('No count fell due in the week: it is filed with the temperature and without counts.'))
         return
     if site.production_form == Site.ProductionForm.STAMFISK and temperature is not None and temperature < COLD:
         return                                  # broodstock below 4 °C is not counted
-    if _all_to_be_slaughtered(held, due, period):
+    if _all_to_be_slaughtered(units, held, due, fish_on, period):
         warnings.append(_('Every fish of the site is planned for slaughter within %(days)d days of the day the count '
                           'fell due: no count is needed (lakselusforskriften § 6).') % {'days': SLAUGHTER_DAYS})
         return
-    names = {unit.pk: unit for unit in units}
     for unit_id in sorted(due, key=lambda pk: names[pk].code):
         problems.append(_('%(unit)s held salmonids and was due a count by %(date)s: count it, or the site’s average '
                           'is not of every cage.') % {'unit': names[unit_id].code, 'date': due[unit_id].isoformat()})
 
 
-def _all_to_be_slaughtered(held, due, period):
-    """Whether every cage with salmonids has a harvest planned that covers its fish within 14 days of the day its count
-    fell due (of the week's end for a cage that was not due), a plan that is open: neither cancelled nor recorded."""
-    fish = read.unit_counts(list(held))
+def _all_to_be_slaughtered(units, held, due, fish_on, period):
+    """Whether every cage with salmonids has a harvest planned that covers its production fish (cleaner fish are not
+    harvested) within 14 days of the day its count fell due (of the week's end for a cage that was not due), the fish
+    being those it held that day. A plan counts when it is not cancelled, whether still open or already recorded as a
+    harvest (a voided harvest is no longer one): the exception does not lapse when the fish are slaughtered."""
+    closing = {unit_id: unit_stock.count for unit_id, unit_stock in read.stock_on(units, period.end).items()}
+    fish = {unit_id: fish_on[due[unit_id]].get(unit_id, 0) if unit_id in due else closing.get(unit_id, 0)
+            for unit_id in held}
     planned = {}
-    for item in HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, unit__in=held, cancelled_reason='',
-                                                operation__isnull=True):
+    for item in HandlingPlanItem.objects.filter(Q(operation__isnull=True) | Q(operation__is_deleted=False),
+                                                kind=PlanKind.HARVEST, unit__in=held, cancelled_reason=''):
         latest = due.get(item.unit_id, period.end) + timedelta(days=SLAUGHTER_DAYS)
         if item.date <= latest:
             planned[item.unit_id] = planned.get(item.unit_id, 0) + (item.planned_count or 0)
-    return all(planned.get(unit_id, 0) >= fish.get(unit_id, 0) > 0 for unit_id in held)
+    return any(fish.values()) and all(planned.get(unit_id, 0) >= fish[unit_id] for unit_id in held)
 
 
 # ---- the treatments -----------------------------------------------------------------------------------------
-def _treatments(site, units, report, counts, problems, period, salmonids):
+def _treatments(site, units, report, counts, problems, warnings, period, salmonids):
     answers = {answer.treatment_id: answer for answer in report.treatment_answers.all()}
     by_unit_day = {}
     if counts['week'] is not None:
@@ -215,6 +237,9 @@ def _treatments(site, units, report, counts, problems, period, salmonids):
         holding = holding_cache[first_day]
         whole = holding <= treated
         cages = None if whole else len(holding & treated)
+        if not holding or cages == 0:
+            note(problems, _('The treatment of %(date)s was of no unit that held salmonids: the report cannot say how many '
+                             'cages were treated.') % {'date': treatment.start_date.isoformat()})
         answer = answers.get(treatment.pk)
         before, ambiguous = _before_count(treatment, treated, by_unit_day)
         if answer is not None:
@@ -227,6 +252,10 @@ def _treatments(site, units, report, counts, problems, period, salmonids):
                'before_count': before, 'combination': answer.combination if answer is not None else None}
         row.update(_kind(treatment, problems))
         rows.append(row)
+    if any(row['medicinal'] for row in rows):
+        # § 10 c asks for the amount of active substance; the amount recorded is the product's (unverified which is meant).
+        warnings.append(_('The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the '
+                          'amount of the active substance: confirm which it wants.'))
     groups = {}
     for row in rows:
         if row['combination'] is not None:
@@ -252,6 +281,9 @@ def _before_count(treatment, treated, count_days):
 def _kind(treatment, problems):
     """The treatment's type in the report, and for a medicinal one its substance, strength and amount."""
     if treatment.method not in MEDICINAL:
+        if treatment.method == TreatmentMethod.OTHER and not treatment.notes.strip():
+            note(problems, _('Describe the treatment of %(date)s (Operations › Health): “other” is described in the '
+                             'report.') % {'date': treatment.start_date.isoformat()})
         return {'medicinal': False, 'type': NON_MEDICINAL_TYPE[treatment.method], 'description': (
             treatment.notes if treatment.method == TreatmentMethod.OTHER else None), 'substance': None}
     medicine = treatment.medicine

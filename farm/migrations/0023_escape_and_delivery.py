@@ -82,6 +82,10 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='stockmovement',
+            constraint=models.CheckConstraint(condition=models.Q(models.Q(('kind', 'adjustment'), ('reason', 'escape'), _negated=True), ('count_delta__lt', 0), _connector='OR'), name='chk_stock_movements_escape_removes'),
+        ),
+        migrations.AddConstraint(
+            model_name='stockmovement',
             constraint=models.CheckConstraint(condition=models.Q(('kind__in', ['input', 'mortality', 'cull', 'transfer_out', 'transfer_in', 'harvest', 'delivery', 'weighing', 'adjustment'])), name='chk_stock_movements_kind'),
         ),
         migrations.AddConstraint(

@@ -188,7 +188,9 @@ class Report(AuditedModel):
 
     @property
     def is_superseded(self):
-        """A filed correction replaces it."""
+        """A filed correction replaces it (a list annotates it, `has_filed_correction`, to ask once for all)."""
+        if hasattr(self, 'has_filed_correction'):
+            return self.has_filed_correction
         return self.corrections.filter(submitted_at__isnull=False).exists()
 
     @property

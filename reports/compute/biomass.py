@@ -10,10 +10,11 @@ last measured point; else the book, marked stale. Each batch's basis is filed wi
 from decimal import Decimal
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from farm.feeding import read as feeding_read
-from farm.models import Batch, DeliveryRecord, Feed, FeedingRecord, Tank
+from farm.models import Batch, DeliveryRecord, Feed, FeedingRecord, ProtocolAssignment, Site, Tank
 from farm.models.stock import AdjustmentReason, MovementKind
 from farm.stock import read
 
@@ -34,7 +35,7 @@ BOOK, PROJECTED, STALE = 'book', 'projected', 'book_stale'
 
 
 def is_production(batch):
-    return not batch.species.cleaner_fish_type
+    return not batch.species.is_cleaner_fish
 
 
 def loss_cause(line):
@@ -46,9 +47,7 @@ def loss_cause(line):
 def compute(site, period, report=None):
     problems, warnings = [], []
     units = stock.site_units(site)
-    opening = read.stock_on(units, stock.day_before(period))
-    closing = read.stock_on(units, period.end)
-    lines = read.movements(units, period.start, period.end)
+    opening, closing, lines = read.in_period(units, period.start, period.end)
     batches = Batch.all_objects.select_related('species').in_bulk(
         {line.batch_id for line in lines} | {share.batch.pk for found in (opening, closing) for unit_stock in
                                              found.values() for share in unit_stock.shares})
@@ -115,11 +114,27 @@ def compute(site, period, report=None):
     }
     warnings.append(_('Fiskeridirektoratet’s current form is to be confirmed with Fiskeridirektoratet before relying '
                       'on this layout (D-12).'))
-    scope = stock.scope_rows(units, period.end) + [
-        ('feeding_records', FeedingRecord.all_objects.filter(unit__in=units, date__gte=period.start,
-                                                             date__lte=period.end)),
+    if site.production_form == Site.ProductionForm.STAMFISK:
+        warnings.append(_('Broodstock of salmon, trout and rainbow trout at sea state whether they were put out in spring '
+                          'or autumn, and a site shared with a food-fish permit says which permit the report is for '
+                          '(akvakulturdriftsforskriften § 44 second paragraph): this report has no field for it yet.'))
+    return Result(content, problems, warnings, scope(site, period, units))
+
+
+def scope(site, period, units=None):
+    """The rows the month's figures are read from (for the fingerprint), without computing them: the ledger, and for the
+    biomass the feeding projection is read from, every feeding up to the month's end, their feeds and the protocol
+    assignments of the units and their batches (the temperatures it also reads are the water module's, and a past sample
+    voided later is shown by the page's own comparison, not by this fingerprint)."""
+    units = units if units is not None else stock.site_units(site)
+    unit_ids = [unit.pk for unit in units]
+    assignments = ProtocolAssignment.all_objects.filter(Q(unit__in=unit_ids)
+                                                        | Q(batch__in=read.batches_ever_in(unit_ids)))
+    return stock.scope_rows(units, period.end) + [
+        ('feeding_records', FeedingRecord.all_objects.filter(unit__in=units, date__lte=period.end)),
+        ('feeds', Feed.all_objects.filter(feedings__unit__in=units, feedings__date__lte=period.end).distinct()),
+        ('protocol_assignments', assignments),
     ]
-    return Result(content, problems, warnings, scope)
 
 
 def _biomass(units, closing, period, warnings):
@@ -141,14 +156,19 @@ def _biomass(units, closing, period, warnings):
             share.last_weighed or share.since)
         if (period.end - measured).days <= recent:
             figure = {'grams': share.grams, 'basis': {'method': BOOK, 'measured_on': measured.isoformat()}}
-        elif estimate is not None and not estimate.blind_days:
+        elif estimate is not None and not estimate.blind_days and estimate.fed_since_kg > 0:
             figure = {'grams': estimate.grams, 'basis': {'method': PROJECTED, 'measured_on': measured.isoformat(),
                                                          'measured_avg_g': text(estimate.measured_g, 2)}}
         else:
             figure = {'grams': share.grams, 'basis': {'method': STALE, 'measured_on': measured.isoformat()}}
-            warnings.append(_('A batch’s biomass is its last measured average from %(date)s: no weighing in the '
-                              '%(days)d days before the month’s end, and the projection has feeding days without a '
-                              'feeding table.') % {'date': measured.isoformat(), 'days': recent})
+            if estimate is not None and not estimate.blind_days:
+                warnings.append(_('A batch’s biomass is its last measured average from %(date)s: no weighing in the '
+                                  '%(days)d days before the month’s end, and no feeding with a feeding table was '
+                                  'recorded since to project it from.') % {'date': measured.isoformat(), 'days': recent})
+            else:
+                warnings.append(_('A batch’s biomass is its last measured average from %(date)s: no weighing in the '
+                                  '%(days)d days before the month’s end, and the projection has feeding days without a '
+                                  'feeding table.') % {'date': measured.isoformat(), 'days': recent})
         found[(unit_id, share.batch.pk)] = figure
     return found
 
@@ -158,7 +178,7 @@ def _fallow_since(units, closing, period):
     if any(is_production(share.batch) for unit_stock in closing.values() for share in unit_stock.shares):
         return None
     unit_ids = {unit.pk for unit in units}
-    production = set(Batch.all_objects.filter(pk__in=read.batches_ever_in(unit_ids), species__cleaner_fish_type='')
-                     .values_list('pk', flat=True))
+    production = {pk for pk, batch in Batch.all_objects.select_related('species').in_bulk(
+        read.batches_ever_in(unit_ids)).items() if is_production(batch)}
     days = [line.op.date for line in read.ledger(production) if line.op.date <= period.end and line.unit_id in unit_ids]
     return max(days).isoformat() if days else None

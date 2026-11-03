@@ -6,9 +6,13 @@ from decimal import Decimal
 from django.test import SimpleTestCase
 
 from farm.feeding import services as feeding_services
-from farm.models import Feed, FeedingRecord, HandlingPlanItem, HandlingRule
+from farm.models import (
+    Batch, Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, HandlingRule, ProtocolAssignment, ProtocolBand,
+    Supplier,
+)
 from farm.models.handling import HandlingKind
 from farm.stock import services
+from farm.tests.helpers import make_species
 
 from .. import compute, periods
 from ..compute import biomass
@@ -73,6 +77,37 @@ class SmoltTests(ReportTestCase):
         self.assertEqual(result.content['identity'], {'organisation_number': '987654321', 'lokalitetsnummer': 12345,
                                                       'site': 'Hatchery', 'site_code': 'HA'})
 
+    def test_a_unit_emptied_by_moving_its_fish_within_the_site_does_not_count_them_twice(self):
+        batch = self.stock(self.k1, 3850, '5', day(10, 2))
+        services.record_transfer(self.user, source=self.k1, batch=batch, day=day(10, 30), legs=[(self.k3, 3850)],
+                                 reason='density')
+        result = compute.compute(self.report(Report.Kind.SMOLT, OCTOBER))
+        rows = {row['number']: row for row in result.content['units'].values()}
+        self.assertEqual((rows['K-01']['fish_at_end'], rows['K-01']['avg_weight_g'], rows['K-03']['fish_at_end']),
+                         (0, '5.00', 3850))                       # the average just before, the fish in K-03 only
+        self.assertEqual(sum(row['fish_at_end'] for row in rows.values()), 3850)
+        self.assertEqual(result.problems, [])
+        self.assertIn('3850 of the fish of K-01 were moved on 2026-10-30 to other units of the site: they are in '
+                      'those units’ counts, not in this one’s (its average weight is the one just before).',
+                      result.warnings)
+
+    def test_a_unit_that_held_two_species_one_after_the_other_is_listed_once_for_each(self):
+        trout = make_species('TRR', 'Rainbow trout', 'Oncorhynchus mykiss', local_name='Regnbueørret',
+                             official_code='TRR')
+        operation = services.record_input(self.user, species=trout, input_stage='smolt', origin='own_hatchery',
+                                          day=day(10, 1), lines=[(self.k1, 1000, Decimal(40))])
+        services.record_delivery(self.user, unit=self.k1, batch=operation.movements.get().batch, day=day(10, 10),
+                                 count=1000, destination='Buyer AS')
+        self.stock(self.k1, 500, '2', day(10, 12))
+        result = compute.compute(self.report(Report.Kind.SMOLT, OCTOBER))
+        rows = {key.split('/')[1]: row for key, row in result.content['units'].items()}
+        self.assertEqual({code: (row['fish_at_end'], row['avg_weight_g'], row['moved_out_of_site'])
+                          for code, row in rows.items()},
+                         {'TRR': (1000, '40.00', 1000), 'SAL': (500, '2.00', 0)})   # each species' own fish
+        self.assertEqual(result.problems, [])
+        self.assertIn('K-01 held more than one species in the month and is listed once for each: confirm that '
+                      'Mattilsynet takes one tank number twice.', result.warnings)
+
     def test_what_keeps_it_from_being_ready(self):
         self.october()
         self.salmon.official_code = ''
@@ -122,14 +157,35 @@ class BiomassTests(ReportTestCase):
                          [f'Batch {self.first.code} has no year class (Operations › Production units).',
                           f'Batch {self.second.code} has no year class (Operations › Production units).'])
 
-    def test_fish_weighed_long_ago_without_a_blind_day_report_the_projection(self):
-        self.october()
-        result = compute.compute(self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea))
-        row, = result.content['units'].values()
-        first = next(item for item in row['stock'] if item['fish'] == 500)
-        # No feeding since their stocking: the projection adds no growth, and it is the figure filed, with its basis.
-        self.assertEqual((first['biomass_kg'], first['basis']), ('1.0', {
-            'method': biomass.PROJECTED, 'measured_on': '2026-09-20', 'measured_avg_g': '2.00'}))
+    def test_a_projection_is_the_basis_only_when_feed_was_credited_since_the_last_measured_point(self):
+        batch = self.stock(self.m1, 2000, '100', day(9, 1))                  # 200 kg, not weighed since
+        report = self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea)
+
+        def figure():
+            result = compute.compute(report)
+            row, = result.content['units'].values()
+            return next(item for item in row['stock'] if item['fish'] == 2000), result.warnings
+        # Nothing fed since the stocking: the figure is a 60-day-old measurement and says so, never a projection.
+        item, warnings = figure()
+        self.assertEqual((item['biomass_kg'], item['basis']), ('200.0', {'method': biomass.STALE,
+                                                                       'measured_on': '2026-09-01'}))
+        self.assertIn('A batch’s biomass is its last measured average from 2026-09-01: no weighing in the 30 days '
+                      'before the month’s end, and no feeding with a feeding table was recorded since to project it '
+                      'from.', warnings)
+        # Fed to a feeding table with an expected FCR of 1: 75 kg of feed is 75 kg of growth.
+        feed = Feed.objects.create(name='Grower', code='GR-1', feed_type='grower')
+        protocol = FeedingProtocol.objects.create(name='P', species=self.salmon, expected_fcr=Decimal('1.00'),
+                                                  status='active')
+        ProtocolBand.objects.create(protocol=protocol, min_weight_g=Decimal(0), max_weight_g=None, feed=feed,
+                                    meals_per_day=4, expected_fcr=Decimal('1.00'))
+        ProtocolAssignment.objects.create(protocol=protocol, batch=batch, valid_from=day(9, 1))
+        for number in range(21, 26):
+            feeding_services.record_feeding(self.user, unit=self.m1, day=day(10, number), feed=feed,
+                                            amount_kg=Decimal(15))
+        item, warnings = figure()
+        self.assertEqual((item['biomass_kg'], item['basis']), ('275.0', {
+            'method': biomass.PROJECTED, 'measured_on': '2026-09-01', 'measured_avg_g': '100.00'}))
+        self.assertFalse([text for text in warnings if 'last measured average' in text])
 
     def test_losses_harvest_and_the_fallow_day(self):
         batch = self.stock(self.m1, 1000, '500', day(10, 1))
@@ -151,6 +207,12 @@ class BiomassTests(ReportTestCase):
 
 
 class PlannedSlaughterTests(ReportTestCase):
+    def setUp(self):
+        super().setUp()
+        self.facility.operator = Supplier.objects.create(name='Fjord Slakteri AS', code='FSL', supplies=['slaughter'],
+                                                         organisation_number='912345678')
+        self.facility.save()
+
     def plan(self, on, kilos, unit=None, **fields):
         unit = unit or self.m1
         batch = getattr(self, 'planned_batch', None) or self.stock(unit, 1000, '4000', day(10, 1))
@@ -172,7 +234,8 @@ class PlannedSlaughterTests(ReportTestCase):
         self.assertEqual(locality['species'], {'SAL': {'monday': 2000, 'tuesday': None, 'wednesday': 1501,
                                                        'thursday': None, 'friday': None, 'saturday': None,
                                                        'sunday': None}})
-        self.assertEqual(result.content['facility'], {'name': 'Fjord Slakteri', 'approval_number': 'M123'})
+        self.assertEqual(result.content['facility'], {'name': 'Fjord Slakteri', 'approval_number': 'M123',
+                                                      'organisation_number': '912345678'})
         self.assertEqual(result.problems, [])
 
     def test_a_plan_without_kilos_keeps_it_from_being_ready(self):

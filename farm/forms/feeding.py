@@ -88,8 +88,11 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         for target in FeedTarget.values:
             fish = stock.of(target) if stock is not None else None
             if fish is not None and fish.batches:
-                species = self.species_for[target] = fish.batches[0].species
-                self.suiting_for[target] = {feed.pk for feed in feeds if suits(feed, species, fish.avg_weight_g)}
+                self.species_for[target] = fish.batches[0].species
+                # A feed suits these fish when it suits any batch of them (several cleaner species may share a cage).
+                self.suiting_for[target] = {
+                    feed.pk for feed in feeds
+                    if any(suits(feed, share.batch.species, share.avg_weight_g) for share in fish.counted)}
         self.suiting = set().union(*self.suiting_for.values())
         choices = [('', '---------')]
         if not self.suiting:
@@ -104,13 +107,18 @@ class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
         if 'target' not in self.fields:
             cleaned['target'] = FeedTarget.PRODUCTION
         elif not cleaned.get('target'):
-            # Left to the feed: the cleaner fish's when it suits them and not the production fish (D-1), and when
-            # the unit holds no production fish for it to be for.
+            # Left to the feed: the cleaner fish's when it suits them and not the production fish, the production
+            # fish's in the opposite case, and the cleaner fish's when the unit has no production fish (D-1). A feed
+            # that suits both or neither of them says nothing: the person is asked, never guessed for.
             feed = cleaned.get('feed')
             ours = feed is not None and feed.pk in self.suiting_for.get(FeedTarget.CLEANER_FISH, ())
             theirs = feed is not None and feed.pk in self.suiting_for.get(FeedTarget.PRODUCTION, ())
-            alone = FeedTarget.PRODUCTION not in self.species_for
-            cleaned['target'] = FeedTarget.CLEANER_FISH if alone or ours and not theirs else FeedTarget.PRODUCTION
+            if FeedTarget.PRODUCTION not in self.species_for:
+                cleaned['target'] = FeedTarget.CLEANER_FISH
+            elif ours != theirs:
+                cleaned['target'] = FeedTarget.CLEANER_FISH if ours else FeedTarget.PRODUCTION
+            elif feed is not None and 'feed' not in self.errors:
+                self.add_error('target', _('Say whom the feed is for: the production fish or the cleaner fish.'))
         return cleaned
 
     @property

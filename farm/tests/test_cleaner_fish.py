@@ -6,6 +6,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.core.management import call_command
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase
 from django.urls import reverse
@@ -224,13 +225,54 @@ class CullAndHarvestTests(CleanerFishTestCase):
         self.user.groups.add(role('Harvest keeper', *HARVEST_KEEPER))
         form = self.client.get(reverse('farm:handlingplanitem_create'), {'kind': 'harvest'}).context['form']
         self.assertEqual(set(form.fields['batch'].queryset), {self.salmon_batch, self.batch})
+        target_form = self.client.get(reverse('farm:productionplan_create')).context['form']
+        self.assertEqual(set(target_form.fields['batch'].queryset), {self.salmon_batch, self.batch})
         listed = self.client.get(reverse('farm:productionplan_list'))
         self.assertEqual({row['share'].batch for row in listed.context['objects'] if row['share']},
                          {self.salmon_batch, self.batch})
         self.assertFalse(HandlingPlanItem.objects.exists())
 
 
+class SpeciesFlagTests(CleanerFishTestCase):
+    def errors(self, species):
+        try:
+            species.full_clean()
+        except ValidationError as error:
+            return error.message_dict
+        return {}
+
+    def test_whether_a_species_is_a_cleaner_fish_is_fixed_once_fish_of_it_have_been_stocked(self):
+        fixed = ['Fixed: fish of this species have been stocked, so whether it is a cleaner fish cannot change.']
+        self.lump.cleaner_fish_type = ''
+        self.assertEqual(self.errors(self.lump)['cleaner_fish_type'], fixed)
+        self.lump.cleaner_fish_type = 'wrasse'                   # one cleaner fish for another: the same reads
+        self.assertNotIn('cleaner_fish_type', self.errors(self.lump))
+        self.salmon.cleaner_fish_type = 'lumpfish'
+        self.assertEqual(self.errors(self.salmon)['cleaner_fish_type'], fixed)
+        unused = make_species('COD', 'Cod', 'Gadus morhua', local_name='Torsk')
+        unused.cleaner_fish_type = 'wrasse'
+        self.assertNotIn('cleaner_fish_type', self.errors(unused))     # nothing stocked: it may change
+
+
 class FeedingTargetTests(CleanerFishTestCase):
+    def test_the_days_view_gives_the_production_fish_their_feed_and_the_cleaner_fish_a_line_of_their_own(self):
+        self.feed_cage('10', days_ago=1)
+        self.feed_cage('4', FeedTarget.CLEANER_FISH, self.block, days_ago=1)
+        self.feed_cage('3', FeedTarget.CLEANER_FISH, self.block, days_ago=2)      # a day with the cleaner fish only
+        page = self.client.get(reverse('farm:feeding_records'), {'view': 'days'})
+        rows = {row['day']: row for row in page.context['day_rows'] if row['unit'] == self.cage}
+        self.assertEqual({day: (row['given_kg'], row['cleaner_kg']) for day, row in rows.items()
+                          if row['given_kg'] or row['cleaner_kg']}, {self.day(1): (10, 4), self.day(2): (0, 3)})
+        self.assertEqual((page.context['given_kg'], page.context['cleaner_kg']), (10, 7))
+        self.assertContains(page, 'to the cleaner fish')
+
+    def test_the_lice_count_is_of_the_cages_with_production_fish(self):
+        self.stock(self.cage2, species=self.lump, days_ago=5)               # a cage of cleaner fish alone
+        self.user.groups.add(role('Lice counter', 'view_licecount', 'add_licecount'))
+        form = self.client.get(reverse('farm:lice_record')).context['form']
+        self.assertIn(self.cage, form.fields['unit'].queryset)
+        self.assertNotIn(self.cage2, form.fields['unit'].queryset)
+
     def feed_cage(self, kilos, target=FeedTarget.PRODUCTION, feed=None, days_ago=1, **fields):
         return self.record(kilos=kilos, days_ago=days_ago, unit=self.cage, feed=feed or self.feed, target=target,
                            **fields)
@@ -343,18 +385,41 @@ class FeedingDialogTests(CleanerFishTestCase):
         services.void_feeding(self.user, record, 'Wrong cage')
         self.assertEqual(read.fed([self.cage], self.day(5), self.today), {})
 
-    def test_left_to_the_feed_the_target_is_the_cleaner_fishs_only_when_the_feed_suits_only_them(self):
+    def test_left_to_the_feed_the_target_is_the_one_kind_of_fish_the_feed_suits_and_never_guessed_otherwise(self):
         self.suit(self.block, self.lump, 0, 1000)
         self.suit(self.feed, self.salmon, 0, 1000)
-        extra = self.feed.__class__.objects.create(name='All fish', code='AF', feed_type='grower')
-        self.suit(extra, self.lump, 0, 1000)
-        self.suit(extra, self.salmon, 0, 1000)
-        for feed, target in ((self.block, 'cleaner_fish'), (self.feed, 'production'), (extra, 'production')):
+        both = self.feed.__class__.objects.create(name='All fish', code='AF', feed_type='grower')
+        self.suit(both, self.lump, 0, 1000)
+        self.suit(both, self.salmon, 0, 1000)
+        for feed, target in ((self.block, 'cleaner_fish'), (self.feed, 'production')):
             self.client.post(self.url(), self.data(feed=str(feed.pk), target=''), headers={'X-Modal': '1'})
             self.assertEqual(FeedingRecord.objects.order_by('-created_at').first().target, target, feed.code)
+        # A feed that suits both kinds of fish (or neither) does not say whom it is for: the person is asked.
+        asked = 'Say whom the feed is for: the production fish or the cleaner fish.'
+        neither = self.feed.__class__.objects.create(name='Other fish', code='OF', feed_type='grower')
+        self.suit(neither, make_species('COD', 'Cod', 'Gadus morhua', local_name='Torsk'), 0, 1000)
+        for feed in (both, neither):
+            response = self.client.post(self.url(), self.data(feed=str(feed.pk), target=''))
+            self.assertEqual((response.status_code, response.context['form'].errors['target']), (422, [asked]), feed.code)
+        self.assertEqual(FeedingRecord.objects.count(), 2)
+        response = self.client.post(self.url(), self.data(feed=str(both.pk), target='production'),
+                                    headers={'X-Modal': '1'})
+        self.assertEqual((response.status_code, FeedingRecord.objects.count()), (204, 3))
         # The choices list the feeds that suit either kind of fish first.
         groups = self.client.get(self.url()).context['form'].fields['feed'].choices
         self.assertEqual(str(groups[1][0]), 'Suitable for these fish')
+
+    def test_a_feed_that_suits_any_cleaner_species_of_the_unit_is_the_cleaner_fishs(self):
+        wrasse = make_species('WRA', 'Ballan wrasse', 'Labrus bergylta', local_name='Berggylt', freshwater=False,
+                              official_code='WRA', cleaner_fish_type='wrasse')
+        self.stock(self.cage, count=500, weight='60', days_ago=9, species=wrasse)      # lumpfish and wrasse share the cage
+        only_wrasse = self.feed.__class__.objects.create(name='Wrasse feed', code='WF', feed_type='grower')
+        self.suit(only_wrasse, wrasse, 0, 1000)
+        self.suit(self.feed, self.salmon, 0, 1000)
+        response = self.client.post(self.url(), self.data(feed=str(only_wrasse.pk), target=''),
+                                    headers={'X-Modal': '1'})
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(FeedingRecord.objects.get().target, 'cleaner_fish')
 
     def test_a_unit_without_cleaner_fish_has_no_target_and_a_unit_of_cleaner_fish_alone_feeds_them(self):
         response = self.client.post(self.url(self.t1), self.data(feed=str(self.block.pk)), headers={'X-Modal': '1'})

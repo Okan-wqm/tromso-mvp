@@ -22,6 +22,28 @@ COMPUTE = {
 }
 
 
+# The rows each kind reads, for the fingerprint, without computing a figure: what "the records no longer give what was
+# filed" is checked by on the list, so the list never folds a ledger.
+SCOPE = {
+    ReportKind.SEA_LICE: lambda report: lice.scope(report.site, report.period),
+    ReportKind.SMOLT: lambda report: smolt.scope(report.site, report.period),
+    ReportKind.CLEANER_FISH: lambda report: cleaner.scope(report.site, report.period),
+    ReportKind.BIOMASS: lambda report: biomass.scope(report.site, report.period),
+    ReportKind.SLAUGHTER_PLANNED: lambda report: slaughter.scope(report.facility, report.period),
+    ReportKind.LAND_STOCK: notices.land_stock_scope,
+    ReportKind.SITE_IN_USE: notices.site_change_scope,
+    ReportKind.SITE_EMPTIED: notices.site_change_scope,
+    ReportKind.ESCAPE: notices.event_scope,
+    ReportKind.DISEASE: notices.event_scope,
+    ReportKind.WELFARE: notices.event_scope,
+}
+
+
+def scope(report):
+    """The rows the report reads, as `compute` reads them (a pair of label and queryset each)."""
+    return SCOPE[report.kind](report)
+
+
 def compute(report):
     """The report's Result as the records give it now, with the contact person the authority can ask (every report
     names one, Mattilsynet's `kontaktperson`)."""

@@ -8,13 +8,15 @@ from django.core.exceptions import ValidationError
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.http import content_disposition_header
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from core import navigation
 from core.crud import done, render_page
 
-from . import compute, exports, services
+from . import compute, exports, periods, services
 from .forms import SubmitForm
 from .resources import ReportResource
 
@@ -39,7 +41,9 @@ def submit(request, pk):
     detail = reverse('reports:report_detail', args=[report.pk])
     if form.is_valid():
         try:
-            services.submit(request.user, report, **form.cleaned_data)
+            filed = {**form.cleaned_data, 'submitted_at': timezone.make_aware(form.cleaned_data['submitted_at'],
+                                                                           periods.OSLO)}
+            services.submit(request.user, report, **filed)
         except ValidationError as error:
             for messages_of_field in error.message_dict.values():
                 for text in messages_of_field:
@@ -85,7 +89,7 @@ def export(request, pk, fmt):
                                 content_type='application/json; charset=utf-8')
     else:
         raise Http404
-    response['Content-Disposition'] = f'attachment; filename="{name}.{fmt}"'
+    response['Content-Disposition'] = content_disposition_header(True, f'{name}.{fmt}')
     return response
 
 

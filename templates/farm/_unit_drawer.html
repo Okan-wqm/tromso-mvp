@@ -47,7 +47,7 @@
           <tbody>
             {% for share, fed in batch_rows %}
             <tr>
-              <td><span class="row-title">{{ share.batch.code }}</span><span class="row-sub">{{ share.batch.get_input_stage_display }} · {% blocktrans trimmed with date=share.since|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% if share.cleaner %} · {% trans "cleaner fish" %}{% endif %}{% if share.siblings > 1 %} · {{ share.percent_of_unit|percent }}{% endif %}</span></td>
+              <td><span class="row-title">{{ share.batch.code }}</span><span class="row-sub">{{ share.batch.get_input_stage_display }} · {% blocktrans trimmed with date=share.since|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% if share.cleaner %} · {% trans "cleaner fish" %}{% endif %}{% if share.siblings > 1 %} · {{ share.percent_of_unit|percent }}{% endif %}</span><span class="row-sub">{% if share.batch.year_class %}{% trans "Year class" %} {{ share.batch.year_class }}{% else %}{% trans "No year class" %}{% endif %} · {% if share.batch.provenance %}{{ share.batch.get_provenance_display }}{% else %}{% trans "Farmed or wild-caught not given" %}{% endif %}{% if can_record %} · <a href="{% url 'farm:stock_batch' share.batch.pk %}?unit={{ unit.pk }}" data-modal>{% trans "Batch details" %}</a>{% endif %}</span></td>
               <td class="num">{{ share.count|fish }}</td>
               <td class="num">{{ share.avg_weight_g|grams }}<span class="row-sub">{% if share.last_weighed %}{% blocktrans trimmed with date=share.last_weighed|date:"DATE_FORMAT" %}weighed {{ date }}{% endblocktrans %}{% else %}{% trans "as stocked" %}{% endif %}</span></td>
               <td class="num">{{ share.biomass_kg|kilos }}</td>

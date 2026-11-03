@@ -544,7 +544,15 @@ marked in the drawer's batch table. A cleaner fish is not harvested (it is culle
 the cause "healthy, no longer to be used"), so the harvest dialog, the harvest plan and the harvest targets
 leave it out; a sea-lice count needs production fish in the unit (the lice are counted on the salmon); the
 medicine withdrawal and the water judging still see every fish. Which of the two a feeding is for is on the
-record (see Feeding records). `check_stock` holds the species rule with the same function as the service.
+record (see Feeding records). `check_stock` holds the species rule with the same function as the service. Whether a
+species is a cleaner fish is fixed once fish of it have been stocked (every read takes the flag live; lumpfish to
+wrasse may change).
+
+**Batch details.** A batch's year class (årsklasse) and whether its fish are farmed or wild-caught are what the reports
+ask of a batch and what fish stocked before they were asked for do not have; stock is never edited, so the drawer's batch
+table has a **Batch details** dialog (who may record stock) that sets the two, logged as an update of the batch whose version
+moves on, so a report filed from the batch is told to need a correction. The own hatchery's fish are farmed and the farm's
+catch wild-caught whatever is typed; a bought cleaner fish must say which.
 
 **Void** is the undo: the operation stops counting, the stock is folded again without it, and it is
 refused when later operations need its fish (the message names them). A correction is a void and a new
@@ -669,7 +677,8 @@ The unit's drawer on Production units has the same per batch under Feeding (Toda
 **Records** has two views: the feeding records (the list below) and **By unit and day** (`?view=days`; site, unit,
 batch, from and to, the last 7 days by default, at most 31 a page): per unit and day the batches with their estimated
 weight and the basis of the ration (protocol, SFR at the temperature, meals) or why there is none, the calculated
-ration, the feed given, the deviation (given − calculated, kg and %), and the weighings' correction lines.
+ration, the feed given to the production fish, the deviation (given − calculated, kg and %), and the weighings' correction
+lines; the feed given to the cleaner fish is not in that sum or the deviation, it has a line of its own under it.
 
 **Who may do what:** Feeding records (Read = Meal board and Records, Create = record a feeding or a meal, Delete =
 void one), Feeding protocols and Protocol assignments (read, create, edit, delete) in the role matrix (Production ·
@@ -1673,20 +1682,23 @@ what was filed: a correction is needed", figure by figure; a correction is a new
 |---|---|---|
 | Sea lice (lakselusforskriften § 10) | a sea site, an ISO week | Tuesday of the next week |
 | Smolt (akvakulturdriftsforskriften § 58) | a juvenile site, a month | the 7th of the next month |
-| Cleaner fish (§ 44, § 3 h) | a food-fish sea site, a month | the 7th of the next month |
+| Cleaner fish (§ 44, § 3 h) | every sea site, whatever its permit, a month in which it held cleaner fish | the 7th of the next month |
 | Monthly biomass (§ 44; Fiskeridirektoratet's form is to be confirmed) | a sea site of food fish or broodstock, a month | the 7th of the next month |
 | Planned slaughter (restkontrollforskriften § 9a) | a slaughter facility, a week | Thursday 24:00 before, or when the fish start fasting if earlier |
-| A land site's yearly stock, a site taken into use, a site emptied (§ 44a) | a food-fish or broodstock site on land | 7 January, when it happens |
+| A land site's yearly stock, a site taken into use, a site emptied (§ 44a) | a food-fish or broodstock site on land, and a hatchery of cleaner-fish juveniles (§ 3 i) | 7 January, when it happens |
 | Escape (§ 38), disease (dyrehelseforskriften § 7), welfare (§ 14) | a notice, started by a person from the escape or the health event | at once |
 
 **Due** (`reports/due.py`, read from the records, never stored). Which reports a site owes follows its **production form**
 (Facility › Sites, Reports tab), its type and the fish it held in the period (a week or month without fish of the kind owes
 nothing); it is listed from its **reports-from** date to the last closed period, minus the filed ones, a draft staying listed
-with its deadline and an **Overdue** mark. A site that holds fish and has no reports-from date or no production form is listed
-as "Not set up for reports" with a link to its form, never hidden. Planned slaughters come from the harvest plan (a facility and
-a week), escapes and listed diseases from their records until a notice of each is filed. The days are Oslo's calendar, whatever
+with its deadline and an **Overdue** mark. A site that holds fish and has no reports-from date, no production form or a species with no official code (not known to be
+a salmonid) is listed as "Not set up for reports" with what is missing and a link to its form, never hidden. Planned slaughters
+come from the open harvest plans (a facility and a week: a plan item that is cancelled or already recorded as a harvest is not
+owed), escapes and listed diseases from their records since the site's reports-from date until a notice of each is filed (a
+notice told by telephone counts). The days are Oslo's calendar, whatever
 clock the site keeps, and the ISO week of 28 December to 3 January is 2026-W53. The page also lists the **filed reports whose
-records changed** (read again only for the last 31 days, the backdating window).
+records changed**: only the rows a report read are compared with the ones it was filed from (never a ledger folded again), and a
+report of a period older than the last 31 days, the backdating window, is not read again.
 
 **A report** has a kind, a site (a slaughter facility for the planned slaughter), a period or the day of the event, its health
 event or escape for a notice, the contact person (the person who starts it, as the authority asks for one on every report), and for
@@ -1700,6 +1712,9 @@ amount: each with where to put it right) and what is worth a look.
 **The answers no record holds** are rows on the report's form while it is a draft: for the sea-lice week, whether each treatment was
 given before the count and which were given together (the records carry dates, no times), the suspicions of resistance and the
 sensitivity tests; for the biomass report, the units used for production of reduced capacity. They are frozen with the filing.
+
+**Clocks.** The time of a filing is Oslo's, as the authority keeps it; the time something was found is typed on the site's own
+clock (Facility › Sites) and stored as the moment it was; the browser's zone is never used.
 
 **Recording the filing** (Edit): when, through what (Altinn, the reporting API from another system, e-mail, telephone, other)
 and the receipt or reference (none for a call). In one transaction the report is locked, its version checked, its content computed
@@ -1715,16 +1730,24 @@ the records now, and say which.
 **What each computes** (nothing is typed but the contact person and the answers above):
 - *Sea lice*: the week's counts per cage and the site's average per stage (the mean of the cages' averages, as the regulation
   says), the cages that held salmonids and were due a count (7 days, 14 below 4 °C; none for broodstock below 4 °C, nor when every
-  fish is planned for slaughter within 14 days), the sea temperature (the mean of the week's samples at the site's depth points of
-  3 m, from Water chemistry), the week's lice treatments with substance, strength and amount from their records.
-- *Smolt*: per tank that held fish, its number, species, the fish and average weight at the month's end (a tank emptied in the month
-  reports the fish just before), and the fish dead, culled and moved out of the site, deliveries included.
+  fish is planned for slaughter within 14 days of the day the count fell due, whether the harvest is still planned or already
+  recorded; a cage with no production fish left on that day needs none), the sea temperature (the mean of the week's samples at the site's depth points of
+  3 m, from Water chemistry), the week's lice treatments with substance, strength and amount from their records (the amount is
+  the product's: Mattilsynet's § 10 c asks for the active substance's, so the report says to confirm which it wants).
+- *Smolt*: per tank and species that held fish, its number, species, the fish and average weight at the month's end (a tank
+  emptied in the month reports the fish just before, less those moved to another tank of the site, which are in that tank's
+  count), and the fish dead, culled and moved out of the site, deliveries included. A tank that held two species one after the
+  other is listed once for each, with a warning.
 - *Cleaner fish*: per unit, species and origin the fish at the end of the month before, those stocked and moved in, those taken out
-  by the six causes, dead and moved out, the month's count adjustments netted, and the dry and wet feed of the cleaner fish.
+  by the six causes, dead and moved out, the month's count adjustments netted (an escape and a recount up in one month are
+  warned about, so the netting does not hide the escape), and the dry and wet feed of the cleaner fish.
 - *Monthly biomass*: per production unit the fish stocked, the stock and its biomass at the month's end with how it was worked out
-  (the last weighing, the feeding projection, or the last weighing marked stale), the harvest, the live fish moved to another
-  site, the losses by cause and the feed; the day the site was left fallow.
-- *Planned slaughter*: per locality, species and weekday the whole kilos of the open harvest plans.
+  (the last weighing, the feeding projection where feed was credited since it, or the last weighing marked stale), the harvest, the live fish moved to another
+  site, the losses by cause and the feed; the day the site was left fallow. Broodstock at sea is warned that the season it was put
+  out in and the permit it is reported for (§ 44 second paragraph) have no field yet.
+- *Planned slaughter*: per locality, species and weekday the whole kilos of the week's planned harvests to the facility (a
+  cancelled one is left out), filed by the company that operates the slaughterhouse (its nine-digit organisation number from
+  Purchasing › Suppliers), never by a farm whose fish it slaughters.
 
 **`manage.py check_reports`** checks every report from scratch (a filed one has its content and the content its hash, a draft has
 none, a correction corrects a filed report of the same key, a notice is of its event's site); the tests run it after their writes.

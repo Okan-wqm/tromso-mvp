@@ -376,6 +376,9 @@ class StockMovement(models.Model):
                    | Q(measured_weight_kg__gt=0, kind__in=[MovementKind.HARVEST, MovementKind.MORTALITY,
                                                            MovementKind.CULL, MovementKind.DELIVERY])),
             _check('reason', _reason_rule()),
+            # An escape takes fish out of the book: a count adjustment up is a recount, never an escape.
+            _check('escape_removes', ~Q(kind=MovementKind.ADJUSTMENT, reason=AdjustmentReason.ESCAPE)
+                   | Q(count_delta__lt=0)),
             _check('size_class', Q(size_class='') | Q(kind__in=PAIRED)),
             # A harvest is weighed: its kilos are the farm's own fact beside the book (STK-29, STK-30).
             _check('harvest_weighed', ~Q(kind=MovementKind.HARVEST) | Q(measured_weight_kg__isnull=False)),

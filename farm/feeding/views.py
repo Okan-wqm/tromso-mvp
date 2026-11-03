@@ -180,8 +180,12 @@ def _by_day(request):
     projection = None
     if units:
         projection = read.project([unit.pk for unit in units], [(unit.pk, day) for unit in units for day in span])
-    given = {(row['unit_id'], row['date']): row['kilos'] for row in FeedingRecord.objects.filter(
-        unit__in=units, date__range=(first, last)).values('unit_id', 'date').annotate(kilos=Sum('amount_kg'))}
+    # What the production fish were given is what the calculated ration and the deviation are about; the cleaner fish's
+    # feed has a line of its own beside it, never in the sum.
+    given, cleaner = {}, {}
+    for row in (FeedingRecord.objects.filter(unit__in=units, date__range=(first, last))
+                .values('unit_id', 'date', 'target').annotate(kilos=Sum('amount_kg'))):
+        (cleaner if row['target'] == FeedTarget.CLEANER_FISH else given)[(row['unit_id'], row['date'])] = row['kilos']
     by_id = {unit.pk: unit for unit in units}
     unit_days = projection.days if projection else {}
     corrections = {}
@@ -192,13 +196,15 @@ def _by_day(request):
         {share.batch_id for unit_day in unit_days.values() for share in unit_day.shares}
         | {correction.batch_id for found in corrections.values() for correction in found})
     rows = []
-    for unit_id, day in sorted(set(given) | set(unit_days), key=lambda key: (-key[1].toordinal(), by_id[key[0]].code)):
+    for unit_id, day in sorted(set(given) | set(cleaner) | set(unit_days),
+                               key=lambda key: (-key[1].toordinal(), by_id[key[0]].code)):
         unit_day = unit_days.get((unit_id, day))
         shares = unit_day.shares if unit_day else []
         if batch is not None and batch.pk not in {share.batch_id for share in shares}:
             continue
         rows.append({
             'unit': by_id[unit_id], 'day': day, 'unit_day': unit_day, 'given_kg': given.get((unit_id, day), 0),
+            'cleaner_kg': cleaner.get((unit_id, day), 0),
             'shares': [{'share': share, 'batch': batches[share.batch_id],
                         'why': share.end.why(batches[share.batch_id])} for share in shares],
             'corrections': [{'correction': correction, 'batch': batches[correction.batch_id]}
@@ -209,7 +215,7 @@ def _by_day(request):
     return render_page(request, 'farm/feeding_list.html', _context(
         view=DAYS, views=_views(request, DAYS), day_rows=page.object_list, page=page,
         pager_query=urlencode({'view': DAYS, **kept}), params=params, choices=choices, clipped=clipped, span=SPAN,
-        given_kg=sum((row['given_kg'] for row in rows), 0),
+        given_kg=sum((row['given_kg'] for row in rows), 0), cleaner_kg=sum((row['cleaner_kg'] for row in rows), 0),
         calculated_kg=sum(calculated) if calculated and None not in calculated else None,
         filtered=bool(set(kept) - {'from', 'to'}), clear_url=f'{reverse(RECORDS)}?view={DAYS}',
         record_url=_with_next(reverse('farm:feeding_new'), request) if request.user.has_perm(RECORD) else ''))

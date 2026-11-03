@@ -1,0 +1,14 @@
+{% comment %} The calculator's live parts (farm.water.views.calculator_results): what the browser asks for again while
+   the form is filled in. Each part is the root of its include, marked data-live-part, and replaces the page's
+   part of the same name (frontend/poll.ts, the live form); the form's own fields are never in a part. The
+   page (farm/water_calculator.html) includes the same templates where they sit, so the two never differ.{% endcomment %}
+{% include "farm/calculator/_source.html" %}
+{% include "farm/calculator/_actions.html" %}
+{% include "farm/calculator/_errors.html" %}
+{% include "farm/calculator/_simulator.html" %}
+{% include "farm/calculator/_plot.html" with key="nh3" plot=result.plots.nh3 %}
+{% include "farm/calculator/_plot.html" with key="h2s" plot=result.plots.h2s %}
+{% include "farm/calculator/_deffeyes.html" %}
+{% include "farm/calculator/_plot.html" with key="carbonate" plot=result.plots.carbonate %}
+{% include "farm/calculator/_plot.html" with key="saturation" plot=result.plots.saturation %}
+{% include "farm/calculator/_results.html" %}

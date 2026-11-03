@@ -17,13 +17,14 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -34,12 +35,12 @@ from core import navigation
 from core.crud import done, render_page
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
-                           find_point, point_order)
+                           find_owner, find_point, point_order)
 from ..models import Equipment, SamplingPoint, Site, System, Tank, WaterMeasurement
 from ..models.site import zone_of
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, owner_type_of, site_of
 from ..stock.services import AlreadyRecorded
-from . import deffeyes, parameters, read, services
+from . import calculation, parameters, read, services
 from .evaluate import ALERTS, Status
 from .parameters import MEASURED, NH3_N
 
@@ -269,20 +270,87 @@ def _owner_points(owner):
 
 
 # ---- the calculator ------------------------------------------------------------------------------------
+def _calculator_data(query):
+    """The calculator's values: the address's, and when a unit or a loop was just chosen (`point` is not the
+    `loaded` one) its values put in (farm/water/calculation.offers): over what was entered, or over the defaults
+    when nothing was. (data, whether values were put in.) Nothing is written anywhere."""
+    chosen = query.get('point', '')
+    if not chosen or chosen == query.get('loaded', ''):
+        return query, False
+    data = query.copy() if CalculatorForm.DRAWN in query else CalculatorForm.default_data()
+    data['point'] = chosen
+    owner = find_owner(chosen)
+    if owner is not None:
+        CalculatorForm.fill(data, calculation.offers(owner))
+    data['loaded'] = chosen
+    return data, True
+
+
+def _source(form, owner):
+    """Where the values came from, field by field: what the unit or loop offers, whether the form still has it,
+    its time and status; and the measured fields it has no value for."""
+    offers = calculation.offers(owner)
+    entered = getattr(form, 'cleaned_data', {})
+    rows = []
+    for name, offer in offers.items():
+        field = form.fields[name]
+        value = None if offer.value is None else offer.value.quantize(Decimal(1).scaleb(-field.decimal_places))
+        rows.append({'label': field.label, 'value': value, 'decimals': field.decimal_places, 'offer': offer,
+                     'changed': entered.get(name) != value})
+    missing = [form.fields[name].label for name in calculation.MEASURED_FIELDS if name not in offers]
+    return {'point': owner, 'rows': rows, 'missing': missing}
+
+
+def _calculator_context(request, data, all_layers=False):
+    """The form, the calculation (None while a value is wrong) and where the values came from."""
+    form = CalculatorForm(data if data else None)
+    result = None
+    if not form.is_bound or form.is_valid():
+        result = calculation.calculate(**form.inputs(), all_layers=all_layers)
+    chosen = data.get('point', '') if data else ''
+    owner = find_owner(chosen) if chosen else None
+    query = data.urlencode() if data else ''
+    return _context(
+        form=form, result=result, analysis=result.analysis if result else None,
+        chart=result.chart if result else None, source=_source(form, owner) if owner is not None else None,
+        point_gone=bool(chosen) and owner is None, query=query,
+        latest_url=page_url(), history_tab_url=page_url(view=HISTORY), calculator_url=reverse('farm:water_calculator'),
+        results_url=reverse('farm:water_calculator_results'),
+        report_url=reverse('farm:water_calculator_report') + (f'?{query}' if query else ''))
+
+
 @permission_required(VIEW, raise_exception=True)
 def calculator(request):
-    """The calculator: a water's values, a target and the limits in, the Water Quality Management Chart
-    (farm/water/deffeyes.py) and the values worked out next to it. A GET form; without values it shows its
-    defaults. Nothing is stored."""
-    form = CalculatorForm(request.GET or None)
-    analysis = chart = None
-    if not form.is_bound or form.is_valid():
-        water, limits, target, pressure, layers = form.inputs()
-        analysis = deffeyes.analyse(water, limits, target, pressure)
-        chart = deffeyes.draw(analysis, layers)
-    context = _context(form=form, analysis=analysis, chart=chart, latest_url=page_url(),
-                       history_tab_url=page_url(view=HISTORY), calculator_url=reverse('farm:water_calculator'))
-    return render_page(request, 'farm/water_calculator.html', context)
+    """The calculator: a water's values, a target, the limits and the dosing in, the Water Quality Management
+    Chart (farm/water/deffeyes.py), the four small charts, the values worked out, the dosing recipes and the
+    simulator out (farm/water/calculation.py). A GET form: the address holds the values, so a link opens the
+    same view; without values it shows its defaults. Choosing a unit or a loop puts its latest values in and
+    sends the address with them (a link then keeps them). Nothing is stored. The page's results are its live
+    parts (`calculator_results`), which the browser asks for again as the form changes (frontend/poll.ts)."""
+    data, filled = _calculator_data(request.GET)
+    if filled:
+        return redirect(f"{reverse('farm:water_calculator')}?{data.urlencode()}")
+    return render_page(request, 'farm/water_calculator.html', _calculator_context(request, data))
+
+
+@permission_required(VIEW, raise_exception=True)
+def calculator_results(request):
+    """The calculator's live parts for the values in the address, each a [data-live-part] that replaces the
+    page's own: what the browser asks for while the form is filled in. The same view as the page's, nothing
+    stored."""
+    data, _filled = _calculator_data(request.GET)
+    return render(request, 'farm/calculator/_parts.html', _calculator_context(request, data))
+
+
+@permission_required(VIEW, raise_exception=True)
+def calculator_report(request):
+    """The calculator's printed report for the values in the address: the values entered, the values worked
+    out, every chart with every layer drawn (as the source's report forces its safety overlays), the recipes
+    and the simulator's steps; on a page of its own, to print."""
+    data, _filled = _calculator_data(request.GET)
+    context = _calculator_context(request, data, all_layers=True)
+    context['generated_at'] = timezone.now()
+    return render(request, 'farm/water_calculator_report.html', context)
 
 
 # ---- the dialogs ---------------------------------------------------------------------------------------

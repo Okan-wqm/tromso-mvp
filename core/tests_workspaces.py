@@ -61,8 +61,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                                     'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
                                                     'Water limits',
                                                     'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
-                                                    'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
-                                                    'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
+                                                    'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
+                                                    'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
                                                     'Sea-lice counts', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
@@ -120,8 +120,8 @@ class PanelMemoryTests(WorkspaceTestCase):
                                                   'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
                                                   'Water limits',
                                                   'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
-                                                  'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
-                                                  'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
+                                                  'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
+                                                  'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
                                                   'Sea-lice counts', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
@@ -217,6 +217,8 @@ class MenuPlacementTests(TestCase):
             'farm.HealthEvent': 'Production · Operations · Health',
             'farm.LiceCount': 'Production · Operations · Health',
             'messaging.Conversation': 'Production · Communication',
+            'tasks.Task': 'Production · Operations',
+            'tasks.TaskSeries': 'Production · Operations',
             'knowledge.Document': 'Company · Knowledge',
             'knowledge.KnowledgeEntry': 'Company · Knowledge',
             'core.AuditLog': 'Company · Administration',

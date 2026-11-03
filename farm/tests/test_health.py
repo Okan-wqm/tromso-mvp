@@ -664,7 +664,8 @@ class HealthEventPageTests(HealthTestCase):
 
     def test_a_deleted_site_keeps_its_events_out_of_sight(self):
         HealthEvent.objects.create(site=self.tromso, date=self.day(3), kind='observation')
-        self.assertEqual(plan_delete(self.tromso).kept_groups(), [{'label': 'Health events', 'count': 1}])
+        self.assertEqual(plan_delete(self.tromso).kept_groups(),
+                         [{'label': 'Health events', 'count': 1, 'note': HealthEvent.kept_note}])
 
 
 def treatment_data(units, **overrides):

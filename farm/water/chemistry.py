@@ -38,7 +38,16 @@ USGS tables: ln C* = −139.34411 + 1.575701e5/T − 6.642308e7/T² + 1.243800e1
 − S (1.7674e−2 − 10.754/T + 2140.7/T²), C* in mg/L at 1 atm of moist air. At a barometric pressure P
 (atm): Cp = C* P (1 − Pwv/P)(1 − θP) / ((1 − Pwv)(1 − θ)), with ln Pwv = 11.8571 − 3840.70/T − 216961/T²
 and θ = 0.000975 − 1.426e−5 t + 6.436e−8 t². P follows from the site's altitude by the standard
-atmosphere, P = (1 − 2.25577e−5 h)^5.25588. Saturation in % = 100 × mg/L ÷ Cp."""
+atmosphere, P = (1 − 2.25577e−5 h)^5.25588. Saturation in % = 100 × mg/L ÷ Cp.
+
+Carbon dioxide from the air. The CO₂ a water holds in equilibrium with the air: K0 × pCO₂, K0 the solubility of
+Weiss (1974), Mar. Chem. 2: 203, in its per-litre form, ln K0 = −58.0931 + 90.5069 (100/T) + 22.2940 ln(T/100)
++ S (0.027766 − 0.025888 (T/100) + 0.0050578 (T/100)²), mol/(L atm) (his per-kg form, −60.2409 + 93.4517
+(100/T) + 23.3585 ln(T/100) + S (0.023517 − 0.023656 (T/100) + 0.0047036 (T/100)²), is the one of Dickson,
+Sabine & Christian 2007, SOP check value ln K0 = −3.5617 at 25 °C and 35 ‰; the two differ by the density),
+and pCO₂ = xCO₂ (P − Pwv), the air's CO₂ mole fraction in its dry part, AIR_CO2 = 420 µmol/mol (outdoor air
+in 2024, NOAA Global Monitoring Laboratory; indoors, in a fish hall, often more). Stripping (aeration, a
+degasser) moves the water's CO₂ towards it and never below it."""
 import math
 from dataclasses import dataclass
 from functools import lru_cache
@@ -366,6 +375,30 @@ def oxygen_solubility(temp_c, salinity, pressure=1.0):
     c = math.exp(ln_c)
     if pressure == 1.0:
         return c
-    vapour = math.exp(11.8571 - 3840.70 / t - 216961 / t ** 2)
+    vapour = vapour_pressure_atm(temp_c)
     theta = 0.000975 - 1.426e-5 * temp_c + 6.436e-8 * temp_c ** 2
     return c * pressure * (1 - vapour / pressure) * (1 - theta * pressure) / ((1 - vapour) * (1 - theta))
+
+
+def vapour_pressure_atm(temp_c):
+    """The vapour pressure of water, atm (Benson & Krause 1984, as APHA 4500-O gives it)."""
+    t = temp_c + KELVIN
+    return math.exp(11.8571 - 3840.70 / t - 216961 / t ** 2)
+
+
+# ---- carbon dioxide from the air (Weiss 1974) -----------------------------------------------------------
+AIR_CO2 = 420e-6          # the air's CO₂, mol/mol of dry air (outdoor, 2024)
+
+
+def k0_co2(temp_c, salinity):
+    """The solubility of CO₂, Weiss (1974), per litre: mol/(L atm)."""
+    t = (temp_c + KELVIN) / 100
+    return math.exp(-58.0931 + 90.5069 / t + 22.2940 * math.log(t)
+                    + salinity * (0.027766 - 0.025888 * t + 0.0050578 * t * t))
+
+
+def co2_from_air(temp_c, salinity, pressure=1.0):
+    """The CO₂ (mg/L) of a water in equilibrium with the air at a barometric pressure (atm): the least
+    stripping can leave in it."""
+    partial = AIR_CO2 * (pressure - vapour_pressure_atm(temp_c))
+    return k0_co2(temp_c, salinity) * partial * MG_CO2_PER_MMOL * 1000

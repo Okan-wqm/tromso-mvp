@@ -1,0 +1,2 @@
+{% load i18n %}{# The calculator's report link (a live part): it opens the report of the values in the form. #}
+<span class="calc-report" data-live-part="actions">{% if result %}<a class="button button-ghost" href="{{ report_url }}" target="_blank" rel="noopener">{% include "icons/_icon.html" with name="printer" %}{% trans "Print report" %}</a>{% endif %}</span>

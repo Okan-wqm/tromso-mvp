@@ -405,13 +405,19 @@ def latest(points, now=None):
     return water
 
 
-def unit_water(units, now=None):
-    """{unit id: PointWater} of each unit's water: its middle point's latest values (`middle_points`), nothing
-    for a unit that has none. What Production units, its drawer and the overview show."""
-    units = list(units)
-    middles = middle_points(units)
+def owner_water(owners, now=None):
+    """{owner id: PointWater} of each unit's, loop's or equipment's water: its middle point's latest values
+    (`middle_points`), nothing for an owner that has none. What Production units, its drawer and the overview show
+    for units (`unit_water`), and what the calculator takes a unit's or a loop's values from."""
+    owners = list(owners)
+    middles = middle_points(owners)
     water = latest(list(middles.values()), now)
-    return {unit.pk: water[middles[unit.pk].pk] if unit.pk in middles else PointWater(None) for unit in units}
+    return {owner.pk: water[middles[owner.pk].pk] if owner.pk in middles else PointWater(None) for owner in owners}
+
+
+def unit_water(units, now=None):
+    """{unit id: PointWater} of each unit's water (`owner_water`)."""
+    return owner_water(units, now)
 
 
 # ---- the history ------------------------------------------------------------------------------------------
@@ -464,9 +470,11 @@ def history(samples):
     return rows
 
 
-def limits_now(point):
-    """{code: [WaterLimit]} for the fish at the point today: what a value there would be judged against."""
+def limits_now(place):
+    """{code: [WaterLimit]} for the fish at a point, or in a unit, loop or piece of equipment, today: what a value
+    there would be judged against."""
     now = timezone.now()
+    point = place if isinstance(place, SamplingPoint) else SamplingPoint(**{owner_type_of(place): place})
     context = Context([point], now)
     exposures = context.exposures(point, local_time(now, point).date())
     found = {}

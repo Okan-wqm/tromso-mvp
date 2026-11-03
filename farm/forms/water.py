@@ -13,7 +13,9 @@ from decimal import Decimal
 
 from django import forms
 from django.db.models import Q
-from django.utils import timezone
+from django.http import QueryDict
+from django.utils import formats, timezone
+from django.utils.text import format_lazy
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.crud import Fieldset, TabbedForm, tab_fields
@@ -24,7 +26,7 @@ from ..models.site import zone_of
 from ..models.water import BOUNDS
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
 from ..templatetags.water import limit_text
-from ..water import chemistry, deffeyes, parameters, services
+from ..water import calculation, chemistry, deffeyes, dosing, parameters, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
 
@@ -85,6 +87,39 @@ def find_point(value):
     except ValueError:
         return None
     return SamplingPoint.objects.with_owners().filter(pk=value).first()
+
+
+def owner_value(owner):
+    """A unit or a system as the calculator's "Values from" choice: tank:<id>, system:<id>."""
+    return f'{owner._meta.model_name}:{owner.pk}'
+
+
+def owner_label(owner):
+    if isinstance(owner, System):
+        return gettext('%(code)s · %(name)s (loop)') % {'code': owner.code, 'name': owner.name}
+    return f'{owner.code} · {owner.name}'
+
+
+def find_owner(value):
+    """The live unit or system a "Values from" choice names; None for anything else."""
+    kind, _sep, pk = (value or '').partition(':')
+    model = {'tank': Tank, 'system': System}.get(kind)
+    try:
+        uuid.UUID(pk)
+    except ValueError:
+        return None
+    if model is None:
+        return None
+    related = ('site',) if model is System else ('production_department__site',)
+    return model.objects.select_related(*related).filter(pk=pk).first()
+
+
+def owner_choices():
+    """The units, then the systems (a loop), each live: what the calculator can take values from."""
+    units = Tank.objects.select_related('production_department__site').order_by('code')
+    systems = System.objects.select_related('site').order_by('code')
+    return [(_('Units'), [(owner_value(unit), owner_label(unit)) for unit in units]),
+            (_('Systems (loop)'), [(owner_value(system), owner_label(system)) for system in systems])]
 
 
 def point_order(point):
@@ -351,12 +386,25 @@ def _measured(code, required=False, low=None, help_text=None):
                         help_text=parameter.help if help_text is None else help_text, required=required)
 
 
-class CalculatorForm(forms.Form):
-    """The water the Water Quality Management Chart is drawn for, a target, the limits and the chart's layers.
-    A GET form: the values live in the address and nothing is stored. Without values it shows DEFAULTS: the
-    source's example water, and limits that are defaults, not the limits of any fish (farm/water/deffeyes.py;
-    the bug document, WQ-30 on). A measured value has its parameter's label, range and precision."""
+# The pH bounds of the limits tab, in the order they must go up.
+PH_FIELDS = ['ph_critical_low', 'ph_warning_low', 'ph_warning_high', 'ph_critical_high']
 
+
+def dose_name(reagent):
+    """A simulator field's name: the grams of a reagent."""
+    return f'dose_{reagent.key}'
+
+
+class CalculatorForm(forms.Form):
+    """The water the Water Quality Management Chart is drawn for, a target, the limits, the dosing and the
+    chart's layers. A GET form: the values live in the address and nothing is stored. Without values it shows
+    DEFAULTS: the source's example water, and limits that are defaults, not the limits of any fish
+    (farm/water/deffeyes.py; the bug document, WQ-30 on). A measured value has its parameter's label, range
+    and precision. `point` is where the values were taken from (a unit or a loop, or none: entered by hand) and
+    `loaded` the point they were last filled in from (farm/water/views.py, the calculator)."""
+
+    point = forms.CharField(label=_('Values from'), required=False, widget=forms.Select(attrs={'data-autosubmit': ''}))
+    loaded = forms.CharField(required=False, widget=forms.HiddenInput)
     temperature_c = _measured('temperature_c', required=True)
     ph = _measured('ph', required=True, low=4)
     salinity_ppt = _measured('salinity_ppt', required=True)
@@ -368,11 +416,13 @@ class CalculatorForm(forms.Form):
         _('Sulfide as a laboratory or a methylene-blue kit reports it, as S. The H₂S is worked out from it, the '
           'pH, the temperature and the salinity.'))
     oxygen_mg_l = _measured('oxygen_mg_l', help_text=_('For the oxygen saturation.'))
+    volume_m3 = number_field(_('Volume (m³)'), Decimal('0.01'), 1000000, 2,
+                             _('The water the amounts are for: a tank or a loop. Empty: the doses per m³ only.'))
     calcium_mg_l = number_field(_('Calcium (mg/L Ca²⁺)'), 0, 2000, 1,
-                                _('For the calcite and aragonite saturation lines, in water of 5 to 44 ‰.'))
+                                _('For the calcite and aragonite saturation, in water of 5 to 44 ‰.'))
     altitude_m = number_field(_('Altitude (m)'), 0, 5000, 0,
-                              _('For the oxygen saturation: the pressure of the standard atmosphere there. Empty is '
-                                'sea level.'))
+                              _('For the oxygen saturation and the CO₂ the air leaves in the water: the pressure of '
+                                'the standard atmosphere there. Empty is sea level.'))
     target_ph = number_field(_('Target pH (NBS scale)'), 4, 12, 2)
     target_alkalinity_mg_l = number_field(_('Target alkalinity (mg/L as CaCO₃)'), 0, 1000, 0)
     alkalinity_low_mg_l = number_field(_('Alkalinity band, low (mg/L as CaCO₃)'), 0, 1000, 0,
@@ -385,38 +435,78 @@ class CalculatorForm(forms.Form):
                                   _('Default 15 mg/L, a common guideline for salmonids.'))
     h2s_limit_ug_l = number_field(_('H₂S limit (µg/L H₂S)'), Decimal('0.1'), 10000, 1,
                                   _('Default 2 µg/L, the US EPA criterion for un-ionised H₂S (1986).'))
+    ph_critical_low = number_field(
+        _('pH, critical below (NBS scale)'), 0, 14, 2,
+        _('The pH a simulator step may have, as the water limits say it: inside the warning bounds ok, outside them '
+          'a warning, outside the critical bounds critical. Default 6.5 to 8.5 critical and 7.0 to 8.0 warning, as '
+          'the source marks it, not the limits of your fish unless the values come from a unit.'))
+    ph_warning_low = number_field(_('pH, warning below (NBS scale)'), 0, 14, 2)
+    ph_warning_high = number_field(_('pH, warning above (NBS scale)'), 0, 14, 2)
+    ph_critical_high = number_field(_('pH, critical above (NBS scale)'), 0, 14, 2)
+    reagents = forms.MultipleChoiceField(
+        label=_('Reagents to dose with'), required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'choices'}),
+        choices=[(reagent.key, format_lazy('{} · {}', reagent.formula, reagent.name)) for reagent in dosing.REAGENTS],
+        help_text=_('The recipes take two of them at a time; on the chart, one draws its direction, two their '
+                    'path to the target.'))
     layers = forms.MultipleChoiceField(label=_('Show on the chart'), choices=deffeyes.LAYERS, required=False,
                                        widget=forms.CheckboxSelectMultiple)
 
-    GROUPS = [
-        (_('Water'), ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l', 'total_sulfide_ug_l',
-                      'oxygen_mg_l', 'calcium_mg_l', 'altitude_m']),
-        (_('Target and alkalinity band'), ['target_ph', 'target_alkalinity_mg_l', 'alkalinity_low_mg_l',
-                                           'alkalinity_high_mg_l']),
-        (_('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l']),
+    DOSES = [dose_name(reagent) for reagent in dosing.REAGENTS]
+    TABS = [
+        ('water', _('Water'), ['temperature_c', 'ph', 'salinity_ppt', 'alkalinity_mg_l', 'tan_mg_l',
+                               'total_sulfide_ug_l', 'oxygen_mg_l']),
+        ('system', _('System'), ['volume_m3', 'calcium_mg_l', 'altitude_m']),
+        ('target', _('Target'), ['target_ph', 'target_alkalinity_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']),
+        ('limits', _('Limits'), ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'h2s_limit_ug_l', *PH_FIELDS]),
+        ('reagents', _('Reagents'), ['reagents']),
+        ('simulator', _('Simulator'), DOSES),
     ]
     DEFAULTS = {
+        'point': '', 'loaded': '',
         'temperature_c': Decimal('12'), 'ph': Decimal('7.00'), 'salinity_ppt': Decimal('1'),
         'alkalinity_mg_l': Decimal('80'), 'tan_mg_l': Decimal('0.5'), 'total_sulfide_ug_l': Decimal('2'),
-        'oxygen_mg_l': None, 'calcium_mg_l': None, 'altitude_m': None,
+        'oxygen_mg_l': None, 'volume_m3': Decimal('1'), 'calcium_mg_l': None, 'altitude_m': None,
         'target_ph': Decimal('7.5'), 'target_alkalinity_mg_l': Decimal('100'),
         'alkalinity_low_mg_l': Decimal('50'), 'alkalinity_high_mg_l': Decimal('100'),
         'nh3_n_limit_mg_l': Decimal('0.0103'), 'co2_limit_mg_l': Decimal('15'), 'h2s_limit_ug_l': Decimal('2'),
+        'ph_critical_low': Decimal('6.5'), 'ph_warning_low': Decimal('7.0'), 'ph_warning_high': Decimal('8.0'),
+        'ph_critical_high': Decimal('8.5'),
+        'reagents': list(dosing.DEFAULT_REAGENTS),
+        **{name: None for name in DOSES},
         'layers': [key for key, _label in deffeyes.LAYERS],
     }
-    # A submitted form carries this, so a chart with every layer unticked stays so.
+    # A submitted form carries this, so a chart with every layer unticked, or no reagent, stays so.
     DRAWN = 'drawn'
+    # The fields a choice of boxes is: unticked they are missing from the address.
+    BOXES = ('reagents', 'layers')
 
     def __init__(self, data=None, **kwargs):
         super().__init__(data, initial=self.DEFAULTS, **kwargs)
+        for reagent in dosing.REAGENTS:
+            self.fields[dose_name(reagent)] = number_field(
+                format_lazy('{} (g)', reagent.formula), 0, 10000000, 1, help_text=reagent.name)
+        self.fields['point'].widget.choices = [('', _('Entered here')), *owner_choices()]
 
-    def groups(self):
-        return [(label, [self[name] for name in names]) for label, names in self.GROUPS]
+    def tabs(self):
+        """[{key, label, fields, has_errors}] of the input bar, in order."""
+        return [{'key': key, 'label': label, 'fields': [self[name] for name in names],
+                 'has_errors': any(name in self.errors for name in names)} for key, label, names in self.TABS]
+
+    def doses(self):
+        """(reagent, bound field) of the simulator's amounts."""
+        return [(reagent, self[dose_name(reagent)]) for reagent in dosing.REAGENTS]
+
+    def _boxes(self, name):
+        if self.DRAWN not in self.data:
+            return self.DEFAULTS[name]
+        return self.cleaned_data[name]
 
     def clean_layers(self):
-        if self.DRAWN not in self.data:
-            return self.DEFAULTS['layers']
-        return self.cleaned_data['layers']
+        return self._boxes('layers')
+
+    def clean_reagents(self):
+        return self._boxes('reagents')
 
     def clean(self):
         data = super().clean()
@@ -427,8 +517,23 @@ class CalculatorForm(forms.Form):
         low, high = data.get('alkalinity_low_mg_l'), data.get('alkalinity_high_mg_l')
         if low is not None and high is not None and low >= high:
             self.add_error('alkalinity_high_mg_l', _('The band goes up: its high end is above its low end.'))
+        self._ph_order(data)
         self._possible(data)
         return data
+
+    def _ph_order(self, data):
+        """The pH bounds go up: critical below, warning below, warning above, critical above, each given one not
+        below the one before it."""
+        before = None
+        for name in PH_FIELDS:
+            value = data.get(name)
+            if value is None:
+                continue
+            if before is not None and value < before:
+                self.add_error(name, _('The pH bounds go up: critical below, warning below, warning above, '
+                                       'critical above.'))
+                continue
+            before = value
 
     def _possible(self, data):
         """A pH the alkalinity allows: hydroxide and borate are alkalinity too, so at a high pH the alkalinity
@@ -451,7 +556,7 @@ class CalculatorForm(forms.Form):
         return self.cleaned_data if self.is_bound else self.DEFAULTS
 
     def inputs(self):
-        """(water, limits, target, pressure in atm, layers) for farm/water/deffeyes.py."""
+        """The keyword arguments of farm/water/calculation.calculate."""
         values = {name: float(value) if isinstance(value, Decimal) else value for name, value in self.values().items()}
         water = deffeyes.Water(
             temperature_c=values['temperature_c'], salinity_ppt=values['salinity_ppt'], ph=values['ph'],
@@ -466,5 +571,34 @@ class CalculatorForm(forms.Form):
         if values['target_ph'] is not None:
             target = deffeyes.Target(values['target_ph'], values['target_alkalinity_mg_l'])
         altitude = values['altitude_m']
-        pressure = chemistry.pressure_atm(altitude) if altitude is not None else 1.0
-        return water, limits, target, pressure, frozenset(values['layers'])
+        amounts = {reagent.key: values[dose_name(reagent)] for reagent in dosing.REAGENTS
+                   if values[dose_name(reagent)]}
+        return {'water': water, 'limits': limits, 'target': target,
+                'pressure': chemistry.pressure_atm(altitude) if altitude is not None else 1.0,
+                'layers': frozenset(values['layers']), 'chosen': list(values['reagents']),
+                'volume': values['volume_m3'], 'amounts': amounts,
+                'ph_bounds': calculation.PhBounds(*(values[name] for name in PH_FIELDS))}
+
+    # -- a unit's or a loop's values --
+    @classmethod
+    def default_data(cls):
+        """DEFAULTS as a submitted form's data, in the language: where a unit's values go in when the address
+        holds nothing else."""
+        data = QueryDict(mutable=True)
+        for name, value in cls.DEFAULTS.items():
+            if isinstance(value, list):
+                data.setlist(name, value)
+            elif value not in (None, ''):
+                data[name] = formats.localize_input(value)
+        data[cls.DRAWN] = '1'
+        return data
+
+    @classmethod
+    def fill(cls, data, offers):
+        """Puts the values a unit or a loop offers (farm/water/calculation.offers) into a form's data, each at its
+        field's precision and in the language."""
+        fields = cls().fields
+        for name, offer in offers.items():
+            step = Decimal(1).scaleb(-fields[name].decimal_places)
+            data[name] = '' if offer.value is None else formats.localize_input(offer.value.quantize(step))
+        return data

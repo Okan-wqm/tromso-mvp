@@ -19,10 +19,10 @@ What works today:
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
   Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
   ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
-  under Operations the production units with their fish, the water chemistry, the store (Storage), Feeding:
-  the meal board, the records, the feeding protocols and their assignments, Harvest: harvested, harvest plan,
-  production plans, and Health: treatments, health events and sea-lice counts; and under Communication the
-  messages). Each has its own overview. A
+  under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
+  the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
+  Harvest: harvested, harvest plan, production plans, and Health: treatments, health events and sea-lice
+  counts; and under Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
@@ -829,35 +829,90 @@ default), one row per unit that is not inactive and per loop, one time and one s
 skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right (at
 most 200 rows).
 
-**The calculator** (the third tab, `/operations/water/calculator/`) draws a water on the **Water
-Quality Management Chart**, the source's Deffeyes diagram, server-rendered as SVG without JavaScript
-(`farm/water/deffeyes.py`, `templates/farm/_deffeyes_chart.html`). It is a GET form: the values live in
-the address, nothing is stored, and without values it shows its defaults.
-- **In**: temperature, pH (NBS, 4 to 12), salinity, alkalinity (mg/L as CaCO₃), each with its
-  parameter's label, range and precision; optionally TAN, total sulfide (µg/L as S, as laboratories and
-  methylene-blue kits report it), dissolved oxygen with an altitude, calcium; a target pH and
-  alkalinity; the alkalinity band of the safe zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S
-  (µg/L as H₂S); and which layers to draw.
+**The calculator** (the third tab, `/operations/water/calculator/`) is laid out as the source's: where the
+values come from, the input bar, the dosing simulator, the row of charts [NH₃ and H₂S against pH | the **Water
+Quality Management Chart**, larger | the carbonate species and the calcite saturation against pH] and the
+results row [ammonia | hydrogen sulfide | worked out | dosing recipes]; on a phone one column, the big chart
+first. Every chart is SVG drawn on the server without a chart library (`farm/water/deffeyes.py`,
+`farm/water/charts.py`); one `Calculation` (`farm/water/calculation.py`) feeds the page, its live parts and
+its report, so they never disagree. It is a GET form: the values live in the address, nothing is stored, and
+without values it shows its defaults.
+- **Interactive**: the results follow the form. Ticking or unticking a layer redraws the chart at once;
+  typing redraws the charts and the results after a 0.3 s pause; no button. The browser asks the server for
+  the calculator's live parts (`/operations/water/calculator/results/`, each part a `data-live-part`) and
+  swaps them in; a request still on its way is dropped, the fields are never replaced (focus and caret
+  stay), the wrong values come back under their fields and in a list that links to them, and the address
+  follows the form, so a link opens the same view. The server is the one source of every number and of the
+  SVG: the browser code (`frontend/poll.ts`, the live form, usable by any GET form) has no chemistry. Without
+  the script the form has a Calculate button and the page is drawn again.
+- **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in its latest value
+  of each measured field (temperature, pH, salinity, alkalinity, TAN, dissolved oxygen: `read.latest`, each
+  with its age, stale ones marked), its site's altitude, and the limits of the fish in it today
+  (`read.limits_now`: the critical high of NH₃-N and of CO₂, the warning bounds of alkalinity as the safe
+  zone's band, the four pH bounds; with several species the strictest), and sends the address with them. They
+  can be changed for this calculation (marked "changed here"); nothing is written back. A field the point has no
+  value for keeps what was entered, and the bar says which; the pH bounds are the fish's all four, one they
+  have none of is emptied. The calculator has one limit per ammonia, CO₂ or sulfide (the critical one) and
+  its own 0.2 pH alert band: a species' warning bound for NH₃-N is not used, so a value between the warning and
+  the critical bound is ok here and a warning in the water module.
+- **In** (tabs Water, System, Target, Limits, Reagents, Simulator): temperature, pH (NBS, 4 to 12),
+  salinity, alkalinity (mg/L as CaCO₃), each with its parameter's label, range and precision; optionally
+  TAN, total sulfide (µg/L as S, as laboratories and methylene-blue kits report it), dissolved oxygen; the
+  volume (m³), the calcium and the altitude; a target pH and alkalinity and the alkalinity band of the safe
+  zone; the limits NH₃-N (mg/L as N), CO₂ (mg/L) and H₂S (µg/L as H₂S) and the pH a step of the simulator may
+  have (critical and warning, each side); the reagents to dose with (the
+  source's nine; NaHCO₃, NaOH, CO₂ added and CO₂ stripped to start with); the simulator's grams of each; and
+  the chart's layers.
 - **The chart**: DIC (mmol/L) across, alkalinity (meq/L) up, 0 to 6 each and wider when the point, the
-  target or the band needs it; pH isolines every 0.25 from 4.25 to 12.5 (every 0.5 labelled); the
-  regions where NH₃ (above its border's isoline), H₂S (below its border's isoline) and CO₂ (below the
-  curve where CO₂ = the limit) pass their limits; the safe zone (the band, between the NH₃ border and
-  the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium given, from 5
-  to 44 ‰ (Mucci's range); the water (a star) and the target (a cross). A note says why a layer asked
-  for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its tooltip and the
-  legend.
-- **Out**, in a table next to the chart: alkalinity (meq/L), DIC, CO₂ and its status, target DIC and
-  CO₂, NH₃-N and its status, H₂S (µg/L as H₂S) and its status, each limit's pH border and the pH margin
-  to it, the most TAN and the most total sulfide this pH allows, the oxygen solubility and saturation.
-  A status follows the source: past the border critical, within 0.2 pH a warning.
+  target, the band, the dosing waypoint or a simulator step needs it; pH isolines every 0.25 from 4.25 to
+  12.5 (every 0.5 labelled); the regions where NH₃ (above its border's isoline), H₂S (below its border's
+  isoline) and CO₂ (below the curve where CO₂ = the limit) pass their limits; the safe zone (the band, between
+  the NH₃ border and the higher of the CO₂ and H₂S borders); Ω = 1 for calcite and aragonite with the calcium
+  given, from 5 to 44 ‰ (Mucci's range); the water (a star) and the target (a cross); the dosing layer (one
+  reagent chosen: its direction from the water; two: both, the wedge between them and their path to the
+  target through the waypoint; more: a note) and the simulator's path, an arrow at each step. A note says
+  why a layer asked for is not drawn; a region's name with its border (NH₃ toxic (pH > 8.04)) is in its
+  tooltip and the legend.
+- **The small charts**: NH₃-N (TAN × the NH₃ share) from pH 6 to 9.5 with the limit, the H₂S and HS⁻ shares
+  of the total sulfide from 4 to 12.5, the CO₂, HCO₃⁻ and CO₃²⁻ shares of the DIC from 4 to 12, and the
+  calcite and aragonite saturation index at the water's DIC from 6 to 9.5 (5 to 44 ‰ with the calcium only);
+  the NH₃ and H₂S charts carry the safe, alert (0.2 pH) and danger bands of their borders, none when the value
+  or its limit is missing; an axis widens to hold the water.
+- **Out**: ammonia (NH₃-N and its status, the most TAN this pH allows, the border and the margin, NH₃'s share
+  at the border), hydrogen sulfide (H₂S as H₂S and its status, the most total sulfide, the border and the
+  margin), worked out (CO₂ and its status, border and margin; the CO₂ the air leaves in the water; alkalinity
+  in meq/L, DIC, target DIC and CO₂; oxygen solubility and saturation). A status follows the source: past the
+  border critical, within 0.2 pH a warning.
+- **Dosing** (`farm/water/dosing.py`): each reagent moves the water along its own direction on the chart,
+  per mmol: NaHCO₃ +1 DIC +1 alkalinity, Na₂CO₃ and CaCO₃ +1 +2, NaOH 0 +1, Ca(OH)₂ and CaO 0 +2, CO₂ +1 0,
+  stripping −1 0, HCl 0 −1 (Deffeyes 1965; Stumm & Morgan 1996). A **recipe** reaches the target with two
+  reagents: the move is split on their directions with both amounts ≥ 0; every pair of the chosen reagents,
+  ranked as the source ranks them (sodium bicarbonate first), an overshoot-and-correct pair only when nothing
+  else reaches, at most six; grams for the volume and g/m³; a recipe is flagged when its stripping would end
+  below the CO₂ of water in equilibrium with the air whichever of its two doses goes first. The **simulator**
+  adds the grams in turn and shows each step's pH (against the pH bounds, as the water limits judge it: inside
+  the warning bounds ok, outside a warning, outside the critical bounds critical), alkalinity (a warning
+  outside the band), DIC, CO₂, NH₃-N and H₂S, each judged as the water is, the change from the water to the
+  last step, and its path on the chart. Amounts are of the pure substance (a product of 31 % HCl
+  weighs about three times as much). Stripping below the CO₂ of water in equilibrium with the air (Weiss
+  1974, 420 µmol/mol, the site's pressure) is flagged; acid past the alkalinity is shown as acid, and more
+  CO₂ stripped than there is carbon stops the simulation (the source clamped both, WQ-41). The dosing is
+  checked against an independent carbonate model (Plummer & Busenberg's constants in fresh water, Lueker's with
+  Dickson's boron in sea water): the pH agrees within 0.005 in fresh water and 0.012 in sea water. In fresh
+  water salted to a few ‰ with NaCl alone, Millero's constants (which include the ion pairs of sea water's
+  magnesium and calcium) may put the pH after a strong base up to about 0.15 lower near pH 9, the side that
+  under-warns on NH₃: this is the inherited convention of the chemistry above, not a new one.
+- **Print report** opens `/operations/water/calculator/report/` with the same address: the values, the
+  values worked out, every chart with every layer drawn (as the source's report forces its safety layers
+  on), the simulator and the recipes, on a page of its own for A4 across.
 - **The chemistry** (`farm/water/chemistry.py`, one module with the ammonia and oxygen above): K1 and K2
   of carbonic acid of Millero, Graham, Huang, Bustos-Serrano & Pierrot (2006), fresh to sea water (the
   source calls them Millero 2010, WQ-39); Kw of Millero (1995); KB of Dickson (1990)
   with Uppström's (1974) boron; the ammonium constant of Millero (1995); KH₂S of Millero, Plese &
-  Fernandez (1988); the Ksp of Mucci (1983); each converted to the free scale, the pH (NBS) too, as the
-  source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2), CO₂ = DIC α0; NH₃-N = TAN
-  K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH and an alkalinity that
-  cannot go together (the hydroxide alone above the alkalinity) are refused.
+  Fernandez (1988); the Ksp of Mucci (1983); the CO₂ solubility of Weiss (1974); each converted to the free
+  scale, the pH (NBS) too, as the source does. DIC = (alkalinity − [OH⁻] + [H⁺] − [B(OH)₄⁻]) / (α1 + 2 α2),
+  CO₂ = DIC α0; NH₃-N = TAN K / (K + [H⁺]); H₂S = total sulfide × 34.08 / 32.07 × [H⁺] / (K + [H⁺]). A pH
+  and an alkalinity that cannot go together (the hydroxide alone above the alkalinity) are refused.
 - **Two conventions inherited from the source**, kept for consistency and stated here: the ionic strength
   comes from the salinity, so at 0 ‰ the pH needs no activity correction while fresh water's own ions
   would give it one; entering 0 instead of 0.3 ‰ gives 7 to 13 % more CO₂ and 5 to 9 % more NH₃ at 5 to
@@ -871,32 +926,33 @@ the address, nothing is stored, and without values it shows its defaults.
   "Safe zone (H₂S not assessed)". A border outside the chart's pH range (4 to 12.5) is said in words in
   the table, and its region is still shaded wherever it meets the plotted box (a large box reaches past
   pH 12.5 or below 4).
-- **The limits are defaults, not the fish's**: NH₃-N 0.0103 mg/L (0.0125 mg/L NH₃, Piper et al. 1982,
-  as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA 1986); the example water is the
-  source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L, target pH 7.5 at 100 mg/L)
-  with 2 µg/L sulfide as S.
-- **Checked** (`farm/tests/test_deffeyes.py`): the constants against their papers' published values;
-  CO₂ against Standard Methods 4500-CO₂ D; the source's own TypeScript, copied unchanged from its
-  engine, run over 689 waters and 24 charts (`farm/tests/deffeyes_reference/driver.ts` makes
-  `reference.json`, how is in its header): every value agrees within the table's rounding (DIC, NH₃
-  and H₂S within 1e−8 relative, the constants within 5e−8 pK, CO₂ within 3e−6 for the molar mass, the
-  borders within 1e−6 pH, the boundaries within the source's 4-decimal points); the chart's lines and
-  regions against the formulas, the point at its coordinates; the page in each language. What the source
-  did wrong is in the bug document (WQ-30 to WQ-39).
-- **Not ported**: the dosing (reagents, recipes, the dosing lines and the on-demand path), the volume,
-  the fish type and size (they changed nothing, WQ-37), the four small charts beside it (NH₃, H₂S and
-  carbonate against pH, calcite saturation) and the printed report.
+- **The limits are defaults, not the fish's**, unless the values come from a unit: NH₃-N 0.0103 mg/L
+  (0.0125 mg/L NH₃, Piper et al. 1982, as N), CO₂ 15 mg/L (a salmonid guideline), H₂S 2 µg/L (US EPA
+  1986); the example water is the source's (12 °C, pH 7.0, 1 ‰, 80 mg/L, TAN 0.5 mg/L, band 50 to 100 mg/L,
+  target pH 7.5 at 100 mg/L, 1 m³) with 2 µg/L sulfide as S.
+- **Checked** (`farm/tests/test_deffeyes.py`, `farm/tests/test_calculator.py`): the constants against their
+  papers' published values; CO₂ against Standard Methods 4500-CO₂ D; the source's own TypeScript, copied
+  unchanged from its engine, run over 689 waters and 24 charts, 798 dosing cases, 36 simulator runs and
+  the small charts' data (`farm/tests/deffeyes_reference/driver.ts` makes `reference.json`, how is in its
+  header): every value agrees within the table's rounding (DIC, NH₃ and H₂S within 1e−8 relative, the
+  constants within 5e−8 pK, CO₂ within 3e−6 for the molar mass, the borders within 1e−6 pH, the boundaries
+  within the source's 4-decimal points, the doses within 2e−5 for the molar masses); every recipe, added
+  by the simulator, ends at its target; the simulator's pH after NaHCO₃ and NaOH against Plummer &
+  Busenberg's constants solved on their own; the alkalinity a gram of each base gives against the
+  stoichiometry (1.68 kg NaHCO₃ per kg as CaCO₃ ...); Weiss's K0 against Dickson et al.'s check value and
+  Plummer & Busenberg; the chart's lines and regions against the formulas, the point at its coordinates;
+  the page, its live parts, the report and the values of a unit in each language. What the source did
+  wrong is in the bug document (WQ-30 to WQ-46).
+- **Not ported**: the fish type and size (they changed nothing, WQ-37: here the fish come with a unit),
+  the measurement points' reading sources and sensor sets of the values bar (no sensors here yet).
 
-**Next: a chart per unit or loop.** The chart takes a `Water`, `Limits` and a `Target`, not a form, so a
-unit's or a loop's own chart needs no change to `deffeyes.py`: `Water` comes from the point's latest
-values (`read.latest`: temperature, pH, alkalinity, TAN, dissolved oxygen, and the salinity as
-`Context.salinity_for` finds it), `Limits` from the water limits of the fish in it today
-(`read.limits_now`: the critical high of NH₃-N and CO₂, the warning bounds of alkalinity as the band),
-the pressure from the site's altitude, and the drawer or the history includes
-`farm/_deffeyes_chart.html`. Three things come with it: total sulfide, calcium and H₂S become parameters
-(a column each, a migration, a limit parameter for H₂S); the pH and the alkalinity are taken from the
-same sample, or their age difference is shown, since the latest value of each may come from different
-samples; and a point's history can draw its samples as a track.
+**Next: a chart per unit or loop.** The chart and the calculation take a `Water`, `Limits` and a `Target`,
+not a form, and the calculator already fills them from a point (`calculation.offers`), so a unit's or a
+loop's own chart in the drawer or its history needs no change to them. Three things come with it: total
+sulfide, calcium and H₂S become parameters (a column each, a migration, a limit parameter for H₂S); the pH
+and the alkalinity are taken from the same sample, or their age difference is shown, since the latest value
+of each may come from different samples (the calculator shows each value's age); and a point's history can
+draw its samples as a track.
 
 **Who may do what**: the area Water chemistry (Production · Operations): Read the page (the calculator
 too), Create records a sample or a round, Delete voids one; the area Water limits (Production · Setup ·
@@ -928,9 +984,12 @@ Differences from the source (details in the bug document, WQ-01 to WQ-39):
   limit and none when a limit it needs is missing (WQ-30); sulfide goes in as S and H₂S comes out as H₂S
   (WQ-31); Ω only where its constants hold (WQ-32); the axes hold the point (WQ-33); a border off the chart
   is said in words (WQ-34); CO₂ is judged against its limit (WQ-36); every input is checked (WQ-37,
-  WQ-38); K1 and K2 are cited to their paper (WQ-39).
+  WQ-38); K1 and K2 are cited to their paper (WQ-39). Its dosing finds the base-and-stripping recipes
+  (WQ-40), shows an acid overdose as acid (WQ-41), judges each step as the water is (WQ-43), says the
+  amounts are of the pure substance (WQ-44) and flags stripping below the air's CO₂ (WQ-45); its small
+  charts keep the water on them (WQ-42).
 - Not ported: sensors and their reading sources (points, positions, channels), charts and daily means,
-  notifications, the calculator's dosing, H₂S as a sample parameter, hardness and the other lab
+  notifications, H₂S as a sample parameter, hardness and the other lab
   parameters, detection limits ("< 0.02"), attachments, limits per life stage or site, a sampling plan
   per unit, and a site's intake water. The rations read the latest water temperature from here and keep
   no copy of their own (WQ-02; `farm/feeding/temperature.py`).
@@ -1344,6 +1403,103 @@ Differences from the source (details in the bug document, HLT-01 to HLT-23):
   master as a medicine catalogue, welfare scores, escape incidents, vaccination details, medicine stock, lab
   result values, the reports to Mattilsynet, treatment effect and resistance tests, cleaner-fish health
   (health-maturity §4d). The water temperature at a treatment is not typed on it: it is the water samples'.
+### Operations › Tasks (`/operations/tasks/`) and Recurring tasks (`/operations/tasks/recurring/`)
+
+The farm's jobs: "clean the drum filter of T-01", "report the lice count to Mattilsynet", each at one place,
+for the people who do it, due on a day. Tables `tasks`, `task_assignees`, `task_checklist_items`,
+`task_notes`, and for the recurring tasks `task_series`, `task_series_assignees`,
+`task_series_checklist_items`; the app is `tasks/`.
+
+**A task** is a title, a description, a category (feeding, cleaning, maintenance, fish health, water quality,
+harvest, transport, administration, other), a priority (urgent, high, medium, low), a due date and
+optionally a due time, and:
+
+- **one place, chosen from a list**: a whole site, a production department, a system, a unit or a piece of
+  equipment, exactly one (a database check over five real links). The dialog's **Site** select narrows the
+  **Location** select, which lists every live place grouped by kind ("T-01 · Tank 1 — Hall A · Bergen");
+  **Without a site** offers the production departments without a site and what is in them. Nothing is typed;
+  the server checks the place against the site and refuses anything not offered.
+- optionally **the batch** it is about: a batch with fish at the chosen place now (from the stock ledger),
+  narrowed by the Location select (a chain: site → location → batch). A task keeps its batch after the fish
+  leave; a new choice, or a new place, is checked again.
+- **its people**: one or more user accounts, offered as the active users who can read Tasks (the platform
+  admin among them). Each of them sees it under My tasks and any of them can start and complete it. Someone
+  who can no longer be chosen (deactivated, or the role taken away) stays on the tasks they had, marked so.
+- a **checklist**, once the task exists: its lines, at most 30, edited as a list on the dialog's Checklist
+  tab until the first line is ticked; then each tick is the only change, with who and when.
+- **notes**: anyone who can read Tasks adds one in the drawer; a note is never edited or removed and is in
+  the activity log with its text (task notes are part of the work record; Messages are not, see below).
+
+**Statuses**: open, **in progress** (who started it and when), **done** (who completed it, when, and a
+note), **cancelled** (who, when and why). Start, Complete and a tick: a person the task is for, or whoever
+may edit tasks; Cancel and Reopen: whoever may edit tasks (reopening clears the completion or the
+cancellation and the start). The person who created a task has no rights of their own (owner decision 8).
+Each change is one call of `tasks/services.py`, in one transaction with the task locked, logged, and
+the database holds the rule (done exactly with who and when, cancelled exactly with a reason, in progress
+exactly with who started it).
+
+**Overdue is worked out on read**, never stored: a task that is open or in progress is overdue once its due
+date has passed, or on its due date once its due time has passed, each on the clock of its place's site
+(`farm.models.site.zone_of`; the company's for a production department without a site). A task due 3 Nov at
+23:00 on an Oslo site is due today at 23:30 UTC on 2 Nov and overdue at 22:30 UTC on 3 Nov.
+
+**The page** has three views, each a query of its own, filtered and paged on the server (50 a page):
+**Today** (the overdue first, then the ones due today by time and priority, then the ones done today),
+**Open** (every open one and in progress, by due date) and **Completed** (done and cancelled, latest first),
+with the number of each, a search, filters (site or "without a site", place, assignee or **My tasks**,
+priority, category, due from and to) and the overdue count. A row is one link: it opens **the drawer**
+(`?task=`) with the place (shown "Place deleted" once its place is deleted), batch, due date, people,
+recurring task, who started, completed or cancelled it, the checklist with a tick per line, the notes, and
+what the person may do: Start, Complete, Reopen, Edit, Cancel task, Delete. **New task** opens the dialog;
+`?place=unit:<id>` starts it at a place (for a "New task" button on a unit's drawer later). A form sent twice
+creates one task (its key, `core.crud.ENTRY_KEY`). The production overview has two tiles, the tasks due
+today and the overdue ones.
+
+**Recurring tasks** plan a task at a place for its people: **daily** every N days, **weekly** every N weeks
+on chosen weekdays, or **monthly** every N months on a day of the month (the 29th to 31st fall on a shorter
+month's last day), from a first day (and up to a last day, if it has one), with an optional due time and its
+own checklist, copied to each task. The dates are worked out from the first day on the site's calendar, so
+nothing drifts and a daylight-saving weekend moves nothing (`TaskSeries.dates`). Its tasks are **real tasks**,
+made up to `TASK_HORIZON_DAYS` (14) ahead; the first time, or after a gap, the missed days are made back to
+at most `TASK_BACKFILL_DAYS` (7), and they are overdue (owner decision 3). They are made when a recurring
+task is saved, before the Tasks pages and the overview read, and by `manage.py generate_tasks` for a cron;
+one recurring task per transaction, locked, and a unique key per recurring task and day, so each day is made
+once however often and however concurrently. A planned task that nobody touched (open, never edited, no tick,
+no note) is only the rule's projection: **changing, pausing or deleting** the recurring task replaces or
+removes those from today on and keeps every other one; a task a person deleted is not made again; resuming
+does not make the paused days. The list shows each rule in words ("Every 2 weeks on Monday, Thursday at
+08:00"), the place, the people, the next day and whether it is active.
+
+**Deleting**: a task is soft-deleted (the delete plan, restorable from the admin). Deleting a place does not
+wait for its tasks (owner decision 7): they keep the link (`DO_NOTHING`), stay in the lists showing "Place
+deleted", and show the place again when it is restored; the confirmation counts them. A recurring task goes
+with its place (`CASCADE`), taking its planned tasks nobody touched (`Task.deleted_with`); the others stay.
+
+**Who may do what**: the areas Tasks and Recurring tasks (Production · Operations), each read, create, edit
+and delete; see Statuses for start, complete, tick and notes.
+
+**Not in the MVP, and how it plugs in**: notifications (signals from `tasks/services.py`; the system
+assistant's direct message in Messages, a menu badge, an e-mail digest), auto rules (from the prototype's
+own write paths with a dedupe key, e.g. a critical water value opens a task at that unit, not the source's
+free-text conditions), maintenance (preventive maintenance as a recurring task at an equipment place, a
+repair as a task), a calendar, people without a login (with HR), and the AI assistants (reading
+`tasks/read.py`, writing through `tasks/services.py` with the person's confirmation). Task notes are not a
+Messages conversation: a conversation is for its members only and not in the activity log, while a task's
+notes are part of the farm's record that a supervisor, the next shift or an auditor reads.
+
+Differences from the source (details in the bug document, TSK-01 to TSK-23):
+
+- The place is one of five real links chosen from a list (the source's was free text, its `siteId` never
+  written); the people are user accounts (the source mixed accounts with workers who cannot sign in and
+  copied their names); every link is a foreign key (TSK-01, TSK-02, TSK-12).
+- Overdue is worked out on read on the site's clock (the source stored it on the server's clock and lost
+  "in progress"); each view is its own server query (the source showed the first 50 tasks, and its Today never
+  matched a date) (TSK-03, TSK-04, TSK-09).
+- A rule anchored to its first day with weekdays and a day of the month, made once per day in its own
+  transaction (the source's drifted, ran on UTC and shared one transaction) (TSK-06, TSK-14).
+- Every action has its page and test; the status changes only through its own actions with who and when;
+  the checklist keeps who ticked what; a form sent twice creates once (TSK-05, TSK-07, TSK-10, TSK-11, TSK-16).
+- Not ported: tags, the time estimate, auto rules, the calendar, notifications, the AI tools.
 
 ## Messages (Production › Communication, `/messages/`)
 
@@ -1635,12 +1791,13 @@ only one who manages roles and users; everyone else gets exactly what their role
   Feeding protocols and Protocol assignments (read, create, edit, delete), Water chemistry (read the page
   and a unit's water, create = record a sample or a round, delete = void one), Storage (read the page,
   create = record a delivery, issue, write-off, return, transfer or count, delete = void one), Storage
-  locations (read, create, edit, delete), Slaughter facilities and Handling rules (read, create, edit, delete),
-  Harvested (read), Harvest plan and Production plans (read, create, edit, delete), Medicines (read, create,
-  edit, delete), Treatments (read, create, edit = change the last day, delete = void one), Health events
+  locations (read, create, edit, delete), Tasks and Recurring tasks (read, create, edit, delete; a person a task
+  is for also starts, ticks and completes it), Slaughter facilities and Handling rules (read, create, edit,
+  delete), Harvested (read), Harvest plan and Production plans (read, create, edit, delete), Medicines (read,
+  create, edit, delete), Treatments (read, create, edit = change the last day, delete = void one), Health events
   (read, create, edit, delete = void one), Sea-lice counts (read, create, delete = void one), Messages (read =
-  use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete;
-  Edit also reviews an entry) and Activity log (read).
+  use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
+  also reviews an entry) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -1682,7 +1839,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `inventory`, `knowledge`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `inventory`, `knowledge`, `messaging`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -1738,11 +1895,16 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   (`data-modal`), inner tabs, upper-case inputs, row lists and check boxes that need another one
   (`data-requires`, the role matrix), GET forms that leave empty fields out of the address
   (`data-omit-empty`, the database viewer's filters), choices and rows that belong to another field's
-  value (`data-depends-on`), fields that render the form again with what was entered (`data-refresh`),
-  link lists with one primary mark (`data-links`);
+  value (`data-depends-on`; a choice cleared because it no longer fits is a change too, so a chain such as
+  site → location → batch fits itself all the way down), fields that render the form again with what was
+  entered (`data-refresh`, sent once per change however many fields it cleared),
+  link lists with one primary mark (`data-links`), a print button (`data-print`), and a link to a field
+  in a hidden tab opens the tab;
 - `auth.ts` the show/hide password button;
 - `poll.ts` the parts of a page the server renders again while it is in view (`data-poll`: the open
-  conversation, the list of conversations, a menu entry's number), a list that follows new rows
+  conversation, the list of conversations, a menu entry's number), a GET form whose results the server
+  draws again as it is filled in (`data-live`: its `data-live-part`s are swapped, its fields' errors put
+  under them, the address kept in step; the water calculator), a list that follows new rows
   (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`).
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
@@ -1785,7 +1947,11 @@ down what a delete does to its neighbours: it is whatever its links say. Records
 many-to-many link (the equipment serving a system) keep their link rows; the confirmation lists them,
 and the link counts again once the record is restored. Records whose link is `DO_NOTHING` (a unit's or a
 system's water samples) stay as they are: their manager hides them while the record is deleted, the
-confirmation counts them, and they come back with it.
+confirmation counts them, and they come back with it. The confirmation counts each kept record once, however
+many of its links point at what is deleted, and says what becomes of them (the model's `kept_note`: a task
+stays in the lists, showing its place as deleted). Records that point at it through `DO_NOTHING` but are
+only a plan go with it all the same: their model says which (`AuditedModel.deleted_with`, a recurring task's
+planned tasks nobody touched).
 
 ### Shared form parts
 
@@ -1799,7 +1965,9 @@ What one tab needed and the next ones will too lives in `core/`:
   fields for one record (a pond has no diameter): the tabs show the fields it kept.
   A unique constraint among live records, on fields or on an expression (a species' scientific name
   in any case, `Lower(...)`), is checked on the form by the constraint itself, with its message on
-  the field.
+  the field. A model with an `entry_key` field gets a hidden key on its new-record form, stored with the
+  record: the same form sent twice (a double click, a retried request, two at once) creates one record and
+  the second sending opens it (`core.crud.ENTRY_KEY`, a task, a recurring task).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
@@ -1829,7 +1997,10 @@ What one tab needed and the next ones will too lives in `core/`:
   choices; the activity log keeps each as its msgid and the database viewer shows the array as
   PostgreSQL prints it (`{feed,transport}`).
 - `DependentSelect` (`core/widgets.py`) and `LinkList` (`core/links.py`): a choice, or a list of
-  check boxes with the details of each link, that belongs to another field's value.
+  check boxes with the details of each link, that belongs to another field's value. A choice that belongs
+  to none of its values (a production department without a site: `None` in `belongs_to`) belongs to
+  `core.widgets.NONE`, the value the source field offers as "Without a site" (the list filters' value for
+  "without one" too), so it can be chosen like any other.
 - `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data (a type's technical
   specifications), the form fields and the check of the stored values from one definition.
 - `TreeMixin` (`core/models.py`): records nested under records of the same kind, without loops.
@@ -1902,7 +2073,9 @@ real mail.
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/operations/water/` | Operations › Water chemistry: the latest water per unit and loop; `?view=history` the samples, `?unit=<id>` or `?system=<id>` one point's history |
-| `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart of the water in the address (a GET form) |
+| `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
+| `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
+| `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |
 | `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
@@ -1923,6 +2096,10 @@ real mail.
 | `/operations/storage/count/` | Count a location (`?location=<id>` chooses it) |
 | `/operations/storage/void/<id>/` | Voids an operation of the store |
 | `/operations/storage/items/<id>/`, `/operations/storage/lots/<id>/` | An item's day-by-day book (`?site=<id>`), a lot's trace |
+| `/operations/tasks/` | Operations › Tasks: `?view=open` or `completed`, the filters, `?task=<id>` opens a task's drawer |
+| `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
+| `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
+| `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
@@ -1965,11 +2142,12 @@ real mail.
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
-| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
+| `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

@@ -10,7 +10,11 @@ consequences per tab, this reads each link's `on_delete` and applies it to live 
   holding it back (a deleted unit's feeding records and its sampling points, as its stock lines), shown again
   with it when it is restored (restoring brings back only the record itself, so what must come back with it is
   kept, not deleted with it). The database's own foreign key still refuses a hard delete. What they keep in
-  turn is kept too (a unit's points keep their water samples). The confirmation counts them all.
+  turn is kept too (a unit's points keep their water samples). The
+  confirmation counts them, each record once whatever links it, and says what becomes of them
+  (the model's `kept_note`). Records that point at it this way but are only a plan, not history (a
+  recurring task's planned tasks nobody has touched), are deleted with it all the same: their model
+  says which (`AuditedModel.deleted_with`).
 
 Records linked to it through a many-to-many link (the equipment serving a system) keep the link row:
 the link only stops counting while the record is deleted, so restoring it brings the link back. The
@@ -39,7 +43,7 @@ class DeletePlan:
     cascade: list = field(default_factory=list)   # deleted with obj; parents before their children
     detach: list = field(default_factory=list)    # (record, link) pairs whose link is cleared
     unlinked: list = field(default_factory=list)  # records linked many-to-many, whose link stops counting
-    kept: dict = field(default_factory=dict)      # model -> how many records keep their link, out of sight
+    kept_records: dict = field(default_factory=dict)   # model -> the pks of its records that keep their link
 
     @property
     def can_delete(self):
@@ -72,9 +76,15 @@ class DeletePlan:
                 })
         return groups
 
+    @property
+    def kept(self):
+        """{model: how many of its records keep their link}, each record counted once."""
+        return {model: len(pks) for model, pks in self.kept_records.items()}
+
     def kept_groups(self):
-        """[{'label': 'Water samples', 'count': 120}]: kept as they are, hidden while it is deleted."""
-        return [{'label': capfirst(model._meta.verbose_name_plural), 'count': count}
+        """[{'label': 'Water samples', 'count': 120, 'note': ...}]: kept as they are; the note says what
+        becomes of them while it is deleted (the model's `kept_note`)."""
+        return [{'label': capfirst(model._meta.verbose_name_plural), 'count': count, 'note': model.kept_note}
                 for model, count in self.kept.items()]
 
     def unlinked_groups(self):
@@ -93,7 +103,18 @@ def plan_delete(obj):
     plan.detach = [(record, link) for record, link in plan.detach if (type(record), record.pk) not in deleted]
     plan.unlinked = list({(type(record), record.pk): record for record in plan.unlinked
                           if (type(record), record.pk) not in deleted}.values())
+    kept = {model: {pk for pk in pks if (model, pk) not in deleted} for model, pks in plan.kept_records.items()}
+    plan.kept_records = {model: pks for model, pks in kept.items() if pks}
     return plan
+
+
+def _cascade(children, plan, seen):
+    for child in children:
+        key = (type(child), child.pk)
+        if key not in seen:
+            seen.add(key)
+            plan.cascade.append(child)
+            _collect(child, plan, seen)
 
 
 def _collect(obj, plan, seen):
@@ -109,43 +130,35 @@ def _collect(obj, plan, seen):
         link = relation.field.name
         action = relation.on_delete
         if action is models.DO_NOTHING:
-            _keep(model, model.objects.filter(**{link: obj}), plan)
+            planned = list(model.deleted_with(link, obj))
+            _cascade(planned, plan, seen)
+            pks = set(model.objects.filter(**{link: obj}).exclude(pk__in=[record.pk for record in planned])
+                      .values_list('pk', flat=True))
+            _keep(model, pks, plan)
             continue
         children = list(model.objects.filter(**{link: obj}))
         if not children:
             continue
         if action is models.CASCADE:
-            for child in children:
-                if (model, child.pk) not in seen:
-                    seen.add((model, child.pk))
-                    plan.cascade.append(child)
-                    _collect(child, plan, seen)
+            _cascade(children, plan, seen)
         elif action is models.SET_NULL:
             plan.detach.extend((child, link) for child in children)
         elif action in (models.PROTECT, models.RESTRICT):
             plan.blockers.append(protected(model, len(children)))
 
 
-def _keeps_more(model):
-    """The links through which other farm records point at this kind of record with DO_NOTHING."""
-    return [relation for relation in model._meta.related_objects
-            if relation.one_to_many and issubclass(relation.related_model, AuditedModel)
-            and relation.on_delete is models.DO_NOTHING]
-
-
-def _keep(model, rows, plan):
-    """Counts the records of `rows` (a queryset) that stay as they are, out of sight, and what they keep in turn: a
-    deleted unit keeps its sampling points and they their water samples. Only a kind that keeps something is read
-    (a unit's points, a few); the rest are counted (a point's samples, thousands)."""
-    links = _keeps_more(model)
-    records = list(rows) if links else []
-    count = len(records) if links else rows.count()
-    if not count:
+def _keep(model, pks, plan):
+    """Notes the records of `model` with these pks as kept, and what they keep in turn: a deleted unit keeps its
+    sampling points and they their water samples."""
+    new = pks - plan.kept_records.get(model, set())
+    if not new:
         return
-    plan.kept[model] = plan.kept.get(model, 0) + count
-    for relation in links:
+    plan.kept_records.setdefault(model, set()).update(new)
+    for relation in model._meta.related_objects:
         child = relation.related_model
-        _keep(child, child.objects.filter(**{f'{relation.field.name}__in': records}), plan)
+        if relation.one_to_many and issubclass(child, AuditedModel) and relation.on_delete is models.DO_NOTHING:
+            found = child.objects.filter(**{f'{relation.field.name}__in': new}).values_list('pk', flat=True)
+            _keep(child, set(found), plan)
 
 
 def protected(model, count):

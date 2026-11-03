@@ -1,0 +1,117 @@
+{% extends base_template %}
+{% load i18n tasks assets %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
+{% comment %} Operations › Tasks (tasks.resources.TaskResource): three views, each a query of its own paged on the
+   server (Today: overdue, then due today, then done today; Open; Completed), the filters and the open drawer
+   in the address, and the drawer of the task picked (?task=). Overdue is worked out on read, on the clock of
+   each task's site. A row is one link, so the page works without the browser code.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="units-main">
+  <nav class="view-tabs" aria-label="{% trans "Tasks" %}">
+    {% for item in views %}
+    <a class="view-tab" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}{% if item.count is not None %} <span class="view-count">{{ item.count }}</span>{% endif %}</a>
+    {% endfor %}
+    {% if series_url %}<a class="view-tab" href="{{ series_url }}">{% trans "Recurring tasks" %}</a>{% endif %}
+  </nav>
+
+  <div class="toolbar units-toolbar">
+    <form method="get" class="search units-search" role="search">
+      {% for key, value in hidden_for_search %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+      {% include "icons/_icon.html" with name="search" %}
+      <label class="sr-only" for="task-search">{% trans "Search tasks" %}</label>
+      <input id="task-search" type="search" name="q" value="{{ query }}" placeholder="{% trans "Search tasks" %}">
+    </form>
+    {% if can_add %}<a class="button button-inline" href="{{ create_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "New task" %}</a>{% endif %}
+  </div>
+
+  <form method="get" class="toolbar-filter task-filters" data-omit-empty>
+    {% if params.view %}<input type="hidden" name="view" value="{{ params.view }}">{% endif %}
+    {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <select id="site-filter" name="site">
+      <option value="">{% trans "All sites" %}</option>
+      {% for value, label in site_options %}<option value="{{ value }}"{% if params.site == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="location-filter">{% trans "Location" %}</label>
+    <select id="location-filter" name="location">
+      <option value="">{% trans "Any place" %}</option>
+      {% for group_label, options in location_choices %}<optgroup label="{{ group_label }}">{% for value, label in options %}<option value="{{ value }}"{% if params.location == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</optgroup>{% endfor %}
+    </select>
+    <label class="sr-only" for="assignee-filter">{% trans "Assignee" %}</label>
+    <select id="assignee-filter" name="assignee">
+      <option value="">{% trans "Anyone" %}</option>
+      <option value="{{ me_value }}"{% if params.assignee == me_value %} selected{% endif %}>{% trans "My tasks" %}</option>
+      {% for user in people %}<option value="{{ user.pk }}"{% if params.assignee == user.pk|stringformat:"s" %} selected{% endif %}>{{ user|person }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="priority-filter">{% trans "Priority" %}</label>
+    <select id="priority-filter" name="priority">
+      <option value="">{% trans "Any priority" %}</option>
+      {% for value, label in priorities %}<option value="{{ value }}"{% if params.priority == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="sr-only" for="category-filter">{% trans "Category" %}</label>
+    <select id="category-filter" name="category">
+      <option value="">{% trans "Any category" %}</option>
+      {% for value, label in categories %}<option value="{{ value }}"{% if params.category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="date-filter">{% trans "Due from" %} <input type="date" name="from" value="{{ params.from }}"></label>
+    <label class="date-filter">{% trans "to" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
+  </form>
+
+  {% if overdue_count %}<p class="units-count"><strong class="over-text">{% blocktrans trimmed count count=overdue_count %}{{ count }} overdue task{% plural %}{{ count }} overdue tasks{% endblocktrans %}</strong></p>{% endif %}
+
+  {% if objects %}
+  <div class="table-wrap">
+    <table class="data-table task-table">
+      <thead>
+        <tr>
+          <th scope="col">{% trans "Task" %}</th>
+          <th scope="col">{% trans "Location" %}</th>
+          <th scope="col">{% trans "Due" %}</th>
+          <th scope="col">{% trans "Assignees" %}</th>
+          <th scope="col">{% trans "Status" %}</th>
+          <th scope="col" class="num">{% trans "Checklist" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in objects %}{% with place=task.place %}
+        <tr class="unit-row{% if task.overdue %} is-overdue{% endif %}{% if drawer.pk == task.pk %} is-selected{% endif %}"{% if drawer.pk == task.pk %} aria-current="true"{% endif %}>
+          <td>
+            <a class="unit-code row-link" href="?{% if row_query %}{{ row_query }}&amp;{% endif %}task={{ task.pk }}">{{ task.title }}</a>
+            <span class="row-sub">{{ task.get_category_display }} · <span class="priority-{{ task.priority }}">{{ task.get_priority_display }}</span>{% if task.series_id %} · {% trans "recurring" %}{% endif %}</span>
+          </td>
+          <td>{{ place|place_label }}{% if place.is_deleted %} <span class="badge badge-voided">{% trans "Place deleted" %}</span>{% endif %}<span class="row-sub nowrap">{{ place|place_context }}</span></td>
+          <td class="nowrap"><time datetime="{{ task.due_date|date:'Y-m-d' }}">{{ task.due_date|date:"DATE_FORMAT" }}</time>{% if task.due_time %} {{ task.due_time|time:"H:i" }}{% endif %}{% if task.overdue %} <span class="badge badge-overdue">{% trans "Overdue" %}</span>{% endif %}</td>
+          <td>{% with names=task.assignees.all|people %}{% if names %}{{ names }}{% else %}<span class="over-text">{% trans "Nobody" %}</span>{% endif %}{% endwith %}</td>
+          <td><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>{% if task.status == "done" %}<span class="row-sub">{{ task.completed_by|person }} · {{ task.completed_at|date:"DATETIME_FORMAT" }}</span>{% elif task.status == "cancelled" %}<span class="row-sub">{{ task.cancelled_by|person }}: {{ task.cancel_reason }}</span>{% elif task.status == "in_progress" %}<span class="row-sub">{{ task.started_by|person }}</span>{% endif %}</td>
+          <td class="num">{% if task.lines %}{{ task.lines_done }}/{{ task.lines }}{% else %}—{% endif %}</td>
+        </tr>
+        {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+  {% else %}
+  <div class="empty">
+    {% include "icons/_icon.html" with name="list-checks" %}
+    {% if filtered or query %}
+    <h2>{% trans "No task matches these filters." %}</h2>
+    <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+    {% elif view == "completed" %}
+    <h2>{% trans "No task completed or cancelled yet" %}</h2>
+    {% elif view == "open" %}
+    <h2>{% trans "No open tasks" %}</h2>
+    <p>{% trans "A task is a job at one place for the people who do it, due on a day." %}</p>
+    {% else %}
+    <h2>{% trans "Nothing due today" %}</h2>
+    <p>{% trans "Today lists the overdue tasks, those due today and those done today." %}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% if drawer %}{% include "tasks/_task_drawer.html" %}{% endif %}
+{% endblock %}

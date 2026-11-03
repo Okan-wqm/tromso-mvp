@@ -55,5 +55,10 @@ AREAS = [
     # Messages: Read is the Messages page, writing in one's own conversations and starting a direct one; Create
     # also creates channels. Only the members of a conversation read it, whatever the role (messaging/services.py).
     Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),
+    # Tasks: Read is the Tasks page, a task's drawer and adding a note; a person a task is for may also start it,
+    # tick its checklist and complete it. Edit also cancels and reopens any task and edits its checklist.
+    Area(_('Tasks'), 'tasks.Task'),
+    # Recurring tasks: the rules that plan tasks ahead; Create, Edit and Delete change the plan.
+    Area(_('Recurring tasks'), 'tasks.TaskSeries'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

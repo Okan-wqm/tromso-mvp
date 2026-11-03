@@ -44,7 +44,7 @@ class LinkListWidget(forms.Widget):
             link = linked.get(pk)
             initial = {detail: link[detail] for detail in self.detail_names if link and link.get(detail) is not None}
             rows.append({
-                'pk': pk, 'label': str(record), 'group': group_of(self.belongs_to.get(pk)),
+                'pk': pk, 'label': str(record), 'group': group_of(self.belongs_to, pk),
                 'id': f'{context["widget"]["attrs"].get("id", name)}_{index}',
                 'checked': link is not None, 'primary': bool(link and link['primary']),
                 'details': self.details(prefix=f'{name}-{pk}', initial=initial) if self.details else None,

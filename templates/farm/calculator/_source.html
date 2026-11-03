@@ -1,0 +1,21 @@
+{% load i18n water %}{% comment %} Where the calculator's values came from (a live part): the latest values of the unit or loop chosen,
+   each with its age (a limit with the fish it is for), marked when it was changed here. Nothing goes back to
+   the samples. {% endcomment %}
+<div class="calc-source-values" data-live-part="source" aria-live="polite">
+  {% if source %}
+  <p class="calc-source-head">{% blocktrans trimmed with point=source.point.code %}The latest values of {{ point }}, for this calculation only: change any of them here, nothing is written back.{% endblocktrans %}</p>
+  <ul class="calc-offers">
+    {% for row in source.rows %}
+    <li class="calc-offer{% if row.changed %} is-changed{% endif %}{% if row.offer.reading.status == "stale" %} is-stale{% endif %}">
+      <span class="calc-offer-label">{{ row.label }}</span>
+      <span class="calc-offer-value">{{ row.value|amount:row.decimals }}</span>
+      <span class="calc-offer-from">{% if row.offer.reading %}{% blocktrans trimmed with age=row.offer.reading.at|age %}{{ age }} ago{% endblocktrans %}{% if row.offer.reading.status == "stale" %} · {% trans "stale" %}{% endif %}{% elif row.offer.field == "altitude_m" %}{% trans "the site’s altitude" %}{% elif row.offer.rows %}{% for limit in row.offer.rows %}{{ limit|limit_text }}{% if not forloop.last %}; {% endif %}{% endfor %}{% else %}{% trans "its fish have no such bound" %}{% endif %}</span>
+      {% if row.changed %}<span class="calc-offer-changed">{% trans "changed here" %}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if source.missing %}<p class="calc-source-note">{% trans "Not measured there in the last 30 days, as entered:" %} {{ source.missing|join:", " }}.</p>{% endif %}
+  {% elif point_gone %}
+  <p class="form-error">{% trans "That unit or system is no longer there: the values are as entered." %}</p>
+  {% endif %}
+</div>

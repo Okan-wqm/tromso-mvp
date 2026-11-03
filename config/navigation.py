@@ -82,6 +82,9 @@ WORKSPACES = [
                 # The store: what is on hand where, deliveries, moves, write-offs and counts; the feed fed is read
                 # from the feeding records.
                 Entry(_('Storage'), 'inventory:storage', 'package', 'inventory.view_inventoryoperation'),
+                # The farm's jobs, each at one place for its people, and the recurring tasks that plan them.
+                Entry(_('Tasks'), 'tasks:task_list', 'list-checks', 'tasks.view_task'),
+                Entry(_('Recurring tasks'), 'tasks:taskseries_list', 'repeat', 'tasks.view_taskseries'),
             ]),
             Group(_('Feeding'), [
                 Entry(_('Meal board'), 'farm:meal_board', 'utensils', 'farm.view_feedingrecord'),

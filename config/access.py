@@ -15,6 +15,9 @@ AREAS = [
     Area(_('Water limits'), 'farm.WaterLimit'),
     Area(_('Medicines'), 'farm.Medicine'),
     Area(_('Suppliers'), 'farm.Supplier'),
+    Area(_('Library'), 'knowledge.Document'),
+    # Edit also reviews an entry (marks it reviewed, or takes it back to draft).
+    Area(_('Knowledge entries'), 'knowledge.KnowledgeEntry'),
     # The stock: Read is the Production units page, Create records an operation (a stocking, a mortality,
     # a weighing), Delete voids one. Operations are never edited: a correction is a void and a new entry.
     Area(_('Production units'), 'farm.StockOperation', actions=('view', 'add', 'delete')),

@@ -1,0 +1,6 @@
+{% load i18n %}{% comment %} The PDF input of a document (knowledge.forms.document.DocumentFileInput): the stored file by its own
+   name, opened through the library's file view, a box to remove it, and the input for another.{% endcomment %}
+{% if widget.is_initial %}<p class="file-current">{{ widget.initial_text }}: <a href="{% url 'knowledge:document_file' widget.value.instance.pk %}" target="_blank" rel="noopener">{{ widget.value.instance.file_name }}</a></p>
+{% if not widget.required %}<label class="check"><input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"{% if widget.attrs.disabled %} disabled{% endif %}> {{ widget.clear_checkbox_label }}</label>{% endif %}
+<p class="file-change">{{ widget.input_text }}:</p>{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>

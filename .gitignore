@@ -11,3 +11,6 @@ node_modules/
 
 # Built from locale/*/LC_MESSAGES/django.po by `manage.py compile_catalogs`
 *.mo
+
+# Uploaded files (MEDIA_ROOT): never committed, never served as static files
+/media/

@@ -244,6 +244,12 @@ msgstr[0] "%(count)s üye"
 msgstr[1] "%(count)s üye"
 
 #, python-format
+msgid "%(count)s page"
+msgid_plural "%(count)s pages"
+msgstr[0] "%(count)s sayfa"
+msgstr[1] "%(count)s sayfa"
+
+#, python-format
 msgid "%(count)s part"
 msgid_plural "%(count)s parts"
 msgstr[0] "%(count)s parça"
@@ -352,6 +358,10 @@ msgstr "balık başına %(females)s ergin dişi · %(mobile)s hareketli · %(att
 #, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s “%(record)s” silinmiş."
+
+#, python-format
+msgid "%(first)s et al."
+msgstr "%(first)s vd."
 
 #, python-format
 msgid "%(first)s–%(last)s of %(total)s"
@@ -653,11 +663,19 @@ msgstr "%(weight)s, %(protocol)s protokolünün ağırlık aralıkları dışın
 msgid "%(weight)s weighed %(date)s"
 msgstr "%(date)s tarihinde %(weight)s tartıldı"
 
+#, python-format
+msgid "%(when)s by %(who)s"
+msgstr "%(when)s, %(who)s"
+
 msgid "(batch in unit)"
 msgstr "(birimdeki parti)"
 
 msgid "(has errors)"
 msgstr "(hata var)"
+
+#, python-format
+msgid "(printed as %(label)s)"
+msgstr "(basılı sayfa %(label)s)"
 
 msgid "(unit)"
 msgstr "(birim)"
@@ -673,6 +691,17 @@ msgstr "0 satır eşleşiyor"
 
 msgid "9-digit Norwegian organisation number"
 msgstr "9 haneli Norveç kuruluş numarası"
+
+msgid "A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001."
+msgstr "DOI 10. ile başlar ve boşluk içermez, örn. 10.1016/j.aquaculture.2019.01.001."
+
+#, python-format
+msgid ""
+"A PDF of up to %(limit)s. Its text is read when it is saved, page by page, for the search and, "
+"later, for the AI agents."
+msgstr ""
+"En fazla %(limit)s büyüklüğünde bir PDF. Metni kaydedilirken sayfa sayfa okunur: arama için ve "
+"ileride yapay zekâ ajanları için."
 
 msgid "A batch alone: the protocol follows it into every unit it is moved to."
 msgstr "Yalnızca parti: protokol, parti hangi birime taşınırsa onunla birlikte gider."
@@ -710,6 +739,9 @@ msgstr "Bu adda bir kanal zaten var."
 
 msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
 msgstr "Bir tanı şüpheli veya doğrulanmıştır; tanı yoksa doğrulanacak bir şey yoktur."
+
+msgid "A document in the library"
+msgstr "Kütüphanedeki bir belge"
 
 msgid "A dose needs its unit, and a unit its dose."
 msgstr "Doz birimiyle, birim de dozuyla girilir."
@@ -781,6 +813,13 @@ msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
 msgstr[1] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
+
+msgid ""
+"A piece of knowledge in your own words, with its source: a document of the library, another "
+"published source, or an expert’s or your own observation."
+msgstr ""
+"Kendi sözlerinizle bir bilgi ve kaynağı: kütüphaneden bir belge, yayımlanmış başka bir kaynak ya "
+"da bir uzmanın veya sizin gözleminiz."
 
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "Fiyatın bir para birimi, para biriminin de bir fiyatı olmalı."
@@ -926,6 +965,9 @@ msgstr "Azami yoğunluğun üstü, kabul edildi"
 msgid "Above the usual feed rate, accepted"
 msgstr "Olağan yemleme oranının üzerinde, onaylandı"
 
+msgid "Abstract"
+msgstr "Özet"
+
 msgid "Account"
 msgstr "Hesap"
 
@@ -993,6 +1035,9 @@ msgstr "Kalibrasyon ekle"
 msgid "Add contact"
 msgstr "Kişi ekle"
 
+msgid "Add knowledge from this document"
+msgstr "Bu belgeden bilgi ekle"
+
 msgid "Add members"
 msgstr "Üye ekle"
 
@@ -1017,6 +1062,13 @@ msgstr "Kurulum › Tanklar, havuzlar ve kafesler bölümünde ekleyin."
 
 msgid "Add unit"
 msgstr "Birim ekle"
+
+msgid "Added"
+msgstr "Eklenme"
+
+#, python-format
+msgid "Added by %(who)s, %(when)s"
+msgstr "Ekleyen: %(who)s, %(when)s"
 
 msgid "Address"
 msgstr "Adres"
@@ -1066,6 +1118,10 @@ msgstr "Alkalinite (mg/L)"
 
 msgid "All"
 msgstr "Tümü"
+
+#, python-format
+msgid "All %(plural)s"
+msgstr "Tüm %(plural)s"
 
 msgid "All actions"
 msgstr "Tüm işlemler"
@@ -1119,6 +1175,9 @@ msgstr "Tüm protokoller"
 msgid "All sites"
 msgstr "Tüm sahalar"
 
+msgid "All sources"
+msgstr "Tüm kaynaklar"
+
 msgid "All species"
 msgstr "Tüm balık türleri"
 
@@ -1130,6 +1189,9 @@ msgstr "Tüm sistemler"
 
 msgid "All the energy in the feed, in MJ per kg as fed."
 msgstr "Yemdeki tüm enerji, verildiği hâliyle kg başına MJ."
+
+msgid "All topics"
+msgstr "Tüm konular"
 
 msgid "All treatments"
 msgstr "Tüm tedaviler"
@@ -1152,6 +1214,9 @@ msgstr "Tüm su ortamları"
 
 msgid "All water types"
 msgstr "Tüm su tipleri"
+
+msgid "All years"
+msgstr "Tüm yıllar"
 
 msgid "Allows"
 msgstr "İzin verir"
@@ -1186,6 +1251,13 @@ msgstr "Aktif bir protokolün tablosu olmalı."
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "Miktar birimiyle, birim de miktarıyla girilir."
 
+msgid ""
+"An article, report, book or regulation the company relies on: its reference, its abstract and its"
+" PDF, whose text is searched."
+msgstr ""
+"Şirketin dayandığı bir makale, rapor, kitap ya da mevzuat: künyesi, özeti ve metni aranabilen "
+"PDF’i."
+
 #, python-format
 msgid "An assignment can start at most %(days)d days back."
 msgstr "Bir atama en fazla %(days)d gün geriden başlayabilir."
@@ -1203,6 +1275,9 @@ msgstr "Bir olay kendi tarihinde veya sonrasında kapatılır."
 msgid "An expected FCR is between 0.50 and 3.00."
 msgstr "Beklenen FCR 0,50 ile 3,00 arasındadır."
 
+msgid "An expert or our own observation"
+msgstr "Bir uzman ya da kendi gözlemimiz"
+
 msgid "Anaesthetic"
 msgstr "Anestezik"
 
@@ -1211,6 +1286,9 @@ msgstr "Analog"
 
 msgid "Analysis"
 msgstr "Analiz"
+
+msgid "Another document in the library has this DOI."
+msgstr "Kütüphanedeki başka bir belge bu DOI’ye sahip."
 
 msgid "Another feed already has this name."
 msgstr "Bu ad başka bir yemde zaten var."
@@ -1238,6 +1316,9 @@ msgstr "Bu günlerin bazılarında bu birime başka bir protokol atanmış."
 
 msgid "Another protocol was assigned to these fish meanwhile: look at the list and try again."
 msgstr "Bu arada bu balıklara başka bir protokol atandı: listeye bakıp yeniden deneyin."
+
+msgid "Another published source"
+msgstr "Yayımlanmış başka bir kaynak"
 
 msgid "Another role already uses this name."
 msgstr "Bu adı başka bir rol zaten kullanıyor."
@@ -1280,6 +1361,9 @@ msgstr "Antibakteriyel"
 
 msgid "Antifungal"
 msgstr "Antifungal"
+
+msgid "Any species"
+msgstr "Her balık türü"
 
 msgid "Any time"
 msgstr "Tüm zamanlar"
@@ -1345,6 +1429,9 @@ msgstr ""
 "KÜB’de yazdığı gibi, son tedavi gününden sonraki gün olarak. KÜB ikisini de veriyorsa bunu da "
 "girin: daha geç biten geçerlidir. Yoksa 0."
 
+msgid "As the document itself gives it."
+msgstr "Belgenin kendisinde yazdığı gibi."
+
 msgid ""
 "As the meter or kit reads it. With the temperature, the saturation is worked out when it is not "
 "entered."
@@ -1402,6 +1489,9 @@ msgstr "Balık başına tutunmuş"
 msgid "Author"
 msgstr "Yazan"
 
+msgid "Authors"
+msgstr "Yazarlar"
+
 msgid "Automatic"
 msgstr "Otomatik"
 
@@ -1426,11 +1516,17 @@ msgstr "Ort. ağırlık"
 msgid "Azamethiphos"
 msgstr "Azametifos"
 
+msgid "Back to draft"
+msgstr "Taslağa geri al"
+
 msgid "Back to overview"
 msgstr "Genel bakışa dön"
 
 msgid "Back to sign in"
 msgstr "Girişe dön"
+
+msgid "Back to the document"
+msgstr "Belgeye dön"
 
 msgid "Back to the latest messages"
 msgstr "En son mesajlara dön"
@@ -1713,6 +1809,9 @@ msgstr "Sahip ya da üye seçin."
 msgid "Choose someone else: a conversation is with another person."
 msgstr "Başka birini seçin: konuşma başka bir kişiyle yapılır."
 
+msgid "Choose the document in the library it comes from."
+msgstr "Bilginin geldiği kütüphane belgesini seçin."
+
 msgid "Choose the kind on the General tab; its dimensions appear here."
 msgstr "Genel sekmesinde türü seçin; boyutları burada görünür."
 
@@ -1739,6 +1838,13 @@ msgstr "Birimler, bir parti ya da bir parti ve birimler seçin."
 
 msgid "Circular"
 msgstr "Dairesel"
+
+msgid "Citation"
+msgstr "Kaynak künyesi"
+
+#, python-format
+msgid "Cited in a text as %(cite)s."
+msgstr "Metin içinde %(cite)s olarak gösterilir."
 
 msgid "City"
 msgstr "Şehir"
@@ -1851,6 +1957,9 @@ msgstr "Kişiler, saha oluşturulduktan sonra eklenebilir."
 msgid "Contacts can be added once the supplier is created."
 msgstr "Kişiler, tedarikçi oluşturulduktan sonra eklenebilir."
 
+msgid "Content"
+msgstr "İçerik"
+
 msgid "Control type"
 msgstr "Kontrol tipi"
 
@@ -1878,6 +1987,9 @@ msgstr "Bakır alaşımı"
 
 msgid "Corona discharge"
 msgstr "Korona deşarjı"
+
+msgid "Could not be read"
+msgstr "Okunamadı"
 
 msgid "Count adjusted"
 msgstr "Sayı düzeltildi"
@@ -1981,6 +2093,12 @@ msgstr "Sipermetrin"
 msgid "D-ended"
 msgstr "D-uçlu"
 
+msgid "DOI"
+msgstr "DOI"
+
+msgid "Danish"
+msgstr "Danca"
+
 msgid "Data"
 msgstr "Veri"
 
@@ -2030,6 +2148,9 @@ msgstr "Sil: %(object)s"
 
 msgid "Delete message"
 msgstr "Mesajı sil"
+
+msgid "Delete the entry"
+msgstr "Kaydı sil"
 
 msgid "Delete this message?"
 msgstr "Bu mesaj silinsin mi?"
@@ -2128,6 +2249,9 @@ msgstr "Dalış ve ROV"
 msgid "Django model"
 msgstr "Django modeli"
 
+msgid "Document"
+msgstr "Belge"
+
 msgid "Dose"
 msgstr "Doz"
 
@@ -2139,6 +2263,9 @@ msgstr "Doz birimi"
 
 msgid "Dose · amount"
 msgstr "Doz · miktar"
+
+msgid "Download"
+msgstr "İndir"
 
 #, python-format
 msgid "Download the rows below as CSV, up to %(limit)s rows"
@@ -2218,6 +2345,9 @@ msgstr "Düzenle"
 msgid "Edit %(name)s"
 msgstr "Düzenle: %(name)s"
 
+msgid "Edit the entry"
+msgstr "Kaydı düzenle"
+
 msgid "Edit the unit"
 msgstr "Birimi düzenle"
 
@@ -2255,6 +2385,9 @@ msgstr "Sona erdi"
 msgid "Energy"
 msgstr "Enerji"
 
+msgid "English"
+msgstr "İngilizce"
+
 msgid "Enter at least one value."
 msgstr "En az bir değer girin."
 
@@ -2265,6 +2398,9 @@ msgid "Enter the email address on your account. We will send you a link to set a
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
 "göndereceğiz."
+
+msgid "Entries"
+msgstr "Kayıtlar"
 
 msgid "Epizootic haematopoietic necrosis (EHN)"
 msgstr "Epizootik hematopoietik nekroz (EHN)"
@@ -2528,6 +2664,15 @@ msgstr "%(fish)s balıktan az incelenen birimler:"
 msgid "Fibreglass (GRP)"
 msgstr "Cam elyaf (CTP)"
 
+msgid "File"
+msgstr "Dosya"
+
+msgid "File name"
+msgstr "Dosya adı"
+
+msgid "File size (bytes)"
+msgstr "Dosya boyutu (bayt)"
+
 msgid "Fill in its feeding table first: a protocol without one cannot be active."
 msgstr "Önce yemleme tablosunu doldurun: tablosu olmayan bir protokol aktif olamaz."
 
@@ -2668,6 +2813,9 @@ msgstr "Serbest karbondioksit; bir CO₂ probundan veya titrasyonla."
 msgid "Freeboard (m)"
 msgstr "Hava payı (m)"
 
+msgid "French"
+msgstr "Fransızca"
+
 msgid "Fresh water"
 msgstr "Tatlı su"
 
@@ -2765,6 +2913,9 @@ msgstr ""
 msgid "Genus: %(genus)s (the first word of the scientific name)."
 msgstr "Cins: %(genus)s (bilimsel adın ilk kelimesi)."
 
+msgid "German"
+msgstr "Almanca"
+
 msgid "Gill disease"
 msgstr "Solungaç hastalığı"
 
@@ -2782,6 +2933,9 @@ msgstr "Ortalama ağırlığı ya da tartılan balık sayısını ve toplam ağ�
 
 msgid "Give the channel a name."
 msgstr "Kanala bir ad verin."
+
+msgid "Give the citation of the source, its web address, or both."
+msgstr "Kaynağın künyesini, web adresini ya da ikisini birden yazın."
 
 msgid "Give the sample, or the average weight."
 msgstr "Örneği ya da ortalama ağırlığı girin."
@@ -2814,6 +2968,9 @@ msgstr "Büyütme"
 
 msgid "Grower feed"
 msgstr "Büyütme yemi"
+
+msgid "Growth"
+msgstr "Büyüme"
 
 msgid "Growth stage"
 msgstr "Büyüme evresi"
@@ -2909,6 +3066,9 @@ msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
 msgid "Hydrogen peroxide"
 msgstr "Hidrojen peroksit"
 
+msgid "Icelandic"
+msgstr "İzlandaca"
+
 msgid ""
 "If an account uses this address, a reset link is on its way. If it has not arrived in a few "
 "minutes, check your spam folder."
@@ -2927,6 +3087,9 @@ msgstr "Yemle"
 
 msgid "In force today"
 msgstr "Bugün yürürlükte"
+
+msgid "In the library"
+msgstr "Kütüphanede"
 
 msgid "Inactive"
 msgstr "Pasif"
@@ -2968,6 +3131,9 @@ msgstr "Kurulum tarihi"
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Tanı şüpheli mi, doğrulanmış mı?"
 
+msgid "Issue"
+msgstr "Sayı"
+
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
 "log keeps its history, and it can be restored from the admin."
@@ -2991,6 +3157,9 @@ msgstr "Stok işlemleri var: önce onları iptal edin."
 msgid "It holds fish: move or harvest them first."
 msgstr "İçinde balık var: önce taşıyın veya hasat edin."
 
+msgid "It is a draft again."
+msgstr "Yeniden taslak."
+
 msgid "It is assigned for today or later: end those assignments first."
 msgstr "Bugün ya da sonrası için atanmış: önce bu atamaları sona erdirin."
 
@@ -3010,6 +3179,9 @@ msgid ""
 msgstr ""
 "Artık sayılmaz: son değerler ve durumlar onsuz yeniden hesaplanır. Bir numuneyi düzeltmek için "
 "iptal edip yeniden girin."
+
+msgid "It was reviewed; after this change it is a draft again, until it is reviewed anew."
+msgstr "İncelenmişti; bu değişiklikten sonra yeniden incelenene kadar tekrar taslak."
 
 msgid "Its company registration or VAT number, e.g. 923456789 in Norway; spaces are left out."
 msgstr "Şirket sicil ya da vergi numarası, örn. Norveç’te 923456789; boşluklar atılır."
@@ -3056,6 +3228,15 @@ msgstr "Anahtar"
 
 msgid "Kind"
 msgstr "Tür"
+
+msgid "Knowledge"
+msgstr "Bilgi"
+
+msgid "Knowledge entries"
+msgstr "Bilgi kayıtları"
+
+msgid "Knowledge taken from it"
+msgstr "Bu belgeden alınan bilgiler"
 
 msgid "L"
 msgstr "L"
@@ -3158,6 +3339,9 @@ msgstr "Uzunluk (m)"
 msgid "Level sensor"
 msgstr "Seviye sensörü"
 
+msgid "Library"
+msgstr "Kütüphane"
+
 msgid ""
 "Lice are counted at least every 7 days at 4 °C or above, every 14 days below (lakselusforskriften"
 " § 6)."
@@ -3250,8 +3434,14 @@ msgstr "Yönetici"
 msgid "Manufacturer"
 msgstr "Üretici"
 
+msgid "Mark as reviewed"
+msgstr "İncelendi olarak işaretle"
+
 msgid "Mark which one is the primary one."
 msgstr "Hangisinin birincil olduğunu işaretleyin."
+
+msgid "Marked as reviewed by you."
+msgstr "Sizin tarafınızdan incelendi olarak işaretlendi."
 
 msgid "Marketing authorisation number"
 msgstr "Ruhsat numarası"
@@ -3459,6 +3649,9 @@ msgstr "Ad en az 2 karakter olmalı."
 msgid "Name or code"
 msgstr "Ad veya kod"
 
+msgid "Name the person whose observation or advice it is."
+msgstr "Gözlemin ya da önerinin kime ait olduğunu yazın."
+
 msgid "Narrows the list of types."
 msgstr "Tür listesini daraltır."
 
@@ -3537,6 +3730,9 @@ msgstr "“%(query)s” ile eşleşen %(plural)s yok"
 msgid "No %(plural)s yet"
 msgstr "Henüz %(plural)s yok"
 
+msgid "No PDF: the document is known by its reference only."
+msgstr "PDF yok: belge yalnızca künyesiyle biliniyor."
+
 msgid "No band yet. Use “Add band” to add a row."
 msgstr "Henüz ağırlık aralığı yok. Satır eklemek için “Ağırlık aralığı ekle”yi kullanın."
 
@@ -3576,6 +3772,12 @@ msgstr "Bu birimde henüz yemleme kaydedilmedi."
 msgid "No feeding recorded yet"
 msgstr "Henüz yemleme kaydedilmedi"
 
+msgid "No file"
+msgstr "Dosya yok"
+
+msgid "No file."
+msgstr "Dosya yok."
+
 #, python-format
 msgid "No fish are in %(unit)s."
 msgstr "%(unit)s içinde balık yok."
@@ -3603,6 +3805,9 @@ msgid ""
 msgstr ""
 "Bu günü kapsayan yemle tedavi yok: Sağlık › Tedaviler altında kaydedin, yoksa balıkların bekleme "
 "süresi bilinmez kalır."
+
+msgid "No knowledge entry cites it yet."
+msgstr "Henüz hiçbir bilgi kaydı bu belgeye dayanmıyor."
 
 msgid "No limit"
 msgstr "Sınır yok"
@@ -3661,6 +3866,19 @@ msgstr "Henüz tablo yok"
 #, python-format
 msgid "No temperature in the last %(days)d days: record one."
 msgstr "Son %(days)d günde sıcaklık kaydı yok: bir tane kaydedin."
+
+msgid "No text found"
+msgstr "Metin bulunamadı"
+
+msgid ""
+"No text found: the pages are images, as in a scan. Its text needs OCR, which the library does not"
+" do yet."
+msgstr ""
+"Metin bulunamadı: sayfalar taranmış gibi görüntülerden oluşuyor. Metni için OCR gerekir; "
+"kütüphane bunu henüz yapmıyor."
+
+msgid "No text on this page."
+msgstr "Bu sayfada metin yok."
 
 msgid "No treatment in this unit in the last 90 days."
 msgstr "Son 90 günde bu birimde tedavi yok."
@@ -3727,6 +3945,9 @@ msgstr "Nord-Trøndelag ve güneyi"
 msgid "Nordland, Troms and Finnmark"
 msgstr "Nordland, Troms ve Finnmark"
 
+msgid "Norwegian"
+msgstr "Norveççe"
+
 msgid "Norwegian list, category F"
 msgstr "Norveç listesi, F kategorisi"
 
@@ -3745,6 +3966,9 @@ msgstr "Belirtilmedi"
 msgid "Not in a system"
 msgstr "Bir sistemde değil"
 
+msgid "Not in the text of the PDF: the words are in the reference or the abstract."
+msgstr "PDF’in metninde yok: sözcükler künyede ya da özette geçiyor."
+
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
 
@@ -3756,6 +3980,9 @@ msgstr "Ölçülmedi"
 
 msgid "Not rated"
 msgstr "Puanlanmadı"
+
+msgid "Not reviewed yet. AI agents will act on reviewed entries only."
+msgstr "Henüz incelenmedi. Yapay zekâ ajanları yalnızca incelenmiş kayıtlara göre hareket edecek."
 
 msgid "Not set"
 msgstr "Girilmedi"
@@ -3801,6 +4028,9 @@ msgstr "Boş olabilir"
 msgid "Number of lamps"
 msgstr "Lamba sayısı"
 
+msgid "Number of pages"
+msgstr "Sayfa sayısı"
+
 msgid "Nursery"
 msgstr "Yavru yetiştirme"
 
@@ -3812,6 +4042,9 @@ msgstr "Normal"
 
 msgid "Observation"
 msgstr "Gözlem"
+
+msgid "Observed on"
+msgstr "Gözlem tarihi"
 
 msgid "Offered"
 msgstr "Sunuluyor"
@@ -3830,6 +4063,13 @@ msgstr "Daha eski"
 
 msgid "On the site’s clock."
 msgstr "Sahanın saatine göre."
+
+msgid ""
+"One author per line, in the order of the document, family name first: “Olsen, Bjørn Erik”. An "
+"organisation as it is named: “Mattilsynet”."
+msgstr ""
+"Her satıra bir yazar, belgedeki sırayla, önce soyadı: “Olsen, Bjørn Erik”. Bir kurum adıyla: "
+"“Mattilsynet”."
 
 msgid "One probe that measures several water parameters."
 msgstr "Birden çok su parametresini ölçen tek prob."
@@ -3914,6 +4154,9 @@ msgstr "Açık sağlık olayları"
 
 msgid "Open menu"
 msgstr "Menüyü aç"
+
+msgid "Open the PDF"
+msgstr "PDF’i aç"
 
 msgid "Open this link to set a new password:"
 msgstr "Yeni parola belirlemek için bu bağlantıyı açın:"
@@ -4009,6 +4252,9 @@ msgstr "Bu seri numarası başka bir ekipmanda zaten var."
 msgid "Other equipment already uses this code."
 msgstr "Bu kodu başka bir ekipman zaten kullanıyor."
 
+msgid "Other language"
+msgstr "Başka bir dil"
+
 msgid "Other parasites (e.g. AGD)"
 msgstr "Diğer parazitler (örn. AGD)"
 
@@ -4070,15 +4316,31 @@ msgstr "O₂ (%)"
 msgid "O₂ (mg/L)"
 msgstr "O₂ (mg/L)"
 
+msgid "PDF file"
+msgstr "PDF dosyası"
+
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU aynı sayıdır: tatlı suda 0, denizde yaklaşık 35."
 
 msgid "PVC"
 msgstr "PVC"
 
+msgid "Page"
+msgstr "Sayfa"
+
 #, python-format
 msgid "Page %(number)s of %(total)s"
 msgstr "Sayfa %(number)s / %(total)s"
+
+#, python-format
+msgid "Page %(page)s"
+msgstr "Sayfa %(page)s"
+
+msgid "Page label"
+msgstr "Sayfa etiketi"
+
+msgid "Page(s)"
+msgstr "Sayfa(lar)"
 
 msgid "Pages"
 msgstr "Sayfalar"
@@ -4272,6 +4534,9 @@ msgstr "Birincil sistem"
 msgid "Processing"
 msgstr "İşleme"
 
+msgid "Procurement and logistics"
+msgstr "Satın alma ve lojistik"
+
 msgid "Production"
 msgstr "Üretim"
 
@@ -4315,6 +4580,9 @@ msgstr "Protokol atamaları"
 msgid "Protocols"
 msgstr "Protokoller"
 
+msgid "Published in"
+msgstr "Yayımlandığı yer"
+
 msgid "Pumping"
 msgstr "Pompalama"
 
@@ -4339,6 +4607,9 @@ msgstr "Kalite kontrol"
 
 msgid "Quarantine"
 msgstr "Karantina"
+
+msgid "Quote"
+msgstr "Alıntı"
 
 msgid "RAS (recirculating)"
 msgstr "RAS (devridaimli)"
@@ -4365,6 +4636,9 @@ msgid ""
 msgstr ""
 "Veritabanının kendisinden okundu ve <code>%(app)s</code> uygulamasının <code>%(model)s</code> "
 "Django modeliyle eşleştirildi."
+
+msgid "Read the text, page by page"
+msgstr "Metni sayfa sayfa oku"
 
 msgid "Reason"
 msgstr "Neden"
@@ -4435,6 +4709,9 @@ msgstr "Dikdörtgen"
 msgid "Reduced appetite"
 msgstr "Azalmış iştah"
 
+msgid "Reference"
+msgstr "Künye"
+
 msgid "Reference data"
 msgstr "Referans verileri"
 
@@ -4443,6 +4720,9 @@ msgstr "Soğutucu akışkan"
 
 msgid "Region"
 msgstr "Bölge"
+
+msgid "Regulation"
+msgstr "Mevzuat"
 
 msgid "Regulatory"
 msgstr "Mevzuat"
@@ -4461,6 +4741,9 @@ msgstr "Uzaktan"
 
 msgid "Remove"
 msgstr "Kaldır"
+
+msgid "Remove the file"
+msgstr "Dosyayı kaldır"
 
 msgid "Rename the protocol first: its copies have used every name."
 msgstr "Önce protokolün adını değiştirin: kopyaları tüm adları kullanmış."
@@ -4494,6 +4777,29 @@ msgstr "Geri yüklendi"
 
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
+
+msgid "Review"
+msgstr "İnceleme"
+
+msgid "Review it again"
+msgstr "Yeniden incele"
+
+msgid "Reviewed"
+msgstr "İncelendi"
+
+msgid "Reviewed at"
+msgstr "İnceleme zamanı"
+
+msgid "Reviewed by"
+msgstr "İnceleyen"
+
+msgid ""
+"Reviewing says the statement and its source are right: it is recorded in your name, now. Editing "
+"the statement, topics, species or source of a reviewed entry makes it a draft again."
+msgstr ""
+"İncelemek, ifadenin ve kaynağının doğru olduğunu söylemektir: sizin adınıza, şu an kaydedilir. "
+"İncelenmiş bir kaydın ifadesini, konularını, balık türlerini ya da kaynağını düzenlemek onu "
+"yeniden taslak yapar."
 
 msgid "River or stream"
 msgstr "Nehir veya dere"
@@ -4693,11 +4999,23 @@ msgstr "Tüm sütunlarda ara"
 msgid "Search findings, units, site or vet"
 msgstr "Bulgu, birim, saha veya veterinerde ara"
 
+msgid "Search the statements, quotes and sources"
+msgstr "İfadelerde, alıntılarda ve kaynaklarda ara"
+
+msgid "Search titles, authors, abstracts and the text of the PDFs"
+msgstr "Başlıklarda, yazarlarda, özetlerde ve PDF metinlerinde ara"
+
 msgid "Search unit, batch or species"
 msgstr "Birim, parti veya balık türü ara"
 
+msgid "Search vector"
+msgstr "Arama vektörü"
+
 msgid "Seaweed"
 msgstr "Deniz yosunu"
+
+msgid "Section"
+msgstr "Bölüm"
 
 msgid "Sedation"
 msgstr "Sedasyon"
@@ -4890,6 +5208,9 @@ msgstr "Smolt"
 msgid "Solar"
 msgstr "Güneş"
 
+msgid "Someone changed this entry while you were reading it. Read it again before you review it."
+msgstr "Siz okurken biri bu kaydı değiştirdi. İncelemeden önce yeniden okuyun."
+
 #. Translators: %(name)s is the kind of record in lower case (e.g. site).
 #, python-format
 msgid ""
@@ -4916,6 +5237,17 @@ msgstr "Kaynak"
 msgid "Source of the values"
 msgstr "Değerlerin kaynağı"
 
+#, python-format
+msgid "Source: %(kind)s"
+msgstr "Kaynak: %(kind)s"
+
+msgid "Spanish"
+msgstr "İspanyolca"
+
+msgid "Species"
+msgstr "Balık türleri"
+
+msgctxt "plural"
 msgid "Species"
 msgstr "Balık türleri"
 
@@ -4978,6 +5310,9 @@ msgstr "Eyalet / il"
 
 msgid "Stated volume (m³)"
 msgstr "Girilen hacim (m³)"
+
+msgid "Statement"
+msgstr "İfade"
 
 msgid "Status"
 msgstr "Durum"
@@ -5089,6 +5424,9 @@ msgstr "Şüpheli"
 msgid "Suspended"
 msgstr "Askıda"
 
+msgid "Swedish"
+msgstr "İsveççe"
+
 msgid "Switch panel"
 msgstr "Paneli değiştir"
 
@@ -5164,6 +5502,22 @@ msgstr "Tenacibakülozis"
 msgid "Terms and notes"
 msgstr "Koşullar ve notlar"
 
+msgid "Text"
+msgstr "Metin"
+
+msgid "Text found"
+msgstr "Metin bulundu"
+
+#, python-format
+msgid "Text found on %(found)d of %(count)d page."
+msgid_plural "Text found on %(found)d of %(count)d pages."
+msgstr[0] "%(count)d sayfanın %(found)d sayfasında metin bulundu."
+msgstr[1] "%(count)d sayfanın %(found)d sayfasında metin bulundu."
+
+#, python-format
+msgid "Text of %(name)s"
+msgstr "%(name)s metni"
+
 msgid "That message is not in this conversation."
 msgstr "Bu mesaj bu konuşmada değil."
 
@@ -5180,6 +5534,9 @@ msgstr "İngilizce adı, örn. Atlantic salmon."
 
 msgid "The MT number, when the medicine has one."
 msgstr "İlacın varsa ruhsat (MT) numarası."
+
+msgid "The abstract or summary, as the document gives it."
+msgstr "Belgenin verdiği haliyle özet."
 
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Siparişler ve sorular için adres; kişilerin kendi adresleri aşağıdadır."
@@ -5258,6 +5615,9 @@ msgstr "En derin nokta ortalama derinlikten sığ olamaz."
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Sindirilebilir enerji brüt enerjiden fazla olamaz."
 
+msgid "The document in the library the knowledge comes from."
+msgstr "Bilginin geldiği kütüphane belgesi."
+
 msgid "The end cannot be worked out: record the water temperature."
 msgstr "Sonu hesaplanamıyor: su sıcaklığını kaydedin."
 
@@ -5308,6 +5668,10 @@ msgstr ""
 "Çiftliğin kullandığı yemler: kimin ürettiği, peleti ve analizi, her birinin uygun olduğu balık "
 "türleri ve balık ağırlıkları."
 
+#, python-format
+msgid "The file is %(size)s; the library takes PDFs of up to %(limit)s."
+msgstr "Dosya %(size)s; kütüphane en fazla %(limit)s büyüklüğünde PDF alır."
+
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Bu protokolle yemlenen ilk gün, çiftliğin saatine göre."
 
@@ -5331,12 +5695,30 @@ msgstr "Sağlık olayının tarihi %(date)s, bu tedaviden sonra."
 msgid "The invitation to set a password is sent here."
 msgstr "Parola belirleme daveti buraya gönderilir."
 
+msgid "The journal, book, conference, report series or publisher."
+msgstr "Dergi, kitap, konferans, rapor dizisi ya da yayıncı."
+
+msgid "The journal’s issue."
+msgstr "Derginin sayısı."
+
+msgid "The journal’s volume."
+msgstr "Derginin cildi."
+
 msgid ""
 "The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
 "between weighings grows by the feed divided by it."
 msgstr ""
 "Tablonun beklediği, kg büyüme başına kg yem; bir ağırlık aralığının kendi değeri olabilir. "
 "Tartımlar arasında tahmini ağırlık, yemin bu değere bölümü kadar artar."
+
+msgid ""
+"The knowledge in your own words, as one statement someone can act on, e.g. “In Atlantic salmon "
+"under 50 g, free CO₂ above 15 mg/L leads to nephrocalcinosis.” or “A feed order is at least 20 t "
+"and arrives 3 days after it is placed.”"
+msgstr ""
+"Bilgi, kendi sözlerinizle ve göre davranılabilecek tek bir ifade olarak, örn. “50 g altındaki "
+"Atlantik somonunda 15 mg/L üzerindeki serbest CO₂ nefrokalsinoza yol açar.” ya da “Bir yem "
+"siparişi en az 20 t’dur ve verildikten 3 gün sonra gelir.”"
 
 msgid ""
 "The language of the console and of the emails this person gets. Left empty, it follows their "
@@ -5411,6 +5793,9 @@ msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
 #, python-format
 msgid "The official code of %(name)s is %(code)s."
 msgstr "%(name)s için resmî kod %(code)s."
+
+msgid "The pages in the journal or book, e.g. 45–67."
+msgstr "Dergideki ya da kitaptaki sayfalar, örn. 45–67."
 
 msgid "The parent equipment is on another site."
 msgstr "Üst ekipman başka bir sahada."
@@ -5508,6 +5893,12 @@ msgstr ""
 "Sahanın haftalık ortalaması o olmadan yeniden hesaplanır. Bir sayımı düzeltmek için iptal edip "
 "yeniden kaydedin."
 
+msgid "The source as a reference list cites it: authors, year, title, where it was published."
+msgstr "Kaynakçada gösterildiği gibi kaynak: yazarlar, yıl, başlık, yayımlandığı yer."
+
+msgid "The source’s own words that say it, copied exactly."
+msgstr "Kaynağın bunu söyleyen kendi sözleri, aynen aktarılmış."
+
 msgid ""
 "The species and life stages it is made for, and the fish weights in grams: from the lower weight "
 "up to, not including, the upper one; leave an end empty when it has none. One row per species and"
@@ -5516,6 +5907,12 @@ msgstr ""
 "Yemin yapıldığı balık türleri ve yaşam evreleri ile gram cinsinden balık ağırlıkları: alt "
 "ağırlıktan başlayıp üst ağırlığa kadar, üst ağırlık hariç; sınırı olmayan ucu boş bırakın. Her "
 "balık türü ve evre için bir satır, en fazla 50. Yem bilgilerinden ayrı kaydedilirler."
+
+msgid "The species it holds for; none when it holds for any."
+msgstr "Geçerli olduğu balık türleri; her tür için geçerliyse hiçbiri."
+
+msgid "The species it is about, if any."
+msgstr "Varsa, konu aldığı balık türleri."
 
 msgid "The species the table is for: it is assigned only to fish of this species."
 msgstr "Tablonun yapıldığı balık türü: yalnızca bu türdeki balıklara atanır."
@@ -5555,6 +5952,17 @@ msgid ""
 msgstr ""
 "Balıkların tutulduğu tanklar, havuzlar ve kafesler; her biri bir üretim departmanında ve varsa "
 "bir sistemde."
+
+msgid ""
+"The text as it was read from the PDF, without its layout. It is what the search finds and what "
+"the AI agents will read; a page without text is an image."
+msgstr ""
+"PDF’ten okunduğu haliyle metin, sayfa düzeni olmadan. Aramanın bulduğu ve yapay zekâ ajanlarının "
+"okuyacağı budur; metni olmayan bir sayfa bir görüntüdür."
+
+#, python-format
+msgid "The text could not be read: %(reason)s"
+msgstr "Metin okunamadı: %(reason)s"
 
 msgid "The time cannot be in the future."
 msgstr "Zaman gelecekte olamaz."
@@ -5650,6 +6058,12 @@ msgstr ""
 "şey doldurulmaz. Bir tedavi onu son gününden, balıkların birimlerinin su sıcaklığıyla sayar "
 "(Operasyonlar › Tedaviler)."
 
+msgid "The year cannot be later than next year (in press)."
+msgstr "Yıl gelecek yıldan (baskıda) sonra olamaz."
+
+msgid "The year it was published."
+msgstr "Yayımlandığı yıl."
+
 msgid "Their weight (kg)"
 msgstr "Toplam ağırlıkları (kg)"
 
@@ -5687,6 +6101,9 @@ msgstr "Bu kayıt (%(name)s) henüz silinemez."
 
 msgid "This empties the unit of this batch"
 msgstr "Bu, birimi bu partiden boşaltır"
+
+msgid "This file is not a PDF."
+msgstr "Bu dosya bir PDF değil."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -5749,6 +6166,9 @@ msgstr "Üç faz"
 msgid "Tick at least one thing it supplies."
 msgstr "Tedarik ettiği en az bir şeyi işaretleyin."
 
+msgid "Tick at least one topic."
+msgstr "En az bir konu işaretleyin."
+
 msgid "Tick at least one water environment."
 msgstr "En az bir su ortamı işaretleyin."
 
@@ -5764,6 +6184,9 @@ msgstr "Zamanlayıcı"
 msgid "Timezone"
 msgstr "Saat dilimi"
 
+msgid "Title"
+msgstr "Başlık"
+
 msgid "To"
 msgstr "Bitiş"
 
@@ -5775,6 +6198,12 @@ msgstr "Bugün"
 
 msgid "Today’s ration"
 msgstr "Bugünkü rasyon"
+
+msgid "Topic"
+msgstr "Konu"
+
+msgid "Topics"
+msgstr "Konular"
 
 msgid "Total alkalinity. A kit in dKH: multiply by 17.85."
 msgstr "Toplam alkalinite. dKH veren bir kit: 17,85 ile çarpın."
@@ -5830,6 +6259,9 @@ msgstr "Bulanıklık"
 
 msgid "Turbidity (NTU)"
 msgstr "Bulanıklık (NTU)"
+
+msgid "Turkish"
+msgstr "Türkçe"
 
 msgid "Two rows have the same feed size."
 msgstr "İki satır aynı yem boyutuna sahip."
@@ -6008,6 +6440,9 @@ msgstr "İptal edildi"
 msgid "Voltage"
 msgstr "Gerilim"
 
+msgid "Volume"
+msgstr "Cilt"
+
 msgid "Volume (m³)"
 msgstr "Hacim (m³)"
 
@@ -6073,6 +6508,9 @@ msgstr "Su hacmi"
 msgid "Water volume (m³)"
 msgstr "Su hacmi (m³)"
 
+msgid "Web address"
+msgstr "Web adresi"
+
 msgid "Website"
 msgstr "Web sitesi"
 
@@ -6124,6 +6562,9 @@ msgstr "Ölü balıkların ağırlığı (kg)"
 msgid "Welcome, %(name)s. The company’s figures will appear here."
 msgstr "Hoş geldiniz, %(name)s. Şirketin rakamları burada görünecek."
 
+msgid "Welfare"
+msgstr "Refah"
+
 msgid "Well (groundwater)"
 msgstr "Kuyu (yeraltı suyu)"
 
@@ -6132,6 +6573,12 @@ msgstr "Kuyulu tekne ve nakliye"
 
 msgid "What it holds"
 msgstr "İçeriği"
+
+msgid "What it is about. AI agents will read the entries of the topics they watch."
+msgstr "Neyle ilgili olduğu. Yapay zekâ ajanları izledikleri konuların kayıtlarını okuyacak."
+
+msgid "What it is about. The knowledge entries taken from it have topics of their own."
+msgstr "Neyle ilgili olduğu. Ondan alınan bilgi kayıtlarının kendi konuları vardır."
 
 msgid "What it is made for. A medicated feed is given on a vet’s prescription."
 msgstr "Ne için yapıldığı. İlaçlı yem veteriner reçetesiyle verilir."
@@ -6155,14 +6602,32 @@ msgstr ""
 msgid "When"
 msgstr "Ne zaman"
 
+msgid "When it was observed or said, if it matters."
+msgstr "Önemliyse, ne zaman gözlendiği ya da söylendiği."
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
 
 msgid "Where"
 msgstr "Nerede"
 
+msgid "Where in the document, e.g. 4 or 12–13."
+msgstr "Belgenin neresinde, örn. 4 ya da 12–13."
+
+msgid ""
+"Where it can be read, when it has no DOI or the DOI is not enough. https:// is added when it is "
+"left out."
+msgstr "DOI’si yoksa ya da DOI yetmiyorsa okunabileceği yer. Yazılmazsa https:// eklenir."
+
+msgid "Where the knowledge comes from: every entry has exactly one source."
+msgstr "Bilginin geldiği yer: her kaydın tam olarak bir kaynağı vardır."
+
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Değerlerin nereden geldiği, örn. “veteriner, Kasım 2026” veya bir kılavuz."
+
+#, python-format
+msgid "Where “%(query)s” is in the text"
+msgstr "“%(query)s” metnin neresinde geçiyor"
 
 msgid "Which feeding protocol feeds which fish, from which day."
 msgstr "Hangi yemleme protokolünün hangi balıkları hangi günden itibaren yemlediği."
@@ -6175,6 +6640,12 @@ msgstr "Her kullanıcının hangi rollere sahip olduğu."
 
 msgid "Which sites each supplier delivers to or works at."
 msgstr "Her tedarikçinin teslimat yaptığı ya da çalıştığı sahalar."
+
+msgid "Which species each knowledge entry holds for."
+msgstr "Her bilgi kaydının hangi balık türleri için geçerli olduğu."
+
+msgid "Which species each library document is about."
+msgstr "Her kütüphane belgesinin hangi balık türleriyle ilgili olduğu."
 
 msgid "Which units each health event concerns; none for the whole site."
 msgstr "Her sağlık olayının ilgilendirdiği birimler; tüm saha için hiçbiri."
@@ -6200,6 +6671,14 @@ msgstr "Tüm parti"
 
 msgid "Whole site"
 msgstr "Tüm saha"
+
+msgid "Whose observation or advice it is, e.g. “Kari Nordmann, fish health vet” or your own name."
+msgstr ""
+"Gözlemin ya da önerinin kime ait olduğu, örn. “Kari Nordmann, balık sağlığı veterineri” ya da "
+"kendi adınız."
+
+msgid "Why the text could not be read"
+msgstr "Metnin neden okunamadığı"
 
 msgid ""
 "Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
@@ -6257,6 +6736,9 @@ msgid ""
 msgstr ""
 "Cinsi ve türü Latin harfleriyle yazın, örn. Salmo salar; üçüncü kelime olarak bir alt tür "
 "gelebilir."
+
+msgid "Year"
+msgstr "Yıl"
 
 msgid "Yersiniosis"
 msgstr "Yersiniozis"
@@ -6334,6 +6816,10 @@ msgid "by %(name)s"
 msgstr "%(name)s tarafından"
 
 #, python-format
+msgid "by %(who)s, %(when)s"
+msgstr "inceleyen %(who)s, %(when)s"
+
+#, python-format
 msgid "by <strong>%(name)s</strong>"
 msgstr "<strong>%(name)s</strong> tarafından"
 
@@ -6368,6 +6854,18 @@ msgstr "kritiklik %(level)d"
 msgid "deleted"
 msgstr "silindi"
 
+msgid "document"
+msgstr "belge"
+
+msgid "document page"
+msgstr "belge sayfası"
+
+msgid "document pages"
+msgstr "belge sayfaları"
+
+msgid "documents"
+msgstr "belgeler"
+
 msgid "e.g. 0–10 bar"
 msgstr "örn. 0–10 bar"
 
@@ -6392,6 +6890,13 @@ msgstr "örn. 0–50 ppt"
 msgid "e.g. 0–50 °C"
 msgstr "örn. 0–50 °C"
 
+msgid ""
+"e.g. 10.1016/j.aquaculture.2019.01.001; a link to doi.org is read as its DOI. Two documents of "
+"the library cannot have the same DOI."
+msgstr ""
+"örn. 10.1016/j.aquaculture.2019.01.001; doi.org bağlantısı DOI olarak okunur. Kütüphanedeki iki "
+"belge aynı DOI’ye sahip olamaz."
+
 msgid "e.g. 12345"
 msgstr "örn. 12345"
 
@@ -6400,6 +6905,9 @@ msgstr "örn. 150"
 
 msgid "e.g. 1–10 kg/h"
 msgstr "örn. 1–10 kg/h"
+
+msgid "e.g. 2019"
+msgstr "örn. 2019"
 
 msgid "e.g. 25"
 msgstr "örn. 25"
@@ -6410,8 +6918,14 @@ msgstr "örn. 250"
 msgid "e.g. 3"
 msgstr "örn. 3"
 
+msgid "e.g. 3.2 Results, Table 4."
+msgstr "örn. 3.2 Bulgular, Tablo 4."
+
 msgid "e.g. 30 days net"
 msgstr "örn. 30 gün vadeli"
+
+msgid "e.g. 4"
+msgstr "örn. 4"
 
 msgid "e.g. 4 8 12 16"
 msgstr "örn. 4 8 12 16"
@@ -6431,8 +6945,14 @@ msgstr "örn. 60,3913"
 msgid "e.g. 923456789"
 msgstr "örn. 923456789"
 
+msgid "e.g. Aquaculture"
+msgstr "örn. Aquaculture"
+
 msgid "e.g. Atlantic salmon"
 msgstr "örn. Atlantic salmon"
+
+msgid "e.g. Carbon dioxide and the growth of Atlantic salmon"
+msgstr "örn. Karbondioksit ve Atlantik somonunun büyümesi"
 
 msgid "e.g. FJF"
 msgstr "örn. FJF"
@@ -6639,6 +7159,12 @@ msgstr "%(name)s içinde"
 msgid "kg"
 msgstr "kg"
 
+msgid "knowledge entries"
+msgstr "bilgi kayıtları"
+
+msgid "knowledge entry"
+msgstr "bilgi kaydı"
+
 #, python-format
 msgid "loop %(system)s, %(age)s ago"
 msgstr "döngü %(system)s, %(age)s önce"
@@ -6679,6 +7205,9 @@ msgstr "günde biyokütlenin kg’ı başına mg"
 msgid "mg/mL"
 msgstr "mg/mL"
 
+msgid "n.d."
+msgstr "t.y."
+
 #, python-format
 msgid "next meal %(meal)s"
 msgstr "sonraki öğün %(meal)s"
@@ -6700,6 +7229,10 @@ msgstr "modelde yok"
 
 msgid "open"
 msgstr "süresiz"
+
+#, python-format
+msgid "p. %(page)s"
+msgstr "s. %(page)s"
 
 msgid "pH"
 msgstr "pH"

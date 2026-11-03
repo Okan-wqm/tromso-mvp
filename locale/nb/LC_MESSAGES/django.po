@@ -248,6 +248,12 @@ msgstr[0] "%(count)s medlem"
 msgstr[1] "%(count)s medlemmer"
 
 #, python-format
+msgid "%(count)s page"
+msgid_plural "%(count)s pages"
+msgstr[0] "%(count)s side"
+msgstr[1] "%(count)s sider"
+
+#, python-format
 msgid "%(count)s part"
 msgid_plural "%(count)s parts"
 msgstr[0] "%(count)s del"
@@ -352,6 +358,10 @@ msgstr "%(females)s voksne hunnlus · %(mobile)s bevegelige · %(attached)s fast
 #, python-format
 msgid "%(field)s “%(record)s” is deleted."
 msgstr "%(field)s «%(record)s» er slettet."
+
+#, python-format
+msgid "%(first)s et al."
+msgstr "%(first)s mfl."
 
 #, python-format
 msgid "%(first)s–%(last)s of %(total)s"
@@ -650,11 +660,19 @@ msgstr "%(weight)s er utenfor vektklassene i %(protocol)s (%(range)s)."
 msgid "%(weight)s weighed %(date)s"
 msgstr "%(weight)s veid %(date)s"
 
+#, python-format
+msgid "%(when)s by %(who)s"
+msgstr "%(when)s av %(who)s"
+
 msgid "(batch in unit)"
 msgstr "(fiskegruppe i enhet)"
 
 msgid "(has errors)"
 msgstr "(har feil)"
+
+#, python-format
+msgid "(printed as %(label)s)"
+msgstr "(trykt som %(label)s)"
 
 msgid "(unit)"
 msgstr "(enhet)"
@@ -670,6 +688,17 @@ msgstr "0 rader samsvarer"
 
 msgid "9-digit Norwegian organisation number"
 msgstr "Norsk organisasjonsnummer (9 siffer)"
+
+msgid "A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001."
+msgstr "En DOI begynner med 10. og har ingen mellomrom, f.eks. 10.1016/j.aquaculture.2019.01.001."
+
+#, python-format
+msgid ""
+"A PDF of up to %(limit)s. Its text is read when it is saved, page by page, for the search and, "
+"later, for the AI agents."
+msgstr ""
+"En PDF på opptil %(limit)s. Teksten leses side for side når den lagres, for søket og senere for "
+"KI-agentene."
 
 msgid "A batch alone: the protocol follows it into every unit it is moved to."
 msgstr "Bare en fiskegruppe: protokollen følger den til hver enhet den flyttes til."
@@ -707,6 +736,9 @@ msgstr "Det finnes allerede en kanal med dette navnet."
 
 msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
 msgstr "En diagnose er mistenkt eller bekreftet; uten diagnose er det ingenting å bekrefte."
+
+msgid "A document in the library"
+msgstr "Et dokument i biblioteket"
 
 msgid "A dose needs its unit, and a unit its dose."
 msgstr "En dose trenger sin enhet, og en enhet sin dose."
@@ -778,6 +810,13 @@ msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "En side viser høyst %(days)s dag: første dag ble flyttet."
 msgstr[1] "En side viser høyst %(days)s dager: første dag ble flyttet."
+
+msgid ""
+"A piece of knowledge in your own words, with its source: a document of the library, another "
+"published source, or an expert’s or your own observation."
+msgstr ""
+"En kunnskap med dine egne ord, med kilden: et dokument i biblioteket, en annen publisert kilde, "
+"eller en eksperts eller din egen observasjon."
 
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "En pris trenger sin valuta, og en valuta trenger en pris."
@@ -920,6 +959,9 @@ msgstr "Over maks. tetthet, godtatt"
 msgid "Above the usual feed rate, accepted"
 msgstr "Over vanlig fôringsrate, godtatt"
 
+msgid "Abstract"
+msgstr "Sammendrag"
+
 msgid "Account"
 msgstr "Konto"
 
@@ -987,6 +1029,9 @@ msgstr "Legg til kalibrering"
 msgid "Add contact"
 msgstr "Legg til kontaktperson"
 
+msgid "Add knowledge from this document"
+msgstr "Legg til kunnskap fra dette dokumentet"
+
 msgid "Add members"
 msgstr "Legg til medlemmer"
 
@@ -1013,6 +1058,13 @@ msgstr "Legg dem til i Oppsett › Kar, dammer og merder."
 
 msgid "Add unit"
 msgstr "Legg til enhet"
+
+msgid "Added"
+msgstr "Lagt til"
+
+#, python-format
+msgid "Added by %(who)s, %(when)s"
+msgstr "Lagt til av %(who)s, %(when)s"
 
 msgid "Address"
 msgstr "Adresse"
@@ -1062,6 +1114,10 @@ msgstr "Alkalitet (mg/L)"
 
 msgid "All"
 msgstr "Alle"
+
+#, python-format
+msgid "All %(plural)s"
+msgstr "Alle %(plural)s"
 
 msgid "All actions"
 msgstr "Alle handlinger"
@@ -1115,6 +1171,9 @@ msgstr "Alle protokoller"
 msgid "All sites"
 msgstr "Alle lokaliteter"
 
+msgid "All sources"
+msgstr "Alle kilder"
+
 msgid "All species"
 msgstr "Alle arter"
 
@@ -1126,6 +1185,9 @@ msgstr "Alle systemer"
 
 msgid "All the energy in the feed, in MJ per kg as fed."
 msgstr "All energien i fôret, i MJ per kg slik det fôres."
+
+msgid "All topics"
+msgstr "Alle emner"
 
 msgid "All treatments"
 msgstr "Alle behandlinger"
@@ -1148,6 +1210,9 @@ msgstr "Alle vannmiljøer"
 
 msgid "All water types"
 msgstr "Alle vanntyper"
+
+msgid "All years"
+msgstr "Alle år"
 
 msgid "Allows"
 msgstr "Tillater"
@@ -1182,6 +1247,13 @@ msgstr "En aktiv protokoll har en tabell."
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
 
+msgid ""
+"An article, report, book or regulation the company relies on: its reference, its abstract and its"
+" PDF, whose text is searched."
+msgstr ""
+"En artikkel, rapport, bok eller forskrift selskapet bygger på: referansen, sammendraget og PDF-"
+"en, der teksten er søkbar."
+
 #, python-format
 msgid "An assignment can start at most %(days)d days back."
 msgstr "En tildeling kan starte høyst %(days)d dager tilbake."
@@ -1199,6 +1271,9 @@ msgstr "En hendelse avsluttes på eller etter datoen sin."
 msgid "An expected FCR is between 0.50 and 3.00."
 msgstr "En forventet FCR er mellom 0,50 og 3,00."
 
+msgid "An expert or our own observation"
+msgstr "En ekspert eller vår egen observasjon"
+
 msgid "Anaesthetic"
 msgstr "Bedøvelsesmiddel"
 
@@ -1207,6 +1282,9 @@ msgstr "Analog"
 
 msgid "Analysis"
 msgstr "Analyse"
+
+msgid "Another document in the library has this DOI."
+msgstr "Et annet dokument i biblioteket har denne DOI-en."
 
 msgid "Another feed already has this name."
 msgstr "Et annet fôr har allerede dette navnet."
@@ -1234,6 +1312,9 @@ msgstr "En annen protokoll er tildelt denne enheten på noen av disse dagene."
 
 msgid "Another protocol was assigned to these fish meanwhile: look at the list and try again."
 msgstr "En annen protokoll ble tildelt denne fisken i mellomtiden: se på listen og prøv igjen."
+
+msgid "Another published source"
+msgstr "En annen publisert kilde"
 
 msgid "Another role already uses this name."
 msgstr "Dette navnet brukes allerede av en annen rolle."
@@ -1276,6 +1357,9 @@ msgstr "Antibakterielt"
 
 msgid "Antifungal"
 msgstr "Soppmiddel"
+
+msgid "Any species"
+msgstr "Alle arter"
 
 msgid "Any time"
 msgstr "Når som helst"
@@ -1341,6 +1425,9 @@ msgstr ""
 "Slik preparatomtalen oppgir det, i dager etter siste behandlingsdag. Oppgi den også når "
 "preparatomtalen gir begge: den seneste slutten gjelder. 0 når den ikke har noen."
 
+msgid "As the document itself gives it."
+msgstr "Slik dokumentet selv oppgir den."
+
 msgid ""
 "As the meter or kit reads it. With the temperature, the saturation is worked out when it is not "
 "entered."
@@ -1400,6 +1487,9 @@ msgstr "Fastsittende per fisk"
 msgid "Author"
 msgstr "Forfatter"
 
+msgid "Authors"
+msgstr "Forfattere"
+
 msgid "Automatic"
 msgstr "Automatisk"
 
@@ -1424,11 +1514,17 @@ msgstr "Snittvekt"
 msgid "Azamethiphos"
 msgstr "Azametifos"
 
+msgid "Back to draft"
+msgstr "Tilbake til utkast"
+
 msgid "Back to overview"
 msgstr "Tilbake til oversikten"
 
 msgid "Back to sign in"
 msgstr "Tilbake til innlogging"
+
+msgid "Back to the document"
+msgstr "Tilbake til dokumentet"
 
 msgid "Back to the latest messages"
 msgstr "Tilbake til de nyeste meldingene"
@@ -1707,6 +1803,9 @@ msgstr "Velg eier eller medlem."
 msgid "Choose someone else: a conversation is with another person."
 msgstr "Velg en annen: en samtale er med en annen person."
 
+msgid "Choose the document in the library it comes from."
+msgstr "Velg dokumentet i biblioteket kunnskapen kommer fra."
+
 msgid "Choose the kind on the General tab; its dimensions appear here."
 msgstr "Velg typen på fanen Generelt; målene vises her."
 
@@ -1733,6 +1832,13 @@ msgstr "Velg enheter, en fiskegruppe, eller en fiskegruppe og enheter."
 
 msgid "Circular"
 msgstr "Rund"
+
+msgid "Citation"
+msgstr "Kildehenvisning"
+
+#, python-format
+msgid "Cited in a text as %(cite)s."
+msgstr "Henvises til i en tekst som %(cite)s."
 
 msgid "City"
 msgstr "By"
@@ -1845,6 +1951,9 @@ msgstr "Kontaktpersoner kan legges til etter at lokaliteten er opprettet."
 msgid "Contacts can be added once the supplier is created."
 msgstr "Kontaktpersoner kan legges til etter at leverandøren er opprettet."
 
+msgid "Content"
+msgstr "Innhold"
+
 msgid "Control type"
 msgstr "Styringstype"
 
@@ -1872,6 +1981,9 @@ msgstr "Kobberlegering"
 
 msgid "Corona discharge"
 msgstr "Koronautladning"
+
+msgid "Could not be read"
+msgstr "Kunne ikke leses"
 
 msgid "Count adjusted"
 msgstr "Antall korrigert"
@@ -1975,6 +2087,12 @@ msgstr "Cypermetrin"
 msgid "D-ended"
 msgstr "D-ende"
 
+msgid "DOI"
+msgstr "DOI"
+
+msgid "Danish"
+msgstr "Dansk"
+
 msgid "Data"
 msgstr "Data"
 
@@ -2024,6 +2142,9 @@ msgstr "Slett %(object)s"
 
 msgid "Delete message"
 msgstr "Slett melding"
+
+msgid "Delete the entry"
+msgstr "Slett oppføringen"
 
 msgid "Delete this message?"
 msgstr "Slette denne meldingen?"
@@ -2122,6 +2243,9 @@ msgstr "Dykking og ROV"
 msgid "Django model"
 msgstr "Django-modell"
 
+msgid "Document"
+msgstr "Dokument"
+
 msgid "Dose"
 msgstr "Dose"
 
@@ -2133,6 +2257,9 @@ msgstr "Doseenhet"
 
 msgid "Dose · amount"
 msgstr "Dose · mengde"
+
+msgid "Download"
+msgstr "Last ned"
 
 #, python-format
 msgid "Download the rows below as CSV, up to %(limit)s rows"
@@ -2216,6 +2343,9 @@ msgstr "Rediger"
 msgid "Edit %(name)s"
 msgstr "Rediger %(name)s"
 
+msgid "Edit the entry"
+msgstr "Rediger oppføringen"
+
 msgid "Edit the unit"
 msgstr "Rediger enheten"
 
@@ -2253,6 +2383,9 @@ msgstr "Avsluttet"
 msgid "Energy"
 msgstr "Energi"
 
+msgid "English"
+msgstr "Engelsk"
+
 msgid "Enter at least one value."
 msgstr "Legg inn minst én verdi."
 
@@ -2261,6 +2394,9 @@ msgstr "Enter sender, Shift+Enter gir ny linje."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+msgid "Entries"
+msgstr "Oppføringer"
 
 msgid "Epizootic haematopoietic necrosis (EHN)"
 msgstr "Epizootisk hematopoetisk nekrose (EHN)"
@@ -2522,6 +2658,15 @@ msgstr "Færre enn %(fish)s fisk undersøkt i:"
 msgid "Fibreglass (GRP)"
 msgstr "Glassfiber (GRP)"
 
+msgid "File"
+msgstr "Fil"
+
+msgid "File name"
+msgstr "Filnavn"
+
+msgid "File size (bytes)"
+msgstr "Filstørrelse (byte)"
+
 msgid "Fill in its feeding table first: a protocol without one cannot be active."
 msgstr "Fyll ut fôringstabellen først: en protokoll uten tabell kan ikke være aktiv."
 
@@ -2661,6 +2806,9 @@ msgstr "Fri karbondioksid, fra en CO₂-sonde eller en titrering."
 msgid "Freeboard (m)"
 msgstr "Fribord (m)"
 
+msgid "French"
+msgstr "Fransk"
+
 msgid "Fresh water"
 msgstr "Ferskvann"
 
@@ -2758,6 +2906,9 @@ msgstr ""
 msgid "Genus: %(genus)s (the first word of the scientific name)."
 msgstr "Slekt: %(genus)s (det første ordet i det vitenskapelige navnet)."
 
+msgid "German"
+msgstr "Tysk"
+
 msgid "Gill disease"
 msgstr "Gjellesykdom"
 
@@ -2775,6 +2926,9 @@ msgstr "Oppgi snittvekten, eller antall fisk veid og samlet vekt."
 
 msgid "Give the channel a name."
 msgstr "Gi kanalen et navn."
+
+msgid "Give the citation of the source, its web address, or both."
+msgstr "Oppgi kildehenvisningen, nettadressen eller begge."
 
 msgid "Give the sample, or the average weight."
 msgstr "Oppgi prøven eller snittvekten."
@@ -2809,6 +2963,9 @@ msgstr "Matfisk"
 
 msgid "Grower feed"
 msgstr "Vekstfôr"
+
+msgid "Growth"
+msgstr "Vekst"
 
 msgid "Growth stage"
 msgstr "Vekststadium"
@@ -2902,6 +3059,9 @@ msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 msgid "Hydrogen peroxide"
 msgstr "Hydrogenperoksid"
 
+msgid "Icelandic"
+msgstr "Islandsk"
+
 msgid ""
 "If an account uses this address, a reset link is on its way. If it has not arrived in a few "
 "minutes, check your spam folder."
@@ -2920,6 +3080,9 @@ msgstr "I fôr"
 
 msgid "In force today"
 msgstr "Gjelder i dag"
+
+msgid "In the library"
+msgstr "I biblioteket"
 
 msgid "Inactive"
 msgstr "Inaktiv"
@@ -2961,6 +3124,9 @@ msgstr "Installasjonsdato"
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Er diagnosen mistenkt eller bekreftet?"
 
+msgid "Issue"
+msgstr "Hefte"
+
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
 "log keeps its history, and it can be restored from the admin."
@@ -2984,6 +3150,9 @@ msgstr "Den har beholdningsoperasjoner: annuller dem først."
 msgid "It holds fish: move or harvest them first."
 msgstr "Det er fisk i den: flytt eller høst fisken først."
 
+msgid "It is a draft again."
+msgstr "Den er et utkast igjen."
+
 msgid "It is assigned for today or later: end those assignments first."
 msgstr "Den er tildelt for i dag eller senere: avslutt disse tildelingene først."
 
@@ -3003,6 +3172,9 @@ msgid ""
 msgstr ""
 "Den slutter å telle: de siste verdiene og statusene regnes ut igjen uten den. For å rette en "
 "prøve, annuller den og legg den inn på nytt."
+
+msgid "It was reviewed; after this change it is a draft again, until it is reviewed anew."
+msgstr "Den var gjennomgått; etter denne endringen er den et utkast igjen, til den gjennomgås på nytt."
 
 msgid "Its company registration or VAT number, e.g. 923456789 in Norway; spaces are left out."
 msgstr "Organisasjonsnummer eller MVA-nummer, f.eks. 923456789 i Norge; mellomrom fjernes."
@@ -3049,6 +3221,15 @@ msgstr "Nøkkel"
 
 msgid "Kind"
 msgstr "Type"
+
+msgid "Knowledge"
+msgstr "Kunnskap"
+
+msgid "Knowledge entries"
+msgstr "Kunnskapsoppføringer"
+
+msgid "Knowledge taken from it"
+msgstr "Kunnskap hentet fra det"
 
 msgid "L"
 msgstr "L"
@@ -3151,6 +3332,9 @@ msgstr "Lengde (m)"
 msgid "Level sensor"
 msgstr "Nivåsensor"
 
+msgid "Library"
+msgstr "Bibliotek"
+
 msgid ""
 "Lice are counted at least every 7 days at 4 °C or above, every 14 days below (lakselusforskriften"
 " § 6)."
@@ -3243,8 +3427,14 @@ msgstr "Leder"
 msgid "Manufacturer"
 msgstr "Produsent"
 
+msgid "Mark as reviewed"
+msgstr "Merk som gjennomgått"
+
 msgid "Mark which one is the primary one."
 msgstr "Merk hvilken som er den primære."
+
+msgid "Marked as reviewed by you."
+msgstr "Merket som gjennomgått av deg."
 
 msgid "Marketing authorisation number"
 msgstr "MT-nummer"
@@ -3452,6 +3642,9 @@ msgstr "Navnet må ha minst 2 tegn."
 msgid "Name or code"
 msgstr "Navn eller kode"
 
+msgid "Name the person whose observation or advice it is."
+msgstr "Oppgi hvem observasjonen eller rådet kommer fra."
+
 msgid "Narrows the list of types."
 msgstr "Snevrer inn listen over typer."
 
@@ -3530,6 +3723,9 @@ msgstr "Ingen %(plural)s samsvarer med «%(query)s»"
 msgid "No %(plural)s yet"
 msgstr "Ingen %(plural)s ennå"
 
+msgid "No PDF: the document is known by its reference only."
+msgstr "Ingen PDF: dokumentet er bare kjent ved referansen."
+
 msgid "No band yet. Use “Add band” to add a row."
 msgstr "Ingen vektklasser ennå. Bruk «Legg til vektklasse» for å legge til en rad."
 
@@ -3569,6 +3765,12 @@ msgstr "Ingen fôring registrert i denne enheten ennå."
 msgid "No feeding recorded yet"
 msgstr "Ingen fôring registrert ennå"
 
+msgid "No file"
+msgstr "Ingen fil"
+
+msgid "No file."
+msgstr "Ingen fil."
+
 #, python-format
 msgid "No fish are in %(unit)s."
 msgstr "Det er ingen fisk i %(unit)s."
@@ -3596,6 +3798,9 @@ msgid ""
 msgstr ""
 "Ingen fôrbehandling dekker denne dagen: registrer den under Helse › Behandlinger, ellers forblir "
 "fiskens tilbakeholdelsestid ukjent."
+
+msgid "No knowledge entry cites it yet."
+msgstr "Ingen kunnskapsoppføring viser til det ennå."
 
 msgid "No limit"
 msgstr "Ingen grense"
@@ -3656,6 +3861,19 @@ msgstr "Ingen tabell ennå"
 #, python-format
 msgid "No temperature in the last %(days)d days: record one."
 msgstr "Ingen temperatur de siste %(days)d dagene: registrer én."
+
+msgid "No text found"
+msgstr "Ingen tekst funnet"
+
+msgid ""
+"No text found: the pages are images, as in a scan. Its text needs OCR, which the library does not"
+" do yet."
+msgstr ""
+"Ingen tekst funnet: sidene er bilder, som i en skanning. Teksten krever OCR, som biblioteket ikke"
+" gjør ennå."
+
+msgid "No text on this page."
+msgstr "Ingen tekst på denne siden."
 
 msgid "No treatment in this unit in the last 90 days."
 msgstr "Ingen behandling i denne enheten de siste 90 dagene."
@@ -3722,6 +3940,9 @@ msgstr "Nord-Trøndelag og sørover"
 msgid "Nordland, Troms and Finnmark"
 msgstr "Nordland, Troms og Finnmark"
 
+msgid "Norwegian"
+msgstr "Norsk"
+
 msgid "Norwegian list, category F"
 msgstr "Nasjonal liste, kategori F"
 
@@ -3740,6 +3961,9 @@ msgstr "Ikke oppgitt"
 msgid "Not in a system"
 msgstr "Ikke i et system"
 
+msgid "Not in the text of the PDF: the words are in the reference or the abstract."
+msgstr "Ikke i PDF-ens tekst: ordene står i referansen eller sammendraget."
+
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
 
@@ -3751,6 +3975,9 @@ msgstr "Ikke målt"
 
 msgid "Not rated"
 msgstr "Ikke vurdert"
+
+msgid "Not reviewed yet. AI agents will act on reviewed entries only."
+msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
 
 msgid "Not set"
 msgstr "Ikke satt"
@@ -3796,6 +4023,9 @@ msgstr "Kan være tom"
 msgid "Number of lamps"
 msgstr "Antall lamper"
 
+msgid "Number of pages"
+msgstr "Antall sider"
+
 msgid "Nursery"
 msgstr "Yngelavdeling"
 
@@ -3807,6 +4037,9 @@ msgstr "OK"
 
 msgid "Observation"
 msgstr "Observasjon"
+
+msgid "Observed on"
+msgstr "Observert"
 
 msgid "Offered"
 msgstr "Tilbys"
@@ -3825,6 +4058,13 @@ msgstr "Eldre"
 
 msgid "On the site’s clock."
 msgstr "På lokalitetens klokke."
+
+msgid ""
+"One author per line, in the order of the document, family name first: “Olsen, Bjørn Erik”. An "
+"organisation as it is named: “Mattilsynet”."
+msgstr ""
+"Én forfatter per linje, i dokumentets rekkefølge, etternavn først: «Olsen, Bjørn Erik». En "
+"organisasjon slik den heter: «Mattilsynet»."
 
 msgid "One probe that measures several water parameters."
 msgstr "Én sonde som måler flere vannparametere."
@@ -3909,6 +4149,9 @@ msgstr "Åpne helsehendelser"
 
 msgid "Open menu"
 msgstr "Åpne menyen"
+
+msgid "Open the PDF"
+msgstr "Åpne PDF-en"
 
 msgid "Open this link to set a new password:"
 msgstr "Åpne denne lenken for å velge nytt passord:"
@@ -4004,6 +4247,9 @@ msgstr "Annet utstyr har allerede dette serienummeret."
 msgid "Other equipment already uses this code."
 msgstr "Annet utstyr bruker allerede denne koden."
 
+msgid "Other language"
+msgstr "Annet språk"
+
 msgid "Other parasites (e.g. AGD)"
 msgstr "Andre parasitter (f.eks. AGD)"
 
@@ -4065,15 +4311,31 @@ msgstr "O₂ (%)"
 msgid "O₂ (mg/L)"
 msgstr "O₂ (mg/L)"
 
+msgid "PDF file"
+msgstr "PDF-fil"
+
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU er samme tall: 0 i ferskvann, omkring 35 i sjøen."
 
 msgid "PVC"
 msgstr "PVC"
 
+msgid "Page"
+msgstr "Side"
+
 #, python-format
 msgid "Page %(number)s of %(total)s"
 msgstr "Side %(number)s av %(total)s"
+
+#, python-format
+msgid "Page %(page)s"
+msgstr "Side %(page)s"
+
+msgid "Page label"
+msgstr "Sidetall"
+
+msgid "Page(s)"
+msgstr "Side(r)"
 
 msgid "Pages"
 msgstr "Sider"
@@ -4267,6 +4529,9 @@ msgstr "Primært system"
 msgid "Processing"
 msgstr "Bearbeiding"
 
+msgid "Procurement and logistics"
+msgstr "Innkjøp og logistikk"
+
 msgid "Production"
 msgstr "Produksjon"
 
@@ -4312,6 +4577,9 @@ msgstr "Protokolltildelinger"
 msgid "Protocols"
 msgstr "Protokoller"
 
+msgid "Published in"
+msgstr "Publisert i"
+
 msgid "Pumping"
 msgstr "Pumping"
 
@@ -4336,6 +4604,9 @@ msgstr "Kvalitetskontroll"
 
 msgid "Quarantine"
 msgstr "Karantene"
+
+msgid "Quote"
+msgstr "Sitat"
 
 msgid "RAS (recirculating)"
 msgstr "RAS (resirkulerende)"
@@ -4362,6 +4633,9 @@ msgid ""
 msgstr ""
 "Lest fra selve databasen og koblet til Django-modellen <code>%(model)s</code> i appen "
 "<code>%(app)s</code>."
+
+msgid "Read the text, page by page"
+msgstr "Les teksten side for side"
 
 msgid "Reason"
 msgstr "Årsak"
@@ -4432,6 +4706,9 @@ msgstr "Rektangulær"
 msgid "Reduced appetite"
 msgstr "Nedsatt appetitt"
 
+msgid "Reference"
+msgstr "Referanse"
+
 msgid "Reference data"
 msgstr "Referansedata"
 
@@ -4440,6 +4717,9 @@ msgstr "Kjølemedium"
 
 msgid "Region"
 msgstr "Region"
+
+msgid "Regulation"
+msgstr "Regelverk"
 
 msgid "Regulatory"
 msgstr "Myndighetskrav"
@@ -4458,6 +4738,9 @@ msgstr "Fjernstyrt"
 
 msgid "Remove"
 msgstr "Fjern"
+
+msgid "Remove the file"
+msgstr "Fjern filen"
 
 msgid "Rename the protocol first: its copies have used every name."
 msgstr "Gi protokollen nytt navn først: kopiene har brukt opp alle navnene."
@@ -4491,6 +4774,28 @@ msgstr "Gjenopprettet"
 
 msgid "Retired"
 msgstr "Utfaset"
+
+msgid "Review"
+msgstr "Gjennomgang"
+
+msgid "Review it again"
+msgstr "Gjennomgå på nytt"
+
+msgid "Reviewed"
+msgstr "Gjennomgått"
+
+msgid "Reviewed at"
+msgstr "Gjennomgått"
+
+msgid "Reviewed by"
+msgstr "Gjennomgått av"
+
+msgid ""
+"Reviewing says the statement and its source are right: it is recorded in your name, now. Editing "
+"the statement, topics, species or source of a reviewed entry makes it a draft again."
+msgstr ""
+"Å gjennomgå betyr at utsagnet og kilden er riktige: det registreres i ditt navn, nå. Endrer du "
+"utsagnet, emnene, artene eller kilden til en gjennomgått oppføring, blir den et utkast igjen."
 
 msgid "River or stream"
 msgstr "Elv eller bekk"
@@ -4690,11 +4995,23 @@ msgstr "Søk i alle kolonner"
 msgid "Search findings, units, site or vet"
 msgstr "Søk i funn, enheter, lokalitet eller veterinær"
 
+msgid "Search the statements, quotes and sources"
+msgstr "Søk i utsagn, sitater og kilder"
+
+msgid "Search titles, authors, abstracts and the text of the PDFs"
+msgstr "Søk i titler, forfattere, sammendrag og PDF-enes tekst"
+
 msgid "Search unit, batch or species"
 msgstr "Søk etter enhet, fiskegruppe eller art"
 
+msgid "Search vector"
+msgstr "Søkevektor"
+
 msgid "Seaweed"
 msgstr "Tang og tare"
+
+msgid "Section"
+msgstr "Avsnitt"
 
 msgid "Sedation"
 msgstr "Sedering"
@@ -4887,6 +5204,9 @@ msgstr "Smolt"
 msgid "Solar"
 msgstr "Sol"
 
+msgid "Someone changed this entry while you were reading it. Read it again before you review it."
+msgstr "Noen endret denne oppføringen mens du leste den. Les den igjen før du gjennomgår den."
+
 #. Translators: %(name)s is the kind of record in lower case (e.g. site).
 #, python-format
 msgid ""
@@ -4913,6 +5233,17 @@ msgstr "Kilde"
 msgid "Source of the values"
 msgstr "Kilde for verdiene"
 
+#, python-format
+msgid "Source: %(kind)s"
+msgstr "Kilde: %(kind)s"
+
+msgid "Spanish"
+msgstr "Spansk"
+
+msgid "Species"
+msgstr "Arter"
+
+msgctxt "plural"
 msgid "Species"
 msgstr "Arter"
 
@@ -4975,6 +5306,9 @@ msgstr "Fylke"
 
 msgid "Stated volume (m³)"
 msgstr "Oppgitt volum (m³)"
+
+msgid "Statement"
+msgstr "Utsagn"
 
 msgid "Status"
 msgstr "Status"
@@ -5086,6 +5420,9 @@ msgstr "Mistenkt"
 msgid "Suspended"
 msgstr "Suspendert"
 
+msgid "Swedish"
+msgstr "Svensk"
+
 msgid "Switch panel"
 msgstr "Bytt panel"
 
@@ -5161,6 +5498,22 @@ msgstr "Tenacibakulose"
 msgid "Terms and notes"
 msgstr "Betingelser og notater"
 
+msgid "Text"
+msgstr "Tekst"
+
+msgid "Text found"
+msgstr "Tekst funnet"
+
+#, python-format
+msgid "Text found on %(found)d of %(count)d page."
+msgid_plural "Text found on %(found)d of %(count)d pages."
+msgstr[0] "Tekst funnet på %(found)d av %(count)d side."
+msgstr[1] "Tekst funnet på %(found)d av %(count)d sider."
+
+#, python-format
+msgid "Text of %(name)s"
+msgstr "Tekst i %(name)s"
+
 msgid "That message is not in this conversation."
 msgstr "Den meldingen er ikke i denne samtalen."
 
@@ -5177,6 +5530,9 @@ msgstr "Det engelske navnet, f.eks. Atlantic salmon."
 
 msgid "The MT number, when the medicine has one."
 msgstr "MT-nummeret, når legemiddelet har et."
+
+msgid "The abstract or summary, as the document gives it."
+msgstr "Sammendraget slik dokumentet gir det."
 
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Adressen for bestillinger og spørsmål; kontaktpersonene har sine egne nedenfor."
@@ -5253,6 +5609,9 @@ msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Den fordøyelige energien kan ikke være mer enn bruttoenergien."
 
+msgid "The document in the library the knowledge comes from."
+msgstr "Dokumentet i biblioteket kunnskapen kommer fra."
+
 msgid "The end cannot be worked out: record the water temperature."
 msgstr "Slutten kan ikke regnes ut: registrer vanntemperaturen."
 
@@ -5303,6 +5662,10 @@ msgstr ""
 "Fôret anlegget bruker: hvem som lager det, pelleten og analysen, og hvilke arter og fiskevekter "
 "hvert fôr passer for."
 
+#, python-format
+msgid "The file is %(size)s; the library takes PDFs of up to %(limit)s."
+msgstr "Filen er %(size)s; biblioteket tar PDF-er på opptil %(limit)s."
+
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Første dag det fôres etter den, etter anleggets klokke."
 
@@ -5326,12 +5689,30 @@ msgstr "Helsehendelsen er datert %(date)s, etter denne behandlingen."
 msgid "The invitation to set a password is sent here."
 msgstr "Invitasjonen til å velge passord sendes hit."
 
+msgid "The journal, book, conference, report series or publisher."
+msgstr "Tidsskriftet, boka, konferansen, rapportserien eller forlaget."
+
+msgid "The journal’s issue."
+msgstr "Tidsskriftets hefte."
+
+msgid "The journal’s volume."
+msgstr "Tidsskriftets volum."
+
 msgid ""
 "The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
 "between weighings grows by the feed divided by it."
 msgstr ""
 "Kg fôr per kg tilvekst som tabellen forventer; en vektklasse kan ha sin egen. Den estimerte "
 "vekten mellom veiinger øker med fôret delt på den."
+
+msgid ""
+"The knowledge in your own words, as one statement someone can act on, e.g. “In Atlantic salmon "
+"under 50 g, free CO₂ above 15 mg/L leads to nephrocalcinosis.” or “A feed order is at least 20 t "
+"and arrives 3 days after it is placed.”"
+msgstr ""
+"Kunnskapen med dine egne ord, som ett utsagn noen kan handle på, f.eks. «Hos atlantisk laks under"
+" 50 g gir fri CO₂ over 15 mg/L nefrokalsinose.» eller «En fôrbestilling er minst 20 t og kommer 3"
+" dager etter at den er lagt inn.»"
 
 msgid ""
 "The language of the console and of the emails this person gets. Left empty, it follows their "
@@ -5408,6 +5789,9 @@ msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
 #, python-format
 msgid "The official code of %(name)s is %(code)s."
 msgstr "Artskoden for %(name)s er %(code)s."
+
+msgid "The pages in the journal or book, e.g. 45–67."
+msgstr "Sidene i tidsskriftet eller boka, f.eks. 45–67."
 
 msgid "The parent equipment is on another site."
 msgstr "Det overordnede utstyret er på en annen lokalitet."
@@ -5505,6 +5889,12 @@ msgstr ""
 "Lokalitetens ukesnitt regnes ut på nytt uten den. For å rette en telling, annuller den og "
 "registrer den på nytt."
 
+msgid "The source as a reference list cites it: authors, year, title, where it was published."
+msgstr "Kilden slik en referanseliste oppgir den: forfattere, år, tittel, hvor den er publisert."
+
+msgid "The source’s own words that say it, copied exactly."
+msgstr "Kildens egne ord som sier det, gjengitt nøyaktig."
+
 msgid ""
 "The species and life stages it is made for, and the fish weights in grams: from the lower weight "
 "up to, not including, the upper one; leave an end empty when it has none. One row per species and"
@@ -5513,6 +5903,12 @@ msgstr ""
 "Artene og livsstadiene fôret er laget for, og fiskevektene i gram: fra den nedre vekten opp til, "
 "men ikke med, den øvre; la en ende stå tom når den ikke har noen grense. Én rad per art og "
 "stadium, høyst 50. De lagres separat fra fôropplysningene."
+
+msgid "The species it holds for; none when it holds for any."
+msgstr "Artene det gjelder for; ingen når det gjelder alle."
+
+msgid "The species it is about, if any."
+msgstr "Artene det handler om, om noen."
 
 msgid "The species the table is for: it is assigned only to fish of this species."
 msgstr "Arten tabellen er for: den tildeles bare fisk av denne arten."
@@ -5552,6 +5948,17 @@ msgid ""
 msgstr ""
 "Karene, dammene og merdene fisken holdes i, hver i en produksjonsavdeling og, når den har et, i "
 "et system."
+
+msgid ""
+"The text as it was read from the PDF, without its layout. It is what the search finds and what "
+"the AI agents will read; a page without text is an image."
+msgstr ""
+"Teksten slik den ble lest fra PDF-en, uten oppsettet. Det er dette søket finner og KI-agentene "
+"vil lese; en side uten tekst er et bilde."
+
+#, python-format
+msgid "The text could not be read: %(reason)s"
+msgstr "Teksten kunne ikke leses: %(reason)s"
 
 msgid "The time cannot be in the future."
 msgstr "Tidspunktet kan ikke være fram i tid."
@@ -5645,6 +6052,12 @@ msgstr ""
 "begge; ingenting fylles inn for deg. En behandling regner den fra siste dag, på vanntemperaturen "
 "i fiskens enheter (Drift › Behandlinger)."
 
+msgid "The year cannot be later than next year (in press)."
+msgstr "Året kan ikke være senere enn neste år (i trykken)."
+
+msgid "The year it was published."
+msgstr "Året det ble publisert."
+
 msgid "Their weight (kg)"
 msgstr "Samlet vekt (kg)"
 
@@ -5682,6 +6095,9 @@ msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 
 msgid "This empties the unit of this batch"
 msgstr "Dette tømmer enheten for fiskegruppen"
+
+msgid "This file is not a PDF."
+msgstr "Denne filen er ikke en PDF."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -5744,6 +6160,9 @@ msgstr "Trefase"
 msgid "Tick at least one thing it supplies."
 msgstr "Kryss av for minst én ting den leverer."
 
+msgid "Tick at least one topic."
+msgstr "Kryss av for minst ett emne."
+
 msgid "Tick at least one water environment."
 msgstr "Kryss av for minst ett vannmiljø."
 
@@ -5759,6 +6178,9 @@ msgstr "Tidsur"
 msgid "Timezone"
 msgstr "Tidssone"
 
+msgid "Title"
+msgstr "Tittel"
+
 msgid "To"
 msgstr "Til"
 
@@ -5770,6 +6192,12 @@ msgstr "I dag"
 
 msgid "Today’s ration"
 msgstr "Dagens rasjon"
+
+msgid "Topic"
+msgstr "Emne"
+
+msgid "Topics"
+msgstr "Emner"
 
 msgid "Total alkalinity. A kit in dKH: multiply by 17.85."
 msgstr "Total alkalitet. Et sett i dKH: gang med 17,85."
@@ -5825,6 +6253,9 @@ msgstr "Turbiditet"
 
 msgid "Turbidity (NTU)"
 msgstr "Turbiditet (NTU)"
+
+msgid "Turkish"
+msgstr "Tyrkisk"
 
 msgid "Two rows have the same feed size."
 msgstr "To rader har samme fôrstørrelse."
@@ -6003,6 +6434,9 @@ msgstr "Annullert"
 msgid "Voltage"
 msgstr "Spenning"
 
+msgid "Volume"
+msgstr "Volum"
+
 msgid "Volume (m³)"
 msgstr "Volum (m³)"
 
@@ -6068,6 +6502,9 @@ msgstr "Vannvolum"
 msgid "Water volume (m³)"
 msgstr "Vannvolum (m³)"
 
+msgid "Web address"
+msgstr "Nettadresse"
+
 msgid "Website"
 msgstr "Nettsted"
 
@@ -6119,6 +6556,9 @@ msgstr "Vekt av dødfisken (kg)"
 msgid "Welcome, %(name)s. The company’s figures will appear here."
 msgstr "Velkommen, %(name)s. Selskapets tall vises her."
 
+msgid "Welfare"
+msgstr "Velferd"
+
 msgid "Well (groundwater)"
 msgstr "Brønn (grunnvann)"
 
@@ -6127,6 +6567,12 @@ msgstr "Brønnbåt og transport"
 
 msgid "What it holds"
 msgstr "Hva den inneholder"
+
+msgid "What it is about. AI agents will read the entries of the topics they watch."
+msgstr "Hva det handler om. KI-agentene vil lese oppføringene i emnene de følger."
+
+msgid "What it is about. The knowledge entries taken from it have topics of their own."
+msgstr "Hva det handler om. Kunnskapsoppføringene hentet fra det har egne emner."
 
 msgid "What it is made for. A medicated feed is given on a vet’s prescription."
 msgstr "Hva det er laget for. Medisinfôr gis etter resept fra veterinær."
@@ -6150,14 +6596,34 @@ msgstr ""
 msgid "When"
 msgstr "Når"
 
+msgid "When it was observed or said, if it matters."
+msgstr "Når det ble observert eller sagt, om det betyr noe."
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
 msgid "Where"
 msgstr "Hvor"
 
+msgid "Where in the document, e.g. 4 or 12–13."
+msgstr "Hvor i dokumentet, f.eks. 4 eller 12–13."
+
+msgid ""
+"Where it can be read, when it has no DOI or the DOI is not enough. https:// is added when it is "
+"left out."
+msgstr ""
+"Hvor det kan leses, når det ikke har DOI eller DOI-en ikke er nok. https:// legges til når det "
+"mangler."
+
+msgid "Where the knowledge comes from: every entry has exactly one source."
+msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."
+
 msgid "Where the values come from, e.g. “the vet, November 2026” or a guideline."
 msgstr "Hvor verdiene kommer fra, f.eks. «veterinæren, november 2026» eller en veileder."
+
+#, python-format
+msgid "Where “%(query)s” is in the text"
+msgstr "Hvor «%(query)s» står i teksten"
 
 msgid "Which feeding protocol feeds which fish, from which day."
 msgstr "Hvilken fôringsprotokoll som fôrer hvilken fisk, fra hvilken dag."
@@ -6170,6 +6636,12 @@ msgstr "Hvilke roller hver bruker har."
 
 msgid "Which sites each supplier delivers to or works at."
 msgstr "Hvilke lokaliteter hver leverandør leverer til eller arbeider på."
+
+msgid "Which species each knowledge entry holds for."
+msgstr "Hvilke arter hver kunnskapsoppføring gjelder for."
+
+msgid "Which species each library document is about."
+msgstr "Hvilke arter hvert dokument i biblioteket handler om."
 
 msgid "Which units each health event concerns; none for the whole site."
 msgstr "Hvilke enheter hver helsehendelse gjelder; ingen for hele lokaliteten."
@@ -6195,6 +6667,14 @@ msgstr "Hele fiskegruppen"
 
 msgid "Whole site"
 msgstr "Hele lokaliteten"
+
+msgid "Whose observation or advice it is, e.g. “Kari Nordmann, fish health vet” or your own name."
+msgstr ""
+"Hvem observasjonen eller rådet kommer fra, f.eks. «Kari Nordmann, fiskehelseveterinær» eller ditt"
+" eget navn."
+
+msgid "Why the text could not be read"
+msgstr "Hvorfor teksten ikke kunne leses"
 
 msgid ""
 "Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
@@ -6252,6 +6732,9 @@ msgid ""
 msgstr ""
 "Skriv slekt og art med latinske bokstaver, f.eks. Salmo salar; en underart kan følge som tredje "
 "ord."
+
+msgid "Year"
+msgstr "År"
 
 msgid "Yersiniosis"
 msgstr "Yersiniose"
@@ -6331,6 +6814,10 @@ msgid "by %(name)s"
 msgstr "av %(name)s"
 
 #, python-format
+msgid "by %(who)s, %(when)s"
+msgstr "av %(who)s, %(when)s"
+
+#, python-format
 msgid "by <strong>%(name)s</strong>"
 msgstr "av <strong>%(name)s</strong>"
 
@@ -6365,6 +6852,18 @@ msgstr "kritikalitet %(level)d"
 msgid "deleted"
 msgstr "slettet"
 
+msgid "document"
+msgstr "dokument"
+
+msgid "document page"
+msgstr "dokumentside"
+
+msgid "document pages"
+msgstr "dokumentsider"
+
+msgid "documents"
+msgstr "dokumenter"
+
 msgid "e.g. 0–10 bar"
 msgstr "f.eks. 0–10 bar"
 
@@ -6389,6 +6888,13 @@ msgstr "f.eks. 0–50 ppt"
 msgid "e.g. 0–50 °C"
 msgstr "f.eks. 0–50 °C"
 
+msgid ""
+"e.g. 10.1016/j.aquaculture.2019.01.001; a link to doi.org is read as its DOI. Two documents of "
+"the library cannot have the same DOI."
+msgstr ""
+"f.eks. 10.1016/j.aquaculture.2019.01.001; en lenke til doi.org leses som DOI-en. To dokumenter i "
+"biblioteket kan ikke ha samme DOI."
+
 msgid "e.g. 12345"
 msgstr "f.eks. 12345"
 
@@ -6397,6 +6903,9 @@ msgstr "f.eks. 150"
 
 msgid "e.g. 1–10 kg/h"
 msgstr "f.eks. 1–10 kg/h"
+
+msgid "e.g. 2019"
+msgstr "f.eks. 2019"
 
 msgid "e.g. 25"
 msgstr "f.eks. 25"
@@ -6407,8 +6916,14 @@ msgstr "f.eks. 250"
 msgid "e.g. 3"
 msgstr "f.eks. 3"
 
+msgid "e.g. 3.2 Results, Table 4."
+msgstr "f.eks. 3.2 Resultater, tabell 4."
+
 msgid "e.g. 30 days net"
 msgstr "f.eks. 30 dager netto"
+
+msgid "e.g. 4"
+msgstr "f.eks. 4"
 
 msgid "e.g. 4 8 12 16"
 msgstr "f.eks. 4 8 12 16"
@@ -6428,8 +6943,14 @@ msgstr "f.eks. 60,3913"
 msgid "e.g. 923456789"
 msgstr "f.eks. 923456789"
 
+msgid "e.g. Aquaculture"
+msgstr "f.eks. Aquaculture"
+
 msgid "e.g. Atlantic salmon"
 msgstr "f.eks. Atlantic salmon"
+
+msgid "e.g. Carbon dioxide and the growth of Atlantic salmon"
+msgstr "f.eks. Karbondioksid og veksten til atlantisk laks"
 
 msgid "e.g. FJF"
 msgstr "f.eks. FJF"
@@ -6636,6 +7157,12 @@ msgstr "i %(name)s"
 msgid "kg"
 msgstr "kg"
 
+msgid "knowledge entries"
+msgstr "kunnskapsoppføringer"
+
+msgid "knowledge entry"
+msgstr "kunnskapsoppføring"
+
 #, python-format
 msgid "loop %(system)s, %(age)s ago"
 msgstr "kretsløp %(system)s, %(age)s siden"
@@ -6676,6 +7203,9 @@ msgstr "mg/kg biomasse per dag"
 msgid "mg/mL"
 msgstr "mg/mL"
 
+msgid "n.d."
+msgstr "u.å."
+
 #, python-format
 msgid "next meal %(meal)s"
 msgstr "neste måltid %(meal)s"
@@ -6697,6 +7227,10 @@ msgstr "ikke i modellen"
 
 msgid "open"
 msgstr "åpen"
+
+#, python-format
+msgid "p. %(page)s"
+msgstr "s. %(page)s"
 
 msgid "pH"
 msgstr "pH"

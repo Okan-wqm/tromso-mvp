@@ -8,6 +8,7 @@ from core.database import Section, Viewer
 VIEWER = Viewer(
     sections=[
         Section(_('Facility'), ('farm',)),
+        Section(_('Knowledge'), ('knowledge',)),
         Section(_('Storage'), ('inventory',)),
         Section(_('Messages'), ('messaging',)),
         Section(_('Administration'), ('core', 'auth')),
@@ -28,5 +29,7 @@ VIEWER = Viewer(
         'auth_user_groups': _('Which roles each user has.'),
         'auth_user_user_permissions': _('Permissions given to one user directly instead of through a role.'),
         'supplier_sites': _('Which sites each supplier delivers to or works at.'),
+        'document_species': _('Which species each library document is about.'),
+        'knowledge_entry_species': _('Which species each knowledge entry holds for.'),
     },
 )

@@ -1,0 +1,20 @@
+{% load i18n %}{% comment %} An entry's review (knowledge.views.review_entry): its status, who reviewed it and when, and, for
+   people who may edit entries, the buttons that mark it reviewed or take it back to draft. Each button is a form of
+   its own (a dialog posts a form's fields, not which button was pressed). `version` makes sure the review covers the
+   words the reviewer read.{% endcomment %}
+<div class="review-box">
+  {% if entry.status == "reviewed" %}
+  <p><span class="badge badge-reviewed">{{ entry.get_status_display }}</span> {% blocktrans trimmed with who=entry.reviewed_by when=entry.reviewed_at|date:"DATETIME_FORMAT" %}by {{ who }}, {{ when }}{% endblocktrans %}</p>
+  {% else %}
+  <p><span class="badge badge-draft">{{ entry.get_status_display }}</span> {% trans "Not reviewed yet. AI agents will act on reviewed entries only." %}</p>
+  {% endif %}
+  {% if can_review %}
+  <div class="review-actions">
+    {% if entry.status == "reviewed" %}
+    <form method="post" action="{% url 'knowledge:entry_review' entry.pk %}">{% csrf_token %}<input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="draft"><button type="submit" class="button button-ghost">{% trans "Back to draft" %}</button></form>
+    {% endif %}
+    <form method="post" action="{% url 'knowledge:entry_review' entry.pk %}">{% csrf_token %}<input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="reviewed"><button type="submit" class="button button-inline">{% if entry.status == "reviewed" %}{% trans "Review it again" %}{% else %}{% trans "Mark as reviewed" %}{% endif %}</button></form>
+  </div>
+  <p class="panel-help">{% trans "Reviewing says the statement and its source are right: it is recorded in your name, now. Editing the statement, topics, species or source of a reviewed entry makes it a draft again." %}</p>
+  {% endif %}
+</div>

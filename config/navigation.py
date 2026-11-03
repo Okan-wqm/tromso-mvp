@@ -4,8 +4,8 @@ from core.navigation import Entry, Group, Section, Workspace
 
 # The panels of the console, switched from the top left. Company holds what belongs to the company
 # as a whole (every signed-in person has it); Production holds the farm's production side and is
-# offered to people who can use something in it. Each has its own overview. The HR pages will join
-# Company.
+# offered to people who can use something in it. Each has its own overview. Company also holds the
+# knowledge (the library and the knowledge entries); the HR pages will join it.
 #
 # Production's menu has two main headings, as in the platform: Setup (the farm's structure, its
 # reference lists and its suppliers, entered once and changed seldom) and Operations (the daily
@@ -22,6 +22,13 @@ WORKSPACES = [
                 # Where stock is kept on each site: feed stores, silos, cold rooms, medicine cabinets.
                 Entry(_('Storage locations'), 'inventory:storagelocation_list', 'warehouse',
                       'inventory.view_storagelocation'),
+            ]),
+            # What the company knows: the documents of its library and the knowledge taken from them, which AI
+            # agents will watch the farm with. It belongs to the organisation, not only to production.
+            Group(_('Knowledge'), [
+                Entry(_('Library'), 'knowledge:document_list', 'book-open', 'knowledge.view_document'),
+                Entry(_('Knowledge entries'), 'knowledge:knowledgeentry_list', 'lightbulb',
+                      'knowledge.view_knowledgeentry'),
             ]),
             Group(_('Administration'), [
                 Entry(_('Activity log'), 'core:activity_log', 'history', 'core.view_auditlog'),

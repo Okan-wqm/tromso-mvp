@@ -1,0 +1,26 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} The text read from a document's PDF, page by page (knowledge.views.document_text): what the library's
+   search finds and what the AI agents will read and cite.{% endcomment %}
+{% block title %}{% blocktrans trimmed with name=object %}Text of {{ name }}{% endblocktrans %}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
+{% block heading %}{{ object }}{% endblock %}
+{% block content %}
+<p class="op-context"><a href="{{ detail_url }}">{% trans "Back to the document" %}</a> · <span class="muted">{{ object.text_summary }}</span></p>
+<p class="panel-help">{% trans "The text as it was read from the PDF, without its layout. It is what the search finds and what the AI agents will read; a page without text is an image." %}</p>
+{% for text_page in page.object_list %}
+<article class="page-text" id="page-{{ text_page.number }}">
+  <h2 class="section-title">{% blocktrans with page=text_page.number %}Page {{ page }}{% endblocktrans %}{% if text_page.label %} <span class="muted">{% blocktrans with label=text_page.label %}(printed as {{ label }}){% endblocktrans %}</span>{% endif %}</h2>
+  {% if text_page.text %}<div class="page-body">{{ text_page.text }}</div>{% else %}<p class="muted">{% trans "No text on this page." %}</p>{% endif %}
+</article>
+{% endfor %}
+{% if page.paginator.num_pages > 1 %}
+<nav class="pager list-pager" aria-label="{% trans "Pages" %}">
+  <span>{% blocktrans trimmed with first=page.start_index last=page.end_index total=page.paginator.count %}{{ first }}–{{ last }} of {{ total }}{% endblocktrans %}</span>
+  <span class="pager-links">
+    {% if page.has_previous %}<a class="button button-ghost" href="?page={{ page.previous_page_number }}">{% trans "Previous" %}</a>{% endif %}
+    {% if page.has_next %}<a class="button button-ghost" href="?page={{ page.next_page_number }}">{% trans "Next" %}</a>{% endif %}
+  </span>
+</nav>
+{% endif %}
+{% endblock %}

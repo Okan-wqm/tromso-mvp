@@ -16,15 +16,19 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
-  Administration) and **Production** (overview, production departments, systems, equipment, tanks, ponds &
-  cages, species, feeds, water limits, suppliers, and under Operations the production units with their fish,
-  the water chemistry, the store (Storage) and Feeding: the meal board, the records, the feeding protocols
-  and their assignments, and under Communication the messages). Each has its own overview. A
+  Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
+  ponds & cages, species, feeds, water limits, suppliers, and under Operations the production units with their
+  fish, the water chemistry, the store (Storage) and Feeding: the meal board, the records, the feeding
+  protocols and their assignments, and under Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
   menu, in the Production panel; built so that AI assistants join the same conversations later (see
   Messages).
+- Knowledge (`/knowledge/`), in the Company panel: a **Library** of articles and reports with their reference,
+  their PDF (sent only to people who may read it) and its text read page by page and searched, and **Knowledge
+  entries**, each a statement with exactly one source and a review, which AI agents will later watch the farm
+  with and cite (see Knowledge).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
   user menu and on the sign-in pages (see Languages).
 - The console shell: a left menu that collapses (296 px to 110 px, icon over label), remembers the
@@ -1096,6 +1100,158 @@ document, MSG-01 to MSG-21):
   and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
   NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
 
+## Knowledge (Company › Knowledge: Library `/knowledge/library/`, Knowledge entries `/knowledge/entries/`)
+
+The place where people record what the company knows, so that AI agents can later watch the farm with it and
+cite it: "in salmon under 50 g, CO₂ above 15 mg/L causes disease" (from an article) is to warn the person
+when a unit's live values match and name the article and its page; "a feed order is at least 20 t and arrives
+in 3 days" (from a supplier's terms) is to let an agent propose a purchase order. Knowledge is not only about
+fish, and it belongs to the organisation, so it sits in the **Company** panel, in the group **Knowledge**. App
+`knowledge`, tables `documents`, `document_pages`, `document_species`, `knowledge_entries` and
+`knowledge_entry_species`. What is built now is the recording; the agents are designed for (below), not built.
+
+**The Library** holds documents: articles, reports, books, guidelines, regulations. A document has its
+reference (title; authors, one per line, family name first, in their order; year; where it was published;
+volume, issue and pages; DOI and web address), its abstract, language, topics, species and optionally its
+PDF. The list (50 a page) shows each document with how a text cites it ("Olsen & Hansen (2019)"), its year,
+topics, species, the PDF with its page count and whether its text was found, and how many knowledge entries
+cite it; filters by topic, species and year; a search over everything, PDFs included. The read page
+(`/knowledge/library/<id>/view/`, for everyone who may read the library) shows the full reference in APA 7 form
+(`knowledge/citation.py`: "Olsen, B. E., & Hansen, K. (2019). Title. *Aquaculture*, *512*(3), 45–67.
+https://doi.org/…"; a document without authors is cited by its title, one without a year with "n.d."), the
+abstract and details, **Open the PDF** and **Download**, what reading its text gave, after a search the pages
+where the words are with their passages, and the knowledge entries taken from it with **Add knowledge from this
+document**. **Read the text, page by page** shows what was read from the PDF, 20 pages a screen.
+
+The rules, each a database check as well: a title; authors without empty lines (spaces trimmed on save); a
+year from 1500 to 2100 (and the form refuses one later than next year); a DOI that starts with `10.` and has no
+spaces, stored without its link (`https://doi.org/` or `doi:` typed before it are removed) and unique among
+live documents whatever its case, so the same article is not added twice; a web address with http or https
+only; topics from the list; the file and what is known about it come together (below).
+
+**The file.** A PDF of at most `KNOWLEDGE_MAX_FILE_BYTES` (20 MB, `config/settings.py`), its name ending in
+`.pdf` and its first bytes `%PDF-` (the browser's word for its type is not trusted). It is stored by Django's
+storage under `MEDIA_ROOT` (`DJANGO_MEDIA_ROOT`, by default `media/` in the checkout, not committed) under a
+name of our own (`knowledge/documents/<random>.pdf`); the uploaded file's name is kept on the document for the
+person and the download. **There is no public address**: no `MEDIA_URL` route exists, and the file is sent only
+by `knowledge.views.document_file` (`/knowledge/library/<id>/file/`, `?download` for an attachment) to a
+signed-in person with the Library's read permission, for a live document, `private` for caches. Replacing or
+removing the file (the File tab's **Remove the file**) deletes the old one from the storage once the change is
+committed (a rolled-back save keeps it); a deleted document keeps its file and text, for a restore. Django
+streams a large upload to a temporary file before the form can refuse it, so the web server in front must cap
+a request's body too (e.g. nginx `client_max_body_size 25m`).
+
+**Its text** is read when a new file is saved (`Document.save`, `knowledge/extraction.py`, pypdf): page by page
+into `document_pages` (the page's number and, when the PDF labels its pages as the journal does, its printed
+number, so a citation can say "p. 237"), normalised to NFKC (the ligatures of PDFs, "ﬁ", read as "fi"; "CO₂" as
+"CO2") and without control characters. The outcome is on the document: **Text found** (with the page count),
+**No text found** (a scan: pages that are images; not an error, its text needs OCR, which is not done yet), or
+**Could not be read** with the reason (a damaged PDF; one protected by a password; one with only an owner
+password is read, with `cryptography`). The PDF is kept whatever the outcome. The reading runs in the request
+(fine for the MVP's articles; a worker with a time limit is the place for it when books and scans come).
+
+**Searching** (`knowledge/search.py`). Every searchable text is a `tsvector` in a **generated column**, so the
+database keeps it in step with the text whatever writes the row, each with a GIN index: a document's own
+(title weighted A, authors B, abstract C, venue D), one per page of its PDF (so no vector meets PostgreSQL's 1 MB
+limit and a hit names its page), and an entry's (statement A, quote B, section and citation C, person D). The
+stored texts are analysed with the **`simple`** configuration: lower case, every word as written, whatever the
+language. The library holds English, Norwegian and Turkish texts, often mixed in one document (a Norwegian
+report with an English abstract, a Turkish thesis with an English one), so no single language's stemmer suits
+the stored side, and a per-document language would stem half of such a document wrongly. The stemming is
+done on the **query** side instead: each word typed is analysed with the `english`, `norwegian` and `turkish`
+stemmers and with `simple`, and each stem is a prefix, so "diseases" finds "disease", "fisken" finds
+"fiskehelse", "balıklar" finds "balıklarda"; stems shorter than three letters and numbers match whole ("pH" is
+not "phosphorus", "15" is not "150"). Every word must be in the document, in its own vector or on any of its
+pages ("Olsen nephrocalcinosis" finds Olsen's article that speaks of it on page 4); an entry matches by its own
+words or those of the document it cites. Results are ranked by `ts_rank` (a title hit above an abstract hit
+above a hit in the text), the best page's passage shown with the words marked. What is typed is turned into
+quoted lexemes, never read as query syntax.
+
+**Knowledge entries.** An entry is a statement in the person's own words (at most 2000 characters), its topics
+(at least one: water quality, feeding, health, growth, welfare, harvest, procurement and logistics, equipment,
+regulation, other), the species it holds for (none: any), and **its source, exactly one kind**:
+
+- **A document in the library**, with the page(s), the section and the quote (the document's own words);
+- **Another published source**: its citation as a reference list gives it, its web address, or both, and
+  optionally a quote;
+- **An expert or our own observation**: the person ("Kari Nordmann, fish health vet") and optionally when.
+
+The form shows the fields of the kind chosen (choosing another renders the form again, `refresh_on`), and saving
+empties the fields of the other kinds (`KnowledgeEntry.clean`). The database holds it whatever writes the row:
+one check per kind says that kind has what it needs and that the other kinds' fields are empty, a check keeps
+the kind in its list and the quote away from an observation. The list (50 a page) shows each statement with its
+source in a line ("Olsen & Hansen (2019), p. 4, 3.2 Results") and its status; filters by topic, species, kind of
+source and status; the read page shows the statement, the source (the document's full reference, linked to it
+for people who may read the library) and the quote.
+
+**The review.** An entry is a **draft** until someone with the Edit permission marks it **reviewed**
+(**Mark as reviewed** on its read page or on the Review tab of its dialog, `knowledge.views.review_entry`): the
+reviewer is the person signed in and the time is now, never typed, and a database check keeps the status, the
+reviewer and the time together. The review is refused when the entry changed since the reviewer opened it (its
+version), and **Back to draft** undoes it. Editing the statement, topics, species or source of a reviewed entry
+takes it back to draft and says so, so a review always covers the words as they are. AI agents will act on
+reviewed entries only.
+
+**Who may do what:** the areas Library and Knowledge entries (Company · Knowledge) with read, create, edit and
+delete; for entries, Edit also reviews. Reading the PDF and its text needs the Library's read.
+
+**Deleting.** A document cited by a live entry **cannot be deleted** (`PROTECT`): the entry *is* its source, an
+entry pointing at nothing would say nothing anyone could check, and the "exactly one source" check would refuse
+the detached row anyway. The confirmation says how many entries cite it; re-point or delete them first. A
+deleted entry's document can then go; restoring the entry waits for its document (core.softdelete.restore).
+Deleting a species keeps the documents' and entries' links to it, out of sight, as for feeds. Both are soft
+deletes, restored from the admin.
+
+**The activity log** records a document's metadata as for every tab, its file by its own name (never the
+storage's), and what reading the text gave (Text, Number of pages): **never the text itself**. An entry's log
+has its fields and its review (Status, Reviewed by, Reviewed at). **The database viewer** (section Knowledge)
+shows the extracted text and the search vectors as it shows any long text: cut to 80 characters in the grid, at
+most 5,000 on click, whole only in the CSV export.
+
+### AI agents: how they plug in (designed for, not built)
+
+Nothing below exists yet; the tables above are shaped so it can be added without rewriting them.
+
+**The Rule** (a table of its own, `knowledge_rules`, one entry to many rules): the structured form of an entry
+that a program can apply. It **cites its entry** (`entry`, `PROTECT`), so every warning or proposal it makes
+names the entry, and through it the document, page and quote.
+
+| Field | What it holds |
+|---|---|
+| `entry` | The knowledge entry it applies (its source, its review). |
+| `subject` | What it is about: a production unit's water, a batch, a species, a supplier's orders. |
+| `species`, `stage`, `weight_min_g`, `weight_max_g` | Scope: the species (none: any), the life stage (`InputStage`), the band of average weight (`FeedSuitability.suits` semantics, lower included, upper excluded). |
+| conditions (rows of `knowledge_rule_conditions`) | Each a metric, an operator and a value in the metric's unit, all to hold: a water parameter of `farm/water/parameters.py` by its key (`co2_mg_l`, `oxygen_mg_l`, `tan_mg_l`, …, and the worked-out NH₃-N and O₂ saturation), the average weight, the density, the days since stocking, a supplier's or feed's terms (minimum order in kg, lead time in days). The metric list is code, like the water parameters, so a value is never compared in another unit. |
+| `consequence` | What follows, in words, and its kind: a warning, a proposed action (a purchase order, a water exchange). |
+| `severity` | Information, warning or critical, as the water limits' bands. |
+| `status` | Proposed (by an agent), accepted, retired; who accepted it and when. |
+
+Example: entry "In Atlantic salmon under 50 g, free CO₂ above 15 mg/L leads to nephrocalcinosis" (Olsen et al.
+2019, p. 4) → rule: subject unit water, species Atlantic salmon, weight below 50 g, condition `co2_mg_l > 15`,
+consequence "risk of nephrocalcinosis", severity warning.
+
+**Extraction proposes, a person decides.** An agent reads a document's pages (`document_pages`, page by page;
+for long ones, chunks of pages with an embedding each in a table of their own written by the same save that
+writes the page, pgvector, so they can never disagree with the text) and **proposes** entries, as drafts
+whose source is the document with the page and the exact quote, and rules for them, as proposed. Nothing
+proposed is used until a person reviews the entry and accepts the rule. The quote is checked against the
+page's text before it is shown, so an agent cannot cite words the document does not have.
+
+**Warnings cite their source.** An evaluator, next to the water's (`farm/water/evaluate.py`), applies the
+accepted rules of reviewed entries to the values read now (a unit's latest water, its batches' average weight
+from the stock ledger): a match is a warning on the unit and in the drawer, "CO₂ 17 mg/L: risk of
+nephrocalcinosis in salmon under 50 g. Olsen et al. (2019), p. 4", linked to the entry. As for the water,
+nothing is sent yet; the MVP alerts nobody. A proposed action (the purchase order) is a proposal a person
+accepts, written through the tab's own write path as that person, as the Messages' assistants will do.
+
+**Owner decision open:** whether a person may review their own entry (four eyes). Today anyone with Edit may;
+a check `reviewed_by <> created_by` and a Review column of its own in the role matrix are the two changes it
+would take.
+
+Not built now: OCR of scanned PDFs, other file types (Word, images), reading the text in a background worker,
+embeddings, the rules and their evaluator, exporting references (BibTeX, RIS), fetching a reference from its
+DOI (Crossref), versions of a document's file, phrase search ("…" in the query).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -1110,7 +1266,8 @@ only one who manages roles and users; everyone else gets exactly what their role
   and a unit's water, create = record a sample or a round, delete = void one), Storage (read the page,
   create = record a delivery, issue, write-off, return, transfer or count, delete = void one), Storage
   locations (read, create, edit, delete), Messages (read = use Messages,
-  create = also create channels) and Activity log (read).
+  create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit also reviews
+  an entry) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -1152,7 +1309,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `inventory`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `inventory`, `knowledge`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -1178,7 +1335,9 @@ C:\Python312\python.exe -m venv .venv
 ```
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
-defaults match the local container in `docker-compose.yml`.
+defaults match the local container in `docker-compose.yml`. Uploaded files (the library's PDFs) go to
+`MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
+checkout anywhere but a developer's machine, and back it up with the database.
 
 ## Languages
 
@@ -1272,6 +1431,13 @@ What one tab needed and the next ones will too lives in `core/`:
   disabled field so a posted value is never read.
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
   "Tanks, ponds & cages" lists units.
+- `Resource.search`: what the list's search box does; by default the text in one of `search_fields`, a
+  full-text search where a tab needs one (the library, `knowledge/search.py`).
+- `Resource.detail_template`: a read page for one record (`<prefix>/<id>/view/`, `templates/crud/detail.html`)
+  for everyone who may read the tab, with Edit and Delete for those who may; the edit form needs the change
+  permission, so a reader would otherwise see only the list (a library document, a knowledge entry).
+- Files: a form with a file field gets the uploaded files and posts as multipart, in the dialog too (a
+  document's PDF). A file is never served from a public address: a view that checks the permission sends it.
 - `Resource.page_size`: the list is paged on the server, after the search and the filters, and the
   page links keep both (`templates/crud/_pager.html`). Lists that nest records (systems, equipment)
   stay on one page.
@@ -1379,6 +1545,13 @@ real mail.
 | `/messages/<id>/members/` | A channel's members; `add/`, `<participant>/remove/`, `<participant>/role/` change them |
 | `/messages/<id>/leave/`, `/messages/<id>/messages/<message>/delete/` | Leave a channel; delete one's own message |
 | `/messages/list/`, `/messages/unread/` | Fragments the page polls: the list of conversations, the menu's unread number |
+| `/knowledge/library/` | Knowledge › Library (`?q=` searches, `topic`, `species`, `year` filter) |
+| `/knowledge/library/<id>/view/` | A document's read page (`?q=` shows the pages where the words are) |
+| `/knowledge/library/<id>/file/` | A document's PDF, to people who may read the library (`?download` as an attachment) |
+| `/knowledge/library/<id>/text/` | The text read from a document's PDF, page by page |
+| `/knowledge/entries/` | Knowledge › Knowledge entries; `<id>/view/` an entry's read page |
+| `/knowledge/entries/new/?document=<id>` | A new entry whose source is that document |
+| `/knowledge/entries/<id>/review/` | Marks an entry reviewed, or takes it back to draft (POST) |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -1410,6 +1583,7 @@ real mail.
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
+| `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |

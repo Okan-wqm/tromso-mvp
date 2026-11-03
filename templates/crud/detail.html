@@ -1,0 +1,18 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} The read page of a tab (core.crud.DetailView, Resource.detail_template), in a dialog or as a page:
+   one record as everyone who may read the tab sees it. A tab's own template extends this and fills
+   `details`; Edit and Delete are offered to those who may.{% endcomment %}
+{% block title %}{{ object }}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
+{% block heading %}{{ object }}{% endblock %}
+{% block content %}
+<div class="detail">
+  {% block details %}{% endblock %}
+  <div class="form-actions detail-actions">
+    <a class="button button-ghost" href="{{ list_url }}" data-modal-close>{% blocktrans trimmed %}All {{ plural }}{% endblocktrans %}</a>
+    {% if can_delete %}<a class="button button-ghost" href="{{ delete_url }}" data-modal>{% include "icons/_icon.html" with name="trash" %}{% trans "Delete" %}</a>{% endif %}
+    {% if can_change %}<a class="button button-inline" href="{{ edit_url }}" data-modal>{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit" %}</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

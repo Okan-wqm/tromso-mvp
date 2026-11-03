@@ -59,7 +59,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
                                                     'Suppliers', 'Production units', 'Water chemistry',
-                                                    'Meal board', 'Records', 'Protocols', 'Assignments'])
+                                                    'Meal board', 'Records', 'Protocols', 'Assignments', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -115,7 +115,7 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
                                                   'Suppliers', 'Production units', 'Water chemistry', 'Meal board',
-                                                  'Records', 'Protocols', 'Assignments'])
+                                                  'Records', 'Protocols', 'Assignments', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -147,7 +147,7 @@ class MainHeadingTests(WorkspaceTestCase):
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Purchasing']),
-                          ('Operations', ['', 'Feeding'])])
+                          ('Operations', ['', 'Feeding']), ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
@@ -195,6 +195,7 @@ class MenuPlacementTests(TestCase):
             'farm.FeedingProtocol': 'Production · Operations · Feeding',
             'farm.ProtocolAssignment': 'Production · Operations · Feeding',
             'farm.WaterMeasurement': 'Production · Operations',
+            'messaging.Conversation': 'Production · Communication',
             'core.AuditLog': 'Company · Administration',
         })
 

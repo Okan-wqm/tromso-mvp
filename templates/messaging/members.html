@@ -1,0 +1,47 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} A channel's members (messaging.views.members): its owners add people, remove members and make them
+   owners; every member can leave. Each button posts one change and the list opens again.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+{% if error %}<div class="form-error" role="alert">{{ error }}</div>{% endif %}
+<ul class="chat-members" role="list">
+  {% for member in members %}
+  <li class="chat-member">
+    <span class="chat-member-name">{{ member }}{% if member.pk == participant.pk %} <span class="faint">({% trans "you" %})</span>{% endif %}</span>
+    <span class="badge{% if member.is_owner %} badge-active{% else %} badge-inactive{% endif %}">{{ member.get_role_display }}</span>
+    {% if is_owner and member.pk != participant.pk %}
+    <span class="chat-member-actions">
+      <form method="post" action="{% url 'messaging:set_role' conversation.pk member.pk %}">
+        {% csrf_token %}
+        {% if member.is_owner %}<input type="hidden" name="role" value="member"><button type="submit" class="button button-ghost">{% trans "Make member" %}</button>
+        {% else %}<input type="hidden" name="role" value="owner"><button type="submit" class="button button-ghost">{% trans "Make owner" %}</button>{% endif %}
+      </form>
+      <form method="post" action="{% url 'messaging:remove_member' conversation.pk member.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="button button-ghost">{% trans "Remove" %}</button>
+      </form>
+    </span>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% if form %}
+<form method="post" action="{% url 'messaging:add_members' conversation.pk %}" class="chat-add" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% if form.fields.people.queryset.exists %}
+  {% with field=form.people %}{% include "registration/_field.html" %}{% endwith %}
+  <button type="submit" class="button button-inline">{% trans "Add" %}</button>
+  {% else %}
+  <p class="help">{% trans "Everyone who can use Messages is a member already." %}</p>
+  {% endif %}
+</form>
+{% endif %}
+<div class="form-actions">
+  <a class="button button-ghost" href="{% url 'messaging:leave' conversation.pk %}" data-modal>{% trans "Leave channel" %}</a>
+  <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Close" %}</a>
+</div>
+{% endblock %}

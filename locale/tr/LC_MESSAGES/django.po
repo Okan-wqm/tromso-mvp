@@ -175,6 +175,12 @@ msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(unit)s içinde %(count)s balık kalıyor: onları da tartın."
 
 #, python-format
+msgid "%(count)s member"
+msgid_plural "%(count)s members"
+msgstr[0] "%(count)s üye"
+msgstr[1] "%(count)s üye"
+
+#, python-format
 msgid "%(count)s part"
 msgid_plural "%(count)s parts"
 msgstr[0] "%(count)s parça"
@@ -385,6 +391,10 @@ msgid "%(name)s “%(object)s” saved."
 msgstr "%(name)s “%(object)s” kaydedildi."
 
 #, python-format
+msgid "%(names)s cannot use Messages."
+msgstr "%(names)s Mesajlar'ı kullanamaz."
+
+#, python-format
 msgid "%(number)s deleted"
 msgstr "%(number)s silinmiş"
 
@@ -560,6 +570,12 @@ msgstr "9 haneli Norveç kuruluş numarası"
 msgid "A batch alone: the protocol follows it into every unit it is moved to."
 msgstr "Yalnızca parti: protokol, parti hangi birime taşınırsa onunla birlikte gider."
 
+msgid "A channel needs an owner: make another member an owner first."
+msgstr "Bir kanalın sahibi olmalı: önce başka bir üyeyi sahip yapın."
+
+msgid "A channel with this name already exists."
+msgstr "Bu adda bir kanal zaten var."
+
 msgid "A draft copy with this table, to change and assign from a date."
 msgstr "Bu tabloyla bir taslak kopya: değiştirip bir tarihten itibaren atamak için."
 
@@ -585,6 +601,10 @@ msgid ""
 msgstr ""
 "Membran (HDPE, PVC, EPDM) %(low)s ile %(high)s mm, beton %(concrete_low)s ile %(concrete_high)s "
 "mm kalınlığındadır."
+
+#, python-format
+msgid "A message has at most %(count)d characters."
+msgstr "Bir mesaj en fazla %(count)d karakter olabilir."
 
 msgid "A new protocol is a draft: fill in its feeding table, then set it active."
 msgstr "Yeni bir protokol taslaktır: yemleme tablosunu doldurun, ardından aktif yapın."
@@ -746,6 +766,9 @@ msgstr ""
 msgid "Activity log"
 msgstr "Etkinlik günlüğü"
 
+msgid "Add"
+msgstr "Ekle"
+
 #, python-format
 msgid "Add %(name)s"
 msgstr "Yeni %(name)s"
@@ -758,6 +781,9 @@ msgstr "Kalibrasyon ekle"
 
 msgid "Add contact"
 msgstr "Kişi ekle"
+
+msgid "Add members"
+msgstr "Üye ekle"
 
 msgid "Add species"
 msgstr "Balık türü ekle"
@@ -829,6 +855,9 @@ msgstr "Tüm partiler"
 
 msgid "All categories"
 msgstr "Tüm kategoriler"
+
+msgid "All conversations"
+msgstr "Tüm konuşmalar"
 
 msgid "All feed types"
 msgstr "Tüm yem türleri"
@@ -1050,6 +1079,9 @@ msgstr "Atama"
 msgid "Assignments"
 msgstr "Atamalar"
 
+msgid "Assistant"
+msgstr "Asistan"
+
 #, python-format
 msgid "At least %(min)s."
 msgstr "En az %(min)s."
@@ -1071,6 +1103,9 @@ msgstr "Deniz seviyesi basıncında: sahanın rakımı yok."
 
 msgid "At the deepest point, usually by the outlet."
 msgstr "En derin noktada, genellikle çıkışın yanında."
+
+msgid "Author"
+msgstr "Yazan"
 
 msgid "Automatic"
 msgstr "Otomatik"
@@ -1098,6 +1133,9 @@ msgstr "Genel bakışa dön"
 
 msgid "Back to sign in"
 msgstr "Girişe dön"
+
+msgid "Back to the latest messages"
+msgstr "En son mesajlara dön"
 
 msgid "Backup power supply."
 msgstr "Yedek güç kaynağı."
@@ -1269,6 +1307,16 @@ msgstr "Parolayı değiştir"
 msgid "Changed"
 msgstr "Değiştirildi"
 
+msgid "Channel"
+msgstr "Kanal"
+
+#, python-format
+msgid "Channel %(name)s created."
+msgstr "%(name)s kanalı oluşturuldu."
+
+msgid "Channel name"
+msgstr "Kanal adı"
+
 msgid "Check"
 msgstr "Kontrol"
 
@@ -1281,12 +1329,18 @@ msgstr "Kimyasallar"
 msgid "Chiller"
 msgstr "Soğutucu (chiller)"
 
+msgid "Choose a conversation"
+msgstr "Bir konuşma seçin"
+
 #, python-format
 msgid "Choose a feeder on the site of %(unit)s."
 msgstr "%(unit)s biriminin sahasındaki bir yemleme makinesi seçin."
 
 msgid "Choose a feeder: equipment of the Feeding category."
 msgstr "Bir yemleme makinesi seçin: Yemleme kategorisinden bir ekipman."
+
+msgid "Choose a person"
+msgstr "Bir kişi seçin"
 
 msgid "Choose a site to list its units and loops."
 msgstr "Birimlerini ve döngülerini listelemek için bir saha seçin."
@@ -1317,6 +1371,12 @@ msgstr "Aktif bir yem seçin."
 
 msgid "Choose at least one."
 msgstr "En az birini seçin."
+
+msgid "Choose owner or member."
+msgstr "Sahip ya da üye seçin."
+
+msgid "Choose someone else: a conversation is with another person."
+msgstr "Başka birini seçin: konuşma başka bir kişiyle yapılır."
 
 msgid "Choose the kind on the General tab; its dimensions appear here."
 msgstr "Genel sekmesinde türü seçin; boyutları burada görünür."
@@ -1381,6 +1441,9 @@ msgstr "Sütunlar"
 msgid "Common name"
 msgstr "Yaygın ad"
 
+msgid "Communication"
+msgstr "İletişim"
+
 msgid "Compacted clay"
 msgstr "Sıkıştırılmış kil"
 
@@ -1435,6 +1498,12 @@ msgstr "Kişiler, tedarikçi oluşturulduktan sonra eklenebilir."
 msgid "Control type"
 msgstr "Kontrol tipi"
 
+msgid "Conversation"
+msgstr "Konuşma"
+
+msgid "Conversations"
+msgstr "Konuşmalar"
+
 msgid "Cooling"
 msgstr "Soğutma"
 
@@ -1472,6 +1541,9 @@ msgstr "Oluştur"
 #, python-format
 msgid "Create %(name)s"
 msgstr "Oluştur: %(name)s"
+
+msgid "Create channel"
+msgstr "Kanal oluştur"
 
 msgid "Create, Edit and Delete include Read. Roles and users are managed by the platform admin only."
 msgstr ""
@@ -1578,6 +1650,12 @@ msgstr "Sil: %(name)s"
 msgid "Delete %(object)s"
 msgstr "Sil: %(object)s"
 
+msgid "Delete message"
+msgstr "Mesajı sil"
+
+msgid "Delete this message?"
+msgstr "Bu mesaj silinsin mi?"
+
 #, python-format
 msgid "Delete “%(object)s”?"
 msgstr "“%(object)s” silinsin mi?"
@@ -1632,6 +1710,9 @@ msgstr "Sindirilebilir enerji (MJ/kg)"
 
 msgid "Dimensions"
 msgstr "Boyutlar"
+
+msgid "Direct conversation"
+msgstr "Doğrudan konuşma"
 
 msgid "Discontinued"
 msgstr "Üretimden kaldırıldı"
@@ -1766,6 +1847,9 @@ msgstr "Enerji"
 msgid "Enter at least one value."
 msgstr "En az bir değer girin."
 
+msgid "Enter sends, Shift+Enter starts a new line."
+msgstr "Enter gönderir, Shift+Enter yeni satıra geçer."
+
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
@@ -1831,6 +1915,12 @@ msgid ""
 msgstr ""
 "Balık türünün yetiştirildiği her su. Atlantik somonu ve gökkuşağı alabalığı tatlı suda büyür, "
 "sonra deniz suyunda yetiştirilir: ikisini de işaretleyin."
+
+msgid "Everyone in the conversation sees that a message was deleted, not what it said."
+msgstr "Konuşmadaki herkes bir mesajın silindiğini görür, içeriğini görmez."
+
+msgid "Everyone who can use Messages is a member already."
+msgstr "Mesajlar'ı kullanabilen herkes zaten üye."
 
 msgid "Everything supplied"
 msgstr "Tedarik edilen her şey"
@@ -2218,6 +2308,9 @@ msgstr "Ortalamayı ya da örneği girin, ikisini birden değil."
 msgid "Give the average weight, or the number of fish weighed and their weight together."
 msgstr "Ortalama ağırlığı ya da tartılan balık sayısını ve toplam ağırlıklarını girin."
 
+msgid "Give the channel a name."
+msgstr "Kanala bir ad verin."
+
 msgid "Give the sample, or the average weight."
 msgstr "Örneği ya da ortalama ağırlığı girin."
 
@@ -2471,6 +2564,9 @@ msgstr "Son yemleme"
 msgid "Last name"
 msgstr "Soyad"
 
+msgid "Last read"
+msgstr "Son okunan"
+
 msgid "Last sign-in"
 msgstr "Son giriş"
 
@@ -2485,6 +2581,16 @@ msgstr "Enlem ve boylam birlikte girilmelidir."
 
 msgid "Latitude is required for a sea cage."
 msgstr "Deniz kafesi için enlem zorunludur."
+
+msgid "Leave"
+msgstr "Ayrıl"
+
+#, python-format
+msgid "Leave %(channel)s?"
+msgstr "%(channel)s kanalından ayrılınsın mı?"
+
+msgid "Leave channel"
+msgstr "Kanaldan ayrıl"
 
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
@@ -2570,6 +2676,12 @@ msgstr "Bakım ve onarım"
 msgid "Make and model"
 msgstr "Marka ve model"
 
+msgid "Make member"
+msgstr "Üye yap"
+
+msgid "Make owner"
+msgstr "Sahip yap"
+
 msgid "Manager"
 msgstr "Yönetici"
 
@@ -2643,8 +2755,27 @@ msgstr "İlaçlar ve aşılar"
 msgid "Medium pressure"
 msgstr "Orta basınç"
 
+msgid "Member"
+msgstr "Üye"
+
+msgid "Members"
+msgstr "Üyeler"
+
+#, python-format
+msgid "Members of %(channel)s"
+msgstr "%(channel)s üyeleri"
+
 msgid "Mesh size (mm)"
 msgstr "Göz açıklığı (mm)"
+
+msgid "Message"
+msgstr "Mesaj"
+
+msgid "Message deleted"
+msgstr "Mesaj silindi"
+
+msgid "Messages"
+msgstr "Mesajlar"
 
 msgid "Metadata"
 msgstr "Üstveri"
@@ -2755,12 +2886,21 @@ msgstr "Hiç"
 msgid "Never shown"
 msgstr "Hiçbir zaman gösterilmez"
 
+msgid "New"
+msgstr "Yeni"
+
 #, python-format
 msgid "New %(name)s"
 msgstr "Yeni %(name)s"
 
 msgid "New batch"
 msgstr "Yeni parti"
+
+msgid "New channel"
+msgstr "Yeni kanal"
+
+msgid "New message"
+msgstr "Yeni mesaj"
 
 msgid "New password"
 msgstr "Yeni parola"
@@ -2812,6 +2952,9 @@ msgstr "Henüz kaydedilmiş değişiklik yok."
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Henüz kişi yok. Satır eklemek için “Kişi ekle” düğmesini kullanın."
 
+msgid "No conversations yet."
+msgstr "Henüz konuşma yok."
+
 msgid "No feed recorded up to the last weighing."
 msgstr "Son tartıma kadar yem kaydedilmedi."
 
@@ -2844,6 +2987,12 @@ msgstr "Son tartıma kadar büyüme yok."
 
 msgid "No limit"
 msgstr "Sınır yok"
+
+msgid "No messages yet"
+msgstr "Henüz mesaj yok"
+
+msgid "No messages yet: write the first one."
+msgstr "Henüz mesaj yok: ilkini siz yazın."
 
 msgid "No other table."
 msgstr "Başka tablo yok."
@@ -2917,6 +3066,11 @@ msgstr "Henüz birim yok"
 
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
+
+msgid "Nobody else can use Messages yet: the platform admin gives it to a role (Roles, Messages: Read)."
+msgstr ""
+"Henüz başka kimse Mesajlar'ı kullanamıyor: platform yöneticisi bunu bir role verir (Roller, "
+"Mesajlar: Görüntüle)."
 
 msgid "None"
 msgstr "Yok"
@@ -3059,6 +3213,9 @@ msgstr ""
 msgid "Only warnings and criticals"
 msgstr "Yalnızca uyarılar ve kritikler"
 
+msgid "Open conversation"
+msgstr "Konuşmayı aç"
+
 msgid "Open menu"
 msgstr "Menüyü aç"
 
@@ -3106,6 +3263,9 @@ msgstr "İsteğe bağlı: yemlemenin ya da ilk öğünün saati."
 
 msgid "Optional; the batch number is given on saving."
 msgstr "İsteğe bağlı; parti numarası kaydedilirken verilir."
+
+msgid "Or start one: New message writes to one person, a channel to a group."
+msgstr "Ya da yeni bir tane başlatın: Yeni mesaj bir kişiye, kanal bir gruba yazar."
 
 msgid "Or, instead of a sample, the average weight as measured."
 msgstr "Ya da örnek yerine ölçülen ortalama ağırlık."
@@ -3157,6 +3317,12 @@ msgstr "Genel bakış"
 
 msgid "Own hatchery"
 msgstr "Kendi kuluçkahanemiz"
+
+msgid "Owner"
+msgstr "Sahip"
+
+msgid "Owners"
+msgstr "Sahipler"
 
 msgid "Oxygen"
 msgstr "Oksijen"
@@ -3768,11 +3934,17 @@ msgstr "Birini seçin"
 msgid "Semi-automatic feeder"
 msgstr "Yarı otomatik yemleme makinesi"
 
+msgid "Send"
+msgstr "Gönder"
+
 msgid "Send reset link"
 msgstr "Sıfırlama bağlantısı gönder"
 
 msgid "Sensors"
 msgstr "Sensörler"
+
+msgid "Sent at"
+msgstr "Gönderilme zamanı"
 
 msgid ""
 "Separated by spaces. A temperature between two columns is read in between them; outside the first"
@@ -3808,6 +3980,9 @@ msgstr "Tüm %(plural)s"
 
 msgid "Show deleted rows"
 msgstr "Silinmiş satırları göster"
+
+msgid "Show earlier messages"
+msgstr "Önceki mesajları göster"
 
 msgid "Show the units"
 msgstr "Birimleri göster"
@@ -4142,6 +4317,9 @@ msgstr "Sıcaklıklar"
 
 msgid "Terms and notes"
 msgstr "Koşullar ve notlar"
+
+msgid "That message is not in this conversation."
+msgstr "Bu mesaj bu konuşmada değil."
 
 #, python-format
 msgid ""
@@ -5014,6 +5192,9 @@ msgstr ""
 msgid "Wrasse"
 msgstr "Lapin"
 
+msgid "Write a message first."
+msgstr "Önce bir mesaj yazın."
+
 msgid ""
 "Write the genus and the species in Latin letters, e.g. Salmo salar; a subspecies may follow as a "
 "third word."
@@ -5027,6 +5208,12 @@ msgstr "Evet"
 msgid "Yesterday"
 msgstr "Dün"
 
+msgid "You"
+msgstr "Siz"
+
+msgid "You are its owner. People who cannot use Messages are not listed."
+msgstr "Kanalın sahibi sizsiniz. Mesajlar'ı kullanamayan kişiler listede yok."
+
 msgid "You can now sign in with your new password."
 msgstr "Artık yeni parolanızla giriş yapabilirsiniz."
 
@@ -5035,6 +5222,13 @@ msgstr "Kendi hesabınızı devre dışı bırakamazsınız."
 
 msgid "You do not have permission to do this."
 msgstr "Bunu yapma izniniz yok."
+
+#, python-format
+msgid "You left %(channel)s."
+msgstr "%(channel)s kanalından ayrıldınız."
+
+msgid "You stop seeing its messages. Your messages stay, with your name; an owner can add you again."
+msgstr "Artık mesajlarını görmezsiniz. Mesajlarınız adınızla kalır; bir sahip sizi yeniden ekleyebilir."
 
 msgid "Your new password is saved. Use it the next time you sign in."
 msgstr "Yeni parolanız kaydedildi. Bir sonraki girişinizde kullanın."
@@ -5047,6 +5241,12 @@ msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
 
 msgid "as stocked"
 msgstr "stoklandığı gibi"
+
+msgid "assistant"
+msgstr "asistan"
+
+msgid "assistants"
+msgstr "asistanlar"
 
 #, python-format
 msgid "average %(weight)s"
@@ -5082,8 +5282,17 @@ msgstr "<strong>%(name)s</strong> tarafından"
 msgid "calculated %(calculated)s"
 msgstr "hesaplanan %(calculated)s"
 
+msgid "channel"
+msgstr "kanal"
+
 msgid "contains"
 msgstr "içerir"
+
+msgid "conversation"
+msgstr "konuşma"
+
+msgid "conversations"
+msgstr "konuşmalar"
 
 #, python-format
 msgid "critical above %(value)s"
@@ -5356,6 +5565,12 @@ msgstr "gizli"
 msgid "meals done"
 msgstr "öğünler tamamlandı"
 
+msgid "message"
+msgstr "mesaj"
+
+msgid "messages"
+msgstr "mesajlar"
+
 #, python-format
 msgid "next meal %(meal)s"
 msgstr "sonraki öğün %(meal)s"
@@ -5390,6 +5605,12 @@ msgstr "pH sensörü"
 #, python-format
 msgid "part of %(code)s"
 msgstr "%(code)s parçası"
+
+msgid "participant"
+msgstr "katılımcı"
+
+msgid "participants"
+msgstr "katılımcılar"
 
 msgid "primary"
 msgstr "birincil"
@@ -5490,6 +5711,9 @@ msgstr "birim, %(age)s önce"
 msgid "units"
 msgstr "birimler"
 
+msgid "unread"
+msgstr "okunmamış"
+
 #, python-format
 msgid "up to %(weight)s g"
 msgstr "%(weight)s g altı"
@@ -5551,6 +5775,9 @@ msgstr "numuneden hesaplandı"
 
 msgid "yes"
 msgstr "evet"
+
+msgid "you"
+msgstr "siz"
 
 #, python-format
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"

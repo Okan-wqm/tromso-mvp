@@ -72,6 +72,14 @@ class DatabaseViewerTestCase(TestCase):
         return self.client.get(export_url(name), query)
 
 
+class FormulaGuardTests(TestCase):
+    def test_text_a_spreadsheet_would_run_is_marked_and_other_text_is_not(self):
+        for text in ('=1+1', '+47 123', '-x', '@SUM(A1)', '\tx', '\rx'):
+            self.assertEqual(dbgrid.formula_safe(text), f"'{text}")
+        for text in ('Pond', '1-2', '', 'a=b'):
+            self.assertEqual(dbgrid.formula_safe(text), text)
+
+
 class AccessTests(DatabaseViewerTestCase):
     def test_the_platform_admin_sees_the_database(self):
         self.assertEqual(self.client.get(reverse('core:database')).status_code, 200)
@@ -113,8 +121,16 @@ class AccessTests(DatabaseViewerTestCase):
 
 
 class RegistryTests(DatabaseViewerTestCase):
+    def test_every_app_of_the_project_with_tables_is_listed(self):
+        # A new app is seen in the viewer or fails here (OUR-25): its tables are not left out by forgetting it.
+        listed = {label for section in database.viewer().sections for label in section.apps}
+        for config in apps.get_app_configs():
+            if not config.name.startswith('django.') and list(config.get_models()):
+                self.assertIn(config.label, listed, config.label)
+
     def test_tables_come_from_the_models_of_the_listed_apps(self):
-        expected = {model._meta.db_table for label in ('farm', 'inventory', 'knowledge', 'messaging', 'core', 'auth')
+        expected = {model._meta.db_table for label in ('farm', 'inventory', 'knowledge', 'messaging', 'reports', 'core',
+                                                       'auth')
                     for model in apps.get_app_config(label).get_models(include_auto_created=True)}
         self.assertEqual(set(names()), expected)
         self.assertTrue({'sites', 'site_contacts', 'production_departments', 'audit_log', 'auth_user',

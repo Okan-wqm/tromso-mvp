@@ -44,6 +44,10 @@ AREAS = [
     Area(_('Production plans'), 'farm.ProductionPlan'),
     # Messages: Read is the Messages page, writing in one's own conversations and starting a direct one; Create
     # also creates channels. Only the members of a conversation read it, whatever the role (messaging/services.py).
+    # Regulatory reports: Read is the Reports page, a report and its exports; Create starts a report, a notice or a
+    # correction; Edit fills in a draft and records that it was filed (a state change under Edit, as a review is for
+    # knowledge entries); Delete discards a draft. A filed report is never changed or deleted.
+    Area(_('Regulatory reports'), 'reports.Report'),
     Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

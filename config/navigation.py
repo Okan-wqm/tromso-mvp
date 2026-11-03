@@ -10,7 +10,8 @@ from core.navigation import Entry, Group, Section, Workspace
 # Production's menu has two main headings, as in the platform: Setup (the farm's structure, its
 # reference lists and its suppliers, entered once and changed seldom) and Operations (the daily
 # production records: stocking, feeding, water chemistry, health, harvest), from Production units on.
-# A third, Communication, holds how the people running production talk to each other: Messages.
+# A third, Reports, holds what is told to the authorities from those records; a fourth, Communication,
+# how the people running production talk to each other: Messages.
 #
 # Where an entry sits here is also where the role matrix and the tab's page heading place it.
 WORKSPACES = [
@@ -90,6 +91,13 @@ WORKSPACES = [
                 Entry(pgettext_lazy('page', 'Harvested'), 'farm:harvests', 'package-check', 'farm.view_harvestrecord'),
                 Entry(_('Harvest plan'), 'farm:handlingplanitem_list', 'calendar', 'farm.view_handlingplanitem'),
                 Entry(_('Production plans'), 'farm:productionplan_list', 'target', 'farm.view_productionplan'),
+            ]),
+        ]),
+        # What the farm tells the authorities, computed from the records above and filed by people: neither structure
+        # nor a daily record, so a heading of its own (docs/regulatory-reports.md, 5.6).
+        Section(_('Reports'), [
+            Group('', [
+                Entry(_('Regulatory reports'), 'reports:report_list', 'file-text', 'reports.view_report'),
             ]),
         ]),
         # Messages between the people running production, direct and in channels; their AI assistants join the

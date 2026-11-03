@@ -11,6 +11,7 @@ VIEWER = Viewer(
         Section(_('Knowledge'), ('knowledge',)),
         Section(_('Storage'), ('inventory',)),
         Section(_('Messages'), ('messaging',)),
+        Section(_('Reports'), ('reports',)),
         Section(_('Administration'), ('core', 'auth')),
     ],
     # Tables of a listed app that stay hidden, by table name.

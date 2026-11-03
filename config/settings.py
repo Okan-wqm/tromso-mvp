@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'messaging',
     # The store: storage locations, the items and lots they hold and their ledger (Operations › Storage).
     'inventory',
+    # Regulatory reports, computed from the farm's records and filed by people (Production › Reports).
+    'reports',
 ]
 
 MIDDLEWARE = [
@@ -204,6 +206,11 @@ STOCK_BACKDATE_DAYS = 31
 # A feeding above this % of the unit's book biomass a day asks for an acknowledgement, stored on the record
 # (farm/feeding/services.py; owner decision Q-F5): a kilo typed for a gram is caught, fry may be fed more.
 FEEDING_ACK_PERCENT = 10
+
+# Regulatory reports (Production › Reports): a unit weighed within this many days before a month's end reports its
+# measured biomass; one weighed longer ago reports the feeding projection when it has no blind day, else its last
+# measured biomass marked stale (docs/regulatory-reports.md, D-7).
+REPORT_RECENT_WEIGHING_DAYS = 30
 
 # A ration reads the latest temperature of the unit or its loop measured at most this many days before (owner
 # decision Q5): stale after the temperature's 24 hours, no ration after this (farm/feeding/temperature.py).

@@ -1,0 +1,33 @@
+{% extends "crud/form.html" %}
+{% load i18n %}
+{% comment %} A report's form (reports.forms.ReportForm): what it is for, fixed once started, the contact person, a notice's
+   narrative; a lice report's resistance suspicions and sensitivity tests and a biomass report's units of reduced
+   capacity are lists of their own (core.crud.RowList), saved separately while it is a draft.{% endcomment %}
+{% block extra_tabs %}{% if resistance %}<button type="button" role="tab" class="tab" data-tab="resistance">{% trans "Resistance suspicions" %}</button><button type="button" role="tab" class="tab" data-tab="sensitivity">{% trans "Sensitivity tests" %}</button>{% endif %}{% if units %}<button type="button" role="tab" class="tab" data-tab="units">{% trans "Units of reduced capacity" %}</button>{% endif %}{% endblock %}
+{% block extra_panels %}
+{% if resistance %}
+{% trans "Resistance suspicions" as panel_title %}
+{% trans "A suspicion of resistance to a treatment against lice in the week (lakselusforskriften § 10 e): the substance and why it is suspected. Saved separately from the report." as help %}
+{% trans "No suspicion. Use “Add suspicion” to add a row." as empty %}
+{% trans "Add suspicion" as add %}
+{% trans "Save suspicions" as save %}
+{% url 'reports:report_resistance' object.pk as action %}
+{% include "crud/_row_list.html" with rows=resistance tab="resistance" legend=panel_title kind="resistance-row" %}
+{% trans "Sensitivity tests" as panel_title %}
+{% trans "The result of a sensitivity test in the week (lakselusforskriften § 10 d): when, the laboratory, the substance and the result. Saved separately from the report." as help %}
+{% trans "No test. Use “Add test” to add a row." as empty %}
+{% trans "Add test" as add %}
+{% trans "Save tests" as save %}
+{% url 'reports:report_sensitivity' object.pk as action %}
+{% include "crud/_row_list.html" with rows=sensitivity tab="sensitivity" legend=panel_title kind="sensitivity-row" %}
+{% endif %}
+{% if units %}
+{% trans "Units of reduced capacity" as panel_title %}
+{% trans "The units used for production of reduced capacity this month (akvakulturdriftsforskriften § 44 first paragraph j): tick each that was. Saved separately from the report." as help %}
+{% trans "No unit. Use “Add unit” to add a row." as empty %}
+{% trans "Add unit" as add %}
+{% trans "Save units" as save %}
+{% url 'reports:report_units' object.pk as action %}
+{% include "crud/_row_list.html" with rows=units tab="units" legend=panel_title kind="unit-answer-row" %}
+{% endif %}
+{% endblock %}

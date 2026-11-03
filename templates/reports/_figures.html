@@ -1,0 +1,63 @@
+{% load i18n %}{% comment %} A report's figures by kind, from its content (reports/compute): the identity, then the kind's
+   own table. `content` is the frozen content once the report is filed.{% endcomment %}
+{% with identity=content.identity %}
+{% if identity %}
+<dl class="facts">
+  <div><dt>{% trans "Organisation number" %}</dt><dd>{{ identity.organisation_number|default:"–" }}</dd></div>
+  <div><dt>{% trans "Lokalitetsnummer" %}</dt><dd>{{ identity.lokalitetsnummer|default:"–" }}</dd></div>
+</dl>
+{% endif %}
+{% endwith %}
+{% if content.kind == "smolt" %}
+<div class="table-wrap"><table class="data-table report-figures">
+  <thead><tr><th scope="col">{% trans "Unit" %}</th><th scope="col">{% trans "Species" context "singular" %}</th><th scope="col" class="number">{% trans "Fish at the month’s end" %}</th><th scope="col" class="number">{% trans "Average weight (g)" %}</th><th scope="col" class="number">{% trans "Culled" %}</th><th scope="col" class="number">{% trans "Died" %}</th><th scope="col" class="number">{% trans "Moved out of the site" %}</th></tr></thead>
+  <tbody>{% for unit in content.units.values %}<tr><th scope="row">{{ unit.number }}</th><td>{{ unit.species|default:"–" }}</td><td class="number">{{ unit.fish_at_end }}</td><td class="number">{{ unit.avg_weight_g|default:"–" }}</td><td class="number">{{ unit.culled }}</td><td class="number">{{ unit.died }}</td><td class="number">{{ unit.moved_out_of_site }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% elif content.kind == "biomass" %}
+{% if content.fallow_since %}<p class="panel-help">{% blocktrans trimmed with day=content.fallow_since %}Fallow since {{ day }}.{% endblocktrans %}</p>{% endif %}
+{% for unit in content.units.values %}
+<h3 class="panel-title">{{ unit.number }}{% if unit.volume_m3 %} · {{ unit.volume_m3 }} m³{% endif %}{% if unit.reduced_capacity %} · {% trans "reduced capacity" %}{% endif %}</h3>
+<div class="table-wrap"><table class="data-table report-figures">
+  <thead><tr><th scope="col">{% trans "Item" %}</th><th scope="col">{% trans "Species" context "singular" %}</th><th scope="col">{% trans "Year class" %}</th><th scope="col" class="number">{% trans "Fish" %}</th><th scope="col" class="number">{% trans "kg" %}</th><th scope="col">{% trans "Detail" %}</th></tr></thead>
+  <tbody>
+    {% for row in unit.stock %}<tr><td>{% trans "Stock at the month’s end" %}</td><td>{{ row.species|default:"–" }}</td><td>{{ row.year_class|default:"–" }}</td><td class="number">{{ row.fish }}</td><td class="number">{{ row.biomass_kg }}</td><td>{{ row.basis.method }} {{ row.basis.measured_on }}</td></tr>{% endfor %}
+    {% for row in unit.stocked %}<tr><td>{% trans "Stocked" %}</td><td>{{ row.species|default:"–" }}</td><td>{{ row.year_class|default:"–" }}</td><td class="number">{{ row.fish }}</td><td class="number">–</td><td>{{ row.from_lokalitetsnummer|default:"" }}</td></tr>{% endfor %}
+    {% for row in unit.harvested %}<tr><td>{% trans "Harvested" %}</td><td>{{ row.species|default:"–" }}</td><td>–</td><td class="number">{{ row.fish }}</td><td class="number">{{ row.slaughter_weight_kg|default:"–" }}</td><td>{{ row.condition }}</td></tr>{% endfor %}
+    {% for row in unit.moved_out %}<tr><td>{% trans "Moved to another site" %}</td><td>{{ row.species|default:"–" }}</td><td>–</td><td class="number">{{ row.fish }}</td><td class="number">{{ row.kg|default:"–" }}</td><td>{{ row.to_lokalitetsnummer|default:"" }}</td></tr>{% endfor %}
+    {% for row in unit.losses %}<tr><td>{% trans "Lost" %}</td><td>{{ row.species|default:"–" }}</td><td>–</td><td class="number">{{ row.fish }}</td><td class="number">{{ row.kg|default:"–" }}</td><td>{{ row.cause }}</td></tr>{% endfor %}
+    {% for row in unit.feed %}<tr><td>{% trans "Feed" %}</td><td>–</td><td>–</td><td class="number">–</td><td class="number">{{ row.kg }}</td><td>{{ row.feed }} ({{ row.feed_type }})</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endfor %}
+{% elif content.kind == "slaughter_planned" %}
+<p class="panel-help">{{ content.facility.name }} ({{ content.facility.approval_number }})</p>
+{% for locality in content.localities.values %}
+<h3 class="panel-title">{{ locality.site }} · {{ locality.lokalitetsnummer|default:"–" }}</h3>
+<div class="table-wrap"><table class="data-table report-figures">
+  <thead><tr><th scope="col">{% trans "Species" context "singular" %}</th><th scope="col" class="number">{% trans "Monday" %}</th><th scope="col" class="number">{% trans "Tuesday" %}</th><th scope="col" class="number">{% trans "Wednesday" %}</th><th scope="col" class="number">{% trans "Thursday" %}</th><th scope="col" class="number">{% trans "Friday" %}</th><th scope="col" class="number">{% trans "Saturday" %}</th><th scope="col" class="number">{% trans "Sunday" %}</th></tr></thead>
+  <tbody>{% for code, days in locality.species.items %}<tr><th scope="row">{{ code|default:"–" }}</th>{% for day, kilos in days.items %}<td class="number">{{ kilos|default_if_none:"–" }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table></div>
+{% endfor %}
+{% elif content.kind == "land_stock" %}
+<div class="table-wrap"><table class="data-table report-figures">
+  <thead><tr><th scope="col">{% trans "Species" context "singular" %}</th><th scope="col">{% trans "Year class" %}</th><th scope="col" class="number">{% trans "Fish" %}</th></tr></thead>
+  <tbody>{% for row in content.stock %}<tr><td>{{ row.species|default:"–" }}</td><td>{{ row.year_class|default:"–" }}</td><td class="number">{{ row.fish }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% elif content.kind == "site_in_use" or content.kind == "site_emptied" %}
+<dl class="facts">
+  <div><dt>{% trans "Day" %}</dt><dd>{{ content.occurred_on }}</dd></div>
+  {% if content.species %}<div><dt>{% trans "Species" context "plural" %}</dt><dd>{{ content.species|join:", " }}</dd></div>{% endif %}
+</dl>
+{% else %}
+<dl class="facts">
+  <div><dt>{% trans "Happened on" %}</dt><dd>{{ content.occurred_on|default:"–" }}</dd></div>
+  <div><dt>{% trans "Found at" %}</dt><dd>{{ content.found_at|default:"–" }}</dd></div>
+  <div><dt>{% trans "What happened" %}</dt><dd>{{ content.what_happened|default:"–"|linebreaksbr }}</dd></div>
+  <div><dt>{% trans "Cause" %}</dt><dd>{{ content.cause|default:"–" }}</dd></div>
+  <div><dt>{% trans "Fish dead" %}</dt><dd>{{ content.fish_dead|default_if_none:"–" }}</dd></div>
+  <div><dt>{% trans "Fish injured" %}</dt><dd>{{ content.fish_injured|default_if_none:"–" }}</dd></div>
+  <div><dt>{% trans "Fish involved" %}</dt><dd>{{ content.fish_involved|default_if_none:"–" }}</dd></div>
+  <div><dt>{% trans "The situation now" %}</dt><dd>{{ content.situation|default:"–" }}</dd></div>
+  <div><dt>{% trans "Measures taken" %}</dt><dd>{{ content.measures|default:"–" }}</dd></div>
+</dl>
+{% endif %}

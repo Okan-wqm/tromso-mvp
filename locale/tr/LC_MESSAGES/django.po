@@ -4629,9 +4629,9 @@ msgid "No growth up to the last weighing."
 msgstr "Son tartıma kadar büyüme yok."
 
 #, python-format
-msgid "No handling rule for %(kind)s: the fast is not checked (Harvest and logistics › Handling rules)."
+msgid "No handling rule for %(kind)s: the fast is not checked (Reference data › Handling rules)."
 msgstr ""
-"%(kind)s için elleçleme kuralı yok: aç bırakma denetlenmedi (Hasat ve lojistik › Elleçleme "
+"%(kind)s için elleçleme kuralı yok: aç bırakma denetlenmedi (Referans verileri › Elleçleme "
 "kuralları)."
 
 msgid "No harvest matches these filters."

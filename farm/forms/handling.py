@@ -1,4 +1,4 @@
-"""Setup › Harvest and logistics › Handling rules: how long fish fast before a kind of handling, for a species or for
+"""Setup › Reference data › Handling rules: how long fish fast before a kind of handling, for a species or for
 every species."""
 from django import forms
 from django.utils.translation import gettext_lazy as _

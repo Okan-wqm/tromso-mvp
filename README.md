@@ -1064,7 +1064,7 @@ Differences from the source (details in the bug document, STR-01 to STR-28):
   ranges, the `hazmat` kind, count approval, a feeding record's lot, silo-first draw through the feeder, spare
   parts (STR-28), barcode scanning.
 
-### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
+### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Setup › Reference data › Handling rules (`/handling-rules/`)
 
 What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
 `slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
@@ -1244,7 +1244,7 @@ sedation, other; a vaccination uses a vaccine and a vaccine is a vaccination), t
 first day follows the date rule of every daily record, the last may be planned up to 28 days ahead), the dose
 and the amount used with their units (the report's units), the bath time, who prescribed it and the
 prescription number, the vet (a supplier of veterinary and fish health services) and the health event it
-answers. **The fast before it** is the shared handling check's (kind treatment; Setup › Harvest and logistics ›
+answers. **The fast before it** is the shared handling check's (kind treatment; Setup › Reference data ›
 Handling rules, 24 h to start with): the dialog shows when the fish of each unit were last fed against the rule, and too short a
 fast is a warning; going on stores a handling acknowledgement on the treatment (`HandlingAcknowledgement`, which
 belongs to a stock operation or a treatment, exactly one, a database check) and makes its log entry critical. A
@@ -1911,7 +1911,7 @@ real mail.
 | `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
 | `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
-| `/handling-rules/` | Harvest and logistics › Handling rules |
+| `/handling-rules/` | Reference data › Handling rules |
 | `/medicines/` | Reference data › Medicines |
 | `/operations/health/treatments/` | Operations › Treatments; `new/` records one (`?unit=<id>` ticks a unit), `<id>/last-day/` changes its last day, `<id>/void/` voids it |
 | `/operations/health/events/` | Operations › Health events; `<id>/void/` voids one |

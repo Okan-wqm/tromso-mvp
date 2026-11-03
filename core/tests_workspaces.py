@@ -59,7 +59,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                    'Medicines', 'Slaughter facilities', 'Handling rules', 'Suppliers', 'Production units',
+                                                    'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
                                                     'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                     'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
                                                     'Sea-lice counts', 'Messages'])
@@ -117,7 +117,7 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Species', 'Feeds', 'Water limits',
-                                                  'Medicines', 'Slaughter facilities', 'Handling rules', 'Suppliers', 'Production units',
+                                                  'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
                                                   'Water chemistry', 'Storage', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                   'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
                                                   'Sea-lice counts', 'Messages'])
@@ -199,7 +199,7 @@ class MenuPlacementTests(TestCase):
             'farm.WaterLimit': 'Production · Setup · Reference data',
             'farm.Medicine': 'Production · Setup · Reference data',
             'farm.SlaughterFacility': 'Production · Setup · Harvest and logistics',
-            'farm.HandlingRule': 'Production · Setup · Harvest and logistics',
+            'farm.HandlingRule': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
             'farm.FeedingRecord': 'Production · Operations · Feeding',

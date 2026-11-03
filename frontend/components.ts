@@ -46,16 +46,25 @@ function initTabs(root: ParentNode & Element | Document): void {
   });
   const firstError = panels.find((panel) => panel.hasAttribute('data-has-errors'));
   select(tablist.dataset.open || firstError?.dataset.panel || tabs[0].dataset.tab || '');
+}
 
-  // A link to a field in a hidden panel (a form's list of wrong values) opens that panel first.
-  root.addEventListener('click', (event) => {
+// A link to a field in a hidden panel (a form's list of wrong values) opens that panel first, by pressing its
+// tab. One handler for the page and every dialog it opens; without tabs every panel shows and the link works
+// as it is.
+function initTabLinks(): void {
+  document.addEventListener('click', (event) => {
     const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
     if (!(link instanceof HTMLAnchorElement) || link.hash.length < 2) return;
     const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
     const panel = target?.closest<HTMLElement>('[data-panel]');
-    if (!target || !panel || !panels.includes(panel)) return;
+    // The tab of the tab list that holds the panel (the page's and a dialog's lists are two).
+    const tablist = panel
+      ? [...document.querySelectorAll<HTMLElement>('[data-tabs]')].find((list) => list.parentElement?.contains(panel))
+      : undefined;
+    const tab = tablist?.querySelector<HTMLButtonElement>(`[data-tab="${CSS.escape(panel?.dataset.panel ?? '')}"]`);
+    if (!target || !tab) return;
     event.preventDefault();
-    select(panel.dataset.panel ?? '');
+    tab.click();
     target.focus();
   });
 }
@@ -132,7 +141,10 @@ function initAutosubmit(root: ParentNode): void {
 // A production department belongs to a site: after the site is chosen only its departments are
 // offered, and a choice that no longer fits is cleared. The options of a select, or the rows of a list
 // of check boxes, carry data-group: the value, or the space-separated values, of the other field they
-// belong to. The server checks the same rule; this only guides.
+// belong to; a choice that belongs to none (a production department without a site) carries the value
+// the source offers for "none" (core.widgets.NONE), so it is chosen like any other. Clearing a choice is
+// a change of the select too: a select that depends on it fits itself in turn (site → location → batch).
+// An option group left with nothing to offer goes too. The server checks the same rule; this only guides.
 function initDependents(root: ParentNode): void {
   root.querySelectorAll<HTMLElement>('[data-depends-on]').forEach((dependent) => {
     const source = dependent.closest('form')?.elements.namedItem(dependent.dataset.dependsOn ?? '');
@@ -146,7 +158,13 @@ function initDependents(root: ParentNode): void {
         option.hidden = !shown;
         option.disabled = !shown;
       }
-      if (select.selectedOptions[0]?.disabled) select.value = '';
+      select.querySelectorAll<HTMLOptGroupElement>('optgroup').forEach((group) => {
+        group.hidden = ![...group.querySelectorAll<HTMLOptionElement>('option')].some((option) => !option.hidden);
+      });
+      if (select.selectedOptions[0]?.disabled) {
+        select.value = '';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     };
     const fitRows = (): void => {
       const rows = [...dependent.querySelectorAll<HTMLElement>('[data-group]')];
@@ -174,25 +192,40 @@ function initDependents(root: ParentNode): void {
 // specifications). After a change the form is posted with the marker, and the server renders it again
 // with everything entered so far, saving nothing: into the dialog, or as the page. The values go in the
 // request body, never in the address. The marker's value is the field's name, so the form comes back open
-// on that field's tab.
+// on that field's tab. A form is sent once however many of its fields change at once: a choice another
+// change cleared (initDependents) changes too, so the form waits for the change to settle and names the
+// field the person changed (the event the browser sent, not one the page dispatched).
+const refreshing = new Map<HTMLFormElement, string>();
+
+function sendDraft(form: HTMLFormElement, marker: string, name: string): void {
+  if (modal?.holds(form)) {
+    const data = new FormData(form);
+    data.set(marker, name);
+    void modal.load(form.action, { method: 'POST', body: data }).then(() => modal?.focus(name));
+    return;
+  }
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = marker;
+  input.value = name;
+  form.append(input);
+  form.submit();
+}
+
 function initRefresh(root: ParentNode): void {
   root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-refresh]').forEach((field) => {
-    field.addEventListener('change', () => {
+    field.addEventListener('change', (event) => {
       const form = field.form;
       const marker = field.dataset.refresh;
       if (!form || !marker) return;
-      if (modal?.holds(form)) {
-        const data = new FormData(form);
-        data.set(marker, field.name);
-        void modal.load(form.action, { method: 'POST', body: data }).then(() => modal?.focus(field.name));
-        return;
-      }
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = marker;
-      input.value = field.name;
-      form.append(input);
-      form.submit();
+      const waiting = refreshing.has(form);
+      if (!waiting || event.isTrusted) refreshing.set(form, field.name);
+      if (waiting) return;
+      window.setTimeout(() => {
+        const name = refreshing.get(form) ?? field.name;
+        refreshing.delete(form);
+        sendDraft(form, marker, name);
+      });
     });
   });
 }
@@ -343,4 +376,5 @@ class Modal {
 
 const dialog = document.querySelector<HTMLDialogElement>('dialog#modal');
 const modal = dialog ? new Modal(dialog) : null;
+initTabLinks();
 init(document);

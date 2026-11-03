@@ -23,6 +23,10 @@ msgid "%(age)s ago"
 msgstr "%(age)s siden"
 
 #, python-format
+msgid "%(batch)s has no fish at %(place)s now."
+msgstr "%(batch)s har ingen fisk i %(place)s nå."
+
+#, python-format
 msgid "%(batch)s has not been in %(units)s yet: the row applies once it is."
 msgid_plural "%(batch)s has not been in %(units)s yet: the rows apply once it is."
 msgstr[0] "%(batch)s har ikke vært i %(units)s ennå: raden gjelder når den kommer dit."
@@ -166,6 +170,12 @@ msgstr[0] "%(count)d helsehendelse viser til den: la «%(category)s» være krys
 msgstr[1] "%(count)d helsehendelser viser til den: la «%(category)s» være krysset av."
 
 #, python-format
+msgid "%(count)d line saved."
+msgid_plural "%(count)d lines saved."
+msgstr[0] "%(count)d linje lagret."
+msgstr[1] "%(count)d linjer lagret."
+
+#, python-format
 msgid "%(count)d medicine is made by it: keep “%(category)s” ticked."
 msgid_plural "%(count)d medicines are made by it: keep “%(category)s” ticked."
 msgstr[0] "%(count)d legemiddel er laget av den: la «%(category)s» være krysset av."
@@ -274,6 +284,12 @@ msgid "%(count)s member"
 msgid_plural "%(count)s members"
 msgstr[0] "%(count)s medlem"
 msgstr[1] "%(count)s medlemmer"
+
+#, python-format
+msgid "%(count)s overdue task"
+msgid_plural "%(count)s overdue tasks"
+msgstr[0] "%(count)s forfalt oppgave"
+msgstr[1] "%(count)s forfalte oppgaver"
 
 #, python-format
 msgid "%(count)s page"
@@ -621,6 +637,10 @@ msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d deci
 msgstr "%(parameter)s: grenser fra %(low)s til %(high)s, høyst %(decimals)d desimaler."
 
 #, python-format
+msgid "%(person)s (can no longer be chosen)"
+msgstr "%(person)s (kan ikke velges lenger)"
+
+#, python-format
 msgid "%(point)s is deleted."
 msgstr "%(point)s er slettet."
 
@@ -645,6 +665,10 @@ msgstr "%(record)s er den primære"
 #, python-format
 msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s ble ikke gjenopprettet: %(reasons)s"
+
+#, python-format
+msgid "%(rule)s at %(time)s"
+msgstr "%(rule)s kl. %(time)s"
 
 #, python-format
 msgid "%(sfr)s at %(temperature)s: %(ration)s a day, %(meals)s × %(meal)s"
@@ -826,6 +850,22 @@ msgstr "0 rader"
 msgid "0 rows match"
 msgstr "0 rader samsvarer"
 
+msgid "1 for every day, 2 for every other day, up to 52."
+msgstr "1 for hver dag, 2 for annenhver dag, opptil 52."
+
+msgid ""
+"1 for every month, 3 for every quarter, up to 52; the months are counted from the first day’s "
+"month."
+msgstr "1 for hver måned, 3 for hvert kvartal, opptil 52; månedene telles fra måneden til første dag."
+
+msgid ""
+"1 for every week, 2 for every other week, up to 52; the weeks are counted from the first day’s "
+"week."
+msgstr "1 for hver uke, 2 for annenhver uke, opptil 52; ukene telles fra uken til første dag."
+
+msgid "1 to 31; in a shorter month the 29th, 30th and 31st fall on its last day."
+msgstr "1 til 31; i en kortere måned faller den 29., 30. og 31. på månedens siste dag."
+
 msgid "1 to 6 letters or digits, as Mattilsynet gives it."
 msgstr "1 til 6 bokstaver eller sifre, slik Mattilsynet gir det."
 
@@ -854,6 +894,11 @@ msgstr ""
 
 msgid "A batch alone: the protocol follows it into every unit it is moved to."
 msgstr "Bare en fiskegruppe: protokollen følger den til hver enhet den flyttes til."
+
+msgid "A batch goes with a unit, a system, a production department or a site, not with equipment."
+msgstr ""
+"En fiskegruppe hører til en enhet, et system, en produksjonsavdeling eller en lokalitet, ikke til"
+" utstyr."
 
 msgid "A bath, a dip or a freshwater bath only."
 msgstr "Bare bad, dypp eller ferskvannsbad."
@@ -888,6 +933,18 @@ msgstr "En kanal trenger en eier: gjør først et annet medlem til eier."
 
 msgid "A channel with this name already exists."
 msgstr "Det finnes allerede en kanal med dette navnet."
+
+msgid "A checklist can be added once the recurring task is created."
+msgstr "En sjekkliste kan legges til når den gjentakende oppgaven er opprettet."
+
+msgid "A checklist can be added once the task is created."
+msgstr "En sjekkliste kan legges til når oppgaven er opprettet."
+
+#, python-format
+msgid "A checklist has at most %(num)d line."
+msgid_plural "A checklist has at most %(num)d lines."
+msgstr[0] "En sjekkliste har høyst %(num)d linje."
+msgstr[1] "En sjekkliste har høyst %(num)d linjer."
 
 msgid ""
 "A count sets what a location holds at the end of its day; the difference from the book is shown "
@@ -940,6 +997,9 @@ msgstr "En høsting går til et slakteri, en transport til en enhet."
 msgid "A harvest is recorded from its unit’s drawer on Production units, or from its plan."
 msgstr "En høsting registreres fra enhetens panel under Produksjonsenheter, eller fra planen."
 
+msgid "A job that comes back: every day, on chosen weekdays, or on a day of the month."
+msgstr "En jobb som kommer igjen: hver dag, på valgte ukedager eller på en dag i måneden."
+
 #, python-format
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "En siste dag eldre enn %(date)s kan ikke endres."
@@ -983,6 +1043,9 @@ msgstr ""
 msgid "A message has at most %(count)d characters."
 msgstr "En melding har høyst %(count)d tegn."
 
+msgid "A monthly task repeats on a day of the month; the others on none."
+msgstr "En månedlig oppgave gjentas på en dag i måneden; de andre på ingen."
+
 msgid "A new protocol is a draft: fill in its feeding table, then set it active."
 msgstr "En ny protokoll er et utkast: fyll ut fôringstabellen, og gjør den deretter aktiv."
 
@@ -996,6 +1059,10 @@ msgid ""
 msgstr ""
 "En ny enhet starter i en av disse: den har ingen fisk ennå. Den blir aktiv når det settes ut fisk"
 " i den; høsting, rengjøring og karantene kommer senere."
+
+#, python-format
+msgid "A note is at most %(count)d characters."
+msgstr "Et notat er på høyst %(count)d tegn."
 
 #, python-format
 msgid "A page shows at most %(days)s day: the first day was moved."
@@ -1058,6 +1125,16 @@ msgstr ""
 
 msgid "A recipe takes two reagents: choose at least two (the Reagents tab)."
 msgstr "En oppskrift bruker to kjemikalier: velg minst to (fanen Kjemikalier)."
+
+#, python-format
+msgid ""
+"A recurring task plans its tasks up to two weeks ahead; they are on the <a "
+"href=\"%(url)s\">Tasks</a> page. Changing or pausing it plans the tasks from today on that nobody"
+" has touched again; the others stay as they are."
+msgstr ""
+"En gjentakende oppgave planlegger oppgavene sine opptil to uker fram; de står på siden <a "
+"href=\"%(url)s\">Oppgaver</a>. Å endre eller sette den på pause planlegger på nytt oppgavene fra "
+"i dag som ingen har rørt; de andre blir som de er."
 
 #, python-format
 msgid "A round takes at most %(rows)d rows."
@@ -1134,6 +1211,9 @@ msgstr "En tabell har høyst %(count)d temperaturkolonner."
 msgid "A tank, a pond or a cage; it cannot be changed later."
 msgstr "Kar, dam eller merd; kan ikke endres senere."
 
+msgid "A task is a job at one place for the people who do it, due on a day."
+msgstr "En oppgave er en jobb på ett sted for dem som gjør den, med frist på en dag."
+
 #, python-format
 msgid "A temperature column has at most one decimal: %(value)s."
 msgstr "En temperaturkolonne har høyst én desimal: %(value)s."
@@ -1193,6 +1273,9 @@ msgstr ""
 "din, med mindre verdiene kommer fra en enhet. Resultatene følger verdiene mens du endrer dem. "
 "Ingenting lagres."
 
+msgid "A weekly task repeats on at least one weekday; the others on none."
+msgstr "En ukentlig oppgave gjentas på minst én ukedag; de andre på ingen."
+
 msgid "Abnormal swimming"
 msgstr "Unormal svømming"
 
@@ -1225,6 +1308,9 @@ msgstr "Handlinger"
 
 msgid "Active"
 msgstr "Aktiv"
+
+msgid "Active and paused"
+msgstr "Aktive og satt på pause"
 
 msgid "Active substance"
 msgstr "Virkestoff"
@@ -1272,6 +1358,9 @@ msgstr "Legg til %(name)s"
 msgid "Add a lot"
 msgstr "Legg til parti"
 
+msgid "Add a note"
+msgstr "Legg til et notat"
+
 msgid "Add band"
 msgstr "Legg til vektklasse"
 
@@ -1292,6 +1381,9 @@ msgstr "Legg til linje"
 
 msgid "Add members"
 msgstr "Legg til medlemmer"
+
+msgid "Add note"
+msgstr "Legg til notat"
 
 msgid "Add species"
 msgstr "Legg til art"
@@ -1327,6 +1419,10 @@ msgstr "Lagt til av %(who)s, %(when)s"
 msgid "Address"
 msgstr "Adresse"
 
+msgid "Administration"
+msgstr "Administrasjon"
+
+msgctxt "task category"
 msgid "Administration"
 msgstr "Administrasjon"
 
@@ -1693,6 +1789,15 @@ msgstr "Soppmiddel"
 msgid "Any active location, on this site or another."
 msgstr "Hvilken som helst aktiv lagerplass, på denne lokaliteten eller en annen."
 
+msgid "Any category"
+msgstr "Alle kategorier"
+
+msgid "Any place"
+msgstr "Alle steder"
+
+msgid "Any priority"
+msgstr "Alle prioriteter"
+
 msgid "Any severity"
 msgstr "Alle alvorlighetsgrader"
 
@@ -1789,6 +1894,12 @@ msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
 msgid "Ash (%)"
 msgstr "Aske (%)"
 
+msgid "Assignee"
+msgstr "Ansvarlig"
+
+msgid "Assignees"
+msgstr "Ansvarlige"
+
 msgid "Assignment"
 msgstr "Tildeling"
 
@@ -1883,6 +1994,9 @@ msgstr "Snittvekt"
 
 msgid "Azamethiphos"
 msgstr "Azametifos"
+
+msgid "Back"
+msgstr "Tilbake"
 
 msgid "Back to draft"
 msgstr "Tilbake til utkast"
@@ -2125,11 +2239,28 @@ msgstr "Kalibreringer kan legges til når utstyret er opprettet."
 msgid "Cancel"
 msgstr "Avbryt"
 
+msgid "Cancel task"
+msgstr "Avlys oppgaven"
+
+#, python-format
+msgid "Cancel “%(task)s”?"
+msgstr "Avlyse «%(task)s»?"
+
 msgid "Cancelled"
+msgstr "Avlyst"
+
+msgctxt "task status"
+msgid "Cancelled"
+msgstr "Avlyst"
+
+msgid "Cancelled at"
 msgstr "Avlyst"
 
 msgid "Cancelled because"
 msgstr "Avlyst fordi"
+
+msgid "Cancelled by"
+msgstr "Avlyst av"
 
 msgid "Cannibalism"
 msgstr "Kannibalisme"
@@ -2209,6 +2340,12 @@ msgstr "Sjekk"
 msgid "Check your email"
 msgstr "Sjekk e-posten din"
 
+msgid "Checklist"
+msgstr "Sjekkliste"
+
+msgid "Checklist item"
+msgstr "Sjekklistepunkt"
+
 msgid "Chemical store"
 msgstr "Kjemikalielager"
 
@@ -2240,6 +2377,9 @@ msgstr "Velg en helsehendelse på lokaliteten til disse enhetene."
 
 msgid "Choose a person"
 msgstr "Velg en person"
+
+msgid "Choose a place from the list."
+msgstr "Velg et sted fra listen."
 
 msgid "Choose a site to list its units and loops."
 msgstr "Velg en lokalitet for å liste enhetene og kretsløpene."
@@ -2292,6 +2432,9 @@ msgstr "Velg en annen lagerplass enn den det tas fra."
 
 msgid "Choose at least one."
 msgstr "Velg minst én."
+
+msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
+msgstr "Velg ett sted: en hel lokalitet, en produksjonsavdeling, et system, en enhet eller utstyr."
 
 msgid "Choose owner or member."
 msgstr "Velg eier eller medlem."
@@ -2354,6 +2497,10 @@ msgstr "Bare rensefisk"
 msgid "Cleaning"
 msgstr "Rengjøring"
 
+msgctxt "task category"
+msgid "Cleaning"
+msgstr "Rengjøring"
+
 msgid "Clear"
 msgstr "Nullstill"
 
@@ -2404,6 +2551,24 @@ msgstr "Selskap"
 
 msgid "Company overview"
 msgstr "Selskapsoversikt"
+
+msgid "Complete"
+msgstr "Fullfør"
+
+msgid "Complete task"
+msgstr "Fullfør oppgaven"
+
+msgid "Completed"
+msgstr "Fullført"
+
+msgid "Completed at"
+msgstr "Fullført"
+
+msgid "Completed by"
+msgstr "Fullført av"
+
+msgid "Completion note"
+msgstr "Merknad ved fullføring"
 
 msgid "Composition as fed"
 msgstr "Sammensetning slik det fôres"
@@ -2634,6 +2799,9 @@ msgstr "DIC (mmol/L)"
 msgid "DOI"
 msgstr "DOI"
 
+msgid "Daily"
+msgstr "Daglig"
+
 msgid "Damaged"
 msgstr "Skadet"
 
@@ -2651,6 +2819,9 @@ msgstr "Dato"
 
 msgid "Date and time on the site’s clock."
 msgstr "Dato og klokkeslett etter lokalitetens klokke."
+
+msgid "Day of the month"
+msgstr "Dag i måneden"
 
 msgid "Days"
 msgstr "Dager"
@@ -2834,6 +3005,10 @@ msgstr "Dokument"
 msgid "Done"
 msgstr "Utført"
 
+msgctxt "task status"
+msgid "Done"
+msgstr "Utført"
+
 msgid "Dose"
 msgstr "Dose"
 
@@ -2891,11 +3066,30 @@ msgstr "Trommeldiameter"
 msgid "Drum filter"
 msgstr "Trommelfilter"
 
+msgid "Due"
+msgstr "Frist"
+
+msgid "Due date"
+msgstr "Fristdato"
+
+msgid "Due from"
+msgstr "Frist fra"
+
+msgid "Due time"
+msgstr "Klokkeslett for frist"
+
 msgid "Duplicate"
 msgstr "Dupliser"
 
 msgid "E.g. AquaGen, SalmoBreed."
 msgstr "F.eks. AquaGen, SalmoBreed."
+
+msgid ""
+"E.g. “the unit was emptied”. The task stays among the completed ones with this reason, and can be"
+" reopened."
+msgstr ""
+"F.eks. «enheten ble tømt». Oppgaven blir stående blant de fullførte med denne grunnen, og kan "
+"åpnes igjen."
 
 msgid ""
 "E.g. “typed 1000 instead of 100”. The operation stays in the history, struck through, with this "
@@ -3013,6 +3207,9 @@ msgstr "Legg inn minst én verdi."
 msgid "Enter sends, Shift+Enter starts a new line."
 msgstr "Enter sender, Shift+Enter gir ny linje."
 
+msgid "Enter the day of the month."
+msgstr "Skriv inn dagen i måneden."
+
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
 
@@ -3062,6 +3259,9 @@ msgstr "Estimert: den målte vekten og fôret siden, delt på forventet FCR"
 msgid "Event"
 msgstr "Hendelse"
 
+msgid "Every"
+msgstr "Hver"
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -3069,8 +3269,20 @@ msgstr ""
 "Alle endringer som er gjort: hvem, når, hvilken post og gamle og nye verdier. Oppføringer kan "
 "ikke redigeres eller slettes."
 
+#, python-format
+msgid "Every day"
+msgid_plural "Every %(count)d days"
+msgstr[0] "Hver dag"
+msgstr[1] "Hver %(count)d. dag"
+
 msgid "Every handling"
 msgstr "All håndtering"
+
+#, python-format
+msgid "Every month on day %(day)d"
+msgid_plural "Every %(count)d months on day %(day)d"
+msgstr[0] "Hver måned den %(day)d."
+msgstr[1] "Hver %(count)d. måned den %(day)d."
 
 msgid "Every permission that exists: view, add, change and delete of each model, and the custom ones."
 msgstr ""
@@ -3099,6 +3311,12 @@ msgstr ""
 
 msgid "Every way of giving"
 msgstr "Alle måter å gi på"
+
+#, python-format
+msgid "Every week on %(days)s"
+msgid_plural "Every %(count)d weeks on %(days)s"
+msgstr[0] "Hver uke på %(days)s"
+msgstr[1] "Hver %(count)d. uke på %(days)s"
 
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Alle i samtalen ser at en melding ble slettet, ikke hva den sa."
@@ -3279,6 +3497,10 @@ msgstr "Fôrautomat"
 msgid "Feeding"
 msgstr "Fôring"
 
+msgctxt "task category"
+msgid "Feeding"
+msgstr "Fôring"
+
 msgid "Feeding (from the records)"
 msgstr "Fôring (fra registreringene)"
 
@@ -3417,6 +3639,10 @@ msgstr "Fiskeoppdrett"
 msgid "Fish harvested"
 msgstr "Høstet fisk"
 
+msgctxt "task category"
+msgid "Fish health"
+msgstr "Fiskehelse"
+
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Fisk beholdningen fortsatt har utover tellingen, registreres da som uforklart svinn."
 
@@ -3521,6 +3747,9 @@ msgstr "Ferskvann"
 
 msgid "Freshwater bath"
 msgstr "Ferskvannsbad"
+
+msgid "Friday"
+msgstr "Fredag"
 
 msgid "From"
 msgstr "Fra"
@@ -3729,6 +3958,10 @@ msgstr "Bekreftede håndteringsadvarsler"
 msgid "Harvest"
 msgstr "Høsting"
 
+msgctxt "task category"
+msgid "Harvest"
+msgstr "Høsting"
+
 msgid "Harvest and handling"
 msgstr "Høsting og håndtering"
 
@@ -3812,6 +4045,9 @@ msgstr "Skjul"
 
 msgid "Hide deleted rows"
 msgstr "Skjul slettede rader"
+
+msgid "High"
+msgstr "Høy"
 
 msgid "History"
 msgstr "Historikk"
@@ -3918,6 +4154,9 @@ msgstr "I fôr"
 
 msgid "In force today"
 msgstr "Gjelder i dag"
+
+msgid "In progress"
+msgstr "Pågår"
 
 msgid "In the library"
 msgstr "I biblioteket"
@@ -4063,11 +4302,18 @@ msgstr "Nummeret i rapporter til myndighetene (kar- eller merdnummeret), når de
 msgid "Its parts are on another site: %(parts)s. Move them first."
 msgstr "Delene er på en annen lokalitet: %(parts)s. Flytt dem først."
 
+#, python-format
+msgid "Its place, %(place)s, is deleted: choose another."
+msgstr "Stedet, %(place)s, er slettet: velg et annet."
+
 msgid "Its site decides which systems and which parent equipment can be chosen."
 msgstr "Lokaliteten avgjør hvilke systemer og hvilket overordnet utstyr som kan velges."
 
 msgid "Its site decides which systems can be chosen."
 msgstr "Lokaliteten avgjør hvilke systemer som kan velges."
+
+msgid "Its tasks are made from this day on, up to two weeks ahead."
+msgstr "Oppgavene lages fra denne dagen, opptil to uker fram."
 
 msgid "Its volume cannot be calculated from its shape: enter it as measured or as drawn."
 msgstr "Volumet kan ikke beregnes ut fra formen: oppgi det som målt eller som tegnet."
@@ -4295,6 +4541,9 @@ msgstr "Parti på lagerplass"
 msgid "Lot number"
 msgstr "Partinummer"
 
+msgid "Low"
+msgstr "Lav"
+
 msgid "Low oxygen"
 msgstr "Lavt oksygen"
 
@@ -4316,6 +4565,10 @@ msgstr "Hovednavigasjon"
 msgid "Maintenance"
 msgstr "Vedlikehold"
 
+msgctxt "task category"
+msgid "Maintenance"
+msgstr "Vedlikehold"
+
 msgid "Maintenance and repair"
 msgstr "Vedlikehold og reparasjon"
 
@@ -4334,11 +4587,21 @@ msgstr "Leder"
 msgid "Manufacturer"
 msgstr "Produsent"
 
+msgid "Mark as done"
+msgstr "Merk som utført"
+
+msgid "Mark as not done"
+msgstr "Merk som ikke utført"
+
 msgid "Mark as reviewed"
 msgstr "Merk som gjennomgått"
 
 msgid "Mark which one is the primary one."
 msgstr "Merk hvilken som er den primære."
+
+#, python-format
+msgid "Mark “%(task)s” as done?"
+msgstr "Merke «%(task)s» som utført?"
 
 msgid "Marked as reviewed by you."
 msgstr "Merket som gjennomgått av deg."
@@ -4462,6 +4725,9 @@ msgstr "Legemidler"
 msgid "Medicines and vaccines"
 msgstr "Legemidler og vaksiner"
 
+msgid "Medium"
+msgstr "Middels"
+
 msgid "Medium pressure"
 msgstr "Mellomtrykk"
 
@@ -4526,6 +4792,12 @@ msgstr "Vann (%)"
 msgid "Mollusc"
 msgstr "Bløtdyr"
 
+msgid "Monday"
+msgstr "Mandag"
+
+msgid "Monthly"
+msgstr "Månedlig"
+
 #, python-format
 msgid "More than %(rows)d units and systems: choose a production department or a system."
 msgstr "Flere enn %(rows)d enheter og systemer: velg en produksjonsavdeling eller et system."
@@ -4560,6 +4832,9 @@ msgstr "Multiparametersonde"
 
 msgid "Municipality"
 msgstr "Kommune"
+
+msgid "My tasks"
+msgstr "Mine oppgaver"
 
 msgid ""
 "NH₃ and NH₄⁺ together, as nitrogen. A kit that reads NH₄⁺: divide by 1.29; one that reads NH₃: "
@@ -4630,6 +4905,13 @@ msgstr "Oppgi hvem observasjonen eller rådet kommer fra."
 msgid "Narrows the list of types."
 msgstr "Snevrer inn listen over typer."
 
+msgid ""
+"Narrows the places offered under Location. “Without a site” offers the production departments "
+"that have none and what is in them."
+msgstr ""
+"Begrenser stedene under Plassering. «Uten lokalitet» viser produksjonsavdelingene som ikke har "
+"noen, og det som er i dem."
+
 msgid "Natural gas"
 msgstr "Naturgass"
 
@@ -4679,6 +4961,9 @@ msgstr "Ny melding"
 msgid "New password"
 msgstr "Nytt passord"
 
+msgid "New task"
+msgstr "Ny oppgave"
+
 msgid "Newer"
 msgstr "Nyere"
 
@@ -4725,6 +5010,9 @@ msgstr "Ingen endringer samsvarer med filtrene."
 
 msgid "No changes recorded yet."
 msgstr "Ingen endringer registrert ennå."
+
+msgid "No checklist."
+msgstr "Ingen sjekkliste."
 
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad."
@@ -4824,6 +5112,9 @@ msgstr "Ingen kunnskapsoppføring viser til det ennå."
 msgid "No limit"
 msgstr "Ingen grense"
 
+msgid "No lines yet. Use “Add line” to add one."
+msgstr "Ingen linjer ennå. Bruk «Legg til linje» for å legge til en."
+
 msgid "No longer in stock"
 msgstr "Ikke lenger i beholdningen"
 
@@ -4838,6 +5129,12 @@ msgstr "Ingen meldinger ennå"
 
 msgid "No messages yet: write the first one."
 msgstr "Ingen meldinger ennå: skriv den første."
+
+msgid "No notes yet."
+msgstr "Ingen notater ennå."
+
+msgid "No open tasks"
+msgstr "Ingen åpne oppgaver"
 
 msgid "No operation matches these filters."
 msgstr "Ingen operasjon passer med disse filtrene."
@@ -4894,6 +5191,12 @@ msgstr ""
 
 msgid "No table yet"
 msgstr "Ingen tabell ennå"
+
+msgid "No task completed or cancelled yet"
+msgstr "Ingen oppgaver fullført eller avlyst ennå"
+
+msgid "No task matches these filters."
+msgstr "Ingen oppgaver samsvarer med filtrene."
 
 #, python-format
 msgid "No temperature in the last %(days)d days: record one."
@@ -4959,6 +5262,9 @@ msgstr "Uten volum: bare dosene per m³."
 
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
+
+msgid "Nobody"
+msgstr "Ingen"
 
 msgid "Nobody else can use Messages yet: the platform admin gives it to a role (Roles, Messages: Read)."
 msgstr ""
@@ -5059,8 +5365,14 @@ msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s, slutten u
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
 
+msgid "Note"
+msgstr "Notat"
+
 msgid "Notes"
 msgstr "Notater"
+
+msgid "Nothing due today"
+msgstr "Ingenting har frist i dag"
 
 msgid "Nothing found"
 msgstr "Ingenting funnet"
@@ -5144,6 +5456,9 @@ msgstr "Olje"
 msgid "Older"
 msgstr "Eldre"
 
+msgid "On"
+msgstr "På"
+
 msgid "On hand"
 msgstr "På lager"
 
@@ -5159,6 +5474,9 @@ msgid ""
 msgstr ""
 "Beholdningen ganger det hvert parti kostet ved mottak, per valuta; partier mottatt uten kostnad "
 "regnes ikke med."
+
+msgid "On the clock of the place’s site; a task not done by then is overdue."
+msgstr "Etter klokken på stedets lokalitet; en oppgave som ikke er utført innen da, er forfalt."
 
 msgid "On the site’s clock."
 msgstr "På lokalitetens klokke."
@@ -5220,6 +5538,9 @@ msgstr "Bare en silo fyller en fôrautomat: fjern fôrautomaten, eller gjør lag
 msgid "Only an active protocol can be assigned; this one is %(status)s."
 msgstr "Bare en aktiv protokoll kan tildeles; denne har status %(status)s."
 
+msgid "Only an open task can be started."
+msgstr "Bare en åpen oppgave kan startes."
+
 msgid "Only bought fish have a supplier."
 msgstr "Bare kjøpt fisk har en leverandør."
 
@@ -5255,6 +5576,10 @@ msgstr ""
 msgid "Only warnings and criticals"
 msgstr "Bare advarsler og kritiske"
 
+msgid "Open"
+msgstr "Åpen"
+
+msgctxt "task status"
 msgid "Open"
 msgstr "Åpen"
 
@@ -5309,14 +5634,26 @@ msgstr ""
 msgid "Optional. Above it the overview warns; nothing is refused. Feed is counted in kg."
 msgstr "Valgfritt. Over den varsler oversikten; ingenting avvises. Fôr telles i kg."
 
+msgid "Optional: from this time on the due day a task is overdue."
+msgstr "Valgfritt: fra dette klokkeslettet på fristdagen er en oppgave forfalt."
+
+msgid "Optional: from this time on the due day the task is overdue."
+msgstr "Valgfritt: fra dette klokkeslettet på fristdagen er oppgaven forfalt."
+
 msgid "Optional: how many fish."
 msgstr "Valgfritt: hvor mange fisk."
 
 msgid "Optional: how many meals it was given in."
 msgstr "Valgfritt: hvor mange måltider det ble gitt i."
 
+msgid "Optional: no tasks after this day."
+msgstr "Valgfritt: ingen oppgaver etter denne dagen."
+
 msgid "Optional: the feeder that gave it, on the unit’s site."
 msgstr "Valgfritt: fôrautomaten som ga det, på enhetens lokalitet."
+
+msgid "Optional: the fish the job is about, a batch with fish at the chosen place now."
+msgstr "Valgfritt: fisken jobben gjelder, en fiskegruppe med fisk på det valgte stedet nå."
 
 msgid ""
 "Optional: the health event (Operations › Health events) these fish died or were culled under; it "
@@ -5346,6 +5683,9 @@ msgstr "Valgfritt: brønnbåt- eller transportselskapet."
 msgid "Optional: their round (live) weight, in kg."
 msgstr "Valgfritt: rund (levende) vekt, i kg."
 
+msgid "Optional: what was done or found, e.g. “2 dead fish removed”."
+msgstr "Valgfritt: hva som ble gjort eller funnet, f.eks. «2 døde fisk fjernet»."
+
 msgid "Optional; the batch number is given on saving."
 msgstr "Valgfritt; gruppenummeret gis ved lagring."
 
@@ -5367,6 +5707,10 @@ msgstr "Overstyring av organisasjonsnummer"
 msgid "Origin"
 msgstr "Opprinnelse"
 
+msgid "Other"
+msgstr "Annet"
+
+msgctxt "task category"
 msgid "Other"
 msgstr "Annet"
 
@@ -5429,6 +5773,9 @@ msgstr "Total lengde (m)"
 
 msgid "Overdue"
 msgstr "Forfalt"
+
+msgid "Overdue tasks"
+msgstr "Forfalte oppgaver"
 
 msgid "Overview"
 msgstr "Oversikt"
@@ -5535,6 +5882,9 @@ msgstr "Over grensen"
 msgid "Pasteurellosis"
 msgstr "Pasteurellose"
 
+msgid "Paused"
+msgstr "På pause"
+
 msgid "Payment terms"
 msgstr "Betalingsbetingelser"
 
@@ -5597,6 +5947,9 @@ msgstr "Piscirickettsiose"
 msgid "Place"
 msgstr "Sted"
 
+msgid "Place deleted"
+msgstr "Sted slettet"
+
 msgid "Plan"
 msgstr "Plan"
 
@@ -5611,6 +5964,9 @@ msgstr "Planlagt"
 
 msgid "Planned fish"
 msgstr "Planlagt antall fisk"
+
+msgid "Planned for"
+msgstr "Planlagt for"
 
 #, python-format
 msgid "Planned for %(date)s"
@@ -5721,6 +6077,9 @@ msgstr "Skriv ut"
 
 msgid "Print report"
 msgstr "Skriv ut rapport"
+
+msgid "Priority"
+msgstr "Prioritet"
 
 msgid "Processing"
 msgstr "Bearbeiding"
@@ -5854,6 +6213,9 @@ msgstr "Kjemikalier å dosere med"
 msgid "Reason"
 msgstr "Årsak"
 
+msgid "Reason for cancelling"
+msgstr "Grunn til avlysning"
+
 msgid "Reason for the status"
 msgstr "Årsak til statusen"
 
@@ -5939,6 +6301,12 @@ msgstr "Registreringer"
 msgid "Rectangular"
 msgstr "Rektangulær"
 
+msgid "Recurring task"
+msgstr "Gjentakende oppgave"
+
+msgid "Recurring tasks"
+msgstr "Gjentakende oppgaver"
+
 msgid "Reduced appetite"
 msgstr "Nedsatt appetitt"
 
@@ -5981,6 +6349,9 @@ msgstr "Fjern filen"
 msgid "Rename the protocol first: its copies have used every name."
 msgstr "Gi protokollen nytt navn først: kopiene har brukt opp alle navnene."
 
+msgid "Reopen"
+msgstr "Åpne igjen"
+
 msgid "Reorder level"
 msgstr "Bestillingspunkt"
 
@@ -5995,6 +6366,9 @@ msgstr "Bestillingspunkter kan settes når lagerplassen er opprettet."
 
 msgid "Repair"
 msgstr "Reparasjon"
+
+msgid "Repeats"
+msgstr "Gjentas"
 
 msgid "Reports for this species cannot be filed without it."
 msgstr "Rapporter for denne arten kan ikke sendes inn uten den."
@@ -6176,12 +6550,18 @@ msgstr "Prøveveiing"
 msgid "Saprolegniosis"
 msgstr "Saprolegniose"
 
+msgid "Saturday"
+msgstr "Lørdag"
+
 #, python-format
 msgid "Save %(name)s"
 msgstr "Lagre %(name)s"
 
 msgid "Save calibrations"
 msgstr "Lagre kalibreringer"
+
+msgid "Save checklist"
+msgstr "Lagre sjekklisten"
 
 msgid "Save contacts"
 msgstr "Lagre kontaktpersoner"
@@ -6206,6 +6586,9 @@ msgstr "Si hva det var: metoden eller årsaken er «annen»."
 
 msgid "Say what it was: the reason is “other”."
 msgstr "Skriv hva det var: årsaken er «annet»."
+
+msgid "Say why it is cancelled."
+msgstr "Skriv hvorfor den avlyses."
 
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
@@ -6306,6 +6689,12 @@ msgstr "Søk i alle kolonner"
 msgid "Search findings, units, site or vet"
 msgstr "Søk i funn, enheter, lokalitet eller veterinær"
 
+msgid "Search recurring tasks"
+msgstr "Søk i gjentakende oppgaver"
+
+msgid "Search tasks"
+msgstr "Søk i oppgaver"
+
 msgid "Search the statements, quotes and sources"
 msgstr "Søk i utsagn, sitater og kilder"
 
@@ -6365,6 +6754,9 @@ msgstr "Velg en metode"
 
 msgid "Select a parameter"
 msgstr "Velg en parameter"
+
+msgid "Select a place"
+msgstr "Velg et sted"
 
 msgid "Select a production department"
 msgstr "Velg en produksjonsavdeling"
@@ -6687,6 +7079,18 @@ msgstr "Utdatert"
 msgid "Standby"
 msgstr "Reserve"
 
+msgid "Start"
+msgstr "Start"
+
+msgid "Started"
+msgstr "Startet"
+
+msgid "Started at"
+msgstr "Startet"
+
+msgid "Started by"
+msgstr "Startet av"
+
 msgid "Starter feed"
 msgstr "Startfôr"
 
@@ -6814,6 +7218,9 @@ msgstr ""
 "Sulfid slik et laboratorium eller et metylenblått-sett rapporterer det, som S. H₂S regnes ut fra "
 "det, pH-en, temperaturen og saliniteten."
 
+msgid "Sunday"
+msgstr "Søndag"
+
 msgid "Supplier"
 msgstr "Leverandør"
 
@@ -6909,6 +7316,15 @@ msgstr "Målvekt"
 
 msgid "Target weight (g)"
 msgstr "Målvekt (g)"
+
+msgid "Task"
+msgstr "Oppgave"
+
+msgid "Tasks"
+msgstr "Oppgaver"
+
+msgid "Tasks due today"
+msgstr "Oppgaver med frist i dag"
 
 msgid "Technical specifications"
 msgstr "Tekniske spesifikasjoner"
@@ -7074,6 +7490,9 @@ msgstr "Kalkulatorens verdier"
 msgid "The charts and the values show again once every value is right."
 msgstr "Diagrammene og verdiene vises igjen når alle verdiene er riktige."
 
+msgid "The checklist has been started: its lines can no longer be changed. Add a note instead."
+msgstr "Sjekklisten er påbegynt: linjene kan ikke lenger endres. Legg til et notat i stedet."
+
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
 "such as vets, divers and wellboats."
@@ -7095,6 +7514,9 @@ msgstr "Datoen kan ikke være fram i tid."
 
 msgid "The days before yesterday keep their protocol: the last day is yesterday at the earliest."
 msgstr "Dagene før i går beholder protokollen sin: siste dag er tidligst i går."
+
+msgid "The days of the week it is due."
+msgstr "Ukedagene den har frist."
 
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
@@ -7255,6 +7677,9 @@ msgstr ""
 #, python-format
 msgid "The last day can be planned at most %(days)d days ahead."
 msgstr "Siste dag kan planlegges høyst %(days)d dager frem."
+
+msgid "The last day cannot be before the first day."
+msgstr "Siste dag kan ikke være før første dag."
 
 msgid "The last day cannot be before the first."
 msgstr "Siste dag kan ikke være før første."
@@ -7500,6 +7925,23 @@ msgid "The specifications must be a set of named values."
 msgstr "Spesifikasjonene må være et sett med navngitte verdier."
 
 msgid ""
+"The steps of the job, one per line, at most 30, copied to every task it plans. Saving them gives "
+"the tasks from today on that nobody has touched the new list. It is saved separately from the "
+"recurring task."
+msgstr ""
+"Stegene i jobben, ett per linje, høyst 30, kopiert til hver oppgave den planlegger. Når de "
+"lagres, får oppgavene fra i dag som ingen har rørt, den nye listen. Den lagres separat fra den "
+"gjentakende oppgaven."
+
+msgid ""
+"The steps of the job, one per line, at most 30; each is ticked on the Tasks page with who and "
+"when. The list can be changed until its first line is ticked. It is saved separately from the "
+"task."
+msgstr ""
+"Stegene i jobben, ett per linje, høyst 30; hvert krysses av på siden Oppgaver med hvem og når. "
+"Listen kan endres til den første linjen er krysset av. Den lagres separat fra oppgaven."
+
+msgid ""
 "The stock is worked out again without it, from its date on. A stocking that is voided takes its "
 "batch with it. To correct an operation, void it and enter it again."
 msgstr ""
@@ -7549,6 +7991,10 @@ msgstr ""
 "Målvekten hver fiskegruppe vokser til før høsting. Anslått vekt nå er fôringsprotokollenes "
 "anslag; dagen målet nås, regnes fram med rasjonen for hver dag, ved enhetens siste temperatur "
 "holdt fast, uten vekst på en sultedag. Forventet høsting er datoen som ble gitt ved utsett."
+
+#, python-format
+msgid "The task is %(status)s: its checklist can no longer be ticked."
+msgstr "Oppgaven er %(status)s: sjekklisten kan ikke lenger krysses av."
 
 msgid ""
 "The text as it was read from the PDF, without its layout. It is what the search finds and what "
@@ -7707,6 +8153,11 @@ msgstr ""
 msgid "They stay as they are, out of sight while this is deleted, and come back when it is restored."
 msgstr "De blir stående som de er, skjult mens denne er slettet, og kommer tilbake når den gjenopprettes."
 
+msgid "They stay in the task lists, which show this as deleted, and show it again when it is restored."
+msgstr ""
+"De blir stående i oppgavelistene, som viser dette som slettet, og viser det igjen når det "
+"gjenopprettes."
+
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
@@ -7732,6 +8183,9 @@ msgstr "Denne lenken fungerer ikke lenger"
 
 msgid "This operation is already voided."
 msgstr "Denne operasjonen er allerede annullert."
+
+msgid "This place is not on the chosen site."
+msgstr "Dette stedet er ikke på valgt lokalitet."
 
 msgid "This plan is cancelled."
 msgstr "Denne planen er avlyst."
@@ -7770,6 +8224,13 @@ msgstr "Dette systemet er slettet."
 msgid "This table points at"
 msgstr "Denne tabellen peker på"
 
+#, python-format
+msgid "This task is already %(status)s."
+msgstr "Denne oppgaven er allerede %(status)s."
+
+msgid "This task is open already."
+msgstr "Denne oppgaven er allerede åpen."
+
 msgid "This treatment is voided."
 msgstr "Denne behandlingen er annullert."
 
@@ -7794,6 +8255,9 @@ msgstr "Tre bokstaver, f.eks. NOK."
 msgid "Three-phase"
 msgstr "Trefase"
 
+msgid "Thursday"
+msgstr "Torsdag"
+
 msgid "Tick at least one thing it supplies."
 msgstr "Kryss av for minst én ting den leverer."
 
@@ -7802,6 +8266,9 @@ msgstr "Kryss av for minst ett emne."
 
 msgid "Tick at least one water environment."
 msgstr "Kryss av for minst ett vannmiljø."
+
+msgid "Tick at least one weekday."
+msgstr "Kryss av minst én ukedag."
 
 msgid "Tick it only when the amount is right, e.g. for fry that are fed more."
 msgstr "Kryss av bare når mengden er riktig, f.eks. for yngel som fôres mer."
@@ -7839,6 +8306,9 @@ msgstr "Til enheter"
 
 msgid "Today"
 msgstr "I dag"
+
+msgid "Today lists the overdue tasks, those due today and those done today."
+msgstr "I dag viser de forfalte oppgavene, dem med frist i dag og dem som er utført i dag."
 
 msgid "Today’s ration"
 msgstr "Dagens rasjon"
@@ -7884,6 +8354,10 @@ msgstr "Flytting registrert: %(count)s fisk av %(batch)s fra %(unit)s til %(unit
 msgid "Transport"
 msgstr "Transport"
 
+msgctxt "task category"
+msgid "Transport"
+msgstr "Transport"
+
 msgid "Treatment"
 msgstr "Behandling"
 
@@ -7903,6 +8377,9 @@ msgstr "Behandlinger, siste 90 dager"
 
 msgid "Try another search."
 msgstr "Prøv et annet søk."
+
+msgid "Tuesday"
+msgstr "Tirsdag"
 
 msgid "Turbidity"
 msgstr "Turbiditet"
@@ -7991,6 +8468,13 @@ msgstr "Enheter med en kritisk vannverdi"
 msgid "Unknown"
 msgstr "Ukjent"
 
+msgid ""
+"Untick to pause it: its tasks from today on that nobody has started are removed, and none are "
+"made until it is ticked again."
+msgstr ""
+"Fjern krysset for å sette den på pause: oppgavene fra i dag som ingen har startet, fjernes, og "
+"ingen nye lages før den krysses av igjen."
+
 msgid "Until"
 msgstr "Til og med"
 
@@ -8006,6 +8490,9 @@ msgstr "Oppdatert"
 
 msgid "Updated by"
 msgstr "Oppdatert av"
+
+msgid "Urgent"
+msgstr "Haster"
 
 msgid "Use capital letters, digits, hyphens and underscores only."
 msgstr "Bruk bare store bokstaver, sifre, bindestrek og understrek."
@@ -8166,6 +8653,10 @@ msgstr "Vanngrenser"
 msgid "Water quality"
 msgstr "Vannkvalitet"
 
+msgctxt "task category"
+msgid "Water quality"
+msgstr "Vannkvalitet"
+
 msgid "Water round"
 msgstr "Vannrunde"
 
@@ -8198,12 +8689,18 @@ msgstr "Nettadresse"
 msgid "Website"
 msgstr "Nettsted"
 
+msgid "Wednesday"
+msgstr "Onsdag"
+
 msgid "Week"
 msgstr "Uke"
 
 #, python-format
 msgid "Week %(week)s, %(year)s"
 msgstr "Uke %(week)s, %(year)s"
+
+msgid "Weekly"
+msgstr "Ukentlig"
 
 msgid "Weekly averages"
 msgstr "Ukesnitt"
@@ -8299,6 +8796,9 @@ msgstr ""
 msgid "When"
 msgstr "Når"
 
+msgid "When and who"
+msgstr "Når og hvem"
+
 msgid "When it was observed or said, if it matters."
 msgstr "Når det ble observert eller sagt, om det betyr noe."
 
@@ -8322,6 +8822,9 @@ msgid ""
 "Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
 "facilities)."
 msgstr "Hvor fisken går: et aktivt slakteri som tar imot denne arten (Høsting og logistikk › Slakterier)."
+
+msgid "Where the job is done: a whole site, a production department, a system, a unit or equipment."
+msgstr "Hvor jobben gjøres: en hel lokalitet, en produksjonsavdeling, et system, en enhet eller utstyr."
 
 msgid "Where the knowledge comes from: every entry has exactly one source."
 msgstr "Hvor kunnskapen kommer fra: hver oppføring har nøyaktig én kilde."
@@ -8365,6 +8868,16 @@ msgstr "Hvilke enheter hver helsehendelse gjelder; ingen for hele lokaliteten."
 
 msgid "Which units each treatment was given in."
 msgstr "Hvilke enheter hver behandling ble gitt i."
+
+msgid "Who"
+msgstr "Hvem"
+
+msgid ""
+"Who does it: active users who can read Tasks. Each of them sees it, and any of them can start and"
+" complete it."
+msgstr ""
+"Hvem som gjør den: aktive brukere som kan lese Oppgaver. Alle ser den, og hvem som helst av dem "
+"kan starte og fullføre den."
 
 msgid "Who it goes back to."
 msgstr "Hvem det går tilbake til."
@@ -8468,6 +8981,9 @@ msgstr ""
 "Skriv slekt og art med latinske bokstaver, f.eks. Salmo salar; en underart kan følge som tredje "
 "ord."
 
+msgid "Write the note first."
+msgstr "Skriv notatet først."
+
 msgid "Write-off"
 msgstr "Kassering"
 
@@ -8566,6 +9082,9 @@ msgstr "av %(who)s, %(when)s"
 #, python-format
 msgid "by <strong>%(name)s</strong>"
 msgstr "av <strong>%(name)s</strong>"
+
+msgid "by its recurring task"
+msgstr "av den gjentakende oppgaven"
 
 #, python-format
 msgid "calculated %(calculated)s"
@@ -8711,6 +9230,12 @@ msgstr "f.eks. Atlantic salmon"
 msgid "e.g. Carbon dioxide and the growth of Atlantic salmon"
 msgstr "f.eks. Karbondioksid og veksten til atlantisk laks"
 
+msgid "e.g. Check the oxygen in every tank"
+msgstr "f.eks. Sjekk oksygenet i hvert kar"
+
+msgid "e.g. Clean the drum filter"
+msgstr "f.eks. Rengjør trommelfilteret"
+
 msgid "e.g. FJF"
 msgstr "f.eks. FJF"
 
@@ -8755,6 +9280,9 @@ msgstr "f.eks. Hovedproduksjonslokalitet"
 
 msgid "e.g. Main circulation pump"
 msgstr "f.eks. Hovedsirkulasjonspumpe"
+
+msgid "e.g. Morning oxygen round"
+msgstr "f.eks. Morgenrunde for oksygen"
 
 msgid "e.g. NUTRA-3"
 msgstr "f.eks. NUTRA-3"
@@ -8903,6 +9431,10 @@ msgstr "celler i fôringstabell"
 
 msgid "feeds"
 msgstr "fôr"
+
+#, python-format
+msgid "from %(first)s"
+msgstr "fra %(first)s"
 
 #, python-format
 msgid "from %(start)s to %(end)s"
@@ -9138,6 +9670,10 @@ msgstr "deltakere"
 msgid "passed at every pH of the chart's range (4 to 12.5)"
 msgstr "overskredet ved hver pH i diagrammets område (4 til 12,5)"
 
+#, python-format
+msgid "planned for %(date)s"
+msgstr "planlagt for %(date)s"
+
 msgid "planned harvest or transport"
 msgstr "planlagt høsting eller transport"
 
@@ -9167,6 +9703,15 @@ msgstr "protokolltildelinger"
 
 msgid "protocol’s"
 msgstr "protokollens"
+
+msgid "recurring"
+msgstr "gjentakende"
+
+msgid "recurring task"
+msgstr "gjentakende oppgave"
+
+msgid "recurring tasks"
+msgstr "gjentakende oppgaver"
 
 msgid "reorder level"
 msgstr "bestillingspunkt"
@@ -9273,8 +9818,17 @@ msgstr "målet nås %(date)s, ved %(temperature)s °C holdt fast"
 msgid "target reached"
 msgstr "målet er nådd"
 
+msgid "task"
+msgstr "oppgave"
+
+msgid "tasks"
+msgstr "oppgaver"
+
 msgid "the site’s altitude"
 msgstr "lokalitetens høyde over havet"
+
+msgid "to"
+msgstr "til"
 
 #, python-format
 msgid "to %(date)s"
@@ -9306,6 +9860,10 @@ msgstr "enheter"
 
 msgid "unread"
 msgstr "ulest"
+
+#, python-format
+msgid "until %(last)s"
+msgstr "til %(last)s"
 
 #, python-format
 msgid "until %(last)s (harvest from %(first)s)"
@@ -9426,6 +9984,22 @@ msgstr "Ω: trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "«%(name)s» er ikke en av spesifikasjonene for denne typen."
+
+#, python-format
+msgid "“%(task)s” is cancelled."
+msgstr "«%(task)s» er avlyst."
+
+#, python-format
+msgid "“%(task)s” is done."
+msgstr "«%(task)s» er utført."
+
+#, python-format
+msgid "“%(task)s” is in progress."
+msgstr "«%(task)s» pågår."
+
+#, python-format
+msgid "“%(task)s” is open again."
+msgstr "«%(task)s» er åpen igjen."
 
 #, python-format
 msgid "“%(value)s” is not a temperature."

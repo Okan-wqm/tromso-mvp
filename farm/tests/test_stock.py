@@ -1038,6 +1038,95 @@ class ActivityLogTests(StockTestCase):
         self.assertContains(self.client.get(reverse('core:activity_log')), 'Ölüm')
 
 
+class SiteHistoryTests(StockTestCase):
+    """A unit's stock records belong to its site (OUR-06): the reports to the authorities are per locality."""
+
+    def test_a_unit_with_stock_records_stays_on_its_site(self):
+        batch = self.stock()
+        services.record_transfer(self.user, source=self.t1, batch=batch, day=self.day(1), legs=[(self.t2, 2000)],
+                                 reason='maintenance')
+        unit = Tank.objects.get(pk=self.t1.pk)                    # empty now, with a history
+        unit.production_department = self.sea
+        with self.assertRaises(ValidationError) as caught:
+            unit.full_clean()
+        self.assertEqual(caught.exception.message_dict['production_department'],
+                         ['It has stock records on its site: it can only move to a production department of the same '
+                          'site.'])
+        unit.production_department = ProductionDepartment.objects.create(site=self.bergen, name='Hall B', code='HB')
+        unit.full_clean()                                         # another department of the same site is fine
+        fresh = make_unit('T-09', self.hall)
+        fresh.production_department = self.sea
+        fresh.full_clean()                                        # a unit without records may move anywhere
+
+    def test_a_site_with_stock_records_is_closed_not_deleted(self):
+        from core.softdelete import plan_delete
+        self.assertEqual(plan_delete(self.bergen).blockers, [])
+        operation = services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
+                                          day=self.day(3), lines=[(self.t1, 10, Decimal(5))])
+        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers,
+                         ['Its units have stock records: set its status to Closed instead.'])
+        services.void(self.user, operation, 'Entered by mistake')    # a voided stocking is no record
+        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers, [])
+
+
+class ReadsOfAPeriodTests(StockTestCase):
+    """The reads the regulatory reports stand on: the stock at the end of a past day and the lines of a period,
+    both the fold's own figures (farm/stock/read.py)."""
+
+    def setUp(self):
+        super().setUp()
+        self.batch = self.stock(count=2000, weight='125', days_ago=10)            # 250 kg in T-01
+        self.mortality(self.batch, 100, days_ago=8, cause='disease')
+        services.record_cull(self.user, unit=self.t1, batch=self.batch, day=self.day(7), count=50, reason='deformed')
+        services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(6), avg_weight_g=Decimal(200))
+        self.moved = services.record_transfer(self.user, source=self.t1, batch=self.batch, day=self.day(4),
+                                              legs=[(self.t2, 600)], reason='density')
+
+    def test_stock_on_a_past_day_is_the_fold_cut_at_that_day(self):
+        self.assertEqual(read.stock_on([self.t1, self.t2], self.day(11)), {})
+        on = read.stock_on([self.t1, self.t2], self.day(9))
+        self.assertEqual((list(on), on[self.t1.pk].count, on[self.t1.pk].biomass_kg), ([self.t1.pk], 2000, 250))
+        on = read.stock_on([self.t1, self.t2], self.day(7))      # 100 died, 50 culled, at 125 g
+        self.assertEqual((on[self.t1.pk].count, on[self.t1.pk].biomass_kg, on[self.t1.pk].deaths,
+                          on[self.t1.pk].culls), (1850, Decimal('231.25'), 100, 50))
+        on = read.stock_on([self.t1, self.t2], self.day(4))      # weighed at 200 g, then 600 moved
+        self.assertEqual([(on[unit.pk].count, on[unit.pk].biomass_kg, on[unit.pk].batches)
+                          for unit in (self.t1, self.t2)], [(1250, 250, [self.batch]), (600, 120, [self.batch])])
+        # Today's stock is the same fold, cut at today: stock_of and stock_on agree.
+        now, today = read.stock_of([self.t1, self.t2]), read.stock_on([self.t1, self.t2], self.today)
+        self.assertEqual({key: (value.count, value.grams) for key, value in now.items()},
+                         {key: (value.count, value.grams) for key, value in today.items()})
+
+    def test_a_unit_emptied_before_the_day_is_left_out_and_a_void_changes_the_past(self):
+        back = services.record_transfer(self.user, source=self.t2, batch=self.batch, day=self.day(2),
+                                        legs=[(self.t1, 600)], reason='density')
+        self.assertEqual(set(read.stock_on([self.t1, self.t2], self.day(2))), {self.t1.pk})
+        services.void(self.user, back, 'Entered by mistake')
+        self.assertEqual(read.stock_on([self.t1, self.t2], self.day(2))[self.t2.pk].count, 600)
+
+    def test_the_lines_of_a_period_with_their_reasons_grams_and_the_other_end(self):
+        lines = read.movements([self.t1], self.day(8), self.day(4))
+        self.assertEqual([(line.kind, line.count, line.reason, line.kilos, line.date) for line in lines], [
+            ('mortality', -100, 'disease', Decimal('12.5'), self.day(8)),
+            ('cull', -50, 'deformed', Decimal('6.25'), self.day(7)),
+            ('weighing', 0, '', None, self.day(6)),
+            ('transfer_out', -600, 'density', Decimal(120), self.day(4)),
+        ])
+        self.assertEqual(lines[-1].other_unit_id, self.t2.pk)
+        arrived = read.movements([self.t2], self.day(10), self.today)
+        self.assertEqual([(line.kind, line.count, line.kilos, line.other_unit_id) for line in arrived],
+                         [('transfer_in', 600, Decimal(120), self.t1.pk)])
+        # Outside the period, nothing; a void takes its lines out.
+        self.assertEqual(read.movements([self.t1], self.day(3), self.today), [])
+        services.void(self.user, self.moved, 'Entered by mistake')
+        self.assertEqual(read.movements([self.t2], self.day(10), self.today), [])
+
+    def test_a_weighed_mortality_reports_its_weighed_kilos(self):
+        self.mortality(self.batch, 10, days_ago=1, measured_weight_kg=Decimal('2.5'))
+        line, = read.movements([self.t1], self.day(1), self.day(1))
+        self.assertEqual((line.kilos, line.grams), (Decimal('2.5'), Decimal(2000)))
+
+
 class DatabaseViewerTests(TestCase):
     def test_the_stock_tables_are_shown_with_their_descriptions_and_checks(self):
         tables = {table.name: table for _, tables in database.sections() for table in tables}

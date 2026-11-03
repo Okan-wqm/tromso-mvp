@@ -172,6 +172,21 @@ def split_of(records):
                             for record in records]).split
 
 
+def fed(units, first, last):
+    """{(unit id, batch id, feed id): kg} of the live feedings of `units` dated from `first` to `last`, each split
+    among the batches it fed as `split_of` splits it (the batches in the unit at the start of its day, by their book
+    biomass then). The reports read the feed of a period here, never from the records' own kilos."""
+    records = list(FeedingRecord.objects.filter(unit__in=list(units), date__gte=first, date__lte=last))
+    feed_of = {record.pk: (record.unit_id, record.feed_id) for record in records}
+    found = {}
+    for record_id, parts in split_of(records).items():
+        unit_id, feed_id = feed_of[record_id]
+        for batch_id, kilos in parts.items():
+            key = (unit_id, batch_id, feed_id)
+            found[key] = found.get(key, ZERO) + kilos
+    return found
+
+
 def records_of_batch(batch, records):
     """The ids of `records` (a queryset) that fed `batch`: those whose split gives it a part."""
     unit_ids = set(StockMovement.objects.filter(batch=batch, operation__is_deleted=False)

@@ -48,6 +48,8 @@ class Line:
     # A weighed total beside the book (dead fish, a harvest's catch): never in the fold, read by the
     # feeding walk for the biomass removed.
     measured_weight_kg: Decimal = None
+    # The line's reason (a mortality's cause, a cull's reason): never in the fold, read by the reports.
+    reason: str = ''
 
 
 class StockError(Exception):

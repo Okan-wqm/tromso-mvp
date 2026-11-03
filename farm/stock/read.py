@@ -29,15 +29,15 @@ def ledger(batch_ids):
     so the lines of an operation all come with its batch."""
     rows = list(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False).values_list(
         'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
-        'avg_weight_g', 'pair', 'measured_weight_kg'))
+        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])
     ops = {}
     lines = []
-    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured in rows:
+    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured, reason in rows:
         op = ops.setdefault(op_id, Op(op_id, op_kind, op_date, first[op_id]))
-        lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair, measured))
+        lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair, measured, reason))
     return lines
 
 
@@ -201,7 +201,20 @@ def stock_of(units):
     batch_ids = {row['batch_id'] for row in present}
     if not batch_ids:
         return {}
-    shares = fold(ledger(batch_ids))
+    return _unit_stocks(units, fold(ledger(batch_ids)), batch_ids)
+
+
+def stock_on(units, day):
+    """{unit id: UnitStock} of the units that held fish at the end of `day` (after every operation dated that day
+    or before): the fold of every batch ever in them, cut at `day`. A month's last day gives its closing stock, the
+    day before it its opening stock. A unit without fish then is left out."""
+    batch_ids = batches_ever_in([unit.pk for unit in units])
+    lines = [line for line in ledger(batch_ids) if line.op.date <= day]
+    return _unit_stocks(units, fold(lines), batch_ids) if lines else {}
+
+
+def _unit_stocks(units, shares, batch_ids):
+    """{unit id: UnitStock} of `units` from the fold's shares: each unit's batches with fish, oldest stay first."""
     batches = Batch.all_objects.select_related('species').in_bulk(batch_ids)
     by_id = {unit.pk: unit for unit in units}
     stock = {}
@@ -218,3 +231,50 @@ def stock_of(units):
     return stock
 
 
+@dataclass(frozen=True)
+class Movement:
+    """A live ledger line of a unit in a period, as the reports read it: what it did, its reason, the grams the fold
+    moved with it (None for a weighing, which sets the grams instead), and for a transfer the unit at its other end."""
+    line_id: int
+    operation_id: object
+    operation_kind: str
+    date: object
+    unit_id: object
+    batch_id: object
+    kind: str
+    count: int                  # count_delta: + into the unit, - out of it, 0 for a weighing
+    reason: str
+    grams: Decimal = None
+    measured_weight_kg: Decimal = None
+    other_unit_id: object = None
+
+    @property
+    def kilos(self):
+        """The weighed kilos when the line has them (dead fish, a harvest's catch), else the fold's."""
+        if self.measured_weight_kg is not None:
+            return self.measured_weight_kg
+        return None if self.grams is None else self.grams / 1000
+
+
+def movements(units, first, last):
+    """[Movement] of the live lines in `units` dated from `first` to `last` (both included), in the fold's order. The
+    grams come from folding every line of the batches ever in the units up to `last`, so a line moves exactly what
+    the stock says it moved; a transfer's other end is the line of the same operation with the same pair."""
+    unit_ids = {unit.pk for unit in units}
+    lines = [line for line in ledger(batches_ever_in(unit_ids)) if line.op.date <= last]
+    grams = {}
+    fold(lines, on_line=lambda line, share, moved: grams.__setitem__(line.id, moved))
+    ends = {}
+    for line in lines:
+        if line.pair is not None:
+            ends.setdefault((line.op.id, line.pair), []).append(line)
+    found = []
+    for line in sorted(lines, key=lambda line: (line.op.date, line.op.seq, line.id)):
+        if line.unit_id not in unit_ids or line.op.date < first:
+            continue
+        other = None
+        if line.pair is not None:
+            other = next((end.unit_id for end in ends[(line.op.id, line.pair)] if end.id != line.id), None)
+        found.append(Movement(line.id, line.op.id, line.op.kind, line.op.date, line.unit_id, line.batch_id, line.kind,
+                              line.count_delta, line.reason, grams.get(line.id), line.measured_weight_kg, other))
+    return found

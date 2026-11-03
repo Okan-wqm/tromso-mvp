@@ -77,13 +77,13 @@ class SmoltTests(ReportTestCase):
         self.october()
         self.salmon.official_code = ''
         self.salmon.save()
-        self.hatchery.organisation_number_override = '12345'
+        self.hatchery.organisation_number = ''
         self.hatchery.save()
         report = self.report(Report.Kind.SMOLT, OCTOBER, contact_phone='')
         problems = compute.compute(report).problems
         self.assertEqual(problems, [
             'Atlantic salmon (SAL) has no official code (Setup › Reference data › Species).',   # once, not per unit
-            'Hatchery (HA) has no organisation number of 9 digits (Facility › Sites).',
+            'Hatchery (HA) has no organisation number (Facility › Sites, its Reports tab).',
             'Give the contact person’s name, e-mail and telephone (the Contact person tab).'])
 
     def test_a_month_without_fish_has_nothing_to_file(self):

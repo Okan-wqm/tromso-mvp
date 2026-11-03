@@ -35,6 +35,15 @@ class Site(CodedMixin, AuditedModel):
         SOUTH = lice.SOUTH, _('Nord-Trøndelag and southwards')
         NORTH = lice.NORTH, _('Nordland, Troms and Finnmark')
 
+    class ProductionForm(models.TextChoices):
+        """What the site produces, which decides the reports it owes (akvakulturdriftsforskriften § 3 a, b and § 4
+        nr. 27; docs/regulatory-reports.md 5.2): settefisk is fish produced to go to other sites or another kind of
+        production (chapter 5, § 58), matfisk fish grown for food and stamfisk broodstock (chapter 4: § 44 at sea,
+        § 44a on land or in fresh water)."""
+        SETTEFISK = 'settefisk', _('Juveniles (settefisk)')
+        MATFISK = 'matfisk', _('Food fish (matfisk)')
+        STAMFISK = 'stamfisk', _('Broodstock (stamfisk)')
+
     TIMEZONES = [
         ('UTC', 'UTC'),
         ('Europe/Oslo', 'Europe/Oslo (CET)'),
@@ -52,7 +61,13 @@ class Site(CodedMixin, AuditedModel):
         validators=[MinValueValidator(10000), MaxValueValidator(99999)],
         help_text=_('Akvakulturregisteret locality number (5 digits).'),
     )
-    organisation_number_override = models.CharField(_('Organisation number override'), max_length=20, blank=True)
+    # The organisation number the authorities know the site's fish by: the permit holder's, which owns the fish
+    # (Mattilsynet's reports: "selskapet som eier fisken"; OUR-12). Nine digits.
+    organisation_number = models.CharField(_('Organisation number'), max_length=9, blank=True)
+    production_form = models.CharField(_('Production form'), max_length=10, blank=True,
+                                       choices=ProductionForm.choices)
+    # From this day on the site's reports are listed as due; the periods before were filed elsewhere (D-6).
+    reports_from = models.DateField(_('Reports from'), null=True, blank=True)
     type = models.CharField(_('Site type'), max_length=20, choices=Type.choices, default=Type.LAND_BASED)
     status = models.CharField(_('Status'), max_length=20, choices=Status.choices, default=Status.ACTIVE)
     is_active = models.BooleanField(_('Active'), default=True, db_index=True)
@@ -126,6 +141,15 @@ class Site(CodedMixin, AuditedModel):
             models.CheckConstraint(
                 condition=Q(lokalitetsnummer__isnull=True) | Q(lokalitetsnummer__gte=10000, lokalitetsnummer__lte=99999),
                 name='chk_sites_lokalitetsnummer_range',
+            ),
+            models.CheckConstraint(
+                condition=Q(organisation_number='') | Q(organisation_number__regex=r'^[0-9]{9}$'),
+                name='chk_sites_organisation_number',
+                violation_error_message=_('An organisation number is 9 digits.'),
+            ),
+            models.CheckConstraint(
+                condition=Q(production_form='') | Q(production_form__in=['settefisk', 'matfisk', 'stamfisk']),
+                name='chk_sites_production_form',
             ),
             models.CheckConstraint(
                 condition=Q(latitude__isnull=True) | Q(latitude__gte=-90, latitude__lte=90),

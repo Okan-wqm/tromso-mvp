@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -78,3 +79,27 @@ class ProductionDepartment(CodedMixin, AuditedModel):
             ),
         ]
         indexes = [models.Index(fields=['type']), models.Index(fields=['status'])]
+
+    def clean(self):
+        """Moved to another site, a department takes its units along: refused when one of them has stock records
+        (their past figures would be reported for the other locality, OUR-06, as a unit's own move is) or when one
+        of its units' regulatory numbers is taken on the new site (OUR-07)."""
+        super().clean()
+        if self._state.adding:
+            return
+        stored = type(self).all_objects.filter(pk=self.pk).values_list('site_id', flat=True).first()
+        if stored == self.site_id:
+            return
+        units = self.tanks.all()
+        if any(unit.has_history() for unit in units):
+            raise ValidationError({'site': _('Its units have stock records on their site: the department stays on '
+                                             'it.')})
+        numbers = [unit.regulatory_unit_id for unit in units if unit.regulatory_unit_id]
+        if numbers and self.site_id:
+            taken = (type(units.first()).objects.filter(production_department__site_id=self.site_id,
+                                                        regulatory_unit_id__in=numbers)
+                     .exclude(production_department=self).order_by('regulatory_unit_id')
+                     .values_list('regulatory_unit_id', flat=True))
+            if taken:
+                raise ValidationError({'site': _('The site has units numbered %(numbers)s already.') % {
+                    'numbers': ', '.join(dict.fromkeys(taken))}})

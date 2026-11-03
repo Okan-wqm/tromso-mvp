@@ -17,7 +17,9 @@ from ..handling import check
 from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Species, Supplier, Tank
 from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
-from ..models.stock import ARRIVAL_STATUSES, CullReason, InputStage, MortalityCause, Origin, TransferReason
+from ..models.stock import (
+    ARRIVAL_STATUSES, PROVENANCE_OF_ORIGIN, CullReason, InputStage, MortalityCause, Origin, TransferReason,
+)
 from ..models.supplier import SupplyCategory
 from ..stock import services
 from ..templatetags.stock import number
@@ -290,19 +292,25 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
 
     class Meta:
         model = Batch
-        fields = ['species', 'input_stage', 'origin', 'supplier', 'supplier_batch_ref', 'strain', 'name',
-                  'input_date', 'expected_harvest_date', 'notes']
+        fields = ['species', 'input_stage', 'origin', 'provenance', 'supplier', 'supplier_batch_ref', 'strain',
+                  'year_class', 'name', 'input_date', 'expected_harvest_date', 'notes']
         field_classes = {'supplier': SupplierChoice}
         widgets = {'input_date': DATE, 'expected_harvest_date': DATE, 'notes': NOTES}
         help_texts = {
             'supplier': _('Who sold the fish: a supplier of live fish and eggs (Purchasing › Suppliers); none for '
                           'the own hatchery or wild-caught fish.'),
             'strain': _('E.g. AquaGen, SalmoBreed.'),
+            'provenance': _('For bought fish: farmed, or caught in the wild. Required for cleaner fish (their report '
+                            'asks it); the own hatchery’s fish are farmed, the farm’s catch wild-caught.'),
+            'year_class': _('The year class (årsklasse) the reports give, e.g. 2026. Whether it is the hatch year or '
+                            'the year the fish went to sea is not confirmed with the authorities: enter it as the '
+                            'farm counts it.'),
             'name': _('Optional; the batch number is given on saving.'),
         }
 
-    field_order = ['species', 'input_stage', 'input_date', 'count', 'avg_weight_g', 'origin', 'supplier',
-                   'supplier_batch_ref', 'strain', 'name', 'expected_harvest_date', 'notes', 'over_capacity_ack']
+    field_order = ['species', 'input_stage', 'input_date', 'count', 'avg_weight_g', 'origin', 'provenance',
+                   'supplier', 'supplier_batch_ref', 'strain', 'year_class', 'name', 'expected_harvest_date', 'notes',
+                   'over_capacity_ack']
 
     def __init__(self, *args, unit=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -311,10 +319,25 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
         self.fields['input_date'].initial = services.local_today(unit)
         self.fields['token'].initial = uuid.uuid4()
         self.fields['supplier'].empty_label = _('None')
+        self.fields['provenance'].choices = [('', _('Not given')), *self.fields['provenance'].choices[1:]]
 
     def clean(self):
         cleaned = super().clean()
-        purchased = cleaned.get('origin') == Origin.PURCHASED
+        origin = cleaned.get('origin')
+        said = PROVENANCE_OF_ORIGIN.get(origin)
+        if said is not None:
+            # The origin says it: the person need not, and may not say otherwise.
+            if cleaned.get('provenance') not in ('', said):
+                self.add_error('provenance', _('Fish of the own hatchery are farmed, fish caught in the wild '
+                                               'wild-caught.'))
+            else:
+                cleaned['provenance'] = said
+        species = cleaned.get('species')
+        if (species is not None and species.is_cleaner_fish and origin == Origin.PURCHASED
+                and not cleaned.get('provenance') and 'provenance' not in self.errors):
+            self.add_error('provenance', _('Farmed or wild-caught? The cleaner-fish report asks it of every cleaner '
+                                           'fish.'))
+        purchased = origin == Origin.PURCHASED
         if purchased and not cleaned.get('supplier') and 'supplier' not in self.errors:
             self.add_error('supplier', _('Who sold the fish?'))
         elif 'origin' in cleaned and not purchased:
@@ -332,7 +355,8 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
             supplier=data['supplier'], supplier_batch_ref=data['supplier_batch_ref'].strip(),
             strain=data['strain'].strip(), name=data['name'].strip(),
             expected_harvest_date=data['expected_harvest_date'], notes=data['notes'],
-            ack=data['over_capacity_ack'], token=data['token'])
+            provenance=data['provenance'], year_class=data['year_class'], ack=data['over_capacity_ack'],
+            token=data['token'])
 
 
 class UnitChoice(forms.ModelChoiceField):

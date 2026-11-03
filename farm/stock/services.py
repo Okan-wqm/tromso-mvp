@@ -26,7 +26,7 @@ written. A void is the undo: steps 1, 4 and 6 with the operation left out; it fa
 operation (or the feeding) that depends on it, when later operations need its fish. `voided` is the
 one void of the farm's daily records, a stock operation's and a feeding's.
 
-Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 'notes',
+Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 'provenance', 'notes',
 'avg_weight_g', 'measured_weight_kg', 'destinations', 'over_capacity_ack', 'handling_ack', 'facility',
 'transport', 'vessel', 'plan_item', 'health_event' and NON_FIELD_ERRORS.
 
@@ -64,7 +64,7 @@ from farm.models import (
 from farm.models.handling import KIND_OF_OPERATION
 from farm.models.harvest import FULFILLED_BY
 from farm.models.stock import (
-    ARRIVAL_STATUSES, REASONS, AdjustmentReason, MovementKind, OperationKind, TransferReason,
+    ARRIVAL_STATUSES, PROVENANCE_OF_ORIGIN, REASONS, AdjustmentReason, MovementKind, OperationKind, TransferReason,
 )
 from farm.models.tank import NEEDS_NO_FISH
 from farm.templatetags.stock import number
@@ -81,8 +81,8 @@ STOCKABLE_SPECIES = (Species.Status.ACTIVE, Species.Status.EXPERIMENTAL)
 # What emptying a unit makes of its status (stock-db §6.6); a status not listed stays.
 EMPTIED = {Status.ACTIVE: Status.FALLOW, Status.HARVESTING: Status.CLEANING, Status.QUARANTINE: Status.CLEANING}
 # The batch fields the activity log shows for a new batch.
-BATCH_FIELDS = ['code', 'name', 'species', 'input_stage', 'origin', 'supplier', 'supplier_batch_ref', 'strain',
-                'input_date', 'expected_harvest_date', 'notes']
+BATCH_FIELDS = ['code', 'name', 'species', 'input_stage', 'origin', 'provenance', 'supplier', 'supplier_batch_ref',
+                'strain', 'year_class', 'input_date', 'expected_harvest_date', 'notes']
 
 
 class AlreadyRecorded(Exception):
@@ -263,6 +263,9 @@ def _check_static(kind, day, entries, batches, units, new_batch):
             raise ValidationError({'species': _('%(species)s is %(status)s: a new batch takes an active or '
                                                 'experimental species.')
                                    % {'species': species, 'status': str(species.get_status_display()).lower()}})
+        if species.is_cleaner_fish and not new_batch.fields['provenance']:
+            raise ValidationError({'provenance': _('Farmed or wild-caught? The cleaner-fish report asks it of every '
+                                                   'cleaner fish.')})
 
 
 def _check_event(event, day, units):
@@ -496,15 +499,19 @@ def _quantize(grams):
 
 
 def record_input(user, *, species, input_stage, origin, day, lines, supplier=None, supplier_batch_ref='',
-                 strain='', name='', expected_harvest_date=None, notes='', ack=False, token=None):
+                 strain='', name='', expected_harvest_date=None, notes='', provenance='', year_class=None, ack=False,
+                 token=None):
     """A new batch stocked into one or several units: `lines` = [(unit, fish, average weight in g)].
-    The batch has no count of its own: its input lines are the count (STK-05)."""
+    The batch has no count of its own: its input lines are the count (STK-05). Its provenance is the origin's when
+    the origin says it (the own hatchery, the farm's catch), else as given: required for a cleaner fish, whose
+    report asks it. Its year class is as given, never defaulted (D-14)."""
     units = [unit for unit, _count, _weight in lines]
     if len(set(units)) != len(units):
         raise ValidationError({'unit': _('Each unit can be listed once.')})
     entries = [Entry(unit, None, MovementKind.INPUT, count, avg_weight_g=_quantize(weight))
                for unit, count, weight in lines]
     batch = NewBatch({'species': species, 'input_stage': input_stage, 'origin': origin,
+                      'provenance': provenance or PROVENANCE_OF_ORIGIN.get(origin, ''), 'year_class': year_class,
                       'supplier': supplier, 'supplier_batch_ref': supplier_batch_ref, 'strain': strain,
                       'name': name, 'expected_harvest_date': expected_harvest_date, 'notes': notes})
     return _commit(user, OperationKind.INPUT, day, entries, ack=ack, token=token, new_batch=batch)

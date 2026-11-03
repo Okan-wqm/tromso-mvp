@@ -12,6 +12,7 @@ the whole timeline of every batch it touches and keeps the unit statuses in step
 """
 from decimal import Decimal
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
@@ -41,6 +42,20 @@ class Origin(models.TextChoices):
     PURCHASED = 'purchased', _('Bought from a supplier')
     OWN_HATCHERY = 'own_hatchery', _('Own hatchery')
     WILD = 'wild', _('Wild-caught')
+
+
+YEAR_CLASS_MESSAGE = _('A year class is a year, e.g. 2026.')
+
+
+class Provenance(models.TextChoices):
+    """Where the fish come from as Mattilsynet's cleaner-fish report asks it (`opprinnelse`): farmed or caught in
+    the wild. A batch of the own hatchery is farmed and one caught by the farm wild-caught; fish bought say which."""
+    FARMED = 'farmed', _('Farmed')
+    WILD_CAUGHT = 'wild_caught', _('Wild-caught')
+
+
+# What the origin says of the provenance: fish of the own hatchery are farmed, fish the farm caught wild-caught.
+PROVENANCE_OF_ORIGIN = {Origin.OWN_HATCHERY: Provenance.FARMED, Origin.WILD: Provenance.WILD_CAUGHT}
 
 
 class OperationKind(models.TextChoices):
@@ -88,6 +103,8 @@ class MortalityCause(models.TextChoices):
 
 
 class CullReason(models.TextChoices):
+    """Why fish were culled. A cleaner fish is culled for one of Mattilsynet's six causes (the cleaner-fish report's
+    `uttak`, its OpenAPI read 2026-11-03), a production fish for one of the others; the stock service holds which."""
     SMALL_SIZE = 'small_size', _('Small size')
     DEFORMED = 'deformed', _('Deformed')
     SICK = 'sick', _('Sick')
@@ -95,6 +112,18 @@ class CullReason(models.TextChoices):
     GRADING = 'grading', _('Grading')
     QUALITY = 'quality', _('Quality')
     OTHER = 'other', _('Other')
+    INJURED = 'injured', _('Injured')
+    EMACIATED = 'emaciated', _('Emaciated')
+    SALMON_HANDLING = 'salmon_handling', _('Healthy, before the salmon are handled')
+    POOR_ENVIRONMENT = 'poor_environment', _('Healthy, before a poor environment')
+    NOT_USED = 'not_used', _('Healthy, no longer to be used')
+
+
+# The causes of a cleaner fish's cull (antallAvlivetSykdom … antallAvlivetSkalIkkeBrukes) and of a production fish's.
+CLEANER_CULL_REASONS = (CullReason.SICK, CullReason.INJURED, CullReason.EMACIATED, CullReason.SALMON_HANDLING,
+                        CullReason.POOR_ENVIRONMENT, CullReason.NOT_USED)
+PRODUCTION_CULL_REASONS = (CullReason.SMALL_SIZE, CullReason.DEFORMED, CullReason.SICK, CullReason.POOR_GROWTH,
+                           CullReason.GRADING, CullReason.QUALITY, CullReason.OTHER)
 
 
 class TransferReason(models.TextChoices):
@@ -168,6 +197,13 @@ class Batch(AuditedModel):
                            '%(count)d batches of fish were bought from it: keep “%(category)s” ticked.', 'count'),
     )
     supplier_batch_ref = models.CharField(_('Supplier’s batch number'), max_length=100, blank=True)
+    provenance = models.CharField(_('Farmed or wild-caught'), max_length=12, blank=True, choices=Provenance.choices)
+    # The year class (årsklasse) of the reports (akvakulturdriftsforskriften § 42, § 44; D-14): entered, never
+    # defaulted, since fish stocked as eggs keep their batch through every move. Whether the authorities mean the
+    # hatch year or the year the fish went to sea is unverified.
+    year_class = models.PositiveSmallIntegerField(
+        _('Year class'), null=True, blank=True,
+        validators=[MinValueValidator(1980, YEAR_CLASS_MESSAGE), MaxValueValidator(2100, YEAR_CLASS_MESSAGE)])
     strain = models.CharField(_('Strain'), max_length=100, blank=True)
     input_date = models.DateField(_('Stocking date'))
     expected_harvest_date = models.DateField(_('Expected harvest'), null=True, blank=True)
@@ -191,6 +227,17 @@ class Batch(AuditedModel):
                 violation_error_message=_('Bought fish have a supplier; fish of the own hatchery or caught in the '
                                           'wild have none.'),
             ),
+            models.CheckConstraint(
+                condition=Q(provenance='') | Q(provenance__in=Provenance.values), name='chk_batches_provenance'),
+            # Fish of the own hatchery are farmed and fish caught by the farm wild-caught; bought fish say which.
+            models.CheckConstraint(
+                condition=Q(origin=Origin.PURCHASED) | Q(origin=Origin.OWN_HATCHERY, provenance=Provenance.FARMED)
+                | Q(origin=Origin.WILD, provenance=Provenance.WILD_CAUGHT),
+                name='chk_batches_origin_provenance',
+                violation_error_message=_('Fish of the own hatchery are farmed, fish caught in the wild wild-caught.')),
+            models.CheckConstraint(
+                condition=Q(year_class__isnull=True) | Q(year_class__gte=1980, year_class__lte=2100),
+                name='chk_batches_year_class', violation_error_message=YEAR_CLASS_MESSAGE),
             models.CheckConstraint(
                 condition=Q(expected_harvest_date__isnull=True) | Q(expected_harvest_date__gt=F('input_date')),
                 name='chk_batches_harvest_after_input',

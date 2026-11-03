@@ -32,9 +32,9 @@ class ReportTestCase(TestCase):
         self.user.groups.add(role('Reporter', *REPORTER))
         self.client.force_login(self.user)
         self.hatchery = Site.objects.create(name='Hatchery', code='HA', type='hatchery', lokalitetsnummer=12345,
-                                            organisation_number_override='987654321')
+                                            organisation_number='987654321')
         self.sea = Site.objects.create(name='Fjord', code='FJ', type='sea_cage', latitude=60, longitude=5,
-                                       lokalitetsnummer=23456, organisation_number_override='987654321')
+                                       lokalitetsnummer=23456, organisation_number='987654321')
         self.hall = ProductionDepartment.objects.create(site=self.hatchery, name='Hall', code='HL')
         self.bay = ProductionDepartment.objects.create(site=self.sea, name='Bay', code='BY')
         self.k1, self.k2, self.k3 = (make_unit(code, self.hall) for code in ('K-01', 'K-02', 'K-03'))

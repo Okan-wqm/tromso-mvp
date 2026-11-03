@@ -7,14 +7,12 @@ decimals as text), what keeps it from being ready (problems) and what the person
 reader's language and never frozen, and the scope it read, for the fingerprint."""
 import hashlib
 import json
-import re
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.utils.translation import gettext as _
 
 FORMAT_VERSION = 1
-ORGANISATION_NUMBER = r'^[0-9]{9}$'
 
 
 @dataclass
@@ -60,9 +58,9 @@ def unit_number(unit):
 
 def identity(site, problems):
     """The site as the authority knows it; what is missing goes into `problems`."""
-    organisation = site.organisation_number_override
-    if not re.fullmatch(ORGANISATION_NUMBER, organisation or ''):
-        note(problems, _('%(site)s has no organisation number of 9 digits (Facility › Sites).') % {'site': site})
+    organisation = site.organisation_number      # nine digits or empty: the database holds it
+    if not organisation:
+        note(problems, _('%(site)s has no organisation number (Facility › Sites, its Reports tab).') % {'site': site})
     if site.lokalitetsnummer is None:
         note(problems, _('%(site)s has no lokalitetsnummer (Facility › Sites).') % {'site': site})
     return {'organisation_number': organisation or None, 'lokalitetsnummer': site.lokalitetsnummer,

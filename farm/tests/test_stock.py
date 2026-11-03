@@ -849,7 +849,8 @@ class DialogTests(StockTestCase):
         data = {'token': str(uuid.uuid4()), 'species': str(self.salmon.pk), 'input_stage': 'fry',
                 'input_date': self.day(2).isoformat(), 'count': '5000', 'avg_weight_g': '2.5', 'origin': 'purchased',
                 'supplier': str(self.supplier.pk), 'supplier_batch_ref': 'S-9', 'strain': '', 'name': '',
-                'expected_harvest_date': '', 'notes': '', 'units-TOTAL_FORMS': str(len(rows)),
+                'expected_harvest_date': '', 'notes': '', 'provenance': '', 'year_class': '',
+                'units-TOTAL_FORMS': str(len(rows)),
                 'units-INITIAL_FORMS': '0', 'units-MIN_NUM_FORMS': '1', 'units-MAX_NUM_FORMS': '20'}
         for index, (unit, count) in enumerate(rows):
             data[f'units-{index}-unit'] = str(unit.pk) if unit else ''
@@ -864,16 +865,40 @@ class DialogTests(StockTestCase):
         self.assertContains(form, 'class="modal-head"')
         self.assertEqual(form.context['rows'].initial, [{'unit': self.t1.pk}])
         self.assertEqual(form.context['form']['input_date'].value(), self.today)
-        response = self.post(url, self.input_data([(self.t1, 3000), (self.t2, 2000)]))
+        response = self.post(url, self.input_data([(self.t1, 3000), (self.t2, 2000)], provenance='farmed',
+                                                  year_class='2026'))
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response['X-Modal-Redirect'], f'{reverse("farm:production_units")}?kind=tank&unit={self.t1.pk}')
         batch = Batch.objects.get()
-        self.assertEqual((batch.supplier, batch.supplier_batch_ref, batch.input_date, batch.origin),
-                         (self.supplier, 'S-9', self.day(2), 'purchased'))
+        self.assertEqual((batch.supplier, batch.supplier_batch_ref, batch.input_date, batch.origin, batch.provenance,
+                          batch.year_class), (self.supplier, 'S-9', self.day(2), 'purchased', 'farmed', 2026))
         self.assertEqual(sorted(StockMovement.objects.values_list('unit__code', 'count_delta', 'avg_weight_g')),
                          [('T-01', 3000, Decimal('2.5000')), ('T-02', 2000, Decimal('2.5000'))])
         page = self.client.get(reverse('farm:production_units'))
         self.assertContains(page, f'Batch {batch.code} stocked: 5,000 fish into T-01, T-02.')
+
+    def test_the_provenance_follows_the_origin_and_a_cleaner_fish_needs_one(self):
+        url = reverse('farm:stock_input')
+        own = {'origin': 'own_hatchery', 'supplier': '', 'supplier_batch_ref': ''}
+        self.post(url, self.input_data([(self.t1, 5000)], **own))
+        batch = Batch.objects.get()
+        self.assertEqual((batch.provenance, batch.year_class), ('farmed', None))       # said by the origin; no default
+        response = self.post(url, self.input_data([(self.t2, 5000)], **{**own, 'origin': 'wild'}, provenance='farmed'))
+        self.assertEqual(response.context['form'].errors['provenance'],
+                         ['Fish of the own hatchery are farmed, fish caught in the wild wild-caught.'])
+        lumpfish = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='Rognkjeks', freshwater=False,
+                                cleaner_fish_type='lumpfish')
+        response = self.post(url, self.input_data([(self.t2, 5000)], species=str(lumpfish.pk)))
+        message = ['Farmed or wild-caught? The cleaner-fish report asks it of every cleaner fish.']
+        self.assertEqual(response.context['form'].errors['provenance'], message)
+        self.assertEqual(self.refused(services.record_input, self.user, species=lumpfish, input_stage='fry',
+                                      origin='purchased', supplier=self.supplier, day=self.day(2),
+                                      lines=[(self.t2, 10, Decimal(5))])['provenance'], message)
+        self.assertEqual(Batch.all_objects.count(), 1)
+        response = self.post(url, self.input_data([(self.t2, 5000)], species=str(lumpfish.pk), provenance='wild_caught',
+                                                  year_class='1979'))
+        self.assertIn('year_class', response.context['form'].errors)
+        self.assertEqual(Batch.all_objects.count(), 1)
 
     def test_the_split_must_add_up_and_name_each_unit_once(self):
         url = reverse('farm:stock_input')
@@ -1057,6 +1082,19 @@ class SiteHistoryTests(StockTestCase):
         fresh = make_unit('T-09', self.hall)
         fresh.production_department = self.sea
         fresh.full_clean()                                        # a unit without records may move anywhere
+
+    def test_a_department_whose_units_have_stock_records_stays_on_its_site(self):
+        # Its move would take the units along: the same rule as a unit's own move.
+        self.stock()
+        self.hall.site = self.tromso
+        with self.assertRaises(ValidationError) as caught:
+            self.hall.full_clean()
+        self.assertEqual(caught.exception.message_dict['site'],
+                         ['Its units have stock records on their site: the department stays on it.'])
+        empty = ProductionDepartment.objects.create(site=self.bergen, name='Hall B', code='HB')
+        make_unit('T-09', empty)
+        empty.site = self.tromso
+        empty.full_clean()
 
     def test_a_site_with_stock_records_is_closed_not_deleted(self):
         from core.softdelete import plan_delete

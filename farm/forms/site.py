@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
@@ -9,7 +10,7 @@ from .contact import contact_formset
 # The source form's inner tabs (Basic info / Location info / Contact info) and their fields.
 SITE_FORM_TABS = [
     ('basic', _('Basic info'), [
-        'name', 'code', 'lokalitetsnummer', 'organisation_number_override', 'description',
+        'name', 'code', 'lokalitetsnummer', 'description',
         'type', 'status', 'area_m2', 'timezone',
     ]),
     ('location', _('Location'), [
@@ -17,7 +18,21 @@ SITE_FORM_TABS = [
         'altitude',
     ]),
     ('contact', _('Contact'), ['site_manager', 'contact_email', 'contact_phone']),
+    # What the regulatory reports need of the site (Production › Reports).
+    ('reports', _('Reports'), ['organisation_number', 'production_form', 'reports_from']),
 ]
+
+
+class OrganisationNumberField(forms.CharField):
+    """Nine digits, typed as printed (987 654 321) or plain, stored plain."""
+
+    default_validators = [RegexValidator(r'^[0-9]{9}$', _('An organisation number is 9 digits.'))]
+
+    def to_python(self, value):
+        return ''.join(super().to_python(value).split())
+
+    def widget_attrs(self, widget):
+        return {**super().widget_attrs(widget), 'maxlength': '11'}    # with its two spaces
 
 
 class SiteForm(CodedFormMixin, TabbedForm):
@@ -29,11 +44,17 @@ class SiteForm(CodedFormMixin, TabbedForm):
         # Quantities are typed and shown the way the language writes them (50000,5 or 50000.5), so
         # they are text inputs: a number input would use the browser's own language instead.
         localized_fields = ['area_m2', 'latitude', 'longitude', 'altitude']
+        field_classes = {'organisation_number': OrganisationNumberField}
         help_texts = {
             'lokalitetsnummer': _('Akvakulturregisteret locality number (5 digits). '
                                   'Norwegian regulatory reports cannot be filed without it.'),
             'timezone': _('Feeding jobs run on the site’s local day. Leave it inherited unless the site is '
                           'in a different timezone than the company.'),
+            'organisation_number': _('The permit holder’s, which owns the fish: the reports to Mattilsynet and '
+                                     'Fiskeridirektoratet carry it. Nine digits.'),
+            'production_form': _('Juveniles, food fish or broodstock: it decides the reports the site owes.'),
+            'reports_from': _('Its reports are listed as due from this day; leave it empty while they are filed '
+                              'elsewhere.'),
             'latitude': _('Required for a sea cage.'),
             'lice_area': _('For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 '
                            'from Nord-Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark '
@@ -43,8 +64,9 @@ class SiteForm(CodedFormMixin, TabbedForm):
             'name': forms.TextInput(attrs={'placeholder': _('e.g. Main Production Site')}),
             'code': forms.TextInput(attrs={'placeholder': _('e.g. MPS-001'), 'data-uppercase': ''}),
             'lokalitetsnummer': forms.NumberInput(attrs={'placeholder': _('e.g. 12345'), 'min': 10000, 'max': 99999}),
-            'organisation_number_override': forms.TextInput(
-                attrs={'placeholder': _('9-digit Norwegian organisation number')}),
+            'organisation_number': forms.TextInput(
+                attrs={'placeholder': _('9-digit Norwegian organisation number'), 'inputmode': 'numeric'}),
+            'reports_from': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'description': forms.Textarea(attrs={'rows': 3, 'placeholder': _('Brief description of the site')}),
             'area_m2': forms.TextInput(attrs={'placeholder': _('e.g. 50000'), 'inputmode': 'decimal'}),
             'country': forms.TextInput(attrs={'placeholder': _('e.g. Norway')}),
@@ -61,6 +83,7 @@ class SiteForm(CodedFormMixin, TabbedForm):
         super().__init__(*args, **kwargs)
         self.fields['timezone'].choices = [('', _('Inherit from company'))] + Site.TIMEZONES
         self.fields['lice_area'].choices = [('', _('Not set'))] + list(Site.LiceArea.choices)
+        self.fields['production_form'].choices = [('', _('Not set'))] + list(Site.ProductionForm.choices)
 
     def clean(self):
         cleaned = super().clean()

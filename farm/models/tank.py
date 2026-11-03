@@ -397,10 +397,13 @@ class Tank(CodedMixin, AuditedModel):
                 fields=['code'], condition=Q(is_deleted=False), name='uq_tanks_code_live',
                 violation_error_message=_('Another unit already uses this code.'),
             ),
+            # A unit's number is the locality's (merd 1 on two sites is two units, OUR-07). The database holds it per
+            # production department, all a constraint can see; clean() and check_stock hold it per site.
             models.UniqueConstraint(
-                fields=['regulatory_unit_id'], condition=Q(is_deleted=False) & ~Q(regulatory_unit_id=''),
+                fields=['production_department', 'regulatory_unit_id'],
+                condition=Q(is_deleted=False) & ~Q(regulatory_unit_id=''),
                 name='uq_tanks_regulatory_unit_id_live',
-                violation_error_message=_('Another unit already has this regulatory unit ID.'),
+                violation_error_message=_('Another unit of the site already has this regulatory unit ID.'),
             ),
             *_constraints(),
         ]
@@ -456,6 +459,16 @@ class Tank(CodedMixin, AuditedModel):
         from .stock import StockMovement
         return StockMovement.objects.filter(unit=self, operation__is_deleted=False).exists()
 
+    def same_number_on_site(self):
+        """Another live unit of the same site with this unit's regulatory unit ID (none when it has none)."""
+        if not self.regulatory_unit_id or not self.production_department_id:
+            return None
+        site_id = self.production_department.site_id
+        others = type(self).objects.filter(regulatory_unit_id=self.regulatory_unit_id).exclude(pk=self.pk)
+        others = others.filter(production_department__site_id=site_id) if site_id else others.filter(
+            production_department_id=self.production_department_id)
+        return others.first()
+
     def _check_site(self, errors):
         """A unit with stock lines stays on its site: moved to a production department of another site, its past
         stock, feedings and counts would be reported for the other locality."""
@@ -466,6 +479,11 @@ class Tank(CodedMixin, AuditedModel):
         if site_now != self.production_department.site_id and self.has_history():
             errors['production_department'] = ValidationError(
                 _('It has stock records on its site: it can only move to a production department of the same site.'))
+
+    def _check_number(self, errors):
+        if 'regulatory_unit_id' not in errors and self.same_number_on_site() is not None:
+            errors['regulatory_unit_id'] = ValidationError(
+                _('Another unit of the site already has this regulatory unit ID.'))
 
     def delete_blockers(self):
         if self.has_stock():
@@ -562,6 +580,7 @@ class Tank(CodedMixin, AuditedModel):
         if stored and self.has_stock() and any(getattr(self, name) != stored[name] for name in VOLUME_FIELDS):
             errors[NON_FIELD_ERRORS] = _('Fish are in it, so its size cannot change: move or harvest them first.')
         self._check_site(errors)
+        self._check_number(errors)
         if errors:
             raise ValidationError(errors)
 

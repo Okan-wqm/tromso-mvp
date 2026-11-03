@@ -64,6 +64,13 @@ class Buoyancy(models.TextChoices):
     SINKING = 'sinking', _('Sinking')
 
 
+class FeedForm(models.TextChoices):
+    """Dry feed (pellets, extruded) or wet feed (moist, paste): Mattilsynet's cleaner-fish report gives the month's
+    kilos of each (tørrforKg, våtforKg)."""
+    DRY = 'dry', _('Dry')
+    WET = 'wet', _('Wet')
+
+
 class FeedStatus(models.TextChoices):
     ACTIVE = 'active', _('Active')
     INACTIVE = 'inactive', _('Inactive')
@@ -127,6 +134,7 @@ class Feed(CodedMixin, AuditedModel):
             'first.', 'count'),
     )
     feed_type = models.CharField(_('Feed type'), max_length=20, choices=FeedType.choices)
+    feed_form = models.CharField(_('Dry or wet'), max_length=3, choices=FeedForm.choices, default=FeedForm.DRY)
     pellet_size_mm = models.DecimalField(_('Pellet size (mm)'), max_digits=5, decimal_places=2, null=True,
                                          blank=True, validators=PELLET_SIZE)
     buoyancy = models.CharField(_('Buoyancy'), max_length=20, blank=True, choices=Buoyancy.choices)
@@ -176,6 +184,7 @@ class Feed(CodedMixin, AuditedModel):
             models.CheckConstraint(condition=Q(code__regex=CODE), name='chk_feeds_code',
                                    violation_error_message=CODE_MESSAGE),
             models.CheckConstraint(condition=Q(feed_type__in=FeedType.values), name='chk_feeds_feed_type'),
+            models.CheckConstraint(condition=Q(feed_form__in=FeedForm.values), name='chk_feeds_feed_form'),
             models.CheckConstraint(condition=Q(buoyancy='') | Q(buoyancy__in=Buoyancy.values), name='chk_feeds_buoyancy'),
             models.CheckConstraint(condition=Q(status__in=FeedStatus.values), name='chk_feeds_status'),
             models.CheckConstraint(condition=Q(pellet_size_mm__gte=Decimal('0.01'), pellet_size_mm__lte=100),

@@ -26,6 +26,13 @@ def feeders_for(unit):
     return Equipment.objects.filter(place, equipment_type__category=EquipmentType.Category.FEEDING)
 
 
+class FeedTarget(models.TextChoices):
+    """Whom a feeding is for: the unit's production fish, or the cleaner fish beside them (D-1). Its feed is split
+    among the batches of its target only."""
+    PRODUCTION = 'production', _('Production fish')
+    CLEANER_FISH = 'cleaner_fish', _('Cleaner fish')
+
+
 class FeedingRecord(AuditedModel):
     """Feed given to one unit on one day: the farm's feeding record. Source table: farm.feeding_records.
 
@@ -56,6 +63,7 @@ class FeedingRecord(AuditedModel):
     date = models.DateField(_('Date'))
     time = models.TimeField(_('Time'), null=True, blank=True)    # farm-local, as the date
     feed = models.ForeignKey(Feed, on_delete=models.PROTECT, related_name='feedings', verbose_name=_('Feed'))
+    target = models.CharField(_('Fed to'), max_length=12, choices=FeedTarget.choices, default=FeedTarget.PRODUCTION)
     amount_kg = models.DecimalField(_('Feed given (kg)'), max_digits=10, decimal_places=3,
                                     validators=[MinValueValidator(MIN_AMOUNT_KG), MaxValueValidator(MAX_AMOUNT_KG)])
     meals = models.PositiveSmallIntegerField(_('Meals'), null=True, blank=True,
@@ -82,6 +90,7 @@ class FeedingRecord(AuditedModel):
         constraints = [
             models.CheckConstraint(condition=Q(amount_kg__gte=MIN_AMOUNT_KG, amount_kg__lte=MAX_AMOUNT_KG),
                                    name='chk_feeding_records_amount'),
+            models.CheckConstraint(condition=Q(target__in=FeedTarget.values), name='chk_feeding_records_target'),
             models.CheckConstraint(condition=Q(meals__isnull=True) | Q(meals__gte=1, meals__lte=MAX_MEALS),
                                    name='chk_feeding_records_meals'),
             models.CheckConstraint(

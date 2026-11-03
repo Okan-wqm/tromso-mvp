@@ -493,15 +493,33 @@ class UniquenessTests(TankTestCase):
         self.post(unit_data(self.hall))
         self.assertEqual(Tank.objects.get().code, 'T-01')
 
-    def test_a_regulatory_unit_id_is_unique_among_live_units_when_given(self):
+    def test_a_regulatory_unit_id_is_unique_among_the_live_units_of_a_site_when_given(self):
+        # The number is the locality's (merd 1 on two sites is two units, OUR-07).
         self.make(code='A', regulatory_unit_id='K-7')
         self.make(code='B')
-        errors = self.errors(unit_data(self.hall, regulatory_unit_id='K-7'))
-        self.assertEqual(errors['regulatory_unit_id'], ['Another unit already has this regulatory unit ID.'])
+        message = ['Another unit of the site already has this regulatory unit ID.']
+        self.assertEqual(self.errors(unit_data(self.hall, regulatory_unit_id='K-7'))['regulatory_unit_id'], message)
+        # Another production department of the same site: the same site, refused by clean().
+        self.assertEqual(self.errors(unit_data(self.hall_b, regulatory_unit_id='K-7'))['regulatory_unit_id'], message)
         self.post(unit_data(self.hall))
         self.assertEqual(Tank.objects.filter(regulatory_unit_id='').count(), 2)
+        # Another site may use the number.
+        self.post(unit_data(self.sea, code='S-1', regulatory_unit_id='K-7'))
+        self.assertEqual(Tank.objects.filter(regulatory_unit_id='K-7').count(), 2)
+        # The database holds it per production department, all a constraint can see.
         with self.assertRaises(IntegrityError), transaction.atomic():
             self.make(code='C', regulatory_unit_id='K-7')
+
+    def test_a_department_moving_site_keeps_its_units_numbers_unique(self):
+        self.make(code='A', regulatory_unit_id='K-7')
+        cage = self.make(code='S1', department=self.sea, regulatory_unit_id='K-7')
+        self.sea.site = self.bergen
+        with self.assertRaises(ValidationError) as caught:
+            self.sea.full_clean()
+        self.assertEqual(caught.exception.message_dict['site'], ['The site has units numbered K-7 already.'])
+        cage.regulatory_unit_id = 'K-8'
+        cage.save()
+        self.sea.full_clean()
 
 
 class StatusTests(TankTestCase):

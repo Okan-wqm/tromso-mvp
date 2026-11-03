@@ -29,7 +29,8 @@ class SiteRoundTripTests(SiteTestCase):
     def test_site_create_read_edit_delete(self):
         full = site_data(
             name='Bergen Hatchery', code='bh-01', lokalitetsnummer='12345',
-            organisation_number_override='987654321', description='Smolt production',
+            organisation_number='987654321', production_form='settefisk', reports_from='2026-01-01',
+            description='Smolt production',
             type='hatchery', status='maintenance', area_m2='50000.50', timezone='Europe/Oslo',
             country='Norway', region='Vestland', street='Kaien 1', city='Bergen', state='Vestland',
             postal_code='5003', latitude='60.391300', longitude='5.322100', altitude='12.50',
@@ -51,19 +52,36 @@ class SiteRoundTripTests(SiteTestCase):
         # Edit: change values and clear optional ones
         self.client.post(reverse('farm:site_edit', args=[site.pk]), dict(
             full, name='Bergen Smolt', status='active', latitude='', longitude='', altitude='',
-            lokalitetsnummer='', contact_email='', version='1',
+            lokalitetsnummer='', contact_email='', organisation_number='', production_form='', reports_from='',
+            version='1',
         ))
         site.refresh_from_db()
         self.assertEqual((site.name, site.status, site.version), ('Bergen Smolt', 'active', 2))
         self.assertIsNone(site.latitude)
         self.assertIsNone(site.lokalitetsnummer)
         self.assertEqual(site.contact_email, '')
+        self.assertEqual((site.organisation_number, site.production_form, site.reports_from), ('', '', None))
 
         # Delete
         self.client.post(reverse('farm:site_delete', args=[site.pk]))
         self.assertFalse(Site.objects.exists())
         self.assertEqual(list(self.client.get(reverse('farm:site_list')).context['objects']), [])
         self.assertTrue(Site.all_objects.get(pk=site.pk).is_deleted)
+
+    def test_the_organisation_number_is_nine_digits_typed_with_or_without_spaces(self):
+        self.client.post(reverse('farm:site_create'), site_data(organisation_number='987 654 321'))
+        self.assertEqual(Site.objects.get().organisation_number, '987654321')
+        for typed in ('98765432', '9876543210', '98765432A', 'NO987654321MVA'):
+            response = self.client.post(reverse('farm:site_create'), site_data(name='Other', code='OT',
+                                                                               organisation_number=typed))
+            self.assertEqual(response.status_code, 200, typed)
+            self.assertIn('organisation_number', response.context['form'].errors, typed)
+        self.assertEqual(Site.objects.count(), 1)
+
+    def test_the_database_holds_the_organisation_number_and_the_production_form(self):
+        for fields in ({'organisation_number': '12345'}, {'production_form': 'hatchery'}):
+            with self.subTest(fields), self.assertRaises(IntegrityError), transaction.atomic():
+                self.make_site(**fields)
 
     def test_contact_create_read_edit_delete(self):
         site = self.make_site()
@@ -265,7 +283,7 @@ class SiteCreateTests(SiteTestCase):
     def test_errors_mark_their_tab(self):
         response = self.client.post(reverse('farm:site_create'), site_data(type='sea_cage'))
         tabs = {tab['key']: tab['has_errors'] for tab in response.context['form'].tab_list()}
-        self.assertEqual(tabs, {'basic': False, 'location': True, 'contact': False})
+        self.assertEqual(tabs, {'basic': False, 'location': True, 'contact': False, 'reports': False})
 
 
 class SiteDatabaseConstraintTests(SiteTestCase):

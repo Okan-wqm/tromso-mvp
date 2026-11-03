@@ -28,7 +28,7 @@ FIELDS = TEXTS + NUMBERS
 def feed_data(**overrides):
     """What the feed dialog posts."""
     data = {
-        'name': 'Nutra Olympic 3 mm', 'code': 'nutra-3', 'manufacturer': '', 'feed_type': 'grower',
+        'name': 'Nutra Olympic 3 mm', 'code': 'nutra-3', 'manufacturer': '', 'feed_type': 'grower', 'feed_form': 'dry',
         'pellet_size_mm': '', 'buoyancy': '', 'status': 'active', 'protein_pct': '', 'fat_pct': '', 'nfe_pct': '',
         'fibre_pct': '', 'ash_pct': '', 'moisture_pct': '', 'phosphorus_pct': '', 'gross_energy_mj_kg': '',
         'digestible_energy_mj_kg': '', 'price_per_kg': '', 'currency': '', 'notes': '',
@@ -84,12 +84,13 @@ class FeedRoundTripTests(FeedTestCase):
     def test_create_read_edit_delete(self):
         # Create: every field typed
         self.create(name=' Nutra Olympic 3 mm ', code=' nutra-3 ', manufacturer=str(self.mill.pk), feed_type='grower',
-                    pellet_size_mm='3', buoyancy='slow_sinking', status='inactive', protein_pct='45.5', fat_pct='24',
+                    feed_form='wet', pellet_size_mm='3', buoyancy='slow_sinking', status='inactive', protein_pct='45.5', fat_pct='24',
                     nfe_pct='12.5', fibre_pct='1.5', ash_pct='8', moisture_pct='8.5', phosphorus_pct='1.1',
                     gross_energy_mj_kg='22.5', digestible_energy_mj_kg='19.8', price_per_kg='14.75', currency=' nok ',
                     notes='Bags of 25 kg')
         feed = Feed.objects.get()
-        self.assertEqual(stored(feed, 'manufacturer', 'created_by', 'version'), (self.mill, self.user, 1))
+        self.assertEqual(stored(feed, 'manufacturer', 'created_by', 'version', 'feed_form'),
+                         (self.mill, self.user, 1, 'wet'))
         self.assertEqual(stored(feed, *FIELDS), (
             'Nutra Olympic 3 mm', 'NUTRA-3', 'grower', 'slow_sinking', 'inactive', 'NOK', 'Bags of 25 kg',
             Decimal('3.00'), Decimal('45.50'), Decimal('24.00'), Decimal('12.50'), Decimal('1.50'), Decimal('8.00'),
@@ -103,17 +104,19 @@ class FeedRoundTripTests(FeedTestCase):
             'name': 'Nutra Olympic 3 mm', 'code': 'NUTRA-3', 'feed_type': 'grower', 'buoyancy': 'slow_sinking',
             'status': 'inactive', 'currency': 'NOK', 'notes': 'Bags of 25 kg', 'manufacturer': self.mill.pk,
             'version': 1})
+        self.assertEqual(form['feed_form'].value(), 'wet')
         self.assertEqual([form[name].value() for name in NUMBERS], [
             Decimal('3.00'), Decimal('45.50'), Decimal('24.00'), Decimal('12.50'), Decimal('1.50'), Decimal('8.00'),
             Decimal('8.50'), Decimal('1.10'), Decimal('22.50'), Decimal('19.80'), Decimal('14.75')])
 
         # Edit: every field changed
         self.edit(feed, name='Rapid 4 mm', code='RAPID-4', manufacturer=str(self.other_mill.pk), feed_type='finisher',
-                  pellet_size_mm='4.5', buoyancy='sinking', status='active', protein_pct='40', fat_pct='30',
+                  feed_form='dry', pellet_size_mm='4.5', buoyancy='sinking', status='active', protein_pct='40', fat_pct='30',
                   nfe_pct='15', fibre_pct='2', ash_pct='6', moisture_pct='7', phosphorus_pct='0.9',
                   gross_energy_mj_kg='24', digestible_energy_mj_kg='21.5', price_per_kg='16', currency='EUR',
                   notes='Winter feed')
-        self.assertEqual(stored(feed, 'manufacturer', 'updated_by', 'version'), (self.other_mill, self.user, 2))
+        self.assertEqual(stored(feed, 'manufacturer', 'updated_by', 'version', 'feed_form'),
+                         (self.other_mill, self.user, 2, 'dry'))
         self.assertEqual(stored(feed, *FIELDS), (
             'Rapid 4 mm', 'RAPID-4', 'finisher', 'sinking', 'active', 'EUR', 'Winter feed', Decimal('4.50'),
             Decimal('40.00'), Decimal('30.00'), Decimal('15.00'), Decimal('2.00'), Decimal('6.00'), Decimal('7.00'),
@@ -634,7 +637,8 @@ class FeedAuditTests(FeedTestCase):
                          ('create', 'feed', 'Nutra Olympic 3 mm (NUTRA-3)'))
         self.assertEqual(created.changes, {
             'Name': [None, 'Nutra Olympic 3 mm'], 'Code': [None, 'NUTRA-3'], 'Manufacturer': [None, 'Fjord Feed AS (FJF)'],
-            'Feed type': [None, message('Grower feed')], 'Buoyancy': [None, message('Floating')],
+            'Feed type': [None, message('Grower feed')], 'Dry or wet': [None, message('Dry')],
+            'Buoyancy': [None, message('Floating')],
             'Status': [None, message('Active')], 'Crude protein (%)': [None, '45.50'], 'Price per kg': [None, '14.00'],
             'Currency': [None, 'NOK'],
         })

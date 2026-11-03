@@ -5,7 +5,8 @@ from django.contrib.auth.models import Group, Permission
 def site_data(**overrides):
     data = {
         'name': 'Main Production Site', 'code': 'mps-001', 'type': 'land_based', 'status': 'active',
-        'lokalitetsnummer': '', 'organisation_number_override': '', 'description': '', 'area_m2': '',
+        'lokalitetsnummer': '', 'organisation_number': '', 'production_form': '', 'reports_from': '',
+        'description': '', 'area_m2': '',
         'timezone': '', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
         'postal_code': '', 'latitude': '', 'longitude': '', 'altitude': '', 'site_manager': '',
         'contact_email': '', 'contact_phone': '',

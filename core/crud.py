@@ -33,6 +33,7 @@ from django.utils.translation import gettext as _
 from . import audit, navigation, softdelete
 from .models import AuditedModel, AuditLog
 from .softdelete import plan_delete
+from .widgets import NONE
 
 
 def is_modal(request):
@@ -427,7 +428,8 @@ class ResourceView:
         return get_object_or_404(self.resource.queryset(), pk=pk)
 
 
-NONE = 'none'   # a list filter's value for "records without one" (production departments without a site)
+# NONE (core.widgets, imported above): a list filter's value for "records without one" (production departments
+# without a site), the value a DependentSelect's source takes for the same.
 
 
 def filter_by(request, objects, param, choices, lookup, allow_none=False):

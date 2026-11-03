@@ -17,8 +17,9 @@ What works today:
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
   and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, water limits, suppliers, and under Operations the production units with their fish, the
-  feeding records and the water chemistry). Each has its own overview. A
+  species, feeds, water limits, medicines, suppliers, and under Operations the production units with their
+  fish, the feeding records, the water chemistry and the fish's health: treatments, health events and sea-lice
+  counts). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Three languages, English, Norwegian (bokmål) and Turkish, chosen with the EN / TR / NB switch in the
@@ -48,7 +49,9 @@ delete is a soft delete. Differences from the source:
 - Column lengths win where the source's form allowed longer values (name 150, code 20, email 150).
 - Editing is guarded by the `version` column: a save based on an old version is refused.
 - Deleting a site leaves its production departments without a site (see Production departments); the other dependants
-  join the delete plan as their tabs arrive.
+  join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
+- The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
+  which decides the weeks of the lower spring limit (see Operations › Health).
 
 ### Production departments (`/production-departments/`)
 
@@ -514,10 +517,11 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   the person's language; the drawer's "Stock this unit" knows its unit.
 - Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
+- The medicine withdrawal of a unit's fish is on its row and in its drawer (see Operations › Health); the
+  harvest dialog's warning and acknowledgement are the handling check's (farm/handling).
 - Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
-  comes from the samples, see Water chemistry), harvest plans, lot numbers, buyers and prices, the
-  medicine-withdrawal block on harvest (**it must come back with the health module before real
-  harvests**), batch documents and costs, count adjustments as a dialog (their lines and checks exist).
+  comes from the samples, see Water chemistry), harvest plans, lot numbers, buyers and prices, batch
+  documents and costs, count adjustments as a dialog (their lines and checks exist).
 
 ### Operations › Feeding records (`/operations/feeding/`)
 
@@ -725,6 +729,125 @@ Differences from the source (details in the bug document, WQ-01 to WQ-29):
   and a site's intake water. The feeding tab is to read the latest water temperature from here and keep
   no copy of its own (WQ-02).
 
+### Operations › Health and Reference data › Medicines
+
+The fish's health: the medicines the farm uses with their withdrawal (Setup › Reference data › **Medicines**,
+`/medicines/`), what was given the fish (Operations › Health › **Treatments**, `/operations/health/treatments/`),
+what was seen, found or advised (**Health events**, `/operations/health/events/`) and the sea lice counted
+(**Sea-lice counts**, `/operations/health/lice/`). Tables `medicines`, `treatments` with `treatment_units`,
+`health_events` with `health_event_units`, and `lice_counts`. Typed columns and database checks, no JSON
+(the source kept a treatment, its withdrawal and a lab result in five JSON blobs of one row, HLT-07, HLT-15).
+
+**Medicines** (a tab: table, search, filters by kind, administration and status, the dialog, delete): name
+(unique among live medicines whatever its case), MT number, kind (sea-lice medicine, antibacterial, other
+antiparasitic, antifungal, vaccine, anaesthetic, other), how it is given (bath, in feed, injection, dip), the
+active substance, for a sea-lice medicine its substance as Mattilsynet's weekly lice report names it (the
+official value is stored, e.g. `EMAMECTIN_BENZOAT`; other medicines have none), the strength with its unit
+(both or neither), the manufacturer (a supplier of medicines and vaccines, a `SupplierLink`), prescription only,
+status, notes, and **the withdrawal in degree-days, in days or both, at least one** (a database check; 0 means
+none; both given, the later end wins). Nothing is seeded: the values are the product's SPC, entered by the farm
+and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer (`PROTECT`): set it
+inactive.
+
+**Treatments** (a read page with dialogs, like Feeding records): one course given to the fish of one or more
+units of a site: the method (bath, in feed, injection, dip with a medicine; thermal, mechanical, freshwater or
+other without one, a database check), the medicine (an active one; a treatment is given the way its medicine is,
+so the lice report's method follows), the reason (sea lice, other parasites, bacterial, fungal, vaccination,
+sedation, other; a vaccination uses a vaccine and a vaccine is a vaccination), the first and **last day** (the
+first day follows the date rule of every daily record, the last may be planned up to 28 days ahead), the dose
+and the amount used with their units (the report's units), the bath time, who prescribed it and the
+prescription number, the vet (a supplier of veterinary and fish health services) and the health event it
+answers. Every unit must hold fish on the first day; the other way round, a stock operation that would leave a
+treatment (or a lice count) without fish on its day is refused, naming it, and `check_stock` reports one. **No
+batch is stored**: the batches treated are the ones the stock ledger has in its units from its first to its last
+day. The list filters by site, unit, batch, method, medicine, dates, "under withdrawal today" and
+"vaccinations", shows every batch a treatment reached with the withdrawal it puts on it, and offers **Last day**
+(the course ended earlier or goes on: Edit, logged with the old and new day) and **Void** (with a reason, the
+farm's window; it lifts the withdrawal). Nothing else is edited: a correction is a void and a new record.
+
+**The medicine withdrawal** is worked out on read, never stored (`farm/health/withdrawal.py`), so a void, a
+corrected temperature or a backdated transfer changes it at once:
+
+- it **follows the fish**: every live treatment with a medicine whose treated batches include the batch holds
+  it, wherever it is now; if only some of its units were treated, the whole batch is held;
+- **days**: day 1 is the day after the last treatment day, the first day the fish may be harvested is the last
+  day + the days + 1;
+- **degree-days**: the batch's daily mean water temperature is added up from the day after the last day until
+  it reaches the medicine's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
+  of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
+  copy); with the batch in several units that day, the lowest counts. **A past day without a temperature counts
+  as 0 °C** and the warning says how many; not reached by today, the rest is projected at the mean of the last 7
+  measured days within 30 ("about"); with none at all the end is unknown ("record the water temperature");
+- both given, the later end wins; a running course counts from its planned last day;
+- **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
+  covers holds it with an unknown end until the treatment is recorded or the feeding voided.
+
+Where it shows: Production units marks the unit's row **Withdrawal**, and its drawer says **"Not suitable for
+harvest — medicine withdrawal until 13 Dec 2026 (harvest from 14 Dec 2026)"** ("about" when projected, "end
+unknown" with why) to everyone who sees the page, and lists each batch held and why. The harvest side reads the
+same through the registry of `farm/handling/withdrawal.py` (`blocks(unit, day)`; the health records register
+their provider in `farm/apps.py`): its handling check warns, never blocks (owner decision), and keeps the
+acknowledgement.
+
+**Health events** (a tab: created and edited on their form, every change logged, voided with a reason instead of
+deleted): the site (chosen once) and some of its units or the whole site, the date, the kind (observation, vet or
+fish-health visit, lab result, increased mortality), the signs (several of a fixed list), a diagnosis from a
+reviewed catalogue (`farm/health/diseases.py`: the EU-listed and the Norwegian category F and G diseases of
+dyrehelseforskriften §§ 5–6, each with whether it must be notified, and common unlisted ones), suspected or
+confirmed (with a diagnosis, a database check), **Mattilsynet notified at** (on the site's clock), who examined,
+the vet and the laboratory (suppliers) with its reference, findings, recommendations, closed on and the outcome.
+A notifiable diagnosis, suspected or confirmed, without the time Mattilsynet was told raises the red **Notify
+Mattilsynet** banner on the list and in the unit's drawer (§ 7: at once, already on suspicion; sea lice are
+reported weekly with the counts instead). A mortality or a cull may be recorded under an event (the dialogs offer
+the events of the unit's site that concern it, open or closed within the backdating window, to people who may
+read them; `StockOperation.health_event`, a database check
+keeps it to those two kinds) and the event counts its **deaths** from those lines; mortality has the cause
+**Treatment** for deaths a treatment or its handling caused. Closing an event never lifts a withdrawal: that is
+the treatment's (HLT-01). An event that a live treatment or operation names is not voided.
+
+**Sea-lice counts** (a read page with dialogs): per unit and day, the fish examined and the lice of each stage
+found on them in total (adult females, mobile, attached); the averages per fish are worked out, never stored
+rounded. One live count per unit and day; a correction is a void and a new count (HLT-19). The page shows each
+site's **weekly averages** for the latest 12 weeks, as lakselusforskriften (FOR-2012-12-05-1140, read on Lovdata
+on 2026-11-03) has them:
+
+- Vedlegg 1 point 6: a unit's average is its lice / its fish examined, the site's average **the mean of the
+  units' averages**, every unit weighing the same (the source weighted them by their fish, HLT-22); the latest
+  count of each unit in the ISO week counts;
+- § 8: the site's average of adult female lice must stay **below 0.5**, and below **0.2 from Monday of week 16
+  to Sunday of week 21** from Nord-Trøndelag southwards, **weeks 21 to 26** in Nordland, Troms and Finnmark; at
+  the limit is over it ("færre enn"). The area is the site's (Facility › Sites, Location: Sea-lice limit area);
+  a site without one is judged by the stricter of the two, and the page says so;
+- Vedlegg 1 points 2 and 3: at least 20 fish a cage in weeks 14–21 (south) or 19–26 (north), 10 otherwise; a
+  smaller sample is pointed out; how many of the units with fish were counted is shown.
+
+Over the limit is a warning on the page; nobody is alerted yet, and the weekly report to Mattilsynet is not
+built (§ 10).
+
+**The unit's drawer** on Production units has a **Health** section: the withdrawal of each batch with why, the
+open health events that concern the unit, its treatments of the last 90 days, its latest lice count, and Record
+treatment, Record sea-lice count and Record health event with the unit chosen.
+
+**Who may do what**: the areas Medicines (Production · Setup · Reference data: read, create, edit, delete),
+Treatments (read, create, edit = change the last day, delete = void), Health events (read, create, edit, delete =
+void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
+The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
+works out every unit's withdrawal from scratch and lists the fish held, with the end and why.
+
+Differences from the source (details in the bug document, HLT-01 to HLT-23):
+
+- One treatment record, read by the withdrawal and (later) the lice report; the source had two that never met
+  (HLT-03). The withdrawal is the medicine's, in degree-days or days, from the last treatment day, worked out on
+  read; the source's date started at the click, was days only, was lifted by resolving the disease and could be
+  edited away (HLT-01, HLT-02, HLT-04, HLT-08).
+- Real foreign keys and checks everywhere (HLT-16); voids instead of deletes and edits that are logged (HLT-04);
+  the server's reasons on the field (HLT-17); a reviewed disease catalogue with ILA as the listed, endemic disease
+  it is (HLT-11); the statutory lice limits and the cage-mean average (HLT-10, HLT-22).
+- Not ported: the `health_events` JSON, quarantine as a flag (a unit status), the stats tiles, the chemical
+  master as a medicine catalogue, welfare scores, escape incidents, vaccination details, medicine stock, lab
+  result values, the reports to Mattilsynet, treatment effect and resistance tests, cleaner-fish health
+  (health-maturity §4d). The water temperature at a treatment is not typed on it: it is the water samples'.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -735,7 +858,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   Systems, Equipment, Tanks, ponds & cages, Species, Feeds, Water limits and Suppliers (read, create,
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
   Feeding records (read, create = record a feeding, delete = void one), Water chemistry (read the page
-  and a unit's water, create = record a sample or a round, delete = void one) and Activity log (read).
+  and a unit's water, create = record a sample or a round, delete = void one), Medicines (read, create, edit,
+  delete), Treatments (read, create, edit = change the last day, delete = void one), Health events (read,
+  create, edit, delete = void one), Sea-lice counts (read, create, delete = void one) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -983,6 +1108,10 @@ real mail.
 | `/operations/water/record/` | Record a water sample (`?unit=<id>` or `?system=<id>` chooses the point) |
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
+| `/medicines/` | Reference data › Medicines |
+| `/operations/health/treatments/` | Operations › Treatments; `new/` records one (`?unit=<id>` ticks a unit), `<id>/last-day/` changes its last day, `<id>/void/` voids it |
+| `/operations/health/events/` | Operations › Health events; `<id>/void/` voids one |
+| `/operations/health/lice/` | Operations › Sea-lice counts; `new/` records one (`?unit=<id>` chooses the unit), `<id>/void/` voids it |
 | `/water-limits/` | Reference data › Water limits |
 | `/activity/` | Activity log |
 | `/roles/` | Administration › Roles (platform admin) |
@@ -1011,6 +1140,7 @@ real mail.
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the list and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
+| `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

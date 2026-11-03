@@ -1623,6 +1623,52 @@ Differences from the source (details in the bug document, TSK-01 to TSK-23):
   the checklist keeps who ticked what; a form sent twice creates once (TSK-05, TSK-07, TSK-10, TSK-11, TSK-16).
 - Not ported: tags, the time estimate, auto rules, the calendar, notifications, the AI tools.
 
+### Research › Experiments (`/research/experiments/`)
+
+Trials of one species on one site, for a research facility: the design (factors and their levels, groups and
+controls), the replicates, the tanks and the days each is booked to a replicate, how the tanks were allocated, and the
+team. The app `experiments` reads `farm` and nothing reads it: it stores only what no other record holds, and every
+figure (fish, feed, FCR, water, deaths) is read through the farm's own reads over the days a tank is booked; a diet is
+applied through the farm's own feeding-protocol assignments. No farm table has an experiment column.
+
+**What is stored** (tables `experiments`, `experiment_factors`, `experiment_levels`, `experiment_groups`,
+`experiment_group_levels`, `experiment_replicates`, `experiment_replicate_units`, `experiment_members`; migration
+`experiments/0001_initial`, which depends on the farm's migration 0018 only, so the order in which other branches add
+farm migrations does not matter):
+
+- An **experiment**: a generated number (`E-2026-001`, never reused, `core.codes.next_code`), a name, a template flag, its
+  status (draft, running, closed), its site and species (one of each: a unit holds one species, and one clock gives the
+  day key), the hypothesis, the primary endpoint (`experiments/variables.py`: biological FCR, economic FCR, survival,
+  biomass gain: what the farm's reads give today), the start day (day 0, the baseline weighing) and the duration in days
+  (the last day is the final weighing), how the tanks were allocated (not yet, randomised with a seed, or placed by hand
+  with the reason), the experiment it was copied from, notes and the key of the form that made it.
+- A **factor** (a thing the groups differ in: the diet, whose levels name feeding protocols, which is how the farm
+  applies it, or another factor with a unit) has **levels**: a diet level names its protocol and has no label; another
+  level has a label and optionally a number (a dose, a setting). A **group** has a role (test, control, negative or
+  positive control: both kinds of control may exist) and a level of every factor (**group levels**); it has
+  **replicates**, numbered within it (the number is stored: a replaced tank must not renumber R2). A **placement** books
+  one tank to one replicate for a range of days, both included (the tank, not a system: `Tank.system` changes and has no
+  history, so a system is only a shortcut on the page that books its tanks).
+- The **team**: a person and a role (lead, researcher, student, technician, advisor), one lead.
+
+**What the database holds** (constraints, tested one by one by writes that check nothing; the rest is said below):
+
+| Rule | Held by |
+|---|---|
+| a tank is in one experiment at a time, drafts included (a draft reserves its tanks), the days inclusive | exclusion constraint `excl_replicate_units_unit` on (tank, daterange), the twin of the feeding assignments'; a placement has both days, so it never books a tank for ever |
+| a window ends on or after the day it starts | check |
+| one level per factor per group; a level belongs to its factor; the group and the factor belong to the row's experiment; a level has its factor's kind | unique pair and four composite foreign keys (`fk_experiment_group_levels_*`, `fk_experiment_levels_factor_kind`; a wrong row would put another trial's level in a group and corrupt every factor column of the dataset) |
+| a diet level has a protocol and no label or number; another level has a label and no protocol | check (else a start would silently skip a diet) |
+| one diet factor; one lead; names unique among live rows, whatever the case; replicate numbers unique in a group; a number is never reused | unique constraints (partial among live rows where a row can be deleted) |
+| a template is a draft without a start day or an allocation; a started experiment has its day 0, hypothesis, primary endpoint and allocation; the allocation method, its seed and its reason belong together | checks |
+| a protocol or tank in a trial cannot be deleted | `PROTECT` and the delete plan (a deleted draft frees its tanks) |
+
+What PostgreSQL cannot say without copying columns (a tank on the experiment's site, a window inside the experiment's
+span, a level for every factor, a diet applied at the start) is checked by the services and says so where it is.
+The owner decided five things: a draft reserves its tanks; no trial is registered beyond the farm's 31-day
+window; a tank that was ever in a trial is never deleted (set it inactive); a hypothesis and a primary endpoint are
+needed to start; one species and one site per experiment.
+
 ## Messages (Production › Communication, `/messages/`)
 
 People write to each other in **direct conversations** (two people) and **channels** (a name and its
@@ -2280,6 +2326,7 @@ real mail.
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
+| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the constraints and composite keys (`migrations/0001_initial.py`), `templates/experiments/`, tests |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

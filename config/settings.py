@@ -50,6 +50,9 @@ INSTALLED_APPS = [
     # The store: storage locations, the items and lots they hold and their ledger (Operations › Storage).
     'inventory',
     'tasks',
+    # Research: experiments (trials of one species on one site: the design, the allocation, the tanks and
+    # the days), reading the farm and read by nothing.
+    'experiments',
 ]
 
 MIDDLEWARE = [

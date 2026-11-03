@@ -53,7 +53,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
-        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Activity log', 'Roles', 'Users', 'Database'])
+        self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Library', 'Knowledge entries', 'Activity log',
+                                                 'Roles', 'Users', 'Database'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
@@ -159,7 +160,7 @@ class MainHeadingTests(WorkspaceTestCase):
     def test_company_has_no_main_headings(self):
         self.sign_in(self.admin)
         response = self.page(reverse('home'))
-        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Administration'])])
+        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration'])])
         self.assertNotContains(response, 'rail-section')
 
     def test_a_heading_with_nothing_the_person_may_read_is_not_shown(self):
@@ -200,6 +201,8 @@ class MenuPlacementTests(TestCase):
             'messaging.Conversation': 'Production · Communication',
             'tasks.Task': 'Production · Operations',
             'tasks.TaskSeries': 'Production · Operations',
+            'knowledge.Document': 'Company · Knowledge',
+            'knowledge.KnowledgeEntry': 'Company · Knowledge',
             'core.AuditLog': 'Company · Administration',
         })
 

@@ -19,7 +19,7 @@
 </div>
 {% endif %}
 
-<form method="post" action="{{ request.path }}" class="record-form" novalidate>
+<form method="post" action="{{ request.path }}" class="record-form"{% if form.is_multipart %} enctype="multipart/form-data"{% endif %} novalidate>
   {% csrf_token %}
   {% if form.version %}{{ form.version }}{% endif %}{% if form.entry_key %}{{ form.entry_key }}{% endif %}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}

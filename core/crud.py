@@ -12,9 +12,12 @@ needs the same way:
 - languages: a tab's name, plural and group are translatable text (gettext_lazy); the pages put them
   into sentences, so write them in the lower case a noun has in the middle of a sentence;
 - rows saved as a list: a tab's `row_lists` (a site's contacts) get their URL, their formset on the
-  edit page and a logged save (RowList).
+  edit page and a logged save (RowList);
+- a form sent twice creates once: a model with an `entry_key` field gets the key of the form it was
+  created with (TabbedForm), and the same form sent again opens the record the first one created.
 """
 import copy
+import uuid
 from dataclasses import dataclass, field as dataclass_field
 
 from django import forms
@@ -22,7 +25,7 @@ from django.contrib import messages
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.db.models import F, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -63,6 +66,9 @@ def done(request, url, stay=False):
 
 # The marker of a posted form to render again with what was entered, nothing saved (TabbedForm.refresh_on).
 DRAFT = '_draft'
+# A model's field for the key of the form that created the record (not a secret): the same form sent twice
+# (a double click, a retried request) creates one record. The form carries it hidden (TabbedForm).
+ENTRY_KEY = 'entry_key'
 
 
 @dataclass(frozen=True)
@@ -88,7 +94,10 @@ class TabbedForm(forms.ModelForm):
     that field's tab.
 
     A form can drop fields for one record (`del self.fields[name]` in `__init__`, e.g. the measures a
-    pond does not have); the tabs then show the fields it kept, and a heading left without fields goes."""
+    pond does not have); the tabs then show the fields it kept, and a heading left without fields goes.
+
+    A new record of a model with an `entry_key` field gets a hidden key (ENTRY_KEY), stored with it;
+    `sent_before()` finds the record a form with the same key already created (CreateView)."""
 
     tabs = []
     fixed_after_creation = ()
@@ -109,6 +118,8 @@ class TabbedForm(forms.ModelForm):
             del self.fields['version']
         elif not self.instance._state.adding and not self.is_bound:
             self.initial['version'] = self.instance.version
+        if self.instance._state.adding and any(f.name == ENTRY_KEY for f in self._meta.model._meta.fields):
+            self.fields[ENTRY_KEY] = forms.UUIDField(widget=forms.HiddenInput, initial=uuid.uuid4, required=False)
 
     def get_initial_for_field(self, field, field_name):
         """A draft starts from the values it carries; a field it does not carry, or one that cannot be
@@ -128,7 +139,17 @@ class TabbedForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         self._check_conditional_constraints(cleaned)
+        if cleaned.get(ENTRY_KEY):
+            setattr(self.instance, ENTRY_KEY, cleaned[ENTRY_KEY])
         return cleaned
+
+    def sent_before(self):
+        """The record a form with this form's key already created (the same form sent twice); None for a
+        first sending or a form without a key."""
+        key = self.cleaned_data.get(ENTRY_KEY) if ENTRY_KEY in self.fields else None
+        if key is None:
+            return None
+        return self._meta.model._base_manager.filter(**{ENTRY_KEY: key}).first()
 
     def _check_conditional_constraints(self, cleaned):
         """Conditional unique and exclusion constraints, e.g. "code unique among live records", "scientific
@@ -498,18 +519,32 @@ class CreateView(FormView):
         form = r.form(request, request.POST)
         if not form.is_valid():
             return self.page(form)
-        with transaction.atomic():
-            obj = form.save(commit=False)
-            for field in ('created_by', 'updated_by'):
-                if hasattr(obj, field):
-                    setattr(obj, field, request.user)
-            obj.save()
-            form.save_m2m()
-            audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
-            r.after_save(request, obj, created=True)
-        # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
-        flash(request, _('%(name)s “%(object)s” created.'), r, obj)
-        return done(request, reverse(r.url_name('edit'), args=[obj.pk]), stay=True)
+        sent = form.sent_before()
+        if sent is None:
+            try:
+                with transaction.atomic():
+                    obj = form.save(commit=False)
+                    for field in ('created_by', 'updated_by'):
+                        if hasattr(obj, field):
+                            setattr(obj, field, request.user)
+                    obj.save()
+                    form.save_m2m()
+                    audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
+                    r.after_save(request, obj, created=True)
+            except IntegrityError:
+                # The same form sent twice at once: the other request's insert held the key's unique index
+                # until it committed, so its record is there now. Any other refusal is a fault.
+                sent = form.sent_before()
+                if sent is None:
+                    raise
+            else:
+                # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+                flash(request, _('%(name)s “%(object)s” created.'), r, obj)
+                return done(request, reverse(r.url_name('edit'), args=[obj.pk]), stay=True)
+        # Sent before: the record the first sending created, as that sending showed it.
+        if getattr(sent, 'is_deleted', False):
+            return done(request, reverse(r.url_name('list')))
+        return done(request, reverse(r.url_name('edit'), args=[sent.pk]), stay=True)
 
 
 class UpdateView(FormView):

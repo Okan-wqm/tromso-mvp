@@ -21,7 +21,7 @@
 
 <form method="post" action="{{ request.path }}" class="record-form" novalidate>
   {% csrf_token %}
-  {% if form.version %}{{ form.version }}{% endif %}
+  {% if form.version %}{{ form.version }}{% endif %}{% if form.entry_key %}{{ form.entry_key }}{% endif %}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
   {% for tab in tabs %}
   <section class="tab-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>

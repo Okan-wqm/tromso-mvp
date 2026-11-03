@@ -168,6 +168,10 @@ class PagesInEveryLanguageTests(TestCase):
                   f'{sample}?unit={self.unit.pk}',
                   f"{reverse('farm:water_round')}?site={self.site.pk}",
                   reverse('farm:water_void', args=[self.sample.pk])]
+        calculator = (f'?point=tank%3A{self.unit.pk}&loaded=tank%3A{self.unit.pk}&temperature_c=9&ph=7&salinity_ppt=0'
+                      '&alkalinity_mg_l=80&drawn=1&dose_nahco3=20&volume_m3=1&reagents=nahco3&reagents=naoh')
+        pages += [reverse('farm:water_calculator'), reverse('farm:water_calculator') + calculator,
+                  reverse('farm:water_calculator_report') + calculator]
         pages += [reverse('farm:harvests'), reverse('farm:handlingplanitem_list'),
                   reverse('farm:handlingplanitem_create'), f"{reverse('farm:handlingplanitem_create')}?kind=transport",
                   reverse('farm:productionplan_list'), reverse('farm:productionplan_create')]

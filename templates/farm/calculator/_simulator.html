@@ -1,0 +1,52 @@
+{% load i18n water %}{% comment %} The dosing simulator's results (a live part; farm/water/calculation.py): the water after each amount
+   of the Simulator tab, each value judged as the water is (CO₂ against its limit at that alkalinity, NH₃ and
+   H₂S against their borders), the change from the water to the last step, and what cannot be. Its path is
+   drawn on the chart. Hidden while no amount is given. {% endcomment %}
+<section class="calc-card calc-simulator" data-live-part="simulator" aria-labelledby="calc-simulator-title"{% if not result.steps and not result.steps_note %} hidden{% endif %}>
+  {% if result.steps or result.steps_note %}
+  <h3 class="calc-card-title" id="calc-simulator-title">{% trans "Dosing simulator" %}</h3>
+  <p class="calc-card-help">{% trans "The water after each amount, added in the order of the list, mixed through and closed to the air while it mixes. Amounts are of the pure substance." %}</p>
+  {% if result.steps_note %}<p class="calc-note">{{ result.steps_note }}</p>{% endif %}
+  {% if result.steps %}
+  {% with tan=analysis.water.tan_mg_l sulfide=analysis.water.total_sulfide_ug_l %}
+  <div class="table-wrap">
+    <table class="data-table calc-steps">
+      <thead>
+        <tr>
+          <th scope="col">{% trans "Step" %}</th>
+          <th scope="col" class="num">pH</th>
+          <th scope="col" class="num">{% trans "Alkalinity (meq/L)" %}</th>
+          <th scope="col" class="num">{% trans "DIC (mmol/L)" %}</th>
+          <th scope="col" class="num">{% trans "CO₂ (mg/L)" %}</th>
+          {% if tan is not None %}<th scope="col" class="num">{% trans "NH₃-N (mg/L)" %}</th>{% endif %}
+          {% if sulfide is not None %}<th scope="col" class="num">{% trans "H₂S (µg/L)" %}</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for judged in result.steps %}{% with step=judged.step %}
+        <tr{% if step.ph is None %} class="wq-row-critical"{% endif %}>
+          <th scope="row">{% if forloop.first %}{% trans "The water" %}{% else %}+ {{ step.reagent.formula }} {% blocktrans trimmed with grams=step.grams|amount:1 %}{{ grams }} g{% endblocktrans %}{% endif %}</th>
+          {% if step.ph is None %}
+          <td class="num">—</td><td class="num">{{ step.alkalinity|amount:3 }}</td><td class="num">{{ step.dic|amount:3 }}</td><td class="num">—</td>{% if tan is not None %}<td class="num">—</td>{% endif %}{% if sulfide is not None %}<td class="num">—</td>{% endif %}
+          {% else %}
+          <td class="num">{{ step.ph|amount:2 }}</td>
+          <td class="num">{{ step.alkalinity|amount:3 }}</td>
+          <td class="num">{{ step.dic|amount:3 }}</td>
+          <td class="num wq-value wq-{{ judged.co2.status }}">{{ step.co2_mg_l|amount:1 }}<span class="sr-only"> ({{ judged.co2.status|status_label }})</span></td>
+          {% if tan is not None %}<td class="num wq-value wq-{{ judged.nh3.status }}">{{ judged.nh3_n_mg_l|amount:4 }}<span class="sr-only"> ({{ judged.nh3.status|status_label }})</span></td>{% endif %}
+          {% if sulfide is not None %}<td class="num wq-value wq-{{ judged.h2s.status }}">{{ judged.h2s_ug_l|amount:2 }}<span class="sr-only"> ({{ judged.h2s.status|status_label }})</span></td>{% endif %}
+          {% endif %}
+        </tr>
+        {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endwith %}
+  {% with change=result.change %}{% if change %}
+  <p class="calc-change">{% trans "From the water to the last step:" %} <span>ΔpH {{ change.ph|signed_amount:2 }}</span> <span>{% blocktrans trimmed with value=change.alkalinity|signed_amount:3 %}Δalkalinity {{ value }} meq/L{% endblocktrans %}</span> <span>{% blocktrans trimmed with value=change.dic|signed_amount:3 %}ΔDIC {{ value }} mmol/L{% endblocktrans %}</span> <span>{% blocktrans trimmed with value=change.co2|signed_amount:1 %}ΔCO₂ {{ value }} mg/L{% endblocktrans %}</span></p>
+  {% endif %}{% endwith %}
+  {% for judged in result.steps %}{% if judged.step.below_air %}<p class="calc-note wq-value wq-warning">{% blocktrans trimmed with formula=judged.step.reagent.formula air=result.air_co2_mg_l|amount:2 %}After {{ formula }} the CO₂ is below the {{ air }} mg/L a water keeps in equilibrium with the air: stripping cannot take it there.{% endblocktrans %}</p>{% endif %}{% endfor %}
+  {% with stopped=result.stopped %}{% if stopped %}<p class="calc-note wq-value wq-critical" role="alert">{% if stopped.step.dic <= 0 %}{% blocktrans trimmed with formula=stopped.step.reagent.formula %}After {{ formula }} no water is left with this DIC: more CO₂ is stripped than the water holds. The simulation stops there.{% endblocktrans %}{% else %}{% blocktrans trimmed with formula=stopped.step.reagent.formula %}After {{ formula }} no pH from 0 to 14 gives this DIC and alkalinity. The simulation stops there.{% endblocktrans %}{% endif %}</p>{% endif %}{% endwith %}
+  {% endif %}
+  {% endif %}
+</section>

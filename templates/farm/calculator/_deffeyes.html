@@ -1,0 +1,2 @@
+{% load i18n %}{# The Water Quality Management Chart (a live part); its layer boxes sit outside it, in the form. #}
+<div class="calc-deffeyes-chart" data-live-part="deffeyes">{% if result %}{% include "farm/_deffeyes_chart.html" %}{% else %}<p class="calc-not-ready">{% trans "The charts and the values show again once every value is right." %}</p>{% endif %}</div>

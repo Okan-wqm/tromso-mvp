@@ -28,7 +28,11 @@ What the chart shows, as the source draws it (the corrections are in the bug doc
 - The water (a star) and the target (a cross), a dashed line between them.
 - A limit's status follows the source: past its pH border critical, within 0.2 pH of it a warning. A
   border outside the chart's pH range (4 to 12.5) is said in words, not as a number (WQ-34); its region is
-  still shaded wherever it meets the plotted box, which in a large box can reach past pH 12.5 or below 4."""
+  still shaded wherever it meets the plotted box, which in a large box can reach past pH 12.5 or below 4.
+- Dosing (farm/water/dosing.py, as `dosing.Visual`): one reagent chosen, its direction line from the water;
+  two, both lines, the wedge between them and their path to the target through the waypoint. The simulator:
+  the water after each amount, joined from the water, an arrowhead at each step. The axes grow to hold the
+  waypoint and every step."""
 import math
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -55,6 +59,8 @@ LAYERS = [
     ('h2s', _('H₂S toxic')),
     ('omega', _('Ω calcite and aragonite')),
     ('target', _('Target')),
+    ('dosing', _('Dosing path')),
+    ('simulator', _('Simulator path')),
 ]
 ALL_LAYERS = frozenset(key for key, _label in LAYERS)
 
@@ -119,7 +125,7 @@ class Border:
         return self.ph is not None and not self.on_chart and not self.everywhere
 
 
-def _border(ph, border, toxic_above, missing=None):
+def judge(ph, border, toxic_above, missing=None):
     """The border and the status: critical past it, a warning within ALERT_PH of it, ok short of it or when
     it cannot be reached. `missing`: the status when there is nothing to judge (no value or no limit)."""
     if missing is not None:
@@ -156,6 +162,16 @@ class Analysis:
     oxygen_saturation_pct: float | None
     pressure_atm: float
 
+    @property
+    def nh3_share_pct(self):
+        """NH₃ as a share of TAN at the water's pH, in %."""
+        return 100 * self.equilibria.nh3_share(self.water.ph)
+
+    @property
+    def h2s_share_pct(self):
+        """H₂S as a share of the total sulfide at the water's pH, in %."""
+        return 100 * self.equilibria.h2s_share(self.water.ph)
+
 
 def analyse(water, limits=Limits(), target=None, pressure=1.0):
     """The values of a water against the limits: DIC and CO₂ from the alkalinity and the pH, NH₃-N from the
@@ -165,8 +181,8 @@ def analyse(water, limits=Limits(), target=None, pressure=1.0):
     alkalinity = water.alkalinity_mg_l / chemistry.MG_CACO3_PER_MEQ
     dic = eq.dic(alkalinity, ph)
     co2_limit = None if limits.co2_mg_l is None else limits.co2_mg_l / chemistry.MG_CO2_PER_MMOL
-    co2 = _border(ph, None if co2_limit is None else eq.ph_where_co2(alkalinity, co2_limit), False,
-                  Status.NO_LIMIT if co2_limit is None else None)
+    co2 = judge(ph, None if co2_limit is None else eq.ph_where_co2(alkalinity, co2_limit), False,
+                Status.NO_LIMIT if co2_limit is None else None)
 
     target_alkalinity = target_dic = target_co2 = None
     if target is not None:
@@ -176,14 +192,14 @@ def analyse(water, limits=Limits(), target=None, pressure=1.0):
 
     tan, nh3_limit = water.tan_mg_l, limits.nh3_n_mg_l
     nh3_share = eq.nh3_share(ph)
-    nh3 = _border(ph, None if tan is None or nh3_limit is None else eq.ph_where_nh3(tan, nh3_limit), True,
-                  Status.NOT_MEASURED if tan is None else Status.NO_LIMIT if nh3_limit is None else None)
+    nh3 = judge(ph, None if tan is None or nh3_limit is None else eq.ph_where_nh3(tan, nh3_limit), True,
+                Status.NOT_MEASURED if tan is None else Status.NO_LIMIT if nh3_limit is None else None)
 
     sulfide, h2s_limit = water.total_sulfide_ug_l, limits.h2s_ug_l
     h2s_share = eq.h2s_share(ph)
     total_h2s = None if sulfide is None else sulfide * chemistry.H2S_PER_S
-    h2s = _border(ph, None if total_h2s is None or h2s_limit is None else eq.ph_where_h2s(total_h2s, h2s_limit),
-                  False, Status.NOT_MEASURED if sulfide is None else Status.NO_LIMIT if h2s_limit is None else None)
+    h2s = judge(ph, None if total_h2s is None or h2s_limit is None else eq.ph_where_h2s(total_h2s, h2s_limit),
+                False, Status.NOT_MEASURED if sulfide is None else Status.NO_LIMIT if h2s_limit is None else None)
 
     solubility = chemistry.oxygen_solubility(water.temperature_c, water.salinity_ppt, pressure)
     return Analysis(
@@ -228,9 +244,11 @@ def _axis(needed):
     return math.ceil(needed / step) * step, float(step)
 
 
-def box_of(analysis):
-    dics = [analysis.dic, analysis.target_dic or 0]
-    alkalinities = [analysis.alkalinity_meq, analysis.target_alkalinity_meq or 0]
+def box_of(analysis, extra=()):
+    """The box that holds the water, the target, the alkalinity band and the `extra` points (DIC,
+    alkalinity) with 10 % to spare."""
+    dics = [analysis.dic, analysis.target_dic or 0, *(point[0] for point in extra)]
+    alkalinities = [analysis.alkalinity_meq, analysis.target_alkalinity_meq or 0, *(point[1] for point in extra)]
     if analysis.limits.alkalinity_high_mg_l is not None:
         alkalinities.append(analysis.limits.alkalinity_high_mg_l / chemistry.MG_CACO3_PER_MEQ)
     dic, dic_step = _axis(max(dics))
@@ -318,6 +336,11 @@ class Geometry:
     omega: dict = field(default_factory=dict)          # 'calcite' / 'aragonite' → [polyline]
     point: tuple = (0.0, 0.0)
     target: tuple | None = None
+    reagent_lines: list = field(default_factory=list)  # [(reagent, [polyline])]
+    wedge: list = field(default_factory=list)          # polygon
+    dosing_path: list = field(default_factory=list)    # [polyline]
+    waypoint: tuple | None = None
+    simulator: list = field(default_factory=list)      # [(DIC, alkalinity)] of every step, the water first
     notes: list = field(default_factory=list)
 
 
@@ -438,11 +461,15 @@ def omega_line(eq, calcium_mg_l, ksp, box):
     return clip_polyline(points, box)
 
 
-def geometry(analysis, layers=ALL_LAYERS):
+def geometry(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
     """The chart of an analysis, the layers asked for, in the chart's units; a note says why a layer asked
-    for is not drawn."""
+    for is not drawn. `dosing`: the dosing layer (a dosing.Visual); `simulator`: the water after each step of
+    the simulator, (DIC, alkalinity), the water first."""
     eq, limits, water = analysis.equilibria, analysis.limits, analysis.water
-    box = box_of(analysis)
+    show_target = 'target' in layers and analysis.target is not None
+    path = dosing is not None and 'dosing' in layers and show_target and bool(dosing.path)
+    simulator = list(simulator) if 'simulator' in layers and len(simulator) > 1 else []
+    box = box_of(analysis, [*simulator, *([dosing.waypoint] if path else [])])
     shape = Geometry(box, point=(analysis.dic, analysis.alkalinity_meq))
     if 'isolines' in layers:
         for ph in ISOLINE_PHS:
@@ -478,8 +505,18 @@ def geometry(analysis, layers=ALL_LAYERS):
             shape.omega['aragonite'] = omega_line(eq, water.calcium_mg_l, eq.ksp_aragonite, box)
         else:
             shape.notes.append(_('Ω: needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983).'))
-    if 'target' in layers and analysis.target is not None:
+    if show_target:
         shape.target = (analysis.target_dic, analysis.target_alkalinity_meq)
+    if dosing is not None and 'dosing' in layers:
+        for reagent, line in dosing.lines:
+            shape.reagent_lines.append((reagent, clip_polyline(line, box)))
+        shape.wedge = clip_to_box(dosing.wedge, box) if dosing.wedge else []
+        if path:
+            shape.dosing_path = clip_polyline(dosing.path, box)
+            shape.waypoint = dosing.waypoint
+        if dosing.note:
+            shape.notes.append(dosing.note)
+    shape.simulator = simulator
     return shape
 
 
@@ -554,11 +591,16 @@ class Chart:
     path: str | None
     notes: list
     box: Box
+    reagent_lines: list = field(default_factory=list)
+    wedge: str | None = None
+    dosing_path: list = field(default_factory=list)
+    waypoint: dict | None = None
+    simulator: dict | None = None
 
 
-def draw(analysis, layers=ALL_LAYERS):
-    """The chart of an analysis as the template draws it."""
-    shape = geometry(analysis, layers)
+def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
+    """The chart of an analysis as the template draws it (`dosing` and `simulator` as `geometry` takes them)."""
+    shape = geometry(analysis, layers, dosing, simulator)
     box = shape.box
 
     def x(dic):
@@ -604,6 +646,23 @@ def draw(analysis, layers=ALL_LAYERS):
                   'lines': [[_fixed(tx - arm), _fixed(ty - arm), _fixed(tx + arm), _fixed(ty + arm)],
                             [_fixed(tx + arm), _fixed(ty - arm), _fixed(tx - arm), _fixed(ty + arm)]]}
         path = points([shape.point, shape.target])
+    reagent_lines = []
+    for reagent, lines in shape.reagent_lines:
+        for line in lines:
+            (x1, y1), (x2, y2) = [(x(dic), y(alkalinity)) for dic, alkalinity in line[-2:]]
+            reagent_lines.append({'key': reagent.key, 'formula': reagent.formula, 'points': points(line),
+                                  'arrow': _arrow(x1, y1, x2, y2)})
+    simulator_drawing = None
+    if shape.simulator:
+        pixels = [(x(dic), y(alkalinity)) for dic, alkalinity in shape.simulator]
+        simulator_drawing = {
+            'points': ' '.join(f'{_fixed(across)},{_fixed(up)}' for across, up in pixels),
+            'arrows': [_arrow(*pixels[index - 1], *pixels[index]) for index in range(1, len(pixels))
+                       if math.dist(pixels[index - 1], pixels[index]) > 1],
+            'end': {'x': _fixed(pixels[-1][0]), 'y': _fixed(pixels[-1][1])}}
+    waypoint = None
+    if shape.waypoint is not None and box.inside(shape.waypoint):
+        waypoint = {'x': _fixed(x(shape.waypoint[0])), 'y': _fixed(y(shape.waypoint[1]))}
     return Chart(
         width=WIDTH, height=HEIGHT,
         plot={'left': LEFT, 'top': TOP, 'right': LEFT + PLOT, 'bottom': TOP + PLOT, 'size': PLOT,
@@ -612,7 +671,17 @@ def draw(analysis, layers=ALL_LAYERS):
         x_ticks=ticks(box.dic, box.dic_step, x), y_ticks=ticks(box.alkalinity, box.alkalinity_step, y),
         isolines=isolines, regions=regions, boundaries=boundaries, omega=omega, legend=legend,
         point={'x': _fixed(px), 'y': _fixed(py), 'star': _star(px, py)}, target=target, path=path,
-        notes=shape.notes, box=box)
+        notes=shape.notes, box=box, reagent_lines=reagent_lines,
+        wedge=points(shape.wedge) if shape.wedge else None,
+        dosing_path=[points(line) for line in shape.dosing_path], waypoint=waypoint, simulator=simulator_drawing)
+
+
+def _arrow(x1, y1, x2, y2, size=9):
+    """An arrowhead at (x2, y2) pointing away from (x1, y1), in pixels (the source's, 0.8 π either side)."""
+    angle = math.atan2(y2 - y1, x2 - x1)
+    corners = [(x2, y2)] + [(x2 + size * math.cos(angle + turn), y2 + size * math.sin(angle + turn))
+                            for turn in (math.pi * 0.8, -math.pi * 0.8)]
+    return ' '.join(f'{_fixed(a)},{_fixed(b)}' for a, b in corners)
 
 
 def _tick(value):

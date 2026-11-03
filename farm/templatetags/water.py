@@ -81,7 +81,13 @@ def amount(value, decimals):
 @register.filter
 def ph_margin(value):
     """How far a pH is from a limit's border on the safe side, with its sign: +0.42, −0.10."""
+    return signed_amount(value, 2)
+
+
+@register.filter
+def signed_amount(value, decimals):
+    """A change with its sign, at `decimals` decimals as the language writes it: +0.500, −1.25, 0."""
     if value is None:
         return DASH
-    rounded = round(value, 2)
-    return ('+' if rounded > 0 else '−' if rounded < 0 else '') + number(abs(rounded), 2)
+    rounded = round(value, int(decimals))
+    return ('+' if rounded > 0 else '−' if rounded < 0 else '') + number(abs(rounded), int(decimals))

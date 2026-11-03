@@ -1,7 +1,10 @@
 declare const process: any;
 /**
- * The reference table of farm/tests/test_deffeyes.py: the source's water-chemistry calculator
- * (aquaculture_platform, commit 352aa2a8) run by its own pure functions. Writes reference.json to stdout.
+ * The reference table of farm/tests/test_deffeyes.py and farm/tests/test_calculator.py: the source's
+ * water-chemistry calculator (aquaculture_platform, commit 352aa2a8) run by its own pure functions: the
+ * constants, the values, the chart's geometry, the dosing recipes and the dosing simulator (reagents.ts) and
+ * the data of the four small charts beside the chart (ammonia-calc.ts, co2-calc.ts). Writes reference.json to
+ * stdout.
  *
  * To make it again (nothing here runs in the source's checkout):
  * 1. Copy into ./src, unchanged, from that commit: libs/aquaculture-engines/src/water-chemistry/
@@ -36,6 +39,14 @@ import {
   totToFree,
   phLineSlope,
   phLineIntercept,
+  REAGENTS,
+  calcDicOfAlk,
+  calculateDosingRecipes,
+  calcForwardDosing,
+  generateUIAvsPHData,
+  generateH2SvsPHData,
+  generateCarbonateVsPHData,
+  generateSaturationVsPHData,
 } from './src/index.js';
 
 const H2S_PER_S = 34.08088 / 32.065;
@@ -199,9 +210,87 @@ for (const tempC of TEMPS) for (const S of SALINITIES) {
     ph_offset: num(phNbsToFree(7, tempC, S) - 7),
   });
 }
+
+// ---- dosing (reagents.ts: calculateDosingRecipes as compute.ts calls it, calcForwardDosing as the
+// calculator's page calls it) and the four small charts' data (ammonia-calc.ts, co2-calc.ts, as
+// SecondaryCharts.tsx calls them) ----
+const DEFAULT_REAGENTS = ['Sodium Bicarbonate', 'Sodium Hydroxide', 'Add CO₂', 'De-gas CO₂'];
+const ALL_REAGENTS = REAGENTS.map((r) => r.name);
+const SELECTIONS: string[][] = [DEFAULT_REAGENTS, ALL_REAGENTS];
+for (let a = 0; a < ALL_REAGENTS.length; a++) {
+  for (let b = a + 1; b < ALL_REAGENTS.length; b++) SELECTIONS.push([ALL_REAGENTS[a], ALL_REAGENTS[b]]);
+}
+// [tempC, S, pH, alkMg]
+const DOSING_WATERS: Array<[number, number, number, number]> = [[12, 1, 7.0, 80], [25, 35, 8.1, 115], [8, 0, 6.6, 30]];
+// [targetpH, targetAlkMg]: up and right, up and left, down, the water itself (12 °C), along NaHCO₃ and more
+const DOSING_TARGETS: Array<[number, number]> = [[7.5, 100], [7.2, 60], [6.8, 150], [8.3, 80], [6.5, 40], [7.0, 80],
+  [8.0, 200]];
+const dosing: any[] = [];
+let d = 0;
+for (const [tempC, S, pH, alkMg] of DOSING_WATERS) for (const [targetpH, targetAlkMg] of DOSING_TARGETS) {
+  for (const selected of SELECTIONS) {
+    const volume = [1, 37.5][d % 2];
+    const alk = alkMgToMeq(alkMg);
+    const targetAlk = alkMgToMeq(targetAlkMg);
+    const dic = calcDicOfAlk(alk, pH, tempC, S);
+    const targetDic = calcDicOfAlk(targetAlk, targetpH, tempC, S);
+    const recipes = calculateDosingRecipes(dic, alk, targetDic, targetAlk, volume, selected);
+    dosing.push({
+      temperature_c: tempC, salinity_ppt: S, ph: pH, alkalinity_mg_l: alkMg, target_ph: targetpH,
+      target_alkalinity_mg_l: targetAlkMg, volume_m3: volume, reagents: selected,
+      dic: num(dic), target_dic: num(targetDic),
+      recipes: recipes.map((recipe) => recipe.steps.map((step) => [step.reagentName, num(step.amountGrams),
+        num(step.deltaAlk), num(step.deltaDIC)])),
+    });
+    d += 1;
+  }
+}
+const AMOUNTS: Array<Record<string, number>> = [
+  { 'Sodium Bicarbonate': 50 },
+  { 'Sodium Hydroxide': 20, 'De-gas CO₂': 30 },
+  { 'Muriatic Acid': 40 },
+  { 'Sodium Carbonate': 10, 'Calcium Carbonate': 5, 'Calcium Hydroxide': 5, 'Calcium Oxide': 5, 'Add CO₂': 10 },
+  { 'De-gas CO₂': 500 },
+  { 'Muriatic Acid': 4000 },
+];
+const forward: any[] = [];
+for (const [tempC, S, pH, alkMg] of DOSING_WATERS) for (const amounts of AMOUNTS) for (const volume of [1, 2.5]) {
+  const alk = alkMgToMeq(alkMg);
+  const dic = calcDicOfAlk(alk, pH, tempC, S);
+  // As the page does (WaterChemistryPage.tsx): the reagents with an amount, in the REAGENTS order.
+  const inputs = REAGENTS.filter((r) => (amounts[r.name] || 0) > 0)
+    .map((r) => ({ reagentKey: r.name, amountGrams: amounts[r.name] }));
+  const steps = calcForwardDosing({ dic, alk, tempC, salinity: S }, volume, inputs);
+  forward.push({
+    temperature_c: tempC, salinity_ppt: S, ph: pH, alkalinity_mg_l: alkMg, volume_m3: volume, amounts,
+    steps: steps.map((step) => [step.label, num(step.dic), num(step.alk), num(step.ph), num(step.co2)]),
+  });
+}
+// [tempC, S, pH, alkMg, tan, nh3Limit, totalS (as S), h2sLimit, caMgL]
+const CHART_WATERS: Array<[number, number, number, number, number, number, number, number, number]> = [
+  [12, 1, 7.0, 80, 0.5, 0.0103, 2, 2, 400], [25, 35, 8.1, 115, 1, 0.02, 10, 2, 412], [4, 10, 7.5, 60, 3, 0.05, 50, 25, 150],
+];
+const phCharts: any[] = [];
+for (const [tempC, S, pH, alkMg, tan, nh3Limit, totalS, h2sLimit, caMgL] of CHART_WATERS) {
+  const h2sMeasured = totalS * H2S_PER_S * fractionH2S(pH, tempC, S);
+  const dic = calcDicOfAlk(alkMgToMeq(alkMg), pH, tempC, S);
+  const every = <T,>(list: T[], step: number) => list.filter((_p, k) => k % step === 0);
+  phCharts.push({
+    temperature_c: tempC, salinity_ppt: S, ph: pH, alkalinity_mg_l: alkMg, tan_mg_l: tan, nh3_n_limit: nh3Limit,
+    total_sulfide_ug_l: totalS, h2s_limit: h2sLimit, calcium_mg_l: caMgL,
+    uia: every(generateUIAvsPHData(tempC, S, tan, nh3Limit), 5).map((p) => [p.pH, num(p.UIA)]),
+    h2s: every(generateH2SvsPHData(tempC, S, h2sMeasured, pH, h2sLimit, 4.0, 12.5), 10)
+      .map((p) => [p.pH, num(p.H2S_pct), num(p.HS_pct), num(p.H2S_ugL)]),
+    carbonate: every(generateCarbonateVsPHData(tempC, S, 2.0, 4.0, 12.0), 5)
+      .map((p) => [p.pH, num(p.CO2), num(p.HCO3), num(p.CO3)]),
+    saturation: every(generateSaturationVsPHData(tempC, S, dic, caMgL), 5)
+      .map((p) => [p.pH, num(p.Calcite), num(p.Aragonite)]),
+  });
+}
 process.stdout.write(JSON.stringify({
   source: 'aquaculture_platform 352aa2a8 (libs/aquaculture-engines/src/water-chemistry, web/shared-ui/src/water-chemistry/compute.ts)',
   generated_by: 'driver.ts with the main checkout tsc; node ' + process.version,
   h2s_per_s: H2S_PER_S,
   constants: table(constants), outputs: table(rows), edges: table(edges), geometry,
+  dosing, forward, ph_charts: phCharts,
 }));

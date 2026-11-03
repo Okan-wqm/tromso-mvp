@@ -6,7 +6,7 @@
 <figure class="deffeyes">
   <figcaption class="deffeyes-title" id="deffeyes-title">{% trans "Water Quality Management Chart" %}</figcaption>
   <svg class="deffeyes-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-labelledby="deffeyes-title deffeyes-desc" xmlns="http://www.w3.org/2000/svg">
-    <desc id="deffeyes-desc">{% blocktrans trimmed %}A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values are in the table next to it.{% endblocktrans %}</desc>
+    <desc id="deffeyes-desc">{% blocktrans trimmed %}A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values are in the results under the charts.{% endblocktrans %}</desc>
     <g class="deffeyes-grid">
       {% for tick in chart.x_ticks %}<line x1="{{ tick.at }}" y1="{{ chart.plot.top }}" x2="{{ tick.at }}" y2="{{ chart.plot.bottom }}"/>{% endfor %}
       {% for tick in chart.y_ticks %}<line x1="{{ chart.plot.left }}" y1="{{ tick.at }}" x2="{{ chart.plot.right }}" y2="{{ tick.at }}"/>{% endfor %}
@@ -24,6 +24,12 @@
     {% endfor %}
     {% if chart.path %}<polyline class="deffeyes-path" data-layer="target" points="{{ chart.path }}"/>{% endif %}
     {% if chart.target %}<g class="deffeyes-target" data-layer="target" data-x="{{ chart.target.x }}" data-y="{{ chart.target.y }}"><title>{% trans "Target" %}</title>{% for line in chart.target.lines %}<line x1="{{ line.0 }}" y1="{{ line.1 }}" x2="{{ line.2 }}" y2="{{ line.3 }}"/>{% endfor %}</g>{% endif %}
+    {% if chart.wedge %}<polygon class="deffeyes-wedge" data-layer="dosing" points="{{ chart.wedge }}"/>{% endif %}
+    {% for line in chart.reagent_lines %}<polyline class="deffeyes-reagent deffeyes-reagent-{{ line.key }}" data-layer="dosing" data-reagent="{{ line.key }}" points="{{ line.points }}"><title>{{ line.formula }}</title></polyline>{% if line.arrow %}<polygon class="deffeyes-arrow deffeyes-reagent-{{ line.key }}" data-layer="dosing" points="{{ line.arrow }}"/>{% endif %}
+    {% endfor %}
+    {% for line in chart.dosing_path %}<polyline class="deffeyes-dosing-path" data-layer="dosing" points="{{ line }}"><title>{% trans "Dosing path" %}</title></polyline>{% endfor %}
+    {% if chart.waypoint %}<circle class="deffeyes-waypoint" data-layer="dosing" cx="{{ chart.waypoint.x }}" cy="{{ chart.waypoint.y }}" r="5"><title>{% trans "Between the two doses" %}</title></circle>{% endif %}
+    {% if chart.simulator %}<g class="deffeyes-simulator" data-layer="simulator"><title>{% trans "Simulator path" %}</title><polyline points="{{ chart.simulator.points }}"/>{% for arrow in chart.simulator.arrows %}<polygon class="deffeyes-arrow" points="{{ arrow }}"/>{% endfor %}<circle cx="{{ chart.simulator.end.x }}" cy="{{ chart.simulator.end.y }}" r="5"/></g>{% endif %}
     <polygon class="deffeyes-point" data-x="{{ chart.point.x }}" data-y="{{ chart.point.y }}" points="{{ chart.point.star }}"><title>{% trans "The water" %}</title></polygon>
     <rect class="deffeyes-frame" x="{{ chart.plot.left }}" y="{{ chart.plot.top }}" width="{{ chart.plot.size }}" height="{{ chart.plot.size }}"/>
     <g class="deffeyes-ticks">
@@ -38,6 +44,9 @@
     {% if chart.target %}<li><svg class="deffeyes-key" viewBox="0 0 16 16" aria-hidden="true"><g class="deffeyes-target"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></g></svg>{% trans "Target" %}</li>{% endif %}
     {% if chart.isolines %}<li><span class="deffeyes-swatch deffeyes-swatch-isolines" aria-hidden="true"></span>{% trans "pH isolines" %}</li>{% endif %}
     {% for item in chart.legend %}<li><span class="deffeyes-swatch deffeyes-swatch-{{ item.key }}" aria-hidden="true"></span>{{ item.name }}</li>{% endfor %}
+    {% for line in chart.reagent_lines %}<li><span class="deffeyes-swatch deffeyes-swatch-reagent deffeyes-reagent-{{ line.key }}" aria-hidden="true"></span>{{ line.formula }}</li>{% endfor %}
+    {% if chart.dosing_path %}<li><span class="deffeyes-swatch deffeyes-swatch-dosing" aria-hidden="true"></span>{% trans "Dosing path" %}</li>{% endif %}
+    {% if chart.simulator %}<li><span class="deffeyes-swatch deffeyes-swatch-simulator" aria-hidden="true"></span>{% trans "Simulator path" %}</li>{% endif %}
   </ul>
   {% if chart.notes %}<ul class="deffeyes-notes">{% for note in chart.notes %}<li>{{ note }}</li>{% endfor %}</ul>{% endif %}
 </figure>

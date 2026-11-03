@@ -1,0 +1,44 @@
+{% load i18n stock water %}{% comment %} One of the four small charts beside the Water Quality Management Chart (a live part,
+   farm/water/charts.py): `key` nh3, h2s, carbonate or saturation, `plot` its charts.Drawing (None when it
+   cannot be drawn, said why). Its title and the facts under it say in text what the chart shows; the SVG is
+   drawn on the server with a dot decimal in every coordinate. {% endcomment %}
+<section class="calc-card calc-plot" data-live-part="plot-{{ key }}" aria-labelledby="plot-{{ key }}-title">
+  {% if result %}{% with water=analysis.water %}
+  <h3 class="calc-card-title" id="plot-{{ key }}-title">
+    {% if key == "nh3" %}{% trans "Un-ionised ammonia against pH" %}{% include "farm/_water_status.html" with status=analysis.nh3.status %}
+    {% elif key == "h2s" %}{% trans "H₂S and HS⁻ against pH" %}{% include "farm/_water_status.html" with status=analysis.h2s.status %}
+    {% elif key == "carbonate" %}{% trans "CO₂, HCO₃⁻ and CO₃²⁻ against pH" %}
+    {% else %}{% trans "Calcite and aragonite saturation against pH" %}{% endif %}
+  </h3>
+  <p class="calc-plot-facts" id="plot-{{ key }}-facts">
+    {% if key == "nh3" %}{% if water.tan_mg_l is None %}{% trans "Give the TAN to draw the NH₃ it holds." %}{% else %}TAN {{ water.tan_mg_l|amount:3 }} mg/L · NH₃-N {{ analysis.nh3_n_mg_l|amount:4 }} mg/L ({{ analysis.nh3_share_pct|percent:2 }}) · pH {{ water.ph|amount:2 }} · {% include "farm/calculator/_border_fact.html" with border=analysis.nh3 %}{% endif %}
+    {% elif key == "h2s" %}{% if water.total_sulfide_ug_l is None %}{% trans "Shares of the total sulfide; give the total sulfide for the H₂S and its border." %}{% else %}H₂S {{ analysis.h2s_ug_l|amount:2 }} µg/L ({{ analysis.h2s_share_pct|percent:1 }}) · {% blocktrans trimmed with value=water.total_sulfide_ug_l|amount:1 %}total sulfide {{ value }} µg/L as S{% endblocktrans %} · pH {{ water.ph|amount:2 }} · {% include "farm/calculator/_border_fact.html" with border=analysis.h2s %}{% endif %}
+    {% elif key == "carbonate" %}pH {{ water.ph|amount:2 }} · CO₂ {{ analysis.co2_mg_l|amount:1 }} mg/L · {% include "farm/calculator/_border_fact.html" with border=analysis.co2 %} · {% blocktrans trimmed with temperature=water.temperature_c|amount:1 salinity=water.salinity_ppt|amount:1 %}{{ temperature }} °C, {{ salinity }} ‰{% endblocktrans %}
+    {% elif plot %}{% blocktrans trimmed with dic=analysis.dic|amount:3 calcium=water.calcium_mg_l|amount:1 %}At the water’s DIC, {{ dic }} mmol/L, and {{ calcium }} mg/L calcium; Mucci (1983); 0 is saturation, above it CaCO₃ can form.{% endblocktrans %}
+    {% else %}{% trans "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)." %}{% endif %}
+  </p>
+  {% if plot %}
+  <svg class="ph-chart" viewBox="0 0 {{ plot.width }} {{ plot.height }}" role="img" aria-labelledby="plot-{{ key }}-title plot-{{ key }}-facts" xmlns="http://www.w3.org/2000/svg">
+    {% for band in plot.bands %}<rect class="ph-band ph-band-{{ band.kind }}" x="{{ band.x }}" y="{{ plot.frame.top }}" width="{{ band.width }}" height="{{ plot.frame.height }}"/>{% endfor %}
+    <g class="ph-grid">
+      {% for tick in plot.x_ticks %}<line x1="{{ tick.at }}" y1="{{ plot.frame.top }}" x2="{{ tick.at }}" y2="{{ plot.frame.bottom }}"/>{% endfor %}
+      {% for tick in plot.y_ticks %}<line x1="{{ plot.frame.left }}" y1="{{ tick.at }}" x2="{{ plot.frame.right }}" y2="{{ tick.at }}"/>{% endfor %}
+    </g>
+    {% for line in plot.horizontals %}<line class="ph-level ph-level-{{ line.key }}" x1="{{ plot.frame.left }}" y1="{{ line.y }}" x2="{{ plot.frame.right }}" y2="{{ line.y }}"/><text class="ph-label ph-level-label" x="{{ plot.frame.right }}" y="{{ line.y }}" dy="-4" text-anchor="end">{{ line.label }}</text>{% endfor %}
+    {% for line in plot.verticals %}<line class="ph-marker ph-marker-{{ line.key }}" x1="{{ line.x }}" y1="{{ plot.frame.top }}" x2="{{ line.x }}" y2="{{ plot.frame.bottom }}"/><text class="ph-label ph-marker-label-{{ line.key }}" x="{{ line.x }}" y="{{ line.label_y }}" dx="{% if line.anchor == "end" %}-4{% else %}4{% endif %}" text-anchor="{{ line.anchor }}">{{ line.label }}</text>{% endfor %}
+    {% for series in plot.series %}<polyline class="ph-series ph-series-{{ series.key }}" points="{{ series.points }}"><title>{{ series.name }}</title></polyline>{% endfor %}
+    {% for dot in plot.dots %}<circle class="ph-dot ph-dot-{{ dot.key }}" cx="{{ dot.x }}" cy="{{ dot.y }}" r="5"><title>{{ dot.name }}</title></circle>{% endfor %}
+    <rect class="ph-frame" x="{{ plot.frame.left }}" y="{{ plot.frame.top }}" width="{{ plot.frame.width }}" height="{{ plot.frame.height }}"/>
+    <g class="ph-ticks">
+      {% for tick in plot.x_ticks %}<text x="{{ tick.at }}" y="{{ plot.frame.x_tick_y }}" text-anchor="middle">{{ tick.label }}</text>{% endfor %}
+      {% for tick in plot.y_ticks %}<text x="{{ plot.frame.y_tick_x }}" y="{{ tick.at }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>{% endfor %}
+    </g>
+    <text class="ph-axis" x="{{ plot.frame.centre_x }}" y="{{ plot.frame.x_title_y }}" text-anchor="middle">{% trans "pH (NBS)" %}</text>
+  </svg>
+  <ul class="ph-legend">
+    {% for series in plot.series %}<li><span class="ph-swatch ph-series-{{ series.key }}" aria-hidden="true"></span>{{ series.name }}</li>{% endfor %}
+    {% if plot.bands %}<li><span class="ph-swatch ph-band-safe" aria-hidden="true"></span>{% trans "Safe" %}</li><li><span class="ph-swatch ph-band-alert" aria-hidden="true"></span>{% trans "Within 0.2 pH" %}</li><li><span class="ph-swatch ph-band-danger" aria-hidden="true"></span>{% trans "Past the limit" %}</li>{% endif %}
+  </ul>
+  {% endif %}
+  {% endwith %}{% endif %}
+</section>

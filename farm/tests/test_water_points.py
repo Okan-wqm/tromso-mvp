@@ -559,7 +559,8 @@ class DeleteTests(PointTestCase):
         self.sample(point=self.t2, hours=2, ph='7.1')
         self.sample(point=self.loop, co2_mg_l='9')
         self.assertEqual(plan_delete(self.ras).kept_groups(),
-                         [{'label': 'Sampling points', 'count': 1}, {'label': 'Water samples', 'count': 1}])
+                         [{'label': 'Sampling points', 'count': 1, 'note': SamplingPoint.kept_note},
+                          {'label': 'Water samples', 'count': 1, 'note': WaterMeasurement.kept_note}])
         self.ras.soft_delete(self.admin)
         self.assertEqual(SamplingPoint.objects.filter(system=self.ras).count(), 0)
         self.assertEqual(WaterMeasurement.objects.filter(point__system=self.ras).count(), 0)
@@ -581,7 +582,8 @@ class DeleteTests(PointTestCase):
         inlet = point_of(self.filter, 'inlet')
         self.sample(point=inlet, ph='7')
         self.assertEqual(plan_delete(self.filter).kept_groups(),
-                         [{'label': 'Sampling points', 'count': 1}, {'label': 'Water samples', 'count': 1}])
+                         [{'label': 'Sampling points', 'count': 1, 'note': SamplingPoint.kept_note},
+                          {'label': 'Water samples', 'count': 1, 'note': WaterMeasurement.kept_note}])
         self.filter.soft_delete(self.admin)
         self.assertEqual(SamplingPoint.objects.filter(equipment=self.filter).count(), 0)
         self.assertEqual(self.refused(services.record, self.user, point=inlet, measured_at=self.ago(hours=1),
@@ -645,6 +647,25 @@ class ReadTests(PointTestCase):
         self.assertEqual(temperatures.of(self.t1.pk, today), D(8))                # the unit's own, not the inlet's
         self.assertEqual(temperatures.of(self.t2.pk, today), D(11))               # else its system's loop
         self.assertIsNone(temperatures.of(self.t2.pk, today - timedelta(days=1)))
+
+    def test_the_calculator_takes_the_values_of_a_unit_or_a_loop_from_its_middle_point(self):
+        from ..water import calculation
+        self.stock(self.t1)
+        self.limit('co2_mg_l', critical_high=15)
+        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='15', ph='6.1')
+        self.sample(point=self.t1, hours=2, temperature_c='9.5', ph='7.2')
+        self.sample(point=self.loop, hours=1, alkalinity_mg_l='90', salinity_ppt='0.5')
+        offers = calculation.offers(self.t1)
+        self.assertEqual((offers['temperature_c'].value, offers['ph'].value, offers['co2_limit_mg_l'].value),
+                         (D('9.5'), D('7.20'), D(15)))
+        self.assertEqual(offers['temperature_c'].reading.point, self.mid1)
+        self.assertNotIn('alkalinity_mg_l', offers)                    # nothing of the unit's is the loop's
+        self.assertEqual(offers['altitude_m'].value, D(0))
+        loop = calculation.offers(self.ras)
+        self.assertEqual((loop['alkalinity_mg_l'].value, loop['salinity_ppt'].value, 'ph' in loop),
+                         (D(90), D('0.5'), False))
+        bare = calculation.offers(self.pond)                            # no point at all: no readings, the site's altitude
+        self.assertEqual(set(bare), {'altitude_m'})
 
     def test_there_is_one_implementation_of_the_units_water(self):
         """The feeding temperature and the withdrawal ask farm/water/read.py's `water_sources`, and no module outside

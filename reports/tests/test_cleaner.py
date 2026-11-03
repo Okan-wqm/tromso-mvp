@@ -175,6 +175,7 @@ class ExportAndPageTests(CleanerFishTestCase):
         self.assertEqual(errors(body, 'RensefiskrapporteringDto'), [])
         csv = self.client.get(reverse('reports:report_export', args=[report.pk, 'csv'])).content.decode()
         self.assertIn('produksjonsenheter,[0].arter[0].uttak.antallAvlivetSykdom,50', csv)
+        self.assertReportsAddUp()
         # A void of the records the filing read is told, not hidden.
         services.void(self.user, StockOperation.objects.get(movements__reason='sick'), 'Wrong batch')
         changed = self.client.get(reverse('reports:report_detail', args=[report.pk]))

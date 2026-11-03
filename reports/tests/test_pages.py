@@ -157,6 +157,7 @@ class FilingTests(ReportPagesTestCase):
         page = self.client.get(reverse('reports:report_detail', args=[report.pk]))
         self.assertContains(page, 'As filed')
         self.assertContains(page, 'The records still give what was filed.')
+        self.assertReportsAddUp()
 
     def test_what_the_filing_refuses(self):
         _response, report = self.start()                       # no fish in October: not ready

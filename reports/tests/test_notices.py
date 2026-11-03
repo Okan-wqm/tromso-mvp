@@ -159,6 +159,7 @@ class TheFilingTellsTheHealthRecordsTests(NoticeTestCase):
         self.assertContains(self.file(report, channel='telephone', reference=''), 'Recorded as filed.')
         report.refresh_from_db()
         self.assertEqual((report.status, report.channel), ('submitted', 'telephone'))
+        self.assertReportsAddUp()
         logged = AuditLog.objects.filter(entity_type='regulatory report', action='update').latest('created_at')
         self.assertEqual(logged.changes['Not ready when filed'], [None, ' '.join(problems)])
         self.assertEqual(notices.pending([self.event]), [])

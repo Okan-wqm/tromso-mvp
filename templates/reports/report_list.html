@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n reports %}
 {% comment %} Production › Reports › Regulatory reports (reports.resources.ReportResource): the reports and notices the
    farm files with the authorities, each computed from the records; a filed one is kept as it was filed.{% endcomment %}
 {% block search_placeholder %}{% trans "Search by site, facility or receipt" %}{% endblock %}
@@ -23,6 +23,32 @@
   </select>
   <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
+{% endblock %}
+{% block notice %}
+{% if changed %}
+<div class="notice notice-error" role="alert">
+  <strong>{% trans "The records no longer give what was filed" %}</strong>
+  <ul>{% for report in changed %}<li><a href="{% url 'reports:report_detail' report.pk %}">{{ report }}</a></li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% if due %}
+<section class="notice notice-warning" aria-labelledby="due-title">
+  <strong id="due-title">{% trans "Due" %}</strong>
+  <ul>
+    {% for row in due %}<li>
+      {{ row.kind.label }} · {{ row.place }}{% if row.period %} · {{ row.period.label }}{% endif %}{% if row.event and not row.period %} · {{ row.event }}{% endif %}
+      · {% if row.deadline %}{{ row.deadline|date:"DATE_FORMAT" }}{% if row.overdue %} <span class="badge badge-closed">{% trans "Overdue" %}</span>{% endif %}{% else %}{% trans "at once" %}{% endif %}
+      {% if row.report %}· <a href="{% url 'reports:report_detail' row.report.pk %}">{% trans "Open the draft" %}</a>{% elif start_url %}· <a href="{{ start_url }}?{{ row.start_query|urlencode_query }}">{% trans "Start" %}</a>{% endif %}
+    </li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% if not_set_up %}
+<div class="notice notice-warning">
+  <strong>{% trans "Not set up for reports" %}</strong>
+  <ul>{% for item in not_set_up %}<li><a href="{% url 'farm:site_edit' item.site.pk %}">{{ item.site }}</a> · {% if item.production_form %}{% trans "no production form" %}{% endif %}{% if item.production_form and item.reports_from %}, {% endif %}{% if item.reports_from %}{% trans "no reports-from date" %}{% endif %}</li>{% endfor %}</ul>
+</div>
+{% endif %}
 {% endblock %}
 {% block empty_text %}{% trans "A report to Mattilsynet or Fiskeridirektoratet, computed from the records: you check it, file it yourself and record here that you did." %}{% endblock %}
 {% block items %}

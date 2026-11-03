@@ -9,7 +9,7 @@ from core.crud import Resource, RowList, filter_by
 from farm.health.read import with_deaths
 from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site
 
-from . import compute, exports, periods, services
+from . import compute, due, exports, periods, services
 from .forms import (
     ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
     UnitAnswerFormSet,
@@ -140,9 +140,12 @@ class ReportResource(Resource):
             objects = objects.filter(submitted_at__isnull=False)
         else:
             chosen_status = ''
+        owed = due.due()
         return objects, {'kinds': Report.Kind.choices, 'chosen_kind': chosen_kind, 'sites': sites,
                          'chosen_site': chosen_site, 'statuses': STATUSES, 'chosen_status': chosen_status,
-                         'today': periods.oslo_today()}
+                         'today': periods.oslo_today(), 'due': owed.rows, 'not_set_up': owed.not_set_up,
+                         'changed': due.no_longer_match(),
+                         'start_url': reverse('reports:report_create') if request.user.has_perm(cls.perm('add')) else ''}
 
     @classmethod
     def detail_extras(cls, request, report):

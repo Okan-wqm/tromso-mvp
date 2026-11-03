@@ -11,6 +11,7 @@ from farm.stock import services
 from farm.tests.helpers import make_facility, make_species, role
 from farm.tests.test_stock import make_unit
 
+from .. import integrity
 from ..models import Report
 from ..periods import MONTH, WEEK, Period
 
@@ -58,6 +59,10 @@ class ReportTestCase(TestCase):
         self.second = self.stock(self.k3, 800, '3', day(10, 20))
         services.record_transfer(self.user, source=self.k3, batch=self.second, day=day(10, 25),
                                  legs=[(self.m1, 800)], reason='growth_stage')
+
+    def assertReportsAddUp(self):
+        """`manage.py check_reports` finds nothing (reports/integrity.py)."""
+        self.assertEqual(integrity.problems(), [])
 
     def stock(self, unit, count, weight, on):
         operation = services.record_input(self.user, species=self.salmon, input_stage='smolt', origin='own_hatchery',

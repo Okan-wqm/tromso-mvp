@@ -1645,6 +1645,9 @@ msgstr "Legg til den første brukeren; vedkommende får en e-post for å velge p
 msgid "Add them in Setup › Tanks, ponds & cages."
 msgstr "Legg dem til i Oppsett › Kar, dammer og merder."
 
+msgid "Add treatment"
+msgstr "Legg til behandling"
+
 msgid "Add unit"
 msgstr "Legg til enhet"
 
@@ -5895,6 +5898,9 @@ msgstr "Ingen behandling i denne enheten de siste 90 dagene."
 msgid "No treatment matches these filters."
 msgstr "Ingen behandling samsvarer med disse filtrene."
 
+msgid "No treatment of the week is answered. Use “Add treatment” to add a row."
+msgstr "Ingen behandling i uken er besvart. Bruk «Legg til behandling» for å legge til en rad."
+
 msgid "No treatment recorded yet"
 msgstr "Ingen behandling registrert ennå"
 
@@ -7399,6 +7405,9 @@ msgstr "Lagre tester"
 
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Lagre utstyret med denne fôrautomattypen først; deretter kan kalibreringene legges til her."
+
+msgid "Save treatments"
+msgstr "Lagre behandlinger"
 
 msgid "Save units"
 msgstr "Lagre enheter"
@@ -9921,6 +9930,14 @@ msgid ""
 msgstr ""
 "Det punktet ser: strømmen inn til eieren, vannet inne i den eller strømmen ut. Vannet i en enhet,"
 " slik fôringen og tilbakeholdelsen leser det, er midtpunktet."
+
+msgid ""
+"What the records of the week's lice treatments do not say: whether each was given before the "
+"count, and which were given together (the same combination number). Saved separately from the "
+"report."
+msgstr ""
+"Det registreringene av ukens lusebehandlinger ikke sier: om hver ble gitt før tellingen, og "
+"hvilke som ble gitt sammen (samme kombinasjonsnummer). Lagres atskilt fra rapporten."
 
 msgid "What the report is filed under has changed since it was filed."
 msgstr "Det rapporten er sendt inn under, har endret seg siden den ble sendt inn."

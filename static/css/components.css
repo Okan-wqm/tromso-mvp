@@ -1270,14 +1270,15 @@ mark { padding: 0 .125rem; border-radius: 3px; background: #FBF0D9; color: inher
 
 /* Regulatory reports (Production › Reports): the answers' row lists, the figures, what differs from the records */
 .resistance-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) 5.5rem; }
-.sensitivity-row { grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 1fr) 5.5rem; }
+.sensitivity-row { grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 5.5rem; }
+.treatment-answer-row { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1.2fr) 5.5rem; }
 .unit-answer-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) 5.5rem; }
 @media (max-width: 767px) {
-  .resistance-row, .sensitivity-row, .unit-answer-row { grid-template-columns: minmax(0, 1fr); }
+  .resistance-row, .sensitivity-row, .unit-answer-row, .treatment-answer-row { grid-template-columns: minmax(0, 1fr); }
 }
 .report-figures td.number, .report-figures th.number { text-align: right; font-variant-numeric: tabular-nums; }
-.report-print { max-width: 60rem; }
-.report-print .data-table td:first-child { color: var(--muted); }
+.regulatory-print { max-width: 60rem; }
+.regulatory-print .data-table td:first-child { color: var(--muted); }
 @media print {
-  .report-print .form-actions { display: none; }
+  .regulatory-print .form-actions { display: none; }
 }

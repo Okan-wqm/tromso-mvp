@@ -323,7 +323,10 @@ class AnswersAndExportTests(LiceTestCase):
         answer = TreatmentAnswer.objects.get()
         self.assertEqual((answer.treatment, answer.done_before_count, answer.combination, answer.created_by),
                          (treatment, True, None, self.user))
-        self.assertContains(self.client.get(reverse('reports:report_edit', args=[self.report_.pk])), 'Treatments')
+        form = self.client.get(reverse('reports:report_edit', args=[self.report_.pk]))
+        self.assertContains(form, 'data-panel="treatments"')
+        self.assertContains(form, 'treatment-answer-row')
+        self.assertContains(form, 'data-panel="resistance"')
         version = str(Report.objects.get(pk=self.report_.pk).version)
         self.client.post(url, {**rows_data('treatments', [{
             'id': str(answer.pk), 'treatment': str(treatment.pk), 'done_before_count': False, 'combination': ''}],

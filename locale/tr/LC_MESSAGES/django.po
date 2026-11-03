@@ -1642,6 +1642,9 @@ msgstr "İlk kullanıcıyı ekleyin; parolasını belirlemesi için e-posta alı
 msgid "Add them in Setup › Tanks, ponds & cages."
 msgstr "Kurulum › Tanklar, havuzlar ve kafesler bölümünde ekleyin."
 
+msgid "Add treatment"
+msgstr "Tedavi ekle"
+
 msgid "Add unit"
 msgstr "Birim ekle"
 
@@ -5901,6 +5904,9 @@ msgstr "Son 90 günde bu birimde tedavi yok."
 msgid "No treatment matches these filters."
 msgstr "Bu filtrelere uyan tedavi yok."
 
+msgid "No treatment of the week is answered. Use “Add treatment” to add a row."
+msgstr "Haftanın hiçbir tedavisi yanıtlanmadı. Satır eklemek için “Tedavi ekle”yi kullanın."
+
 msgid "No treatment recorded yet"
 msgstr "Henüz tedavi kaydedilmedi"
 
@@ -7404,6 +7410,9 @@ msgstr "Testleri kaydet"
 
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Önce ekipmanı bu yemleme makinesi türüyle kaydedin; ardından kalibrasyonları buraya eklenebilir."
+
+msgid "Save treatments"
+msgstr "Tedavileri kaydet"
 
 msgid "Save units"
 msgstr "Birimleri kaydet"
@@ -9930,6 +9939,15 @@ msgid ""
 msgstr ""
 "Noktanın gördüğü: sahibine giren akım, içindeki su veya ondan çıkan akım. Bir birimin suyu, "
 "rasyonların ve arınma süresinin okuduğu şekliyle, orta noktasıdır."
+
+msgid ""
+"What the records of the week's lice treatments do not say: whether each was given before the "
+"count, and which were given together (the same combination number). Saved separately from the "
+"report."
+msgstr ""
+"Haftanın bit tedavilerinin kayıtlarının söylemedikleri: her birinin sayımdan önce yapılıp "
+"yapılmadığı ve hangilerinin birlikte yapıldığı (aynı kombinasyon numarası). Rapordan ayrı "
+"kaydedilir."
 
 msgid "What the report is filed under has changed since it was filed."
 msgstr "Raporun sunulduğu kimlik bilgileri sunulduğundan beri değişti."

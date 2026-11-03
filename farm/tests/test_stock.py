@@ -236,7 +236,7 @@ class InputTests(StockTestCase):
         errors = self.refused(self.stock, species=self.trout)
         self.assertEqual(errors['species'], [f'T-01 would hold Atlantic salmon (SAL) + Rainbow trout (RBT) on '
                                              f'{services.shown_date(self.day(10))}: a unit holds one species at a '
-                                             'time.'])
+                                             'time (cleaner fish join the production fish only on a sea site).'])
 
     def test_a_discontinued_species_is_not_stocked(self):
         self.salmon.status = Species.Status.DISCONTINUED

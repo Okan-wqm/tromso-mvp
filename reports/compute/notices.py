@@ -7,29 +7,40 @@ about its fish are read here. § 44a: a site taken into use (the day its first f
 emptied (the day its last fish left), and in continuous operation the stock by species and year class each year."""
 from django.utils.translation import gettext as _
 
-from farm.models import Batch
+from farm.health.read import with_deaths
+from farm.models import Batch, HealthEvent, StockOperation
 from farm.models.stock import MovementKind
 from farm.stock import read
 
 from . import stock
-from .common import Result, identity, species_code, year_class
+from .common import Result, identity, species_code, unit_number, year_class
 
 NARRATIVE = ('what_happened', 'cause', 'fish_dead', 'fish_injured', 'fish_involved', 'situation', 'measures')
 
 
 def event(report):
-    """An event notice (a welfare event, for now; escape and disease read their event too): the narrative as the
-    person wrote it."""
+    """An event notice (a disease or a welfare event): the narrative as the person wrote it and, when it is about a
+    health event, what the health records say of it (its day, diagnosis, units and the deaths recorded under it)."""
     problems = []
     content = {'kind': report.kind, 'occurred_on': report.occurred_on.isoformat() if report.occurred_on else None,
                'identity': identity(report.site, problems),
                'found_at': report.found_at.isoformat() if report.found_at else None,
                **{name: getattr(report, name) or None for name in NARRATIVE}}
+    scope = []
+    if report.health_event_id:
+        event = with_deaths(HealthEvent.all_objects.filter(pk=report.health_event_id)).prefetch_related(
+            'units').get()
+        content['health_event'] = {
+            'id': str(event.pk), 'date': event.date.isoformat(), 'diagnosis': event.diagnosis or None,
+            'confirmation': event.confirmation or None, 'deaths': event.deaths,
+            'units': sorted(unit_number(unit) for unit in event.units.all())}
+        scope = [('health_events', HealthEvent.all_objects.filter(pk=event.pk)),
+                 ('stock_operations', StockOperation.all_objects.filter(health_event=event))]
     if not report.what_happened.strip():
         problems.append(_('Say what happened.'))
     if report.found_at is None:
         problems.append(_('Say when it was found.'))
-    return Result(content, problems, [], [])
+    return Result(content, problems, [], scope)
 
 
 def site_change(report):

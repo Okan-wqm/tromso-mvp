@@ -7,7 +7,6 @@ import uuid
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import TabbedForm, tab_fields
@@ -15,10 +14,8 @@ from core.crud import TabbedForm, tab_fields
 from ..health import services
 from ..health.withdrawal import rule
 from ..models import HealthEvent, LiceCount, Medicine, Site, Supplier, Tank, Treatment
-from ..models.site import zone_of
 from ..stock.dates import local_today, site_earliest, site_today
 from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
-from .water import SiteClockField
 
 
 def supplier_label(supplier):
@@ -102,7 +99,7 @@ class MedicineForm(TabbedForm):
 # ---- health events ------------------------------------------------------------------------------------
 HEALTH_EVENT_FORM_TABS = [
     ('event', _('Event'), ['site', 'units', 'date', 'kind', 'signs']),
-    ('diagnosis', _('Diagnosis'), ['diagnosis', 'confirmation', 'authority_notified_at']),
+    ('diagnosis', _('Diagnosis'), ['diagnosis', 'confirmation']),
     ('examination', _('Examination'), ['examined_by', 'vet', 'lab', 'lab_reference', 'findings',
                                        'recommendations']),
     ('closing', _('Closing'), ['closed_on', 'outcome']),
@@ -111,15 +108,14 @@ HEALTH_EVENT_FORM_TABS = [
 
 class HealthEventForm(TabbedForm):
     """A health event: where and what (the site chosen once, some of its units or the whole site), the
-    diagnosis and whether Mattilsynet was told, the examination, and its closing. The units are the site's:
+    diagnosis, the examination, and its closing. That Mattilsynet was told is the filing of a notice (Production ›
+    Reports), not a field here. The units are the site's:
     choosing the site renders the form again with them (refresh_on). Its date follows the farm's date rule
     when it is entered or changed."""
 
     tabs = HEALTH_EVENT_FORM_TABS
     fixed_after_creation = ('site',)
     refresh_on = ('site',)
-
-    authority_notified_at = SiteClockField(label=_('Mattilsynet notified at'), required=False)
 
     class Meta:
         model = HealthEvent
@@ -129,8 +125,7 @@ class HealthEventForm(TabbedForm):
         help_texts = {
             'units': _('Leave all unticked when it concerns the whole site.'),
             'diagnosis': _('A listed disease is notified to Mattilsynet at once, already on suspicion '
-                           '(dyrehelseforskriften § 7).'),
-            'authority_notified_at': _('On the site’s clock.'),
+                           '(dyrehelseforskriften § 7): the event’s page offers to start the notice.'),
             'examined_by': _('The vet or fish-health biologist, or who observed it.'),
             'vet': _('A supplier of veterinary and fish health services (Purchasing › Suppliers).'),
             'lab': _('A supplier of laboratory analyses.'),
@@ -153,18 +148,6 @@ class HealthEventForm(TabbedForm):
                           if self.site is not None else Tank.objects.none())
         if self.site is None:
             units.help_text = _('Choose the site first.')
-        if not self.instance._state.adding and self.instance.authority_notified_at and not self.is_bound:
-            self.initial['authority_notified_at'] = timezone.localtime(
-                self.instance.authority_notified_at, zone_of(self.instance.site)).replace(tzinfo=None)
-
-    def clean_authority_notified_at(self):
-        moment = self.cleaned_data['authority_notified_at']
-        if moment is None or self.site is None:
-            return moment
-        moment = timezone.make_aware(moment, zone_of(self.site))
-        if moment > timezone.now():
-            raise ValidationError(_('The time cannot be in the future.'))
-        return moment
 
     def clean(self):
         cleaned = super().clean()
@@ -176,9 +159,6 @@ class HealthEventForm(TabbedForm):
             elif day < site_earliest(site):
                 self.add_error('date', _('Operations can be dated at most %(days)d days back.') % {
                     'days': settings.STOCK_BACKDATE_DAYS})
-        notified = cleaned.get('authority_notified_at')
-        if notified is not None and day is not None and timezone.localtime(notified, zone_of(site)).date() < day:
-            self.add_error('authority_notified_at', _('Mattilsynet is notified on or after the date of the event.'))
         return cleaned
 
 

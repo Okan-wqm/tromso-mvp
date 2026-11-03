@@ -6,9 +6,10 @@ from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core import audit
 from core.crud import Resource, RowList, filter_by
-from farm.models import SlaughterFacility, Site
+from farm.health.read import with_deaths
+from farm.models import HealthEvent, SlaughterFacility, Site
 
-from . import compute, periods, services
+from . import compute, exports, periods, services
 from .forms import (
     ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
     UnitAnswerFormSet,
@@ -115,6 +116,11 @@ class ReportResource(Resource):
                     initial['period_start'] = periods.Period.from_key(request.GET.get('period', '')).start
                 except ValueError:
                     pass
+            event = HealthEvent.objects.select_related('site').prefetch_related('units').filter(
+                pk=request.GET.get('health_event', '')).first() if _is_uuid(request.GET.get('health_event', '')) \
+                else None
+            if event is not None:
+                initial.update(_from_event(event, kind))
             kwargs['initial'] = initial
         return cls.form_class(*args, **kwargs)
 
@@ -154,6 +160,7 @@ class ReportResource(Resource):
             'can_correct': report.submitted_at is not None and request.user.has_perm(cls.perm('add')),
             'export_urls': {fmt: reverse('reports:report_export', args=[report.pk, fmt]) for fmt in ('csv', 'json')},
             'print_url': reverse('reports:report_print', args=[report.pk]),
+            'has_api': report.kind in exports.API_KINDS,
         }
         if extras['can_submit']:
             extras['submit_form'] = SubmitForm(initial={
@@ -162,6 +169,20 @@ class ReportResource(Resource):
         if extras['can_correct']:
             extras['correct_url'] = reverse('reports:report_correct', args=[report.pk])
         return extras
+
+
+def _from_event(event, kind):
+    """What a notice started from a health event begins with: its site and day, the kind it calls for (a listed disease
+    is notified as a disease), and what the event says of what happened, the cause and the dead (the person's text
+    from there on)."""
+    units = ', '.join(unit.code for unit in event.units.all()) or _('the whole site')
+    what = ' · '.join(str(part) for part in (event, event.get_confirmation_display() if event.confirmation else '',
+                                              units) if part)
+    deaths = with_deaths(HealthEvent.objects.filter(pk=event.pk)).get().deaths
+    return {'kind': kind if kind in compute.COMPUTE else (
+        ReportKind.DISEASE if event.notifiable else ReportKind.WELFARE),
+        'site': event.site_id, 'health_event': event.pk, 'occurred_on': event.date, 'what_happened': what,
+        'cause': event.get_diagnosis_display() if event.diagnosis else '', 'fish_dead': deaths or None}
 
 
 def _is_uuid(value):

@@ -10,6 +10,8 @@ from core.dbgrid import formula_safe
 
 from .kinds import ReportKind
 
+# The reports Mattilsynet's reporting API takes: the kinds `api_json` builds.
+API_KINDS = (ReportKind.SEA_LICE, ReportKind.SMOLT, ReportKind.CLEANER_FISH, ReportKind.SLAUGHTER_PLANNED)
 CULL_FIELDS = {'sick': 'antallAvlivetSykdom', 'injured': 'antallAvlivetSkader', 'emaciated': 'antallAvlivetAvmagret',
                'salmon_handling': 'antallAvlivetForeståendeHåndteringAvLaksen',
                'poor_environment': 'antallAvlivetForeståendeUgunstigLevemiljø', 'not_used': 'antallAvlivetSkalIkkeBrukes'}

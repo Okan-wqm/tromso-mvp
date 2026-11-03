@@ -8,7 +8,7 @@ from django.db.models import F, Q
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
-from farm.models import SlaughterFacility, Site, Tank, Treatment
+from farm.models import HealthEvent, SlaughterFacility, Site, Tank, Treatment
 
 from . import periods
 from .kinds import BY_FACILITY, EVENTS, KINDS, PERIODIC, ReportKind, info
@@ -33,6 +33,7 @@ NARRATIVE = ('what_happened', 'found_at', 'cause', 'fish_dead', 'fish_injured', 
              'measures')
 NARRATIVE_KINDS = (ReportKind.ESCAPE, ReportKind.DISEASE, ReportKind.WELFARE)
 SITE_NOTICES = (ReportKind.SITE_IN_USE, ReportKind.SITE_EMPTIED)
+HEALTH_EVENT_KINDS = (ReportKind.DISEASE, ReportKind.WELFARE)
 WEEKLY = tuple(kind for kind in PERIODIC if KINDS[kind].grain == periods.WEEK)
 MONTHLY = tuple(kind for kind in PERIODIC if KINDS[kind].grain == periods.MONTH)
 YEARLY = tuple(kind for kind in PERIODIC if KINDS[kind].grain == periods.YEAR)
@@ -64,6 +65,10 @@ class Report(AuditedModel):
     facility = models.ForeignKey(SlaughterFacility, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='regulatory_reports', verbose_name=_('Slaughter facility'))
     period_start = models.DateField(_('Period'), null=True, blank=True)
+    # The health event a notice is about: a disease notice's, a welfare notice's when it came of one (D-4: that
+    # Mattilsynet was told of the event is this notice's filing, which the health records read).
+    health_event = models.ForeignKey(HealthEvent, null=True, blank=True, on_delete=models.PROTECT,
+                                     related_name='notices', verbose_name=_('Health event'))
     occurred_on = models.DateField(_('Happened on'), null=True, blank=True)
 
     contact_name = models.CharField(_('Contact person'), max_length=255, blank=True)
@@ -107,6 +112,9 @@ class Report(AuditedModel):
             _check('month', ~Q(kind__in=MONTHLY) | Q(period_start__day=1)),
             _check('year', ~Q(kind__in=YEARLY) | Q(period_start__day=1, period_start__month=1)),
             _check('site_notice', ~Q(kind__in=SITE_NOTICES) | Q(occurred_on__isnull=False)),
+            _check('health_event', Q(kind=ReportKind.DISEASE, health_event__isnull=False)
+                   | (~Q(kind=ReportKind.DISEASE) & (Q(kind=ReportKind.WELFARE) | Q(health_event__isnull=True))),
+                   _('A disease notice is about a health event; a welfare notice may be; no other report is.')),
             _check('narrative', Q(kind__in=NARRATIVE_KINDS)
                    | Q(what_happened='', found_at__isnull=True, cause='', fish_dead__isnull=True,
                        fish_injured__isnull=True, fish_involved__isnull=True, situation='', measures='')),
@@ -130,6 +138,11 @@ class Report(AuditedModel):
                 condition=Q(is_deleted=False, corrects__isnull=True, kind__in=SITE_NOTICES),
                 name='uq_regulatory_reports_site_notice',
                 violation_error_message=_('This notice has already been started: open it from the list.')),
+            models.UniqueConstraint(
+                fields=['kind', 'health_event'],
+                condition=Q(is_deleted=False, corrects__isnull=True, health_event__isnull=False),
+                name='uq_regulatory_reports_event_notice',
+                violation_error_message=_('This health event has a notice already: open it from the list.')),
             models.UniqueConstraint(
                 fields=['corrects'], condition=Q(is_deleted=False, corrects__isnull=False),
                 name='uq_regulatory_reports_correction',
@@ -185,6 +198,8 @@ class Report(AuditedModel):
             stored = type(self).all_objects.filter(pk=self.pk).values('submitted_at').first()
             if stored and stored['submitted_at'] is not None:
                 raise ValidationError(gettext('It was filed and cannot change: start a correction instead.'))
+        if self.health_event_id and self.site_id and self.health_event.site_id != self.site_id:
+            raise ValidationError({'health_event': gettext('Choose a health event of the site.')})
 
     def delete_blockers(self):
         if self.submitted_at is not None:

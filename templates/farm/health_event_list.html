@@ -30,8 +30,8 @@
 {% if to_notify %}
 <div class="notice notice-error" role="alert">
   <strong>{% trans "Notify Mattilsynet" %}</strong>
-  {% trans "A listed disease is suspected or confirmed and Mattilsynet has not been notified: notify at once (dyrehelseforskriften § 7), then enter the time on the event." %}
-  <ul>{% for event in to_notify %}<li>{% if can_change %}<a href="{% url 'farm:healthevent_edit' event.pk %}" data-modal>{{ event }}</a>{% else %}{{ event }}{% endif %} · {{ event.site.name }} · {{ event.get_confirmation_display }}</li>{% endfor %}</ul>
+  {% trans "A listed disease is suspected or confirmed and Mattilsynet has not been notified: notify at once (dyrehelseforskriften § 7), then record the filing of the notice." %}
+  <ul>{% for event, url in to_notify %}<li>{% if url %}<a href="{{ url }}">{{ event }}</a>{% elif can_change %}<a href="{% url 'farm:healthevent_edit' event.pk %}" data-modal>{{ event }}</a>{% else %}{{ event }}{% endif %} · {{ event.site.name }} · {{ event.get_confirmation_display }}</li>{% endfor %}</ul>
 </div>
 {% endif %}
 {% endblock %}
@@ -53,7 +53,7 @@
         </td>
         <td>{{ event.site.name }}<span class="row-sub">{% for unit in event.units.all %}{% if not forloop.first %}, {% endif %}{{ unit.code }}{% empty %}{% trans "Whole site" %}{% endfor %}</span></td>
         <td>{% for label in event.sign_labels %}{% if not forloop.first %}, {% endif %}{{ label }}{% empty %}—{% endfor %}</td>
-        <td>{% if event.notifiable %}{% if event.authority_notified_at %}{% blocktrans trimmed with moment=event.authority_notified_at|date:"DATETIME_FORMAT" %}Notified {{ moment }}{% endblocktrans %}{% elif not event.is_deleted %}<strong class="over-text">{% trans "Notify at once" %}</strong>{% endif %}{% else %}—{% endif %}</td>
+        <td>{% if event.notifiable %}{% with notified=told|told_of:event %}{% if notified %}{% blocktrans trimmed with moment=notified.at|date:"DATETIME_FORMAT" %}Notified {{ moment }}{% endblocktrans %}{% elif told is not None and not event.is_deleted %}<strong class="over-text">{% trans "Notify at once" %}</strong>{% else %}—{% endif %}{% endwith %}{% else %}—{% endif %}</td>
         <td>{{ event.examined_by|default:"—" }}{% if event.vet %}<span class="row-sub">{{ event.vet.name }}</span>{% endif %}{% if event.lab %}<span class="row-sub">{{ event.lab.name }}{% if event.lab_reference %} · {{ event.lab_reference }}{% endif %}</span>{% endif %}</td>
         <td class="num">{{ event.deaths|fish }}</td>
         <td class="nowrap">{% if event.closed_on %}{{ event.closed_on|date:"DATE_FORMAT" }}{% if event.outcome %}<span class="row-sub">{{ event.outcome|truncatechars:80 }}</span>{% endif %}{% else %}{% trans "Open" %}{% endif %}{% if event.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=event.void_reason name=event.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>

@@ -9,7 +9,11 @@ from core import audit
 from core.models import AuditLog
 
 from . import compute
-from .models import NARRATIVE, WITHOUT_REFERENCE, Report, ReportSnapshot
+from .kinds import EVENTS
+from .models import NARRATIVE, WITHOUT_REFERENCE, Channel, Report, ReportSnapshot
+
+# The format of a notice that was recorded on the health event before notices existed (its time only).
+LEGACY_FORMAT = 0
 
 # The leaves of a content that name rather than count: a change of one is "identity changed since filing".
 IDENTITY_LEAVES = ('/number', '/species', '/organisation_number', '/lokalitetsnummer', '/site', '/site_code')
@@ -45,7 +49,10 @@ def submit(user, report, *, submitted_at, channel, reference, version):
         if not reference.strip() and channel not in WITHOUT_REFERENCE:
             raise ValidationError({'reference': [_('Give the receipt or reference the authority gave.')]})
         result = compute.compute(current)
-        if result.problems:
+        # A notice given by telephone is recorded as it was told: its figures may not all be in the records yet, and
+        # what is missing is kept with the filing rather than keeping the call from being recorded.
+        phoned = channel == Channel.TELEPHONE and current.kind in EVENTS
+        if result.problems and not phoned:
             _refuse(_('It is not ready: %(problems)s') % {'problems': ' '.join(result.problems)})
         digest = compute.content_hash(result.content)
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
@@ -62,6 +69,7 @@ def submit(user, report, *, submitted_at, channel, reference, version):
                 str(Report._meta.get_field('channel').verbose_name): [None, audit.message(current.get_channel_display())],
                 str(Report._meta.get_field('reference').verbose_name): [None, current.reference or None],
                 str(_('Content hash')): [None, digest],
+                **({str(_('Not ready when filed')): [None, ' '.join(result.problems)]} if result.problems else {}),
             }
             audit.record(user, AuditLog.Action.UPDATE, current, changes, entity_type=Report._meta.verbose_name)
     return current
@@ -96,6 +104,8 @@ def differences(report):
     unit's number, a species' code, the site's numbers renamed since) and of the sources read, and whether the
     format changed. Read on the report's page; nothing is stored."""
     snapshot = report.snapshot
+    if snapshot.format_version == LEGACY_FORMAT:
+        return {'figures': [], 'identity': [], 'sources': [], 'format_changed': False, 'legacy': True}
     now = compute.compute(report).content
     before, after = compute.flatten(snapshot.content), compute.flatten(now)
     figures, identity, sources = [], [], []

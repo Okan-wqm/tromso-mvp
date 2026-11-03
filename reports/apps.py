@@ -9,4 +9,8 @@ class ReportsConfig(AppConfig):
     verbose_name = 'Reports'
 
     def ready(self):
+        from farm.health import notices
+
         from . import resources  # noqa: F401  declares the tab on Resource.registry
+        from .health import DiseaseNotices
+        notices.register(DiseaseNotices())      # "Mattilsynet notified" of a health event is its filed notice (D-4)

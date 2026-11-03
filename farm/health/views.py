@@ -30,7 +30,7 @@ from ..stock import read as stock_read, views as stock_views
 from ..stock.dates import local_today, shown_date
 from ..stock.read import Presence
 from ..stock.services import AlreadyRecorded
-from . import read, services, withdrawal
+from . import notices, read, services, withdrawal
 
 TREATMENTS = {'view': 'farm.view_treatment', 'add': 'farm.add_treatment', 'change': 'farm.change_treatment',
               'delete': 'farm.delete_treatment'}
@@ -386,6 +386,7 @@ def drawer(request, unit, back):
         events = HealthEvent.objects.filter(site=site, closed_on__isnull=True).prefetch_related('units') \
             if site is not None else HealthEvent.objects.none()
         context['health_events'] = [event for event in events if not event.units.all() or unit in event.units.all()]
+        context['health_notify'] = {event.pk for event in notices.pending(context['health_events']) or []}
         shown = True
     if user.has_perm(COUNTS['view']):
         context['health_lice'] = read.latest_counts([unit.pk]).get(unit.pk)

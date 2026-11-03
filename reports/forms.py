@@ -4,19 +4,19 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
-from farm.models import SlaughterFacility, Site, Tank
+from farm.models import HealthEvent, SlaughterFacility, Site, Tank
 from farm.models.harvest import FacilityStatus
 
 from . import periods
 from .compute import COMPUTE, lice
 from .kinds import BY_FACILITY, EVENTS, PERIODIC, info
 from .models import (
-    NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, TreatmentAnswer,
+    HEALTH_EVENT_KINDS, NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, TreatmentAnswer,
     UnitAnswer,
 )
 
 REPORT_FORM_TABS = [
-    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'occurred_on']),
+    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'occurred_on']),
     ('contact', _('Contact person'), ['contact_name', 'contact_email', 'contact_phone']),
     ('event', _('What happened'), list(NARRATIVE)),
     ('notes', _('Notes'), ['notes']),
@@ -29,7 +29,7 @@ class ReportForm(TabbedForm):
     the narrative of a notice. A day of the period is enough: the report is for its week, month or year."""
 
     tabs = REPORT_FORM_TABS
-    fixed_after_creation = ('kind', 'site', 'facility', 'period_start', 'occurred_on')
+    fixed_after_creation = ('kind', 'site', 'facility', 'period_start', 'health_event', 'occurred_on')
     refresh_on = ('kind',)
 
     class Meta:
@@ -64,6 +64,11 @@ class ReportForm(TabbedForm):
         if 'facility' in self.fields and self.instance._state.adding:
             self.fields['facility'].queryset = SlaughterFacility.objects.filter(
                 status=FacilityStatus.ACTIVE).order_by('name')
+        if 'health_event' in self.fields:
+            self.fields['health_event'].queryset = HealthEvent.objects.select_related('site').order_by(
+                '-date', '-created_at')
+            self.fields['health_event'].label_from_instance = lambda event: f'{event} · {event.site}'
+            self.fields['health_event'].empty_label = _('None')
         kind = self.chosen_kind()
         if not kind:
             return
@@ -72,12 +77,16 @@ class ReportForm(TabbedForm):
         keep.add('period_start' if kind in PERIODIC else 'occurred_on')
         if kind in NARRATIVE_KINDS:
             keep.update(NARRATIVE)
+        if kind in HEALTH_EVENT_KINDS:
+            keep.add('health_event')
         for name in list(self.fields):
             if name not in keep and name != 'version':
                 del self.fields[name]
         for name in ('site', 'facility', 'period_start'):
             if name in self.fields and not self.fields[name].disabled:
                 self.fields[name].required = True
+        if kind == Report.Kind.DISEASE and 'health_event' in self.fields:
+            self.fields['health_event'].required = True
         if kind in SITE_NOTICES or kind in EVENTS and 'occurred_on' in self.fields and not self.fields[
                 'occurred_on'].disabled:
             self.fields['occurred_on'].required = True

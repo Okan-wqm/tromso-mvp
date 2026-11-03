@@ -143,6 +143,14 @@ def in_tree_order(records, wanted=None):
     return ordered
 
 
+class AuditSeverity(models.TextChoices):
+    """How much an activity-log entry matters. Critical: someone went on past a warning that protects fish
+    or food (a harvest during a medicine withdrawal, a handling after too short a fast; farm/handling). The
+    alarms that come later read these entries."""
+    NORMAL = 'normal', _('Normal')
+    CRITICAL = 'critical', _('Critical')
+
+
 class AuditLog(models.Model):
     """Who did what to which record, with old and new values. Rows are append-only: a database
     trigger (migration 0003) refuses UPDATE and DELETE, so history cannot be edited, not even by
@@ -155,6 +163,9 @@ class AuditLog(models.Model):
         RESTORE = 'restore', _('Restored')
         # An operation that stops counting, with its reason (farm stock operations): history keeps it.
         VOID = 'void', _('Voided')
+
+    # Defined outside the class so that its Meta can name their values in the constraint.
+    Severity = AuditSeverity
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -173,11 +184,21 @@ class AuditLog(models.Model):
     # is None, a person's text as written, {'msgid': ...} for an enumeration, or a list of those for several
     # choices (see core.audit).
     changes = models.JSONField(default=dict, blank=True)
+    severity = models.CharField(max_length=10, choices=Severity.choices, default=Severity.NORMAL)
 
     class Meta:
         db_table = 'audit_log'
         ordering = ['-created_at']
-        indexes = [models.Index(fields=['entity_type', 'entity_id'])]
+        indexes = [
+            models.Index(fields=['entity_type', 'entity_id']),
+            # The few critical entries, newest first, without reading the whole log.
+            models.Index(fields=['-created_at'], condition=models.Q(severity=AuditSeverity.CRITICAL),
+                         name='audit_log_critical_idx'),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(severity__in=AuditSeverity.values),
+                                   name='chk_audit_log_severity'),
+        ]
         # Not about audit rows: the one permission of the platform's own screens that no model owns
         # (core.database). It is not in the access matrix, so only the platform admin has it.
         permissions = [('browse_database', 'Can browse the database')]

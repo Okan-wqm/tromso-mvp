@@ -160,8 +160,10 @@ class TabbedForm(forms.ModelForm):
         protocol in force per unit among live assignments" (days that overlap). Django leaves them out of form
         validation when the condition uses a field the form does not edit (is_deleted), so check them here:
         the record as the form would save it, by the constraint itself. The error goes on the constraint's
-        last field the form shows, with its message. An empty value never clashes in a unique constraint; in
-        an exclusion constraint it may mean something (an open end of a period), so it is checked too."""
+        last field the form shows, with its message. An empty value never clashes in a unique constraint,
+        unless it counts empty values as equal (`nulls_distinct=False`: one handling rule for every species, the
+        one with no species); in an exclusion constraint it may mean something (an open end of a period), so it
+        is checked too."""
         model = self._meta.model
         for constraint in model._meta.constraints:
             unique = isinstance(constraint, models.UniqueConstraint)
@@ -171,7 +173,7 @@ class TabbedForm(forms.ModelForm):
             candidate = copy.copy(self.instance)
             for name in names:
                 value = cleaned.get(name) if name in self.fields else getattr(self.instance, name, None)
-                if unique and value in (None, ''):
+                if unique and value in (None, '') and constraint.nulls_distinct is not False:
                     break
                 setattr(candidate, name, value)
             else:

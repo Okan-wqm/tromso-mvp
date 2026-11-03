@@ -10,6 +10,8 @@ from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibrat
 from .feed import Feed, FeedSuitability
 from .feeding import FeedingRecord
 from .feeding_protocol import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
+from .handling import HandlingAcknowledgement, HandlingRule
+from .harvest import HandlingPlanItem, HarvestRecord, ProductionPlan, SlaughterFacility
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
@@ -21,7 +23,8 @@ from .water import WaterLimit, WaterMeasurement
 
 __all__ = [
     'Batch', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
-    'FeedingProtocol', 'FeedingRecord', 'ProductionDepartment', 'ProtocolAssignment', 'ProtocolBand', 'ProtocolRate',
-    'Site', 'SiteContact', 'Species', 'StockMovement', 'StockOperation', 'Supplier', 'SupplierContact', 'System',
-    'Tank', 'WaterLimit', 'WaterMeasurement',
+    'FeedingProtocol', 'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
+    'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment', 'ProtocolBand', 'ProtocolRate', 'Site',
+    'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement', 'StockOperation', 'Supplier', 'SupplierContact',
+    'System', 'Tank', 'WaterLimit', 'WaterMeasurement',
 ]

@@ -2,7 +2,8 @@
 {% load i18n stock feeding %}
 {% comment %} An operation on the fish of one unit (farm.stock.views.record_operation): mortality, cull, a weighing;
    a feeding too (farm/feeding_form.html extends it and fills the intro). In the dialog or as a page; the
-   server's reasons appear on the field they concern.{% endcomment %}
+   server's reasons appear on the field they concern. A harvest, transfer or grading shows the handling check
+   and its box (farm/_handling_panel.html); one recorded from a plan says so.{% endcomment %}
 {% block title %}{{ heading }} · {{ unit.code }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}
@@ -20,12 +21,13 @@
   {% with share=form.only_batch %}{% if share %}
   <p class="op-batch">{% blocktrans trimmed with batch=share.batch.code fish=share.count|fish weight=share.avg_weight_g|grams %}Batch {{ batch }}: {{ fish }} fish at {{ weight }}{% endblocktrans %}</p>
   {% endif %}{% endwith %}
+  {% if plan %}<p class="op-plan">{% blocktrans trimmed with date=plan.date|date:"DATE_FORMAT" %}From the plan of {{ date }}: it is linked to the plan when it is recorded.{% endblocktrans %}</p>{% endif %}
   {% if estimate %}
   <p class="op-batch estimate-line">{% blocktrans trimmed with weight=estimate.estimated_g|grams date=estimate.day|date:"DATE_FORMAT" %}Estimated {{ weight }} on {{ date }}{% endblocktrans %}{% if estimate.days is not None %} ({% blocktrans trimmed count days=estimate.days %}{{ days }} day since the last measured weight{% plural %}{{ days }} days since the last measured weight{% endblocktrans %}){% endif %}{% if estimate.entered_g is not None %}; {% blocktrans trimmed with weight=estimate.entered_g|grams grams=estimate.difference_g|difference:1 percent=estimate.difference_pct|difference:1 %}you entered {{ weight }}: {{ grams }} g, {{ percent }} %{% endblocktrans %}{% endif %}.{% if estimate.blind_days %} <span class="warn-text">{% blocktrans trimmed count days=estimate.blind_days %}The estimate is incomplete: {{ days }} feeding day without an expected FCR.{% plural %}The estimate is incomplete: {{ days }} feeding days without an expected FCR.{% endblocktrans %}</span>{% endif %}</p>
   {% endif %}
   {% block intro %}{% endblock %}
   <div class="form-grid">
-    {% for field in form.visible_fields %}{% if field.name != form.ack_field %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
+    {% for field in form.visible_fields %}{% if field.name != form.ack_field and field.name != "handling_ack" %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
   </div>
   {% if rows %}
   <fieldset class="form-fieldset" data-formset>
@@ -39,6 +41,7 @@
     <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{% trans "Add unit" %}</button>
   </fieldset>
   {% endif %}
+  {% if form.handling_kind %}{% include "farm/_handling_panel.html" %}{% endif %}
   {% if form.needs_ack %}
   <div class="notice notice-warning">{% with field=form.ack %}{% include "registration/_field.html" %}{% endwith %}</div>
   {% endif %}

@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core.fields import ChoiceArrayField
 from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
+from core.softdelete import protected
 
 from .contact import ONE_PRIMARY, Contact
 from .site import Site
@@ -35,6 +36,8 @@ class SupplyCategory(models.TextChoices):
     LABORATORY = 'laboratory', _('Laboratory analyses')
     DIVING = 'diving', _('Diving and ROV')
     TRANSPORT = 'transport', _('Wellboat and transport')
+    # A slaughterhouse and its processing plant: the operator of a slaughter facility (Reference data).
+    SLAUGHTER = 'slaughter', _('Slaughter and processing')
     MAINTENANCE = 'maintenance', _('Maintenance and repair')
     CONSULTANCY = 'consultancy', _('Consultancy')
     OTHER = 'other', _('Other')
@@ -183,6 +186,21 @@ class Supplier(CodedMixin, AuditedModel):
                     'count': count, 'category': SupplyCategory(link.category).label}))
         if errors:
             raise ValidationError({'supplies': errors})
+
+    def delete_blockers(self):
+        """A PROTECT link from a record that is not a farm record of its own (a harvest's transport, kept on
+        the harvest operation's HarvestRecord) blocks the delete too: core.softdelete follows only farm
+        records, so every such SupplierLink is read here, by its live rows (its model's default manager)."""
+        blockers = []
+        for relation in self._meta.related_objects:
+            link = relation.field
+            if (not isinstance(link, SupplierLink) or issubclass(relation.related_model, AuditedModel)
+                    or relation.on_delete is not models.PROTECT):
+                continue
+            count = relation.related_model._default_manager.filter(**{link.name: self}).count()
+            if count:
+                blockers.append(protected(relation.related_model, count))
+        return blockers
 
     def save(self, *args, **kwargs):
         self.organisation_number = normalise_organisation_number(self.organisation_number)

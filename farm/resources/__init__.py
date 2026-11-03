@@ -2,14 +2,18 @@
 from .equipment import EquipmentResource
 from .feed import FeedResource
 from .feeding_protocol import FeedingProtocolResource, ProtocolAssignmentResource
+from .handling_rule import HandlingRuleResource
+from .harvest_plan import HandlingPlanItemResource, ProductionPlanResource
 from .production_department import ProductionDepartmentResource
 from .site import SiteResource
+from .slaughter_facility import SlaughterFacilityResource
 from .species import SpeciesResource
 from .supplier import SupplierResource
 from .system import SystemResource
 from .tank import TankResource
 from .water_limit import WaterLimitResource
 
-__all__ = ['EquipmentResource', 'FeedResource', 'FeedingProtocolResource', 'ProductionDepartmentResource',
-           'ProtocolAssignmentResource', 'SiteResource', 'SpeciesResource', 'SupplierResource', 'SystemResource',
-           'TankResource', 'WaterLimitResource']
+__all__ = ['EquipmentResource', 'FeedResource', 'FeedingProtocolResource', 'HandlingPlanItemResource',
+           'HandlingRuleResource', 'ProductionDepartmentResource', 'ProductionPlanResource',
+           'ProtocolAssignmentResource', 'SiteResource', 'SlaughterFacilityResource', 'SpeciesResource',
+           'SupplierResource', 'SystemResource', 'TankResource', 'WaterLimitResource']

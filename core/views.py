@@ -35,7 +35,8 @@ def _day(value, end=False):
 def activity_log(request):
     """Every recorded change, newest first, filterable by person, record type, action and dates."""
     entries = AuditLog.objects.all()
-    filters = {key: request.GET.get(key, '').strip() for key in ('q', 'user', 'type', 'action', 'from', 'to')}
+    filters = {key: request.GET.get(key, '').strip()
+               for key in ('q', 'user', 'type', 'action', 'severity', 'from', 'to')}
     if filters['q']:
         entries = entries.filter(entity_label__icontains=filters['q'])
     if filters['user']:
@@ -44,6 +45,10 @@ def activity_log(request):
         entries = entries.filter(entity_type=filters['type'])
     if filters['action']:
         entries = entries.filter(action=filters['action'])
+    if filters['severity'] in AuditLog.Severity.values:
+        entries = entries.filter(severity=filters['severity'])
+    else:
+        filters['severity'] = ''
     if start := _day(filters['from']):
         entries = entries.filter(created_at__gte=start)
     if end := _day(filters['to'], end=True):
@@ -60,4 +65,5 @@ def activity_log(request):
         'types': [(name, gettext(name)) for name in
                   AuditLog.objects.order_by('entity_type').values_list('entity_type', flat=True).distinct()],
         'actions': AuditLog.Action.choices,
+        'severities': AuditLog.Severity.choices,
     })

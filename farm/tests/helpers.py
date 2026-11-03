@@ -49,6 +49,12 @@ def make_species(code='SAL', common_name='Atlantic salmon', scientific_name='Sal
     return Species.objects.create(code=code, common_name=common_name, scientific_name=scientific_name, **values)
 
 
+def make_facility(name='Fjord Slakteri', approval_number='M123', **fields):
+    """An active slaughter facility that takes every species (Reference data › Slaughter facilities)."""
+    from ..models import SlaughterFacility
+    return SlaughterFacility.objects.create(name=name, approval_number=approval_number, **fields)
+
+
 def stock_fish(user, unit, count=1000, weight='50', days_ago=10, species=None, **fields):
     """Stocks a new batch of `count` fish of `weight` g into `unit`, `days_ago` days back; returns the batch."""
     from datetime import timedelta

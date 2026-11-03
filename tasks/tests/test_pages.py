@@ -199,8 +199,8 @@ class ListsOfferedTests(TasksTestCase):
         batch = stock_fish(self.boss, self.t1)
         empty = stock_fish(self.boss, self.t2)
         from farm.stock import services as stock
-        stock.record_harvest(self.boss, unit=self.t2, batch=empty, day=stock.local_today(self.t2), count=1000,
-                             measured_weight_kg=50, everything=True)
+        stock.record_mortality(self.boss, unit=self.t2, batch=empty, day=stock.local_today(self.t2), count=1000,
+                               cause='disease')
         html = self.client.get(NEW).content.decode()
         self.assertIn('data-depends-on="location"', html)
         groups = ' '.join(sorted(places.token(place) for place in (self.t1, self.hall, self.bergen)))
@@ -219,8 +219,8 @@ class ListsOfferedTests(TasksTestCase):
         batch = stock_fish(self.boss, self.t1)
         task = self.make_task(batch=batch)
         from farm.stock import services as stock
-        stock.record_harvest(self.boss, unit=self.t1, batch=batch, day=stock.local_today(self.t1), count=1000,
-                             measured_weight_kg=50, everything=True)
+        stock.record_mortality(self.boss, unit=self.t1, batch=batch, day=stock.local_today(self.t1), count=1000,
+                               cause='disease')
         response = self.client.post(edit_url(task), form_data(
             title='Renamed', site=str(self.bergen.pk), location=places.token(self.t1), batch=str(batch.pk),
             due_date=self.today.isoformat(), assignees=[self.ali.pk], version=task.version))

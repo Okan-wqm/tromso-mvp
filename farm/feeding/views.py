@@ -20,7 +20,6 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
@@ -28,6 +27,7 @@ from core.crud import done, render_page
 
 from ..forms.feeding import FeedingForm, feed_label
 from ..forms.stock import VoidForm
+from ..handling.fasting import fasting_on
 from ..models import Batch, Feed, FeedingRecord, Site, Tank
 from ..models.site import zone_of
 from ..stock import read as stock_read, views as stock_views
@@ -57,10 +57,7 @@ def _context(url_name=RECORDS, **extra):
 
 def _back(request, unit=None):
     """Where a dialog goes back to: the page it was opened from (`next`, the list with its filters), else
-    Production units with the unit's drawer open."""
-    target = request.GET.get('next', '')
-    if target.startswith('/') and url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
-        return target
+    Production units with the unit's drawer open (the stock dialogs' rule)."""
     return stock_views._back(request, unit)
 
 
@@ -349,8 +346,9 @@ def record_feeding(request, pk):
                         % {'feed': record.feed, 'species': stock.batches[0].species,
                            'weight': grams(stock.avg_weight_g)})
                 return done(request, back)
+        day = form.cleaned_data.get('date') or local_today(unit)
         return stock_views._refused(request, 'farm/feeding_form.html', {
-            **context, 'form': form, 'split': _split(unit, form.cleaned_data.get('date') or local_today(unit))})
+            **context, 'form': form, 'split': _split(unit, day), 'fasting': fasting_on(unit, day)})
     form = FeedingForm(unit=unit, stock=stock)
     meal = next_meal(unit) if request.GET.get('meal') == 'next' else None
     if meal is not None:
@@ -359,7 +357,8 @@ def record_feeding(request, pk):
         form.initial.update({'amount_kg': meal['amount_kg'], 'meals': meal['meals'], 'time': meal['time'],
                              **({'feed': feed.pk} if feed is not None and feed.status == Feed.Status.ACTIVE else {})})
     return render_page(request, 'farm/feeding_form.html',
-                       {**context, 'form': form, 'meal': meal, 'split': _split(unit, local_today(unit))})
+                       {**context, 'form': form, 'meal': meal, 'split': _split(unit, local_today(unit)),
+                        'fasting': fasting_on(unit, local_today(unit))})
 
 
 @permission_required(VOID, raise_exception=True)

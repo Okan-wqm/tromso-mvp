@@ -1,5 +1,5 @@
 """The starting handling rules: one for every species per kind of handling, each saying where its value comes
-from and that the farm's veterinarian is to check it (Setup › Reference data › Handling rules). They are the
+from and that the farm's veterinarian is to check it (Setup › Harvest and logistics › Handling rules). They are the
 farm's own rules from then on: edited, deleted or overridden per species on that tab, every change logged
 there. Like the equipment type catalogue (0007), what a migration writes is not in the activity log.
 

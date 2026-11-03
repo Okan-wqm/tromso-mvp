@@ -151,12 +151,13 @@ class MainHeadingTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
-                         [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Purchasing']),
+                         [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics', 'Purchasing']),
                           ('Operations', ['', 'Feeding', 'Harvest']), ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Reference data</p>', html=True)
+        self.assertContains(response, '<p class="rail-group">Harvest and logistics</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Purchasing</p>', html=True)
 
     def test_company_has_no_main_headings(self):
@@ -194,8 +195,8 @@ class MenuPlacementTests(TestCase):
             'farm.Species': 'Production · Setup · Reference data',
             'farm.Feed': 'Production · Setup · Reference data',
             'farm.WaterLimit': 'Production · Setup · Reference data',
-            'farm.SlaughterFacility': 'Production · Setup · Reference data',
-            'farm.HandlingRule': 'Production · Setup · Reference data',
+            'farm.SlaughterFacility': 'Production · Setup · Harvest and logistics',
+            'farm.HandlingRule': 'Production · Setup · Harvest and logistics',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
             'farm.FeedingRecord': 'Production · Operations · Feeding',

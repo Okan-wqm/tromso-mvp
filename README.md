@@ -1075,7 +1075,7 @@ document, MSG-01 to MSG-21):
   and presence, search, notification preferences, archiving, legal hold, receipts per message, sockets and
   NATS (polling for now, above), AI personas (the assistants above replace them), tenants.
 
-### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Reference data › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
+### Operations › Harvest (`/operations/harvests/`, `/operations/harvest-plan/`, `/operations/production-plans/`), Setup › Harvest and logistics › Slaughter facilities (`/slaughter-facilities/`) and Handling rules (`/handling-rules/`)
 
 What was harvested, where it went, what is planned, and what must be known before fish are handled. Tables
 `slaughter_facilities` (with `slaughter_facility_species`), `harvest_records`, `production_plans`,
@@ -1186,10 +1186,13 @@ long enough? Nothing is blocked (owner decision): both are warnings.
   `HandlingAcknowledgement` per warning with what the person was shown (the withdrawal's end, estimated or not,
   and reason; or the last feeding, the hours fasted, the hours asked and the rule), and the operation's
   activity-log entry is **critical**, with the warnings. Who and when are the operation's.
-- *The meal board* asks `farm.handling.fasting.fasting_on(unit, day)`: the reason when the day is in the fast a
-  planned harvest or transport asks for (every day from the one the fast starts on to the planned day, in full,
-  for the whole unit; where two overlap the one that starts first wins), else None. The feeding dialog says so
-  on such a day ("A feeding can still be recorded").
+- *The meal board* gives **no ration on a fasting day**: the ration's policy (`farm/feeding/read.policy`) loads
+  the fasts planned harvests and transports ask for (`farm.handling.fasting.fasts`, every day from the one the
+  fast starts on to the planned day, in full, for the whole unit; where two overlap the one that starts first
+  wins) and `ration.Policy.basis` answers `FASTING` with the reason, e.g. "Fasting before the harvest of 15 Nov
+  2026: from 12 Nov 2026, 00:00 (72 h)". The band stays, so a feeding recorded anyway is still credited at its
+  expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
+  The feeding dialog says so on such a day ("A feeding can still be recorded").
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 
@@ -1670,8 +1673,8 @@ real mail.
 | `/operations/harvest-plan/` | Operations › Harvest › Harvest plan: planned harvests and transports; `?unit=<id>` one unit's |
 | `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
-| `/slaughter-facilities/` | Reference data › Slaughter facilities |
-| `/handling-rules/` | Reference data › Handling rules |
+| `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
+| `/handling-rules/` | Harvest and logistics › Handling rules |
 | `/water-limits/` | Reference data › Water limits |
 | `/operations/tasks/` | Operations › Tasks: `?view=open` or `completed`, the filters, `?task=<id>` opens a task's drawer |
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |

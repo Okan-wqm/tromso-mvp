@@ -7,7 +7,7 @@ from ..models import SlaughterFacility, Species
 
 
 class SlaughterFacilityResource(Resource):
-    """Setup › Reference data › Slaughter facilities: where harvested fish go."""
+    """Setup › Harvest and logistics › Slaughter facilities: where harvested fish go."""
 
     model = SlaughterFacility
     form_class = SlaughterFacilityForm

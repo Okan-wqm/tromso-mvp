@@ -24,13 +24,14 @@ from ..feeding.projection import Projector
 from ..feeding.ration import Band, Cell, Policy, Table, sfr_at
 from ..feeding.temperature import Temperature
 from ..models import (
-    Feed, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, ProtocolRate, StockOperation, System, Tank,
+    Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, ProtocolAssignment, ProtocolBand, ProtocolRate,
+    StockOperation, System, Tank,
     WaterMeasurement,
 )
 from ..stock import services as stock_services
 from ..stock.fold import Line, Op
 from ..water import services as water_services
-from .helpers import role
+from .helpers import make_facility, role
 from .test_feeding import FeedingTestCase
 
 D = Decimal
@@ -322,6 +323,43 @@ class WorkedExampleTestCase(ProtocolTestCase):
         response = self.client.get(reverse('farm:meal_board'))
         row = next(row for row in response.context['rows'] if row['unit'] == self.t2)
         return response, row, row['lines'][0]
+
+
+class FastingOnTheBoardTests(WorkedExampleTestCase):
+    """A planned harvest or transport asks its unit to fast for the handling rule's hours before it (Setup ›
+    Handling rules, harvest 72 h from the data migration): on those days the meal board has no ration and says why;
+    cancelling the plan gives the ration back."""
+
+    def plan(self, kind='harvest', days_ahead=2, **fields):
+        extra = {'facility': make_facility()} if kind == 'harvest' else {'destination_unit': self.t1}
+        return HandlingPlanItem.objects.create(kind=kind, date=self.today + timedelta(days=days_ahead), unit=self.t2,
+                                               batch=self.fish, **{**extra, **fields})
+
+    def test_no_ration_before_a_planned_harvest_and_the_reason(self):
+        item = self.plan()
+        response, row, line = self.board_line()
+        self.assertFalse(line['share'].end.has_ration)
+        self.assertEqual(line['share'].end.missing, ration.FASTING)
+        self.assertIn('Fasting before the harvest of', line['why'])
+        self.assertIn('(72 h)', line['why'])
+        self.assertContains(response, 'Fasting before the harvest of')
+        item.cancelled_reason = 'Moved to next month'
+        item.save()
+        response, row, line = self.board_line()
+        self.assertTrue(line['share'].end.has_ration)
+
+    def test_a_harvest_beyond_the_fasting_window_leaves_today_fed(self):
+        self.plan(days_ahead=5)                          # 72 h before day +5 starts on day +2
+        response, row, line = self.board_line()
+        self.assertTrue(line['share'].end.has_ration)
+
+    def test_a_planned_transport_asks_for_its_own_rule(self):
+        self.plan(kind='transport', days_ahead=2)       # transport 24 h: the fast starts tomorrow at 00:00
+        response, row, line = self.board_line()
+        self.assertTrue(line['share'].end.has_ration)
+        self.plan(kind='transport', days_ahead=1)       # its fast starts today at 00:00: today is a fasting day
+        response, row, line = self.board_line()
+        self.assertIn('Fasting before the transport of', line['why'])
 
 
 class BoardTests(WorkedExampleTestCase):

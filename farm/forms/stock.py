@@ -458,8 +458,8 @@ class HarvestForm(PlannedForm, HandlingChecked, OperationForm):
         help_text=_('Fish the book still holds beyond the count are then recorded as an unaccounted loss.'))
     facility = forms.ModelChoiceField(
         label=_('Slaughter facility'), queryset=SlaughterFacility.objects.none(),
-        help_text=_('Where the fish go: an active facility that takes this species (Reference data › Slaughter '
-                    'facilities).'))
+        help_text=_('Where the fish go: an active facility that takes this species (Harvest and logistics › '
+                    'Slaughter facilities).'))
     transport = TransportChoice(label=_('Transport'), queryset=Supplier.objects.none(), required=False,
                                 help_text=_('Optional: the wellboat or haulage company that carries them.'))
     vessel = forms.CharField(label=_('Wellboat or vehicle'), max_length=100, required=False,

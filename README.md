@@ -15,11 +15,11 @@ What works today:
 - Roles (`/roles/`) and users (`/users/`), managed by the platform admin only (see Roles and users).
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
-- Two panels, switched from the top left: **Company** (overview, Facility › Sites, Administration)
-  and **Production** (overview, production departments, systems, equipment, tanks, ponds & cages,
-  species, feeds, water limits, suppliers, and under Operations the production units with their fish, the
-  water chemistry and Feeding: the meal board, the records, the feeding protocols and their assignments, and
-  under Communication the messages). Each has its own overview. A
+- Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
+  Administration) and **Production** (overview, production departments, systems, equipment, tanks, ponds &
+  cages, species, feeds, water limits, suppliers, and under Operations the production units with their fish,
+  the water chemistry, the store (Storage) and Feeding: the meal board, the records, the feeding protocols
+  and their assignments, and under Communication the messages). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
@@ -842,6 +842,135 @@ Differences from the source (details in the bug document, WQ-01 to WQ-29):
   and a site's intake water. The rations read the latest water temperature from here and keep no copy of
   their own (WQ-02; `farm/feeding/temperature.py`).
 
+### Operations › Storage (`/operations/storage/`) and Facility › Storage locations (`/storage-locations/`)
+
+The store: where the farm keeps feed (medicines once the health module's `Medicine` is in; chemicals and
+consumables when their records are ported), the lots it holds, and what came in and went out. Its own app,
+`inventory`, with its own tables and migrations: `storage_locations`, `inventory_items`, `inventory_lots`,
+`inventory_operations`, `inventory_lines` and `inventory_reorder_levels`.
+
+**Storage locations** (Company › Facility, a `core.crud` tab): a place on a site where stock is kept, a
+warehouse, a silo, a cold room, a chemical store, a medicine cabinet or an outdoor store. A table (location
+with its code, site, kind, feeder, capacity, **on hand now** worked out from the book with its number of
+lots, status), search by name or code, filters by site, kind and status, a form in the dialog with two inner
+tabs (General: site, name, code, kind, status, feeder; Capacity and notes) and a third, **Reorder levels**,
+saved as a list (one row per feed: the quantity below which the overview says the stock is low). The site is
+chosen once, at creation. A silo is a location, not equipment, and may name the feeder it fills (a feeder of
+its site; only a silo has one). The capacity is optional, in kg or in units counted (owner decision Q-S2):
+above it the overview warns and nothing is refused. An inactive location takes no new stock; what it holds
+still shows and can leave. Code unique among live locations, name unique within its site, capacity and its
+unit together, the feeder only on a silo: database checks, with the message on the field. Every optional
+field can be cleared.
+
+**The ledger.** An item (`InventoryItem`) has exactly one link, to a feed now (a database check); the person
+never picks an item, they pick a feed and the write path finds or makes its item. A lot (`InventoryLot`) is
+its number and expiry as printed on the bag, optional for feed and required for medicines (owner decision
+Q-S5): a delivery that names a known lot reuses it (any case), a different expiry for it is refused, feed
+without a printed number is one lot per expiry. An operation (`InventoryOperation`) is what a person did,
+with its date on the clock of the sites of its locations: a **delivery** from a supplier (lines of lots into
+locations, a cost per kg with its currency, the supplier's own document number, the one free text: a number,
+not a link), an **issue** (taken out for something other than feeding: a treatment, samples, maintenance), a
+**write-off** (expired, damaged, contaminated, spilled), a **return to the supplier** (it leaves the store), a
+**transfer** (one lot from one location to another, on the same site or another, owner decision Q-S6) or a
+**count** (one location at the end of a day). Its lines (`InventoryLine`) say how much of which lot came into
+(+) or left (−) which location, or was counted there. Nothing about the quantity is stored anywhere else.
+
+**Feeding never waits for the store.** The feed given is read from the feeding records of the units of a
+site (the unit's production department's site), per feed and day, and drawn on read from the site's lots,
+first expired first out (lots not expired that day by expiry, a lot without one last, then the day it first
+arrived, its number, the location's code; then expired lots, which the overview reports). What the book
+cannot cover is **feeding beyond the book**, per site and day: shown on the overview and the item's page,
+never refused, and never filled by a later delivery (owner decision Q-S1): it is fixed by recording the
+missing delivery, dated on or before the day (within the backdating window). Units without a site feed
+from no store.
+
+**The fold** (`inventory/fold.py`, pure; `inventory/read.py` loads it), per item over every location of every
+site, day by day: arrivals, departures, the feeding's draw, counts. The lines are facts and the feeding is an
+estimate of which lots were fed (a record names no lot), so a departure is checked against the book of the
+lines alone (it may never take a lot in a location below 0, on its day or later), and the feeding draws only
+what no later departure of the same lot needs. A count sets every lot of its location to the quantity
+counted (0 for one it does not list) at the end of its day; its variance is the counted quantity less the
+book just before it, feeding of that day included, **worked out on read, never stored** (owner decision
+Q-S7). One person records a count; there is no approval step.
+
+**One write path** (`inventory/services.py`, `_commit`): it locks the items, then the locations, each in
+primary-key order (a feeding takes no lock), refuses a form sent twice (its token), checks the date on the
+clock of every site it touches (`farm.stock.dates.check_site_date`: the farm's today at the latest, at most
+`STOCK_BACKDATE_DAYS` back), live locations, arrivals into active locations only, a live supplier that
+supplies the item's category (feed), lot number and expiry where the category needs them, then writes the
+operation and its lines and folds every item it touches from its first line: a backdated operation is placed
+where it belongs and accepted only if every later day stays right ("The write-off of 3 Nov from WH-1 would be
+left without its stock: … Void that operation first, or correct this one."). A supplier keeps the categories
+its live deliveries and returns need (`SupplierLink.category_field`). Every operation, void and new lot is in
+the activity log.
+
+**Void** is the farm's one void (`farm.stock.services.voided`, on the clock of the operation's sites): a
+reason, within the backdating window, struck through in the history, "Voided" in the log; refused when a
+later departure needs its stock (the message names it), or when a deleted location would hold stock again. A
+lot left without live lines is voided with it, so its number can be delivered again with another expiry. A
+correction is a void and a new entry; nothing is edited.
+
+**The page** has four tabs in the address (`?tab=`) and the actions Receive delivery, Transfer, Issue, Write
+off, Return to supplier and Count a location, each a dialog (the shared dialog or a page, the server's
+reasons on their fields, back to the page it came from):
+
+- **Overview**: feeding beyond the book (per site and feed, since when, a link to the day-by-day book) and
+  expired lots fed; per site and item the stock on hand, the feed of the last 7 days and the **days of
+  cover** (on hand ÷ the kilos fed a day there over the last 7 days); low stock (on hand of an item in a
+  location below its reorder level, owner decision Q-S4: what a purchasing agent will read to propose
+  orders); over capacity; lots expiring within 30 days and expired lots with stock; the value on hand per
+  site and currency (on hand × what the lot cost when delivered), never added across currencies.
+- **Stock**: a row per lot in a location (location, item, lot, expiry with an Expired badge, on hand, last
+  movement, value) with Transfer, Issue, Write off and Return, each with the lot and its location already
+  chosen; filters site, location, item and Show empty; totals per site and item. The item's day-by-day book
+  (`items/<id>/?site=`: in, out, fed from the book, fed beyond it, the count difference, the stock at the end
+  of each day) and the lot's trace (`lots/<id>/`: its deliveries and supplier, moves, departures and counts,
+  voided ones struck through, and the feeding estimated to have drawn it) are pages of their own.
+- **Movements**: the operations, newest first, 50 a page, each with its lines, supplier and document number,
+  who recorded it and when, notes, and Void while allowed; filters site, location, operation, item, supplier,
+  from and to (whole farm days), Show voided. The operation "Feeding (from the records)" lists the feed given
+  per site, feed and day, each linked to its feeding records.
+- **Counts**: each count with its variance per lot (book, counted, difference), who counted, Void while
+  allowed, and Count a location. The count dialog lists the lots the book has in the location at the end of
+  the chosen day (changing the location or the day renders it again, nothing saved); each must be filled in,
+  0 when none is left; lots found that the book did not have there are added as rows (a feed, a lot number
+  and expiry: a known lot is reused, an unknown one is made, its supplier unknown).
+
+**Who may do what:** the area Storage (Production · Operations): Read the page, Create records a delivery,
+an issue, a write-off, a return, a transfer or a count, Delete voids one; the area Storage locations (Company
+· Facility) with read, create, edit and delete (editing includes the reorder levels). **Deleting**: a location
+that holds stock cannot be deleted, so neither can its site; an empty one goes with its site. Deleting the
+feeder leaves the silo without one (logged). A feed with an item of the store, and a supplier named by a live
+delivery or return, cannot be deleted (`PROTECT`: traceability one step back). A deleted location keeps its
+lines and counts. `manage.py check_inventory` checks the whole store from scratch (operations made of their
+lines, transfer pairs, the suppliers' categories, lots that need a number and expiry, no departure below 0 in
+the book of the lines, no deleted location with stock) and the tests run it. The admin shows voided operations
+and lots and does not restore them.
+
+**For the health module (Medicine):** the second link of `InventoryItem` (`medicine`, `PROTECT`, null), the
+exactly-one check (`feed` xor `medicine`) and the `category` expression (a medicine → `medicines`) change in
+one migration of `inventory`; `LOT_REQUIRED` already requires a medicine lot's number and expiry; the
+delivery line and the count's found rows offer the medicine beside the feed, and `STOCKED` in
+`inventory/forms.py` gains `medicines` so the suppliers of medicines are offered; a medicine's unit is then
+chosen from `Unit`. Consumption from a treatment is read like the feeding (storage §3.8).
+
+Differences from the source (details in the bug document, STR-01 to STR-28):
+
+- One ledger and quantities on read, instead of a projection, a log and a total on each product that the
+  master forms could overwrite (STR-08, STR-15); feeding is read from the records and never refused (STR-01,
+  STR-10), per site, never from another site's store (STR-11).
+- Every reference is a foreign key: item, lot, location, site, supplier (STR-12, STR-13); a return takes stock
+  out (STR-03); a count corrects the book, there is no "adjustment" (STR-02); a count's variance is read
+  against the book of its day (STR-05); a departure names its lot in its location from a list (STR-06,
+  STR-07, STR-18); a transfer is one operation through the one write path, with the form's token (STR-07).
+- Every movement is dated on its day on the site's clock (STR-17, STR-26), the overview never adds kilos to
+  units or one currency to another and has no fake fill rate (STR-20), a location keeps its site (STR-21).
+- Not ported: purchase orders (phase 2, owner decision Q-S3: the delivery keeps its supplier and the
+  supplier's document number, and an order line link can be added to the delivered line later), chemicals,
+  consumables and healthcare without a master (STR-04), lot-mix relabelling (STR-19), temperature and humidity
+  ranges, the `hazmat` kind, count approval, a feeding record's lot, silo-first draw through the feeder, spare
+  parts (STR-28), barcode scanning.
+
 ## Messages (Production › Communication, `/messages/`)
 
 People write to each other in **direct conversations** (two people) and **channels** (a name and its
@@ -978,7 +1107,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   edit, delete), Production units (read the page, create = record an operation, delete = void one),
   Feeding records (read the Meal board and Records, create = record a feeding or a meal, delete = void one),
   Feeding protocols and Protocol assignments (read, create, edit, delete), Water chemistry (read the page
-  and a unit's water, create = record a sample or a round, delete = void one), Messages (read = use Messages,
+  and a unit's water, create = record a sample or a round, delete = void one), Storage (read the page,
+  create = record a delivery, issue, write-off, return, transfer or count, delete = void one), Storage
+  locations (read, create, edit, delete), Messages (read = use Messages,
   create = also create channels) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
@@ -1021,7 +1152,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `inventory`, `messaging`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -1236,6 +1367,12 @@ real mail.
 | `/operations/water/round/` | A water round: the units and loops of a site, production department or system |
 | `/operations/water/void/<id>/` | Voids a water sample |
 | `/water-limits/` | Reference data › Water limits |
+| `/storage-locations/` | Company › Facility › Storage locations; `<id>/reorder/` saves a location's reorder levels |
+| `/operations/storage/` | Operations › Storage; `?tab=stock`, `movements` or `counts` |
+| `/operations/storage/receive/`, `issue/`, `write-off/`, `return/`, `transfer/` | Receive a delivery; a lot leaving a location (`?location=<id>&lot=<id>` chooses it) |
+| `/operations/storage/count/` | Count a location (`?location=<id>` chooses it) |
+| `/operations/storage/void/<id>/` | Voids an operation of the store |
+| `/operations/storage/items/<id>/`, `/operations/storage/lots/<id>/` | An item's day-by-day book (`?site=<id>`), a lot's trace |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
@@ -1271,6 +1408,7 @@ real mail.
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the values worked out from a sample (`chemistry.py`), judging on read (`evaluate.py`), the latest values and the history (`read.py`), the one write path (`services.py`), the page and dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

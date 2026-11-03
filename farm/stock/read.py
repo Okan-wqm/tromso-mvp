@@ -12,7 +12,10 @@ Definitions (stock-db §4), for a unit u today:
 - last weighing = the latest weighing of the current stay.
 FCR, the last feeding and the feed rate are read from the feeding records with the same ledger
 (farm/feeding/read.py)."""
+from bisect import bisect_right
+from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -22,6 +25,7 @@ from farm.models import Batch, StockMovement, Tank
 from .fold import Line, Op, Share, fold
 
 HUNDRED = Decimal(100)
+DAY = timedelta(days=1)
 
 
 def ledger(batch_ids):
@@ -58,6 +62,77 @@ def batches_ever_in(unit_ids):
     """The ids of every batch that ever had a live line in these units."""
     return set(StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False)
                .values_list('batch_id', flat=True).distinct())
+
+
+class Presence:
+    """Which batch had fish in which unit on which day, from the counts of the live lines alone (no fold:
+    a count is the sum of the lines up to a day). A batch counts on a day when it had fish there at the end
+    of that day or of the day before, so fish stocked, moved or harvested that day count. The water judges
+    a sample for the species present (farm/water/read.py), the health module finds the batches a treatment
+    reached and the units a batch was in (farm/health/withdrawal.py).
+
+    Build it with `of_units` (every batch that was in these units) or `of_batches` (every unit these
+    batches were in)."""
+
+    def __init__(self, rows):
+        """`rows`: (unit id, batch id, date, count delta) of live lines."""
+        changes = defaultdict(lambda: defaultdict(int))
+        for unit_id, batch_id, day, delta in rows:
+            changes[(unit_id, batch_id)][day] += delta
+        self.timelines = {}                          # (unit, batch) -> (days, fish at the end of each)
+        self.units = defaultdict(set)                # batch -> the units it was ever in
+        self.batches = defaultdict(set)              # unit -> the batches ever in it
+        for (unit_id, batch_id), by_day in changes.items():
+            days, counts, running = [], [], 0
+            for day in sorted(by_day):
+                running += by_day[day]
+                days.append(day)
+                counts.append(running)
+            self.timelines[(unit_id, batch_id)] = (days, counts)
+            self.units[batch_id].add(unit_id)
+            self.batches[unit_id].add(batch_id)
+
+    @classmethod
+    def _of(cls, lines):
+        return cls(lines.values_list('unit_id', 'batch_id', 'operation__date', 'count_delta'))
+
+    @classmethod
+    def of_units(cls, unit_ids):
+        return cls._of(StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False))
+
+    @classmethod
+    def of_batches(cls, batch_ids):
+        return cls._of(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False))
+
+    def count_at_end(self, unit_id, batch_id, day):
+        """The fish of the batch in the unit after every line dated `day` or before."""
+        timeline = self.timelines.get((unit_id, batch_id))
+        if timeline is None:
+            return 0
+        days, counts = timeline
+        index = bisect_right(days, day) - 1
+        return counts[index] if index >= 0 else 0
+
+    def present(self, unit_id, batch_id, day):
+        return self.count_at_end(unit_id, batch_id, day) > 0 or self.count_at_end(unit_id, batch_id, day - DAY) > 0
+
+    def batches_in(self, unit_id, day):
+        """The batches with fish in the unit on `day`."""
+        return {batch_id for batch_id in self.batches.get(unit_id, ()) if self.present(unit_id, batch_id, day)}
+
+    def units_of(self, batch_id, day):
+        """The units the batch had fish in on `day`."""
+        return {unit_id for unit_id in self.units.get(batch_id, ()) if self.present(unit_id, batch_id, day)}
+
+    def present_between(self, unit_id, batch_id, first, last):
+        """Whether the batch had fish in the unit on any day from `first` to `last`, both included. The count
+        changes only on the days of its lines, so those days and `first` are the only ones to look at."""
+        if first > last:
+            return False
+        if self.present(unit_id, batch_id, first):
+            return True
+        days, counts = self.timelines.get((unit_id, batch_id), ((), ()))
+        return any(first < day <= last and count > 0 for day, count in zip(days, counts))
 
 
 @dataclass

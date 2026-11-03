@@ -24,8 +24,9 @@ from django.db.models import Func, Q, UUIDField
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from farm.models import StockMovement, System, Tank, WaterLimit, WaterMeasurement
+from farm.models import Batch, System, Tank, WaterLimit, WaterMeasurement
 from farm.models.water import local_time, site_of
+from farm.stock.read import Presence
 
 from . import chemistry, parameters
 from .evaluate import Limits, Status, is_fresh, worst
@@ -98,36 +99,17 @@ class PointWater:
 
 # ---- the fish in a unit on a day ----------------------------------------------------------------------------
 class SpeciesBook:
-    """Which species were in which unit on which day, from the live stock lines: a batch counts on a day
-    when it had fish there at the end of that day or of the day before (fish stocked or harvested that
-    day count)."""
+    """Which species were in which unit on which day, from the live stock lines: the species of the batches
+    present that day (farm.stock.read.Presence: fish stocked or harvested that day count)."""
 
     def __init__(self, unit_ids):
-        changes, self.species = defaultdict(lambda: defaultdict(int)), {}
-        rows = (StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False)
-                .values_list('unit_id', 'batch_id', 'batch__species_id', 'operation__date', 'count_delta'))
-        for unit_id, batch_id, species_id, day, delta in rows:
-            changes[(unit_id, batch_id)][day] += delta
-            self.species[batch_id] = species_id
-        self.timelines = defaultdict(dict)    # unit -> batch -> (days, fish at the end of each)
-        for (unit_id, batch_id), by_day in changes.items():
-            days, counts, running = [], [], 0
-            for day in sorted(by_day):
-                running += by_day[day]
-                days.append(day)
-                counts.append(running)
-            self.timelines[unit_id][batch_id] = (days, counts)
-
-    @staticmethod
-    def _at_end(timeline, day):
-        days, counts = timeline
-        index = bisect_right(days, day) - 1
-        return counts[index] if index >= 0 else 0
+        self.presence = Presence.of_units(unit_ids)
+        batch_ids = {batch_id for batches in self.presence.batches.values() for batch_id in batches}
+        self.species = dict(Batch.all_objects.filter(pk__in=batch_ids).values_list('pk', 'species_id'))
 
     def on(self, unit_id, day):
         """The species ids in the unit on `day`."""
-        return {self.species[batch_id] for batch_id, timeline in self.timelines.get(unit_id, {}).items()
-                if self._at_end(timeline, day) > 0 or self._at_end(timeline, day - timedelta(days=1)) > 0}
+        return {self.species[batch_id] for batch_id in self.presence.batches_in(unit_id, day)}
 
 
 # ---- everything a set of points needs, read once ----------------------------------------------------------

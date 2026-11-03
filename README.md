@@ -716,6 +716,13 @@ notes, and **Void** while allowed.
   (the dash's title says which). Fish moved in by a plain transfer arrive at book weight, so they start a
   window only at their first weighing. Known bias, said in the drawer: dead fish leave at the last
   weighed average, so their growth since is not credited (bFCR a little high when many die).
+- **A bounded window** (`read.window(stay, first, last)`, `read.windows_in(unit_ids, first, last)`): the same window
+  with its ends put on the measured points of two given days (the last point of each day: the state at its end),
+  for a period that is not the whole stay (an experiment's days). A day without a measured point gives no window,
+  never an interpolated one, and a window must start before it ends; a bound left out is the stay's own end.
+  `windows_in` walks the units' feeding once from the first day on and gives `{(unit, batch): window}` for the
+  units asked (a batch that came into a unit more than once has the window of its latest stay that has one); an
+  FCR over several windows is `Conversion` of them, ratio of sums, the formula of this page.
 - In the drawer: fed today (kilos, meals), the last 7 days' kilos and the **feed rate** (SFR, % of the
   biomass a day = 100 × feed / the sum of the book biomass of the days with fish; the book does not grow
   between weighings, so it reads high as the last weighing ages, and the drawer says how old it is), the

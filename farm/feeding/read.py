@@ -228,15 +228,49 @@ def last_fed_at(unit, day, batch=None, since=None):
 
 
 # ---- FCR -----------------------------------------------------------------------------------------
-def window(stay):
-    if not stay.points:
+def _last_on(points, day):
+    """The index of the last measured point on `day` (the state at the end of that day), else None."""
+    found = [index for index, point in enumerate(points) if point.day == day]
+    return found[-1] if found else None
+
+
+def window(stay, first=None, last=None):
+    """The stay's FCR window: from its first measured point to its last weighing (or the harvest that closed it).
+    A bound `first` or `last` (a day) puts that end on the stay's measured point of that day (the last of the day);
+    a day without a measured point gives None, never an interpolated one, and so does a window that would not
+    start before it ends. Unbounded it is the whole stay's."""
+    points = stay.points
+    start = (0 if points else None) if first is None else _last_on(points, first)
+    if start is None:
         return None
-    first = stay.points[0]
-    ends = [point for point in stay.points[1:] if point.kind in (PointKind.WEIGHING, PointKind.CLOSE)]
-    if not ends:
+    if last is None:
+        ends = [index for index, point in enumerate(points) if index > start
+                and point.kind in (PointKind.WEIGHING, PointKind.CLOSE)]
+        end = ends[-1] if ends else None
+    else:
+        end = _last_on(points, last)
+    if end is None or end <= start:
         return None
-    last = ends[-1]
-    return Window(first, last, stay.fed_kg(first.day, last.day, closing=last.kind == PointKind.CLOSE))
+    start, end = points[start], points[end]
+    return Window(start, end, stay.fed_kg(start.day, end.day, closing=end.kind == PointKind.CLOSE))
+
+
+def windows_in(unit_ids, first=None, last=None):
+    """{(unit id, batch id): Window} of the batches that were in these units, over the days `first` and `last`
+    (window(): each a day with a measured point of the stay, else the share has no window; None: the stay's own
+    end). One walk of the units' feeding from `first` on. A batch that came into a unit more than once has the
+    window of its latest stay that has one. A replicate's FCR is `Conversion` of the windows of its tanks."""
+    unit_ids = list(unit_ids)
+    walked = _walk(unit_ids, feedings(unit_ids, since=first))
+    found = {}
+    for key, stays in walked.stays.items():
+        if key[0] not in unit_ids:           # the ledger follows the batches into other units too
+            continue
+        for stay in stays:
+            made = window(stay, first, last)
+            if made is not None:
+                found[key] = made
+    return found
 
 
 @dataclass

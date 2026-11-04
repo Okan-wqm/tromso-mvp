@@ -463,9 +463,10 @@ class HealthEvent(AuditedModel):
     diagnosis from the reviewed catalogue (farm/health/diseases.py), the vet and the laboratory as
     suppliers, findings and recommendations are typed columns (HLT-07, HLT-15).
 
-    A diagnosis is suspected or confirmed (both or neither, a database check). A notifiable one without the
-    time Mattilsynet was notified shows the "Notify Mattilsynet" banner (dyrehelseforskriften § 7: at once,
-    on suspicion). Closing an event never lifts a medicine withdrawal: the withdrawal is the treatment's
+    A diagnosis is suspected or confirmed (both or neither, a database check). A notifiable one Mattilsynet has
+    not been told of shows the "Notify Mattilsynet" banner (dyrehelseforskriften § 7: at once, on suspicion): that
+    it was told is the filing of a disease notice, which the regulatory reports keep and farm/health/notices.py
+    reads; the event has no column for it. Closing an event never lifts a medicine withdrawal: the withdrawal is the treatment's
     (HLT-01). Deaths recorded under the event are the mortality and cull operations that name it, counted
     from the stock ledger (StockOperation.health_event), never a number typed here.
 
@@ -485,7 +486,6 @@ class HealthEvent(AuditedModel):
                              blank=True)
     diagnosis = models.CharField(_('Diagnosis'), max_length=30, blank=True, choices=diseases.CHOICES)
     confirmation = models.CharField(_('Confirmation'), max_length=20, blank=True, choices=Confirmation.choices)
-    authority_notified_at = models.DateTimeField(_('Mattilsynet notified at'), null=True, blank=True)
     examined_by = models.CharField(_('Examined by'), max_length=150, blank=True)
     vet = SupplierLink(
         Supplier, null=True, blank=True, on_delete=models.PROTECT, related_name='health_events',
@@ -561,11 +561,6 @@ class HealthEvent(AuditedModel):
     def notifiable(self):
         disease = self.disease
         return disease is not None and disease.notifiable
-
-    @property
-    def needs_notification(self):
-        """A notifiable diagnosis, suspected or confirmed, that Mattilsynet has not been told of."""
-        return self.notifiable and self.authority_notified_at is None and not self.is_deleted
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------

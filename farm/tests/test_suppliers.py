@@ -248,7 +248,7 @@ class SupplierContactTests(SupplierTestCase):
         self.client.post(self.url, contacts_data([
             {'name': 'Kari', 'role': 'Sales', 'email': 'kari@fjordfeed.no', 'phone': '+47 1', 'is_primary': True},
             {'name': 'Ola', 'role': 'Vet on call', 'email': '', 'phone': '+47 2', 'is_primary': False},
-        ]))
+        ], record=self.supplier))
         self.assertEqual(list(self.supplier.contacts.values_list('name', 'role', 'email', 'phone', 'is_primary',
                                                                  'created_by')),
                          [('Kari', 'Sales', 'kari@fjordfeed.no', '+47 1', True, self.user.pk),
@@ -264,21 +264,21 @@ class SupplierContactTests(SupplierTestCase):
         self.client.post(self.url, contacts_data([
             {'id': str(kari.pk), 'name': 'Kari', 'role': '', 'email': 'kari@fjordfeed.no', 'is_primary': False},
             {'id': str(ola.pk), 'name': 'Ola', 'role': 'Vet on call', 'phone': '+47 2', 'is_primary': True},
-        ], initial=2))
+        ], initial=2, record=self.supplier))
         self.assertEqual(list(self.supplier.contacts.values_list('name', 'role', 'is_primary')),
                          [('Ola', 'Vet on call', True), ('Kari', '', False)])
         # Delete
         ola, kari = self.supplier.contacts.all()
         self.client.post(self.url, contacts_data([
             {'id': str(ola.pk), 'name': 'Ola', 'is_primary': True},
-            {'id': str(kari.pk), 'name': 'Kari', 'DELETE': True}], initial=2))
+            {'id': str(kari.pk), 'name': 'Kari', 'DELETE': True}], initial=2, record=self.supplier))
         self.assertEqual(list(self.supplier.contacts.values_list('name', flat=True)), ['Ola'])
 
     def test_one_primary_contact_and_a_name_each(self):
         response = self.client.post(self.url, contacts_data([
-            {'name': 'Kari', 'is_primary': True}, {'name': 'Ola', 'is_primary': True}]))
+            {'name': 'Kari', 'is_primary': True}, {'name': 'Ola', 'is_primary': True}], record=self.supplier))
         self.assertContains(response, 'Only one contact can be the primary contact; 2 are marked.')
-        response = self.client.post(self.url, contacts_data([{'name': '', 'role': 'Sales'}]))
+        response = self.client.post(self.url, contacts_data([{'name': '', 'role': 'Sales'}], record=self.supplier))
         self.assertEqual(response.context['contacts'].forms[0].errors['name'], ['This field is required.'])
         self.assertFalse(self.supplier.contacts.exists())
         self.supplier.contacts.create(name='Kari', is_primary=True)
@@ -286,7 +286,8 @@ class SupplierContactTests(SupplierTestCase):
             self.supplier.contacts.create(name='Ola', is_primary=True)
 
     def test_saving_the_contacts_is_logged_on_the_supplier(self):
-        self.client.post(self.url, contacts_data([{'name': 'Kari', 'role': 'Sales', 'is_primary': True}]))
+        self.client.post(self.url, contacts_data([{'name': 'Kari', 'role': 'Sales', 'is_primary': True}],
+                                                 record=self.supplier))
         entry = AuditLog.objects.get()
         self.assertEqual((entry.action, entry.entity_type, entry.entity_id, entry.changes),
                          ('update', 'supplier', str(self.supplier.pk), {'Contacts': [None, 'Kari (Sales, primary)']}))
@@ -295,7 +296,8 @@ class SupplierContactTests(SupplierTestCase):
         reader = get_user_model().objects.create_user('ola', 'ola@example.com', 'x')
         reader.groups.add(role('Reader', 'view_supplier'))
         self.client.force_login(reader)
-        self.assertEqual(self.client.post(self.url, contacts_data([{'name': 'Kari'}])).status_code, 403)
+        data = contacts_data([{'name': 'Kari'}], record=self.supplier)
+        self.assertEqual(self.client.post(self.url, data).status_code, 403)
         self.assertFalse(self.supplier.contacts.exists())
 
 

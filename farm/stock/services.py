@@ -11,13 +11,15 @@ code that changes a unit's status for stock reasons. In one transaction it:
 3. writes the operation and its lines;
 4. folds every batch the operation touches, and every batch that was ever in its units, from the
    first line, and checks the whole timeline, not only today: no share ever below 0 fish, a weighing
-   only where there are fish, one species per unit (owner decision Q1), and every feeding recorded
-   in its units from its date on still finds fish there at the start or the end of its day (the
-   feeding records, farm/feeding), as every treatment on its first day and every sea-lice count (the
-   health records, farm/health). A backdated operation is placed where it belongs and accepted only
-   if every later day stays valid;
-5. checks the capacity of the units fish arrive in, on the operation's date: above the max biomass
-   only with the person's acknowledgement, stored on the operation (owner decision Q4);
+   only where there are fish, one species per unit (owner decision Q1; on a sea site cleaner fish may join
+   its production species, D-1), and every feeding recorded in its units from its date on still finds fish
+   of its target there at the start or the end of its day (the feeding records, farm/feeding), as every
+   treatment on its first day and every sea-lice count (production fish) on its day (the health records,
+   farm/health). A backdated operation is placed where it belongs and accepted only if every later day
+   stays valid;
+5. checks the capacity of the units fish arrive in, on the operation's date, by their production fish (cleaner
+   fish are not in it, D-2): above the max biomass only with the person's acknowledgement, stored on the
+   operation (owner decision Q4);
 6. moves the unit statuses that follow the fish (a unit going from empty to stocked, or back), and
    writes the activity log.
 
@@ -26,9 +28,9 @@ written. A void is the undo: steps 1, 4 and 6 with the operation left out; it fa
 operation (or the feeding) that depends on it, when later operations need its fish. `voided` is the
 one void of the farm's daily records, a stock operation's and a feeding's.
 
-Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 'notes',
+Fields the errors are reported on: 'date', 'count', 'unit', 'batch', 'species', 'provenance', 'notes',
 'avg_weight_g', 'measured_weight_kg', 'destinations', 'over_capacity_ack', 'handling_ack', 'facility',
-'transport', 'vessel', 'plan_item', 'health_event' and NON_FIELD_ERRORS.
+'transport', 'vessel', 'plan_item', 'health_event', 'cause', 'destination' and NON_FIELD_ERRORS.
 
 A harvest, a transfer and a grading run the handling check (farm/handling/check.py) after the locks: a
 medicine withdrawal in force (a harvest only) or too short a fast is a warning, and the person goes on by acknowledging the
@@ -40,8 +42,9 @@ operation).
 
 Operations: a stocking (a new batch into one or several units), a mortality, a cull, a weighing, a
 transfer (out of one unit into one or several: a split is a transfer into several), a grading (a
-transfer whose fish are weighed per size class, the fish that stay weighed too) and a harvest; each is
-voidable. Count adjustments have their line kind and checks but no dialog yet."""
+transfer whose fish are weighed per size class, the fish that stay weighed too), a harvest, a delivery of live
+fish out of the company (with who received them, DeliveryRecord) and an escape (a count adjustment with its cause,
+EscapeRecord); each is voidable."""
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -58,12 +61,14 @@ from farm.feeding.fold import walk
 from farm.handling import check
 from farm.health import read as health_read
 from farm.models import (
-    Batch, HandlingPlanItem, HarvestRecord, HealthEvent, Species, StockMovement, StockOperation, Tank,
+    Batch, DeliveryRecord, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, Species, StockMovement,
+    StockOperation, Tank,
 )
 from farm.models.handling import KIND_OF_OPERATION
 from farm.models.harvest import FULFILLED_BY
 from farm.models.stock import (
-    ARRIVAL_STATUSES, REASONS, AdjustmentReason, MovementKind, OperationKind, TransferReason,
+    ARRIVAL_STATUSES, CLEANER_CULL_REASONS, PRODUCTION_CULL_REASONS, PROVENANCE_OF_ORIGIN, REASONS, AdjustmentReason,
+    CullReason, MovementKind, OperationKind, TransferReason,
 )
 from farm.models.tank import NEEDS_NO_FISH
 from farm.templatetags.stock import number
@@ -80,8 +85,8 @@ STOCKABLE_SPECIES = (Species.Status.ACTIVE, Species.Status.EXPERIMENTAL)
 # What emptying a unit makes of its status (stock-db §6.6); a status not listed stays.
 EMPTIED = {Status.ACTIVE: Status.FALLOW, Status.HARVESTING: Status.CLEANING, Status.QUARANTINE: Status.CLEANING}
 # The batch fields the activity log shows for a new batch.
-BATCH_FIELDS = ['code', 'name', 'species', 'input_stage', 'origin', 'supplier', 'supplier_batch_ref', 'strain',
-                'input_date', 'expected_harvest_date', 'notes']
+BATCH_FIELDS = ['code', 'name', 'species', 'input_stage', 'origin', 'provenance', 'supplier', 'supplier_batch_ref',
+                'strain', 'year_class', 'input_date', 'expected_harvest_date', 'notes']
 
 
 class AlreadyRecorded(Exception):
@@ -128,12 +133,13 @@ def _already(token):
 
 
 def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None, handling_ack=None,
-            harvest=None, plan_item=None, health_event=None):
+            harvest=None, plan_item=None, health_event=None, escape=None, delivery=None):
     """Writes an operation and its lines (see the module's docstring); returns the operation. A harvest is
     checked for a medicine withdrawal, and a harvest, transfer or grading for the fast, first (`handling_ack` is the
     fingerprint of the warnings the person went on past); a harvest writes its record (`harvest`: its
     facility, transport and vessel); `plan_item` is the planned harvest or transport it fulfils; a mortality
-    or cull may name its `health_event`."""
+    or cull may name its `health_event`; an escape (a count adjustment) writes its `escape` record and a delivery
+    its `delivery` record, the way a harvest writes its own."""
     with transaction.atomic():
         batches = locked(Batch, {entry.batch.pk for entry in entries if entry.batch is not None})
         units = locked(Tank, {entry.unit.pk for entry in entries})
@@ -174,6 +180,14 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
             record = HarvestRecord(operation=operation, **harvest)
             record.full_clean()
             record.save()
+        for given, model, wanted in ((escape, EscapeRecord, OperationKind.ADJUSTMENT),
+                                     (delivery, DeliveryRecord, OperationKind.DELIVERY)):
+            if (given is not None) != (kind == wanted):
+                raise ValueError(f'An operation of kind {kind} and its {model.__name__} go together.')
+            if given is not None:
+                record = model(operation=operation, **given)
+                record.full_clean()
+                record.save()
         if assessment is not None and assessment.warnings:
             check.acknowledge(operation, assessment)
         _log(user, AuditLog.Action.CREATE, operation, assessment)
@@ -251,6 +265,9 @@ def _check_static(kind, day, entries, batches, units, new_batch):
             raise ValidationError({'species': _('%(species)s is %(status)s: a new batch takes an active or '
                                                 'experimental species.')
                                    % {'species': species, 'status': str(species.get_status_display()).lower()}})
+        if species.is_cleaner_fish and not new_batch.fields['provenance']:
+            raise ValidationError({'provenance': _('Farmed or wild-caught? The cleaner-fish report asks it of every '
+                                                   'cleaner fish.')})
 
 
 def _check_event(event, day, units):
@@ -280,6 +297,9 @@ def _validate(batch_ids, unit_ids, day, new_op_id=None, arriving=()):
     batch_ids = batch_ids | read.batches_ever_in(unit_ids)
     lines = read.ledger(batch_ids)
     species = dict(Batch.all_objects.filter(pk__in=batch_ids).values_list('pk', 'species_id'))
+    cleaner = {line.batch_id for line in lines if line.cleaner}
+    cleaner_species = {species[batch_id] for batch_id in cleaner}
+    sea = read.sea_units({line.unit_id for line in lines})
     grams_after = {}
 
     def observe(op, shares):
@@ -287,12 +307,14 @@ def _validate(batch_ids, unit_ids, day, new_op_id=None, arriving=()):
         for unit_id in arrivals:
             present = {batch_id for (unit, batch_id), share in shares.items() if unit == unit_id and share.count}
             kinds = {species[batch_id] for batch_id in present}
-            if len(kinds) > 1:
-                raise _mixed(op, unit_id, kinds)
+            if read.mixed(kinds, cleaner_species, unit_id in sea):
+                raise _mixed(op, unit_id, kinds, unit_id in sea)
         if op.id == new_op_id:
-            for unit_id in arriving:
-                grams_after[unit_id] = sum((share.grams for (unit, _b), share in shares.items() if unit == unit_id),
-                                           Decimal(0))
+            # The capacity is the production fish's (D-2): a unit only cleaner fish arrive in is not asked.
+            for unit_id in {line.unit_id for line in lines_of.get(op.id, ()) if line.count_delta > 0
+                            and not line.cleaner and line.unit_id in arriving}:
+                grams_after[unit_id] = sum((share.grams for (unit, batch_id), share in shares.items()
+                                            if unit == unit_id and batch_id not in cleaner), Decimal(0))
 
     lines_of = {}
     for line in lines:
@@ -310,7 +332,7 @@ def _validate(batch_ids, unit_ids, day, new_op_id=None, arriving=()):
             'The feeding of %(date)s in %(unit)s would have no fish: void it first.') % {
             'date': shown_date(feeding.date), 'unit': unit}})
     for kind, _record, unit_id, record_day in sorted(health, key=lambda item: item[3]):
-        if not walked.days[(unit_id, record_day)].has_fish:
+        if not health_read.has_fish_for(kind, walked.days[(unit_id, record_day)]):
             unit, _batch, _species = _names(unit_id)
             text = (_('The treatment of %(date)s in %(unit)s would have no fish: void it first.') if kind == 'treatment'
                     else _('The sea-lice count of %(date)s in %(unit)s would have no fish: void it first.'))
@@ -342,11 +364,15 @@ def _names(unit_id=None, batch_id=None, species_ids=()):
     return unit, batch, species
 
 
-def _mixed(op, unit_id, species_ids):
+def _mixed(op, unit_id, species_ids, sea=False):
     unit, _batch, species = _names(unit_id, species_ids=species_ids)
+    params = {'unit': unit, 'species': ' + '.join(sorted(species)), 'date': shown_date(op.date)}
+    if sea:
+        return ValidationError({'species': _('%(unit)s would hold %(species)s on %(date)s: a unit holds one species '
+                                             'of production fish at a time, beside its cleaner fish.') % params})
     return ValidationError({'species': _('%(unit)s would hold %(species)s on %(date)s: a unit holds one species '
-                                         'at a time.') % {'unit': unit, 'species': ' + '.join(sorted(species)),
-                                                          'date': shown_date(op.date)}})
+                                         'at a time (cleaner fish join the production fish only on a sea '
+                                         'site).') % params})
 
 
 def _explain(error, new_op_id):
@@ -454,10 +480,13 @@ def _log(user, action, operation, assessment=None):
         changes = {label_: [None, value] for label_, value in audit.snapshot(operation, names).items()
                    if value is not None}
         changes[str(_('Stock lines'))] = [None, '; '.join(_describe(line) for line in lines)]
-        record = HarvestRecord.all_objects.filter(operation=operation).first()
-        if record is not None:
-            changes.update({label_: [None, value] for label_, value in audit.snapshot(
-                record, ['facility', 'transport', 'vessel']).items() if value is not None})
+        for model, names in ((HarvestRecord, ['facility', 'transport', 'vessel']),
+                             (EscapeRecord, ['found_time', 'suspected', 'cause', 'health_status', 'recaptured']),
+                             (DeliveryRecord, ['destination', 'destination_site_number'])):
+            record = model.all_objects.filter(operation=operation).first()
+            if record is not None:
+                changes.update({label_: [None, value] for label_, value in audit.snapshot(record, names).items()
+                                if value is not None})
         critical = assessment is not None and bool(assessment.warnings)
         if critical:
             changes[str(_('Handling warnings acknowledged'))] = [None, ' '.join(assessment.messages())]
@@ -494,18 +523,53 @@ def _quantize(grams):
 
 
 def record_input(user, *, species, input_stage, origin, day, lines, supplier=None, supplier_batch_ref='',
-                 strain='', name='', expected_harvest_date=None, notes='', ack=False, token=None):
+                 strain='', name='', expected_harvest_date=None, notes='', provenance='', year_class=None, ack=False,
+                 token=None):
     """A new batch stocked into one or several units: `lines` = [(unit, fish, average weight in g)].
-    The batch has no count of its own: its input lines are the count (STK-05)."""
+    The batch has no count of its own: its input lines are the count (STK-05). Its provenance is the origin's when
+    the origin says it (the own hatchery, the farm's catch), else as given: required for a cleaner fish, whose
+    report asks it. Its year class is as given, never defaulted (D-14)."""
     units = [unit for unit, _count, _weight in lines]
     if len(set(units)) != len(units):
         raise ValidationError({'unit': _('Each unit can be listed once.')})
     entries = [Entry(unit, None, MovementKind.INPUT, count, avg_weight_g=_quantize(weight))
                for unit, count, weight in lines]
     batch = NewBatch({'species': species, 'input_stage': input_stage, 'origin': origin,
+                      'provenance': provenance or PROVENANCE_OF_ORIGIN.get(origin, ''), 'year_class': year_class,
                       'supplier': supplier, 'supplier_batch_ref': supplier_batch_ref, 'strain': strain,
                       'name': name, 'expected_harvest_date': expected_harvest_date, 'notes': notes})
     return _commit(user, OperationKind.INPUT, day, entries, ack=ack, token=token, new_batch=batch)
+
+
+def correct_batch(user, *, batch, year_class=None, provenance=''):
+    """Gives a batch its year class and whether its fish are farmed or wild-caught: the two facts of a batch the reports
+    ask for, which fish stocked before they were asked for do not have (stock is never edited, so there is no other way
+    to set them). Logged as an update of the batch, whose version moves on, so a report filed from it is told to need a
+    correction. The provenance follows the origin where the origin says it, and is required for a bought cleaner fish."""
+    with transaction.atomic():
+        found = locked(Batch, {batch.pk}).get(batch.pk)
+        if found is None or found.is_deleted:
+            raise ValidationError({'batch': _('This batch has been voided.')})
+        said = PROVENANCE_OF_ORIGIN.get(found.origin)
+        if said is not None:
+            if provenance not in ('', said):
+                raise ValidationError({'provenance': _('Fish of the own hatchery are farmed, fish caught in the wild '
+                                                       'wild-caught.')})
+            provenance = said
+        elif found.species.is_cleaner_fish and not provenance:
+            raise ValidationError({'provenance': _('Farmed or wild-caught? The cleaner-fish report asks it of every '
+                                                   'cleaner fish.')})
+        with audit.source_language():
+            before = audit.snapshot(found, ['provenance', 'year_class'])
+            if (found.provenance, found.year_class) == (provenance, year_class):
+                return found
+            found.provenance, found.year_class = provenance, year_class
+            found.full_clean(exclude=['code'])
+            found.version += 1
+            found.updated_by = user
+            found.save()
+            audit.record_update(user, found, before, audit.snapshot(found, ['provenance', 'year_class']))
+    return found
 
 
 def needs_notes(reason, notes):
@@ -522,9 +586,18 @@ def record_mortality(user, *, unit, batch, day, count, cause, measured_weight_kg
     return _commit(user, OperationKind.MORTALITY, day, [entry], notes=notes, token=token, health_event=health_event)
 
 
+def cull_reasons(batch):
+    """The reasons a fish of `batch` is culled for: a cleaner fish's are Mattilsynet's six causes (the cleaner-fish
+    report's `uttak`), a production fish's the others. The database knows the list, not the batch's species."""
+    return CLEANER_CULL_REASONS if batch.species.is_cleaner_fish else PRODUCTION_CULL_REASONS
+
+
 def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event=None, token=None):
     """Fish taken out and killed (too small, deformed, sick), at the share's average. `health_event`: the
     event they were culled under, if any."""
+    if reason not in cull_reasons(batch):
+        raise ValidationError({'reason': _('%(reason)s is not a reason to cull %(batch)s.') % {
+            'reason': CullReason(reason).label, 'batch': batch.code}})
     needs_notes(reason, notes)
     entry = Entry(unit, batch, MovementKind.CULL, -count, reason=reason)
     return _commit(user, OperationKind.CULL, day, [entry], notes=notes, token=token, health_event=health_event)
@@ -608,7 +681,11 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facilit
     difference is the book's error. `everything`: the harvest empties the unit of this batch, and fish
     the book holds beyond the count are an unaccounted loss (a count adjustment of the same operation,
     taken before the harvest so the harvest takes the rest of the book). Where the fish went is its
-    HarvestRecord: the slaughter facility (required), the transport supplier and the wellboat or vehicle."""
+    HarvestRecord: the slaughter facility (required), the transport supplier and the wellboat or vehicle. Cleaner
+    fish are not harvested: they are culled at the end of their use, which their report asks the cause of."""
+    if batch.species.is_cleaner_fish:
+        raise ValidationError({'batch': _('Cleaner fish are not harvested: record their cull, with the reason “%(reason)s” '
+                                          'at the end of their use.') % {'reason': CullReason.NOT_USED.label}})
     with transaction.atomic():
         locked(Batch, {batch.pk})
         locked(Tank, {unit.pk})
@@ -624,6 +701,41 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facilit
         return _commit(user, OperationKind.HARVEST, day, entries, notes=notes, token=token,
                        handling_ack=handling_ack, plan_item=plan_item,
                        harvest={'facility': facility, 'transport': transport, 'vessel': vessel.strip()})
+
+
+def _positive(count):
+    """The fish an escape or a delivery takes out: at least one (a negative count would put fish in)."""
+    if count < 1:
+        raise ValidationError({'count': _('Give the number of fish: at least 1.')})
+
+
+def record_escape(user, *, unit, batch, day, count, cause, suspected=False, found_time=None, health_status='',
+                  recaptured=None, notes='', token=None):
+    """Fish of `batch` escaped from `unit` (or are suspected to have: the count is then an estimate): `count` fish leave
+    the book at the share's average, as a count adjustment of the reason escape, with its record: the cause (required),
+    the time found, the health status of the fish and the fish recaptured as known now. Fiskeridirektoratet's notice is a
+    report that reads the record (akvakulturdriftsforskriften § 38)."""
+    if not cause.strip():
+        raise ValidationError({'cause': _('Say what caused it, or what is thought to have.')})
+    _positive(count)
+    entry = Entry(unit, batch, MovementKind.ADJUSTMENT, -count, reason=AdjustmentReason.ESCAPE)
+    return _commit(user, OperationKind.ADJUSTMENT, day, [entry], notes=notes, token=token, escape={
+        'found_time': found_time, 'suspected': suspected, 'cause': cause.strip(),
+        'health_status': health_status.strip(), 'recaptured': recaptured})
+
+
+def record_delivery(user, *, unit, batch, day, count, destination, destination_site_number=None,
+                    measured_weight_kg=None, handling_ack=None, notes='', token=None):
+    """Live fish delivered out of the company, to `destination` (a customer, with the receiving site's lokalitetsnummer
+    when it has one): they leave at the batch's average in the unit, their weighed kilos kept beside the book as a harvest's
+    are. Moving fish alive is a transport, so the handling check runs its fast (too short a fast); a medicine withdrawal is
+    a meat withdrawal and is asked for a harvest only."""
+    if not destination.strip():
+        raise ValidationError({'destination': _('Say who received the fish.')})
+    _positive(count)
+    entry = Entry(unit, batch, MovementKind.DELIVERY, -count, measured_weight_kg=measured_weight_kg)
+    return _commit(user, OperationKind.DELIVERY, day, [entry], notes=notes, token=token, handling_ack=handling_ack,
+                   delivery={'destination': destination.strip(), 'destination_site_number': destination_site_number})
 
 
 def void(user, operation, reason):

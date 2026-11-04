@@ -110,7 +110,9 @@ class ProductionPlanForm(TabbedForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         planned = ProductionPlan.objects.exclude(pk=self.instance.pk).values('batch_id')
-        batches = Batch.objects.filter(pk__in=stock_read.batches_in_stock()).exclude(pk__in=planned)
+        # A target weight is for fish that are harvested: cleaner fish are culled, not harvested.
+        batches = (Batch.objects.filter(pk__in=stock_read.batches_in_stock(), species__cleaner_fish_type='')
+                   .exclude(pk__in=planned))
         if self.instance.batch_id:
             batches = batches | Batch.all_objects.filter(pk=self.instance.batch_id)
         self.fields['batch'].queryset = batches.order_by('-input_date', '-code')
@@ -170,7 +172,7 @@ class HandlingPlanItemForm(TabbedForm):
         self.fields['unit'].empty_label = _('Select a unit')
         homes = {}
         for unit_id, unit_stock in stock.items():
-            for share in unit_stock.shares:
+            for share in unit_stock.counted:          # a cleaner fish is culled, not harvested
                 homes.setdefault(str(share.batch.pk), []).append(unit_id)
         if item.batch_id:
             homes.setdefault(str(item.batch_id), []).append(item.unit_id)

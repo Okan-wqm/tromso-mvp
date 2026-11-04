@@ -46,8 +46,8 @@ and delete through the pages and check what is stored in the database.
 
 ### Facility › Sites (`/sites/`)
 
-Tables `sites` and `site_contacts`. Cards with search by name, code or region; a form with three
-inner tabs (Basic info, Location, Contact); contacts saved as a whole list on the Contact tab;
+Tables `sites` and `site_contacts`. Cards with search by name, code or region; a form with four
+inner tabs (Basic info, Location, Contact, Reports); contacts saved as a whole list on the Contact tab;
 delete is a soft delete. Differences from the source:
 
 - Single company: no `tenantId`, no row-level security.
@@ -62,6 +62,11 @@ delete is a soft delete. Differences from the source:
   join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).
+- The Reports tab has what the regulatory reports need of the site (see Production › Reports): its **organisation
+  number** (the permit holder's, which owns the fish: nine digits, typed with or without spaces and stored as
+  digits, a database check; it replaces the source's free-text override), its **production form** (juveniles,
+  food fish or broodstock, which decides the reports it owes) and **reports from**, the day its reports are listed
+  as due from (the periods before were filed elsewhere).
 
 ### Production departments (`/production-departments/`)
 
@@ -227,7 +232,10 @@ Differences from the source:
   are in it; deleting a system takes its units out of it, logged.
 - Water type is required and has no default (the source defaulted to saltwater in one place and
   freshwater in another).
-- Code and regulatory unit ID are unique among live units, as database constraints; a deleted unit can
+- The code is unique among live units. The regulatory unit ID is the locality's own number (merd 1 on two sites
+  is two units): unique among the live units of a site, held by the database per production department and by the
+  form across the site. A unit with stock records stays on its site, and so does a production department whose
+  units have some, since moved, their past figures would be reported for another locality. A deleted unit can
   be restored from the admin.
 - Deleting a site leaves its production departments, with their units, without a site (as for
   equipment); the source deactivated their tanks.
@@ -268,9 +276,10 @@ three wrasses). When a species is created under one of these scientific names, o
 the fields left blank are filled in from it (local name in Norwegian, family, water environments
 when none is ticked, cleaner-fish type, official code) and the message after saving lists them;
 a typed value is never replaced, and an edit that keeps the name fills nothing, so every field can
-be cleared. Official codes are filled in only for the nine grow-out species (FAO ASFIS, e.g. SAL);
-the four cleaner-fish codes of the source are unverified and never filled in (SPC-32). A catalogue
-species cannot be given an official code other than its verified one. No species rows are seeded
+be cleared. Official codes are the FAO ASFIS 3-alpha codes Mattilsynet's reports ask for, for the nine
+grow-out species (e.g. SAL) and the five cleaner fish (LUM lumpfish, USB ballan wrasse, YFM corkwing, TBR
+goldsinny, ENX rock cook; the source's map had them wrong, SPC-32, REP-51). A catalogue species cannot be
+given an official code other than its own. No species rows are seeded
 and there is no "add from catalogue" action.
 
 Deleting a species: a batch links to it with `on_delete=PROTECT`, so a species with batches is set
@@ -313,8 +322,9 @@ type, manufacturer, species it suits and status, 50 feeds a page, a form in the 
 form has four inner tabs:
 
 - **Basic info**: name (as on the bag), code, manufacturer (a supplier of feed), feed type (larval,
-  starter, fry, grower, finisher, broodstock, medicated, other), pellet size in mm, buoyancy (floating,
-  slow sinking, sinking, or not stated), status (active, inactive, discontinued).
+  starter, fry, grower, finisher, broodstock, medicated, other), dry or wet (the cleaner-fish report gives the
+  month's kilos of each), pellet size in mm, buoyancy (floating, slow sinking, sinking, or not stated),
+  status (active, inactive, discontinued).
 - **Analysis**: the composition as fed, in % of the feed as delivered (crude protein, crude fat,
   carbohydrate as NFE, crude fibre, ash, moisture, phosphorus), and the gross and digestible energy in
   MJ/kg.
@@ -490,15 +500,23 @@ their reason, each with **Void** while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
 service, with the server's reason on the field it concerns: a new batch (species, stage at input,
-stocking date, fish arriving and their average weight, origin, supplier and its batch number, strain,
-name, expected harvest, notes, and the units the fish go into, whose fish must add up to the fish
-arriving); mortality (fish, cause, the weighed kilos if known); cull (fish, reason); a sampling
+stocking date, fish arriving and their average weight, origin, farmed or wild-caught (the origin says it
+for the own hatchery's fish and the farm's catch; bought fish say it, which a cleaner fish requires), supplier
+and its batch number, strain, year class, name, expected harvest, notes, and the units the fish go into, whose
+fish must add up to the fish arriving); mortality (fish, cause, the weighed kilos if known); cull (fish,
+reason: a cleaner fish's are the six causes of Mattilsynet's cleaner-fish report, a production fish's the
+others, each batch offered its own); a sampling
 weigh-in (fish weighed and their weight together, or a measured average); transfer / split (to one or
 several units, a reason); grading (per size class a unit, fish and measured average, and the average of
 the fish that stay); harvest (fish and their round kilos as weighed, the slaughter facility, the transport and
 vessel; "this empties the unit of this batch" records the fish the book still holds as an unaccounted loss; see
-Operations › Harvest). A harvest, a transfer and a grading show the handling check (fasting and medicine
-withdrawal) and ask for an acknowledgement when it warns. A unit holding two batches asks which one.
+Operations › Harvest); **delivery** (live fish out of the company: fish, their weighed kilos if known, who received them and
+the receiving site's lokalitetsnummer if it has one; it is a transport, so the fast is checked; it is the smolt report's fish
+moved out of the site); **escape** (fish escaped or only suspected, the cause, when found, the health status of the fish and the
+fish recaptured: a count adjustment of the reason escape with its record, from which Fiskeridirektoratet's notice is started; an
+escape from several units is recorded for each). A harvest shows the handling check (the medicine withdrawal and the fast) and a transfer, a grading and a
+delivery the fast alone (a medicine withdrawal is a meat withdrawal: it means nothing for live fish), and each asks for an
+acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
 (`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored on the operation).
 
@@ -512,13 +530,35 @@ the whole lot. Only measured weights enter the book. Nothing is stored that can 
 
 **One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
 date, the units' status (a unit takes fish while active, preparing or fallow), the species (one per unit,
-several batches of it), then writes and folds every batch involved from its first line, so a backdated
+several batches of it; on a sea site cleaner fish may join the production species, see Cleaner fish below), then
+writes and folds every batch involved from its first line, so a backdated
 operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
 recorded in the unit still finds fish there on its day: "The feeding of 2 Nov in T-01 would have no fish:
 void it first."); above a unit's max biomass it asks for an acknowledgement, stored on the operation. The unit's status follows its fish:
 the first fish make a preparing or fallow unit active, the last fish out make an active one fallow and
 a harvesting or quarantined one due for cleaning; a void that brings fish back makes the unit active.
 Every operation, every void and every status change is in the activity log ("Voided", with the reason).
+
+**Cleaner fish** (lumpfish, wrasse: a species with a cleaner-fish type) are batches like any other, in the same
+ledger, with the same operations, and on a sea site they share the production fish's cage: a unit holds one
+species of production fish, beside any cleaner fish; elsewhere one species (a hatchery's tank has one `artskode`
+in the smolt report). They are not part of the unit's fish: its count, biomass, average, density, capacity,
+survival, bFCR and feed rate are the production fish's (cleaner fish are outside the biomass and capacity rules,
+docs/regulatory-reports.md, D-2; the capacity check of an arrival asks about the production fish's biomass only), and
+the cleaner fish get a line of their own in the row and the drawer ("Cleaner fish: B-2026-004 · 10,000 fish"),
+marked in the drawer's batch table. A cleaner fish is not harvested (it is culled at the end of its use, for
+the cause "healthy, no longer to be used"), so the harvest dialog, the harvest plan and the harvest targets
+leave it out; a sea-lice count needs production fish in the unit (the lice are counted on the salmon); the
+medicine withdrawal and the water judging still see every fish. Which of the two a feeding is for is on the
+record (see Feeding records). `check_stock` holds the species rule with the same function as the service. Whether a
+species is a cleaner fish is fixed once fish of it have been stocked (every read takes the flag live; lumpfish to
+wrasse may change).
+
+**Batch details.** A batch's year class (årsklasse) and whether its fish are farmed or wild-caught are what the reports
+ask of a batch and what fish stocked before they were asked for do not have; stock is never edited, so the drawer's batch
+table has a **Batch details** dialog (who may record stock) that sets the two, logged as an update of the batch whose version
+moves on, so a report filed from the batch is told to need a correction. The own hatchery's fish are farmed and the farm's
+catch wild-caught whatever is typed; a bought cleaner fish must say which.
 
 **Void** is the undo: the operation stops counting, the stock is folded again without it, and it is
 refused when later operations need its fish (the message names them). A correction is a void and a new
@@ -546,9 +586,10 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
 - The medicine withdrawal of a unit's fish is on its row and in its drawer (see Operations › Health); the
   harvest dialog's warning and acknowledgement are the handling check's (farm/handling). A transfer or a grading
   moves live fish: it is not warned of a medicine withdrawal.
-- Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
-  comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
-  count adjustments as a dialog (their lines and checks exist). Harvest plans and the handling check are on
+- Not ported: a cleaner-fish tab of its own (the announced one; their figures are on the unit's line and drawer
+  for now), sensors (the water comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch
+  documents and costs, a dialog for a count correction (an escape is the one count adjustment with a dialog). Harvest
+  plans and the handling check are on
   Operations › Harvest; the medicine withdrawal they check is the health records' (Operations › Health),
   through the registry of farm/handling/withdrawal.py.
 
@@ -645,7 +686,8 @@ The unit's drawer on Production units has the same per batch under Feeding (Toda
 **Records** has two views: the feeding records (the list below) and **By unit and day** (`?view=days`; site, unit,
 batch, from and to, the last 7 days by default, at most 31 a page): per unit and day the batches with their estimated
 weight and the basis of the ration (protocol, SFR at the temperature, meals) or why there is none, the calculated
-ration, the feed given, the deviation (given − calculated, kg and %), and the weighings' correction lines.
+ration, the feed given to the production fish, the deviation (given − calculated, kg and %), and the weighings' correction
+lines; the feed given to the cleaner fish is not in that sum or the deviation, it has a line of its own under it.
 
 **Who may do what:** Feeding records (Read = Meal board and Records, Create = record a feeding or a meal, Delete =
 void one), Feeding protocols and Protocol assignments (read, create, edit, delete) in the role matrix (Production ·
@@ -672,7 +714,9 @@ the unit, the day, the feed (an active feed of Reference data › Feeds) and the
 and optionally the time, the number of meals, the feeder and notes; several a day are fine (meals, a feed
 change mid-day). **No batch is stored**: the batches a record fed are the batches the stock ledger has in
 the unit that day, the feed split between them by their book biomass at the start of the day (at its
-end when the unit was empty that morning, the day it was stocked). A backdated stock operation therefore
+end when the unit was empty that morning, the day it was stocked). A record is for the unit's production
+fish or for the cleaner fish beside them (its **target**, stored): the feed is split among the batches of
+its target only, so salmon feed is never booked to lumpfish. A backdated stock operation therefore
 never leaves a stored batch wrong, and nothing is written back into the stock: feed never changes a count
 or a gram of the book (only measured weights enter it).
 
@@ -680,17 +724,19 @@ or a gram of the book (only measured weights enter it).
 units, or **Record feeding** on the list (it lists the units with fish). The dialog has the date (the
 farm's today), the feed (the active feeds; those whose suitability rows suit the fish's species and
 average weight first, the others under "Other active feeds": choosing one of those is allowed and
-noticed), the kilos (`0.035` for 35 g), meals, time, feeder (a feeder of the unit's site) and notes. A
-unit with two batches says how the feed is split ("Split by the book biomass at the start of 2 Nov:
+noticed), the kilos (`0.035` for 35 g), meals, time, feeder (a feeder of the unit's site) and notes; in a unit
+that holds cleaner fish also **Fed to** (production fish, cleaner fish, or "as the feed suits": the cleaner
+fish's when the feed suits only them or the unit has no production fish). A unit with two batches of the
+target says how the feed is split ("Split by the book biomass at the start of 2 Nov:
 B-2026-001 71 %, B-2026-004 29 %"). The rules, in one write path (`farm/feeding/services.py`), each with
 the server's reason on its field:
 
 - the date as for the stock: the farm's today at the latest, at most `STOCK_BACKDATE_DAYS` (31) back;
-- the unit must hold fish at the start or the end of that day (from the stock ledger); and the other way
-  round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
+- the unit must hold fish of the target at the start or the end of that day (from the stock ledger; the
+  reason is on the target when the unit holds the other kind); and the other way round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
   fish) is refused while a recorded feeding would be left without fish, naming it;
 - a new record takes an active feed; a record keeps its feed whatever the feed's status becomes;
-- above `FEEDING_ACK_PERCENT` (10 %) of the unit's book biomass in a day, the person is asked to confirm,
+- above `FEEDING_ACK_PERCENT` (10 %) of the book biomass of the target's fish in a day, the person is asked to confirm,
   and the confirmation is stored on the record (a kilo typed for a gram is caught; fry may be fed more);
 - a form sent twice records once; the unit is locked as a stock operation locks it, so a feeding and a
   harvest of one unit take turns.
@@ -1313,7 +1359,7 @@ temperature, held constant and shown) and grow by it ÷ the band's expected FCR;
 harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
 reason, never a default, and so does two years without reaching it. Nothing is stored.
 
-**Slaughter facilities** (Setup › Reference data): name, Mattilsynet's approval number (godkjenningsnummer, 1
+**Slaughter facilities** (Setup › Harvest and logistics): name, Mattilsynet's approval number (godkjenningsnummer, 1
 to 6 letters or digits, stored in capitals, unique among live facilities; the format is the source's and is not
 verified with Mattilsynet), the operator (a supplier of the new category **Slaughter and processing**, which
 keeps that category while it operates a facility), address, municipality, coordinates (both or neither), the
@@ -1533,11 +1579,14 @@ deleted): the site (chosen once) and some of its units or the whole site, the da
 fish-health visit, lab result, increased mortality), the signs (several of a fixed list), a diagnosis from a
 reviewed catalogue (`farm/health/diseases.py`: the EU-listed and the Norwegian category F and G diseases of
 dyrehelseforskriften §§ 5–6, each with whether it must be notified, and common unlisted ones), suspected or
-confirmed (with a diagnosis, a database check), **Mattilsynet notified at** (on the site's clock), who examined,
+confirmed (with a diagnosis, a database check), who examined,
 the vet and the laboratory (suppliers) with its reference, findings, recommendations, closed on and the outcome.
-A notifiable diagnosis, suspected or confirmed, without the time Mattilsynet was told raises the red **Notify
-Mattilsynet** banner on the list and in the unit's drawer (§ 7: at once, already on suspicion; sea lice are
-reported weekly with the counts instead). A mortality or a cull may be recorded under an event (the dialogs offer
+That Mattilsynet was told is not a field of the event: it is the filing of a disease notice (Production › Reports), which the
+health records read through a registry (`farm/health/notices.py`). A notifiable diagnosis, suspected or confirmed, that no
+filed notice tells Mattilsynet of raises the red **Notify Mattilsynet** banner on the list and in the unit's drawer, with a link
+to start the notice filled in from the event for people who may (§ 7: at once, already on suspicion; sea lice are reported
+weekly with the counts instead); the list's Mattilsynet column shows when it was told. With no notices registered it says
+nothing about it, never "not notified". A mortality or a cull may be recorded under an event (the dialogs offer
 the events of the unit's site that concern it, open or closed within the backdating window, to people who may
 read them; `StockOperation.health_event`, a database check
 keeps it to those two kinds) and the event counts its **deaths** from those lines; mortality has the cause
@@ -1888,6 +1937,105 @@ experiment, Edit changes it, saves its design, its places and its team, and star
 student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
 deleted ones too, and restores an experiment (not its parts).
+
+## Regulatory reports (Production › Reports, `/reports/`)
+
+The reports the farm owes Mattilsynet and Fiskeridirektoratet, made from the records and filed by people. Its own app
+(`reports/`, tables `regulatory_reports`, `regulatory_report_snapshots` and the rows of a report's answers); it reads the
+farm's records through the farm's own reads (the stock fold, the feeding walk, the health records, the water read) and the farm
+never reads it, except through the one registry of `farm/health/notices.py`. `docs/regulatory-reports.md` has every field of
+every report, where it comes from, the design and the owner's decisions D-1 to D-15; the source's bugs are in the bug document.
+
+**What it does not do.** It sends nothing: no Altinn, Maskinporten or Mattilsynet API call, no scheduler, no e-mail. A person
+files the report where the authority takes it, then records here **when, how and with which receipt**. What was filed is
+frozen: its content, with a hash that is also in the activity log, and the hash of the records it was made from. If the
+records change afterwards (a void, a backdated record, a unit moved to another site) its page says "the records no longer give
+what was filed: a correction is needed", figure by figure; a correction is a new report of the same key that replaces it.
+
+**The reports** (`reports/kinds.py`: authority, basis, period, deadline, where it is filed):
+
+| Report | For | Deadline |
+|---|---|---|
+| Sea lice (lakselusforskriften § 10) | a sea site, an ISO week | Tuesday of the next week |
+| Smolt (akvakulturdriftsforskriften § 58) | a juvenile site, a month | the 7th of the next month |
+| Cleaner fish (§ 44, § 3 h) | every sea site, whatever its permit, a month in which it held cleaner fish | the 7th of the next month |
+| Monthly biomass (§ 44; Fiskeridirektoratet's form is to be confirmed) | a sea site of food fish or broodstock, a month | the 7th of the next month |
+| Planned slaughter (restkontrollforskriften § 9a) | a slaughter facility, a week | Thursday 24:00 before, or when the fish start fasting if earlier |
+| A land site's yearly stock, a site taken into use, a site emptied (§ 44a) | a food-fish or broodstock site on land, and a hatchery of cleaner-fish juveniles (§ 3 i) | 7 January, when it happens |
+| Escape (§ 38), disease (dyrehelseforskriften § 7), welfare (§ 14) | a notice, started by a person from the escape or the health event | at once |
+
+**Due** (`reports/due.py`, read from the records, never stored). Which reports a site owes follows its **production form**
+(Facility › Sites, Reports tab), its type and the fish it held in the period (a week or month without fish of the kind owes
+nothing); it is listed from its **reports-from** date to the last closed period, minus the filed ones, a draft staying listed
+with its deadline and an **Overdue** mark. A site that holds fish and has no reports-from date, no production form or a species with no official code (not known to be
+a salmonid) is listed as "Not set up for reports" with what is missing and a link to its form, never hidden. Planned slaughters
+come from the open harvest plans (a facility and a week: a plan item that is cancelled or already recorded as a harvest is not
+owed), escapes and listed diseases from their records since the site's reports-from date until a notice of each is filed (a
+notice told by telephone counts). The days are Oslo's calendar, whatever
+clock the site keeps, and the ISO week of 28 December to 3 January is 2026-W53. The page also lists the **filed reports whose
+records changed**: only the rows a report read are compared with the ones it was filed from (never a ledger folded again), and a
+report of a period older than the last 31 days, the backdating window, is not read again.
+
+**A report** has a kind, a site (a slaughter facility for the planned slaughter), a period or the day of the event, its health
+event or escape for a notice, the contact person (the person who starts it, as the authority asks for one on every report), and for
+a notice the person's account of what happened (what, when found, cause, fish dead, injured and involved, the situation, the
+measures; filled in from the event when it is started from one). The key (kind, site, period, event) is fixed once it exists and
+one live original is allowed for each; a draft can be edited and discarded (the delete plan, restorable in the admin), a filed
+report never. A report page shows the figures as the records give them now, what keeps it from being **ready** (a species without
+its official code, a site without its organisation number, a cage that was due a count and has none, a treatment without an
+amount: each with where to put it right) and what is worth a look.
+
+**The answers no record holds** are rows on the report's form while it is a draft: for the sea-lice week, whether each treatment was
+given before the count and which were given together (the records carry dates, no times), the suspicions of resistance and the
+sensitivity tests; for the biomass report, the units used for production of reduced capacity. They are frozen with the filing.
+
+**Clocks.** The time of a filing is Oslo's, as the authority keeps it; the time something was found is typed on the site's own
+clock (Facility › Sites) and stored as the moment it was; the browser's zone is never used.
+
+**Recording the filing** (Edit): when, through what (Altinn, the reporting API from another system, e-mail, telephone, other)
+and the receipt or reference (none for a call). In one transaction the report is locked, its version checked, its content computed
+and stored with its hashes, and the filing logged with the hash. A report that is not ready is refused, except a **notice given
+by telephone**, which is recorded as it was told, what was missing kept in the log entry. A database trigger keeps a filed report,
+its content and its answers unchanged whatever writes them.
+
+**Exports** (Read): a printable page, CSV (section, the authority's field name, value; text guarded against spreadsheet formulas,
+numbers left numbers) and, for sea lice, smolt, cleaner fish and planned slaughter, **JSON in the shape of Mattilsynet's reporting
+API**, validated in the tests against its OpenAPI. They are built from the frozen content once the report is filed, else from
+the records now, and say which.
+
+**What each computes** (nothing is typed but the contact person and the answers above):
+- *Sea lice*: the week's counts per cage and the site's average per stage (the mean of the cages' averages, as the regulation
+  says), the cages that held salmonids and were due a count (7 days, 14 below 4 °C; none for broodstock below 4 °C, nor when every
+  fish is planned for slaughter within 14 days of the day the count fell due, whether the harvest is still planned or already
+  recorded; a cage with no production fish left on that day needs none), the sea temperature (the mean of the week's samples at the site's depth points of
+  3 m, from Water chemistry), the week's lice treatments with substance, strength and amount from their records (the amount is
+  the product's: Mattilsynet's § 10 c asks for the active substance's, so the report says to confirm which it wants).
+- *Smolt*: per tank and species that held fish, its number, species, the fish and average weight at the month's end (a tank
+  emptied in the month reports the fish just before, less those moved to another tank of the site, which are in that tank's
+  count), and the fish dead, culled and moved out of the site, deliveries included. A tank that held two species one after the
+  other is listed once for each, with a warning.
+- *Cleaner fish*: per unit, species and origin the fish at the end of the month before, those stocked and moved in, those taken out
+  by the six causes, dead and moved out, the month's count adjustments netted (an escape and a recount up in one month are
+  warned about, so the netting does not hide the escape), and the dry and wet feed of the cleaner fish.
+- *Monthly biomass*: per production unit the fish stocked, the stock and its biomass at the month's end with how it was worked out
+  (the last weighing, the feeding projection where feed was credited since it, or the last weighing marked stale), the harvest, the live fish moved to another
+  site, the losses by cause and the feed; the day the site was left fallow. Broodstock at sea is warned that the season it was put
+  out in and the permit it is reported for (§ 44 second paragraph) have no field yet.
+- *Planned slaughter*: per locality, species and weekday the whole kilos of the week's planned harvests to the facility (a
+  cancelled one is left out), filed by the company that operates the slaughterhouse (its nine-digit organisation number from
+  Purchasing › Suppliers), never by a farm whose fish it slaughters.
+
+**`manage.py check_reports`** checks every report from scratch (a filed one has its content and the content its hash, a draft has
+none, a correction corrects a filed report of the same key, a notice is of its event's site); the tests run it after their writes.
+
+**Roles.** The area **Regulatory reports** (Production · Reports): Read the page, a report and its exports; Create starts a report, a
+notice or a correction; Edit fills in a draft and records the filing; Delete discards a draft.
+
+**Differences from the source.** Nothing is filed by the system and no draft is made behind anyone's back; the figures are never
+stored beside the records; the source's wrong cleaner-fish codes (USB for lumpfish, BER, GRO, BNB), unknown origin, unit counts by
+weight and missing dry and wet feed are not ported; the source's per-tab wizards, thresholds tables and scheduler are not ported.
+The bugs found in it (REP-01 to REP-62) are in the bug document.
+
 ## Messages (Production › Communication, `/messages/`)
 
 People write to each other in **direct conversations** (two people) and **channels** (a name and its
@@ -2182,7 +2330,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   is for also starts, ticks and completes it), Slaughter facilities and Handling rules (read, create, edit,
   delete), Harvested (read), Harvest plan and Production plans (read, create, edit, delete), Medicines (read,
   create, edit, delete), Treatments (read, create, edit = change the last day, delete = void one), Health events
-  (read, create, edit, delete = void one), Sea-lice counts (read, create, delete = void one), Messages (read =
+  (read, create, edit, delete = void one), Sea-lice counts (read, create, delete = void one), Regulatory reports
+  (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
+  record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
   also reviews an entry) and Activity log (read).
   A new tab appears in the matrix by
@@ -2226,7 +2376,7 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `inventory`, `knowledge`, `messaging`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `inventory`, `knowledge`, `messaging`, `reports`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -2314,7 +2464,7 @@ entries) and shows each entry only to people allowed to read it; an entry can ca
 unread messages) that the page polls. Production's menu has two main headings, as in the platform: **Setup** (the farm's structure under Facility structure, the
 reference lists the production side picks from under Reference data, and the suppliers under
 Purchasing) and **Operations** (the daily
-production records; it appears with its first tab), and a third, **Communication** (Messages). The source calls the reference lists "Records";
+production records; it appears with its first tab), then **Reports** (Regulatory reports) and **Communication** (Messages). The source calls the reference lists "Records";
 the prototype does not, because Operations holds the daily records. The menu is the one place that says
 where a page sits: the role matrix and the small heading above a tab's title follow it
 (`core.navigation.place`). There are no built-in roles: the platform admin creates roles
@@ -2496,6 +2646,9 @@ real mail.
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
 | `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/copy/` the copy dialog, `<id>/release/<placement>/` and `<id>/replace/<placement>/` release or replace a tank of a running experiment, `<id>/team/` saves the team, `<id>/delete/` |
+| `/reports/` | Production › Reports › Regulatory reports: what is due, the filed reports whose records changed, the reports and notices; `?kind=`, `site=`, `status=` filter, `new/?kind=&site=&period=2026-W45` (or `&facility=`, `&health_event=`, `&escape=`) starts one |
+| `/reports/<id>/view/`, `<id>/`, `<id>/delete/` | A report's page (the figures as filed, or as the records give them now, and the differences), its form, discarding a draft; `<id>/treatments/`, `resistance/`, `sensitivity/`, `units/` save the answers of its kind |
+| `/reports/<id>/submit/`, `correct/`, `export.<csv or json>`, `print/` | Records the filing (POST); starts a correction (POST); the exports; the printable page |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |
@@ -2547,6 +2700,7 @@ real mail.
 | `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |
 | `farm/water/degree_days.py` | The batch's daily mean water temperature and the degree-days it adds up to (a past day without a measurement at the species' assumed temperature, else 0 °C; a day ahead projected): the one definition the medicine withdrawal and the purging fast share |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
+| `reports/` | Regulatory reports (its own app): the models (`models.py`), the kinds (`kinds.py`) and periods (`periods.py`), each report's computation from the records (`compute/`), the filing and corrections (`services.py`), what is due (`due.py`), the exports (`exports.py`), the check (`integrity.py`) and the provider the health records read (`health.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |

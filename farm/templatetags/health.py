@@ -24,6 +24,12 @@ def per_fish(count, stage):
 
 
 @register.filter
+def told_of(told, event):
+    """The Notified of a health event (farm.health.notices), or None when Mattilsynet has not been told of it."""
+    return (told or {}).get(event.pk)
+
+
+@register.filter
 def withdrawal_rule(medicine):
     """A medicine's withdrawal on one line: 150 degree-days, 7 days, or both; per species when they differ."""
     return withdrawal.rules_text(medicine)

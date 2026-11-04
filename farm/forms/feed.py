@@ -10,7 +10,8 @@ DECIMAL = {'inputmode': 'decimal'}
 NUMBERS = ['pellet_size_mm', *PERCENTAGES, *ENERGIES, 'price_per_kg']
 
 FEED_FORM_TABS = [
-    ('basic', _('Basic info'), ['name', 'code', 'manufacturer', 'feed_type', 'pellet_size_mm', 'buoyancy', 'status']),
+    ('basic', _('Basic info'), ['name', 'code', 'manufacturer', 'feed_type', 'feed_form', 'pellet_size_mm', 'buoyancy',
+                                'status']),
     ('analysis', _('Analysis'), [
         Fieldset(_('Composition as fed'), list(PERCENTAGES),
                  _('Percent of the feed as delivered, as the feed declaration states it. Protein, fat, carbohydrate, '
@@ -36,6 +37,8 @@ class FeedForm(CodedFormMixin, TabbedForm):
             'code': _('Your own short code: capital letters, digits, hyphens and underscores.'),
             'manufacturer': _('The feed mill that makes it: a supplier of feed (Purchasing › Suppliers).'),
             'feed_type': _('What it is made for. A medicated feed is given on a vet’s prescription.'),
+            'feed_form': _('Dry (pellets) or wet (moist feed, paste): the cleaner-fish report gives the month’s kilos '
+                           'of each.'),
             'pellet_size_mm': _('The pellet diameter, as a feeder’s calibrations write it.'),
             'buoyancy': _('Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep '
                           'tanks.'),

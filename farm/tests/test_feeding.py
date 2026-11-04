@@ -350,6 +350,31 @@ class SplitTests(FeedingTestCase):
                          [(self.batch, 20), (second, 4)])
 
 
+class FedInAPeriodTests(FeedingTestCase):
+    """The feed of a period as the regulatory reports read it: each record split as split_of splits it, per unit,
+    batch and feed (farm/feeding/read.py fed)."""
+
+    def test_the_feed_of_a_period_per_unit_batch_and_feed(self):
+        second = self.stock(count=2500, weight='80', days_ago=10)            # 200 kg beside 500 kg
+        other = Feed.objects.create(name='Starter 1', code='ST-1', feed_type='starter')
+        self.record(kilos='10', days_ago=15)
+        self.record(kilos='14', days_ago=5)
+        self.record(kilos='7', days_ago=5, feed=other)
+        self.record(kilos='3', days_ago=1)
+        self.assertEqual(read.fed([self.t1], self.day(15), self.day(5)), {
+            (self.t1.pk, self.batch.pk, self.feed.pk): 20, (self.t1.pk, second.pk, self.feed.pk): 4,
+            (self.t1.pk, self.batch.pk, other.pk): 5, (self.t1.pk, second.pk, other.pk): 2})
+        self.assertEqual(read.fed([self.t1], self.day(4), self.today), {
+            (self.t1.pk, self.batch.pk, self.feed.pk): Decimal('3') * 500 / 700,
+            (self.t1.pk, second.pk, self.feed.pk): Decimal('3') * 200 / 700})
+        self.assertEqual(read.fed([self.t2], self.day(30), self.today), {})
+
+    def test_a_voided_record_is_not_fed(self):
+        record = self.record(kilos='10', days_ago=2)
+        services.void_feeding(self.user, record, 'Wrong unit')
+        self.assertEqual(read.fed([self.t1], self.day(30), self.today), {})
+
+
 class FishRuleTests(FeedingTestCase):
     def test_a_backdated_harvest_cannot_leave_a_feeding_without_fish(self):
         feeding = self.record(days_ago=1)

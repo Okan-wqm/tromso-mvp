@@ -33,6 +33,7 @@ urlpatterns = [
     path('', include('knowledge.urls')),
     path('messages/', include('messaging.urls')),
     path('', include('inventory.urls')),
+    path('', include('reports.urls')),
     path('', include('tasks.urls')),
     path('', include('experiments.urls')),
     path('', include('core.urls')),

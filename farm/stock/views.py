@@ -31,12 +31,12 @@ from core.crud import DRAFT, done, render_page
 from ..feeding import read as feeding_read, views as feeding_views
 from ..health import views as health_views
 from ..forms.stock import (
-    BatchInputForm, CullForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm, PlannedForm, TransferForm,
-    VoidForm, WeighingForm, kept_rows, stockable_units,
+    BatchDetailsForm, BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
+    PlannedForm, TransferForm, VoidForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
 from .. import placements
-from ..models import HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
+from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
 from ..models.stock import ARRIVAL_STATUSES
 from ..templatetags.stock import fish, number, tonnes
 from ..water import views as water_views
@@ -96,7 +96,7 @@ def _matches(unit, stock, params):
     if query:
         words = [unit.code, unit.name]
         if stock is not None:
-            for batch in stock.batches:
+            for batch in (share.batch for share in stock.shares):
                 words += [batch.code, batch.name, batch.species.common_name, batch.species.local_name,
                           batch.species.scientific_name]
         return any(query.lower() in word.lower() for word in words if word)
@@ -190,7 +190,7 @@ def _drawer(request, unit, stock, feeding, params):
     can_record, can_void = request.user.has_perm(RECORD), request.user.has_perm(VOID)
     operations = list(StockOperation.all_objects.filter(movements__unit=unit).distinct()
                       .select_related('created_by', 'deleted_by', 'harvest_record__facility',
-                                      'harvest_record__transport')
+                                      'harvest_record__transport', 'escape_record', 'delivery_record')
                       .prefetch_related(Prefetch('movements', StockMovement.objects.select_related('unit', 'batch')),
                                         'acknowledgements')
                       .order_by('-date', '-created_at')[:HISTORY])
@@ -204,6 +204,8 @@ def _drawer(request, unit, stock, feeding, params):
         lines = list(operation.movements.all())
         history.append({
             'operation': operation, 'lines': lines, 'record': getattr(operation, 'harvest_record', None),
+            'escape': getattr(operation, 'escape_record', None),
+            'delivery': getattr(operation, 'delivery_record', None),
             'corrections': [{'correction': corrections[(line.batch_id, operation.date)], 'batch': line.batch}
                             for line in lines if line.kind == 'weighing' and line.unit_id == unit.pk
                             and not operation.is_deleted and (line.batch_id, operation.date) in corrections],
@@ -360,6 +362,8 @@ OPERATIONS = {
     'grading': (GradingForm, gettext_lazy('Grading')),
     'cull': (CullForm, gettext_lazy('Record cull')),
     'harvest': (HarvestForm, gettext_lazy('Harvest')),
+    'delivery': (DeliveryForm, gettext_lazy('Deliver fish')),
+    'escape': (EscapeForm, gettext_lazy('Record escape')),
 }
 
 
@@ -379,6 +383,11 @@ def _recorded(operation):
                 _('Grading recorded: %(count)s fish of %(batch)s from %(unit)s to %(units)s.'))
         return text % {**params, 'count': number(sum(item.count_delta for item in moved)),
                        'units': ', '.join(item.unit.code for item in moved)}
+    if operation.kind == 'delivery':
+        return _('Delivery recorded: %(count)s fish of %(batch)s from %(unit)s to %(destination)s.') % {
+            **params, 'destination': operation.delivery_record.destination}
+    if operation.kind == 'adjustment':
+        return _('Escape recorded: %(count)s fish of %(batch)s from %(unit)s.') % params
     if operation.kind == 'harvest':
         harvest = next(item for item in lines if item.kind == 'harvest')
         return _('Harvest recorded: %(count)s fish of %(batch)s from %(unit)s, %(kilos)s kg weighed.') % {
@@ -419,6 +428,8 @@ def record_operation(request, pk, kind):
     form_class, heading = OPERATIONS[kind]
     stock = read.stock_of([unit]).get(unit.pk)
     present = stock.shares if stock else []
+    if form_class is HarvestForm:
+        present = [share for share in present if not share.cleaner]      # cleaner fish are culled, not harvested
     plan = _plan(request, unit, form_class)
     context = _context(unit=unit, stock=stock, heading=heading, back_url=_back(request, unit), plan=plan)
     if not present:
@@ -484,6 +495,29 @@ def _estimate(unit, form):
             'days': (day - share.measured_on).days if share.measured_on else None, 'entered_g': entered,
             'difference_g': entered - share.start_g if entered is not None else None,
             'difference_pct': 100 * (entered - share.start_g) / share.start_g if entered is not None else None}
+
+
+@permission_required(RECORD, raise_exception=True)
+def batch_details(request, pk):
+    """A batch's year class and whether its fish are farmed or wild-caught, for fish stocked before the reports asked
+    for them (who may record stock may give them; logged on the batch)."""
+    batch = get_object_or_404(Batch.objects.select_related('species'), pk=pk)
+    chosen = _params(request)['unit']
+    unit = Tank.objects.filter(pk=chosen).first() if _is_uuid(chosen) else None
+    context = _context(batch=batch, heading=_('Batch details: %(batch)s') % {'batch': batch.code},
+                       back_url=_back(request, unit))
+    if request.method == 'POST':
+        form = BatchDetailsForm(request.POST, instance=batch)
+        if form.is_valid():
+            try:
+                form.save(request.user)
+            except ValidationError as error:
+                form.add_service_error(error)
+            else:
+                messages.success(request, _('Batch details saved: %(batch)s.') % {'batch': batch.code})
+                return done(request, _back(request, unit))
+        return _refused(request, 'farm/stock_batch.html', {**context, 'form': form})
+    return render_page(request, 'farm/stock_batch.html', {**context, 'form': BatchDetailsForm(instance=batch)})
 
 
 @permission_required(VOID, raise_exception=True)

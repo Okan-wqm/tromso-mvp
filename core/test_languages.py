@@ -296,8 +296,10 @@ class FormsAndMessagesTests(TestCase):
                                    ('nb', '1 kontaktperson lagret.', '2 kontaktpersoner lagret.'),
                                    ('tr', '1 kişi kaydedildi.', '2 kişi kaydedildi.')]:
             self.in_language(language)
-            self.assertContains(self.client.post(url, contacts_data(rows[:1]), follow=True), one, msg_prefix=language)
-            self.assertContains(self.client.post(url, contacts_data(rows), follow=True), two, msg_prefix=language)
+            self.assertContains(self.client.post(url, contacts_data(rows[:1], record=site), follow=True), one,
+                                msg_prefix=language)
+            self.assertContains(self.client.post(url, contacts_data(rows, record=site), follow=True), two,
+                                msg_prefix=language)
 
     def test_quantities_are_shown_and_read_the_way_the_language_writes_them(self):
         site = Site.objects.create(name='Bergen', code='BG', area_m2=Decimal('50000.5'),
@@ -361,7 +363,7 @@ class ActivityLogLanguageTests(TestCase):
                          site_data(name='Pond', code='bg', status='closed', type='hatchery', version='1'))
         self.in_language('tr')
         self.client.post(reverse('farm:site_contacts', args=[site.pk]),
-                         contacts_data([{'name': 'Kari', 'role': 'Vet', 'is_primary': True}]))
+                         contacts_data([{'name': 'Kari', 'role': 'Vet', 'is_primary': True}], record=site))
         created, edited, contacts = AuditLog.objects.order_by('created_at')
         self.assertEqual((created.action, created.entity_type), ('create', 'site'))
         self.assertEqual(created.changes['Site name'], [None, 'Pond'])
@@ -396,6 +398,20 @@ class ActivityLogLanguageTests(TestCase):
         page = self.client.get(reverse('core:activity_log'))
         self.assertContains(page, '<option value="site">Lokalitet</option>', html=True)
         self.assertContains(page, '<option value="create">Opprettet</option>', html=True)
+
+    def test_a_records_name_is_stored_in_english_whatever_the_language(self):
+        from django.utils import translation
+
+        from core import audit
+        from farm.models import WaterLimit
+        from farm.tests.helpers import make_species
+        limit = WaterLimit.objects.create(species=make_species(), parameter='temperature_c', critical_high=20)
+        with translation.override('en'):
+            english = str(limit)
+        with translation.override('nb'):
+            self.assertNotEqual(str(limit), english)          # the name has translated words in it
+            row = audit.record(self.user, AuditLog.Action.CREATE, limit)
+        self.assertEqual(row.entity_label, english)
 
     def test_deleting_in_a_language_still_logs_in_english(self):
         site = Site.objects.create(name='Bergen', code='BG')

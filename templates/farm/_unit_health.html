@@ -7,7 +7,7 @@
   {% if health_events %}
   <p class="op-meta">{% trans "Open health events" %}</p>
   <ul class="op-lines" role="list">
-    {% for event in health_events %}<li>{{ event.date|date:"DATE_FORMAT" }} · {{ event }}{% if event.needs_notification %} · <strong class="over-text">{% trans "Notify Mattilsynet" %}</strong>{% endif %}</li>{% endfor %}
+    {% for event in health_events %}<li>{{ event.date|date:"DATE_FORMAT" }} · {{ event }}{% if event.pk in health_notify %} · <strong class="over-text">{% trans "Notify Mattilsynet" %}</strong>{% endif %}</li>{% endfor %}
   </ul>
   {% endif %}
   {% if health_treatments_url %}

@@ -23,6 +23,7 @@ urlpatterns += [
     *(path(f'operations/units/<uuid:pk>/{kind}/', stock.record_operation, {'kind': kind}, name=f'stock_{kind}')
       for kind in stock.OPERATIONS),
     path('operations/units/void/<uuid:pk>/', stock.void_operation, name='stock_void'),
+    path('operations/units/batch/<uuid:pk>/', stock.batch_details, name='stock_batch'),
     path('operations/units/<uuid:pk>/feeding/', feeding.record_feeding, name='feeding_record'),
     path('operations/feeding/', feeding.feeding_records, name='feeding_records'),
     path('operations/feeding/board/', feeding.meal_board, name='meal_board'),

@@ -1,4 +1,4 @@
-"""Harvest: where harvested fish go (the slaughter facilities of Setup › Reference data), what a harvest
+"""Harvest: where harvested fish go (the slaughter facilities of Setup › Harvest and logistics), what a harvest
 adds to its stock operation (HarvestRecord), and the plans (Operations › Harvest): a target weight per batch
 (ProductionPlan) and the harvests and transports planned per unit (HandlingPlanItem).
 

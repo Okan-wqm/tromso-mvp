@@ -11,6 +11,7 @@ VIEWER = Viewer(
         Section(_('Knowledge'), ('knowledge',)),
         Section(_('Storage'), ('inventory',)),
         Section(_('Messages'), ('messaging',)),
+        Section(_('Reports'), ('reports',)),
         Section(_('Tasks'), ('tasks',)),
         Section(_('Research'), ('experiments',)),
         Section(_('Administration'), ('core', 'auth')),

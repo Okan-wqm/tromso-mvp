@@ -168,7 +168,7 @@ class SeriesPagesTests(TasksTestCase):
     def test_the_checklist_is_copied_and_saving_it_plans_again(self):
         series = self.create()
         url = reverse('tasks:taskseries_checklist', args=[series.pk])
-        self.client.post(url, rows_data('checklist', [{'text': 'Read the probe'}, {'text': 'Write it down'}]))
+        self.client.post(url, rows_data('checklist', [{'text': 'Read the probe'}, {'text': 'Write it down'}], record=series))
         for task in Task.objects.filter(series=series):
             self.assertEqual(list(task.checklist.values_list('text', flat=True)), ['Read the probe', 'Write it down'])
 

@@ -655,3 +655,11 @@ class HypertableCountTests(DatabaseViewerTestCase):
     def test_an_ordinary_table_is_counted_exactly(self):
         self.make_site()
         self.assertEqual(database.find('sites').counts(), {'rows': 1, 'deleted': 0, 'estimated': False})
+
+
+class ConstraintTriggerTests(DatabaseViewerTestCase):
+    def test_a_constraint_trigger_is_shown_among_the_constraints(self):
+        constraints = {constraint.name: constraint for constraint in database.find('sensors_binding').structure().constraints}
+        trigger = constraints['trg_sensors_binding_rules']
+        self.assertEqual(str(trigger.kind), 'Constraint trigger')
+        self.assertIn('TRIGGER', trigger.definition)

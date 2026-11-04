@@ -262,6 +262,17 @@ mod tests {
     }
 
     #[test]
+    fn too_old_is_measured_by_the_late_limit_not_the_retention() {
+        // 729 days: inside the 730-day retention, beyond the 728-day late limit
+        let old = msg(serde_json::json!({"ts": iso(now() - Duration::days(729)), "v1": 1.0}), now());
+        let edge = msg(serde_json::json!({"ts": iso(now() - Duration::days(728)), "v1": 1.0}), now());
+        let out = process(&cfg(), &HashMap::new(), &mut DeadLimiter::new(10), &[old, edge]);
+        assert_eq!(out.dead.iter().map(|d| d.reason).collect::<Vec<_>>(), vec![DeadReason::TooOld]);
+        assert_eq!(out.readings.len(), 1);
+        assert_eq!(out.readings[0].row.ts, now() - Duration::days(728));
+    }
+
+    #[test]
     fn the_time_rule_flags_and_refuses() {
         let ahead = msg(serde_json::json!({"ts": iso(now() + Duration::minutes(10)), "v1": 1.0}), now());
         let old = msg(serde_json::json!({"ts": iso(now() - Duration::days(800)), "v1": 1.0}), now());

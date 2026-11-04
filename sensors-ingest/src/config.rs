@@ -57,6 +57,8 @@ pub struct Contract {
     pub config_epoch: i64,
     pub future_skew_s: i64,
     pub retention_days: i64,
+    /// Days back a device time may be before the message is `too_old` (two days inside the retention).
+    pub late_limit_days: i64,
 }
 
 /// One row of the view.
@@ -385,6 +387,7 @@ pub async fn load(client: &mut tokio_postgres::Client) -> Result<Config, ConfigE
         config_epoch: c.try_get(1)?,
         future_skew_s: i64::from(c.try_get::<_, i32>(2)?),
         retention_days: i64::from(c.try_get::<_, i32>(3)?),
+        late_limit_days: 0,
     };
     let sql = format!(
         "SELECT {} FROM sensors_ingest_config ORDER BY channel_no, valid_from NULLS FIRST",
@@ -440,7 +443,7 @@ pub(crate) mod tests {
     use chrono::TimeZone;
 
     pub fn contract() -> Contract {
-        Contract { schema_version: 1, config_epoch: 7, future_skew_s: 60, retention_days: 730 }
+        Contract { schema_version: 1, config_epoch: 7, future_skew_s: 60, retention_days: 730, late_limit_days: 728 }
     }
 
     pub fn row(conn: u128, device: u128, topic: &str, channel_no: i32) -> ViewRow {

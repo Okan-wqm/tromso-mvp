@@ -93,7 +93,7 @@ async fn config_loads_through_the_view_with_epochs_and_routes() {
     let cfg = config::load(&mut c).await.unwrap();
     assert!(cfg.rejected.is_empty(), "{:?}", cfg.rejected);
     assert_eq!(cfg.contract.schema_version, 1);
-    assert_eq!((cfg.contract.future_skew_s, cfg.contract.retention_days), (60, 730));
+    assert_eq!((cfg.contract.future_skew_s, cfg.contract.retention_days, cfg.contract.late_limit_days), (60, 730, 728));
     let mut nos = cfg.channel_nos();
     nos.sort();
     assert_eq!(nos, vec![s.ch_a, s.ch_b, ch_do]);

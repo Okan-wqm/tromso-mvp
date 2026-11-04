@@ -69,7 +69,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
         self.assertEqual([(p['key'], p['label']) for p in response.context['workspaces']],
-                         [('company', 'Company'), ('production', 'Production')])
+                         [('company', 'Company'), ('production', 'Production'), ('sensors', 'Sensors')])
         self.assertContains(response, 'data-menu-toggle', count=2)    # the switcher and the user menu
         self.assertContains(response, '<span class="workspace-name">Production</span>', html=True)
         self.assertContains(response, 'aria-current="true">Production</a>')
@@ -78,7 +78,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
     def test_each_panel_links_to_its_first_page_for_this_person(self):
         self.sign_in(self.admin)
         panels = {p['key']: p['url'] for p in self.page(reverse('home')).context['workspaces']}
-        self.assertEqual(panels, {'company': reverse('home'), 'production': reverse('production_home')})
+        self.assertEqual(panels, {'company': reverse('home'), 'production': reverse('production_home'),
+                                  'sensors': reverse('sensors:home')})
         production_only = get_user_model().objects.create_user('per', 'per@example.com', 'x')
         production_only.groups.add(role('Systems', 'view_system'))
         self.sign_in(production_only)
@@ -224,6 +225,12 @@ class MenuPlacementTests(TestCase):
             'tasks.TaskSeries': 'Production · Operations',
             'knowledge.Document': 'Company · Knowledge',
             'knowledge.KnowledgeEntry': 'Company · Knowledge',
+            'sensors.Connection': 'Sensors · Setup',
+            'sensors.PayloadFormat': 'Sensors · Setup',
+            'sensors.Device': 'Sensors · Setup',
+            'sensors.Channel': 'Sensors · Setup',
+            'sensors.Binding': 'Sensors · Setup',
+            'sensors.Credential': 'Sensors · Administration',
             'core.AuditLog': 'Company · Administration',
         })
 

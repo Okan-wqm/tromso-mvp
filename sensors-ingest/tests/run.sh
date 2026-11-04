@@ -27,9 +27,9 @@ fi
 
 psql() { docker run --rm --network "$NET" -e PGPASSWORD="${DB_PASSWORD:-balik}" timescale/timescaledb:2.17.2-pg17 \
   psql -h "$DB_HOST" -U "${DB_USER:-balik}" "$@"; }
-if [ -z "$(psql -d postgres -Atc "SELECT 1 FROM pg_database WHERE datname = '$TEST_DB'")" ]; then
-  psql -d postgres -c "CREATE DATABASE $TEST_DB" >/dev/null
-fi
+# a fresh database each run: the unlanded migrations may still change
+psql -d postgres -qc "DROP DATABASE IF EXISTS $TEST_DB WITH (FORCE)" >/dev/null
+psql -d postgres -qc "CREATE DATABASE $TEST_DB" >/dev/null
 docker run --rm --network "$NET" -v "$REPO:/app" -w /app -e DB_HOST="$DB_HOST" -e DB_PORT=5432 -e DB_NAME="$TEST_DB" \
   "$DJANGO_IMAGE" python manage.py migrate --no-input >/dev/null
 

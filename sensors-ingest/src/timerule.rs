@@ -1,10 +1,11 @@
-//! The time rule (plan decision 5, contract `future_skew_s`, `retention_days`): which time a sample is stored at.
+//! The time rule (plan decision 5, contract `future_skew_s`, `late_limit_days`): which time a sample is stored at.
 //!
 //! - no device time (the format has no time path): the receive time, flagged RECEIVE_TIME;
 //! - device time more than `future_skew_s` after the receive time: the receive time, flagged CLOCK_SUSPECT (a device
 //!   clock running ahead must not push the channel's newest time into the future, which would send every later
 //!   sample down the late path);
-//! - device time older than `retention_days` before the receive time: refused, dead letter `too_old` (retention would
+//! - device time older than `late_limit_days` before the receive time: refused, dead letter `too_old` (the contract keeps it two
+//!   days inside the raw retention: retention would
 //!   drop it at once, and a dropped chunk is never refilled);
 //! - otherwise the device time, unflagged, however far in the past (a gateway replaying a backlog is normal).
 //!
@@ -17,7 +18,7 @@ use chrono::{DateTime, Duration, Utc};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Limits {
     pub future_skew_s: i64,
-    pub retention_days: i64,
+    pub late_limit_days: i64,
 }
 
 /// The stored time and its quality bits, or the reason the sample is refused.
@@ -34,8 +35,8 @@ pub fn resolve(
     if latest.is_some_and(|l| device_ts > l) {
         return Ok((received_at, CLOCK_SUSPECT));
     }
-    // A retention beyond the representable range means nothing is too old.
-    let oldest = Duration::try_days(limits.retention_days).and_then(|d| received_at.checked_sub_signed(d));
+    // A late limit beyond the representable range means nothing is too old.
+    let oldest = Duration::try_days(limits.late_limit_days).and_then(|d| received_at.checked_sub_signed(d));
     if oldest.is_some_and(|o| device_ts < o) {
         return Err(DeadReason::TooOld);
     }
@@ -48,7 +49,7 @@ mod tests {
     use chrono::TimeZone;
     use proptest::prelude::*;
 
-    const L: Limits = Limits { future_skew_s: 60, retention_days: 730 };
+    const L: Limits = Limits { future_skew_s: 60, late_limit_days: 730 };
 
     fn now() -> DateTime<Utc> {
         Utc.with_ymd_and_hms(2026, 11, 4, 12, 0, 0).unwrap() + Duration::nanoseconds(123_456_789)
@@ -89,14 +90,14 @@ mod tests {
 
     #[test]
     fn a_zero_skew_accepts_only_times_up_to_receipt() {
-        let l = Limits { future_skew_s: 0, retention_days: 730 };
+        let l = Limits { future_skew_s: 0, late_limit_days: 730 };
         assert_eq!(resolve(Some(now()), now(), l), Ok((micros(now()), 0)));
         let ahead = now() + Duration::microseconds(1);
         assert_eq!(resolve(Some(ahead), now(), l), Ok((micros(now()), CLOCK_SUSPECT)));
     }
 
     proptest! {
-        // The stored time is never more than the skew after receipt, never older than retention, and is the device
+        // The stored time is never more than the skew after receipt, never older than the late limit, and is the device
         // time whenever it is accepted unflagged.
         #[test]
         fn stored_time_is_bounded(offset_s in -80_000_000i64..80_000_000) {
@@ -104,12 +105,12 @@ mod tests {
             match resolve(Some(t), now(), L) {
                 Ok((ts, q)) => {
                     prop_assert!(ts <= now() + Duration::seconds(L.future_skew_s));
-                    prop_assert!(ts >= now() - Duration::days(L.retention_days) - Duration::microseconds(1));
+                    prop_assert!(ts >= now() - Duration::days(L.late_limit_days) - Duration::microseconds(1));
                     if q == 0 { prop_assert_eq!(ts, micros(t)); } else { prop_assert_eq!(q, CLOCK_SUSPECT); }
                 }
                 Err(r) => {
                     prop_assert_eq!(r, DeadReason::TooOld);
-                    prop_assert!(t < now() - Duration::days(L.retention_days));
+                    prop_assert!(t < now() - Duration::days(L.late_limit_days));
                 }
             }
         }

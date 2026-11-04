@@ -139,7 +139,7 @@ impl Batch<'_> {
 }
 
 pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut DeadLimiter, msgs: &[Msg]) -> Output {
-    let limits = Limits { future_skew_s: cfg.contract.future_skew_s, retention_days: cfg.contract.retention_days };
+    let limits = Limits { future_skew_s: cfg.contract.future_skew_s, late_limit_days: cfg.contract.late_limit_days };
     let mut b = Batch { committed, out: Output::default(), dead: BTreeMap::new() };
     for m in msgs {
         let Some(dev) = cfg.route(m.connection_id, &m.topic) else {

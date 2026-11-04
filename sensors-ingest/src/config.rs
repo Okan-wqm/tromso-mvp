@@ -377,7 +377,7 @@ pub async fn load(client: &mut tokio_postgres::Client) -> Result<Config, ConfigE
         .await?;
     let c = tx
         .query_opt(
-            "SELECT schema_version, config_epoch, future_skew_s, retention_days FROM sensors_contract WHERE id = 1",
+            "SELECT schema_version, config_epoch, future_skew_s, retention_days, late_limit_days FROM sensors_contract \n             WHERE id = 1",
             &[],
         )
         .await?
@@ -387,7 +387,7 @@ pub async fn load(client: &mut tokio_postgres::Client) -> Result<Config, ConfigE
         config_epoch: c.try_get(1)?,
         future_skew_s: i64::from(c.try_get::<_, i32>(2)?),
         retention_days: i64::from(c.try_get::<_, i32>(3)?),
-        late_limit_days: 0,
+        late_limit_days: i64::from(c.try_get::<_, i32>(4)?),
     };
     let sql = format!(
         "SELECT {} FROM sensors_ingest_config ORDER BY channel_no, valid_from NULLS FIRST",

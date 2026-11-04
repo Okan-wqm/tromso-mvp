@@ -10,7 +10,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0022_health_notified_at_removed'),
+        ('farm', '0024_health_notified_at_removed'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

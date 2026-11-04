@@ -55,6 +55,25 @@ class PeriodTests(SimpleTestCase):
         self.assertEqual(periods.oslo_today(utc_evening), date(2026, 11, 4))
 
 
+class ArchitectureTests(SimpleTestCase):
+    """The reports read the farm through the farm's own reads, and the farm never reads the reports."""
+
+    def sources(self, root, skip=('tests', 'migrations', '__pycache__')):
+        return {path.relative_to(root).as_posix(): path.read_text(encoding='utf-8') for path in root.rglob('*.py')
+                if not set(skip) & set(path.relative_to(root).parts)}
+
+    def test_the_reports_read_no_water_sample_but_through_the_water_modules_read(self):
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        self.assertEqual([name for name, text in self.sources(root).items() if 'WaterMeasurement' in text], [])
+
+    def test_the_farm_does_not_import_the_reports(self):
+        from pathlib import Path
+        farm = Path(__file__).resolve().parents[2] / 'farm'
+        self.assertEqual([name for name, text in self.sources(farm).items()
+                          if 'from reports' in text or 'import reports' in text], [])
+
+
 class SmoltTests(ReportTestCase):
     def test_the_month_per_unit_from_the_ledger(self):
         self.october()

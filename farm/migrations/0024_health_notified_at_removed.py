@@ -8,7 +8,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0021_reports_fields'),
+        ('farm', '0023_reports_fields'),
     ]
 
     operations = [

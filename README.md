@@ -2281,6 +2281,28 @@ printed page of it): the sites with their production departments, then the offic
 and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
 production department created, renamed or deleted under Production is in the chart at once, from the same rows.
 
+### HR: checks, the demonstration company, the browser code and the tests
+
+- **`manage.py check_hr`** reads what no database constraint can hold because it looks at several rows and changes with time, and
+  fails with the list: a last day with a placement after it, leave after it, a placement before the person joined, a person placed in
+  no department today, an office department with people but no site (they would be read on the company clock) and an inactive
+  department with people. It changes nothing; a person decides.
+- **`manage.py seed_hr_demo`** (only with `DEBUG` on, idempotent) makes a small company for a walk-through in a browser: a site on
+  Oslo time, two production departments with managers, an office department, nine people placed in them, three shifts, a week of
+  plans, a holiday, leave types, a pending leave request, a punch, and four roles made like any role (Demo lead, Demo staff, Demo
+  HR admin, Demo auditor) with a sign-in each (`demo_lead_hatchery`, `demo_lead_nursery`, `demo_staff`, `demo_hr`, `demo_auditor`).
+- **Browser code** (`frontend/roster.ts`, TypeScript only): on the Shift schedule the arrow keys move between cells, and the paint
+  form (hidden without the script) picks a shift, selects cells and posts them to the batch route, which plans all or none; the page's
+  Print button is the shared `data-print`. The script has no text of its own.
+- **Tests** (`hr/tests/`): per model the create, read, edit, delete and restore round trips against stored rows with a test that
+  names every column; the constraints through `IntegrityError` on raw rows, including both triggers, the open punch and the
+  exclusions; the team scope by function and by URL for every actor (404 on every verb outside it, nothing written or logged, every
+  route needs a row in the matrix or the suite fails); the boundary (no pay, bank, tax or identity column, form field, template word
+  or import, and every free-text column named and masked); derived state at a fixed `now` for sites ahead of and behind UTC and the
+  7 and 9 hour nights; the rules as pure functions; the services' refusals leaving rows and log unchanged; query budgets (the same
+  number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
+  list; and the migrations back to nothing and forward again.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the

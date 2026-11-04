@@ -6,7 +6,7 @@
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
-<p class="muted">{% blocktrans trimmed with total=root.total %}{{ total }} people you may see in the company.{% endblocktrans %}</p>
+<p class="muted">{% blocktrans trimmed with total=root.total %}{{ total }} people you may see in the company.{% endblocktrans %} <button type="button" class="button button-ghost" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button></p>
 {% if root.children %}
 <ul class="org-tree">
   {% for node in root.children %}{% include "hr/_org_node.html" %}{% endfor %}

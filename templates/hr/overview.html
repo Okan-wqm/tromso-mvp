@@ -11,6 +11,7 @@
   <a class="button button-ghost" href="?week={{ week.previous|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Previous week" %}</a>
   <strong class="week-title">{{ week.start|date:"DATE_FORMAT" }} – {{ week.end|date:"DATE_FORMAT" }}</strong>
   <a class="button button-ghost" href="?week={{ week.next|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Next week" %}</a>
+  <button type="button" class="button button-ghost" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button>
 </nav>
 <div class="toolbar">
   <form method="get" class="search" role="search">

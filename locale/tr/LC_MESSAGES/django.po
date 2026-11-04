@@ -2340,6 +2340,9 @@ msgstr "Kapsam"
 msgid "Apply"
 msgstr "Uygula"
 
+msgid "Apply to the selected days"
+msgstr "Seçili günlere uygula"
+
 msgid "Approval number"
 msgstr "Onay numarası"
 
@@ -3131,6 +3134,9 @@ msgstr "Temizle"
 
 msgid "Clear filters"
 msgstr "Filtreleri temizle"
+
+msgid "Clear selection"
+msgstr "Seçimi temizle"
 
 msgid "Clock in"
 msgstr "Giriş"
@@ -7204,6 +7210,9 @@ msgstr "Sayfa(lar)"
 
 msgid "Pages"
 msgstr "Sayfalar"
+
+msgid "Paint"
+msgstr "Boya"
 
 msgid "Pale gills"
 msgstr "Solgun solungaçlar"

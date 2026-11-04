@@ -2342,6 +2342,9 @@ msgstr "Gjelder for"
 msgid "Apply"
 msgstr "Bruk"
 
+msgid "Apply to the selected days"
+msgstr "Bruk på de valgte dagene"
+
 msgid "Approval number"
 msgstr "Godkjenningsnummer"
 
@@ -3128,6 +3131,9 @@ msgstr "Nullstill"
 
 msgid "Clear filters"
 msgstr "Fjern filtrene"
+
+msgid "Clear selection"
+msgstr "Fjern utvalg"
 
 msgid "Clock in"
 msgstr "Stemple inn"
@@ -7197,6 +7203,9 @@ msgstr "Side(r)"
 
 msgid "Pages"
 msgstr "Sider"
+
+msgid "Paint"
+msgstr "Mal"
 
 msgid "Pale gills"
 msgstr "Bleke gjeller"

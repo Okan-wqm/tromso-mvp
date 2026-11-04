@@ -4,7 +4,6 @@ import django.core.validators
 import django.db.models.deletion
 import uuid
 from django.conf import settings
-from django.contrib.postgres.operations import BtreeGistExtension
 from django.db import migrations, models
 
 
@@ -17,8 +16,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # The exclusion constraints compare an equal id and an overlapping range in one index.
-        BtreeGistExtension(),
+        # The exclusion constraints compare an equal id and an overlapping range in one index. The extension is shared with the
+        # farm's own exclusion constraints, so going back never drops it (it would fail while they exist, and it is not ours).
+        migrations.RunSQL('CREATE EXTENSION IF NOT EXISTS btree_gist', reverse_sql=migrations.RunSQL.noop),
         migrations.CreateModel(
             name='Employee',
             fields=[

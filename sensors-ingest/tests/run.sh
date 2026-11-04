@@ -57,4 +57,15 @@ docker run --rm --network "$NET" -v "$REPO:/w" -v si-cargo:/usr/local/cargo/regi
     cargo clippy --all-targets -- -D warnings
     if command -v cargo-deny >/dev/null; then cargo deny --locked check; else cargo install --locked cargo-deny --root /t/tools && cargo deny --locked check; fi
   '
+
+# THIRD_PARTY must equal what Cargo.lock says
+META=$(mktemp)
+docker run --rm -v "$REPO:/w" -v si-cargo:/usr/local/cargo/registry -w /w/sensors-ingest "$RUST_IMAGE" \
+  cargo metadata --format-version 1 --locked --filter-platform x86_64-unknown-linux-gnu > "$META"
+cp "$META" sensors-ingest/target-meta.json.tmp
+docker run --rm -v "$REPO:/w" python:3.12-slim python -I /w/sensors-ingest/tests/third_party.py \
+  /w/sensors-ingest/target-meta.json.tmp > "$META.out"
+rm -f sensors-ingest/target-meta.json.tmp
+diff -u sensors-ingest/THIRD_PARTY "$META.out" || { echo "THIRD_PARTY is out of date: regenerate it"; exit 1; }
+echo "sensors-ingest: THIRD_PARTY current"
 echo "sensors-ingest: all green"

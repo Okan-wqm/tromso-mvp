@@ -90,11 +90,15 @@ pub struct Shared {
     pub discarded: AtomicU64,
     pub poison: AtomicU64,
     pub queue_depth: AtomicI64,
+    /// Durations of the most recent commits (milliseconds, at most COMMIT_SAMPLES), for /healthz percentiles.
+    pub commit_ms: std::sync::Mutex<std::collections::VecDeque<u32>>,
     /// Connections the readers report connected, by connection id.
     pub connected: std::sync::Mutex<std::collections::HashMap<uuid::Uuid, bool>>,
 }
 
 impl Shared {
+    pub fn record_commit(&self, _d: Duration) {}
+
     pub fn current_generation(&self) -> u64 {
         self.generation.load(Ordering::SeqCst)
     }

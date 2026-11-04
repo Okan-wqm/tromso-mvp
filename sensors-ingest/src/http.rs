@@ -168,6 +168,15 @@ mod tests {
         assert!(body["problems"].to_string().contains("database"), "{body}");
         s.shared.qos0_dropped.store(3, Ordering::SeqCst);
         assert_eq!(call(&s, get("/healthz")).await.1["qos0_dropped"], 3);
+        for ms in 1..=100u32 {
+            s.shared.record_commit(std::time::Duration::from_millis(u64::from(ms)));
+        }
+        let body = call(&s, get("/healthz")).await.1;
+        assert_eq!(
+            (body["commit_ms"]["p50"].as_u64(), body["commit_ms"]["p99"].as_u64(), body["commit_ms"]["max"].as_u64()),
+            (Some(50), Some(99), Some(100))
+        );
+        assert_eq!(body["commit_ms"]["count"], 100);
     }
 
     #[tokio::test]

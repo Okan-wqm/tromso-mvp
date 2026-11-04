@@ -76,6 +76,9 @@ impl Settings {
     }
 }
 
+/// Commit durations kept for the percentiles.
+pub const COMMIT_SAMPLES: usize = 10_000;
+
 /// Shared with the readers and the health endpoint.
 #[derive(Default)]
 pub struct Shared {
@@ -97,7 +100,31 @@ pub struct Shared {
 }
 
 impl Shared {
-    pub fn record_commit(&self, _d: Duration) {}
+    pub fn record_commit(&self, d: Duration) {
+        let ms = u32::try_from(d.as_millis()).unwrap_or(u32::MAX);
+        let mut q = match self.commit_ms.lock() {
+            Ok(g) => g,
+            Err(p) => p.into_inner(),
+        };
+        if q.len() >= COMMIT_SAMPLES {
+            q.pop_front();
+        }
+        q.push_back(ms);
+    }
+
+    /// (p50, p99, max, count) of the recorded commit durations in milliseconds.
+    pub fn commit_percentiles(&self) -> (u32, u32, u32, usize) {
+        let mut v: Vec<u32> = match self.commit_ms.lock() {
+            Ok(g) => g.iter().copied().collect(),
+            Err(p) => p.into_inner().iter().copied().collect(),
+        };
+        if v.is_empty() {
+            return (0, 0, 0, 0);
+        }
+        v.sort_unstable();
+        let at = |q: usize| v.get((v.len() * q).div_ceil(100).saturating_sub(1)).copied().unwrap_or(0);
+        (at(50), at(99), v.last().copied().unwrap_or(0), v.len())
+    }
 
     pub fn current_generation(&self) -> u64 {
         self.generation.load(Ordering::SeqCst)
@@ -461,12 +488,14 @@ impl Writer {
         if batch.msgs.is_empty() {
             return true;
         }
+        let started = std::time::Instant::now();
         let Some(cfg) = self.cfg.clone() else { return false };
         let out = pipeline::process(&cfg, &self.committed, &mut self.limiter, &batch.msgs);
         let status = self.status(None);
         let Some(client) = self.client.as_mut() else { return false };
         match db::write_batch(client, &out, &status).await {
             Ok(_) => {
+                self.shared.record_commit(started.elapsed());
                 self.applied(out, batch.acks);
                 true
             }

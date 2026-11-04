@@ -64,6 +64,7 @@ async fn healthz(State(state): State<AppState>) -> (StatusCode, Json<serde_json:
             brokers.insert(id.to_string(), serde_json::Value::Bool(up));
         }
     }
+    let (p50, p99, max, count) = sh.commit_percentiles();
     let body = serde_json::json!({
         "status": if problems.is_empty() { "ok" } else { "unhealthy" },
         "problems": problems,
@@ -75,6 +76,7 @@ async fn healthz(State(state): State<AppState>) -> (StatusCode, Json<serde_json:
         "qos0_dropped": sh.qos0_dropped.load(Ordering::SeqCst),
         "discarded_stale": sh.discarded.load(Ordering::SeqCst),
         "poison": sh.poison.load(Ordering::SeqCst),
+        "commit_ms": {"p50": p50, "p99": p99, "max": max, "count": count},
         "version": env!("CARGO_PKG_VERSION"),
     });
     let code = if problems.is_empty() { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };

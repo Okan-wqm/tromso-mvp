@@ -82,7 +82,8 @@ mod tests {
         assert_eq!(o.settings.conninfo, "host=db dbname=balik user=sensors_ingest");
         assert_eq!(o.settings.password.as_deref(), Some("s3cret"));
         assert_eq!(o.settings.role, None);
-        assert_eq!((o.settings.batch_ms, o.settings.batch_max, o.queue_capacity), (250, 5000, 10_000));
+        // bench: a 20000-message broker window drains 9074 msg/s, a 5000 window 5278 (BENCH.md)
+        assert_eq!((o.settings.batch_ms, o.settings.batch_max, o.queue_capacity), (250, 20_000, 40_000));
         assert_eq!(o.http_addr, Some("0.0.0.0:8080".parse().unwrap()));
         assert_eq!(o.secrets_dir, std::path::PathBuf::from("/run/secrets"));
     }

@@ -17,7 +17,7 @@ class ProductionDepartmentResource(Resource):
 
     @classmethod
     def queryset(cls):
-        return super().queryset().select_related('site')
+        return super().queryset().select_related('site', 'manager')
 
     @classmethod
     def filter_list(cls, request, objects):

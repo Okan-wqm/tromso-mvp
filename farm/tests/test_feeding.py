@@ -415,7 +415,7 @@ class FiguresTests(FeedingTestCase):
 
     def test_bfcr_efcr_and_the_feed_rate_from_the_records_and_the_ledger(self):
         units = list(Tank.objects.all())
-        figures = read.figures(stock_read.stock_of(units), detail=self.t1)[self.t1.pk]
+        figures = read.figures(stock_read.stock_of(units), details=[self.t1])[self.t1.pk]
         conversion = figures.conversion
         self.assertEqual((conversion.feed_kg, conversion.gain_kg, conversion.economic_gain_kg), (168, 196, 186))
         self.assertEqual((figures.last_fed, figures.week.today_kg, figures.week.today_meals, figures.week.kg),
@@ -547,8 +547,8 @@ class PermissionTests(FeedingTestCase):
         blind = get_user_model().objects.create_user('blind', 'blind@example.com')
         blind.groups.add(role('Blind', 'view_stockoperation'))
         self.assertEqual(feeding_views.unit_figures(blind, stock), {})
-        self.assertEqual(feeding_views.unit_figures(reader, stock, detail=self.t1).keys(),
-                         read.figures(stock, detail=self.t1).keys())
+        self.assertEqual(feeding_views.unit_figures(reader, stock, details=[self.t1]).keys(),
+                         read.figures(stock, details=[self.t1]).keys())
 
     def test_the_menu_and_the_role_matrix_place_it_under_operations(self):
         self.assertEqual(str(navigation.place('farm.view_feedingrecord').path), 'Production · Operations · Feeding')

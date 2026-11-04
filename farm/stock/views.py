@@ -138,7 +138,7 @@ def production_units(request):
     kinds_present = {unit.kind for unit in units}
     biomass = sum((stock[unit.pk].biomass_kg for unit in shown if unit.pk in stock), start=0)
     drawer_unit = next((unit for unit in units if str(unit.pk) == params['unit']), None)
-    feeding = feeding_views.unit_figures(request.user, stock, detail=drawer_unit)
+    feeding = feeding_views.unit_figures(request.user, stock, details=[drawer_unit] if drawer_unit else ())
     water = water_views.unit_water(request.user, shown)
     withdrawals = harvest_views.withdrawals([unit for unit in shown if unit.pk in stock])
 

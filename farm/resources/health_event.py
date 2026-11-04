@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import Resource, filter_by
 
 from ..forms.health import HealthEventForm
-from ..health import diseases
+from ..health import diseases, notices
 from ..health.read import with_deaths
 from ..models import HealthEvent, Site, Tank
 from ..stock import views as stock_views
@@ -65,12 +65,15 @@ class HealthEventResource(Resource):
             chosen_state = ''
         if request.GET.get('q'):
             objects = objects.distinct()      # a search in the units can match an event twice
+        listed = HealthEvent.objects.filter(diagnosis__in=diseases.NOTIFIABLE).select_related('site')
+        events = list(listed)
         return objects, {
             'sites': sites, 'chosen_site': chosen_site,
             'kinds': HealthEvent.Kind.choices, 'chosen_kind': chosen_kind,
             'states': states, 'chosen_state': chosen_state,
             'show_voided': request.GET.get('voided') == '1',
-            'to_notify': list(HealthEvent.objects.filter(diagnosis__in=diseases.NOTIFIABLE,
-                                                         authority_notified_at__isnull=True).select_related('site')),
+            # Whom Mattilsynet has been told of: the filed notices (farm/health/notices.py); None: not checked.
+            'told': notices.told(HealthEvent.all_objects.filter(diagnosis__in=diseases.NOTIFIABLE)),
+            'to_notify': [(event, notices.start_url(event, request.user)) for event in notices.pending(events) or []],
             'can_void': request.user.has_perm('farm.delete_healthevent'),
         }

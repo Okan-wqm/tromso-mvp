@@ -59,11 +59,11 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
-                                                    'Water limits',
-                                                    'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
-                                                    'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
-                                                    'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
-                                                    'Sea-lice counts', 'Messages'])
+                                                    'Water limits', 'Medicines', 'Handling rules', 'Slaughter facilities',
+                                                    'Suppliers', 'Production units', 'Water chemistry', 'Storage', 'Tasks',
+                                                    'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                                    'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
+                                                    'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -118,11 +118,11 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
-                                                  'Water limits',
-                                                  'Medicines', 'Handling rules', 'Slaughter facilities', 'Suppliers', 'Production units',
-                                                  'Water chemistry', 'Storage', 'Tasks', 'Recurring tasks', 'Meal board', 'Records', 'Protocols',
-                                                  'Assignments', 'Harvested', 'Harvest plan', 'Production plans', 'Treatments', 'Health events',
-                                                  'Sea-lice counts', 'Messages'])
+                                                  'Water limits', 'Medicines', 'Handling rules', 'Slaughter facilities',
+                                                  'Suppliers', 'Production units', 'Water chemistry', 'Storage', 'Tasks',
+                                                  'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                                  'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
+                                                  'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -155,7 +155,8 @@ class MainHeadingTests(WorkspaceTestCase):
         self.assertEqual(self.headings(response),
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
                                                  'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Communication', [''])])
+                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Reports', ['']),
+                          ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
@@ -216,6 +217,7 @@ class MenuPlacementTests(TestCase):
             'farm.Treatment': 'Production · Operations · Health',
             'farm.HealthEvent': 'Production · Operations · Health',
             'farm.LiceCount': 'Production · Operations · Health',
+            'reports.Report': 'Production · Reports',
             'messaging.Conversation': 'Production · Communication',
             'tasks.Task': 'Production · Operations',
             'tasks.TaskSeries': 'Production · Operations',
@@ -228,6 +230,14 @@ class MenuPlacementTests(TestCase):
         self.assertEqual(str(SiteResource.group()), 'Facility')
         self.assertEqual(str(SystemResource.group()), 'Facility structure')
         self.assertEqual(str(RoleResource.group()), 'Administration')
+
+    def test_an_entry_in_a_group_without_a_label_is_headed_by_its_section(self):
+        place = navigation.place('farm.view_stockoperation')        # Operations, in its unlabelled group
+        self.assertEqual((str(place.group.label), str(place.heading)), ('', 'Operations'))
+        place = navigation.place('farm.view_site')
+        self.assertEqual(str(place.heading), 'Facility')
+        home = navigation.page('production_home')                     # an unlabelled group of an unlabelled section
+        self.assertEqual(str(home.heading), 'Production')
 
     def test_a_permission_with_no_menu_entry_is_a_configuration_error(self):
         with self.assertRaisesMessage(ImproperlyConfigured, "'farm.view_nothing'"):

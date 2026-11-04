@@ -7,6 +7,8 @@
   <form method="post" action="{{ action }}" novalidate data-formset>
     {% csrf_token %}
     {{ contacts.management_form }}
+    {# The record's version travels with its list: a save based on an outdated record is refused (RowListView). #}
+    <input type="hidden" name="version" value="{{ object.version }}">
     {% if contacts.non_form_errors %}<div class="form-error" role="alert">{{ contacts.non_form_errors }}</div>{% endif %}
     <div class="contact-rows" data-rows>
       {% for row in contacts %}{% include "farm/_contact_row.html" %}{% endfor %}

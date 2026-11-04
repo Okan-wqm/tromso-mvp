@@ -5,7 +5,8 @@ from django.contrib.auth.models import Group, Permission
 def site_data(**overrides):
     data = {
         'name': 'Main Production Site', 'code': 'mps-001', 'type': 'land_based', 'status': 'active',
-        'lokalitetsnummer': '', 'organisation_number_override': '', 'description': '', 'area_m2': '',
+        'lokalitetsnummer': '', 'organisation_number': '', 'production_form': '', 'reports_from': '',
+        'description': '', 'area_m2': '',
         'timezone': '', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
         'postal_code': '', 'latitude': '', 'longitude': '', 'altitude': '', 'site_manager': '',
         'contact_email': '', 'contact_phone': '',
@@ -14,13 +15,16 @@ def site_data(**overrides):
     return data
 
 
-def rows_data(prefix, rows, initial=0):
-    """What a row list (core.crud.RowList) posts: its management form and each row's fields under the
-    list's prefix. A check box is given as True/False."""
+def rows_data(prefix, rows, initial=0, record=None):
+    """What a row list (core.crud.RowList) posts: its management form, each row's fields under the list's
+    prefix (a check box given as True/False), and the version of its `record` as stored now, which the page
+    sends with the list (a save based on an outdated record is refused)."""
     data = {
         f'{prefix}-TOTAL_FORMS': str(len(rows)), f'{prefix}-INITIAL_FORMS': str(initial),
         f'{prefix}-MIN_NUM_FORMS': '0', f'{prefix}-MAX_NUM_FORMS': '1000',
     }
+    if record is not None:
+        data['version'] = str(type(record).all_objects.values_list('version', flat=True).get(pk=record.pk))
     for i, row in enumerate(rows):
         for key, value in row.items():
             if value is True:
@@ -30,8 +34,8 @@ def rows_data(prefix, rows, initial=0):
     return data
 
 
-def contacts_data(rows, initial=0):
-    return rows_data('contacts', rows, initial)
+def contacts_data(rows, initial=0, record=None):
+    return rows_data('contacts', rows, initial, record)
 
 
 def role(name, *codenames):

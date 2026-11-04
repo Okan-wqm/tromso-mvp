@@ -78,7 +78,7 @@
       <tr{% if record.is_deleted %} class="is-voided"{% endif %}>
         <td class="nowrap"><time datetime="{{ record.date|date:'Y-m-d' }}">{{ record.date|date:"DATE_FORMAT" }}</time>{% if record.time %}<span class="row-sub">{{ record.time|time:"H:i" }}</span>{% endif %}</td>
         <td><span class="row-title">{{ record.unit.code }}</span><span class="row-sub nowrap">{{ record.unit.production_department.name }}{% if record.unit.production_department.site %} · {{ record.unit.production_department.site.name }}{% endif %}</span></td>
-        <td class="nowrap">{% for batch in row.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% empty %}—{% endfor %}</td>
+        <td class="nowrap">{% for batch in row.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% empty %}—{% endfor %}{% if record.target == "cleaner_fish" %}<span class="row-sub">{% trans "Cleaner fish" %}</span>{% endif %}</td>
         <td>{{ record.feed.name }}<span class="row-sub">{{ record.feed.code }}{% if record.feed.pellet_size_mm %} · {% blocktrans trimmed with size=record.feed.pellet_size_mm|floatformat:"-2" %}{{ size }} mm{% endblocktrans %}{% endif %}</span></td>
         <td class="num">{{ record.amount_kg|feed_kg }}</td>
         <td class="num">{{ record.meals|default:"—" }}</td>

@@ -11,7 +11,10 @@
       <p class="drawer-sub">{{ unit.name }} · {{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</p>
       <p class="drawer-sub"><span class="badge badge-{{ unit.status }}">{{ unit.get_status_display }}</span>{% if unit.status_changed_at %} {% blocktrans trimmed with date=unit.status_changed_at|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% endif %}</p>
       {% if stock %}
+      {% if stock.batches %}
       <p class="drawer-line"><strong>{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %}</strong> · {% with species=stock.batches.0.species %}{{ species.local_name|default:species.common_name }}{% endwith %} · {% blocktrans trimmed count days=drawer_days %}Stocked · {{ days }} day{% plural %}Stocked · {{ days }} days{% endblocktrans %}</p>
+      {% endif %}
+      {% if stock.cleaner %}<p class="drawer-line">{% blocktrans trimmed with fish=stock.cleaner_stock.count|fish biomass=stock.cleaner_stock.biomass_kg|kilos %}Cleaner fish: {{ fish }} fish, {{ biomass }}: not in the figures below, which are the production fish's.{% endblocktrans %}</p>{% endif %}
       {% endif %}
     </div>
     <a class="icon-button" href="{{ close_url }}" title="{% trans "Close" %}">{% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Close" %}</span></a>
@@ -44,7 +47,7 @@
           <tbody>
             {% for share, fed in batch_rows %}
             <tr>
-              <td><span class="row-title">{{ share.batch.code }}</span><span class="row-sub">{{ share.batch.get_input_stage_display }} · {% blocktrans trimmed with date=share.since|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% if stock.shares|length > 1 %} · {{ share.percent_of_unit|percent }}{% endif %}</span></td>
+              <td><span class="row-title">{{ share.batch.code }}</span><span class="row-sub">{{ share.batch.get_input_stage_display }} · {% blocktrans trimmed with date=share.since|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% if share.cleaner %} · {% trans "cleaner fish" %}{% endif %}{% if share.siblings > 1 %} · {{ share.percent_of_unit|percent }}{% endif %}</span><span class="row-sub">{% if share.batch.year_class %}{% trans "Year class" %} {{ share.batch.year_class }}{% else %}{% trans "No year class" %}{% endif %} · {% if share.batch.provenance %}{{ share.batch.get_provenance_display }}{% else %}{% trans "Farmed or wild-caught not given" %}{% endif %}{% if can_record %} · <a href="{% url 'farm:stock_batch' share.batch.pk %}?unit={{ unit.pk }}" data-modal>{% trans "Batch details" %}</a>{% endif %}</span></td>
               <td class="num">{{ share.count|fish }}</td>
               <td class="num">{{ share.avg_weight_g|grams }}<span class="row-sub">{% if share.last_weighed %}{% blocktrans trimmed with date=share.last_weighed|date:"DATE_FORMAT" %}weighed {{ date }}{% endblocktrans %}{% else %}{% trans "as stocked" %}{% endif %}</span></td>
               <td class="num">{{ share.biomass_kg|kilos }}</td>
@@ -162,6 +165,8 @@
             <li>{% if line.unit_id != unit.pk %}{{ line.unit.code }} · {% endif %}{{ line.batch.code }}: {% if line.kind == "weighing" %}{% blocktrans trimmed with weight=line.avg_weight_g|grams %}average {{ weight }}{% endblocktrans %}{% else %}{% blocktrans trimmed with fish=line.count_delta|signed %}{{ fish }} fish{% endblocktrans %}{% if line.avg_weight_g %} · {{ line.avg_weight_g|grams }}{% endif %}{% if line.size_class %} · {{ line.size_class }}{% endif %}{% if line.reason %} · {{ line.reason_label }}{% endif %}{% if line.measured_weight_kg %} · {% blocktrans trimmed with kilos=line.measured_weight_kg|kilos %}{{ kilos }} weighed{% endblocktrans %}{% endif %}{% if line.kind == "harvest" and line.book %} · {% blocktrans trimmed with book=line.book.kg|kilos difference=line.book.difference_kg|signed_kilos percent=line.book.difference_pct|signed_percent %}book {{ book }} · {{ difference }} ({{ percent }}){% endblocktrans %}{% endif %}{% endif %}</li>
             {% endfor %}
           </ul>
+          {% if item.escape %}<p class="op-meta">{% if item.escape.suspected %}{% trans "Suspected escape" %} · {% endif %}{{ item.escape.cause }}{% if item.escape.found_time %} · {% blocktrans trimmed with time=item.escape.found_time|time:"H:i" %}found {{ time }}{% endblocktrans %}{% endif %}{% if item.escape.health_status %} · {{ item.escape.health_status }}{% endif %}{% if item.escape.recaptured is not None %} · {% blocktrans trimmed with fish=item.escape.recaptured|fish %}{{ fish }} recaptured{% endblocktrans %}{% endif %}</p>{% endif %}
+          {% if item.delivery %}<p class="op-meta">{% blocktrans trimmed with destination=item.delivery.destination %}To {{ destination }}{% endblocktrans %}{% if item.delivery.destination_site_number %} · {{ item.delivery.destination_site_number }}{% endif %}</p>{% endif %}
           {% if item.record %}<p class="op-meta">{% blocktrans trimmed with facility=item.record.facility %}To {{ facility }}{% endblocktrans %}{% if item.record.transport %} · {{ item.record.transport.name }}{% endif %}{% if item.record.vessel %} · {{ item.record.vessel }}{% endif %}</p>{% endif %}
           {% if operation.acknowledgements.all %}<p class="op-meta"><span class="badge badge-critical">{% trans "Handling warning acknowledged" %}</span></p>{% endif %}
           {% for found in item.corrections %}<p class="op-meta">{% include "farm/_correction.html" with correction=found.correction batch=found.batch %}</p>{% endfor %}

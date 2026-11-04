@@ -4,13 +4,13 @@ When a species is saved under one of these scientific names, the fields left bla
 filled in from here (farm.forms.species); a value that was typed is never replaced. The catalogue is
 data in the code, not rows in the database: no species is ever created from it.
 
-Official codes. The nine grow-out species carry their FAO ASFIS 3-alpha code, which the Norwegian
-reports use as artskode, and only these are filled in. The four cleaner fish carry the codes of the
-source's map (USB, BER, GRO, BNB), which the source itself marks as unverified: in FAO ASFIS, USB is
-the ballan wrasse, yet the map gives it to the lumpfish. They are kept here marked unverified and are
-never filled in, and a species of the catalogue whose code is verified cannot be given another one
-(farm.models.Species.clean). Verify the cleaner-fish codes against Mattilsynet before a report is
-filed (docs/aquaculture-platform-bugs.md, Species).
+Official codes. Every species carries its FAO ASFIS 3-alpha code, which the Norwegian reports use as artskode:
+Mattilsynet's reporting API asks for "kode i store bokstaver etter FAO-standarden" (its OpenAPI, read 2026-11-03),
+and the codes were checked against the ASFIS list 2026.1 (docs/regulatory-reports.md, 3.4). The cleaner fish are
+LUM (lumpfish), USB (ballan wrasse), YFM (corkwing), TBR (goldsinny) and ENX (rock cook); the source's map gave
+the lumpfish USB and the wrasses BER, GRO and BNB, other species in ASFIS (SPC-32, REP-51). A blank code is
+filled in from here, and a species of the catalogue whose code is verified cannot be given another one
+(farm.models.Species.clean).
 
 Names: the English common name, and the Norwegian name as the local name (the source's onboarding
 seeder used Turkish names). Water: every water the species is farmed in. Salmon and trout grow up in
@@ -24,7 +24,7 @@ class CatalogueSpecies:
     common_name: str              # English
     local_name: str               # Norwegian
     official_code: str
-    official_code_verified: bool  # False: kept for reference, never filled in
+    official_code_verified: bool  # False: kept for reference, never filled in (none today)
     family: str
     freshwater: bool
     brackish: bool
@@ -46,14 +46,17 @@ CATALOGUE = (
     CatalogueSpecies('Dicentrarchus labrax', 'European seabass', 'Havabbor', 'BSS', True, 'Moronidae',
                      False, True, True),
     CatalogueSpecies('Sparus aurata', 'Gilthead seabream', 'Dorade', 'SBG', True, 'Sparidae', False, True, True),
-    # Cleaner fish: the source's codes, unverified (see above).
-    CatalogueSpecies('Cyclopterus lumpus', 'Lumpfish', 'Rognkjeks', 'USB', False, 'Cyclopteridae',
+    # Cleaner fish, FAO ASFIS 3-alpha codes (the five Mattilsynet names: rognkjeks, berggylt, grønngylt, bergnebb,
+    # gressgylt).
+    CatalogueSpecies('Cyclopterus lumpus', 'Lumpfish', 'Rognkjeks', 'LUM', True, 'Cyclopteridae',
                      False, False, True, 'lumpfish'),
-    CatalogueSpecies('Labrus bergylta', 'Ballan wrasse', 'Berggylt', 'BER', False, 'Labridae',
+    CatalogueSpecies('Labrus bergylta', 'Ballan wrasse', 'Berggylt', 'USB', True, 'Labridae',
                      False, False, True, 'wrasse'),
-    CatalogueSpecies('Symphodus melops', 'Corkwing wrasse', 'Grønngylt', 'GRO', False, 'Labridae',
+    CatalogueSpecies('Symphodus melops', 'Corkwing wrasse', 'Grønngylt', 'YFM', True, 'Labridae',
                      False, False, True, 'wrasse'),
-    CatalogueSpecies('Ctenolabrus rupestris', 'Goldsinny wrasse', 'Bergnebb', 'BNB', False, 'Labridae',
+    CatalogueSpecies('Ctenolabrus rupestris', 'Goldsinny wrasse', 'Bergnebb', 'TBR', True, 'Labridae',
+                     False, False, True, 'wrasse'),
+    CatalogueSpecies('Centrolabrus exoletus', 'Rock cook', 'Gressgylt', 'ENX', True, 'Labridae',
                      False, False, True, 'wrasse'),
 )
 

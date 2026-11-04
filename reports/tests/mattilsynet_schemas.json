@@ -1,0 +1,1580 @@
+{
+ "_source": "Mattilsynet innrapportering-api OpenAPI, https://innrapportering-api.fisk.mattilsynet.io/q/openapi?format=json, version de3580a, read 2026-11-03; licence NLOD 2.0 (https://data.norge.no/nlod/no/2.0). The schemas the reports exports are checked against.",
+ "schemas": {
+  "ArtDto": {
+   "description": "Hvor mange rensefisk av en gitt art som er satt ut i eller tatt ut av produksjonsenheten.",
+   "properties": {
+    "artskode": {
+     "description": "Gyldig artskode for fisken. Vi forventer kode i store bokstaver etter FAO-standarden. Artskodeverket kan hentes fra [www.fao.org](https://www.fao.org/fishery/en/collection/asfis/en). / Valid species code for the fish. We expect an uppercase code following the FAO standard. The species code list can be retrieved from [www.fao.org](https://www.fao.org/fishery/en/collection/asfis/en).",
+     "examples": [
+      "USB"
+     ],
+     "pattern": "[A-Z]{3}",
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "beholdningVedForrigeMånedsslutt": {
+     "description": "Beholdningen ved slutten av <b>måneden før</b> måneden denne rapporten gjelder for. Oppgi antall fisk av valgt art og opprinnelse i produksjonsenheten. / The stock at the end of the <b>month before</b> the month this report applies to. Provide the number of fish of the selected species and origin in the production unit.",
+     "examples": [
+      500
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "opprinnelse": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/RensefiskOpprinnelse"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Om fisken i produksjonsenheten er villfanget eller oppdrettet. Dersom fisken i anlegget kommer fra både oppdrett og fiske, kan man bruke <code>VILLFANGET_OG_OPPDRETTET</code>. / Whether the fish in the production unit is wild-caught or farmed. If the fish at the facility comes from both farming and fishing, you can use <code>VILLFANGET_OG_OPPDRETTET</code>.",
+     "examples": [
+      "VILLFANGET"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "utsett": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/UtsettDto"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Utsett gjort for denne fiskearten i løpet av måneden. / Stocking done for this fish species during the month.",
+     "type": "object"
+    },
+    "uttak": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/UttakDto"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Uttak gjort for denne fiskearten i løpet av måneden. / Removals done for this fish species during the month.",
+     "type": "object"
+    }
+   },
+   "required": [
+    "artskode",
+    "opprinnelse",
+    "beholdningVedForrigeMånedsslutt",
+    "utsett",
+    "uttak"
+   ],
+   "type": "object"
+  },
+  "FoelsomhetsundersoekelseDto": {
+   "properties": {
+    "annenResistens": {
+     "description": "Annen resistens / Other resistance",
+     "examples": [
+      "Annen resistens beskrivelse dersom resistens er satt til ANNEN_RESISTENS"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "laboratorium": {
+     "description": "Navn på laboratorium / Name of the laboratory",
+     "examples": [
+      "FiskLab AS"
+     ],
+     "pattern": "\\S",
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "resistens": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/ResistensType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Type resistens / Type of resistance",
+     "examples": [
+      "CYPERMETHRIN"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "testresultat": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/FoelsomhetsundersoekelseTestresultatType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Testresultat / Test result",
+     "examples": [
+      "FØLSOM"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    },
+    "utførtDato": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/Instant"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Dato for utført undersøkelse / Date the examination was performed",
+     "examples": [
+      "2025-08-15T10:00:00Z"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "utførtDato",
+    "laboratorium",
+    "resistens",
+    "testresultat",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "FoelsomhetsundersoekelseTestresultatType": {
+   "enum": [
+    "FØLSOM",
+    "NEDSATT_FØLSOMHET",
+    "RESISTENS"
+   ],
+   "type": "string"
+  },
+  "IkkeMedikamentellBehandlingDto": {
+   "properties": {
+    "antallMerder": {
+     "description": "Antall merder behandlet / Number of fish cages treated",
+     "examples": [
+      2
+     ],
+     "exclusiveMinimum": 0,
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "beskrivelse": {
+     "description": "Beskrivelse skal kun være satt dersom type er 'ANNEN_BEHANDLING' / 'Beskrivelse' or 'Description' should only be set if type is 'ANNEN_BEHANDLING'",
+     "examples": [
+      "Beskrivelse skal kun være satt dersom type er 'ANNEN_BEHANDLING'"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "gjennomførtFørTelling": {
+     "description": "Om behandlingen er gjennomført før telling / Whether the treatment was performed before counting",
+     "examples": [
+      true
+     ],
+     "type": "boolean"
+    },
+    "heleLokaliteten": {
+     "description": "Om behandlingen gjelder hele lokaliteten / Whether the treatment applies to the entire site",
+     "examples": [
+      false
+     ],
+     "type": "boolean"
+    },
+    "type": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/IkkeMedikamentellBehandlingsType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Type ikke-medikamentell behandling / Type of non-medicinal treatment",
+     "examples": [
+      "TERMISK_BEHANDLING"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    }
+   },
+   "required": [
+    "type",
+    "gjennomførtFørTelling",
+    "heleLokaliteten",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "IkkeMedikamentellBehandlingsType": {
+   "enum": [
+    "TERMISK_BEHANDLING",
+    "MEKANISK_BEHANDLING",
+    "FERSKVANNSBEHANDLING",
+    "ANNEN_BEHANDLING"
+   ],
+   "type": "string"
+  },
+  "Instant": {
+   "examples": [
+    "2022-03-10T16:15:50Z"
+   ],
+   "format": "date-time",
+   "type": "string"
+  },
+  "KombinasjonsbehandlingDto": {
+   "properties": {
+    "ikkeMedikamentelleBehandlinger": {
+     "items": {
+      "$ref": "#/components/schemas/IkkeMedikamentellBehandlingDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "medikamentelleBehandlinger": {
+     "items": {
+      "$ref": "#/components/schemas/MedikamentellBehandlingDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    }
+   },
+   "required": [
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "KontaktpersonDto": {
+   "description": "Kontaktperson som kan svare på spørsmål om rapporteringen. / Contact person who can answer questions about the report.",
+   "properties": {
+    "epost": {
+     "description": "E-postadresse til kontaktperson. / Email address of the contact person.",
+     "examples": [
+      "kontakt@test.no"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "navn": {
+     "description": "Navn på kontaktperson. / Name of the contact person.",
+     "examples": [
+      "Kontakt Kontaktesen"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "telefonnummer": {
+     "description": "Telefonnummer til kontaktperson, gjerne med landskode. / Phone number of the contact person, preferably with country code.",
+     "examples": [
+      "+4798989898"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "navn",
+    "epost",
+    "telefonnummer"
+   ],
+   "type": "object"
+  },
+  "LakselusrapporteringDto": {
+   "properties": {
+    "følsomhetsundersøkelser": {
+     "items": {
+      "$ref": "#/components/schemas/FoelsomhetsundersoekelseDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "ikkeMedikamentelleBehandlinger": {
+     "items": {
+      "$ref": "#/components/schemas/IkkeMedikamentellBehandlingDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "klientReferanse": {
+     "description": "Referanse for rapporten fra klienten som sender inn rapporten. Denne referansen muliggjør sporbarhet på tvers av systemer. Må være unik for hver rapportering. / Reference for the report from the client submitting it. This reference enables traceability across systems. Must be unique for each report.",
+     "examples": [
+      "230c202b-12b5-4db3-95bb-6a5f8182eda7"
+     ],
+     "type": "string"
+    },
+    "kombinasjonsbehandlinger": {
+     "items": {
+      "$ref": "#/components/schemas/KombinasjonsbehandlingDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "kontaktperson": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/KontaktpersonDto"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "lokalitetsnummer": {
+     "description": "Lokalitetsnummer / Site number",
+     "examples": [
+      45145
+     ],
+     "format": "int32",
+     "maximum": 9223372036854775807,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "lusetelling": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/LusetellingDto"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "medikamentelleBehandlinger": {
+     "items": {
+      "$ref": "#/components/schemas/MedikamentellBehandlingDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "organisasjonsnummer": {
+     "description": "Organisasjonsnummer / Organization number",
+     "examples": [
+      "985399077"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "rapporteringsuke": {
+     "description": "Rapporteringsuke / Reporting week",
+     "examples": [
+      33
+     ],
+     "format": "int32",
+     "maximum": 9223372036854775807,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "rapporteringsår": {
+     "description": "Rapporteringsår / Reporting year",
+     "examples": [
+      2025
+     ],
+     "exclusiveMinimum": 0,
+     "format": "int32",
+     "type": "integer"
+    },
+    "resistensMistanker": {
+     "items": {
+      "$ref": "#/components/schemas/MistankeOmResistensDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "sjøtemperatur": {
+     "description": "Sjøtemperatur / Sea temperature",
+     "examples": [
+      8.5
+     ],
+     "format": "double",
+     "type": "number"
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    }
+   },
+   "required": [
+    "klientReferanse",
+    "rapporteringsår",
+    "rapporteringsuke",
+    "organisasjonsnummer",
+    "lokalitetsnummer",
+    "kontaktperson",
+    "sjøtemperatur",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "LusetellingDto": {
+   "properties": {
+    "bevegeligeLus": {
+     "description": "Antall bevegelige lus / Number of mobile lice",
+     "examples": [
+      1.3
+     ],
+     "format": "double",
+     "minimum": 0,
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "fastsittendeLus": {
+     "description": "Antall fastsittende lus / Number of sessile lice",
+     "examples": [
+      1.3
+     ],
+     "format": "double",
+     "minimum": 0,
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    },
+    "voksneHunnlus": {
+     "description": "Antall voksne hunnlus / Number of adult female lice",
+     "examples": [
+      1.2
+     ],
+     "format": "double",
+     "minimum": 0,
+     "type": [
+      "number",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "voksneHunnlus",
+    "bevegeligeLus",
+    "fastsittendeLus",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "MedikamentellBehandlingDto": {
+   "properties": {
+    "antallMerder": {
+     "description": "Antall merder behandlet, dersom heleLokaliteten er 'false' / Number of fish cages treated, if heleLokaliteten is 'false'",
+     "examples": [
+      3
+     ],
+     "exclusiveMinimum": 0,
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "beskrivelse": {
+     "description": "Beskrivelse skal kun være satt dersom type er 'ANNEN_BEHANDLING' / Description should only be set if type is 'ANNEN_BEHANDLING'",
+     "examples": [
+      "Beskrivelse skal kun være satt dersom type er 'ANNEN_BEHANDLING'"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "gjennomførtFørTelling": {
+     "description": "Er det gjennomført medikamentell behandling før telling / Whether medicinal treatment was performed before counting",
+     "examples": [
+      false
+     ],
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "heleLokaliteten": {
+     "description": "Er hele lokaliteten påvirket / Whether the entire site is affected",
+     "examples": [
+      false
+     ],
+     "type": [
+      "boolean",
+      "null"
+     ]
+    },
+    "type": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/MedikamentellBehandlingsType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Medikamentell behandlingstype / Medicinal treatment type",
+     "examples": [
+      "BADEBEHANDLING"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    },
+    "virkestoff": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/VirkestoffDto"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    }
+   },
+   "required": [
+    "type",
+    "gjennomførtFørTelling",
+    "heleLokaliteten",
+    "virkestoff",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "MedikamentellBehandlingsType": {
+   "enum": [
+    "FORBEHANDLING",
+    "BADEBEHANDLING",
+    "ANNEN_BEHANDLING"
+   ],
+   "type": "string"
+  },
+  "MengdeDto": {
+   "properties": {
+    "enhet": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/MengdeMaaleenhetType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Måle enhets type / Unit of measurement type",
+     "examples": [
+      "GRAM"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    },
+    "verdi": {
+     "description": "Mengde verdi / Quantity",
+     "examples": [
+      2.2
+     ],
+     "format": "double",
+     "minimum": 0,
+     "type": "number"
+    }
+   },
+   "required": [
+    "verdi",
+    "enhet",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "MengdeMaaleenhetType": {
+   "enum": [
+    "GRAM",
+    "KILO",
+    "TONN",
+    "LITER"
+   ],
+   "type": "string"
+  },
+  "MistankeOmResistensDto": {
+   "properties": {
+    "annenResistens": {
+     "description": "Beskrivelse dersom resistens type er ANNEN_RESISTENS / Description if resistance type is ANNEN_RESISTENS",
+     "examples": [
+      "Skal kun være satt dersom type er 'ANNEN_RESISTENS'"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "annenÅrsak": {
+     "description": "Beskrivelse dersom reistensårsak er ANNEN_ÅRSAK / Description if resistance cause is ANNEN_ÅRSAK",
+     "examples": [
+      "Skal kun være satt dersom type er 'ANNEN_ÅRSAK'"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "resistens": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/ResistensType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Resistenstype / Resistance type",
+     "examples": [
+      "DELTAMETHRIN"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    },
+    "årsak": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/ResistensAarsakType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Årsak til resistens / Cause of resistance",
+     "examples": [
+      "NEDSATT_BEHANDLINGSEFFEKT"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "resistens",
+    "årsak",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "PlanlagtLokalitetDto": {
+   "description": "En lokalitet det planlegges slakt for. Vi trenger bare lokalitetene som har planlagt slakt.",
+   "properties": {
+    "lokalitetsnummer": {
+     "description": "Lokalitetsnummeret til anlegget det planlegges å slakte fisk fra. Må finnes i Akvakulturregisteret. / The site number of the facility whose fish is planned for slaughter. Must exist in the Akvakulturregisteret.",
+     "examples": [
+      45145
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "organisasjonsnummer": {
+     "description": "Organisasjonsnummeret til oppdretteren det planlegges å slakte fisk fra. Må være nøyaktig 9 sifre. / Organization number of the farmer whose fish is planned for slaughter. Must be exactly 9 digits.",
+     "examples": [
+      "969159570"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "ukeplanPerArt": {
+     "description": "Ukeplaner for hver art som skal slaktes med vekt per dag spesifisert. / Weekly plans for each species to be slaughtered, with weight per day specified.",
+     "items": {
+      "$ref": "#/components/schemas/UkeplanPerArt"
+     },
+     "type": "array"
+    }
+   },
+   "required": [
+    "organisasjonsnummer",
+    "lokalitetsnummer",
+    "ukeplanPerArt"
+   ],
+   "type": "object"
+  },
+  "PlanlagtSlaktRapportDto": {
+   "description": "Ukentlig rapportering av planlagt slakt av oppdrettsfisk. Rapporteres for uken som kommer.",
+   "properties": {
+    "godkjenningsnummer": {
+     "description": "Godkjenningsnummer til slakteriet. / Approval number of the slaughterhouse.",
+     "examples": [
+      "H1245"
+     ],
+     "pattern": "[a-zA-Z\\d]{1,6}",
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "klientReferanse": {
+     "description": "Referanse for rapporten fra klienten som sender inn rapporten. Denne referansen muliggjør sporbarhet på tvers av systemer. Må være unik for hver rapportering. / Reference for the report from the client submitting it. This reference enables traceability across systems. Must be unique for each report.",
+     "examples": [
+      "230c202b-12b5-4db3-95bb-6a5f8182eda7"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "kontaktperson": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/KontaktpersonDto"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Kontaktperson som kan svare på spørsmål om rapporteringen. / Contact person who can answer questions about the report.",
+     "type": [
+      "object",
+      "null"
+     ]
+    },
+    "organisasjonsnummer": {
+     "description": "Organisasjonsnummeret til selskapet som rapporter planlagt slakt. Må være nøyaktig 9 sifre. / Organization number of the company reporting planned slaughter. Must be exactly 9 digits.",
+     "examples": [
+      "985399077"
+     ],
+     "pattern": "\\d{9}",
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "planlagteLokaliteter": {
+     "description": "Lokalitetene det planlegges slakt for. Vi trenger bare lokalitetene som har planlagt slakt. / The sites slaughter is planned for. We only need the sites that have planned slaughter.",
+     "items": {
+      "$ref": "#/components/schemas/PlanlagtLokalitetDto"
+     },
+     "type": [
+      "array",
+      "null"
+     ]
+    },
+    "uke": {
+     "description": "Uken det planlegges slakt for. / The week the slaughter is planned for.",
+     "examples": [
+      5
+     ],
+     "format": "int32",
+     "maximum": 53,
+     "minimum": 1,
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "år": {
+     "description": "Året det planlegges slakt for. / The year the slaughter is planned for.",
+     "examples": [
+      2025
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "klientReferanse",
+    "kontaktperson",
+    "uke",
+    "år",
+    "organisasjonsnummer",
+    "godkjenningsnummer",
+    "planlagteLokaliteter"
+   ],
+   "type": "object"
+  },
+  "ProduksjonsenhetDto": {
+   "description": "Produksjonsenheter knyttet til lokaliteten som rensefisken er satt ut i eller tatt ut av. Vi trenger kun produksjonsenhetene som hadde rensefisk i løpet av måneden.",
+   "properties": {
+    "arter": {
+     "description": "Hvor mange rensefisk av hver art som er satt ut i eller tatt ut av produksjonsenheten. / How many cleaner fish of each species were stocked in or removed from the production unit.",
+     "items": {
+      "$ref": "#/components/schemas/ArtDto"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "merdId": {
+     "description": "Unik ID som identifiserer produksjonsenheten (merden). Merd-ID skal stemme overens med driftsjournalen. / Unique ID identifying the production unit (fish cage). The cage ID must match the operations log.",
+     "examples": [
+      "merd-1"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "merdId",
+    "arter"
+   ],
+   "type": "object"
+  },
+  "ProduksjonsenhetDto1": {
+   "description": "Produksjonsenhet (kar) på lokaliteten. Vi trenger kun produksjonsenhetene som hadde settefisk i løpet av måneden.",
+   "properties": {
+    "antallAvlivet": {
+     "description": "Fisk som har blitt avlivet og/eller destruert i løpet av måneden i valgt produksjonsenhet. / Fish that have been culled and/or destroyed during the month in the selected production unit.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "antallFlyttetEksternt": {
+     "description": "Levende fisk fra produksjonsenheten som er flyttet ut av lokaliteten i løpet av måneden. Intern flytting mellom kar skal ikke rapporteres. / Live fish from the production unit that have been moved out of the site during the month. Internal movement between tanks should not be reported.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "antallSelvdød": {
+     "description": "Fisk som har dødd i løpet av måneden i valgt produksjonsenhet. / Fish that have died during the month in the selected production unit.",
+     "examples": [
+      3540
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "artskode": {
+     "description": "Gyldig artskode for fisken. Vi forventer kode i store bokstaver etter FAO-standarden. Artskodeverket kan hentes fra [www.fao.org](https://www.fao.org/fishery/en/collection/asfis/en). / Valid species code for the fish. We expect an uppercase code following the FAO standard. The species code list can be retrieved from [www.fao.org](https://www.fao.org/fishery/en/collection/asfis/en).",
+     "examples": [
+      "SAL"
+     ],
+     "pattern": "[A-Z]{3}",
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "beholdningVedMånedsslutt": {
+     "description": "Antall fisk i valgt produksjonsenhet ved utgangen av måneden det rapporteres for, eller når produksjonsenheten ble tømt.. / Number of fish in the selected production unit at the end of the reported month, or when the production unit was emptied.",
+     "examples": [
+      120000
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "karId": {
+     "description": "Unik ID som identifiserer produksjonsenheten (karet). Kar-ID skal stemme overens med driftsjournalen. / Unique ID identifying the production unit (tank). The tank ID must match the operations log.",
+     "examples": [
+      "kar-1"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "snittvektGram": {
+     "description": "Snittvekt på fisken i valgt produksjonsenhet, oppgitt i gram. / Average weight of the fish in the selected production unit, given in grams.",
+     "examples": [
+      0.5
+     ],
+     "exclusiveMinimum": 0,
+     "format": "double",
+     "type": [
+      "number",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "karId",
+    "artskode",
+    "snittvektGram",
+    "beholdningVedMånedsslutt",
+    "antallAvlivet",
+    "antallSelvdød",
+    "antallFlyttetEksternt"
+   ],
+   "type": "object"
+  },
+  "RensefiskOpprinnelse": {
+   "enum": [
+    "VILLFANGET",
+    "OPPDRETTET",
+    "VILLFANGET_OG_OPPDRETTET"
+   ],
+   "type": "string"
+  },
+  "RensefiskrapporteringDto": {
+   "description": "Månedlig rapportering for bruk av rensefisk. Rapporten må sendes inn senest 7 dager etter måneden den gjelder for.",
+   "properties": {
+    "klientReferanse": {
+     "description": "Referanse for rapporten fra klienten som sender inn rapporten. Denne referansen muliggjør sporbarhet på tvers av systemer. Må være unik for hver rapportering. / Reference for the report from the client submitting it. This reference enables traceability across systems. Must be unique for each report.",
+     "examples": [
+      "230c202b-12b5-4db3-95bb-6a5f8182eda7"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "kontaktperson": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/KontaktpersonDto"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Kontaktperson som kan svare på spørsmål om rapporteringen. / Contact person who can answer questions about the report.",
+     "type": [
+      "object",
+      "null"
+     ]
+    },
+    "lokalitetsnummer": {
+     "description": "Lokalitetsnummeret til anlegget. Må finnes i Akvakulturregisteret / The site number of the facility. Must exist in the Aquaculture Register",
+     "examples": [
+      45145
+     ],
+     "format": "int32",
+     "maximum": 99999,
+     "minimum": 10000,
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "organisasjonsnummer": {
+     "description": "Organisasjonsnummeret til selskapet som eier fisken. Må være nøyaktig 9 sifre. / Organization number of the company that owns the fish. Must be exactly 9 digits.",
+     "examples": [
+      "985399077"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "produksjonsenheter": {
+     "description": "Liste av produksjonsenheter som rensefisken er satt ut i eller tatt ut av. / List of production units the cleaner fish was stocked in or removed from.",
+     "items": {
+      "$ref": "#/components/schemas/ProduksjonsenhetDto"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "rapporteringsmåned": {
+     "description": "Måneden det rapporteres for. / The month being reported for.",
+     "examples": [
+      5
+     ],
+     "format": "int32",
+     "maximum": 12,
+     "minimum": 1,
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "rapporteringsår": {
+     "description": "Året det rapporteres for. / The year being reported for.",
+     "examples": [
+      2025
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "tørrforKg": {
+     "description": "Total mengde tørrfôr for måneden i kg. / Total amount of dry feed for the month in kg.",
+     "examples": [
+      40
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "våtforKg": {
+     "description": "Total mengde våtfôr for måneden i kg. / Total amount of wet feed for the month in kg.",
+     "examples": [
+      100
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "klientReferanse",
+    "kontaktperson",
+    "organisasjonsnummer",
+    "rapporteringsmåned",
+    "rapporteringsår",
+    "lokalitetsnummer",
+    "tørrforKg",
+    "våtforKg",
+    "produksjonsenheter"
+   ],
+   "type": "object"
+  },
+  "ResistensAarsakType": {
+   "enum": [
+    "BIOESSAY",
+    "NEDSATT_BEHANDLINGSEFFEKT",
+    "SITUASJONEN_I_OMRÅDET",
+    "ANNEN_ÅRSAK"
+   ],
+   "type": "string"
+  },
+  "ResistensType": {
+   "enum": [
+    "AZAMETHIPHOS",
+    "CYPERMETHRIN",
+    "DELTAMETHRIN",
+    "IMIDAKLOPRID",
+    "HYDROGENPEROKSID",
+    "DIFLUBENZURON",
+    "EMAMECTIN_BENZOAT",
+    "TEFLUBENZURON",
+    "FERSKVANNSBEHANDLING",
+    "ANNEN_RESISTENS"
+   ],
+   "type": "string"
+  },
+  "SettefiskrapportDto": {
+   "description": "Månedlig rapportering for bruk av settefisk. Rapporten må sendes inn senest 7 dager etter måneden den gjelder for.",
+   "properties": {
+    "klientReferanse": {
+     "description": "Referanse for rapporten fra klienten som sender inn rapporten. Denne referansen muliggjør sporbarhet på tvers av systemer. Må være unik for hver rapportering. / Reference for the report from the client submitting it. This reference enables traceability across systems. Must be unique for each report.",
+     "examples": [
+      "230c202b-12b5-4db3-95bb-6a5f8182eda7"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "kontaktperson": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/KontaktpersonDto"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Kontaktperson som kan svare på spørsmål om rapporteringen. / Contact person who can answer questions about the report.",
+     "type": [
+      "object",
+      "null"
+     ]
+    },
+    "lokalitetsnummer": {
+     "description": "Lokalitetsnummeret til anlegget. Må finnes i Akvakulturregisteret. / The site number of the facility. Must exist in the Aquaculture Register.",
+     "examples": [
+      45145
+     ],
+     "format": "int32",
+     "maximum": 99999,
+     "minimum": 10000,
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "organisasjonsnummer": {
+     "description": "Organisasjonsnummeret til selskapet som eier fisken. Må være nøyaktig 9 sifre. / Organization number of the company that owns the fish. Must be exactly 9 digits.",
+     "examples": [
+      "985399077"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "produksjonsenheter": {
+     "description": "Produksjonsenheter (kar) på lokaliteten. Vi trenger kun produksjonsenhetene som hadde settefisk i løpet av måneden. / Production units (tanks) at the site. We only need the production units that held smolt during the month.",
+     "items": {
+      "$ref": "#/components/schemas/ProduksjonsenhetDto1"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "rapporteringsmåned": {
+     "description": "Måneden det rapporteres for. / The month being reported for.",
+     "examples": [
+      5
+     ],
+     "format": "int32",
+     "maximum": 12,
+     "minimum": 1,
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "rapporteringsår": {
+     "description": "Året det rapporteres for. / The year being reported for.",
+     "examples": [
+      2025
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "klientReferanse",
+    "kontaktperson",
+    "organisasjonsnummer",
+    "rapporteringsmåned",
+    "rapporteringsår",
+    "lokalitetsnummer",
+    "produksjonsenheter"
+   ],
+   "type": "object"
+  },
+  "StyrkeDto": {
+   "properties": {
+    "enhet": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/StyrkeMaaleenhetType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Måle enhet for styrke / Unit of measurement for strength",
+     "examples": [
+      "MILLIGRAM_PER_GRAM"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    },
+    "verdi": {
+     "description": "Styrke verdi / Strength value of active ingredient",
+     "examples": [
+      3.4
+     ],
+     "exclusiveMinimum": 0,
+     "format": "double",
+     "type": [
+      "number",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "verdi",
+    "enhet",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "StyrkeMaaleenhetType": {
+   "enum": [
+    "MILLIGRAM_PER_GRAM",
+    "MILLIGRAM_PER_MILLILITER",
+    "GRAM_PER_KILO",
+    "MILLIGRAM_PER_KILO",
+    "PROSENT"
+   ],
+   "type": "string"
+  },
+  "UkeplanPerArt": {
+   "description": "Ukeplan for en gitt art som skal slaktes med vekt per dag spesifisert.",
+   "properties": {
+    "artskode": {
+     "description": "En gyldig FAO-artskode. Artskodeverket kan hentes fra <a target=\"_blank\" href=\"https://www.fao.org/fishery/en/collection/asfis/en\">www.fao.org</a>.</p> / A valid FAO species code. The species code list can be retrieved from <a target=\"_blank\" href=\"https://www.fao.org/fishery/en/collection/asfis/en\">www.fao.org</a>.",
+     "examples": [
+      "SAL"
+     ],
+     "type": "string"
+    },
+    "fredagKg": {
+     "description": "Antall kg planlagt slaktet på fredag av denne arten / Kilograms of this species planned for slaughter on Friday",
+     "examples": [
+      "null"
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "lørdagKg": {
+     "description": "Antall kg planlagt slaktet på lørdag av denne arten / Kilograms of this species planned for slaughter on Saturday",
+     "examples": [
+      "null"
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "mandagKg": {
+     "description": "Antall kg planlagt slaktet på mandag av denne arten / Kilograms of this species planned for slaughter on Monday",
+     "examples": [
+      232000
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "onsdagKg": {
+     "description": "Antall kg planlagt slaktet på onsdag av denne arten / Kilograms of this species planned for slaughter on Wednesday",
+     "examples": [
+      "null"
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "søndagKg": {
+     "description": "Antall kg planlagt slaktet på søndag av denne arten / Kilograms of this species planned for slaughter on Sunday",
+     "examples": [
+      "null"
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "tirsdagKg": {
+     "description": "Antall kg planlagt slaktet på tirsdag av denne arten / Kilograms of this species planned for slaughter on Tuesday",
+     "examples": [
+      "null"
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "torsdagKg": {
+     "description": "Antall kg planlagt slaktet på torsdag av denne arten / Kilograms of this species planned for slaughter on Thursday",
+     "examples": [
+      100000
+     ],
+     "format": "int32",
+     "type": [
+      "integer",
+      "null"
+     ]
+    }
+   },
+   "required": [
+    "artskode"
+   ],
+   "type": "object"
+  },
+  "UtsettDto": {
+   "description": "Utsett gjort for en gitt fiskeart i løpet av måneden.",
+   "properties": {
+    "antallFlyttetInn": {
+     "description": "Antall fisk flyttet inn i produksjonsenheten fra en annen produksjonsenhet. / Number of fish moved into the production unit from another production unit.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallNy": {
+     "description": "Antall ny fisk satt ut i produksjonsenheten. / Number of new fish stocked in the production unit.",
+     "examples": [
+      10000
+     ],
+     "format": "int32",
+     "type": "integer"
+    }
+   },
+   "required": [
+    "antallFlyttetInn",
+    "antallNy"
+   ],
+   "type": "object"
+  },
+  "UttakDto": {
+   "description": "Uttak gjort for en gitt fiskeart i løpet av måneden.",
+   "properties": {
+    "antallAvlivetAvmagret": {
+     "description": "Antall svekket fisk som ble avlivet på grunn av lavere kondisjonsfaktor enn de hadde ved utsett. For eksempel observert tynnere kropp, innsynkning i buk, eller andre artsspesifikke tegn til sultet fisk. / Number of weakened fish that were culled due to a lower condition factor than they had at stocking. For example an observed thinner body, sunken belly, or other species-specific signs of starved fish.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallAvlivetForeståendeHåndteringAvLaksen": {
+     "description": "Antall friske individer som ble avlivet på grunn av nært forestående håndtering av laksen. For eksempel avlusing, sortering og annen behandling som ikke er tilpasset rensefiskarten. / Number of healthy individuals that were culled due to imminent handling of the salmon. For example delousing, sorting and other treatment not suited to the cleaner fish species.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallAvlivetForeståendeUgunstigLevemiljø": {
+     "description": "Antall friske individer som ble avlivet på grunn av nært forestående ugunstig levemiljø. For eksempel endring i sjøtemperatur ved årstidsskifte, sterk vind og strøm, skadelige organismer eller stoffer i vannmassene, eller liknende. / Number of healthy individuals that were culled due to an imminent unfavourable living environment. For example a change in sea temperature at the change of seasons, strong wind and current, harmful organisms or substances in the water, or similar.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallAvlivetSkader": {
+     "description": "Antall svekket fisk som ble avlivet på grunn av sår eller skader fra andre årsaker enn sykdom. For eksempel mekaniske påvirkninger som har gitt sår, blødninger, trykk-/gnagskader, skjelltap, forstørret eller punktert svømmeblære, deformiteter (skade eller feilernæring), predatorskade, manetangrep, eller liknende. / Number of weakened fish that were culled due to wounds or injuries from causes other than disease. For example mechanical impacts causing wounds, bleeding, pressure/abrasion injuries, scale loss, enlarged or ruptured swim bladder, deformities (injury or malnutrition), predator damage, jellyfish attacks, or similar.",
+     "examples": [
+      410
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallAvlivetSkalIkkeBrukes": {
+     "description": "Antall friske individer som ble avlivet fordi den ikke skal brukes mer. For eksempel i forbindelse med at produksjonssyklusen for laksen skal avsluttes, individer ikke egner seg som lusespisere (for eksempel blitt for store), eller liknende. / Number of healthy individuals that were culled because they are no longer to be used. For example in connection with the salmon production cycle being ended, individuals not suited as lice eaters (for example having grown too large), or similar.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallAvlivetSykdom": {
+     "description": "Antall svekket fisk som ble tatt ut og avlivet på grunn av ytre/indre/adferdsmessige tegn på sykdom. For eksempel sår av infeksiøs opprinnelse, blødninger i hud, gjeller og øye, katarakt, finneråte, deformiteter og forstørret/punktert svømmeblære som følge av sykdom, svimer av uklar årsak, eller liknende. / Number of weakened fish that were removed and culled due to external/internal/behavioural signs of disease. For example wounds of infectious origin, bleeding in skin, gills and eye, cataracts, fin rot, deformities and enlarged/ruptured swim bladder due to disease, disoriented swimming of unclear cause, or similar.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallFlyttetUt": {
+     "description": "Antall levende fisk som er flyttet og skal holdes videre i en annen produksjonsenhet. For eksempel for overvintring, til gjenbruk i ny produksjonsenhet, eller liknende. / Number of live fish that have been moved and will be kept further in another production unit. For example for overwintering, for reuse in a new production unit, or similar.",
+     "examples": [
+      0
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallKanIkkeGjøresRedeFor": {
+     "description": "Antall fisk som ikke kan gjøres rede for. Dette kan være fisk som har rømt, forsvunnet, eller om det er andre uforklarlige årsaker til tap. / Number of fish that cannot be accounted for. This may be fish that have escaped, disappeared, or where there are other unexplained causes of loss.",
+     "examples": [
+      205
+     ],
+     "format": "int32",
+     "type": "integer"
+    },
+    "antallSelvdød": {
+     "description": "Antall døde fisk som ble hentet ut i løpet av måneden. For eksempel i dødfiskhåv, dødfiskpumpe, i skjul som skal vaskes, eller liknende. All selvdød kan summeres opp i dette feltet. / Number of dead fish that were removed during the month. For example in a dead-fish net, dead-fish pump, in shelters to be cleaned, or similar. All natural mortality can be summed up in this field.",
+     "examples": [
+      1593
+     ],
+     "format": "int32",
+     "type": "integer"
+    }
+   },
+   "required": [
+    "antallAvlivetSykdom",
+    "antallAvlivetSkader",
+    "antallAvlivetAvmagret",
+    "antallAvlivetForeståendeHåndteringAvLaksen",
+    "antallAvlivetForeståendeUgunstigLevemiljø",
+    "antallAvlivetSkalIkkeBrukes",
+    "antallSelvdød",
+    "antallFlyttetUt",
+    "antallKanIkkeGjøresRedeFor"
+   ],
+   "type": "object"
+  },
+  "VirkestoffDto": {
+   "properties": {
+    "annetVirkestoff": {
+     "description": "Beskrivelse hvis virkestofftype er ANNET_VIRKESTOFF / Description if the active ingredient type is ANNET_VIRKESTOFF",
+     "examples": [
+      "Hva det andre virkestoffet er hvis virkestofftype er ANNET_VIRKESTOFF"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "mengde": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/MengdeDto"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "styrke": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/StyrkeDto"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "type": {
+     "anyOf": [
+      {
+       "$ref": "#/components/schemas/VirkestoffType"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Virkestoff type / Active ingredient type",
+     "examples": [
+      "IMIDAKLOPRID"
+     ],
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "unknownProperties": {
+     "additionalProperties": {},
+     "type": "object"
+    }
+   },
+   "required": [
+    "type",
+    "styrke",
+    "mengde",
+    "unknownProperties"
+   ],
+   "type": "object"
+  },
+  "VirkestoffType": {
+   "enum": [
+    "AZAMETHIPHOS",
+    "CYPERMETHRIN",
+    "DELTAMETHRIN",
+    "IMIDAKLOPRID",
+    "HYDROGENPEROKSID",
+    "DIFLUBENZURON",
+    "EMAMECTIN_BENZOAT",
+    "TEFLUBENZURON",
+    "ANNET_VIRKESTOFF"
+   ],
+   "type": "string"
+  }
+ }
+}

@@ -7,10 +7,11 @@ Feed is never written into the stock: the fold's grams are the book, measured we
 walk only reads them (the source added fed kg / expected FCR to the biomass, so its FCR met the target
 by construction, FDR-19).
 
-- A feeding needs fish in its unit at the start of its day (after every operation dated before it) or
+- A feeding is for the unit's production fish or for the cleaner fish beside them (its target, D-1): it
+  needs fish of its target in its unit at the start of its day (after every operation dated before it) or
   at its end (after every operation dated that day); one without is an orphan.
-- Its feed goes to the batches in the unit at the start of the day, split by their book biomass then;
-  when the unit held no fish at the start (stocked that day), by the biomass at the end of the day.
+- Its feed goes to the batches of its target in the unit at the start of the day, split by their book biomass
+  then; when the unit held none at the start (stocked that day), by the biomass at the end of the day.
   Decimals at full precision, so the parts of a record add up to it; only the page rounds.
 - A share's measured points in a stay (the time a batch is in a unit without a break): its stocking, fish
   graded into it while it had none (they carry their measured weight), a weighing (a grading's
@@ -25,6 +26,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
+from farm.models.feeding import FeedTarget
 from farm.models.stock import MovementKind, OperationKind
 from farm.stock.fold import fold
 
@@ -35,13 +37,14 @@ LOST = (MovementKind.MORTALITY, MovementKind.CULL, MovementKind.ADJUSTMENT)
 @dataclass(frozen=True)
 class Feeding:
     """A feeding record as the walk needs it; `meals` and `order` (its place among the day's records: the time,
-    then the order of entry) for the projected growth."""
+    then the order of entry) for the projected growth; `target`, the fish it is for (D-1)."""
     id: object
     unit_id: object
     date: date
     amount_kg: Decimal
     meals: int = None
     order: tuple = ()
+    target: str = FeedTarget.PRODUCTION
 
 
 class PointKind:
@@ -108,11 +111,29 @@ class Window:
         return ratio(self.feed_kg, self.gain_kg)
 
 
+def of_target(grams, cleaner, target):
+    """{batch id: grams} of the batches of `target` among `grams`: the cleaner fish (batch ids in `cleaner`), or the
+    production fish."""
+    wanted = target == FeedTarget.CLEANER_FISH
+    return {batch_id: value for batch_id, value in grams.items() if (batch_id in cleaner) == wanted}
+
+
 @dataclass(frozen=True)
 class Day:
-    """A unit on a day: the grams of each batch with fish at the start of the day and at its end."""
+    """A unit on a day: the grams of each batch with fish at the start of the day and at its end; `cleaner`, the
+    batches of a cleaner-fish species among them. Its figures are of every batch; `of(target)` is the day of the
+    production fish or of the cleaner fish alone (a feeding's, the feed rate's, a sea-lice count's)."""
     start: dict
     end: dict
+    cleaner: frozenset = frozenset()
+
+    def of(self, target):
+        return Day(of_target(self.start, self.cleaner, target), of_target(self.end, self.cleaner, target),
+                   self.cleaner)
+
+    @property
+    def production(self):
+        return self.of(FeedTarget.PRODUCTION)
 
     @property
     def weights(self):
@@ -139,8 +160,9 @@ class Walk:
 
 
 class _Walker:
-    def __init__(self, feedings, days, observe, projector=None):
+    def __init__(self, feedings, days, observe, projector=None, cleaner=frozenset()):
         self.result = Walk()
+        self.cleaner = cleaner
         self.observe = observe
         self.projector = projector
         self.feedings = defaultdict(list)
@@ -164,31 +186,38 @@ class _Walker:
             day = self.order[self.started]
             for unit_id in self.wanted[day]:
                 self.start[(unit_id, day)] = present = _present(shares, unit_id)
-                if present:
-                    self._allocate(unit_id, day, present)
+                for feeding in self.feedings.get((unit_id, day), ()):
+                    self._allocate(feeding, day, of_target(present, self.cleaner, feeding.target))
             self.started += 1
         while self.ended < len(self.order) and (until is None or self.order[self.ended] < until):
             day = self.order[self.ended]
             for unit_id in self.wanted[day]:
                 start = self.start.pop((unit_id, day))
                 end = _present(shares, unit_id)
-                self.result.days[(unit_id, day)] = Day(start, end)
-                if not start and end:
-                    self._allocate(unit_id, day, end)
-                elif not start:
-                    self.result.orphans.extend(self.feedings.get((unit_id, day), ()))
+                self.result.days[(unit_id, day)] = Day(start, end, self.cleaner)
+                for feeding in self.feedings.get((unit_id, day), ()):
+                    if feeding.id in self.result.split:
+                        continue
+                    grams = of_target(end, self.cleaner, feeding.target)
+                    if grams:
+                        self._allocate(feeding, day, grams)
+                    else:
+                        self.result.orphans.append(feeding)
                 if self.projector is not None and end:
                     self.projector.day(unit_id, day, shares, self.feedings.get((unit_id, day), ()), self.result.split)
             self.ended += 1
 
-    def _allocate(self, unit_id, day, grams):
+    def _allocate(self, feeding, day, grams):
+        """Splits the feeding among `grams` (the batches of its target with fish then) by their book biomass; nothing
+        when there are none."""
+        if not grams:
+            return
         total = sum(grams.values(), ZERO)
-        for feeding in self.feedings.get((unit_id, day), ()):
-            parts = {batch_id: feeding.amount_kg * share / total for batch_id, share in grams.items()}
-            self.result.split[feeding.id] = parts
-            for batch_id, kilos in parts.items():
-                stay = self.result.stays[(unit_id, batch_id)][-1]
-                stay.feed[day] = stay.feed.get(day, ZERO) + kilos
+        parts = {batch_id: feeding.amount_kg * share / total for batch_id, share in grams.items()}
+        self.result.split[feeding.id] = parts
+        for batch_id, kilos in parts.items():
+            stay = self.result.stays[(feeding.unit_id, batch_id)][-1]
+            stay.feed[day] = stay.feed.get(day, ZERO) + kilos
 
     # ---- the fold's hooks ----------------------------------------------------------------------
     def before(self, op, shares):
@@ -240,12 +269,13 @@ def _present(shares, unit_id):
 
 
 def walk(lines, feedings=(), days=(), observe=None, projector=None):
-    """Folds `lines` (farm/stock/fold.py) and walks `feedings` (Feeding) along: their split, the stays
+    """Folds `lines` (farm/stock/fold.py) and walks `feedings` (Feeding) along: their split (each among the batches
+    of its target, the lines saying which batches are cleaner fish), the stays
     with their measured points and feed, the unit's book on each feeding day and on `days` ((unit id,
     day) pairs, e.g. the last week's for the feed rate), and the feedings without fish. `observe` is passed
     on to the fold. A `projector` (farm/feeding/projection.py) keeps the estimated weight along the same walk:
     it sees every stock line, every weighing point and the end of every day read. Raises the fold's StockError."""
-    walker = _Walker(feedings, days, observe, projector)
+    walker = _Walker(feedings, days, observe, projector, frozenset(line.batch_id for line in lines if line.cleaner))
     walker.result.shares = fold(lines, walker.after, before=walker.before, on_line=walker.line)
     walker.capture(walker.result.shares)
     return walker.result

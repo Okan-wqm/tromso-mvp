@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
+from farm.models.feeding import FeedTarget
 from farm.models.stock import MovementKind, OperationKind
 
 from .fold import PointKind, Window
@@ -121,6 +122,8 @@ class ShareDay:
     credited_kg: Decimal = ZERO
     meals: int = 0                # recorded meals counted toward the band's meals
     portions_kg: Decimal = ZERO   # what those meals count in the calculated ration
+    fed_since_kg: Decimal = ZERO  # the feed with an expected FCR since its measured point, its fish's part: 0 when the
+    #                               estimate is still the measured weight
 
     @property
     def biomass_kg(self):
@@ -166,23 +169,35 @@ class ShareDay:
 
 @dataclass
 class UnitDay:
-    """A unit on a day: its batches (ShareDay) and the feedings recorded."""
+    """A unit on a day: its batches (ShareDay) and the feedings recorded. Its totals (fed, meals, the ration) are
+    those of its production fish and their feedings: cleaner fish beside them (`cleaner`, their batch ids) have their
+    own lines and their own feedings (D-1), so a lumpfish batch without a feeding table leaves the salmon's ration
+    alone."""
     unit_id: object
     day: date
     shares: list
     feedings: list
+    cleaner: frozenset = frozenset()
+
+    @property
+    def production(self):
+        return [share for share in self.shares if share.batch_id not in self.cleaner]
+
+    @property
+    def production_feedings(self):
+        return [feeding for feeding in self.feedings if feeding.target == FeedTarget.PRODUCTION]
 
     @property
     def fed_kg(self):
-        return sum((feeding.amount_kg for feeding in self.feedings), ZERO)
+        return sum((feeding.amount_kg for feeding in self.production_feedings), ZERO)
 
     @property
     def meals_done(self):
         """The meals recorded, a record that does not say counting as one."""
-        return sum(feeding.meals or 1 for feeding in self.feedings)
+        return sum(feeding.meals or 1 for feeding in self.production_feedings)
 
     def _total(self, name):
-        values = [getattr(share, name) for share in self.shares]
+        values = [getattr(share, name) for share in self.production]
         if not values or any(value is None for value in values):
             return None
         return sum(values, ZERO)
@@ -202,7 +217,7 @@ class UnitDay:
 
     @property
     def next_meal_kg(self):
-        values = [share.next_meal_kg for share in self.shares if share.next_meal_kg is not None]
+        values = [share.next_meal_kg for share in self.production if share.next_meal_kg is not None]
         return sum(values, ZERO) if values and self.ration_kg is not None else None
 
     @property
@@ -242,6 +257,7 @@ def feed(track, fish, measured_g, last_weighed, day, parts, basis_of):
         track.feed_kg += part
         track.feed_per_fcr += part / basis.fcr
     result.grams = track.grams
+    result.fed_since_kg = track.feed_kg
     result.end_g = track.grams / fish
     result.end = basis_of(result.end_g)
     result.blind_days = len(track.blind_days)
@@ -262,12 +278,15 @@ class Projector:
         self.estimates = {}       # (unit id, batch id) -> (estimated average, Track) before a weighing
         self.days = {}            # (unit id, day) -> UnitDay
         self.corrections = {}     # (unit id, batch id) -> [Correction]
+        self.cleaner = set()      # the batches of a cleaner-fish species seen
 
     # ---- the stock lines --------------------------------------------------------------------------
     def line(self, line, share, grams):
         key = (line.unit_id, line.batch_id)
         k = line.count_delta
         track = self.tracks.get(key)
+        if line.cleaner:
+            self.cleaner.add(line.batch_id)
         if line.kind == MovementKind.WEIGHING:
             if track is not None:
                 self.estimates[key] = (track.grams / share.count, line.avg_weight_g, share.count, track)
@@ -331,4 +350,4 @@ class Projector:
             share_day.batch_id = batch_id
             found.append(share_day)
         if asked:
-            self.days[(unit_id, day)] = UnitDay(unit_id, day, found, ordered)
+            self.days[(unit_id, day)] = UnitDay(unit_id, day, found, ordered, frozenset(self.cleaner))

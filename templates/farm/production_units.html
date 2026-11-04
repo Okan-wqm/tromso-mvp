@@ -91,8 +91,11 @@
             </td>
             <td>
               {% if stock %}
+              {% if stock.batches %}
               <span class="nowrap batch-codes">{% for batch in stock.batches %}{% if not forloop.first %} + {% endif %}{{ batch.code }}{% endfor %}</span>
               <span class="row-sub">{% with species=stock.batches.0.species %}{{ species.local_name|default:species.common_name }}{% endwith %}</span>
+              {% endif %}
+              {% if stock.cleaner %}<span class="row-sub">{% blocktrans trimmed with fish=stock.cleaner_stock.count|fish batches=stock.cleaner_stock.batches|join_codes %}Cleaner fish: {{ batches }} · {{ fish }} fish{% endblocktrans %}</span>{% endif %}
               {% elif row.takes_fish %}
               <span class="empty-unit">{% trans "Empty — ready to stock" %}</span>
               {% else %}

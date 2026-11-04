@@ -1,0 +1,79 @@
+{% extends "crud/list.html" %}
+{% load i18n reports %}
+{% comment %} Production › Reports › Regulatory reports (reports.resources.ReportResource): the reports and notices the
+   farm files with the authorities, each computed from the records; a filed one is kept as it was filed.{% endcomment %}
+{% block search_placeholder %}{% trans "Search by site, facility or receipt" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="kind-filter">{% trans "Report" %}</label>
+  <select id="kind-filter" name="kind" data-autosubmit>
+    <option value="">{% trans "All reports" %}</option>
+    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <select id="site-filter" name="site" data-autosubmit>
+    <option value="">{% trans "All sites" %}</option>
+    {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "All statuses" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}
+{% if changed %}
+<div class="notice notice-error" role="alert">
+  <strong>{% trans "The records no longer give what was filed" %}</strong>
+  <ul>{% for report in changed %}<li><a href="{% url 'reports:report_detail' report.pk %}">{{ report }}</a></li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% if due %}
+<section class="notice notice-warning" aria-labelledby="due-title">
+  <strong id="due-title">{% trans "Reports and notices due" %}</strong>
+  <ul>
+    {% for row in due %}<li>
+      {{ row.kind.label }} · {{ row.place }}{% if row.period %} · {{ row.period.label }}{% endif %}{% if row.event and not row.period %} · {{ row.event }}{% endif %}
+      · {% if row.deadline %}{{ row.deadline|date:"DATE_FORMAT" }}{% if row.overdue %} <span class="badge badge-closed">{% trans "Overdue" %}</span>{% endif %}{% else %}{% trans "at once" %}{% endif %}
+      {% if row.report %}· <a href="{% url 'reports:report_detail' row.report.pk %}">{% trans "Open the draft" %}</a>{% elif start_url %}· <a href="{{ start_url }}?{{ row.start_query|urlencode_query }}">{% trans "Start" %}</a>{% endif %}
+    </li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% if not_set_up %}
+<div class="notice notice-warning">
+  <strong>{% trans "Not set up for reports" %}</strong>
+  <ul>{% for item in not_set_up %}<li><a href="{% url 'farm:site_edit' item.site.pk %}">{{ item.site }}</a> · {% if item.production_form %}{% trans "no production form" %}{% endif %}{% if item.production_form and item.reports_from %}, {% endif %}{% if item.reports_from %}{% trans "no reports-from date" %}{% endif %}{% for species in item.species %}{% if item.production_form or item.reports_from or not forloop.first %}, {% endif %}{% blocktrans trimmed %}no official code for {{ species }}{% endblocktrans %}{% endfor %}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% endblock %}
+{% block empty_text %}{% trans "A report to Mattilsynet or Fiskeridirektoratet, computed from the records: you check it, file it yourself and record here that you did." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table report-table">
+    <thead>
+      <tr><th scope="col">{% trans "Report" %}</th><th scope="col">{% trans "For" %}</th><th scope="col">{% trans "Deadline" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for report in objects %}
+      <tr>
+        <td>
+          <a class="row-title" href="{% url 'reports:report_detail' report.pk %}">{{ report.get_kind_display }}</a>
+          <span class="row-sub">{{ report.site|default:report.facility }}{% if report.corrects_id %} · {% trans "a correction" %}{% endif %}</span>
+        </td>
+        <td>{% if report.period %}{{ report.period.label }}{% else %}{{ report.occurred_on|date:"DATE_FORMAT" }}{% endif %}</td>
+        <td class="nowrap">{% if report.deadline %}{{ report.deadline|date:"DATE_FORMAT" }}{% if not report.submitted_at and today > report.deadline %} <span class="badge badge-closed">{% trans "Overdue" %}</span>{% endif %}{% else %}{{ report.info.deadline_text }}{% endif %}</td>
+        <td class="nowrap"><span class="badge badge-{% if report.submitted_at %}active{% else %}draft{% endif %}">{{ report.status_display }}</span>{% if report.submitted_at %}<span class="row-sub">{{ report.submitted_at|date:"DATE_FORMAT" }}{% if report.reference %} · {{ report.reference }}{% endif %}</span>{% endif %}</td>
+        <td class="row-actions">
+          {% if can_change and not report.submitted_at %}<a class="icon-button" href="{% url 'reports:report_edit' report.pk %}" data-modal title="{% trans "Edit the report" %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Edit the report" %}</span></a>{% endif %}
+          {% if can_delete and not report.submitted_at %}<a class="icon-button icon-button-danger" href="{% url 'reports:report_delete' report.pk %}" data-modal title="{% trans "Discard the draft" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Discard the draft" %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

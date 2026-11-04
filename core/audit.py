@@ -88,7 +88,9 @@ def record(user, action, instance, changes=None, entity_type=None, label=None, s
         action=action,
         entity_type=english(entity_type or entity_type_of(type(instance))),
         entity_id=str(instance.pk),
-        entity_label=label or str(instance),
+        # The record's name as English at rest like everything else: a name built from choices (a water limit's
+        # parameter, a plan's kind) would otherwise be stored in the language of the person making the change.
+        entity_label=label or english(instance),
         changes=changes or {},
         severity=severity,
     )

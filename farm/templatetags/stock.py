@@ -98,3 +98,9 @@ def bar_width(value):
     if value in (None, ''):
         return '0'
     return f'{min(Decimal(value), Decimal(100)):.1f}'
+
+
+@register.filter
+def join_codes(batches):
+    """B-2026-001 + B-2026-002: the codes of the batches of a unit's fish."""
+    return ' + '.join(batch.code for batch in batches)

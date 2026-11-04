@@ -33,6 +33,7 @@ from core import audit
 from core.models import AuditLog
 from farm.feeding import read as feeding_read
 from farm.handling import check
+from farm.health import read as health_read
 from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
@@ -76,8 +77,8 @@ def _site_key(unit):
     return ('site', department.site_id) if department.site_id else ('department', department.pk)
 
 
-def _has_fish(unit, day):
-    return feeding_read.book_on(unit, day).has_fish
+def _has_fish(unit, day, kind):
+    return health_read.has_fish_for(kind, feeding_read.book_on(unit, day))
 
 
 def _no_fish(unit, day):
@@ -189,7 +190,7 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
         if health_event is not None:
             _check_event(health_event, locked_units, start_date)
         for unit in sorted(locked_units, key=lambda item: item.code):
-            if not _has_fish(unit, start_date):
+            if not _has_fish(unit, start_date, 'treatment'):
                 raise ValidationError({'units': _no_fish(unit, start_date)})
         checked = handling(locked_units, start_date, method)
         check.require_acknowledged(checked, handling_ack)
@@ -261,7 +262,7 @@ def record_lice_count(user, *, unit, day, fish_counted, adult_females, mobile, a
         if unit.is_deleted:
             raise ValidationError({'unit': _('%(unit)s is deleted.') % {'unit': unit.code}})
         check_date(day, [unit])
-        if not _has_fish(unit, day):
+        if not _has_fish(unit, day, 'lice_count'):
             raise ValidationError({'date': _no_fish(unit, day)})
         if LiceCount.objects.filter(unit=unit, date=day).exists():
             raise ValidationError({'date': _('%(unit)s already has a count on %(date)s: void it first to correct '

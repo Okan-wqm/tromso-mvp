@@ -17,7 +17,9 @@ from ..handling import check
 from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Species, Supplier, Tank
 from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
-from ..models.stock import ARRIVAL_STATUSES, CullReason, InputStage, MortalityCause, Origin, TransferReason
+from ..models.stock import (
+    ARRIVAL_STATUSES, PROVENANCE_OF_ORIGIN, CullReason, InputStage, MortalityCause, Origin, TransferReason,
+)
 from ..models.supplier import SupplyCategory
 from ..stock import services
 from ..templatetags.stock import number
@@ -217,6 +219,25 @@ class CullForm(OperationForm):
 
     field_order = ['batch', 'date', 'count', 'reason', 'health_event', 'notes']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # A cleaner fish's reasons are Mattilsynet's causes, a production fish's the others (services.cull_reasons);
+        # with both in the unit, each list under its own heading.
+        groups = {}
+        for share in self.present.values():
+            groups[share.batch.species.is_cleaner_fish] = services.cull_reasons(share.batch)
+        field = self.fields['reason']
+        if len(groups) == 1:
+            reasons, = groups.values()
+            field.choices = [(reason.value, reason.label) for reason in reasons]
+            if field.initial not in [reason.value for reason in reasons]:
+                field.initial = None
+        elif groups:
+            field.choices = [('', '---------')] + [
+                (heading, [(reason.value, reason.label) for reason in groups[cleaner]])
+                for cleaner, heading in ((False, _('Production fish')), (True, _('Cleaner fish')))]
+            field.initial = None
+
     def save(self, user, rows=None):
         data = self.cleaned_data
         return services.record_cull(
@@ -293,19 +314,25 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
 
     class Meta:
         model = Batch
-        fields = ['species', 'input_stage', 'origin', 'supplier', 'supplier_batch_ref', 'strain', 'name',
-                  'input_date', 'expected_harvest_date', 'notes']
+        fields = ['species', 'input_stage', 'origin', 'provenance', 'supplier', 'supplier_batch_ref', 'strain',
+                  'year_class', 'name', 'input_date', 'expected_harvest_date', 'notes']
         field_classes = {'supplier': SupplierChoice}
         widgets = {'input_date': DATE, 'expected_harvest_date': DATE, 'notes': NOTES}
         help_texts = {
             'supplier': _('Who sold the fish: a supplier of live fish and eggs (Purchasing › Suppliers); none for '
                           'the own hatchery or wild-caught fish.'),
             'strain': _('E.g. AquaGen, SalmoBreed.'),
+            'provenance': _('For bought fish: farmed, or caught in the wild. Required for cleaner fish (their report '
+                            'asks it); the own hatchery’s fish are farmed, the farm’s catch wild-caught.'),
+            'year_class': _('The year class (årsklasse) the reports give, e.g. 2026. Whether it is the hatch year or '
+                            'the year the fish went to sea is not confirmed with the authorities: enter it as the '
+                            'farm counts it.'),
             'name': _('Optional; the batch number is given on saving.'),
         }
 
-    field_order = ['species', 'input_stage', 'input_date', 'count', 'avg_weight_g', 'origin', 'supplier',
-                   'supplier_batch_ref', 'strain', 'name', 'expected_harvest_date', 'notes', 'over_capacity_ack']
+    field_order = ['species', 'input_stage', 'input_date', 'count', 'avg_weight_g', 'origin', 'provenance',
+                   'supplier', 'supplier_batch_ref', 'strain', 'year_class', 'name', 'expected_harvest_date', 'notes',
+                   'over_capacity_ack']
 
     def __init__(self, *args, unit=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -314,10 +341,25 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
         self.fields['input_date'].initial = services.local_today(unit)
         self.fields['token'].initial = uuid.uuid4()
         self.fields['supplier'].empty_label = _('None')
+        self.fields['provenance'].choices = [('', _('Not given')), *self.fields['provenance'].choices[1:]]
 
     def clean(self):
         cleaned = super().clean()
-        purchased = cleaned.get('origin') == Origin.PURCHASED
+        origin = cleaned.get('origin')
+        said = PROVENANCE_OF_ORIGIN.get(origin)
+        if said is not None:
+            # The origin says it: the person need not, and may not say otherwise.
+            if cleaned.get('provenance') not in ('', said):
+                self.add_error('provenance', _('Fish of the own hatchery are farmed, fish caught in the wild '
+                                               'wild-caught.'))
+            else:
+                cleaned['provenance'] = said
+        species = cleaned.get('species')
+        if (species is not None and species.is_cleaner_fish and origin == Origin.PURCHASED
+                and not cleaned.get('provenance') and 'provenance' not in self.errors):
+            self.add_error('provenance', _('Farmed or wild-caught? The cleaner-fish report asks it of every cleaner '
+                                           'fish.'))
+        purchased = origin == Origin.PURCHASED
         if purchased and not cleaned.get('supplier') and 'supplier' not in self.errors:
             self.add_error('supplier', _('Who sold the fish?'))
         elif 'origin' in cleaned and not purchased:
@@ -335,7 +377,28 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
             supplier=data['supplier'], supplier_batch_ref=data['supplier_batch_ref'].strip(),
             strain=data['strain'].strip(), name=data['name'].strip(),
             expected_harvest_date=data['expected_harvest_date'], notes=data['notes'],
-            ack=data['over_capacity_ack'], token=data['token'])
+            provenance=data['provenance'], year_class=data['year_class'], ack=data['over_capacity_ack'],
+            token=data['token'])
+
+
+class BatchDetailsForm(ServiceErrors, forms.ModelForm):
+    """The year class and whether the fish are farmed or wild-caught of a batch stocked without them
+    (farm/stock/services.py `correct_batch`)."""
+
+    service_fields = {'batch': NON_FIELD_ERRORS}
+
+    class Meta:
+        model = Batch
+        fields = ['year_class', 'provenance']
+        help_texts = {field: BatchInputForm.Meta.help_texts[field] for field in ('year_class', 'provenance')}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['provenance'].choices = [('', _('Not given')), *self.fields['provenance'].choices[1:]]
+
+    def save(self, user):
+        return services.correct_batch(user, batch=self.instance, year_class=self.cleaned_data['year_class'],
+                                      provenance=self.cleaned_data['provenance'])
 
 
 class UnitChoice(forms.ModelChoiceField):
@@ -519,6 +582,62 @@ class HarvestForm(PlannedForm, HandlingChecked, OperationForm):
             measured_weight_kg=data['measured_weight_kg'], facility=data['facility'], transport=data['transport'],
             vessel=data['vessel'], everything=data['everything'], notes=data['notes'],
             handling_ack=data['handling_ack'], plan_item=data['plan_item'], token=data['token'])
+
+
+class EscapeForm(OperationForm):
+    """Fish that escaped, or are suspected to have: how many (an estimate when only suspected), the cause, when it was
+    found, their health status and the fish caught again so far. The fish leave the book at the batch's average;
+    Fiskeridirektoratet's notice is started from the escape (Production › Reports)."""
+
+    count = forms.IntegerField(label=_('Fish escaped'), min_value=1)
+    suspected = forms.BooleanField(
+        label=_('Only suspected'), required=False,
+        help_text=_('Tick it when an escape is suspected but not confirmed: the number is then an estimate.'))
+    found_time = forms.TimeField(label=_('Time found'), required=False, widget=forms.TimeInput(
+        attrs={'type': 'time'}, format='%H:%M'), help_text=_('Optional, on the site’s clock.'))
+    cause = forms.CharField(label=_('Cause'), max_length=2000, widget=NOTES,
+                            help_text=_('What caused it, or what is thought to have.'))
+    health_status = forms.CharField(label=_('Health status of the fish'), max_length=1000, required=False,
+                                    help_text=_('Optional: their state of health, e.g. treated or free of disease.'))
+    recaptured = forms.IntegerField(label=_('Fish recaptured'), min_value=0, required=False,
+                                    help_text=_('Optional: the fish caught again so far.'))
+
+    field_order = ['batch', 'date', 'count', 'suspected', 'found_time', 'cause', 'health_status', 'recaptured', 'notes']
+
+    def save(self, user, rows=None):
+        data = self.cleaned_data
+        return services.record_escape(
+            user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'], cause=data['cause'],
+            suspected=data['suspected'], found_time=data['found_time'], health_status=data['health_status'],
+            recaptured=data['recaptured'], notes=data['notes'], token=data['token'])
+
+
+class DeliveryForm(HandlingChecked, OperationForm):
+    """Live fish delivered out of the company, to whom and where. Moving fish alive is a transport: the handling check
+    runs (a medicine withdrawal in force, a fast too short)."""
+
+    count = forms.IntegerField(label=_('Fish delivered'), min_value=1)
+    measured_weight_kg = forms.DecimalField(
+        label=_('Weight of the fish (kg)'), max_digits=14, decimal_places=3, min_value=Decimal('0.001'),
+        required=False, localize=True, widget=forms.TextInput(attrs=DECIMAL),
+        help_text=_('Optional, when they were weighed. The stock takes them out at the average weight of the batch in '
+                    'this unit; the weighed figure is kept beside it.'))
+    destination = forms.CharField(label=_('Delivered to'), max_length=200,
+                                  help_text=_('Who received them: the customer or the receiving site.'))
+    destination_site_number = forms.IntegerField(
+        label=_('Receiving site’s lokalitetsnummer'), min_value=10000, max_value=99999, required=False,
+        help_text=_('Optional: the receiving site’s locality number (5 digits).'))
+
+    handling_kind = HandlingKind.TRANSPORT
+    field_order = ['batch', 'date', 'count', 'measured_weight_kg', 'destination', 'destination_site_number', 'notes']
+
+    def save(self, user, rows=None):
+        data = self.cleaned_data
+        return services.record_delivery(
+            user, unit=self.unit, batch=data['batch'], day=data['date'], count=data['count'],
+            destination=data['destination'], destination_site_number=data['destination_site_number'],
+            measured_weight_kg=data['measured_weight_kg'], handling_ack=data['handling_ack'], notes=data['notes'],
+            token=data['token'])
 
 
 class VoidForm(ServiceErrors, forms.Form):

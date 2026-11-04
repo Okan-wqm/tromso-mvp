@@ -235,6 +235,22 @@ def tab_fields(tabs):
             for name in (item.names if isinstance(item, Fieldset) else [item])]
 
 
+def constraint_error(form, error):
+    """Puts a database constraint's refusal (`error`, an IntegrityError) on the form, on the constraint's last field
+    the form shows, with its message. False when the error names no constraint of the form's model."""
+    name = getattr(getattr(error.__cause__, 'diag', None), 'constraint_name', None)
+    model = form._meta.model
+    constraint = next((item for item in model._meta.constraints if item.name == name), None)
+    if constraint is None:
+        return False
+    names = []
+    if isinstance(constraint, (models.UniqueConstraint, ExclusionConstraint)):
+        names = [item for item in constrained_fields(constraint) if item in form.fields]
+    form.add_error(names[-1] if names else None, constraint.violation_error_message)
+    form.instance._state.adding = True
+    return True
+
+
 def constrained_fields(constraint):
     """The fields a unique or exclusion constraint covers: its `fields`, or the fields its expressions read
     (Lower('scientific_name') covers scientific_name; an assignment's daterange its first and last day)."""
@@ -351,8 +367,9 @@ class Resource:
 
     @classmethod
     def group(cls):
-        """The menu group the tab's page sits in, shown above its heading, e.g. _('Facility')."""
-        return navigation.place(cls.perm('view')).group.label
+        """The menu heading the tab's page sits under, shown above its title: its group, e.g. _('Facility'), or the
+        section of an entry in a group without a label (navigation.Place.heading)."""
+        return navigation.place(cls.perm('view')).heading
 
     @classmethod
     def title(cls):
@@ -568,12 +585,17 @@ class CreateView(FormView):
                     form.save_m2m()
                     audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
                     r.after_save(request, obj, created=True)
-            except IntegrityError:
-                # The same form sent twice at once: the other request's insert held the key's unique index
-                # until it committed, so its record is there now. Any other refusal is a fault.
+            except IntegrityError as error:
+                # The same form sent twice at once: the other request's insert held the key's unique index until it
+                # committed, so its record is there now.
                 sent = form.sent_before()
                 if sent is None:
-                    raise
+                    # Two people saving the same record at once both pass the form's checks; the database's constraint
+                    # refuses the second, and it is told why on the form instead of a server error. Any other refusal
+                    # is a fault.
+                    if not constraint_error(form, error):
+                        raise
+                    return self.page(form)
             else:
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
                 flash(request, _('%(name)s “%(object)s” created.'), r, obj)
@@ -685,6 +707,24 @@ class RowListView(ResourceView):
             page = UpdateView.as_page(r, request)
             return page.page(r.form(request, instance=obj), obj, **{rows.key: formset, 'open_tab': rows.tab})
         kept = formset.kept_rows()
-        rows.save(request.user, obj, kept, r.entity_type())
+        with transaction.atomic():
+            # As an edit of the record: locked, refused when it changed since the list was opened (its version
+            # travels with the list), its version moved on. Asked again under the lock whether the record has
+            # the list: a report filed meanwhile has no answers to change any more.
+            current = r.queryset().select_for_update(of=('self',)).get(pk=pk)
+            versioned = isinstance(current, AuditedModel)
+            if versioned and request.POST.get('version') != str(current.version):
+                # Translators: %(name)s is the kind of record in lower case (e.g. site).
+                messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                          'The form now shows their version; make your changes again.')
+                               % {'name': r.name})
+                return done(request, reverse(r.url_name('edit'), args=[pk]), stay=True)
+            if not rows.applies_to(current):
+                raise Http404
+            rows.save(request.user, current, kept, r.entity_type())
+            if versioned:
+                current.version += 1
+                current.updated_by = request.user
+                current.save(update_fields=['version', 'updated_by', 'updated_at'])
         messages.success(request, rows.saved % {'count': len(kept)})
         return done(request, reverse(r.url_name('edit'), args=[pk]), stay=True)

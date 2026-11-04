@@ -236,7 +236,7 @@ class InputTests(StockTestCase):
         errors = self.refused(self.stock, species=self.trout)
         self.assertEqual(errors['species'], [f'T-01 would hold Atlantic salmon (SAL) + Rainbow trout (RBT) on '
                                              f'{services.shown_date(self.day(10))}: a unit holds one species at a '
-                                             'time.'])
+                                             'time (cleaner fish join the production fish only on a sea site).'])
 
     def test_a_discontinued_species_is_not_stocked(self):
         self.salmon.status = Species.Status.DISCONTINUED
@@ -849,7 +849,8 @@ class DialogTests(StockTestCase):
         data = {'token': str(uuid.uuid4()), 'species': str(self.salmon.pk), 'input_stage': 'fry',
                 'input_date': self.day(2).isoformat(), 'count': '5000', 'avg_weight_g': '2.5', 'origin': 'purchased',
                 'supplier': str(self.supplier.pk), 'supplier_batch_ref': 'S-9', 'strain': '', 'name': '',
-                'expected_harvest_date': '', 'notes': '', 'units-TOTAL_FORMS': str(len(rows)),
+                'expected_harvest_date': '', 'notes': '', 'provenance': '', 'year_class': '',
+                'units-TOTAL_FORMS': str(len(rows)),
                 'units-INITIAL_FORMS': '0', 'units-MIN_NUM_FORMS': '1', 'units-MAX_NUM_FORMS': '20'}
         for index, (unit, count) in enumerate(rows):
             data[f'units-{index}-unit'] = str(unit.pk) if unit else ''
@@ -864,16 +865,40 @@ class DialogTests(StockTestCase):
         self.assertContains(form, 'class="modal-head"')
         self.assertEqual(form.context['rows'].initial, [{'unit': self.t1.pk}])
         self.assertEqual(form.context['form']['input_date'].value(), self.today)
-        response = self.post(url, self.input_data([(self.t1, 3000), (self.t2, 2000)]))
+        response = self.post(url, self.input_data([(self.t1, 3000), (self.t2, 2000)], provenance='farmed',
+                                                  year_class='2026'))
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response['X-Modal-Redirect'], f'{reverse("farm:production_units")}?kind=tank&unit={self.t1.pk}')
         batch = Batch.objects.get()
-        self.assertEqual((batch.supplier, batch.supplier_batch_ref, batch.input_date, batch.origin),
-                         (self.supplier, 'S-9', self.day(2), 'purchased'))
+        self.assertEqual((batch.supplier, batch.supplier_batch_ref, batch.input_date, batch.origin, batch.provenance,
+                          batch.year_class), (self.supplier, 'S-9', self.day(2), 'purchased', 'farmed', 2026))
         self.assertEqual(sorted(StockMovement.objects.values_list('unit__code', 'count_delta', 'avg_weight_g')),
                          [('T-01', 3000, Decimal('2.5000')), ('T-02', 2000, Decimal('2.5000'))])
         page = self.client.get(reverse('farm:production_units'))
         self.assertContains(page, f'Batch {batch.code} stocked: 5,000 fish into T-01, T-02.')
+
+    def test_the_provenance_follows_the_origin_and_a_cleaner_fish_needs_one(self):
+        url = reverse('farm:stock_input')
+        own = {'origin': 'own_hatchery', 'supplier': '', 'supplier_batch_ref': ''}
+        self.post(url, self.input_data([(self.t1, 5000)], **own))
+        batch = Batch.objects.get()
+        self.assertEqual((batch.provenance, batch.year_class), ('farmed', None))       # said by the origin; no default
+        response = self.post(url, self.input_data([(self.t2, 5000)], **{**own, 'origin': 'wild'}, provenance='farmed'))
+        self.assertEqual(response.context['form'].errors['provenance'],
+                         ['Fish of the own hatchery are farmed, fish caught in the wild wild-caught.'])
+        lumpfish = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='Rognkjeks', freshwater=False,
+                                cleaner_fish_type='lumpfish')
+        response = self.post(url, self.input_data([(self.t2, 5000)], species=str(lumpfish.pk)))
+        message = ['Farmed or wild-caught? The cleaner-fish report asks it of every cleaner fish.']
+        self.assertEqual(response.context['form'].errors['provenance'], message)
+        self.assertEqual(self.refused(services.record_input, self.user, species=lumpfish, input_stage='fry',
+                                      origin='purchased', supplier=self.supplier, day=self.day(2),
+                                      lines=[(self.t2, 10, Decimal(5))])['provenance'], message)
+        self.assertEqual(Batch.all_objects.count(), 1)
+        response = self.post(url, self.input_data([(self.t2, 5000)], species=str(lumpfish.pk), provenance='wild_caught',
+                                                  year_class='1979'))
+        self.assertIn('year_class', response.context['form'].errors)
+        self.assertEqual(Batch.all_objects.count(), 1)
 
     def test_the_split_must_add_up_and_name_each_unit_once(self):
         url = reverse('farm:stock_input')
@@ -1036,6 +1061,108 @@ class ActivityLogTests(StockTestCase):
         self.assertContains(page, 'Same fish as yesterday')
         Profile.objects.update_or_create(user=self.user, defaults={'language': 'tr'})
         self.assertContains(self.client.get(reverse('core:activity_log')), 'Ölüm')
+
+
+class SiteHistoryTests(StockTestCase):
+    """A unit's stock records belong to its site (OUR-06): the reports to the authorities are per locality."""
+
+    def test_a_unit_with_stock_records_stays_on_its_site(self):
+        batch = self.stock()
+        services.record_transfer(self.user, source=self.t1, batch=batch, day=self.day(1), legs=[(self.t2, 2000)],
+                                 reason='maintenance')
+        unit = Tank.objects.get(pk=self.t1.pk)                    # empty now, with a history
+        unit.production_department = self.sea
+        with self.assertRaises(ValidationError) as caught:
+            unit.full_clean()
+        self.assertEqual(caught.exception.message_dict['production_department'],
+                         ['It has stock records on its site: it can only move to a production department of the same '
+                          'site.'])
+        unit.production_department = ProductionDepartment.objects.create(site=self.bergen, name='Hall B', code='HB')
+        unit.full_clean()                                         # another department of the same site is fine
+        fresh = make_unit('T-09', self.hall)
+        fresh.production_department = self.sea
+        fresh.full_clean()                                        # a unit without records may move anywhere
+
+    def test_a_department_whose_units_have_stock_records_stays_on_its_site(self):
+        # Its move would take the units along: the same rule as a unit's own move.
+        self.stock()
+        self.hall.site = self.tromso
+        with self.assertRaises(ValidationError) as caught:
+            self.hall.full_clean()
+        self.assertEqual(caught.exception.message_dict['site'],
+                         ['Its units have stock records on their site: the department stays on it.'])
+        empty = ProductionDepartment.objects.create(site=self.bergen, name='Hall B', code='HB')
+        make_unit('T-09', empty)
+        empty.site = self.tromso
+        empty.full_clean()
+
+    def test_a_site_with_stock_records_is_closed_not_deleted(self):
+        from core.softdelete import plan_delete
+        self.assertEqual(plan_delete(self.bergen).blockers, [])
+        operation = services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
+                                          day=self.day(3), lines=[(self.t1, 10, Decimal(5))])
+        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers,
+                         ['Its units have stock records: set its status to Closed instead.'])
+        services.void(self.user, operation, 'Entered by mistake')    # a voided stocking is no record
+        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers, [])
+
+
+class ReadsOfAPeriodTests(StockTestCase):
+    """The reads the regulatory reports stand on: the stock at the end of a past day and the lines of a period,
+    both the fold's own figures (farm/stock/read.py)."""
+
+    def setUp(self):
+        super().setUp()
+        self.batch = self.stock(count=2000, weight='125', days_ago=10)            # 250 kg in T-01
+        self.mortality(self.batch, 100, days_ago=8, cause='disease')
+        services.record_cull(self.user, unit=self.t1, batch=self.batch, day=self.day(7), count=50, reason='deformed')
+        services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(6), avg_weight_g=Decimal(200))
+        self.moved = services.record_transfer(self.user, source=self.t1, batch=self.batch, day=self.day(4),
+                                              legs=[(self.t2, 600)], reason='density')
+
+    def test_stock_on_a_past_day_is_the_fold_cut_at_that_day(self):
+        self.assertEqual(read.stock_on([self.t1, self.t2], self.day(11)), {})
+        on = read.stock_on([self.t1, self.t2], self.day(9))
+        self.assertEqual((list(on), on[self.t1.pk].count, on[self.t1.pk].biomass_kg), ([self.t1.pk], 2000, 250))
+        on = read.stock_on([self.t1, self.t2], self.day(7))      # 100 died, 50 culled, at 125 g
+        self.assertEqual((on[self.t1.pk].count, on[self.t1.pk].biomass_kg, on[self.t1.pk].deaths,
+                          on[self.t1.pk].culls), (1850, Decimal('231.25'), 100, 50))
+        on = read.stock_on([self.t1, self.t2], self.day(4))      # weighed at 200 g, then 600 moved
+        self.assertEqual([(on[unit.pk].count, on[unit.pk].biomass_kg, on[unit.pk].batches)
+                          for unit in (self.t1, self.t2)], [(1250, 250, [self.batch]), (600, 120, [self.batch])])
+        # Today's stock is the same fold, cut at today: stock_of and stock_on agree.
+        now, today = read.stock_of([self.t1, self.t2]), read.stock_on([self.t1, self.t2], self.today)
+        self.assertEqual({key: (value.count, value.grams) for key, value in now.items()},
+                         {key: (value.count, value.grams) for key, value in today.items()})
+
+    def test_a_unit_emptied_before_the_day_is_left_out_and_a_void_changes_the_past(self):
+        back = services.record_transfer(self.user, source=self.t2, batch=self.batch, day=self.day(2),
+                                        legs=[(self.t1, 600)], reason='density')
+        self.assertEqual(set(read.stock_on([self.t1, self.t2], self.day(2))), {self.t1.pk})
+        services.void(self.user, back, 'Entered by mistake')
+        self.assertEqual(read.stock_on([self.t1, self.t2], self.day(2))[self.t2.pk].count, 600)
+
+    def test_the_lines_of_a_period_with_their_reasons_grams_and_the_other_end(self):
+        lines = read.movements([self.t1], self.day(8), self.day(4))
+        self.assertEqual([(line.kind, line.count, line.reason, line.kilos, line.date) for line in lines], [
+            ('mortality', -100, 'disease', Decimal('12.5'), self.day(8)),
+            ('cull', -50, 'deformed', Decimal('6.25'), self.day(7)),
+            ('weighing', 0, '', None, self.day(6)),
+            ('transfer_out', -600, 'density', Decimal(120), self.day(4)),
+        ])
+        self.assertEqual(lines[-1].other_unit_id, self.t2.pk)
+        arrived = read.movements([self.t2], self.day(10), self.today)
+        self.assertEqual([(line.kind, line.count, line.kilos, line.other_unit_id) for line in arrived],
+                         [('transfer_in', 600, Decimal(120), self.t1.pk)])
+        # Outside the period, nothing; a void takes its lines out.
+        self.assertEqual(read.movements([self.t1], self.day(3), self.today), [])
+        services.void(self.user, self.moved, 'Entered by mistake')
+        self.assertEqual(read.movements([self.t2], self.day(10), self.today), [])
+
+    def test_a_weighed_mortality_reports_its_weighed_kilos(self):
+        self.mortality(self.batch, 10, days_ago=1, measured_weight_kg=Decimal('2.5'))
+        line, = read.movements([self.t1], self.day(1), self.day(1))
+        self.assertEqual((line.kilos, line.grams), (Decimal('2.5'), Decimal(2000)))
 
 
 class DatabaseViewerTests(TestCase):

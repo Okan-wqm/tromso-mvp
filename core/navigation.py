@@ -89,6 +89,13 @@ class Place:
     entry: Entry
 
     @property
+    def heading(self):
+        """The nearest labelled heading the entry sits under, shown above a page's title: its group's label, or,
+        for an entry in a group without one (Production › Reports › Regulatory reports), its section's, else its
+        workspace's."""
+        return self.group.label or self.section.label or self.workspace.label
+
+    @property
     def path(self):
         """'Production · Setup · Facility structure', translated when shown."""
         labels = [label for label in (self.workspace.label, self.section.label, self.group.label) if label]

@@ -30,7 +30,7 @@ from ..stock import read as stock_read, views as stock_views
 from ..stock.dates import local_today, shown_date
 from ..stock.read import Presence
 from ..stock.services import AlreadyRecorded
-from . import read, services, withdrawal
+from . import notices, read, services, withdrawal
 
 TREATMENTS = {'view': 'farm.view_treatment', 'add': 'farm.add_treatment', 'change': 'farm.change_treatment',
               'delete': 'farm.delete_treatment'}
@@ -68,13 +68,15 @@ def _day(value):
         return None
 
 
-def _units_with_fish(site=None):
-    """The live units holding fish now (of `site` when given), in code order."""
+def _units_with_fish(site=None, production=False):
+    """The live units holding fish now (of `site` when given), in code order; with `production`, those holding production
+    fish (a cage of cleaner fish alone is not counted for lice: the count is of the salmonids)."""
     units = Tank.objects.select_related('production_department__site').order_by('code')
     if site is not None:
         units = units.filter(production_department__site=site)
     stock = stock_read.stock_of(list(units))
-    return Tank.objects.filter(pk__in=list(stock)).select_related('production_department__site').order_by('code')
+    held = [pk for pk, unit_stock in stock.items() if unit_stock.count > 0 or not production]
+    return Tank.objects.filter(pk__in=held).select_related('production_department__site').order_by('code')
 
 
 def _chosen_unit(request):
@@ -282,7 +284,7 @@ def lice_counts(request):
     params = {key: request.GET.get(key, '').strip() for key in COUNT_FILTERS}
     counts, choices = _filtered_counts(params)
     weeks = read.lice_weeks(counts)[:LICE_WEEKS]
-    stocked = read.stocked_by_site(_units_with_fish())
+    stocked = read.stocked_by_site(_units_with_fish(production=True))
     for week in weeks:
         week.stocked = stocked.get(week.site.pk if week.site else None, 0)
     page = Paginator(counts, PAGE_SIZE).get_page(request.GET.get('page'))
@@ -306,7 +308,7 @@ def lice_counts(request):
 def record_lice_count(request):
     """Record a sea-lice count, of a unit with fish (the drawer's unit chosen)."""
     unit = _chosen_unit(request)
-    units = _units_with_fish()
+    units = _units_with_fish(production=True)
     back = _back(request, reverse('farm:lice_counts'))
     context = _context(COUNTS['view'], heading=_('Record sea-lice count'), back_url=back, unit=unit)
     if request.method == 'POST':
@@ -386,6 +388,7 @@ def drawer(request, unit, back):
         events = HealthEvent.objects.filter(site=site, closed_on__isnull=True).prefetch_related('units') \
             if site is not None else HealthEvent.objects.none()
         context['health_events'] = [event for event in events if not event.units.all() or unit in event.units.all()]
+        context['health_notify'] = {event.pk for event in notices.pending(context['health_events']) or []}
         shown = True
     if user.has_perm(COUNTS['view']):
         context['health_lice'] = read.latest_counts([unit.pk]).get(unit.pk)

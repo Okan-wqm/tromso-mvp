@@ -13,7 +13,8 @@ from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.health import read as health_read
 from farm.models import (
-    Batch, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, StockMovement, StockOperation, Tank,
+    Batch, DeliveryRecord, EscapeRecord, HandlingAcknowledgement, HandlingPlanItem, HarvestRecord, Species,
+    StockMovement, StockOperation, Tank,
 )
 from farm.models.handling import KIND_OF_OPERATION
 from farm.models.harvest import FULFILLED_BY
@@ -25,7 +26,8 @@ from .fold import StockError, fold
 
 # The lines each kind of operation is made of (a cross-row rule, so not a CHECK).
 ONE_LINE = {OperationKind.MORTALITY: MovementKind.MORTALITY, OperationKind.CULL: MovementKind.CULL,
-            OperationKind.WEIGHING: MovementKind.WEIGHING, OperationKind.ADJUSTMENT: MovementKind.ADJUSTMENT}
+            OperationKind.WEIGHING: MovementKind.WEIGHING, OperationKind.ADJUSTMENT: MovementKind.ADJUSTMENT,
+            OperationKind.DELIVERY: MovementKind.DELIVERY}
 
 
 def _operation_problems(operation, lines, batches):
@@ -107,7 +109,7 @@ def problems():
             found.append(f'Feeding {feeding.id} of {feeding.date} in unit {codes[feeding.unit_id]}: no fish in '
                          f'the unit at the start or the end of that day.')
         for kind, record, unit_id, day in health:
-            if not walked.days[(unit_id, day)].has_fish:
+            if not health_read.has_fish_for(kind, walked.days[(unit_id, day)]):
                 found.append(f'{kind.replace("_", " ").capitalize()} {record.pk} of {day} in unit {codes[unit_id]}: '
                              f'no fish in the unit at the start or the end of that day.')
     sums = (StockMovement.objects.filter(operation__is_deleted=False).values('unit_id', 'batch_id')
@@ -119,12 +121,15 @@ def problems():
                          f'the lines add up to {row["fish"]}.')
 
     found += _harvest_problems(operations, lines_of)
+    found += _record_problems(operations, lines_of)
 
     counts = read.unit_counts(list(Tank.all_objects.values_list('pk', flat=True)))
     species = defaultdict(set)
     for (unit_id, batch_id), share in shares.items():
         if share.count:
             species[unit_id].add(batches[batch_id].species_id)
+    cleaner = set(Species.all_objects.exclude(cleaner_fish_type='').values_list('pk', flat=True))
+    sea = read.sea_units(list(species))
     for unit in Tank.all_objects.all():
         fish = counts.get(unit.pk, 0)
         if fish and unit.is_deleted:
@@ -133,8 +138,31 @@ def problems():
             found.append(f'Unit {unit.code} is {unit.status} but holds {fish} fish.')
         if not fish and unit.status in NEEDS_FISH and not unit.is_deleted:
             found.append(f'Unit {unit.code} is {unit.status} but holds no fish.')
-        if len(species[unit.pk]) > 1:
+        if read.mixed(species[unit.pk], cleaner, unit.pk in sea):
             found.append(f'Unit {unit.code} holds {len(species[unit.pk])} species.')
+    return found
+
+
+def _record_problems(operations, lines_of):
+    """What an escape and a delivery add to their operation: every count adjustment on its own is an escape with its
+    record (the line's reason says so), every delivery has where the fish went, and no other kind of operation has one."""
+    found = []
+    escapes = EscapeRecord.all_objects.select_related('operation').in_bulk()
+    deliveries = DeliveryRecord.all_objects.select_related('operation').in_bulk()
+    for operation in operations.values():
+        name = f'{operation.get_kind_display()} {operation.pk} of {operation.date}'
+        if operation.kind == OperationKind.ADJUSTMENT:
+            if operation.pk not in escapes:
+                found.append(f'{name} has no escape record (a count adjustment on its own is an escape).')
+            elif any(line.reason != 'escape' or line.count_delta >= 0 for line in lines_of.get(operation.pk, [])):
+                found.append(f'{name} has an escape record and a line that is not fish leaving by escape.')
+        if operation.kind == OperationKind.DELIVERY and operation.pk not in deliveries:
+            found.append(f'{name} has no delivery record (who received the fish).')
+    for records, kind, what in ((escapes, OperationKind.ADJUSTMENT, 'an escape record'),
+                                (deliveries, OperationKind.DELIVERY, 'a delivery record')):
+        for record in records.values():
+            if record.operation.kind != kind:
+                found.append(f'{record.operation.get_kind_display()} {record.operation_id} has {what}.')
     return found
 
 

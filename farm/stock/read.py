@@ -17,10 +17,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
+from typing import NamedTuple
 
 from django.db.models import Sum
 
-from farm.models import Batch, StockMovement, Tank
+from farm.models import Batch, Site, StockMovement, Tank
+from farm.models.feeding import FeedTarget
 
 from .fold import Line, Op, Share, fold
 
@@ -33,15 +35,16 @@ def ledger(batch_ids):
     so the lines of an operation all come with its batch."""
     rows = list(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False).values_list(
         'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
-        'avg_weight_g', 'pair', 'measured_weight_kg'))
+        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])
     ops = {}
     lines = []
-    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured in rows:
+    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured, reason, cleaner \
+            in rows:
         op = ops.setdefault(op_id, Op(op_id, op_kind, op_date, first[op_id]))
-        lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair, measured))
+        lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair, measured, reason, bool(cleaner)))
     return lines
 
 
@@ -57,6 +60,21 @@ def share_on(unit_id, batch_id, day):
     """The batch in the unit at the end of `day` (after every operation dated that day or before)."""
     lines = [line for line in ledger([batch_id]) if line.op.date <= day]
     return fold(lines).get((unit_id, batch_id)) or Share()
+
+
+def mixed(species_ids, cleaner, sea):
+    """Whether these species may not share a unit: a unit holds one species, except that on a sea site (`sea`)
+    cleaner fish (species ids in `cleaner`) may join its production species, whose species stays one (owner
+    decision Q1 with D-1; a hatchery's tank holds one, as the smolt report has one species per tank)."""
+    if not sea:
+        return len(species_ids) > 1
+    return len(set(species_ids) - set(cleaner)) > 1
+
+
+def sea_units(unit_ids):
+    """The ids of these units on a sea site (Site type sea cage), deleted units included."""
+    return set(Tank.all_objects.filter(pk__in=unit_ids, production_department__site__type=Site.Type.SEA_CAGE)
+               .values_list('pk', flat=True))
 
 
 def unit_counts(unit_ids):
@@ -168,7 +186,17 @@ class BatchShare:
     fish_in: int
     deaths: int
     culls: int
-    unit_count: int = 0      # every fish in the unit, for the share by count
+    unit_count: int = 0      # the unit's fish of its kind (production or cleaner fish), for the share by count
+    siblings: int = 1        # the batches of its kind in the unit, itself included
+
+    @property
+    def cleaner(self):
+        """Cleaner fish (a cleaner-fish species), beside the unit's production fish (D-1)."""
+        return self.batch.species.is_cleaner_fish
+
+    @property
+    def target(self):
+        return FeedTarget.CLEANER_FISH if self.cleaner else FeedTarget.PRODUCTION
 
     @property
     def biomass_kg(self):
@@ -193,17 +221,39 @@ class BatchShare:
 
 @dataclass
 class UnitStock:
-    """The fish in one unit now."""
+    """The fish in one unit now: every batch in it (`shares`), and the unit's figures, which are those of its
+    production fish (`counted`). Cleaner fish beside them (D-1) are not in a unit's fish, biomass, density or
+    capacity (D-2): they are their own figures, `of(FeedTarget.CLEANER_FISH)`."""
     unit: Tank
     shares: list = field(default_factory=list)
+    target: str = FeedTarget.PRODUCTION
+
+    @property
+    def counted(self):
+        """The shares the figures are of: the production fish, or the cleaner fish of `of`."""
+        return [share for share in self.shares if share.target == self.target]
+
+    @property
+    def cleaner(self):
+        """The cleaner fish's shares beside the production fish (D-1)."""
+        return [share for share in self.shares if share.cleaner]
+
+    @property
+    def cleaner_stock(self):
+        """The cleaner fish as a unit's figures of their own (count, biomass, average)."""
+        return self.of(FeedTarget.CLEANER_FISH)
+
+    def of(self, target):
+        """The unit's fish of one kind, production or cleaner fish, with their own figures."""
+        return UnitStock(self.unit, [share for share in self.shares if share.target == target], target)
 
     @property
     def count(self):
-        return sum(share.count for share in self.shares)
+        return sum(share.count for share in self.counted)
 
     @property
     def grams(self):
-        return sum((share.grams for share in self.shares), Decimal(0))
+        return sum((share.grams for share in self.counted), Decimal(0))
 
     @property
     def biomass_kg(self):
@@ -234,19 +284,21 @@ class UnitStock:
 
     @property
     def since(self):
-        return min((share.since for share in self.shares), default=None)
+        """The start of the current stay of the unit's fish: the production fish's, the cleaner fish's when a unit
+        holds only them."""
+        return min((share.since for share in self.counted or self.shares), default=None)
 
     @property
     def fish_in(self):
-        return sum(share.fish_in for share in self.shares)
+        return sum(share.fish_in for share in self.counted)
 
     @property
     def deaths(self):
-        return sum(share.deaths for share in self.shares)
+        return sum(share.deaths for share in self.counted)
 
     @property
     def culls(self):
-        return sum(share.culls for share in self.shares)
+        return sum(share.culls for share in self.counted)
 
     @property
     def survival(self):
@@ -258,11 +310,11 @@ class UnitStock:
 
     @property
     def last_weighed(self):
-        return max((share.last_weighed for share in self.shares if share.last_weighed), default=None)
+        return max((share.last_weighed for share in self.counted if share.last_weighed), default=None)
 
     @property
     def batches(self):
-        return [share.batch for share in self.shares]
+        return [share.batch for share in self.counted]
 
     def days(self, today):
         return (today - self.since).days if self.since else None
@@ -276,7 +328,20 @@ def stock_of(units):
     batch_ids = {row['batch_id'] for row in present}
     if not batch_ids:
         return {}
-    shares = fold(ledger(batch_ids))
+    return _unit_stocks(units, fold(ledger(batch_ids)), batch_ids)
+
+
+def stock_on(units, day):
+    """{unit id: UnitStock} of the units that held fish at the end of `day` (after every operation dated that day
+    or before): the fold of every batch ever in them, cut at `day`. A month's last day gives its closing stock, the
+    day before it its opening stock. A unit without fish then is left out."""
+    batch_ids = batches_ever_in([unit.pk for unit in units])
+    lines = [line for line in ledger(batch_ids) if line.op.date <= day]
+    return _unit_stocks(units, fold(lines), batch_ids) if lines else {}
+
+
+def _unit_stocks(units, shares, batch_ids):
+    """{unit id: UnitStock} of `units` from the fold's shares: each unit's batches with fish, oldest stay first."""
     batches = Batch.all_objects.select_related('species').in_bulk(batch_ids)
     by_id = {unit.pk: unit for unit in units}
     stock = {}
@@ -286,10 +351,71 @@ def stock_of(units):
                 batches[batch_id], share.count, share.grams, share.since, share.last_weighed, share.fish_in,
                 share.deaths, share.culls))
     for unit_stock in stock.values():
-        total = unit_stock.count
-        unit_stock.shares.sort(key=lambda share: (share.since, share.batch.code))
+        kinds = {target: unit_stock.of(target) for target in FeedTarget.values}
+        unit_stock.shares.sort(key=lambda share: (share.cleaner, share.since, share.batch.code))
         for share in unit_stock.shares:
-            share.unit_count = total
+            share.unit_count = kinds[share.target].count
+            share.siblings = len(kinds[share.target].shares)
     return stock
 
 
+class InPeriod(NamedTuple):
+    """What a monthly or weekly report reads of its units: the stock at the end of the day before the period
+    (`opening`) and at its last day (`closing`), as `stock_on` gives them, and the live lines dated in it (`lines`)."""
+    opening: dict
+    closing: dict
+    lines: list
+
+
+def in_period(units, first, last):
+    """The InPeriod of `units` from the day `first` to the day `last`, both included."""
+    return InPeriod(stock_on(units, first - DAY), stock_on(units, last), movements(units, first, last))
+
+
+@dataclass(frozen=True)
+class Movement:
+    """A live ledger line of a unit in a period, as the reports read it: what it did, its reason, the grams the fold
+    moved with it (None for a weighing, which sets the grams instead), and for a transfer the unit at its other end."""
+    line_id: int
+    operation_id: object
+    operation_kind: str
+    date: object
+    unit_id: object
+    batch_id: object
+    kind: str
+    count: int                  # count_delta: + into the unit, - out of it, 0 for a weighing
+    reason: str
+    grams: Decimal = None
+    measured_weight_kg: Decimal = None
+    other_unit_id: object = None
+
+    @property
+    def kilos(self):
+        """The weighed kilos when the line has them (dead fish, a harvest's catch), else the fold's."""
+        if self.measured_weight_kg is not None:
+            return self.measured_weight_kg
+        return None if self.grams is None else self.grams / 1000
+
+
+def movements(units, first, last):
+    """[Movement] of the live lines in `units` dated from `first` to `last` (both included), in the fold's order. The
+    grams come from folding every line of the batches ever in the units up to `last`, so a line moves exactly what
+    the stock says it moved; a transfer's other end is the line of the same operation with the same pair."""
+    unit_ids = {unit.pk for unit in units}
+    lines = [line for line in ledger(batches_ever_in(unit_ids)) if line.op.date <= last]
+    grams = {}
+    fold(lines, on_line=lambda line, share, moved: grams.__setitem__(line.id, moved))
+    ends = {}
+    for line in lines:
+        if line.pair is not None:
+            ends.setdefault((line.op.id, line.pair), []).append(line)
+    found = []
+    for line in sorted(lines, key=lambda line: (line.op.date, line.op.seq, line.id)):
+        if line.unit_id not in unit_ids or line.op.date < first:
+            continue
+        other = None
+        if line.pair is not None:
+            other = next((end.unit_id for end in ends[(line.op.id, line.pair)] if end.id != line.id), None)
+        found.append(Movement(line.id, line.op.id, line.op.kind, line.op.date, line.unit_id, line.batch_id, line.kind,
+                              line.count_delta, line.reason, grams.get(line.id), line.measured_weight_kg, other))
+    return found

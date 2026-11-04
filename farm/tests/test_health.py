@@ -5,8 +5,10 @@ registry the harvest side reads, the statutory sea-lice limits, the write paths,
 (medicines, treatments, health events, sea-lice counts, Production units) checked against the stored rows."""
 import io
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, time
 from decimal import Decimal
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -25,7 +27,7 @@ from core.softdelete import plan_delete
 from ..handling import check as handling_check, withdrawal as registry
 from ..handling.withdrawal import WithdrawalBlock
 from ..harvest import views as harvest_views
-from ..health import diseases, lice, services, withdrawal
+from ..health import diseases, lice, notices, services, withdrawal
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
     Batch, Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site,
@@ -800,6 +802,91 @@ class LiceCountServiceTests(HealthTestCase):
         self.assertEqual({(week.site, len(week.counts)) for week in weeks}, {(self.bergen, 1), (self.tromso, 1)})
 
 
+@dataclass
+class FakeNotices:
+    """A provider of farm/health/notices.py that knows the events it was given."""
+    known: dict
+
+    def told(self, events):
+        return {event.pk: self.known[event.pk] for event in events if event.pk in self.known}
+
+    def start_url(self, event, user):
+        return f'/notice/{event.pk}/' if user.has_perm('farm.view_healthevent') else ''
+
+
+class NoticesRegistryTests(HealthTestCase):
+    """That Mattilsynet was told of a disease is read from the filed notices through a registry (D-4), never from a
+    column of the event; with no provider it is "not checked", never "not notified"."""
+
+    def setUp(self):
+        super().setUp()
+        self.pd = HealthEvent.objects.create(site=self.bergen, date=self.day(2), kind='vet_visit', diagnosis='pd',
+                                             confirmation='suspected')
+        self.isa = HealthEvent.objects.create(site=self.bergen, date=self.day(3), kind='vet_visit', diagnosis='isa',
+                                              confirmation='confirmed')
+        self.lice = HealthEvent.objects.create(site=self.bergen, date=self.day(1), kind='vet_visit',
+                                               diagnosis='sea_lice', confirmation='confirmed')
+        self.told_at = datetime.combine(self.day(1), time(9, 30), tzinfo=zone_of(self.bergen))
+
+    def provider(self, *told):
+        return mock.patch.object(notices, '_providers', [FakeNotices({
+            event.pk: notices.Notified(self.told_at, 'AR-1') for event in told})])
+
+    def test_with_no_provider_nothing_is_checked(self):
+        with mock.patch.object(notices, '_providers', []):
+            self.assertIsNone(notices.told([self.pd]))
+            self.assertIsNone(notices.pending([self.pd]))
+            self.assertEqual(notices.start_url(self.pd, self.user), '')
+            page = self.client.get(reverse('farm:healthevent_list'))
+            self.assertNotContains(page, 'Notify Mattilsynet')
+            self.assertNotContains(page, 'Notify at once')
+
+    def test_the_events_of_a_listed_disease_not_yet_told_are_pending_and_a_void_or_a_sea_lice_count_is_not(self):
+        with self.provider(self.isa):
+            self.assertEqual(notices.pending([self.pd, self.isa, self.lice]), [self.pd])
+            self.assertEqual(notices.told([self.pd, self.isa]), {self.isa.pk: notices.Notified(self.told_at, 'AR-1')})
+            self.pd.is_deleted = True
+            self.assertEqual(notices.pending([self.pd]), [])
+            self.pd.is_deleted = False
+        with self.provider():
+            self.assertEqual(notices.pending([self.pd, self.isa, self.lice]), [self.pd, self.isa])
+
+    def test_the_earliest_telling_counts_when_providers_disagree(self):
+        later = FakeNotices({self.pd.pk: notices.Notified(self.told_at.replace(hour=15), 'AR-2')})
+        earlier = FakeNotices({self.pd.pk: notices.Notified(self.told_at, 'AR-1')})
+        with mock.patch.object(notices, '_providers', [later, earlier]):
+            self.assertEqual(notices.told([self.pd])[self.pd.pk].reference, 'AR-1')
+
+    def test_the_list_offers_the_notice_and_shows_when_it_was_filed(self):
+        with self.provider(self.isa):
+            page = self.client.get(reverse('farm:healthevent_list'))
+            self.assertContains(page, 'Notify Mattilsynet')
+            self.assertContains(page, f'href="/notice/{self.pd.pk}/"')
+            self.assertNotContains(page, f'href="/notice/{self.isa.pk}/"')
+            self.assertContains(page, 'Notified')
+            self.assertEqual([event for event, _url in page.context['to_notify']], [self.pd])
+        with self.provider(self.pd, self.isa):
+            self.assertNotContains(self.client.get(reverse('farm:healthevent_list')), 'Notify at once')
+
+    def test_a_person_who_may_not_start_notices_is_told_to_notify_without_the_link(self):
+        class Refusing(FakeNotices):
+            def start_url(self, event, user):
+                return ''
+        with mock.patch.object(notices, '_providers', [Refusing({})]):
+            page = self.client.get(reverse('farm:healthevent_list'))
+            self.assertContains(page, 'Notify Mattilsynet')
+            self.assertNotContains(page, '/notice/')
+
+    def test_the_units_drawer_marks_its_pending_events(self):
+        self.pd.units.add(self.t1)
+        with self.provider():
+            page = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
+            self.assertEqual(page.context['health_notify'], {self.pd.pk, self.isa.pk})
+        with self.provider(self.pd, self.isa):
+            self.assertEqual(self.client.get(reverse('farm:production_units'),
+                                             {'unit': self.t1.pk}).context['health_notify'], set())
+
+
 class DiseaseCatalogueTests(SimpleTestCase):
     def test_the_listed_diseases_are_notified_but_sea_lice(self):
         self.assertEqual(set(diseases.NOTIFIABLE), {
@@ -889,10 +976,6 @@ class MedicinePageTests(HealthTestCase):
                       caught.exception.message_dict['supplies'])
 
 
-def withdrawal_data(rows, initial=0):
-    return rows_data('withdrawals', rows, initial)
-
-
 class MedicineWithdrawalPageTests(HealthTestCase):
     """A medicine's withdrawal per species: the rows on the Withdrawal tab, saved as a list."""
 
@@ -903,13 +986,18 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         self.url = reverse('farm:medicine_withdrawals', args=[self.slice.pk])
         self.cod = make_species('COD', 'Atlantic cod', 'Gadus morhua', saltwater=True)
 
+    def data(self, rows, initial=0):
+        """What the Withdrawal tab posts: its rows, and the medicine's version as stored now (a list saved on an outdated
+        record is refused)."""
+        return rows_data('withdrawals', rows, initial, record=self.slice)
+
     def rows(self):
         return list(self.slice.withdrawals.values_list('species__code', 'degree_days', 'days', 'safety_margin_pct',
                                                        'note'))
 
     def test_create_read_edit_delete(self):
         # Create: one for every species, two of their own, and a row left blank.
-        response = self.client.post(self.url, withdrawal_data([
+        response = self.client.post(self.url, self.data([
             {'species': '', 'degree_days': '150', 'days': '7', 'safety_margin_pct': '20', 'note': 'SPC 2024'},
             {'species': str(self.salmon.pk), 'degree_days': '', 'days': '10', 'safety_margin_pct': '', 'note': ''},
             {'species': str(self.trout.pk), 'degree_days': '0', 'days': '', 'safety_margin_pct': '12.5',
@@ -937,7 +1025,7 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         self.assertContains(listing, 'SPC 2024')
         # Edit: a value changes, a margin is cleared, a species is changed; Delete: a row is removed.
         every, salmon, trout = self.slice.withdrawals.all()
-        self.client.post(self.url, withdrawal_data([
+        self.client.post(self.url, self.data([
             {'id': str(every.pk), 'species': '', 'degree_days': '', 'days': '14', 'safety_margin_pct': '',
              'note': 'SPC 2025'},
             {'id': str(salmon.pk), 'species': str(self.cod.pk), 'degree_days': '', 'days': '10',
@@ -954,13 +1042,13 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         self.assertIn('Rainbow trout: 0 degree-days + 12.5 % safety margin = 0 degree-days (Vet, Nov 2026)', before)
         self.assertEqual(after, 'Every species: 14 days (SPC 2025); Atlantic cod: 10 days + 5 % safety margin = 11 days')
         # Delete them all: the medicine has no withdrawal recorded.
-        self.client.post(self.url, withdrawal_data([]))
+        self.client.post(self.url, self.data([]))
         self.assertEqual(self.rows(), [])
         self.assertContains(self.client.get(reverse('farm:medicine_list')), 'Not recorded')
 
     def test_the_rules_of_the_rows_on_their_fields(self):
         def post(*rows):
-            return self.client.post(self.url, withdrawal_data(list(rows)))
+            return self.client.post(self.url, self.data(list(rows)))
 
         every = {'species': '', 'degree_days': '', 'days': '3'}
         for row, field in (({'species': str(self.salmon.pk)}, 'degree_days'),                  # no value at all
@@ -1037,7 +1125,7 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         viewer = get_user_model().objects.create_user('kari', 'kari@example.com', 'x')
         viewer.groups.add(role('Medicine viewer', 'view_medicine'))
         self.client.force_login(viewer)
-        response = self.client.post(self.url, withdrawal_data([{'species': '', 'days': '3'}]))
+        response = self.client.post(self.url, self.data([{'species': '', 'days': '3'}]))
         self.assertEqual(response.status_code, 403)
         self.assertEqual(self.rows(), [])
 
@@ -1064,7 +1152,7 @@ class MedicineWithdrawalPageTests(HealthTestCase):
 
 def event_data(site, **overrides):
     data = {'site': str(site.pk), 'units': [], 'date': '', 'kind': 'observation', 'signs': [], 'diagnosis': '',
-            'confirmation': '', 'authority_notified_at': '', 'examined_by': '', 'vet': '', 'lab': '',
+            'confirmation': '', 'examined_by': '', 'vet': '', 'lab': '',
             'lab_reference': '', 'findings': '', 'recommendations': '', 'closed_on': '', 'outcome': ''}
     data.update(overrides)
     return data
@@ -1081,31 +1169,29 @@ class HealthEventPageTests(HealthTestCase):
         event = HealthEvent.objects.get()
         self.assertEqual(
             (event.site, list(event.units.all()), event.date, event.kind, event.signs, event.diagnosis,
-             event.confirmation, event.authority_notified_at, event.examined_by, event.vet, event.lab,
+             event.confirmation, event.examined_by, event.vet, event.lab,
              event.lab_reference, event.findings, event.recommendations, event.created_by),
             (self.bergen, [self.t1], self.day(2), 'vet_visit', ['reduced_appetite', 'pale_gills'], 'pd', 'suspected',
-             None, 'Dr. Hansen', self.vet, self.vet, 'L-9', 'Pale gills in T-01', 'Sample again', self.user))
+             'Dr. Hansen', self.vet, self.vet, 'L-9', 'Pale gills in T-01', 'Sample again', self.user))
         page = self.client.get(reverse('farm:healthevent_list'))
         self.assertEqual(list(page.context['objects']), [event])
         self.assertContains(page, 'Notify Mattilsynet')
         self.assertContains(page, 'Reduced appetite, Pale gills')
-        # Edit: notified, closed, then every optional field cleared.
-        notified = f'{self.day(1).isoformat()}T09:30'
+        # Edit: confirmed and closed, then every optional field cleared. That Mattilsynet was told is a notice's
+        # filing (farm/health/notices.py), not a field of the event.
+        self.assertNotIn('authority_notified_at', self.client.get(
+            reverse('farm:healthevent_edit', args=[event.pk])).context['form'].fields)
         self.client.post(reverse('farm:healthevent_edit', args=[event.pk]), event_data(
             self.bergen, units=[str(self.t1.pk)], date=self.day(2).isoformat(), kind='vet_visit', diagnosis='pd',
-            confirmation='confirmed', authority_notified_at=notified, closed_on=self.day(1).isoformat(),
-            outcome='Recovered', version='1'))
+            confirmation='confirmed', closed_on=self.day(1).isoformat(), outcome='Recovered', version='1'))
         event.refresh_from_db()
-        self.assertEqual((event.confirmation, event.authority_notified_at,
-                          event.closed_on, event.outcome, event.signs, event.examined_by, event.vet),
-                         ('confirmed', datetime.combine(self.day(1), time(9, 30), tzinfo=zone_of(self.bergen)),
-                          self.day(1), 'Recovered', [], '', None))
-        self.assertNotContains(self.client.get(reverse('farm:healthevent_list')), 'Notify Mattilsynet')
+        self.assertEqual((event.confirmation, event.closed_on, event.outcome, event.signs, event.examined_by,
+                          event.vet), ('confirmed', self.day(1), 'Recovered', [], '', None))
         self.client.post(reverse('farm:healthevent_edit', args=[event.pk]), event_data(
             self.bergen, date=self.day(2).isoformat(), kind='observation', version='2'))
         event.refresh_from_db()
-        self.assertEqual((list(event.units.all()), event.diagnosis, event.confirmation, event.authority_notified_at,
-                          event.closed_on, event.outcome, event.version), ([], '', '', None, None, '', 3))
+        self.assertEqual((list(event.units.all()), event.diagnosis, event.confirmation, event.closed_on,
+                          event.outcome, event.version), ([], '', '', None, '', 3))
         # Void, with its reason.
         self.client.post(reverse('farm:healthevent_void', args=[event.pk]), {'reason': 'Wrong site'})
         event = HealthEvent.all_objects.get(pk=event.pk)
@@ -1124,7 +1210,6 @@ class HealthEventPageTests(HealthTestCase):
             ({'date': self.day(-1).isoformat()}, 'date'),
             ({'date': self.day(40).isoformat()}, 'date'),
             ({'units': [str(self.p1.pk)]}, 'units'),
-            ({'authority_notified_at': f'{self.day(4).isoformat()}T10:00'}, 'authority_notified_at'),
             ({'vet': str(self.pharma.pk)}, 'vet'),
         ]
         for overrides, field in cases:

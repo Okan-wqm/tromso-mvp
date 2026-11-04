@@ -45,6 +45,11 @@ class SpeciesStatus(models.TextChoices):
     DISCONTINUED = 'discontinued', _('Discontinued')
 
 
+# The species whose weekly sea-lice report a sea site owes: Mattilsynet's own "Laks, Ørret, Regnbueørret" (salmon, trout,
+# rainbow trout; D-11). By official code, so a species with no code is named where it is missed (reports/due.py).
+SALMONID_CODES = ('SAL', 'TRS', 'TRR')
+
+
 class CleanerFishType(models.TextChoices):
     NONE = '', _('Not a cleaner fish')
     LUMPFISH = 'lumpfish', _('Lumpfish')
@@ -179,6 +184,14 @@ class Species(CodedMixin, AuditedModel):
         errors = {}
         if not any(getattr(self, name) for name in self.WATER_FIELDS):
             errors['freshwater'] = ValidationError(WATER_MESSAGE)
+        stored = None if self._state.adding else Species.all_objects.filter(pk=self.pk).values_list(
+            'cleaner_fish_type', flat=True).first()
+        if stored is not None and bool(stored) != bool(self.cleaner_fish_type) and self.batches(
+                manager='all_objects').exists():
+            # Every read takes the flag live: it would turn the species' stocked fish, their feeding and their
+            # reports into the other kind's. Lumpfish to wrasse (both cleaner fish) may change.
+            errors['cleaner_fish_type'] = ValidationError(
+                _('Fixed: fish of this species have been stocked, so whether it is a cleaner fish cannot change.'))
         entry = species_catalog.find(self.scientific_name)
         if entry and entry.official_code_verified and self.official_code not in ('', entry.official_code):
             errors['official_code'] = ValidationError(

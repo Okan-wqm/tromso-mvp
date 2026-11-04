@@ -445,12 +445,12 @@ class ActionTests(TasksTestCase):
         task = self.make_task()
         url = reverse('tasks:task_checklist', args=[task.pk])
         from farm.tests.helpers import rows_data
-        self.client.post(url, rows_data('checklist', [{'text': 'Stop the pump'}, {'text': 'Brush the screens'}]))
+        self.client.post(url, rows_data('checklist', [{'text': 'Stop the pump'}, {'text': 'Brush the screens'}], record=task))
         self.assertEqual(list(task.checklist.values_list('text', flat=True)), ['Stop the pump', 'Brush the screens'])
         first = task.checklist.first()
         services.tick(self.ali, first, True)
         rows = [{'id': item.pk, 'text': item.text} for item in task.checklist.all()]
-        response = self.client.post(url, rows_data('checklist', rows + [{'text': 'More'}], initial=2))
+        response = self.client.post(url, rows_data('checklist', rows + [{'text': 'More'}], initial=2, record=task))
         self.assertEqual(task.checklist.count(), 2)
         self.assertContains(response, 'The checklist has been started')
         self.assertContains(self.client.get(edit_url(task)), 'its lines can no longer be changed')

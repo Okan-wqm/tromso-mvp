@@ -46,8 +46,8 @@ def equipment_data(kind, department, links=(), specs=None, **overrides):
     return data
 
 
-def calibrations_data(rows, initial=0):
-    return rows_data('calibrations', rows, initial)
+def calibrations_data(rows, initial=0, record=None):
+    return rows_data('calibrations', rows, initial, record)
 
 
 class EquipmentTestCase(TestCase):
@@ -454,7 +454,7 @@ class FeederCalibrationTests(EquipmentTestCase):
              'notes': 'top up daily'},
             {'feed_size_mm': '1.5', 'grams_per_dispensing': '10.5', 'silo_capacity_kg': '0'},
             {'feed_size_mm': '', 'label': '', 'grams_per_dispensing': '', 'silo_capacity_kg': ''},   # left blank
-        ]))
+        ], record=self.unit))
         rows = list(self.unit.calibrations.values_list('feed_size_mm', 'label', 'grams_per_dispensing',
                                                        'silo_capacity_kg', 'notes', 'created_by'))
         self.assertEqual(rows, [(Decimal('1.50'), '', Decimal('10.50'), Decimal('0.00'), '', self.user.pk),
@@ -468,7 +468,7 @@ class FeederCalibrationTests(EquipmentTestCase):
              'DELETE': True},
             {'id': str(starter.pk), 'feed_size_mm': '3', 'label': 'Starter', 'grams_per_dispensing': '30',
              'silo_capacity_kg': '250'},
-        ], initial=2))
+        ], initial=2, record=self.unit))
         self.assertEqual(list(self.unit.calibrations.values_list('feed_size_mm', 'grams_per_dispensing')),
                          [(Decimal('3.00'), Decimal('30.00'))])
 
@@ -477,7 +477,7 @@ class FeederCalibrationTests(EquipmentTestCase):
             {'feed_size_mm': '0', 'grams_per_dispensing': '0.05', 'silo_capacity_kg': '-1'},
             {'feed_size_mm': '2', 'grams_per_dispensing': '1', 'silo_capacity_kg': '1'},
             {'feed_size_mm': '2.00', 'grams_per_dispensing': '1', 'silo_capacity_kg': '1'},
-        ]))
+        ], record=self.unit))
         formset = response.context['calibrations']
         self.assertEqual(set(formset.forms[0].errors), {'feed_size_mm', 'grams_per_dispensing', 'silo_capacity_kg'})
         self.assertIn('Two rows have the same feed size.', formset.non_form_errors())
@@ -486,7 +486,7 @@ class FeederCalibrationTests(EquipmentTestCase):
 
     def test_at_most_fifty(self):
         rows = [{'feed_size_mm': str(size), 'grams_per_dispensing': '1', 'silo_capacity_kg': '1'} for size in range(1, 52)]
-        response = self.client.post(self.url, calibrations_data(rows))
+        response = self.client.post(self.url, calibrations_data(rows, record=self.unit))
         self.assertIn('A feeder has at most 50 calibrations.', response.context['calibrations'].non_form_errors())
         self.assertFalse(self.unit.calibrations.exists())
 
@@ -494,7 +494,7 @@ class FeederCalibrationTests(EquipmentTestCase):
         pump = self.make()
         self.assertNotContains(self.client.get(reverse('farm:equipment_edit', args=[pump.pk])), 'data-tab="calibration"')
         url = reverse('farm:equipment_calibrations', args=[pump.pk])
-        self.assertEqual(self.client.post(url, calibrations_data([])).status_code, 404)
+        self.assertEqual(self.client.post(url, calibrations_data([], record=pump)).status_code, 404)
         row = FeederCalibration(equipment=pump, feed_size_mm=Decimal(1), grams_per_dispensing=Decimal(1),
                                 silo_capacity_kg=Decimal(1))
         with self.assertRaisesMessage(ValidationError, 'Only a feeder has feed calibrations.'):
@@ -513,7 +513,8 @@ class FeederCalibrationTests(EquipmentTestCase):
 
     def test_saving_is_logged_on_the_equipment(self):
         self.client.post(self.url, calibrations_data([
-            {'feed_size_mm': '3', 'label': 'Starter', 'grams_per_dispensing': '25', 'silo_capacity_kg': '250'}]))
+            {'feed_size_mm': '3', 'label': 'Starter', 'grams_per_dispensing': '25', 'silo_capacity_kg': '250'}],
+            record=self.unit))
         entry = AuditLog.objects.get()
         self.assertEqual((entry.action, entry.entity_type, entry.entity_label), ('update', 'equipment', 'Feeder (FD)'))
         self.assertEqual(entry.changes, {'Feed calibrations': [None, '3.00 mm Starter: 25.00 g per shot, silo 250.00 kg']})

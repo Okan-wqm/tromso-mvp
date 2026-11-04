@@ -469,7 +469,8 @@ def label(operation, lines=None):
     lines = lines if lines is not None else list(operation.movements.select_related('unit', 'batch'))
     units = ', '.join(dict.fromkeys(line.unit.code for line in lines))
     batches = ', '.join(dict.fromkeys(line.batch.code for line in lines))
-    return f'{audit.english(operation.get_kind_display())} · {units} · {batches} · {operation.date.isoformat()}'
+    kind = _('Escape') if operation.escape is not None else operation.get_kind_display()
+    return f'{audit.english(kind)} · {units} · {batches} · {operation.date.isoformat()}'
 
 
 def _log(user, action, operation, assessment=None):

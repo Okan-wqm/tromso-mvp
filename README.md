@@ -1872,6 +1872,19 @@ clock the site keeps, and the ISO week of 28 December to 3 January is 2026-W53. 
 records changed**: only the rows a report read are compared with the ones it was filed from (never a ledger folded again), and a
 report of a period older than the last 31 days, the backdating window, is not read again.
 
+**Tabs and where each kind stands.** The Reports page has a tab for every kind of report, always there: *All reports* first,
+then the urgent notices (welfare, disease, escape, a land site taken into use or emptied) and the scheduled reports (sea
+lice, monthly biomass, smolt, cleaner fish, planned slaughter, a land site's yearly stock), each with the number of its reports
+due. A tab lists that kind's reports (drafts and filed) and the filed ones whose records changed, has its own **Start one**
+link for people who may create, and above them **Where it stands**: a line for every site (for the planned slaughter, every
+slaughter facility) saying *N due*, *up to date* or *not due* and, when nothing is due, why in plain words ("no salmonids in
+the sea at Fjord since 2026-10-01", "site not set up: no production form", "Hatchery is not a sea site", "no cleaner fish held
+at ...", "no harvest is planned to ... from this week on"). The lines come from the due list itself (`reports/due.py`: the
+rule that decides what is owed also gives the reason when nothing is), not from a second copy of it, so a site set up as
+food fish that holds no fish says so instead of showing nothing. The site and status filters stay when a tab is chosen. The
+**company overview** has an *Upcoming reports* block (the next deadlines of the due list, the overdue first and in red, a notice
+at once) for people who may read the reports.
+
 **A report** has a kind, a site (a slaughter facility for the planned slaughter), a period or the day of the event, its health
 event or escape for a notice, the contact person (the person who starts it, as the authority asks for one on every report), and for
 a notice the person's account of what happened (what, when found, cause, fish dead, injured and involved, the situation, the
@@ -2623,7 +2636,7 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
-| `/reports/` | Production › Reports › Regulatory reports: what is due, the filed reports whose records changed, the reports and notices; `?kind=`, `site=`, `status=` filter, `new/?kind=&site=&period=2026-W45` (or `&facility=`, `&health_event=`, `&escape=`) starts one |
+| `/reports/` | Production › Reports › Regulatory reports: a tab for every kind (`?kind=`) with where it stands for each site, what is due, the filed reports whose records changed, the reports and notices; `site=`, `status=` filter, `new/?kind=&site=&period=2026-W45` (or `&facility=`, `&health_event=`, `&escape=`) starts one |
 | `/reports/<id>/view/`, `<id>/`, `<id>/delete/` | A report's page (the figures as filed, or as the records give them now, and the differences), its form, discarding a draft; `<id>/treatments/`, `resistance/`, `sensitivity/`, `units/` save the answers of its kind |
 | `/reports/<id>/submit/`, `correct/`, `export.<csv or json>`, `print/` | Records the filing (POST); starts a correction (POST); the exports; the printable page |
 | `/messages/` | Communication › Messages: the person's conversations |

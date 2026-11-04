@@ -330,6 +330,12 @@ msgstr[0] "%(count)s gün-derece"
 msgstr[1] "%(count)s gün-derece"
 
 #, python-format
+msgid "%(count)s due"
+msgid_plural "%(count)s due"
+msgstr[0] "%(count)s tane zamanı geldi"
+msgstr[1] "%(count)s tane zamanı geldi"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(unit)s içinde %(count)s balık kalıyor: onları da tartın."
 
@@ -338,6 +344,12 @@ msgid "%(count)s member"
 msgid_plural "%(count)s members"
 msgstr[0] "%(count)s üye"
 msgstr[1] "%(count)s üye"
+
+#, python-format
+msgid "%(count)s overdue"
+msgid_plural "%(count)s overdue"
+msgstr[0] "%(count)s tane gecikmiş"
+msgstr[1] "%(count)s tane gecikmiş"
 
 #, python-format
 msgid "%(count)s overdue task"
@@ -834,6 +846,22 @@ msgid ""
 msgstr ""
 "%(site)s için deniz biti sınır bölgesi yok (Tesis › Sahalar): daha sıkı sınır ve daha büyük örnek"
 " uygulanır."
+
+#, python-format
+msgid "%(site)s is at sea: it reports the monthly biomass"
+msgstr "%(site)s denizde: aylık biyokütleyi raporlar"
+
+#, python-format
+msgid "%(site)s is not a juvenile (settefisk) site"
+msgstr "%(site)s bir yavru balık (settefisk) lokasyonu değil"
+
+#, python-format
+msgid "%(site)s is not a sea site"
+msgstr "%(site)s bir deniz lokasyonu değil"
+
+#, python-format
+msgid "%(site)s is on land: it reports its yearly stock"
+msgstr "%(site)s karada: yıllık stoğunu raporlar"
 
 #, python-format
 msgid ""
@@ -3905,6 +3933,10 @@ msgid "Escape"
 msgstr "Kaçış"
 
 #, python-format
+msgid "Escape of %(fish)d fish from %(unit)s, %(date)s"
+msgstr "%(date)s: %(unit)s biriminden %(fish)d balığın kaçışı"
+
+#, python-format
 msgid "Escape recorded: %(count)s fish of %(batch)s from %(unit)s."
 msgstr "Kaçış kaydedildi: %(unit)s biriminden %(batch)s partisinden %(count)s balık."
 
@@ -5266,6 +5298,9 @@ msgstr "Anahtar"
 msgid "Kind"
 msgstr "Tür"
 
+msgid "Kinds of report"
+msgstr "Rapor türleri"
+
 msgid "Knowledge"
 msgstr "Bilgi"
 
@@ -6170,6 +6205,9 @@ msgstr "Güncel veri yok"
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Henüz yeniden sipariş seviyesi yok. Satır eklemek için “Yem ekle”yi kullanın."
 
+msgid "No report is due."
+msgstr "Zamanı gelen rapor yok."
+
 msgid "No rows match."
 msgstr "Eşleşen satır yok."
 
@@ -6188,6 +6226,9 @@ msgstr "Henüz deniz biti sayımı kaydedilmedi"
 
 msgid "No site"
 msgstr "Saha yok"
+
+msgid "No site or facility to report for."
+msgstr "Rapor verilecek lokasyon veya tesis yok."
 
 msgid "No species yet. Use “Add species” to add a row."
 msgstr "Henüz balık türü yok. Satır eklemek için “Balık türü ekle”yi kullanın."
@@ -6356,6 +6397,9 @@ msgstr "Denetlenmedi"
 
 msgid "Not chosen yet"
 msgstr "Henüz seçilmedi"
+
+msgid "Not due"
+msgstr "Zamanı gelmedi"
 
 msgid "Not filed: as the records give it now."
 msgstr "Sunulmadı: kayıtların şimdi verdiği gibi."
@@ -7888,6 +7932,9 @@ msgstr "Başka bir nedense nedenini yazın, yalnızca o zaman."
 msgid "Scale loss"
 msgstr "Pul kaybı"
 
+msgid "Scheduled"
+msgstr "Planlı"
+
 msgid "Scientific name"
 msgstr "Bilimsel ad"
 
@@ -8443,6 +8490,9 @@ msgstr "Başlat"
 
 msgid "Start a correction"
 msgstr "Düzeltme başlat"
+
+msgid "Start one"
+msgstr "Bir tane başlat"
 
 msgid "Started"
 msgstr "Başlatıldı"
@@ -10171,6 +10221,12 @@ msgstr "%(date)s tarihine kadar"
 msgid "Up to (g)"
 msgstr "Üst sınır (g)"
 
+msgid "Up to date"
+msgstr "Güncel"
+
+msgid "Upcoming reports"
+msgstr "Yaklaşan raporlar"
+
 msgid "Updated at"
 msgstr "Güncellenme zamanı"
 
@@ -10570,6 +10626,9 @@ msgid ""
 "left out."
 msgstr "DOI’si yoksa ya da DOI yetmiyorsa okunabileceği yer. Yazılmazsa https:// eklenir."
 
+msgid "Where it stands"
+msgstr "Durumu"
+
 msgid ""
 "Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
 "facilities)."
@@ -10670,6 +10729,9 @@ msgid "Whose observation or advice it is, e.g. “Kari Nordmann, fish health vet
 msgstr ""
 "Gözlemin ya da önerinin kime ait olduğu, örn. “Kari Nordmann, balık sağlığı veterineri” ya da "
 "kendi adınız."
+
+msgid "Why"
+msgstr "Neden"
 
 msgid "Why the text could not be read"
 msgstr "Metnin neden okunamadığı"
@@ -10810,8 +10872,15 @@ msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
 msgid "a correction"
 msgstr "bir düzeltme"
 
+msgid "a juvenile site reports smolt, not the monthly biomass"
+msgstr "yavru balık lokasyonu aylık biyokütleyi değil, smolt raporunu verir"
+
 msgid "after the count"
 msgstr "sayımdan sonra"
+
+#, python-format
+msgid "and %(count)s more: all reports"
+msgstr "ve %(count)s tane daha: tüm raporlar"
 
 #, python-format
 msgid "and %(kilos)s to the cleaner fish"
@@ -11233,6 +11302,10 @@ msgstr "kaçış kayıtları"
 msgid "estimated %(estimated)s (measured %(measured)s)"
 msgstr "tahmini %(estimated)s (ölçülen %(measured)s)"
 
+#, python-format
+msgid "every period since %(date)s with fish is filed"
+msgstr "%(date)s tarihinden beri balık bulunan her dönem bildirildi"
+
 msgid "every species"
 msgstr "her balık türü"
 
@@ -11462,8 +11535,28 @@ msgstr "sonraki öğün %(meal)s"
 msgid "no"
 msgstr "hayır"
 
+#, python-format
+msgid "no cleaner fish held at %(site)s since %(date)s"
+msgstr "%(date)s tarihinden beri %(site)s lokasyonunda temizleyici balık yok"
+
+#, python-format
+msgid "no escape without a filed notice since %(date)s"
+msgstr "%(date)s tarihinden beri bildirimi yapılmamış kaçış yok"
+
 msgid "no fish"
 msgstr "balık yok"
+
+#, python-format
+msgid "no fish held at %(site)s since %(date)s"
+msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
+
+#, python-format
+msgid "no harvest is planned to %(facility)s from this week on"
+msgstr "bu haftadan itibaren %(facility)s için planlanmış hasat yok"
+
+#, python-format
+msgid "no listed disease without a filed notice since %(date)s"
+msgstr "%(date)s tarihinden beri bildirimi yapılmamış listeli hastalık yok"
 
 msgid "no number"
 msgstr "numarasız"
@@ -11476,11 +11569,25 @@ msgstr "numarasız, son kullanma %(date)s"
 msgid "no official code for %(species)s"
 msgstr "%(species)s için resmî kod yok"
 
+#, python-format
+msgid "no production fish held at %(site)s since %(date)s"
+msgstr "%(date)s tarihinden beri %(site)s lokasyonunda üretim balığı yok"
+
 msgid "no production form"
 msgstr "üretim biçimi yok"
 
 msgid "no reports-from date"
 msgstr "rapor başlangıç tarihi yok"
+
+msgid "no reports-from date: its periods are not counted"
+msgstr "rapor başlangıç tarihi yok: dönemleri sayılmaz"
+
+msgid "no reports-from date: nothing is counted"
+msgstr "rapor başlangıç tarihi yok: hiçbir şey sayılmaz"
+
+#, python-format
+msgid "no salmonids in the sea at %(site)s since %(date)s"
+msgstr "%(date)s tarihinden beri %(site)s lokasyonunda denizde salmonid yok"
 
 msgid "no such row"
 msgstr "böyle bir satır yok"
@@ -11500,8 +11607,17 @@ msgstr "hiçbir pH'de ulaşılmaz"
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "çizelgenin aralığında ulaşılmaz (4 ile 12,5)"
 
+msgid "only a site of food fish or broodstock on land reports it"
+msgstr "yalnızca karadaki besi balığı veya damızlık lokasyonu bunu raporlar"
+
+msgid "only a site of food fish, broodstock or cleaner-fish juveniles on land reports it"
+msgstr "yalnızca karadaki besi balığı, damızlık veya temizleyici balık yavrusu lokasyonu bunu raporlar"
+
 msgid "open"
 msgstr "süresiz"
+
+msgid "owed once the month or week now running has closed"
+msgstr "şu an süren ay veya hafta kapandığında gelir"
 
 #, python-format
 msgid "p. %(page)s"
@@ -11657,6 +11773,9 @@ msgstr "saha iletişim kişisi"
 msgid "site contacts"
 msgstr "saha iletişim kişileri"
 
+msgid "site not set up: no production form"
+msgstr "lokasyon ayarlanmadı: üretim biçimi yok"
+
 msgid "sites"
 msgstr "sahalar"
 
@@ -11675,6 +11794,12 @@ msgstr "balık türleri"
 
 msgid "stale"
 msgstr "eski"
+
+msgid "started by a person when an event happens"
+msgstr "bir olay olduğunda bir kişi tarafından başlatılır"
+
+msgid "started by a person when it happens"
+msgstr "olduğunda bir kişi tarafından başlatılır"
 
 msgid "starts later"
 msgstr "daha sonra başlıyor"

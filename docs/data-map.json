@@ -216,6 +216,7 @@
         "inventory/tests/test_services.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py",
         "monitoring/tests/test_boards.py",
@@ -5231,6 +5232,7 @@
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
         "monitoring/tests/test_read.py"
       ]
     },
@@ -6380,6 +6382,7 @@
         "farm/tests/test_health.py",
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
         "monitoring/tests/test_read.py"
       ]
     },
@@ -9518,6 +9521,7 @@
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_read.py"
@@ -11651,6 +11655,7 @@
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
         "monitoring/tests/test_pages.py"
       ]
     },
@@ -23161,6 +23166,7 @@
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
       ]
     },

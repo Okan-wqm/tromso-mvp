@@ -1,0 +1,15 @@
+{% load i18n %}
+<section class="upcoming-reports" aria-labelledby="upcoming-title">
+  <h2 id="upcoming-title" class="section-title">{% trans "Upcoming reports" %}{% if upcoming.overdue %} <span class="badge badge-closed">{% blocktrans trimmed count count=upcoming.overdue %}{{ count }} overdue{% plural %}{{ count }} overdue{% endblocktrans %}</span>{% endif %}</h2>
+  {% if upcoming.rows %}
+  <ul>
+    {% for row in upcoming.rows %}<li{% if row.overdue %} class="overdue"{% endif %}>
+      <span>{{ row.kind.label }} · {{ row.place }}{% if row.period %} · {{ row.period.label }}{% endif %}</span>
+      <span>{% if row.deadline %}{{ row.deadline|date:"DATE_FORMAT" }}{% if row.overdue %} · {% trans "Overdue" %}{% endif %}{% else %}{% trans "at once" %}{% endif %}</span>
+    </li>{% endfor %}
+  </ul>
+  <p><a href="{{ upcoming.url }}">{% if upcoming.more %}{% blocktrans trimmed with count=upcoming.more %}and {{ count }} more: all reports{% endblocktrans %}{% else %}{% trans "All reports" %}{% endif %}</a></p>
+  {% else %}
+  <p>{% trans "No report is due." %} <a href="{{ upcoming.url }}">{% trans "All reports" %}</a></p>
+  {% endif %}
+</section>

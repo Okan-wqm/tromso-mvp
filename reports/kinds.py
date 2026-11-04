@@ -85,6 +85,10 @@ KINDS = {
         None, _('at once')),
 }
 
+# The tabs of the Reports page in the source platform's order: the urgent notices (at once), then the scheduled reports.
+URGENT = (ReportKind.WELFARE, ReportKind.DISEASE, ReportKind.ESCAPE, ReportKind.SITE_IN_USE, ReportKind.SITE_EMPTIED)
+SCHEDULED = (ReportKind.SEA_LICE, ReportKind.BIOMASS, ReportKind.SMOLT, ReportKind.CLEANER_FISH,
+             ReportKind.SLAUGHTER_PLANNED, ReportKind.LAND_STOCK)
 PERIODIC = tuple(kind for kind, info in KINDS.items() if info.grain != EVENT)
 EVENTS = tuple(kind for kind, info in KINDS.items() if info.grain == EVENT)
 BY_FACILITY = tuple(kind for kind, info in KINDS.items() if info.scope == FACILITY)

@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 from core import navigation
 from core.crud import done, render_page
 
-from . import compute, exports, periods, services
+from . import compute, due, exports, periods, services
 from .forms import SubmitForm
 from .resources import ReportResource
 
@@ -30,6 +30,19 @@ def _content(report):
     if report.submitted_at is not None:
         return report.snapshot.content, True
     return compute.compute(report).content, False
+
+
+UPCOMING = 6
+
+
+def overview_upcoming(user):
+    """The company overview's upcoming reports: the next deadlines of what is due, the overdue first (the due list, read as
+    the Reports page reads it), for people who may read the reports; None for the others."""
+    if not user.has_perm('reports.view_report'):
+        return None
+    rows = due.due().rows
+    return {'rows': rows[:UPCOMING], 'more': max(len(rows) - UPCOMING, 0), 'url': reverse('reports:report_list'),
+            'overdue': sum(1 for row in rows if row.overdue)}
 
 
 @permission_required('reports.change_report', raise_exception=True)

@@ -275,8 +275,12 @@ class RollupRefreshTests(TransactionTestCase):
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])
         one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
         self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 21'), 0)
-        self.refresh('sensors_rollup_1m')
-        self.refresh('sensors_rollup_1h')
+        # Dropping raw chunks invalidates their region (TimescaleDB 2.17): a refresh over it would empty the rollups. No
+        # job reaches it: the policies look 35 and 75 days back, the late job no further than the late limit and a day.
+        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1m')
+        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1h')
+        with connection.cursor() as cursor:                      # the drop as if it happened two years on
+            cursor.execute('UPDATE sensors_contract SET late_limit_days = 1, retention_days = 3')
         self.run_job('sensors_refresh_late')
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1m WHERE channel_no = 21'), [(3, 9.0)])
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])

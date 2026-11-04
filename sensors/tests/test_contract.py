@@ -99,8 +99,17 @@ class ViewTests(SensorsCase):
 class ContractRowTests(TestCase):
     def test_one_row_with_the_version_and_the_defaults(self):
         contract = Contract.objects.get()
-        self.assertEqual((contract.pk, contract.schema_version, contract.future_skew_s, contract.retention_days),
-                         (1, 1, 60, 730))
+        self.assertEqual((contract.pk, contract.schema_version, contract.future_skew_s, contract.retention_days,
+                          contract.late_limit_days), (1, 1, 60, 730, 728))
+
+    def test_a_message_is_refused_as_too_old_two_days_before_the_raw_data_is_dropped(self):
+        # The rollups take in late readings up to a day past the limit and never reach the dropped region (sensors
+        # migration 0003): the limit stays at least two days inside the retention.
+        from django.db import IntegrityError, transaction
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Contract.objects.update(late_limit_days=729)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Contract.objects.update(late_limit_days=0)
 
     def test_a_second_row_is_refused(self):
         from django.db import IntegrityError, transaction

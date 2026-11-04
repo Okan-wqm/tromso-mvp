@@ -444,6 +444,8 @@ impl Writer {
         self.committed.extend(out.states);
         self.shared.commits.fetch_add(1, Ordering::SeqCst);
         self.shared.last_db_ok.store(now_s(), Ordering::SeqCst);
+        #[cfg(feature = "failpoints")]
+        failpoint_after_commit(self.shared.commits.load(Ordering::SeqCst));
         for a in acks.into_iter().flatten() {
             a.ack();
             self.shared.acked.fetch_add(1, Ordering::SeqCst);
@@ -554,5 +556,19 @@ impl Writer {
         }
         tracing::info!(drained = n, "writer stopped");
         Served::Stopped
+    }
+}
+
+/// Test builds only (`--features failpoints`, never the production image): `INGEST_FAILPOINT_ABORT_AFTER_COMMIT=N`
+/// aborts the process right after the N-th COMMIT and before its acknowledgements, once per container (a marker file
+/// stops the restarted process from aborting again). The end-to-end drill measures what the broker then redelivers.
+#[cfg(feature = "failpoints")]
+fn failpoint_after_commit(commits: u64) {
+    let marker = std::path::Path::new("/tmp/ingest-failpoint-done");
+    let at = std::env::var("INGEST_FAILPOINT_ABORT_AFTER_COMMIT").ok().and_then(|v| v.parse::<u64>().ok());
+    if at == Some(commits) && !marker.exists() {
+        let _ = std::fs::write(marker, b"done");
+        tracing::error!(commits, "failpoint: aborting after COMMIT, before the acknowledgements");
+        std::process::abort();
     }
 }

@@ -22,6 +22,10 @@ tracing-subscriber = { version = "0.3.19", default-features = false, features = 
 axum = { version = "0.8.4", default-features = false, features = ["http1", "json", "tokio"] }
 futures-util = { version = "0.3.31", default-features = false, features = ["std"] }
 
+[features]
+# test builds only: the end-to-end crash drill (Dockerfile build argument FEATURES=failpoints)
+failpoints = []
+
 [dev-dependencies]
 proptest = { version = "1.7", default-features = false, features = ["std"] }
 tower = { version = "0.5", default-features = false, features = ["util"] }

@@ -3,7 +3,8 @@ FROM rust:1.88.0-slim-bookworm@sha256:38bc5a86d998772d4aec2348656ed21438d20fcdce
 WORKDIR /src
 COPY Cargo.toml Cargo.lock rustfmt.toml ./
 COPY src ./src
-RUN cargo build --release --locked --bin sensors-ingest
+ARG FEATURES=""
+RUN cargo build --release --locked --bin sensors-ingest --features "$FEATURES"
 
 FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
 RUN apt-get update \

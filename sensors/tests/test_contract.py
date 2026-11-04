@@ -34,9 +34,9 @@ def view(channel_no=None):
     sql = 'SELECT * FROM sensors_ingest_config'
     with connection.cursor() as cursor:
         if channel_no is None:
-            cursor.execute(sql + ' ORDER BY channel_no, valid_from')
+            cursor.execute(sql + ' ORDER BY channel_no, valid_from NULLS FIRST')
         else:
-            cursor.execute(sql + ' WHERE channel_no = %s ORDER BY valid_from', [channel_no])
+            cursor.execute(sql + ' WHERE channel_no = %s ORDER BY valid_from NULLS FIRST', [channel_no])
         names = [column.name for column in cursor.description]
         return [dict(zip(names, row)) for row in cursor.fetchall()]
 
@@ -50,8 +50,7 @@ class ViewTests(SensorsCase):
     def test_an_uncalibrated_channel_has_one_epoch_from_the_beginning_with_its_unit_conversion(self):
         Channel.objects.filter(pk=self.channel.pk).update(unit_factor=0.1, unit_offset=-2)
         [row] = view(self.channel.channel_no)
-        self.assertEqual(one("SELECT valid_from = '-infinity' FROM sensors_ingest_config WHERE channel_no = %s",
-                             [self.channel.channel_no]), True)
+        self.assertIsNone(row['valid_from'])                  # from the beginning
         self.assertIsNone(row['valid_to'])
         self.assertAlmostEqual(row['a'], 0.1)
         self.assertAlmostEqual(row['b'], -2)
@@ -66,7 +65,7 @@ class ViewTests(SensorsCase):
         rows_ = view(self.channel.channel_no)
         self.assertEqual(len(rows_), 2)
         early, late = rows_
-        self.assertEqual(early['valid_to'], second)
+        self.assertEqual((early['valid_from'], early['valid_to']), (None, second))
         self.assertEqual((late['valid_from'], late['valid_to']), (second, None))
         # value = unit_factor * (gain * raw + offset) + unit_offset
         self.assertAlmostEqual(early['a'], 2 * 1.1)
@@ -192,7 +191,7 @@ class RuntimeTableTests(SensorsCase):
         self.refused('chk_sensors_dead_letter_reason', lambda: DeadLetter.objects.create(**{**fields, 'reason': 'odd'}))
         self.refused('chk_sensors_dead_letter_hash', lambda: DeadLetter.objects.create(**{**fields, 'payload_sha256': 'x'}))
         self.refused('chk_sensors_dead_letter_payload', lambda: DeadLetter.objects.create(
-            **{**fields, 'payload_sha256': 'f' * 64, 'payload': b'x' * 4097}))
+            **{**fields, 'payload_sha256': 'f' * 64, 'payload': b'x' * 4097, 'payload_len': 4097}))
         self.refused('chk_sensors_dead_letter_times', lambda: DeadLetter.objects.create(
             **{**fields, 'payload_sha256': 'e' * 64, 'last_at': now - timedelta(seconds=1)}))
         DeadLetter.objects.create(**{**fields, 'payload_sha256': 'overflow', 'payload': b''})

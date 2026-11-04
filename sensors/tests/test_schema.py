@@ -42,7 +42,7 @@ class PayloadFormatRulesTests(SensorsCase):
         for constraint, fields in (
                 ('chk_sensors_payload_format_name', {'name': ''}),
                 ('chk_sensors_payload_format_encoding', {'encoding': 'xml'}),
-                ('chk_sensors_payload_format_shape', {'shape': 'csv'}),
+                ('chk_sensors_payload_format_shape', {'shape': 'csv', 'name_key': 'n', 'value_key': 'v'}),
                 ('chk_sensors_payload_format_time_unit', {'time_unit': 'epoch_us'}),
                 ('chk_sensors_payload_format_array_keys', {'shape': 'array', 'name_key': '', 'value_key': 'v'}),
                 ('chk_sensors_payload_format_array_keys', {'shape': 'array', 'name_key': 'n', 'value_key': ''}),
@@ -124,7 +124,7 @@ class ChannelRulesTests(SensorsCase):
                 ('chk_sensors_channel_address', {'address_protocol': 'modbus_tcp', 'address': {'unit_id': 1}}),
                 ('chk_sensors_channel_address', {'address_protocol': 's7', 'address': {'db': 1}}),
                 ('chk_sensors_channel_address', {'address_protocol': 'opcua', 'address': {}}),
-                ('chk_sensors_channel_reduction', {'reduction': 'swinging_door'}),
+                ('chk_sensors_channel_reduction', {'reduction': 'swing'}),
                 ('chk_sensors_channel_deadband', {'reduction': 'deadband', 'deadband': 0}),
                 ('chk_sensors_channel_deadband', {'reduction': 'all', 'deadband': -1}),
                 ('chk_sensors_channel_deadband', {'deadband': NAN}),

@@ -27,9 +27,11 @@ def site_units(site):
 
 @dataclass
 class Emptied:
-    """A unit just before an operation that emptied it in the period: the day, and each batch's fish and grams then."""
+    """A unit just before an operation that emptied it in the period: the day, each batch's fish and grams then, and the
+    operation."""
     day: object
     batches: dict           # {batch id: (fish, grams)}
+    operation_id: object
 
     def of(self, batch_ids):
         """(fish, grams) of these batches just before."""
@@ -57,7 +59,7 @@ def emptied_in(units, first, last):
         left = {unit_id for (unit_id, _batch_id), share in shares.items() if unit_id in unit_ids and share.count}
         for unit_id, batches in state_before.items():
             if unit_id not in left:
-                found.setdefault(unit_id, []).append(Emptied(op.date, dict(batches)))
+                found.setdefault(unit_id, []).append(Emptied(op.date, dict(batches), op.id))
 
     fold(lines, observe, before=before)
     return found

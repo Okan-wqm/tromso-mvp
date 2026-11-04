@@ -213,8 +213,10 @@ def _all_to_be_slaughtered(units, held, due, fish_on, period):
     planned = {}
     for item in HandlingPlanItem.objects.filter(Q(operation__isnull=True) | Q(operation__is_deleted=False),
                                                 kind=PlanKind.HARVEST, unit__in=held, cancelled_reason=''):
-        latest = due.get(item.unit_id, period.end) + timedelta(days=SLAUGHTER_DAYS)
-        if item.date <= latest:
+        reference = due.get(item.unit_id, period.end)
+        if item.operation_id is not None and item.date <= reference:
+            continue                    # taken out before: its fish are not among those counted that day
+        if item.date <= reference + timedelta(days=SLAUGHTER_DAYS):
             planned[item.unit_id] = planned.get(item.unit_id, 0) + (item.planned_count or 0)
     return any(fish.values()) and all(planned.get(unit_id, 0) >= fish[unit_id] for unit_id in held)
 

@@ -237,6 +237,22 @@ class CoverageTests(LiceTestCase):
         HandlingPlanItem.objects.filter(pk=items[0].pk).update(cancelled_reason='Weather')
         self.assertEqual(len(self.result().problems), 2)           # not every fish is planned: both cages are due
 
+    def test_a_harvest_recorded_before_the_due_day_is_no_cover_for_the_fish_that_remain(self):
+        self.count(self.m1, 10, 22)             # due again on 29 October
+        self.count(self.m2, 10, 22)
+        batches = {unit: Batch.objects.filter(movements__unit=unit).distinct().get() for unit in (self.m1, self.m2)}
+
+        def plan(unit, on, fish):
+            return HandlingPlanItem.objects.create(kind='harvest', date=on, unit=unit, batch=batches[unit],
+                                                   planned_count=fish, facility=self.facility, created_by=self.user)
+        first = plan(self.m1, day(10, 10), 2500)
+        HandlingPlanItem.objects.filter(pk=first.pk).update(operation=self.harvest(self.m1, day(10, 10), 2500, 500))
+        plan(self.m2, day(11, 5), 3000)
+        # M-01's other 2,500 fish have no plan: the harvest of 10 October took the fish it names out already.
+        self.assertEqual(len(self.result().problems), 2)
+        plan(self.m1, day(11, 5), 2500)
+        self.assertEqual(self.result().problems, [])
+
     def test_a_cage_emptied_before_its_count_fell_due_needs_none(self):
         self.count(self.m1, 10, 27)
         self.count(self.m2, 10, 22)             # M-02 is due on 29 October

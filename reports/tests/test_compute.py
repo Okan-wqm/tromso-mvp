@@ -110,6 +110,17 @@ class SmoltTests(ReportTestCase):
                       'those units’ counts, not in this one’s (its average weight is the one just before).',
                       result.warnings)
 
+    def test_only_the_fish_the_emptying_operation_moved_within_the_site_are_left_out(self):
+        batch = self.stock(self.k1, 3850, '5', day(10, 2))
+        services.record_transfer(self.user, source=self.k1, batch=batch, day=day(10, 30), legs=[(self.k3, 1000)],
+                                 reason='density')
+        services.record_cull(self.user, unit=self.k1, batch=batch, day=day(10, 30), count=2850, reason='small_size')
+        rows = {row['number']: row for row in compute.compute(self.report(Report.Kind.SMOLT, OCTOBER)).content[
+            'units'].values()}
+        # The cull emptied K-01 (2,850 fish just before); the 1,000 moved earlier that day are in K-03's count.
+        self.assertEqual((rows['K-01']['fish_at_end'], rows['K-01']['culled'], rows['K-03']['fish_at_end']),
+                         (2850, 2850, 1000))
+
     def test_a_unit_that_held_two_species_one_after_the_other_is_listed_once_for_each(self):
         trout = make_species('TRR', 'Rainbow trout', 'Oncorhynchus mykiss', local_name='Regnbueørret',
                              official_code='TRR')

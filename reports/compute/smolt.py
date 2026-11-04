@@ -66,8 +66,8 @@ def compute(site, period):
                                  if any(batch_id in event.batches for batch_id in batch_ids)), None)) is not None:
                 before, grams = found.of(batch_ids)
                 average = grams / before
-                moved_within = -sum(line.count for line in species_lines if line.date == found.day and (
-                    line.kind == MovementKind.TRANSFER_OUT and within_site(line)))
+                moved_within = -sum(line.count for line in species_lines if line.operation_id == found.operation_id
+                                    and line.kind == MovementKind.TRANSFER_OUT and within_site(line))
                 count = max(before - moved_within, 0)
                 warnings.append(_('%(unit)s was emptied on %(date)s: the fish and the average weight just before are '
                                   'reported (whether Mattilsynet wants that count or 0 is to be confirmed).') % {

@@ -780,6 +780,10 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
 - **The 14-day slaughter exception** (lice) is judged on the production fish a cage held on the day its count fell due and accepts
   a harvest that is already recorded (not voided): it no longer lapses when the fish are slaughtered; a cage emptied before its
   count fell due needs none.
+- **The list's window is a decision:** "the records no longer give what was filed" is read again for the reports of the last
+  STOCK_BACKDATE_DAYS days and for notices. A master row changed later (a batch's year class given a different value, a site's
+  company number) does not flag a report of an older period: a company that changes its number would otherwise see every
+  report it ever filed marked as needing a correction. The report's own page still shows the differences whenever it is opened.
 - **A species' cleaner flag is fixed** once a batch of it exists (model `clean`, as an assigned protocol's species is fixed): the
   database cannot hold a cross-table rule as a check, so a write that bypasses the forms is not stopped; `check_stock` reports its
   effect (an orphan feeding, a unit with two production species).

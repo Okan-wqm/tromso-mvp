@@ -1,4 +1,5 @@
 import uuid
+from urllib.parse import urlencode
 
 from django.db.models import Exists, OuterRef
 from django.urls import reverse
@@ -15,7 +16,7 @@ from .forms import (
     ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
     UnitAnswerFormSet,
 )
-from .kinds import ReportKind
+from .kinds import SCHEDULED, URGENT, ReportKind
 from .models import Report
 
 STATUSES = [('draft', _('Draft')), ('filed', _('Filed'))]
@@ -143,11 +144,21 @@ class ReportResource(Resource):
         else:
             chosen_status = ''
         owed = due.due()
-        return objects, {'kinds': Report.Kind.choices, 'chosen_kind': chosen_kind, 'sites': sites,
+        rows, changed, lines = owed.rows, due.no_longer_match(), []
+        if chosen_kind:
+            rows = [row for row in rows if row.kind == chosen_kind]
+            changed = [report for report in changed if report.kind == chosen_kind]
+            lines = [line for line in owed.lines_of(chosen_kind)
+                     if not chosen_site or line.place.pk == _uuid_or_none(chosen_site)
+                     or not isinstance(line.place, Site)]
+        start_url = reverse('reports:report_create') if request.user.has_perm(cls.perm('add')) else ''
+        return objects, {'sites': sites, 'chosen_kind': chosen_kind,
                          'chosen_site': chosen_site, 'statuses': STATUSES, 'chosen_status': chosen_status,
-                         'today': periods.oslo_today(), 'due': owed.rows, 'not_set_up': owed.not_set_up,
-                         'changed': due.no_longer_match(),
-                         'start_url': reverse('reports:report_create') if request.user.has_perm(cls.perm('add')) else ''}
+                         'today': periods.oslo_today(), 'due': rows, 'changed': changed, 'lines': lines,
+                         'not_set_up': [] if chosen_kind else owed.not_set_up,
+                         'tabs': _tabs(request, owed.rows, chosen_kind),
+                         'kind_start_url': f'{start_url}?kind={chosen_kind}' if start_url and chosen_kind else '',
+                         'start_url': start_url}
 
     @classmethod
     def detail_extras(cls, request, report):
@@ -179,6 +190,32 @@ class ReportResource(Resource):
         if extras['can_correct']:
             extras['correct_url'] = reverse('reports:report_correct', args=[report.pk])
         return extras
+
+
+def _tabs(request, rows, chosen_kind):
+    """The tabs of the page: all the reports, then a tab for each kind, the urgent notices before the scheduled reports,
+    each with the number of its reports due; a tab keeps the site and status filters."""
+    kept = {name: request.GET[name] for name in ('site', 'status') if request.GET.get(name)}
+    owed = {}
+    for row in rows:
+        owed[row.kind] = owed.get(row.kind, 0) + 1
+    url = reverse('reports:report_list')
+
+    def tab(label, kind, count=0):
+        query = urlencode({**kept, **({'kind': kind} if kind else {})})
+        return {'label': label, 'url': f'{url}?{query}' if query else url, 'current': chosen_kind == kind,
+                'count': count}
+    return [{'label': '', 'tabs': [tab(_('All reports'), '', len(rows))]},
+            {'label': _('Urgent'), 'tabs': [tab(ReportKind(kind).label, kind, owed.get(kind, 0)) for kind in URGENT]},
+            {'label': _('Scheduled'),
+             'tabs': [tab(ReportKind(kind).label, kind, owed.get(kind, 0)) for kind in SCHEDULED]}]
+
+
+def _uuid_or_none(value):
+    try:
+        return uuid.UUID(str(value))
+    except ValueError:
+        return None
 
 
 def _from_event(event, kind):

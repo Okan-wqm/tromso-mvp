@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from farm.models import Equipment, ProductionDepartment, Site, System, Tank
 from farm.feeding.views import overview_tiles as feeding_tiles
 from farm.stock.views import overview_tiles
+from reports.views import overview_upcoming
 from farm.water.views import overview_tiles as water_tiles
 from tasks.views import overview_tiles as task_tiles
 
@@ -22,6 +23,7 @@ def home(request):
     """The company's overview."""
     return render(request, 'home.html', {
         'tiles': _counts(request.user, (_('Sites'), Site, 'farm:site_list')),
+        'upcoming': overview_upcoming(request.user),
     })
 
 

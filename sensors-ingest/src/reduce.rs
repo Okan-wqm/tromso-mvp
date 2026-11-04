@@ -87,8 +87,122 @@ pub struct Step {
     pub late: bool,
 }
 
-pub fn step(_policy: &Policy, _state: &mut State, _s: Sample) -> Step {
-    todo!("reducer")
+pub fn step(policy: &Policy, st: &mut State, s: Sample) -> Step {
+    st.last_seen_at = Some(st.last_seen_at.map_or(s.received_at, |seen| seen.max(s.received_at)));
+    if st.high_ts.is_some_and(|high| s.ts <= high) {
+        return Step { rows: vec![plain(s.ts, s.value, s.quality | LATE)], late: true };
+    }
+    st.high_ts = Some(s.ts);
+    let heartbeat = Duration::try_seconds(policy.heartbeat_s).unwrap_or(Duration::MAX);
+    let good = !quality::is_bad(s.quality);
+    let mut rows = Vec::with_capacity(2);
+
+    // Close the open run early at its last sample: on a quality change or after a data gap.
+    if st.run_n > 0 {
+        let changed = st.anchor_quality.is_none_or(|aq| quality::class(aq) != quality::class(s.quality));
+        let gap = st.last_value_ts.is_none_or(|last| s.ts - last > heartbeat);
+        if changed || gap {
+            if let Some(row) = close_run_at_last(st) {
+                rows.push(row);
+            }
+        }
+    }
+
+    let store = match (st.anchor_ts, st.anchor_value, st.anchor_quality) {
+        (Some(ats), Some(av), Some(aq)) => match policy.reduction {
+            Reduction::All => Some(s.quality),
+            Reduction::Deadband(d) => {
+                if quality::class(aq) != quality::class(s.quality) || (s.value - av).abs() >= d {
+                    Some(s.quality)
+                } else if s.ts - ats >= heartbeat {
+                    Some(s.quality | HEARTBEAT)
+                } else {
+                    None
+                }
+            }
+        },
+        _ => Some(s.quality),
+    };
+
+    match store {
+        Some(q) => {
+            let row = if good { close_run_with(st, s.ts, s.value, q) } else { plain(s.ts, s.value, q) };
+            set_anchor(st, &row);
+            rows.push(row);
+        }
+        None if good => {
+            st.run_n = st.run_n.saturating_add(1);
+            st.run_sum = Some(st.run_sum.unwrap_or(0.0) + s.value);
+            st.run_min = Some(st.run_min.map_or(s.value, |m| m.min(s.value)));
+            st.run_max = Some(st.run_max.map_or(s.value, |m| m.max(s.value)));
+        }
+        None => {}
+    }
+    if good {
+        st.last_good_at = Some(st.last_good_at.map_or(s.received_at, |g| g.max(s.received_at)));
+        st.last_value = Some(s.value);
+        st.last_value_ts = Some(s.ts);
+        st.last_quality = Some(quality::class(s.quality));
+    }
+    Step { rows, late: false }
+}
+
+fn plain(ts: DateTime<Utc>, value: f64, quality: i16) -> Row {
+    Row { ts, value, n: 1, quality, run_sum: None, run_min: None, run_max: None }
+}
+
+fn set_anchor(st: &mut State, row: &Row) {
+    st.anchor_ts = Some(row.ts);
+    st.anchor_value = Some(row.value);
+    st.anchor_quality = Some(row.quality);
+}
+
+fn reset_run(st: &mut State) {
+    st.run_n = 0;
+    st.run_sum = None;
+    st.run_min = None;
+    st.run_max = None;
+}
+
+/// The row of a stored good sample: it closes the open run (which then counts in its `n` and statistics).
+fn close_run_with(st: &mut State, ts: DateTime<Utc>, value: f64, quality: i16) -> Row {
+    let row = if st.run_n == 0 {
+        plain(ts, value, quality)
+    } else {
+        Row {
+            ts,
+            value,
+            n: st.run_n.saturating_add(1),
+            quality,
+            run_sum: Some(st.run_sum.unwrap_or(0.0) + value),
+            run_min: Some(st.run_min.map_or(value, |m| m.min(value))),
+            run_max: Some(st.run_max.map_or(value, |m| m.max(value))),
+        }
+    };
+    reset_run(st);
+    row
+}
+
+/// The row that closes the open run at its own last sample (`last_value_ts`, `last_value`, which a run's samples always
+/// are: they are the newest good forward samples). That row becomes the anchor.
+fn close_run_at_last(st: &mut State) -> Option<Row> {
+    let (ts, value, q) = (st.last_value_ts?, st.last_value?, st.last_quality.or(st.anchor_quality)?);
+    let row = if st.run_n == 1 {
+        plain(ts, value, quality::class(q))
+    } else {
+        Row {
+            ts,
+            value,
+            n: st.run_n,
+            quality: quality::class(q),
+            run_sum: st.run_sum,
+            run_min: st.run_min,
+            run_max: st.run_max,
+        }
+    };
+    reset_run(st);
+    set_anchor(st, &row);
+    Some(row)
 }
 
 #[cfg(test)]
@@ -156,7 +270,10 @@ mod tests {
         let rows = run(&db(0.1, 60), &mut st, &samples);
         assert_eq!(rows.iter().map(|r| r.ts).collect::<Vec<_>>(), vec![at(0), at(60), at(120)]);
         assert_eq!(rows[1].quality, HEARTBEAT);
-        assert_eq!((rows[1].n, rows[1].run_sum, rows[1].run_min, rows[1].run_max), (6, Some(42.0), Some(7.0), Some(7.0)));
+        assert_eq!(
+            (rows[1].n, rows[1].run_sum, rows[1].run_min, rows[1].run_max),
+            (6, Some(42.0), Some(7.0), Some(7.0))
+        );
         assert_eq!(rows[2].n, 6);
     }
 
@@ -179,15 +296,20 @@ mod tests {
     #[test]
     fn a_quality_change_closes_the_run_at_its_last_sample_first() {
         let mut st = State::default();
-        let rows = run(
-            &db(1.0, 600),
-            &mut st,
-            &[smp(0, 5.0, 0), smp(1, 5.1, 0), smp(2, 5.2, 0), smp(3, 5.2, RECEIVE_TIME)],
-        );
+        let rows =
+            run(&db(1.0, 600), &mut st, &[smp(0, 5.0, 0), smp(1, 5.1, 0), smp(2, 5.2, 0), smp(3, 5.2, RECEIVE_TIME)]);
         assert_eq!(rows.len(), 3);
         assert_eq!(
             rows[1],
-            Row { ts: at(2), value: 5.2, n: 2, quality: 0, run_sum: Some(5.1 + 5.2), run_min: Some(5.1), run_max: Some(5.2) }
+            Row {
+                ts: at(2),
+                value: 5.2,
+                n: 2,
+                quality: 0,
+                run_sum: Some(5.1 + 5.2),
+                run_min: Some(5.1),
+                run_max: Some(5.2)
+            }
         );
         assert_eq!(rows[2], plain(3, 5.2, RECEIVE_TIME));
     }
@@ -407,7 +529,7 @@ mod tests {
                 let mut late = Vec::new();
                 let mut i = 0;
                 let mut x = seed | 1;
-                samples.retain(|_| { i += 1; x ^= x << 13; x ^= x >> 7; x ^= x << 17; let keep = i == n || x % 4 != 0; keep });
+                samples.retain(|_| { i += 1; x ^= x << 13; x ^= x >> 7; x ^= x << 17; i == n || x % 4 != 0 });
                 for s in &g.samples { if !samples.contains(s) { late.push(*s); } }
                 samples.extend(late);
             }

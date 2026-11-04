@@ -16,14 +16,23 @@ pub struct Epoch {
 }
 
 /// Epochs sorted by `valid_from` (None first). Returns None when no epoch covers `ts` or the result is not finite.
-pub fn apply(_epochs: &[Epoch], _ts: DateTime<Utc>, _raw: f64) -> Option<f64> {
-    todo!("calibration")
+pub fn apply(epochs: &[Epoch], ts: DateTime<Utc>, raw: f64) -> Option<f64> {
+    let e = epochs.iter().rev().find(|e| e.valid_from.is_none_or(|from| from <= ts))?;
+    let value = e.a * raw + e.b;
+    value.is_finite().then_some(value)
 }
 
 /// Quality bits from the calibrated value and the channel: OUT_OF_RANGE outside `[range_min, range_max]` (both ends
 /// inside), MAINTENANCE when the channel is in maintenance.
-pub fn judge(_value: f64, _range: Option<(f64, f64)>, _maintenance: bool) -> i16 {
-    todo!("judge")
+pub fn judge(value: f64, range: Option<(f64, f64)>, maintenance: bool) -> i16 {
+    let mut q = 0;
+    if range.is_some_and(|(lo, hi)| value < lo || value > hi) {
+        q |= OUT_OF_RANGE;
+    }
+    if maintenance {
+        q |= MAINTENANCE;
+    }
+    q
 }
 
 #[cfg(test)]

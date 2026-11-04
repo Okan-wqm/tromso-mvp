@@ -17,9 +17,11 @@
 //!
 //! Good samples of a partly bad message are kept; each distinct fault becomes one dead letter of the message.
 
-use crate::model::{ChannelMap, DeadReason, Format};
+use crate::model::{ChannelMap, DeadReason, Format, Shape, TimeUnit, to_micros};
 use chrono::{DateTime, Utc};
 use serde::Serialize;
+use serde_json::Value;
+use std::collections::BTreeSet;
 
 /// The largest payload decoded; the broker's own limit is larger, so a bigger message reaches us and is dead-lettered
 /// (evidence) rather than refused by the broker unseen.
@@ -41,8 +43,139 @@ pub struct Decoded {
     pub faults: Vec<DeadReason>,
 }
 
-pub fn decode(_format: &Format, _channels: &[ChannelMap], _payload: &[u8]) -> Decoded {
-    todo!("decode")
+pub fn decode(format: &Format, channels: &[ChannelMap], payload: &[u8]) -> Decoded {
+    if payload.len() > MAX_PAYLOAD {
+        return fault_only(DeadReason::Oversize);
+    }
+    // serde_json refuses nesting deeper than 128 levels, so hostile input cannot exhaust the stack.
+    let Ok(root) = serde_json::from_slice::<Value>(payload) else {
+        return fault_only(DeadReason::NotJson);
+    };
+    let mut out = Decoded { seq: pointer(&root, &format.seq_path).and_then(Value::as_i64), ..Decoded::default() };
+    let mut faults = BTreeSet::new();
+    let mut found = false;
+    match format.shape {
+        Shape::Object => {
+            let time = read_time(format, &[&root]);
+            for ch in channels {
+                let Some(v) = pointer(&root, &ch.value_path) else { continue };
+                found = true;
+                take(&mut out.samples, &mut faults, ch.channel_no, v, &time);
+            }
+        }
+        Shape::Array => {
+            let items = if format.items_path.is_empty() { Some(&root) } else { pointer(&root, &format.items_path) };
+            for item in items.and_then(Value::as_array).map(Vec::as_slice).unwrap_or_default() {
+                let Some(name) = item.get(&format.name_key).and_then(as_name) else { continue };
+                let mut time = None;
+                for ch in channels.iter().filter(|c| !c.item_name.is_empty() && c.item_name == name) {
+                    found = true;
+                    let v = item.get(&format.value_key).unwrap_or(&Value::Null);
+                    let t = time.get_or_insert_with(|| read_time(format, &[item, &root]));
+                    take(&mut out.samples, &mut faults, ch.channel_no, v, t);
+                }
+            }
+        }
+    }
+    if !found {
+        faults.insert(DeadReason::NoChannelMatch);
+    }
+    out.faults = faults.into_iter().collect();
+    out
+}
+
+fn fault_only(r: DeadReason) -> Decoded {
+    Decoded { faults: vec![r], ..Decoded::default() }
+}
+
+/// RFC 6901 pointer; a blank path is "not configured" (None), never the whole document.
+fn pointer<'a>(root: &'a Value, path: &str) -> Option<&'a Value> {
+    if path.is_empty() { None } else { root.pointer(path) }
+}
+
+fn as_name(v: &Value) -> Option<String> {
+    match v {
+        Value::String(s) => Some(s.clone()),
+        Value::Number(n) => Some(n.to_string()),
+        _ => None,
+    }
+}
+
+/// None: no time path (receive time). Some(Ok): the device time. Some(Err): missing or unreadable.
+type Time = Option<Result<DateTime<Utc>, DeadReason>>;
+
+fn read_time(format: &Format, scopes: &[&Value]) -> Time {
+    if format.time_path.is_empty() {
+        return None;
+    }
+    let Some(v) = scopes.iter().find_map(|s| s.pointer(&format.time_path)) else {
+        return Some(Err(DeadReason::MissingTime));
+    };
+    Some(parse_time(format.time_unit, v).map(to_micros).ok_or(DeadReason::BadTime))
+}
+
+fn parse_time(unit: TimeUnit, v: &Value) -> Option<DateTime<Utc>> {
+    match unit {
+        TimeUnit::Iso8601 => DateTime::parse_from_rfc3339(v.as_str()?.trim()).ok().map(|t| t.with_timezone(&Utc)),
+        TimeUnit::EpochS | TimeUnit::EpochMs => {
+            let scale = if unit == TimeUnit::EpochS { 1_000_000 } else { 1_000 };
+            match v {
+                Value::Number(n) => match n.as_i64() {
+                    Some(i) => DateTime::<Utc>::from_timestamp_micros(i.checked_mul(scale)?),
+                    None => from_float_micros(n.as_f64()?, scale),
+                },
+                Value::String(s) => {
+                    let s = s.trim();
+                    match s.parse::<i64>() {
+                        Ok(i) => DateTime::<Utc>::from_timestamp_micros(i.checked_mul(scale)?),
+                        Err(_) => from_float_micros(s.parse::<f64>().ok()?, scale),
+                    }
+                }
+                _ => None,
+            }
+        }
+    }
+}
+
+fn from_float_micros(x: f64, scale: i64) -> Option<DateTime<Utc>> {
+    #[allow(clippy::cast_precision_loss)]
+    let micros = (x * scale as f64).round();
+    // i64 microseconds cover +-292k years; anything beyond is not a time.
+    if !micros.is_finite() || micros.abs() >= 9.0e18 {
+        return None;
+    }
+    #[allow(clippy::cast_possible_truncation)]
+    DateTime::<Utc>::from_timestamp_micros(micros as i64)
+}
+
+fn as_value(v: &Value) -> Result<f64, DeadReason> {
+    let x = match v {
+        Value::Null => return Err(DeadReason::MissingValue),
+        Value::Bool(b) => f64::from(u8::from(*b)),
+        Value::Number(n) => n.as_f64().ok_or(DeadReason::BadValue)?,
+        Value::String(s) => s.trim().parse::<f64>().map_err(|_| DeadReason::BadValue)?,
+        Value::Array(_) | Value::Object(_) => return Err(DeadReason::BadValue),
+    };
+    if x.is_finite() { Ok(x) } else { Err(DeadReason::BadValue) }
+}
+
+fn take(samples: &mut Vec<RawSample>, faults: &mut BTreeSet<DeadReason>, channel_no: i32, v: &Value, time: &Time) {
+    let value = match as_value(v) {
+        Ok(x) => x,
+        Err(r) => {
+            faults.insert(r);
+            return;
+        }
+    };
+    let device_ts = match time {
+        None => None,
+        Some(Ok(t)) => Some(*t),
+        Some(Err(r)) => {
+            faults.insert(*r);
+            return;
+        }
+    };
+    samples.push(RawSample { channel_no, value, device_ts });
 }
 
 #[cfg(test)]

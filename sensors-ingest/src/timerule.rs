@@ -10,8 +10,9 @@
 //!
 //! Both times are cut to microseconds (the stored precision) so the in-memory key equals the stored key.
 
-use crate::model::DeadReason;
-use chrono::{DateTime, Utc};
+use crate::model::{DeadReason, to_micros};
+use crate::quality::{CLOCK_SUSPECT, RECEIVE_TIME};
+use chrono::{DateTime, Duration, Utc};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Limits {
@@ -21,18 +22,30 @@ pub struct Limits {
 
 /// The stored time and its quality bits, or the reason the sample is refused.
 pub fn resolve(
-    _device_ts: Option<DateTime<Utc>>,
-    _received_at: DateTime<Utc>,
-    _limits: Limits,
+    device_ts: Option<DateTime<Utc>>,
+    received_at: DateTime<Utc>,
+    limits: Limits,
 ) -> Result<(DateTime<Utc>, i16), DeadReason> {
-    todo!("time rule")
+    let received_at = to_micros(received_at);
+    let Some(device_ts) = device_ts.map(to_micros) else {
+        return Ok((received_at, RECEIVE_TIME));
+    };
+    let latest = Duration::try_seconds(limits.future_skew_s).and_then(|d| received_at.checked_add_signed(d));
+    if latest.is_some_and(|l| device_ts > l) {
+        return Ok((received_at, CLOCK_SUSPECT));
+    }
+    // A retention beyond the representable range means nothing is too old.
+    let oldest = Duration::try_days(limits.retention_days).and_then(|d| received_at.checked_sub_signed(d));
+    if oldest.is_some_and(|o| device_ts < o) {
+        return Err(DeadReason::TooOld);
+    }
+    Ok((device_ts, 0))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::quality::{CLOCK_SUSPECT, RECEIVE_TIME};
-    use chrono::{Duration, TimeZone};
+    use chrono::TimeZone;
     use proptest::prelude::*;
 
     const L: Limits = Limits { future_skew_s: 60, retention_days: 730 };

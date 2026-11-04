@@ -92,7 +92,10 @@ async fn main() {
     // 1. without acks the broker stops at max_inflight_messages
     let first = drain(&mut rx, Duration::from_secs(3)).await;
     println!("  received without acking: {}", first.len());
-    check(first.len() == 5000, "broker delivers exactly max_inflight_messages (5000) unacked QoS 1 messages, then stops");
+    check(
+        first.len() == 5000,
+        "broker delivers exactly max_inflight_messages (5000) unacked QoS 1 messages, then stops",
+    );
     check(
         first.iter().enumerate().all(|(i, p)| idx(p) == i && p.qos == QoS::AtLeastOnce && !p.dup),
         "first delivery in publish order, QoS 1, DUP clear",

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone as tz
 
 from django.db import IntegrityError, connection, transaction
 from django.test import TestCase, TransactionTestCase
+from django.utils import timezone
 
 from sensors import quality
 from sensors.models import Contract, Reading
@@ -171,11 +172,11 @@ class RollupCatalogueTests(TestCase):
 
     def test_the_policies(self):
         minute, hour = self.jobs('sensors_rollup_1m'), self.jobs('sensors_rollup_1h')
-        self.assertEqual(minute['policy_refresh_continuous_aggregate'],
-                         {'end_offset': '00:01:00', 'start_offset': None, 'mat_hypertable_id':
-                          minute['policy_refresh_continuous_aggregate']['mat_hypertable_id']})
-        self.assertEqual(hour['policy_refresh_continuous_aggregate']['end_offset'], '01:00:00')
-        self.assertIsNone(hour['policy_refresh_continuous_aggregate']['start_offset'])
+        # The refresh window starts a while back, not at NULL: TimescaleDB refuses a compression policy on an aggregate
+        # whose refresh window reaches the compressed region. Older late rows are the daily job's (below).
+        refresh_minute, refresh_hour = minute['policy_refresh_continuous_aggregate'], hour['policy_refresh_continuous_aggregate']
+        self.assertEqual((refresh_minute['start_offset'], refresh_minute['end_offset']), ('35 days', '00:01:00'))
+        self.assertEqual((refresh_hour['start_offset'], refresh_hour['end_offset']), ('75 days', '01:00:00'))
         self.assertEqual(minute['policy_compression']['compress_after'], '60 days')
         self.assertEqual(hour['policy_compression']['compress_after'], '90 days')
         self.assertEqual(minute['policy_retention']['drop_after'], f'{Contract.objects.get().retention_days} days')
@@ -186,6 +187,10 @@ class RollupCatalogueTests(TestCase):
                               "WHERE j.proc_name = 'policy_refresh_continuous_aggregate' "
                               "AND c.view_name LIKE 'sensors_rollup_%%'"))
         self.assertEqual(schedules, {'sensors_rollup_1m': timedelta(minutes=1), 'sensors_rollup_1h': timedelta(hours=1)})
+
+    def test_a_daily_job_refreshes_what_lies_before_the_policies_windows(self):
+        self.assertEqual(rows("SELECT proc_name, schedule_interval FROM timescaledb_information.jobs "
+                              "WHERE proc_name = 'sensors_refresh_late'"), [('sensors_refresh_late', timedelta(days=1))])
 
 
 class RollupValueTests(TestCase):
@@ -228,30 +233,50 @@ class RollupValueTests(TestCase):
 
 
 class RollupRefreshTests(TransactionTestCase):
-    """What only a committed refresh shows: a late row in a refreshed region is taken in by the next refresh (the policy's
-    start is NULL, so any invalidated region is recomputed), and dropping raw chunks does not drop the rollups."""
+    """What only a committed refresh shows: a late row in a refreshed region is taken in by the job that covers it (the
+    minute policy for the last 35 days, the daily job before that), and dropping raw chunks keeps the rollups."""
     serialized_rollback = True
 
     def refresh(self, view):
         with connection.cursor() as cursor:
             cursor.execute(f"CALL refresh_continuous_aggregate('{view}', NULL, NULL)")
 
-    def test_a_late_row_after_a_refresh_is_taken_in_and_dropped_raw_keeps_its_rollups(self):
-        early = datetime(2025, 1, 6, 10, tzinfo=tz.utc)        # far enough back for drop_chunks below
+    def run_job(self, name, view=None):
+        """Runs a job now, as the scheduler would: a refresh policy of `view`, or the job of procedure `name`."""
+        sql = ("SELECT j.job_id FROM timescaledb_information.jobs j JOIN timescaledb_information.continuous_aggregates c "
+               "ON c.materialization_hypertable_name = j.hypertable_name WHERE j.proc_name = %s AND c.view_name = %s"
+               if view else "SELECT job_id FROM timescaledb_information.jobs WHERE proc_name = %s")
+        job = one(sql, [name, view] if view else [name])
+        with connection.cursor() as cursor:
+            cursor.execute('CALL run_job(%s)', [job])
+
+    def minute(self, channel_no):
+        return rows('SELECT n, sum_v, vmin, vmax, vlast FROM sensors_rollup_1m WHERE channel_no = %s', [channel_no])
+
+    def test_a_recent_late_row_is_taken_in_by_the_minute_policy(self):
+        recent = (timezone.now() - timedelta(days=2)).replace(second=0, microsecond=0)
+        insert([(22, recent, 1.0, 1, 0, None, None, None), (22, recent + timedelta(seconds=30), 3.0, 1, 0, None, None, None)])
+        self.refresh('sensors_rollup_1m')
+        insert([(22, recent + timedelta(seconds=10), 5.0, 1, quality.LATE, None, None, None)])
+        self.assertEqual(self.minute(22), [(2, 4.0, 1.0, 3.0, 3.0)])      # below the watermark: as materialized
+        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1m')
+        self.assertEqual(self.minute(22), [(3, 9.0, 1.0, 5.0, 3.0)])
+
+    def test_an_old_late_row_is_taken_in_by_the_daily_job_and_dropped_raw_keeps_its_rollups(self):
+        early = datetime(2025, 1, 6, 10, tzinfo=tz.utc)
         insert([(21, early, 1.0, 1, 0, None, None, None), (21, early + timedelta(seconds=30), 3.0, 1, 0, None, None, None)])
         self.refresh('sensors_rollup_1m')
         self.refresh('sensors_rollup_1h')
         insert([(21, early + timedelta(seconds=10), 5.0, 1, quality.LATE, None, None, None)])
-        # Below the watermark the view shows what was materialized: the late row is not there until the next refresh.
-        self.assertEqual(rows("SELECT n FROM sensors_rollup_1m WHERE channel_no = 21"), [(2,)])
-        self.refresh("sensors_rollup_1m")
-        self.refresh("sensors_rollup_1h")
-        self.assertEqual(rows("SELECT n, sum_v, vmin, vmax, vlast FROM sensors_rollup_1m WHERE channel_no = 21"),
-                         [(3, 9.0, 1.0, 5.0, 3.0)])
-        self.assertEqual(rows("SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21"), [(3, 9.0)])
+        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1m')     # outside its 35 days: no change
+        self.assertEqual(self.minute(21), [(2, 4.0, 1.0, 3.0, 3.0)])
+        self.run_job('sensors_refresh_late')
+        self.assertEqual(self.minute(21), [(3, 9.0, 1.0, 5.0, 3.0)])
+        self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])
         one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
         self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 21'), 0)
         self.refresh('sensors_rollup_1m')
         self.refresh('sensors_rollup_1h')
+        self.run_job('sensors_refresh_late')
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1m WHERE channel_no = 21'), [(3, 9.0)])
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])

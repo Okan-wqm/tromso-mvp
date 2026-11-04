@@ -883,6 +883,7 @@
         "masked": []
       },
       "tests": [
+        "core/test_datamap.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_protocols.py",
@@ -960,37 +961,13 @@
           "status": "paths",
           "paths": [
             {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.stock_input",
+              "how": "view",
+              "label": "farm:stock_delivery",
               "url_names": [
-                "farm:stock_input"
+                "farm:stock_delivery"
               ],
               "routes": [
-                "/operations/units/new-batch/"
-              ]
-            },
-            {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.record_operation",
-              "url_names": [
-                "farm:stock_cull",
-                "farm:stock_delivery",
-                "farm:stock_escape",
-                "farm:stock_grading",
-                "farm:stock_harvest",
-                "farm:stock_mortality",
-                "farm:stock_transfer",
-                "farm:stock_weighing"
-              ],
-              "routes": [
-                "/operations/units/<uuid:pk>/cull/",
-                "/operations/units/<uuid:pk>/delivery/",
-                "/operations/units/<uuid:pk>/escape/",
-                "/operations/units/<uuid:pk>/grading/",
-                "/operations/units/<uuid:pk>/harvest/",
-                "/operations/units/<uuid:pk>/mortality/",
-                "/operations/units/<uuid:pk>/transfer/",
-                "/operations/units/<uuid:pk>/weighing/"
+                "/operations/units/<uuid:pk>/delivery/"
               ]
             }
           ],
@@ -2032,37 +2009,13 @@
           "status": "paths",
           "paths": [
             {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.stock_input",
+              "how": "view",
+              "label": "farm:stock_escape",
               "url_names": [
-                "farm:stock_input"
+                "farm:stock_escape"
               ],
               "routes": [
-                "/operations/units/new-batch/"
-              ]
-            },
-            {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.record_operation",
-              "url_names": [
-                "farm:stock_cull",
-                "farm:stock_delivery",
-                "farm:stock_escape",
-                "farm:stock_grading",
-                "farm:stock_harvest",
-                "farm:stock_mortality",
-                "farm:stock_transfer",
-                "farm:stock_weighing"
-              ],
-              "routes": [
-                "/operations/units/<uuid:pk>/cull/",
-                "/operations/units/<uuid:pk>/delivery/",
-                "/operations/units/<uuid:pk>/escape/",
-                "/operations/units/<uuid:pk>/grading/",
-                "/operations/units/<uuid:pk>/harvest/",
-                "/operations/units/<uuid:pk>/mortality/",
-                "/operations/units/<uuid:pk>/transfer/",
-                "/operations/units/<uuid:pk>/weighing/"
+                "/operations/units/<uuid:pk>/escape/"
               ]
             }
           ],
@@ -4705,37 +4658,43 @@
           "status": "paths",
           "paths": [
             {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.stock_input",
+              "how": "view",
+              "label": "farm:stock_harvest",
               "url_names": [
-                "farm:stock_input"
+                "farm:stock_harvest"
               ],
               "routes": [
-                "/operations/units/new-batch/"
+                "/operations/units/<uuid:pk>/harvest/"
               ]
             },
             {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.record_operation",
+              "how": "view",
+              "label": "farm:stock_transfer",
               "url_names": [
-                "farm:stock_cull",
-                "farm:stock_delivery",
-                "farm:stock_escape",
-                "farm:stock_grading",
-                "farm:stock_harvest",
-                "farm:stock_mortality",
-                "farm:stock_transfer",
-                "farm:stock_weighing"
+                "farm:stock_transfer"
               ],
               "routes": [
-                "/operations/units/<uuid:pk>/cull/",
-                "/operations/units/<uuid:pk>/delivery/",
-                "/operations/units/<uuid:pk>/escape/",
-                "/operations/units/<uuid:pk>/grading/",
-                "/operations/units/<uuid:pk>/harvest/",
-                "/operations/units/<uuid:pk>/mortality/",
-                "/operations/units/<uuid:pk>/transfer/",
-                "/operations/units/<uuid:pk>/weighing/"
+                "/operations/units/<uuid:pk>/transfer/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:stock_grading",
+              "url_names": [
+                "farm:stock_grading"
+              ],
+              "routes": [
+                "/operations/units/<uuid:pk>/grading/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:treatment_record",
+              "url_names": [
+                "farm:treatment_record"
+              ],
+              "routes": [
+                "/operations/health/treatments/new/"
               ]
             }
           ],
@@ -4744,23 +4703,12 @@
         "edit": {
           "status": "none",
           "paths": [],
-          "why": "a ledger is never edited: a mistake is voided and recorded again"
+          "why": "never edited: what the person was shown stays as it was"
         },
         "delete": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.void_operation",
-              "url_names": [
-                "farm:stock_void"
-              ],
-              "routes": [
-                "/operations/units/void/<uuid:pk>/"
-              ]
-            }
-          ],
-          "why": ""
+          "status": "none",
+          "paths": [],
+          "why": "voiding the operation or the treatment leaves them as history"
         },
         "read": {
           "status": "paths",
@@ -4799,7 +4747,7 @@
           "why": ""
         }
       },
-      "note": "One row for each warning the person went on past: written with the operation or the treatment it was given for, never edited. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.",
+      "note": "One row for each warning the person went on past, written with the operation or the treatment it was given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.",
       "forms": [],
       "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
       "soft_delete": false,
@@ -5688,37 +5636,13 @@
           "status": "paths",
           "paths": [
             {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.stock_input",
+              "how": "view",
+              "label": "farm:stock_harvest",
               "url_names": [
-                "farm:stock_input"
+                "farm:stock_harvest"
               ],
               "routes": [
-                "/operations/units/new-batch/"
-              ]
-            },
-            {
-              "how": "with-parent",
-              "label": "with StockOperation: farm.stock.views.record_operation",
-              "url_names": [
-                "farm:stock_cull",
-                "farm:stock_delivery",
-                "farm:stock_escape",
-                "farm:stock_grading",
-                "farm:stock_harvest",
-                "farm:stock_mortality",
-                "farm:stock_transfer",
-                "farm:stock_weighing"
-              ],
-              "routes": [
-                "/operations/units/<uuid:pk>/cull/",
-                "/operations/units/<uuid:pk>/delivery/",
-                "/operations/units/<uuid:pk>/escape/",
-                "/operations/units/<uuid:pk>/grading/",
-                "/operations/units/<uuid:pk>/harvest/",
-                "/operations/units/<uuid:pk>/mortality/",
-                "/operations/units/<uuid:pk>/transfer/",
-                "/operations/units/<uuid:pk>/weighing/"
+                "/operations/units/<uuid:pk>/harvest/"
               ]
             }
           ],
@@ -9556,6 +9480,7 @@
       "tests": [
         "core/test_catalogs.py",
         "core/test_database.py",
+        "core/test_datamap.py",
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_schema.py",

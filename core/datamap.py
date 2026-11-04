@@ -22,6 +22,7 @@ The rules the test enforces are `problems()`; a new app is picked up from INSTAL
 test until its `screens.py` declares them, with a message that names the model and where to declare it."""
 import json
 import re
+from functools import cache
 from dataclasses import dataclass, field
 from importlib import import_module
 from importlib.util import find_spec
@@ -116,12 +117,14 @@ class Screen:
 
 # --- what the code says --------------------------------------------------------------------------------------
 
+@cache
 def project_apps():
     """The apps that are the project's own: the ones whose code lives under the project directory."""
     root = Path(settings.BASE_DIR).resolve()
     return [config for config in apps.get_app_configs() if root in Path(config.path).resolve().parents]
 
 
+@cache
 def project_models():
     """Every concrete model of the project's apps, the tables Django makes for a many-to-many link included."""
     result = []
@@ -274,8 +277,9 @@ def constraints_of(model):
     return result
 
 
+@cache
 def test_modules():
-    """{relative path: text} of every test module of the project's apps."""
+    """{relative path: the words in it} of every test module of the project's apps."""
     root = Path(settings.BASE_DIR).resolve()
     found = {}
     for config in project_apps():
@@ -283,13 +287,13 @@ def test_modules():
             parts = path.relative_to(config.path).parts
             if 'migrations' in parts or not (path.name.startswith('test') or 'tests' in parts[:-1]):
                 continue
-            found[path.relative_to(root).as_posix()] = path.read_text(encoding='utf-8')
+            found[path.relative_to(root).as_posix()] = frozenset(re.findall(r'\w+', path.read_text(encoding='utf-8')))
     return found
 
 
 def descriptions():
     config = database.viewer()
-    return {model: database.describe(model, str(config.descriptions.get(model._meta.db_table, '')))
+    return {model: str(database.describe(model, str(config.descriptions.get(model._meta.db_table, ''))))
             for model in project_models()}
 
 
@@ -458,8 +462,7 @@ class Map:
             self.problems.append(
                 f'{label}: the database viewer does not show {db_table}: add the app {model._meta.app_label!r} to a '
                 f'section of config/database.py.')
-        mentioned = [path for path, text in self.test_modules.items()
-                     if re.search(rf'\b{re.escape(model._meta.object_name)}\b', text)]
+        mentioned = [path for path, words in self.test_modules.items() if model._meta.object_name in words]
         return {
             'app': model._meta.app_label,
             'model': model._meta.object_name,

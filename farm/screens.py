@@ -94,18 +94,20 @@ SCREENS = {
             'pair': system('ties the out line and the in line of a transfer'),
         },
     ),
-    'EscapeRecord': Screen(part_of='farm.StockOperation', read=(stock.production_units,),
-                           forms=(stock_forms.EscapeForm,)),
-    'DeliveryRecord': Screen(part_of='farm.StockOperation', read=(stock.production_units,),
-                             forms=(stock_forms.DeliveryForm,)),
-    'HarvestRecord': Screen(part_of='farm.StockOperation', read=(stock.production_units, harvest.harvests),
-                            forms=(stock_forms.HarvestForm,)),
+    'EscapeRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_escape',),
+                           read=(stock.production_units,), forms=(stock_forms.EscapeForm,)),
+    'DeliveryRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_delivery',),
+                             read=(stock.production_units,), forms=(stock_forms.DeliveryForm,)),
+    'HarvestRecord': Screen(part_of='farm.StockOperation', create=('farm:stock_harvest',),
+                            read=(stock.production_units, harvest.harvests), forms=(stock_forms.HarvestForm,)),
     'HandlingAcknowledgement': Screen(
-        part_of='farm.StockOperation',
+        create=('farm:stock_harvest', 'farm:stock_transfer', 'farm:stock_grading', 'farm:treatment_record'),
+        edit=no('never edited: what the person was shown stays as it was'),
+        delete=no('voiding the operation or the treatment leaves them as history'),
         read=(stock.production_units, harvest.harvests, health.treatments),
-        note='One row for each warning the person went on past: written with the operation or the treatment it was '
-             'given for, never edited. The pages show that a warning was acknowledged (its kind in a tooltip on '
-             'Harvested), not the values it kept.',
+        note='One row for each warning the person went on past, written with the operation or the treatment it was '
+             'given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the '
+             'values it kept.',
         columns={'*': computed('what the person was shown when they acknowledged the warning: the handling check '
                                '(farm/handling/check.py) works it out and the service stores it')},
     ),

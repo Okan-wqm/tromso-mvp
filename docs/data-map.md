@@ -80,7 +80,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_protocols.py` and 5 more
+- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -112,7 +112,7 @@ A group of fish that came in together: its identity and origin, no counts.
 
 Where live fish were delivered out of the company (a customer's site, a sale of smolt): who received them and, when it has one, the receiving site's lokalitetsnummer.
 
-- **create**: with StockOperation: farm.stock.views.stock_input (`/operations/units/new-batch/`); with StockOperation: farm.stock.views.record_operation (`/operations/units/<uuid:pk>/cull/`, `/operations/units/<uuid:pk>/delivery/`, `/operations/units/<uuid:pk>/escape/`, `/operations/units/<uuid:pk>/grading/`, `/operations/units/<uuid:pk>/harvest/`, `/operations/units/<uuid:pk>/mortality/`, `/operations/units/<uuid:pk>/transfer/`, `/operations/units/<uuid:pk>/weighing/`)
+- **create**: farm:stock_delivery (`/operations/units/<uuid:pk>/delivery/`)
 - **edit**: none, by design: a ledger is never edited: a mistake is voided and recorded again
 - **delete**: with StockOperation: farm.stock.views.void_operation (`/operations/units/void/<uuid:pk>/`)
 - **read**: farm.stock.views.production_units (`/operations/units/`)
@@ -221,7 +221,7 @@ A kind of equipment and the technical specifications it has: a centrifugal pump 
 
 What a line cannot say of an escape (akvakulturdriftsforskriften § 38, § 41 c, § 57 b): the cause, whether it is only suspected, the time it was found (the day is the operation's), the health status of the fish and the fish recaptured, as known when it is recorded.
 
-- **create**: with StockOperation: farm.stock.views.stock_input (`/operations/units/new-batch/`); with StockOperation: farm.stock.views.record_operation (`/operations/units/<uuid:pk>/cull/`, `/operations/units/<uuid:pk>/delivery/`, `/operations/units/<uuid:pk>/escape/`, `/operations/units/<uuid:pk>/grading/`, `/operations/units/<uuid:pk>/harvest/`, `/operations/units/<uuid:pk>/mortality/`, `/operations/units/<uuid:pk>/transfer/`, `/operations/units/<uuid:pk>/weighing/`)
+- **create**: farm:stock_escape (`/operations/units/<uuid:pk>/escape/`)
 - **edit**: none, by design: a ledger is never edited: a mistake is voided and recorded again
 - **delete**: with StockOperation: farm.stock.views.void_operation (`/operations/units/void/<uuid:pk>/`)
 - **read**: farm.stock.views.production_units (`/operations/units/`)
@@ -457,11 +457,11 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 
 One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast.
 
-- **create**: with StockOperation: farm.stock.views.stock_input (`/operations/units/new-batch/`); with StockOperation: farm.stock.views.record_operation (`/operations/units/<uuid:pk>/cull/`, `/operations/units/<uuid:pk>/delivery/`, `/operations/units/<uuid:pk>/escape/`, `/operations/units/<uuid:pk>/grading/`, `/operations/units/<uuid:pk>/harvest/`, `/operations/units/<uuid:pk>/mortality/`, `/operations/units/<uuid:pk>/transfer/`, `/operations/units/<uuid:pk>/weighing/`)
-- **edit**: none, by design: a ledger is never edited: a mistake is voided and recorded again
-- **delete**: with StockOperation: farm.stock.views.void_operation (`/operations/units/void/<uuid:pk>/`)
+- **create**: farm:stock_harvest (`/operations/units/<uuid:pk>/harvest/`); farm:stock_transfer (`/operations/units/<uuid:pk>/transfer/`); farm:stock_grading (`/operations/units/<uuid:pk>/grading/`); farm:treatment_record (`/operations/health/treatments/new/`)
+- **edit**: none, by design: never edited: what the person was shown stays as it was
+- **delete**: none, by design: voiding the operation or the treatment leaves them as history
 - **read**: farm.stock.views.production_units (`/operations/units/`); farm.harvest.views.harvests (`/operations/harvests/`); farm.health.views.treatments (`/operations/health/treatments/`)
-- **how it works**: One row for each warning the person went on past: written with the operation or the treatment it was given for, never edited. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.
+- **how it works**: One row for each warning the person went on past, written with the operation or the treatment it was given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › handling_acknowledgements
 - **constraints**: chk_handling_acknowledgements_warning (check); chk_handling_acknowledgements_shape (check); chk_handling_acknowledgements_fasted (check); chk_handling_acknowledgements_fasted_degree_days (check); chk_handling_acknowledgements_one_record (check); uq_handling_acknowledgements_one_fast (unique: operation)
 - **tests that mention it**: `farm/tests/test_harvest.py`, `farm/tests/test_health.py`, `farm/tests/test_migration_purging.py`
@@ -557,7 +557,7 @@ How long the fish must have been without feed before they are handled: one row p
 
 Where a harvest went: the slaughter facility (required) and, when someone else carried the fish, the transport supplier and the wellboat or vehicle.
 
-- **create**: with StockOperation: farm.stock.views.stock_input (`/operations/units/new-batch/`); with StockOperation: farm.stock.views.record_operation (`/operations/units/<uuid:pk>/cull/`, `/operations/units/<uuid:pk>/delivery/`, `/operations/units/<uuid:pk>/escape/`, `/operations/units/<uuid:pk>/grading/`, `/operations/units/<uuid:pk>/harvest/`, `/operations/units/<uuid:pk>/mortality/`, `/operations/units/<uuid:pk>/transfer/`, `/operations/units/<uuid:pk>/weighing/`)
+- **create**: farm:stock_harvest (`/operations/units/<uuid:pk>/harvest/`)
 - **edit**: none, by design: a ledger is never edited: a mistake is voided and recorded again
 - **delete**: with StockOperation: farm.stock.views.void_operation (`/operations/units/void/<uuid:pk>/`)
 - **read**: farm.stock.views.production_units (`/operations/units/`); farm.harvest.views.harvests (`/operations/harvests/`)
@@ -866,7 +866,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_database.py`, `core/test_languages.py` and 26 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_database.py`, `core/test_datamap.py` and 27 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

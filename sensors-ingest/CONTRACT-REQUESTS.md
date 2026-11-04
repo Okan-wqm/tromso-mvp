@@ -63,3 +63,14 @@ ingest had to make that the contract does not spell out. Evidence: the test name
     device topic of the connection. `sensors/credentials.py hash_secret` already writes the `$7$` line S0f verified.
 12. The ingest's own broker password is the file named by its Connection's `secret_file` under `/run/secrets`
     (compose secret `mqtt_ingest`); the Connection page should say so next to the field.
+
+## TimescaleDB finding (affects any writer of a compressed hypertable)
+
+13. **TimescaleDB 2.17.2 loses rows silently**: in one multi-row `INSERT ... ON CONFLICT DO NOTHING`, once a row
+    conflicts with an existing row inside a COMPRESSED chunk, every later row of the statement is dropped without an
+    error, also rows for other, uncompressed chunks (plain SQL: `[existing key in a compressed chunk, new recent key]`
+    inserts 0 rows; `INSERT 0 0`). A conflict in an uncompressed chunk is handled correctly. The ingest therefore
+    writes late rows, and any row older than 13 days (compression after 14), one per statement
+    (src/db.rs `write_batch`; tests/db.rs `late_rows_and_duplicates_reach_compressed_and_recent_chunks`). Any other
+    code that bulk-inserts into `sensors_reading` (a backfill or import command) must do the same. Worth re-testing
+    on the next TimescaleDB upgrade and reporting upstream.

@@ -2,7 +2,7 @@
 //! batch transaction that commits readings, states, device counters, dead letters and the ingest status together.
 //! The caller acknowledges the batch's messages only after `write_batch` returned Ok (COMMIT done).
 
-use crate::pipeline::Output;
+use crate::pipeline::{Output, Reading};
 use crate::reduce::State;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
@@ -107,6 +107,13 @@ const INSERT_READINGS: &str = "INSERT INTO sensors_reading (channel_no, ts, valu
      SELECT * FROM UNNEST($1::int4[], $2::timestamptz[], $3::float8[], $4::int4[], $5::int2[], $6::float8[], \
      $7::float8[], $8::float8[]) ON CONFLICT DO NOTHING";
 
+/// One reading per statement (see `write_batch`).
+const INSERT_ONE_READING: &str = "INSERT INTO sensors_reading (channel_no, ts, value, n, quality, run_sum, run_min, run_max) \n     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING";
+
+/// Chunks are compressed after 14 days (sensors/CONTRACT.md); a row younger than this many days lands in an
+/// uncompressed chunk.
+pub const COMPRESSION_HORIZON_DAYS: i64 = 13;
+
 const UPSERT_STATES: &str = "INSERT INTO sensors_channel_state (channel_no, last_seen_at, last_good_at, last_value, \
      last_value_ts, last_quality, anchor_ts, anchor_value, anchor_quality, run_n, run_sum, run_min, run_max, high_ts) \
      SELECT * FROM UNNEST($1::int4[], $2::timestamptz[], $3::timestamptz[], $4::float8[], $5::timestamptz[], \
@@ -168,17 +175,38 @@ pub async fn write_batch(client: &mut Client, out: &Output, status: &[Status]) -
     let tx = client.transaction().await?;
     let mut w = Written::default();
     if !out.readings.is_empty() {
-        let r = &out.readings;
-        let ch: Vec<i32> = r.iter().map(|x| x.channel_no).collect();
-        let ts: Vec<DateTime<Utc>> = r.iter().map(|x| x.row.ts).collect();
-        let v: Vec<f64> = r.iter().map(|x| x.row.value).collect();
-        let n: Vec<i32> = r.iter().map(|x| x.row.n).collect();
-        let q: Vec<i16> = r.iter().map(|x| x.row.quality).collect();
-        let s: Vec<Option<f64>> = r.iter().map(|x| x.row.run_sum).collect();
-        let mn: Vec<Option<f64>> = r.iter().map(|x| x.row.run_min).collect();
-        let mx: Vec<Option<f64>> = r.iter().map(|x| x.row.run_max).collect();
-        w.readings_inserted = tx.execute(INSERT_READINGS, &[&ch, &ts, &v, &n, &q, &s, &mn, &mx]).await?;
-        w.readings_existing = (r.len() as u64).saturating_sub(w.readings_inserted);
+        // TimescaleDB 2.17.2 drops every later row of a multi-row INSERT ... ON CONFLICT DO NOTHING once one row
+        // conflicts inside a COMPRESSED chunk (tests/db.rs late_rows_and_duplicates...). Rows that can meet a
+        // compressed chunk with a conflict - late rows, and anything older than the compression horizon - go one per
+        // statement; the rest (forward rows of recent, uncompressed chunks) in one batched statement.
+        let horizon = Utc::now() - chrono::Duration::days(COMPRESSION_HORIZON_DAYS);
+        let (single, batch): (Vec<&Reading>, Vec<&Reading>) =
+            out.readings.iter().partition(|x| x.row.quality & crate::quality::LATE != 0 || x.row.ts < horizon);
+        if !batch.is_empty() {
+            let r = &batch;
+            let ch: Vec<i32> = r.iter().map(|x| x.channel_no).collect();
+            let ts: Vec<DateTime<Utc>> = r.iter().map(|x| x.row.ts).collect();
+            let v: Vec<f64> = r.iter().map(|x| x.row.value).collect();
+            let n: Vec<i32> = r.iter().map(|x| x.row.n).collect();
+            let q: Vec<i16> = r.iter().map(|x| x.row.quality).collect();
+            let s: Vec<Option<f64>> = r.iter().map(|x| x.row.run_sum).collect();
+            let mn: Vec<Option<f64>> = r.iter().map(|x| x.row.run_min).collect();
+            let mx: Vec<Option<f64>> = r.iter().map(|x| x.row.run_max).collect();
+            w.readings_inserted = tx.execute(INSERT_READINGS, &[&ch, &ts, &v, &n, &q, &s, &mn, &mx]).await?;
+        }
+        if !single.is_empty() {
+            let one = tx.prepare(INSERT_ONE_READING).await?;
+            for x in single {
+                let r = &x.row;
+                w.readings_inserted += tx
+                    .execute(
+                        &one,
+                        &[&x.channel_no, &r.ts, &r.value, &r.n, &r.quality, &r.run_sum, &r.run_min, &r.run_max],
+                    )
+                    .await?;
+            }
+        }
+        w.readings_existing = (out.readings.len() as u64).saturating_sub(w.readings_inserted);
     }
     if !out.states.is_empty() {
         let st: Vec<(&i32, &State)> = out.states.iter().collect();

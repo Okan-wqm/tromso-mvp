@@ -670,7 +670,15 @@ says so; "No recent data" when the temperature or the oxygen is older than 24 ho
 
 Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
 sparklines, a stored calculation, a server cache or a push channel (a measured miss first), a stored status, an "open in the
-calculator" link. A hundred units is a live measurement (query counts, render time and bytes are in the live-check list).
+calculator" link.
+
+**Measured at 100 units** (a throwaway test database, the test client, 100 stocked units with water and 19 days of feeding each; the
+real figures need the live farm): a simple card page costs 48 queries (264 ms of them), the fragment 43, a detailed page 55 and its
+fragment 50, the 204 path 7 queries and 20 ms; the render takes 1.7 to 2.8 s and the body 395 to 548 KB (about 4 to 5 KB a card), so
+the time is Python and template work, not the database: the change token is what spares an unchanged poll, and a measured slow
+screen would first bound the feeding walk (`project` reads every feeding of the lineage) or cache the rendered card, never the other
+way round. The queries stay equal from 6 to 100 units (pinned at 6 and 24 in `monitoring/tests/test_budget.py`). `CONN_MAX_AGE` is
+left alone: the queries are a tenth of the time, so there is no evidence for it.
 
 ### Operations › Feeding: Meal board, Records, Protocols and Assignments
 

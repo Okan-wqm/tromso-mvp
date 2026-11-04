@@ -15,7 +15,7 @@ from django.urls import reverse
 from core import access, navigation
 from core.models import AuditLog
 from core.softdelete import plan_delete, restore
-from farm.models import Equipment
+from farm.models import Equipment, EquipmentType
 from farm.tests.helpers import role, rows_data
 
 from sensors import credentials, quantities
@@ -41,8 +41,8 @@ class PagesCase(SensorsCase):
                                     'view_site', 'view_equipment'))
         self.client.force_login(self.keeper)
 
-    def posted(self, model, obj, **changes):
-        form = self.client.get(url(model, 'edit', obj.pk)).context['form']
+    def posted(self, kind, obj, **changes):
+        form = self.client.get(url(kind, 'edit', obj.pk)).context['form']
         data = {}
         for name in form.fields:
             value = form[name].value()
@@ -71,10 +71,10 @@ class PagesCase(SensorsCase):
         self.assertEqual(obj.version, 2)
         return obj
 
-    def stale_refused(self, model, obj, field, mine, theirs):
-        stale = self.posted(model, obj, **{field: mine})
-        self.client.post(url(model, 'edit', obj.pk), self.posted(model, obj, **{field: theirs}))
-        response = self.client.post(url(model, 'edit', obj.pk), stale, follow=True)
+    def stale_refused(self, kind, obj, field, mine, theirs):
+        stale = self.posted(kind, obj, **{field: mine})
+        self.client.post(url(kind, 'edit', obj.pk), self.posted(kind, obj, **{field: theirs}))
+        response = self.client.post(url(kind, 'edit', obj.pk), stale, follow=True)
         obj.refresh_from_db()
         self.assertEqual(getattr(obj, field), theirs)
         self.assertContains(response, 'Someone else changed this')
@@ -142,7 +142,8 @@ class PayloadFormatPageTests(PagesCase):
 
 class DevicePageTests(PagesCase):
     def test_round_trip(self):
-        pump = Equipment.objects.create(name='Probe rack', code='RACK', production_department=self.hall)
+        pump = Equipment.objects.create(name='Probe rack', code='RACK', production_department=self.hall,
+                                        equipment_type=EquipmentType.objects.order_by('code').first())
         credential = Credential.objects.create(username='gateway-1')
         device = self.round_trip(
             'device',

@@ -67,5 +67,12 @@ AREAS = [
     Area(_('Tasks'), 'tasks.Task'),
     # Recurring tasks: the rules that plan tasks ahead; Create, Edit and Delete change the plan.
     Area(_('Recurring tasks'), 'tasks.TaskSeries'),
+    # Sensors: the configuration of where live values come from. Edit on Channels also saves a channel's calibrations.
+    Area(_('Connections'), 'sensors.Connection'),
+    Area(_('Payload formats'), 'sensors.PayloadFormat'),
+    Area(_('Devices'), 'sensors.Device'),
+    Area(_('Channels'), 'sensors.Channel'),
+    # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
+    Area(_('Sensor credentials'), 'sensors.Credential'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

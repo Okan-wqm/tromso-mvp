@@ -1,0 +1,24 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% comment %} Sensors › Setup › Connections (sensors.resources.ConnectionResource): the brokers the ingest service listens to. {% endcomment %}
+{% block search_placeholder %}{% trans "Search by name, host or client id" %}{% endblock %}
+{% block empty_text %}{% trans "A connection is an MQTT broker the ingest service listens to. Its devices say which topics." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Connection" %}</th><th scope="col">{% trans "Broker" %}</th><th scope="col">{% trans "Client id" %}</th><th scope="col" class="num">{% trans "Devices" %}</th><th scope="col">{% trans "State" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for connection in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'sensors:connection_edit' connection.pk %}" data-modal>{{ connection.name }}</a>{% else %}<span class="row-title">{{ connection.name }}</span>{% endif %}</td>
+        <td class="mono">{{ connection.host }}:{{ connection.port }}{% if connection.use_tls %} · TLS{% endif %}</td>
+        <td class="mono">{{ connection.client_id }}</td>
+        <td class="num">{{ connection.device_count }}</td>
+        <td>{% if connection.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% endif %}</td>
+        <td class="row-actions">{% include "sensors/_row_actions.html" with model="connection" obj=connection label=connection.name %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

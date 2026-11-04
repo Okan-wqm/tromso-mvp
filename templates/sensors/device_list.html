@@ -1,0 +1,26 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% comment %} Sensors › Setup › Devices (sensors.resources.DeviceResource): the field devices, each on one topic of one
+   connection. {% endcomment %}
+{% block search_placeholder %}{% trans "Search by code, name, topic or model" %}{% endblock %}
+{% block empty_text %}{% trans "A device publishes on one topic of a connection: a probe, a PLC, a gateway. Its channels are the values it sends." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Device" %}</th><th scope="col">{% trans "Topic" %}</th><th scope="col">{% trans "Connection" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col" class="num">{% trans "Channels" %}</th><th scope="col">{% trans "State" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for device in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'sensors:device_edit' device.pk %}" data-modal>{{ device.name }}</a>{% else %}<span class="row-title">{{ device.name }}</span>{% endif %}<span class="row-sub">{{ device.code }}{% if device.manufacturer %} · {{ device.manufacturer }} {{ device.model }}{% endif %}</span></td>
+        <td class="mono">{{ device.topic }}</td>
+        <td>{{ device.connection.name }}</td>
+        <td>{{ device.site.name }}</td>
+        <td class="num"><a href="{% url 'sensors:channel_list' %}?device={{ device.pk }}">{{ device.channel_count }}</a></td>
+        <td>{% if device.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% endif %}</td>
+        <td class="row-actions">{% include "sensors/_row_actions.html" with model="device" obj=device label=device.name %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

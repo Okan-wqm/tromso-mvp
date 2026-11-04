@@ -566,7 +566,10 @@ entry. Voiding a stocking voids its batch; a batch number is never given twice. 
 operations and batches but does not restore them (a restore would skip the checks).
 
 **Who may do what:** the area Production units in the role matrix (Production · Operations): Read the
-page, Create records an operation, Delete voids one. A unit with fish cannot be deleted, nor resized,
+page, Create records an operation, Delete voids one. The feeding figures (bFCR, last fed, the batches' fed and
+bFCR, the drawer's eFCR and Feeding part) are shown only to people who may read the feeding records, as the
+Temp. and O₂ columns are to those who may read the water (`feeding.views.unit_figures`); a role with the stock
+right alone sees the stock. A unit with fish cannot be deleted, nor resized,
 nor set to a status that needs it empty; a species with batches and a supplier fish were bought from
 cannot be deleted (`PROTECT`). `manage.py check_stock` checks the whole ledger from scratch (counts,
 operations made of their lines, stocking dates, unit statuses, species, feedings without fish) and the
@@ -591,7 +594,9 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   documents and costs, a dialog for a count correction (an escape is the one count adjustment with a dialog). Harvest
   plans and the handling check are on
   Operations › Harvest; the medicine withdrawal they check is the health records' (Operations › Health),
-  through the registry of farm/handling/withdrawal.py.
+  through the registry of farm/handling/withdrawal.py. The registry answers for many units at once (a provider
+  takes `(units, day)` and gives `{unit id: blocks}`; `blocks_of`, `check.in_force_of`), so a page of fifty units
+  costs what a page of one does.
 
 ### Operations › Feeding: Meal board, Records, Protocols and Assignments
 
@@ -1025,13 +1030,22 @@ without values it shows its defaults.
 - **Not ported**: the fish type and size (they changed nothing, WQ-37: here the fish come with a unit),
   the measurement points' reading sources and sensor sets of the values bar (no sensors here yet).
 
-**Next: a chart per unit or loop.** The chart and the calculation take a `Water`, `Limits` and a `Target`,
-not a form, and the calculator already fills them from a point (`calculation.offers`), so a unit's or a
-loop's own chart in the drawer or its history needs no change to them. Three things come with it: total
-sulfide, calcium and H₂S become parameters (a column each, a migration, a limit parameter for H₂S); the pH
-and the alkalinity are taken from the same sample, or their age difference is shown, since the latest value
-of each may come from different samples (the calculator shows each value's age); and a point's history can
-draw its samples as a track.
+**A unit's own chart** (`/operations/water/units/<id>/chart/`, for the monitoring cards' window): the same chart
+and calculation, from the latest readings of one of the unit's sampling points (its middle point by default,
+`?point=` another of its own active points, 404 for any other) and the limits of its fish
+(`calculation.chart_of`). It never makes a value up: a unit chart refuses and lists the readings the point lacks
+(temperature, pH, alkalinity, salinity), or says that the unit has no middle point and lists its points, or that
+the pH and the alkalinity cannot go together (`deffeyes.why_impossible`, the calculator's own check). The one
+assumption is a fresh-water unit's salinity of 0 (`read.assumed_salinity`, also the ammonia's rule), shown as
+"assumed". The temperature is the point's own, never the loop's. TAN, oxygen and the site's altitude are drawn
+when there; no total sulfide or calcium is measured, so there is no H₂S or Ω layer, and a limit the fish do not
+have is said, not drawn. Each reading shows its age, status and point; the chart's SVG ids carry the point
+(`uid`), so several windows on one page never clash. The endpoint needs only the right to read water samples.
+`calculation.inputs_from` is the one mapping from field values to the analysis, used by the calculator's form
+and by this chart. Still to come: total sulfide, calcium and H₂S become parameters (a column each, a migration,
+a limit parameter for H₂S); the pH and the alkalinity are taken from the same sample, or their age difference
+is shown, since the latest value of each may come from different samples (the calculator shows each value's
+age); and a point's history can draw its samples as a track.
 
 **Who may do what**: the area Water chemistry (Production · Operations): Read the page (the calculator
 too), Create records a sample or a round, Delete voids one; the area Water limits (Production · Setup ·
@@ -2400,6 +2414,7 @@ real mail.
 | `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
 | `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
 | `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |
+| `/operations/water/units/<id>/chart/` | A unit's own Water Quality Management Chart from one of its points' latest readings (`?point=`), or what is missing; a fragment |
 | `/operations/water/record/` | Record a water sample (`?unit=<id>`, `?system=<id>` or `?equipment=<id>` offers that owner's points with its middle one chosen; `?point=<id>` names one) |
 | `/operations/water/round/` | A water round: the middle points of the units and loops of a site, production department or system (`include=` adds other kinds of point, or the equipment's) |
 | `/operations/water/void/<id>/` | Voids a water sample |

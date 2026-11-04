@@ -24,6 +24,7 @@ from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -351,6 +352,36 @@ def calculator_report(request):
     context = _calculator_context(request, data, all_layers=True)
     context['generated_at'] = timezone.now()
     return render(request, 'farm/water_calculator_report.html', context)
+
+
+# ---- a unit's own chart ----------------------------------------------------------------------------------------
+@permission_required(VIEW, raise_exception=True)
+def unit_chart(request, pk):
+    """The Deffeyes chart of one unit's water, as the body of the monitoring cards' window (the fragment is polled):
+    the chart, the readings it is drawn from with their age, status and point, the limits and species of the fish, and
+    the unit's points as links to the same fragment for another one. `?point=` is one of the unit's own active points
+    (404 for any other); without it, the middle point. A water that cannot be drawn is refused with what it lacks
+    (farm/water/calculation.chart_of). Gated by the right to read water samples alone: it shows nothing else of the
+    unit's records."""
+    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+    chosen = None
+    if request.GET.get('point'):
+        chosen = next((point for point in read.points_of([unit])[unit.pk] if str(point.pk) == request.GET['point']), None)
+        if chosen is None:
+            raise Http404
+    result = calculation.chart_of(unit, chosen)
+    here = reverse('farm:water_unit_chart', args=[unit.pk])
+    labels = CalculatorForm().fields
+    return render(request, 'farm/_unit_chart.html', {
+        'unit': unit, 'result': result, 'uid': f'chart-{result.point.pk}' if result.point else 'chart',
+        'chart': getattr(getattr(result, 'calculation', None), 'chart', None),
+        'point_links': [{'point': point, 'url': f'{here}?{urlencode({"point": point.pk})}',
+                         'current': result.point is not None and point.pk == result.point.pk}
+                        for point in result.points],
+        'limit_rows': [(labels[name].label, offer) for name, offer in getattr(result, 'limits', {}).items()],
+        'species': sorted({row.species.common_name for offer in getattr(result, 'limits', {}).values()
+                           for row in offer.rows}),
+    })
 
 
 # ---- the dialogs ---------------------------------------------------------------------------------------

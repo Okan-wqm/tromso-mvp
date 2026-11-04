@@ -1,0 +1,45 @@
+{% load i18n water %}
+{% comment %} The body of a unit's Deffeyes window (farm.water.views.unit_chart): the chart of its water at one sampling
+   point and the values it is drawn from, or what is missing. Nothing here is a default: a value that is not
+   there is listed, not filled in. The points are links to the same fragment for another point; the window
+   loads them in place (data-window-load). {% endcomment %}
+<div class="unit-chart" data-unit-chart>
+  <p class="unit-chart-head"><strong>{{ unit.code }}</strong>{% if result.point %} · {{ result.point.name }}{% endif %}{% if species %} · {{ species|join:", " }}{% endif %}</p>
+  {% if result.no_point %}
+  <p class="notice notice-warning" role="status">{% trans "This unit has no active middle sampling point, so its chart cannot be drawn. Choose one of its points:" %}</p>
+  {% elif result.missing %}
+  <div class="notice notice-warning" role="status">
+    <p>{% trans "The chart cannot be drawn: this point has no recent value of" %}</p>
+    <ul role="list">{% for label in result.missing %}<li>{{ label }}</li>{% endfor %}</ul>
+    <p>{% trans "Nothing is filled in for a missing value." %}</p>
+  </div>
+  {% elif result.impossible %}
+  <p class="notice notice-warning" role="status">{{ result.impossible }}</p>
+  {% else %}
+  {% include "farm/_deffeyes_chart.html" with chart=chart uid=uid %}
+  <h3 class="unit-chart-subhead">{% trans "Values the chart is drawn from" %}</h3>
+  <div class="table-wrap">
+    <table class="data-table drawer-table unit-chart-values">
+      <tbody>
+        {% for item in result.inputs %}
+        <tr>
+          <th scope="row">{{ item.label }}<span class="row-sub">{% if item.assumed %}{% trans "assumed: fresh water" %}{% elif item.reading %}{% blocktrans trimmed with age=item.reading.at|age point=item.reading.point.name %}{{ age }} ago · {{ point }}{% endblocktrans %}{% endif %}</span></th>
+          {% if item.reading %}{% include "farm/_water_cell.html" with reading=item.reading latest=True %}{% elif item.assumed %}<td class="num wq-derived">{{ item.value|water_value:item.field }}</td>{% else %}<td class="num">{{ item.value|floatformat:"-1g" }}</td>{% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if limit_rows %}
+  <h3 class="unit-chart-subhead">{% trans "Limits of the fish in the unit" %}</h3>
+  <ul class="unit-chart-limits" role="list">{% for label, offer in limit_rows %}<li>{{ label }}: {{ offer.value|floatformat:"-4" }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if result.absent %}<p class="capacity-note">{% blocktrans trimmed with limits=result.absent|join:", " %}No limit for these fish, so no border is drawn: {{ limits }}.{% endblocktrans %}</p>{% endif %}
+  {% endif %}
+  {% if point_links %}
+  <nav class="unit-chart-points" aria-label="{% trans "Sampling points" %}">
+    <h3 class="unit-chart-subhead">{% trans "Sampling points" %}</h3>
+    <ul role="list">{% for link in point_links %}<li>{% if link.current %}<strong aria-current="true">{{ link.point.name }}</strong>{% else %}<a href="{{ link.url }}" data-window-load>{{ link.point.name }}</a>{% endif %}</li>{% endfor %}</ul>
+  </nav>
+  {% endif %}
+</div>

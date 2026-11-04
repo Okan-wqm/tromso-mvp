@@ -1,0 +1,17 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Organisation chart (hr.views.organisation_chart): the company as nested lists, no script and no drawing. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<p class="muted">{% blocktrans trimmed with total=root.total %}{{ total }} people you may see in the company.{% endblocktrans %}</p>
+{% if root.children %}
+<ul class="org-tree">
+  {% for node in root.children %}{% include "hr/_org_node.html" %}{% endfor %}
+</ul>
+{% else %}
+<div class="empty"><h2>{% trans "Nothing to show yet" %}</h2><p>{% trans "Sites, production departments and office departments appear here." %}</p></div>
+{% endif %}
+{% endblock %}

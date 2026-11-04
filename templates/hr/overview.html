@@ -1,0 +1,66 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Team overview (hr.views.team_overview): the week of the viewer's people in numbers (hr.read.overview). {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+{% with week=overview.week %}
+<nav class="week-nav" aria-label="{% trans 'Week' %}">
+  <a class="button button-ghost" href="?week={{ week.previous|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Previous week" %}</a>
+  <strong class="week-title">{{ week.start|date:"DATE_FORMAT" }} – {{ week.end|date:"DATE_FORMAT" }}</strong>
+  <a class="button button-ghost" href="?week={{ week.next|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Next week" %}</a>
+</nav>
+<div class="toolbar">
+  <form method="get" class="search" role="search">
+    <input type="hidden" name="week" value="{{ week.start|date:'Y-m-d' }}">
+    {% include "icons/_icon.html" with name="search" %}
+    <label class="sr-only" for="list-search">{% trans "Search by name or number" %}</label>
+    <input id="list-search" type="search" name="q" value="{{ query }}" placeholder="{% trans 'Search by name or number' %}">
+  </form>
+  <form method="get" class="toolbar-filter">
+    <input type="hidden" name="week" value="{{ week.start|date:'Y-m-d' }}">
+    <label class="sr-only" for="department-filter">{% trans "Department" %}</label>
+    <select id="department-filter" name="department" data-autosubmit>
+      <option value="">{% trans "All departments" %}</option>
+      {% for group, options in departments %}{% if options %}<optgroup label="{{ group }}">{% for value, label in options %}<option value="{{ value }}"{% if chosen_department == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</optgroup>{% endif %}{% endfor %}
+    </select>
+    <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+  </form>
+</div>
+<p class="muted">{% blocktrans trimmed with shown=week.shown total=week.total hours=overview.standard_hours|floatformat:"-1" %}{{ shown }} of {{ total }} people · standard week {{ hours }} h{% endblocktrans %}{% if week.pages > 1 %} · {% trans "Page" %} {{ week.page }}/{{ week.pages }}{% if week.page > 1 %} <a href="?week={{ week.start|date:'Y-m-d' }}&page={{ week.page|add:'-1' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Previous" %}</a>{% endif %}{% if week.page < week.pages %} <a href="?week={{ week.start|date:'Y-m-d' }}&page={{ week.page|add:'1' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Next" %}</a>{% endif %}{% endif %}</p>
+{% if overview.rows %}
+<div class="table-wrap">
+  <table class="data-table overview">
+    <thead>
+      <tr><th scope="col">{% trans "Employee" %}</th><th scope="col" class="num">{% trans "Working days" %}</th><th scope="col" class="num">{% trans "Off" %}</th><th scope="col" class="num">{% trans "On leave" %}</th><th scope="col" class="num">{% trans "Planned (h)" %}</th><th scope="col" class="num">{% trans "Against the standard week (min)" %}</th></tr>
+    </thead>
+    <tbody>
+      {% for row in overview.rows %}
+      <tr>
+        <th scope="row"><span class="row-title">{{ row.employee.full_name }}</span><span class="row-sub">{% if row.department %}{{ row.department.name }}{% else %}{% trans "Not placed" %}{% endif %}</span></th>
+        <td class="num">{{ row.working }}</td><td class="num">{{ row.off }}</td><td class="num">{{ row.leave }}</td>
+        <td class="num">{{ row.planned_hours|floatformat:"-1" }}</td>
+        <td class="num{% if row.over %} is-over{% endif %}">{% if row.over %}+{% endif %}{{ row.over_minutes }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<h2 class="section-title">{% trans "Each day" %}</h2>
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Day" %}</th>{% for day in week.days %}<th scope="col" class="num">{{ day|date:"D j" }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      <tr><th scope="row">{% trans "Working" %}</th>{% for item in overview.footer %}<td class="num">{{ item.working }}</td>{% endfor %}</tr>
+      <tr><th scope="row">{% trans "Off" %}</th>{% for item in overview.footer %}<td class="num">{{ item.off }}</td>{% endfor %}</tr>
+      <tr><th scope="row">{% trans "On leave" %}</th>{% for item in overview.footer %}<td class="num">{{ item.leave }}</td>{% endfor %}</tr>
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty"><h2>{% trans "Nobody to show" %}</h2><p>{% trans "The people of your team appear here with their week in numbers." %}</p></div>
+{% endif %}
+{% endwith %}
+{% endblock %}

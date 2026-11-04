@@ -424,6 +424,12 @@ msgid "%(department)s (no site)"
 msgstr "%(department)s (uten lokalitet)"
 
 #, python-format
+msgid "%(direct)s person"
+msgid_plural "%(direct)s people"
+msgstr[0] "%(direct)s person"
+msgstr[1] "%(direct)s personer"
+
+#, python-format
 msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
 
@@ -791,6 +797,10 @@ msgid "%(shown)s of %(total)s people"
 msgstr "%(shown)s av %(total)s personer"
 
 #, python-format
+msgid "%(shown)s of %(total)s people · standard week %(hours)s h"
+msgstr "%(shown)s av %(total)s personer · standarduke %(hours)s t"
+
+#, python-format
 msgid "%(site)s has no lokalitetsnummer (Facility › Sites)."
 msgstr "%(site)s har ikke lokalitetsnummer (Anlegg › Lokaliteter)."
 
@@ -865,6 +875,20 @@ msgstr "%(temperature)s °C er utenfor denne tabellen (%(low)s–%(high)s °C)."
 #, python-format
 msgid "%(temperature)s °C, %(salinity)s ‰"
 msgstr "%(temperature)s °C, %(salinity)s ‰"
+
+#, python-format
+msgid "%(total)s in all"
+msgstr "%(total)s totalt"
+
+#, python-format
+msgid "%(total)s people you may see in the company."
+msgstr "%(total)s personer du kan se i selskapet."
+
+#, python-format
+msgid "%(total)s person"
+msgid_plural "%(total)s people"
+msgstr[0] "%(total)s person"
+msgstr[1] "%(total)s personer"
 
 #, python-format
 msgid "%(unit)s already has a count on %(date)s: void it first to correct it."
@@ -1891,6 +1915,9 @@ msgid ""
 msgstr ""
 "Etter %(formula)s er CO₂ under de %(air)s mg/L et vann holder i likevekt med luften: lufting kan "
 "ikke få det dit."
+
+msgid "Against the standard week (min)"
+msgstr "Mot standarduken (min)"
 
 msgid "Air"
 msgstr "Luft"
@@ -3848,6 +3875,9 @@ msgstr "EU-listeført, kategori C, D og E"
 
 msgid "EU-listed, category A"
 msgstr "EU-listeført, kategori A"
+
+msgid "Each day"
+msgstr "Hver dag"
 
 msgid "Each point can be listed once."
 msgstr "Hvert punkt kan bare listes én gang."
@@ -6487,6 +6517,9 @@ msgstr ""
 msgid "Nobody is expected today"
 msgstr "Ingen forventes i dag"
 
+msgid "Nobody to show"
+msgstr "Ingen å vise"
+
 msgid "None"
 msgstr "Ingen"
 
@@ -6643,6 +6676,9 @@ msgstr "Ingenting registrert i denne enheten ennå."
 
 msgid "Nothing recorded yet."
 msgstr "Ingenting registrert ennå."
+
+msgid "Nothing to show yet"
+msgstr "Ingenting å vise ennå"
 
 msgid "Nothing was there, and the book had nothing."
 msgstr "Ingenting var der, og registeret hadde ingenting."
@@ -7001,6 +7037,9 @@ msgstr "Rekkefølge"
 
 msgid "Organisation number"
 msgstr "Organisasjonsnummer"
+
+msgid "Organization chart"
+msgstr "Organisasjonskart"
 
 msgid "Origin"
 msgstr "Opprinnelse"
@@ -8580,6 +8619,9 @@ msgstr "Lokaliteter"
 msgid "Sites served"
 msgstr "Lokaliteter den betjener"
 
+msgid "Sites, production departments and office departments appear here."
+msgstr "Lokaliteter, produksjonsavdelinger og kontoravdelinger vises her."
+
 msgid "Size"
 msgstr "Størrelse"
 
@@ -9025,6 +9067,9 @@ msgstr "Oppgaver med frist i dag"
 
 msgid "Team list"
 msgstr "Teamliste"
+
+msgid "Team overview"
+msgstr "Teamoversikt"
 
 msgid "Technical specifications"
 msgstr "Tekniske spesifikasjoner"
@@ -9649,6 +9694,9 @@ msgstr ""
 
 msgid "The people of your team appear here with their plan for the week."
 msgstr "Folkene på teamet ditt vises her med planen for uken."
+
+msgid "The people of your team appear here with their week in numbers."
+msgstr "Folkene på teamet ditt vises her med uken i tall."
 
 msgid ""
 "The people of your team appear here. Someone who manages a department sees the people placed in "
@@ -11235,6 +11283,12 @@ msgstr ""
 
 msgid "Worked out from the values"
 msgstr "Regnet ut fra verdiene"
+
+msgid "Working"
+msgstr "Jobber"
+
+msgid "Working days"
+msgstr "Arbeidsdager"
 
 msgid "Working here"
 msgstr "Jobber her"

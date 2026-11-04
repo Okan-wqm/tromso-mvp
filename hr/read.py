@@ -345,3 +345,111 @@ def board(user, moment=None):
         counts[standing.state] += 1
         planned += 1 if span is not None else 0
     return Board(rows, dict(counts), planned, moment)
+
+
+# ---- the team overview and the organisation chart -------------------------------------------------------------------
+@dataclass
+class OverviewRow:
+    """One person's week in numbers: days working, planned off and on leave, the planned minutes and how they stand against the
+    standard week."""
+    employee: object
+    department: object
+    working: int
+    off: int
+    leave: int
+    planned_minutes: int
+    over_minutes: int      # planned minutes above the standard week (negative: below it)
+
+    @property
+    def planned_hours(self):
+        return Decimal(self.planned_minutes) / 60
+
+    @property
+    def over(self):
+        return self.over_minutes > 0
+
+
+@dataclass
+class Overview:
+    week: object
+    rows: list
+    footer: list           # per day: {'working': n, 'off': n, 'leave': n}, over the people shown
+    standard_minutes: int
+
+    @property
+    def standard_hours(self):
+        return Decimal(self.standard_minutes) / 60
+
+
+def overview(user, week_start, department=None, page=1, per_page=50, query=''):
+    """The week of the viewer's people as numbers: per person the days working, off and on leave and the planned hours against
+    the standard week; per day how many work, are off or are away. Everything comes from `week` (the same cells, the same scope),
+    so the two pages cannot disagree, and nothing is stored."""
+    plan = week(user, week_start, department, page, per_page, query)
+    standard = SchedulingSettings.get().standard_week_minutes
+    footer = [{'working': 0, 'off': 0, 'leave': 0} for _day in plan.days]
+    rows = []
+    for row in plan.rows:
+        working = off = away = 0
+        for index, cell in enumerate(row.cells):
+            if not cell.visible:
+                continue
+            if cell.on_leave:
+                away += 1
+                footer[index]['leave'] += 1
+            elif cell.shift is not None:
+                working += 1
+                footer[index]['working'] += 1
+            elif cell.is_off:
+                off += 1
+                footer[index]['off'] += 1
+        rows.append(OverviewRow(row.employee, row.department, working, off, away, row.planned_minutes,
+                                row.planned_minutes - standard))
+    return Overview(plan, rows, footer, standard)
+
+
+@dataclass
+class Node:
+    """One box of the organisation chart: the company, a site, a department. `direct` are the people placed in it, `total`
+    those in it and below it, as far as the viewer may count them."""
+    kind: str                  # company, site, production, office
+    label: str
+    obj: object = None
+    manager: object = None
+    direct: int = 0
+    total: int = 0
+    children: list = field(default_factory=list)
+
+
+def org_tree(user):
+    """The company as a tree for a person to read: its sites with their production departments, then the office departments by
+    their parents, each with its manager and the people in it (direct and in all below), counted among the people the viewer
+    may reach. Server-drawn nested lists; no layout algorithm and no script."""
+    counts = head_counts(user)
+    sites = {}
+    for department in ProductionDepartment.objects.select_related('site', 'manager').order_by('name'):
+        sites.setdefault(department.site, []).append(department)
+    root = Node('company', '')
+    for site in sorted(sites, key=lambda item: (item is None, item.name if item else '')):
+        node = Node('site', site.name if site else '', site)
+        for department in sites[site]:
+            direct = counts.get((PRODUCTION, department.pk), 0)
+            node.children.append(Node(PRODUCTION, department.name, department, department.manager, direct, direct))
+        node.total = sum(child.total for child in node.children)
+        root.children.append(node)
+    offices = list(OfficeDepartment.objects.select_related('site', 'manager').order_by('name'))
+    by_parent = defaultdict(list)
+    for department in offices:
+        by_parent[department.parent_id].append(department)
+
+    def build(department):
+        direct = counts.get((OFFICE, department.pk), 0)
+        node = Node(OFFICE, department.name, department, department.manager, direct, direct)
+        node.children = [build(child) for child in by_parent.get(department.pk, [])]
+        node.total = direct + sum(child.total for child in node.children)
+        return node
+
+    for department in by_parent.get(None, []):
+        root.children.append(build(department))
+    root.total = sum(child.total for child in root.children)
+    return root

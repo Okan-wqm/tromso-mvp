@@ -27,3 +27,19 @@
 .roster-finding { display: inline-block; margin-left: .25rem; padding: 0 .375rem; border-radius: 999px; font-size: .75rem;
   font-weight: 700; background: #F7E6E6; color: var(--error); cursor: help; }
 .shift-chip.is-off { background: #ECECEA; color: var(--muted); font-weight: 500; }
+/* Team overview: a figure over the standard week is marked. */
+.overview .is-over { color: var(--error); font-weight: 600; }
+/* Organisation chart: nested lists, drawn by the server; a printed page keeps the tree and drops the menu. */
+.org-tree, .org-tree ul { list-style: none; margin: 0; padding: 0 0 0 1.25rem; border-left: 1px solid var(--line); }
+.org-tree { border-left: 0; padding-left: 0; }
+.org-tree li { margin: .5rem 0; }
+.org-box { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; padding: .5rem .75rem;
+  border: 1px solid var(--line); border-radius: .5rem; background: var(--paper, #fff); }
+.org-name { font-weight: 600; }
+.org-kind, .org-manager, .org-count { font-size: .8125rem; color: var(--muted); }
+.org-site > .org-box { background: #ECECEA; }
+@media print {
+  .rail, .topbar, .toolbar, .week-nav, .scrim { display: none; }
+  .console { margin: 0; }
+  .roster-add { display: none; }
+}

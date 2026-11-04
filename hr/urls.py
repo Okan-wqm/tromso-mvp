@@ -12,6 +12,8 @@ urlpatterns = [route for tab in Resource.registry if tab.model._meta.app_label =
 urlpatterns += [
     path('hr/', views.today, name='today'),
     path('hr/today/board/', views.today_board, name='today_board'),
+    path('hr/organization/', views.organisation_chart, name='orgchart'),
+    path('hr/overview/', views.team_overview, name='overview'),
     path('hr/today/clock-<str:direction>/', views.punch, name='punch'),
     path('hr/schedule/plan/', views.plan, name='roster_plan'),
     path('hr/leave/<uuid:pk>/approve/', views.approve, name='leaverequest_approve'),

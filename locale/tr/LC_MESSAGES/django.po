@@ -420,6 +420,12 @@ msgid "%(department)s (no site)"
 msgstr "%(department)s (sahasız)"
 
 #, python-format
+msgid "%(direct)s person"
+msgid_plural "%(direct)s people"
+msgstr[0] "%(direct)s kişi"
+msgstr[1] "%(direct)s kişi"
+
+#, python-format
 msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
 
@@ -792,6 +798,10 @@ msgid "%(shown)s of %(total)s people"
 msgstr "%(total)s kişiden %(shown)s"
 
 #, python-format
+msgid "%(shown)s of %(total)s people · standard week %(hours)s h"
+msgstr "%(total)s kişiden %(shown)s · standart hafta %(hours)s sa"
+
+#, python-format
 msgid "%(site)s has no lokalitetsnummer (Facility › Sites)."
 msgstr "%(site)s için lokalitetsnummer yok (Tesis › Sahalar)."
 
@@ -866,6 +876,20 @@ msgstr "%(temperature)s °C bu tablonun dışında (%(low)s–%(high)s °C)."
 #, python-format
 msgid "%(temperature)s °C, %(salinity)s ‰"
 msgstr "%(temperature)s °C, %(salinity)s ‰"
+
+#, python-format
+msgid "%(total)s in all"
+msgstr "toplam %(total)s"
+
+#, python-format
+msgid "%(total)s people you may see in the company."
+msgstr "Şirkette görebileceğiniz %(total)s kişi."
+
+#, python-format
+msgid "%(total)s person"
+msgid_plural "%(total)s people"
+msgstr[0] "%(total)s kişi"
+msgstr[1] "%(total)s kişi"
 
 #, python-format
 msgid "%(unit)s already has a count on %(date)s: void it first to correct it."
@@ -1889,6 +1913,9 @@ msgid ""
 msgstr ""
 "%(formula)s sonrasında CO₂, havayla dengedeki bir suyun tuttuğu %(air)s mg/L’nin altında: sıyırma"
 " onu oraya indiremez."
+
+msgid "Against the standard week (min)"
+msgstr "Standart haftaya göre (dk)"
 
 msgid "Air"
 msgstr "Hava"
@@ -3847,6 +3874,9 @@ msgstr "AB listesinde, C, D ve E kategorileri"
 
 msgid "EU-listed, category A"
 msgstr "AB listesinde, A kategorisi"
+
+msgid "Each day"
+msgstr "Her gün"
 
 msgid "Each point can be listed once."
 msgstr "Her nokta bir kez listelenebilir."
@@ -6494,6 +6524,9 @@ msgstr ""
 msgid "Nobody is expected today"
 msgstr "Bugün kimse beklenmiyor"
 
+msgid "Nobody to show"
+msgstr "Gösterilecek kimse yok"
+
 msgid "None"
 msgstr "Yok"
 
@@ -6650,6 +6683,9 @@ msgstr "Bu birimde henüz bir şey kaydedilmedi."
 
 msgid "Nothing recorded yet."
 msgstr "Henüz kayıt yok."
+
+msgid "Nothing to show yet"
+msgstr "Henüz gösterilecek bir şey yok"
 
 msgid "Nothing was there, and the book had nothing."
 msgstr "Orada hiçbir şey yoktu, kayıtta da yoktu."
@@ -7008,6 +7044,9 @@ msgstr "Sıra"
 
 msgid "Organisation number"
 msgstr "Kuruluş numarası"
+
+msgid "Organization chart"
+msgstr "Organizasyon şeması"
 
 msgid "Origin"
 msgstr "Köken"
@@ -8586,6 +8625,9 @@ msgstr "Sahalar"
 msgid "Sites served"
 msgstr "Hizmet verilen sahalar"
 
+msgid "Sites, production departments and office departments appear here."
+msgstr "Sahalar, üretim departmanları ve ofis departmanları burada görünür."
+
 msgid "Size"
 msgstr "Boyut"
 
@@ -9031,6 +9073,9 @@ msgstr "Bugün süresi dolan görevler"
 
 msgid "Team list"
 msgstr "Ekip listesi"
+
+msgid "Team overview"
+msgstr "Ekip özeti"
 
 msgid "Technical specifications"
 msgstr "Teknik özellikler"
@@ -9658,6 +9703,9 @@ msgstr ""
 
 msgid "The people of your team appear here with their plan for the week."
 msgstr "Ekibinizin kişileri haftalık planlarıyla burada görünür."
+
+msgid "The people of your team appear here with their week in numbers."
+msgstr "Ekibinizin kişileri haftalarıyla birlikte sayılarla burada görünür."
 
 msgid ""
 "The people of your team appear here. Someone who manages a department sees the people placed in "
@@ -11248,6 +11296,12 @@ msgstr ""
 
 msgid "Worked out from the values"
 msgstr "Değerlerden hesaplanan"
+
+msgid "Working"
+msgstr "Çalışan"
+
+msgid "Working days"
+msgstr "Çalışma günleri"
 
 msgid "Working here"
 msgstr "Burada çalışıyor"

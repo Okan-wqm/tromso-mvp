@@ -55,7 +55,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
                                                  'Activity log', 'Roles', 'Users', 'Database', 'Today & attendance', 'Team list', 'Departments',
-                                                 'Shift schedule', 'Attendance', 'Leave requests', 'Scheduling settings'])
+                                                 'Organization chart', 'Shift schedule', 'Team overview', 'Attendance', 'Leave requests', 'Scheduling settings'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',

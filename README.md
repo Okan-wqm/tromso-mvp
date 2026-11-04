@@ -2269,6 +2269,18 @@ with **Mark present** (Create: a person of the team, the times, the reason), a c
 void (Delete). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
 HR dashboard, where its Read page first sits).
 
+### HR dashboard › Organization chart (`/hr/organization/`) and Time & shifts › Team overview (`/hr/overview/`)
+
+**Team overview** is the Shift schedule's week as numbers (`hr.read.overview`, built from the same cells and the same scope, so the two pages
+cannot disagree): per person the days working, planned off and on leave, the planned hours and how many minutes they stand above or below the
+standard week (a setting; a week over it is marked), and per day how many work, are off or are away. It has the week, department and search
+filters and the "n of m" paging of the schedule, needs Read on the Shift schedule, and runs in a fixed number of queries.
+
+**Organization chart** is the company as nested lists, drawn by the server (no script, no layout algorithm; the browser's print makes a
+printed page of it): the sites with their production departments, then the office departments under their parents, each box with its manager
+and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
+production department created, renamed or deleted under Production is in the chart at once, from the same rows.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the

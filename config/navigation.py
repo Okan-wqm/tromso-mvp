@@ -45,9 +45,11 @@ WORKSPACES = [
                 Entry(_('Today & attendance'), 'hr:today', 'user-check', 'hr.view_attendancerecord'),
                 Entry(_('Team list'), 'hr:employee_list', 'users', 'hr.view_employee'),
                 Entry(_('Departments'), 'hr:officedepartment_list', 'layout-grid', 'hr.view_officedepartment'),
+                Entry(_('Organization chart'), 'hr:orgchart', 'network', 'hr.view_officedepartment'),
             ]),
             Group(_('Time & shifts'), [
                 Entry(_('Shift schedule'), 'hr:shiftassignment_list', 'calendar', 'hr.view_shiftassignment'),
+                Entry(_('Team overview'), 'hr:overview', 'users', 'hr.view_shiftassignment'),
                 Entry(_('Attendance'), 'hr:attendancerecord_list', 'user-check', 'hr.view_attendancerecord'),
                 Entry(_('Leave requests'), 'hr:leaverequest_list', 'calendar-off', 'hr.view_leaverequest'),
                 Entry(_('Scheduling settings'), 'hr:schedulingsettings_list', 'settings', 'hr.view_schedulingsettings'),

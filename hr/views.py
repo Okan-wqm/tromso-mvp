@@ -15,8 +15,9 @@ from django.views.decorators.http import require_POST
 from core import navigation
 from core.crud import done, render_page
 from farm.models.site import zone_of
+from farm.stock.dates import site_today
 
-from . import read, rules, scope, services
+from . import read, rules, scope, services, units
 from .models import AttendanceRecord, Shift
 
 OFF, CLEAR = 'off', 'clear'
@@ -161,3 +162,33 @@ def punch(request, direction):
     else:
         messages.success(request, _('You are clocked in.') if direction == 'in' else _('You are clocked out.'))
     return redirect(reverse('hr:today'))
+
+
+# ---- the team overview and the organisation chart ---------------------------------------------------------------
+def team_overview(request):
+    """Team overview: the viewer's people and their week in numbers (`?week=`, `?department=`, `?q=`, `?page=`)."""
+    if not request.user.has_perm('hr.view_shiftassignment'):
+        raise PermissionDenied
+    from .resources.roster import parse_day
+    start = parse_day(request.GET.get('week')) or site_today(None)
+    department = units.find(request.GET.get('department', ''))
+    try:
+        page = int(request.GET.get('page', '1'))
+    except ValueError:
+        page = 1
+    query = request.GET.get('q', '').strip()
+    place = navigation.page('hr:overview')
+    return render(request, 'hr/overview.html', {
+        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': query,
+        'overview': read.overview(request.user, start, department, page, query=query), 'departments': units.choices(),
+        'chosen_department': units.token(department)})
+
+
+def organisation_chart(request):
+    """Organisation chart: sites with their production departments and the office departments, nested, with managers and head
+    counts the viewer may see."""
+    if not request.user.has_perm('hr.view_officedepartment'):
+        raise PermissionDenied
+    place = navigation.page('hr:orgchart')
+    return render(request, 'hr/orgchart.html', {'title': place.entry.label, 'eyebrow': place.heading,
+                                                'base_template': 'app_base.html', 'root': read.org_tree(request.user)})

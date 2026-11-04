@@ -29,7 +29,8 @@ from farm.stock.read import Presence
 
 from . import compute, periods
 from .kinds import EVENTS, KINDS, PERIODIC, ReportKind
-from .models import DueClosure, Report
+from . import duties
+from .models import DueClosure, OutsideDutyDone, Report
 
 SEA_SITE = Site.Type.SEA_CAGE
 PRODUCTION_FORM = Site.ProductionForm
@@ -101,6 +102,7 @@ class DueList:
     not_set_up: list = field(default_factory=list)
     lines: list = field(default_factory=list)
     closed: list = field(default_factory=list)
+    duties: list = field(default_factory=list)       # reports.duties.DutyLine: the annual duties outside this system
 
     def lines_of(self, kind):
         return [line for line in self.lines if line.kind == kind]
@@ -150,17 +152,21 @@ def due(today=None):
     _lines_of_notices(sites, found)
     _lines_of_slaughter(found)
     found.rows.sort(key=lambda row: (not row.overdue, row.deadline or date.min, str(row.kind), str(row.place)))
+    found.duties.sort(key=lambda line: (line.status != duties.OVERDUE, line.deadline, line.site.name, line.duty.code))
     return found
 
 
 class Existing(dict):
     """The reports started, by key, and the keys a person closed with a reason (DueClosure): neither is owed."""
     closed = frozenset()
+    done = {}
 
 
 def _existing():
     """{(kind, site id, facility id, period start, event id): the live original report} of every report started."""
     index = Existing()
+    index.done = {(record.duty, record.site_id, record.year): record
+                  for record in OutsideDutyDone.objects.select_related('recorded_by')}
     index.closed = frozenset((closure.kind, closure.site_id, closure.facility_id, closure.period_start, None)
                              for closure in DueClosure.objects.all())
     for report in Report.objects.filter(corrects__isnull=True):
@@ -200,6 +206,8 @@ def _site(site, today, existing, found):
     if (site.reports_from is None or not site.production_form or uncoded) and holds:
         found.not_set_up.append(SetUp(site, reports_from=site.reports_from is None,
                                       production_form=not site.production_form, species=uncoded))
+    salmonids = any(_category(batch)[SALMONID] for batch in batches.values())
+    found.duties.extend(duties.lines_of(site, today, existing.done, salmonids))
     for kind in SITE_KINDS:
         if KINDS[kind].grain == 'event':
             continue

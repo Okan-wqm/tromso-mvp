@@ -828,6 +828,16 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   cleaner-fish report), and feed recorded beside "none given" is a problem too. The cleaner-fish **API** rows are one per
   species (`ArtDto` is per species): the figures of the farmed and the wild-caught fish of a species are added and the
   origin is `VILLFANGET_OG_OPPDRETTET` when both are there; the stored content keeps the rows per origin (`exports._per_species`).
+- **Duties outside this system (coverage review R16, R17, R23, R25, R15, R29, R31, gap 6):** `reports/duties.py` lists them with what the
+  saved official texts say (deadline, channel, whom each binds by production form, the text it is written in, a source link where one was
+  saved) and what is not known (marked unverified, with the question of the register it rests on). The **driftsplan** (1 October each
+  year, for the two next calendar years: "alle akvakulturanlegg i sjø som produserer matfisk eller stamfisk", idle sites too; the
+  official page of 2026-09-18) and the **lice coordination plan** (lakselusforskriften § 4: sent each year before 1 October) are due
+  lines (`DueList.duties`, one per site and year from 2026: overdue, due within 60 days, upcoming, done) with a person's record that
+  they were done (`OutsideDutyDone`: the day and the reference, undone by deleting it, both logged); nothing is sent and no form is
+  built. They are reminded on the Reports page and the company overview. The page *Duties outside this system* adds § 45 (land
+  broodstock, 15 July), § 39 (recapture), the executed slaughter, the county governor's yearly report and the cleaner-fish
+  broodstock report. The consequence of filing late is unverified for the two plans (Q6).
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
   (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.

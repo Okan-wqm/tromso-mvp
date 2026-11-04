@@ -4,12 +4,22 @@ resistance suspicions, sensitivity tests, unit answers) are row lists of the tab
 from core.datamap import Screen, no, system
 
 from . import views
-from .forms import CloseForm, SubmitForm
+from .forms import CloseForm, DutyDoneForm, SubmitForm
 from .resources import ReportResource
 
 APPEND_ONLY = 'append-only: a database trigger refuses UPDATE and DELETE'
 
 SCREENS = {
+    'OutsideDutyDone': Screen(
+        create=(views.duty_done,),
+        edit=no('a record is undone, not edited: undoing deletes it'),
+        delete=(views.duty_undo,),
+        read=(views.outside_duties,),
+        note='The record of a person that an annual duty outside this system (the driftsplan, the lice coordination plan) was done.',
+        forms=(DutyDoneForm,),
+        columns={'duty': system('the duty the link names'), 'site': system('the site the link names'),
+                 'year': system('the year the link names'), 'recorded_by': system('the person who recorded it')},
+    ),
     'DueClosure': Screen(
         create=(views.close,),
         edit=no('a closure is reopened, not edited: reopening deletes it'),

@@ -215,7 +215,9 @@ class UpcomingTests(DueTestCase):
         block = page.context['upcoming']
         self.assertTrue(block['rows'])
         self.assertEqual(block['rows'][0].overdue, True)
-        self.assertEqual(block['overdue'], sum(1 for row in due.due().rows if row.overdue))
+        owed = due.due()
+        self.assertEqual(block['overdue'], sum(1 for row in owed.rows if row.overdue)
+                         + sum(1 for line in owed.duties if line.status == 'overdue'))     # the duties outside the system too
         self.assertContains(page, 'class="overdue"')
         self.assertContains(page, reverse('reports:report_list'))
 

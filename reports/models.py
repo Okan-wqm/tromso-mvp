@@ -336,6 +336,43 @@ class OpenQuestion(AuditedModel):
         return f'{self.code} · {self.question[:60]}'
 
 
+class OutsideDuty(models.TextChoices):
+    """The annual duties outside this system a person records as done (reports/duties.py): nothing here is a report."""
+    DRIFTSPLAN = 'driftsplan', _('Operating plan (driftsplan)')
+    LICE_PLAN = 'lice_plan', _('Lice coordination plan')
+
+
+class OutsideDutyDone(models.Model):
+    """A person's record that an annual duty outside this system was done for a site and a year: the day and the reference the
+    authority gave. Not a report, nothing is sent; undoing it deletes the row. Both are in the activity log."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    duty = models.CharField(_('Duty'), max_length=20, choices=OutsideDuty.choices)
+    site = models.ForeignKey(Site, on_delete=models.PROTECT, related_name='+', verbose_name=_('Site'))
+    year = models.PositiveSmallIntegerField(_('Year'))
+    done_on = models.DateField(_('Done on'))
+    reference = models.CharField(_('Receipt or reference'), max_length=200, blank=True)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                    related_name='+', verbose_name=_('Recorded by'))
+    recorded_at = models.DateTimeField(_('Recorded at'), auto_now_add=True)
+
+    class Meta:
+        db_table = 'regulatory_duties_done'
+        ordering = ['-year', 'duty']
+        verbose_name = _('duty done')
+        verbose_name_plural = _('duties done')
+        constraints = [
+            models.CheckConstraint(condition=Q(duty__in=OutsideDuty.values), name='chk_duties_done_duty'),
+            models.CheckConstraint(condition=Q(year__gte=2026, year__lte=2100), name='chk_duties_done_year',
+                                   violation_error_message=_('Give a year from 2026.')),
+            models.UniqueConstraint(fields=['duty', 'site', 'year'], name='uq_duties_done_year',
+                                    violation_error_message=_('This duty is recorded as done for this site and year.')),
+        ]
+
+    def __str__(self):
+        return f'{self.get_duty_display()} · {self.site} · {self.year}'
+
+
 class DueClosure(models.Model):
     """A report that was owed and will not be filed, closed by a person with the reason (a slaughter that never took place,
     a period filed elsewhere): the due list stops listing it. Reopening deletes the row; both are in the activity log.

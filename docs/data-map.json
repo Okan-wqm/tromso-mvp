@@ -215,6 +215,7 @@
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py",
         "reports/tests/test_ack.py",
+        "reports/tests/test_duties.py",
         "reports/tests/test_gaps789.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
@@ -9513,6 +9514,7 @@
         "inventory/tests/helpers.py",
         "reports/tests/helpers.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_duties.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
@@ -20991,6 +20993,220 @@
       },
       "tests": [
         "reports/tests/test_slaughter_duty.py"
+      ]
+    },
+    {
+      "app": "reports",
+      "model": "OutsideDutyDone",
+      "table": "regulatory_duties_done",
+      "description": "A person's record that an annual duty outside this system was done for a site and a year: the day and the reference the authority gave.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "duty",
+          "field": "duty",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "driftsplan",
+            "lice_plan"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the duty the link names"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the site the link names"
+        },
+        {
+          "name": "year",
+          "field": "year",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the year the link names"
+        },
+        {
+          "name": "done_on",
+          "field": "done_on",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DutyDoneForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "reference",
+          "field": "reference",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DutyDoneForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "recorded_by_id",
+          "field": "recorded_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who recorded it"
+        },
+        {
+          "name": "recorded_at",
+          "field": "recorded_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set when saved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_duties_done_duty",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_duties_done_year",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_duties_done_year",
+          "kind": "unique",
+          "fields": [
+            "duty",
+            "site",
+            "year"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.duty_done",
+              "url_names": [
+                "reports:duty_done"
+              ],
+              "routes": [
+                "/reports/duties/done/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a record is undone, not edited: undoing deletes it"
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.duty_undo",
+              "url_names": [
+                "reports:duty_undo"
+              ],
+              "routes": [
+                "/reports/duties/done/<uuid:pk>/undo/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.outside_duties",
+              "url_names": [
+                "reports:outside_duties"
+              ],
+              "routes": [
+                "/reports/duties/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The record of a person that an annual duty outside this system (the driftsplan, the lice coordination plan) was done.",
+      "forms": [
+        {
+          "form": "DutyDoneForm",
+          "module": "reports.forms",
+          "fields": {
+            "done_on": "",
+            "reference": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": []
+      },
+      "tests": [
+        "reports/tests/test_duties.py"
       ]
     },
     {

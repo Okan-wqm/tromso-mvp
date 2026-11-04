@@ -51,6 +51,15 @@
   </div>
 </section>
 {% endif %}
+{% if not chosen_kind %}
+<section class="notice{% if duty_lines %} notice-warning{% endif %}" aria-labelledby="outside-title">
+  <strong id="outside-title">{% trans "Outside this system" %}</strong>
+  {% if duty_lines %}
+  <ul>{% for line in duty_lines %}<li>{{ line.duty.title }} · {{ line.site.name }} · {{ line.year }} · {{ line.deadline|date:"DATE_FORMAT" }}{% if line.status == "overdue" %} <span class="badge badge-closed">{% trans "Overdue" %}</span>{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  <p><a href="{% url 'reports:outside_duties' %}">{% trans "Duties outside this system" %}</a>: {% trans "the operating plan, the lice coordination plan and the others the authorities require that are not filed here." %}</p>
+</section>
+{% endif %}
 {% if closed %}
 <section class="notice" aria-labelledby="closed-title">
   <strong id="closed-title">{% trans "Closed without filing" %}</strong>

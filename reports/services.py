@@ -6,12 +6,15 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from core import audit
+from farm.models import Batch
+from farm.models.species import SALMONID_CODES
 from core.models import AuditLog
 
 from . import compute, due, periods
 from .kinds import EVENTS
 from .models import (
-    NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, OpenQuestion, QuestionStatus, Report, ReportSnapshot,
+    NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, OpenQuestion, OutsideDutyDone, QuestionStatus, Report,
+    ReportSnapshot,
 )
 
 # The format of a notice that was recorded on the health event before notices existed (its time only).
@@ -131,6 +134,41 @@ def reopen(user, closure):
                          label=audit.english(closure))
         closure.delete()
     return pk
+
+
+def record_duty_done(user, *, duty, site, year, done_on, reference=''):
+    """Records that an annual duty outside this system was done for a site and a year (not a report; nothing is sent). Refused when
+    the duty does not bind the site, or the day is in the future. Logged."""
+    from . import duties
+    found = duties.BY_CODE.get(duty)
+    if found is None or not found.recordable:
+        _refuse(_('This duty is not recorded here.'))
+    if done_on > periods.oslo_today():
+        raise ValidationError({'done_on': [_('The day cannot be in the future.')]})
+    salmonids = any(batch.species.official_code in SALMONID_CODES for batch in Batch.objects.filter(
+        movements__unit__production_department__site=site).select_related('species').distinct())
+    if not duties.applies(found, site, salmonids)[0]:
+        _refuse(_('This duty does not bind this site.'))
+    with transaction.atomic():
+        record = OutsideDutyDone(duty=duty, site=site, year=year, done_on=done_on, reference=reference.strip(),
+                                 recorded_by=user)
+        record.full_clean()
+        record.save()
+        with audit.source_language():
+            audit.record_create(user, record, {
+                str(_('Duty')): audit.message(record.get_duty_display()), str(_('Site')): str(site),
+                str(_('Year')): str(year), str(_('Done on')): done_on.isoformat(),
+                str(_('Receipt or reference')): record.reference or None})
+    return record
+
+
+def undo_duty_done(user, record):
+    """Takes a record away: the duty is owed again. Logged."""
+    with transaction.atomic():
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.DELETE, record, entity_type=OutsideDutyDone._meta.verbose_name,
+                         label=audit.english(record))
+        record.delete()
 
 
 def start_correction(user, report):

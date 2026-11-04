@@ -1806,6 +1806,13 @@ condition the harvested fish are weighed (round or gutted weight) and is not rea
 month with no feed recorded is a problem unless the person says none was given. The cleaner-fish file for the API has one row per
 species, with the mixed origin when both farmed and wild-caught fish are in it.
 
+**Duties outside this system.** The operating plan (driftsplan, due 1 October each year for every sea site of food fish or broodstock, idle
+ones too) and the lice coordination plan (§ 4, before 1 October each year, sea sites with salmonids) are listed as due lines with a
+reminder on the Reports page and the company overview; you file them in Altinn and record here when and with what reference. The page
+*Duties outside this system* lists them and the others (the land broodstock report of 15 July, recapture, executed slaughter, the county
+governor's report, the cleaner-fish broodstock report) with their deadline, channel, whom they bind by production form, a link to the text
+and what is not verified. Nothing is sent and no form is built for them.
+
 **What you are about to record.** Before a filing is recorded, the report's page says "What you are about to record as filed", with
 the content hash and a link to the print page (the exact values to type, field by field in the authority's names); every export
 carries the same hash. The recording posts that hash, and if the records changed meanwhile (a backdated record) it is refused

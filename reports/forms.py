@@ -167,6 +167,14 @@ class OpenQuestionForm(TabbedForm):
                       'answer': _('What the authority said, and where (the mail, the page). Needed to mark it answered.')}
 
 
+class DutyDoneForm(forms.Form):
+    """Recording that a duty outside this system was done: the day and the reference the authority gave."""
+
+    done_on = forms.DateField(label=_('Done on'), widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+    reference = forms.CharField(label=_('Receipt or reference'), max_length=200, required=False,
+                                help_text=_('The receipt or case number the authority gave, if any.'))
+
+
 class CloseForm(forms.Form):
     """Closing a report that is owed and will not be filed: why."""
 

@@ -179,6 +179,8 @@ class ReportResource(Resource):
                          'chosen_site': chosen_site, 'statuses': STATUSES, 'chosen_status': chosen_status,
                          'today': periods.oslo_today(), 'due': rows, 'changed': changed, 'lines': lines,
                          'not_set_up': [] if chosen_kind else owed.not_set_up,
+                         'duty_lines': [] if chosen_kind else [line for line in owed.duties
+                                                               if line.status in ('overdue', 'due_soon')],
                          'tabs': _tabs(request, owed.rows, chosen_kind),
                          'kind_start_url': f'{start_url}?kind={chosen_kind}' if start_url and chosen_kind else '',
                          'start_url': start_url}

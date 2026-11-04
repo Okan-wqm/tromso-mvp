@@ -318,6 +318,12 @@ msgstr[0] "%(count)s døgngrad"
 msgstr[1] "%(count)s døgngrader"
 
 #, python-format
+msgid "%(count)s due"
+msgid_plural "%(count)s due"
+msgstr[0] "%(count)s skal sendes"
+msgstr[1] "%(count)s skal sendes"
+
+#, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
 msgstr "%(count)s fisk blir igjen i %(unit)s: vei dem også."
 
@@ -326,6 +332,12 @@ msgid "%(count)s member"
 msgid_plural "%(count)s members"
 msgstr[0] "%(count)s medlem"
 msgstr[1] "%(count)s medlemmer"
+
+#, python-format
+msgid "%(count)s overdue"
+msgid_plural "%(count)s overdue"
+msgstr[0] "%(count)s forsinket"
+msgstr[1] "%(count)s forsinket"
 
 #, python-format
 msgid "%(count)s overdue task"
@@ -799,6 +811,22 @@ msgid ""
 msgstr ""
 "%(site)s har ikke lusegrenseområde (Anlegg › Lokaliteter): den strengeste grensen og det største "
 "utvalget brukes."
+
+#, python-format
+msgid "%(site)s is at sea: it reports the monthly biomass"
+msgstr "%(site)s ligger i sjø: den rapporterer månedlig biomasse"
+
+#, python-format
+msgid "%(site)s is not a juvenile (settefisk) site"
+msgstr "%(site)s er ikke en settefiskslokalitet"
+
+#, python-format
+msgid "%(site)s is not a sea site"
+msgstr "%(site)s er ikke en sjølokalitet"
+
+#, python-format
+msgid "%(site)s is on land: it reports its yearly stock"
+msgstr "%(site)s ligger på land: den rapporterer årlig beholdning"
 
 #, python-format
 msgid ""
@@ -5146,6 +5174,9 @@ msgstr "Nøkkel"
 msgid "Kind"
 msgstr "Type"
 
+msgid "Kinds of report"
+msgstr "Rapporttyper"
+
 msgid "Knowledge"
 msgstr "Kunnskap"
 
@@ -6009,6 +6040,9 @@ msgstr "Ingen protokoll er tildelt denne fisken."
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Ingen bestillingspunkter ennå. Bruk «Legg til fôr» for å legge til en rad."
 
+msgid "No report is due."
+msgstr "Ingen rapport skal sendes."
+
 msgid "No rows match."
 msgstr "Ingen rader samsvarer."
 
@@ -6027,6 +6061,9 @@ msgstr "Ingen lusetelling registrert ennå"
 
 msgid "No site"
 msgstr "Ingen lokalitet"
+
+msgid "No site or facility to report for."
+msgstr "Ingen lokalitet eller anlegg å rapportere for."
 
 msgid "No species yet. Use “Add species” to add a row."
 msgstr "Ingen arter ennå. Bruk «Legg til art» for å legge til en rad."
@@ -6194,6 +6231,9 @@ msgstr "Ikke kontrollert"
 
 msgid "Not chosen yet"
 msgstr "Ikke valgt ennå"
+
+msgid "Not due"
+msgstr "Ikke aktuell"
 
 msgid "Not filed: as the records give it now."
 msgstr "Ikke sendt inn: slik registreringene gir den nå."
@@ -7696,6 +7736,9 @@ msgstr "Si hvorfor når det er en annen grunn, og bare da."
 msgid "Scale loss"
 msgstr "Skjelltap"
 
+msgid "Scheduled"
+msgstr "Planlagte"
+
 msgid "Scientific name"
 msgstr "Vitenskapelig navn"
 
@@ -8229,6 +8272,9 @@ msgstr "Start"
 
 msgid "Start a correction"
 msgstr "Start en korrigering"
+
+msgid "Start one"
+msgstr "Start en"
 
 msgid "Started"
 msgstr "Startet"
@@ -9927,6 +9973,12 @@ msgstr "Til %(date)s"
 msgid "Up to (g)"
 msgstr "Opp til (g)"
 
+msgid "Up to date"
+msgstr "À jour"
+
+msgid "Upcoming reports"
+msgstr "Kommende rapporter"
+
 msgid "Updated at"
 msgstr "Oppdatert"
 
@@ -10314,6 +10366,9 @@ msgstr ""
 "Hvor det kan leses, når det ikke har DOI eller DOI-en ikke er nok. https:// legges til når det "
 "mangler."
 
+msgid "Where it stands"
+msgstr "Status"
+
 msgid ""
 "Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
 "facilities)."
@@ -10414,6 +10469,9 @@ msgid "Whose observation or advice it is, e.g. “Kari Nordmann, fish health vet
 msgstr ""
 "Hvem observasjonen eller rådet kommer fra, f.eks. «Kari Nordmann, fiskehelseveterinær» eller ditt"
 " eget navn."
+
+msgid "Why"
+msgstr "Hvorfor"
 
 msgid "Why the text could not be read"
 msgstr "Hvorfor teksten ikke kunne leses"
@@ -10556,8 +10614,15 @@ msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek.
 msgid "a correction"
 msgstr "en korrigering"
 
+msgid "a juvenile site reports smolt, not the monthly biomass"
+msgstr "en settefiskslokalitet rapporterer smolt, ikke månedlig biomasse"
+
 msgid "after the count"
 msgstr "etter tellingen"
+
+#, python-format
+msgid "and %(count)s more: all reports"
+msgstr "og %(count)s til: alle rapporter"
 
 #, python-format
 msgid "and %(kilos)s to the cleaner fish"
@@ -10963,6 +11028,10 @@ msgstr "rømmingsregistreringer"
 msgid "estimated %(estimated)s (measured %(measured)s)"
 msgstr "estimert %(estimated)s (målt %(measured)s)"
 
+#, python-format
+msgid "every period since %(date)s with fish is filed"
+msgstr "alle perioder med fisk siden %(date)s er sendt inn"
+
 msgid "every species"
 msgstr "alle arter"
 
@@ -11186,8 +11255,28 @@ msgstr "neste måltid %(meal)s"
 msgid "no"
 msgstr "nei"
 
+#, python-format
+msgid "no cleaner fish held at %(site)s since %(date)s"
+msgstr "ingen rensefisk på %(site)s siden %(date)s"
+
+#, python-format
+msgid "no escape without a filed notice since %(date)s"
+msgstr "ingen rømming uten sendt varsel siden %(date)s"
+
 msgid "no fish"
 msgstr "ingen fisk"
+
+#, python-format
+msgid "no fish held at %(site)s since %(date)s"
+msgstr "ingen fisk på %(site)s siden %(date)s"
+
+#, python-format
+msgid "no harvest is planned to %(facility)s from this week on"
+msgstr "ingen slakting er planlagt til %(facility)s fra denne uken"
+
+#, python-format
+msgid "no listed disease without a filed notice since %(date)s"
+msgstr "ingen listeført sykdom uten sendt varsel siden %(date)s"
 
 msgid "no number"
 msgstr "uten nummer"
@@ -11200,11 +11289,25 @@ msgstr "uten nummer, utløper %(date)s"
 msgid "no official code for %(species)s"
 msgstr "ingen offisiell kode for %(species)s"
 
+#, python-format
+msgid "no production fish held at %(site)s since %(date)s"
+msgstr "ingen produksjonsfisk på %(site)s siden %(date)s"
+
 msgid "no production form"
 msgstr "ingen produksjonsform"
 
 msgid "no reports-from date"
 msgstr "ingen rapporter-fra-dato"
+
+msgid "no reports-from date: its periods are not counted"
+msgstr "ingen rapporteringsdato: periodene telles ikke"
+
+msgid "no reports-from date: nothing is counted"
+msgstr "ingen rapporteringsdato: ingenting telles"
+
+#, python-format
+msgid "no salmonids in the sea at %(site)s since %(date)s"
+msgstr "ingen laksefisk i sjøen på %(site)s siden %(date)s"
 
 msgid "no such row"
 msgstr "ingen slik rad"
@@ -11224,8 +11327,17 @@ msgstr "nås ikke ved noen pH"
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "nås ikke i diagrammets område (4 til 12,5)"
 
+msgid "only a site of food fish or broodstock on land reports it"
+msgstr "bare en landlokalitet med matfisk eller stamfisk rapporterer det"
+
+msgid "only a site of food fish, broodstock or cleaner-fish juveniles on land reports it"
+msgstr "bare en landlokalitet med matfisk, stamfisk eller rensefiskyngel rapporterer det"
+
 msgid "open"
 msgstr "åpen"
+
+msgid "owed once the month or week now running has closed"
+msgstr "forfaller når måneden eller uken som pågår er over"
 
 #, python-format
 msgid "p. %(page)s"
@@ -11381,6 +11493,9 @@ msgstr "lokalitetskontakt"
 msgid "site contacts"
 msgstr "lokalitetskontakter"
 
+msgid "site not set up: no production form"
+msgstr "lokaliteten er ikke satt opp: ingen produksjonsform"
+
 msgid "sites"
 msgstr "lokaliteter"
 
@@ -11399,6 +11514,12 @@ msgstr "arter"
 
 msgid "stale"
 msgstr "utdatert"
+
+msgid "started by a person when an event happens"
+msgstr "startes av en person når noe skjer"
+
+msgid "started by a person when it happens"
+msgstr "startes av en person når det skjer"
 
 msgid "starts later"
 msgstr "starter senere"

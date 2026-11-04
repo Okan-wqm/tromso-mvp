@@ -86,12 +86,14 @@ pub struct Step {
     /// At most two rows: a run closed early, then the sample itself.
     pub rows: Vec<Row>,
     pub late: bool,
+    /// The sample has exactly the newest time processed: the same instant again (a duplicate or a redelivery), no row.
+    pub duplicate: bool,
 }
 
 pub fn step(policy: &Policy, st: &mut State, s: Sample) -> Step {
     st.last_seen_at = Some(st.last_seen_at.map_or(s.received_at, |seen| seen.max(s.received_at)));
     if st.high_ts.is_some_and(|high| s.ts <= high) {
-        return Step { rows: vec![plain(s.ts, s.value, s.quality | LATE)], late: true };
+        return Step { rows: vec![plain(s.ts, s.value, s.quality | LATE)], late: true, duplicate: false };
     }
     st.high_ts = Some(s.ts);
     let heartbeat = Duration::try_seconds(policy.heartbeat_s).unwrap_or(Duration::MAX);
@@ -147,7 +149,7 @@ pub fn step(policy: &Policy, st: &mut State, s: Sample) -> Step {
         st.last_value_ts = Some(s.ts);
         st.last_quality = Some(quality::class(s.quality));
     }
-    Step { rows, late: false }
+    Step { rows, late: false, duplicate: false }
 }
 
 fn plain(ts: DateTime<Utc>, value: f64, quality: i16) -> Row {
@@ -238,7 +240,7 @@ mod tests {
     fn first_sample_is_stored_and_becomes_the_anchor() {
         let mut st = State::default();
         let out = step(&db(0.1, 60), &mut st, smp(0, 5.0, 0));
-        assert_eq!(out, Step { rows: vec![plain(0, 5.0, 0)], late: false });
+        assert_eq!(out, Step { rows: vec![plain(0, 5.0, 0)], late: false, duplicate: false });
         assert_eq!((st.anchor_ts, st.anchor_value, st.anchor_quality), (Some(at(0)), Some(5.0), Some(0)));
         assert_eq!((st.high_ts, st.last_value, st.last_value_ts), (Some(at(0)), Some(5.0), Some(at(0))));
         assert_eq!(st.last_seen_at, Some(at(0) + Duration::milliseconds(300)));
@@ -371,9 +373,10 @@ mod tests {
         run(&db(1.0, 600), &mut st, &[smp(0, 5.0, 0), smp(10, 5.1, 0)]);
         let before = st.clone();
         let out = step(&db(1.0, 600), &mut st, smp(5, 9.0, 0));
-        assert_eq!(out, Step { rows: vec![plain(5, 9.0, LATE)], late: true });
+        assert_eq!(out, Step { rows: vec![plain(5, 9.0, LATE)], late: true, duplicate: false });
+        // exactly the newest time: the same instant of the same channel again is a duplicate, no row
         let out = step(&db(1.0, 600), &mut st, smp(10, 5.1, 0));
-        assert_eq!(out, Step { rows: vec![plain(10, 5.1, LATE)], late: true });
+        assert_eq!(out, Step { rows: vec![], late: true, duplicate: true });
         assert_eq!(st.last_seen_at, Some(at(10) + Duration::milliseconds(300)));
         assert_eq!(State { last_seen_at: before.last_seen_at, ..st.clone() }, before);
     }
@@ -529,7 +532,9 @@ mod tests {
             }
             let stored: std::collections::HashSet<DateTime<Utc>> = first.iter().map(|r| r.ts).collect();
             let extra: Vec<&Row> = again.iter().filter(|r| !stored.contains(&r.ts)).collect();
-            let suppressed = batch.iter().filter(|s| !stored.contains(&s.ts)).count();
+            // the batch's newest sample is at high_ts: a duplicate, no row
+            let high = st.high_ts;
+            let suppressed = batch.iter().filter(|s| !stored.contains(&s.ts) && Some(s.ts) != high).count();
             prop_assert_eq!(extra.len(), suppressed);
             prop_assert!(extra.iter().all(|r| r.quality & LATE != 0 && r.n == 1));
         }

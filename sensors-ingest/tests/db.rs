@@ -196,14 +196,15 @@ async fn a_batch_commits_readings_states_devices_dead_letters_and_status_and_a_r
     let out2 = pipeline::process(&cfg, &committed, &mut DeadLimiter::new(100), &msgs);
     assert!(out2.readings.iter().all(|r| r.row.quality & quality::LATE != 0));
     let w2 = db::write_batch(&mut c, &out2, &status(&s.fx)).await.unwrap();
-    // stored rows conflict; the eight suppressed A samples (10.1-10.4, 10.6-10.9) come back as LATE rows: the
-    // bounded residual of plan risk 2
-    assert_eq!(w2.readings_inserted, 8);
-    assert_eq!(w2.readings_existing as usize, out2.readings.len() - 8);
+    // stored rows conflict; the last message (at the newest time) is a duplicate; the other seven suppressed A
+    // samples (10.1-10.4, 10.6-10.8) come back as LATE rows: the bounded residual of plan risk 2
+    assert_eq!(w2.readings_inserted, 7);
+    assert_eq!(w2.readings_existing as usize, out2.readings.len() - 7);
     let counts = a.query("SELECT count FROM sensors_dead_letter ORDER BY reason", &[]).await.unwrap();
     assert_eq!(counts.iter().map(|r| r.get::<_, i32>(0)).collect::<Vec<_>>(), vec![2, 2]);
-    let dev = a.query_one("SELECT accepted_total, late_total FROM sensors_device_state", &[]).await.unwrap();
-    assert_eq!((dev.get::<_, i64>(0), dev.get::<_, i64>(1)), (20, 10));
+    let dev =
+        a.query_one("SELECT accepted_total, late_total, ignored_total FROM sensors_device_state", &[]).await.unwrap();
+    assert_eq!((dev.get::<_, i64>(0), dev.get::<_, i64>(1), dev.get::<_, i64>(2)), (20, 9, 1));
 }
 
 #[tokio::test]

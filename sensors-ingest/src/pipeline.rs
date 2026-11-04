@@ -388,10 +388,17 @@ mod tests {
         let out = process(&cfg(), &committed, &mut DeadLimiter::new(10), &[m.clone()]);
         assert!(committed.is_empty());
         committed.extend(out.states);
-        // redelivered: late path, the stored row conflicts in the database
-        let out2 = process(&cfg(), &committed, &mut DeadLimiter::new(10), &[m]);
-        assert_eq!(out2.readings[0].row.quality, LATE);
-        assert_eq!(out2.devices[&dev()].late, 1);
+        // redelivered at the newest time: a duplicate, no row, counted as ignored
+        let out2 = process(&cfg(), &committed, &mut DeadLimiter::new(10), &[m.clone()]);
+        assert!(out2.readings.is_empty());
+        assert_eq!((out2.devices[&dev()].late, out2.devices[&dev()].ignored), (0, 1));
+        // an older time takes the late path
+        let mut older = m;
+        older.payload =
+            serde_json::to_vec(&serde_json::json!({"ts": iso(now() - Duration::seconds(5)), "v1": 3.0})).unwrap();
+        let out3 = process(&cfg(), &committed, &mut DeadLimiter::new(10), &[older]);
+        assert_eq!(out3.readings[0].row.quality, LATE);
+        assert_eq!(out3.devices[&dev()].late, 1);
         assert_eq!(out2.devices[&dev()].accepted, 1);
     }
 

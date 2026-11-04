@@ -11,7 +11,6 @@ from .forms.health import LastDayForm
 from .forms.water import MEASURED, RoundForm, RoundRowForm, SampleVoidForm, WaterSampleForm
 from .harvest import views as harvest
 from .health import views as health
-from .resources.equipment import EquipmentResource
 from .resources.feeding_protocol import FeedingProtocolResource
 from .stock import views as stock
 from .water import views as water
@@ -57,7 +56,7 @@ SCREENS = {
                   'for it'),
         edit=no('reference data written by migrations'),
         delete=no('reference data written by migrations; a type no longer offered is made inactive'),
-        read=(EquipmentResource,),
+        read=gap('no page lists the equipment catalogue: a type only shows as the choice on the Equipment form'),
         note="The Equipment form offers the active types and shows the chosen type's specification fields.",
         columns={'*': system("reference data from the migrations; the form shows the type's name and its fields")},
     ),
@@ -105,7 +104,8 @@ SCREENS = {
         part_of='farm.StockOperation',
         read=(stock.production_units, harvest.harvests, health.treatments),
         note='One row for each warning the person went on past: written with the operation or the treatment it was '
-             'given for, never edited.',
+             'given for, never edited. The pages show that a warning was acknowledged (its kind in a tooltip on '
+             'Harvested), not the values it kept.',
         columns={'*': computed('what the person was shown when they acknowledged the warning: the handling check '
                                '(farm/handling/check.py) works it out and the service stores it')},
     ),
@@ -159,6 +159,11 @@ SCREENS = {
         forms=(LastDayForm,),
         extra_fields={'token': TOKEN},
         columns={'void_reason': VOIDED},
+    ),
+    'Treatment_units': Screen(
+        edit=no('the units are chosen when the treatment is recorded; only its last day can be changed'),
+        delete=no('the rows stay with the treatment, voided with it'),
+        read=(health.treatments,),
     ),
     'LiceCount': Screen(
         create=(health.record_lice_count,),

@@ -46,7 +46,7 @@ MARKDOWN, JSON = DOCS / 'data-map.md', DOCS / 'data-map.json'
 # How much a missing path weighs in the Gaps ranking: nobody can fill it, nobody can read it, ...
 # In Screen.columns: the reason for every column that no form covers and nothing else says (a table the code writes).
 ALL = '*'
-WEIGHT = {'create': 4, 'edit': 3, 'read': 3, 'delete': 2, 'column': 1}
+WEIGHT = {'create': 4, 'edit': 3, 'read': 3, 'delete': 2, 'restore': 1, 'column': 1}
 
 
 @dataclass(frozen=True)
@@ -98,6 +98,8 @@ class Screen:
     columns   column -> computed / system / dynamic / gap, for a column no form covers; '*' for all the rest
     extra_fields   a form field that is not a column and fills none -> why (a form's token, a choice that only
               narrows another)
+    restore   for a record that is deleted softly and that the admin does not restore: `no(why)` (the admin restores
+              the records of a tab; a voided record is entered again, a left member added again)
     note      one line on how it works that the paths do not say (voiding a stocking voids its batch)"""
     create: object = ()
     edit: object = ()
@@ -108,6 +110,7 @@ class Screen:
     fills: dict = field(default_factory=dict)
     columns: dict = field(default_factory=dict)
     extra_fields: dict = field(default_factory=dict)
+    restore: object = None
     note: str = ''
 
 
@@ -201,6 +204,13 @@ def link_lists(model):
     from .links import LinkList
     return [(form, name, item) for form in all_model_forms() for name, item in form.base_fields.items()
             if isinstance(item, LinkList) and item.through is model]
+
+
+def m2m_links(model):
+    """[(parent model, many-to-many field)] whose rows this table holds: the link table Django makes, or a `through`
+    model; the parent's form saves them with the field."""
+    return [(parent, link) for parent in project_models() for link in parent._meta.many_to_many
+            if link.remote_field.through is model]
 
 
 def all_subclasses(cls):
@@ -368,21 +378,21 @@ class Map:
                 for capability in ('create', 'edit', 'delete'):
                     paths[capability].append(saved)
                 paths['read'].append(self.url_paths('rowlist', label, [tab.url_name('edit')]))
-        for form, name, _ in link_lists(model):
-            parent = form._meta.model
-            for capability in CAPABILITIES:
-                for path in self.resolve(parent._meta.label)['paths']['edit' if capability == 'delete' else capability]:
-                    paths[capability].append({**path, 'how': 'linklist',
-                                              'label': f'field {name} of {form.__name__}: {path["label"]}'})
-        parent = model._meta.auto_created
-        if parent:
-            link = next(f for f in parent._meta.many_to_many if f.remote_field.through is model)
+        for parent, link in m2m_links(model):
             for form in self.forms_with(parent, link.name):
-                for capability in ('create', 'edit', 'delete', 'read'):
-                    for path in self.resolve(parent._meta.label)['paths'][
-                            'edit' if capability == 'delete' else capability]:
-                        paths[capability].append({**path, 'how': 'm2m',
-                                                  'label': f'field {link.name} of {form.__name__}: {path["label"]}'})
+                label = f'field {link.name} of {form.__name__}'
+                tabs = [tab for tab in tabs_of(parent) if tab.form_class is form]
+                for tab in tabs:
+                    for capability, allowed in (('create', 'add'), ('edit', 'change'), ('delete', 'change'),
+                                                ('read', 'view')):
+                        if tab.allows(allowed):
+                            path = self.tab_path(tab, 'edit' if capability == 'delete' else capability)
+                            paths[capability].append({**path, 'how': 'm2m', 'label': f'{label}: {path["label"]}'})
+                if not tabs:
+                    # A dialog's form: the link is made when the dialog records the parent; what changes or shows
+                    # it afterwards is not in the code.
+                    for path in self.resolve(parent._meta.label)['paths']['create']:
+                        paths['create'].append({**path, 'how': 'm2m', 'label': f'{label}: {path["label"]}'})
         return paths
 
     def forms_with(self, model, name):
@@ -442,7 +452,6 @@ class Map:
                     f'see "Data map" in the README).')
         columns = self.columns(model, screen)
         soft = issubclass(model, AuditedModel)
-        registered = admin.site._registry.get(model)
         db_table = model._meta.db_table
         section, masked = self.viewer.get(db_table, (None, []))
         if section is None:
@@ -460,26 +469,42 @@ class Map:
             'constraints': constraints_of(model),
             'screens': capabilities,
             'note': screen.note,
-            'forms': [{'form': form.__name__, 'module': form.__module__,
-                       'fields': form_fields(form)} for form in self.all_forms(model)],
-            'delete_kind': ('soft delete through the delete plan' if soft else 'rows are removed'),
+            'forms': [{'form': form.__name__, 'module': form.__module__, 'fields': form_fields(form)}
+                      for form in self.all_forms(model)],
+            'delete_kind': ('soft delete through the delete plan' if soft else
+                            'no soft-delete column: a row goes, or stays, with what owns it'),
             'soft_delete': soft,
-            'restore_in_admin': bool(soft and registered is not None and 'restore' in registered.actions),
+            'restore': self.restore(model, screen, soft),
             'viewer': {'section': section, 'masked': masked},
             'tests': mentioned,
         }
+
+    def restore(self, model, screen, soft):
+        """How a soft-deleted record comes back: the admin's Restore action, or why not."""
+        if not soft:
+            return {'status': 'n/a', 'why': ''}
+        registered = admin.site._registry.get(model)
+        if registered is not None and 'restore' in registered.actions:
+            return {'status': 'admin', 'why': 'the Restore action in the admin (platform admin)'}
+        if isinstance(screen.restore, Reason):
+            return {'status': screen.restore.kind, 'why': screen.restore.why}
+        if registered is not None:
+            return {'status': 'none', 'why': 'listed read-only in the admin: a voided record is entered again on its '
+                                             'page, where the checks run'}
+        return {'status': 'gap', 'why': 'deleted rows are not in the admin, so nothing brings them back'}
 
     def columns(self, model, screen):
         label = model._meta.label
         parents = {rows.formset.fk.name for tab in Resource.registry for rows in tab.row_lists
                    if rows.formset.model is model}
-        parents |= {column.name for form, _, item in link_lists(model) for column in model._meta.concrete_fields
-                    if column.is_relation and column.related_model is form._meta.model and column.name != item.target}
         forms_here = self.all_forms(model)
         covered = {}
         for form in forms_here:
             for name, tab in form_fields(form).items():
-                covered.setdefault(name, []).append(f'{form.__name__}' + (f' › {tab}' if tab else ''))
+                covered.setdefault(name, [])
+                text = f'{form.__name__}' + (f' › {tab}' if tab else '')
+                if text not in covered[name]:
+                    covered[name].append(text)
         for key, targets in screen.fills.items():
             form_name, _, field_name = key.rpartition('.')
             holders = [form for form in forms_here if field_name in form.base_fields
@@ -491,11 +516,17 @@ class Map:
                 if column not in {f.name for f in model._meta.concrete_fields}:
                     self.problems.append(f'{label}: Screen.fills sends {key!r} to {column!r}, which is not a '
                                          f'column of the table.')
-                covered.setdefault(column, []).extend(f'{form.__name__}.{field_name}' for form in holders)
+                covered.setdefault(column, []).extend(
+                    text for text in dict.fromkeys(f'{form.__name__}.{field_name}' for form in holders)
+                    if text not in covered.get(column, []))
         for form, name, item in link_lists(model):
             for column in (item.target, item.primary, *item.detail_names):
                 if column:
                     covered.setdefault(column, []).append(f'{form.__name__}.{name}')
+        for parent, link in m2m_links(model):
+            for form in self.forms_with(parent, link.name):
+                for column in (link.m2m_field_name(), link.m2m_reverse_field_name()):
+                    covered.setdefault(column, []).append(f'{form.__name__}.{link.name}')
         through = model._meta.auto_created
         link = next((f for f in through._meta.many_to_many if f.remote_field.through is model), None) if through else None
         reported = set()
@@ -574,11 +605,11 @@ class Map:
                                   'weight': WEIGHT[capability]})
             for column in table['columns']:
                 if column['how'] == 'gap':
-                    found.append({'table': label, 'what': f'column {column["name"]}', 'why': column['why'],
+                    found.append({'table': label, 'what': f'column {column["field"]}', 'why': column['why'],
                                   'weight': WEIGHT['column']})
-            if table['soft_delete'] and not table['restore_in_admin']:
-                found.append({'table': label, 'what': 'restore', 'why': 'soft-deleted rows cannot be restored in the '
-                              'admin (register the app with core.admin.register_audited)', 'weight': WEIGHT['delete']})
+            if table['restore']['status'] == 'gap':
+                found.append({'table': label, 'what': 'restore', 'why': table['restore']['why'],
+                              'weight': WEIGHT['restore']})
         return sorted(found, key=lambda item: (-item['weight'], item['table'], item['what']))
 
     def framework(self):
@@ -663,7 +694,7 @@ def markdown(built, document):
     lines += [f'- `{name}`: {where}' for name, where in document['framework'].items()]
     lines += ['', '## Gaps', '',
               'Every table or column with no frontend path, heaviest first (a table nobody can fill 4, edit or read 3, '
-              'delete 2, a column 1). Each says what is missing and why; fixing one means building the page, then '
+              'delete 2, a row nothing can restore or a column 1). Each says what is missing and why; fixing one means building the page, then '
               'changing its declaration in `<app>/screens.py`.', '']
     if document['gaps']:
         lines += ['| # | Table | Missing | Why |', '|---|---|---|---|']
@@ -687,8 +718,11 @@ def table_block(table):
     viewer = table['viewer']
     shown = f'{viewer["section"]} › {table["table"]}' if viewer['section'] else 'not shown'
     masked = f' (never shown: {", ".join(viewer["masked"])})' if viewer['masked'] else ''
-    restore = ', restored in the admin' if table['restore_in_admin'] else ''
-    lines.append(f'- **delete kind**: {table["delete_kind"]}{restore}; **database viewer**: {shown}{masked}')
+    restore = table['restore']
+    back = {'admin': 'restored in the admin', 'none': f'not restored: {restore["why"]}',
+            'gap': f'**GAP**: {restore["why"]}'}.get(restore['status'], '')
+    lines.append(f'- **delete kind**: {table["delete_kind"]}' + (f'; {back}' if back else '')
+                 + f'; **database viewer**: {shown}{masked}')
     if table['forms']:
         lines.append('- **forms**: ' + ', '.join(f'`{f["form"]}`' for f in table['forms']))
     constraints = [f'{c["name"]} ({c["kind"]}{": " + ", ".join(c["fields"]) if c["fields"] else ""})'

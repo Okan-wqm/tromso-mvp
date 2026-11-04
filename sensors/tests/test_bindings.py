@@ -76,11 +76,11 @@ class RuleTests(BindingCase):
     def test_one_primary_per_target_and_quantity_at_a_time(self):
         other = make_channel(self.device, 'ph', code='PH-2')
         self.bind(self.ph, point=self.mid1)
-        with self.assertRaisesMessage(Exception, 'already has a primary pH (NBS scale) channel'):
+        with self.assertRaisesMessage(Exception, 'already has a primary ph channel'):
             self.bind(other, point=self.mid1)
         self.bind(other, point=self.mid1, role='backup')
         third = make_channel(self.device, 'ph', code='PH-3')
-        with self.assertRaisesMessage(Exception, 'already has a backup pH (NBS scale) channel'):
+        with self.assertRaisesMessage(Exception, 'already has a backup ph channel'):
             self.bind(third, point=self.mid1, role='backup')
         self.bind(third, point=self.mid2)                                     # another point: allowed
 
@@ -266,4 +266,4 @@ class ConcurrencyTests(TransactionTestCase):
             thread.start()
         for thread in threads:
             thread.join(20)
-        self.assertEqual(sorted(results), ['RaiseException', 'ok'])
+        self.assertEqual(sorted(results), ['CheckViolation', 'ok'])

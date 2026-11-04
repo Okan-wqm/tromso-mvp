@@ -1399,6 +1399,9 @@ msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "En side viser høyst %(days)s dag: første dag ble flyttet."
 msgstr[1] "En side viser høyst %(days)s dager: første dag ble flyttet."
 
+msgid "A pending request has no decider and no decision time."
+msgstr "En ventende søknad har ingen beslutter og intet beslutningstidspunkt."
+
 msgid "A person cannot be placed before they joined."
 msgstr "En person kan ikke plasseres før vedkommende begynte."
 
@@ -3080,6 +3083,9 @@ msgstr "Velg enhetene som ble behandlet."
 
 msgid "Choose units, a batch, or a batch and units."
 msgstr "Velg enheter, en fiskegruppe, eller en fiskegruppe og enheter."
+
+msgid "Chosen by the people who administer HR."
+msgstr "Velges av de som administrerer HR."
 
 msgid "Circular"
 msgstr "Rund"
@@ -8700,6 +8706,9 @@ msgid ""
 "filing."
 msgstr "Noen andre endret denne rapporten mens du så på den: se på nytt før du registrerer innsendingen."
 
+msgid "Someone planned one of these days at the same time. Look at the week again."
+msgstr "Noen planla en av disse dagene samtidig. Se på uken igjen."
+
 #, python-format
 msgid "Sort by %(name)s"
 msgstr "Sorter etter %(name)s"
@@ -9629,6 +9638,9 @@ msgstr "Neste måltid på Måltidstavlen: %(kilos)s, fylt inn nedenfor."
 
 msgid "The nitrogen-free extract: what is left when the other parts are taken away."
 msgstr "Nitrogenfritt ekstrakt: det som er igjen når de andre delene er trukket fra."
+
+msgid "The note is too long."
+msgstr "Merknaden er for lang."
 
 msgid "The number the company knows the person by."
 msgstr "Nummeret selskapet kjenner personen på."
@@ -11375,11 +11387,17 @@ msgstr "Du kan nå logge inn med det nye passordet ditt."
 msgid "You cannot deactivate your own account."
 msgstr "Du kan ikke deaktivere din egen konto."
 
+msgid "You do not enter or correct your own attendance."
+msgstr "Du legger ikke inn eller retter ditt eget oppmøte."
+
 msgid "You do not have permission to do this."
 msgstr "Du har ikke tillatelse til å gjøre dette."
 
 msgid "You do not plan this person on this day."
 msgstr "Du planlegger ikke denne personen denne dagen."
+
+msgid "You do not plan your own days."
+msgstr "Du planlegger ikke dine egne dager."
 
 msgid "You do not see this person on this day."
 msgstr "Du ser ikke denne personen denne dagen."

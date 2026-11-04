@@ -24,6 +24,14 @@ SCOPED_AREAS = [
 ]
 
 
+class _Private:
+    def __eq__(self, other):
+        return isinstance(other, dict) and other.get('msgid') == 'Private text' and bool(other.get('rev'))
+
+
+PRIVATE = _Private()
+
+
 def only_a_sites(cls, request, objects):
     """A scope: the codes that start with A."""
     return objects.filter(code__startswith='A')
@@ -100,7 +108,7 @@ class PrivateFieldTests(TestCase):
         plain = audit.snapshot(site, ['name', 'description'])
         self.assertEqual(plain['Description'], 'Secret words')
         masked = audit.snapshot(site, ['name', 'description'], private=['description'])
-        self.assertEqual(masked, {'Site name': 'Pond', 'Description': {'msgid': 'Private text'}})
+        self.assertEqual(masked, {'Site name': 'Pond', 'Description': PRIVATE})
         site.description = ''
         self.assertEqual(audit.snapshot(site, ['description'], private=['description']), {'Description': None})
 
@@ -108,7 +116,7 @@ class PrivateFieldTests(TestCase):
         site = Site.objects.create(name='Pond', code='PND', description='Secret words')
         with mock.patch.object(SiteResource, 'private_fields', ('description',)):
             recorded = SiteResource.recorded(site)
-        self.assertEqual(recorded['Description'], {'msgid': 'Private text'})
+        self.assertEqual(recorded['Description'], PRIVATE)
         self.assertNotIn('Secret words', str(recorded))
         self.assertEqual(SiteResource.private_fields, ())
 

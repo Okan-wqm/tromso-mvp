@@ -14,7 +14,7 @@ from farm.models import ProductionDepartment, Site
 from .. import read, services
 from ..models import Employee, Holiday, Posting, SchedulingSettings, Shift, ShiftAssignment
 from ..units import token
-from .helpers import fields_of, user
+from .helpers import PRIVATE, fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
 MONDAY = date(2026, 3, 2)
@@ -109,7 +109,7 @@ class CellFormTests(RosterTestCase):
         self.post_cell(self.in_a, MONDAY, self.early, actor=self.planner, note='Private words')
         row = ShiftAssignment.objects.get()
         entry = AuditLog.objects.get(entity_id=str(row.pk))
-        self.assertEqual(entry.changes['Note'], [None, {'msgid': 'Private text'}])
+        self.assertEqual(entry.changes['Note'], [None, PRIVATE])
         self.assertNotIn('Private words', str(AuditLog.objects.values_list('changes', flat=True)))
         ShiftAssignment.objects.filter(pk=row.pk).update(version=3)
         self.client.post(reverse('hr:shiftassignment_edit', args=[row.pk]), {'shift': str(self.late.pk),

@@ -14,7 +14,7 @@ from farm.models import ProductionDepartment, Site
 from .. import leave, read, services
 from ..models import Employee, Holiday, LeaveRequest, LeaveType, Posting, SchedulingSettings, Shift, ShiftAssignment
 from ..units import token
-from .helpers import fields_of, user
+from .helpers import PRIVATE, fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
 FRIDAY, MONDAY, TUESDAY = date(2026, 3, 6), date(2026, 3, 9), date(2026, 3, 10)
@@ -260,7 +260,7 @@ class DecisionTests(LeaveTestCase):
         self.assertEqual((second.status, second.decision_note), ('rejected', 'Short staffed'))
         log = AuditLog.objects.get(entity_id=str(second.pk))
         self.assertEqual(log.changes['Status'], [{'msgid': 'Pending'}, {'msgid': 'Rejected'}])
-        self.assertEqual(log.changes['Decision note'], [None, {'msgid': 'Private text'}])
+        self.assertEqual(log.changes['Decision note'], [None, PRIVATE])
         self.assertNotIn('Short staffed', str(log.changes))
 
     def test_every_refusal_changes_nothing_and_logs_nothing(self):
@@ -379,7 +379,7 @@ class PrivacyAndScopeTests(LeaveTestCase):
         self.file(self.ann_user, self.in_a, TUESDAY, TUESDAY, reason='Secret words')
         self.assertNotIn('Secret words', str(list(AuditLog.objects.values_list('changes', flat=True))))
         entry = AuditLog.objects.filter(entity_type='leave request').latest('created_at')
-        self.assertEqual(entry.changes['Reason'], [None, {'msgid': 'Private text'}])
+        self.assertEqual(entry.changes['Reason'], [None, PRIVATE])
         from config.database import VIEWER
         self.assertEqual(set(VIEWER.masked['leave_requests']), {'reason', 'decision_note'})
 

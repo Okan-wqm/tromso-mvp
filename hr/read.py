@@ -229,20 +229,24 @@ def week(user, week_start, department=None, page=1, per_page=50, query=''):
     rows = []
     for employee in employees:
         placed = postings.get(employee.pk, [])
-        head = placed[0] if placed else None
+        reach = visible.get(employee.pk, set()) if visible is not None else set(days)
+        # the department, site and clock are those of the first day the viewer reaches the person on, never another team's
+        first_reached = min(reach) if reach else days[0]
+        head = next((p for p in placed if p.valid_from <= first_reached and (p.valid_until is None
+                                                                             or p.valid_until >= first_reached)), None)
         site = site_of_posting(head) if head is not None else None
         zone = zone_of(site)
         mine = plan.get(employee.pk, {})
         holiday_of = {holiday.day: holiday for holiday in holidays if holiday.site_id in (None, getattr(site, 'pk', None))}
         planned = []
         for day, assignment in sorted(mine.items()):
-            if assignment.shift is not None:
+            # only what the viewer reaches goes into the rules, so a finding cannot show a shift of another team's days
+            if assignment.shift is not None and (visible is None or day in reach):
                 first, last = clock.span(day, assignment.shift, zone)
                 planned.append(rules.Planned(day, first, last, clock.net_minutes(first, last,
                                                                                 assignment.shift.break_minutes)))
         away = on_leave.get(employee.pk, set())
         found = rules.findings(planned, away, set(holiday_of), settings, [start])
-        reach = visible.get(employee.pk, set()) if visible is not None else set(days)
         cells = []
         for day in days:
             cell = Cell(day, visible=day in reach, assignment=mine.get(day) if day in reach else None,

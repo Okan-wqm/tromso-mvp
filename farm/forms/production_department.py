@@ -27,7 +27,7 @@ class ProductionDepartmentForm(CodedFormMixin, TabbedForm):
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, editor=None, **kwargs):
         super().__init__(*args, **kwargs)
         site = self.fields['site']
         site.queryset = Site.objects.all()
@@ -38,3 +38,8 @@ class ProductionDepartmentForm(CodedFormMixin, TabbedForm):
         self.fields['manager'].queryset = get_user_model().objects.filter(
             Q(is_active=True) | Q(pk=self.instance.manager_id)).order_by('username')
         self.fields['manager'].empty_label = _('No manager')
+        # The Manager decides whose people a person reaches in HR, so only those who administer HR choose it: someone who
+        # edits production departments cannot make themselves the manager of a team.
+        if editor is None or not (editor.has_perm('hr.all_employee') or editor.has_perm('hr.change_officedepartment')):
+            self.fields['manager'].disabled = True
+            self.fields['manager'].help_text = _('Chosen by the people who administer HR.')

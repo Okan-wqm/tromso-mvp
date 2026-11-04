@@ -9,7 +9,7 @@ from core.crud import TabbedForm, tab_fields
 from farm.forms.water import SiteClockField
 from farm.models.site import zone_of
 
-from .. import read, scope
+from .. import read, scope, services
 from ..models import AttendanceRecord, Employee
 
 TABS = [('record', _('Record'), ['employee', 'clock_in', 'clock_out', 'note'])]
@@ -51,6 +51,15 @@ class AttendanceRecordForm(TabbedForm):
         """The clock the person's times are typed on: the site of the department they are placed in that day."""
         return zone_of(read.site_on(employee, day))
 
+    def kept_or_made(self, name, naive, zone):
+        """The moment typed, on the site's clock; the stored one when the field was not changed (the form shows minutes: a
+        punch at 08:00:45 is not rewritten as 08:00:00 by an edit that touched something else)."""
+        stored = None if self.instance._state.adding else getattr(self.instance, name)
+        if stored is not None and timezone.localtime(stored, zone).replace(second=0, microsecond=0,
+                                                                         tzinfo=None) == naive:
+            return stored
+        return timezone.make_aware(naive, zone)
+
     def clean(self):
         cleaned = super().clean()
         if self.errors:
@@ -59,10 +68,12 @@ class AttendanceRecordForm(TabbedForm):
         employee = cleaned['employee'] if adding else self.instance.employee
         naive_in, naive_out = cleaned['clock_in'], cleaned.get('clock_out')
         zone = self.zone(employee, naive_in.date())
-        started = timezone.make_aware(naive_in, zone)
-        ended = timezone.make_aware(naive_out, zone) if naive_out is not None else None
+        started = self.kept_or_made('clock_in', naive_in, zone)
+        ended = self.kept_or_made('clock_out', naive_out, zone) if naive_out is not None else None
         if not scope.can_reach(self.user, employee, started.astimezone(zone).date()):
             raise ValidationError(_('You do not see this person on this day.'))
+        if services.self_plan(self.user, employee):
+            raise ValidationError(_('You do not enter or correct your own attendance.'))
         if ended is not None and ended <= started:
             self.add_error('clock_out', _('The person cannot clock out before they clocked in.'))
             return cleaned

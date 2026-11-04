@@ -171,7 +171,7 @@ def evaluate(employee, changes):
     holidays = holiday_days(first, last, site)
     away = leave.approved_days([employee.pk], first, last).get(employee.pk, set())
     weeks = {rules.monday(day) for day in changes}
-    return rules.findings(planned, away, holidays, settings, weeks)
+    return rules.findings(planned, away, holidays, settings, weeks, only=set(changes))
 
 
 def _cell_permission(existing, shift):
@@ -190,7 +190,10 @@ def plan_shifts(user, cells, shift):
         by_person.setdefault(employee.pk, (employee, {}))[1][day] = shift
     with transaction.atomic():
         warnings, blocking, writes = [], [], []
+        list(Employee.objects.select_for_update().filter(pk__in=list(by_person)).order_by('pk').values_list('pk', flat=True))
         for employee, changes in by_person.values():
+            if self_plan(user, employee):
+                raise PermissionDenied
             existing = {row.day: row for row in ShiftAssignment.objects.select_for_update().filter(
                 employee=employee, day__in=list(changes))}
             for day in changes:
@@ -255,6 +258,12 @@ def _leave_values(request):
         return audit.snapshot(request, LEAVE_FIELDS, private=PRIVATE_LEAVE)
 
 
+def self_plan(user, employee):
+    """Whether `user` would be recording or planning their own row without holding Everyone: a lead does not write their own
+    attendance or plan (a leave request has the same rule, by the service and by a trigger)."""
+    return employee.user_id is not None and employee.user_id == user.pk and not user.has_perm(scope.ALL)
+
+
 def _own(user, leave_request):
     return leave_request.employee.user_id is not None and leave_request.employee.user_id == user.pk
 
@@ -263,7 +272,7 @@ def can_decide(user, leave_request):
     """Whether `user` may approve or reject the request: Edit on Leave requests, the person in their team, and not their own
     request (one rule; a database trigger holds the last part whatever writes). One approval step."""
     return (leave_request.status == LeaveStatus.PENDING and user.has_perm('hr.change_leaverequest')
-            and not _own(user, leave_request) and scope.can_reach(user, leave_request.employee))
+            and not _own(user, leave_request) and scope.can_reach(user, leave_request.employee, leave_request.first_day))
 
 
 def can_cancel(user, leave_request, today=None, listed=False):
@@ -280,7 +289,7 @@ def can_cancel(user, leave_request, today=None, listed=False):
         return True
     if not user.has_perm('hr.change_leaverequest'):
         return False
-    return listed or scope.can_reach(user, leave_request.employee)
+    return listed or scope.can_reach(user, leave_request.employee, leave_request.first_day)
 
 
 def _lock(leave_request):
@@ -291,6 +300,9 @@ def _lock(leave_request):
 def decide_leave(user, leave_request, approve, note=''):
     """Approves or rejects a pending request, with the decider and the time. Refused (nothing changes, nothing is logged)
     for someone who may not decide it, for the person's own request, and for one that is no longer pending."""
+    note = (note or '').strip()
+    if len(note) > LeaveRequest._meta.get_field('decision_note').max_length:
+        raise ValidationError(_('The note is too long.'))
     with transaction.atomic():
         current = _lock(leave_request)
         if not can_decide(user, current):
@@ -298,7 +310,7 @@ def decide_leave(user, leave_request, approve, note=''):
         before = _leave_values(current)
         current.status = LeaveStatus.APPROVED if approve else LeaveStatus.REJECTED
         current.decided_by, current.decided_at = user, timezone.now()
-        current.decision_note = note.strip()
+        current.decision_note = note
         current.updated_by, current.version = user, current.version + 1
         current.save()
         audit.record_update(user, current, before, _leave_values(current),
@@ -390,7 +402,8 @@ def clock_out(user):
 def enter_presence(user, employee, clock_in_at, clock_out_at, note):
     """A lead records presence for a person of their team: times already on the site's clock as instants, and a reason
     (required: the CHECK on the table says so too). Needs Create on Attendance and the person in the user's team."""
-    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(user, employee):
+    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(user, employee, timezone.localtime(
+            clock_in_at, zone_of(read.site_on(employee, clock_in_at.date()))).date()) or self_plan(user, employee):
         raise PermissionDenied
     note = (note or '').strip()
     if not note:

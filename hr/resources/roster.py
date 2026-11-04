@@ -7,7 +7,7 @@ from core import audit
 from core.crud import Resource
 from farm.stock.dates import site_today
 
-from .. import read, rules, scope, units
+from .. import read, rules, scope, services, units
 from ..forms.roster import ShiftAssignmentForm
 from ..models import ShiftAssignment
 
@@ -39,7 +39,11 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return objects.filter(employee__in=scope.team(request.user).values('pk'))
+        return scope.by_day(request.user, objects, 'employee', 'day')
+
+    @classmethod
+    def allowed(cls, request, obj, action):
+        return not services.self_plan(request.user, obj.employee)
 
     @classmethod
     def form(cls, request, *args, **kwargs):

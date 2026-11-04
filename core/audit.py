@@ -5,6 +5,9 @@ The log is language-neutral at rest: labels, record types and enumerated values 
 English msgids whatever language the person who made the change was using, and shown translated
 (AuditLog.shown_changes). Build every snapshot inside `source_language()` (core.crud does); a person's
 own text (names, descriptions) is stored as written and never translated."""
+import hashlib
+import hmac
+
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -88,7 +91,10 @@ def snapshot(instance, field_names, labels=None, private=()):
         field = instance._meta.get_field(name)
         value = _display(instance, field)
         if name in private and value is not None:
-            value = message(_('Private text'))
+            # The words are never stored. A short keyed digest is, so that replacing one text by another is a change the log
+            # shows ("Private text" to "Private text") without saying anything about what they say.
+            value = {**message(_('Private text')), 'rev': hmac.new(
+                settings.SECRET_KEY.encode(), str(value).encode(), hashlib.sha256).hexdigest()[:8]}
         result[str(labels.get(name, capfirst(field.verbose_name)))] = value
     return result
 

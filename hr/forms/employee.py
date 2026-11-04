@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import TabbedForm, tab_fields
 from farm.stock.dates import site_today
 
-from .. import read, units
+from .. import read, scope, units
 from ..models import Employee
 
 PLACEMENT_FIELDS = ('department', 'title', 'from_day')
@@ -62,7 +62,7 @@ class EmployeeForm(TabbedForm):
             'left_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, editor=None, **kwargs):
         super().__init__(*args, **kwargs)
         adding = self.instance._state.adding
         self.today = site_today(None)
@@ -71,6 +71,11 @@ class EmployeeForm(TabbedForm):
             ~Exists(Employee.objects.filter(user=OuterRef('pk'))) | Q(pk=self.instance.user_id or 0)).order_by('username')
         self.fields['user'].queryset = accounts
         self.fields['user'].empty_label = _('No account')
+        # Who a person's account is decides who reads their private words (a leave reason is the account's own): only the
+        # holders of Everyone link or unlink one.
+        if editor is None or not editor.has_perm(scope.ALL):
+            self.fields['user'].disabled = True
+            self.fields['user'].queryset = accounts.filter(pk=self.instance.user_id or 0)
         self.fields['department'].choices = [('', _('Select a department'))] + units.choices(
             include=[self.current.department] if self.current else [])
         self.fields['department'].required = adding

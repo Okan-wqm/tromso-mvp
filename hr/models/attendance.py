@@ -52,7 +52,7 @@ class AttendanceRecord(AuditedModel):
             models.CheckConstraint(condition=Q(clock_out__isnull=True) | Q(clock_out__gt=F('clock_in')),
                                    name='chk_attendance_records_order', violation_error_message=ORDER_MESSAGE),
             models.CheckConstraint(condition=Q(via__in=['self', 'entered']), name='chk_attendance_records_via'),
-            models.CheckConstraint(condition=Q(via='self') | ~Q(note=''), name='chk_attendance_records_note',
+            models.CheckConstraint(condition=Q(via='self') | Q(note__regex=r'\S'), name='chk_attendance_records_note',
                                    violation_error_message=NOTE_MESSAGE),
             ExclusionConstraint(
                 name='excl_attendance_employee_span',

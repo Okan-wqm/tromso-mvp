@@ -4,6 +4,7 @@ from datetime import date
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import IntegrityError
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -66,6 +67,9 @@ def plan(request):
     except ValidationError as error:
         for message in error.messages:
             messages.error(request, message)
+        return redirect(target)
+    except IntegrityError:
+        messages.error(request, _('Someone planned one of these days at the same time. Look at the week again.'))
         return redirect(target)
     messages.success(request, ngettext('%(count)d day planned.', '%(count)d days planned.', len(cells))
                      % {'count': len(cells)})

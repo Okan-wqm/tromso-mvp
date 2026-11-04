@@ -63,22 +63,24 @@ def monday(day):
     return day - timedelta(days=day.weekday())
 
 
-def findings(planned, leave_days, holidays, settings, weeks):
+def findings(planned, leave_days, holidays, settings, weeks, only=None):
     """The findings for one person.
 
     `planned`: every Planned shift in the window (the weeks and a day or more either side, so the rest across a border
     and a run of days that crosses it are seen); `leave_days`: the days of approved leave; `holidays`: the days that
     are holidays for the person's site; `settings`: min_rest_minutes, standard_week_minutes, max_consecutive_days,
-    rest_rule; `weeks`: the Mondays of the weeks a finding is wanted for (the rest of the window only gives context)."""
+    rest_rule; `weeks`: the Mondays of the weeks a finding is wanted for (the rest of the window only gives context);
+    `only`: when given, the leave and holiday findings are for those days alone (the days a save changes: an old
+    conflict elsewhere in the week is not the new plan's)."""
     wanted = {monday(week) for week in weeks}
     found = []
     ordered = sorted(planned, key=lambda item: (item.start, item.end))
     by_day = {}
     for item in ordered:
         by_day.setdefault(item.day, []).append(item)
-        if item.day in leave_days and monday(item.day) in wanted:
+        if item.day in leave_days and monday(item.day) in wanted and (only is None or item.day in only):
             found.append(Finding(LEAVE_OVERLAP, BLOCK, item.day))
-        if item.day in holidays and monday(item.day) in wanted:
+        if item.day in holidays and monday(item.day) in wanted and (only is None or item.day in only):
             found.append(Finding(HOLIDAY_WORK, WARN, item.day))
     for before, after in zip(ordered, ordered[1:]):
         if monday(after.day) not in wanted and monday(before.day) not in wanted:

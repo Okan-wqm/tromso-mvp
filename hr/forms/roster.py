@@ -51,6 +51,8 @@ class ShiftAssignmentForm(TabbedForm):
             return cleaned
         if not scope.can_reach(self.user, employee, day):
             raise ValidationError(_('You do not plan this person on this day.'))
+        if services.self_plan(self.user, employee):
+            raise ValidationError(_('You do not plan your own days.'))
         found = services.evaluate(employee, {day: shift})
         blocking = [item for item in found if item.blocks]
         if blocking:

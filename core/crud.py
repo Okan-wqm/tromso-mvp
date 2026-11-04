@@ -409,6 +409,13 @@ class Resource:
         return objects
 
     @classmethod
+    def allowed(cls, request, obj, action):
+        """Whether the person may `action` ('change' or 'delete') this record they can reach: the verbs and the rows are
+        settled by the role and `scoped`; this is for a rule about the record itself (HR: not one's own attendance or plan).
+        The default allows it."""
+        return True
+
+    @classmethod
     def visible(cls, request):
         """Every live record of the tab the person may reach: `queryset` narrowed by `scoped`."""
         return cls.scoped(request, cls.queryset())
@@ -515,7 +522,10 @@ class ResourceView:
         }
 
     def get_object(self, pk):
-        return get_object_or_404(self.resource.visible(self.request), pk=pk)
+        obj = get_object_or_404(self.resource.visible(self.request), pk=pk)
+        if self.action in ('change', 'delete') and not self.resource.allowed(self.request, obj, self.action):
+            raise PermissionDenied
+        return obj
 
 
 # NONE (core.widgets, imported above): a list filter's value for "records without one" (production departments
@@ -690,6 +700,8 @@ class DeleteView(ResourceView):
         r = self.resource
         with transaction.atomic():
             obj = get_object_or_404(r.visible(request).select_for_update(of=('self',)), pk=pk)
+            if not r.allowed(request, obj, 'delete'):
+                raise PermissionDenied
             if isinstance(obj, AuditedModel):
                 plan = plan_delete(obj)
                 if not plan.can_delete:

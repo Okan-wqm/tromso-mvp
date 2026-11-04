@@ -1397,6 +1397,9 @@ msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
 msgstr[1] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
 
+msgid "A pending request has no decider and no decision time."
+msgstr "Bekleyen talebin karar vereni ve karar zamanı yoktur."
+
 msgid "A person cannot be placed before they joined."
 msgstr "Bir kişi işe girmeden önceki bir güne yerleştirilemez."
 
@@ -3079,6 +3082,9 @@ msgstr "Tedavi edilen birimleri seçin."
 
 msgid "Choose units, a batch, or a batch and units."
 msgstr "Birimler, bir parti ya da bir parti ve birimler seçin."
+
+msgid "Chosen by the people who administer HR."
+msgstr "İK’yı yönetenler tarafından seçilir."
 
 msgid "Circular"
 msgstr "Dairesel"
@@ -8706,6 +8712,9 @@ msgid ""
 "filing."
 msgstr "Siz bakarken bu raporu başka biri değiştirdi: sunumu kaydetmeden önce yeniden bakın."
 
+msgid "Someone planned one of these days at the same time. Look at the week again."
+msgstr "Biri bu günlerden birini aynı anda planladı. Haftaya yeniden bakın."
+
 #, python-format
 msgid "Sort by %(name)s"
 msgstr "Sırala: %(name)s"
@@ -9636,6 +9645,9 @@ msgstr "Öğün panosundaki sonraki öğün: %(kilos)s; aşağıya dolduruldu."
 
 msgid "The nitrogen-free extract: what is left when the other parts are taken away."
 msgstr "Azotsuz öz madde: diğer parçalar çıkarıldığında kalan."
+
+msgid "The note is too long."
+msgstr "Not çok uzun."
 
 msgid "The number the company knows the person by."
 msgstr "Şirketin kişiyi tanıdığı numara."
@@ -11388,11 +11400,17 @@ msgstr "Artık yeni parolanızla giriş yapabilirsiniz."
 msgid "You cannot deactivate your own account."
 msgstr "Kendi hesabınızı devre dışı bırakamazsınız."
 
+msgid "You do not enter or correct your own attendance."
+msgstr "Kendi yoklamanızı girmezsiniz ya da düzeltmezsiniz."
+
 msgid "You do not have permission to do this."
 msgstr "Bunu yapma izniniz yok."
 
 msgid "You do not plan this person on this day."
 msgstr "Bu kişiyi bu günde planlamıyorsunuz."
+
+msgid "You do not plan your own days."
+msgstr "Kendi günlerinizi planlamazsınız."
 
 msgid "You do not see this person on this day."
 msgstr "Bu kişiyi bu günde görmüyorsunuz."

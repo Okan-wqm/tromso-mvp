@@ -9,7 +9,7 @@ gives the HR pages, or a role without a department, reaches nothing beyond thems
 department the rows."""
 from datetime import timedelta
 
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 
 from farm.stock.dates import site_today
 
@@ -38,20 +38,32 @@ def office_departments_below(managed):
     return found
 
 
+def managed(user):
+    """The placements `user` manages: in a production department they are the Manager of, or in an office department they
+    manage or any below it (a deleted department gives none)."""
+    placed = Q(production_department__manager=user, production_department__is_deleted=False)
+    below = office_departments_below(list(OfficeDepartment.objects.filter(manager=user)))
+    return placed | Q(office_department__in=below) if below else placed
+
+
+def by_day(user, objects, employee='employee', day='day'):
+    """`objects` (records of a person, dated by the field `day`) narrowed to those whose person the user reached ON THAT DAY:
+    a record belongs to the manager of the department the person was placed in on its day, so a person who moved leaves
+    their old records with the old manager. A holder of Everyone reaches all; a person always reaches their own."""
+    if user.has_perm(ALL):
+        return objects
+    placed = Posting.objects.filter(managed(user), employee=OuterRef(f'{employee}_id'), valid_from__lte=OuterRef(day)).filter(
+        Q(valid_until__isnull=True) | Q(valid_until__gte=OuterRef(day)))
+    return objects.filter(Q(**{f'{employee}__user': user}) | Exists(placed))
+
+
 def team(user, day=None):
     """The employees `user` may reach on `day` (the company's today by default): live rows only. Path joins
     bypass the soft-delete manager, so a deleted department or placement is left out explicitly."""
     if user.has_perm(ALL):
         return Employee.objects.all()
     day = day or site_today(None)
-    managed_production = Q(production_department__manager=user, production_department__is_deleted=False)
-    managed_office = OfficeDepartment.objects.filter(manager=user)
-    placed = Q()
-    placed |= managed_production
-    below = office_departments_below(list(managed_office))
-    if below:
-        placed |= Q(office_department__in=below)
-    members = Posting.objects.filter(placed & covering(day)).values('employee')
+    members = Posting.objects.filter(managed(user) & covering(day)).values('employee')
     return Employee.objects.filter(Q(user=user) | Q(pk__in=members))
 
 
@@ -70,9 +82,7 @@ def visible_days(user, first, last):
     each = [first + timedelta(days=n) for n in range((last - first).days + 1)]
     for employee_id in Employee.objects.filter(user=user).values_list('pk', flat=True):
         days[employee_id] = set(each)
-    managed_production = Q(production_department__manager=user, production_department__is_deleted=False)
-    below = office_departments_below(list(OfficeDepartment.objects.filter(manager=user)))
-    placed = managed_production | (Q(office_department__in=below) if below else Q())
+    placed = managed(user)
     for posting in Posting.objects.filter(placed & overlapping(first, last)).values('employee', 'valid_from', 'valid_until'):
         start = max(posting['valid_from'], first)
         end = min(posting['valid_until'] or last, last)

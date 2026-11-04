@@ -41,6 +41,10 @@ class EmployeeResource(Resource):
         return objects.filter(pk__in=scope.team(request.user).values('pk'))
 
     @classmethod
+    def form(cls, request, *args, **kwargs):
+        return cls.form_class(*args, editor=request.user, **kwargs)
+
+    @classmethod
     def list_queryset(cls, request):
         """The team with each person's placement today read in the same query (a subquery, not one per row)."""
         today = site_today(None)

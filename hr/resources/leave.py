@@ -46,7 +46,7 @@ class LeaveRequestResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return objects.filter(employee__in=scope.team(request.user).values('pk'))
+        return scope.by_day(request.user, objects, 'employee', 'first_day')
 
     @classmethod
     def form(cls, request, *args, **kwargs):

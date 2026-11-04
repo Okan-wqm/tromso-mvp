@@ -162,6 +162,7 @@ class DepartmentManagerTests(ProductionDepartmentTestCase):
 
     def setUp(self):
         super().setUp()
+        self.user.groups.add(role('HR administration', 'change_officedepartment'))     # who may choose the manager
         self.kari = get_user_model().objects.create_user('kari', 'kari@example.com', 'x')
         self.ola = get_user_model().objects.create_user('ola', 'ola@example.com', 'x', is_active=False)
 

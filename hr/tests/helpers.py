@@ -31,3 +31,16 @@ class HrTestCase(TestCase):
     def setUp(self):
         self.user = user('ali', *HR_ADMIN)
         self.client.force_login(self.user)
+
+
+class _Private:
+    """Equal to the log's value for a private text: the enumerated "Private text" with its digest, whatever the digest is."""
+
+    def __eq__(self, other):
+        return isinstance(other, dict) and other.get('msgid') == 'Private text' and bool(other.get('rev'))
+
+    def __repr__(self):
+        return 'PRIVATE'
+
+
+PRIVATE = _Private()

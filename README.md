@@ -2281,6 +2281,14 @@ printed page of it): the sites with their production departments, then the offic
 and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
 production department created, renamed or deleted under Production is in the chart at once, from the same rows.
 
+**Rules the review of the branch added.** A record of a person belongs to the manager of the department the person was placed in
+on the record's own day (`hr.scope.by_day`: a plan, a punch, a leave request), so a person who moved leaves their old records with
+the old manager on every verb; the week names the department and the clock of the first day the viewer reaches, and its findings
+are worked out from the days the viewer reaches only. A lead does not plan or write their own attendance (Everyone may). The
+Manager of a production department and the account of an employee are chosen by those who administer HR (`hr.change_officedepartment`
+or Everyone), because they decide whose rows and whose private words a person reaches. A pending request carries no decider and a
+hand-entered note has words, as database checks; a decision note over 500 characters is an error on the page.
+
 ### HR: checks, the demonstration company, the browser code and the tests
 
 - **`manage.py check_hr`** reads what no database constraint can hold because it looks at several rows and changes with time, and
@@ -2531,8 +2539,9 @@ The matrix has one more column for the same purpose, **Everyone** (`all`): offer
 are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and the scope function reads it as
 "no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
 punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
-that the field was set or cleared, not what it says (and an edit between two filled texts is not shown; the
-record's version moves on).
+that the field was set, replaced or cleared, not what it says (a short keyed digest of the text is kept so that
+a replacement is a change the log shows). A tab can also refuse a verb on a record it reaches (`Resource.allowed`: HR
+refuses editing, voiding and planning one's own attendance and plan).
 
 ### The delete plan
 

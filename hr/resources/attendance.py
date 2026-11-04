@@ -9,7 +9,7 @@ from core.crud import Resource
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
-from .. import clock, scope
+from .. import clock, scope, services
 from ..forms.attendance import AttendanceRecordForm
 from ..models import AttendanceRecord, Posting
 
@@ -51,7 +51,11 @@ class AttendanceRecordResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return objects.filter(employee__in=scope.team(request.user).values('pk'))
+        return scope.by_day(request.user, objects.annotate(clocked_day=TruncDate('clock_in')), 'employee', 'clocked_day')
+
+    @classmethod
+    def allowed(cls, request, obj, action):
+        return not services.self_plan(request.user, obj.employee)
 
     @classmethod
     def form(cls, request, *args, **kwargs):

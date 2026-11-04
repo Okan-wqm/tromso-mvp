@@ -98,6 +98,11 @@ class LeaveRequest(AuditedModel):
                 condition=Q(status__in=['pending', 'cancelled']) | Q(decided_at__isnull=False),
                 name='chk_leave_requests_decided',
                 violation_error_message=_('An approved or rejected request has the time it was decided.')),
+            # A request nobody has decided has no decider and no time.
+            models.CheckConstraint(
+                condition=~Q(status='pending') | Q(decided_at__isnull=True, decided_by__isnull=True),
+                name='chk_leave_requests_pending_undecided',
+                violation_error_message=_('A pending request has no decider and no decision time.')),
             ExclusionConstraint(
                 name='excl_leave_requests_employee_days',
                 expressions=[(F('employee'), RangeOperators.EQUAL), (days(), RangeOperators.OVERLAPS)],

@@ -193,7 +193,7 @@ class EnteredPresenceTests(PeopleTestCase):
         record.refresh_from_db()
         self.assertEqual((record.clock_out, record.version), (at(15), 2))
         entry = AuditLog.objects.filter(entity_id=str(record.pk), action='update').get()
-        self.assertEqual(set(entry.changes), {'Clock out'})              # the note is private: only that it exists is logged
+        self.assertEqual(set(entry.changes), {'Clock out', 'Note'})      # a new note is a change; its words are never logged
         self.assertNotIn('Corrected', str(list(AuditLog.objects.values_list('changes', flat=True))))
         self.assertNotIn('Phone was dead', str(list(AuditLog.objects.values_list('changes', flat=True))))
         # Void = delete

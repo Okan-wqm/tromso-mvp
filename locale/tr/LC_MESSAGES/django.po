@@ -3839,6 +3839,10 @@ msgid "Escape"
 msgstr "Kaçış"
 
 #, python-format
+msgid "Escape of %(fish)d fish from %(unit)s, %(date)s"
+msgstr "%(date)s: %(unit)s biriminden %(fish)d balığın kaçışı"
+
+#, python-format
 msgid "Escape recorded: %(count)s fish of %(batch)s from %(unit)s."
 msgstr "Kaçış kaydedildi: %(unit)s biriminden %(batch)s partisinden %(count)s balık."
 

@@ -231,3 +231,26 @@ class UpcomingTests(DueTestCase):
         block = self.client.get(reverse('home')).context['upcoming']
         total = len(due.due().rows)
         self.assertEqual(len(block['rows']) + block['more'], total)
+
+
+class EscapeLabelTests(DueTestCase):
+    def test_an_escape_is_named_as_one_wherever_it_is_offered_or_listed(self):
+        from core.models import AuditLog
+        from ..forms import escape_label
+        batch = self.stock(self.m1, 3000, '200', day(9, 25))
+        operation = stock.record_escape(self.user, unit=self.m1, batch=batch, day=day(10, 12), count=50,
+                                        cause='A tear of about 0.4 m')
+        text = 'Escape of 50 fish from M-01, 2026-10-12'
+        escape = operation.escape_record
+        self.assertEqual((str(operation), str(escape), operation.escape), (text, text, escape))
+        self.assertEqual(escape_label(escape), f'{text} · A tear of about 0.4 m')     # the picker
+        row, = [row for row in due.due(TODAY).rows if row.kind == ReportKind.ESCAPE]  # the due list
+        self.assertEqual(str(row.event), text)
+        page = self.client.get(reverse('reports:report_list'))
+        self.assertContains(page, text)
+        self.assertNotContains(page, 'Count adjustment')
+        entry = AuditLog.objects.filter(entity_type='stock operation').latest('created_at')   # the activity log
+        self.assertEqual(entry.entity_label, f'Escape · M-01 · {batch.code} · 2026-10-12')
+        # A count adjustment that is not an escape keeps its kind's name.
+        other = stock.StockOperation.objects.create(kind='adjustment', date=day(10, 13))
+        self.assertEqual((other.escape, str(other)), (None, 'Count adjustment 2026-10-13'))

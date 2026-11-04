@@ -3836,6 +3836,10 @@ msgid "Escape"
 msgstr "Rømming"
 
 #, python-format
+msgid "Escape of %(fish)d fish from %(unit)s, %(date)s"
+msgstr "%(date)s: rømming av %(fish)d fisk fra %(unit)s"
+
+#, python-format
 msgid "Escape recorded: %(count)s fish of %(batch)s from %(unit)s."
 msgstr "Rømming registrert: %(count)s fisk av %(batch)s fra %(unit)s."
 

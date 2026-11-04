@@ -15,7 +15,7 @@ from datetime import date, timedelta
 
 from django.conf import settings
 
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 
 from farm.health import diseases, notices
 from django.utils.translation import gettext as _, gettext_lazy
@@ -311,13 +311,11 @@ def _slaughter(today, existing, rows):
 
 def _escapes(today, existing, rows):
     """An escape since its site's reports-from date (D-6) with no filed notice."""
-    escapes = list(EscapeRecord.objects.select_related('operation'))
-    lines = {}
-    for line in (StockMovement.objects.filter(operation__in=[escape.operation_id for escape in escapes])
-                 .select_related('unit__production_department__site').order_by('id')):
-        lines.setdefault(line.operation_id, line)
-    for escape in escapes:
-        site = lines[escape.operation_id].unit.production_department.site if escape.operation_id in lines else None
+    lines = Prefetch('operation__movements', StockMovement.objects.select_related(
+        'unit__production_department__site').order_by('id'))
+    for escape in EscapeRecord.objects.select_related('operation').prefetch_related(lines):
+        first = next(iter(escape.operation.movements.all()), None)
+        site = first.unit.production_department.site if first is not None else None
         if site is None or site.reports_from is None or escape.operation.date < site.reports_from:
             continue
         row = _row(ReportKind.ESCAPE, site, None, today, existing, escape)

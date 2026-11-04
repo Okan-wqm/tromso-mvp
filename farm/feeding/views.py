@@ -389,6 +389,15 @@ def void_feeding(request, pk):
 
 
 # ---- what other pages show -----------------------------------------------------------------------
+def unit_figures(user, stock, **kwargs):
+    """The feeding figures of the units with fish on Production units (FCR, last fed, the drawer's week and
+    ration; read.figures, whose keywords it passes on), by unit id; nothing for a person who may not read the
+    feeding records. The twin of water.views.unit_water."""
+    if not user.has_perm(VIEW):
+        return {}
+    return read.figures(stock, **kwargs)
+
+
 def drawer(request, unit, stock, feeding, query):
     """The Feeding part of a unit's drawer on Production units: its figures (`feeding`, read.figures), its
     last feedings, voided ones struck through, each with Void while it may be voided."""

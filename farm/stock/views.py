@@ -138,7 +138,7 @@ def production_units(request):
     kinds_present = {unit.kind for unit in units}
     biomass = sum((stock[unit.pk].biomass_kg for unit in shown if unit.pk in stock), start=0)
     drawer_unit = next((unit for unit in units if str(unit.pk) == params['unit']), None)
-    feeding = feeding_read.figures(stock, detail=drawer_unit)
+    feeding = feeding_views.unit_figures(request.user, stock, detail=drawer_unit)
     water = water_views.unit_water(request.user, shown)
     withdrawals = harvest_views.withdrawals([unit for unit in shown if unit.pk in stock])
 
@@ -150,6 +150,7 @@ def production_units(request):
               for unit in shown],
         biomass=biomass,
         count_line=ngettext('%(count)d unit', '%(count)d units', len(shown)) % {'count': len(shown)},
+        show_feeding=request.user.has_perm(feeding_views.VIEW),
         show_water=request.user.has_perm(water_views.VIEW), water_critical=water_views.critical_count(water),
         params=params, query=params['q'],
         search_hidden=[(key, params[key]) for key in (*FILTERS, 'unit') if key != 'q' and params[key]],
@@ -223,8 +224,9 @@ def _drawer(request, unit, stock, feeding, params):
         **harvest_views.drawer(request, unit, stock),
         **health_views.drawer(request, unit, page_url(params, unit=str(unit.pk))),
         'feeding': feeding,
-        # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares).
-        'batch_rows': list(zip(stock.shares, feeding.shares)) if stock is not None else [],
+        # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares; None: no feeding rights).
+        'batch_rows': list(zip(stock.shares, feeding.shares if feeding else [None] * len(stock.shares)))
+        if stock is not None else [],
         # Today's ration of each batch, at its estimated weight (farm/feeding/projection.py).
         'ration_rows': _ration_rows(stock, feeding),
         'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,

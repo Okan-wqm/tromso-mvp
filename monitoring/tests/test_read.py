@@ -15,7 +15,7 @@ from farm.models import HandlingPlanItem, HealthEvent
 from farm.tests.helpers import make_facility
 from farm.water import parameters, read as water_read
 from farm.water.evaluate import Status
-from farm.water.read import PointWater, Reading
+from farm.water.read import Observation, Origin, PointWater, Reading
 
 from .. import read
 from . import D, MonitoringCase
@@ -66,7 +66,7 @@ class ModesTests(SimpleTestCase):
 # ---- the state ladder, on hand-made cards ---------------------------------------------------------------------------
 def reading(code, value, hours=1, status=Status.OK, point=None):
     point = point or SimpleNamespace(name='Middle', kind='middle')
-    sample = SimpleNamespace(measured_at=NOW - timedelta(hours=hours), point=point)
+    sample = Observation(point, NOW - timedelta(hours=hours), Origin.MANUAL, {code: D(str(value))})
     return Reading(parameters.get(code), D(str(value)), sample, status=status)
 
 

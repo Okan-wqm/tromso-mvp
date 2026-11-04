@@ -18,7 +18,7 @@
         <tr>
           <td><a class="row-title mono" href="{% url 'core:database_table' entry.table.name %}">{{ entry.table.name }}</a></td>
           <td>{{ entry.table.description }}</td>
-          <td class="num">{{ entry.rows }}</td>
+          <td class="num">{% if entry.estimated %}<span title="{% trans "An estimate from the database’s statistics" %}">≈ {{ entry.rows }}</span>{% else %}{{ entry.rows }}{% endif %}</td>
           <td class="num">{% if entry.deleted %}<span class="badge badge-closed">{{ entry.deleted }}</span>{% elif entry.deleted == 0 %}0{% else %}<span class="faint">–</span>{% endif %}</td>
         </tr>
         {% endfor %}

@@ -76,5 +76,8 @@ class Limits:
         return worst(judge(value, row) for row in found), found
 
 
-def is_fresh(parameter, measured_at, now):
-    return now - measured_at <= timedelta(hours=parameter.fresh_hours)
+def is_fresh(parameter, measured_at, now, fresh_for=None):
+    """The one freshness rule: a value says something about the water now for its parameter's `fresh_hours`, or, for a
+    live value, for `fresh_for` seconds (a sensor channel's three heartbeats)."""
+    limit = timedelta(seconds=fresh_for) if fresh_for is not None else timedelta(hours=parameter.fresh_hours)
+    return now - measured_at <= limit

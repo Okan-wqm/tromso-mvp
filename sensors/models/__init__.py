@@ -1,3 +1,4 @@
+from .binding import Binding, Role
 from .channel import Calibration, Channel, ChannelStatus, Protocol, Reduction
 from .connection import Connection
 from .credential import Credential
@@ -6,6 +7,6 @@ from .format import Encoding, PayloadFormat, Shape, TimeUnit
 from .runtime import Contract, ChannelState, DeadLetter, DeadReason, DeviceState, IngestStatus, QualityFlag
 from .reading import Reading
 
-__all__ = ['Calibration', 'Channel', 'ChannelState', 'ChannelStatus', 'Connection', 'Contract', 'Credential',
+__all__ = ['Binding', 'Calibration', 'Channel', 'ChannelState', 'ChannelStatus', 'Connection', 'Contract', 'Credential',
            'DeadLetter', 'DeadReason', 'Device', 'DeviceState', 'Encoding', 'IngestStatus', 'PayloadFormat', 'Protocol',
-           'QualityFlag', 'Reading', 'Reduction', 'Shape', 'TimeUnit']
+           'QualityFlag', 'Reading', 'Reduction', 'Role', 'Shape', 'TimeUnit']

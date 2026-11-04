@@ -214,12 +214,13 @@ def _strictest(rows, bound, pick):
     return (pick(values), tuple(row for row in rows if getattr(row, bound) is not None)) if values else (None, ())
 
 
-def offers(owner, now=None, point=None):
+def offers(owner, now=None, point=None, water=None):
     """{field: Offer} of what a unit or a loop gives the calculator now. `point`: a sampling point of the owner whose
     readings are given instead of its middle point's (a unit's inlet, its outlet); nothing is borrowed from any other
     point."""
     found = {}
-    water = read.owner_water([owner], now)[owner.pk] if point is None else read.latest([point], now)[point.pk]
+    if water is None:
+        water = read.owner_water([owner], now)[owner.pk] if point is None else read.latest([point], now)[point.pk]
     for name in MEASURED_FIELDS:
         reading = water.get(name)
         if reading is not None and reading.value is not None:
@@ -279,6 +280,7 @@ class UnitChart:
     assumed: tuple = ()                # the fields that are assumed, never measured: ('salinity_ppt',)
     absent: tuple = ()
     points: tuple = ()                 # the unit's active points, middle first (the window's links)
+    sensors_failed: bool = False       # the live values could not be read: the samples alone gave the inputs
 
 
 @dataclass(frozen=True)
@@ -292,6 +294,7 @@ class Refusal:
     points: tuple = ()
     impossible: str = ''
     no_point: bool = False
+    sensors_failed: bool = False
 
 
 def chart_of(unit, point=None, now=None):
@@ -306,7 +309,9 @@ def chart_of(unit, point=None, now=None):
         point = next((each for each in points if each.kind == read.MIDDLE), None)
         if point is None:
             return Refusal(unit, None, [], points, no_point=True)
-    found = offers(unit, now, point)
+    water = read.latest([point], now)[point.pk]
+    failed = water.sensors_failed
+    found = offers(unit, now, point, water)
     values = {name: float(found[name].value) for name in (*REQUIRED, *OPTIONAL) if name in found}
     inputs = {name: ChartInput(name, parameters.get(name).label, found[name].value, found[name].reading)
               for name in (*REQUIRED, *OPTIONAL) if name in found}
@@ -320,11 +325,11 @@ def chart_of(unit, point=None, now=None):
             assumed = ('salinity_ppt',)
     missing = [parameters.get(name).label for name in REQUIRED if name not in values]
     if missing:
-        return Refusal(unit, point, missing, points)
+        return Refusal(unit, point, missing, points, sensors_failed=failed)
     why = deffeyes.why_impossible(values['temperature_c'], values['salinity_ppt'], values['ph'],
                                   values['alkalinity_mg_l'])
     if why:
-        return Refusal(unit, point, [], points, impossible=why)
+        return Refusal(unit, point, [], points, impossible=why, sensors_failed=failed)
     if 'altitude_m' in found:
         values['altitude_m'] = float(found['altitude_m'].value)
         inputs['altitude_m'] = ChartInput('altitude_m', _('Altitude (m)'), found['altitude_m'].value)
@@ -334,4 +339,4 @@ def chart_of(unit, point=None, now=None):
     absent = tuple(label for name, label in (('nh3_n_limit_mg_l', _('NH₃-N limit')), ('co2_limit_mg_l', _('CO₂ limit')))
                    if name not in limits)
     ordered = [inputs[name] for name in (*REQUIRED, *OPTIONAL, 'altitude_m') if name in inputs]
-    return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points)
+    return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points, sensors_failed=failed)

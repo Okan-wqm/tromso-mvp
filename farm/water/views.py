@@ -208,7 +208,7 @@ def _latest(site):
     counts = {status: sum(1 for row in rows if row['water'].status == status) for status in ALERTS}
     return {'rows': rows, 'columns': columns, 'point_count': sum(1 for row in rows if row['point'] is not None),
             'critical_count': counts[Status.CRITICAL], 'warning_count': counts[Status.WARNING],
-            'now': timezone.now()}
+            'sensors_failed': any(point_water.sensors_failed for point_water in water.values()), 'now': timezone.now()}
 
 
 def _day(request, name, default):

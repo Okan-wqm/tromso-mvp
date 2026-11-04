@@ -35,24 +35,36 @@ The functions, by what they answer:
   pressure when it has none, said so).
 - The fish a value is judged for are the species in its unit on the day it was measured, at any time of
   that day (SpeciesBook, from the stock ledger); a loop's sample is judged for every unit of the loop, and a
-  piece of equipment's for every unit of the systems it serves. The latest values are judged for today's fish."""
+  piece of equipment's for every unit of the systems it serves. The latest values are judged for today's fish.
+
+Live values (farm/water/sources.py: the sensors) join the samples here and nowhere else. A value of any source is an
+`Observation`: where (a point), when, from what (`Origin`: manual, lab, a sensor on the point, the system's sensor) and,
+for a live value, how long it stays fresh. `latest` picks per point and per parameter, each on its own, in the owner's
+order (A1): a fresh value of a sensor on the point (primary, then backup); for a middle point, a fresh value of a sensor
+on the system (the unit's system, or the system whose loop it is); a fresh manual or lab value; else the newest of all,
+which is then stale. A sensor value enters as the parameter's Decimal at its decimals, exactly as a typed value, and is
+judged by the same limits. Derived values follow their base value's source: a sensor TAN gives NH3 only with fresh sensor
+pH and temperature, a sensor oxygen gives the other unit only with a fresh sensor temperature, at the oldest input's time;
+a manual TAN only with its own sample's pH and temperature. `Series` answers "the value at a moment" from the samples and
+the sensors alike (each sensor value at or before the moment, never after it)."""
 from bisect import bisect_right
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.postgres.aggregates import ArrayAgg
+from django.db import models
 from django.db.models import Func, Q, UUIDField
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, gettext_lazy
 
 from farm.models import Batch, EquipmentSystem, SamplingPoint, System, Tank, WaterLimit, WaterMeasurement
 from farm.models.water import LIVE_POINT
 from farm.models.water_point import PointKind, local_time, owner_type_of, site_of
 from farm.stock.read import Presence
 
-from . import chemistry, parameters
+from . import chemistry, parameters, sources
 from .evaluate import Limits, Status, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
@@ -145,15 +157,124 @@ def water_sources(units, *, nested):
     return found
 
 
+# ---- where a value comes from ----------------------------------------------------------------------------
+class Origin(models.TextChoices):
+    """Where a value comes from, as the pages name it beside its age."""
+    MANUAL = 'manual', gettext_lazy('manual')
+    LAB = 'lab', gettext_lazy('lab')
+    SENSOR = 'sensor', gettext_lazy('sensor')                       # bound to the point itself
+    SYSTEM_SENSOR = 'system_sensor', gettext_lazy('system sensor')  # bound to the system, for its middle points
+
+
+LIVE = (Origin.SENSOR, Origin.SYSTEM_SENSOR)
+# How a sensor on the point is named, by the kind of owner the point is on.
+SENSOR_LABELS = {'unit': gettext_lazy('unit sensor'), 'system': gettext_lazy('system sensor'),
+                 'equipment': gettext_lazy('equipment sensor')}
+
+
+@dataclass(frozen=True)
+class Observation:
+    """The values one source gave at a point at one moment: a sample (manual or lab: `sample` is the WaterMeasurement), a
+    sensor channel's value, or the set of sensor values a derived value was worked out from (`at` then the oldest).
+    `fresh_for` is the seconds a live value stays fresh (None: the parameter's own hours)."""
+    point: SamplingPoint
+    at: datetime
+    origin: str
+    measured: dict                     # code -> Decimal
+    channel_no: int | None = None
+    role: str = ''
+    fresh_for: int | None = None
+    is_deleted: bool = False
+    sample: WaterMeasurement | None = None
+
+    @classmethod
+    def of_sample(cls, sample):
+        return cls(sample.point, sample.measured_at, Origin.LAB if sample.source == 'lab' else Origin.MANUAL,
+                   sample.values(), is_deleted=sample.is_deleted, sample=sample)
+
+    @classmethod
+    def of_sensor(cls, point, value, origin):
+        """A sensor's value (sources.SensorValue) as the water parameter's Decimal, at its decimals."""
+        step = parameters.get(value.code).step
+        return cls(point, value.at, origin, {value.code: Decimal(repr(float(value.value))).quantize(step)},
+                   channel_no=value.channel_no, role=value.role, fresh_for=value.fresh_for)
+
+    @classmethod
+    def combined(cls, observations):
+        """The sensor values a derived value is worked out from: their values together, at the oldest one's time, from
+        the first one's point and origin, fresh as long as the least fresh of them."""
+        first = observations[0]
+        measured = {}
+        for each in observations:
+            measured.update(each.measured)
+        oldest = min(observations, key=lambda each: each.at)
+        ends = [each.at + timedelta(seconds=each.fresh_for) for each in observations if each.fresh_for is not None]
+        fresh_for = int((min(ends) - oldest.at).total_seconds()) if ends else None
+        return cls(first.point, oldest.at, first.origin, measured, fresh_for=fresh_for)
+
+    @property
+    def measured_at(self):
+        return self.at
+
+    @property
+    def live(self):
+        return self.origin in LIVE
+
+    @property
+    def origin_label(self):
+        """'unit sensor', 'system sensor', 'manual', 'lab'."""
+        if self.origin == Origin.SENSOR:
+            return SENSOR_LABELS[self.point.owner_type]
+        return Origin(self.origin).label
+
+    def values(self):
+        return self.measured
+
+    def get(self, code):
+        return self.measured.get(code)
+
+
+def observe(value):
+    """An Observation of a sample, or the Observation given."""
+    return Observation.of_sample(value) if isinstance(value, WaterMeasurement) else value
+
+
+def sensor_targets(point, system_tier):
+    """[(target, origin)] of a point's live values, in the order they count: the point's own sensors, then, for a middle
+    point, the system's: always for a system's own middle point (its loop), and for a unit's with `system_tier` (the
+    unit's system; owner rule A1)."""
+    found = [((sources.POINT, point.pk), Origin.SENSOR)]
+    if point.kind == PointKind.MIDDLE:
+        system_id = point.system_id or (point.unit.system_id if system_tier and point.unit_id else None)
+        if system_id:
+            found.append(((sources.SYSTEM, system_id), Origin.SYSTEM_SENSOR))
+    return found
+
+
+@dataclass(frozen=True)
+class Found:
+    """A value found at a moment (Series.latest): when it was measured, the value, how long it stays fresh (seconds, None
+    for a sample: the parameter's hours) and where it came from."""
+    at: datetime
+    value: Decimal
+    fresh_for: int | None = None
+    origin: str = Origin.MANUAL
+
+
 class Series:
     """One parameter's values over time at a set of points, read in one query: what "the latest value at a
     moment" is looked up in, for a sample without a salinity here and for a unit's temperature on the day of its
-    ration (farm/feeding/temperature.py). Live samples of live points only."""
+    ration (farm/feeding/temperature.py). Live samples of live points only; with `live`, the sensors too (asked once
+    per point and moment; a system's middle point has the system's sensors as its own). A sample's own workings never
+    take a live value (its salinity series is not live)."""
 
-    def __init__(self, points, code, since, until=None):
+    def __init__(self, points, code, since, until=None, live=False):
+        self.code, self.live = code, live
+        self.points = {point.pk: point for point in points}
         self.moments = defaultdict(list)    # point id -> [measured at], in time order
         self.values = defaultdict(list)     # point id -> [value], in the same order
-        chosen = list({point.pk for point in points})
+        self.asked = {}                     # (point id, moment) -> [Found] of the sensors
+        chosen = list(self.points)
         if chosen:
             rows = WaterMeasurement.objects.filter(point__in=chosen, measured_at__gte=since,
                                                    **{f'{code}__isnull': False})
@@ -163,24 +284,50 @@ class Series:
                 self.moments[point_id].append(moment)
                 self.values[point_id].append(value)
 
+    def _live(self, point_id, moment, window):
+        """The sensors' values of the point at the moment (Found, primary first), at most `window` old."""
+        key = (point_id, moment)
+        if key not in self.asked:
+            point = self.points.get(point_id)
+            targets = sensor_targets(point, system_tier=False) if point is not None else []
+            answer = sources.value_at([target for target, _origin in targets], self.code, moment)
+            found = []
+            for target, origin in targets:
+                for value in sources.ordered(answer.values.get(target, [])):
+                    if value.at <= moment and moment - value.at <= window:
+                        observed = Observation.of_sensor(point, value, origin)
+                        found.append(Found(value.at, observed.get(self.code), value.fresh_for, origin))
+            self.asked[key] = found
+        return self.asked[key]
+
     def latest(self, point_id, moment, window):
-        """(measured at, value) of the point's newest value at or before `moment` and at most `window` older than
-        it; None when there is none."""
+        """The point's value at `moment` (Found): a fresh sensor value (a live series), else the newest value at or before
+        `moment` and at most `window` older than it, sample or sensor, a fresh sample before a stale sensor (A1); None when
+        there is none."""
         moments = self.moments.get(point_id, [])
         index = bisect_right(moments, moment) - 1
+        sample = None
         if index >= 0 and moment - moments[index] <= window:
-            return moments[index], self.values[point_id][index]
-        return None
+            sample = Found(moments[index], self.values[point_id][index])
+        live = self._live(point_id, moment, window) if self.live else []
+        parameter = parameters.get(self.code)
+        fresh = next((found for found in live if is_fresh(parameter, found.at, moment, found.fresh_for)), None)
+        if fresh is not None:
+            return fresh
+        if sample is not None and is_fresh(parameter, sample.at, moment):
+            return sample
+        return max([found for found in (sample, *live) if found is not None], key=lambda found: found.at, default=None)
 
 
 # ---- what a reading is -----------------------------------------------------------------------------------
 @dataclass
 class Reading:
-    """One parameter's value from one sample: entered, or worked out (`derived`); None when it could not be
-    worked out, `note` saying why. `status` and the limit rows that judged it come from evaluate."""
+    """One parameter's value from one Observation (a sample, a sensor's value, or the sensor values a derived value is
+    worked out from): entered or measured, or worked out (`derived`); None when it could not be worked out, `note`
+    saying why. `status` and the limit rows that judged it come from evaluate."""
     parameter: parameters.Parameter
     value: Decimal
-    sample: WaterMeasurement
+    sample: Observation
     derived: bool = False
     note: str = ''
     status: str = Status.NOT_MEASURED
@@ -188,7 +335,7 @@ class Reading:
 
     @property
     def at(self):
-        return self.sample.measured_at
+        return self.sample.at
 
     @property
     def code(self):
@@ -199,16 +346,26 @@ class Reading:
         """Where the value was taken."""
         return self.sample.point
 
+    @property
+    def origin(self):
+        return self.sample.origin
+
     def age(self, now=None):
         return (now or timezone.now()) - self.at
+
+    def fresh(self, now):
+        """Whether it still says something about the water now (evaluate.is_fresh, the one rule)."""
+        return is_fresh(self.parameter, self.at, now, self.sample.fresh_for)
 
 
 @dataclass
 class PointWater:
     """The latest readings of one sampling point, by parameter code; `point` is None for a unit that has no
-    middle point (unit_water), which has no readings."""
+    middle point (unit_water), which has no readings. `sensors_failed`: a live source could not be read, so what is
+    shown comes from the samples alone (the pages say so)."""
     point: object
     readings: dict = field(default_factory=dict)
+    sensors_failed: bool = False
 
     @property
     def status(self):
@@ -288,83 +445,91 @@ class Context:
         return [(species_id, unit.water_type) for unit in self.served[point.pk]
                 for species_id in self.book.on(unit.pk, day)]
 
-    def salinity_for(self, sample):
-        """The sample's salinity, else its point's latest within WINDOW before it, else its owner's middle
+    def salinity_for(self, observation):
+        """The observation's salinity, else its point's latest sample within WINDOW before it, else its owner's middle
         point's, else 0 where every unit it concerns is in fresh water."""
-        if sample.salinity_ppt is not None:
-            return sample.salinity_ppt
-        point = sample.point
+        observation = observe(observation)
+        if observation.get(parameters.SALINITY) is not None:
+            return observation.get(parameters.SALINITY)
+        point = observation.point
         for where in (point, self.middles.get(point.owner.pk)):
-            found = None if where is None else self.salinity.latest(where.pk, sample.measured_at, WINDOW)
+            found = None if where is None else self.salinity.latest(where.pk, observation.at, WINDOW)
             if found is not None:
-                return found[1]
+                return found.value
         return assumed_salinity(self.water_types(point))
 
-    # -- one sample's readings --
-    def readings(self, sample):
-        """{code: Reading} of a sample: what was entered and what follows from it."""
-        found = {code: Reading(parameters.get(code), value, sample) for code, value in sample.values().items()}
-        salinity = self.salinity_for(sample)
-        temperature = sample.temperature_c
-        if sample.tan_mg_l is not None:
-            found.update(self._ammonia(sample, salinity))
-        if sample.oxygen_mg_l is not None or sample.oxygen_saturation_pct is not None:
-            found.update(self._oxygen(sample, temperature, salinity))
+    # -- one observation's readings --
+    def readings(self, observation):
+        """{code: Reading} of a sample or an Observation: what was measured and what follows from it."""
+        observation = observe(observation)
+        found = {code: Reading(parameters.get(code), value, observation) for code, value in observation.values().items()}
+        salinity = self.salinity_for(observation)
+        if observation.get(TAN) is not None:
+            found.update(self._ammonia(observation, salinity))
+        if observation.get(OXYGEN_MG_L) is not None or observation.get(OXYGEN_PCT) is not None:
+            found.update(self._oxygen(observation, observation.get(parameters.TEMPERATURE), salinity))
         return found
 
     @staticmethod
     def _salinity_missing():
         return _('Needs the salinity: none was recorded here in the 30 days before.')
 
-    def _ammonia(self, sample, salinity):
-        if sample.ph is None or sample.temperature_c is None:
-            return {NH3_N.code: Reading(NH3_N, None, sample, True,
-                                        _('Needs the pH and the temperature of the same sample.'))}
-        if salinity is None:
-            return {NH3_N.code: Reading(NH3_N, None, sample, True, self._salinity_missing())}
-        share = Decimal(chemistry.nh3_fraction(float(sample.ph), float(sample.temperature_c), float(salinity)))
-        nh3 = (sample.tan_mg_l * share).quantize(NH3_N.step)
-        return {NH3_N.code: Reading(NH3_N, nh3, sample, True),
-                NH4_N.code: Reading(NH4_N, (sample.tan_mg_l - nh3).quantize(NH4_N.step), sample, True)}
+    @staticmethod
+    def _same_source_missing(observation):
+        if observation.live:
+            return _('Needs a fresh pH and temperature from the sensors with the sensor’s TAN.')
+        return _('Needs the pH and the temperature of the same sample.')
 
-    def _oxygen(self, sample, temperature, salinity):
-        mg_l, percent = sample.oxygen_mg_l, sample.oxygen_saturation_pct
+    def _ammonia(self, observation, salinity):
+        ph, temperature, tan = (observation.get(code) for code in (parameters.PH, parameters.TEMPERATURE, TAN))
+        if ph is None or temperature is None:
+            return {NH3_N.code: Reading(NH3_N, None, observation, True, self._same_source_missing(observation))}
+        if salinity is None:
+            return {NH3_N.code: Reading(NH3_N, None, observation, True, self._salinity_missing())}
+        share = Decimal(chemistry.nh3_fraction(float(ph), float(temperature), float(salinity)))
+        nh3 = (tan * share).quantize(NH3_N.step)
+        return {NH3_N.code: Reading(NH3_N, nh3, observation, True),
+                NH4_N.code: Reading(NH4_N, (tan - nh3).quantize(NH4_N.step), observation, True)}
+
+    def _oxygen(self, observation, temperature, salinity):
+        mg_l, percent = observation.get(OXYGEN_MG_L), observation.get(OXYGEN_PCT)
         missing = OXYGEN_PCT if percent is None else OXYGEN_MG_L if mg_l is None else None
         if temperature is None or salinity is None:
             if missing is None:
                 return {}
-            why = (_('Needs the temperature of the same sample.') if temperature is None
+            why = ((_('Needs a fresh temperature from the sensors with the sensor’s oxygen.') if observation.live
+                    else _('Needs the temperature of the same sample.')) if temperature is None
                    else self._salinity_missing())
-            return {missing: Reading(parameters.get(missing), None, sample, True, why)}
-        site = site_of(sample.point)
+            return {missing: Reading(parameters.get(missing), None, observation, True, why)}
+        site = site_of(observation.point)
         altitude = site.altitude if site is not None else None
         pressure = chemistry.pressure_atm(float(altitude)) if altitude is not None else 1.0
         solubility = Decimal(chemistry.oxygen_solubility(float(temperature), float(salinity), pressure))
         note = '' if altitude is not None else _('At sea-level pressure: the site has no altitude.')
         if missing == OXYGEN_PCT:
             value = (100 * mg_l / solubility).quantize(parameters.get(OXYGEN_PCT).step)
-            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, sample, True, note)}
+            return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, observation, True, note)}
         if missing == OXYGEN_MG_L:
             value = (percent * solubility / 100).quantize(parameters.get(OXYGEN_MG_L).step)
-            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), value, sample, True, note)}
+            return {OXYGEN_MG_L: Reading(parameters.get(OXYGEN_MG_L), value, observation, True, note)}
         expected = percent * solubility / 100
         if expected and abs(mg_l - expected) / expected > OXYGEN_TOLERANCE:
             note = _('The mg/L and the % disagree by more than 10 % at this temperature and salinity: check the '
                      'meter’s settings.')
-            return {code: Reading(parameters.get(code), getattr(sample, code), sample, False, note)
+            return {code: Reading(parameters.get(code), observation.get(code), observation, False, note)
                     for code in (OXYGEN_MG_L, OXYGEN_PCT)}
         return {}
 
     # -- judging --
     def judge(self, reading, day, now=None):
         """Sets the reading's status and limit rows, for the fish of `day`; stale when `now` is given and the
-        value is older than its parameter's freshness."""
+        value is no longer fresh (Reading.fresh)."""
         if reading.code not in LIMITED or reading.value is None:
             reading.status = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
             return reading
         reading.status, reading.limits = self.limits.assess(reading.code, reading.value,
                                                             self.exposures(reading.sample.point, day))
-        if now is not None and not is_fresh(reading.parameter, reading.at, now):
+        if now is not None and not reading.fresh(now):
             reading.status = Status.STALE
         return reading
 
@@ -390,9 +555,77 @@ def _newest_ids(points, since):
     return found
 
 
+def _manual(point, newest, samples, context):
+    """{code: Reading} of the point's latest samples: each slot's newest sample with what follows from it."""
+    found = {}
+    for slot, sample_id in newest.get(point.pk, {}).items():
+        readings = context.readings(samples[sample_id])
+        codes = {OXYGEN: (OXYGEN_MG_L, OXYGEN_PCT), TAN: (TAN, NH3_N.code, NH4_N.code)}.get(slot, (slot,))
+        for code in codes:
+            if code in readings:
+                found[code] = readings[code]
+    return found
+
+
+def _live(point, targets, answer):
+    """{code: [Observation]} of the point's live values, in the order they count (sensor_targets, then primary first)."""
+    found = defaultdict(list)
+    for target, origin in targets:
+        for code, values in answer.values.get(target, {}).items():
+            if code in parameters.COLUMNS:
+                found[code].extend(Observation.of_sensor(point, value, origin) for value in sources.ordered(values))
+    return found
+
+
+def _resolve(point, manual, live, context, now):
+    """{code: Reading} of one point in the owner's order (A1), each parameter on its own: a fresh live value, else a
+    fresh one worked out from fresh live values (the other oxygen unit), else a fresh manual or lab value, else the
+    newest of all, stale. A derived value follows the source of its base: NH3 and NH4 a live TAN's (worked out from live
+    values only) or the sample's."""
+    fresh_live = {code: next((each for each in observations if is_fresh(parameters.get(code), each.at, now,
+                                                                          each.fresh_for)), None)
+                  for code, observations in live.items()}
+    chosen = {}
+    for code in parameters.COLUMNS:
+        parameter = parameters.get(code)
+        if fresh_live.get(code) is not None:
+            chosen[code] = Reading(parameter, fresh_live[code].get(code), fresh_live[code])
+            continue
+        other = {OXYGEN_MG_L: OXYGEN_PCT, OXYGEN_PCT: OXYGEN_MG_L}.get(code)
+        if other and fresh_live.get(other) is not None and fresh_live.get(parameters.TEMPERATURE) is not None:
+            worked = context.readings(Observation.combined([fresh_live[other], fresh_live[parameters.TEMPERATURE],
+                                                            *([fresh_live[parameters.SALINITY]]
+                                                              if fresh_live.get(parameters.SALINITY) else [])]))
+            if worked.get(code) is not None and worked[code].value is not None:
+                chosen[code] = worked[code]
+                continue
+        sample = manual.get(code)
+        if sample is not None and sample.fresh(now):
+            chosen[code] = sample
+            continue
+        candidates = [Reading(parameter, each.get(code), each) for each in live.get(code, [])]
+        if sample is not None:
+            candidates.append(sample)
+        if candidates:
+            chosen[code] = max(candidates, key=lambda reading: reading.at)
+    tan = chosen.get(TAN)
+    if tan is not None and tan.sample.live:
+        inputs = [tan.sample, *(fresh_live[code] for code in (parameters.PH, parameters.TEMPERATURE, parameters.SALINITY)
+                                if fresh_live.get(code) is not None)]
+        if tan.fresh(now):
+            together = Observation.combined(inputs)
+            chosen.update(context._ammonia(together, context.salinity_for(together)))
+        else:
+            chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, context._same_source_missing(tan.sample))
+    elif tan is not None:
+        chosen.update({code: manual[code] for code in (NH3_N.code, NH4_N.code) if code in manual})
+    return chosen
+
+
 def latest(points, now=None):
-    """{point id: PointWater} of every sampling point given, with the latest reading of each parameter measured
-    in the WINDOW, judged for the fish in it today; values older than their freshness are stale."""
+    """{point id: PointWater} of every sampling point given: per parameter, its value in the owner's order (`_resolve`),
+    judged for the fish in it today; values no longer fresh are stale. One query for the samples, one ask of the live
+    sources for every point."""
     now = now or timezone.now()
     since = now - WINDOW
     points = list(points)
@@ -400,17 +633,19 @@ def latest(points, now=None):
     ids = {sample_id for slots in newest.values() for sample_id in slots.values()}
     samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(ids)
     context = Context(points, since)
+    targets = {point.pk: sensor_targets(point, system_tier=True) for point in points}
+    answer = sources.latest([target for found in targets.values() for target, _origin in found], now)
     water = {}
     for point in points:
-        point_water = water[point.pk] = PointWater(point)
+        point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed)
         today = local_time(now, point).date()
-        for slot, sample_id in newest.get(point.pk, {}).items():
-            readings = context.readings(samples[sample_id])
-            codes = {OXYGEN: (OXYGEN_MG_L, OXYGEN_PCT), TAN: (TAN, NH3_N.code, NH4_N.code)}.get(slot, (slot,))
-            for code in codes:
-                if code in readings:
-                    point_water.readings[code] = context.judge(readings[code], today, now)
+        resolved = _resolve(point, _manual(point, newest, samples, context), _live(point, targets[point.pk], answer),
+                            context, now)
+        for code, reading in resolved.items():
+            point_water.readings[code] = context.judge(reading, today, now)
     return water
+
+
 
 
 def owner_water(owners, now=None):

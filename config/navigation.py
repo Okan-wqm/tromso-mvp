@@ -126,4 +126,25 @@ WORKSPACES = [
             ]),
         ]),
     ]),
+    # The sensors: where live values come from (MQTT connections, the devices and their channels), how they are read
+    # and kept, and where they are bound. A panel of its own, opened from the panel switcher like Production, offered to
+    # people who can use something in it. Its Administration holds the broker credentials: a right of its own.
+    Workspace('sensors', _('Sensors'), sections=[
+        Section('', [Group('', [Entry(_('Overview'), 'sensors:home', 'home')])]),
+        Section(_('Setup'), [
+            Group('', [
+                Entry(_('Connections'), 'sensors:connection_list', 'plug', 'sensors.view_connection'),
+                Entry(_('Payload formats'), 'sensors:payloadformat_list', 'braces', 'sensors.view_payloadformat'),
+                Entry(_('Devices'), 'sensors:device_list', 'cpu', 'sensors.view_device'),
+                Entry(_('Channels'), 'sensors:channel_list', 'activity', 'sensors.view_channel'),
+                # Where each channel's values belong over time; a move ends a binding and starts the next.
+                Entry(_('Bindings'), 'sensors:binding_list', 'link', 'sensors.view_binding'),
+            ]),
+        ]),
+        Section(_('Administration'), [
+            Group('', [
+                Entry(_('Credentials'), 'sensors:credential_list', 'key-round', 'sensors.view_credential'),
+            ]),
+        ]),
+    ]),
 ]

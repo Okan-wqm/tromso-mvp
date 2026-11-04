@@ -99,6 +99,7 @@ class Table:
     section: str
     description: str
     masked: frozenset  # column names
+    hypertable: bool = False   # a TimescaleDB hypertable (from the catalogue, sections())
 
     @property
     def app(self):
@@ -113,13 +114,18 @@ class Table:
         return any(f.column == 'is_deleted' for f in self.model._meta.concrete_fields)
 
     def counts(self):
-        """{'rows': n, 'deleted': n}, the soft-deleted rows counted among the rows; 'deleted' is None
-        for a table that does not soft-delete."""
+        """{'rows': n, 'deleted': n, 'estimated': bool}, the soft-deleted rows counted among the rows; 'deleted' is None
+        for a table that does not soft-delete. A hypertable's rows are the database's estimate from its statistics
+        (approximate_row_count; counting a hypertable reads every chunk), its deleted rows not counted."""
+        if self.hypertable:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT approximate_row_count(%s::regclass)', [connection.ops.quote_name(self.name)])
+                return {'rows': cursor.fetchone()[0], 'deleted': None, 'estimated': True}
         counted = {'rows': Count('pk')}
         if self.soft_deletable:
             counted['deleted'] = Count('pk', filter=Q(is_deleted=True))
         counts = self.model._base_manager.aggregate(**counted)
-        return {'deleted': None, **counts}
+        return {'deleted': None, **counts, 'estimated': False}
 
     def structure(self):
         """What the database says about the table, with each column matched to the model's field."""
@@ -210,6 +216,7 @@ def describe(model, override=''):
 def sections():
     """[(section label, [Table, ...])] in the configured order, the tables of a section by name."""
     config = viewer()
+    timescale = hypertables()
     result = []
     for section in config.sections:
         models = [model for label in section.apps
@@ -217,7 +224,7 @@ def sections():
                   if model._meta.managed and not model._meta.proxy and model._meta.db_table not in config.excluded]
         tables = [Table(model._meta.db_table, model, section.label,
                         describe(model, config.descriptions.get(model._meta.db_table, '')),
-                        frozenset(config.masked.get(model._meta.db_table, ())))
+                        frozenset(config.masked.get(model._meta.db_table, ())), model._meta.db_table in timescale)
                   for model in models]
         result.append((section.label, sorted(tables, key=lambda table: table.name)))
     return result
@@ -226,3 +233,10 @@ def sections():
 def find(name):
     """The table called `name` in the database, or None when the viewer does not show it."""
     return next((table for _, tables in sections() for table in tables if table.name == name), None)
+
+
+def hypertables():
+    """The names of the TimescaleDB hypertables, from the catalogue."""
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT hypertable_name FROM timescaledb_information.hypertables')
+        return {name for name, in cursor.fetchall()}

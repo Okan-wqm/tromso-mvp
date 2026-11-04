@@ -811,6 +811,13 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   when the records now give another content ("The records changed after you looked at the report: review it again"), so what
   is frozen is always the content that was previewed (the hash of the snapshot equals the previewed one). The system still
   cannot know what was typed into Altinn: the person is trained to type from the print page.
+- **A value on an unconfirmed reading is made visible at the filing (coverage review R03, R04):** `Result.questions` names the open
+  questions (7.1) a content rests on: the amount of a medicinal lice treatment (Q1: the product's amount is filed where the
+  authority's `virkestoff.mengde` may mean the active substance's) and the types given to a medicated feed and an injection
+  (Q2). While such a question is open, `services.submit` refuses to record the filing until the person has confirmed each by
+  hand (a checkbox with the question's text on the report's page); the confirmation is logged with the question's text
+  ("Open questions acknowledged"). Answering the question in the register ends the requirement; it does not change the filed
+  value by itself, so an answer that says the active substance is meant is a change of the computation to be made.
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
   (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.

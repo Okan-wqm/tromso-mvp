@@ -180,6 +180,12 @@ class SubmitForm(forms.Form):
     version = forms.IntegerField(widget=forms.HiddenInput)
     # The hash of the content the page showed (reports.compute.content_hash): what is recorded is exactly that.
     content_sha256 = forms.CharField(widget=forms.HiddenInput, min_length=64, max_length=64)
+    # The open questions the person confirmed by hand (the numbers of reports.OpenQuestion); the service says which are needed.
+    acknowledged = forms.MultipleChoiceField(required=False, widget=forms.MultipleHiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['acknowledged'].choices = [(code, code) for code in OpenQuestion.objects.values_list('code', flat=True)]
 
 
 class ResistanceSuspicionForm(forms.ModelForm):

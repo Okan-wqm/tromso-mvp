@@ -23,6 +23,7 @@ class Result:
     problems: list = field(default_factory=list)
     warnings: list = field(default_factory=list)
     scope: list = field(default_factory=list)
+    questions: list = field(default_factory=list)     # the numbers of the open questions (reports.OpenQuestion) it rests on
 
     @property
     def ready(self):

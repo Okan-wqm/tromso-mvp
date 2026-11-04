@@ -1795,6 +1795,11 @@ sensitivity tests; for the biomass report, the units used for production of redu
 **Clocks.** The time of a filing is Oslo's, as the authority keeps it; the time something was found is typed on the site's own
 clock (Facility › Sites) and stored as the moment it was; the browser's zone is never used.
 
+**A value the authority has not confirmed** (the amount of a lice treatment, the type of a medicated feed or an injection: questions
+Q1 and Q2 of the register Production › Reports › Questions for the authority) is shown with its question on the report's
+page, and the filing is refused until the person confirms it was checked by hand; the confirmation is logged. Answering the
+question in the register lifts it.
+
 **What you are about to record.** Before a filing is recorded, the report's page says "What you are about to record as filed", with
 the content hash and a link to the print page (the exact values to type, field by field in the authority's names); every export
 carries the same hash. The recording posts that hash, and if the records changed meanwhile (a backdated record) it is refused

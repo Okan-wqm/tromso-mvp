@@ -4983,6 +4983,9 @@ msgstr "H₂S: grensen nås ikke noe sted i dette diagrammet."
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: det totale sulfidet kan ikke gi grensen ved noen pH."
 
+msgid "I checked this by hand."
+msgstr "Jeg har sjekket dette for hånd."
+
 msgid "Icelandic"
 msgstr "Islandsk"
 
@@ -6298,6 +6301,9 @@ msgstr "Ikke kontrollert"
 msgid "Not chosen yet"
 msgstr "Ikke valgt ennå"
 
+msgid "Not confirmed by the authority"
+msgstr "Ikke bekreftet av myndigheten"
+
 msgid "Not due"
 msgstr "Ikke aktuell"
 
@@ -6609,6 +6615,17 @@ msgstr "Åpne helsehendelser"
 
 msgid "Open menu"
 msgstr "Åpne menyen"
+
+#, python-format
+msgid ""
+"Open question %(code)s: %(question)s Confirm that you checked this by hand before you record the "
+"filing."
+msgstr ""
+"Åpent spørsmål %(code)s: %(question)s Bekreft at du har sjekket dette for hånd før du registrerer"
+" innsendingen."
+
+msgid "Open questions acknowledged"
+msgstr "Bekreftede åpne spørsmål"
 
 msgid "Open the PDF"
 msgstr "Åpne PDF-en"
@@ -9240,6 +9257,13 @@ msgid ""
 msgstr ""
 "Protokollen er tildelt, så tabellen er låst: rasjonene for dagene den fôret, leses fra den. For å"
 " endre den: dupliser protokollen, endre kopien og tildel den fra en dato."
+
+msgid ""
+"The question is in the register of questions for the authority. Recording the filing is refused "
+"until you confirm it, and your confirmation is logged."
+msgstr ""
+"Spørsmålet står i registeret over spørsmål til myndighetene. Registreringen avvises til du "
+"bekrefter, og bekreftelsen loggføres."
 
 msgid ""
 "The ration is the estimated biomass times the SFR of the protocol’s band at the unit’s "

@@ -63,6 +63,15 @@
   <form method="post" action="{{ submit_url }}" class="record-form" novalidate>
     {% csrf_token %}
     {{ submit_form.version }}{{ submit_form.content_sha256 }}
+    {% if open_questions %}
+    <div class="notice notice-warning" role="alert">
+      <strong>{% trans "Not confirmed by the authority" %}</strong>
+      {% for question in open_questions %}
+      <label class="check-row"><input type="checkbox" name="acknowledged" value="{{ question.code }}"> <span><strong>{{ question.code }}</strong> · {{ question.question }} {% trans "I checked this by hand." %}</span></label>
+      {% endfor %}
+      <p class="panel-help">{% trans "The question is in the register of questions for the authority. Recording the filing is refused until you confirm it, and your confirmation is logged." %}</p>
+    </div>
+    {% endif %}
     <div class="form-grid">{% for field in submit_form.visible_fields %}{% include "registration/_field.html" %}{% endfor %}</div>
     <div class="form-actions"><button type="submit" class="button button-inline"{% if problems %} disabled{% endif %}>{% trans "Record as filed" %}</button></div>
   </form>

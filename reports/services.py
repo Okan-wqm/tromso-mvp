@@ -10,7 +10,9 @@ from core.models import AuditLog
 
 from . import compute, due, periods
 from .kinds import EVENTS
-from .models import NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, Report, ReportSnapshot
+from .models import (
+    NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, OpenQuestion, QuestionStatus, Report, ReportSnapshot,
+)
 
 # The format of a notice that was recorded on the health event before notices existed (its time only).
 LEGACY_FORMAT = 0
@@ -33,12 +35,14 @@ def _refuse(message):
     raise ValidationError({NON_FIELD_ERRORS: [message]})
 
 
-def submit(user, report, *, submitted_at, channel, reference, version, content_sha256):
+def submit(user, report, *, submitted_at, channel, reference, version, content_sha256, acknowledged=()):
     """Records that `report` was filed (when, how, the receipt) and freezes its content as it is computed now: the content
     the person was shown, named by its hash (`content_sha256`, what the page and the print gave before the filing). Refused
     for a stale form, a report already filed, one not ready (its problems), a time in the future, a channel with a
-    receipt but none given, or when the records now give another content than the one that was shown (a backdated
-    record in between): the person looks again, and what is frozen is always what was previewed."""
+    receipt but none given, when the records now give another content than the one that was shown (a backdated
+    record in between): the person looks again, and what is frozen is always what was previewed, or when the content rests
+    on a question for the authority that is still open (`acknowledged`: the numbers the person confirmed by hand), which is
+    logged with the question's text."""
     with transaction.atomic():
         current = Report.objects.select_for_update().get(pk=report.pk)
         if current.version != version:
@@ -60,6 +64,12 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
         if logged:
             with audit.source_language():      # the log is English at rest, whoever records the filing
                 logged = compute.compute(current).problems
+        unconfirmed = OpenQuestion.objects.filter(code__in=result.questions, status=QuestionStatus.OPEN)
+        missing = [question for question in unconfirmed if question.code not in acknowledged]
+        if missing:
+            raise ValidationError({'acknowledged': [_('Open question %(code)s: %(question)s Confirm that you checked '
+                                                      'this by hand before you record the filing.') % {
+                'code': question.code, 'question': question.question} for question in missing]})
         digest = compute.content_hash(result.content)
         if digest != content_sha256:
             _refuse(_('The records changed after you looked at the report: review it again before you record the '
@@ -79,6 +89,8 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
                 str(Report._meta.get_field('reference').verbose_name): [None, current.reference or None],
                 str(_('Content hash')): [None, digest],
                 **({str(_('Not ready when filed')): [None, ' '.join(logged)]} if logged else {}),
+                **({str(_('Open questions acknowledged')): [None, '; '.join(
+                    f'{question.code}: {question.question}' for question in unconfirmed)]} if unconfirmed else {}),
             }
             audit.record(user, AuditLog.Action.UPDATE, current, changes, entity_type=Report._meta.verbose_name)
     return current

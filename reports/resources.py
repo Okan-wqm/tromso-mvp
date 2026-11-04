@@ -207,6 +207,8 @@ class ReportResource(Resource):
         }
         if extras['can_submit']:
             extras['preview_hash'] = compute.content_hash(result.content)
+            extras['open_questions'] = list(OpenQuestion.objects.filter(code__in=result.questions,
+                                                                       status=QuestionStatus.OPEN))
             extras['submit_form'] = SubmitForm(initial={
                 'submitted_at': timezone.localtime(timezone.now(), periods.OSLO).replace(
                     tzinfo=None, second=0, microsecond=0), 'version': report.version,

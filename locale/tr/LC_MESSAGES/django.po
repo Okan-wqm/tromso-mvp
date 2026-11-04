@@ -4992,6 +4992,9 @@ msgstr "H₂S: bu çizelgenin hiçbir yerinde sınıra ulaşılmaz."
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: toplam sülfür hiçbir pH'de sınıra ulaşamaz."
 
+msgid "I checked this by hand."
+msgstr "Bunu elle kontrol ettim."
+
 msgid "Icelandic"
 msgstr "İzlandaca"
 
@@ -6303,6 +6306,9 @@ msgstr "Denetlenmedi"
 msgid "Not chosen yet"
 msgstr "Henüz seçilmedi"
 
+msgid "Not confirmed by the authority"
+msgstr "Kurum tarafından doğrulanmadı"
+
 msgid "Not due"
 msgstr "Zamanı gelmedi"
 
@@ -6614,6 +6620,17 @@ msgstr "Açık sağlık olayları"
 
 msgid "Open menu"
 msgstr "Menüyü aç"
+
+#, python-format
+msgid ""
+"Open question %(code)s: %(question)s Confirm that you checked this by hand before you record the "
+"filing."
+msgstr ""
+"Açık soru %(code)s: %(question)s Bildirimi kaydetmeden önce bunu elle kontrol ettiğinizi "
+"onaylayın."
+
+msgid "Open questions acknowledged"
+msgstr "Onaylanan açık sorular"
 
 msgid "Open the PDF"
 msgstr "PDF’i aç"
@@ -9247,6 +9264,13 @@ msgid ""
 msgstr ""
 "Protokol atanmış, bu yüzden tablosu kilitli: yemlediği günlerin rasyonları ondan okunur. "
 "Değiştirmek için protokolü kopyalayın, kopyayı değiştirin ve bir tarihten itibaren atayın."
+
+msgid ""
+"The question is in the register of questions for the authority. Recording the filing is refused "
+"until you confirm it, and your confirmation is logged."
+msgstr ""
+"Soru, kuruma sorular kaydındadır. Onaylayana kadar bildirimin kaydı reddedilir ve onayınız "
+"günlüğe yazılır."
 
 msgid ""
 "The ration is the estimated biomass times the SFR of the protocol’s band at the unit’s "

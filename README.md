@@ -680,6 +680,14 @@ screen would first bound the feeding walk (`project` reads every feeding of the 
 way round. The queries stay equal from 6 to 100 units (pinned at 6 and 24 in `monitoring/tests/test_budget.py`). `CONN_MAX_AGE` is
 left alone: the queries are a tenth of the time, so there is no evidence for it.
 
+**Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
+every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
+an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the
+fragment, and two people who may not read every section) and compares what each card says with `golden_cards.json`
+(`monitoring/tests/golden.py`: the state word, the reasons, every labelled figure, the links, and every text and title, which a
+card may add to but never lose; ids, dates and ages normalised). The card read's queries were recorded at 6, 24 and 200 units:
+35 simple, 42 detailed, 42 mixed, equal at every size (`RecordedCountsTests`).
+
 ### Operations › Feeding: Meal board, Records, Protocols and Assignments
 
 The Feeding group of Operations has four pages: the **Meal board** (`/operations/feeding/board/`), **Records**

@@ -19,7 +19,7 @@ PEOPLE = itertools.count()
 CEILINGS = {'simple': 80, 'detailed': 100, 'mixed': 100}
 
 
-class BudgetTests(MonitoringCase):
+class Counting:
     def count(self, units, mode):
         modes = {unit.pk: (mode if mode != 'mixed' else ('detailed' if index % 2 else 'simple'))
                  for index, unit in enumerate(units)}
@@ -32,6 +32,8 @@ class BudgetTests(MonitoringCase):
             self.assertTrue(query['sql'].lstrip().upper().startswith(('SELECT', 'WITH', 'SAVEPOINT', 'RELEASE')), query['sql'][:80])   # a savepoint keeps a failing chip provider inside it: no write
         return len(log)
 
+
+class BudgetTests(Counting, MonitoringCase):
     def test_the_counts_at_six_and_twenty_four_units_are_equal_in_every_mode(self):
         units = self.farm_of(24)
         for mode in ('simple', 'detailed', 'mixed'):
@@ -68,3 +70,18 @@ class BudgetTests(MonitoringCase):
         for table in ('"treatments"', '"lice_counts"', '"tasks"'):
             self.assertNotIn(table, text)
         self.assertGreater(len(detailed), len(simple))
+
+
+# The counts recorded before card templates (step 0 of the card-template plan), for a person who may read everything:
+# the same at 6, 24 and 200 units. Card templates must not change them without the owner (README, Monitoring).
+RECORDED = {'simple': 35, 'detailed': 42, 'mixed': 42}
+
+
+class RecordedCountsTests(Counting, MonitoringCase):
+    def test_the_counts_recorded_before_card_templates_at_6_24_and_200_units(self):
+        units = self.farm_of(200)
+        found = {}
+        for mode in ('simple', 'detailed', 'mixed'):
+            self.count(units[:6], mode)                               # warm what the first call loads once
+            found[mode] = [self.count(units[:size], mode) for size in (6, 24, 200)]
+        self.assertEqual(found, {mode: [count] * 3 for mode, count in RECORDED.items()})

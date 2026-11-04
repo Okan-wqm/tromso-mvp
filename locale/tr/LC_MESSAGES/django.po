@@ -23,6 +23,10 @@ msgid "%(age)s ago"
 msgstr "%(age)s önce"
 
 #, python-format
+msgid "%(age)s ago · %(point)s"
+msgstr "%(age)s önce · %(point)s"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s partisinin şu anda %(place)s yerinde balığı yok."
 
@@ -2612,6 +2616,9 @@ msgstr "CO₂"
 
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
+
+msgid "CO₂ limit"
+msgstr "CO₂ sınırı"
 
 msgid "CO₂ limit (mg/L)"
 msgstr "CO₂ sınırı (mg/L)"
@@ -5295,6 +5302,9 @@ msgstr "Sınır"
 msgid "Limits"
 msgstr "Sınırlar"
 
+msgid "Limits of the fish in the unit"
+msgstr "Birimdeki balıkların sınırları"
+
 msgid "Line"
 msgstr "Satır"
 
@@ -5707,6 +5717,9 @@ msgstr "NH₃-N"
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
 
+msgid "NH₃-N limit"
+msgstr "NH₃-N sınırı"
+
 msgid "NH₃-N limit (mg/L as N)"
 msgstr "NH₃-N sınırı (mg/L N olarak)"
 
@@ -5966,6 +5979,10 @@ msgstr "Henüz hiçbir bilgi kaydı bu belgeye dayanmıyor."
 
 msgid "No limit"
 msgstr "Sınır yok"
+
+#, python-format
+msgid "No limit for these fish, so no border is drawn: %(limits)s."
+msgstr "Bu balıklar için sınır yok, bu yüzden sınır çizilmedi: %(limits)s."
 
 msgid "No lines yet. Use “Add line” to add one."
 msgstr "Henüz satır yok. Eklemek için “Satır ekle”yi kullanın."
@@ -6292,6 +6309,9 @@ msgstr "Bu filtrelere uyan stok yok."
 
 msgid "Nothing in the store yet"
 msgstr "Depoda henüz hiçbir şey yok"
+
+msgid "Nothing is filled in for a missing value."
+msgstr "Eksik bir değer için hiçbir şey doldurulmaz."
 
 msgid "Nothing is in stock: receive a delivery first."
 msgstr "Stokta hiçbir şey yok: önce bir teslimat alın."
@@ -8685,6 +8705,9 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Hesaplayıcının değerleri"
 
+msgid "The chart cannot be drawn: this point has no recent value of"
+msgstr "Grafik çizilemiyor: bu noktanın güncel bir değeri yok:"
+
 msgid "The charts and the values show again once every value is right."
 msgstr "Her değer doğru olduğunda çizelgeler ve değerler yeniden görünür."
 
@@ -9643,6 +9666,13 @@ msgstr "Bu tür seçilen kategoride değil."
 msgid "This unit already has a count on this day: void it first to correct it."
 msgstr "Bu birimde bu gün için zaten bir sayım var: düzeltmek için önce onu iptal edin."
 
+msgid ""
+"This unit has no active middle sampling point, so its chart cannot be drawn. Choose one of its "
+"points:"
+msgstr ""
+"Bu birimin etkin bir orta numune noktası yok, bu yüzden grafiği çizilemiyor. Noktalarından birini"
+" seçin:"
+
 msgid "This unit has no active middle sampling point, so no water is shown for it."
 msgstr "Bu birimin aktif bir orta numune noktası yok, bu yüzden su gösterilmez."
 
@@ -9988,6 +10018,9 @@ msgstr "Değerler"
 
 msgid "Values from"
 msgstr "Değerlerin kaynağı"
+
+msgid "Values the chart is drawn from"
+msgstr "Grafiğin çizildiği değerler"
 
 msgid "Version"
 msgstr "Sürüm"
@@ -10580,6 +10613,9 @@ msgstr "asistan"
 
 msgid "assistants"
 msgstr "asistanlar"
+
+msgid "assumed: fresh water"
+msgstr "varsayıldı: tatlı su"
 
 #, python-format
 msgid "at %(point)s"

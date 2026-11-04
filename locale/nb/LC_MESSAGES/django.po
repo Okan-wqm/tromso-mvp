@@ -23,6 +23,10 @@ msgid "%(age)s ago"
 msgstr "%(age)s siden"
 
 #, python-format
+msgid "%(age)s ago · %(point)s"
+msgstr "%(age)s siden · %(point)s"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s har ingen fisk i %(place)s nå."
 
@@ -2611,6 +2615,9 @@ msgstr "CO₂"
 
 msgid "CO₂ (mg/L)"
 msgstr "CO₂ (mg/L)"
+
+msgid "CO₂ limit"
+msgstr "CO₂-grense"
 
 msgid "CO₂ limit (mg/L)"
 msgstr "CO₂-grense (mg/L)"
@@ -5284,6 +5291,9 @@ msgstr "Grense"
 msgid "Limits"
 msgstr "Grenser"
 
+msgid "Limits of the fish in the unit"
+msgstr "Grenser for fisken i enheten"
+
 msgid "Line"
 msgstr "Linje"
 
@@ -5696,6 +5706,9 @@ msgstr "NH₃-N"
 msgid "NH₃-N (mg/L)"
 msgstr "NH₃-N (mg/L)"
 
+msgid "NH₃-N limit"
+msgstr "NH₃-N-grense"
+
 msgid "NH₃-N limit (mg/L as N)"
 msgstr "NH₃-N-grense (mg/L som N)"
 
@@ -5957,6 +5970,10 @@ msgstr "Ingen kunnskapsoppføring viser til det ennå."
 
 msgid "No limit"
 msgstr "Ingen grense"
+
+#, python-format
+msgid "No limit for these fish, so no border is drawn: %(limits)s."
+msgstr "Ingen grense for denne fisken, så ingen grenselinje er tegnet: %(limits)s."
 
 msgid "No lines yet. Use “Add line” to add one."
 msgstr "Ingen linjer ennå. Bruk «Legg til linje» for å legge til en."
@@ -6285,6 +6302,9 @@ msgstr "Ingen beholdning passer med disse filtrene."
 
 msgid "Nothing in the store yet"
 msgstr "Ingenting på lager ennå"
+
+msgid "Nothing is filled in for a missing value."
+msgstr "Ingenting fylles inn for en manglende verdi."
 
 msgid "Nothing is in stock: receive a delivery first."
 msgstr "Ingen beholdning: ta imot et varemottak først."
@@ -8676,6 +8696,9 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Kalkulatorens verdier"
 
+msgid "The chart cannot be drawn: this point has no recent value of"
+msgstr "Diagrammet kan ikke tegnes: dette punktet har ingen ferske verdier for"
+
 msgid "The charts and the values show again once every value is right."
 msgstr "Diagrammene og verdiene vises igjen når alle verdiene er riktige."
 
@@ -9632,6 +9655,13 @@ msgstr "Denne typen er ikke i den valgte kategorien."
 msgid "This unit already has a count on this day: void it first to correct it."
 msgstr "Denne enheten har allerede en telling denne dagen: annuller den først for å rette den."
 
+msgid ""
+"This unit has no active middle sampling point, so its chart cannot be drawn. Choose one of its "
+"points:"
+msgstr ""
+"Denne enheten har ikke noe aktivt midtre prøvepunkt, så diagrammet kan ikke tegnes. Velg ett av "
+"punktene:"
+
 msgid "This unit has no active middle sampling point, so no water is shown for it."
 msgstr "Denne enheten har ikke noe aktivt midtre prøvepunkt, så det vises ikke vann for den."
 
@@ -9977,6 +10007,9 @@ msgstr "Verdier"
 
 msgid "Values from"
 msgstr "Verdier fra"
+
+msgid "Values the chart is drawn from"
+msgstr "Verdiene diagrammet er tegnet fra"
 
 msgid "Version"
 msgstr "Versjon"
@@ -10571,6 +10604,9 @@ msgstr "assistent"
 
 msgid "assistants"
 msgstr "assistenter"
+
+msgid "assumed: fresh water"
+msgstr "antatt: ferskvann"
 
 #, python-format
 msgid "at %(point)s"

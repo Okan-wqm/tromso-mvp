@@ -230,6 +230,10 @@ class MenuPlacementTests(TestCase):
             'sensors.Device': 'Sensors · Setup',
             'sensors.Channel': 'Sensors · Setup',
             'sensors.Binding': 'Sensors · Setup',
+            'sensors.Reading': 'Sensors · Operations',
+            'sensors.DeadLetter': 'Sensors · Operations',
+            'sensors.AlarmRule': 'Sensors · Operations',
+            'sensors.AlarmEvent': 'Sensors · Operations',
             'sensors.Credential': 'Sensors · Administration',
             'core.AuditLog': 'Company · Administration',
         })

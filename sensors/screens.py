@@ -4,6 +4,8 @@ tables are written by the ingest service (sensors-ingest/, sensors/CONTRACT.md) 
 reads them."""
 from core.datamap import Screen, computed, no, system
 
+from .views import dead_letter_resolve, dead_letters, home
+
 INGEST = 'written by the ingest service (sensors/CONTRACT.md), never by a page'
 MIGRATION = 'one row written by migration sensors 0001; the contract is changed by a migration, never by a page'
 
@@ -32,12 +34,13 @@ SCREENS = {
         create=no(INGEST), edit=no(INGEST), delete=no(INGEST), read=no('read by the device status (sensors/read.py)'),
         columns={'*': computed('what the ingest service has seen of the device')}),
     'IngestStatus': Screen(
-        create=no(INGEST), edit=no(INGEST), delete=no(INGEST), read=no('read by the Sensors overview'),
+        create=no(INGEST), edit=no(INGEST), delete=no(INGEST), read=(home,),
         columns={'*': computed('the ingest service\'s heartbeat per connection')}),
     'DeadLetter': Screen(
-        create=no(INGEST), edit=no('the message is evidence: only its resolution is set, by a person'),
+        create=no(INGEST), edit=(dead_letter_resolve,),
         delete=no('pruned after 90 days by manage.py sensors_housekeeping'),
-        read=no('read by the Sensors overview'),
+        read=(dead_letters, home),
+        note='The message is evidence: only its resolution is set, by a person (logged).',
         columns={'*': computed('what the ingest service could not store, counted'),
                  'resolved_at': system('set when a person marks it resolved'),
                  'resolved_by': system('the person who marked it resolved')}),

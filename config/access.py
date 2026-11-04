@@ -78,6 +78,10 @@ AREAS = [
     # Sensor readings: Read is the Charts and Live values pages and a place's charts in a monitoring window. Nobody writes
     # them but the ingest service.
     Area(_('Sensor readings'), 'sensors.Reading', actions=('view',)),
+    # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
+    Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
+    # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
+    Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),

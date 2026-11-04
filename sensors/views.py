@@ -9,9 +9,10 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import Http404, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -25,7 +26,8 @@ from farm.models import Equipment, SamplingPoint, System, Tank
 
 from . import chart, credentials, quantities, read, trail
 from .forms import on_site_clock
-from .models import Binding, Channel, ChannelStatus, Credential
+from .models import (Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason, Device,
+                     IngestStatus)
 from .resources import (ChannelResource, ConnectionResource, CredentialResource, DeviceResource, PayloadFormatResource,
                         secret_page)
 
@@ -45,7 +47,8 @@ def home(request):
     tiles = [{'label': resource.title(), 'count': resource.model.objects.count(), 'url': reverse(resource.url_name('list'))}
              for resource in (ConnectionResource, DeviceResource, ChannelResource, PayloadFormatResource)
              if request.user.has_perm(resource.perm('view'))]
-    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles))
+    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles,
+                                                               state_tiles=state_tiles(request.user, timezone.now())))
 
 
 @require_POST
@@ -225,3 +228,82 @@ def trail_points(request):
                     'alkalinity_mg_l': point.alkalinity_mg_l, 'salinity_ppt': point.salinity_ppt, 'dic': point.dic,
                     'alkalinity_meq': point.alkalinity_meq} for point in found.points],
         'missing': [moment.isoformat() for moment in found.missing]})
+
+
+# ---- dead letters ----------------------------------------------------------------------------------------------
+DEAD_PAGE = 100
+
+
+@permission_required('sensors.view_deadletter', raise_exception=True)
+def dead_letters(request):
+    """Sensors › Operations › Dead letters: what the ingest could not store, newest first, the open ones by default; the
+    payload shown as text and as hex, escaped (it is whatever a device sent). A person who may change them resolves one."""
+    letters = DeadLetter.objects.order_by('-last_at')
+    reason = request.GET.get('reason', '')
+    if reason in DeadReason.values:
+        letters = letters.filter(reason=reason)
+    if request.GET.get('show') != 'all':
+        letters = letters.filter(resolved_at__isnull=True)
+    page = Paginator(letters, DEAD_PAGE).get_page(request.GET.get('page'))
+    names = dict(Connection.all_objects.values_list('pk', 'name'))
+    rows = [{'letter': letter, 'connection': names.get(letter.connection_id, '—'),
+             'text': bytes(letter.payload).decode('utf-8', errors='replace'), 'hex': bytes(letter.payload).hex()}
+            for letter in page.object_list]
+    kept = request.GET.copy()
+    kept.pop('page', None)
+    return render_page(request, 'sensors/dead_letters.html', _context(
+        'sensors:dead_letters', rows=rows, page=page, reasons=DeadReason.choices, reason=reason,
+        show=request.GET.get('show', ''), pager_query=kept.urlencode(),
+        can_resolve=request.user.has_perm('sensors.change_deadletter')))
+
+
+@require_POST
+@permission_required('sensors.change_deadletter', raise_exception=True)
+def dead_letter_resolve(request, pk):
+    """Marks a dead letter resolved (the cause is dealt with), logged; the message itself stays as it came."""
+    with transaction.atomic():
+        letter = get_object_or_404(DeadLetter.objects.select_for_update(), pk=pk)
+        if letter.resolved_at is None:
+            letter.resolved_at, letter.resolved_by = timezone.now(), request.user
+            letter.save(update_fields=['resolved_at', 'resolved_by'])
+            with audit.source_language():
+                audit.record(request.user, AuditLog.Action.UPDATE, letter, {'Resolved': [None, 'yes']})
+    messages.success(request, _('Dead letter resolved.'))
+    return redirect(reverse('sensors:dead_letters'))
+
+
+# ---- the overview's state ---------------------------------------------------------------------------------------
+INGEST_DEAD_AFTER = timedelta(seconds=90)
+
+
+def state_tiles(user, now):
+    """What the overview says of the sensors now, each for the right that may read it: whether the ingest is alive (its
+    heartbeat within 90 s), how many devices are online, how many active channels of active devices have no fresh value, and how many
+    dead letters came in the last day."""
+    tiles = []
+    if user.has_perm('sensors.view_connection'):
+        statuses = list(IngestStatus.objects.filter(connection_id__in=Connection.objects.filter(is_active=True)
+                                                    .values('pk')))
+        if not statuses:
+            text = _('No heartbeat yet')
+        elif all(now - status.heartbeat_at <= INGEST_DEAD_AFTER for status in statuses):
+            text = _('Alive')
+        else:
+            text = _('Down')
+        tiles.append({'label': _('Ingest'), 'text': text, 'count': text,
+                      'url': reverse('sensors:connection_list')})
+    if user.has_perm('sensors.view_device'):
+        devices = list(Device.objects.filter(is_active=True))
+        online = sum(1 for status in read.device_status(devices, now).values() if status.online)
+        tiles.append({'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
+                      'url': reverse('sensors:device_list')})
+    if user.has_perm('sensors.view_channel'):
+        listened = Channel.objects.filter(state=ChannelStatus.ACTIVE, device__is_active=True, device__is_deleted=False)
+        stale = sum(1 for state in read.latest(listened.values_list('channel_no', flat=True), now).values()
+                    if not state.fresh)
+        tiles.append({'label': _('Channels without a fresh value'), 'count': stale,
+                      'url': reverse('sensors:channel_list')})
+    if user.has_perm('sensors.view_deadletter'):
+        tiles.append({'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
+                      'count': DeadLetter.objects.filter(last_at__gte=now - timedelta(days=1)).count()})
+    return tiles

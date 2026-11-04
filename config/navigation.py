@@ -146,6 +146,8 @@ WORKSPACES = [
             Group('', [
                 Entry(_('Charts'), 'sensors:charts', 'chart-line', 'sensors.view_reading'),
                 Entry(_('Live values'), 'sensors:live', 'radio', 'sensors.view_reading'),
+                # What the ingest could not store, kept as evidence and counted.
+                Entry(_('Dead letters'), 'sensors:dead_letters', 'inbox', 'sensors.view_deadletter'),
             ]),
         ]),
         Section(_('Administration'), [

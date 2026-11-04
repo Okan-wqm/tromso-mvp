@@ -45,7 +45,7 @@ class DeliveryInTheReportsTests(ReportTestCase):
         batch = operation.movements.get().batch
         services.record_delivery(self.user, unit=self.m1, batch=batch, day=day(10, 14), count=1000,
                                  destination='Nordic Farms')
-        result = compute.compute(self.report(Report.Kind.CLEANER_FISH, OCTOBER, site=self.sea))
+        result = compute.compute(self.report(Report.Kind.CLEANER_FISH, OCTOBER, site=self.sea, no_cleaner_feed=True))
         row, = result.content['units'].values()
         figures, = row['species']
         self.assertEqual((figures['moved_out'], figures['closing'], result.problems), (1000, 3000, []))

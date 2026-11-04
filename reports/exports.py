@@ -16,6 +16,8 @@ CULL_FIELDS = {'sick': 'antallAvlivetSykdom', 'injured': 'antallAvlivetSkader', 
                'salmon_handling': 'antallAvlivetForeståendeHåndteringAvLaksen',
                'poor_environment': 'antallAvlivetForeståendeUgunstigLevemiljø', 'not_used': 'antallAvlivetSkalIkkeBrukes'}
 ORIGINS = {'farmed': 'OPPDRETTET', 'wild_caught': 'VILLFANGET'}
+BOTH_ORIGINS = 'VILLFANGET_OG_OPPDRETTET'      # "if the fish comes from both farming and fishing": one row per species
+SPECIES_FIGURES = ('opening', 'stocked', 'moved_in', 'died', 'moved_out', 'unaccounted')
 WEEKDAY_FIELDS = {'monday': 'mandagKg', 'tuesday': 'tirsdagKg', 'wednesday': 'onsdagKg', 'thursday': 'torsdagKg',
                   'friday': 'fredagKg', 'saturday': 'lørdagKg', 'sunday': 'søndagKg'}
 
@@ -79,6 +81,27 @@ def _lice(report, content, base):
     return body
 
 
+def _per_species(rows):
+    """The cleaner-fish rows of a unit as the API takes them: one per species (`ArtDto` is per species), the figures of its
+    origins added together and the origin the mixed value when both farmed and wild-caught fish are in it."""
+    species = {}
+    for row in rows:
+        merged = species.get(row['species'])
+        if merged is None:
+            species[row['species']] = {**row, 'culled': dict(row['culled']), 'origins': {row['origin']}}
+            continue
+        for name in SPECIES_FIGURES:
+            merged[name] += row[name]
+        for cause, fish in row['culled'].items():
+            merged['culled'][cause] += fish
+        merged['origins'].add(row['origin'])
+    found = []
+    for row in species.values():
+        origins = {ORIGINS.get(origin) for origin in row['origins']}
+        found.append({**row, 'origin': BOTH_ORIGINS if len(origins) > 1 else origins.pop()})
+    return found
+
+
 def api_json(report, content):
     """The report as Mattilsynet's reporting API takes it, or None for a kind the API has no endpoint for."""
     identity = content.get('identity', {})
@@ -93,13 +116,13 @@ def api_json(report, content):
                 'produksjonsenheter': [{
                     'merdId': unit['number'],
                     'arter': [{
-                        'artskode': found['species'], 'opprinnelse': ORIGINS.get(found['origin']),
+                        'artskode': found['species'], 'opprinnelse': found['origin'],
                         'beholdningVedForrigeMånedsslutt': found['opening'],
                         'utsett': {'antallNy': found['stocked'], 'antallFlyttetInn': found['moved_in']},
                         'uttak': {**{CULL_FIELDS[cause]: fish for cause, fish in found['culled'].items()},
                                   'antallSelvdød': found['died'], 'antallFlyttetUt': found['moved_out'],
                                   'antallKanIkkeGjøresRedeFor': found['unaccounted']},
-                    } for found in unit['species']],
+                    } for found in _per_species(unit['species'])],
                 } for unit in sorted(content['units'].values(), key=lambda unit: unit['number'])]}
     if report.kind == ReportKind.SMOLT:
         year, month = report.period.iso

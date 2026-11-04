@@ -76,6 +76,8 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
                       'filing.'))
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
                                       content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope))
+        current.deadline_on = compute.deadline(current)
+        current.filed_late = (periods.oslo_today(submitted_at) > current.deadline_on) if current.deadline_on else False
         current.submitted_at, current.submitted_by = submitted_at, user
         current.channel, current.reference = channel, reference.strip()
         current.updated_by, current.version = user, current.version + 1
@@ -88,6 +90,10 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
                 str(Report._meta.get_field('channel').verbose_name): [None, audit.message(current.get_channel_display())],
                 str(Report._meta.get_field('reference').verbose_name): [None, current.reference or None],
                 str(_('Content hash')): [None, digest],
+                str(Report._meta.get_field('deadline_on').verbose_name): [None, current.deadline_on and
+                                                                            current.deadline_on.isoformat()],
+                str(Report._meta.get_field('filed_late').verbose_name): [None, audit.message(
+                    _('Yes') if current.filed_late else _('No'))],
                 **({str(_('Not ready when filed')): [None, ' '.join(logged)]} if logged else {}),
                 **({str(_('Open questions acknowledged')): [None, '; '.join(
                     f'{question.code}: {question.question}' for question in unconfirmed)]} if unconfirmed else {}),

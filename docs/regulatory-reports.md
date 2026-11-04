@@ -818,6 +818,16 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   hand (a checkbox with the question's text on the report's page); the confirmation is logged with the question's text
   ("Open questions acknowledged"). Answering the question in the register ends the requirement; it does not change the filed
   value by itself, so an answer that says the active substance is meant is a change of the computation to be made.
+- **Filed late, and the silent defaults (coverage review C07, R19, R11, R09):** recording a filing stores the deadline
+  (`Report.deadline_on`) and whether the day of the filing in Oslo came after it (`filed_late`; empty for a filing recorded before this
+  was kept, `False` for a notice, which is filed at once), shown on the report ("Filed 2 days after its deadline") and the
+  list, and in the log entry; the database holds that only a filed report has them. The biomass report's `slaktetilstand`
+  is no longer a constant: the person says round or gutted weight (`Report.harvest_condition`, only on the biomass report,
+  checked by the database) and a month with a harvest is not ready until they have. A cleaner-fish month with no feed
+  recorded is a **problem**, not a silent 0 kg, unless the person says none was given (`Report.no_cleaner_feed`, only on the
+  cleaner-fish report), and feed recorded beside "none given" is a problem too. The cleaner-fish **API** rows are one per
+  species (`ArtDto` is per species): the figures of the farmed and the wild-caught fish of a species are added and the
+  origin is `VILLFANGET_OG_OPPDRETTET` when both are there; the stored content keeps the rows per origin (`exports._per_species`).
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
   (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.

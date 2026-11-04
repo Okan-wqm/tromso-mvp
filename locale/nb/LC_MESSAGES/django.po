@@ -402,6 +402,12 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
 
 #, python-format
+msgid "%(days)s day late"
+msgid_plural "%(days)s days late"
+msgstr[0] "%(days)s dag for sent"
+msgstr[1] "%(days)s dager for sent"
+
+#, python-format
 msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "%(days)s dag siden siste målte vekt"
@@ -3119,6 +3125,9 @@ msgstr "Sammensetning slik det fôres"
 msgid "Concrete"
 msgstr "Betong"
 
+msgid "Condition of the harvested fish"
+msgstr "Tilstand på den slaktede fisken"
+
 msgid "Conductivity"
 msgstr "Ledningsevne"
 
@@ -4188,6 +4197,9 @@ msgstr "Fôr i dag"
 msgid "Feed type"
 msgstr "Fôrtype"
 
+msgid "Feed was recorded for the cleaner fish this month, but the report says none was given."
+msgstr "Det er registrert fôr til rensefisken denne måneden, men rapporten sier at det ikke ble gitt noe."
+
 msgid "Feed, last 7 days"
 msgstr "Fôr, siste 7 dager"
 
@@ -4280,8 +4292,17 @@ msgstr "Filstørrelse (byte)"
 msgid "Filed"
 msgstr "Innsendt"
 
+#, python-format
+msgid "Filed %(days)s day after its deadline, %(deadline)s"
+msgid_plural "Filed %(days)s days after its deadline, %(deadline)s"
+msgstr[0] "Sendt inn %(days)s dag etter fristen, %(deadline)s"
+msgstr[1] "Sendt inn %(days)s dager etter fristen, %(deadline)s"
+
 msgid "Filed at"
 msgstr "Sendt inn"
+
+msgid "Filed late"
+msgstr "Sendt inn for sent"
 
 msgid "Filed through"
 msgstr "Sendt inn via"
@@ -4758,6 +4779,9 @@ msgstr "Vekst"
 msgid "Growth stage"
 msgstr "Vekststadium"
 
+msgid "Gutted weight"
+msgstr "Sløyd vekt"
+
 msgid "Gyrodactylus salaris infection"
 msgstr "Infeksjon med Gyrodactylus salaris"
 
@@ -5022,6 +5046,9 @@ msgstr "Pågår"
 
 msgid "In the library"
 msgstr "I biblioteket"
+
+msgid "In time"
+msgstr "I tide"
 
 msgid "Inactive"
 msgstr "Inaktiv"
@@ -5965,15 +5992,18 @@ msgstr "Ingen utløpsdato registrert."
 msgid "No feed recorded up to the last weighing."
 msgstr "Ingen fôring registrert fram til siste veiing."
 
+msgid "No feed was given to the cleaner fish"
+msgstr "Rensefisken fikk ikke fôr"
+
 msgid "No feeding matches these filters."
 msgstr "Ingen fôring passer disse filtrene."
 
 msgid ""
-"No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg "
-"(Operations › Feeding: choose the cleaner fish as the target)."
+"No feeding of the cleaner fish is recorded in the month: record it (Operations › Feeding: choose "
+"the cleaner fish as the target), or say that none was given (the Report tab)."
 msgstr ""
-"Ingen fôring av rensefisken er registrert i måneden, så fôret rapporteres som 0 kg (Drift › "
-"Fôring: velg rensefisken som mottaker)."
+"Ingen fôring av rensefisken er registrert i måneden: registrer den (Drift › Fôring: velg "
+"rensefisken som mottaker), eller si at det ikke ble gitt noe (fanen Rapport)."
 
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
@@ -6543,6 +6573,9 @@ msgstr "Bare en fôrautomat har fôrkalibreringer."
 msgid "Only a filed report is corrected: change the draft itself."
 msgstr "Bare en innsendt rapport korrigeres: endre selve utkastet."
 
+msgid "Only a filed report is late or on time."
+msgstr "Bare en innsendt rapport er sen eller i tide."
+
 msgid "Only a sea-lice medicine has a substance in the lice report."
 msgstr "Bare et lakselusmiddel har et virkestoff i luserapporten."
 
@@ -6577,6 +6610,12 @@ msgstr "Bare ett system kan være det primære."
 
 msgid "Only suspected"
 msgstr "Bare mistenkt"
+
+msgid "Only the biomass report has a condition of the harvested fish."
+msgstr "Bare biomasserapporten har tilstand på den slaktede fisken."
+
+msgid "Only the cleaner-fish report says that no feed was given."
+msgstr "Bare rensefiskrapporten sier at det ikke ble gitt fôr."
 
 msgid "Only the last band can be without an upper weight."
 msgstr "Bare den siste vektklassen kan være uten øvre vekt."
@@ -7624,6 +7663,9 @@ msgstr "Runde"
 msgid "Round weight"
 msgstr "Rund vekt"
 
+msgid "Round weight (as weighed at harvest)"
+msgstr "Rund vekt (slik veid ved slakting)"
+
 msgid "Round weight (kg)"
 msgstr "Rund vekt (kg)"
 
@@ -7789,6 +7831,13 @@ msgstr "Lagre enheter"
 
 msgid "Save withdrawal"
 msgstr "Lagre tilbakeholdelsestid"
+
+msgid ""
+"Say in what condition the harvested fish are weighed in this report: round or gutted weight (the "
+"Report tab; slaktetilstand)."
+msgstr ""
+"Oppgi i hvilken tilstand den slaktede fisken er veid i denne rapporten: rund eller sløyd vekt "
+"(fanen Rapport; slaktetilstand)."
 
 msgid "Say what caused it, or what is thought to have."
 msgstr "Si hva som forårsaket det, eller hva som antas å ha gjort det."

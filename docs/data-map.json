@@ -215,6 +215,7 @@
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py",
         "reports/tests/test_ack.py",
+        "reports/tests/test_gaps789.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
         "reports/tests/test_questions.py",
@@ -22944,6 +22945,57 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "harvest_condition",
+          "field": "harvest_condition",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "round",
+            "gutted"
+          ],
+          "link": null,
+          "on_form": [
+            "ReportForm › Report"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "no_cleaner_feed",
+          "field": "no_cleaner_feed",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ReportForm › Report"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "deadline_on",
+          "field": "deadline_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the deadline when the filing is recorded"
+        },
+        {
+          "name": "filed_late",
+          "field": "filed_late",
+          "type": "boolean",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "whether the filing came after the deadline, set when it is recorded"
         }
       ],
       "constraints": [
@@ -22991,6 +23043,24 @@
         },
         {
           "name": "chk_regulatory_reports_escape",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_harvest_condition",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_no_cleaner_feed",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_late_when_filed",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -23200,6 +23270,8 @@
             "health_event": "Report",
             "escape": "Report",
             "occurred_on": "Report",
+            "harvest_condition": "Report",
+            "no_cleaner_feed": "Report",
             "contact_name": "Contact person",
             "contact_email": "Contact person",
             "contact_phone": "Contact person",
@@ -23247,6 +23319,7 @@
         "reports/tests/test_compute.py",
         "reports/tests/test_delivery.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_gaps789.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",

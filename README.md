@@ -1800,6 +1800,12 @@ Q1 and Q2 of the register Production › Reports › Questions for the authority
 page, and the filing is refused until the person confirms it was checked by hand; the confirmation is logged. Answering the
 question in the register lifts it.
 
+**Filed late.** Recording a filing stores the deadline and whether it came after it (the day in Oslo); the report and the list say
+"Filed 2 days after its deadline" and a notice, filed at once, is never late. **Said, not assumed:** the biomass report asks in what
+condition the harvested fish are weighed (round or gutted weight) and is not ready with a harvest until it is said; a cleaner-fish
+month with no feed recorded is a problem unless the person says none was given. The cleaner-fish file for the API has one row per
+species, with the mixed origin when both farmed and wild-caught fish are in it.
+
 **What you are about to record.** Before a filing is recorded, the report's page says "What you are about to record as filed", with
 the content hash and a link to the print page (the exact values to type, field by field in the authority's names); every export
 carries the same hash. The recording posts that hash, and if the records changed meanwhile (a backdated record) it is refused

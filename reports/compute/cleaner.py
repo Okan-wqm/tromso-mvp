@@ -27,7 +27,7 @@ CAUSES = tuple(reason.value for reason in CLEANER_CULL_REASONS)
 FARMED, WILD = 'farmed', 'wild_caught'
 
 
-def compute(site, period):
+def compute(site, period, report=None):
     problems, warnings = [], []
     units = stock.site_units(site)
     opening, closing, lines = read.in_period(units, period.start, period.end)
@@ -110,9 +110,12 @@ def compute(site, period):
     if not content_rows:
         problems.append(_('No unit of the site held cleaner fish in the month: the report has nothing to file.'))
     feed = _feed(units, period, batches, cleaner)
-    if rows and not feed['feeds']:
-        warnings.append(_('No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg '
-                          '(Operations › Feeding: choose the cleaner fish as the target).'))
+    said_none = report is not None and report.no_cleaner_feed
+    if rows and not feed['feeds'] and not said_none:
+        problems.append(_('No feeding of the cleaner fish is recorded in the month: record it (Operations › Feeding: choose '
+                          'the cleaner fish as the target), or say that none was given (the Report tab).'))
+    if feed['feeds'] and said_none:
+        problems.append(_('Feed was recorded for the cleaner fish this month, but the report says none was given.'))
     content = {'kind': 'cleaner_fish', 'period': period.key, 'identity': identity(site, problems), 'feed': feed,
                'units': content_rows}
     return Result(content, problems, warnings, scope(site, period, units))

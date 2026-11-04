@@ -19,7 +19,8 @@ from .models import (
 )
 
 REPORT_FORM_TABS = [
-    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on']),
+    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on',
+                             'harvest_condition', 'no_cleaner_feed']),
     ('contact', _('Contact person'), ['contact_name', 'contact_email', 'contact_phone']),
     ('event', _('What happened'), list(NARRATIVE)),
     ('notes', _('Notes'), ['notes']),
@@ -97,6 +98,10 @@ class ReportForm(TabbedForm):
             keep.add('health_event')
         if kind == Report.Kind.ESCAPE:
             keep.add('escape')
+        if kind == Report.Kind.BIOMASS:
+            keep.add('harvest_condition')
+        if kind == Report.Kind.CLEANER_FISH:
+            keep.add('no_cleaner_feed')
         for name in list(self.fields):
             if name not in keep and name != 'version':
                 del self.fields[name]

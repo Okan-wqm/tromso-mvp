@@ -398,6 +398,12 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, saat kaydedilmemiş: günün sonundan sayıldı"
 
 #, python-format
+msgid "%(days)s day late"
+msgid_plural "%(days)s days late"
+msgstr[0] "%(days)s gün geç"
+msgstr[1] "%(days)s gün geç"
+
+#, python-format
 msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "son ölçülen ağırlıktan bu yana %(days)s gün"
@@ -3124,6 +3130,9 @@ msgstr "Verildiği hâliyle bileşim"
 msgid "Concrete"
 msgstr "Beton"
 
+msgid "Condition of the harvested fish"
+msgstr "Hasat edilen balığın durumu"
+
 msgid "Conductivity"
 msgstr "İletkenlik"
 
@@ -4195,6 +4204,9 @@ msgstr "Bugün verilen yem"
 msgid "Feed type"
 msgstr "Yem türü"
 
+msgid "Feed was recorded for the cleaner fish this month, but the report says none was given."
+msgstr "Bu ay temizleyici balıklar için yem kaydedildi, ancak rapor hiç verilmediğini söylüyor."
+
 msgid "Feed, last 7 days"
 msgstr "Yem, son 7 gün"
 
@@ -4287,8 +4299,17 @@ msgstr "Dosya boyutu (bayt)"
 msgid "Filed"
 msgstr "Sunuldu"
 
+#, python-format
+msgid "Filed %(days)s day after its deadline, %(deadline)s"
+msgid_plural "Filed %(days)s days after its deadline, %(deadline)s"
+msgstr[0] "Son tarihinden %(days)s gün sonra bildirildi, %(deadline)s"
+msgstr[1] "Son tarihinden %(days)s gün sonra bildirildi, %(deadline)s"
+
 msgid "Filed at"
 msgstr "Sunulma zamanı"
+
+msgid "Filed late"
+msgstr "Geç bildirildi"
 
 msgid "Filed through"
 msgstr "Sunulma yolu"
@@ -4765,6 +4786,9 @@ msgstr "Büyüme"
 msgid "Growth stage"
 msgstr "Büyüme evresi"
 
+msgid "Gutted weight"
+msgstr "Işkembesiz ağırlık"
+
 msgid "Gyrodactylus salaris infection"
 msgstr "Gyrodactylus salaris enfeksiyonu"
 
@@ -5031,6 +5055,9 @@ msgstr "Devam ediyor"
 
 msgid "In the library"
 msgstr "Kütüphanede"
+
+msgid "In time"
+msgstr "Zamanında"
 
 msgid "Inactive"
 msgstr "Pasif"
@@ -5974,15 +6001,18 @@ msgstr "Son kullanma tarihi kaydedilmemiş."
 msgid "No feed recorded up to the last weighing."
 msgstr "Son tartıma kadar yem kaydedilmedi."
 
+msgid "No feed was given to the cleaner fish"
+msgstr "Temizleyici balıklara yem verilmedi"
+
 msgid "No feeding matches these filters."
 msgstr "Bu filtrelere uyan yemleme yok."
 
 msgid ""
-"No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg "
-"(Operations › Feeding: choose the cleaner fish as the target)."
+"No feeding of the cleaner fish is recorded in the month: record it (Operations › Feeding: choose "
+"the cleaner fish as the target), or say that none was given (the Report tab)."
 msgstr ""
-"Ay içinde temizleyici balıklar için besleme kaydedilmedi, bu yüzden yemleri 0 kg olarak "
-"bildirilir (İşlemler › Besleme: hedef olarak temizleyici balığı seçin)."
+"Ay içinde temizleyici balıklar için besleme kaydedilmedi: kaydedin (İşlemler › Besleme: hedef "
+"olarak temizleyici balığı seçin) veya hiç verilmediğini belirtin (Rapor sekmesi)."
 
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
@@ -6548,6 +6578,9 @@ msgstr "Yem kalibrasyonu yalnızca yemleme makinelerinde olur."
 msgid "Only a filed report is corrected: change the draft itself."
 msgstr "Yalnızca sunulmuş bir rapor düzeltilir: taslağın kendisini değiştirin."
 
+msgid "Only a filed report is late or on time."
+msgstr "Yalnızca bildirilmiş bir rapor geç veya zamanındadır."
+
 msgid "Only a sea-lice medicine has a substance in the lice report."
 msgstr "Bit raporunda etken maddesi yalnızca deniz biti ilacının olur."
 
@@ -6582,6 +6615,12 @@ msgstr "Yalnızca bir sistem birincil olabilir."
 
 msgid "Only suspected"
 msgstr "Yalnızca şüpheli"
+
+msgid "Only the biomass report has a condition of the harvested fish."
+msgstr "Yalnızca biyokütle raporunda hasat edilen balığın durumu vardır."
+
+msgid "Only the cleaner-fish report says that no feed was given."
+msgstr "Yalnızca temizleyici balık raporu yem verilmediğini söyler."
 
 msgid "Only the last band can be without an upper weight."
 msgstr "Yalnızca son ağırlık aralığının üst ağırlığı boş olabilir."
@@ -7628,6 +7667,9 @@ msgstr "Tur"
 msgid "Round weight"
 msgstr "Canlı ağırlık"
 
+msgid "Round weight (as weighed at harvest)"
+msgstr "Tüm ağırlık (hasatta tartıldığı gibi)"
+
 msgid "Round weight (kg)"
 msgstr "Canlı ağırlık (kg)"
 
@@ -7793,6 +7835,13 @@ msgstr "Birimleri kaydet"
 
 msgid "Save withdrawal"
 msgstr "Bekleme süresini kaydet"
+
+msgid ""
+"Say in what condition the harvested fish are weighed in this report: round or gutted weight (the "
+"Report tab; slaktetilstand)."
+msgstr ""
+"Bu raporda hasat edilen balığın hangi durumda tartıldığını belirtin: tüm veya işkembesiz ağırlık "
+"(Rapor sekmesi; slaktetilstand)."
 
 msgid "Say what caused it, or what is thought to have."
 msgstr "Nedenini veya neden olduğu düşünülen şeyi yazın."

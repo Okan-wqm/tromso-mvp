@@ -29,6 +29,8 @@ SCREENS = {
         note='Recording the filing freezes the report (ReportSnapshot); a correction of a filed report is a new report.',
         forms=(SubmitForm,),
         columns={'corrects': system('set when a correction of a filed report is started'),
+                 'deadline_on': system('the deadline when the filing is recorded'),
+                 'filed_late': system('whether the filing came after the deadline, set when it is recorded'),
                  'submitted_by': system('the person who recorded the filing')},
     ),
     'ReportSnapshot': Screen(

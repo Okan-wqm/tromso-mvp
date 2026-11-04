@@ -46,6 +46,7 @@ def loss_cause(line):
 
 def compute(site, period, report=None):
     problems, warnings = [], []
+    condition = report.harvest_condition if report is not None else ''
     units = stock.site_units(site)
     opening, closing, lines = read.in_period(units, period.start, period.end)
     batches = Batch.all_objects.select_related('species').in_bulk(
@@ -85,7 +86,7 @@ def compute(site, period, report=None):
                                        'from_lokalitetsnummer': other_site.lokalitetsnummer if other_site else None})
             elif line.kind == MovementKind.HARVEST:
                 row['harvested'].append({'species': code, 'fish': -line.count, 'slaughter_weight_kg': text(
-                    line.kilos, 1), 'condition': 'round'})
+                    line.kilos, 1), 'condition': condition or None})
             elif line.kind == MovementKind.DELIVERY:
                 row['moved_out'].append({'species': code, 'fish': -line.count, 'kg': text(line.kilos, 1),
                                          'to_lokalitetsnummer': deliveries[line.operation_id].destination_site_number})
@@ -108,6 +109,9 @@ def compute(site, period, report=None):
             feed = feeds[feed_id]
             row['feed'].append({'feed': feed.name, 'feed_type': feed.feed_type, 'kg': text(kilos, 1)})
         rows[str(unit.pk)] = row
+    if any(row['harvested'] for row in rows.values()) and not condition:
+        problems.append(_('Say in what condition the harvested fish are weighed in this report: round or gutted weight '
+                          '(the Report tab; slaktetilstand).'))
     content = {
         'kind': 'biomass', 'period': period.key, 'identity': identity(site, problems), 'units': rows,
         'fallow_since': _fallow_since(units, closing, period),

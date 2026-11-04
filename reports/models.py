@@ -18,6 +18,12 @@ from .kinds import BY_FACILITY, EVENTS, KINDS, PERIODIC, ReportKind, info
 SHA256 = r'^[0-9a-f]{64}$'
 
 
+class HarvestCondition(models.TextChoices):
+    """The condition of the harvested fish the biomass report's slaughter weights are given in (`slaktetilstand`)."""
+    ROUND = 'round', _('Round weight (as weighed at harvest)')
+    GUTTED = 'gutted', _('Gutted weight')
+
+
 class Channel(models.TextChoices):
     """How the person filed the report: the system sends nothing (docs/regulatory-reports.md, 5.1)."""
     ALTINN = 'altinn', _('Altinn form')
@@ -99,6 +105,15 @@ class Report(AuditedModel):
     channel = models.CharField(_('Filed through'), max_length=20, blank=True, choices=Channel.choices)
     reference = models.CharField(_('Receipt or reference'), max_length=200, blank=True)
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
+    # The two facts no record holds that a monthly report needs said: in what condition the harvest weights of the biomass
+    # report are given, and that no feed was given to the cleaner fish (so that 0 kg is a statement, not a silence).
+    harvest_condition = models.CharField(_('Condition of the harvested fish'), max_length=10, blank=True,
+                                         choices=HarvestCondition.choices)
+    no_cleaner_feed = models.BooleanField(_('No feed was given to the cleaner fish'), default=False)
+    # Set when the filing is recorded: the deadline then, and whether the filing came after it (the day in Oslo). Empty for a
+    # notice (filed at once) and for a filing recorded before this was kept.
+    deadline_on = models.DateField(_('Deadline'), null=True, blank=True)
+    filed_late = models.BooleanField(_('Filed late'), null=True, blank=True)
 
     class Meta:
         db_table = 'regulatory_reports'
@@ -120,6 +135,13 @@ class Report(AuditedModel):
             _check('escape', Q(kind=ReportKind.ESCAPE, escape__isnull=False)
                    | (~Q(kind=ReportKind.ESCAPE) & Q(escape__isnull=True)),
                    _('An escape notice is about an escape, and no other report is.')),
+            _check('harvest_condition', Q(harvest_condition='')
+                   | Q(kind=ReportKind.BIOMASS, harvest_condition__in=HarvestCondition.values),
+                   _('Only the biomass report has a condition of the harvested fish.')),
+            _check('no_cleaner_feed', Q(no_cleaner_feed=False) | Q(kind=ReportKind.CLEANER_FISH),
+                   _('Only the cleaner-fish report says that no feed was given.')),
+            _check('late_when_filed', Q(filed_late__isnull=True, deadline_on__isnull=True) | Q(submitted_at__isnull=False),
+                   _('Only a filed report is late or on time.')),
             _check('health_event', Q(kind=ReportKind.DISEASE, health_event__isnull=False)
                    | (~Q(kind=ReportKind.DISEASE) & (Q(kind=ReportKind.WELFARE) | Q(health_event__isnull=True))),
                    _('A disease notice is about a health event; a welfare notice may be; no other report is.')),
@@ -171,6 +193,13 @@ class Report(AuditedModel):
     @property
     def info(self):
         return info(self.kind)
+
+    @property
+    def days_late(self):
+        """How many days after its deadline (in Oslo) it was filed; 0 when it was on time or has no deadline."""
+        if not self.filed_late:
+            return 0
+        return (periods.oslo_today(self.submitted_at) - self.deadline_on).days
 
     @property
     def period(self):

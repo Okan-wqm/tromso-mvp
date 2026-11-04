@@ -23,6 +23,11 @@ def covering(day):
     return Q(valid_from__lte=day) & (Q(valid_until__isnull=True) | Q(valid_until__gte=day))
 
 
+def overlapping(first, last):
+    """The placements in force on some day between `first` and `last`."""
+    return Q(valid_from__lte=last) & (Q(valid_until__isnull=True) | Q(valid_until__gte=first))
+
+
 def office_departments_below(managed):
     """The ids of `managed` (a list of office departments) and of every department below them."""
     found, frontier = {department.pk for department in managed}, [department.pk for department in managed]
@@ -68,8 +73,7 @@ def visible_days(user, first, last):
     managed_production = Q(production_department__manager=user, production_department__is_deleted=False)
     below = office_departments_below(list(OfficeDepartment.objects.filter(manager=user)))
     placed = managed_production | (Q(office_department__in=below) if below else Q())
-    overlapping = Q(valid_from__lte=last) & (Q(valid_until__isnull=True) | Q(valid_until__gte=first))
-    for posting in Posting.objects.filter(placed & overlapping).values('employee', 'valid_from', 'valid_until'):
+    for posting in Posting.objects.filter(placed & overlapping(first, last)).values('employee', 'valid_from', 'valid_until'):
         start = max(posting['valid_from'], first)
         end = min(posting['valid_until'] or last, last)
         days.setdefault(posting['employee'], set()).update(

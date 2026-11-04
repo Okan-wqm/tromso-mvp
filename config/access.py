@@ -71,6 +71,9 @@ AREAS = [
     # The shift patterns and the holidays the roster and the leave charge read, and the scheduling limits (one row: Edit
     # only). The three have no menu line of their own but Scheduling settings: it leads to the other two.
     Area(_('Shifts'), 'hr.Shift'),
+    # The roster: Read is the Shift schedule (the viewer's team), Create plans a day, Edit changes a plan, Delete clears a
+    # cell; the rules (rest, hours, leave) run on every save.
+    Area(_('Shift schedule'), 'hr.ShiftAssignment'),
     Area(_('Holidays'), 'hr.Holiday'),
     Area(_('Scheduling settings'), 'hr.SchedulingSettings', actions=('view', 'change')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),

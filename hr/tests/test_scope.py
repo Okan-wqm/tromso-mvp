@@ -142,7 +142,8 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
                  'officedepartment_list', 'officedepartment_create', 'officedepartment_edit',
                  'officedepartment_delete', 'shift_list', 'shift_create', 'shift_edit', 'shift_delete', 'holiday_list',
                  'holiday_create', 'holiday_edit', 'holiday_delete', 'schedulingsettings_list',
-                 'schedulingsettings_edit'}
+                 'schedulingsettings_edit', 'shiftassignment_list', 'shiftassignment_create', 'shiftassignment_edit',
+                 'shiftassignment_delete', 'roster_plan'}
         self.assertEqual(set(names) - known, set(), 'give every new HR route a row in the URL matrix')
 
 

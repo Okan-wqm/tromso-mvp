@@ -22,7 +22,7 @@ VIEWER = Viewer(
     # filtered (that would reveal them), and the CSV export leaves them out. Every column that holds
     # a secret belongs here, and so does what people write to each other: a message's text is for the
     # members of its conversation, which the platform admin reading the database is not (README, Messages).
-    masked={'auth_user': ('password',), 'messages': ('body',)},
+    masked={'auth_user': ('password',), 'messages': ('body',), 'shift_assignments': ('note',)},
     # One line per table where the model's docstring does not say it in the project's words.
     descriptions={
         'employees': _('The people of the company for HR: number, name (or the account that names them), type and the '
@@ -31,6 +31,7 @@ VIEWER = Viewer(
         'holidays': _('Days that are not working days, for every site or for one.'),
         'scheduling_settings': _('The one row of scheduling limits and defaults (rest, weekly hours, days in a row, working '
                                  'weekdays, punch window).'),
+        'shift_assignments': _('One person’s plan for one day: the shift they start that day, or none for planned off.'),
         'postings': _('Where each person works from a day: one department, production or office, and the title.'),
         'office_departments': _('The company’s office departments (finance, administration), nested under one another.'),
         'auth_user': _('People who can sign in: account details and a hash of the password.'),

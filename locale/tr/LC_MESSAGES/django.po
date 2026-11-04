@@ -130,6 +130,12 @@ msgstr[0] "%(count)d gün (%(hours)d sa)"
 msgstr[1] "%(count)d gün (%(hours)d sa)"
 
 #, python-format
+msgid "%(count)d day planned."
+msgid_plural "%(count)d days planned."
+msgstr[0] "%(count)d gün planlandı."
+msgstr[1] "%(count)d gün planlandı."
+
+#, python-format
 msgid ""
 "%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed "
 "temperature in Reference data › Species."
@@ -736,6 +742,10 @@ msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (artık seçilemez)"
 
 #, python-format
+msgid "%(person)s, %(day)s: %(what)s"
+msgstr "%(person)s, %(day)s: %(what)s"
+
+#, python-format
 msgid "%(point)s is deleted."
 msgstr "%(point)s silinmiş."
 
@@ -776,6 +786,10 @@ msgstr "%(rule)s, saat %(time)s"
 #, python-format
 msgid "%(sfr)s at %(temperature)s: %(ration)s a day, %(meals)s × %(meal)s"
 msgstr "%(temperature)s sıcaklıkta %(sfr)s: günde %(ration)s, %(meals)s × %(meal)s"
+
+#, python-format
+msgid "%(shown)s of %(total)s people"
+msgstr "%(total)s kişiden %(shown)s"
 
 #, python-format
 msgid "%(site)s has no lokalitetsnummer (Facility › Sites)."
@@ -1460,6 +1474,9 @@ msgstr ""
 "Yinelenen bir görev, görevlerini iki hafta öncesinden planlar; bunlar <a "
 "href=\"%(url)s\">Görevler</a> sayfasındadır. Onu değiştirmek veya duraklatmak, bugünden itibaren "
 "kimsenin dokunmadığı görevleri yeniden planlar; diğerleri olduğu gibi kalır."
+
+msgid "A remark for the lead’s own planning; it is not shown in the log."
+msgstr "Ekip liderinin kendi planlaması için bir not; günlükte gösterilmez."
 
 msgid "A report is for a period, a notice for an event."
 msgstr "Bir rapor bir dönem içindir, bir bildirim bir olay içindir."
@@ -5817,6 +5834,9 @@ msgstr "Aylık biyokütle"
 msgid "More than %(rows)d points: choose a production department or a system."
 msgstr "%(rows)d noktadan fazla: bir üretim bölümü veya sistem seçin."
 
+msgid "More than the standard week"
+msgstr "Standart haftadan fazla"
+
 msgid "Mortality"
 msgstr "Ölüm"
 
@@ -5996,6 +6016,9 @@ msgstr "Sonraki"
 
 msgid "Next meal"
 msgstr "Sonraki öğün"
+
+msgid "Next week"
+msgstr "Sonraki hafta"
 
 msgid "Nitrate (mg/L NO₃ as N)"
 msgstr "Nitrat (N olarak mg/L NO₃)"
@@ -6552,6 +6575,9 @@ msgstr "Gözlem"
 msgid "Observed on"
 msgstr "Gözlem tarihi"
 
+msgid "Off"
+msgstr "İzinli"
+
 msgid "Offered"
 msgstr "Sunuluyor"
 
@@ -6604,6 +6630,9 @@ msgid ""
 msgstr ""
 "Her satıra bir yazar, belgedeki sırayla, önce soyadı: “Olsen, Bjørn Erik”. Bir kurum adıyla: "
 "“Mattilsynet”."
+
+msgid "One person’s plan for one day: the shift they start that day, or none for planned off."
+msgstr "Bir kişinin bir günlük planı: o gün başladığı vardiya, ya da planlı izin için hiçbiri."
 
 msgid "One probe that measures several water parameters."
 msgstr "Birden çok su parametresini ölçen tek prob."
@@ -7124,11 +7153,17 @@ msgstr "Plan"
 msgid "Plan harvest"
 msgstr "Hasat planla"
 
+msgid "Plan this day"
+msgstr "Bu günü planla"
+
 msgid "Plan transport"
 msgstr "Taşıma planla"
 
 msgid "Planned"
 msgstr "Planlandı"
+
+msgid "Planned (h)"
+msgstr "Planlanan (sa)"
 
 msgid "Planned fish"
 msgstr "Planlanan balık"
@@ -7139,6 +7174,9 @@ msgstr "Planlandığı gün"
 #, python-format
 msgid "Planned for %(date)s"
 msgstr "%(date)s için planlandı"
+
+msgid "Planned off"
+msgstr "Planlı izin"
 
 msgid "Planned round weight (kg)"
 msgstr "Planlanan canlı ağırlık (kg)"
@@ -7229,6 +7267,9 @@ msgstr "Basınç sensörü"
 
 msgid "Previous"
 msgstr "Önceki"
+
+msgid "Previous week"
+msgstr "Önceki hafta"
 
 msgid "Price and notes"
 msgstr "Fiyat ve notlar"
@@ -8244,6 +8285,9 @@ msgstr "Toplam sülfürün payları; H₂S ve sınırı için toplam sülfürü 
 
 msgid "Shift"
 msgstr "Vardiya"
+
+msgid "Shift schedule"
+msgstr "Vardiya çizelgesi"
 
 msgid "Shifts"
 msgstr "Vardiyalar"
@@ -9403,6 +9447,9 @@ msgstr ""
 "Şirketin İK için kişileri: numara, ad (ya da onları adlandıran hesap), tür ve ilk ile son gün. "
 "Maaş, banka veya kimlik numarası tutulmaz."
 
+msgid "The people of your team appear here with their plan for the week."
+msgstr "Ekibinizin kişileri haftalık planlarıyla burada görünür."
+
 msgid ""
 "The people of your team appear here. Someone who manages a department sees the people placed in "
 "it."
@@ -9427,8 +9474,17 @@ msgstr ""
 "İzin sahibinin numarası, balığın sahibi: Mattilsynet ve Fiskeridirektoratet raporları bunu taşır."
 " Dokuz hane."
 
+msgid "The person is on approved leave on this day."
+msgstr "Kişi bu günde onaylı izinde."
+
 msgid "The person the authority can ask about the report. Needed before it is filed."
 msgstr "Kurumun rapor hakkında sorabileceği kişi. Sunulmadan önce gereklidir."
+
+msgid "The person works more days in a row than the most allowed."
+msgstr "Kişi, izin verilen en çok günden fazla art arda çalışıyor."
+
+msgid "The person works on a holiday."
+msgstr "Kişi bir tatil gününde çalışıyor."
 
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Suyu dağıtım deliklerinden tanka veren boru."
@@ -9515,6 +9571,9 @@ msgstr "Rapor, sunulduğundan daha yeni bir yöntemle hesaplanıyor."
 msgid "The report is for the week, month or year this day falls in."
 msgstr "Rapor, bu günün düştüğü hafta, ay veya yıl içindir."
 
+msgid "The rest since the last shift is shorter than the minimum."
+msgstr "Son vardiyadan bu yana dinlenme, en azdan daha kısa."
+
 msgid ""
 "The result of a sensitivity test in the week (lakselusforskriften § 10 d): when, the laboratory, "
 "the substance and the result. Saved separately from the report."
@@ -9535,6 +9594,9 @@ msgid ""
 msgstr ""
 "Çizelgenin vardiya kalıpları: sahanın duvar saatine göre bir başlangıç ve bitiş, bir mola ve bir "
 "tolerans."
+
+msgid "The shift the person starts on this day; none means planned off."
+msgstr "Kişinin bu gün başladığı vardiya; hiçbiri planlı izin demektir."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Uzun eksene dik en kısa çap."
@@ -9825,6 +9887,9 @@ msgstr "Havuz doluyken su yüzeyi."
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
 
+msgid "The week is longer than the standard week."
+msgstr "Hafta, standart haftadan uzun."
+
 msgid ""
 "The week the Team overview compares planned hours with. Default 40 hours; a default, not the law:"
 " confirm it with the company’s agreements."
@@ -9992,6 +10057,9 @@ msgstr "Bu sahibin bu adda bir noktası zaten var."
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Bu sahibin zaten aktif bir orta noktası var: suyunu o temsil eder."
 
+msgid "This person already has a plan for this day."
+msgstr "Bu kişinin bu gün için zaten bir planı var."
+
 msgid "This person is already placed in a department on some of these days."
 msgstr "Bu kişi, bu günlerin bir kısmında zaten bir departmana yerleştirilmiş."
 
@@ -10025,6 +10093,9 @@ msgstr "Bu rapor bu dönem için zaten başlatılmış: listeden açın."
 
 msgid "This sample is already voided."
 msgstr "Bu numune zaten iptal edildi."
+
+msgid "This shift overlaps another shift of the person."
+msgstr "Bu vardiya, kişinin başka bir vardiyasıyla çakışıyor."
 
 msgid "This site already has a production department with this name."
 msgstr "Bu sahada bu adla bir üretim departmanı zaten var."
@@ -10999,6 +11070,9 @@ msgstr "Kendi hesabınızı devre dışı bırakamazsınız."
 msgid "You do not have permission to do this."
 msgstr "Bunu yapma izniniz yok."
 
+msgid "You do not plan this person on this day."
+msgstr "Bu kişiyi bu günde planlamıyorsunuz."
+
 #, python-format
 msgid "You left %(channel)s."
 msgstr "%(channel)s kanalından ayrıldınız."
@@ -11719,6 +11793,9 @@ msgstr "hiçbir pH'de ulaşılmaz"
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "çizelgenin aralığında ulaşılmaz (4 ile 12,5)"
 
+msgid "off"
+msgstr "izinli"
+
 msgid "office department"
 msgstr "ofis departmanı"
 
@@ -11787,6 +11864,9 @@ msgstr "yerleştirme"
 msgid "placements"
 msgstr "yerleştirmeler"
 
+msgid "plan"
+msgstr "plan"
+
 #, python-format
 msgid "planned for %(date)s"
 msgstr "%(date)s için planlandı"
@@ -11796,6 +11876,9 @@ msgstr "planlanmış hasat veya taşıma"
 
 msgid "planned harvests and transports"
 msgstr "planlanmış hasatlar ve taşımalar"
+
+msgid "plans"
+msgstr "planlar"
 
 msgid "primary"
 msgstr "birincil"

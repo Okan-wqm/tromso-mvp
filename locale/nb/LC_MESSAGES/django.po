@@ -130,6 +130,12 @@ msgstr[0] "%(count)d dag (%(hours)d t)"
 msgstr[1] "%(count)d dager (%(hours)d t)"
 
 #, python-format
+msgid "%(count)d day planned."
+msgid_plural "%(count)d days planned."
+msgstr[0] "%(count)d dag planlagt."
+msgstr[1] "%(count)d dager planlagt."
+
+#, python-format
 msgid ""
 "%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed "
 "temperature in Reference data › Species."
@@ -735,6 +741,10 @@ msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (kan ikke velges lenger)"
 
 #, python-format
+msgid "%(person)s, %(day)s: %(what)s"
+msgstr "%(person)s, %(day)s: %(what)s"
+
+#, python-format
 msgid "%(point)s is deleted."
 msgstr "%(point)s er slettet."
 
@@ -775,6 +785,10 @@ msgstr "%(rule)s kl. %(time)s"
 #, python-format
 msgid "%(sfr)s at %(temperature)s: %(ration)s a day, %(meals)s × %(meal)s"
 msgstr "%(sfr)s ved %(temperature)s: %(ration)s per dag, %(meals)s × %(meal)s"
+
+#, python-format
+msgid "%(shown)s of %(total)s people"
+msgstr "%(shown)s av %(total)s personer"
 
 #, python-format
 msgid "%(site)s has no lokalitetsnummer (Facility › Sites)."
@@ -1459,6 +1473,9 @@ msgstr ""
 "En gjentakende oppgave planlegger oppgavene sine opptil to uker fram; de står på siden <a "
 "href=\"%(url)s\">Oppgaver</a>. Å endre eller sette den på pause planlegger på nytt oppgavene fra "
 "i dag som ingen har rørt; de andre blir som de er."
+
+msgid "A remark for the lead’s own planning; it is not shown in the log."
+msgstr "En merknad for lederens egen planlegging; den vises ikke i loggen."
 
 msgid "A report is for a period, a notice for an event."
 msgstr "En rapport gjelder en periode, et varsel en hendelse."
@@ -5804,6 +5821,9 @@ msgstr "Månedlig biomasse"
 msgid "More than %(rows)d points: choose a production department or a system."
 msgstr "Mer enn %(rows)d punkter: velg en produksjonsavdeling eller et system."
 
+msgid "More than the standard week"
+msgstr "Mer enn standarduken"
+
 msgid "Mortality"
 msgstr "Dødelighet"
 
@@ -5983,6 +6003,9 @@ msgstr "Neste"
 
 msgid "Next meal"
 msgstr "Neste måltid"
+
+msgid "Next week"
+msgstr "Neste uke"
 
 msgid "Nitrate (mg/L NO₃ as N)"
 msgstr "Nitrat (mg/L NO₃ som N)"
@@ -6543,6 +6566,9 @@ msgstr "Observasjon"
 msgid "Observed on"
 msgstr "Observert"
 
+msgid "Off"
+msgstr "Fri"
+
 msgid "Offered"
 msgstr "Tilbys"
 
@@ -6595,6 +6621,9 @@ msgid ""
 msgstr ""
 "Én forfatter per linje, i dokumentets rekkefølge, etternavn først: «Olsen, Bjørn Erik». En "
 "organisasjon slik den heter: «Mattilsynet»."
+
+msgid "One person’s plan for one day: the shift they start that day, or none for planned off."
+msgstr "Én persons plan for én dag: skiftet de starter den dagen, eller ingen for planlagt fri."
 
 msgid "One probe that measures several water parameters."
 msgstr "Én sonde som måler flere vannparametere."
@@ -7115,11 +7144,17 @@ msgstr "Plan"
 msgid "Plan harvest"
 msgstr "Planlegg høsting"
 
+msgid "Plan this day"
+msgstr "Planlegg denne dagen"
+
 msgid "Plan transport"
 msgstr "Planlegg transport"
 
 msgid "Planned"
 msgstr "Planlagt"
+
+msgid "Planned (h)"
+msgstr "Planlagt (t)"
 
 msgid "Planned fish"
 msgstr "Planlagt antall fisk"
@@ -7130,6 +7165,9 @@ msgstr "Planlagt for"
 #, python-format
 msgid "Planned for %(date)s"
 msgstr "Planlagt til %(date)s"
+
+msgid "Planned off"
+msgstr "Planlagt fri"
 
 msgid "Planned round weight (kg)"
 msgstr "Planlagt rund vekt (kg)"
@@ -7220,6 +7258,9 @@ msgstr "Trykksensor"
 
 msgid "Previous"
 msgstr "Forrige"
+
+msgid "Previous week"
+msgstr "Forrige uke"
 
 msgid "Price and notes"
 msgstr "Pris og notater"
@@ -8236,6 +8277,9 @@ msgstr "Andeler av totalt sulfid; oppgi totalt sulfid for H₂S og grensen."
 
 msgid "Shift"
 msgstr "Skift"
+
+msgid "Shift schedule"
+msgstr "Vaktplan"
 
 msgid "Shifts"
 msgstr "Skift"
@@ -9392,6 +9436,9 @@ msgstr ""
 "Selskapets folk for HR: nummer, navn (eller kontoen som navngir dem), type og første og siste "
 "dag. Det lagres ingen lønn, bank- eller identitetsnummer."
 
+msgid "The people of your team appear here with their plan for the week."
+msgstr "Folkene på teamet ditt vises her med planen for uken."
+
 msgid ""
 "The people of your team appear here. Someone who manages a department sees the people placed in "
 "it."
@@ -9414,8 +9461,17 @@ msgstr ""
 "Tillatelseshaverens, som eier fisken: rapportene til Mattilsynet og Fiskeridirektoratet har det "
 "med. Ni sifre."
 
+msgid "The person is on approved leave on this day."
+msgstr "Personen har godkjent permisjon denne dagen."
+
 msgid "The person the authority can ask about the report. Needed before it is filed."
 msgstr "Personen myndigheten kan spørre om rapporten. Trengs før den sendes inn."
+
+msgid "The person works more days in a row than the most allowed."
+msgstr "Personen jobber flere dager på rad enn tillatt."
+
+msgid "The person works on a holiday."
+msgstr "Personen jobber på en helligdag."
 
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
@@ -9502,6 +9558,9 @@ msgstr "Rapporten beregnes på en nyere måte enn da den ble sendt inn."
 msgid "The report is for the week, month or year this day falls in."
 msgstr "Rapporten gjelder uken, måneden eller året denne dagen faller i."
 
+msgid "The rest since the last shift is shorter than the minimum."
+msgstr "Hvilen siden forrige skift er kortere enn minimum."
+
 msgid ""
 "The result of a sensitivity test in the week (lakselusforskriften § 10 d): when, the laboratory, "
 "the substance and the result. Saved separately from the report."
@@ -9522,6 +9581,9 @@ msgid ""
 msgstr ""
 "Skiftmønstrene i vaktplanen: en start og en slutt etter lokalitetens veggklokke, en pause og en "
 "toleranse."
+
+msgid "The shift the person starts on this day; none means planned off."
+msgstr "Skiftet personen starter denne dagen; ingen betyr planlagt fri."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
@@ -9811,6 +9873,9 @@ msgstr "Vannflaten når dammen er full."
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Vannet mengdene gjelder: et kar eller et kretsløp. Tomt: bare dosene per m³."
 
+msgid "The week is longer than the standard week."
+msgstr "Uken er lengre enn standarduken."
+
 msgid ""
 "The week the Team overview compares planned hours with. Default 40 hours; a default, not the law:"
 " confirm it with the company’s agreements."
@@ -9977,6 +10042,9 @@ msgstr "Denne eieren har allerede et punkt med dette navnet."
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Denne eieren har allerede et aktivt midtpunkt: det står for vannet dens."
 
+msgid "This person already has a plan for this day."
+msgstr "Denne personen har allerede en plan for denne dagen."
+
 msgid "This person is already placed in a department on some of these days."
 msgstr "Denne personen er allerede plassert i en avdeling på noen av disse dagene."
 
@@ -10010,6 +10078,9 @@ msgstr "Denne rapporten er allerede startet for denne perioden: åpne den fra li
 
 msgid "This sample is already voided."
 msgstr "Denne prøven er allerede annullert."
+
+msgid "This shift overlaps another shift of the person."
+msgstr "Dette skiftet overlapper et annet skift for personen."
 
 msgid "This site already has a production department with this name."
 msgstr "Denne lokaliteten har allerede en produksjonsavdeling med dette navnet."
@@ -10984,6 +11055,9 @@ msgstr "Du kan ikke deaktivere din egen konto."
 msgid "You do not have permission to do this."
 msgstr "Du har ikke tillatelse til å gjøre dette."
 
+msgid "You do not plan this person on this day."
+msgstr "Du planlegger ikke denne personen denne dagen."
+
 #, python-format
 msgid "You left %(channel)s."
 msgstr "Du har forlatt %(channel)s."
@@ -11706,6 +11780,9 @@ msgstr "nås ikke ved noen pH"
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "nås ikke i diagrammets område (4 til 12,5)"
 
+msgid "off"
+msgstr "fri"
+
 msgid "office department"
 msgstr "kontoravdeling"
 
@@ -11774,6 +11851,9 @@ msgstr "plassering"
 msgid "placements"
 msgstr "plasseringer"
 
+msgid "plan"
+msgstr "plan"
+
 #, python-format
 msgid "planned for %(date)s"
 msgstr "planlagt for %(date)s"
@@ -11783,6 +11863,9 @@ msgstr "planlagt høsting eller transport"
 
 msgid "planned harvests and transports"
 msgstr "planlagte høstinger og transporter"
+
+msgid "plans"
+msgstr "planer"
 
 msgid "primary"
 msgstr "hovedkontakt"

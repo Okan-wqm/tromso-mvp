@@ -2186,6 +2186,33 @@ HR-27) and a status. **Holidays** (`/hr/settings/holidays/`): a day, a name and 
 every site and one per site (`nulls_distinct=False`); typed in by HR, never seeded, because the country's days are the
 owner's data. A site with holidays is not deleted.
 
+### Time & shifts › Shift schedule (`/hr/schedule/`)
+
+A week of the viewer's people as a table: a row per person (their department under the name), a cell per day, the planned
+hours at the end. A cell shows the shift (its code in its tone), "Off" for planned off, the holiday of the person's site, and
+a "!" with the finding when a rule is broken; it opens the plan of that person and day in a dialog (a plus on an empty cell
+when the viewer may create). The week is the ISO week (Monday first, no setting); `?week=` takes any date of it, `?department=`
+and the search narrow the people and never widen them, and the list says "n of m" with its own paging. Everything on the page is
+worked out on the server (`hr.read.week`: one query each for the page's people, their plan a fortnight either side, their
+placements and the holidays, whatever the number of people), and a person who moved is shown to each manager on their days
+only (`hr.scope.visible_days`).
+
+**One roster table** (`hr.ShiftAssignment`, `shift_assignments`, shown as "plan" in the log): a person and the day a shift
+starts (a night shift ends on the next day), the shift or none (planned off, which is not the same as no plan), a note (private:
+masked in the log and the viewer). One row per person and day among live rows; a cleared cell is a soft delete. Leave and
+holidays are joined when the week is read, there is no publish step, and every change is logged with its before and after.
+
+**Real instants, not wall-clock sums** (`hr/clock.py`): a shift on a day becomes two UTC instants through the site's time zone, so
+22:00-06:00 is 7 hours on the night the clocks go forward and 9 on the night they go back, and the rest between shifts is the
+real gap, across a week's border and for a night shift (the source computed 1920 minutes where 480 is right: HR-08).
+
+**The rules** (`hr/rules.py`, pure functions, one place each): two shifts that overlap and a shift on a day of approved leave
+always block; a rest shorter than the minimum warns or blocks by the setting; more hours than the standard week, more days in a
+row than the maximum and work on a holiday warn. They run on every save: a blocking finding is an error on the form and a
+warning is told after the save and written into the audit row. `hr.services.plan_shifts` sets a shift, planned off or nothing on
+a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, the rules for each person;
+a person outside the team is a 404 and writes nothing); the page's batch route is `/hr/schedule/plan/` (POST).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2207,7 +2234,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shifts and Holidays (read, create, edit, delete) and Scheduling settings (read, edit) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and

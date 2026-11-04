@@ -542,7 +542,11 @@ def filter_by(request, objects, param, choices, lookup, allow_none=False):
 class ListView(ResourceView):
     def get(self, request):
         query = request.GET.get('q', '').strip()
-        objects = self.resource.scoped(request, self.resource.list_queryset(request))
+        objects = self.resource.list_queryset(request)
+        if isinstance(objects, models.QuerySet):
+            # A tab whose list is not a queryset (a union of two kinds, a week) narrows it to the rows the person may
+            # reach in its own read; it cannot be narrowed afterwards.
+            objects = self.resource.scoped(request, objects)
         if query:
             objects = self.resource.search(objects, query)
         objects, filters = self.resource.filter_list(request, objects)

@@ -5,13 +5,15 @@ from datetime import timedelta
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from core import audit
 from core.models import AuditLog
+from farm.models.site import zone_of
 
-from . import scope, units
-from .models import Employee, Posting
+from . import clock, read, rules, scope, units
+from .models import Employee, Holiday, Posting, SchedulingSettings, ShiftAssignment
 
 POSTING_FIELDS = ['production_department', 'office_department', 'title', 'valid_from', 'valid_until']
 
@@ -118,3 +120,111 @@ def align_placements(user, employee):
                 posting.valid_until = employee.left_on
                 _save(user, posting)
                 _log_change(user, posting, before)
+
+
+# ---- the roster -------------------------------------------------------------------------------------------------
+CLEAR = object()          # a cell cleared: the plan for that day is removed (a soft delete, logged)
+MARGIN = 15               # days either side of a change read for the rest across a border and a run of days
+
+def holiday_days(first, last, site):
+    """The days between `first` and `last` that are holidays for `site` (None: only those of every site)."""
+    scope_of_site = Q(site__isnull=True) if site is None else Q(site__isnull=True) | Q(site=site)
+    return set(Holiday.objects.filter(scope_of_site, day__range=(first, last)).values_list('day', flat=True))
+
+
+
+
+def evaluate(employee, changes):
+    """The findings of the rules for `employee` if `changes` ({day: Shift, None (off) or CLEAR}) were applied to the
+    plan: for the weeks the changed days fall in, with the neighbouring days read for the rest across a border. Nothing is
+    written."""
+    settings = SchedulingSettings.get()
+    first, last = min(changes) - timedelta(days=MARGIN), max(changes) + timedelta(days=MARGIN)
+    plan = {row.day: row.shift for row in ShiftAssignment.objects.filter(
+        employee=employee, day__range=(first, last)).select_related('shift')}
+    for day, shift in changes.items():
+        if shift is CLEAR:
+            plan.pop(day, None)
+        else:
+            plan[day] = shift
+    site = read.site_on(employee, min(changes))
+    zone = zone_of(site)
+    planned = []
+    for day, shift in sorted(plan.items()):
+        if shift is not None:
+            start, end = clock.span(day, shift, zone)
+            planned.append(rules.Planned(day, start, end, clock.net_minutes(start, end, shift.break_minutes)))
+    holidays = holiday_days(first, last, site)
+    weeks = {rules.monday(day) for day in changes}
+    return rules.findings(planned, set(), holidays, settings, weeks)
+
+
+def _cell_permission(existing, shift):
+    if shift is CLEAR:
+        return 'hr.delete_shiftassignment'
+    return 'hr.change_shiftassignment' if existing is not None else 'hr.add_shiftassignment'
+
+
+def plan_shifts(user, cells, shift):
+    """Sets `shift` (a Shift, None for planned off, or CLEAR) on every cell, (employee, day), or on none: the cells
+    are checked first (the verb each needs, the person in the user's team on that day) and the rules run for each
+    person; a blocking finding refuses the whole batch and names the first conflicting cells. Returns the warnings as
+    [(employee, Finding)], which are also written into the audit rows."""
+    by_person = {}
+    for employee, day in cells:
+        by_person.setdefault(employee.pk, (employee, {}))[1][day] = shift
+    with transaction.atomic():
+        warnings, blocking, writes = [], [], []
+        for employee, changes in by_person.values():
+            existing = {row.day: row for row in ShiftAssignment.objects.select_for_update().filter(
+                employee=employee, day__in=list(changes))}
+            for day in changes:
+                if not scope.can_reach(user, employee, day) or not user.has_perm(
+                        _cell_permission(existing.get(day), shift)):
+                    raise PermissionDenied
+            if shift is CLEAR and not existing:
+                continue
+            found = evaluate(employee, changes)
+            blocking += [(employee, item) for item in found if item.blocks]
+            warnings += [(employee, item) for item in found if not item.blocks]
+            writes.append((employee, changes, existing))
+        if blocking:
+            raise ValidationError([
+                _('%(person)s, %(day)s: %(what)s') % {'person': employee, 'day': item.day, 'what': rules.text(item)}
+                for employee, item in blocking[:5]])
+        codes = {}
+        for employee, item in warnings:
+            codes.setdefault(employee.pk, set()).add(item.code)
+        for employee, changes, existing in writes:
+            for day in changes:
+                _write_cell(user, employee, day, shift, existing.get(day), codes.get(employee.pk, ()))
+    return warnings
+
+
+def _write_cell(user, employee, day, shift, row, warning_codes):
+    """Writes one cell and its audit row (English at rest, like every row), with the warnings the plan went on past."""
+    entity_type = audit.entity_type_of(ShiftAssignment)
+    with audit.source_language():
+        before = audit.snapshot(row, ['shift']) if row is not None else {}
+        if shift is CLEAR:
+            audit.record(user, AuditLog.Action.DELETE, row, before and {key: [value, None] for key, value in before.items()
+                                                                       if value is not None}, entity_type=entity_type)
+            row.soft_delete(user)
+            return
+        if row is None:
+            row = ShiftAssignment(employee=employee, day=day, shift=shift, created_by=user, updated_by=user)
+            row.save()
+            audit.record_create(user, row, {**audit.snapshot(row, ['shift']), **_warnings_entry(warning_codes)},
+                                entity_type=entity_type)
+            return
+        row.shift, row.updated_by, row.version = shift, user, row.version + 1
+        row.save()
+        changed = audit.diff(before, audit.snapshot(row, ['shift']))
+        if changed:
+            audit.record(user, AuditLog.Action.UPDATE, row, {**changed, **_warnings_entry(warning_codes)},
+                         entity_type=entity_type)
+
+
+def _warnings_entry(codes):
+    """The warnings a plan was saved with, by their sentences (msgids, shown translated)."""
+    return {'Warnings': [audit.message(rules.TEXT[code]) for code in sorted(codes)]} if codes else {}

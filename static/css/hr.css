@@ -12,3 +12,18 @@
 .tone-7 { background: #EFEBD0; color: #5A5313; }
 .tone-8 { background: #E4E4EE; color: #34346B; }
 .plain-list { margin: 0; padding: 0; list-style: none; display: grid; gap: .375rem; }
+/* The Shift schedule: a table of people and days; a cell is one plan. */
+.week-nav { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin: 0 0 .875rem; }
+.week-title { min-width: 12rem; text-align: center; }
+.roster th, .roster td { vertical-align: top; }
+.roster-day { text-align: center; }
+.roster-cell { min-width: 5.5rem; text-align: center; }
+.roster-cell.is-holiday { background: #F4F1E4; }
+.roster-cell.has-warning { box-shadow: inset 0 -3px 0 #C99A2E; }
+.roster-cell.has-block { box-shadow: inset 0 -3px 0 var(--error); }
+.roster-link, .roster-add { display: inline-block; text-decoration: none; }
+.roster-add { min-width: 1.75rem; color: var(--muted); border: 1px dashed var(--line); border-radius: .375rem; }
+.roster-holiday { display: block; font-size: .75rem; color: var(--muted); }
+.roster-finding { display: inline-block; margin-left: .25rem; padding: 0 .375rem; border-radius: 999px; font-size: .75rem;
+  font-weight: 700; background: #F7E6E6; color: var(--error); cursor: help; }
+.shift-chip.is-off { background: #ECECEA; color: var(--muted); font-weight: 500; }

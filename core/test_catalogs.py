@@ -1,7 +1,10 @@
 """The message catalogs: complete, translated, in step with the code, and every tab translatable."""
+import json
+import os
 import re
 import shutil
 import subprocess
+import tempfile
 from importlib import import_module
 from pathlib import Path
 
@@ -184,14 +187,53 @@ class TypeScriptTests(SimpleTestCase):
     # Key names the browser reports, not text.
     KEY_NAMES = {'Escape', 'Enter'}
 
-    def test_no_ui_text_in_the_typescript(self):
+    @classmethod
+    def shipped(cls, root):
+        """The TypeScript compiled for the browser: every .ts under frontend/ but the tests (`*.test.ts`,
+        frontend/test/), which tsconfig.json leaves out of the build."""
+        return sorted(path for path in (root / 'frontend').glob('*.ts'))
+
+    @classmethod
+    def ui_text(cls, root):
+        """[(file, line number, line)] of every sentence in quotes in the shipped TypeScript (a key name is not text)."""
         sentence = re.compile(r"""(['"])([A-Z][a-z]+(?: [A-Za-z]+)*[.!?]?)\1""")
-        for path in sorted((self.ROOT / 'frontend').glob('*.ts')):
+        found = []
+        for path in cls.shipped(root):
             for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                 code = line.split('//')[0]
-                for match in sentence.finditer(code):
-                    with self.subTest(file=path.name, line=number):
-                        self.assertIn(match.group(2), self.KEY_NAMES, f'UI text in {path.name}:{number}: {line.strip()}')
+                found += [(path.relative_to(root).as_posix(), number, line.strip()) for match in sentence.finditer(code)
+                          if match.group(2) not in cls.KEY_NAMES]
+        return found
+
+    def test_no_ui_text_in_the_typescript(self):
+        self.assertEqual(self.ui_text(self.ROOT), [])
+
+    def test_the_rule_reads_every_folder_of_the_browser_code_and_not_its_tests(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name in ('frontend/grid/layout.ts', 'frontend/grid/layout.test.ts', 'frontend/test/random.ts'):
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_text("const word = 'Saved for you';\n", encoding='utf-8')
+            self.assertEqual(self.ui_text(root), [('frontend/grid/layout.ts', 1, "const word = 'Saved for you';")])
+
+    def test_the_browser_build_leaves_the_tests_out_and_the_test_build_has_them(self):
+        shipped = json.loads((self.ROOT / 'tsconfig.json').read_text(encoding='utf-8'))
+        self.assertEqual(shipped['exclude'], ['frontend/**/*.test.ts', 'frontend/test/**'])
+        tests = json.loads((self.ROOT / 'tsconfig.test.json').read_text(encoding='utf-8'))
+        self.assertEqual(tests['extends'], './tsconfig.json')
+        self.assertEqual((tests['exclude'], tests['compilerOptions']['outDir']), ([], '.build/test'))
+        self.assertIn('.build/', (self.ROOT / '.gitignore').read_text(encoding='utf-8').splitlines())
+
+    def test_the_typescript_unit_tests_pass(self):
+        """`npm test`: the test build, then `node --test` on it. Skipped on a machine without Node and `npm install`;
+        under CI (`CI=1`) a missing Node is a failure, never a skip."""
+        npm = shutil.which('npm')
+        if npm is None or not (self.ROOT / 'node_modules').is_dir():
+            if os.environ.get('CI') == '1':
+                self.fail('CI needs Node and `npm install` to run the TypeScript tests')
+            self.skipTest('Node and `npm install` are needed to run the TypeScript tests')
+        result = subprocess.run([npm, 'test', '--silent'], cwd=self.ROOT, capture_output=True, text=True, timeout=600)
+        self.assertEqual(result.returncode, 0, result.stdout[-4000:] + result.stderr[-4000:])
 
     def test_the_typescript_type_checks(self):
         npx = shutil.which('npx')

@@ -191,7 +191,8 @@ class TypeScriptTests(SimpleTestCase):
     def shipped(cls, root):
         """The TypeScript compiled for the browser: every .ts under frontend/ but the tests (`*.test.ts`,
         frontend/test/), which tsconfig.json leaves out of the build."""
-        return sorted(path for path in (root / 'frontend').glob('*.ts'))
+        return sorted(path for path in (root / 'frontend').rglob('*.ts')
+                      if not path.name.endswith('.test.ts') and 'test' not in path.relative_to(root / 'frontend').parts[:-1])
 
     @classmethod
     def ui_text(cls, root):

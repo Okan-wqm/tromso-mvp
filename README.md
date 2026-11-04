@@ -2941,6 +2941,7 @@ real mail.
 | `static/css/auth.css` | Sign-in layout |
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |
+| `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
 
 ## Tests
 
@@ -2949,5 +2950,9 @@ real mail.
 ```
 
 Tests build the catalogs first and hash passwords quickly (`config/test_runner.py`); the TypeScript is
-type-checked by a test when Node and `npm install` are there. The tests need the database container running (they check the timescaledb extension too). Set
+type-checked by a test when Node and `npm install` are there, and its unit tests run by another (`npm test`: `tsconfig.test.json`
+builds `frontend/` with its `*.test.ts` and `frontend/test/` into `.build/test`, not committed, `scripts/mark-esm.mjs` marks it
+as ES modules and `node --test` runs it; without Node the test is skipped, under `CI=1` it fails). The browser build
+(`tsconfig.json`) leaves the tests out, and the no-UI-text rule reads every folder of `frontend/` but the tests. The
+development-only tools and their licences are in [`THIRD_PARTY.md`](THIRD_PARTY.md); none of them is shipped to the browser. The tests need the database container running (they check the timescaledb extension too). Set
 `DB_TEST_NAME` to give a checkout its own test database when two test runs overlap.

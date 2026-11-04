@@ -285,6 +285,27 @@ class PlacementTriggerTests(TriggerTestCase):
         self.assertIsNone(ReplicateUnit.objects.get(pk=self.p1.pk).created_by)
 
 
+class BornDraftAndTemplateTests(TriggerTestCase):
+    def insert(self, status, code):
+        return sql("INSERT INTO experiments (id, code, name, status, is_template, species_id, site_id, duration_days, version, "
+                   "created_at, updated_at, is_deleted, hypothesis, primary_endpoint, allocation_method, allocation_note, "
+                   "notes, starts_on, entry_key) SELECT gen_random_uuid(), %s, 'Raw', %s, false, species_id, site_id, 56, 1, now(), "
+                   "now(), false, 'h', 'bfcr', 'manual', 'x', '', current_date, gen_random_uuid() FROM experiments WHERE id = %s",
+                   [code, status, self.trial.pk])
+
+    def test_an_experiment_is_only_ever_made_a_draft(self):
+        self.assertEqual(self.insert('draft', 'E-2026-901'), 1)
+        for status, code in (('running', 'E-2026-902'), ('closed', 'E-2026-903')):
+            with self.subTest(status=status):
+                self.refuses(self.insert, status, code)
+
+    def test_a_draft_with_placements_is_not_made_a_template_and_one_without_is(self):
+        self.refuses_sql("UPDATE experiments SET is_template = true, starts_on = NULL, allocation_method = '', "
+                         "allocation_note = '', allocation_seed = NULL WHERE id = %s", [self.trial.pk])
+        empty = self.experiment('Empty')
+        self.accepts_sql("UPDATE experiments SET is_template = true WHERE id = %s", [empty.pk])
+
+
 class TriggersInTheCatalogueTests(TriggerTestCase):
     def test_each_guarded_table_has_its_trigger_and_the_team_has_none(self):
         with connection.cursor() as cursor:

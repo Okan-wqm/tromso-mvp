@@ -903,6 +903,14 @@ msgstr ""
 "et kar går foran karets, så den ville overstyre fôrregimet til %(group)s."
 
 #, python-format
+msgid ""
+"%(tank)s has no weighing on %(day)s, its last day: the feed conversion is read from the weighing "
+"of the first day to the weighing of the last."
+msgstr ""
+"%(tank)s har ingen veiing %(day)s, som er karets siste dag: fôrfaktoren leses fra veiingen første"
+" dag til veiingen siste dag."
+
+#, python-format
 msgid "%(tank)s holds more than one batch of %(species)s on day 0: its figures are the batches’ together."
 msgstr "%(tank)s har mer enn én batch av %(species)s på dag 0: tallene er batchenes samlet."
 

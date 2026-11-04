@@ -1886,7 +1886,7 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   same stay and the same days** (`experiments/read.overview`): the conversion is `Conversion` of `feeding.read.windows_in`
   bounded by the placement's days (from the baseline weighing on day 0 to the latest weighing, or to the weighing of the
   placement's last day once it has come), summed over the replicate's tanks as a ratio of sums, the fish and biomass come from
-  `stock_of`, the survival from the fish there on the first day less the fish lost since (mortality, culls, an adjustment down),
+  `stock_of`, the survival from the fish there on the first day (in the tanks the replicate began with: a replacement's are the same fish) less the fish lost since (mortality, culls, an adjustment down),
   all bounded by the days: **no "since stocking" figure ever sits beside a trial figure**, no figure is stored or copied, and a draft
   has none. A dash says why (hover it: not weighed, no feed, no growth); a replacement tank without a measured point at the
   move leaves a gap in the replicate's conversion window, and the page says which tank it leaves out. No figure of a group is

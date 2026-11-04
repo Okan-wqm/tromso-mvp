@@ -31,8 +31,8 @@ All days are **dates on the site's clock** (the site's time zone, else the compa
 Every figure of the Overview is bounded by the placement's days: the feed conversion runs **from the weighing of the first
 day to the latest weighing**, or, once the last day has come (or the experiment is closed), **to the weighing of the last
 day**; a bound that is not the day of a measured point gives no window and a dash that says why (nothing is interpolated). The survival
-is the share of the fish present on the first day that were not lost since (mortality, culls, an adjustment down) to the last
-day or today. There is **no "since stocking" figure beside a trial figure**, and no figure of a group: a mean over
+is the share of the fish present on the first day (in the tanks the replicate began with: the fish moved into a replacement are the same fish)
+that were not lost since (mortality, culls, an adjustment down; in a replacement from its first day) to the last day or today. There is **no "since stocking" figure beside a trial figure**, and no figure of a group: a mean over
 replicates is a statistic, which the statistics area comes with.
 
 ## Allocation
@@ -85,7 +85,7 @@ tested by raw SQL in `test_triggers.py`):
 | `fk_experiment_group_levels_group` / `_factor` / `_level` (composite) | the group and the factor are of one experiment and the level is of that factor: a wrong row would put another trial's level in a group |
 | `uq_experiment_groups_name_live`, `chk_experiment_groups_role`, `uq_experiment_replicates_number_live`, `chk_experiment_replicates_number` | group names and replicate numbers are unique, the group's role and the replicate number are in range |
 | `uq_experiment_members_user`, `uq_experiment_members_lead`, `chk_experiment_members_role` | a person once in a team, one lead |
-| `trg_experiments_frozen` | once started, every column but the status, the name, the notes and the bookkeeping is fixed; the status goes only forward; the row is never deleted |
+| `trg_experiments_frozen` | an experiment is only ever inserted as a draft, a draft with placements is never made a template; once started, every column but the status, the name, the notes and the bookkeeping is fixed; the status goes only forward; the row is never deleted |
 | `trg_experiment_{factors,levels,groups,group_levels,replicates}_frozen` | no insert, update or delete of the design's parts unless the experiment is a draft |
 | `trg_experiment_replicate_units_frozen` | a draft's placements are free; a running experiment may get a new placement and shorten one (`until_on`, never longer) and say why (`left_reason`); a closed one allows nothing; a started placement is never deleted; a template has none |
 | PROTECT and the delete plan | a tank, a protocol, a site or a species that an experiment names is not deleted while it does; a draft is deleted with its design |

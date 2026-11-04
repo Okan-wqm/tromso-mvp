@@ -119,6 +119,7 @@ class ReplicateFigures:
     survival: Decimal = None          # % of the fish there on its first day that were not lost since
     conversion: object = None         # feeding.read.Conversion over its windows
     gap: list = field(default_factory=list)    # tanks left out of the conversion: no measured point at a move
+    unmeasured: str = ''                       # why there is no conversion when a tank's last day has no weighing
 
     @property
     def tanks(self):
@@ -185,11 +186,13 @@ def _stock_now(experiment, rows, units, today):
 
 def _survival(rows, units, mine, presence, today):
     """The share of the fish present on a replicate's first day that were not lost (mortality, cull, an adjustment down)
-    since, up to its last day or today: one query for the losses of every tank."""
+    since, up to its last day or today: one query for the losses of every tank. Only the tanks the replicate began with
+    give its starting fish: the fish a replacement tank receives are the same fish (moved), not new ones, so what was
+    lost in it from its first day on counts, and what was in it on that day does not."""
     first = min(cell.first for row in rows for cell in row.cells)
     last = min(max(cell.last for row in rows for cell in row.cells), today)
     lines = (StockMovement.objects.filter(unit_id__in=list(units), batch_id__in=mine, operation__is_deleted=False,
-                                          kind__in=LOST, count_delta__lt=0, operation__date__gt=first,
+                                          kind__in=LOST, count_delta__lt=0, operation__date__gte=first,
                                           operation__date__lte=last)
              .values_list('unit_id', 'batch_id', 'operation__date', 'count_delta'))
     losses = {}
@@ -197,11 +200,14 @@ def _survival(rows, units, mine, presence, today):
         losses.setdefault((unit_id, batch_id), []).append((day, -delta))
     for row in rows:
         start = lost = 0
+        began = min((cell.first for cell in row.cells), default=None)
         for cell in row.cells:
+            initial = cell.first == began
             for batch in row.batches:
-                start += presence.count_at_end(cell.unit.pk, batch.pk, cell.first)
+                if initial:
+                    start += presence.count_at_end(cell.unit.pk, batch.pk, cell.first)
                 lost += sum(count for day, count in losses.get((cell.unit.pk, batch.pk), ())
-                            if cell.first < day <= min(cell.last, today))
+                            if (cell.first < day if initial else cell.first <= day) and day <= min(cell.last, today))
         if start:
             row.survival = Decimal(100) * (start - lost) / start
 
@@ -232,6 +238,11 @@ def _conversion(rows, today, closed):
                 gap.append(cell.unit.code)
         row.conversion = feeding_read.Conversion(taken)
         row.gap = gap if taken else []
+        ended = next((cell for cell in row.cells if window_end(cell, today, closed) is not None), None)
+        if not taken and own and ended is not None:
+            row.unmeasured = _('%(tank)s has no weighing on %(day)s, its last day: the feed conversion is read from the weighing '
+                               'of the first day to the weighing of the last.') % {
+                'tank': ended.unit.code, 'day': ended.last.isoformat()}
 
 
 @dataclass

@@ -43,7 +43,9 @@ def of(units, user):
     for provider in _providers:
         try:
             with transaction.atomic():
-                chips = provider(units, user)
+                chips = {unit_id: list(rows) for unit_id, rows in provider(units, user).items()}
+            if not all(isinstance(chip, Placement) for rows in chips.values() for chip in rows):
+                raise TypeError('a placement provider answers {unit id: [Placement]}')
         except Exception:                                      # fail open: no chip is worth a broken page
             logger.exception('The placement provider %s failed; its chips are left out.', provider)
             continue

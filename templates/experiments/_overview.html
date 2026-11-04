@@ -21,8 +21,8 @@
         <td class="num">{{ row.biomass_kg|kilos }}</td>
         <td class="num">{{ row.survival|percent:1 }}</td>
         {% with conversion=row.conversion %}
-        <td class="num"{% if not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>
-        <td class="num"{% if not conversion.economic %} title="{{ conversion.why_no_economic }}"{% endif %}>{{ conversion.economic|fcr }}</td>
+        <td class="num"{% if not conversion.biological %} title="{% if row.unmeasured %}{{ row.unmeasured }}{% else %}{{ conversion.why_no_biological }}{% endif %}"{% endif %}>{{ conversion.biological|fcr }}</td>
+        <td class="num"{% if not conversion.economic %} title="{% if row.unmeasured %}{{ row.unmeasured }}{% else %}{{ conversion.why_no_economic }}{% endif %}"{% endif %}>{{ conversion.economic|fcr }}</td>
         {% endwith %}
       </tr>
       {% endfor %}

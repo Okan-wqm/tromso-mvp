@@ -59,6 +59,12 @@ class RegistryTests(TestCase):
         with connection.cursor() as cursor:                    # the connection still works: the failure stayed in its savepoint
             cursor.execute('SELECT 1')
 
+    def test_a_provider_that_answers_something_else_is_left_out_too(self):
+        for answer in (None, [], {1: None}, {1: Placement}, {1: 'x'}):
+            with self.subTest(answer=answer), self.assertLogs(placements.logger, logging.ERROR):
+                found = self.of([lambda units, user, answer=answer: answer, provider_of('kept')])
+            self.assertEqual(self.labels(found), {1: ['kept'], 2: ['kept']})
+
     def test_registering_twice_registers_once(self):
         with mock.patch.object(placements, '_providers', []):
             provider = provider_of('x')

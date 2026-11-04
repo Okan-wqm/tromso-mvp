@@ -2,7 +2,8 @@
 was planned is what is judged). The forms and the services say it in readable messages first (`design.problems`,
 `services`); these triggers make the rule hold for any other writer, a script or a hand-typed UPDATE.
 
-- `experiments`: once the status is not draft, every column but the status (forward only: draft, running, closed), the
+- `experiments`: it is only ever made a draft (a start is the Start's, a status change), a draft with placements is never made a
+  template, and once the status is not draft, every column but the status (forward only: draft, running, closed), the
   name, the notes and the bookkeeping columns is fixed, and the row is never deleted (a soft delete changes
   `is_deleted`, so it is refused too).
 - factors, levels, groups, group levels and replicates: no insert, update or delete unless the owning experiment is a
@@ -38,6 +39,13 @@ $$ LANGUAGE sql STABLE;
 
 CREATE FUNCTION experiment_frozen() RETURNS trigger AS $$
 BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.status <> 'draft' THEN
+            RAISE EXCEPTION 'experiment %: it is made a draft and started by its Start, not made %', NEW.code, NEW.status
+                USING ERRCODE = 'check_violation';
+        END IF;
+        RETURN NEW;
+    END IF;
     IF TG_OP = 'DELETE' THEN
         IF OLD.status <> 'draft' THEN
             RAISE EXCEPTION 'experiment % has started: it is never deleted', OLD.code USING ERRCODE = 'check_violation';
@@ -48,6 +56,11 @@ BEGIN
        AND (OLD.status, NEW.status) NOT IN (('draft', 'running'), ('running', 'closed')) THEN
         RAISE EXCEPTION 'experiment %: the status goes from draft to running to closed, not from % to %',
             OLD.code, OLD.status, NEW.status USING ERRCODE = 'check_violation';
+    END IF;
+    IF NEW.is_template AND NOT OLD.is_template AND EXISTS (
+        SELECT 1 FROM experiment_replicate_units u JOIN experiment_replicates r ON r.id = u.replicate_id
+            JOIN experiment_groups g ON g.id = r.group_id WHERE g.experiment_id = NEW.id) THEN
+        RAISE EXCEPTION 'experiment %: a template has no placements', NEW.code USING ERRCODE = 'check_violation';
     END IF;
     IF OLD.status = 'draft' THEN
         RETURN NEW;
@@ -61,7 +74,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_experiments_frozen
-    BEFORE UPDATE OR DELETE ON experiments
+    BEFORE INSERT OR UPDATE OR DELETE ON experiments
     FOR EACH ROW EXECUTE FUNCTION experiment_frozen();
 
 CREATE FUNCTION experiment_design_frozen() RETURNS trigger AS $$

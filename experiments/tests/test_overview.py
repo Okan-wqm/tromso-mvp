@@ -144,6 +144,16 @@ class OverviewTests(RanTrialCase):
         self.assertEqual(self.row().conversion.biological, Decimal('1.3'))         # to the weighing of its last day
         ReplicateUnit.objects.filter(replicate__group__experiment=self.trial).update(until_on=self.day(8))
         self.assertIsNone(self.row().conversion.biological)         # no measured point on day 8 ago: no window, no guess
+        self.assertEqual(self.row().unmeasured, f'T-01 has no weighing on {self.day(8).isoformat()}, its last day: the feed '
+                         'conversion is read from the weighing of the first day to the weighing of the last.')
+        page = self.client.get(reverse('experiments:experiment_detail', args=[self.trial.pk]))
+        self.assertContains(page, 'T-01 has no weighing on')                     # the dash says why, not "not weighed"
+
+    def test_a_placement_that_ends_today_is_read_to_its_last_day_not_to_the_latest_weighing(self):
+        self.assertEqual(self.row().unmeasured, '')
+        ReplicateUnit.objects.filter(unit=self.tanks[0]).update(until_on=self.today)
+        self.assertIsNone(self.row().conversion.biological)         # the last day has come, and was not weighed
+        self.assertNotEqual(self.row().unmeasured, '')
 
 
 class ReadFunctionTests(RanTrialCase):
@@ -157,6 +167,16 @@ class ReadFunctionTests(RanTrialCase):
         self.assertEqual(read.placements(units, self.first - timedelta(days=1)), {})
         self.assertEqual(read.placements(units, self.end + timedelta(days=1)), {})
         self.assertEqual(read.placements([], self.first), {})
+
+    def test_a_booking_meets_the_days_asked_on_both_ends_and_not_beyond(self):
+        tank = [self.tanks[0].pk]
+        other = self.experiment('Other')
+        for first, last, expected in ((self.end, self.end + timedelta(days=3), True),
+                                      (self.end + timedelta(days=1), self.end + timedelta(days=3), False),
+                                      (self.first - timedelta(days=3), self.first, True),
+                                      (self.first - timedelta(days=3), self.first - timedelta(days=1), False)):
+            with self.subTest(first=first, last=last):
+                self.assertEqual(bool(read.booked(tank, first, last, exclude=other)), expected)
 
     def test_a_deleted_experiments_tanks_are_in_nothing(self):
         other = self.experiment('Gone')
@@ -186,6 +206,29 @@ class ReadFunctionTests(RanTrialCase):
         ReplicateUnit.objects.filter(replicate=design_replicate(self.trial, 'Control', 1)).update(until_on=self.day(8))
         self.assertEqual(read.data(self.trial)[0].records, 12)            # days 19 to 8: a placement only gets shorter
         self.assertEqual(read.data(self.experiment('Empty')), [])
+
+
+class SurvivalTests(RanTrialCase):
+    """Survival over a replicate that had a tank replaced: the fish moved to the replacement are the same fish."""
+
+    def replace_with_the_fish(self, moved):
+        from farm.handling import check
+        from farm.models.handling import KIND_OF_OPERATION
+        from farm.models.stock import OperationKind
+        services.replace_unit(self.user, ReplicateUnit.objects.get(unit=self.tanks[1]), self.tanks[5], self.today, 'Pump',
+                              Experiment.objects.get(pk=self.trial.pk).version)
+        day = self.day(0)
+        seen = check.assess(KIND_OF_OPERATION[OperationKind.TRANSFER], self.tanks[1], day, self.batches[1],
+                            with_earliest=False).fingerprint
+        stock_services.record_transfer(self.user, source=self.tanks[1], batch=self.batches[1], day=day,
+                                       legs=[(self.tanks[5], moved)], reason='split', handling_ack=seen)
+
+    def test_the_fish_that_moved_with_a_replacement_are_not_counted_twice_and_the_losses_before_and_after_are(self):
+        self.mortality(self.batches[1], 50, days_ago=3, unit=self.tanks[1])
+        self.replace_with_the_fish(950)
+        self.assertEqual(self.row(2).survival, Decimal(95))              # 1,000 at day 0, 50 lost
+        self.mortality(self.batches[1], 10, days_ago=0, unit=self.tanks[5])      # lost in the replacement on its first day
+        self.assertEqual(self.row(2).survival, Decimal(94))
 
 
 class QueryBudgetTests(PageTestCase):

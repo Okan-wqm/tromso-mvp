@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import IntegrityError, transaction
+from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import translation
 
@@ -351,3 +352,58 @@ class AmendPageTests(AmendTestCase):
 def design_slot(trial):
     from ..models import Replicate
     return Replicate.objects.get(group__experiment=trial)
+
+
+class ReleaseRaceTests(TransactionTestCase):
+    """Two people release two different tanks of one running experiment with the same form: the experiment's lock makes them take
+    turns, so the second finds the version moved and is refused, and no change is lost."""
+
+    serialized_rollback = True
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from farm.models import ProductionDepartment, Site
+        from farm.stock import services as stock_services
+        from farm.tests.helpers import make_species
+        from farm.tests.test_stock import make_unit
+        self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'x')
+        site = Site.objects.create(name='Bergen', code='BG')
+        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
+        self.tanks = [make_unit(f'T-0{n}', hall) for n in (1, 2)]
+        self.today = stock_services.local_today(self.tanks[0])
+        first = self.today - timedelta(days=3)
+        self.trial = Experiment.objects.create(code='E-2026-001', name='One', site=site, species=make_species(),
+                                               duration_days=56, starts_on=first)
+        group = self.trial.groups.create(name='A', role='control')
+        for number, tank in enumerate(self.tanks, start=1):
+            group.replicates.create(number=number).placements.create(unit=tank, from_on=first,
+                                                                     until_on=first + timedelta(days=56))
+        Experiment.objects.filter(pk=self.trial.pk).update(
+            status='running', hypothesis='h', primary_endpoint='bfcr', allocation_method='manual', allocation_note='x')
+        self.trial.refresh_from_db()
+
+    def test_two_releases_with_one_version_one_wins_and_nothing_is_lost(self):
+        import threading
+        from django.db import connection
+        results, gate = [], threading.Barrier(2)
+        placements = list(ReplicateUnit.objects.order_by('unit__code'))
+
+        def release(placement):
+            gate.wait()
+            try:
+                services.release_unit(self.user, placement, self.today - timedelta(days=1), 'Pump', self.trial.version)
+                results.append('ok')
+            except ValidationError as error:
+                results.append(error.messages[0])
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=release, args=(placement,)) for placement in placements]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        self.assertEqual(sorted(result == 'ok' for result in results), [False, True])
+        self.assertIn('Someone else changed this experiment', [r for r in results if r != 'ok'][0])
+        self.assertEqual((Experiment.objects.get().version, ReplicateUnit.objects.exclude(left_reason='').count()),
+                         (self.trial.version + 1, 1))

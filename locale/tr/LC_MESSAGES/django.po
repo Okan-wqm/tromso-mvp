@@ -905,6 +905,14 @@ msgstr ""
 "geçersiz kılar."
 
 #, python-format
+msgid ""
+"%(tank)s has no weighing on %(day)s, its last day: the feed conversion is read from the weighing "
+"of the first day to the weighing of the last."
+msgstr ""
+"%(tank)s tankında son günü olan %(day)s tarihinde tartım yok: yem dönüşümü ilk günkü tartımdan "
+"son günkü tartıma kadar okunur."
+
+#, python-format
 msgid "%(tank)s holds more than one batch of %(species)s on day 0: its figures are the batches’ together."
 msgstr ""
 "%(tank)s, 0. günde %(species)s türünden birden fazla parti tutuyor: rakamları partilerin "

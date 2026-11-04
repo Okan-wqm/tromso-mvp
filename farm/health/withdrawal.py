@@ -357,10 +357,11 @@ def describe(withdrawal):
     return text
 
 
-def provider(unit, day):
-    """The health module's answer to farm.handling.withdrawal.blocks: a block per withdrawal that holds a
-    batch in `unit` on `day`."""
-    withdrawals = of_units([unit], day).get(unit.pk, [])
-    batches = Batch.all_objects.in_bulk({withdrawal.batch_id for withdrawal in withdrawals})
-    return [WithdrawalBlock(batches[withdrawal.batch_id], withdrawal.until, withdrawal.estimated,
-                            describe(withdrawal), withdrawal.source) for withdrawal in withdrawals]
+def provider(units, day):
+    """The health module's answer to farm.handling.withdrawal.blocks_of: {unit id: [block]}, a block per withdrawal
+    that holds a batch in the unit on `day` (None: the unit's own today); the units without one are left out."""
+    withdrawals = of_units(units, day)
+    batches = Batch.all_objects.in_bulk({withdrawal.batch_id for held in withdrawals.values() for withdrawal in held})
+    return {unit_id: [WithdrawalBlock(batches[withdrawal.batch_id], withdrawal.until, withdrawal.estimated,
+                                      describe(withdrawal), withdrawal.source) for withdrawal in held]
+            for unit_id, held in withdrawals.items()}

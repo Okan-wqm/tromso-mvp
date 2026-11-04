@@ -158,15 +158,25 @@ def check(kind, unit, day, batch=None):
     return assess(kind, unit, day, batch).warnings
 
 
+def in_force_of(units, day=None):
+    """{unit id: [block]} of every unit given: the withdrawal blocks in force for its fish on `day` (None: the unit's
+    own today), those whose `until` is after the day, or unknown. None when no provider is registered: not checked."""
+    found = withdrawal.blocks_of(units, day)
+    if found is None:
+        return None
+    days = {unit.pk: day or local_today(unit) for unit in units}
+    return {unit_id: [block for block in blocks if block.until is None or block.until > days[unit_id]]
+            for unit_id, blocks in found.items()}
+
+
 def in_force(unit, day, batches=None):
     """The withdrawal blocks in force for the fish in `unit` on `day` (of `batches` only, when given): their
     `until` is after the day, or unknown. None when no provider is registered: not checked."""
-    found = withdrawal.blocks(unit, day)
+    found = in_force_of([unit], day)
     if found is None:
         return None
     held = None if batches is None else {each.pk for each in batches}
-    return [block for block in found if (held is None or block.batch.pk in held)
-            and (block.until is None or block.until > day)]
+    return [block for block in found[unit.pk] if held is None or block.batch.pk in held]
 
 
 def _withdrawal(result, batches):

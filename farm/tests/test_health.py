@@ -23,17 +23,22 @@ from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
 
 from ..handling import check as handling_check, withdrawal as registry
+from ..handling.withdrawal import WithdrawalBlock
+from ..harvest import views as harvest_views
 from ..health import diseases, lice, services, withdrawal
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
-    Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species,
-    StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
+    Batch, Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site,
+    Species, StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
+from ..stock.dates import local_today
 from ..feeding import services as feeding_services
 from .helpers import make_facility, make_species, point_of, role, rows_data
 from .test_stock import StockTestCase, make_unit
+
+Status = Tank.Status
 
 
 def setUpModule():
@@ -503,6 +508,71 @@ class WithdrawalTests(HealthTestCase):
                    reason='vaccination')
         self.assertEqual(self.held(), [])
         self.assertEqual(self.held(day=self.day(1))[0].until, self.today)
+
+
+class BulkRegistryTests(HealthTestCase):
+    """The registry answers for many units at once; the old one-unit provider is kept here as the oracle."""
+
+    def setUp(self):
+        super().setUp()
+        Site.objects.filter(pk=self.bergen.pk).update(timezone='America/Los_Angeles')
+        Site.objects.filter(pk=self.tromso.pk).update(timezone='Pacific/Auckland')
+        self.s1 = make_unit('S-01', self.sea, 'pond', status=Status.ACTIVE)
+        self.t1, self.t2, self.s1 = (Tank.objects.select_related('production_department__site').get(pk=unit.pk)
+                                     for unit in (self.t1, self.t2, self.s1))
+        self.b2, self.b3 = self.stock(self.t2, count=500), self.stock(self.s1, count=300)
+        self.treat(self.medicine(days=7), 5, 3, units=[self.t1])
+        other = self.medicine(name='Other', days=12)
+        self.treat(other, 5, 2, units=[self.t2])
+        self.treat(other, 5, 2, units=[self.s1])
+        self.units = [self.t1, self.t2, self.s1]
+
+    def one_unit_provider(self, unit, day):
+        """The provider as it was: one unit, one day."""
+        withdrawals = withdrawal.of_units([unit], day).get(unit.pk, [])
+        batches = Batch.all_objects.in_bulk({each.batch_id for each in withdrawals})
+        return [WithdrawalBlock(batches[each.batch_id], each.until, each.estimated, withdrawal.describe(each),
+                                each.source) for each in withdrawals]
+
+    def test_blocks_of_equals_the_one_unit_answers_in_two_time_zones(self):
+        self.assertNotEqual(local_today(self.t1), local_today(self.s1))
+        for day in (None, self.day(-3), self.day(2)):
+            with self.subTest(day=day):
+                found = registry.blocks_of(self.units, day)
+                self.assertEqual(set(found), {unit.pk for unit in self.units})
+                for unit in self.units:
+                    self.assertEqual(found[unit.pk], self.one_unit_provider(unit, day or local_today(unit)))
+                    self.assertEqual(registry.blocks(unit, day or local_today(unit)), found[unit.pk])
+        self.assertTrue(all(registry.blocks_of(self.units).values()))       # the fixture does hold every unit
+
+    def test_in_force_of_equals_in_force_for_each_unit(self):
+        for day in (None, self.day(-4)):
+            found = handling_check.in_force_of(self.units, day)
+            for unit in self.units:
+                self.assertEqual(found[unit.pk], handling_check.in_force(unit, day or local_today(unit)))
+        self.assertEqual(handling_check.in_force(self.t2, local_today(self.t2), [self.b3]), [])
+
+    def test_the_row_badges_of_production_units_are_the_units_with_a_block_in_force(self):
+        self.assertEqual(set(harvest_views.withdrawals(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})
+        self.assertEqual(harvest_views.withdrawals([self.t1])[self.t1.pk][0].batch, self.batch)
+        self.assertEqual(harvest_views.withdrawals([]), {})
+        kept = list(registry._providers)
+        registry._providers.clear()
+        try:
+            self.assertEqual(harvest_views.withdrawals(self.units), {})
+            self.assertIsNone(handling_check.in_force_of(self.units))
+        finally:
+            registry._providers.extend(kept)
+
+    def test_the_queries_do_not_grow_with_the_units_of_a_time_zone(self):
+        with CaptureQueriesContext(connection) as one:
+            registry.blocks_of([self.t1])
+        with CaptureQueriesContext(connection) as two:
+            registry.blocks_of([self.t1, self.t2])
+        self.assertEqual(len(one), len(two))
+        with CaptureQueriesContext(connection) as three:
+            registry.blocks_of(self.units)
+        self.assertLessEqual(len(three), 2 * len(one))        # a second time zone costs one more reader
 
 
 class RegistryTests(SimpleTestCase):

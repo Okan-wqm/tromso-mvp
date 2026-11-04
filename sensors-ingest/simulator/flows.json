@@ -1,0 +1,429 @@
+[
+  {
+    "id": "tab_sim",
+    "type": "tab",
+    "label": "Field simulator",
+    "disabled": false,
+    "info": "Field devices for the Sensors ingest (sensors-ingest/simulator). Built by build-flows.js; do not edit here."
+  },
+  {
+    "id": "sim_broker",
+    "type": "mqtt-broker",
+    "name": "Sensors broker",
+    "broker": "${SIM_MQTT_HOST}",
+    "port": "1883",
+    "clientid": "sensors-simulator",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "30",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "tick",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "every second",
+    "props": [],
+    "repeat": "1",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 1,
+    "topic": "",
+    "x": 140,
+    "y": 120,
+    "wires": [
+      [
+        "dev_plc",
+        "dev_probe",
+        "dev_flow"
+      ]
+    ]
+  },
+  {
+    "id": "dev_plc",
+    "type": "function",
+    "z": "tab_sim",
+    "name": "PLC (object of tags)",
+    "func": "const now = Date.now();\nconst st = context.get('st') || { seq: 0, t0: now, last: {}, total: 0 };\nst.seq += 1;\nconst flat = new Date(now).getUTCMinutes() % 10 < 2;\nfunction gauss() {\n  let u = 0, v = 0;\n  while (u === 0) u = Math.random();\n  while (v === 0) v = Math.random();\n  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);\n}\nfunction sig(key, base, amp, periodMin, sd, driftPerHour) {\n  if (flat && st.last[key] !== undefined) return st.last[key];\n  const hours = (now - st.t0) / 3600e3;\n  const x = base + amp * Math.sin((2 * Math.PI * now) / (periodMin * 60e3)) + driftPerHour * hours + sd * gauss();\n  const r = Math.round(x * 1000) / 1000;\n  st.last[key] = r;\n  return r;\n}\n\n// A PLC: one object payload with several tags, ISO time with a +01:00 offset, its own sequence number.\nconst local = new Date(now + 3600e3).toISOString().replace('Z', '+01:00');\nconst tag = (v) => ({ value: v, quality: 'good' });\nmsg.topic = 'sim/plc-1/tags';\nmsg.payload = {\n  ts: local,\n  seq: st.seq,\n  tags: {\n    temp_inlet: tag(sig('temp_inlet', 9.5, 0.4, 30, 0.02, 0.05)),\n    temp_outlet: tag(sig('temp_outlet', 10.1, 0.4, 30, 0.02, 0.05)),\n    o2_sump: tag(sig('o2_sump', 10.2, 0.8, 20, 0.05, -0.1)),\n    ph_sump: tag(sig('ph_sump', 7.35, 0.05, 45, 0.005, 0)),\n    flow_main: tag(sig('flow_main', 120, 5, 15, 0.8, 0)),\n    pump1_run: { value: true, quality: 'good' },\n  },\n};\ncontext.set('st', st);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 180,
+    "wires": [
+      [
+        "faults"
+      ]
+    ]
+  },
+  {
+    "id": "dev_probe",
+    "type": "function",
+    "z": "tab_sim",
+    "name": "O2 probe (array, epoch ms)",
+    "func": "const now = Date.now();\nconst st = context.get('st') || { seq: 0, t0: now, last: {}, total: 0 };\nst.seq += 1;\nconst flat = new Date(now).getUTCMinutes() % 10 < 2;\nfunction gauss() {\n  let u = 0, v = 0;\n  while (u === 0) u = Math.random();\n  while (v === 0) v = Math.random();\n  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);\n}\nfunction sig(key, base, amp, periodMin, sd, driftPerHour) {\n  if (flat && st.last[key] !== undefined) return st.last[key];\n  const hours = (now - st.t0) / 3600e3;\n  const x = base + amp * Math.sin((2 * Math.PI * now) / (periodMin * 60e3)) + driftPerHour * hours + sd * gauss();\n  const r = Math.round(x * 1000) / 1000;\n  st.last[key] = r;\n  return r;\n}\n\n// An oxygen probe: an array of items, each with its name, value and epoch-millisecond time.\nmsg.topic = 'sim/o2-probe-1/data';\nconst items = [\n  { n: 'do', v: sig('do', 9.8, 0.9, 25, 0.04, -0.05), t: now },\n  { n: 'temp', v: sig('temp', 9.6, 0.3, 30, 0.02, 0.03), t: now },\n  { n: 'sat', v: sig('sat', 96, 6, 25, 0.4, 0), t: now },\n];\nmsg.payload = { seq: st.seq, items };\ncontext.set('st', st);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 240,
+    "wires": [
+      [
+        "faults"
+      ]
+    ]
+  },
+  {
+    "id": "dev_flow",
+    "type": "function",
+    "z": "tab_sim",
+    "name": "Flow meter (ISO time)",
+    "func": "const now = Date.now();\nconst st = context.get('st') || { seq: 0, t0: now, last: {}, total: 0 };\nst.seq += 1;\nconst flat = new Date(now).getUTCMinutes() % 10 < 2;\nfunction gauss() {\n  let u = 0, v = 0;\n  while (u === 0) u = Math.random();\n  while (v === 0) v = Math.random();\n  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);\n}\nfunction sig(key, base, amp, periodMin, sd, driftPerHour) {\n  if (flat && st.last[key] !== undefined) return st.last[key];\n  const hours = (now - st.t0) / 3600e3;\n  const x = base + amp * Math.sin((2 * Math.PI * now) / (periodMin * 60e3)) + driftPerHour * hours + sd * gauss();\n  const r = Math.round(x * 1000) / 1000;\n  st.last[key] = r;\n  return r;\n}\n\n// A flow meter: ISO UTC time (shifted by the clock-skew switch), a sequence, the flow and its running total.\nconst flowNow = sig('flow', 42, 3, 12, 0.3, 0);\nst.total = Math.round((st.total + flowNow / 3600) * 1000) / 1000;\nconst skew = flow.get('skew_s') || 0;\nmsg.topic = 'sim/flow-meter-1/state';\nmsg.payload = { time: new Date(now + skew * 1000).toISOString(), sequence: st.seq, flow_m3h: flowNow, total_m3: st.total };\ncontext.set('st', st);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 300,
+    "wires": [
+      [
+        "faults"
+      ]
+    ]
+  },
+  {
+    "id": "faults",
+    "type": "function",
+    "z": "tab_sim",
+    "name": "field faults",
+    "func": "// Field faults on the way to the broker: an outage buffers everything (replayed by the switch board), out-of-order\n// holds five PLC messages and sends them reversed, duplicates send every message twice.\nif (flow.get('outage')) {\n  const b = flow.get('backlog') || [];\n  if (b.length < 20000) b.push(msg); else flow.set('backlog_lost', (flow.get('backlog_lost') || 0) + 1);\n  flow.set('backlog', b);\n  node.status({ fill: 'red', shape: 'ring', text: 'outage: ' + b.length + ' buffered' });\n  return null;\n}\nlet out = [msg];\nif ((flow.get('ooo_left') || 0) > 0 && msg.topic === 'sim/plc-1/tags') {\n  const buf = flow.get('ooo_buf') || [];\n  buf.push(msg);\n  if (buf.length < 5) { flow.set('ooo_buf', buf); return null; }\n  flow.set('ooo_left', 0);\n  flow.set('ooo_buf', []);\n  out = buf.reverse();\n}\nif (flow.get('dup')) out = out.flatMap((m) => [m, RED.util.cloneMessage(m)]);\nconst skew = flow.get('skew_s') || 0;\nnode.status({ fill: 'green', shape: 'dot', text: (flow.get('dup') ? 'duplicates, ' : '') + (skew ? 'skew ' + skew + ' s' : 'normal') });\nreturn [out];",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 620,
+    "y": 360,
+    "wires": [
+      [
+        "mqtt_out"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_out",
+    "type": "mqtt out",
+    "z": "tab_sim",
+    "name": "to broker (QoS 1)",
+    "topic": "",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "sim_broker",
+    "x": 860,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "sw_outage_start",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "outage: start",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "outage_start",
+    "payloadType": "str",
+    "x": 160,
+    "y": 480,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_outage_replay",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "outage: end and replay backlog",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "outage_replay",
+    "payloadType": "str",
+    "x": 160,
+    "y": 540,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_dup_on",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "duplicates on",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "dup_on",
+    "payloadType": "str",
+    "x": 160,
+    "y": 600,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_dup_off",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "duplicates off",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "dup_off",
+    "payloadType": "str",
+    "x": 160,
+    "y": 660,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_ooo",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "out of order (next 5 PLC)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "ooo",
+    "payloadType": "str",
+    "x": 160,
+    "y": 720,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_late",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "late messages (3 and 20 days)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "late",
+    "payloadType": "str",
+    "x": 160,
+    "y": 780,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_garbage",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "garbage payloads",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "garbage",
+    "payloadType": "str",
+    "x": 160,
+    "y": 840,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_skew_ahead",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "clock skew: flow meter +10 min",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "skew_ahead",
+    "payloadType": "str",
+    "x": 160,
+    "y": 900,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_skew_behind",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "clock skew: flow meter -1 h",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "skew_behind",
+    "payloadType": "str",
+    "x": 160,
+    "y": 960,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "sw_skew_off",
+    "type": "inject",
+    "z": "tab_sim",
+    "name": "clock skew: off",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "skew_off",
+    "payloadType": "str",
+    "x": 160,
+    "y": 1020,
+    "wires": [
+      [
+        "switches"
+      ]
+    ]
+  },
+  {
+    "id": "switches",
+    "type": "function",
+    "z": "tab_sim",
+    "name": "switch board",
+    "func": "// The switch board: each inject node sends its name. Replay and the one-shot faults go straight to the broker.\nconst now = Date.now();\nconst iso = (t) => new Date(t).toISOString();\nconst plc = (ts, seq, o2) => ({ topic: 'sim/plc-1/tags', payload: { ts, seq, tags: { temp_inlet: { value: 9.5 }, o2_sump: { value: o2 } } } });\nswitch (msg.payload) {\n  case 'outage_start':\n    flow.set('outage', true);\n    return null;\n  case 'outage_replay': {\n    flow.set('outage', false);\n    const b = flow.get('backlog') || [];\n    flow.set('backlog', []);\n    let i = 0;\n    const step = () => {\n      const chunk = b.slice(i, i + 100);\n      i += 100;\n      if (chunk.length) { node.send([chunk]); setTimeout(step, 100); }\n    };\n    step();\n    node.status({ fill: 'blue', shape: 'dot', text: 'replayed ' + b.length });\n    return null;\n  }\n  case 'dup_on': flow.set('dup', true); return null;\n  case 'dup_off': flow.set('dup', false); return null;\n  case 'ooo': flow.set('ooo_left', 5); flow.set('ooo_buf', []); return null;\n  case 'skew_ahead': flow.set('skew_s', 600); return null;\n  case 'skew_behind': flow.set('skew_s', -3600); return null;\n  case 'skew_off': flow.set('skew_s', 0); return null;\n  case 'late':\n    // stored by a device during a long outage and sent days later (3 days, and 20 days: a compressed chunk)\n    return [[plc(iso(now - 3 * 86400e3), 1, 10.1), plc(iso(now - 20 * 86400e3), 2, 10.3)]];\n  case 'garbage': {\n    const pad = 'x'.repeat(70 * 1024);\n    return [[\n      { topic: 'sim/plc-1/tags', payload: '{\"ts\": 12' },\n      { topic: 'sim/plc-1/tags', payload: JSON.stringify({ ts: iso(now), seq: 0, tags: { o2_sump: { value: 'abc' } } }) },\n      { topic: 'sim/plc-1/tags', payload: JSON.stringify({ seq: 0, tags: { o2_sump: { value: 10 } } }) },\n      { topic: 'sim/plc-1/tags', payload: JSON.stringify({ ts: iso(now), seq: 0, tags: { o2_sump: { value: 'NaN' } } }) },\n      { topic: 'sim/plc-1/tags', payload: JSON.stringify({ ts: iso(now), pad }) },\n      { topic: 'sim/unknown/device-9', payload: JSON.stringify({ ts: iso(now), v: 1 }) },\n    ]];\n  }\n  default:\n    node.warn('unknown switch ' + msg.payload);\n    return null;\n}",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 620,
+    "y": 1080,
+    "wires": [
+      [
+        "mqtt_out"
+      ]
+    ]
+  }
+]

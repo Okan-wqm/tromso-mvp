@@ -28,9 +28,9 @@ trap 'rm -f "$PWD/.check-secret"; cleanup' EXIT
 docker run -d --name simcheck-sim --network "$NET" -e SIM_MQTT_HOST=simcheck-broker -e SIM_MQTT_USER=simulator \
   -e SIM_MQTT_PASSWORD_FILE=/run/secrets/sim_mqtt -v "$(win "$PWD/.check-secret"):/run/secrets/sim_mqtt:ro" \
   -v "$(win "$PWD"):/sim:ro" --entrypoint bash "$NODERED" /sim/start.sh >/dev/null
-for _ in $(seq 1 60); do
-  if docker run --rm --network "$NET" --entrypoint node "$NODERED" -e \
-    "fetch('http://simcheck-sim:1880/flows').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then break; fi
+for _ in $(seq 1 90); do
+  docker logs simcheck-sim 2>&1 | grep -q "Started flows" && break
+  [ "$(docker inspect -f "{{.State.Running}}" simcheck-sim)" = true ] || { docker logs simcheck-sim 2>&1 | tail -20; exit 1; }
   sleep 1
 done
 sleep 3

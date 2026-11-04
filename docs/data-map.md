@@ -603,7 +603,7 @@ A health observation, a vet or fish-health visit, a lab result or a rise in mort
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › health_events
 - **forms**: `HealthEventForm`
 - **constraints**: chk_health_events_kind (check); chk_health_events_signs (check); chk_health_events_diagnosis (check); chk_health_events_confirmation (check); chk_health_events_closed_on (check); chk_health_events_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_health.py` and 3 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_health.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

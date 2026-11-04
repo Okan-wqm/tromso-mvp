@@ -11335,6 +11335,11 @@ msgstr "balık yok"
 msgid "no fish held at %(site)s since %(date)s"
 msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
 
+msgid ""
+"no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
+"event happens"
+msgstr "14 gündür açıklanamayan artmış ölüm yok; aksi halde bir olay olduğunda bir kişi başlatır"
+
 #, python-format
 msgid "no listed disease without a filed notice since %(date)s"
 msgstr "%(date)s tarihinden beri bildirimi yapılmamış listeli hastalık yok"
@@ -11579,9 +11584,6 @@ msgstr "balık türleri"
 
 msgid "stale"
 msgstr "eski"
-
-msgid "started by a person when an event happens"
-msgstr "bir olay olduğunda bir kişi tarafından başlatılır"
 
 msgid "started by a person when it happens"
 msgstr "olduğunda bir kişi tarafından başlatılır"

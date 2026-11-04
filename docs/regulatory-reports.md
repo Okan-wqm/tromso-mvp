@@ -521,8 +521,9 @@ for reports" with what is missing, rather than hidden (E4).
 | Monthly biomass | site, month | a matfisk or stamfisk sea site held production fish (not cleaner fish: they may stay through fallowing, § 40 fifth paragraph ✔) at any time in the month | the 7th of the next month |
 | Planned slaughter | slaughter facility, ISO week | **the harvest, planned or done** (§ 9a is the farmer's duty and arises from the harvest, not from the plan): a plan item (kind harvest, not cancelled, open or recorded) or a live `HarvestRecord` of the facility in the week, from the site's reports-from date; the week stays owed after it has passed until filed or closed with a reason (`DueClosure`, coverage review R13) (D-3) | the earlier of Thursday 24:00 of the week before and the day the fish start fasting for it (restkontrollforskriften § 9a ✔; the fast's start is `fast_of(item)`, `farm/handling/fasting.py:12-14`, `:119-122` ✔); a slaughter agreed later: at once; corrections until Tuesday 09:00 of the slaughter week (E1) |
 | Escape | an escape record | every escape record dated on or after its site's reports-from date (D-6) with no filed notice (a draft stays owed) | at once ("straks") |
-| Disease | a health event | a health event with a listed diagnosis, suspected or confirmed, dated on or after its site's reports-from date, that the health records' registry (`farm/health/notices.py`) does not know to be told of; and a mortality event whose cause is still unexplained 14 days after the first assessment (dyrehelseforskriften § 7, E1) | at once ("umiddelbart"); the second case "så snart som praktisk mulig" |
-| Welfare | started by a person | — | at once ("umiddelbart") |
+| Disease | a health event | a health event with a listed diagnosis, suspected or confirmed, dated on or after its site's reports-from date, that the health records' registry (`farm/health/notices.py`) does not know to be told of (dyrehelseforskriften § 7 first paragraph) | at once ("umiddelbart") |
+| Welfare (unexplained mortality) | a health event | **built** (coverage review R27, `due._unexplained`): a health event of the kind increased mortality, live, with no diagnosis and not closed, dated 14 or more days ago and on or after the site's reports-from date, that no notice has told Mattilsynet of: a **welfare** notice about the event (§ 7 second paragraph: when the cause is still unclear after the reassessment within 14 days). The records have no field for the reassessment: giving the event a diagnosis or closing it with its outcome says the cause is clear and ends the duty. Other signs of disease and a reduced production rate, which the paragraph also names, are not events the records hold | "så snart som praktisk mulig" |
+| Welfare (anything else) | started by a person | — | at once ("umiddelbart") |
 
 The window's eligibility is read from summed live `count_delta`: one query per kind for each site's net count of
 the relevant fish before the window and its daily deltas and arrival days inside it, then a walk over the periods
@@ -803,8 +804,7 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   report with a reason (`DueClosure`: a check that its place fits its kind, one per place and period, a reason; created through
   the dialog, deleted by *Reopen*, both in the activity log); it is a record of a decision, not a report, and nothing is sent.
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
-  (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the disease notice for a mortality
-  left unexplained 14 days (5.2); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
+  (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.
 
 ## 6. Decisions

@@ -146,6 +146,7 @@ def due(today=None):
     _slaughter(today, existing, found.rows)
     _escapes(today, existing, found.rows)
     _diseases(today, existing, found.rows)
+    _unexplained(today, existing, found.rows)
     _lines_of_notices(sites, found)
     _lines_of_slaughter(found)
     found.rows.sort(key=lambda row: (not row.overdue, row.deadline or date.min, str(row.kind), str(row.place)))
@@ -257,7 +258,7 @@ def _lines_of_notices(sites, found):
     two notices of a land site are started by a person when something happens."""
     counts = {}
     for row in found.rows:
-        if row.kind in (ReportKind.ESCAPE, ReportKind.DISEASE):
+        if row.kind in (ReportKind.ESCAPE, ReportKind.DISEASE, ReportKind.WELFARE):
             counts[(row.kind, row.place.pk)] = counts.get((row.kind, row.place.pk), 0) + 1
     nothing = {ReportKind.ESCAPE: _('no escape without a filed notice since %(date)s'),
                ReportKind.DISEASE: _('no listed disease without a filed notice since %(date)s')}
@@ -272,7 +273,12 @@ def _lines_of_notices(sites, found):
                     found.lines.append(Line(kind, site, NOT_DUE, nothing[kind] % {
                         'date': site.reports_from.isoformat()}))
             elif kind == ReportKind.WELFARE:
-                found.lines.append(Line(kind, site, NOT_DUE, _('started by a person when an event happens')))
+                if counts.get((kind, site.pk)):
+                    found.lines.append(Line(kind, site, DUE, count=counts[(kind, site.pk)]))
+                else:
+                    found.lines.append(Line(kind, site, NOT_DUE, _(
+                        'no increased mortality has stayed unexplained for 14 days; otherwise started by a person '
+                        'when an event happens')))
             elif not site.production_form:
                 found.lines.append(Line(kind, site, NOT_DUE, _('site not set up: no production form')))
             elif site.type != SEA_SITE and site.production_form in (PRODUCTION_FORM.MATFISK, PRODUCTION_FORM.STAMFISK):
@@ -352,6 +358,28 @@ def _diseases(today, existing, rows):
         if event.site.reports_from is None or event.date < event.site.reports_from:
             continue
         row = _row(ReportKind.DISEASE, event.site, None, today, existing, event)
+        if row is not None:
+            rows.append(row)
+
+
+REASSESS_DAYS = 14          # dyrehelseforskriften § 7 second paragraph: a new assessment within 14 days
+
+
+def _unexplained(today, existing, rows):
+    """A welfare notice for an increased-mortality event still unexplained after the 14 days the regulation gives for the
+    vet's reassessment (§ 7 second paragraph: notify as soon as practicable when the cause is still unclear after it). The
+    records model it as a health event of the kind increased mortality with no diagnosis and not closed: giving the event a
+    diagnosis, or closing it with its outcome, says the cause is clear and ends the duty. The system holds no field for
+    the reassessment itself, only these two ways to say it is explained. Other signs of disease and a reduced production
+    rate, which the paragraph also names, are not events the records hold."""
+    events = list(HealthEvent.objects.filter(
+        kind=HealthEvent.Kind.MORTALITY, diagnosis='', closed_on__isnull=True,
+        date__lte=today - timedelta(days=REASSESS_DAYS)).select_related('site'))
+    told = notices.told(events) or {}
+    for event in events:
+        if event.pk in told or event.site.reports_from is None or event.date < event.site.reports_from:
+            continue
+        row = _row(ReportKind.WELFARE, event.site, None, today, existing, event)
         if row is not None:
             rows.append(row)
 

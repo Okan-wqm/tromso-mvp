@@ -1759,7 +1759,8 @@ are owed per facility and week from the first week the site reports, and the dut
 (restkontrollforskriften § 9a): a plan item that is not cancelled (still open or already recorded as a harvest) and a harvest
 recorded with no plan at all each owe their week, and a week that has passed stays owed, with its deadline and an Overdue
 mark, until its notice is filed or a person closes it with a reason (*Close without filing*, in the activity log, shown under
-the kind's tab and reopened from there). Escapes and listed diseases from their records since the site's reports-from date until a notice of each is filed (a
+the kind's tab and reopened from there). Escapes and listed diseases, and an increased-mortality event still unexplained 14 days on (no diagnosis, not closed:
+dyrehelseforskriften § 7 second paragraph; a welfare notice), from their records since the site's reports-from date until a notice of each is filed (a
 notice told by telephone counts). The days are Oslo's calendar, whatever
 clock the site keeps, and the ISO week of 28 December to 3 January is 2026-W53. The page also lists the **filed reports whose
 records changed**: only the rows a report read are compared with the ones it was filed from (never a ledger folded again), and a

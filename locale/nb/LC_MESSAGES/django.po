@@ -11328,6 +11328,11 @@ msgstr "ingen fisk"
 msgid "no fish held at %(site)s since %(date)s"
 msgstr "ingen fisk på %(site)s siden %(date)s"
 
+msgid ""
+"no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
+"event happens"
+msgstr "ingen økt dødelighet har vært uforklart i 14 dager; ellers startes den av en person når noe skjer"
+
 #, python-format
 msgid "no listed disease without a filed notice since %(date)s"
 msgstr "ingen listeført sykdom uten sendt varsel siden %(date)s"
@@ -11572,9 +11577,6 @@ msgstr "arter"
 
 msgid "stale"
 msgstr "utdatert"
-
-msgid "started by a person when an event happens"
-msgstr "startes av en person når noe skjer"
 
 msgid "started by a person when it happens"
 msgstr "startes av en person når det skjer"

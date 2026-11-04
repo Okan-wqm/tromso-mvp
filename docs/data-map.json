@@ -6376,7 +6376,8 @@
         "farm/tests/test_health.py",
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
-        "reports/tests/test_tabs.py"
+        "reports/tests/test_tabs.py",
+        "reports/tests/test_unexplained.py"
       ]
     },
     {

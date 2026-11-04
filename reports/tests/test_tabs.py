@@ -132,7 +132,9 @@ class NoticeReasonsTests(LinesTestCase):
         self.assertEqual(self.reason(ReportKind.ESCAPE, self.sea), 'no reports-from date: nothing is counted')
 
     def test_welfare_and_the_two_notices_of_a_land_site_are_started_by_a_person(self):
-        self.assertEqual(self.reason(ReportKind.WELFARE, self.sea), 'started by a person when an event happens')
+        self.assertEqual(self.reason(ReportKind.WELFARE, self.sea),
+                         'no increased mortality has stayed unexplained for 14 days; otherwise started by a person '
+                         'when an event happens')
         for kind in (ReportKind.SITE_IN_USE, ReportKind.SITE_EMPTIED):
             self.assertEqual(self.reason(kind, self.hatchery), 'only a site of food fish or broodstock on land reports it')
             self.assertEqual(self.reason(kind, self.sea), 'only a site of food fish or broodstock on land reports it')

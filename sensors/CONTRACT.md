@@ -60,8 +60,10 @@ Every statement that changes `sensors_connection`, `sensors_payload_format`, `se
 ## `sensors_contract` (one row, id = 1)
 
 `schema_version` (1), `config_epoch` bigint, `future_skew_s` (60: a device time further in the future than this is
-replaced by the receive time and flagged 4), `retention_days` (730: a message older than this is dead-lettered
-`too_old`; equal to the retention policy of `sensors_reading`, a test keeps them equal).
+replaced by the receive time and flagged 4), `retention_days` (730: how long raw readings are kept; equal to the
+retention policy of `sensors_reading`, a test keeps them equal), `late_limit_days` (728: a message whose device time is
+older than this many days is dead-lettered `too_old`; a CHECK keeps it at least two days inside the retention, so every
+message taken in also reaches the rollups, whose late refresh never reaches the dropped region).
 
 ## Quality bits (`sensors_quality_flag`, `sensors/quality.py`)
 

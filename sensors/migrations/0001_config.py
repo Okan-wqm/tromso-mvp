@@ -200,12 +200,13 @@ class Migration(migrations.Migration):
                 ('config_epoch', models.BigIntegerField(db_default=0, verbose_name='Configuration epoch')),
                 ('future_skew_s', models.IntegerField(db_default=60, verbose_name='Allowed future skew (seconds)')),
                 ('retention_days', models.IntegerField(db_default=730, verbose_name='Raw retention (days)')),
+                ('late_limit_days', models.IntegerField(db_default=728, verbose_name='Late limit (days)')),
             ],
             options={
                 'verbose_name': 'ingest contract',
                 'verbose_name_plural': 'ingest contract',
                 'db_table': 'sensors_contract',
-                'constraints': [models.CheckConstraint(condition=models.Q(('id', 1)), name='chk_sensors_contract_singleton'), models.CheckConstraint(condition=models.Q(('future_skew_s__gte', 0), ('future_skew_s__lte', 3600)), name='chk_sensors_contract_skew'), models.CheckConstraint(condition=models.Q(('retention_days__gte', 1)), name='chk_sensors_contract_retention')],
+                'constraints': [models.CheckConstraint(condition=models.Q(('id', 1)), name='chk_sensors_contract_singleton'), models.CheckConstraint(condition=models.Q(('future_skew_s__gte', 0), ('future_skew_s__lte', 3600)), name='chk_sensors_contract_skew'), models.CheckConstraint(condition=models.Q(('retention_days__gte', 3)), name='chk_sensors_contract_retention'), models.CheckConstraint(condition=models.Q(('late_limit_days__gte', 1), ('late_limit_days__lte', django.db.models.expressions.CombinedExpression(models.F('retention_days'), '-', models.Value(2)))), name='chk_sensors_contract_late_limit')],
             },
         ),
         migrations.CreateModel(

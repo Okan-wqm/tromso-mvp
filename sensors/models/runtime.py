@@ -14,14 +14,16 @@ MAX_PAYLOAD = 4096
 class Contract(models.Model):
     """The one row both sides of the contract read: its version, the configuration's epoch (a trigger moves it and
     notifies channel `sensors_config` on every change of a table the ingest reads), how far in the future a device's
-    time may be before it is replaced by the receive time, and how old a message may be before it is refused (the
-    raw retention: a test keeps it equal to the retention policy)."""
+    time may be before it is replaced by the receive time, how long raw readings are kept (a test keeps it equal to
+    the retention policy) and how old a message may be before it is refused as too old (two days inside the
+    retention, so every message taken in also reaches the rollups)."""
 
     id = models.SmallIntegerField(primary_key=True, db_default=1)
     schema_version = models.IntegerField(_('Contract version'))
     config_epoch = models.BigIntegerField(_('Configuration epoch'), db_default=0)
     future_skew_s = models.IntegerField(_('Allowed future skew (seconds)'), db_default=60)
     retention_days = models.IntegerField(_('Raw retention (days)'), db_default=730)
+    late_limit_days = models.IntegerField(_('Late limit (days)'), db_default=728)
 
     class Meta:
         db_table = 'sensors_contract'
@@ -31,7 +33,11 @@ class Contract(models.Model):
             models.CheckConstraint(condition=Q(id=1), name='chk_sensors_contract_singleton'),
             models.CheckConstraint(condition=Q(future_skew_s__gte=0, future_skew_s__lte=3600),
                                    name='chk_sensors_contract_skew'),
-            models.CheckConstraint(condition=Q(retention_days__gte=1), name='chk_sensors_contract_retention'),
+            models.CheckConstraint(condition=Q(retention_days__gte=3), name='chk_sensors_contract_retention'),
+            # Two days inside the retention: the daily late refresh looks one day past the limit and must never reach a
+            # region whose raw chunks are dropped (a refresh there would empty the rollups; migration 0003).
+            models.CheckConstraint(condition=Q(late_limit_days__gte=1, late_limit_days__lte=F('retention_days') - 2),
+                                   name='chk_sensors_contract_late_limit'),
         ]
 
     def __str__(self):

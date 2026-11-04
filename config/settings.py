@@ -54,6 +54,9 @@ INSTALLED_APPS = [
     'tasks',
     # The monitoring cards: one live card per unit for the control room's wall, composed from the other apps' reads.
     'monitoring',
+    # Sensors: MQTT connections, devices, channels and their readings (a TimescaleDB hypertable written by the ingest
+    # service, sensors-ingest/), in a panel of their own; their water values reach the water read (farm/water/sources.py).
+    'sensors',
 ]
 
 MIDDLEWARE = [

@@ -17,6 +17,7 @@
   {% if object.hypothesis %}<h2 class="section-title">{% trans "Hypothesis" %}</h2><p>{{ object.hypothesis|linebreaksbr }}</p>{% endif %}
   {% if object.notes %}<h2 class="section-title">{% trans "Notes" %}</h2><p>{{ object.notes|linebreaksbr }}</p>{% endif %}
 </section>
+{% if can_start %}<p><a class="button button-inline" href="{{ start_url }}" data-modal>{% trans "Start the experiment" %}</a></p>{% endif %}
 <section class="detail-section">
   <h2 class="section-title">{% trans "Team" %}</h2>
   <ul class="plain-list">

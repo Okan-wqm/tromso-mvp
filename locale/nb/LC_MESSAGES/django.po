@@ -430,6 +430,10 @@ msgid "%(first)s et al."
 msgstr "%(first)s mfl."
 
 #, python-format
+msgid "%(first)s to %(last)s"
+msgstr "%(first)s til %(last)s"
+
+#, python-format
 msgid "%(first)s–%(last)s of %(total)s"
 msgstr "%(first)s–%(last)s av %(total)s"
 
@@ -735,6 +739,30 @@ msgstr "%(supplier)s er ikke leverandør av %(category)s (Innkjøp › Leverand�
 #, python-format
 msgid "%(system)s is on another site than the production department."
 msgstr "%(system)s er på en annen lokalitet enn produksjonsavdelingen."
+
+#, python-format
+msgid ""
+"%(tank)s already has the feeding protocol %(protocol)s assigned (%(period)s): end it first, for "
+"starting an experiment never ends another record."
+msgstr ""
+"%(tank)s har allerede fôringsprotokollen %(protocol)s tildelt (%(period)s): avslutt den først, "
+"for å starte et forsøk avslutter aldri en annen post."
+
+#, python-format
+msgid ""
+"%(tank)s feeds batch %(batch)s by %(protocol)s (%(period)s): a protocol assigned to a batch in a "
+"unit beats the unit’s, so it would override the diet of %(group)s."
+msgstr ""
+"%(tank)s fôrer batch %(batch)s etter %(protocol)s (%(period)s): en protokoll tildelt en batch i "
+"et kar går foran karets, så den ville overstyre fôrregimet til %(group)s."
+
+#, python-format
+msgid "%(tank)s holds more than one batch of %(species)s on day 0: its figures are the batches’ together."
+msgstr "%(tank)s har mer enn én batch av %(species)s på dag 0: tallene er batchenes samlet."
+
+#, python-format
+msgid "%(tank)s holds no fish of %(species)s on day 0."
+msgstr "%(tank)s har ingen fisk av %(species)s på dag 0."
 
 #, python-format
 msgid "%(tank)s is booked to %(experiment)s on some of these days."
@@ -1374,6 +1402,9 @@ msgstr "En mal har ingen kar: den er et design som skal kopieres."
 msgid "A template is a draft design without a start day or an allocation."
 msgstr "En mal er et utkast til design uten startdag eller fordeling."
 
+msgid "A template is not started: copy it into an experiment."
+msgstr "En mal startes ikke: kopier den til et forsøk."
+
 msgid ""
 "A transfer is a transport. A grading is checked against its own rule and the transport rule; the "
 "longer applies."
@@ -1940,6 +1971,9 @@ msgstr "En annen protokoll er tildelt denne enheten på noen av disse dagene."
 
 msgid "Another protocol was assigned to these fish meanwhile: look at the list and try again."
 msgstr "En annen protokoll ble tildelt denne fisken i mellomtiden: se på listen og prøv igjen."
+
+msgid "Another protocol was assigned to these tanks meanwhile: look at the assignments and try again."
+msgstr "En annen protokoll ble tildelt disse karene i mellomtiden: se på tildelingene og prøv igjen."
 
 msgid "Another published source"
 msgstr "En annen publisert kilde"
@@ -7692,6 +7726,20 @@ msgstr "Reserve"
 msgid "Start"
 msgstr "Start"
 
+#, python-format
+msgid "Start %(experiment)s"
+msgstr "Start %(experiment)s"
+
+msgid "Start despite these warnings"
+msgstr "Start til tross for disse advarslene"
+
+msgid "Start the experiment"
+msgstr "Start forsøket"
+
+#, python-format
+msgid "Start “%(experiment)s”?"
+msgstr "Starte «%(experiment)s»?"
+
 msgid "Started"
 msgstr "Startet"
 
@@ -7703,6 +7751,20 @@ msgstr "Startet av"
 
 msgid "Starter feed"
 msgstr "Startfôr"
+
+msgid "Starting fixes the design for ever. Going on is logged with the warnings shown here."
+msgstr "Å starte låser designet for alltid. Å gå videre logges med advarslene som vises her."
+
+msgid ""
+"Starting fixes the design for ever: the hypothesis, the groups, their levels and replicates, the "
+"tanks and the days. For each group with a diet, its feeding protocol is assigned to its tanks for"
+" their days (Operations › Feeding › Assignments), so the meal board feeds by it. The figures are "
+"read from the farm’s own records over these days."
+msgstr ""
+"Å starte låser designet for alltid: hypotesen, gruppene, nivåene og replikatene deres, karene og "
+"dagene. For hver gruppe med et fôrregime tildeles fôringsprotokollen til karene for dagene deres "
+"(Drift › Fôring › Tildelinger), slik at måltidstavlen fôrer etter den. Tallene leses fra "
+"anleggets egne registre i disse dagene."
 
 msgid "Starting later"
 msgstr "Starter senere"
@@ -8333,6 +8395,10 @@ msgid ""
 msgstr ""
 "Fisken må ha vært uten fôr minst så lenge før håndteringen, regnet til starten av dagen. 0 til "
 "720."
+
+#, python-format
+msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
+msgstr "Fisken i %(tank)s er ikke veid på dag 0: grunnlaget for fôrutnyttelsen deres mangler."
 
 #, python-format
 msgid "The group name %(name)s is too long."
@@ -8973,6 +9039,12 @@ msgstr "Denne fiskegruppen har allerede en produksjonsplan."
 msgid "This empties the unit of this batch"
 msgstr "Dette tømmer enheten for fiskegruppen"
 
+msgid "This experiment cannot be started."
+msgstr "Dette forsøket kan ikke startes."
+
+msgid "This experiment has started."
+msgstr "Dette forsøket er startet."
+
 msgid "This experiment was deleted meanwhile."
 msgstr "Dette forsøket ble slettet i mellomtiden."
 
@@ -9466,6 +9538,9 @@ msgstr "Advarsel over"
 
 msgid "Warning below"
 msgstr "Advarsel under"
+
+msgid "Warnings acknowledged"
+msgstr "Anerkjente advarsler"
 
 msgid "Warranty end date"
 msgstr "Garantien utløper"
@@ -10364,6 +10439,10 @@ msgid "from %(first)s"
 msgstr "fra %(first)s"
 
 #, python-format
+msgid "from %(first)s, with no last day"
+msgstr "fra %(first)s, uten siste dag"
+
+#, python-format
 msgid "from %(start)s to %(end)s"
 msgstr "fra %(start)s til %(end)s"
 
@@ -10925,6 +11004,10 @@ msgstr "Ω kalsitt og aragonitt"
 
 msgid "Ω: needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Ω: trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (1983)."
+
+#, python-format
+msgid "“%(experiment)s” started."
+msgstr "«%(experiment)s» er startet."
 
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."

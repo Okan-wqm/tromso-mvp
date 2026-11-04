@@ -720,6 +720,7 @@ notes, and **Void** while allowed.
   with its ends put on the measured points of two given days (the last point of each day: the state at its end),
   for a period that is not the whole stay (an experiment's days). A day without a measured point gives no window,
   never an interpolated one, and a window must start before it ends; a bound left out is the stay's own end.
+  `measured_on(unit_ids, day)` says which batches have a measured point on a day (where a window can start or end).
   `windows_in` walks the units' feeding once from the first day on and gives `{(unit, batch): window}` for the
   units asked (a batch that came into a unit more than once has the window of its latest stay that has one); an
   FCR over several windows is `Conversion` of them, ratio of sums, the formula of this page.
@@ -1740,6 +1741,22 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   and one system holding tanks of different groups (water-borne confounding, from the current `Tank.system`). The reads
   (`experiments/read.py`): `cells` is the one definition of what belongs to the trial (each placement with its replicate, group,
   tank and days), `booked` says which experiment holds which tanks on some days, and `error_df` is the replicates less the groups.
+- **Start** (the dialog `<id>/start/`, from the Design tab and the read page; `services.start`) fixes the design and applies the
+  diet. The dialog shows what is wrong with the design (`design.problems`): the errors block (the button is off), the
+  warnings are read and acknowledged with one box whose value is their fingerprint, so a start whose warnings changed
+  meanwhile is asked again (`check.require_acknowledged(…, field='start_ack')`, the handling check's rule and widget).
+  Besides the findings above, a draft asks that nothing stands in the diet's way: **a unit's own assignment on a tank in the
+  days it is booked is an error, listed, and never ended by the start** (the person ends it on Assignments); so is a protocol
+  assigned to a batch in the tank, which would beat the unit's (`farm/feeding/ration.py`); and, once day 0 has come, warnings
+  for a tank with no fish of the species that day, two batches of it, or fish not weighed that day (a measured point of the
+  stay on day 0, `feeding/read.measured_on`, is what the bounded FCR window starts from). Starting is one transaction that
+  locks the batches the tanks held, the tanks (primary-key order) and then the experiment, refuses a stale version, a second
+  start, a template and an error, and, for every group with a diet level, writes the farm's own assignment rows (unit scope, from
+  the first to the last day of each placement) through `farm/feeding/assignments.py`, the rows and log entries the assignment
+  dialog would write, so the meal board and the rations follow the diet; they are found later by (unit, protocol, first day),
+  with no link column on a farm table. The status goes draft to running through `TRANSITIONS`, and one row on the experiment
+  says "Status: Draft → Running" with the warnings acknowledged, in English. A feeding recorded while it starts waits for the tank
+  (a test races the two), and two starts at once give one winner and one assignment row each.
 - **The team** is a list saved as a whole (`RowList`, logged on the experiment as "Team"): a person and their part,
   exactly one lead; only people who can read Experiments are offered, and one kept from before stays in the list.
 - **The read page** (`<id>/view/`) shows the details and the team to everyone who may read the tab.
@@ -1750,7 +1767,7 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   be deleted while it does.
 
 **Who may do what**: the area Experiments (Production · Research): Read the list and the read pages, Create makes an
-experiment, Edit changes it, saves its design, its places and its team, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
+experiment, Edit changes it, saves its design, its places and its team, and starts it, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
 student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
 deleted ones too, and restores an experiment (not its parts).
@@ -2361,7 +2378,7 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
-| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/team/` saves the team, `<id>/delete/` |
+| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/team/` saves the team, `<id>/delete/` |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |

@@ -7,7 +7,8 @@ nothing is written.
 
 - `save_design`: the factors, groups, levels and replicates of a draft, saved as a whole, the grid's rows matched to the
   stored ones by their id (a renamed group keeps its replicates and the tanks placed in them);
-- `save_places`, `randomise`, `move_span`: the tanks of a draft's replicates and the days they are booked to them."""
+- `save_places`, `randomise`, `move_span`: the tanks of a draft's replicates and the days they are booked to them;
+- `start`: fixes the design and applies the diet through the farm's own assignments."""
 import itertools
 import uuid
 from dataclasses import dataclass, field
@@ -21,15 +22,18 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit, softdelete
 from core.models import AuditLog
-from farm.models import FeedingProtocol, Tank
+from farm.feeding import assignments
+from farm.handling import check
+from farm.models import Batch, FeedingProtocol, Tank
 from farm.models.feeding_protocol import ProtocolStatus
+from farm.stock.read import batches_ever_in
 from farm.stock.services import locked as stock_locked
 
 from . import allocation, read
 from . import design as design_module
 from .models import (
-    AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level, Replicate,
-    ReplicateUnit, Status,
+    TRANSITIONS, AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level,
+    Replicate, ReplicateUnit, Status,
 )
 
 DESIGN = gettext_lazy('Design')
@@ -591,3 +595,80 @@ def clashes_when_moved(experiment, old_span, new):
         if other is not None:
             found[row.unit] = other
     return found
+
+
+# ---- starting ------------------------------------------------------------------------------------
+STATUS = gettext_lazy('Status')
+ACKNOWLEDGED = gettext_lazy('Warnings acknowledged')
+
+
+def _diet_rows(experiment):
+    """The assignment rows the experiment's diet asks for (farm/feeding/assignments.py, the rows the dialog would write):
+    for every group with a diet level, its protocol on each of its tanks, unit by unit, for the days the tank is booked.
+    Every fault at once, a tank by its code."""
+    design = design_module.load(experiment)
+    diet = next((factor for factor in design.factors if factor.kind == FactorKind.DIET), None)
+    made, errors = [], []
+    if diet is None:
+        return made
+    for group in design.groups:
+        level = design.level_of(group, diet)
+        if level is None or level.protocol is None:
+            continue
+        by_days = {}
+        for replicate in design.replicates.get(group.pk, []):
+            for row in design.placements.get(replicate.pk, []):
+                by_days.setdefault((row.from_on, row.until_on), []).append(row.unit)
+        for (first, last), units in by_days.items():
+            rows, found = assignments.rows(level.protocol, units, None, first, last,
+                                           notes=f'{experiment.code} · {group.name}')
+            made.extend(rows)
+            errors.extend(f'{error.unit.code if error.unit else group.name}: {error.message}' for error in found)
+    if errors:
+        raise _refused(*dict.fromkeys(errors))
+    return made
+
+
+def start(user, experiment, seen, version):
+    """Starts a draft: its design is fixed from now on (the triggers hold it for any writer), and the diet is applied.
+    The experiment must have no error (`design.problems`, which includes a unit's own assignment that stands in the way:
+    starting never ends another record), and the person must have acknowledged the warnings they were shown (`seen`, their
+    fingerprint: a start whose warnings changed meanwhile is asked again, on the field `start_ack`). For every group with
+    a diet level the farm's own assignment rows are written (unit scope, from the first to the last day of each placement,
+    through `farm.feeding.assignments`, each logged as the dialog logs them), so the meal board follows the diet; they
+    are found later by (unit, protocol, first day), with no link column. The batches the tanks held, the tanks and then
+    the experiment are locked, in that order. Logged on the experiment as "Status", with the warnings acknowledged."""
+    with transaction.atomic():
+        unit_ids = set(ReplicateUnit.objects.filter(replicate__group__experiment=experiment)
+                       .values_list('unit_id', flat=True))
+        stock_locked(Batch, batches_ever_in(unit_ids))
+        stock_locked(Tank, unit_ids)
+        locked = locked_draft(experiment, version)
+        if locked.is_template:
+            raise _refused(_('A template is not started: copy it into an experiment.'))
+        if Status.RUNNING not in TRANSITIONS[locked.status]:
+            raise _refused(_('This experiment cannot be started.'))
+        assessment = design_module.assess(locked)
+        if assessment.errors:
+            raise _refused(*[finding.text for finding in assessment.errors])
+        check.require_acknowledged(assessment, seen, field='start_ack')
+        warned = []
+        if assessment.warnings:
+            with audit.source_language():                          # the log is English at rest
+                warned = [finding.text for finding in design_module.assess(locked).warnings]
+        rows = _diet_rows(locked)
+        try:
+            assignments.save(user, rows)
+        except IntegrityError:
+            raise _refused(_('Another protocol was assigned to these tanks meanwhile: look at the assignments and try '
+                             'again.'))
+        locked.status = Status.RUNNING
+        locked.version += 1
+        locked.updated_by = user
+        locked.save(update_fields=['status', 'version', 'updated_by', 'updated_at'])
+        with audit.source_language():
+            changes = {str(STATUS): [audit.message(Status.DRAFT.label), audit.message(Status.RUNNING.label)]}
+            if warned:
+                changes[str(ACKNOWLEDGED)] = [None, '\n'.join(warned)]
+            audit.record(user, AuditLog.Action.UPDATE, locked, changes)
+        return locked

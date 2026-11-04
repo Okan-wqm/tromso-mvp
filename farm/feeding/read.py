@@ -255,6 +255,15 @@ def window(stay, first=None, last=None):
     return Window(start, end, stay.fed_kg(start.day, end.day, closing=end.kind == PointKind.CLOSE))
 
 
+def measured_on(unit_ids, day):
+    """{(unit id, batch id)} of the batches in these units whose stay has a measured point (stocking, fish graded in, a
+    weighing, the harvest that closed it) on `day`: a window can start or end there (`window`)."""
+    unit_ids = list(unit_ids)
+    walked = _walk(unit_ids, [])
+    return {key for key, stays in walked.stays.items()
+            if key[0] in unit_ids and any(point.day == day for stay in stays for point in stay.points)}
+
+
 def windows_in(unit_ids, first=None, last=None):
     """{(unit id, batch id): Window} of the batches that were in these units, over the days `first` and `last`
     (window(): each a day with a measured point of the stay, else the share has no window; None: the stay's own

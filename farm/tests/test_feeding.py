@@ -509,6 +509,14 @@ class WindowsInTests(FeedingTestCase):
             with self.subTest(first=first, last=last):
                 self.assertEqual(read.windows_in([self.t1.pk], first, last), {})
 
+    def test_the_measured_points_of_a_day_are_the_ones_a_window_can_start_or_end_on(self):
+        self.assertEqual(read.measured_on([self.t1.pk], self.day(20)), {(self.t1.pk, self.batch.pk)})     # stocked
+        self.assertEqual(read.measured_on([self.t1.pk], self.day(6)), {(self.t1.pk, self.batch.pk)})      # weighed
+        for day in (self.day(19), self.day(10), self.day(5), self.day(21)):
+            self.assertEqual(read.measured_on([self.t1.pk], day), set())
+        self.assertEqual(read.measured_on([self.t2.pk], self.day(20)), set())
+        self.assertEqual(read.measured_on([], self.day(20)), set())
+
     def test_only_the_units_asked_for_and_only_the_feed_of_their_days(self):
         self.assertEqual(read.windows_in([]), {})
         self.assertEqual(read.windows_in([self.t2.pk]), {})

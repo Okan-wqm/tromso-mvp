@@ -314,6 +314,8 @@ class ProblemsTests(DesignTestCase):
         services.save_places(self.user, self.trial, [services.Place(replicate, [tank])
                                                      for tank, (_group, replicate) in zip(self.tanks, slots)],
                              self.trial.version, 'Tanks 1 to 4 stand in one row')
+        for tank in self.tanks[:4]:
+            self.stock(tank, count=1000, weight='50', days_ago=0)                 # stocked, so weighed, on day 0
         for protocol, unit in ((self.low, self.tanks[6]), (self.high, self.tanks[7])):
             ProtocolAssignment.objects.create(protocol=protocol, unit=unit, valid_from=self.day(1),
                                               valid_until=self.day(1))        # assigned: its table is fixed
@@ -336,12 +338,12 @@ class ProblemsTests(DesignTestCase):
         self.good()
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(32))
         ReplicateUnit.objects.update(from_on=self.day(32), until_on=self.day(32) + timedelta(days=56))   # the days move too
-        self.assertEqual(self.codes(), ['day_0_too_old'])
+        self.assertEqual(self.codes('error'), ['day_0_too_old'])
         self.assertEqual(self.found()[0].text, 'Day 0 is further back than records can be dated: an '
                                                               'experiment is registered at most 31 days after it begins.')
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(31))
         ReplicateUnit.objects.update(from_on=self.day(31), until_on=self.day(31) + timedelta(days=56))
-        self.assertEqual(self.codes(), [])
+        self.assertEqual(self.codes('error'), [])
 
     def test_the_groups_have_replicates_and_a_level_of_every_factor_and_none_repeats_another(self):
         self.good()
@@ -448,7 +450,7 @@ class ProblemsTests(DesignTestCase):
         ReplicateUnit.objects.create(replicate=first, unit=self.tanks[5], from_on=self.today,
                                      until_on=self.today + timedelta(days=56))
         Tank.objects.filter(pk=self.tanks[5].pk).update(system=second_system)
-        self.assertEqual(sorted(self.codes('warning')), ['replicate_in_systems', 'system_confounding'])
+        self.assertEqual(sorted(self.codes('warning')), ['no_fish', 'replicate_in_systems', 'system_confounding'])
 
     def test_the_checks_are_a_list_other_areas_can_add_to(self):
         self.good()

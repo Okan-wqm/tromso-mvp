@@ -4,18 +4,18 @@ replicates with a seeded deal, each saved as a whole by its own view),
 the read page, and delete through the delete plan (a draft only: the model says so). The creator is the lead of a new
 experiment."""
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db.models import Count, Q
 from django.urls import path, reverse
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by
+from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by, render_page
 from core.people import person_name
 from farm.models import Site, Species, System, Tank
 
 from . import design as design_module, read, services
 from .forms import (
-    ExperimentForm, MemberFormSet, design_forms, design_rows, place_rows, places_forms,
+    ExperimentForm, MemberFormSet, StartForm, design_forms, design_rows, place_rows, places_forms,
 )
 from .models import AllocationMethod, Experiment, Member, Status
 
@@ -89,7 +89,10 @@ class ExperimentResource(Resource):
 
     @classmethod
     def detail_extras(cls, request, experiment):
-        return {'team': TeamList.rows(experiment)}
+        return {'team': TeamList.rows(experiment),
+                'start_url': reverse('experiments:experiment_start', args=[experiment.pk]),
+                'can_start': request.user.has_perm(cls.perm('change')) and experiment.status == Status.DRAFT
+                and not experiment.is_template}
 
     @classmethod
     def form(cls, request, *args, **kwargs):
@@ -114,14 +117,16 @@ class ExperimentResource(Resource):
                 'places_form': places_form, 'places': place_forms, 'span': window,
                 'cells': read.cells(experiment) if frozen else [],
                 'allocation': allocation_banner(experiment), 'error_df': read.error_df(experiment),
-                'places_url': reverse('experiments:experiment_places', args=[experiment.pk])}
+                'places_url': reverse('experiments:experiment_places', args=[experiment.pk]),
+                'start_url': reverse('experiments:experiment_start', args=[experiment.pk])}
 
     @classmethod
     def urls(cls):
         p = cls.url_prefix
         return [*super().urls(),
                 path(f'{p}/<uuid:pk>/design/', ExperimentDesignView.as_view(resource=cls), name='experiment_design'),
-                path(f'{p}/<uuid:pk>/places/', ExperimentPlacesView.as_view(resource=cls), name='experiment_places')]
+                path(f'{p}/<uuid:pk>/places/', ExperimentPlacesView.as_view(resource=cls), name='experiment_places'),
+                path(f'{p}/<uuid:pk>/start/', ExperimentStartView.as_view(resource=cls), name='experiment_start')]
 
 
 def allocation_banner(experiment):
@@ -219,3 +224,41 @@ class ExperimentPlacesView(ResourceView):
         systems = System.objects.filter(pk__in=[token[7:] for token in tokens if token.startswith('system:')],
                                         site=experiment.site)
         return [*tanks, *systems]
+
+
+class ExperimentStartView(ResourceView):
+    """The Start dialog (the change permission): what is wrong with the design (the errors block, the warnings are
+    acknowledged by one box that carries their fingerprint), what starting does, and Start (experiments.services.start)."""
+
+    action = 'change'
+    template = 'experiments/experiment_start.html'
+
+    def page(self, form, experiment, status=200):
+        r = self.resource
+        response = render_page(self.request, self.template, self.context(
+            form=form, object=experiment, findings=form.assessment, back_url=reverse(r.url_name('edit'),
+                                                                                    args=[experiment.pk])))
+        response.status_code = status
+        return response
+
+    def get(self, request, pk):
+        experiment = self.get_object(pk)
+        assessment = design_module.assess(experiment) if experiment.status == Status.DRAFT else None
+        return self.page(StartForm(initial={'version': experiment.version}, assessment=assessment), experiment)
+
+    def post(self, request, pk):
+        r = self.resource
+        experiment = self.get_object(pk)
+        assessment = design_module.assess(experiment) if experiment.status == Status.DRAFT else None
+        form = StartForm(request.POST, assessment=assessment)
+        if form.is_valid():
+            try:
+                services.start(request.user, experiment, form.cleaned_data['start_ack'], form.cleaned_data['version'])
+            except ValidationError as error:
+                for field, found in error.message_dict.items():
+                    for message in found:
+                        form.add_error(None if field == NON_FIELD_ERRORS else field, message)
+            else:
+                messages.success(request, gettext('“%(experiment)s” started.') % {'experiment': experiment})
+                return done(request, reverse(r.url_name('edit'), args=[pk]), stay=True)
+        return self.page(form, experiment, status=422)

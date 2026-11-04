@@ -12,12 +12,15 @@ from datetime import timedelta
 from django.conf import settings
 from django.utils.translation import gettext as _
 
-from farm.feeding.read import tables as protocol_tables
+from farm.feeding.read import measured_on, tables as protocol_tables
+from farm.models import Batch, ProtocolAssignment
 from farm.models.feeding_protocol import ProtocolStatus
-from farm.stock.dates import site_earliest
+from farm.stock.dates import site_earliest, site_today
+from farm.stock.read import Presence
 
 from .models import (
     AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, Level, Member, Replicate, ReplicateUnit,
+    Status,
 )
 
 ERROR, WARNING = 'error', 'warning'
@@ -247,7 +250,79 @@ def check_places(design):
                 'system': system.name, 'groups': ', '.join(sorted(names))}, system.name)
 
 
-CHECKS = [check_experiment, check_groups, check_protocols, check_balance, check_places]
+def _period(first, last):
+    if last is None:
+        return _('from %(first)s, with no last day') % {'first': first.isoformat()}
+    return _('%(first)s to %(last)s') % {'first': first.isoformat(), 'last': last.isoformat()}
+
+
+def check_feeding(design):
+    """The diet is applied through the farm's own assignments when the experiment starts, so a draft asks that nothing
+    stands in its way: no unit's own assignment on a tank in the days it is booked (starting an experiment never ends
+    another record silently: it is listed, and the person ends it), and no protocol assigned to a batch in the unit,
+    which would beat the unit's (farm/feeding/ration.py)."""
+    experiment = design.experiment
+    diet = next((factor for factor in design.factors if factor.kind == FactorKind.DIET), None)
+    if experiment.status != Status.DRAFT or diet is None:
+        return
+    fed = [(group, row) for group in design.groups
+           if (design.level_of(group, diet) is not None and design.level_of(group, diet).protocol_id)
+           for replicate in design.replicates.get(group.pk, []) for row in design.placements.get(replicate.pk, [])]
+    standing = {}
+    for assignment in (ProtocolAssignment.objects.filter(unit_id__in={row.unit_id for _group, row in fed})
+                       .select_related('protocol', 'batch').order_by('valid_from')):
+        standing.setdefault(assignment.unit_id, []).append(assignment)
+    for group, row in fed:
+        for assignment in standing.get(row.unit_id, []):
+            if assignment.valid_from > row.until_on or (assignment.valid_until or row.from_on) < row.from_on:
+                continue
+            values = {'tank': row.unit.code, 'protocol': assignment.protocol.name,
+                      'period': _period(assignment.valid_from, assignment.valid_until), 'group': group.name}
+            if assignment.batch_id:
+                values['batch'] = assignment.batch.code
+                yield Finding(ERROR, 'batch_assignment', _('%(tank)s feeds batch %(batch)s by %(protocol)s (%(period)s): a '
+                                                           'protocol assigned to a batch in a unit beats the unit’s, so '
+                                                           'it would override the diet of %(group)s.') % values,
+                              f'{row.unit.code}/{assignment.pk}')
+            else:
+                yield Finding(ERROR, 'standing_assignment', _('%(tank)s already has the feeding protocol %(protocol)s '
+                                                              'assigned (%(period)s): end it first, for starting an '
+                                                              'experiment never ends another record.') % values,
+                              f'{row.unit.code}/{assignment.pk}')
+
+
+def check_day_zero(design):
+    """The baseline: on day 0 each tank holds fish of the species, one batch, with a measured weight that day (the
+    window of its FCR starts at that point). Asked once day 0 has come: before it the stock is not yet there to read."""
+    experiment = design.experiment
+    if (experiment.status != Status.DRAFT or experiment.starts_on is None
+            or experiment.starts_on > site_today(experiment.site)):
+        return
+    units = {row.unit.pk: row.unit for rows in design.placements.values() for row in rows}
+    if not units:
+        return
+    day = experiment.starts_on
+    presence = Presence.of_units(list(units))
+    species = dict(Batch.all_objects.filter(pk__in=set().union(*presence.batches.values()) if presence.batches else [])
+                   .values_list('pk', 'species_id'))
+    measured = measured_on(list(units), day)
+    for unit in sorted(units.values(), key=lambda unit: unit.code):
+        batches = sorted(batch for batch in presence.batches_in(unit.pk, day) if species.get(batch) == experiment.species_id)
+        if not batches:
+            yield Finding(WARNING, 'no_fish', _('%(tank)s holds no fish of %(species)s on day 0.') % {
+                'tank': unit.code, 'species': experiment.species}, unit.code)
+        elif len(batches) > 1:
+            yield Finding(WARNING, 'two_batches', _('%(tank)s holds more than one batch of %(species)s on day 0: its '
+                                                    'figures are the batches’ together.') % {
+                'tank': unit.code, 'species': experiment.species}, unit.code)
+        for batch in batches:
+            if (unit.pk, batch) not in measured:
+                yield Finding(WARNING, 'no_weighing', _('The fish of %(tank)s are not weighed on day 0: the baseline of '
+                                                        'their feed conversion is missing.') % {'tank': unit.code},
+                              unit.code)
+
+
+CHECKS = [check_experiment, check_groups, check_protocols, check_balance, check_places, check_feeding, check_day_zero]
 
 
 def problems(experiment, design=None):

@@ -11,6 +11,7 @@
   {% include "experiments/_design_table.html" %}
   {% else %}
   {% include "experiments/_findings.html" %}
+  {% if not object.is_template %}<p><a class="button button-inline" href="{{ start_url }}" data-modal>{% trans "Start the experiment" %}</a></p>{% endif %}
   <p class="panel-help">{% trans "A factor is what the groups differ in: the diet, whose levels are feeding protocols (how the farm applies it), or another factor such as a temperature, whose levels are labels. Each group has one level of each factor and its replicates, the tanks of which are placed on the Places tab. The design is saved as a whole." %}</p>
   <form method="post" action="{{ design_url }}" novalidate data-formset>
     {% csrf_token %}

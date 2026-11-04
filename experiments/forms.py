@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _, ngettext_lazy
 from core.codes import next_code
 from core.crud import DRAFT, RowFormSet, TabbedForm, tab_fields
 from core.people import person_name, who_can
+from farm.forms.stock import AcknowledgeInput
 from farm.models import FeedingProtocol, Site, Species, System, Tank
 from farm.models.feeding_protocol import ProtocolStatus
 from farm.stock.dates import site_today
@@ -497,3 +498,19 @@ def places_forms(experiment, data=None):
     return (configure(PlacesForm(initial={'version': experiment.version, 'seed': seed,
                                           'note': experiment.allocation_note})),
             PlaceFormSet(initial=initial, prefix='places', **kwargs))
+
+
+# ---- starting -----------------------------------------------------------------------------------------------------
+class StartForm(forms.Form):
+    """The Start dialog: the experiment's version, and the box that goes on past the warnings shown, whose value is their
+    fingerprint (farm.forms.stock.AcknowledgeInput), so a start whose warnings changed meanwhile is asked again."""
+
+    version = forms.IntegerField(widget=forms.HiddenInput)
+    start_ack = forms.CharField(
+        label=_('Start despite these warnings'), required=False, widget=AcknowledgeInput,
+        help_text=_('Starting fixes the design for ever. Going on is logged with the warnings shown here.'))
+
+    def __init__(self, *args, assessment=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.assessment = assessment
+        self.fields['start_ack'].widget.fingerprint = assessment.fingerprint if assessment else ''

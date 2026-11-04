@@ -430,6 +430,10 @@ msgid "%(first)s et al."
 msgstr "%(first)s vd."
 
 #, python-format
+msgid "%(first)s to %(last)s"
+msgstr "%(first)s – %(last)s"
+
+#, python-format
 msgid "%(first)s–%(last)s of %(total)s"
 msgstr "%(first)s–%(last)s / %(total)s"
 
@@ -736,6 +740,33 @@ msgstr "%(supplier)s bir %(category)s tedarikçisi değil (Satın alma › Tedar
 #, python-format
 msgid "%(system)s is on another site than the production department."
 msgstr "%(system)s, üretim departmanından farklı bir sahada."
+
+#, python-format
+msgid ""
+"%(tank)s already has the feeding protocol %(protocol)s assigned (%(period)s): end it first, for "
+"starting an experiment never ends another record."
+msgstr ""
+"%(tank)s için %(protocol)s yemleme protokolü zaten atanmış (%(period)s): önce onu sonlandırın, "
+"çünkü bir deneyi başlatmak başka bir kaydı asla sonlandırmaz."
+
+#, python-format
+msgid ""
+"%(tank)s feeds batch %(batch)s by %(protocol)s (%(period)s): a protocol assigned to a batch in a "
+"unit beats the unit’s, so it would override the diet of %(group)s."
+msgstr ""
+"%(tank)s, %(batch)s partisini %(protocol)s ile besliyor (%(period)s): bir birimdeki partiye "
+"atanan protokol birimin protokolünden önce gelir, bu yüzden %(group)s grubunun yem rejimini "
+"geçersiz kılar."
+
+#, python-format
+msgid "%(tank)s holds more than one batch of %(species)s on day 0: its figures are the batches’ together."
+msgstr ""
+"%(tank)s, 0. günde %(species)s türünden birden fazla parti tutuyor: rakamları partilerin "
+"toplamıdır."
+
+#, python-format
+msgid "%(tank)s holds no fish of %(species)s on day 0."
+msgstr "%(tank)s, 0. günde %(species)s türünden balık tutmuyor."
 
 #, python-format
 msgid "%(tank)s is booked to %(experiment)s on some of these days."
@@ -1372,6 +1403,9 @@ msgstr "Şablonun tankı yoktur: kopyalanacak bir tasarımdır."
 msgid "A template is a draft design without a start day or an allocation."
 msgstr "Şablon, başlangıç günü ve dağıtımı olmayan taslak bir tasarımdır."
 
+msgid "A template is not started: copy it into an experiment."
+msgstr "Şablon başlatılmaz: bir deney olarak kopyalayın."
+
 msgid ""
 "A transfer is a transport. A grading is checked against its own rule and the transport rule; the "
 "longer applies."
@@ -1939,6 +1973,9 @@ msgstr "Bu günlerin bazılarında bu birime başka bir protokol atanmış."
 
 msgid "Another protocol was assigned to these fish meanwhile: look at the list and try again."
 msgstr "Bu arada bu balıklara başka bir protokol atandı: listeye bakıp yeniden deneyin."
+
+msgid "Another protocol was assigned to these tanks meanwhile: look at the assignments and try again."
+msgstr "Bu tanklara bu arada başka bir protokol atandı: atamalara bakın ve yeniden deneyin."
 
 msgid "Another published source"
 msgstr "Yayımlanmış başka bir kaynak"
@@ -7686,6 +7723,20 @@ msgstr "Yedekte"
 msgid "Start"
 msgstr "Başlat"
 
+#, python-format
+msgid "Start %(experiment)s"
+msgstr "%(experiment)s deneyini başlat"
+
+msgid "Start despite these warnings"
+msgstr "Bu uyarılara rağmen başlat"
+
+msgid "Start the experiment"
+msgstr "Deneyi başlat"
+
+#, python-format
+msgid "Start “%(experiment)s”?"
+msgstr "“%(experiment)s” deneyi başlatılsın mı?"
+
 msgid "Started"
 msgstr "Başlatıldı"
 
@@ -7697,6 +7748,22 @@ msgstr "Başlatan"
 
 msgid "Starter feed"
 msgstr "Başlangıç yemi"
+
+msgid "Starting fixes the design for ever. Going on is logged with the warnings shown here."
+msgstr ""
+"Başlatmak tasarımı sonsuza dek sabitler. Devam etmek, burada gösterilen uyarılarla birlikte "
+"günlüğe yazılır."
+
+msgid ""
+"Starting fixes the design for ever: the hypothesis, the groups, their levels and replicates, the "
+"tanks and the days. For each group with a diet, its feeding protocol is assigned to its tanks for"
+" their days (Operations › Feeding › Assignments), so the meal board feeds by it. The figures are "
+"read from the farm’s own records over these days."
+msgstr ""
+"Başlatmak tasarımı sonsuza dek sabitler: hipotez, gruplar, düzeyleri ve tekrarları, tanklar ve "
+"günler. Yem rejimi olan her grup için yemleme protokolü, günlerine göre tanklarına atanır "
+"(Operasyonlar › Yemleme › Atamalar), böylece öğün panosu onunla besler. Rakamlar, bu günler "
+"boyunca çiftliğin kendi kayıtlarından okunur."
 
 msgid "Starting later"
 msgstr "Daha sonra başlayacak"
@@ -8328,6 +8395,10 @@ msgid ""
 msgstr ""
 "Balıklar elleçlemeden önce en az bu kadar süre yemsiz kalmış olmalı; elleçleme gününün "
 "başlangıcına kadar sayılır. 0 ile 720 arası."
+
+#, python-format
+msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
+msgstr "%(tank)s balıkları 0. günde tartılmamış: yem dönüşümlerinin başlangıç değeri eksik."
 
 #, python-format
 msgid "The group name %(name)s is too long."
@@ -8968,6 +9039,12 @@ msgstr "Bu partinin zaten bir üretim planı var."
 msgid "This empties the unit of this batch"
 msgstr "Bu, birimi bu partiden boşaltır"
 
+msgid "This experiment cannot be started."
+msgstr "Bu deney başlatılamaz."
+
+msgid "This experiment has started."
+msgstr "Bu deney başladı."
+
 msgid "This experiment was deleted meanwhile."
 msgstr "Bu deney bu arada silindi."
 
@@ -9461,6 +9538,9 @@ msgstr "Uyarı üst sınırı"
 
 msgid "Warning below"
 msgstr "Uyarı alt sınırı"
+
+msgid "Warnings acknowledged"
+msgstr "Kabul edilen uyarılar"
 
 msgid "Warranty end date"
 msgstr "Garanti bitiş tarihi"
@@ -10356,6 +10436,10 @@ msgid "from %(first)s"
 msgstr "%(first)s tarihinden"
 
 #, python-format
+msgid "from %(first)s, with no last day"
+msgstr "%(first)s tarihinden, son günü olmadan"
+
+#, python-format
 msgid "from %(start)s to %(end)s"
 msgstr "%(start)s – %(end)s"
 
@@ -10917,6 +11001,10 @@ msgstr "Ω kalsit ve aragonit"
 
 msgid "Ω: needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Ω: kalsiyum ve 5 ile 44 ‰ arasında bir tuzluluk gerekir, Mucci'nin (1983) aralığı."
+
+#, python-format
+msgid "“%(experiment)s” started."
+msgstr "“%(experiment)s” deneyi başladı."
 
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."

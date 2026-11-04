@@ -1,15 +1,17 @@
 """The data map (core.datamap): every table has a screen that fills, changes, deletes and shows it, every user column is
 on a form or says why not, and docs/data-map.md and .json are what the code says now. A table, a column or a form field
 added without its declaration fails here, naming the model and where to declare it."""
+import sys
 from contextlib import ExitStack
 from importlib import import_module
+from pathlib import Path
 from unittest import mock
 
 from django import forms
 from django.conf import settings
 from django.core.management import CommandError, call_command
 from django.db import models
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 from django.test.utils import isolate_apps
 
 from . import datamap
@@ -37,6 +39,17 @@ class DataMapTests(SimpleTestCase):
     def test_the_projects_apps_are_found_from_where_their_code_lives(self):
         found = {config.label for config in datamap.project_apps()}
         self.assertTrue({'core', 'farm', 'inventory', 'knowledge', 'messaging', 'reports', 'tasks'} <= found, found)
+        self.assertFalse(found & {'auth', 'admin', 'contenttypes', 'sessions'}, found)
+
+    def test_a_python_environment_kept_inside_the_project_does_not_make_djangos_apps_the_projects(self):
+        # On a developer's machine the virtual environment sits in the project directory: Django's own apps
+        # (admin, auth, sessions) then live "under" it. Pretend the project root is the environment's parent.
+        datamap.project_apps.cache_clear()
+        try:
+            with override_settings(BASE_DIR=Path(sys.prefix).resolve().parent):
+                found = {config.label for config in datamap.project_apps()}
+        finally:
+            datamap.project_apps.cache_clear()
         self.assertFalse(found & {'auth', 'admin', 'contenttypes', 'sessions'}, found)
 
     def test_every_table_has_a_screen_path_and_every_column_a_reason(self):

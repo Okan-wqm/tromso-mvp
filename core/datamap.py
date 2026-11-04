@@ -22,6 +22,7 @@ The rules the test enforces are `problems()`; a new app is picked up from INSTAL
 test until its `screens.py` declares them, with a message that names the model and where to declare it."""
 import json
 import re
+import sys
 from functools import cache
 from dataclasses import dataclass, field
 from importlib import import_module
@@ -119,9 +120,13 @@ class Screen:
 
 @cache
 def project_apps():
-    """The apps that are the project's own: the ones whose code lives under the project directory."""
+    """The apps that are the project's own: the ones whose code lives under the project directory and not
+    in the Python environment (a virtual environment kept inside the project, as on a developer's machine,
+    holds Django's own apps under the project directory too)."""
     root = Path(settings.BASE_DIR).resolve()
-    return [config for config in apps.get_app_configs() if root in Path(config.path).resolve().parents]
+    environment = Path(sys.prefix).resolve()
+    return [config for config in apps.get_app_configs()
+            if root in Path(config.path).resolve().parents and environment not in Path(config.path).resolve().parents]
 
 
 @cache

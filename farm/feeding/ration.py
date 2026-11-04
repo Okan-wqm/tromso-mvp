@@ -219,12 +219,13 @@ class Policy:
         band = table.band_for(weight_g)
         if band is None:
             return Basis(weight_g, table, assignment, missing=OUTSIDE_BANDS)
+        temperature = self.temperature(unit_id, day)
         # A fasting day before a planned harvest or transport has no ration; the band stays, so a feeding given
-        # anyway is still credited at the band's expected FCR.
+        # anyway is still credited at the band's expected FCR, and the water's temperature stays on the line
+        # (the board's Water column reads it from here: a fasting unit still has water to watch).
         fast = self.fasting(unit_id, day) if self.fasting is not None else None
         if fast is not None:
-            return Basis(weight_g, table, assignment, band, missing=FASTING, fast=fast)
-        temperature = self.temperature(unit_id, day)
+            return Basis(weight_g, table, assignment, band, temperature, missing=FASTING, fast=fast)
         if temperature is None:
             return Basis(weight_g, table, assignment, band, missing=NO_TEMPERATURE)
         sfr = sfr_at(band.cells, temperature.value_c)

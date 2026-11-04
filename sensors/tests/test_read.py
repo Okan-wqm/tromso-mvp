@@ -180,10 +180,11 @@ class LocalDayTests(ReadCase):
         oslo = ZoneInfo('Europe/Oslo')
         # 2026-10-25: the clocks go back in Oslo, a day of 25 hours.
         day = datetime(2026, 10, 25, tzinfo=oslo)
-        rows = [(day + timedelta(hours=hour), 9.0) for hour in range(25)]
+        rows = [(day.astimezone(tz.utc) + timedelta(hours=hour), 9.0) for hour in range(25)]     # absolute hours
         rows += [(datetime(2026, 10, 26, 0, 30, tzinfo=oslo), 9.0)]
         insert(self.temp.channel_no, rows)
-        found = read.series(self.t1, 'temperature_c', datetime(2026, 9, 1, tzinfo=tz.utc),
+        unit = type(self.t1).objects.select_related('production_department__site').get(pk=self.t1.pk)
+        found = read.series(unit, 'temperature_c', datetime(2026, 9, 1, tzinfo=tz.utc),
                             datetime(2027, 11, 1, tzinfo=tz.utc))
         self.assertEqual(found.tier, 'day')
         days = {bucket.start.astimezone(oslo).date(): bucket.n for bucket in found.buckets}

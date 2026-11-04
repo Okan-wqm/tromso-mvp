@@ -11,4 +11,8 @@ urlpatterns = [route for tab in Resource.registry if tab.model._meta.app_label =
 urlpatterns += [
     path('sensors/', views.home, name='home'),
     path('sensors/credentials/<uuid:pk>/rotate/', views.credential_rotate, name='credential_rotate'),
+    path('sensors/charts/', views.charts, name='charts'),
+    path('sensors/charts/csv/', views.chart_csv, name='chart_csv'),
+    path('sensors/charts/place/', views.target_charts, name='target_charts'),
+    path('sensors/live/', views.live, name='live'),
 ]

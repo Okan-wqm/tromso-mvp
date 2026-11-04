@@ -141,6 +141,13 @@ WORKSPACES = [
                 Entry(_('Bindings'), 'sensors:binding_list', 'link', 'sensors.view_binding'),
             ]),
         ]),
+        # What the channels say: their values over time and now (the right to read sensor readings).
+        Section(_('Operations'), [
+            Group('', [
+                Entry(_('Charts'), 'sensors:charts', 'chart-line', 'sensors.view_reading'),
+                Entry(_('Live values'), 'sensors:live', 'radio', 'sensors.view_reading'),
+            ]),
+        ]),
         Section(_('Administration'), [
             Group('', [
                 Entry(_('Credentials'), 'sensors:credential_list', 'key-round', 'sensors.view_credential'),

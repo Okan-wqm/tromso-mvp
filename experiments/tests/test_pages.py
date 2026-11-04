@@ -234,7 +234,7 @@ class TeamTests(PageTestCase):
         self.nobody = person('nobody', 'view_site')
 
     def post(self, rows):
-        return self.client.post(self.url, rows_data('team', rows))
+        return self.client.post(self.url, rows_data('team', rows, record=self.trial))
 
     def test_the_team_is_saved_as_a_whole_with_one_lead_and_logged_on_the_experiment(self):
         response = self.post([{'user': self.user.pk, 'role': 'lead'}, {'user': self.kari.pk, 'role': 'student'},
@@ -284,6 +284,12 @@ class TeamTests(PageTestCase):
         self.assertContains(page, 'data-tab="team"')
         self.assertContains(page, reverse('experiments:experiment_team', args=[self.trial.pk]))
         self.assertContains(page, 'Save team')
+        self.assertContains(page, f'name="version" value="{self.trial.version}"')     # the list's save is refused when stale
+        stale = rows_data('team', [{'user': self.user.pk, 'role': 'lead'}, {'user': self.kari.pk, 'role': 'student'}],
+                          record=self.trial)
+        stale['version'] = str(self.trial.version - 1)
+        self.client.post(self.url, stale)
+        self.assertEqual(Member.objects.count(), 1)
 
 
 class DeleteTests(PageTestCase):

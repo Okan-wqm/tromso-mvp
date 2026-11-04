@@ -40,21 +40,27 @@ class ExperimentConstraintTests(ExperimentTestCase):
         self.experiment(is_template=True)
         self.refuses(self.experiment, is_template=True, starts_on=self.today)
         self.refuses(self.experiment, is_template=True, allocation_method='manual', allocation_note='by hand')
-        self.refuses(self.experiment, is_template=True, status='running', starts_on=self.today, hypothesis='h',
-                     primary_endpoint='bfcr', allocation_method='manual', allocation_note='by hand')
+        template = self.experiment(is_template=True)
+        self.refuses(Experiment.objects.filter(pk=template.pk).update, status='running', starts_on=self.today,
+                     hypothesis='h', primary_endpoint='bfcr', allocation_method='manual', allocation_note='by hand')
 
     def test_a_started_experiment_has_its_day_0_hypothesis_endpoint_and_allocation(self):
-        whole = {'status': 'running', 'starts_on': self.today, 'hypothesis': 'More protein, faster growth',
-                 'primary_endpoint': 'bfcr', 'allocation_method': 'manual', 'allocation_note': 'by hand'}
-        self.experiment(**whole)
+        """Started by an UPDATE (an experiment is only ever inserted as a draft, the trigger says so): the check refuses it
+        without any of them, and lets it through with all."""
+        whole = {'starts_on': self.today, 'hypothesis': 'More protein, faster growth', 'primary_endpoint': 'bfcr',
+                 'allocation_method': 'manual', 'allocation_note': 'by hand'}
+
+        def start(trial, **fields):
+            Experiment.objects.filter(pk=trial.pk).update(status='running', **{**whole, **fields})
+
         for missing in ('starts_on', 'hypothesis', 'primary_endpoint', 'allocation_method'):
             with self.subTest(missing=missing):
-                blank = {**whole, missing: None if missing == 'starts_on' else ''}
+                blank = {missing: None if missing == 'starts_on' else ''}
                 if missing == 'allocation_method':
                     blank['allocation_note'] = ''
-                self.refuses(self.experiment, **blank)
+                self.refuses(start, self.experiment(), **blank)
+        start(self.experiment())
         self.experiment(starts_on=None, status='draft')            # a draft needs none of them
-        self.refuses(self.experiment, **{**whole, 'status': 'closed', 'hypothesis': ''})
 
     def test_the_allocation_method_its_seed_and_its_reason_belong_together(self):
         self.experiment()

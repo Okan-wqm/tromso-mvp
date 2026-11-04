@@ -1859,6 +1859,12 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   gave up to its last day stays in the figures (the figures are bounded by the placement's days, so a replacement without a
   weighing at the move leaves a gap that the Overview names). One row "Places" and one "Reason it left" go on the experiment's log; the
   tanks and batches are locked before the experiment, and a form older than the stored version is refused.
+- **The chip beside a tank** (`farm/placements.py`, filled by `experiments.read.chips`, registered in `experiments.ready()`). Production
+  units (the row and the drawer) and the meal board show "E-2026-001 · Control · R2" beside a tank that is booked to an experiment today
+  (the unit's site's today; a draft reserves its tank, so it shows too, as a draft), linking to the experiment, for those who may read
+  experiments. The registry is a list of providers, as the medicine withdrawal's is, and it **fails open**: with none registered, or
+  one that raises or breaks its transaction (it runs in its own savepoint), the page shows no chip and nothing else changes. One read of
+  the placements for each distinct day, so the farm's pages do not grow with their units.
 - **Deviations and `check_experiments`.** The Overview of a started experiment ends with **Deviations from the design**: what the farm's
   own records show on the days of the placements that the design did not say, derived from them (`read.deviations`, never stored, and
   nothing is ever refused for a design): **a batch** of the species that was in a tank on some day and not on its first day (cleaner
@@ -2538,6 +2544,7 @@ real mail.
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
+| `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |
 | `farm/water/degree_days.py` | The batch's daily mean water temperature and the degree-days it adds up to (a past day without a measurement at the species' assumed temperature, else 0 °C; a day ahead projected): the one definition the medicine withdrawal and the purging fast share |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |

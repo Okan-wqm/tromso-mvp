@@ -35,6 +35,7 @@ from ..forms.stock import (
     VoidForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
+from .. import placements
 from ..models import HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
 from ..models.stock import ARRIVAL_STATUSES
 from ..templatetags.stock import fish, number, tonnes
@@ -141,11 +142,13 @@ def production_units(request):
     feeding = feeding_read.figures(stock, detail=drawer_unit)
     water = water_views.unit_water(request.user, shown)
     withdrawals = harvest_views.withdrawals([unit for unit in shown if unit.pk in stock])
+    chips = placements.of(shown, request.user)
 
     context = _context(
         units=units, stocked=len(stock),
         rows=[{'unit': unit, 'stock': stock.get(unit.pk), 'feeding': feeding.get(unit.pk),
-               'water': water.get(unit.pk), 'withdrawal': withdrawals.get(unit.pk), 'selected': unit is drawer_unit,
+               'water': water.get(unit.pk), 'withdrawal': withdrawals.get(unit.pk), 'placements': chips.get(unit.pk, ()),
+               'selected': unit is drawer_unit,
                'href': page_url(params, unit=str(unit.pk)), 'takes_fish': unit.status in ARRIVAL_STATUSES}
               for unit in shown],
         biomass=biomass,
@@ -228,6 +231,7 @@ def _drawer(request, unit, stock, feeding, params):
         # Today's ration of each batch, at its estimated weight (farm/feeding/projection.py).
         'ration_rows': _ration_rows(stock, feeding),
         'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,
+        'drawer_placements': placements.of([unit], request.user).get(unit.pk, ()),
         'drawer_days': stock.days(services.local_today(unit)) if stock else None,
         'stock_url': reverse('farm:stock_input') + query if can_record and takes_fish else '',
         'close_url': page_url(params, unit=''),

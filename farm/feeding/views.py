@@ -25,6 +25,7 @@ from django.utils.translation import gettext as _, ngettext
 from core import navigation
 from core.crud import done, render_page
 
+from .. import placements
 from ..forms.feeding import FeedingForm, feed_label
 from ..forms.stock import VoidForm
 from ..handling.fasting import fasting_on
@@ -256,6 +257,7 @@ def meal_board(request):
         else:
             params[key] = ''
     today = {unit.pk: local_today(unit) for unit in stocked}
+    chips = placements.of(stocked, request.user)
     projection = None
     if stocked:
         projection = read.project([unit.pk for unit in stocked], [(unit.pk, today[unit.pk]) for unit in stocked])
@@ -272,6 +274,7 @@ def meal_board(request):
         temperature = next((line['share'].end.temperature for line in lines if line['share'].end.temperature), None)
         rows.append({
             'unit': unit, 'stock': stock[unit.pk], 'day': unit_day, 'lines': lines, 'temperature': temperature,
+            'placements': chips.get(unit.pk, ()),
             'record_url': f'{reverse("farm:feeding_record", args=[unit.pk])}?'
                           f'{urlencode({"meal": "next", "next": here})}' if can_record else '',
             'water_url': f'{reverse("farm:water_record")}?{urlencode({"unit": unit.pk})}' if can_sample else ''})

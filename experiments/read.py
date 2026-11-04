@@ -13,6 +13,8 @@ farm/feeding/read.py) over the days a placement gives, never copied, and the que
   biomass now, survival over the days and the feed conversion over the days: every figure through the farm's own reads,
   bounded by the placement's days, with no "since stocking" figure beside them;
 - `data(experiment)`: per tank its days and the feeding records of them, for the Data tab;
+- `chips(units, user)`: the placement registry's provider (farm/placements.py): each unit's experiment, group and replicate
+  on its site's today, for those who may read experiments;
 - `deviations(experiment)`: what happened on the days of the placements that the design did not say (a batch that came in,
   fish moved between replicates or out of the trial, a feed on no band of the diet, a ration that does not follow the diet):
   derived from the farm's own records, never stored, never blocking."""
@@ -20,16 +22,18 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
 
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import number_format
 from django.utils.translation import gettext as _
 
+from farm import placements as farm_placements
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import LOST
 from farm.models import Batch, Feed, FeedingRecord, ProtocolBand, StockMovement, Tank
 from farm.models.stock import MovementKind
 from farm.stock import read as stock_read
-from farm.stock.dates import site_today
+from farm.stock.dates import local_today, site_today
 
 from .models import ExperimentGroup, FactorKind, GroupLevel, Replicate, ReplicateUnit, Status
 
@@ -442,4 +446,25 @@ def _ration_off_diet(placed, protocols, presence, mine, units, today):
                         _('No feeding protocol reaches %(tank)s, though %(protocol)s is the diet of its group, from '
                           '%(first)s to %(last)s.'))
                 found.append(Deviation(RATION_OFF_DIET, cell, first, last, text % values, actual))
+    return found
+
+
+# ---- the chip beside a unit on the farm's pages ------------------------------------------------------------------------
+def chips(units, user):
+    """{unit id: [farm.placements.Placement]}: the experiment, group and replicate each unit is booked to on its site's today
+    (drafts reserve their tanks, so they show too), for a person who may read experiments; one read of `placements` for
+    each distinct day, so the farm's pages do not grow with their units."""
+    if not user.has_perm('experiments.view_experiment'):
+        return {}
+    by_day = {}
+    for unit in units:
+        by_day.setdefault(local_today(unit), []).append(unit.pk)
+    found = {}
+    for day, unit_ids in by_day.items():
+        for unit_id, cell in placements(unit_ids, day).items():
+            experiment = cell.group.experiment
+            found[unit_id] = [farm_placements.Placement(
+                label=f'{experiment.code} · {cell.group.name} · R{cell.replicate.number}',
+                title=f'{experiment.name} ({experiment.get_status_display()})',
+                url=reverse('experiments:experiment_detail', args=[experiment.pk]))]
     return found

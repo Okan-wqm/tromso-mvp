@@ -102,6 +102,15 @@ started experiment: the errors of `design.HOLDS_AFTER_START` (a group without re
 site or booked outside the days, an allocation missing), a tank deleted while it is in an experiment, a team without a lead and, while it runs,
 a placement of a diet group **without its live feeding assignment** (the diet's protocol, from the placement's first day to its last).
 
+## The chip beside a tank
+
+`farm/placements.py` is a registry like the medicine withdrawal's (`farm/handling/withdrawal.py`): an app registers a provider in its `ready()`, and
+Production units (the row and the drawer) and the meal board show what the providers say of each unit. The experiments' provider (`read.chips`) says
+"E-2026-001 · Control · R2" for a tank booked to an experiment on its site's today, a draft included, for those who may read experiments. The
+registry **fails open**: no provider, or one that raises or breaks its transaction (it runs in its own savepoint), gives no chip and changes nothing
+else. `experiments/tests/test_placements.py` and `farm/tests/test_placements.py` test the registration, the day of each unit, the permission, the
+query count and that a failing provider never breaks a farm page.
+
 ## Derived, never stored
 
 `read.cells` (the one definition of "which tank, which days, which replicate"), `read.booked`, `read.placements`, `read.overview`,
@@ -128,8 +137,8 @@ The plan (`plan/area1/PLAN.md`) and the code disagree in a few places, and the c
   inside one replicate (a replacement's) is not: the plan's "between two placements" would have flagged every replacement. Only a protocol assigned to a
   **batch in the unit** beats the unit's (the farm's rule: batch in unit, then the unit, then the whole batch), so a protocol
   assigned to a batch alone is not a deviation.
-- The placement badge (plan step 14, optional) is not built: it would put a chip on three farm pages (Production units, the meal board, the unit's drawer) through a
-  registry in the farm, and those pages are being changed by other work. `read.placements(unit_ids, day)` is the read it would use.
+- The placement badge (plan step 14) is built as the plan says, with one change: the provider is given the units and the person (`provider(units, user)`), not
+  unit ids and a day, because each unit is read on its own site's day and only those who may read experiments see it.
 
 ## What to check live
 

@@ -13,11 +13,11 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext_lazy
 
 from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
-from farm.models import Equipment, Site
+from farm.models import Equipment, SamplingPoint, Site, System
 from farm.models.site import zone_of
 
 from . import quantities
-from .models import Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape, TimeUnit
+from .models import Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape, TimeUnit
 
 DECIMAL = {'inputmode': 'decimal'}
 # A whole-second device time cannot tell apart two messages of one second, and the readings' key is (channel, time):
@@ -285,14 +285,18 @@ class SiteClockDateTimeField(forms.DateTimeField):
         moment = super().to_python(value)
         if moment is None or self.zone is None:
             return moment
-        wall = timezone.make_naive(moment, timezone.get_current_timezone())
-        first, second = wall.replace(fold=0, tzinfo=self.zone), wall.replace(fold=1, tzinfo=self.zone)
-        if first.utcoffset() != second.utcoffset():
-            raise ValidationError(_('This time happens twice on the site’s clock (the clocks go back): choose another.'))
-        if timezone.make_naive(first.astimezone(self.zone), self.zone) != wall:
-            raise ValidationError(_('This time does not exist on the site’s clock (the clocks go forward): choose '
-                                    'another.'))
-        return first
+        return on_site_clock(timezone.make_naive(moment, timezone.get_current_timezone()), self.zone)
+
+
+def on_site_clock(wall, zone):
+    """The moment a wall-clock time (naive) is on a site's clock; refused when the clocks skip it or show it twice."""
+    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
+    if first.utcoffset() != second.utcoffset():
+        raise ValidationError(_('This time happens twice on the site’s clock (the clocks go back): choose another.'))
+    if timezone.make_naive(first.astimezone(zone), zone) != wall:
+        raise ValidationError(_('This time does not exist on the site’s clock (the clocks go forward): choose '
+                                'another.'))
+    return first
 
 
 class CalibrationForm(forms.ModelForm):
@@ -353,3 +357,107 @@ class CredentialForm(TabbedForm):
                                        '(manage.py sensor_broker_sync).'),
         }
 
+
+
+BIND_TABS = [('general', gettext_lazy('Binding'), ['channel', 'target', 'role', 'valid_from', 'note'])]
+TARGET_KINDS = {'point': SamplingPoint, 'system': System, 'equipment': Equipment}
+
+
+def target_choices():
+    """The places a channel can be bound to, grouped: live active sampling points (the owner's code and the point's
+    name), systems and pieces of equipment. A value is "kind:pk"."""
+    points = SamplingPoint.objects.filter(is_active=True).with_owners().order_by('name')
+    return [
+        (_('Sampling points'), sorted(((f'point:{point.pk}', str(point)) for point in points), key=lambda item: item[1])),
+        (_('Systems'), [(f'system:{system.pk}', str(system)) for system in System.objects.order_by('code')]),
+        (_('Equipment'), [(f'equipment:{item.pk}', str(item)) for item in Equipment.objects.order_by('code')]),
+    ]
+
+
+class BindForm(TabbedForm):
+    """The Move dialog: bind a channel from a moment to a sampling point, a system or a piece of equipment (one choice,
+    `target`, that fills the column of its kind). The channel's open binding ends at that moment (sensors/bindings.py).
+    The moment is typed on the clock of the channel's site."""
+
+    tabs = BIND_TABS
+    target = forms.ChoiceField(label=gettext_lazy('Bound to'))
+    valid_from = forms.DateTimeField(label=gettext_lazy('From'),
+                                     widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'))
+
+    class Meta:
+        model = Binding
+        fields = ['channel', 'role', 'valid_from', 'note']
+        help_texts = {
+            'note': gettext_lazy('e.g. moved to the new tank after the grading'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['channel'].queryset = Channel.objects.select_related('device__site').order_by('device__code', 'code')
+        self.fields['target'].choices = [('', '---------'), *target_choices()]
+        self.fields['target'].help_text = _('A water value goes to a sampling point or a system; a process value '
+                                            '(flow, level, power…) to a piece of equipment or a system.')
+        self.fields['valid_from'].help_text = _('On the clock of the channel’s site. Its binding until now ends then.')
+
+    def clean(self):
+        cleaned = super().clean()
+        channel, chosen = cleaned.get('channel'), cleaned.get('target', '')
+        kind, _sep, pk = chosen.partition(':')
+        model = TARGET_KINDS.get(kind)
+        target = model.objects.filter(pk=pk).first() if model is not None and pk else None
+        if chosen and target is None:
+            self.add_error('target', _('Choose a place from the list.'))
+        if channel is None or target is None:
+            return cleaned
+        if channel.is_water and kind == 'equipment':
+            self.add_error('target', _('A water value is bound to a sampling point or a system.'))
+        if not channel.is_water and kind == 'point':
+            self.add_error('target', _('A process value is bound to a piece of equipment or a system.'))
+        if cleaned.get('valid_from') is not None:
+            wall = timezone.make_naive(cleaned['valid_from'], timezone.get_current_timezone())
+            try:
+                cleaned['valid_from'] = on_site_clock(wall, zone_of(channel.device.site))
+            except ValidationError as error:
+                self.add_error('valid_from', error)
+                return cleaned
+            role = cleaned.get('role')
+            clash = Binding.objects.filter(**{kind: target}, role=role, channel__quantity=channel.quantity) \
+                .exclude(channel=channel).at(cleaned['valid_from']).select_related('channel').first()
+            if clash is not None:
+                self.add_error('role', _('%(target)s already has a %(role)s %(quantity)s channel then: %(channel)s.') % {
+                    'target': target, 'role': clash.get_role_display().lower(), 'quantity': channel.quantity_info.label,
+                    'channel': clash.channel})
+        cleaned['target_kind'], cleaned['target_object'] = kind, target
+        return cleaned
+
+    def _check_conditional_constraints(self, cleaned):
+        # The channel's period overlaps its own open binding, which the move ends: sensors/bindings.py checks the
+        # moment, the database the rest.
+        pass
+
+
+EDIT_BINDING_TABS = [('general', gettext_lazy('Binding'), ['valid_to', 'note'])]
+
+
+class BindingForm(TabbedForm):
+    """An existing binding: only its end and its note change; where and from when it held is history (a move is a new
+    binding)."""
+
+    tabs = EDIT_BINDING_TABS
+
+    class Meta:
+        model = Binding
+        fields = tab_fields(EDIT_BINDING_TABS)
+        help_texts = {'valid_to': gettext_lazy('When the channel stopped being here; empty while it still is.')}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        zone = zone_of(self.instance.channel.device.site) if self.instance.channel_id else None
+        self.fields['valid_to'] = SiteClockDateTimeField(label=self.fields['valid_to'].label, required=False, zone=zone,
+                                                         help_text=self.fields['valid_to'].help_text)
+
+    def clean_valid_to(self):
+        value = self.cleaned_data.get('valid_to')
+        if value is not None and value > timezone.now():
+            raise ValidationError(_('A binding cannot end in the future.'))
+        return value

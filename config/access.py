@@ -72,6 +72,9 @@ AREAS = [
     Area(_('Payload formats'), 'sensors.PayloadFormat'),
     Area(_('Devices'), 'sensors.Device'),
     Area(_('Channels'), 'sensors.Channel'),
+    # Where a channel's values belong: Create is the Move dialog (also from a monitoring card), Edit changes only the end
+    # and the note, Delete hides a wrong binding with its history.
+    Area(_('Channel bindings'), 'sensors.Binding'),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),

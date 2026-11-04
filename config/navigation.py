@@ -137,6 +137,8 @@ WORKSPACES = [
                 Entry(_('Payload formats'), 'sensors:payloadformat_list', 'braces', 'sensors.view_payloadformat'),
                 Entry(_('Devices'), 'sensors:device_list', 'cpu', 'sensors.view_device'),
                 Entry(_('Channels'), 'sensors:channel_list', 'activity', 'sensors.view_channel'),
+                # Where each channel's values belong over time; a move ends a binding and starts the next.
+                Entry(_('Bindings'), 'sensors:binding_list', 'link', 'sensors.view_binding'),
             ]),
         ]),
         Section(_('Administration'), [

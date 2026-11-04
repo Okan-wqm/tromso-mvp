@@ -4,16 +4,22 @@ deleted softly by the plan its links say (core.softdelete): a connection takes i
 payload format or a credential in use blocks the delete. Readings are never deleted with a channel."""
 import uuid
 
+from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.db.models import Count, IntegerField, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
-from django.utils.translation import gettext_lazy as _, ngettext_lazy
+from django.utils import timezone
+from django.utils.translation import gettext as gettext_now, gettext_lazy as _, ngettext_lazy
 
-from core.crud import CreateView, Resource, RowList, render_page
+from core.crud import CreateView, Resource, RowList, done, render_page
+from farm.models.site import zone_of
 
-from . import credentials
-from .forms import CalibrationFormSet, ChannelForm, ConnectionForm, CredentialForm, DeviceForm, PayloadFormatForm
-from .models import Channel, Connection, Credential, Device, PayloadFormat
+from . import bindings, credentials
+from .forms import (BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm, CredentialForm, DeviceForm,
+                    PayloadFormatForm)
+from .models import Binding, Channel, Connection, Credential, Device, PayloadFormat
 
 
 def _count(model, link, **condition):
@@ -165,3 +171,64 @@ class CredentialResource(Resource):
         if created:
             request.sensors_secret = (obj, credentials.give_secret(obj))
 
+
+
+class BindView(CreateView):
+    """The Move dialog: binds a channel from a moment (sensors/bindings.py `move`, which ends its open binding then). A
+    link may name the channel and the place (`?channel=…&target=point:…`, from a monitoring card or a Deffeyes window)."""
+
+    def get(self, request):
+        initial = {name: request.GET[name] for name in ('channel', 'target', 'role') if request.GET.get(name)}
+        chosen = initial.get('channel', '')
+        channel = Channel.objects.select_related('device__site').filter(pk=chosen).first() if _uuid(chosen) else None
+        # Now, on the clock of the channel's site (the company's while no channel is chosen).
+        zone = zone_of(channel.device.site if channel is not None else None)
+        initial['valid_from'] = timezone.localtime(timezone=zone).strftime('%Y-%m-%dT%H:%M')
+        return self.page(BindForm(initial=initial))
+
+    def post(self, request):
+        form = BindForm(request.POST)
+        if not form.is_valid():
+            return self.page(form)
+        data = form.cleaned_data
+        try:
+            bindings.move(request.user, data['channel'], data['valid_from'], role=data['role'], note=data['note'],
+                          **{data['target_kind']: data['target_object']})
+        except ValidationError as error:
+            for field, messages_ in error.message_dict.items():
+                form.add_error(field if field in form.fields else None, messages_)
+            return self.page(form)
+        except IntegrityError as error:
+            # Someone else bound the same place or channel since the form checked it: the database said no.
+            cause = getattr(error, '__cause__', None)
+            form.add_error(None, str(getattr(getattr(cause, 'diag', None), 'message_primary', '') or error))
+            return self.page(form)
+        messages.success(request, gettext_now('%(channel)s bound to %(target)s.') % {'channel': data['channel'],
+                                                                          'target': data['target_object']})
+        return done(request, reverse(self.resource.url_name('list')))
+
+
+class BindingResource(Resource):
+    model = Binding
+    form_class = BindingForm
+    name, plural = _('channel binding'), _('channel bindings')
+    url_prefix = 'sensors/bindings'
+    search_fields = ['channel__code', 'channel__device__code', 'point__name', 'system__code', 'equipment__code']
+    list_template = 'sensors/binding_list.html'
+    icon = 'link'
+    create_view = BindView
+    page_size = 100
+
+    @classmethod
+    def queryset(cls):
+        return (Binding.objects.visible()
+                .select_related('channel__device', 'point__unit', 'point__system', 'point__equipment', 'system',
+                                'equipment').order_by('-valid_from'))
+
+    @classmethod
+    def filter_list(cls, request, objects):
+        """The bindings of one channel (its history), when the address names it."""
+        channel = request.GET.get('channel', '')
+        if _uuid(channel):
+            return objects.filter(channel_id=channel), {'channel': channel}
+        return objects, {'channel': ''}

@@ -12,7 +12,7 @@ from datetime import timedelta
 import psycopg
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import connection
+from django.db import IntegrityError, connection, transaction
 from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -76,11 +76,11 @@ class RuleTests(BindingCase):
     def test_one_primary_per_target_and_quantity_at_a_time(self):
         other = make_channel(self.device, 'ph', code='PH-2')
         self.bind(self.ph, point=self.mid1)
-        with self.assertRaisesMessage(Exception, 'already has a primary ph channel'):
+        with self.assertRaisesMessage(IntegrityError, 'already has a primary ph channel'), transaction.atomic():
             self.bind(other, point=self.mid1)
         self.bind(other, point=self.mid1, role='backup')
         third = make_channel(self.device, 'ph', code='PH-3')
-        with self.assertRaisesMessage(Exception, 'already has a backup ph channel'):
+        with self.assertRaisesMessage(IntegrityError, 'already has a backup ph channel'), transaction.atomic():
             self.bind(third, point=self.mid1, role='backup')
         self.bind(third, point=self.mid2)                                     # another point: allowed
 
@@ -88,9 +88,11 @@ class RuleTests(BindingCase):
         from farm.models import Equipment, EquipmentType
         pump = Equipment.objects.create(name='Pump', code='P1', production_department=self.hall,
                                         equipment_type=EquipmentType.objects.order_by('code').first())
-        with self.assertRaisesMessage(Exception, 'A water value is bound to a sampling point or a system'):
+        water, process = 'A water value is bound to a sampling point or a system', \
+            'A process value is bound to a piece of equipment or a system'
+        with self.assertRaisesMessage(IntegrityError, water), transaction.atomic():
             self.bind(self.ph, equipment=pump)
-        with self.assertRaisesMessage(Exception, 'A process value is bound to a piece of equipment or a system'):
+        with self.assertRaisesMessage(IntegrityError, process), transaction.atomic():
             self.bind(self.flow, point=self.mid1)
         self.bind(self.ph, system=self.ras)
         self.bind(self.flow, equipment=pump, start=self.start)
@@ -132,7 +134,7 @@ class WaterReadTests(BindingCase):
         self.assertEqual(reading.sample.fresh_for, self.ph.fresh_s)
 
     def test_the_systems_channel_is_the_units_and_its_loops(self):
-        temperature = make_channel(self.device, 'temperature_c')
+        temperature = make_channel(self.device, 'temperature_c', code='TEMP-SYSTEM')
         bindings.move(self.user, temperature, system=self.ras, at=self.start)
         self.state(temperature, 9.46)
         water = read.latest([self.mid1, self.loop])

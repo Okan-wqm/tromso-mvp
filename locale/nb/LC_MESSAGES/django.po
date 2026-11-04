@@ -106,6 +106,12 @@ msgstr[0] "%(count)d kalibrering lagret."
 msgstr[1] "%(count)d kalibreringer lagret."
 
 #, python-format
+msgid "%(count)d card saved."
+msgid_plural "%(count)d cards saved."
+msgstr[0] "%(count)d kort lagret."
+msgstr[1] "%(count)d kort lagret."
+
+#, python-format
 msgid "%(count)d contact saved."
 msgid_plural "%(count)d contacts saved."
 msgstr[0] "%(count)d kontaktperson lagret."
@@ -218,6 +224,12 @@ msgstr[1] "%(count)d legemidler er laget av den: la «%(category)s» være kryss
 #, python-format
 msgid "%(count)d min"
 msgstr "%(count)d min"
+
+#, python-format
+msgid "%(count)d open health event"
+msgid_plural "%(count)d open health events"
+msgstr[0] "%(count)d åpen helsehendelse"
+msgstr[1] "%(count)d åpne helsehendelser"
 
 #, python-format
 msgid ""
@@ -602,6 +614,14 @@ msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s som mister koblingen «%(link)s»"
 
 #, python-format
+msgid "%(label)s: no recent data"
+msgstr "%(label)s: ingen ferske data"
+
+#, python-format
+msgid "%(label)s: no recent data, %(age)s old"
+msgstr "%(label)s: ingen ferske data, %(age)s gammel"
+
+#, python-format
 msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
 msgstr "%(label)s: den lagrede verdien %(value)s er ikke i formen den lagres i."
 
@@ -777,8 +797,18 @@ msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
 
 #, python-format
+msgid "%(section)s: not shown to you"
+msgstr "%(section)s: vises ikke for deg"
+
+#, python-format
 msgid "%(sfr)s at %(temperature)s: %(ration)s a day, %(meals)s × %(meal)s"
 msgstr "%(sfr)s ved %(temperature)s: %(ration)s per dag, %(meals)s × %(meal)s"
+
+#, python-format
+msgid "%(shown)d of %(farm)d unit shown"
+msgid_plural "%(shown)d of %(farm)d units shown"
+msgstr[0] "%(shown)d av %(farm)d enhet vist"
+msgstr[1] "%(shown)d av %(farm)d enheter vist"
 
 #, python-format
 msgid "%(site)s has no lokalitetsnummer (Facility › Sites)."
@@ -1161,6 +1191,19 @@ msgstr ""
 
 msgid "A bioassay"
 msgstr "En bioassay"
+
+#, python-format
+msgid "A board has at most %(num)d card."
+msgid_plural "A board has at most %(num)d cards."
+msgstr[0] "Et panel har høyst %(num)d kort."
+msgstr[1] "Et panel har høyst %(num)d kort."
+
+msgid ""
+"A board is a named wall screen: the units it shows and how each card is drawn. Everyone who may "
+"read Monitoring can open it."
+msgstr ""
+"Et panel er en navngitt veggskjerm: enhetene den viser og hvordan hvert kort tegnes. Alle som kan"
+" lese Overvåking kan åpne det."
 
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "En kapasitet trenger sin enhet, og en enhet sin kapasitet."
@@ -2113,6 +2156,9 @@ msgstr "En annen fôringsprotokoll har allerede dette navnet."
 msgid "Another medicine already has this name."
 msgstr "Et annet legemiddel har allerede dette navnet."
 
+msgid "Another monitoring board already has this name."
+msgstr "Et annet overvåkingspanel har allerede dette navnet."
+
 msgid "Another production department already uses this code."
 msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
 
@@ -2268,6 +2314,9 @@ msgstr "Som nitrogen. Et sett som leser NO₃⁻: del på 4,43."
 
 msgid "As the SPC names it, e.g. azamethiphos."
 msgstr "Slik preparatomtalen kaller det, f.eks. azametifos."
+
+msgid "As the board"
+msgstr "Som panelet"
 
 msgid "As the document itself gives it."
 msgstr "Slik dokumentet selv oppgir den."
@@ -2525,6 +2574,9 @@ msgstr "Mellom %(low)s og %(high)s for denne parameteren."
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "Mellom %(low)s og %(high)s: kontroller verdien."
 
+msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
+msgstr "Mellom 10 og 600. Tomt bruker systemets 15 sekunder."
+
 msgid "Between the two doses"
 msgstr "Mellom de to dosene"
 
@@ -2547,6 +2599,9 @@ msgstr "Sperret"
 
 msgid "Blower"
 msgstr "Luftblåser"
+
+msgid "Board"
+msgstr "Panel"
 
 msgid "Book"
 msgstr "Beholdning"
@@ -2750,8 +2805,20 @@ msgstr ""
 "(1988); kalsitt og aragonitt: Mucci (1983); oksygen: Benson og Krause (1984). pH er slik en måler"
 " leser den (NBS-skala). En grense nærmere enn 0,2 pH er en advarsel."
 
+msgid "Card"
+msgstr "Kort"
+
 msgid "Cardiomyopathy syndrome (CMS)"
 msgstr "Kardiomyopatisyndrom (CMS)"
+
+msgid "Cards"
+msgstr "Kort"
+
+msgid "Cards are"
+msgstr "Kortene er"
+
+msgid "Cards can be added once the board is created."
+msgstr "Kort kan legges til når panelet er opprettet."
 
 msgid "Category"
 msgstr "Kategori"
@@ -2922,6 +2989,9 @@ msgstr "Velg enheten fisken skal i."
 msgid "Choose the units that were treated."
 msgstr "Velg enhetene som ble behandlet."
 
+msgid "Choose units"
+msgstr "Velg enheter"
+
 msgid "Choose units, a batch, or a batch and units."
 msgstr "Velg enheter, en fiskegruppe, eller en fiskegruppe og enheter."
 
@@ -2962,6 +3032,10 @@ msgid ""
 "Cleaner fish: %(fish)s fish, %(biomass)s: not in the figures below, which are the production "
 "fish's."
 msgstr "Rensefisk: %(fish)s fisk, %(biomass)s: ikke med i tallene under, som gjelder produksjonsfisken."
+
+#, python-format
+msgid "Cleaner fish: %(fish)s · %(weight)s · %(biomass)s"
+msgstr "Rensefisk: %(fish)s · %(weight)s · %(biomass)s"
 
 msgid "Cleaning"
 msgstr "Rengjøring"
@@ -3364,6 +3438,13 @@ msgstr "Standard 2 µg/L, US EPAs kriterium for uionisert H₂S (1986)."
 msgid "Defaults"
 msgstr "Standardverdier"
 
+msgid "Deffeyes chart"
+msgstr "Deffeyes-diagram"
+
+#, python-format
+msgid "Deffeyes chart · %(unit)s"
+msgstr "Deffeyes-diagram · %(unit)s"
+
 msgid "Definition"
 msgstr "Definisjon"
 
@@ -3479,6 +3560,9 @@ msgstr "Beskrivelse"
 
 msgid "Detail"
 msgstr "Detalj"
+
+msgid "Detailed"
+msgstr "Detaljert"
 
 msgid "Details"
 msgstr "Detaljer"
@@ -3633,6 +3717,9 @@ msgstr "Frist fra"
 
 msgid "Due time"
 msgstr "Klokkeslett for frist"
+
+msgid "Due today"
+msgstr "Forfaller i dag"
 
 msgid "Duplicate"
 msgstr "Dupliser"
@@ -4098,8 +4185,14 @@ msgstr ""
 "Fôr gitt til en enhet registreres fra skuffen dens under Produksjonsenheter, eller med Registrer "
 "fôring."
 
+msgid "Feed in use"
+msgstr "Fôr i bruk"
+
 msgid "Feed per shot (g)"
 msgstr "Fôr per skudd (g)"
+
+msgid "Feed rate"
+msgstr "Fôringsrate"
 
 #, python-format
 msgid "Feed rate %(rate)s of the biomass a day over the last 7 days"
@@ -4531,6 +4624,9 @@ msgstr "Drivstofftype"
 msgid "Full name of the site manager"
 msgstr "Lokalitetslederens fulle navn"
 
+msgid "Full screen"
+msgstr "Fullskjerm"
+
 msgid "Fungal disease"
 msgstr "Soppsykdom"
 
@@ -4600,6 +4696,9 @@ msgstr "Oppgi snittvekten eller prøven, ikke begge."
 
 msgid "Give the average weight, or the number of fish weighed and their weight together."
 msgstr "Oppgi snittvekten, eller antall fisk veid og samlet vekt."
+
+msgid "Give the board a name."
+msgstr "Gi panelet et navn."
 
 msgid "Give the channel a name."
 msgstr "Gi kanalen et navn."
@@ -4832,6 +4931,9 @@ msgstr "Timer sultet"
 
 msgid "Hours the rule asks for"
 msgstr "Timer regelen krever"
+
+msgid "How a card is drawn unless its row says otherwise: simple (the key figures) or detailed."
+msgstr "Hvordan et kort tegnes med mindre raden sier noe annet: enkelt (nøkkeltallene) eller detaljert."
 
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
@@ -5236,6 +5338,9 @@ msgstr "Sist lest"
 msgid "Last sign-in"
 msgstr "Sist innlogget"
 
+msgid "Last weighed"
+msgstr "Sist veid"
+
 msgid "Latest"
 msgstr "Siste"
 
@@ -5317,6 +5422,9 @@ msgstr "List opp det som ble levert."
 
 msgid "Live fish and eggs"
 msgstr "Levende fisk og rogn"
+
+msgid "Loading…"
+msgstr "Laster …"
 
 msgid "Lobster"
 msgstr "Hummer"
@@ -5541,6 +5649,9 @@ msgstr "Tilbakeholdelsestiden avgjør: til %(date)s."
 msgid "Medicine withdrawal decides: until about %(date)s."
 msgstr "Tilbakeholdelsestiden avgjør: til omtrent %(date)s."
 
+msgid "Medicine withdrawal in force"
+msgstr "Tilbakeholdelsestid for legemiddel gjelder"
+
 msgid "Medicine withdrawal not checked"
 msgstr "Tilbakeholdelsestid ikke kontrollert"
 
@@ -5625,6 +5736,12 @@ msgstr "Bløtdyr"
 
 msgid "Monday"
 msgstr "Mandag"
+
+msgid "Monitoring"
+msgstr "Overvåking"
+
+msgid "Monitoring boards"
+msgstr "Overvåkingspaneler"
 
 msgid "Monthly"
 msgstr "Månedlig"
@@ -5758,6 +5875,9 @@ msgstr ""
 msgid "Natural gas"
 msgstr "Naturgass"
 
+msgid "Needs a look"
+msgstr "Trenger oppmerksomhet"
+
 msgid "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (1983)."
 
@@ -5845,8 +5965,14 @@ msgstr "Ingen vektklasser ennå. Bruk «Legg til vektklasse» for å legge til e
 msgid "No batch"
 msgstr "Ingen fiskegruppe"
 
+msgid "No board"
+msgstr "Ingen panel"
+
 msgid "No calibrations yet. Use “Add calibration” to add a row."
 msgstr "Ingen kalibreringer ennå. Bruk «Legg til kalibrering» for å legge til en rad."
+
+msgid "No cards yet. Use “Add unit” to add a row."
+msgstr "Ingen kort ennå. Bruk «Legg til enhet» for å legge til en rad."
 
 msgid "No changes match these filters."
 msgstr "Ingen endringer samsvarer med filtrene."
@@ -5856,6 +5982,9 @@ msgstr "Ingen endringer registrert ennå."
 
 msgid "No checklist."
 msgstr "Ingen sjekkliste."
+
+msgid "No connection: this may be out of date"
+msgstr "Ingen forbindelse: dette kan være utdatert"
 
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad."
@@ -6023,6 +6152,9 @@ msgstr "Ingen produksjonsenheter ennå"
 msgid "No protocol is assigned to these fish."
 msgstr "Ingen protokoll er tildelt denne fisken."
 
+msgid "No recent data"
+msgstr "Ingen ferske data"
+
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Ingen bestillingspunkter ennå. Bruk «Legg til fôr» for å legge til en rad."
 
@@ -6122,6 +6254,9 @@ msgstr "Ingen enhet har fisk: en behandling trenger fisk i enhetene sine på fø
 
 msgid "No unit holds fish: lice are counted on the fish of a unit."
 msgstr "Ingen enhet har fisk: lus telles på fisken i en enhet."
+
+msgid "No unit matches."
+msgstr "Ingen enhet passer."
 
 msgid "No unit of the site held cleaner fish in the month: the report has nothing to file."
 msgstr "Ingen enhet på lokaliteten hadde rensefisk i måneden: rapporten har ingenting å sende inn."
@@ -6405,6 +6540,18 @@ msgstr ""
 "Én forfatter per linje, i dokumentets rekkefølge, etternavn først: «Olsen, Bjørn Erik». En "
 "organisasjon slik den heter: «Mattilsynet»."
 
+msgid ""
+"One card per unit, in the farm’s order. A card is drawn as the board says unless its row says "
+"otherwise. A unit that is deleted keeps its row and its card comes back when the unit does; "
+"saving this list drops the row. The cards are saved separately from the board’s details."
+msgstr ""
+"Ett kort per enhet, i gårdens rekkefølge. Et kort tegnes slik panelet sier med mindre raden sier "
+"noe annet. En slettet enhet beholder raden sin, og kortet kommer tilbake når enheten gjør det; "
+"lagring av denne listen fjerner raden. Kortene lagres atskilt fra panelets detaljer."
+
+msgid "One card per unit."
+msgstr "Ett kort per enhet."
+
 msgid "One probe that measures several water parameters."
 msgstr "Én sonde som måler flere vannparametere."
 
@@ -6505,6 +6652,10 @@ msgstr "Åpen"
 msgctxt "task status"
 msgid "Open"
 msgstr "Åpen"
+
+#, python-format
+msgid "Open %(name)s"
+msgstr "Åpne %(name)s"
 
 msgid "Open and closed"
 msgstr "Åpne og avsluttede"
@@ -7343,6 +7494,15 @@ msgstr "Referanse"
 msgid "Reference data"
 msgstr "Referansedata"
 
+msgid "Refresh (s)"
+msgstr "Oppdatering (s)"
+
+msgid "Refresh between 10 and 600 seconds, or leave it empty."
+msgstr "Oppdatering mellom 10 og 600 sekunder, eller la feltet stå tomt."
+
+msgid "Refresh every (seconds)"
+msgstr "Oppdater hvert (sekund)"
+
 msgid "Refrigerant"
 msgstr "Kjølemedium"
 
@@ -7636,6 +7796,9 @@ msgstr "Lagre %(name)s"
 msgid "Save calibrations"
 msgstr "Lagre kalibreringer"
 
+msgid "Save cards"
+msgstr "Lagre kort"
+
 msgid "Save checklist"
 msgstr "Lagre sjekklisten"
 
@@ -7754,6 +7917,9 @@ msgstr "Område for lusegrense"
 msgid "Sea-lice medicine"
 msgstr "Lakselusmiddel"
 
+msgid "Search"
+msgstr "Søk"
+
 #, python-format
 msgid "Search %(plural)s"
 msgstr "Søk i %(plural)s"
@@ -7826,6 +7992,9 @@ msgstr "Søk i utsagn, sitater og kilder"
 
 msgid "Search titles, authors, abstracts and the text of the PDFs"
 msgstr "Søk i titler, forfattere, sammendrag og PDF-enes tekst"
+
+msgid "Search unit"
+msgstr "Søk enhet"
 
 msgid "Search unit, batch or species"
 msgstr "Søk etter enhet, fiskegruppe eller art"
@@ -8013,6 +8182,9 @@ msgstr "Vis tomme"
 msgid "Show on the chart"
 msgstr "Vis i diagrammet"
 
+msgid "Show the chosen units"
+msgstr "Vis de valgte enhetene"
+
 msgid "Show the points"
 msgstr "Vis punktene"
 
@@ -8021,6 +8193,13 @@ msgstr "Vis dem"
 
 msgid "Show voided"
 msgstr "Vis annullerte"
+
+msgid ""
+"Shown in the board picker of the Monitoring page. Anyone who may read Monitoring may choose a "
+"board: a board is configuration, not a record."
+msgstr ""
+"Vises i panelvelgeren på Overvåking-siden. Alle som kan lese Overvåking kan velge et panel: et "
+"panel er oppsett, ikke en registrering."
 
 msgid "Shrimp"
 msgstr "Reke"
@@ -8040,6 +8219,9 @@ msgstr "Logg inn"
 msgid "Sign out"
 msgstr "Logg ut"
 
+msgid "Signed out, or no longer available"
+msgstr "Logget ut, eller ikke lenger tilgjengelig"
+
 msgid "Signs"
 msgstr "Symptomer"
 
@@ -8051,6 +8233,9 @@ msgstr "Silokapasitet (kg)"
 
 msgid "Silo volume"
 msgstr "Silovolum"
+
+msgid "Simple"
+msgstr "Enkel"
 
 msgid "Simulator"
 msgstr "Simulator"
@@ -8270,6 +8455,9 @@ msgstr "Sult"
 
 msgid "State"
 msgstr "Fylke"
+
+msgid "State from"
+msgstr "Status fra"
 
 msgid "Stated volume (m³)"
 msgstr "Oppgitt volum (m³)"
@@ -8696,6 +8884,13 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Kalkulatorens verdier"
 
+msgid ""
+"The cards of each monitoring board: a unit and, when it differs from the board, how its card is "
+"drawn."
+msgstr ""
+"Kortene på hvert overvåkingspanel: en enhet og, når det avviker fra panelet, hvordan kortet "
+"tegnes."
+
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Diagrammet kan ikke tegnes: dette punktet har ingen ferske verdier for"
 
@@ -8995,6 +9190,13 @@ msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller ko
 
 msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Navnet på selskapets eget språk, f.eks. Laks."
+
+msgid ""
+"The named wall screens of Monitoring: a name, how its cards are drawn by default and how often "
+"its screens ask."
+msgstr ""
+"De navngitte veggskjermene i Overvåking: et navn, hvordan kortene tegnes som standard og hvor "
+"ofte skjermene spør."
 
 #, python-format
 msgid "The next meal on the Meal board: %(kilos)s, filled in below."
@@ -10086,6 +10288,9 @@ msgstr "Volum"
 msgid "Volume (m³)"
 msgstr "Volum (m³)"
 
+msgid "Wall"
+msgstr "Veggskjerm"
+
 msgid "Warehouse"
 msgstr "Lagerbygning"
 
@@ -10196,6 +10401,12 @@ msgid "Weigh now: the estimate is %(days)s day old"
 msgid_plural "Weigh now: the estimate is %(days)s days old"
 msgstr[0] "Vei nå: estimatet er %(days)s dag gammelt"
 msgstr[1] "Vei nå: estimatet er %(days)s dager gammelt"
+
+msgid "Weigh now: the estimate is not reliable"
+msgstr "Veg nå: anslaget er ikke pålitelig"
+
+msgid "Weigh soon"
+msgstr "Veg snart"
 
 #, python-format
 msgid "Weigh soon: %(days)s day since the last measured weight"
@@ -10667,6 +10878,12 @@ msgstr "av den gjentakende oppgaven"
 msgid "calculated %(calculated)s"
 msgstr "beregnet %(calculated)s"
 
+msgid "card of a monitoring board"
+msgstr "kort på et overvåkingspanel"
+
+msgid "cards of a monitoring board"
+msgstr "kort på et overvåkingspanel"
+
 msgid "changed here"
 msgstr "endret her"
 
@@ -10682,6 +10899,10 @@ msgstr "rensefisk %(batches)s: %(fish)s fisk"
 
 msgid "combination"
 msgstr "kombinasjon"
+
+#, python-format
+msgid "computed at %(time)s"
+msgstr "beregnet kl. %(time)s"
 
 msgid "contains"
 msgstr "inneholder"
@@ -10861,6 +11082,9 @@ msgstr "f.eks. Fjord Slakteri"
 
 msgid "e.g. HAT-A"
 msgstr "f.eks. HAT-A"
+
+msgid "e.g. Hall A wall"
+msgstr "f.eks. Hall A-veggen"
 
 msgid "e.g. Hatchery hall A"
 msgstr "f.eks. Klekkerihall A"
@@ -11211,6 +11435,12 @@ msgstr "mg/kg biomasse per dag"
 
 msgid "mg/mL"
 msgstr "mg/mL"
+
+msgid "monitoring board"
+msgstr "overvåkingspanel"
+
+msgid "monitoring boards"
+msgstr "overvåkingspaneler"
 
 msgid "n.d."
 msgstr "u.å."

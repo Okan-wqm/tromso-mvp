@@ -20,6 +20,9 @@
 //                              404 or a redirect to sign-in); the page's CSS says so in its own words. A
 //                              `poll:gone` event (detail.status) bubbles from the element when it is gone.
 //   `poll:now` event           asks at once; detail.url (optional) is the address to ask from now on
+//   data-poll-url="<url>"      on a link inside a polled element: a click asks that element for <url> at once (the
+//                              state the link stands for, e.g. a card drawn in detail) and the address bar follows
+//                              the link's href (history.replaceState); without the script the link navigates
 //   data-scroll-end            a list that opens scrolled to its end and follows new rows while it is there
 //   data-submit-on-enter       a textarea whose form is sent with Enter; Shift+Enter starts a new line
 //   data-live="<url>"          a GET form whose results the server draws again as it is filled in: on a change (a
@@ -322,6 +325,14 @@ function live(form: HTMLFormElement): void {
   });
 }
 
+document.addEventListener('click', (event) => {
+  const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-poll-url]');
+  const polled = link?.closest<HTMLElement>('[data-poll]');
+  if (!link || !polled || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+  event.preventDefault();
+  polled.dispatchEvent(new CustomEvent('poll:now', { detail: { url: link.dataset.pollUrl } }));
+  window.history.replaceState(window.history.state, '', link.href);
+});
 document.querySelectorAll<HTMLElement>('[data-scroll-end]').forEach((list) => { list.scrollTop = list.scrollHeight; });
 document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
 document.querySelectorAll<HTMLTextAreaElement>('textarea[data-submit-on-enter]').forEach(sendOnEnter);

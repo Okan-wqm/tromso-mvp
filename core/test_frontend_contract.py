@@ -82,6 +82,7 @@ class PollContractTests(SimpleTestCase):
         self.assertIn('isConnected', text)                                  # an element that left the page is let go
         for event in ('poll:now', 'poll:gone'):
             self.assertIn(event, text)
+        self.assertIn("a[data-poll-url]", text)
         self.assertIn('TIMEOUT = 20000', text)
         self.assertIn('SLOWEST = 60000', text)
 
@@ -89,3 +90,50 @@ class PollContractTests(SimpleTestCase):
         self.assertIn('js/poll.js', checks.ENTRY_SCRIPTS)
         base = (ROOT / 'templates' / 'app_base.html').read_text(encoding='utf-8')
         self.assertIn("{% asset 'js/poll.js' %}", base)
+
+
+WINDOWS = (ROOT / 'frontend' / 'windows.ts').read_text(encoding='utf-8')
+
+
+class WindowContractTests(SimpleTestCase):
+    """frontend/windows.ts reads the hooks templates/monitoring/_windows.html and the cards render."""
+
+    def test_the_skeleton_the_script_clones_has_every_hook_it_reads(self):
+        partial = (ROOT / 'templates' / 'monitoring' / '_windows.html').read_text(encoding='utf-8')
+        # (what the partial renders, what the script reads of it)
+        for rendered, read in (('id="monitor-windows"', "'monitor-windows'"), ('data-every=', 'host.dataset.every'),
+                               ('data-storage-key=', 'host.dataset.storageKey'),
+                               ('data-stale-text=', 'host.dataset.staleText'), ('data-gone-text=', 'host.dataset.goneText'),
+                               ('id="monitor-window-template"', '#monitor-window-template'),
+                               ('data-window-handle', '[data-window-handle]'), ('data-window-title', '[data-window-title]'),
+                               ('data-window-body', '[data-window-body]'), ('data-window-close', '[data-window-close]')):
+            with self.subTest(hook=rendered):
+                self.assertIn(rendered, partial)
+                self.assertIn(read, WINDOWS)
+        self.assertIn('role="dialog"', partial)           # non-modal: a dialog role on a <section>, not <dialog>
+        self.assertNotIn('<dialog', partial)
+
+    def test_the_window_hooks_a_template_uses_are_documented_in_the_script(self):
+        known = set(re.findall(r'^//\s+[<`#]?\w*\s*(data-[a-z-]+)', WINDOWS[:WINDOWS.index('import')], flags=re.M))
+        known |= set(re.findall(r'(data-(?:window|fullscreen)[a-z-]*)', WINDOWS[:WINDOWS.index('import')]))
+        for path in templates():
+            for hook in set(re.findall(r'\b(data-(?:window[a-z-]*|fullscreen))\b', path.read_text(encoding='utf-8'))):
+                with self.subTest(template=path.name, hook=hook):
+                    self.assertIn(hook, known)
+
+    def test_the_script_has_no_text_and_does_not_use_the_modal_dialog(self):
+        text = '\n'.join(line.split('//')[0] for line in WINDOWS.splitlines())
+        self.assertNotIn('showModal', text)               # a modal makes the page inert: the wall must keep polling
+        self.assertIn("document.getElementById('monitor-windows')", text)
+
+    def test_the_wall_and_the_notices_are_styled_from_the_pages_own_hooks(self):
+        css = (ROOT / 'static' / 'css' / 'monitor.css').read_text(encoding='utf-8')
+        for rule in ('html[data-wall] .rail', 'html[data-wall] .topbar', '[data-poll-state="stale"]::before',
+                     '[data-poll-state="gone"]::before', 'attr(data-stale-text)', 'attr(data-gone-text)',
+                     '.monitor-window', '@media (max-width: 639px)', 'prefers-reduced-motion'):
+            self.assertIn(rule, css)
+        base = (ROOT / 'templates' / 'app_base.html').read_text(encoding='utf-8')
+        self.assertIn('{% block html_attrs %}{% endblock %}>', base)
+
+    def test_windows_js_is_checked_at_start(self):
+        self.assertIn('js/windows.js', checks.ENTRY_SCRIPTS)

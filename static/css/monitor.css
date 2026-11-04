@@ -1,0 +1,144 @@
+/* Monitoring: the wall of cards, its notices and the movable windows. One file for the whole module; it uses the
+   shared tokens (base.css, app.css) and no colour of its own, so a new visual design replaces it in one place. */
+
+/* ---- notices printed from the polled element's state (frontend/poll.ts sets data-poll-state) ---------------- */
+[data-poll-state="stale"]::before,
+[data-poll-state="gone"]::before {
+  display: block;
+  grid-column: 1 / -1;
+  margin-bottom: .5rem;
+  padding: .375rem .75rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+[data-poll-state="stale"]::before { content: attr(data-stale-text); background: var(--sage); color: var(--speck); }
+[data-poll-state="gone"]::before { content: attr(data-gone-text); background: var(--error); color: var(--white); }
+.monitor-grid[data-poll-state="stale"]::before,
+.monitor-grid[data-poll-state="gone"]::before {
+  padding: .75rem 1.25rem;
+  font-size: clamp(1.25rem, 2.4vw, 2.5rem);
+  text-align: center;
+}
+
+/* ---- the wall: ?wall=1 puts data-wall on <html> (templates/app_base.html html_attrs) -------------------------- */
+html[data-wall] .rail,
+html[data-wall] .topbar,
+html[data-wall] .scrim,
+html[data-wall] .menu-button { display: none; }
+html[data-wall] .content { max-width: none; padding: clamp(8px, 1vw, 20px); }
+html[data-wall] .monitor-toolbar { display: none; }
+
+/* ---- the movable windows (frontend/windows.ts) --------------------------------------------------------------- */
+.monitor-window {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 280px;
+  min-height: 180px;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+  resize: both;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  box-shadow: 0 12px 32px rgba(35, 41, 32, .28);
+}
+.monitor-window:focus-visible { outline: 2px solid var(--stripe); outline-offset: 1px; }
+.monitor-window-bar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .25rem .375rem .25rem .875rem;
+  background: var(--olive);
+  color: var(--white);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.monitor-window-bar .icon-button { color: inherit; }
+.monitor-window-title {
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  font-size: .9375rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.monitor-window-body { flex: 1; min-height: 0; padding: .75rem; overflow: auto; }
+
+@media (max-width: 639px) {
+  /* A sheet at the bottom of the screen: not dragged, not resized. */
+  .monitor-window {
+    top: auto !important;
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    width: auto !important;
+    height: 70vh !important;
+    border-radius: 12px 12px 0 0;
+    resize: none;
+  }
+  .monitor-window-bar { cursor: default; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .monitor-window { transition: box-shadow .15s; }
+}
+
+/* ---- the toolbar -------------------------------------------------------------------------------------------- */
+.monitor-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem 1.25rem; margin-bottom: 1rem; }
+.monitor-filters { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+.monitor-filters label { display: grid; gap: .125rem; font-size: .8125rem; color: var(--muted); }
+.monitor-units summary { cursor: pointer; }
+.monitor-unit-list { display: flex; flex-wrap: wrap; gap: .25rem 1rem; max-width: 40rem; padding: .5rem 0; }
+.monitor-actions { display: flex; gap: .5rem; margin-left: auto; }
+
+/* ---- the grid and its cards (container queries: a card adapts to its own width, not the screen's) ----------- */
+.monitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr)); gap: 1rem; align-items: start; }
+.monitor-head, .monitor-strip { grid-column: 1 / -1; margin: 0; }
+.monitor-strip { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; padding: 0; list-style: none; }
+.monitor-strip:empty { display: none; }
+.monitor-strip-line a { color: inherit; text-decoration: none; }
+.monitor-card {
+  container-type: inline-size;
+  padding: .875rem 1rem;
+  border: 1px solid var(--line);
+  border-left-width: 6px;
+  border-radius: 8px;
+  background: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+.monitor-card-head { display: flex; justify-content: space-between; gap: .75rem; }
+.monitor-card-head h3 { margin: 0; font-size: 1.25rem; }
+.monitor-card-head h3 a { color: inherit; text-decoration: none; }
+.monitor-card-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .25rem .5rem; }
+.monitor-section { margin-top: .5rem; }
+.monitor-reasons { margin: .375rem 0 0; padding-left: 1.125rem; }
+.monitor-card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .75rem; }
+.monitor-card .metrics { grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); }
+.monitor-state { display: inline-flex; align-items: center; gap: .375rem; font-weight: 700; }
+.monitor-shape { display: inline-block; width: .75rem; height: .75rem; background: currentColor; }
+.monitor-shape-critical { clip-path: polygon(50% 0, 100% 100%, 0 100%); }                      /* triangle */
+.monitor-shape-warning { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }               /* diamond */
+.monitor-shape-blind { background: none; border: 2px dashed currentColor; border-radius: 50%; } /* open ring */
+.monitor-shape-note { border-radius: 2px; }                                                     /* square */
+.monitor-shape-ok { border-radius: 50%; }                                                       /* disc */
+.monitor-shape-empty { background: none; border: 2px solid currentColor; border-radius: 2px; }
+.monitor-critical { border-left-color: var(--error); }
+.monitor-warning { border-left-color: var(--stripe); }
+.monitor-blind { border-left-color: var(--muted); border-left-style: dashed; }
+.monitor-note { border-left-color: var(--sage); }
+.monitor-ok { border-left-color: var(--olive); }
+.monitor-empty { border-left-color: var(--sage); opacity: .85; }
+.monitor-critical .monitor-state { color: var(--error); }
+.monitor-warning .monitor-state { color: var(--stripe-dark); }
+@container (max-width: 18rem) { .monitor-card .metrics { grid-template-columns: repeat(2, 1fr); } }
+
+/* A wall is read at a distance: larger figures, fixed rhythm, nothing that moves. */
+html[data-wall] .monitor-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: clamp(.5rem, 1vw, 1.25rem); }
+html[data-wall] .monitor-card { font-size: clamp(1rem, 1.1vw, 1.75rem); }
+html[data-wall] .monitor-card-head h3 { font-size: 1.5em; }
+html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700; }

@@ -11,6 +11,9 @@ AREAS = [
     Area(_('Systems'), 'farm.System'),
     Area(_('Equipment'), 'farm.Equipment'),
     Area(_('Tanks, ponds & cages'), 'farm.Tank'),
+    # The named wall screens of Operations › Monitoring. Anyone who may read Monitoring may choose a board: a board is
+    # configuration, so these rights are for making and changing them.
+    Area(_('Monitoring boards'), 'monitoring.MonitorBoard'),
     # Where a sample is taken: the points of a unit, a loop or a piece of equipment (the samples are Water chemistry).
     Area(_('Sampling points'), 'farm.SamplingPoint'),
     Area(_('Species'), 'farm.Species'),
@@ -23,7 +26,7 @@ AREAS = [
     Area(_('Library'), 'knowledge.Document'),
     # Edit also reviews an entry (marks it reviewed, or takes it back to draft).
     Area(_('Knowledge entries'), 'knowledge.KnowledgeEntry'),
-    # The stock: Read is the Production units page, Create records an operation (a stocking, a mortality,
+    # The stock: Read is the Production units page and Monitoring, Create records an operation (a stocking, a mortality,
     # a weighing), Delete voids one. Operations are never edited: a correction is a void and a new entry.
     Area(_('Production units'), 'farm.StockOperation', actions=('view', 'add', 'delete')),
     # The feeding records: Read is the Meal board and the Records page (and the feeding part of a unit's drawer),

@@ -301,6 +301,10 @@ class UnitStock:
         return sum(share.culls for share in self.counted)
 
     @property
+    def losses(self):
+        return self.deaths + self.culls
+
+    @property
     def survival(self):
         return HUNDRED * (1 - Decimal(self.deaths) / self.fish_in) if self.fish_in else None
 

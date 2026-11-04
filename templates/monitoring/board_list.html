@@ -1,0 +1,31 @@
+{% extends "crud/list.html" %}
+{% load i18n assets %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}">{% endblock %}
+{% comment %} Setup › Facility structure › Monitoring boards (monitoring.resources.MonitorBoardResource): the named wall screens of the
+   Monitoring page, each with how many cards it holds and how they are drawn. {% endcomment %}
+{% block search_placeholder %}{% trans "Search by name" %}{% endblock %}
+{% block empty_text %}{% trans "A board is a named wall screen: the units it shows and how each card is drawn. Everyone who may read Monitoring can open it." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Board" %}</th><th scope="col">{% trans "Cards are" %}</th><th scope="col" class="num">{% trans "Cards" %}</th><th scope="col" class="num">{% trans "Refresh (s)" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for board in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'monitoring:monitorboard_edit' board.pk %}" data-modal>{{ board.name }}</a>{% else %}<span class="row-title">{{ board.name }}</span>{% endif %}{% if board.description %}<span class="row-sub">{{ board.description }}</span>{% endif %}</td>
+        <td>{{ board.get_default_mode_display }}</td>
+        <td class="num">{{ board.cards }}</td>
+        <td class="num">{{ board.refresh_seconds|default:"—" }}</td>
+        <td class="row-actions">
+          <a class="icon-button" href="{% url 'monitoring:monitor' %}?board={{ board.pk }}" title="{% blocktrans with name=board.name %}Open {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="monitor" %}<span class="sr-only">{% blocktrans with name=board.name %}Open {{ name }}{% endblocktrans %}</span></a>
+          {% if can_change %}<a class="icon-button" href="{% url 'monitoring:monitorboard_edit' board.pk %}" data-modal title="{% blocktrans with name=board.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=board.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'monitoring:monitorboard_delete' board.pk %}" data-modal title="{% blocktrans with name=board.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=board.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Operations › Monitoring (monitoring.views.monitor): a live card per tank, pond or cage, simple or detailed, in one polled
+   grid that doubles as a wall screen (?wall=1), and a unit's Deffeyes chart in a movable window. The toolbar is a GET form
+   that works without script; the grid is data-poll (frontend/poll.ts) and its children are keyed so only a changed card is
+   replaced; the windows sit beside it (frontend/windows.ts). {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block html_attrs %}{% if wall %} data-wall{% endif %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><script type="module" src="{% asset 'js/windows.js' %}"></script>{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<form method="get" class="monitor-toolbar toolbar" role="search">
+  {% if wall %}<input type="hidden" name="wall" value="1">{% endif %}
+  <div class="monitor-filters">
+    <label>{% trans "Board" %}<select name="board" data-autosubmit><option value="">{% trans "No board" %}</option>{% for each in boards %}<option value="{{ each.pk }}"{% if board and each.pk == board.pk %} selected{% endif %}>{{ each.name }}</option>{% endfor %}</select></label>
+    <label>{% trans "Site" %}<select name="site" data-autosubmit><option value="">{% trans "All sites" %}</option>{% for site in sites %}<option value="{{ site.pk }}"{% if site.pk|stringformat:"s" == params.site %} selected{% endif %}>{{ site.name }}</option>{% endfor %}</select></label>
+    <label>{% trans "Production department" %}<select name="department" data-autosubmit><option value="">{% trans "All" %}</option>{% for department in departments %}<option value="{{ department.pk }}"{% if department.pk|stringformat:"s" == params.department %} selected{% endif %}>{{ department.name }}</option>{% endfor %}</select></label>
+    <label>{% trans "System" %}<select name="system" data-autosubmit><option value="">{% trans "All" %}</option>{% for system in systems %}<option value="{{ system.pk }}"{% if system.pk|stringformat:"s" == params.system %} selected{% endif %}>{{ system.name }}</option>{% endfor %}</select></label>
+    <label>{% trans "Kind" %}<select name="kind" data-autosubmit><option value="">{% trans "All" %}</option>{% for value, label in kinds %}<option value="{{ value }}"{% if value == params.kind %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label>{% trans "Fish" %}<select name="occupancy" data-autosubmit>{% for value, label in occupancies %}<option value="{{ value }}"{% if value == params.occupancy %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label>{% trans "Cards" %}<select name="mode" data-autosubmit><option value="">{% trans "Simple" %}</option><option value="detailed"{% if params.mode == "detailed" %} selected{% endif %}>{% trans "Detailed" %}</option></select></label>
+    <label class="monitor-search">{% trans "Search" %}<input type="search" name="q" value="{{ params.q }}" placeholder="{% trans "Search unit" %}"></label>
+    <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+  </div>
+  <details class="monitor-units">
+    <summary>{% trans "Choose units" %}</summary>
+    <div class="monitor-unit-list">{% for unit in all_units %}<label><input type="checkbox" name="units" value="{{ unit.pk }}"{% if unit.pk|stringformat:"s" in params.units %} checked{% endif %}> {{ unit.code }}</label>{% endfor %}</div>
+    <button type="submit" class="button button-ghost">{% trans "Show the chosen units" %}</button>
+  </details>
+  <div class="monitor-actions">
+    <a class="button button-ghost" href="{{ wall_url }}">{% include "icons/_icon.html" with name="monitor" %}{% trans "Wall" %}</a>
+    <button type="button" class="button button-ghost" data-fullscreen aria-pressed="false">{% include "icons/_icon.html" with name="maximize" %}{% trans "Full screen" %}</button>
+  </div>
+</form>
+
+<div class="monitor-grid" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% include "monitoring/_grid.html" %}</div>
+
+{% include "monitoring/_windows.html" %}
+{% endblock %}

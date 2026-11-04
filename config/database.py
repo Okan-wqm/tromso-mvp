@@ -13,6 +13,7 @@ VIEWER = Viewer(
         Section(_('Messages'), ('messaging',)),
         Section(_('Reports'), ('reports',)),
         Section(_('Tasks'), ('tasks',)),
+        Section(_('Monitoring'), ('monitoring',)),
         Section(_('Administration'), ('core', 'auth')),
     ],
     # Tables of a listed app that stay hidden, by table name.
@@ -34,6 +35,8 @@ VIEWER = Viewer(
         'water_sampling_points': _('Where a water sample is taken: a named place on one unit, one system’s loop or one '
                                    'piece of equipment, of a kind that says whether it sees the stream in, the water '
                                    'within or the stream out.'),
+        'monitor_boards': _('The named wall screens of Monitoring: a name, how its cards are drawn by default and how often its screens ask.'),
+        'monitor_board_units': _('The cards of each monitoring board: a unit and, when it differs from the board, how its card is drawn.'),
         'treatment_units': _('Which units each treatment was given in.'),
         'health_event_units': _('Which units each health event concerns; none for the whole site.'),
         'document_species': _('Which species each library document is about.'),

@@ -2243,6 +2243,32 @@ and the decision note are masked in the activity log ("Private text") and in the
 only for holders of Everyone. Approved leave is read over the roster: planning a shift on a day of approved leave is refused, and
 the week shows the cell as on leave. When a person leaves, their later pending requests are cancelled and later plans removed.
 
+### HR dashboard › Today & attendance (`/hr/`) and Time & shifts › Attendance (`/hr/time/attendance/`)
+
+**A punch is a stretch, not a day** (`hr.AttendanceRecord`, `attendance_records`): a clock-in and a clock-out (none while the person
+is in), who made it (`self`: the person clocked in at the server's time, never the browser's; `entered`: a lead typed the time, on
+the site's clock, and must say why) and a note (private: masked in the log and the viewer). A person can work in two stretches and a
+night shift crosses midnight, so there is **no one-row-a-day rule** (the source's was a racy application check, HR-10, HR-14). The
+database holds the rest: the out is after the in, an entered stretch has its reason, no two stretches of a person overlap and at
+most one is open (an exclusion constraint on `tstzrange(clock_in, clock_out)`: an open stretch runs on to infinity, so it also
+forbids a second open one). A stretch has no stored day, site or state.
+
+**Who is where is read** (`hr.read.board`, `hr.rules.status`, pure): for each person of the viewer's team the planned shift today on the
+person's own site clock (or the night that began yesterday and is still running), their stretches from the punch window before the start
+(a setting) and their approved leave give one state: *upcoming* (before the start plus the grace), *not in yet* (until the later of the
+grace and the absent-after minutes), *absent*, *present* or *late* (clocked in, past the grace) while in, *done* once out, *on leave*. A
+record is a fact and the plan an intent: a person who is there but not planned is listed as present, "not planned". People planned off,
+with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
+leave. Today shows the figures (planned, here, late, not in yet, absent, on leave) and the people; the board is a fragment the page
+polls (`data-poll`, 30 seconds) and the server draws every number and every time, on the clock of each person's site. The person's own
+**Clock in** and **Clock out** buttons need Read on Attendance and an employee row of their own, and are refused while a stretch is open
+or none is.
+
+**The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the site's clock,
+with **Mark present** (Create: a person of the team, the times, the reason), a correction (Edit, logged with what it was before) and a
+void (Delete). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
+HR dashboard, where its Read page first sits).
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2264,7 +2290,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and

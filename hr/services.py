@@ -4,7 +4,7 @@ ValidationError (a sentence for the person) or PermissionDenied; a refusal leave
 from datetime import timedelta
 
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -15,7 +15,8 @@ from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import clock, leave, read, rules, scope, units
-from .models import Employee, Holiday, LeaveRequest, Posting, SchedulingSettings, ShiftAssignment
+from .models import (AttendanceRecord, Employee, Holiday, LeaveRequest, Posting, SchedulingSettings,
+                     ShiftAssignment)
 from .models.leave import LeaveStatus
 
 POSTING_FIELDS = ['production_department', 'office_department', 'title', 'valid_from', 'valid_until']
@@ -318,3 +319,87 @@ def cancel_leave(user, leave_request):
         audit.record_update(user, current, before, _leave_values(current),
                             entity_type=audit.entity_type_of(LeaveRequest))
         return current
+
+
+# ---- attendance ---------------------------------------------------------------------------------------------------
+PUNCH_FIELDS = ['employee', 'clock_in', 'clock_out', 'via', 'note']
+PRIVATE_PUNCH = ['note']
+
+
+def own_employee(user):
+    """The employee row of the person's account, or None (a login with no employee: an administrator)."""
+    return Employee.objects.filter(user=user).first()
+
+
+def _punch_values(record):
+    with audit.source_language():
+        return audit.snapshot(record, PUNCH_FIELDS, private=PRIVATE_PUNCH)
+
+
+def _save_punch(user, record, created, before=None):
+    try:
+        with transaction.atomic():
+            record.save()
+    except IntegrityError as error:
+        if getattr(getattr(error.__cause__, 'diag', None), 'constraint_name', '') == 'excl_attendance_employee_span':
+            raise ValidationError(_('This person is already clocked in for some of this time.')) from error
+        raise
+    if created:
+        audit.record_create(user, record, _punch_values(record), entity_type=audit.entity_type_of(AttendanceRecord))
+    else:
+        audit.record_update(user, record, before, _punch_values(record), entity_type=audit.entity_type_of(AttendanceRecord))
+
+
+def clock_in(user):
+    """The person clocks in at the server's time (never the browser's). Needs Read on Attendance and an employee row of
+    one's own; refused while a punch is open (the database refuses a second open one as well)."""
+    if not user.has_perm('hr.view_attendancerecord'):
+        raise PermissionDenied
+    with transaction.atomic():
+        employee = own_employee(user)
+        if employee is None:
+            raise PermissionDenied
+        employee = Employee.objects.select_for_update().get(pk=employee.pk)
+        if AttendanceRecord.objects.filter(employee=employee, clock_out__isnull=True).exists():
+            raise ValidationError(_('You are already clocked in.'))
+        record = AttendanceRecord(employee=employee, clock_in=timezone.now(), via=AttendanceRecord.Via.SELF,
+                                  created_by=user, updated_by=user)
+        _save_punch(user, record, True)
+        return record
+
+
+def clock_out(user):
+    """The person clocks out of their open punch at the server's time."""
+    if not user.has_perm('hr.view_attendancerecord'):
+        raise PermissionDenied
+    with transaction.atomic():
+        employee = own_employee(user)
+        if employee is None:
+            raise PermissionDenied
+        employee = Employee.objects.select_for_update().get(pk=employee.pk)
+        record = AttendanceRecord.objects.filter(employee=employee, clock_out__isnull=True).first()
+        if record is None:
+            raise ValidationError(_('You are not clocked in.'))
+        before = _punch_values(record)
+        record.clock_out = max(timezone.now(), record.clock_in + timedelta(seconds=1))
+        record.updated_by, record.version = user, record.version + 1
+        _save_punch(user, record, False, before)
+        return record
+
+
+def enter_presence(user, employee, clock_in_at, clock_out_at, note):
+    """A lead records presence for a person of their team: times already on the site's clock as instants, and a reason
+    (required: the CHECK on the table says so too). Needs Create on Attendance and the person in the user's team."""
+    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(user, employee):
+        raise PermissionDenied
+    note = (note or '').strip()
+    if not note:
+        raise ValidationError(_('Say why the time was entered by hand.'))
+    if clock_out_at is not None and clock_out_at <= clock_in_at:
+        raise ValidationError(_('The person cannot clock out before they clocked in.'))
+    with transaction.atomic():
+        employee = Employee.objects.select_for_update().get(pk=employee.pk)
+        record = AttendanceRecord(employee=employee, clock_in=clock_in_at, clock_out=clock_out_at,
+                                  via=AttendanceRecord.Via.ENTERED, note=note, created_by=user, updated_by=user)
+        _save_punch(user, record, True)
+        return record

@@ -7,14 +7,17 @@ from decimal import Decimal
 
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
+from django.utils import timezone
 
 from core.models import in_tree_order
+from farm.clocks import clocks
 from farm.models import ProductionDepartment
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import clock, leave, rules, scope, units
-from .models import Employee, Holiday, OfficeDepartment, Posting, SchedulingSettings, ShiftAssignment
+from .models import (AttendanceRecord, Employee, Holiday, OfficeDepartment, Posting, SchedulingSettings,
+                     ShiftAssignment)
 
 PRODUCTION, OFFICE = 'production', 'office'
 
@@ -250,3 +253,95 @@ def week(user, week_start, department=None, page=1, per_page=50, query=''):
         rows.append(Row(employee, head.department if head is not None else None, cells, total,
                         [item for item in found if item.code == rules.WEEK_HOURS]))
     return Week(start, days, rows, len(rows), paginator.count, shown.number, paginator.num_pages)
+
+
+# ---- today: who is where ----------------------------------------------------------------------------------------
+@dataclass
+class BoardRow:
+    """One person on today's board: their planned shift (or none: an unplanned presence), the span as instants and their
+    standing now."""
+    employee: object
+    department: object
+    shift: object
+    span: tuple
+    standing: object
+    day: date
+    zone: object
+
+    @property
+    def state(self):
+        return self.standing.state
+
+    @property
+    def unscheduled(self):
+        return self.shift is None and self.span is None
+
+
+@dataclass
+class Board:
+    rows: list
+    counts: dict
+    planned: int
+    moment: object
+
+    def count(self, state):
+        return self.counts.get(state, 0)
+
+    @property
+    def here(self):
+        return self.count(rules.PRESENT) + self.count(rules.LATE)
+
+
+def board(user, moment=None):
+    """Who is where now, for the people `user` may reach: each person's planned shift today (or the night shift that began
+    yesterday and is still running), their punches, their leave, and the state worked out from them (rules.status) on their
+    site's clock. People planned off, on a holiday or with nothing planned are not listed, unless they are there all the
+    same. In a fixed number of queries whatever the number of people."""
+    moment = moment or timezone.now()
+    clocks_now = clocks(moment)
+    by_site = {site: clock for clock in clocks_now if clock.sites is not None for site in clock.sites}
+    company_clock = next(clock for clock in clocks_now if clock.sites is None)
+    low, high = min(c.today for c in clocks_now), max(c.today for c in clocks_now)
+    settings = SchedulingSettings.get()
+    people = list(scope.team(user, high).filter(joined_on__lte=high).filter(Q(left_on__isnull=True) | Q(left_on__gte=low))
+                  .select_related('user').order_by('last_name', 'first_name', 'employee_number'))
+    ids = [employee.pk for employee in people]
+    postings = defaultdict(list)
+    for posting in Posting.objects.filter(scope.overlapping(low, high), employee__in=ids).select_related(
+            'production_department__site', 'office_department__site').order_by('valid_from'):
+        postings[posting.employee_id].append(posting)
+    plan = {(row.employee_id, row.day): row for row in ShiftAssignment.objects.filter(
+        employee__in=ids, day__range=(low - timedelta(days=1), high)).select_related('shift')}
+    punches = defaultdict(list)
+    for record in AttendanceRecord.objects.filter(employee__in=ids, clock_in__gte=moment - timedelta(days=2),
+                                               clock_in__lte=moment):
+        punches[record.employee_id].append(record)
+    away = leave.approved_days(ids, low, high)
+    rows = []
+    counts = defaultdict(int)
+    planned = 0
+    for employee in people:
+        placed = postings.get(employee.pk, [])
+        head = next((p for p in placed if p.valid_from <= high and (p.valid_until is None or p.valid_until >= low)), None)
+        site = site_of_posting(head) if head is not None else None
+        clock_here = by_site.get(getattr(site, 'pk', None), company_clock)
+        today, zone = clock_here.today, clock_here.zone
+        options = {}
+        for day in (today - timedelta(days=1), today):
+            cell = plan.get((employee.pk, day))
+            if cell is not None and cell.shift is not None:
+                options[day] = (cell.shift, clock.span(day, cell.shift, zone), day)
+        yesterday = options.get(today - timedelta(days=1))
+        # the night that began yesterday and is still running comes first; else the shift that starts today
+        chosen = yesterday if yesterday is not None and yesterday[1][1] > moment else options.get(today)
+        mine = [(record.clock_in, record.clock_out) for record in punches.get(employee.pk, [])]
+        on_leave = today in away.get(employee.pk, set())
+        shift, span, day = chosen if chosen is not None else (None, None, today)
+        standing = rules.status(span, mine, on_leave, moment, shift.grace_minutes if shift else 0,
+                                settings.absent_after_minutes, settings.punch_window_minutes)
+        if standing is None:
+            continue
+        rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone))
+        counts[standing.state] += 1
+        planned += 1 if span is not None else 0
+    return Board(rows, dict(counts), planned, moment)

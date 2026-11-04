@@ -10,6 +10,9 @@ app_name = 'hr'
 # Today and the organisation chart) have routes of their own below.
 urlpatterns = [route for tab in Resource.registry if tab.model._meta.app_label == app_name for route in tab.urls()]
 urlpatterns += [
+    path('hr/', views.today, name='today'),
+    path('hr/today/board/', views.today_board, name='today_board'),
+    path('hr/today/clock-<str:direction>/', views.punch, name='punch'),
     path('hr/schedule/plan/', views.plan, name='roster_plan'),
     path('hr/leave/<uuid:pk>/approve/', views.approve, name='leaverequest_approve'),
     path('hr/leave/<uuid:pk>/reject/', views.reject, name='leaverequest_reject'),

@@ -1685,6 +1685,9 @@ msgstr "Azami yoğunluğun üstü, kabul edildi"
 msgid "Above the usual feed rate, accepted"
 msgstr "Olağan yemleme oranının üzerinde, onaylandı"
 
+msgid "Absent"
+msgstr "Devamsız"
+
 msgid "Absent after (minutes)"
 msgstr "Devamsız sayılma (dakika)"
 
@@ -2463,6 +2466,9 @@ msgstr "Tutunmuş bitler"
 msgid "Attached per fish"
 msgstr "Balık başına tutunmuş"
 
+msgid "Attendance"
+msgstr "Yoklama"
+
 msgid "Author"
 msgstr "Yazan"
 
@@ -3099,6 +3105,19 @@ msgstr "Temizle"
 msgid "Clear filters"
 msgstr "Filtreleri temizle"
 
+msgid "Clock in"
+msgstr "Giriş"
+
+msgid "Clock out"
+msgstr "Çıkış"
+
+msgid "Clocked in by the person"
+msgstr "Kişinin kendisi giriş yaptı"
+
+#, python-format
+msgid "Clocked in since %(since)s."
+msgstr "%(since)s’den beri içeride."
+
 msgid "Close"
 msgstr "Kapat"
 
@@ -3265,6 +3284,9 @@ msgstr "Bakır alaşımı"
 
 msgid "Corona discharge"
 msgstr "Korona deşarjı"
+
+msgid "Correct"
+msgstr "Düzelt"
 
 msgid "Correction"
 msgstr "Düzeltme"
@@ -3927,6 +3949,9 @@ msgstr "İstihdam türü"
 msgid "Empty"
 msgstr "Boş"
 
+msgid "Empty while the person is still in."
+msgstr "Kişi hâlâ içerideyken boş."
+
 #, python-format
 msgid "Empty · %(status)s"
 msgstr "Boş · %(status)s"
@@ -3965,6 +3990,9 @@ msgid "Enter the email address on your account. We will send you a link to set a
 msgstr ""
 "Hesabınızdaki e-posta adresini girin. Yeni bir parola belirlemeniz için size bir bağlantı "
 "göndereceğiz."
+
+msgid "Entered by hand"
+msgstr "Elle girildi"
 
 msgid "Entered here"
 msgstr "Burada girilen"
@@ -5005,6 +5033,9 @@ msgstr "Isıtma ve soğutma"
 msgid "Heating capacity"
 msgstr "Isıtma kapasitesi"
 
+msgid "Here now"
+msgstr "Şu an burada"
+
 #, python-format
 msgid "Hi %(name)s,"
 msgstr "Merhaba %(name)s,"
@@ -5043,6 +5074,9 @@ msgstr "Aç kalınan saat"
 
 msgid "Hours the rule asks for"
 msgstr "Kuralın istediği saat"
+
+msgid "How"
+msgstr "Nasıl"
 
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
@@ -5465,6 +5499,13 @@ msgstr "Son okunan"
 msgid "Last sign-in"
 msgstr "Son giriş"
 
+msgid "Late"
+msgstr "Geç"
+
+#, python-format
+msgid "Late %(minutes)s min"
+msgstr "%(minutes)s dk geç"
+
 msgid "Latest"
 msgstr "Son değerler"
 
@@ -5674,6 +5715,9 @@ msgstr "Tamamlanmadı olarak işaretle"
 
 msgid "Mark as reviewed"
 msgstr "İncelendi olarak işaretle"
+
+msgid "Mark present"
+msgstr "Mevcut işaretle"
 
 msgid "Mark which one is the primary one."
 msgstr "Hangisinin birincil olduğunu işaretleyin."
@@ -6447,6 +6491,9 @@ msgstr ""
 "Henüz başka kimse Mesajlar'ı kullanamıyor: platform yöneticisi bunu bir role verir (Roller, "
 "Mesajlar: Görüntüle)."
 
+msgid "Nobody is expected today"
+msgstr "Bugün kimse beklenmiyor"
+
 msgid "None"
 msgstr "Yok"
 
@@ -6501,6 +6548,9 @@ msgstr "Bir sistemde değil"
 msgid "Not in the text of the PDF: the words are in the reference or the abstract."
 msgstr "PDF’in metninde yok: sözcükler künyede ya da özette geçiyor."
 
+msgid "Not in yet"
+msgstr "Henüz gelmedi"
+
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
 
@@ -6521,6 +6571,9 @@ msgstr "Yerleştirilmemiş"
 
 msgid "Not placed in any department."
 msgstr "Hiçbir departmana yerleştirilmemiş."
+
+msgid "Not planned"
+msgstr "Planlanmamış"
 
 msgid "Not rated"
 msgstr "Puanlanmadı"
@@ -6690,6 +6743,9 @@ msgstr ""
 "Eldeki miktar çarpı her lotun teslimattaki maliyeti, para birimi başına; maliyetsiz teslim edilen"
 " lotlar sayılmaz."
 
+msgid "On leave"
+msgstr "İzinde"
+
 msgid "On the clock of the place’s site; a task not done by then is overdue."
 msgstr "Yerin bulunduğu sahanın saatine göre; o zamana kadar yapılmayan görev gecikmiş olur."
 
@@ -6725,6 +6781,13 @@ msgstr ""
 "Aralıkların dışındaki balıklar ya da ilk ve son sıcaklık sütununun dışındaki sudakiler rasyon "
 "almaz. Her hücrede SFR, yani günde verilen yemin vücut ağırlığına oranı (%%); 0, o sıcaklıkta "
 "yemleme yok demektir. Boş bırakılan FCR, protokolün FCR’sidir. Tablo bir bütün olarak kaydedilir."
+
+msgid ""
+"One stretch of a person’s presence: from a clock-in to a clock-out, by the person or entered by "
+"hand; its note is masked."
+msgstr ""
+"Bir kişinin bir süre boyunca bulunması: girişten çıkışa, kişinin kendisi ya da elle girilmiş; "
+"notu gizlenir."
 
 #, python-format
 msgid "Only %(available)s %(unit)s of %(item)s, lot %(lot)s, are in %(location)s on %(date)s."
@@ -7266,6 +7329,9 @@ msgstr "Planlanan canlı ağırlık (kg)"
 msgid "Planned slaughter"
 msgstr "Planlı kesim"
 
+msgid "Planned today"
+msgstr "Bugün planlanan"
+
 msgid "Platform admin"
 msgstr "Platform yöneticisi"
 
@@ -7340,6 +7406,9 @@ msgstr "Reçete numarası"
 
 msgid "Prescription only"
 msgstr "Reçeteyle verilir"
+
+msgid "Present"
+msgstr "Mevcut"
 
 msgid "Pressure"
 msgstr "Basınç"
@@ -8087,6 +8156,9 @@ msgstr "Neden iptal edildiğini yazın."
 
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
+
+msgid "Say why the time was entered by hand."
+msgstr "Saatin neden elle girildiğini belirtin."
 
 msgid "Say why when it is another reason, and only then."
 msgstr "Başka bir nedense nedenini yazın, yalnızca o zaman."
@@ -9163,6 +9235,9 @@ msgstr "Her değer doğru olduğunda çizelgeler ve değerler yeniden görünür
 msgid "The checklist has been started: its lines can no longer be changed. Add a note instead."
 msgstr "Kontrol listesine başlandı: satırları artık değiştirilemez. Bunun yerine bir not ekleyin."
 
+msgid "The clock-ins of your team in these days appear here."
+msgstr "Ekibinizin bu günlerdeki girişleri burada görünür."
+
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
 "such as vets, divers and wellboats."
@@ -9591,6 +9666,9 @@ msgstr ""
 "Ekibinizin kişileri burada görünür. Bir departmanı yöneten kişi, o departmana yerleştirilenleri "
 "görür."
 
+msgid "The people of your team who are planned today, on leave or here appear on this page."
+msgstr "Ekibinizden bugün planlanan, izinde olan ya da burada bulunan kişiler bu sayfada görünür."
+
 msgid ""
 "The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
 " one can be the primary contact. Contacts are saved separately from the supplier details."
@@ -9607,6 +9685,9 @@ msgid ""
 msgstr ""
 "İzin sahibinin numarası, balığın sahibi: Mattilsynet ve Fiskeridirektoratet raporları bunu taşır."
 " Dokuz hane."
+
+msgid "The person cannot clock out before they clocked in."
+msgstr "Kişi girişinden önce çıkış yapamaz."
 
 msgid "The person is on approved leave on this day."
 msgstr "Kişi bu günde onaylı izinde."
@@ -10213,6 +10294,9 @@ msgstr "Bu kişinin bu günlerin bir kısmı için zaten bir izin talebi var."
 msgid "This person already has a plan for this day."
 msgstr "Bu kişinin bu gün için zaten bir planı var."
 
+msgid "This person is already clocked in for some of this time."
+msgstr "Bu kişi, bu sürenin bir kısmında zaten giriş yapmış."
+
 msgid "This person is already placed in a department on some of these days."
 msgstr "Bu kişi, bu günlerin bir kısmında zaten bir departmana yerleştirilmiş."
 
@@ -10366,6 +10450,9 @@ msgstr "Hedef birimler"
 
 msgid "Today"
 msgstr "Bugün"
+
+msgid "Today & attendance"
+msgstr "Bugün ve yoklama"
 
 msgid "Today lists the overdue tasks, those due today and those done today."
 msgstr "Bugün; gecikmiş görevleri, bugün süresi dolanları ve bugün tamamlananları listeler."
@@ -10587,6 +10674,9 @@ msgstr "%(date)s tarihine kadar"
 
 msgid "Up to (g)"
 msgstr "Üst sınır (g)"
+
+msgid "Upcoming"
+msgstr "Yaklaşan"
 
 msgid "Updated at"
 msgstr "Güncellenme zamanı"
@@ -11100,6 +11190,9 @@ msgstr ""
 msgid "Why the text could not be read"
 msgstr "Metnin neden okunamadığı"
 
+msgid "Why the time was entered or corrected: it is not shown in the log."
+msgstr "Saatin neden girildiği ya da düzeltildiği: günlükte gösterilmez."
+
 msgid ""
 "Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
 " it was is cleared."
@@ -11211,8 +11304,20 @@ msgstr "Dün"
 msgid "You"
 msgstr "Siz"
 
+msgid "You are already clocked in."
+msgstr "Zaten giriş yaptınız."
+
+msgid "You are clocked in."
+msgstr "Giriş yaptınız."
+
+msgid "You are clocked out."
+msgstr "Çıkış yaptınız."
+
 msgid "You are its owner. People who cannot use Messages are not listed."
 msgstr "Kanalın sahibi sizsiniz. Mesajlar'ı kullanamayan kişiler listede yok."
+
+msgid "You are not clocked in."
+msgstr "Giriş yapmadınız."
 
 msgid "You can now sign in with your new password."
 msgstr "Artık yeni parolanızla giriş yapabilirsiniz."
@@ -11225,6 +11330,9 @@ msgstr "Bunu yapma izniniz yok."
 
 msgid "You do not plan this person on this day."
 msgstr "Bu kişiyi bu günde planlamıyorsunuz."
+
+msgid "You do not see this person on this day."
+msgstr "Bu kişiyi bu günde görmüyorsunuz."
 
 #, python-format
 msgid "You left %(channel)s."
@@ -11267,6 +11375,12 @@ msgstr "%(point)s noktasında"
 
 msgid "at once"
 msgstr "derhal"
+
+msgid "attendance record"
+msgstr "yoklama kaydı"
+
+msgid "attendance records"
+msgstr "yoklama kayıtları"
 
 #, python-format
 msgid "average %(weight)s"

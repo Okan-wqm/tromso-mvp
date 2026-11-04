@@ -1,0 +1,19 @@
+{% extends base_template %}
+{% load i18n assets hr %}
+{% comment %} Today & attendance (hr.views.today): the board of the viewer's people, drawn by the server (hr.read.board) and drawn
+   again by it while the page is in view (frontend/poll.ts); the person's own clock in and out. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="toolbar">
+  {% if own %}
+  <form method="post" action="{% url 'hr:punch' 'out' %}" {% if not open_punch %}hidden{% endif %}>{% csrf_token %}<button type="submit" class="button">{% include "icons/_icon.html" with name="user-check" %}{% trans "Clock out" %}</button></form>
+  <form method="post" action="{% url 'hr:punch' 'in' %}" {% if open_punch %}hidden{% endif %}>{% csrf_token %}<button type="submit" class="button">{% include "icons/_icon.html" with name="user-check" %}{% trans "Clock in" %}</button></form>
+  {% if open_punch %}<span class="muted">{% blocktrans trimmed with since=open_punch.clock_in|on_clock:open_zone|date:"H:i" %}Clocked in since {{ since }}.{% endblocktrans %}</span>{% endif %}
+  {% endif %}
+  {% if can_enter %}<a class="button button-inline" href="{% url 'hr:attendancerecord_create' %}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Mark present" %}</a>{% endif %}
+</div>
+<div data-poll="{% url 'hr:today_board' %}" data-poll-every="30">{% include "hr/_board.html" %}</div>
+{% endblock %}

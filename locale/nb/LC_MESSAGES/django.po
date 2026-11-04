@@ -1687,6 +1687,9 @@ msgstr "Over maks. tetthet, godtatt"
 msgid "Above the usual feed rate, accepted"
 msgstr "Over vanlig fôringsrate, godtatt"
 
+msgid "Absent"
+msgstr "Fraværende"
+
 msgid "Absent after (minutes)"
 msgstr "Fraværende etter (minutter)"
 
@@ -2469,6 +2472,9 @@ msgstr "Fastsittende lus"
 msgid "Attached per fish"
 msgstr "Fastsittende per fisk"
 
+msgid "Attendance"
+msgstr "Oppmøte"
+
 msgid "Author"
 msgstr "Forfatter"
 
@@ -3096,6 +3102,19 @@ msgstr "Nullstill"
 msgid "Clear filters"
 msgstr "Fjern filtrene"
 
+msgid "Clock in"
+msgstr "Stemple inn"
+
+msgid "Clock out"
+msgstr "Stemple ut"
+
+msgid "Clocked in by the person"
+msgstr "Stemplet inn av personen"
+
+#, python-format
+msgid "Clocked in since %(since)s."
+msgstr "Stemplet inn siden %(since)s."
+
 msgid "Close"
 msgstr "Lukk"
 
@@ -3262,6 +3281,9 @@ msgstr "Kobberlegering"
 
 msgid "Corona discharge"
 msgstr "Koronautladning"
+
+msgid "Correct"
+msgstr "Rett"
 
 msgid "Correction"
 msgstr "Korrigering"
@@ -3928,6 +3950,9 @@ msgstr "Ansettelsestype"
 msgid "Empty"
 msgstr "Tom"
 
+msgid "Empty while the person is still in."
+msgstr "Tom så lenge personen fortsatt er inne."
+
 #, python-format
 msgid "Empty · %(status)s"
 msgstr "Tom · %(status)s"
@@ -3964,6 +3989,9 @@ msgstr "Skriv inn dagen i måneden."
 
 msgid "Enter the email address on your account. We will send you a link to set a new password."
 msgstr "Skriv inn e-postadressen på kontoen din. Vi sender deg en lenke for å velge nytt passord."
+
+msgid "Entered by hand"
+msgstr "Lagt inn for hånd"
 
 msgid "Entered here"
 msgstr "Lagt inn her"
@@ -4996,6 +5024,9 @@ msgstr "Oppvarming og kjøling"
 msgid "Heating capacity"
 msgstr "Varmekapasitet"
 
+msgid "Here now"
+msgstr "Her nå"
+
 #, python-format
 msgid "Hi %(name)s,"
 msgstr "Hei %(name)s,"
@@ -5034,6 +5065,9 @@ msgstr "Timer sultet"
 
 msgid "Hours the rule asks for"
 msgstr "Timer regelen krever"
+
+msgid "How"
+msgstr "Hvordan"
 
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
@@ -5456,6 +5490,13 @@ msgstr "Sist lest"
 msgid "Last sign-in"
 msgstr "Sist innlogget"
 
+msgid "Late"
+msgstr "Sen"
+
+#, python-format
+msgid "Late %(minutes)s min"
+msgstr "%(minutes)s min for sent"
+
 msgid "Latest"
 msgstr "Siste"
 
@@ -5665,6 +5706,9 @@ msgstr "Merk som ikke utført"
 
 msgid "Mark as reviewed"
 msgstr "Merk som gjennomgått"
+
+msgid "Mark present"
+msgstr "Merk som til stede"
 
 msgid "Mark which one is the primary one."
 msgstr "Merk hvilken som er den primære."
@@ -6440,6 +6484,9 @@ msgstr ""
 "Ingen andre kan bruke Meldinger ennå: plattformadministratoren gir det til en rolle (Roller, "
 "Meldinger: Les)."
 
+msgid "Nobody is expected today"
+msgstr "Ingen forventes i dag"
+
 msgid "None"
 msgstr "Ingen"
 
@@ -6494,6 +6541,9 @@ msgstr "Ikke i et system"
 msgid "Not in the text of the PDF: the words are in the reference or the abstract."
 msgstr "Ikke i PDF-ens tekst: ordene står i referansen eller sammendraget."
 
+msgid "Not in yet"
+msgstr "Ikke kommet ennå"
+
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
 
@@ -6514,6 +6564,9 @@ msgstr "Ikke plassert"
 
 msgid "Not placed in any department."
 msgstr "Ikke plassert i noen avdeling."
+
+msgid "Not planned"
+msgstr "Ikke planlagt"
 
 msgid "Not rated"
 msgstr "Ikke vurdert"
@@ -6683,6 +6736,9 @@ msgstr ""
 "Beholdningen ganger det hvert parti kostet ved mottak, per valuta; partier mottatt uten kostnad "
 "regnes ikke med."
 
+msgid "On leave"
+msgstr "På permisjon"
+
 msgid "On the clock of the place’s site; a task not done by then is overdue."
 msgstr "Etter klokken på stedets lokalitet; en oppgave som ikke er utført innen da, er forfalt."
 
@@ -6718,6 +6774,13 @@ msgstr ""
 "utenfor første og siste temperaturkolonne, får ingen rasjon. I hver celle SFR, %% av kroppsvekten"
 " som fôres per dag; 0 betyr ingen fôring ved den temperaturen. Tom FCR betyr protokollens. "
 "Tabellen lagres samlet."
+
+msgid ""
+"One stretch of a person’s presence: from a clock-in to a clock-out, by the person or entered by "
+"hand; its note is masked."
+msgstr ""
+"Én periode med en persons tilstedeværelse: fra en innstempling til en utstempling, av personen "
+"selv eller lagt inn for hånd; merknaden er maskert."
 
 #, python-format
 msgid "Only %(available)s %(unit)s of %(item)s, lot %(lot)s, are in %(location)s on %(date)s."
@@ -7259,6 +7322,9 @@ msgstr "Planlagt rund vekt (kg)"
 msgid "Planned slaughter"
 msgstr "Planlagt slakting"
 
+msgid "Planned today"
+msgstr "Planlagt i dag"
+
 msgid "Platform admin"
 msgstr "Plattformadministrator"
 
@@ -7333,6 +7399,9 @@ msgstr "Reseptnummer"
 
 msgid "Prescription only"
 msgstr "Reseptpliktig"
+
+msgid "Present"
+msgstr "Til stede"
 
 msgid "Pressure"
 msgstr "Trykk"
@@ -8081,6 +8150,9 @@ msgstr "Skriv hvorfor den avlyses."
 
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
+
+msgid "Say why the time was entered by hand."
+msgstr "Si hvorfor tiden ble lagt inn for hånd."
 
 msgid "Say why when it is another reason, and only then."
 msgstr "Si hvorfor når det er en annen grunn, og bare da."
@@ -9154,6 +9226,9 @@ msgstr "Diagrammene og verdiene vises igjen når alle verdiene er riktige."
 msgid "The checklist has been started: its lines can no longer be changed. Add a note instead."
 msgstr "Sjekklisten er påbegynt: linjene kan ikke lenger endres. Legg til et notat i stedet."
 
+msgid "The clock-ins of your team in these days appear here."
+msgstr "Teamets innstemplinger i disse dagene vises her."
+
 msgid ""
 "The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services "
 "such as vets, divers and wellboats."
@@ -9580,6 +9655,9 @@ msgid ""
 "it."
 msgstr "Folkene på teamet ditt vises her. Den som leder en avdeling ser folkene som er plassert i den."
 
+msgid "The people of your team who are planned today, on leave or here appear on this page."
+msgstr "Folk på teamet ditt som er planlagt i dag, på permisjon eller her vises på denne siden."
+
 msgid ""
 "The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
 " one can be the primary contact. Contacts are saved separately from the supplier details."
@@ -9596,6 +9674,9 @@ msgid ""
 msgstr ""
 "Tillatelseshaverens, som eier fisken: rapportene til Mattilsynet og Fiskeridirektoratet har det "
 "med. Ni sifre."
+
+msgid "The person cannot clock out before they clocked in."
+msgstr "Personen kan ikke stemple ut før de stemplet inn."
 
 msgid "The person is on approved leave on this day."
 msgstr "Personen har godkjent permisjon denne dagen."
@@ -10200,6 +10281,9 @@ msgstr "Denne personen har allerede en permisjonssøknad for noen av disse dagen
 msgid "This person already has a plan for this day."
 msgstr "Denne personen har allerede en plan for denne dagen."
 
+msgid "This person is already clocked in for some of this time."
+msgstr "Denne personen er allerede stemplet inn for deler av denne tiden."
+
 msgid "This person is already placed in a department on some of these days."
 msgstr "Denne personen er allerede plassert i en avdeling på noen av disse dagene."
 
@@ -10353,6 +10437,9 @@ msgstr "Til enheter"
 
 msgid "Today"
 msgstr "I dag"
+
+msgid "Today & attendance"
+msgstr "I dag og oppmøte"
 
 msgid "Today lists the overdue tasks, those due today and those done today."
 msgstr "I dag viser de forfalte oppgavene, dem med frist i dag og dem som er utført i dag."
@@ -10574,6 +10661,9 @@ msgstr "Til %(date)s"
 
 msgid "Up to (g)"
 msgstr "Opp til (g)"
+
+msgid "Upcoming"
+msgstr "Kommende"
 
 msgid "Updated at"
 msgstr "Oppdatert"
@@ -11087,6 +11177,9 @@ msgstr ""
 msgid "Why the text could not be read"
 msgstr "Hvorfor teksten ikke kunne leses"
 
+msgid "Why the time was entered or corrected: it is not shown in the log."
+msgstr "Hvorfor tiden ble lagt inn eller rettet: den vises ikke i loggen."
+
 msgid ""
 "Why the unit has its current status, e.g. “net change”. When the status changes, a reason left as"
 " it was is cleared."
@@ -11198,8 +11291,20 @@ msgstr "I går"
 msgid "You"
 msgstr "Du"
 
+msgid "You are already clocked in."
+msgstr "Du er allerede stemplet inn."
+
+msgid "You are clocked in."
+msgstr "Du er stemplet inn."
+
+msgid "You are clocked out."
+msgstr "Du er stemplet ut."
+
 msgid "You are its owner. People who cannot use Messages are not listed."
 msgstr "Du er eieren. Personer som ikke kan bruke Meldinger, står ikke på listen."
+
+msgid "You are not clocked in."
+msgstr "Du er ikke stemplet inn."
 
 msgid "You can now sign in with your new password."
 msgstr "Du kan nå logge inn med det nye passordet ditt."
@@ -11212,6 +11317,9 @@ msgstr "Du har ikke tillatelse til å gjøre dette."
 
 msgid "You do not plan this person on this day."
 msgstr "Du planlegger ikke denne personen denne dagen."
+
+msgid "You do not see this person on this day."
+msgstr "Du ser ikke denne personen denne dagen."
 
 #, python-format
 msgid "You left %(channel)s."
@@ -11256,6 +11364,12 @@ msgstr "ved %(point)s"
 
 msgid "at once"
 msgstr "straks"
+
+msgid "attendance record"
+msgstr "oppmøteregistrering"
+
+msgid "attendance records"
+msgstr "oppmøteregistreringer"
 
 #, python-format
 msgid "average %(weight)s"

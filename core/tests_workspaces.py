@@ -54,8 +54,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Activity log', 'Roles', 'Users', 'Database', 'Team list', 'Departments',
-                                                 'Shift schedule', 'Leave requests', 'Scheduling settings'])
+                                                 'Activity log', 'Roles', 'Users', 'Database', 'Today & attendance', 'Team list', 'Departments',
+                                                 'Shift schedule', 'Attendance', 'Leave requests', 'Scheduling settings'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
@@ -230,6 +230,7 @@ class MenuPlacementTests(TestCase):
             'hr.OfficeDepartment': 'Company · HR · HR dashboard',
             'hr.Shift': 'Company · HR · Time & shifts',
             'hr.ShiftAssignment': 'Company · HR · Time & shifts',
+            'hr.AttendanceRecord': 'Company · HR · HR dashboard',
             'hr.LeaveRequest': 'Company · HR · Time & shifts',
             'hr.LeaveType': 'Company · HR · Time & shifts',
             'hr.Holiday': 'Company · HR · Time & shifts',

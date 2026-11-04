@@ -23,7 +23,7 @@ VIEWER = Viewer(
     # a secret belongs here, and so does what people write to each other: a message's text is for the
     # members of its conversation, which the platform admin reading the database is not (README, Messages).
     masked={'auth_user': ('password',), 'messages': ('body',), 'shift_assignments': ('note',),
-            'leave_requests': ('reason', 'decision_note')},
+            'leave_requests': ('reason', 'decision_note'), 'attendance_records': ('note',)},
     # One line per table where the model's docstring does not say it in the project's words.
     descriptions={
         'employees': _('The people of the company for HR: number, name (or the account that names them), type and the '
@@ -35,6 +35,7 @@ VIEWER = Viewer(
         'shift_assignments': _('One person’s plan for one day: the shift they start that day, or none for planned off.'),
         'leave_types': _('The kinds of leave the company grants (annual, sick, parental), with the days a year and whether a request needs approval.'),
         'leave_requests': _('A person’s request to be away from a first to a last day, and how it was decided; its reason and note are masked.'),
+        'attendance_records': _('One stretch of a person’s presence: from a clock-in to a clock-out, by the person or entered by hand; its note is masked.'),
         'postings': _('Where each person works from a day: one department, production or office, and the title.'),
         'office_departments': _('The company’s office departments (finance, administration), nested under one another.'),
         'auth_user': _('People who can sign in: account details and a hash of the password.'),

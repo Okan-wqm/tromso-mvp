@@ -5,16 +5,19 @@ from datetime import date
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponseBadRequest
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.http import require_POST
 
+from core import navigation
 from core.crud import done, render_page
+from farm.models.site import zone_of
 
-from . import rules, scope, services
-from .models import Shift
+from . import read, rules, scope, services
+from .models import AttendanceRecord, Shift
 
 OFF, CLEAR = 'off', 'clear'
 
@@ -118,3 +121,43 @@ def reject(request, pk):
 def cancel(request, pk):
     item = leave_request(request, pk)
     return _run(request, lambda: services.cancel_leave(request.user, item), _('The request was cancelled.'))
+
+
+# ---- today & attendance -------------------------------------------------------------------------------------------
+def _today_context(request):
+    own = services.own_employee(request.user)
+    open_punch = AttendanceRecord.objects.filter(employee=own, clock_out__isnull=True).first() if own else None
+    open_zone = zone_of(read.site_on(own, timezone.localdate())) if open_punch else None
+    return {'board': read.board(request.user), 'own': own, 'open_punch': open_punch, 'open_zone': open_zone,
+            'can_enter': request.user.has_perm('hr.add_attendancerecord'), 'states': rules.STATES}
+
+
+def today(request):
+    """Today & attendance: who is where now, worked out on each site's clock, with the person's own clock in and out."""
+    if not request.user.has_perm('hr.view_attendancerecord'):
+        raise PermissionDenied
+    place = navigation.page('hr:today')
+    return render(request, 'hr/today.html', {'title': place.entry.label, 'eyebrow': place.heading,
+                                             'base_template': 'app_base.html', **_today_context(request)})
+
+
+def today_board(request):
+    """The board alone, as the page polls it (frontend/poll.ts): the server draws every figure again."""
+    if not request.user.has_perm('hr.view_attendancerecord'):
+        raise PermissionDenied
+    return render(request, 'hr/_board.html', _today_context(request))
+
+
+@require_POST
+def punch(request, direction):
+    """The person's own clock in or clock out, at the server's time."""
+    if direction not in ('in', 'out'):
+        raise Http404
+    call = services.clock_in if direction == 'in' else services.clock_out
+    try:
+        call(request.user)
+    except ValidationError as error:
+        messages.error(request, ' '.join(error.messages))
+    else:
+        messages.success(request, _('You are clocked in.') if direction == 'in' else _('You are clocked out.'))
+    return redirect(reverse('hr:today'))

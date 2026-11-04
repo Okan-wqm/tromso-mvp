@@ -145,7 +145,8 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
                  'schedulingsettings_edit', 'shiftassignment_list', 'shiftassignment_create', 'shiftassignment_edit',
                  'shiftassignment_delete', 'roster_plan', 'leaverequest_list', 'leaverequest_create', 'leaverequest_edit',
                  'leaverequest_detail', 'leaverequest_approve', 'leaverequest_reject', 'leaverequest_cancel',
-                 'leavetype_list', 'leavetype_create', 'leavetype_edit', 'leavetype_delete'}
+                 'leavetype_list', 'leavetype_create', 'leavetype_edit', 'leavetype_delete', 'attendancerecord_list',
+                 'attendancerecord_create', 'attendancerecord_edit', 'attendancerecord_delete', 'today', 'today_board', 'punch'}
         self.assertEqual(set(names) - known, set(), 'give every new HR route a row in the URL matrix')
 
 

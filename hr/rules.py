@@ -107,3 +107,51 @@ def _runs(days, longest, wanted):
             found.append(Finding(CONSECUTIVE_DAYS, WARN, day, run))
         previous = day
     return found
+
+
+# ---- who is where: a person's state on a day, from the plan, the punches and the leave ------------------------------
+UPCOMING, PRESENT, LATE, NOT_IN, ABSENT, ON_LEAVE, DONE = ('upcoming', 'present', 'late', 'not_in', 'absent', 'on_leave',
+                                                           'done')
+STATES = (UPCOMING, PRESENT, LATE, NOT_IN, ABSENT, ON_LEAVE, DONE)
+
+
+@dataclass(frozen=True)
+class Standing:
+    """A person's state now: `state`, the first clock-in and the last clock-out that count for the shift, and the
+    minutes late (past the grace)."""
+    state: str
+    first_in: object = None
+    last_out: object = None
+    late_minutes: int = 0
+
+
+def status(span, punches, on_leave, now, grace_minutes, absent_after_minutes, window_minutes):
+    """The state of one person: nothing stored, all read. `span` is the planned (start, end) as instants, or None;
+    `punches` are (clock_in, clock_out or None) of the person, which count for the shift when the clock-in falls from the
+    punch window before the start up to the end (all of them when nothing is planned: an unplanned presence is still a
+    presence). A record is a fact and the plan an intent: a person who clocked in is present or late (or done once they clocked
+    out) whatever the plan says; one who did not is upcoming until the start plus the grace, not in until the start plus the
+    later of the grace and the absent-after minutes, and absent after that. On approved leave a person is on leave."""
+    if on_leave:
+        return Standing(ON_LEAVE)
+    counted = list(punches)
+    if span is not None:
+        start, end = span
+        earliest = start - timedelta(minutes=window_minutes)
+        counted = [punch for punch in punches if earliest <= punch[0] < end]
+    if counted:
+        first_in = min(punch[0] for punch in counted)
+        late = 0
+        if span is not None:
+            late = max(0, int((first_in - span[0]).total_seconds() // 60) - grace_minutes)
+        if any(punch[1] is None for punch in counted):
+            return Standing(LATE if late else PRESENT, first_in, None, late)
+        return Standing(DONE, first_in, max(punch[1] for punch in counted), late)
+    if span is None:
+        return None
+    start = span[0]
+    if now < start + timedelta(minutes=grace_minutes):
+        return Standing(UPCOMING)
+    if now < start + timedelta(minutes=max(grace_minutes, absent_after_minutes)):
+        return Standing(NOT_IN)
+    return Standing(ABSENT)

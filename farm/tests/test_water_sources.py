@@ -254,14 +254,14 @@ class ShownTests(SourcesCase):
         self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.SYSTEM_SENSOR,
                                    'alkalinity_mg_l': read.Origin.MANUAL, 'salinity_ppt': read.Origin.MANUAL})
         html = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])).content.decode()
-        self.assertRegex(html, r'unit sensor · 1[2-9] s ago')
-        self.assertRegex(html, r'system sensor · 4[0-9] s ago')
+        self.assertRegex(html, r'unit sensor #d+ · 1[2-9] s ago')
+        self.assertRegex(html, r'system sensor #d+ · 4[0-9] s ago')
         self.assertRegex(html, r'manual · 1.day ago')
 
     def test_the_water_page_and_the_card_name_the_origin(self):
         self.stock()                                              # an empty unit's card shows no water
         page = self.client.get(reverse('farm:water')).content.decode()
-        self.assertRegex(page, r'unit sensor · 1[2-9] s ago')
+        self.assertRegex(page, r'unit sensor #d+ · 1[2-9] s ago')
         card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
-        self.assertRegex(card, r'unit sensor · 1[2-9] s ago')
-        self.assertRegex(card, r'system sensor · 4[0-9] s ago')
+        self.assertRegex(card, r'unit sensor #d+ · 1[2-9] s ago')
+        self.assertRegex(card, r'system sensor #d+ · 4[0-9] s ago')

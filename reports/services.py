@@ -33,10 +33,12 @@ def _refuse(message):
     raise ValidationError({NON_FIELD_ERRORS: [message]})
 
 
-def submit(user, report, *, submitted_at, channel, reference, version):
-    """Records that `report` was filed (when, how, the receipt) and freezes its content as it is computed now. Refused
-    for a stale form, a report already filed, one not ready (its problems), a time in the future, or a channel
-    with a receipt but none given."""
+def submit(user, report, *, submitted_at, channel, reference, version, content_sha256):
+    """Records that `report` was filed (when, how, the receipt) and freezes its content as it is computed now: the content
+    the person was shown, named by its hash (`content_sha256`, what the page and the print gave before the filing). Refused
+    for a stale form, a report already filed, one not ready (its problems), a time in the future, a channel with a
+    receipt but none given, or when the records now give another content than the one that was shown (a backdated
+    record in between): the person looks again, and what is frozen is always what was previewed."""
     with transaction.atomic():
         current = Report.objects.select_for_update().get(pk=report.pk)
         if current.version != version:
@@ -59,6 +61,9 @@ def submit(user, report, *, submitted_at, channel, reference, version):
             with audit.source_language():      # the log is English at rest, whoever records the filing
                 logged = compute.compute(current).problems
         digest = compute.content_hash(result.content)
+        if digest != content_sha256:
+            _refuse(_('The records changed after you looked at the report: review it again before you record the '
+                      'filing.'))
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
                                       content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope))
         current.submitted_at, current.submitted_by = submitted_at, user

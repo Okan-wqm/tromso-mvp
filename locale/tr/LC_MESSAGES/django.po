@@ -9223,6 +9223,9 @@ msgstr ""
 "Reçeteler bunlardan ikisini birlikte kullanır; çizelgede biri kendi yönünü, ikisi hedefe giden "
 "yolunu çizer."
 
+msgid "The records changed after you looked at the report: review it again before you record the filing."
+msgstr "Siz raporu inceledikten sonra kayıtlar değişti: bildirimi kaydetmeden önce yeniden inceleyin."
+
 msgid "The records no longer give what was filed"
 msgstr "Kayıtlar artık sunulanı vermiyor"
 
@@ -9466,6 +9469,17 @@ msgstr "Tam derinliğin altındaysa olağan ortalama su derinliği; havuz dolu t
 
 msgid "The usual water level when it is below the rim; empty when the tank is filled to its depth."
 msgstr "Kenarın altındaysa olağan su seviyesi; tank tam derinliğine kadar doluysa boş."
+
+msgid ""
+"The values above, field by field in the authority’s names, are on the print page: type them from "
+"there. What is recorded is exactly this content; if the records change before you record it, you "
+"are asked to look again."
+msgstr ""
+"Yukarıdaki değerler, kurumun alan adlarıyla, yazdırma sayfasındadır: oradan yazın. Kaydedilen tam"
+" olarak bu içeriktir; kayıtlar siz kaydetmeden önce değişirse yeniden bakmanız istenir."
+
+msgid "The values to type"
+msgstr "Yazılacak değerler"
 
 msgid "The vet or fish-health biologist, or who observed it."
 msgstr "Veteriner veya balık sağlığı biyoloğu ya da gözlemleyen kişi."
@@ -10389,6 +10403,9 @@ msgid ""
 msgstr ""
 "Balıkların sağlığı hakkında görülen, bulunan veya önerilenler: gözlemler, veteriner ve balık "
 "sağlığı ziyaretleri, laboratuvar sonuçları ve ölüm artışları."
+
+msgid "What you are about to record as filed"
+msgstr "Bildirildi olarak kaydetmek üzere olduğunuz içerik"
 
 msgid "When"
 msgstr "Ne zaman"

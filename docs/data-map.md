@@ -1963,7 +1963,7 @@ What was told to the authority, frozen when the person recorded the filing: the 
 - **how it works**: What was told to the authority, frozen when the filing is recorded; shown, exported again and compared with what the records say now.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Reports › regulatory_report_snapshots
 - **constraints**: chk_regulatory_report_snapshots_sha (check); chk_regulatory_report_snapshots_fingerprint (check)
-- **tests that mention it**: `reports/tests/test_due.py`, `reports/tests/test_notices.py`, `reports/tests/test_pages.py`
+- **tests that mention it**: `reports/tests/test_due.py`, `reports/tests/test_notices.py`, `reports/tests/test_pages.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2034,7 +2034,7 @@ A report to an authority for a site (a slaughter facility for the planned slaugh
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Reports › regulatory_reports
 - **forms**: `ReportForm`, `SubmitForm`
 - **constraints**: chk_regulatory_reports_kind (check); chk_regulatory_reports_scope (check); chk_regulatory_reports_when (check); chk_regulatory_reports_week (check); chk_regulatory_reports_month (check); chk_regulatory_reports_year (check); chk_regulatory_reports_site_notice (check); chk_regulatory_reports_escape (check); chk_regulatory_reports_health_event (check); chk_regulatory_reports_narrative (check); chk_regulatory_reports_channel (check); chk_regulatory_reports_submission (check); chk_regulatory_reports_kept (check); chk_regulatory_reports_not_itself (check); uq_regulatory_reports_period (unique: kind, site, facility, period_start); uq_regulatory_reports_site_notice (unique: kind, site, occurred_on); uq_regulatory_reports_event_notice (unique: kind, health_event); uq_regulatory_reports_escape_notice (unique: kind, escape); uq_regulatory_reports_correction (unique: corrects)
-- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `reports/tests/helpers.py` and 10 more
+- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `reports/tests/helpers.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

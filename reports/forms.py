@@ -158,6 +158,8 @@ class SubmitForm(forms.Form):
     reference = forms.CharField(label=_('Receipt or reference'), max_length=200, required=False,
                                 help_text=_('Not needed for a notice given by telephone.'))
     version = forms.IntegerField(widget=forms.HiddenInput)
+    # The hash of the content the page showed (reports.compute.content_hash): what is recorded is exactly that.
+    content_sha256 = forms.CharField(widget=forms.HiddenInput, min_length=64, max_length=64)
 
 
 class ResistanceSuspicionForm(forms.ModelForm):

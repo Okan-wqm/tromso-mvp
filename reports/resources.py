@@ -184,9 +184,11 @@ class ReportResource(Resource):
             'has_api': report.kind in exports.API_KINDS,
         }
         if extras['can_submit']:
+            extras['preview_hash'] = compute.content_hash(result.content)
             extras['submit_form'] = SubmitForm(initial={
                 'submitted_at': timezone.localtime(timezone.now(), periods.OSLO).replace(
-                    tzinfo=None, second=0, microsecond=0), 'version': report.version})
+                    tzinfo=None, second=0, microsecond=0), 'version': report.version,
+                'content_sha256': extras['preview_hash']})
             extras['submit_url'] = reverse('reports:report_submit', args=[report.pk])
         if extras['can_correct']:
             extras['correct_url'] = reverse('reports:report_correct', args=[report.pk])

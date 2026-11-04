@@ -21685,7 +21685,8 @@
       "tests": [
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
-        "reports/tests/test_pages.py"
+        "reports/tests/test_pages.py",
+        "reports/tests/test_preview.py"
       ]
     },
     {
@@ -22852,7 +22853,8 @@
             "submitted_at": "",
             "channel": "",
             "reference": "",
-            "version": ""
+            "version": "",
+            "content_sha256": ""
           }
         }
       ],
@@ -22877,6 +22879,7 @@
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_preview.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"

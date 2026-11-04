@@ -14,7 +14,7 @@ from farm.tests.test_stock import make_unit
 
 from .. import compute, exports
 from ..models import Report
-from .helpers import OCTOBER, ReportTestCase, day
+from .helpers import OCTOBER, ReportTestCase, day, previewed
 from .schema import errors
 
 
@@ -178,7 +178,8 @@ class ExportAndPageTests(CleanerFishTestCase):
         detail = self.client.get(reverse('reports:report_detail', args=[report.pk]))
         self.assertEqual(detail.context['problems'], [])
         self.client.post(reverse('reports:report_submit', args=[report.pk]), {
-            'submitted_at': '2026-11-03T09:30', 'channel': 'altinn', 'reference': 'AR1', 'version': str(report.version)})
+            'submitted_at': '2026-11-03T09:30', 'channel': 'altinn', 'reference': 'AR1', 'version': str(report.version),
+            'content_sha256': previewed(report)})
         report.refresh_from_db()
         self.assertEqual(report.status, 'submitted')
         self.assertEqual(report.snapshot.content['units'].popitem()[1]['species'][0]['species'], 'LUM')

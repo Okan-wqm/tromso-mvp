@@ -229,7 +229,7 @@ start and end are reported (§ 39 ✔). The notice form's own fields are **unver
 | `artskode` | `[A-Z]{3}`, "store bokstaver etter FAO-standarden" (ASFIS) ✔ | `Species.official_code`, `^[A-Z]{3}$` (`farm/models/species.py:15`, `:92-95` ✔) | exists; the cleaner-fish codes in our catalogue are wrong (3.4) |
 | `godkjenningsnummer` | `[a-zA-Z\d]{1,6}` ✔ | `SlaughterFacility.approval_number`, `^[A-Z0-9]{1,6}$`, stored in capitals (`farm/models/harvest.py:26-29`, `:63-64`, `:114-116` ✔) | exists; consistent with the API's pattern (which also accepts lower case; we store capitals) |
 | `kontaktperson {navn, epost, telefonnummer}` | required on every report ✔ | the person filing; `Site.contact_email`/`contact_phone`, `SiteContact` (`farm/models/site.py:79-81`, `:144-162` ✔) | entered on the report, prefilled from the person |
-| `klientReferanse` | unique per submission ✔ | — | only for API filing; the export carries the report's id |
+| `klientReferanse` | "must be unique for each reporting" ✔ | — | only for API filing; the export carries the **report's** id (`str(report.pk)`): one per report, and a correction is a new report with its own id (coverage review C05) |
 
 ## 2. Where each field comes from here
 
@@ -643,11 +643,13 @@ that take the fish out of the units (OUR-03; the stock stays the only writer of 
   numbers are written as numbers, so a sea temperature of −0.4 °C stays a number.
 - **JSON in the shape of Mattilsynet's API** for the lice, smolt, cleaner-fish and planned-slaughter reports, for a
   person or another system that files through the API. A copy of the relevant schemas of the OpenAPI read
-  2026-11-03 (NLOD licence, E1) is kept with the tests, and every export is validated against it with `jsonschema`
-  (a new pinned dependency) or a hand-written validator of the subset used (decided in Phase 2 by what the subset
-  needs). The OpenAPI lists `unknownProperties` as required on several objects, a Java artefact (E1): the export
-  leaves it out and the test copy drops it from `required`, saying so (whether Mattilsynet's server wants `{}` is
-  unverified).
+  2026-11-03 (NLOD licence, E1) is kept with the tests (`reports/tests/schema.py`, a hand-written validator of the subset
+  the schemas use). **What is true (coverage review C08, C09):** the application does not validate an export when it makes
+  it; a few tests assert specific exports against the copy, so it proves the output of those cases, not every export. The
+  validator does not read `anyOf`, `maxLength` or `format`, so a value outside an enum that the schema writes as `anyOf` is
+  not caught by it. The OpenAPI lists `unknownProperties` as required on several objects, a Java artefact (E1): the export
+  leaves it out, the copy keeps it in `required` and the validator skips that one name (whether Mattilsynet's server wants
+  `{}` is unverified, R02).
 - The biomass report: print and CSV only (Fiskeridirektoratet's current form is unverified, 1.5).
 
 ### 5.6 Menu and pages
@@ -803,6 +805,12 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   report of that week reads the harvest's weighed kilos with a warning that it was not planned. A person can **close** an owed
   report with a reason (`DueClosure`: a check that its place fits its kind, one per place and period, a reason; created through
   the dialog, deleted by *Reopen*, both in the activity log); it is a record of a decision, not a report, and nothing is sent.
+- **What is about to be recorded is shown first (coverage review C06, gap 5):** the report's page shows the content hash and
+  links the print page, which lists the exact values to type in the authority's names, and every export carries the hash
+  (`X-Content-SHA256`; the print page prints it). The filing form posts that hash and `services.submit` refuses to record
+  when the records now give another content ("The records changed after you looked at the report: review it again"), so what
+  is frozen is always the content that was previewed (the hash of the snapshot equals the previewed one). The system still
+  cannot know what was typed into Altinn: the person is trained to type from the print page.
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
   (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.

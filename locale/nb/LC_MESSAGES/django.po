@@ -9216,6 +9216,11 @@ msgstr ""
 "Oppskriftene bruker to av dem om gangen; i diagrammet tegner ett retningen sin, to banen sin til "
 "målet."
 
+msgid "The records changed after you looked at the report: review it again before you record the filing."
+msgstr ""
+"Postene er endret etter at du så på rapporten: se gjennom den på nytt før du registrerer "
+"innsendingen."
+
 msgid "The records no longer give what was filed"
 msgstr "Registreringene gir ikke lenger det som ble sendt inn"
 
@@ -9458,6 +9463,18 @@ msgstr "Vanlig gjennomsnittlig vanndybde når den er under full dybde; tom når 
 
 msgid "The usual water level when it is below the rim; empty when the tank is filled to its depth."
 msgstr "Vanlig vannstand når den er under kanten; tom når karet er fylt til full dybde."
+
+msgid ""
+"The values above, field by field in the authority’s names, are on the print page: type them from "
+"there. What is recorded is exactly this content; if the records change before you record it, you "
+"are asked to look again."
+msgstr ""
+"Verdiene over, felt for felt med myndighetens navn, står på utskriftssiden: skriv dem derfra. Det"
+" som registreres er nøyaktig dette innholdet; endres postene før du registrerer, blir du bedt om "
+"å se på nytt."
+
+msgid "The values to type"
+msgstr "Verdiene som skal skrives"
 
 msgid "The vet or fish-health biologist, or who observed it."
 msgstr "Veterinæren eller fiskehelsebiologen, eller den som observerte det."
@@ -10379,6 +10396,9 @@ msgid ""
 msgstr ""
 "Det som ble sett, funnet eller anbefalt om fiskens helse: observasjoner, veterinær- og "
 "fiskehelsebesøk, laboratoriesvar og økt dødelighet."
+
+msgid "What you are about to record as filed"
+msgstr "Det du er i ferd med å registrere som sendt inn"
 
 msgid "When"
 msgstr "Når"

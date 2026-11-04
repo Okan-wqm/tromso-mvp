@@ -8,6 +8,7 @@
 {% block content %}
 <div class="regulatory-print">
   <p class="panel-help">{% if filed %}{% trans "As filed." %}{% else %}{% trans "Not filed: as the records give it now." %}{% endif %} {{ object.info.channel }}</p>
+  <p class="panel-help">{% trans "Content hash" %}: <code>{{ content_hash }}</code></p>
   <div class="table-wrap">
     <table class="data-table">
       <thead><tr><th scope="col">{% trans "Section" %}</th><th scope="col">{% trans "Field" %}</th><th scope="col">{% trans "Value" %}</th></tr></thead>

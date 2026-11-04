@@ -20,7 +20,7 @@ from .. import compute, due, integrity, services
 from ..kinds import ReportKind
 from ..models import Report, ReportSnapshot
 from ..periods import MONTH, WEEK, YEAR, Period
-from .helpers import OCTOBER, ReportTestCase, day
+from .helpers import OCTOBER, ReportTestCase, day, previewed
 
 TODAY = date(2026, 11, 3)             # a Tuesday
 
@@ -226,7 +226,7 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             self.assertEqual(due.no_longer_match(TODAY), [])
             stock.void(self.user, self.out, 'Wrong unit')
             self.assertEqual(due.no_longer_match(TODAY), [Report.objects.get(pk=report.pk)])
@@ -236,7 +236,7 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
             with mock.patch.object(compute, 'compute', side_effect=AssertionError('the list folded a ledger')):
                 self.assertEqual(len(due.no_longer_match(TODAY)), 1)
@@ -246,13 +246,13 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
             self.assertEqual([found.pk for found in due.no_longer_match(TODAY)], [report.pk])
             correction = services.start_correction(self.user, Report.objects.get(pk=report.pk))
             self.assertEqual([found.pk for found in due.no_longer_match(TODAY)], [report.pk])   # a draft replaces nothing
             services.submit(self.user, correction, submitted_at=datetime(2026, 11, 3, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-3', version=correction.version)
+                            channel='altinn', reference='AR-3', version=correction.version, content_sha256=previewed(correction))
             self.assertEqual(due.no_longer_match(TODAY), [])
 
     def test_a_notice_is_read_again_whatever_its_day(self):
@@ -264,7 +264,7 @@ class ChangedSinceFilingTests(DueTestCase):
                              found_at=datetime(2026, 10, 25, 8, 0, tzinfo=utc.utc))
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, notice, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-4', version=notice.version)
+                            channel='altinn', reference='AR-4', version=notice.version, content_sha256=previewed(notice))
             self.assertEqual(due.no_longer_match(TODAY), [])
             stock.void(self.user, operation, 'Entered twice')
         with override_settings(STOCK_BACKDATE_DAYS=31):
@@ -275,7 +275,7 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
         with override_settings(STOCK_BACKDATE_DAYS=31):
             self.assertEqual(due.no_longer_match(date(2027, 3, 1)), [])

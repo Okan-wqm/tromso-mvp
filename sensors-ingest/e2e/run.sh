@@ -87,7 +87,8 @@ note "duplicates for 6 s: $(( $(late_rows) - B )) extra LATE rows (copies of sup
 
 press sw_garbage; sleep 3
 REASONS=$(sql "SELECT string_agg(DISTINCT reason, ',' ORDER BY reason) FROM sensors_dead_letter")
-check "$([ "$REASONS" = "bad_value,missing_time,no_route,not_json,oversize" ] && echo 1)" "garbage dead-lettered: $REASONS"
+check "$([ "$REASONS" = "bad_value,missing_time,not_json,oversize" ] && echo 1)" "garbage dead-lettered: $REASONS"
+note "a message on a topic no device has (sim/unknown/device-9) never reaches the ingest: it subscribes to device topics only (no_route needs a broader subscription)"
 check "$(sql "SELECT (max(payload_len) > 65536 AND max(octet_length(payload)) <= 4096)::int FROM sensors_dead_letter")" "oversize: full length kept, payload cut to 4 KiB"
 
 press sw_late; sleep 3

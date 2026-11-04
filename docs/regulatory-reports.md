@@ -837,3 +837,21 @@ override one; the change is then recorded here). Taken as recommended unless the
 | D-13 | A site's production form (settefisk, matfisk, stamfisk), which decides its reports (5.2): and the § 44a notices of matfisk and stamfisk sites on land or in fresh water (taken into use, emptied, yearly stock by 7 January), build them? | The production form is needed (a land grow-out site is not a hatchery, E1, E3). The § 44a notices: **yes** (the MVP goes to a university that may run a land site), as a yearly report and two event notices. |
 | D-14 | What is a batch's year class (årsklasse): the hatch year, or the year it went to sea, and how do spring and autumn stockings (§ 44 second paragraph) show? | Entered per batch, **no default**; the definition (hatch year or sea year) and the spring/autumn rule are **unverified**, noted on the field. |
 | D-15 | How our loss reasons map to Fiskeridirektoratet's causes (Dødfisk, Utkast fra slakteri, Rømming, Annet, Tellefeil) | Mortality and culls → Dødfisk; escape → Rømming; count corrections → Tellefeil; unaccounted loss → Annet; Utkast from the slaughter result only. As proposed, **unverified** until the form is confirmed (D-12). |
+
+## 7. The coverage review of 2026-11-04
+
+Five experts compared this system with the authorities' machine-reporting pages and every sub-link; the lead's report is kept
+with the planning material (`coverage/COVERAGE.md`). Its claims were re-checked against the code and the saved official texts
+before anything was changed; what was built from it is in 5.13, and what could not be settled is here.
+
+### 7.1 Open questions for the authority
+
+What only the authority can answer is a **register** in the application (Production › Reports › Questions for the authority;
+`reports.OpenQuestion`, seeded by reports migration 0009 with Q1 to Q12 of the review, all open): the question, whom it is for,
+the report rule it affects, who asked and when, the answer and the day it came. The people who run the reports keep it (its own
+area in the role matrix). A report rule that rests on an open question is **unverified**: where the system files such a
+value it says so to the person at filing (see 5.13). The questions: Q1 `virkestoff.mengde`, product or active substance; Q2 the
+three treatment types; Q3 a unit emptied in the month and two species in one tank; Q4 cleaner fish delivered out, and the feed;
+Q5 who reports a planned slaughter, the kilo basis; Q6 the driftsplan and lice plan channels and the consequence of lateness;
+Q7 Fiskeridirektoratet's channels (biomass, land stock, escape); Q8 the cleaner-fish broodstock annual report; Q9 the county
+report; Q10 a land research site; Q11 Arctic char and the lice duty; Q12 weekend deadlines and the week-year.

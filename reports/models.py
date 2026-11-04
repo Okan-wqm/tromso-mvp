@@ -262,6 +262,51 @@ class ReportSnapshot(models.Model):
         return str(self.report)
 
 
+class QuestionStatus(models.TextChoices):
+    OPEN = 'open', _('Open')
+    ANSWERED = 'answered', _('Answered')
+
+
+class OpenQuestion(AuditedModel):
+    """A question only the authority can answer, on which a rule of a report rests (docs/regulatory-reports.md, section 7):
+    the owner's work list for Mattilsynet, Fiskeridirektoratet or the county. While it is open the report rule it affects is
+    unverified and the pages say so; the answer, who asked and when are kept here."""
+
+    code = models.CharField(_('Number'), max_length=10)
+    question = models.CharField(_('Question'), max_length=1000)
+    authority = models.CharField(_('Asked of'), max_length=100)
+    affects = models.CharField(_('The report rule it affects'), max_length=500)
+    status = models.CharField(_('Status'), max_length=10, choices=QuestionStatus.choices, default=QuestionStatus.OPEN)
+    asked_by = models.CharField(_('Asked by'), max_length=150, blank=True)
+    asked_on = models.DateField(_('Asked on'), null=True, blank=True)
+    answer = models.CharField(_('Answer'), max_length=2000, blank=True)
+    answered_on = models.DateField(_('Answered on'), null=True, blank=True)
+
+    class Meta:
+        db_table = 'regulatory_open_questions'
+        ordering = ['code']
+        verbose_name = _('open question')
+        verbose_name_plural = _('open questions')
+        constraints = [
+            models.UniqueConstraint(fields=['code'], condition=Q(is_deleted=False), name='uq_open_questions_code_live',
+                                    violation_error_message=_('Another question has this number.')),
+            models.CheckConstraint(condition=Q(status__in=QuestionStatus.values), name='chk_open_questions_status'),
+            models.CheckConstraint(
+                condition=Q(status=QuestionStatus.ANSWERED, answer__gt='', answered_on__isnull=False)
+                | Q(status=QuestionStatus.OPEN, answered_on__isnull=True),
+                name='chk_open_questions_answer',
+                violation_error_message=_('An answered question has its answer and the day it came; an open one has '
+                                          'no answer day.')),
+            models.CheckConstraint(
+                condition=Q(asked_on__isnull=True) | Q(answered_on__isnull=True) | Q(answered_on__gte=F('asked_on')),
+                name='chk_open_questions_days',
+                violation_error_message=_('It was answered on or after the day it was asked.')),
+        ]
+
+    def __str__(self):
+        return f'{self.code} · {self.question[:60]}'
+
+
 class DueClosure(models.Model):
     """A report that was owed and will not be filed, closed by a person with the reason (a slaughter that never took place,
     a period filed elsewhere): the due list stops listing it. Reopening deletes the row; both are in the activity log.

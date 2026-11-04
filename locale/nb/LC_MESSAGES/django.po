@@ -2077,6 +2077,9 @@ msgstr "En aktiv protokoll har en tabell."
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
 
+msgid "An answered question has its answer and the day it came; an open one has no answer day."
+msgstr "Et besvart spørsmål har svaret og dagen det kom; et åpent har ingen svardag."
+
 msgid ""
 "An article, report, book or regulation the company relies on: its reference, its abstract and its"
 " PDF, whose text is searched."
@@ -2155,6 +2158,9 @@ msgstr "En annen protokoll ble tildelt denne fisken i mellomtiden: se på listen
 msgid "Another published source"
 msgstr "En annen publisert kilde"
 
+msgid "Another question has this number."
+msgstr "Et annet spørsmål har dette nummeret."
+
 msgid "Another role already uses this name."
 msgstr "Dette navnet brukes allerede av en annen rolle."
 
@@ -2202,6 +2208,15 @@ msgstr "En annen enhet på lokaliteten har allerede denne offisielle enhets-ID-e
 
 msgid "Another user already uses this email."
 msgstr "Denne e-postadressen brukes allerede av en annen bruker."
+
+msgid "Answer"
+msgstr "Svar"
+
+msgid "Answered"
+msgstr "Besvart"
+
+msgid "Answered on"
+msgstr "Besvart den"
 
 msgid "Antibacterial"
 msgstr "Antibakterielt"
@@ -2314,6 +2329,18 @@ msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
 
 msgid "Ash (%)"
 msgstr "Aske (%)"
+
+msgid "Asked"
+msgstr "Spurt"
+
+msgid "Asked by"
+msgstr "Spurt av"
+
+msgid "Asked of"
+msgstr "Stilt til"
+
+msgid "Asked on"
+msgstr "Spurt den"
 
 msgid "Assignee"
 msgstr "Ansvarlig"
@@ -5121,6 +5148,9 @@ msgstr ""
 "Den slutter å telle: de siste verdiene og statusene regnes ut igjen uten den. For å rette en "
 "prøve, annuller den og legg den inn på nytt."
 
+msgid "It was answered on or after the day it was asked."
+msgstr "Det ble besvart samme dag som det ble stilt eller senere."
+
 msgid "It was filed already."
 msgstr "Den er allerede sendt inn."
 
@@ -6070,6 +6100,9 @@ msgstr "Ingen produksjonsenheter ennå"
 msgid "No protocol is assigned to these fish."
 msgstr "Ingen protokoll er tildelt denne fisken."
 
+msgid "No question for the authority is recorded."
+msgstr "Ingen spørsmål til myndighetene er registrert."
+
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Ingen bestillingspunkter ennå. Bruk «Legg til fôr» for å legge til en rad."
 
@@ -6395,6 +6428,9 @@ msgstr "Varsle straks"
 
 msgid "Nullable"
 msgstr "Kan være tom"
+
+msgid "Number"
+msgstr "Nummer"
 
 msgid "Number of lamps"
 msgstr "Antall lamper"
@@ -7225,6 +7261,12 @@ msgstr "Mengde (kg)"
 msgid "Quarantine"
 msgstr "Karantene"
 
+msgid "Question"
+msgstr "Spørsmål"
+
+msgid "Questions for the authority"
+msgstr "Spørsmål til myndighetene"
+
 msgid "Quote"
 msgstr "Sitat"
 
@@ -7858,6 +7900,9 @@ msgstr "Søk på navn, virkestoff, MT-nummer eller produsent"
 
 msgid "Search by name, username or email"
 msgstr "Søk etter navn, brukernavn eller e-post"
+
+msgid "Search by number, question or answer"
+msgstr "Søk på nummer, spørsmål eller svar"
 
 msgid "Search by point or owner"
 msgstr "Søk etter punkt eller eier"
@@ -9236,6 +9281,9 @@ msgstr "Rapporten beregnes på en nyere måte enn da den ble sendt inn."
 msgid "The report is for the week, month or year this day falls in."
 msgstr "Rapporten gjelder uken, måneden eller året denne dagen faller i."
 
+msgid "The report rule it affects"
+msgstr "Rapportregelen den gjelder"
+
 msgid ""
 "The result of a sensitivity test in the week (lakselusforskriften § 10 d): when, the laboratory, "
 "the substance and the result. Saved separately from the report."
@@ -10353,6 +10401,18 @@ msgstr "Hva det handler om. Kunnskapsoppføringene hentet fra det har egne emner
 msgid "What it is made for. A medicated feed is given on a vet’s prescription."
 msgstr "Hva det er laget for. Medisinfôr gis etter resept fra veterinær."
 
+msgid ""
+"What only the authority can answer, and on which a rule of a report rests. Until a question is "
+"answered the rule is unverified: the report says so when it is filed. Send the questions, write "
+"down who asked and when, and record the answer here."
+msgstr ""
+"Det bare myndigheten kan svare på, og som en rapportregel hviler på. Til et spørsmål er besvart "
+"er regelen ikke bekreftet: rapporten sier det når den sendes inn. Send spørsmålene, skriv ned "
+"hvem som spurte og når, og registrer svaret her."
+
+msgid "What the authority said, and where (the mail, the page). Needed to mark it answered."
+msgstr "Hva myndigheten sa, og hvor (e-posten, siden). Trengs for å merke det som besvart."
+
 msgid "What the farm pays per kg, with its currency."
 msgstr "Det anlegget betaler per kg, med valuta."
 
@@ -10480,6 +10540,13 @@ msgstr "Hvilke tillatelser hver rolle gir."
 
 msgid "Which roles each user has."
 msgstr "Hvilke roller hver bruker har."
+
+msgid ""
+"Which rule of which report rests on the answer, e.g. “the sea-lice report, the amount of an "
+"active substance”."
+msgstr ""
+"Hvilken regel i hvilken rapport som hviler på svaret, f.eks. «lakselusrapporten, mengden "
+"virkestoff»."
 
 msgid "Which sites each supplier delivers to or works at."
 msgstr "Hvilke lokaliteter hver leverandør leverer til eller arbeider på."
@@ -11418,6 +11485,12 @@ msgstr "bare en landlokalitet med matfisk, stamfisk eller rensefiskyngel rapport
 
 msgid "open"
 msgstr "åpen"
+
+msgid "open question"
+msgstr "åpent spørsmål"
+
+msgid "open questions"
+msgstr "åpne spørsmål"
 
 msgid "owed once the month or week now running has closed"
 msgstr "forfaller når måneden eller uken som pågår er over"

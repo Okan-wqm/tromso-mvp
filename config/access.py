@@ -56,6 +56,9 @@ AREAS = [
     # correction; Edit fills in a draft and records that it was filed (a state change under Edit, as a review is for
     # knowledge entries); Delete discards a draft. A filed report is never changed or deleted.
     Area(_('Regulatory reports'), 'reports.Report'),
+    # Questions for the authority: the register of what only Mattilsynet, Fiskeridirektoratet or the county can answer, which
+    # the people who run the reports keep (Read, Create, Edit with the answer, Delete).
+    Area(_('Questions for the authority'), 'reports.OpenQuestion'),
     # Messages: Read is the Messages page, writing in one's own conversations and starting a direct one; Create
     # also creates channels. Only the members of a conversation read it, whatever the role (messaging/services.py).
     Area(_('Messages'), 'messaging.Conversation', actions=('view', 'add')),

@@ -2077,6 +2077,9 @@ msgstr "Aktif bir protokolün tablosu olmalı."
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "Miktar birimiyle, birim de miktarıyla girilir."
 
+msgid "An answered question has its answer and the day it came; an open one has no answer day."
+msgstr "Yanıtlanmış bir sorunun yanıtı ve geldiği gün vardır; açık bir sorunun yanıt günü yoktur."
+
 msgid ""
 "An article, report, book or regulation the company relies on: its reference, its abstract and its"
 " PDF, whose text is searched."
@@ -2155,6 +2158,9 @@ msgstr "Bu arada bu balıklara başka bir protokol atandı: listeye bakıp yenid
 msgid "Another published source"
 msgstr "Yayımlanmış başka bir kaynak"
 
+msgid "Another question has this number."
+msgstr "Başka bir sorunun bu numarası var."
+
 msgid "Another role already uses this name."
 msgstr "Bu adı başka bir rol zaten kullanıyor."
 
@@ -2202,6 +2208,15 @@ msgstr "Sahanın başka bir biriminde bu resmî birim numarası zaten var."
 
 msgid "Another user already uses this email."
 msgstr "Bu e-postayı başka bir kullanıcı zaten kullanıyor."
+
+msgid "Answer"
+msgstr "Yanıt"
+
+msgid "Answered"
+msgstr "Yanıtlandı"
+
+msgid "Answered on"
+msgstr "Yanıt tarihi"
 
 msgid "Antibacterial"
 msgstr "Antibakteriyel"
@@ -2312,6 +2327,18 @@ msgstr "Gelişte tartıldığı gibi; yumurta ve larvalar için 0,0001 g’a kad
 
 msgid "Ash (%)"
 msgstr "Ham kül (%)"
+
+msgid "Asked"
+msgstr "Soruldu"
+
+msgid "Asked by"
+msgstr "Soran"
+
+msgid "Asked of"
+msgstr "Sorulan kurum"
+
+msgid "Asked on"
+msgstr "Sorulma tarihi"
 
 msgid "Assignee"
 msgstr "Atanan kişi"
@@ -5128,6 +5155,9 @@ msgstr ""
 "Artık sayılmaz: son değerler ve durumlar onsuz yeniden hesaplanır. Bir numuneyi düzeltmek için "
 "iptal edip yeniden girin."
 
+msgid "It was answered on or after the day it was asked."
+msgstr "Sorulduğu gün veya sonrasında yanıtlandı."
+
 msgid "It was filed already."
 msgstr "Zaten sunuldu."
 
@@ -6077,6 +6107,9 @@ msgstr "Henüz üretim birimi yok"
 msgid "No protocol is assigned to these fish."
 msgstr "Bu balıklara atanmış protokol yok."
 
+msgid "No question for the authority is recorded."
+msgstr "Kuruma sorulan bir soru kaydedilmemiş."
+
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Henüz yeniden sipariş seviyesi yok. Satır eklemek için “Yem ekle”yi kullanın."
 
@@ -6400,6 +6433,9 @@ msgstr "Hemen bildirin"
 
 msgid "Nullable"
 msgstr "Boş olabilir"
+
+msgid "Number"
+msgstr "Numara"
 
 msgid "Number of lamps"
 msgstr "Lamba sayısı"
@@ -7228,6 +7264,12 @@ msgstr "Miktar (kg)"
 msgid "Quarantine"
 msgstr "Karantina"
 
+msgid "Question"
+msgstr "Soru"
+
+msgid "Questions for the authority"
+msgstr "Kuruma sorular"
+
 msgid "Quote"
 msgstr "Alıntı"
 
@@ -7862,6 +7904,9 @@ msgstr "Ad, etken madde, ruhsat numarası veya üreticiyle ara"
 
 msgid "Search by name, username or email"
 msgstr "Ada, kullanıcı adına veya e-postaya göre ara"
+
+msgid "Search by number, question or answer"
+msgstr "Numara, soru veya yanıta göre ara"
 
 msgid "Search by point or owner"
 msgstr "Nokta veya sahibe göre ara"
@@ -9241,6 +9286,9 @@ msgstr "Rapor, sunulduğundan daha yeni bir yöntemle hesaplanıyor."
 msgid "The report is for the week, month or year this day falls in."
 msgstr "Rapor, bu günün düştüğü hafta, ay veya yıl içindir."
 
+msgid "The report rule it affects"
+msgstr "Etkilediği rapor kuralı"
+
 msgid ""
 "The result of a sensitivity test in the week (lakselusforskriften § 10 d): when, the laboratory, "
 "the substance and the result. Saved separately from the report."
@@ -10359,6 +10407,18 @@ msgstr "Neyle ilgili olduğu. Ondan alınan bilgi kayıtlarının kendi konular�
 msgid "What it is made for. A medicated feed is given on a vet’s prescription."
 msgstr "Ne için yapıldığı. İlaçlı yem veteriner reçetesiyle verilir."
 
+msgid ""
+"What only the authority can answer, and on which a rule of a report rests. Until a question is "
+"answered the rule is unverified: the report says so when it is filed. Send the questions, write "
+"down who asked and when, and record the answer here."
+msgstr ""
+"Yalnızca kurumun yanıtlayabileceği ve bir rapor kuralının dayandığı sorular. Bir soru yanıtlanana"
+" kadar kural doğrulanmamıştır: rapor bildirilirken bunu söyler. Soruları gönderin, kimin ne zaman"
+" sorduğunu yazın ve yanıtı buraya kaydedin."
+
+msgid "What the authority said, and where (the mail, the page). Needed to mark it answered."
+msgstr "Kurumun ne dediği ve nerede (e-posta, sayfa). Yanıtlandı olarak işaretlemek için gerekli."
+
 msgid "What the farm pays per kg, with its currency."
 msgstr "Çiftliğin kg başına ödediği, para birimiyle."
 
@@ -10486,6 +10546,11 @@ msgstr "Her rolün hangi izinlere izin verdiği."
 
 msgid "Which roles each user has."
 msgstr "Her kullanıcının hangi rollere sahip olduğu."
+
+msgid ""
+"Which rule of which report rests on the answer, e.g. “the sea-lice report, the amount of an "
+"active substance”."
+msgstr "Hangi raporun hangi kuralı yanıta dayanıyor, örn. “deniz biti raporu, bir etken maddenin miktarı”."
 
 msgid "Which sites each supplier delivers to or works at."
 msgstr "Her tedarikçinin teslimat yaptığı ya da çalıştığı sahalar."
@@ -11422,6 +11487,12 @@ msgstr "yalnızca karadaki besi balığı, damızlık veya temizleyici balık ya
 
 msgid "open"
 msgstr "süresiz"
+
+msgid "open question"
+msgstr "açık soru"
+
+msgid "open questions"
+msgstr "açık sorular"
 
 msgid "owed once the month or week now running has closed"
 msgstr "şu an süren ay veya hafta kapandığında gelir"

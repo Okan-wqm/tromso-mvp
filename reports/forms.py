@@ -14,7 +14,7 @@ from . import periods
 from .compute import COMPUTE, lice
 from .kinds import BY_FACILITY, EVENTS, PERIODIC, info
 from .models import (
-    HEALTH_EVENT_KINDS, NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, TreatmentAnswer,
+    HEALTH_EVENT_KINDS, OpenQuestion, NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, TreatmentAnswer,
     UnitAnswer,
 )
 
@@ -140,6 +140,26 @@ class ReportForm(TabbedForm):
             if found > timezone.now():
                 self.add_error('found_at', _('The time cannot be in the future.'))
         return cleaned
+
+
+OPEN_QUESTION_TABS = [('question', _('Question'), ['code', 'question', 'authority', 'affects', 'status', 'asked_by',
+                                                    'asked_on', 'answer', 'answered_on'])]
+
+
+class OpenQuestionForm(TabbedForm):
+    """A question for the authority, its answer and who asked when."""
+
+    tabs = OPEN_QUESTION_TABS
+
+    class Meta:
+        model = OpenQuestion
+        fields = tab_fields(OPEN_QUESTION_TABS)
+        widgets = {'question': forms.Textarea(attrs={'rows': 3}), 'answer': forms.Textarea(attrs={'rows': 3}),
+                   'asked_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+                   'answered_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')}
+        help_texts = {'affects': _('Which rule of which report rests on the answer, e.g. “the sea-lice report, the amount '
+                                   'of an active substance”.'),
+                      'answer': _('What the authority said, and where (the mail, the page). Needed to mark it answered.')}
 
 
 class CloseForm(forms.Form):

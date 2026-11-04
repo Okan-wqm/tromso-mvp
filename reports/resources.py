@@ -13,11 +13,11 @@ from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site
 
 from . import compute, due, exports, periods, services
 from .forms import (
-    ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
+    OpenQuestionForm, ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
     UnitAnswerFormSet,
 )
 from .kinds import SCHEDULED, URGENT, ReportKind
-from .models import Report
+from .models import OpenQuestion, QuestionStatus, Report
 
 STATUSES = [('draft', _('Draft')), ('filed', _('Filed'))]
 
@@ -78,6 +78,28 @@ class UnitAnswers(ReportRows):
     @classmethod
     def describe(cls, row):
         return row.unit.code if row.reduced_capacity else f'{row.unit.code} ({audit.english(_("No"))})'
+
+
+class OpenQuestionResource(Resource):
+    """Production › Reports › Questions for the authority: what only Mattilsynet, Fiskeridirektoratet or the county can
+    answer, with who asked, when, and the answer; the report rules that rest on an open one are shown as unverified."""
+
+    model = OpenQuestion
+    form_class = OpenQuestionForm
+    name, plural = _('open question'), _('open questions')
+    url_prefix = 'authority-questions'
+    search_fields = ['code', 'question', 'authority', 'affects', 'answer']
+    list_template = 'reports/open_question_list.html'
+    icon = 'file-text'
+
+    @classmethod
+    def filter_list(cls, request, objects):
+        chosen = request.GET.get('status', '')
+        if chosen in QuestionStatus.values:
+            objects = objects.filter(status=chosen)
+        else:
+            chosen = ''
+        return objects, {'statuses': QuestionStatus.choices, 'chosen_status': chosen}
 
 
 class ReportResource(Resource):

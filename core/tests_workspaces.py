@@ -63,7 +63,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                                     'Suppliers', 'Production units', 'Water chemistry', 'Storage', 'Tasks',
                                                     'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                     'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                    'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
+                                                    'Health events', 'Sea-lice counts', 'Regulatory reports', 'Questions for the authority',
+                                                   'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -122,7 +123,8 @@ class PanelMemoryTests(WorkspaceTestCase):
                                                   'Suppliers', 'Production units', 'Water chemistry', 'Storage', 'Tasks',
                                                   'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                   'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                  'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
+                                                  'Health events', 'Sea-lice counts', 'Regulatory reports', 'Questions for the authority',
+                                                   'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -218,6 +220,7 @@ class MenuPlacementTests(TestCase):
             'farm.HealthEvent': 'Production · Operations · Health',
             'farm.LiceCount': 'Production · Operations · Health',
             'reports.Report': 'Production · Reports',
+            'reports.OpenQuestion': 'Production · Reports',
             'messaging.Conversation': 'Production · Communication',
             'tasks.Task': 'Production · Operations',
             'tasks.TaskSeries': 'Production · Operations',

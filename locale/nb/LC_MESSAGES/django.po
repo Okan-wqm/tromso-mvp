@@ -23,10 +23,6 @@ msgid "%(age)s ago"
 msgstr "%(age)s siden"
 
 #, python-format
-msgid "%(age)s ago · %(point)s"
-msgstr "%(age)s siden · %(point)s"
-
-#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s har ingen fisk i %(place)s nå."
 
@@ -286,6 +282,10 @@ msgstr[0] "%(count)d rad lagret."
 msgstr[1] "%(count)d rader lagret."
 
 #, python-format
+msgid "%(count)d s"
+msgstr "%(count)d s"
+
+#, python-format
 msgid "%(count)d treatment"
 msgid_plural "%(count)d treatments"
 msgstr[0] "%(count)d behandling"
@@ -396,6 +396,12 @@ msgid "%(count)s system is not in any production department."
 msgid_plural "%(count)s systems are not in any production department."
 msgstr[0] "%(count)s system tilhører ingen produksjonsavdeling."
 msgstr[1] "%(count)s systemer tilhører ingen produksjonsavdeling."
+
+#, python-format
+msgid "%(count)s time without a value is shaded, never filled."
+msgid_plural "%(count)s times without a value are shaded, never filled."
+msgstr[0] "%(count)s tidsrom uten verdi skraveres og fylles aldri."
+msgstr[1] "%(count)s tidsrom uten verdi skraveres og fylles aldri."
 
 #, python-format
 msgid "%(count)s warning"
@@ -758,6 +764,12 @@ msgstr "%(operation)s (%(date)s) er annullert."
 msgid "%(operation)s recorded: %(quantity)s %(unit)s of %(item)s from %(location)s."
 msgstr "%(operation)s registrert: %(quantity)s %(unit)s %(item)s fra %(location)s."
 
+#. Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor);
+#. %(age)s how old.
+#, python-format
+msgid "%(origin)s · %(age)s ago"
+msgstr "%(origin)s · %(age)s siden"
+
 #, python-format
 msgid "%(owner)s cannot have a point of this kind: %(kinds)s."
 msgstr "%(owner)s kan ikke ha et punkt av denne typen: %(kinds)s."
@@ -871,6 +883,10 @@ msgstr ""
 "Oslos."
 
 #, python-format
+msgid "%(size)s bytes"
+msgstr "%(size)s byte"
+
+#, python-format
 msgid "%(size)s mm"
 msgstr "%(size)s mm"
 
@@ -903,6 +919,10 @@ msgid "%(system)s is on another site than the production department."
 msgstr "%(system)s er på en annen lokalitet enn produksjonsavdelingen."
 
 #, python-format
+msgid "%(target)s already has a %(role)s %(quantity)s channel then: %(channel)s."
+msgstr "%(target)s har allerede en %(role)s kanal for %(quantity)s på det tidspunktet: %(channel)s."
+
+#, python-format
 msgid "%(temperature)s °C"
 msgstr "%(temperature)s °C"
 
@@ -913,6 +933,10 @@ msgstr "%(temperature)s °C er utenfor denne tabellen (%(low)s–%(high)s °C)."
 #, python-format
 msgid "%(temperature)s °C, %(salinity)s ‰"
 msgstr "%(temperature)s °C, %(salinity)s ‰"
+
+#, python-format
+msgid "%(title)s · %(quantity)s · %(tier)s, %(width)s each"
+msgstr "%(title)s · %(quantity)s · %(tier)s, %(width)s hver"
 
 #, python-format
 msgid "%(unit)s already has a count on %(date)s: void it first to correct it."
@@ -1159,6 +1183,23 @@ msgstr ""
 "områdene der CO₂, NH₃ og H₂S går over grensene sine, den trygge sonen og vannets punkt. Verdiene "
 "står i resultatene under diagrammene."
 
+msgid ""
+"A JSON pointer to the device’s sequence number, e.g. /seq; empty for none. It is shown, never "
+"used to refuse a message."
+msgstr ""
+"En JSON pointer til apparatets sekvensnummer, f.eks. /seq; tom hvis det ikke finnes. Den vises, "
+"men brukes aldri til å avvise en melding."
+
+msgid ""
+"A JSON pointer to the device’s time, e.g. /ts. Empty: the time the message is received, and the "
+"reading says so."
+msgstr ""
+"En JSON pointer til apparatets tid, f.eks. /ts. Tom: tidspunktet meldingen mottas, og avlesningen"
+" sier fra om det."
+
+msgid "A JSON pointer: empty, or starting with “/”."
+msgstr "En JSON pointer: tom eller som starter med «/»."
+
 #, python-format
 msgid ""
 "A PDF of up to %(limit)s. Its text is read when it is saved, page by page, for the search and, "
@@ -1217,6 +1258,22 @@ msgstr ""
 "Bad, medisinfôr, injeksjon eller dypp oppgir sitt legemiddel; en behandling uten legemiddel "
 "oppgir ingen."
 
+msgid "A binding cannot end in the future."
+msgstr "En tilknytning kan ikke slutte i fremtiden."
+
+msgid "A binding cannot start in the future."
+msgstr "En tilknytning kan ikke starte i fremtiden."
+
+msgid "A binding is to one sampling point, one system or one piece of equipment."
+msgstr "En tilknytning gjelder ett prøvepunkt, ett system eller ett utstyr."
+
+msgid ""
+"A binding says where a channel's values belong from a moment on: a sampling point or a system for"
+" a water value, a piece of equipment or a system for a process value."
+msgstr ""
+"En tilknytning sier hvor en kanals verdier hører hjemme fra et gitt tidspunkt: et prøvepunkt "
+"eller et system for en vannverdi, et utstyr eller et system for en prosessverdi."
+
 msgid "A bioassay"
 msgstr "En bioassay"
 
@@ -1236,8 +1293,28 @@ msgstr ""
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "En kapasitet trenger sin enhet, og en enhet sin kapasitet."
 
+#, python-format
+msgid "A channel has at most %(num)d calibration."
+msgid_plural "A channel has at most %(num)d calibrations."
+msgstr[0] "En kanal har høyst %(num)d kalibrering."
+msgstr[1] "En kanal har høyst %(num)d kalibreringer."
+
+msgid ""
+"A channel is one value a device sends: what it measures, where it is in the message and how it is"
+" stored."
+msgstr ""
+"En kanal er én verdi et apparat sender: hva den måler, hvor den står i meldingen og hvordan den "
+"lagres."
+
 msgid "A channel needs an owner: make another member an owner first."
 msgstr "En kanal trenger en eier: gjør først et annet medlem til eier."
+
+msgid ""
+"A channel that stores a value when it moves counts the values it did not store at the row that "
+"closes their run: at most one heartbeat late."
+msgstr ""
+"En kanal som lagrer en verdi når den endrer seg, teller verdiene den ikke lagret, på raden som "
+"avslutter serien deres: høyst ett hjerteslag for sent."
 
 msgid "A channel with this name already exists."
 msgstr "Det finnes allerede en kanal med dette navnet."
@@ -1257,6 +1334,11 @@ msgstr[1] "En sjekkliste har høyst %(num)d linjer."
 msgid "A combination is numbered 1 to 9."
 msgstr "En kombinasjon nummereres fra 1 til 9."
 
+msgid "A connection is an MQTT broker the ingest service listens to. Its devices say which topics."
+msgstr ""
+"En tilkobling er en MQTT-broker som innhentingstjenesten lytter til. Apparatene dens bestemmer "
+"hvilke emner."
+
 msgid "A correction of it has been started: discard that first."
 msgstr "En korrigering av den er startet: forkast den først."
 
@@ -1264,6 +1346,13 @@ msgid ""
 "A count sets what a location holds at the end of its day; the difference from the book is shown "
 "here."
 msgstr "En telling setter hva en lagerplass har ved dagens slutt; avviket fra registeret vises her."
+
+msgid ""
+"A credential is the name and secret a device or gateway signs in to the broker with. The secret "
+"is shown once, when it is made."
+msgstr ""
+"En legitimasjon er navnet og hemmeligheten et apparat eller en gateway logger inn på brokeren "
+"med. Hemmeligheten vises én gang, når den lages."
 
 #, python-format
 msgid ""
@@ -1276,6 +1365,17 @@ msgstr ""
 msgid "A day in the period"
 msgstr "En dag i perioden"
 
+msgid "A deadband above 0, unless every value is stored."
+msgstr "Et dødbånd over 0, med mindre hver verdi lagres."
+
+#, python-format
+msgid ""
+"A deadband of %(value)s is finer than the precision of %(quantity)s, %(step)s: a smaller change "
+"is noise."
+msgstr ""
+"Et dødbånd på %(value)s er finere enn presisjonen til %(quantity)s, %(step)s: en mindre endring "
+"er støy."
+
 msgid "A delivery puts stock into a location."
 msgstr "Et varemottak legger beholdning inn på en lagerplass."
 
@@ -1285,8 +1385,25 @@ msgstr "Et dybdepunkt har en dybde, og ingen andre punkter har det."
 msgid "A depth point has a depth."
 msgstr "Et dybdepunkt har en dybde."
 
+msgid ""
+"A device publishes on one topic of a connection: a probe, a PLC, a gateway. Its channels are the "
+"values it sends."
+msgstr ""
+"Et apparat publiserer på ett emne i en tilkobling: en probe, en PLC, en gateway. Kanalene er "
+"verdiene det sender."
+
+msgid "A device’s topic has no “#”."
+msgstr "Emnet til et apparat har ingen «#»."
+
 msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
 msgstr "En diagnose er mistenkt eller bekreftet; uten diagnose er det ingenting å bekrefte."
+
+msgid ""
+"A disabled credential cannot sign in once the broker’s files are written again (manage.py "
+"sensor_broker_sync)."
+msgstr ""
+"En deaktivert legitimasjon kan ikke logge inn når brokerens filer er skrevet på nytt (manage.py "
+"sensor_broker_sync)."
 
 msgid "A disease notice is about a health event; a welfare notice may be; no other report is."
 msgstr ""
@@ -1327,6 +1444,9 @@ msgstr ""
 msgid "A feeding table has at least one band."
 msgstr "En fôringstabell har minst én vektklasse."
 
+msgid "A file name only: letters, digits, dot, hyphen and underscore."
+msgstr "Bare et filnavn: bokstaver, sifre, punktum, bindestrek og understrek."
+
 msgid "A filed report is never deleted: start a correction instead."
 msgstr "En innsendt rapport slettes aldri: start en korrigering i stedet."
 
@@ -1346,12 +1466,44 @@ msgstr "En høsting går til et slakteri, en transport til en enhet."
 msgid "A harvest is recorded from its unit’s drawer on Production units, or from its plan."
 msgstr "En høsting registreres fra enhetens panel under Produksjonsenheter, eller fra planen."
 
+msgid "A heartbeat from 10 seconds to 1 day (86400 seconds)."
+msgstr "Et hjerteslag fra 10 sekunder til 1 døgn (86400 sekunder)."
+
+#, python-format
+msgid ""
+"A heartbeat of %(heartbeat)d seconds is shorter than the %(interval)d seconds the device sends "
+"every."
+msgstr ""
+"Et hjerteslag på %(heartbeat)d sekunder er kortere enn de %(interval)d sekundene apparatet sender"
+" med."
+
 msgid "A job that comes back: every day, on chosen weekdays, or on a day of the month."
 msgstr "En jobb som kommer igjen: hver dag, på valgte ukedager eller på en dag i måneden."
+
+msgid "A keep-alive from 5 to 600 seconds."
+msgstr "En keep-alive fra 5 til 600 sekunder."
 
 #, python-format
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "En siste dag eldre enn %(date)s kan ikke endres."
+
+msgid "A list of items needs the key that names the channel and the key of the value."
+msgstr "En liste med elementer trenger nøkkelen som navngir kanalen og nøkkelen for verdien."
+
+msgid "A list of items, each naming its channel"
+msgstr "En liste med elementer som hver navngir sin kanal"
+
+msgid "A list of items: the key of an item that names its channel, e.g. n."
+msgstr "En liste med elementer: nøkkelen i et element som navngir kanalen, f.eks. n."
+
+msgid "A list of items: the key of an item’s value, e.g. v."
+msgstr "En liste med elementer: nøkkelen for et elements verdi, f.eks. v."
+
+msgid "A list of items: the name the item of this channel has, e.g. do."
+msgstr "En liste med elementer: navnet elementet for denne kanalen har, f.eks. do."
+
+msgid "A list of items: where the list is, e.g. /items; empty when the message is the list."
+msgstr "En liste med elementer: hvor listen står, f.eks. /items; tom når meldingen er selve listen."
 
 msgid ""
 "A listed disease is notified to Mattilsynet at once, already on suspicion (dyrehelseforskriften §"
@@ -1398,6 +1550,15 @@ msgstr ""
 msgid "A message has at most %(count)d characters."
 msgstr "En melding har høyst %(count)d tegn."
 
+msgid ""
+"A message the ingest could not store is kept here with how often it came. Beyond 1000 new ones "
+"per connection and hour the rest are counted on one row. Readings are never refused for the dead "
+"letters’ sake. Kept 90 days."
+msgstr ""
+"En melding innhentingen ikke kunne lagre, beholdes her sammen med hvor ofte den kom. Utover 1000 "
+"nye per tilkobling og time telles resten på én rad. Avlesninger avvises aldri for de ulagrede "
+"meldingenes skyld. Beholdes i 90 dager."
+
 msgid "A monthly task repeats on a day of the month; the others on none."
 msgstr "En månedlig oppgave gjentas på en dag i måneden; de andre på ingen."
 
@@ -1424,6 +1585,13 @@ msgid "A page shows at most %(days)s day: the first day was moved."
 msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "En side viser høyst %(days)s dag: første dag ble flyttet."
 msgstr[1] "En side viser høyst %(days)s dager: første dag ble flyttet."
+
+msgid ""
+"A payload format says how a kind of device writes its messages: where the time is, and where each"
+" value is."
+msgstr ""
+"Et meldingsformat sier hvordan en type apparat skriver meldingene sine: hvor tiden står, og hvor "
+"hver verdi står."
 
 msgid ""
 "A piece of knowledge in your own words, with its source: a document of the library, another "
@@ -1469,8 +1637,14 @@ msgstr ""
 "Et punkt som har prøver slettes ikke, slik at historikken blir stående: gjør det inaktivt i "
 "stedet. Et inaktivt punkt tar ikke nye prøver."
 
+msgid "A port from 1 to 65535."
+msgstr "En port fra 1 til 65535."
+
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "En pris trenger sin valuta, og en valuta trenger en pris."
+
+msgid "A process value is bound to a piece of equipment or a system."
+msgstr "En prosessverdi knyttes til et utstyr eller et system."
 
 msgid "A production department stays on the site it was created on."
 msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet på."
@@ -1525,6 +1699,16 @@ msgstr ""
 msgid "A round takes at most %(rows)d rows."
 msgstr "En runde tar høyst %(rows)d rader."
 
+msgid "A rule is on one channel or on every channel of a quantity."
+msgstr "En regel gjelder én kanal eller hver kanal for en parameter."
+
+msgid ""
+"A rule says when a channel needs a look: no fresh value, its device offline, a value above or "
+"below a threshold, or a change too fast."
+msgstr ""
+"En regel sier når en kanal trenger tilsyn: ingen fersk verdi, apparatet er frakoblet, en verdi "
+"over eller under en terskel, eller en for rask endring."
+
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "En prøve er antall fisk veid og samlet vekt."
 
@@ -1553,6 +1737,9 @@ msgstr "En andel av utstrømmen, fra 0 til 100 %, kan bare oppgis for et utløp.
 
 msgid "A silo only: the feeder it fills, on the same site."
 msgstr "Bare for silo: fôrautomaten den fyller, på samme lokalitet."
+
+msgid "A simulated value, not the real water."
+msgstr "En simulert verdi, ikke det virkelige vannet."
 
 msgid ""
 "A site averages the averages of its units counted that week, every unit weighing the same, and "
@@ -1625,6 +1812,12 @@ msgstr "En temperaturkolonne har høyst én desimal: %(value)s."
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
 
+msgid "A topic has at most one “+”."
+msgstr "Et emne har høyst én «+»."
+
+msgid "A topic starting with “$” is the broker’s own."
+msgstr "Et emne som starter med «$», tilhører brokeren selv."
+
 msgid ""
 "A transfer is a transport. A grading is checked against its own rule and the transport rule; the "
 "longer applies."
@@ -1671,6 +1864,34 @@ msgid "A vaccine is given as a vaccination, and a vaccination with a vaccine."
 msgstr "En vaksine gis som vaksinasjon, og en vaksinasjon med en vaksine."
 
 msgid ""
+"A value is fresh for three heartbeats of its channel. A stale value is not used for a unit’s "
+"water: the next source counts (its system’s sensor, then the latest sample)."
+msgstr ""
+"En verdi er fersk i tre av kanalens hjerteslag. En utdatert verdi brukes ikke for en enhets vann:"
+" neste kilde gjelder (systemets sensor, deretter den siste prøven)."
+
+msgid ""
+"A value is stored again when it moves this much from the last stored one, in the quantity’s unit."
+" Empty: the quantity’s default."
+msgstr ""
+"En verdi lagres på nytt når den endrer seg så mye fra den sist lagrede, i parameterens enhet. "
+"Tom: parameterens standard."
+
+msgid ""
+"A value is stored at least this often even when it does not move. Fresh for three heartbeats. "
+"Empty: the quantity’s default."
+msgstr ""
+"En verdi lagres minst så ofte, selv når den ikke endrer seg. Fersk i tre hjerteslag. Tom: "
+"parameterens standard."
+
+msgid ""
+"A value outside the range is stored, marked, and used nowhere. Empty on a new channel: what the "
+"quantity can be."
+msgstr ""
+"En verdi utenfor området lagres, merkes og brukes ingen steder. Tom på en ny kanal: det "
+"parameteren kan være."
+
+msgid ""
 "A water on the Water Quality Management Chart and against the pH, the pH where each limit is "
 "reached, and what to dose to reach a target. The limits start as defaults, not as the limits of "
 "your fish, unless the values come from a unit. The results follow the values as you change them. "
@@ -1681,14 +1902,37 @@ msgstr ""
 "din, med mindre verdiene kommer fra en enhet. Resultatene følger verdiene mens du endrer dem. "
 "Ingenting lagres."
 
+msgid ""
+"A water value goes to a sampling point or a system; a process value (flow, level, power…) to a "
+"piece of equipment or a system."
+msgstr ""
+"En vannverdi går til et prøvepunkt eller et system; en prosessverdi (vannføring, nivå, effekt…) "
+"til et utstyr eller et system."
+
+msgid "A water value is bound to a sampling point or a system."
+msgstr "En vannverdi knyttes til et prøvepunkt eller et system."
+
 msgid "A weekly task repeats on at least one weekday; the others on none."
 msgstr "En ukentlig oppgave gjentas på minst én ukedag; de andre på ingen."
 
 msgid "A year class is a year, e.g. 2026."
 msgstr "En årsklasse er et år, for eksempel 2026."
 
+msgid "A “+” stands for a whole level of the topic, between slashes."
+msgstr "En «+» står for et helt nivå i emnet, mellom skråstreker."
+
 msgid "Abnormal swimming"
 msgstr "Unormal svømming"
+
+msgid "Above"
+msgstr "Over"
+
+msgid ""
+"Above or below: every value of this time must be past the threshold. No fresh value: this long "
+"past the channel’s freshness. A rate: the change over this time."
+msgstr ""
+"Over eller under: hver verdi i dette tidsrommet må være forbi terskelen. Ingen fersk verdi: så "
+"lenge forbi kanalens ferskhet. En endringsrate: endringen over dette tidsrommet."
 
 msgid "Above the max density, accepted"
 msgstr "Over maks. tetthet, godtatt"
@@ -1696,8 +1940,14 @@ msgstr "Over maks. tetthet, godtatt"
 msgid "Above the usual feed rate, accepted"
 msgstr "Over vanlig fôringsrate, godtatt"
 
+msgid "Above, below and a rate need a threshold."
+msgstr "Over, under og en endringsrate trenger en terskel."
+
 msgid "Abstract"
 msgstr "Sammendrag"
+
+msgid "Accepted"
+msgstr "Godtatt"
 
 msgid "Account"
 msgstr "Konto"
@@ -1707,6 +1957,18 @@ msgstr "Nøyaktighet"
 
 msgid "Acid–base and CO₂"
 msgstr "Syre–base og CO₂"
+
+msgid "Acknowledge"
+msgstr "Kvitter"
+
+msgid "Acknowledged"
+msgstr "Kvittert"
+
+msgid "Acknowledged at"
+msgstr "Kvittert tidspunkt"
+
+msgid "Acknowledged by"
+msgstr "Kvittert av"
 
 msgid "Across the ring: its circumference divided by π, so a 160 m ring is 50.9 m across."
 msgstr "Tvers over ringen: omkretsen delt på π, så en ring på 160 m er 50,9 m i diameter."
@@ -1903,6 +2165,24 @@ msgstr ""
 "Lokalitetsnummer fra Akvakulturregisteret (5 siffer). Uten det kan ikke rapporter til norske "
 "myndigheter sendes inn."
 
+msgid "Alarm event acknowledged."
+msgstr "Alarmhendelsen er kvittert."
+
+msgid "Alarm events"
+msgstr "Alarmhendelser"
+
+msgid "Alarm rule"
+msgstr "Alarmregel"
+
+msgid "Alarm rules"
+msgstr "Alarmregler"
+
+msgid "Alarms are shown on the Sensors pages, not sent: nobody is notified yet."
+msgstr "Alarmer vises på Sensorer-sidene, de sendes ikke: ingen varsles ennå."
+
+msgid "Alive"
+msgstr "I live"
+
 msgid "Alkalinity"
 msgstr "Alkalitet"
 
@@ -1942,6 +2222,9 @@ msgstr "Alle kategorier"
 
 msgid "All conversations"
 msgstr "Alle samtaler"
+
+msgid "All devices"
+msgstr "Alle apparater"
 
 msgid "All feed types"
 msgstr "Alle fôrtyper"
@@ -2047,6 +2330,9 @@ msgstr "Alle vanntyper"
 msgid "All years"
 msgstr "Alle år"
 
+msgid "Allowed future skew (seconds)"
+msgstr "Tillatt tidsavvik fremover (sekunder)"
+
 msgid "Allows"
 msgstr "Tillater"
 
@@ -2145,6 +2431,9 @@ msgstr ""
 msgid "An escape notice is about an escape, and no other report is."
 msgstr "Et rømmingsvarsel gjelder en rømming, ingen annen rapport gjør det."
 
+msgid "An estimate from the database’s statistics"
+msgstr "Et anslag fra databasens statistikk"
+
 msgid "An event is closed on or after its date."
 msgstr "En hendelse avsluttes på eller etter datoen sin."
 
@@ -2154,8 +2443,14 @@ msgstr "En forventet FCR er mellom 0,50 og 3,00."
 msgid "An expert or our own observation"
 msgstr "En ekspert eller vår egen observasjon"
 
+msgid "An inactive connection is not listened to: its devices send to no one."
+msgstr "En inaktiv tilkobling lyttes ikke til: apparatene sender til ingen."
+
 msgid "An inactive location takes no new stock; what it holds still shows and can leave."
 msgstr "En inaktiv lagerplass tar ikke imot ny beholdning; det den har vises fortsatt og kan tas ut."
+
+msgid "An open alarm closes only once the value is back past the threshold by this much."
+msgstr "En åpen alarm lukkes først når verdien er tilbake forbi terskelen med så mye."
 
 msgid "An organisation number is 9 digits."
 msgstr "Et organisasjonsnummer har 9 sifre."
@@ -2168,6 +2463,33 @@ msgstr "Analog"
 
 msgid "Analysis"
 msgstr "Analyse"
+
+msgid "Anchor quality"
+msgstr "Ankerkvalitet"
+
+msgid "Anchor time"
+msgstr "Ankertid"
+
+msgid "Anchor value"
+msgstr "Ankerverdi"
+
+msgid "Another channel of this device has this code."
+msgstr "En annen kanal på dette apparatet har denne koden."
+
+msgid "Another connection already has this name."
+msgstr "En annen tilkobling har allerede dette navnet."
+
+msgid "Another connection already uses this client id."
+msgstr "En annen tilkobling bruker allerede denne klient-ID-en."
+
+msgid "Another credential already has this user name."
+msgstr "En annen legitimasjon har allerede dette brukernavnet."
+
+msgid "Another device of this connection has this code."
+msgstr "Et annet apparat i denne tilkoblingen har denne koden."
+
+msgid "Another device of this connection publishes on this topic."
+msgstr "Et annet apparat i denne tilkoblingen publiserer på dette emnet."
 
 msgid "Another document in the library has this DOI."
 msgstr "Et annet dokument i biblioteket har denne DOI-en."
@@ -2186,6 +2508,9 @@ msgstr "Et annet legemiddel har allerede dette navnet."
 
 msgid "Another monitoring board already has this name."
 msgstr "Et annet overvåkingspanel har allerede dette navnet."
+
+msgid "Another payload format already has this name."
+msgstr "Et annet meldingsformat har allerede dette navnet."
 
 msgid "Another production department already uses this code."
 msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
@@ -2496,6 +2821,9 @@ msgstr "Tilbake til rapporten"
 msgid "Back to the stock"
 msgstr "Tilbake til beholdningen"
 
+msgid "Backup"
+msgstr "Reserve"
+
 msgid "Backup power supply."
 msgstr "Reservestrøm."
 
@@ -2510,6 +2838,9 @@ msgstr "Bakteriell sykdom"
 
 msgid "Bacterial kidney disease (BKD)"
 msgstr "Bakteriell nyresyke (BKD)"
+
+msgid "Bad"
+msgstr "Dårlig"
 
 msgid "Band"
 msgstr "Vektklasse"
@@ -2587,6 +2918,9 @@ msgstr "Biomedietype"
 msgid "Before handling"
 msgstr "Før håndtering"
 
+msgid "Below"
+msgstr "Under"
+
 msgid ""
 "Below the reorder level of a feed in this location, the Storage overview says the stock is low. "
 "One row per feed. They are saved separately from the location details."
@@ -2608,6 +2942,12 @@ msgstr "Mellom 10 og 600. Tomt bruker systemets 15 sekunder."
 msgid "Between the two doses"
 msgstr "Mellom de to dosene"
 
+msgid "Binding"
+msgstr "Tilknytning"
+
+msgid "Bindings"
+msgstr "Tilknytninger"
+
 msgid "Biofloc"
 msgstr "Biofloc"
 
@@ -2621,6 +2961,9 @@ msgstr "Biofilter"
 
 msgid "Biomass"
 msgstr "Biomasse"
+
+msgid "Bit"
+msgstr "Bit"
 
 msgid "Blocked"
 msgstr "Sperret"
@@ -2647,6 +2990,9 @@ msgstr "Kjøpt fisk har en leverandør; fisk fra eget klekkeri eller villfanget 
 msgid "Bought from a supplier"
 msgstr "Kjøpt fra leverandør"
 
+msgid "Bound to"
+msgstr "Knyttet til"
+
 msgid "Bounds"
 msgstr "Grenser"
 
@@ -2658,6 +3004,9 @@ msgstr "Brakkvann"
 
 msgid "Brief description of the site"
 msgstr "Kort beskrivelse av lokaliteten"
+
+msgid "Broker"
+msgstr "Broker"
 
 msgid "Broodstock"
 msgstr "Stamfisk"
@@ -2763,6 +3112,21 @@ msgstr "Beregnet"
 msgid "Calculator"
 msgstr "Kalkulator"
 
+msgid "Calibrated"
+msgstr "Kalibrert"
+
+msgid "Calibrated by"
+msgstr "Kalibrert av"
+
+msgid "Calibration"
+msgstr "Kalibrering"
+
+msgid "Calibrations"
+msgstr "Kalibreringer"
+
+msgid "Calibrations can be added once the channel is created."
+msgstr "Kalibreringer kan legges til når kanalen er opprettet."
+
 msgid "Calibrations can be added once the equipment is created."
 msgstr "Kalibreringer kan legges til når utstyret er opprettet."
 
@@ -2866,15 +3230,45 @@ msgstr "Endre siste dag"
 msgid "Changed"
 msgstr "Endret"
 
+msgid "Changes faster than"
+msgstr "Endrer seg raskere enn"
+
 msgid "Channel"
 msgstr "Kanal"
+
+#, python-format
+msgid ""
+"Channel %(code)s stores at least every %(heartbeat)d seconds, more often than the device would "
+"send: lengthen its heartbeat first."
+msgstr ""
+"Kanal %(code)s lagrer minst hvert %(heartbeat)d. sekund, oftere enn apparatet ville sende: "
+"forleng hjerteslaget først."
 
 #, python-format
 msgid "Channel %(name)s created."
 msgstr "Kanalen %(name)s er opprettet."
 
+msgid "Channel bindings"
+msgstr "Kanaltilknytninger"
+
 msgid "Channel name"
 msgstr "Kanalnavn"
+
+msgid "Channel number"
+msgstr "Kanalnummer"
+
+#, python-format
+msgid "Channel number %(number)s. A value is fresh for three heartbeats: %(seconds)s seconds."
+msgstr "Kanalnummer %(number)s. En verdi er fersk i tre hjerteslag: %(seconds)s sekunder."
+
+msgid "Channels"
+msgstr "Kanaler"
+
+msgid "Channels without a fresh value"
+msgstr "Kanaler uten fersk verdi"
+
+msgid "Charts"
+msgstr "Diagrammer"
 
 msgid "Check"
 msgstr "Sjekk"
@@ -2955,6 +3349,9 @@ msgstr "Velg en leverandør av veterinær- og fiskehelsetjenester."
 
 msgid "Choose a supplier of wellboat and transport."
 msgstr "Velg en leverandør av brønnbåt og transport."
+
+msgid "Choose a time: a preset, or from and to."
+msgstr "Velg et tidsrom: en forhåndsvalgt periode, eller fra og til."
 
 msgid "Choose a type on the General tab; its specifications appear here."
 msgstr "Velg en type på fanen Generelt; spesifikasjonene vises her."
@@ -3078,11 +3475,17 @@ msgstr "Nullstill"
 msgid "Clear filters"
 msgstr "Fjern filtrene"
 
+msgid "Client id"
+msgstr "Klient-ID"
+
 msgid "Close"
 msgstr "Lukk"
 
 msgid "Closed"
 msgstr "Stengt"
+
+msgid "Closed at"
+msgstr "Lukket tidspunkt"
 
 msgid "Closed on"
 msgstr "Avsluttet"
@@ -3154,14 +3557,32 @@ msgstr "Betong"
 msgid "Conductivity"
 msgstr "Ledningsevne"
 
+msgid "Conductivity (µS/cm)"
+msgstr "Ledningsevne (µS/cm)"
+
+msgid "Configuration epoch"
+msgstr "Konfigurasjonsepoke"
+
 msgid "Confirmation"
 msgstr "Bekreftelse"
 
 msgid "Confirmed"
 msgstr "Bekreftet"
 
+msgid "Connected"
+msgstr "Tilkoblet"
+
+msgid "Connection"
+msgstr "Tilkobling"
+
+msgid "Connections"
+msgstr "Tilkoblinger"
+
 msgid "Connectivity"
 msgstr "Tilkobling"
+
+msgid "Constraint trigger"
+msgstr "Begrensningstrigger"
 
 msgid "Constraints"
 msgstr "Begrensninger"
@@ -3214,6 +3635,9 @@ msgstr "Innhold slik det ble sendt inn"
 msgid "Content hash"
 msgstr "Innholdshash"
 
+msgid "Contract version"
+msgstr "Kontraktversjon"
+
 msgid "Control type"
 msgstr "Styringstype"
 
@@ -3238,6 +3662,13 @@ msgstr "Kopiert som «%(protocol)s», et utkast: endre den, gjør den aktiv og t
 
 msgid "Copper alloy"
 msgstr "Kobberlegering"
+
+msgid ""
+"Copy the secret now: it is shown only this once and is not stored. The broker takes it when its "
+"files are written again (manage.py sensor_broker_sync)."
+msgstr ""
+"Kopier hemmeligheten nå: den vises bare denne ene gangen og lagres ikke. Brokeren tar den i bruk "
+"når filene dens skrives på nytt (manage.py sensor_broker_sync)."
 
 msgid "Corona discharge"
 msgstr "Koronautladning"
@@ -3340,6 +3771,12 @@ msgstr "Opprettet"
 msgid "Created by"
 msgstr "Opprettet av"
 
+msgid "Credential"
+msgstr "Legitimasjon"
+
+msgid "Credentials"
+msgstr "Legitimasjoner"
+
 msgid "Critical"
 msgstr "Kritisk"
 
@@ -3441,6 +3878,21 @@ msgstr "Dager dekning: beholdningen på lokaliteten delt på kiloene fôret der 
 
 msgid "Dead fish"
 msgstr "Dødfisk"
+
+msgid "Dead letter resolved."
+msgstr "Den ulagrede meldingen er løst."
+
+msgid "Dead letters"
+msgstr "Ulagrede meldinger"
+
+msgid "Dead letters, last 24 hours"
+msgstr "Ulagrede meldinger, siste 24 timer"
+
+msgid "Dead-lettered"
+msgstr "Ikke lagret"
+
+msgid "Deadband"
+msgstr "Dødbånd"
 
 msgid "Deadline"
 msgstr "Frist"
@@ -3598,6 +4050,18 @@ msgstr "Detaljer"
 msgid "Deviation"
 msgstr "Avvik"
 
+msgid "Device"
+msgstr "Apparat"
+
+msgid "Device offline"
+msgstr "Apparat frakoblet"
+
+msgid "Devices"
+msgstr "Apparater"
+
+msgid "Devices online"
+msgstr "Apparater på nett"
+
 msgid "Diagnosis"
 msgstr "Diagnose"
 
@@ -3627,6 +4091,9 @@ msgstr "Dypp"
 
 msgid "Direct conversation"
 msgstr "Direktesamtale"
+
+msgid "Disabled"
+msgstr "Deaktivert"
 
 msgid "Discard the draft"
 msgstr "Forkast utkastet"
@@ -3704,8 +4171,14 @@ msgstr ""
 "Dosering: hvert kjemikalie flytter vannet i sin egen retning i diagrammet (Deffeyes 1965); CO₂ "
 "luften etterlater i vannet: Weiss (1974), med 420 µmol/mol CO₂ i luften."
 
+msgid "Down"
+msgstr "Nede"
+
 msgid "Download"
 msgstr "Last ned"
+
+msgid "Download the drawn values (CSV)"
+msgstr "Last ned de tegnede verdiene (CSV)"
 
 #, python-format
 msgid "Download the rows below as CSV, up to %(limit)s rows"
@@ -3718,6 +4191,9 @@ msgid "Draft: being built. Active: can be assigned. Retired: kept for the days i
 msgstr ""
 "Utkast: under arbeid. Aktiv: kan tildeles. Utfaset: beholdes for dagene den fôret, tildeles ikke "
 "lenger."
+
+msgid "Draw"
+msgstr "Tegn"
 
 msgid "Drum diameter"
 msgstr "Trommeldiameter"
@@ -3791,6 +4267,9 @@ msgstr "EU-listeført, kategori A"
 msgid "Each point can be listed once."
 msgstr "Hvert punkt kan bare listes én gang."
 
+msgid "Each point is the mean of its time; the band is its lowest and highest value."
+msgstr "Hvert punkt er gjennomsnittet for sitt tidsrom; båndet er dets laveste og høyeste verdi."
+
 msgid "Each temperature is a column once."
 msgstr "Hver temperatur kan bare være én kolonne."
 
@@ -3856,6 +4335,9 @@ msgstr "Rogn"
 msgid "Electric"
 msgstr "Elektrisk"
 
+msgid "Electric current (A)"
+msgstr "Elektrisk strøm (A)"
+
 msgid "Electrical"
 msgstr "Elektrisk"
 
@@ -3880,6 +4362,12 @@ msgstr "Tom – klar for utsett"
 
 msgid "Empty: the rule for every species. A species’ own rule wins over it."
 msgstr "Tom: regelen for alle arter. En arts egen regel går foran."
+
+msgid "Enabled"
+msgstr "Aktivert"
+
+msgid "Encoding"
+msgstr "Koding"
 
 msgid "End unknown"
 msgstr "Slutt ukjent"
@@ -3969,6 +4457,9 @@ msgstr ""
 "Alle endringer som er gjort: hvem, når, hvilken post og gamle og nye verdier. Oppføringer kan "
 "ikke redigeres eller slettes."
 
+msgid "Every channel of"
+msgstr "Hver kanal for"
+
 #, python-format
 msgid "Every day"
 msgid_plural "Every %(count)d days"
@@ -3997,6 +4488,9 @@ msgstr ""
 "Alle tillatelser som finnes: visning, tillegg, endring og sletting for hver modell, og egne "
 "tillatelser."
 
+msgid "Every reason"
+msgstr "Alle årsaker"
+
 msgid "Every species"
 msgstr "Alle arter"
 
@@ -4016,6 +4510,9 @@ msgid ""
 msgstr ""
 "Alle enheter som hadde fisk er oppført, også egg og larver; § 58 gjelder enheter med startfôret "
 "yngel eller eldre fisk (D-8): ta bort de som ikke var det."
+
+msgid "Every value"
+msgstr "Hver verdi"
 
 msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
@@ -4378,6 +4875,9 @@ msgstr "Sluttfôr"
 msgid "First"
 msgstr "Første"
 
+msgid "First at"
+msgstr "Først sett"
+
 msgid "First day"
 msgstr "Første dag"
 
@@ -4505,6 +5005,9 @@ msgstr "Matfisk"
 msgid "For"
 msgstr "For"
 
+msgid "For (seconds)"
+msgstr "Varighet (sekunder)"
+
 msgid ""
 "For a sea site with salmonids: the lower sea-lice limit of spring runs in weeks 16–21 from Nord-"
 "Trøndelag southwards and in weeks 21–26 in Nordland, Troms and Finnmark (lakselusforskriften § "
@@ -4583,6 +5086,12 @@ msgstr "Fribord (m)"
 msgid "French"
 msgstr "Fransk"
 
+msgid "Fresh"
+msgstr "Fersk"
+
+msgid "Fresh for (seconds)"
+msgstr "Fersk i (sekunder)"
+
 msgid "Fresh water"
 msgstr "Ferskvann"
 
@@ -4619,11 +5128,23 @@ msgstr "Fra (g)"
 msgid "From 0 to 100. The shares of the owner’s outlets add up to at most 100."
 msgstr "Fra 0 til 100. Andelene til eierens utløp summerer seg til høyst 100."
 
+msgid "From 1 second to 1 day (86400 seconds)."
+msgstr "Fra 1 sekund til 1 døgn (86400 sekunder)."
+
+msgid "From 5 to 600 seconds."
+msgstr "Fra 5 til 600 sekunder."
+
 msgid "From a saturometer (total dissolved gas)."
 msgstr "Fra et saturometer (total løst gass)."
 
+msgid "From and to"
+msgstr "Fra og til"
+
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
+
+msgid "From the backup or the system’s channel"
+msgstr "Fra reserven eller systemets kanal"
 
 msgid "From the floor to the rim."
 msgstr "Fra bunnen til kanten."
@@ -4662,8 +5183,14 @@ msgstr "Fullskjerm"
 msgid "Fungal disease"
 msgstr "Soppsykdom"
 
+msgid "Furthest value"
+msgstr "Mest avvikende verdi"
+
 msgid "Furunculosis"
 msgstr "Furunkulose"
+
+msgid "Gain"
+msgstr "Forsterkning"
 
 msgid "Galvanised steel"
 msgstr "Galvanisert stål"
@@ -4708,6 +5235,9 @@ msgstr "Tysk"
 msgid "Gill disease"
 msgstr "Gjellesykdom"
 
+msgid "Give a client id."
+msgstr "Oppgi en klient-ID."
+
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Oppgi en mål-pH og en målalkalitet for oppskriftene."
 
@@ -4717,8 +5247,14 @@ msgstr "Oppgi minst én grense."
 msgid "Give at least one temperature column."
 msgstr "Oppgi minst én temperaturkolonne."
 
+msgid "Give both ends of the range, the first below the second, or neither."
+msgstr "Oppgi begge endene av området, den første under den andre, eller ingen av dem."
+
 msgid "Give both or neither."
 msgstr "Oppgi begge eller ingen."
+
+msgid "Give either the value’s path or the item’s name, one of the two."
+msgstr "Oppgi enten verdiens sti eller elementets navn, bare én av dem."
 
 msgid "Give the TAN to draw the NH₃ it holds."
 msgstr "Oppgi TAN for å tegne NH₃-en den inneholder."
@@ -4732,17 +5268,32 @@ msgstr "Oppgi snittvekten, eller antall fisk veid og samlet vekt."
 msgid "Give the board a name."
 msgstr "Gi panelet et navn."
 
+msgid "Give the broker’s host."
+msgstr "Oppgi brokerens vert."
+
 msgid "Give the channel a name."
 msgstr "Gi kanalen et navn."
 
 msgid "Give the citation of the source, its web address, or both."
 msgstr "Oppgi kildehenvisningen, nettadressen eller begge."
 
+msgid "Give the connection a name."
+msgstr "Gi tilkoblingen et navn."
+
 msgid "Give the contact person’s name, e-mail and telephone (the Contact person tab)."
 msgstr "Oppgi kontaktpersonens navn, e-post og telefon (fanen Kontaktperson)."
 
+msgid "Give the device a name."
+msgstr "Gi apparatet et navn."
+
 msgid "Give the fast in hours or days, in degree-days, or both."
 msgstr "Oppgi sultingen i timer eller dager, i døgngrader eller begge deler."
+
+msgid "Give the format a name."
+msgstr "Gi formatet et navn."
+
+msgid "Give the item’s name: the device’s payload format is a list of items."
+msgstr "Oppgi elementets navn: apparatets meldingsformat er en liste med elementer."
 
 msgid "Give the number of fish: at least 1."
 msgstr "Oppgi antall fisk: minst 1."
@@ -4758,6 +5309,12 @@ msgstr "Oppgi prøven eller snittvekten."
 
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Oppgi temperaturkolonnene først: rutenettet følger dem."
+
+msgid "Give the topic the device publishes on."
+msgstr "Oppgi emnet apparatet publiserer på."
+
+msgid "Give the value’s path: the device’s payload format is one object."
+msgstr "Oppgi verdiens sti: apparatets meldingsformat er ett objekt."
 
 msgid "Give the volume to follow the amounts."
 msgstr "Oppgi volumet for å følge mengdene."
@@ -4922,6 +5479,15 @@ msgstr "Frisk, skal ikke brukes mer"
 msgid "Heart and skeletal muscle inflammation (HSMI)"
 msgstr "Hjerte- og skjelettmuskelbetennelse (HSMB)"
 
+msgid "Heartbeat (s)"
+msgstr "Hjerteslag (s)"
+
+msgid "Heartbeat (seconds)"
+msgstr "Hjerteslag (sekunder)"
+
+msgid "Heartbeat at"
+msgstr "Hjerteslag tidspunkt"
+
 msgid "Heat exchanger"
 msgstr "Varmeveksler"
 
@@ -4947,6 +5513,12 @@ msgstr "Skjul slettede rader"
 msgid "High"
 msgstr "Høy"
 
+msgid "Highest of the open run"
+msgstr "Høyeste i den åpne serien"
+
+msgid "Highest of the run"
+msgstr "Høyeste i serien"
+
 msgid "History"
 msgstr "Historikk"
 
@@ -4957,6 +5529,9 @@ msgstr "Historikk for %(owner)s"
 #, python-format
 msgid "History of %(point)s"
 msgstr "Historikk for %(point)s"
+
+msgid "Host"
+msgstr "Vert"
 
 msgid "Hours fasted"
 msgstr "Timer sultet"
@@ -4990,6 +5565,9 @@ msgstr ""
 " fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
 "kontrolleres med veterinæren din."
 
+msgid "How often the device sends a message. Offline after three times this without one."
+msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
+
 msgid "Hydrochloric acid"
 msgstr "Saltsyre"
 
@@ -4998,6 +5576,9 @@ msgstr "Hydrogenperoksid"
 
 msgid "Hydrogen sulfide"
 msgstr "Hydrogensulfid"
+
+msgid "Hysteresis"
+msgstr "Hysterese"
 
 msgid "H₂S"
 msgstr "H₂S"
@@ -5036,6 +5617,9 @@ msgstr "H₂S: grensen nås ikke noe sted i dette diagrammet."
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: det totale sulfidet kan ikke gi grensen ved noen pH."
 
+msgid "ISO 8601 text"
+msgstr "ISO 8601-tekst"
+
 msgid "Icelandic"
 msgstr "Islandsk"
 
@@ -5055,6 +5639,9 @@ msgstr "Hvis fisken ble høstet i dag:"
 msgid "If you did not ask for this, you can ignore this email."
 msgstr "Hvis du ikke ba om dette, kan du se bort fra denne e-posten."
 
+msgid "Ignored"
+msgstr "Ignorert"
+
 msgid "Imidacloprid"
 msgstr "Imidakloprid"
 
@@ -5067,11 +5654,19 @@ msgstr "I fôr"
 msgid "In force today"
 msgstr "Gjelder i dag"
 
+msgid "In maintenance its values are stored, marked, and used nowhere; retired, they are not listened to."
+msgstr ""
+"Under vedlikehold lagres verdiene, merkes og brukes ingen steder; når det er utfaset, lyttes det "
+"ikke til dem."
+
 msgid "In progress"
 msgstr "Pågår"
 
 msgid "In the library"
 msgstr "I biblioteket"
+
+msgid "In the quantity’s unit; for a rate, the change over the time below."
+msgstr "I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor."
 
 msgid "Inactive"
 msgstr "Inaktiv"
@@ -5094,6 +5689,9 @@ msgstr "Infeksiøs pankreasnekrose (IPN)"
 msgid "Infectious salmon anaemia (ISA)"
 msgstr "Infeksiøs lakseanemi (ILA)"
 
+msgid "Ingest"
+msgstr "Innhenting"
+
 msgid "Inherit from company"
 msgstr "Arv fra selskapet"
 
@@ -5115,6 +5713,12 @@ msgstr ""
 
 msgid "Installation date"
 msgstr "Installasjonsdato"
+
+msgid "Instead of one channel: every active channel of this quantity."
+msgstr "I stedet for én kanal: hver aktive kanal for denne parameteren."
+
+msgid "Instrument unit"
+msgstr "Instrumentets enhet"
 
 msgid "Is the diagnosis suspected or confirmed?"
 msgstr "Er diagnosen mistenkt eller bekreftet?"
@@ -5216,6 +5820,12 @@ msgstr "Den var gjennomgått; etter denne endringen er den et utkast igjen, til 
 msgid "Item"
 msgstr "Vare"
 
+msgid "Item name"
+msgstr "Elementnavn"
+
+msgid "Items path"
+msgstr "Elementsti"
+
 msgid "Its company registration or VAT number, e.g. 923456789 in Norway; spaces are left out."
 msgstr "Organisasjonsnummer eller MVA-nummer, f.eks. 923456789 i Norge; mellomrom fjernes."
 
@@ -5269,6 +5879,9 @@ msgstr "Enhetene har lagerposter: sett statusen til Stengt i stedet."
 msgid "Its volume cannot be calculated from its shape: enter it as measured or as drawn."
 msgstr "Volumet kan ikke beregnes ut fra formen: oppgi det som målt eller som tegnet."
 
+msgid "JSON"
+msgstr "JSON"
+
 msgid "JSON for Mattilsynet’s reporting API"
 msgstr "JSON for Mattilsynets rapporterings-API"
 
@@ -5280,6 +5893,9 @@ msgstr "Settefisk"
 
 msgid "Juveniles, food fish or broodstock: it decides the reports the site owes."
 msgstr "Settefisk, matfisk eller stamfisk: det avgjør hvilke rapporter lokaliteten skylder."
+
+msgid "Keep-alive (seconds)"
+msgstr "Keep-alive (sekunder)"
 
 msgid "Key"
 msgstr "Nøkkel"
@@ -5344,8 +5960,14 @@ msgstr "Siste"
 msgid "Last 7 days"
 msgstr "Siste 7 dager"
 
+msgid "Last at"
+msgstr "Sist sett"
+
 msgid "Last calibration"
 msgstr "Siste kalibrering"
+
+msgid "Last commit at"
+msgstr "Siste commit"
 
 msgid "Last day"
 msgstr "Siste dag"
@@ -5361,6 +5983,15 @@ msgstr "Sist fôret %(moment)s, %(fasted)s før %(day)s: regelen for %(kind)s kr
 msgid "Last fed %(when)s: %(fasted)s before %(day)s."
 msgstr "Sist fôret %(when)s: %(fasted)s før %(day)s."
 
+msgid "Last good value"
+msgstr "Siste gode verdi"
+
+msgid "Last good value at"
+msgstr "Siste gode verdi tidspunkt"
+
+msgid "Last message at"
+msgstr "Siste melding"
+
 msgid "Last movement"
 msgstr "Siste bevegelse"
 
@@ -5370,11 +6001,23 @@ msgstr "Etternavn"
 msgid "Last read"
 msgstr "Sist lest"
 
+msgid "Last seen at"
+msgstr "Sist sett tidspunkt"
+
+msgid "Last sequence number"
+msgstr "Siste sekvensnummer"
+
 msgid "Last sign-in"
 msgstr "Sist innlogget"
 
 msgid "Last weighed"
 msgstr "Sist veid"
+
+msgid "Late"
+msgstr "Sen"
+
+msgid "Late limit (days)"
+msgstr "Grense for sen ankomst (dager)"
 
 msgid "Latest"
 msgstr "Siste"
@@ -5413,6 +6056,12 @@ msgstr "La vanndybden stå tom, eller oppgi en over 0."
 
 msgid "Length (m)"
 msgstr "Lengde (m)"
+
+msgid "Letters, digits and . _ @ - only."
+msgstr "Bare bokstaver, sifre og . _ @ -."
+
+msgid "Level (mm)"
+msgstr "Nivå (mm)"
 
 msgid "Level sensor"
 msgstr "Nivåsensor"
@@ -5460,6 +6109,12 @@ msgstr "List opp det som ble levert."
 
 msgid "Live fish and eggs"
 msgstr "Levende fisk og rogn"
+
+msgid "Live sensor values could not be read: samples only."
+msgstr "Sanntidsverdier fra sensorene kunne ikke leses: bare prøver."
+
+msgid "Live values"
+msgstr "Sanntidsverdier"
 
 msgid "Loading…"
 msgstr "Laster …"
@@ -5528,11 +6183,20 @@ msgstr "Lavtrykk"
 msgid "Low stock"
 msgstr "Lav beholdning"
 
+msgid "Lowest of the open run"
+msgstr "Laveste i den åpne serien"
+
+msgid "Lowest of the run"
+msgstr "Laveste i serien"
+
 msgid "Lumpfish"
 msgstr "Rognkjeks"
 
 msgid "Lumpfish and wrasses are stocked with salmon to eat sea lice."
 msgstr "Rognkjeks og leppefisk settes ut sammen med laksen for å spise lakselus."
+
+msgid "MQTT"
+msgstr "MQTT"
 
 msgid "Main navigation"
 msgstr "Hovednavigasjon"
@@ -5635,6 +6299,9 @@ msgstr "Måltider"
 msgid "Meals a day"
 msgstr "Måltider per dag"
 
+msgid "Measured"
+msgstr "Målt"
+
 msgid "Measured at"
 msgstr "Målt"
 
@@ -5730,6 +6397,12 @@ msgstr "Melding slettet"
 msgid "Messages"
 msgstr "Meldinger"
 
+msgid "Messages the ingest service could not store, kept as evidence and counted."
+msgstr "Meldinger innhentingstjenesten ikke kunne lagre, beholdt som dokumentasjon og telt."
+
+msgid "Messages waiting"
+msgstr "Ventende meldinger"
+
 msgid "Metadata"
 msgstr "Metadata"
 
@@ -5741,6 +6414,9 @@ msgstr "Metode"
 
 msgid "Middle"
 msgstr "Midten"
+
+msgid "Milliseconds since 1970"
+msgstr "Millisekunder siden 1970"
 
 msgid "Minimum transmittance"
 msgstr "Minste transmittans"
@@ -5759,6 +6435,12 @@ msgstr "Bevegelige lus"
 
 msgid "Mobile per fish"
 msgstr "Bevegelige per fisk"
+
+msgid "Modbus RTU"
+msgstr "Modbus RTU"
+
+msgid "Modbus TCP"
+msgstr "Modbus TCP"
 
 msgid "Model"
 msgstr "Modell"
@@ -5818,6 +6500,10 @@ msgstr "Flyttet til en annen lokalitet"
 
 msgid "Movements"
 msgstr "Bevegelser"
+
+#, python-format
+msgid "Moves of %(deadband)s"
+msgstr "Endringer på %(deadband)s"
 
 msgid "Moving bed (MBBR)"
 msgstr "Bevegelig medium (MBBR)"
@@ -5891,6 +6577,9 @@ msgstr "NO₃-N (mg/L)"
 msgid "Name"
 msgstr "Navn"
 
+msgid "Name key"
+msgstr "Navnenøkkel"
+
 msgid "Name must be at least 2 characters."
 msgstr "Navnet må ha minst 2 tegn."
 
@@ -5912,6 +6601,12 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid "Needs a fresh pH and temperature from the sensors with the sensor’s TAN."
+msgstr "Trenger fersk pH og temperatur fra sensorene sammen med sensorens TAN."
+
+msgid "Needs a fresh temperature from the sensors with the sensor’s oxygen."
+msgstr "Trenger fersk temperatur fra sensorene sammen med sensorens oksygen."
 
 msgid "Needs a look"
 msgstr "Trenger oppmerksomhet"
@@ -5968,6 +6663,9 @@ msgstr "Ny oppgave"
 msgid "Newer"
 msgstr "Nyere"
 
+msgid "Newest stored time"
+msgstr "Nyeste lagrede tidspunkt"
+
 msgid "Next"
 msgstr "Neste"
 
@@ -5997,6 +6695,9 @@ msgstr "Ingen %(plural)s ennå"
 msgid "No PDF: the document is known by its reference only."
 msgstr "Ingen PDF: dokumentet er bare kjent ved referansen."
 
+msgid "No alarm events."
+msgstr "Ingen alarmhendelser."
+
 msgid "No band yet. Use “Add band” to add a row."
 msgstr "Ingen vektklasser ennå. Bruk «Legg til vektklasse» for å legge til en rad."
 
@@ -6009,6 +6710,9 @@ msgstr "Ingen panel"
 msgid "No calibrations yet. Use “Add calibration” to add a row."
 msgstr "Ingen kalibreringer ennå. Bruk «Legg til kalibrering» for å legge til en rad."
 
+msgid "No calibrations: values are stored as the device sends them (after the unit conversion)."
+msgstr "Ingen kalibreringer: verdiene lagres slik apparatet sender dem (etter enhetskonverteringen)."
+
 msgid "No cards yet. Use “Add unit” to add a row."
 msgstr "Ingen kort ennå. Bruk «Legg til enhet» for å legge til en rad."
 
@@ -6017,6 +6721,15 @@ msgstr "Ingen endringer samsvarer med filtrene."
 
 msgid "No changes recorded yet."
 msgstr "Ingen endringer registrert ennå."
+
+msgid "No channel is listened to yet."
+msgstr "Ingen kanal lyttes til ennå."
+
+msgid "No channel of the device matches"
+msgstr "Ingen kanal på apparatet samsvarer"
+
+msgid "No channels yet: add them on the Channels page."
+msgstr "Ingen kanaler ennå: legg dem til på Kanaler-siden."
 
 msgid "No checklist."
 msgstr "Ingen sjekkliste."
@@ -6038,6 +6751,12 @@ msgstr "Ingen telling samsvarer med disse filtrene."
 
 msgid "No count recorded yet"
 msgstr "Ingen telling registrert ennå"
+
+msgid "No dead letters."
+msgstr "Ingen ulagrede meldinger."
+
+msgid "No device publishes on this topic"
+msgstr "Ingen apparater publiserer på dette emnet"
 
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
@@ -6104,6 +6823,9 @@ msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
 
+msgid "No fresh value"
+msgstr "Ingen fersk verdi"
+
 msgid "No growth up to the last weighing."
 msgstr "Ingen tilvekst fram til siste veiing."
 
@@ -6125,12 +6847,18 @@ msgstr "Ingen høsting registrert ennå"
 msgid "No harvest to this facility is planned in the week."
 msgstr "Ingen høsting til dette slakteriet er planlagt i uken."
 
+msgid "No heartbeat yet"
+msgstr "Ingen hjerteslag ennå"
+
 msgid ""
 "No in-feed treatment covers this day: record it under Health › Treatments, or the fish’s "
 "withdrawal stays unknown."
 msgstr ""
 "Ingen fôrbehandling dekker denne dagen: registrer den under Helse › Behandlinger, ellers forblir "
 "fiskens tilbakeholdelsestid ukjent."
+
+msgid "No item name: the device’s payload format is one object."
+msgstr "Ingen elementnavn: apparatets meldingsformat er ett objekt."
 
 msgid "No knowledge entry cites it yet."
 msgstr "Ingen kunnskapsoppføring viser til det ennå."
@@ -6214,6 +6942,24 @@ msgstr "Ingen prøvepunkter her."
 
 msgid "No sea-lice count recorded yet"
 msgstr "Ingen lusetelling registrert ennå"
+
+#, python-format
+msgid ""
+"No sensor channel is bound to %(place)s in this time, so there is no chart. Manual samples are on"
+" the Water chemistry page."
+msgstr ""
+"Ingen sensorkanal er knyttet til %(place)s i dette tidsrommet, så det finnes ikke noe diagram. "
+"Manuelle prøver ligger på Vannkjemi-siden."
+
+msgid "No sensor values in this time."
+msgstr "Ingen sensorverdier i dette tidsrommet."
+
+msgid ""
+"No sensor values in this time: no channel of this quantity was bound here, or none sent a usable "
+"value."
+msgstr ""
+"Ingen sensorverdier i dette tidsrommet: ingen kanal for denne parameteren var knyttet hit, eller "
+"ingen sendte en brukbar verdi."
 
 msgid "No site"
 msgstr "Ingen lokalitet"
@@ -6323,6 +7069,15 @@ msgstr "Ingen enheter passer til disse filtrene."
 msgid "No units yet"
 msgstr "Ingen enheter ennå"
 
+msgid "No value"
+msgstr "Ingen verdi"
+
+msgid "No value path: the device’s payload format is a list of items."
+msgstr "Ingen verdisti: apparatets meldingsformat er en liste med elementer."
+
+msgid "No value yet"
+msgstr "Ingen verdi ennå"
+
 msgid "No volume: the doses per m³ only."
 msgstr "Uten volum: bare dosene per m³."
 
@@ -6348,6 +7103,13 @@ msgid "Nobody else can use Messages yet: the platform admin gives it to a role (
 msgstr ""
 "Ingen andre kan bruke Meldinger ennå: plattformadministratoren gir det til en rolle (Roller, "
 "Meldinger: Les)."
+
+msgid ""
+"Nobody is notified: an alarm is shown here and on the Sensors overview until a way to send it "
+"exists. It is not an alarm until someone sees it."
+msgstr ""
+"Ingen varsles: en alarm vises her og i sensoroversikten til det finnes en måte å sende den på. "
+"Det er ikke en alarm før noen ser den."
 
 msgid "None"
 msgstr "Ingen"
@@ -6379,11 +7141,17 @@ msgstr "Nasjonal liste, kategori F"
 msgid "Norwegian list, category G"
 msgstr "Nasjonal liste, kategori G"
 
+msgid "Not JSON"
+msgstr "Ikke JSON"
+
 msgid "Not a cleaner fish"
 msgstr "Ikke rensefisk"
 
 msgid "Not a sea-lice medicine"
 msgstr "Ikke et lakselusmiddel"
+
+msgid "Not bound"
+msgstr "Ikke knyttet"
 
 msgid "Not checked"
 msgstr "Ikke kontrollert"
@@ -6491,6 +7259,9 @@ msgstr "Ingenting fylles inn for en manglende verdi."
 msgid "Nothing is in stock: receive a delivery first."
 msgstr "Ingen beholdning: ta imot et varemottak først."
 
+msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
+msgstr "Du har ikke tilgang til noe av sensorene ennå: be om en rettighet på Roller-siden."
+
 msgid "Nothing recorded for this item yet"
 msgstr "Ingenting registrert for denne varen ennå"
 
@@ -6537,6 +7308,9 @@ msgstr "Nylon"
 msgid "OK"
 msgstr "OK"
 
+msgid "OPC UA"
+msgstr "OPC UA"
+
 msgid "Observation"
 msgstr "Observasjon"
 
@@ -6552,11 +7326,20 @@ msgstr "Artskode"
 msgid "Offline"
 msgstr "Ute av drift"
 
+msgid "Offset"
+msgstr "Forskyvning"
+
 msgid "Oil"
 msgstr "Olje"
 
 msgid "Older"
 msgstr "Eldre"
+
+msgid "Older than the newest stored value of the channel when it arrived."
+msgstr "Eldre enn kanalens nyeste lagrede verdi da den kom."
+
+msgid "Older than the raw data is kept"
+msgstr "Eldre enn rådata beholdes"
 
 msgid "On"
 msgstr "På"
@@ -6576,6 +7359,9 @@ msgid ""
 msgstr ""
 "Beholdningen ganger det hvert parti kostet ved mottak, per valuta; partier mottatt uten kostnad "
 "regnes ikke med."
+
+msgid "On the clock of the channel’s site. Its binding until now ends then."
+msgstr "Etter klokken på kanalens lokalitet. Tilknytningen den har nå, slutter da."
 
 msgid "On the clock of the place’s site; a task not done by then is overdue."
 msgstr "Etter klokken på stedets lokalitet; en oppgave som ikke er utført innen da, er forfalt."
@@ -6598,6 +7384,12 @@ msgstr ""
 
 msgid "One card per unit."
 msgstr "Ett kort per enhet."
+
+msgid "One object per message: a JSON pointer to this channel’s value, e.g. /tags/o2/value."
+msgstr "Ett objekt per melding: en JSON pointer til denne kanalens verdi, f.eks. /tags/o2/value."
+
+msgid "One object, a value per channel at its own path"
+msgstr "Ett objekt, én verdi per kanal på sin egen sti"
 
 msgid "One probe that measures several water parameters."
 msgstr "Én sonde som måler flere vannparametere."
@@ -6704,6 +7496,9 @@ msgstr "Åpen"
 msgid "Open %(name)s"
 msgstr "Åpne %(name)s"
 
+msgid "Open alarms"
+msgstr "Åpne alarmer"
+
 msgid "Open and closed"
 msgstr "Åpne og avsluttede"
 
@@ -6716,6 +7511,9 @@ msgstr "Åpne helsehendelser"
 msgid "Open menu"
 msgstr "Åpne menyen"
 
+msgid "Open ones"
+msgstr "Åpne"
+
 msgid "Open the PDF"
 msgstr "Åpne PDF-en"
 
@@ -6724,6 +7522,12 @@ msgstr "Åpne utkastet"
 
 msgid "Open this link to set a new password:"
 msgstr "Åpne denne lenken for å velge nytt passord:"
+
+msgid "Opened"
+msgstr "Åpnet"
+
+msgid "Opened at"
+msgstr "Åpnet tidspunkt"
 
 msgid "Operation"
 msgstr "Operasjon"
@@ -6904,6 +7708,9 @@ msgstr "Utelager"
 msgid "Outlet"
 msgstr "Utløp"
 
+msgid "Outside the channel’s range: kept as evidence, not used."
+msgstr "Utenfor kanalens område: beholdt som dokumentasjon, ikke brukt."
+
 msgid "Oval"
 msgstr "Oval"
 
@@ -7021,6 +7828,9 @@ msgstr "Overordnet system"
 msgid "Parts"
 msgstr "Deler"
 
+msgid "Password hash"
+msgstr "Passordhash"
+
 msgid "Password saved"
 msgstr "Passordet er lagret"
 
@@ -7032,6 +7842,21 @@ msgstr "Pasteurellose"
 
 msgid "Paused"
 msgstr "På pause"
+
+msgid "Payload"
+msgstr "Meldingsinnhold"
+
+msgid "Payload format"
+msgstr "Meldingsformat"
+
+msgid "Payload formats"
+msgstr "Meldingsformater"
+
+msgid "Payload hash (SHA-256)"
+msgstr "Innholdshash (SHA-256)"
+
+msgid "Payload size (bytes)"
+msgstr "Innholdsstørrelse (byte)"
 
 msgid "Payment terms"
 msgstr "Betalingsbetingelser"
@@ -7165,6 +7990,9 @@ msgstr "Dammer"
 msgid "Poor growth"
 msgstr "Dårlig vekst"
 
+msgid "Port"
+msgstr "Port"
+
 msgid "Post-larvae"
 msgstr "Postlarver"
 
@@ -7173,6 +8001,9 @@ msgstr "Postnummer"
 
 msgid "Power"
 msgstr "Effekt"
+
+msgid "Power (kW)"
+msgstr "Effekt (kW)"
 
 msgid "Power consumption"
 msgstr "Effektforbruk"
@@ -7206,6 +8037,9 @@ msgstr "Reseptpliktig"
 
 msgid "Pressure"
 msgstr "Trykk"
+
+msgid "Pressure (bar)"
+msgstr "Trykk (bar)"
 
 msgid "Pressure sensor"
 msgstr "Trykksensor"
@@ -7358,11 +8192,17 @@ msgstr "Kvalitet"
 msgid "Quality control"
 msgstr "Kvalitetskontroll"
 
+msgid "Quality of the last value"
+msgstr "Kvaliteten på siste verdi"
+
 msgid "Quantity"
 msgstr "Mengde"
 
 msgid "Quantity (kg)"
 msgstr "Mengde (kg)"
+
+msgid "Quantity and unit"
+msgstr "Parameter og enhet"
 
 msgid "Quarantine"
 msgstr "Karantene"
@@ -7379,11 +8219,20 @@ msgstr "Raceway (strømkanal)"
 msgid "Rain and run-off"
 msgstr "Regn og overvann"
 
+msgid "Range from"
+msgstr "Område fra"
+
+msgid "Range to"
+msgstr "Område til"
+
 msgid "Rating"
 msgstr "Vurdering"
 
 msgid "Ration"
 msgstr "Rasjon"
+
+msgid "Raw retention (days)"
+msgstr "Lagringstid for rådata (dager)"
 
 msgid "Read"
 msgstr "Les"
@@ -7526,6 +8375,9 @@ msgstr "Gjentakende oppgave"
 msgid "Recurring tasks"
 msgstr "Gjentakende oppgaver"
 
+msgid "Redox potential, ORP (mV)"
+msgstr "Redokspotensial, ORP (mV)"
+
 msgid "Reduced appetite"
 msgstr "Nedsatt appetitt"
 
@@ -7607,8 +8459,18 @@ msgstr "Reparasjon"
 msgid "Repeats"
 msgstr "Gjentas"
 
+msgid "Replace the secret"
+msgstr "Bytt hemmeligheten"
+
 msgid "Replaced by a correction"
 msgstr "Erstattet av en korrigering"
+
+msgid ""
+"Replacing the secret makes a new one, shown once. The old one stops working once the broker’s "
+"files are written again."
+msgstr ""
+"Å bytte hemmeligheten lager en ny, som vises én gang. Den gamle slutter å virke når brokerens "
+"filer skrives på nytt."
 
 msgid "Report"
 msgstr "Rapport"
@@ -7651,6 +8513,21 @@ msgstr "Resistens mot"
 
 msgid "Resistant"
 msgstr "Resistent"
+
+msgid "Resolve"
+msgstr "Løs"
+
+msgid "Resolved"
+msgstr "Løst"
+
+msgid "Resolved at"
+msgstr "Løst tidspunkt"
+
+msgid "Resolved by"
+msgstr "Løst av"
+
+msgid "Resolved ones too"
+msgstr "Også løste"
 
 msgid "Restore the selected deleted records"
 msgstr "Gjenopprett de valgte slettede postene"
@@ -7802,6 +8679,9 @@ msgstr "Salinitetssensor"
 
 msgid "Saltwater"
 msgstr "Saltvann"
+
+msgid "Sample"
+msgstr "Prøve"
 
 msgid "Samples and analyses"
 msgstr "Prøver og analyser"
@@ -7974,6 +8854,18 @@ msgstr "Søk"
 msgid "Search %(plural)s"
 msgstr "Søk i %(plural)s"
 
+msgid "Search by channel or quantity"
+msgstr "Søk etter kanal eller parameter"
+
+msgid "Search by channel, device or place"
+msgstr "Søk etter kanal, apparat eller sted"
+
+msgid "Search by code, name or device"
+msgstr "Søk etter kode, navn eller apparat"
+
+msgid "Search by code, name, topic or model"
+msgstr "Søk etter kode, navn, emne eller modell"
+
 msgid "Search by name"
 msgstr "Søk etter navn"
 
@@ -7997,6 +8889,9 @@ msgstr "Søk på navn, kode eller serienummer"
 
 msgid "Search by name, code, organisation number, email or place"
 msgstr "Søk etter navn, kode, organisasjonsnummer, e-post eller sted"
+
+msgid "Search by name, host or client id"
+msgstr "Søk etter navn, vert eller klient-ID"
 
 msgid "Search by name, scientific name or code"
 msgstr "Søk etter navn, vitenskapelig navn eller kode"
@@ -8024,6 +8919,9 @@ msgstr "Søk etter art eller kilde"
 
 msgid "Search by unit, batch, facility or vessel"
 msgstr "Søk på enhet, fiskegruppe, slakteri eller fartøy"
+
+msgid "Search by user name"
+msgstr "Søk etter brukernavn"
 
 msgid "Search every column"
 msgstr "Søk i alle kolonner"
@@ -8054,6 +8952,18 @@ msgstr "Søkevektor"
 
 msgid "Seaweed"
 msgstr "Tang og tare"
+
+msgid "Seconds since 1970"
+msgstr "Sekunder siden 1970"
+
+msgid "Secret"
+msgstr "Hemmelighet"
+
+msgid "Secret file"
+msgstr "Hemmelighetsfil"
+
+msgid "Secret made at"
+msgstr "Hemmelighet laget"
 
 msgid "Section"
 msgstr "Avsnitt"
@@ -8154,14 +9064,29 @@ msgstr "Send"
 msgid "Send reset link"
 msgstr "Send tilbakestillingslenke"
 
+msgid "Sends every (seconds)"
+msgstr "Sender hvert (sekunder)"
+
 msgid "Sensitive"
 msgstr "Følsom"
 
 msgid "Sensitivity tests"
 msgstr "Følsomhetsundersøkelser"
 
+msgid "Sensor credentials"
+msgstr "Sensorlegitimasjoner"
+
+msgid "Sensor moved here"
+msgstr "Sensoren flyttet hit"
+
+msgid "Sensor readings"
+msgstr "Sensoravlesninger"
+
 msgid "Sensors"
 msgstr "Sensorer"
+
+msgid "Sensors overview"
+msgstr "Sensoroversikt"
 
 msgid "Sent at"
 msgstr "Sendt"
@@ -8173,8 +9098,14 @@ msgstr ""
 "Skilt med mellomrom. En temperatur mellom to kolonner leses mellom dem; utenfor den første og den"
 " siste er det ingen rasjon."
 
+msgid "Sequence path"
+msgstr "Sekvenssti"
+
 msgid "Serial number"
 msgstr "Serienummer"
+
+msgid "Service version"
+msgstr "Tjenesteversjon"
 
 msgid "Set a new password"
 msgstr "Velg nytt passord"
@@ -8262,6 +9193,9 @@ msgstr "Side (m)"
 
 msgid "Side outlet"
 msgstr "Sideutløp"
+
+msgid "Siemens S7"
+msgstr "Siemens S7"
 
 msgid "Sign in"
 msgstr "Logg inn"
@@ -8586,6 +9520,21 @@ msgstr "Lager"
 msgid "Storage locations"
 msgstr "Lagerplasser"
 
+msgid "Store a value when it moves past the deadband"
+msgstr "Lagre en verdi når den endrer seg mer enn dødbåndet"
+
+msgid "Store every value"
+msgstr "Lagre hver verdi"
+
+msgid "Stored because the heartbeat ran out, not because the value moved."
+msgstr "Lagret fordi hjerteslaget løp ut, ikke fordi verdien endret seg."
+
+msgid "Stored value = factor × (calibrated value) + offset, in the quantity’s unit."
+msgstr "Lagret verdi = faktor × (kalibrert verdi) + forskyvning, i parameterens enhet."
+
+msgid "Storing"
+msgstr "Lagring"
+
 msgid "Strain"
 msgstr "Stamme"
 
@@ -8641,6 +9590,12 @@ msgid ""
 msgstr ""
 "Sulfid slik et laboratorium eller et metylenblått-sett rapporterer det, som S. H₂S regnes ut fra "
 "det, pH-en, temperaturen og saliniteten."
+
+msgid "Sum of the open run"
+msgstr "Sum av den åpne serien"
+
+msgid "Sum of the run"
+msgstr "Sum av serien"
 
 msgid "Sunday"
 msgstr "Søndag"
@@ -8848,6 +9803,9 @@ msgstr ""
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "Det engelske navnet, f.eks. Atlantic salmon."
 
+msgid "The MQTT client id the ingest service connects with; unique among connections."
+msgstr "MQTT-klient-ID-en innhentingstjenesten kobler til med; unik blant tilkoblingene."
+
 msgid "The MT number, when the medicine has one."
 msgstr "MT-nummeret, når legemiddelet har et."
 
@@ -8856,6 +9814,13 @@ msgstr "Sammendraget slik dokumentet gir det."
 
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Adressen for bestillinger og spørsmål; kontaktpersonene har sine egne nedenfor."
+
+#, python-brace-format
+msgid "The address is a JSON object, e.g. {\"unit_id\": 1, \"function\": 3, \"register\": 40001}."
+msgstr "Adressen er et JSON-objekt, f.eks. {\"unit_id\": 1, \"function\": 3, \"register\": 40001}."
+
+msgid "The address lacks a key its protocol needs."
+msgstr "Adressen mangler en nøkkel protokollen trenger."
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
@@ -8900,6 +9865,9 @@ msgstr "Fiskegruppene i beholdningen med målvekt for høsting."
 msgid "The biomass cannot be negative."
 msgstr "Biomassen kan ikke være negativ."
 
+msgid "The bits of a sensor reading’s quality and which of them make a reading bad."
+msgstr "Bitene i en sensoravlesnings kvalitet, og hvilke av dem som gjør en avlesning dårlig."
+
 msgid "The board lists the units with fish, from Production units."
 msgstr "Tavlen viser enhetene med fisk, fra Produksjonsenheter."
 
@@ -8923,6 +9891,9 @@ msgstr ""
 msgid "The bounds go up: critical below ≤ warning below ≤ warning above ≤ critical above."
 msgstr "Grensene går oppover: kritisk under ≤ advarsel under ≤ advarsel over ≤ kritisk over."
 
+msgid "The broker credential the device publishes with; one gateway may serve many devices."
+msgstr "Broker-legitimasjonen apparatet publiserer med; én gateway kan betjene mange apparater."
+
 msgid ""
 "The calculated ration of a day counts each recorded meal at the ration it had when it was given "
 "(the estimated weight then), and the meals still to come at the estimate now; a record that does "
@@ -8944,6 +9915,22 @@ msgstr ""
 "Kortene på hvert overvåkingspanel: en enhet og, når det avviker fra panelet, hvordan kortet "
 "tegnes."
 
+msgid "The channel already has a calibration from this moment."
+msgstr "Kanalen har allerede en kalibrering fra dette tidspunktet."
+
+msgid "The channel is bound elsewhere at that time: a channel is in one place at a time."
+msgstr "Kanalen er knyttet et annet sted på det tidspunktet: en kanal er på ett sted om gangen."
+
+#, python-format
+msgid "The channel is bound since %(moment)s: a move starts after that."
+msgstr "Kanalen er knyttet siden %(moment)s: en flytting starter etter det."
+
+msgid "The channel is not bound anywhere now."
+msgstr "Kanalen er ikke knyttet noe sted nå."
+
+msgid "The channel was in maintenance."
+msgstr "Kanalen var under vedlikehold."
+
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Diagrammet kan ikke tegnes: dette punktet har ingen ferske verdier for"
 
@@ -8962,6 +9949,9 @@ msgstr ""
 
 msgid "The company that runs it: a supplier of slaughter and processing (Purchasing › Suppliers)."
 msgstr "Selskapet som driver det: en leverandør av slakting og foredling (Innkjøp › Leverandører)."
+
+msgid "The credential was created."
+msgstr "Legitimasjonen ble opprettet."
 
 msgid "The criticality is from 1 to 5."
 msgstr "Kritikaliteten er fra 1 til 5."
@@ -9010,14 +10000,26 @@ msgstr ""
 msgid "The depth of the water taken, from the surface."
 msgstr "Dybden vannet tas fra, regnet fra overflaten."
 
+msgid "The device marked the value bad."
+msgstr "Apparatet merket verdien som dårlig."
+
+msgid "The device time was in the future: the time is when it was received."
+msgstr "Apparatets tid lå i fremtiden: tiden er når meldingen ble mottatt."
+
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Den fordøyelige energien kan ikke være mer enn bruttoenergien."
 
 msgid "The document in the library the knowledge comes from."
 msgstr "Dokumentet i biblioteket kunnskapen kommer fra."
 
+msgid "The dots are manual and lab samples."
+msgstr "Prikkene er manuelle prøver og laboratorieprøver."
+
 msgid "The end cannot be worked out: record the water temperature."
 msgstr "Slutten kan ikke regnes ut: registrer vanntemperaturen."
+
+msgid "The end comes after the start."
+msgstr "Slutten kommer etter starten."
 
 msgid "The equipment is linked to this system already."
 msgstr "Utstyret er allerede knyttet til dette systemet."
@@ -9115,6 +10117,9 @@ msgstr ""
 "eller dager (5 dager lagres som 120 timer). 0 til 720 timer (30 dager). For en høsting kan feltet"
 " stå tomt når rensingen oppgis i døgngrader."
 
+msgid "The gain is a number other than 0."
+msgstr "Forsterkningen er et tall forskjellig fra 0."
+
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
 
@@ -9129,6 +10134,16 @@ msgstr "Helsehendelsen er datert %(date)s, etter denne operasjonen."
 #, python-format
 msgid "The health event is dated %(date)s, after this treatment."
 msgstr "Helsehendelsen er datert %(date)s, etter denne behandlingen."
+
+msgid ""
+"The ingest service’s heartbeat per broker connection: connected or not, messages waiting and its "
+"last commit."
+msgstr ""
+"Innhentingstjenestens hjerteslag per broker-tilkobling: tilkoblet eller ikke, ventende meldinger "
+"og siste commit."
+
+msgid "The ingest service’s own user name at the broker."
+msgstr "Innhentingstjenestens eget brukernavn på brokeren."
 
 msgid "The invitation to set a password is sent here."
 msgstr "Invitasjonen til å velge passord sendes hit."
@@ -9209,6 +10224,9 @@ msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
 
+msgid "The live sensor values could not be read: the values below come from the water samples only."
+msgstr "Sanntidsverdiene fra sensorene kunne ikke leses: verdiene nedenfor kommer bare fra vannprøvene."
+
 msgid "The live weight as weighed at the harvest, before bleeding and gutting"
 msgstr "Levende vekt som veid ved høsting, før bløgging og sløying"
 
@@ -9228,6 +10246,12 @@ msgstr "Den nedre vekten må være under den øvre vekten."
 msgid "The medicines and vaccines the farm uses, with their withdrawal before harvest."
 msgstr "Legemidlene og vaksinene anlegget bruker, med tilbakeholdelsestiden før høsting."
 
+msgid "The message had no device time: the time is when it was received."
+msgstr "Meldingen hadde ingen apparattid: tiden er når den ble mottatt."
+
+msgid "The message is too large"
+msgstr "Meldingen er for stor"
+
 #, python-format
 msgid ""
 "The mg/L and the % disagree by more than 10 % at this temperature and salinity: check the meter’s"
@@ -9243,6 +10267,16 @@ msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller ko
 
 msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Navnet på selskapets eget språk, f.eks. Laks."
+
+msgid ""
+"The name of the file under /run/secrets that holds the ingest service’s password at the broker. "
+"The password itself is never typed or stored here."
+msgstr ""
+"Navnet på filen under /run/secrets som inneholder innhentingstjenestens passord på brokeren. "
+"Selve passordet skrives aldri inn eller lagres her."
+
+msgid "The name the device or gateway signs in to the broker with. Letters, digits and . _ @ - only."
+msgstr "Navnet apparatet eller gatewayen logger inn på brokeren med. Bare bokstaver, sifre og . _ @ -."
 
 msgid ""
 "The named wall screens of Monitoring: a name, how its cards are drawn by default and how often "
@@ -9264,6 +10298,13 @@ msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
 #, python-format
 msgid "The official code of %(name)s is %(code)s."
 msgstr "Artskoden for %(name)s er %(code)s."
+
+msgid ""
+"The one row both Django and the ingest service read: the contract’s version, the configuration’s "
+"epoch and the time limits."
+msgstr ""
+"Den ene raden både Django og innhentingstjenesten leser: kontraktens versjon, konfigurasjonens "
+"epoke og tidsgrensene."
 
 #, python-format
 msgid "The outlets of %(owner)s take %(total)s %% of its outflow, not 100 %%."
@@ -9332,6 +10373,9 @@ msgstr ""
 msgid "The person the authority can ask about the report. Needed before it is filed."
 msgstr "Personen myndigheten kan spørre om rapporten. Trengs før den sendes inn."
 
+msgid "The piece of equipment this device is, if it is one on the Equipment tab."
+msgstr "Utstyret dette apparatet er, hvis det er et utstyr på Utstyr-fanen."
+
 msgid "The pipe that lets water into a tank through distribution holes."
 msgstr "Røret som slipper vann inn i et kar gjennom fordelingshull."
 
@@ -9382,6 +10426,10 @@ msgstr ""
 "Protokollen er tildelt, så tabellen er låst: rasjonene for dagene den fôret, leses fra den. For å"
 " endre den: dupliser protokollen, endre kopien og tildel den fra en dato."
 
+#, python-format
+msgid "The range %(low)s to %(high)s is outside what %(quantity)s can be: %(min)s to %(max)s."
+msgstr "Området %(low)s til %(high)s er utenfor det %(quantity)s kan være: %(min)s til %(max)s."
+
 msgid ""
 "The ration is the estimated biomass times the SFR of the protocol’s band at the unit’s "
 "temperature, read between the table’s columns. The estimated weight is the last measured one plus"
@@ -9430,6 +10478,9 @@ msgstr "Den trygge sonen ligger i dette båndet."
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
+
+msgid "The secret was replaced."
+msgstr "Hemmeligheten ble byttet."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
@@ -9598,6 +10649,19 @@ msgstr "Teksten kunne ikke leses: %(reason)s"
 msgid "The time cannot be in the future."
 msgstr "Tidspunktet kan ikke være fram i tid."
 
+msgid "The time cannot be read"
+msgstr "Tiden kan ikke leses"
+
+msgid "The time is missing"
+msgstr "Tiden mangler"
+
+msgid ""
+"The topic the device publishes on, as its maker or integrator set it. No “#”; one “+” may stand "
+"for a level the device fills in (its serial number)."
+msgstr ""
+"Emnet apparatet publiserer på, slik produsenten eller integratoren satte det. Ingen «#»; én «+» "
+"kan stå for et nivå apparatet fyller inn (serienummeret sitt)."
+
 #, python-format
 msgid "The treatment of %(date)s has no amount used (Operations › Health): the report asks for it."
 msgstr "Behandlingen %(date)s har ingen brukt mengde (Drift › Helse): rapporten spør om det."
@@ -9613,6 +10677,12 @@ msgid ""
 msgstr ""
 "Behandlingen %(date)s gjaldt ingen enhet som hadde laksefisk: rapporten kan ikke si hvor mange "
 "merder som ble behandlet."
+
+msgid "The unit factor is a number other than 0."
+msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
+
+msgid "The unit the instrument sends, when it differs from the quantity’s."
+msgstr "Enheten instrumentet sender, når den avviker fra parameterens."
 
 msgid ""
 "The unit will hold more fish than its max density allows. Tick it only when that is meant, e.g. "
@@ -9645,6 +10715,12 @@ msgstr "Vanlig gjennomsnittlig vanndybde når den er under full dybde; tom når 
 msgid "The usual water level when it is below the rim; empty when the tank is filled to its depth."
 msgstr "Vanlig vannstand når den er under kanten; tom når karet er fylt til full dybde."
 
+msgid "The value is missing"
+msgstr "Verdien mangler"
+
+msgid "The value is not a number"
+msgstr "Verdien er ikke et tall"
+
 msgid "The vet or fish-health biologist, or who observed it."
 msgstr "Veterinæren eller fiskehelsebiologen, eller den som observerte det."
 
@@ -9674,6 +10750,12 @@ msgstr ""
 "Vannet etter hver mengde, tilsatt i listens rekkefølge, gjennomblandet og lukket mot luften mens "
 "det blandes. Mengdene er av rent stoff."
 
+#, python-format
+msgid ""
+"The water as it was at %(moment)s: each value as its source gave it then, its age counted from "
+"then."
+msgstr "Vannet slik det var %(moment)s: hver verdi slik kilden ga den da, med alder regnet fra da."
+
 msgid "The water cannot stand higher than the depth."
 msgstr "Vannet kan ikke stå høyere enn dybden."
 
@@ -9690,6 +10772,11 @@ msgstr ""
 
 msgid "The water is at its target."
 msgstr "Vannet er ved målet sitt."
+
+msgid ""
+"The water limits judge a water value above or below: set them on the Water limits page, for the "
+"species."
+msgstr "Vanngrensene avgjør om en vannverdi er over eller under: sett dem på Vanngrenser-siden, for arten."
 
 msgid ""
 "The water of the units it applies to. A row for a unit’s water type wins over the row for any "
@@ -9801,6 +10888,16 @@ msgstr ""
 "De blir stående i oppgavelistene, som viser dette som slettet, og viser det igjen når det "
 "gjenopprettes."
 
+msgid "They stay, out of sight while it is deleted, and come back when it is restored."
+msgstr "De blir stående, skjult mens den er slettet, og kommer tilbake når den gjenopprettes."
+
+msgid ""
+"They stay, out of sight while it is deleted, and come back when it is restored: the values the "
+"sensor measured there keep belonging there."
+msgstr ""
+"De blir stående, skjult mens den er slettet, og kommer tilbake når den gjenopprettes: verdiene "
+"sensoren målte der, hører fortsatt til der."
+
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
@@ -9898,6 +10995,14 @@ msgstr "Denne oppgaven er allerede %(status)s."
 msgid "This task is open already."
 msgstr "Denne oppgaven er allerede åpen."
 
+msgid "This time does not exist on the site’s clock (the clocks go forward): choose another."
+msgstr "Dette tidspunktet finnes ikke på lokalitetens klokke (klokken stilles frem): velg et annet."
+
+msgid "This time happens twice on the site’s clock (the clocks go back): choose another."
+msgstr ""
+"Dette tidspunktet forekommer to ganger på lokalitetens klokke (klokken stilles tilbake): velg et "
+"annet."
+
 msgid "This treatment is voided."
 msgstr "Denne behandlingen er annullert."
 
@@ -9932,6 +11037,9 @@ msgstr "Tre bokstaver, f.eks. NOK."
 msgid "Three-phase"
 msgstr "Trefase"
 
+msgid "Threshold"
+msgstr "Terskel"
+
 msgid "Thursday"
 msgstr "Torsdag"
 
@@ -9962,11 +11070,34 @@ msgstr "Kryss av i boksen for å fortsette tross disse advarslene."
 msgid "Time"
 msgstr "Tidspunkt"
 
+msgid "Time and sequence"
+msgstr "Tid og sekvens"
+
 msgid "Time found"
 msgstr "Tidspunkt funnet"
 
+msgid "Time is written as"
+msgstr "Tiden skrives som"
+
+msgid "Time of the last good value"
+msgstr "Tidspunkt for siste gode verdi"
+
+msgid "Time path"
+msgstr "Tidssti"
+
 msgid "Timer"
 msgstr "Tidsur"
+
+msgid "Times"
+msgstr "Tider"
+
+#, python-format
+msgid ""
+"Times in whole seconds cannot tell apart messages sent every second: send every %(seconds)d "
+"seconds or more, or use a format with milliseconds."
+msgstr ""
+"Tider i hele sekunder kan ikke skille meldinger som sendes hvert sekund: send hvert %(seconds)d. "
+"sekund eller sjeldnere, eller bruk et format med millisekunder."
 
 msgid "Timezone"
 msgstr "Tidssone"
@@ -10083,6 +11214,9 @@ msgstr "Turbiditet (NTU)"
 msgid "Turkish"
 msgstr "Tyrkisk"
 
+msgid "Two calibrations start at the same moment."
+msgstr "To kalibreringer starter på samme tidspunkt."
+
 msgid "Two rows are for the same species."
 msgstr "To rader gjelder samme art."
 
@@ -10165,6 +11299,12 @@ msgstr ""
 msgid "Unit cost"
 msgstr "Enhetskostnad"
 
+msgid "Unit factor"
+msgstr "Enhetsfaktor"
+
+msgid "Unit offset"
+msgstr "Enhetsforskyvning"
+
 msgid "Unit, system or equipment"
 msgstr "Enhet, system eller utstyr"
 
@@ -10227,6 +11367,9 @@ msgstr "Oppdatert av"
 msgid "Urgent"
 msgstr "Haster"
 
+msgid "Use TLS"
+msgstr "Bruk TLS"
+
 msgid "Use capital letters, digits, hyphens and underscores only."
 msgstr "Bruk bare store bokstaver, sifre, bindestrek og understrek."
 
@@ -10241,6 +11384,9 @@ msgstr "Brukt til produksjon med redusert kapasitet"
 
 msgid "Used to sign in. Letters, digits and @ . + - _ only."
 msgstr "Brukes til innlogging. Kun bokstaver, sifre og @ . + - _."
+
+msgid "User name"
+msgstr "Brukernavn"
 
 msgid "Username"
 msgstr "Brukernavn"
@@ -10260,14 +11406,34 @@ msgstr "Vaksine"
 msgid "Value"
 msgstr "Verdi"
 
+msgid ""
+"Value = gain × raw value + offset, from the moment given on the site’s clock, applied by the "
+"ingest at the device’s time before the unit conversion. Stored values are calibrated; a later "
+"calibration never changes them. The earliest calibration also covers the time before it. The "
+"calibrations are saved separately from the channel’s details."
+msgstr ""
+"Verdi = forsterkning × råverdi + forskyvning, fra tidspunktet som er oppgitt etter lokalitetens "
+"klokke, brukt av innhentingen på apparatets tid før enhetskonverteringen. Lagrede verdier er "
+"kalibrert; en senere kalibrering endrer dem aldri. Den tidligste kalibreringen dekker også tiden "
+"før den. Kalibreringene lagres separat fra kanalens detaljer."
+
+msgid "Value key"
+msgstr "Verdinøkkel"
+
 msgid "Value on hand"
 msgstr "Verdi på lager"
+
+msgid "Value path"
+msgstr "Verdisti"
 
 msgid "Values"
 msgstr "Verdier"
 
 msgid "Values from"
 msgstr "Verdier fra"
+
+msgid "Values in the open run"
+msgstr "Verdier i den åpne serien"
 
 msgid "Values the chart is drawn from"
 msgstr "Verdiene diagrammet er tegnet fra"
@@ -10402,6 +11568,9 @@ msgstr "Vannkvalitet"
 msgctxt "task category"
 msgid "Water quality"
 msgstr "Vannkvalitet"
+
+msgid "Water quantity"
+msgstr "Vannparameter"
 
 msgid "Water round"
 msgstr "Vannrunde"
@@ -10541,6 +11710,20 @@ msgstr "Hva det er laget for. Medisinfôr gis etter resept fra veterinær."
 msgid "What the farm pays per kg, with its currency."
 msgstr "Det anlegget betaler per kg, med valuta."
 
+msgid ""
+"What the ingest service has seen of each sensor device: its last message and how many it took, "
+"took late, could not store or ignored."
+msgstr ""
+"Hva innhentingstjenesten har sett fra hvert sensorapparat: siste melding og hvor mange den tok "
+"imot, tok imot sent, ikke kunne lagre eller ignorerte."
+
+msgid ""
+"What the ingest service remembers of each sensor channel: its last value, the last stored value "
+"the deadband is measured from and the values not stored since."
+msgstr ""
+"Hva innhentingstjenesten husker om hver sensorkanal: siste verdi, den sist lagrede verdien "
+"dødbåndet måles fra, og verdiene som ikke er lagret siden."
+
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
 
@@ -10594,11 +11777,24 @@ msgstr "Når det ble funnet, på lokalitetens klokke."
 msgid "When it was observed or said, if it matters."
 msgstr "Når det ble observert eller sagt, om det betyr noe."
 
+msgid "When received"
+msgstr "Mottatt"
+
+msgid "When the channel stopped being here; empty while it still is."
+msgstr "Når kanalen sluttet å være her; tom så lenge den fortsatt er det."
+
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
 msgid "Where"
 msgstr "Hvor"
+
+msgid ""
+"Where a PLC or field bus holds the value, as JSON. Modbus: unit_id, function, register; S7: db, "
+"offset; OPC UA: node_id; MQTT: nothing."
+msgstr ""
+"Hvor en PLC eller feltbuss holder verdien, som JSON. Modbus: unit_id, function, register; S7: db,"
+" offset; OPC UA: node_id; MQTT: ingenting."
 
 msgid ""
 "Where a water sample is taken: a named place on one unit, one system’s loop or one piece of "
@@ -10871,6 +12067,18 @@ msgstr "en settefiskslokalitet rapporterer smolt, ikke månedlig biomasse"
 msgid "after the count"
 msgstr "etter tellingen"
 
+msgid "alarm event"
+msgstr "alarmhendelse"
+
+msgid "alarm events"
+msgstr "alarmhendelser"
+
+msgid "alarm rule"
+msgstr "alarmregel"
+
+msgid "alarm rules"
+msgstr "alarmregler"
+
 #, python-format
 msgid "and %(count)s more: all reports"
 msgstr "og %(count)s til: alle rapporter"
@@ -10895,6 +12103,10 @@ msgstr "antatt: ferskvann"
 msgid "at %(point)s"
 msgstr "ved %(point)s"
 
+#, python-format
+msgid "at least every %(seconds)s s"
+msgstr "minst hvert %(seconds)s s"
+
 msgid "at once"
 msgstr "straks"
 
@@ -10904,6 +12116,9 @@ msgstr "snitt %(weight)s"
 
 msgid "bFCR"
 msgstr "bFCR"
+
+msgid "backup"
+msgstr "reserve"
 
 msgid "batch"
 msgstr "fiskegruppe"
@@ -10950,6 +12165,12 @@ msgstr "av den gjentakende oppgaven"
 msgid "calculated %(calculated)s"
 msgstr "beregnet %(calculated)s"
 
+msgid "calibration"
+msgstr "kalibrering"
+
+msgid "calibrations"
+msgstr "kalibreringer"
+
 msgid "card of a monitoring board"
 msgstr "kort på et overvåkingspanel"
 
@@ -10961,6 +12182,21 @@ msgstr "endret her"
 
 msgid "channel"
 msgstr "kanal"
+
+msgid "channel binding"
+msgstr "kanaltilknytning"
+
+msgid "channel bindings"
+msgstr "kanaltilknytninger"
+
+msgid "channel state"
+msgstr "kanalstatus"
+
+msgid "channel states"
+msgstr "kanalstatuser"
+
+msgid "channels"
+msgstr "kanaler"
 
 msgid "cleaner fish"
 msgstr "rensefisk"
@@ -10975,6 +12211,12 @@ msgstr "kombinasjon"
 #, python-format
 msgid "computed at %(time)s"
 msgstr "beregnet kl. %(time)s"
+
+msgid "connection"
+msgstr "tilkobling"
+
+msgid "connections"
+msgstr "tilkoblinger"
 
 msgid "contains"
 msgstr "inneholder"
@@ -11004,6 +12246,15 @@ msgstr "kritikalitet %(level)d"
 msgid "days"
 msgstr "dager"
 
+msgid "days on the site’s clock"
+msgstr "dager etter lokalitetens klokke"
+
+msgid "dead letter"
+msgstr "ulagret melding"
+
+msgid "dead letters"
+msgstr "ulagrede meldinger"
+
 msgid "deleted"
 msgstr "slettet"
 
@@ -11012,6 +12263,18 @@ msgstr "leveringsregistrering"
 
 msgid "delivery records"
 msgstr "leveringsregistreringer"
+
+msgid "device"
+msgstr "apparat"
+
+msgid "device state"
+msgstr "apparatstatus"
+
+msgid "device states"
+msgstr "apparatstatuser"
+
+msgid "devices"
+msgstr "apparater"
 
 msgid "document"
 msgstr "dokument"
@@ -11251,6 +12514,9 @@ msgstr "f.eks. daglig"
 msgid "e.g. kari.nordmann"
 msgstr "f.eks. kari.nordmann"
 
+msgid "e.g. moved to the new tank after the grading"
+msgstr "f.eks. flyttet til det nye karet etter sorteringen"
+
 msgid "e.g. sand, cartridge"
 msgstr "f.eks. sand, patron"
 
@@ -11278,6 +12544,9 @@ msgstr "er lik"
 
 msgid "equipment"
 msgstr "utstyr"
+
+msgid "equipment sensor"
+msgstr "utstyrssensor"
 
 msgid "equipment type"
 msgstr "utstyrstype"
@@ -11401,6 +12670,9 @@ msgstr "helsehendelse"
 msgid "health events"
 msgstr "helsehendelser"
 
+msgid "hourly summaries"
+msgstr "timesammendrag"
+
 msgid "hours"
 msgstr "timer"
 
@@ -11418,6 +12690,15 @@ msgstr "på %(location)s: %(held)s, utløper %(date)s."
 #, python-format
 msgid "in %(name)s"
 msgstr "i %(name)s"
+
+msgid "ingest contract"
+msgstr "innhentingskontrakt"
+
+msgid "ingest status"
+msgstr "innhentingsstatus"
+
+msgid "ingest statuses"
+msgstr "innhentingsstatuser"
 
 msgid "inventory item"
 msgstr "lagervare"
@@ -11449,6 +12730,9 @@ msgstr "kunnskapsoppføringer"
 msgid "knowledge entry"
 msgstr "kunnskapsoppføring"
 
+msgid "lab"
+msgstr "laboratorium"
+
 #, python-format
 msgid "loop %(system)s, %(age)s ago"
 msgstr "kretsløp %(system)s, %(age)s siden"
@@ -11465,6 +12749,9 @@ msgstr "partier"
 
 msgid "mL per fish"
 msgstr "mL per fisk"
+
+msgid "manual"
+msgstr "manuell"
 
 msgid "masked"
 msgstr "maskert"
@@ -11511,6 +12798,9 @@ msgstr "mg/kg biomasse per dag"
 
 msgid "mg/mL"
 msgstr "mg/mL"
+
+msgid "minute summaries"
+msgstr "minuttsammendrag"
 
 msgid "monitoring board"
 msgstr "overvåkingspanel"
@@ -11600,6 +12890,9 @@ msgstr "nås ikke ved noen pH"
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "nås ikke i diagrammets område (4 til 12,5)"
 
+msgid "now"
+msgstr "nå"
+
 msgid "only a site of food fish or broodstock on land reports it"
 msgstr "bare en landlokalitet med matfisk eller stamfisk rapporterer det"
 
@@ -11665,6 +12958,12 @@ msgstr "deltakere"
 msgid "passed at every pH of the chart's range (4 to 12.5)"
 msgstr "overskredet ved hver pH i diagrammets område (4 til 12,5)"
 
+msgid "payload format"
+msgstr "meldingsformat"
+
+msgid "payload formats"
+msgstr "meldingsformater"
+
 #, python-format
 msgid "planned for %(date)s"
 msgstr "planlagt for %(date)s"
@@ -11698,6 +12997,12 @@ msgstr "protokolltildelinger"
 
 msgid "protocol’s"
 msgstr "protokollens"
+
+msgid "quality flag"
+msgstr "kvalitetsflagg"
+
+msgid "quality flags"
+msgstr "kvalitetsflagg"
 
 msgid "recurring"
 msgstr "gjentakende"
@@ -11752,6 +13057,21 @@ msgstr "følsomhetsundersøkelse"
 
 msgid "sensitivity tests"
 msgstr "følsomhetsundersøkelser"
+
+msgid "sensor"
+msgstr "sensor"
+
+msgid "sensor credential"
+msgstr "sensorlegitimasjon"
+
+msgid "sensor credentials"
+msgstr "sensorlegitimasjoner"
+
+msgid "sensor reading"
+msgstr "sensoravlesning"
+
+msgid "sensor readings"
+msgstr "sensoravlesninger"
 
 #, python-format
 msgid "since %(date)s"
@@ -11815,6 +13135,9 @@ msgstr "lagerplass"
 msgid "storage locations"
 msgstr "lagerplasser"
 
+msgid "stored values"
+msgstr "lagrede verdier"
+
 msgid "supplier"
 msgstr "leverandør"
 
@@ -11835,6 +13158,9 @@ msgstr "systemkobling"
 
 msgid "system links"
 msgstr "systemkoblinger"
+
+msgid "system sensor"
+msgstr "systemsensor"
 
 msgid "systems"
 msgstr "systemer"
@@ -11903,6 +13229,9 @@ msgstr "enhetssvar"
 
 msgid "unit answers"
 msgstr "enhetssvar"
+
+msgid "unit sensor"
+msgstr "enhetssensor"
 
 #, python-format
 msgid "unit, %(age)s ago"
@@ -11995,6 +13324,9 @@ msgstr "tilbakeholdelsestid %(rule)s"
 
 msgid "worked out from the sample"
 msgstr "regnet ut fra prøven"
+
+msgid "worked out from the sensors"
+msgstr "beregnet fra sensorene"
 
 msgid "yes"
 msgstr "ja"

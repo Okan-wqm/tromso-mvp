@@ -150,7 +150,7 @@ pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut Dead
         };
         let decoded = decode(&dev.format, &dev.maps, &m.payload);
         let mut faults: Vec<DeadReason> = decoded.faults.clone();
-        let (mut used, mut late) = (false, false);
+        let (mut used, mut late, mut duplicate) = (false, false, false);
         let received_at = crate::model::to_micros(m.received_at);
         for raw in &decoded.samples {
             let Some(ch) = dev.channels.iter().find(|c| c.channel_no == raw.channel_no) else { continue };
@@ -168,7 +168,8 @@ pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut Dead
             let quality = time_q | calib::judge(value, ch.range, ch.maintenance);
             let step = reduce::step(&ch.policy, b.state(ch.channel_no), Sample { ts, value, quality, received_at });
             used = true;
-            late |= step.late;
+            late |= step.late && !step.duplicate;
+            duplicate |= step.duplicate;
             b.out.readings.extend(step.rows.into_iter().map(|row| Reading { channel_no: ch.channel_no, row }));
         }
         faults.sort();
@@ -183,6 +184,7 @@ pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut Dead
         }
         d.accepted += i64::from(used);
         d.late += i64::from(late);
+        d.ignored += i64::from(duplicate);
         d.dead += i64::from(!faults.is_empty());
     }
     b.out.dead = b.dead.into_values().collect();

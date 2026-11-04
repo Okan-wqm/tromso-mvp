@@ -17,7 +17,10 @@
 //! - a suppressed BAD sample is not counted (bad rows are excluded from every statistic) and leaves no row; its
 //!   evidence is the stored bad row it was within the deadband of.
 //!
-//! Late path (`ts <= high_ts`, `high_ts` = newest forward time processed): the sample is stored as it is, flagged LATE,
+//! Duplicate (`ts == high_ts`): the same instant of the channel again (a device sending twice, the last message of a
+//! redelivered batch): no row, counted by the caller (`ignored_total`).
+//!
+//! Late path (`ts < high_ts`, `high_ts` = newest forward time processed): the sample is stored as it is, flagged LATE,
 //! `n = 1`, and the forward state is not touched. A redelivered sample that was stored conflicts on
 //! `(channel_no, ts)` and is dropped by the database; one that was suppressed costs one extra LATE row (bounded by the
 //! broker's unacked window, plan risk 2).
@@ -92,7 +95,10 @@ pub struct Step {
 
 pub fn step(policy: &Policy, st: &mut State, s: Sample) -> Step {
     st.last_seen_at = Some(st.last_seen_at.map_or(s.received_at, |seen| seen.max(s.received_at)));
-    if st.high_ts.is_some_and(|high| s.ts <= high) {
+    if let Some(high) = st.high_ts.filter(|high| s.ts <= *high) {
+        if s.ts == high {
+            return Step { rows: Vec::new(), late: true, duplicate: true };
+        }
         return Step { rows: vec![plain(s.ts, s.value, s.quality | LATE)], late: true, duplicate: false };
     }
     st.high_ts = Some(s.ts);

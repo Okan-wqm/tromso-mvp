@@ -68,5 +68,10 @@ AREAS = [
     # office departments (the production departments are the farm's own, edited under Production).
     Area(_('Employees'), 'hr.Employee', actions=('view', 'add', 'change', 'all')),
     Area(_('Departments'), 'hr.OfficeDepartment'),
+    # The shift patterns and the holidays the roster and the leave charge read, and the scheduling limits (one row: Edit
+    # only). The three have no menu line of their own but Scheduling settings: it leads to the other two.
+    Area(_('Shifts'), 'hr.Shift'),
+    Area(_('Holidays'), 'hr.Holiday'),
+    Area(_('Scheduling settings'), 'hr.SchedulingSettings', actions=('view', 'change')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

@@ -45,6 +45,12 @@ WORKSPACES = [
                 Entry(_('Team list'), 'hr:employee_list', 'users', 'hr.view_employee'),
                 Entry(_('Departments'), 'hr:officedepartment_list', 'layout-grid', 'hr.view_officedepartment'),
             ]),
+            Group(_('Time & shifts'), [
+                Entry(_('Scheduling settings'), 'hr:schedulingsettings_list', 'settings', 'hr.view_schedulingsettings'),
+                # Reached from Scheduling settings: no line in the menu, still in the role matrix.
+                Entry(_('Shifts'), 'hr:shift_list', 'timer', 'hr.view_shift', hidden=True),
+                Entry(_('Holidays'), 'hr:holiday_list', 'calendar', 'hr.view_holiday', hidden=True),
+            ]),
         ]),
     ]),
     Workspace('production', _('Production'), sections=[

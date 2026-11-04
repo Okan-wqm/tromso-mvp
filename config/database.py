@@ -27,6 +27,10 @@ VIEWER = Viewer(
     descriptions={
         'employees': _('The people of the company for HR: number, name (or the account that names them), type and the '
                        'first and last day. No pay, bank or identity number is kept.'),
+        'shifts': _('The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a grace.'),
+        'holidays': _('Days that are not working days, for every site or for one.'),
+        'scheduling_settings': _('The one row of scheduling limits and defaults (rest, weekly hours, days in a row, working '
+                                 'weekdays, punch window).'),
         'postings': _('Where each person works from a day: one department, production or office, and the title.'),
         'office_departments': _('The company’s office departments (finance, administration), nested under one another.'),
         'auth_user': _('People who can sign in: account details and a hash of the password.'),

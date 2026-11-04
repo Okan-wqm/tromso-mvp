@@ -11,5 +11,6 @@ Differences from the source platform (docs/aquaculture-platform-bugs.md, "Human 
 from .employee import Employee, EmploymentType
 from .office_department import OfficeDepartment
 from .posting import Posting
+from .scheduling import Holiday, SchedulingSettings, Shift
 
-__all__ = ['Employee', 'EmploymentType', 'OfficeDepartment', 'Posting']
+__all__ = ['Employee', 'EmploymentType', 'Holiday', 'OfficeDepartment', 'Posting', 'SchedulingSettings', 'Shift']

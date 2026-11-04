@@ -25,8 +25,8 @@ class OfficeDepartment(CodedMixin, TreeMixin, AuditedModel):
     # refused while they exist, they are not flattened silently).
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT, related_name='children',
                                verbose_name=_('Parent department'))
-    site = models.ForeignKey(Site, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
-                             verbose_name=_('Site'))
+    site = models.ForeignKey(Site, null=True, blank=True, on_delete=models.SET_NULL,
+                             related_name='office_departments', verbose_name=_('Site'))
     name = models.CharField(_('Name'), max_length=100)
     code = models.CharField(_('Code'), max_length=20, validators=[RegexValidator(CODE, CODE_MESSAGE)])
     status = models.CharField(_('Status'), max_length=10, choices=Status.choices, default=Status.ACTIVE)

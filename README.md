@@ -2167,6 +2167,25 @@ themselves. The Departments page counts, per department, the people placed there
 The activity log shows the employees and their placements only to holders of Everyone (`core.audit.restrict`); a lead
 who reads the log sees everything else but not the people.
 
+### Time & shifts › Scheduling settings (`/hr/settings/scheduling/`), Shifts and Holidays
+
+**Scheduling settings** is the one row of limits and defaults (table `scheduling_settings`; a unique `singleton` column
+with a check keeps it one; the migration makes it, the only seed: no shift, holiday or leave type is seeded). It is
+changed, never added or deleted. Every setting has exactly one reader: the standard week (the Team overview), the
+minimum rest, the most days in a row and the rest rule, warn or block (the rules of the roster), the working weekdays
+(the days a leave request is charged for) and the punch window and the absent-after minutes (Today). The figures are
+labelled defaults on the page, **not the law**: none of the statutory figures is verified, so none is a database
+constraint (a rest of 60 minutes can be stored); the settings may only be set stricter than the statute, and the owner
+confirms them. Sanity checks only: ranges and the enumerations.
+
+**Shifts** (`/hr/settings/shifts/`, no menu line, reached from the settings page; Shifts is its own matrix area): a name,
+a code (capital letters, digits, hyphens, underscores; unique among live shifts, free again after a delete), the start
+and end on the wall clock of the site (an end at or before the start is the next day), a break (0-240, shorter than the
+shift: a database check on the two time columns), a grace (0-120), a tone 1-8 (a CSS class: no colour value is stored,
+HR-27) and a status. **Holidays** (`/hr/settings/holidays/`): a day, a name and a site or every site, one per day for
+every site and one per site (`nulls_distinct=False`); typed in by HR, never seeded, because the country's days are the
+owner's data. A site with holidays is not deleted.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2188,7 +2207,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shifts and Holidays (read, create, edit, delete) and Scheduling settings (read, edit) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and

@@ -244,3 +244,14 @@ class PermissionTests(OfficeDepartmentTestCase):
     def test_the_page_needs_its_read_permission(self):
         self.client.force_login(user('nobody'))
         self.assertEqual(self.client.get(reverse('hr:officedepartment_list')).status_code, 403)
+
+
+class SiteLinkTests(OfficeDepartmentTestCase):
+    def test_deleting_a_site_leaves_its_office_departments_without_one_and_lists_them(self):
+        department = self.make()
+        plan = softdelete.plan_delete(self.bergen)
+        self.assertTrue(plan.can_delete)
+        self.assertEqual([(record, link) for record, link in plan.detach], [(department, 'site')])
+        softdelete.execute(plan, self.user)
+        department.refresh_from_db()
+        self.assertIsNone(department.site)

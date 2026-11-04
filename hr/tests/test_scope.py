@@ -140,7 +140,9 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
         names = sorted(name for name in get_resolver().namespace_dict['hr'][1].reverse_dict if isinstance(name, str))
         known = {'employee_list', 'employee_create', 'employee_edit', 'employee_detail',
                  'officedepartment_list', 'officedepartment_create', 'officedepartment_edit',
-                 'officedepartment_delete'}
+                 'officedepartment_delete', 'shift_list', 'shift_create', 'shift_edit', 'shift_delete', 'holiday_list',
+                 'holiday_create', 'holiday_edit', 'holiday_delete', 'schedulingsettings_list',
+                 'schedulingsettings_edit'}
         self.assertEqual(set(names) - known, set(), 'give every new HR route a row in the URL matrix')
 
 

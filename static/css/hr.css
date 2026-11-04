@@ -1,2 +1,14 @@
 /* The HR area (templates/hr/): it uses the table, toolbar and badge patterns of components.css; this adds what only
    HR shows. Design polish is a later pass. */
+/* A shift's chip: its tone is one of eight classes, never a colour value from the data. */
+.shift-chip { display: inline-block; min-width: 2.5rem; padding: .125rem .5rem; margin-right: .5rem; border-radius: .375rem;
+  font-size: .8125rem; font-weight: 600; text-align: center; background: #ECECEA; color: var(--speck); }
+.tone-1 { background: #E3EFE3; color: #25502B; }
+.tone-2 { background: #E1EBF5; color: #1E4A73; }
+.tone-3 { background: #F6EBD3; color: #6B4A0E; }
+.tone-4 { background: #EFE0F0; color: #5E2A63; }
+.tone-5 { background: #F7E0DC; color: #7A2A1F; }
+.tone-6 { background: #DDEEEE; color: #1F5A5A; }
+.tone-7 { background: #EFEBD0; color: #5A5313; }
+.tone-8 { background: #E4E4EE; color: #34346B; }
+.plain-list { margin: 0; padding: 0; list-style: none; display: grid; gap: .375rem; }

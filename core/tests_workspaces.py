@@ -54,7 +54,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Activity log', 'Roles', 'Users', 'Database', 'Team list', 'Departments'])
+                                                 'Activity log', 'Roles', 'Users', 'Database', 'Team list', 'Departments',
+                                                 'Scheduling settings'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
@@ -168,7 +169,7 @@ class MainHeadingTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         response = self.page(reverse('home'))
         self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration']),
-                                                    ('HR', ['HR dashboard'])])
+                                                    ('HR', ['HR dashboard', 'Time & shifts'])])
         self.assertContains(response, '<p class="rail-section">HR</p>', html=True, count=1)
         self.assertContains(response, 'rail-section', count=1)
 
@@ -227,6 +228,9 @@ class MenuPlacementTests(TestCase):
             'knowledge.KnowledgeEntry': 'Company · Knowledge',
             'hr.Employee': 'Company · HR · HR dashboard',
             'hr.OfficeDepartment': 'Company · HR · HR dashboard',
+            'hr.Shift': 'Company · HR · Time & shifts',
+            'hr.Holiday': 'Company · HR · Time & shifts',
+            'hr.SchedulingSettings': 'Company · HR · Time & shifts',
             'core.AuditLog': 'Company · Administration',
         })
 

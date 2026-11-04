@@ -1501,6 +1501,19 @@ msgstr "Yalnız deniz biti ilacı: etken maddesi, Mattilsynet’in haftalık bit
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "Çıkış payı, 0 ile 100 % arasında, yalnızca bir çıkış için belirtilebilir."
 
+msgid "A shift cannot start and end at the same time."
+msgstr "Bir vardiya aynı anda başlayıp bitemez."
+
+msgid ""
+"A shift is a start and an end on the wall clock of the site, with a break. Add the shifts the "
+"roster uses."
+msgstr ""
+"Vardiya, sahanın duvar saatine göre bir başlangıç ve bitiştir; bir mola içerir. Çizelgenin "
+"kullandığı vardiyaları ekleyin."
+
+msgid "A short rest, a long week or too many days in a row"
+msgstr "Kısa dinlenme, uzun hafta ya da çok fazla art arda gün"
+
 msgid "A silo only: the feeder it fills, on the same site."
 msgstr "Yalnızca silo: beslediği yemleme makinesi, aynı sahada."
 
@@ -1645,6 +1658,9 @@ msgstr "Azami yoğunluğun üstü, kabul edildi"
 msgid "Above the usual feed rate, accepted"
 msgstr "Olağan yemleme oranının üzerinde, onaylandı"
 
+msgid "Absent after (minutes)"
+msgstr "Devamsız sayılma (dakika)"
+
 msgid "Abstract"
 msgstr "Özet"
 
@@ -1769,6 +1785,11 @@ msgstr "İlk sahayı ekleyin; üretim departmanları, sistemler ve tanklar bir s
 
 msgid "Add the first user; they get an email to set their password."
 msgstr "İlk kullanıcıyı ekleyin; parolasını belirlemesi için e-posta alır."
+
+msgid ""
+"Add the public holidays and other days off of the company; a leave request is not charged for "
+"them."
+msgstr "Şirketin resmî tatillerini ve diğer tatil günlerini ekleyin; izin talebi bunlar için sayılmaz."
 
 msgid "Add them in Setup › Tanks, ponds & cages."
 msgstr "Kurulum › Tanklar, havuzlar ve kafesler bölümünde ekleyin."
@@ -2165,6 +2186,9 @@ msgstr "Yayımlanmış başka bir kaynak"
 
 msgid "Another role already uses this name."
 msgstr "Bu adı başka bir rol zaten kullanıyor."
+
+msgid "Another shift already uses this code."
+msgstr "Başka bir vardiya bu kodu zaten kullanıyor."
 
 msgid "Another site already uses this code."
 msgstr "Bu kodu başka bir saha zaten kullanıyor."
@@ -2575,6 +2599,9 @@ msgstr "Biyolojik filtre"
 msgid "Biomass"
 msgstr "Biyokütle"
 
+msgid "Block"
+msgstr "Engelle"
+
 msgid "Blocked"
 msgstr "Engellendi"
 
@@ -2607,6 +2634,9 @@ msgstr "Acı su"
 
 msgid "Brackish water"
 msgstr "Acı su"
+
+msgid "Break (minutes)"
+msgstr "Mola (dakika)"
 
 msgid "Brief description of the site"
 msgstr "Sahanın kısa açıklaması"
@@ -3372,6 +3402,9 @@ msgstr "Ayın günü"
 msgid "Days"
 msgstr "Günler"
 
+msgid "Days and punches"
+msgstr "Günler ve giriş-çıkışlar"
+
 msgid "Days of cover"
 msgstr "Yeterlilik (gün)"
 
@@ -3379,6 +3412,9 @@ msgid ""
 "Days of cover: what is on hand at the site divided by the kilos fed a day there over the last 7 "
 "days."
 msgstr "Yeterlilik: sahadaki eldeki stok, son 7 günde orada günde verilen kiloya bölünür."
+
+msgid "Days that are not working days, for every site or for one."
+msgstr "Çalışma günü olmayan günler, tüm sahalar ya da bir saha için."
 
 msgid "Dead fish"
 msgstr "Ölü balık"
@@ -3778,6 +3814,9 @@ msgstr "Düzenle veya iptal et"
 msgid "Edit the entry"
 msgstr "Kaydı düzenle"
 
+msgid "Edit the limits"
+msgstr "Sınırları düzenle"
+
 msgid "Edit the report"
 msgstr "Raporu düzenle"
 
@@ -3838,6 +3877,9 @@ msgstr "Bitişi bilinmiyor"
 
 msgid "Ended"
 msgstr "Sona erdi"
+
+msgid "Ends at"
+msgstr "Bitiş"
 
 msgid "Energy"
 msgstr "Enerji"
@@ -3946,6 +3988,9 @@ msgid "Every permission that exists: view, add, change and delete of each model,
 msgstr ""
 "Var olan tüm izinler: her modelin görüntüleme, ekleme, değiştirme ve silme izinleri ile özel "
 "olanlar."
+
+msgid "Every site"
+msgstr "Tüm sahalar"
 
 msgid "Every species"
 msgstr "Her balık türü"
@@ -4733,6 +4778,9 @@ msgstr "Bu uyarılara rağmen devam et"
 msgid "Going on is stored with what is shown here and logged as critical."
 msgstr "Devam etmek, burada gösterilenle birlikte saklanır ve kritik olarak günlüğe yazılır."
 
+msgid "Grace (minutes)"
+msgstr "Tolerans (dakika)"
+
 msgid "Grading"
 msgstr "Boylama"
 
@@ -4913,6 +4961,15 @@ msgstr "%(owner)s geçmişi"
 msgid "History of %(point)s"
 msgstr "%(point)s geçmişi"
 
+msgid "Holiday"
+msgstr "Tatil"
+
+msgid "Holidays"
+msgstr "Tatiller"
+
+msgid "Hours"
+msgstr "Saatler"
+
 msgid "Hours fasted"
 msgstr "Aç kalınan saat"
 
@@ -4924,6 +4981,9 @@ msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
+
+msgid "How long before a shift starts a clock-in counts for it. Default 2 hours."
+msgstr "Bir giriş kaydının vardiya başlamadan ne kadar önce o vardiyaya sayıldığı. Varsayılan 2 saat."
 
 msgid ""
 "How long fish must have been without feed before they are harvested, transported, graded or "
@@ -5030,6 +5090,9 @@ msgstr "Pasif"
 
 msgid "Inactive people cannot sign in."
 msgstr "Pasif kişiler giriş yapamaz."
+
+msgid "Inactive: kept on the old plans, not offered for new ones."
+msgstr "Pasif: eski planlarda kalır, yenilerine önerilmez."
 
 msgid "Inactive: kept, shown as such, not offered for new placements."
 msgstr "Pasif: saklanır, pasif olarak gösterilir, yeni yerleştirmeler için önerilmez."
@@ -5360,6 +5423,9 @@ msgstr "Tüm sahayı ilgilendiriyorsa hiçbirini işaretlemeyin."
 msgid "Leave channel"
 msgstr "Kanaldan ayrıl"
 
+msgid "Leave it empty for a day that is a holiday on every site."
+msgstr "Her sahada tatil olan bir gün için boş bırakın."
+
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
 
@@ -5507,6 +5573,12 @@ msgstr "Üye yap"
 
 msgid "Make owner"
 msgstr "Sahip yap"
+
+msgid "Manage holidays"
+msgstr "Tatilleri yönet"
+
+msgid "Manage shifts"
+msgstr "Vardiyaları yönet"
 
 msgid "Manager"
 msgstr "Yönetici"
@@ -5691,8 +5763,19 @@ msgstr "Yöntem"
 msgid "Middle"
 msgstr "Orta"
 
+msgid "Minimum rest between shifts (minutes)"
+msgstr "Vardiyalar arası en az dinlenme (dakika)"
+
 msgid "Minimum transmittance"
 msgstr "Asgari geçirgenlik"
+
+msgid "Minutes after the start before an arrival counts as late (at most 120)."
+msgstr "Bir gelişin geç sayılmasından önce başlangıçtan sonraki dakikalar (en çok 120)."
+
+msgid "Minutes after the start with no clock-in before a person is shown as absent. Default 30."
+msgstr ""
+"Girişsiz geçen, kişinin devamsız gösterilmesinden önceki başlangıç sonrası dakikalar. Varsayılan "
+"30."
 
 msgid "Missing"
 msgstr "Eksik"
@@ -5746,6 +5829,9 @@ msgstr "Bu pH'de en fazla TAN"
 
 msgid "Most total sulfide at this pH (as S)"
 msgstr "Bu pH'de en fazla toplam sülfür (S olarak)"
+
+msgid "Most working days in a row"
+msgstr "Art arda en çok çalışma günü"
 
 msgid "Moved in"
 msgstr "Taşındı (giriş)"
@@ -6054,6 +6140,9 @@ msgstr "Henüz hasat kaydedilmedi"
 msgid "No harvest to this facility is planned in the week."
 msgstr "Bu hafta bu kesimhaneye planlanmış hasat yok."
 
+msgid "No holidays yet."
+msgstr "Henüz tatil yok."
+
 msgid ""
 "No in-feed treatment covers this day: record it under Health › Treatments, or the fish’s "
 "withdrawal stays unknown."
@@ -6139,6 +6228,9 @@ msgstr "Burada numune noktası yok."
 
 msgid "No sea-lice count recorded yet"
 msgstr "Henüz deniz biti sayımı kaydedilmedi"
+
+msgid "No shifts yet."
+msgstr "Henüz vardiya yok."
 
 msgid "No site"
 msgstr "Saha yok"
@@ -7251,6 +7343,9 @@ msgstr ""
 "Bir üretim departmanının pompaları, filtreleri, yemleme makineleri, sensörleri ve jeneratörleri; "
 "hizmet ettikleri sistemlere bağlı."
 
+msgid "Punch window (minutes)"
+msgstr "Giriş-çıkış penceresi (dakika)"
+
 msgid "Purchase date"
 msgstr "Satın alma tarihi"
 
@@ -7853,6 +7948,9 @@ msgstr "Başka bir nedense nedenini yazın, yalnızca o zaman."
 msgid "Scale loss"
 msgstr "Pul kaybı"
 
+msgid "Scheduling settings"
+msgstr "Planlama ayarları"
+
 msgid "Scientific name"
 msgstr "Bilimsel ad"
 
@@ -8144,6 +8242,12 @@ msgstr "Çıkış payı (%)"
 msgid "Shares of the total sulfide; give the total sulfide for the H₂S and its border."
 msgstr "Toplam sülfürün payları; H₂S ve sınırı için toplam sülfürü girin."
 
+msgid "Shift"
+msgstr "Vardiya"
+
+msgid "Shifts"
+msgstr "Vardiyalar"
+
 msgid "Short axis (m)"
 msgstr "Kısa eksen (m)"
 
@@ -8404,6 +8508,9 @@ msgstr "Paslanmaz çelik"
 msgid "Stale"
 msgstr "Eski"
 
+msgid "Standard week (minutes)"
+msgstr "Standart hafta (dakika)"
+
 msgid "Standby"
 msgstr "Yedekte"
 
@@ -8427,6 +8534,9 @@ msgstr "Başlangıç yemi"
 
 msgid "Starting later"
 msgstr "Daha sonra başlayacak"
+
+msgid "Starts at"
+msgstr "Başlangıç"
 
 msgid "Starvation"
 msgstr "Açlık"
@@ -8864,6 +8974,12 @@ msgstr ""
 msgid "The bounds go up: critical below ≤ warning below ≤ warning above ≤ critical above."
 msgstr "Sınırlar artarak gider: kritik alt ≤ uyarı alt ≤ uyarı üst ≤ kritik üst."
 
+msgid "The break is between 0 and 240 minutes."
+msgstr "Mola 0 ile 240 dakika arasındadır."
+
+msgid "The break must be shorter than the shift."
+msgstr "Mola vardiyadan kısa olmalıdır."
+
 msgid ""
 "The calculated ration of a day counts each recorded meal at the ration it had when it was given "
 "(the estimated weight then), and the meals still to come at the estimate now; a record that does "
@@ -8924,6 +9040,9 @@ msgid ""
 "The day the new placement starts; the old one ends the day before. For a new person: their first "
 "day."
 msgstr "Yeni yerleştirmenin başladığı gün; eskisi bir gün önce biter. Yeni kişi için: ilk günü."
+
+msgid "The days a leave request is charged for (public holidays are taken out). Default Monday to Friday."
+msgstr "Bir izin talebinin sayıldığı günler (resmî tatiller çıkarılır). Varsayılan Pazartesi–Cuma."
 
 msgid "The days are the days the fish leave their units: check they are the slaughter days."
 msgstr "Günler, balıkların birimlerinden ayrıldığı günlerdir: kesim günleri olduklarını kontrol edin."
@@ -9064,6 +9183,9 @@ msgstr ""
 "kalmış olmalıdır: saat veya gün (5 gün, 120 saat olarak saklanır). 0 ile 720 saat (30 gün). "
 "Hasatta, arındırma gün-derece olarak verilmişse boş bırakılabilir."
 
+msgid "The grace is between 0 and 120 minutes."
+msgstr "Tolerans 0 ile 120 dakika arasındadır."
+
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Yarım göz: bir düğümden ötekine; gerilmiş tam göz bunun iki katıdır."
 
@@ -9186,6 +9308,9 @@ msgstr ""
 "Bu sıcaklık ve tuzlulukta mg/L ile % arasında %10'dan fazla fark var: ölçerin ayarlarını kontrol "
 "edin."
 
+msgid "The most days in a row one person is planned. Default 6."
+msgstr "Bir kişinin art arda planlanabileceği en çok gün. Varsayılan 6."
+
 msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
 "licence’s."
@@ -9214,6 +9339,13 @@ msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
 #, python-format
 msgid "The official code of %(name)s is %(code)s."
 msgstr "%(name)s için resmî kod %(code)s."
+
+msgid ""
+"The one row of scheduling limits and defaults (rest, weekly hours, days in a row, working "
+"weekdays, punch window)."
+msgstr ""
+"Planlama sınırları ve varsayılanlarının tek satırı (dinlenme, haftalık saat, art arda gün, "
+"çalışma günleri, giriş-çıkış penceresi)."
 
 #, python-format
 msgid "The outlets of %(owner)s take %(total)s %% of its outflow, not 100 %%."
@@ -9397,8 +9529,22 @@ msgstr "Güvenli bölge bu aralıktadır."
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımının balığı kalmaz: önce onu iptal edin."
 
+msgid ""
+"The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a"
+" grace."
+msgstr ""
+"Çizelgenin vardiya kalıpları: sahanın duvar saatine göre bir başlangıç ve bitiş, bir mola ve bir "
+"tolerans."
+
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Uzun eksene dik en kısa çap."
+
+msgid ""
+"The shortest rest between two shifts of one person. Default 11 hours; a default, not the law: set"
+" it only stricter than the statute."
+msgstr ""
+"Bir kişinin iki vardiyası arasındaki en kısa dinlenme. Varsayılan 11 saat; bir varsayılandır, "
+"yasa değil: yalnızca yasadan daha sıkı ayarlayın."
 
 msgid "The silo is filled automatically."
 msgstr "Silo otomatik olarak doldurulur."
@@ -9571,6 +9717,9 @@ msgstr "Metin okunamadı: %(reason)s"
 msgid "The time cannot be in the future."
 msgstr "Zaman gelecekte olamaz."
 
+msgid "The tone is between 1 and 8."
+msgstr "Ton 1 ile 8 arasındadır."
+
 #, python-format
 msgid "The treatment of %(date)s has no amount used (Operations › Health): the report asks for it."
 msgstr "%(date)s tarihli tedavide kullanılan miktar yok (Operasyonlar › Sağlık): rapor bunu ister."
@@ -9676,6 +9825,13 @@ msgstr "Havuz doluyken su yüzeyi."
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
 
+msgid ""
+"The week the Team overview compares planned hours with. Default 40 hours; a default, not the law:"
+" confirm it with the company’s agreements."
+msgstr ""
+"Ekip özetinin planlanan saatleri karşılaştırdığı hafta. Varsayılan 40 saat; bir varsayılandır, "
+"yasa değil: şirketin sözleşmeleriyle doğrulayın."
+
 #, python-format
 msgid "The weighing of %(date)s in %(unit)s would find no fish of %(batch)s. Void that weighing first."
 msgstr "%(unit)s içindeki %(date)s tarihli tartım %(batch)s balığı bulamazdı. Önce o tartımı iptal edin."
@@ -9753,6 +9909,13 @@ msgstr "Bu elleçleme ve tür için zaten bir kural var."
 msgid "Thermal delousing"
 msgstr "Termal bitten arındırma"
 
+msgid ""
+"These are defaults the company can change, not the law: confirm them with your agreements. A "
+"limit may only be set stricter than the statute."
+msgstr ""
+"Bunlar şirketin değiştirebileceği varsayılanlardır, yasa değil: sözleşmelerinizle doğrulayın. Bir"
+" sınır yalnızca yasadan daha sıkı ayarlanabilir."
+
 #, python-format
 msgid ""
 "These fish of %(batch)s weigh as much as the book holds for %(unit)s on %(date)s, or more: weigh "
@@ -9788,6 +9951,9 @@ msgstr "Bu partinin zaten bir üretim planı var."
 
 msgid "This batch has been voided."
 msgstr "Bu parti iptal edildi."
+
+msgid "This day is already a holiday for this site."
+msgstr "Bu gün bu saha için zaten tatil."
 
 msgid "This department already has a department with this name."
 msgstr "Bu departmanın altında aynı adlı bir departman zaten var."
@@ -9939,6 +10105,9 @@ msgstr "Bu uyarılara rağmen devam etmek için kutuyu işaretleyin."
 msgid "Time"
 msgstr "Saat"
 
+msgid "Time & shifts"
+msgstr "Zaman ve vardiyalar"
+
 msgid "Time found"
 msgstr "Bulunma saati"
 
@@ -9979,6 +10148,9 @@ msgstr "Bugün; gecikmiş görevleri, bugün süresi dolanları ve bugün tamaml
 
 msgid "Today’s ration"
 msgstr "Bugünkü rasyon"
+
+msgid "Tone"
+msgstr "Ton"
 
 msgid "Topic"
 msgstr "Konu"
@@ -10172,6 +10344,9 @@ msgstr "Kritik su değeri olan birimler"
 msgid "Unknown"
 msgstr "Bilinmiyor"
 
+msgid "Unpaid: it is taken off the planned hours. At most 240, shorter than the shift."
+msgstr "Ücretsiz: planlanan saatlerden düşülür. En çok 240, vardiyadan kısa."
+
 msgid ""
 "Untick to pause it: its tasks from today on that nobody has started are removed, and none are "
 "made until it is ticked again."
@@ -10321,8 +10496,17 @@ msgstr "Hacim (m³)"
 msgid "Volunteer"
 msgstr "Gönüllü"
 
+msgid "Wall-clock time on the site. A shift that ends at or before its start ends the next day."
+msgstr "Sahadaki duvar saati. Başlangıcında ya da öncesinde biten bir vardiya ertesi gün biter."
+
 msgid "Warehouse"
 msgstr "Depo binası"
+
+msgid "Warn"
+msgstr "Uyar"
+
+msgid "Warn: the plan is saved with a notice. Block: the plan is refused."
+msgstr "Uyar: plan bir uyarıyla kaydedilir. Engelle: plan reddedilir."
 
 msgid "Warning"
 msgstr "Uyarı"
@@ -10622,6 +10806,9 @@ msgstr "“%(query)s” metnin neresinde geçiyor"
 msgid "Which feeding protocol feeds which fish, from which day."
 msgstr "Hangi yemleme protokolünün hangi balıkları hangi günden itibaren yemlediği."
 
+msgid "Which of the eight colours of the schedule the shift is shown in, 1 to 8."
+msgstr "Vardiyanın çizelgede gösterildiği sekiz renkten hangisi, 1 ile 8 arası."
+
 msgid "Which permissions each role allows."
 msgstr "Her rolün hangi izinlere izin verdiği."
 
@@ -10747,6 +10934,9 @@ msgstr "Değerlerden hesaplanan"
 
 msgid "Working here"
 msgstr "Burada çalışıyor"
+
+msgid "Working weekdays"
+msgstr "Çalışma günleri"
 
 msgid "Worth checking:"
 msgstr "Kontrol etmeye değer:"
@@ -11077,6 +11267,9 @@ msgstr "örn. Karbondioksit ve Atlantik somonunun büyümesi"
 msgid "e.g. Check the oxygen in every tank"
 msgstr "örn. Her tanktaki oksijeni kontrol et"
 
+msgid "e.g. Christmas Day"
+msgstr "ör. Yılbaşı"
+
 msgid "e.g. Clean the drum filter"
 msgstr "örn. Tambur filtreyi temizle"
 
@@ -11122,6 +11315,9 @@ msgstr "örn. Büyük, > 250 g"
 msgid "e.g. M123"
 msgstr "örn. M123"
 
+msgid "e.g. MORN"
+msgstr "ör. SABAH"
+
 msgid "e.g. MPS-001"
 msgstr "örn. MPS-001"
 
@@ -11133,6 +11329,9 @@ msgstr "örn. Ana Üretim Sahası"
 
 msgid "e.g. Main circulation pump"
 msgstr "örn. Ana sirkülasyon pompası"
+
+msgid "e.g. Morning"
+msgstr "ör. Sabah"
 
 msgid "e.g. Morning oxygen round"
 msgstr "örn. Sabah oksijen turu"
@@ -11352,6 +11551,12 @@ msgstr "sağlık olayı"
 msgid "health events"
 msgstr "sağlık olayları"
 
+msgid "holiday"
+msgstr "tatil"
+
+msgid "holidays"
+msgstr "tatiller"
+
 msgid "hours"
 msgstr "saat"
 
@@ -11465,6 +11670,9 @@ msgstr "mg/mL"
 
 msgid "n.d."
 msgstr "t.y."
+
+msgid "next day"
+msgstr "ertesi gün"
 
 #, python-format
 msgid "next meal %(meal)s"
@@ -11655,6 +11863,9 @@ msgstr "numune noktası"
 msgid "sampling points"
 msgstr "numune noktaları"
 
+msgid "scheduling settings"
+msgstr "planlama ayarları"
+
 msgid "sea-lice count"
 msgstr "deniz biti sayımı"
 
@@ -11666,6 +11877,12 @@ msgstr "duyarlılık testi"
 
 msgid "sensitivity tests"
 msgstr "duyarlılık testleri"
+
+msgid "shift"
+msgstr "vardiya"
+
+msgid "shifts"
+msgstr "vardiyalar"
 
 #, python-format
 msgid "since %(date)s"

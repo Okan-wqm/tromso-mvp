@@ -6,14 +6,17 @@ from datetime import timedelta
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from core import audit
 from core.models import AuditLog
 from farm.models.site import zone_of
+from farm.stock.dates import site_today
 
-from . import clock, read, rules, scope, units
-from .models import Employee, Holiday, Posting, SchedulingSettings, ShiftAssignment
+from . import clock, leave, read, rules, scope, units
+from .models import Employee, Holiday, LeaveRequest, Posting, SchedulingSettings, ShiftAssignment
+from .models.leave import LeaveStatus
 
 POSTING_FIELDS = ['production_department', 'office_department', 'title', 'valid_from', 'valid_until']
 
@@ -120,6 +123,17 @@ def align_placements(user, employee):
                 posting.valid_until = employee.left_on
                 _save(user, posting)
                 _log_change(user, posting, before)
+        for plan in ShiftAssignment.objects.filter(employee=employee, day__gt=employee.left_on):
+            plan.soft_delete(user)
+            audit.record(user, AuditLog.Action.DELETE, plan, entity_type=audit.entity_type_of(ShiftAssignment))
+        for pending in LeaveRequest.objects.filter(employee=employee, status=LeaveStatus.PENDING,
+                                                   first_day__gt=employee.left_on):
+            before = _leave_values(pending)
+            pending.status = LeaveStatus.CANCELLED
+            pending.updated_by, pending.version = user, pending.version + 1
+            pending.save()
+            audit.record_update(user, pending, before, _leave_values(pending),
+                                entity_type=audit.entity_type_of(LeaveRequest))
 
 
 # ---- the roster -------------------------------------------------------------------------------------------------
@@ -128,8 +142,7 @@ MARGIN = 15               # days either side of a change read for the rest acros
 
 def holiday_days(first, last, site):
     """The days between `first` and `last` that are holidays for `site` (None: only those of every site)."""
-    scope_of_site = Q(site__isnull=True) if site is None else Q(site__isnull=True) | Q(site=site)
-    return set(Holiday.objects.filter(scope_of_site, day__range=(first, last)).values_list('day', flat=True))
+    return leave.holidays_for(first, last, site)
 
 
 
@@ -155,8 +168,9 @@ def evaluate(employee, changes):
             start, end = clock.span(day, shift, zone)
             planned.append(rules.Planned(day, start, end, clock.net_minutes(start, end, shift.break_minutes)))
     holidays = holiday_days(first, last, site)
+    away = leave.approved_days([employee.pk], first, last).get(employee.pk, set())
     weeks = {rules.monday(day) for day in changes}
-    return rules.findings(planned, set(), holidays, settings, weeks)
+    return rules.findings(planned, away, holidays, settings, weeks)
 
 
 def _cell_permission(existing, shift):
@@ -228,3 +242,79 @@ def _write_cell(user, employee, day, shift, row, warning_codes):
 def _warnings_entry(codes):
     """The warnings a plan was saved with, by their sentences (msgids, shown translated)."""
     return {'Warnings': [audit.message(rules.TEXT[code]) for code in sorted(codes)]} if codes else {}
+
+
+# ---- leave --------------------------------------------------------------------------------------------------------
+LEAVE_FIELDS = ['status', 'decision_note', 'decided_by']
+PRIVATE_LEAVE = ['decision_note']
+
+
+def _leave_values(request):
+    with audit.source_language():
+        return audit.snapshot(request, LEAVE_FIELDS, private=PRIVATE_LEAVE)
+
+
+def _own(user, leave_request):
+    return leave_request.employee.user_id is not None and leave_request.employee.user_id == user.pk
+
+
+def can_decide(user, leave_request):
+    """Whether `user` may approve or reject the request: Edit on Leave requests, the person in their team, and not their own
+    request (one rule; a database trigger holds the last part whatever writes). One approval step."""
+    return (leave_request.status == LeaveStatus.PENDING and user.has_perm('hr.change_leaverequest')
+            and not _own(user, leave_request) and scope.can_reach(user, leave_request.employee))
+
+
+def can_cancel(user, leave_request, today=None, listed=False):
+    """Whether `user` may cancel the request: the person, or a decider; a pending request any time, an approved one only
+    while its first day has not started on the site's clock. `listed`: the request came from the viewer's own team already
+    (a list), so the team is not asked again."""
+    if leave_request.status == LeaveStatus.APPROVED:
+        today = today or site_today(read.site_on(leave_request.employee, leave_request.first_day))
+        if leave_request.first_day <= today:
+            return False
+    elif leave_request.status != LeaveStatus.PENDING:
+        return False
+    if _own(user, leave_request):
+        return True
+    if not user.has_perm('hr.change_leaverequest'):
+        return False
+    return listed or scope.can_reach(user, leave_request.employee)
+
+
+def _lock(leave_request):
+    return LeaveRequest.objects.select_for_update(of=('self',)).select_related('employee__user', 'leave_type').get(
+        pk=leave_request.pk)
+
+
+def decide_leave(user, leave_request, approve, note=''):
+    """Approves or rejects a pending request, with the decider and the time. Refused (nothing changes, nothing is logged)
+    for someone who may not decide it, for the person's own request, and for one that is no longer pending."""
+    with transaction.atomic():
+        current = _lock(leave_request)
+        if not can_decide(user, current):
+            raise PermissionDenied
+        before = _leave_values(current)
+        current.status = LeaveStatus.APPROVED if approve else LeaveStatus.REJECTED
+        current.decided_by, current.decided_at = user, timezone.now()
+        current.decision_note = note.strip()
+        current.updated_by, current.version = user, current.version + 1
+        current.save()
+        audit.record_update(user, current, before, _leave_values(current),
+                            entity_type=audit.entity_type_of(LeaveRequest))
+        return current
+
+
+def cancel_leave(user, leave_request):
+    """Cancels a request (the person's, or a decider's): the days are free again for another request."""
+    with transaction.atomic():
+        current = _lock(leave_request)
+        if not can_cancel(user, current):
+            raise PermissionDenied
+        before = _leave_values(current)
+        current.status = LeaveStatus.CANCELLED
+        current.updated_by, current.version = user, current.version + 1
+        current.save()
+        audit.record_update(user, current, before, _leave_values(current),
+                            entity_type=audit.entity_type_of(LeaveRequest))
+        return current

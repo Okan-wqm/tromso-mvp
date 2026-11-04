@@ -9,9 +9,10 @@ Differences from the source platform (docs/aquaculture-platform-bugs.md, "Human 
   head counts and the department of a past day.
 """
 from .employee import Employee, EmploymentType
+from .leave import LeaveRequest, LeaveType
 from .office_department import OfficeDepartment
 from .posting import Posting
 from .roster import ShiftAssignment
 from .scheduling import Holiday, SchedulingSettings, Shift
 
-__all__ = ['Employee', 'EmploymentType', 'Holiday', 'OfficeDepartment', 'Posting', 'SchedulingSettings', 'Shift', 'ShiftAssignment']
+__all__ = ['Employee', 'EmploymentType', 'Holiday', 'LeaveRequest', 'LeaveType', 'OfficeDepartment', 'Posting', 'SchedulingSettings', 'Shift', 'ShiftAssignment']

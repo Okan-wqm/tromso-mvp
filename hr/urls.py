@@ -11,4 +11,7 @@ app_name = 'hr'
 urlpatterns = [route for tab in Resource.registry if tab.model._meta.app_label == app_name for route in tab.urls()]
 urlpatterns += [
     path('hr/schedule/plan/', views.plan, name='roster_plan'),
+    path('hr/leave/<uuid:pk>/approve/', views.approve, name='leaverequest_approve'),
+    path('hr/leave/<uuid:pk>/reject/', views.reject, name='leaverequest_reject'),
+    path('hr/leave/<uuid:pk>/cancel/', views.cancel, name='leaverequest_cancel'),
 ]

@@ -1,5 +1,6 @@
 """What the HR pages show, read from the records on the viewer's behalf. Nothing here is stored: a department's
 head count, who is present, on leave or late are worked out when a page is read (docs: Human resources)."""
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
@@ -12,7 +13,7 @@ from farm.models import ProductionDepartment
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
-from . import clock, rules, scope, units
+from . import clock, leave, rules, scope, units
 from .models import Employee, Holiday, OfficeDepartment, Posting, SchedulingSettings, ShiftAssignment
 
 PRODUCTION, OFFICE = 'production', 'office'
@@ -104,6 +105,25 @@ def site_on(employee, day):
     return site_of_posting(posting) if posting is not None else None
 
 
+def sites_of(pairs):
+    """{(employee id, day): the site of the department they are placed in that day, or None}, for several pairs in one
+    query."""
+    pairs = list(pairs)
+    if not pairs:
+        return {}
+    placed = defaultdict(list)
+    low, high = min(day for _id, day in pairs), max(day for _id, day in pairs)
+    for posting in Posting.objects.filter(scope.overlapping(low, high), employee__in={pk for pk, _day in pairs}
+                                          ).select_related('production_department__site', 'office_department__site'):
+        placed[posting.employee_id].append(posting)
+    found = {}
+    for pk, day in pairs:
+        covering = next((p for p in placed[pk] if p.valid_from <= day and (p.valid_until is None or p.valid_until >= day)),
+                        None)
+        found[(pk, day)] = site_of_posting(covering) if covering is not None else None
+    return found
+
+
 @dataclass
 class Cell:
     """One person on one day of the week. `visible` is false on the days the viewer does not reach the person on (a
@@ -112,6 +132,7 @@ class Cell:
     visible: bool = True
     assignment: object = None
     holiday: object = None
+    on_leave: bool = False
     findings: list = field(default_factory=list)
 
     @property
@@ -201,6 +222,7 @@ def week(user, week_start, department=None, page=1, per_page=50, query=''):
             'production_department__site', 'office_department__site').order_by('valid_from'):
         postings.setdefault(posting.employee_id, []).append(posting)
     holidays = list(Holiday.objects.filter(day__range=(days[0], days[-1])))
+    on_leave = leave.approved_days(ids, window[0], window[1])
     rows = []
     for employee in employees:
         placed = postings.get(employee.pk, [])
@@ -215,12 +237,13 @@ def week(user, week_start, department=None, page=1, per_page=50, query=''):
                 first, last = clock.span(day, assignment.shift, zone)
                 planned.append(rules.Planned(day, first, last, clock.net_minutes(first, last,
                                                                                 assignment.shift.break_minutes)))
-        found = rules.findings(planned, set(), set(holiday_of), settings, [start])
+        away = on_leave.get(employee.pk, set())
+        found = rules.findings(planned, away, set(holiday_of), settings, [start])
         reach = visible.get(employee.pk, set()) if visible is not None else set(days)
         cells = []
         for day in days:
             cell = Cell(day, visible=day in reach, assignment=mine.get(day) if day in reach else None,
-                        holiday=holiday_of.get(day) if day in reach else None)
+                        holiday=holiday_of.get(day) if day in reach else None, on_leave=day in reach and day in away)
             cell.findings = [item for item in found if item.day == day and day in reach]
             cells.append(cell)
         total = sum(item.net_minutes for item in planned if item.day in reach and monday(item.day) == start)

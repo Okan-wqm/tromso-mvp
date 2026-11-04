@@ -74,6 +74,11 @@ AREAS = [
     # The roster: Read is the Shift schedule (the viewer's team), Create plans a day, Edit changes a plan, Delete clears a
     # cell; the rules (rest, hours, leave) run on every save.
     Area(_('Shift schedule'), 'hr.ShiftAssignment'),
+    # Leave requests: Read is the team's requests, Create files one (for oneself or a person of the team), Edit also approves,
+    # rejects and cancels (as a review is for knowledge entries), nobody deletes one: a wrong request is cancelled. Leave
+    # types are the owner's list.
+    Area(_('Leave requests'), 'hr.LeaveRequest', actions=('view', 'add', 'change')),
+    Area(_('Leave types'), 'hr.LeaveType'),
     Area(_('Holidays'), 'hr.Holiday'),
     Area(_('Scheduling settings'), 'hr.SchedulingSettings', actions=('view', 'change')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),

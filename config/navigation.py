@@ -47,10 +47,12 @@ WORKSPACES = [
             ]),
             Group(_('Time & shifts'), [
                 Entry(_('Shift schedule'), 'hr:shiftassignment_list', 'calendar', 'hr.view_shiftassignment'),
+                Entry(_('Leave requests'), 'hr:leaverequest_list', 'calendar-off', 'hr.view_leaverequest'),
                 Entry(_('Scheduling settings'), 'hr:schedulingsettings_list', 'settings', 'hr.view_schedulingsettings'),
                 # Reached from Scheduling settings: no line in the menu, still in the role matrix.
                 Entry(_('Shifts'), 'hr:shift_list', 'timer', 'hr.view_shift', hidden=True),
                 Entry(_('Holidays'), 'hr:holiday_list', 'calendar', 'hr.view_holiday', hidden=True),
+                Entry(_('Leave types'), 'hr:leavetype_list', 'calendar-off', 'hr.view_leavetype', hidden=True),
             ]),
         ]),
     ]),

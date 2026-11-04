@@ -1298,6 +1298,9 @@ msgstr "Tekrar eden bir iş: her gün, seçilen hafta günlerinde veya ayın bir
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "%(date)s tarihinden eski bir son gün değiştirilemez."
 
+msgid "A leave type is a kind of leave, such as annual or parental leave. Add the types the company uses."
+msgstr "İzin türü, yıllık ya da ebeveyn izni gibi bir izin çeşididir. Şirketin kullandığı türleri ekleyin."
+
 msgid ""
 "A listed disease is notified to Mattilsynet at once, already on suspicion (dyrehelseforskriften §"
 " 7): the event’s page offers to start the notice."
@@ -1384,6 +1387,13 @@ msgstr "Hesabı olan kişi hesabın adıyla anılır; hesabı olmayanın soyadı
 
 msgid "A person without an account needs a last name."
 msgstr "Hesabı olmayan kişinin soyadı gerekir."
+
+msgid ""
+"A person’s request to be away from a first to a last day, and how it was decided; its reason and "
+"note are masked."
+msgstr ""
+"Bir kişinin ilk günden son güne kadar yok olma talebi ve nasıl karara bağlandığı; gerekçesi ve "
+"notu gizlenir."
 
 msgid ""
 "A piece of knowledge in your own words, with its source: a document of the library, another "
@@ -2117,6 +2127,9 @@ msgstr "Aktif bir protokolün tablosu olmalı."
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "Miktar birimiyle, birim de miktarıyla girilir."
 
+msgid "An approved or rejected request has the time it was decided."
+msgstr "Onaylanan ya da reddedilen talebin karar zamanı vardır."
+
 msgid ""
 "An article, report, book or regulation the company relies on: its reference, its abstract and its"
 " PDF, whose text is searched."
@@ -2176,6 +2189,9 @@ msgstr "Bu kodu başka bir yem zaten kullanıyor."
 
 msgid "Another feeding protocol already has this name."
 msgstr "Bu ad başka bir yemleme protokolünde zaten var."
+
+msgid "Another leave type already uses this code."
+msgstr "Başka bir izin türü bu kodu zaten kullanıyor."
 
 msgid "Another medicine already has this name."
 msgstr "Bu ad başka bir ilaçta zaten var."
@@ -2300,6 +2316,16 @@ msgstr "Onay numarası"
 #, python-format
 msgid "Approval number %(number)s"
 msgstr "Onay numarası %(number)s"
+
+msgid "Approve"
+msgstr "Onayla"
+
+msgid "Approved"
+msgstr "Onaylanan"
+
+msgctxt "leave status"
+msgid "Approved"
+msgstr "Onaylandı"
 
 msgid "Aquaponics"
 msgstr "Akuaponik"
@@ -2769,10 +2795,17 @@ msgstr "İptal"
 msgid "Cancel task"
 msgstr "Görevi iptal et"
 
+msgid "Cancel the request"
+msgstr "Talebi iptal et"
+
 #, python-format
 msgid "Cancel “%(task)s”?"
 msgstr "“%(task)s” iptal edilsin mi?"
 
+msgid "Cancelled"
+msgstr "İptal edildi"
+
+msgctxt "leave status"
 msgid "Cancelled"
 msgstr "İptal edildi"
 
@@ -2860,6 +2893,9 @@ msgstr "%(name)s kanalı oluşturuldu."
 
 msgid "Channel name"
 msgstr "Kanal adı"
+
+msgid "Charged"
+msgstr "Sayılan"
 
 msgid "Check"
 msgstr "Kontrol"
@@ -3419,6 +3455,9 @@ msgstr "Ayın günü"
 msgid "Days"
 msgstr "Günler"
 
+msgid "Days a year"
+msgstr "Yıllık gün"
+
 msgid "Days and punches"
 msgstr "Günler ve giriş-çıkışlar"
 
@@ -3441,6 +3480,15 @@ msgstr "Son tarih"
 
 msgid "Deaths"
 msgstr "Ölümler"
+
+msgid "Decided at"
+msgstr "Karar zamanı"
+
+msgid "Decided by"
+msgstr "Karar veren"
+
+msgid "Decision note"
+msgstr "Karar notu"
 
 msgid "Decommissioned"
 msgstr "Kullanımdan kaldırıldı"
@@ -4805,6 +4853,9 @@ msgstr "Boylama"
 msgid "Grading recorded: %(count)s fish of %(batch)s from %(unit)s to %(units)s."
 msgstr "Boylama kaydedildi: %(batch)s partisinden %(count)s balık %(unit)s biriminden %(units)s birimine."
 
+msgid "Granted at once"
+msgstr "Hemen verildi"
+
 msgid "Gross energy (MJ/kg)"
 msgstr "Brüt enerji (MJ/kg)"
 
@@ -5110,6 +5161,9 @@ msgstr "Pasif kişiler giriş yapamaz."
 
 msgid "Inactive: kept on the old plans, not offered for new ones."
 msgstr "Pasif: eski planlarda kalır, yenilerine önerilmez."
+
+msgid "Inactive: kept on the old requests, not offered for new ones."
+msgstr "Pasif: eski taleplerde kalır, yenilerine önerilmez."
 
 msgid "Inactive: kept, shown as such, not offered for new placements."
 msgstr "Pasif: saklanır, pasif olarak gösterilir, yeni yerleştirmeler için önerilmez."
@@ -5443,8 +5497,17 @@ msgstr "Kanaldan ayrıl"
 msgid "Leave it empty for a day that is a holiday on every site."
 msgstr "Her sahada tatil olan bir gün için boş bırakın."
 
+msgid "Leave requests"
+msgstr "İzin talepleri"
+
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
+
+msgid "Leave type"
+msgstr "İzin türü"
+
+msgid "Leave types"
+msgstr "İzin türleri"
 
 msgid "Left"
 msgstr "Ayrıldı"
@@ -5958,6 +6021,9 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Doğal gaz"
+
+msgid "Needs approval"
+msgstr "Onay gerekir"
 
 msgid "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Kalsiyum ve 5 ile 44 ‰ arasında bir tuzluluk gerekir, Mucci’nin (1983) aralığı."
@@ -6578,6 +6644,9 @@ msgstr "Gözlem tarihi"
 msgid "Off"
 msgstr "İzinli"
 
+msgid "Off: a request of this type is granted the moment it is filed, with no decider."
+msgstr "Kapalı: bu türden bir talep, karar verici olmadan, verildiği anda onaylanır."
+
 msgid "Offered"
 msgstr "Sunuluyor"
 
@@ -6674,6 +6743,9 @@ msgstr "Yem kalibrasyonu yalnızca yemleme makinelerinde olur."
 msgid "Only a filed report is corrected: change the draft itself."
 msgstr "Yalnızca sunulmuş bir rapor düzeltilir: taslağın kendisini değiştirin."
 
+msgid "Only a pending request can be changed."
+msgstr "Yalnızca bekleyen bir talep değiştirilebilir."
+
 msgid "Only a sea-lice medicine has a substance in the lice report."
 msgstr "Bit raporunda etken maddesi yalnızca deniz biti ilacının olur."
 
@@ -6730,6 +6802,9 @@ msgstr ""
 
 msgid "Only warnings and criticals"
 msgstr "Yalnızca uyarılar ve kritikler"
+
+msgid "Only you and the people who see every employee can read this."
+msgstr "Bunu yalnızca siz ve tüm çalışanları görenler okuyabilir."
 
 msgid "Open"
 msgstr "Açık"
@@ -7078,6 +7153,13 @@ msgstr "Pelet"
 
 msgid "Pellet size (mm)"
 msgstr "Pelet boyutu (mm)"
+
+msgid "Pending"
+msgstr "Bekleyen"
+
+msgctxt "leave status"
+msgid "Pending"
+msgstr "Bekliyor"
 
 msgid "People"
 msgstr "Kişiler"
@@ -7621,6 +7703,23 @@ msgstr "Yasal raporlar"
 msgid "Regulatory unit ID"
 msgstr "Resmî birim numarası"
 
+msgid "Reject"
+msgstr "Reddet"
+
+msgid "Reject the request"
+msgstr "Talebi reddet"
+
+#, python-format
+msgid "Reject the request of %(name)s, %(first)s to %(last)s?"
+msgstr "%(name)s kişisinin %(first)s – %(last)s talebi reddedilsin mi?"
+
+msgid "Rejected"
+msgstr "Reddedilen"
+
+msgctxt "leave status"
+msgid "Rejected"
+msgstr "Reddedildi"
+
 msgid "Relationships"
 msgstr "İlişkiler"
 
@@ -7681,8 +7780,14 @@ msgstr "Bu balık türünün resmî bildirimleri bu kod olmadan gönderilemez."
 msgid "Reports from"
 msgstr "Raporların başlangıcı"
 
+msgid "Request"
+msgstr "Talep"
+
 msgid "Request a new link"
 msgstr "Yeni bağlantı iste"
+
+msgid "Requests for leave of your team appear here, with who may approve them."
+msgstr "Ekibinizin izin talepleri, onaylayabilecek kişilerle birlikte burada görünür."
 
 msgid "Required for a person without an account."
 msgstr "Hesabı olmayan kişi için zorunludur."
@@ -8043,6 +8148,9 @@ msgstr "Ada veya koda göre ara"
 msgid "Search by name or number"
 msgstr "Ada ya da numaraya göre ara"
 
+msgid "Search by name or type"
+msgstr "Ada ya da türe göre ara"
+
 msgid "Search by name, approval number, place or operator"
 msgstr "Ad, onay numarası, yer veya işletmeciye göre ara"
 
@@ -8126,6 +8234,9 @@ msgstr "Etkinlik günlüğünde tümünü gör"
 
 msgid "See the day-by-day book"
 msgstr "Günlük kaydı görün"
+
+msgid "Seen by the person; it is not written to the log."
+msgstr "Kişi tarafından görülür; günlüğe yazılmaz."
 
 msgid "Sees and plans this department’s people in HR (with a role that gives the HR pages)."
 msgstr "Bu departmanın çalışanlarını İK’da görür ve planlar (İK sayfalarını veren bir rolle)."
@@ -8329,6 +8440,10 @@ msgstr "Göster"
 
 msgid "Show voided"
 msgstr "İptal edilenleri göster"
+
+#, python-format
+msgid "Showing %(limit)s of %(total)s requests."
+msgstr "%(total)s talepten %(limit)s tanesi gösteriliyor."
 
 msgid "Shrimp"
 msgstr "Karides"
@@ -9088,6 +9203,12 @@ msgstr "Yeni yerleştirmenin başladığı gün; eskisi bir gün önce biter. Ye
 msgid "The days a leave request is charged for (public holidays are taken out). Default Monday to Friday."
 msgstr "Bir izin talebinin sayıldığı günler (resmî tatiller çıkarılır). Varsayılan Pazartesi–Cuma."
 
+msgid "The days a person may take of this type in a year; empty for no limit."
+msgstr "Bir kişinin bu türden bir yılda kullanabileceği gün sayısı; sınır yoksa boş bırakın."
+
+msgid "The days a year cannot be negative."
+msgstr "Yıllık gün sayısı negatif olamaz."
+
 msgid "The days are the days the fish leave their units: check they are the slaughter days."
 msgstr "Günler, balıkların birimlerinden ayrıldığı günlerdir: kesim günleri olduklarını kontrol edin."
 
@@ -9203,6 +9324,9 @@ msgstr ""
 msgid "The file is %(size)s; the library takes PDFs of up to %(limit)s."
 msgstr "Dosya %(size)s; kütüphane en fazla %(limit)s büyüklüğünde PDF alır."
 
+msgid "The first day away."
+msgstr "Yok olunan ilk gün."
+
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Bu protokolle yemlenen ilk gün, çiftliğin saatine göre."
 
@@ -9268,6 +9392,13 @@ msgstr ""
 "Tartımlar arasında tahmini ağırlık, yemin bu değere bölümü kadar artar."
 
 msgid ""
+"The kinds of leave the company grants (annual, sick, parental), with the days a year and whether "
+"a request needs approval."
+msgstr ""
+"Şirketin tanıdığı izin türleri (yıllık, hastalık, ebeveyn), yıllık gün sayısı ve talebin onay "
+"gerektirip gerektirmediği ile."
+
+msgid ""
 "The knowledge in your own words, as one statement someone can act on, e.g. “In Atlantic salmon "
 "under 50 g, free CO₂ above 15 mg/L leads to nephrocalcinosis.” or “A feed order is at least 20 t "
 "and arrives 3 days after it is placed.”"
@@ -9280,6 +9411,9 @@ msgid ""
 "The language of the console and of the emails this person gets. Left empty, it follows their "
 "browser."
 msgstr "Konsolun ve bu kişinin aldığı e-postaların dili. Boş bırakılırsa tarayıcısının dilini izler."
+
+msgid "The last day away; the days charged are counted without weekends and holidays."
+msgstr "Yok olunan son gün; sayılan günlerden hafta sonları ve tatiller çıkarılır."
 
 #, python-format
 msgid "The last day can be planned at most %(days)d days ahead."
@@ -9570,6 +9704,15 @@ msgstr "Rapor, sunulduğundan daha yeni bir yöntemle hesaplanıyor."
 
 msgid "The report is for the week, month or year this day falls in."
 msgstr "Rapor, bu günün düştüğü hafta, ay veya yıl içindir."
+
+msgid "The request was approved."
+msgstr "Talep onaylandı."
+
+msgid "The request was cancelled."
+msgstr "Talep iptal edildi."
+
+msgid "The request was rejected."
+msgstr "Talep reddedildi."
 
 msgid "The rest since the last shift is shorter than the minimum."
 msgstr "Son vardiyadan bu yana dinlenme, en azdan daha kısa."
@@ -9981,6 +10124,9 @@ msgstr ""
 "Bunlar şirketin değiştirebileceği varsayılanlardır, yasa değil: sözleşmelerinizle doğrulayın. Bir"
 " sınır yalnızca yasadan daha sıkı ayarlanabilir."
 
+msgid "These days are all weekends or holidays: nothing would be charged."
+msgstr "Bu günlerin hepsi hafta sonu ya da tatil: hiçbir şey sayılmaz."
+
 #, python-format
 msgid ""
 "These fish of %(batch)s weigh as much as the book holds for %(unit)s on %(date)s, or more: weigh "
@@ -10035,6 +10181,10 @@ msgstr "Bu dosya bir PDF değil."
 msgid "This health event has a notice already: open it from the list."
 msgstr "Bu sağlık olayı için zaten bir bildirim var: listeden açın."
 
+#, python-format
+msgid "This is %(days)s days of %(kind)s in %(year)s and %(left)s are left."
+msgstr "%(year)s yılında %(kind)s için %(days)s gün isteniyor, geriye %(left)s gün kaldı."
+
 msgid "This item already has a lot with this number."
 msgstr "Bu kalemin bu numarada bir lotu zaten var."
 
@@ -10056,6 +10206,9 @@ msgstr "Bu sahibin bu adda bir noktası zaten var."
 
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Bu sahibin zaten aktif bir orta noktası var: suyunu o temsil eder."
+
+msgid "This person already has a leave request for some of these days."
+msgstr "Bu kişinin bu günlerin bir kısmı için zaten bir izin talebi var."
 
 msgid "This person already has a plan for this day."
 msgstr "Bu kişinin bu gün için zaten bir planı var."
@@ -11329,6 +11482,12 @@ msgstr "örn. 8"
 msgid "e.g. 923456789"
 msgstr "örn. 923456789"
 
+msgid "e.g. ANNUAL"
+msgstr "ör. YILLIK"
+
+msgid "e.g. Annual leave"
+msgstr "ör. Yıllık izin"
+
 msgid "e.g. Aquaculture"
 msgstr "örn. Aquaculture"
 
@@ -11678,6 +11837,18 @@ msgstr "bilgi kayıtları"
 
 msgid "knowledge entry"
 msgstr "bilgi kaydı"
+
+msgid "leave request"
+msgstr "izin talebi"
+
+msgid "leave requests"
+msgstr "izin talepleri"
+
+msgid "leave type"
+msgstr "izin türü"
+
+msgid "leave types"
+msgstr "izin türleri"
 
 #, python-format
 msgid "loop %(system)s, %(age)s ago"

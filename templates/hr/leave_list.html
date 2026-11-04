@@ -1,0 +1,47 @@
+{% extends "crud/list.html" %}
+{% load i18n assets %}
+{% comment %} Leave requests (hr.resources.LeaveRequestResource): the requests of the viewer's team in four tabs. `objects` are
+   rows (hr.resources.leave.shown): the request, the days it is charged, whether the viewer may read the reason, decide and
+   cancel. {% endcomment %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block above %}
+<nav class="view-tabs" aria-label="{% trans 'Status' %}">
+  {% for key, label in tabs %}<a class="view-tab{% if tab == key %} is-current{% endif %}" href="?tab={{ key }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}{% if key == "all" %} <span class="count">{{ all_count }}</span>{% else %} <span class="count">{% if key == "pending" %}{{ counts.pending }}{% elif key == "approved" %}{{ counts.approved }}{% else %}{{ counts.rejected }}{% endif %}</span>{% endif %}</a>{% endfor %}
+</nav>
+{% endblock %}
+{% block search_placeholder %}{% trans "Search by name or type" %}{% endblock %}
+{% block empty_text %}{% trans "Requests for leave of your team appear here, with who may approve them." %}{% endblock %}
+{% block items %}
+{% if total > limit %}<p class="muted">{% blocktrans trimmed %}Showing {{ limit }} of {{ total }} requests.{% endblocktrans %}</p>{% endif %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Employee" %}</th><th scope="col">{% trans "Leave type" %}</th><th scope="col">{% trans "Days" %}</th><th scope="col" class="num">{% trans "Charged" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Decided by" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for row in objects %}
+      <tr>
+        <td>
+          <a class="row-title" href="{% url 'hr:leaverequest_detail' row.request.pk %}" data-modal>{{ row.request.employee.full_name }}</a>
+          {% if row.show_reason and row.request.reason %}<span class="row-sub">{{ row.request.reason|truncatechars:80 }}</span>{% endif %}
+        </td>
+        <td>{{ row.request.leave_type.name }}</td>
+        <td>{{ row.request.first_day|date:"DATE_FORMAT" }} – {{ row.request.last_day|date:"DATE_FORMAT" }}</td>
+        <td class="num">{{ row.days|floatformat:"-2" }}</td>
+        <td><span class="badge badge-leave-{{ row.request.status }}">{{ row.request.get_status_display }}</span></td>
+        <td>{% if row.request.decided_by %}{{ row.request.decided_by.get_full_name|default:row.request.decided_by.get_username }}{% elif row.request.decided_at %}{% trans "Granted at once" %}{% else %}–{% endif %}</td>
+        <td class="row-actions">
+          {% if row.can_decide %}
+          <form method="post" action="{% url 'hr:leaverequest_approve' row.request.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="icon-button" title="{% trans 'Approve' %}">{% include "icons/_icon.html" with name="user-check" %}<span class="sr-only">{% trans "Approve" %}</span></button></form>
+          <a class="icon-button icon-button-danger" href="{% url 'hr:leaverequest_reject' row.request.pk %}" data-modal title="{% trans 'Reject' %}">{% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Reject" %}</span></a>
+          {% endif %}
+          {% if row.can_cancel %}
+          <form method="post" action="{% url 'hr:leaverequest_cancel' row.request.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="icon-button icon-button-danger" title="{% trans 'Cancel the request' %}">{% include "icons/_icon.html" with name="calendar-off" %}<span class="sr-only">{% trans "Cancel the request" %}</span></button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

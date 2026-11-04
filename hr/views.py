@@ -1,15 +1,17 @@
-"""The HR pages that are not a tab: for now the roster's batch plan (several cells at once)."""
+"""The HR pages that are not a tab: the roster's batch plan (several cells at once) and the decisions on a leave request."""
 import uuid
 from datetime import date
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponseBadRequest
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.http import require_POST
+
+from core.crud import done, render_page
 
 from . import rules, scope, services
 from .models import Shift
@@ -66,3 +68,53 @@ def plan(request):
     for employee, finding in warnings:
         messages.warning(request, f'{employee}: {rules.text(finding)}')
     return redirect(target)
+
+
+# ---- leave: decide and cancel -------------------------------------------------------------------------------------
+def leave_request(request, pk):
+    """The request, if it is in the viewer's team: any other is a 404 (the same scope as every page of the tab)."""
+    from .resources.leave import LeaveRequestResource
+    if not request.user.has_perm('hr.view_leaverequest'):
+        raise PermissionDenied
+    return get_object_or_404(LeaveRequestResource.visible(request), pk=pk)
+
+
+def _back(request):
+    return done(request, reverse('hr:leaverequest_list'))
+
+
+def _run(request, call, done_message):
+    try:
+        call()
+    except ValidationError as error:
+        messages.error(request, ' '.join(error.messages))
+    except PermissionDenied:
+        raise
+    else:
+        messages.success(request, done_message)
+    return _back(request)
+
+
+@require_POST
+def approve(request, pk):
+    item = leave_request(request, pk)
+    return _run(request, lambda: services.decide_leave(request.user, item, True, request.POST.get('note', '')),
+                _('The request was approved.'))
+
+
+def reject(request, pk):
+    """GET: the dialog asking for a note; POST: rejects the request with it."""
+    item = leave_request(request, pk)
+    if request.method == 'POST':
+        return _run(request, lambda: services.decide_leave(request.user, item, False, request.POST.get('note', '')),
+                    _('The request was rejected.'))
+    if not services.can_decide(request.user, item):
+        raise PermissionDenied
+    return render_page(request, 'hr/leave_reject.html', {'object': item, 'title': _('Reject the request'),
+                                                         'group': _('Leave requests')})
+
+
+@require_POST
+def cancel(request, pk):
+    item = leave_request(request, pk)
+    return _run(request, lambda: services.cancel_leave(request.user, item), _('The request was cancelled.'))

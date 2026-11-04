@@ -1298,6 +1298,11 @@ msgstr "En jobb som kommer igjen: hver dag, på valgte ukedager eller på en dag
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "En siste dag eldre enn %(date)s kan ikke endres."
 
+msgid "A leave type is a kind of leave, such as annual or parental leave. Add the types the company uses."
+msgstr ""
+"En permisjonstype er en slags permisjon, som ferie eller foreldrepermisjon. Legg til typene "
+"selskapet bruker."
+
 msgid ""
 "A listed disease is notified to Mattilsynet at once, already on suspicion (dyrehelseforskriften §"
 " 7): the event’s page offers to start the notice."
@@ -1384,6 +1389,13 @@ msgstr "En person med konto navngis av den; en uten trenger et etternavn."
 
 msgid "A person without an account needs a last name."
 msgstr "En person uten konto trenger et etternavn."
+
+msgid ""
+"A person’s request to be away from a first to a last day, and how it was decided; its reason and "
+"note are masked."
+msgstr ""
+"En persons søknad om å være borte fra en første til en siste dag, og hvordan den ble avgjort; "
+"årsak og merknad er maskert."
 
 msgid ""
 "A piece of knowledge in your own words, with its source: a document of the library, another "
@@ -2117,6 +2129,9 @@ msgstr "En aktiv protokoll har en tabell."
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
 
+msgid "An approved or rejected request has the time it was decided."
+msgstr "En godkjent eller avslått søknad har tidspunktet den ble avgjort."
+
 msgid ""
 "An article, report, book or regulation the company relies on: its reference, its abstract and its"
 " PDF, whose text is searched."
@@ -2176,6 +2191,9 @@ msgstr "Et annet fôr bruker allerede denne koden."
 
 msgid "Another feeding protocol already has this name."
 msgstr "En annen fôringsprotokoll har allerede dette navnet."
+
+msgid "Another leave type already uses this code."
+msgstr "En annen permisjonstype bruker allerede denne koden."
 
 msgid "Another medicine already has this name."
 msgstr "Et annet legemiddel har allerede dette navnet."
@@ -2300,6 +2318,16 @@ msgstr "Godkjenningsnummer"
 #, python-format
 msgid "Approval number %(number)s"
 msgstr "Godkjenningsnummer %(number)s"
+
+msgid "Approve"
+msgstr "Godkjenn"
+
+msgid "Approved"
+msgstr "Godkjente"
+
+msgctxt "leave status"
+msgid "Approved"
+msgstr "Godkjent"
 
 msgid "Aquaponics"
 msgstr "Akvaponi"
@@ -2768,12 +2796,19 @@ msgstr "Avbryt"
 msgid "Cancel task"
 msgstr "Avlys oppgaven"
 
+msgid "Cancel the request"
+msgstr "Kanseller søknaden"
+
 #, python-format
 msgid "Cancel “%(task)s”?"
 msgstr "Avlyse «%(task)s»?"
 
 msgid "Cancelled"
 msgstr "Avlyst"
+
+msgctxt "leave status"
+msgid "Cancelled"
+msgstr "Kansellert"
 
 msgctxt "task status"
 msgid "Cancelled"
@@ -2859,6 +2894,9 @@ msgstr "Kanalen %(name)s er opprettet."
 
 msgid "Channel name"
 msgstr "Kanalnavn"
+
+msgid "Charged"
+msgstr "Belastet"
 
 msgid "Check"
 msgstr "Sjekk"
@@ -3414,6 +3452,9 @@ msgstr "Dag i måneden"
 msgid "Days"
 msgstr "Dager"
 
+msgid "Days a year"
+msgstr "Dager i året"
+
 msgid "Days and punches"
 msgstr "Dager og stemplinger"
 
@@ -3436,6 +3477,15 @@ msgstr "Frist"
 
 msgid "Deaths"
 msgstr "Døde"
+
+msgid "Decided at"
+msgstr "Avgjort"
+
+msgid "Decided by"
+msgstr "Avgjort av"
+
+msgid "Decision note"
+msgstr "Beslutningsnotat"
 
 msgid "Decommissioned"
 msgstr "Utrangert"
@@ -4796,6 +4846,9 @@ msgstr "Sortering"
 msgid "Grading recorded: %(count)s fish of %(batch)s from %(unit)s to %(units)s."
 msgstr "Sortering registrert: %(count)s fisk av %(batch)s fra %(unit)s til %(units)s."
 
+msgid "Granted at once"
+msgstr "Innvilget med en gang"
+
 msgid "Gross energy (MJ/kg)"
 msgstr "Bruttoenergi (MJ/kg)"
 
@@ -5099,6 +5152,9 @@ msgstr "Inaktive personer kan ikke logge inn."
 
 msgid "Inactive: kept on the old plans, not offered for new ones."
 msgstr "Inaktiv: beholdes på de gamle planene, tilbys ikke for nye."
+
+msgid "Inactive: kept on the old requests, not offered for new ones."
+msgstr "Inaktiv: beholdes på de gamle søknadene, tilbys ikke for nye."
 
 msgid "Inactive: kept, shown as such, not offered for new placements."
 msgstr "Inaktiv: beholdes, vises som inaktiv og tilbys ikke for nye plasseringer."
@@ -5432,8 +5488,17 @@ msgstr "Forlat kanalen"
 msgid "Leave it empty for a day that is a holiday on every site."
 msgstr "La den stå tom for en dag som er fridag på alle lokaliteter."
 
+msgid "Leave requests"
+msgstr "Permisjonssøknader"
+
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "La vanndybden stå tom, eller oppgi en over 0."
+
+msgid "Leave type"
+msgstr "Permisjonstype"
+
+msgid "Leave types"
+msgstr "Permisjonstyper"
 
 msgid "Left"
 msgstr "Sluttet"
@@ -5945,6 +6010,9 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid "Needs approval"
+msgstr "Må godkjennes"
 
 msgid "Needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (1983)."
@@ -6569,6 +6637,9 @@ msgstr "Observert"
 msgid "Off"
 msgstr "Fri"
 
+msgid "Off: a request of this type is granted the moment it is filed, with no decider."
+msgstr "Av: en søknad av denne typen innvilges i det den leveres, uten beslutter."
+
 msgid "Offered"
 msgstr "Tilbys"
 
@@ -6665,6 +6736,9 @@ msgstr "Bare en fôrautomat har fôrkalibreringer."
 msgid "Only a filed report is corrected: change the draft itself."
 msgstr "Bare en innsendt rapport korrigeres: endre selve utkastet."
 
+msgid "Only a pending request can be changed."
+msgstr "Bare en ventende søknad kan endres."
+
 msgid "Only a sea-lice medicine has a substance in the lice report."
 msgstr "Bare et lakselusmiddel har et virkestoff i luserapporten."
 
@@ -6721,6 +6795,9 @@ msgstr ""
 
 msgid "Only warnings and criticals"
 msgstr "Bare advarsler og kritiske"
+
+msgid "Only you and the people who see every employee can read this."
+msgstr "Bare du og de som ser alle ansatte kan lese dette."
 
 msgid "Open"
 msgstr "Åpen"
@@ -7069,6 +7146,13 @@ msgstr "Pellet"
 
 msgid "Pellet size (mm)"
 msgstr "Pelletstørrelse (mm)"
+
+msgid "Pending"
+msgstr "Ventende"
+
+msgctxt "leave status"
+msgid "Pending"
+msgstr "Venter"
 
 msgid "People"
 msgstr "Personer"
@@ -7614,6 +7698,23 @@ msgstr "Lovpålagte rapporter"
 msgid "Regulatory unit ID"
 msgstr "Offisiell enhets-ID"
 
+msgid "Reject"
+msgstr "Avslå"
+
+msgid "Reject the request"
+msgstr "Avslå søknaden"
+
+#, python-format
+msgid "Reject the request of %(name)s, %(first)s to %(last)s?"
+msgstr "Avslå søknaden fra %(name)s, %(first)s til %(last)s?"
+
+msgid "Rejected"
+msgstr "Avslåtte"
+
+msgctxt "leave status"
+msgid "Rejected"
+msgstr "Avslått"
+
 msgid "Relationships"
 msgstr "Relasjoner"
 
@@ -7674,8 +7775,14 @@ msgstr "Rapporter for denne arten kan ikke sendes inn uten den."
 msgid "Reports from"
 msgstr "Rapporter fra"
 
+msgid "Request"
+msgstr "Søknad"
+
 msgid "Request a new link"
 msgstr "Be om en ny lenke"
+
+msgid "Requests for leave of your team appear here, with who may approve them."
+msgstr "Permisjonssøknader fra teamet ditt vises her, med hvem som kan godkjenne dem."
 
 msgid "Required for a person without an account."
 msgstr "Påkrevd for en person uten konto."
@@ -8035,6 +8142,9 @@ msgstr "Søk etter navn eller kode"
 msgid "Search by name or number"
 msgstr "Søk på navn eller nummer"
 
+msgid "Search by name or type"
+msgstr "Søk på navn eller type"
+
 msgid "Search by name, approval number, place or operator"
 msgstr "Søk på navn, godkjenningsnummer, sted eller driftsselskap"
 
@@ -8118,6 +8228,9 @@ msgstr "Se alt i aktivitetsloggen"
 
 msgid "See the day-by-day book"
 msgstr "Se registeret dag for dag"
+
+msgid "Seen by the person; it is not written to the log."
+msgstr "Sett av personen; den skrives ikke til loggen."
 
 msgid "Sees and plans this department’s people in HR (with a role that gives the HR pages)."
 msgstr "Ser og planlegger avdelingens folk i HR (med en rolle som gir HR-sidene)."
@@ -8321,6 +8434,10 @@ msgstr "Vis dem"
 
 msgid "Show voided"
 msgstr "Vis annullerte"
+
+#, python-format
+msgid "Showing %(limit)s of %(total)s requests."
+msgstr "Viser %(limit)s av %(total)s søknader."
 
 msgid "Shrimp"
 msgstr "Reke"
@@ -9077,6 +9194,12 @@ msgstr "Dagen den nye plasseringen starter; den gamle slutter dagen før. For en
 msgid "The days a leave request is charged for (public holidays are taken out). Default Monday to Friday."
 msgstr "Dagene en permisjonssøknad belastes for (helligdager trekkes fra). Standard mandag til fredag."
 
+msgid "The days a person may take of this type in a year; empty for no limit."
+msgstr "Dagene en person kan ta av denne typen i året; tom for ingen grense."
+
+msgid "The days a year cannot be negative."
+msgstr "Dagene i året kan ikke være negative."
+
 msgid "The days are the days the fish leave their units: check they are the slaughter days."
 msgstr "Dagene er dagene fisken forlater enhetene sine: kontroller at de er slaktedagene."
 
@@ -9192,6 +9315,9 @@ msgstr ""
 msgid "The file is %(size)s; the library takes PDFs of up to %(limit)s."
 msgstr "Filen er %(size)s; biblioteket tar PDF-er på opptil %(limit)s."
 
+msgid "The first day away."
+msgstr "Første dag borte."
+
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Første dag det fôres etter den, etter anleggets klokke."
 
@@ -9257,6 +9383,13 @@ msgstr ""
 "vekten mellom veiinger øker med fôret delt på den."
 
 msgid ""
+"The kinds of leave the company grants (annual, sick, parental), with the days a year and whether "
+"a request needs approval."
+msgstr ""
+"Permisjonstypene selskapet gir (ferie, sykdom, foreldre), med dager i året og om en søknad må "
+"godkjennes."
+
+msgid ""
 "The knowledge in your own words, as one statement someone can act on, e.g. “In Atlantic salmon "
 "under 50 g, free CO₂ above 15 mg/L leads to nephrocalcinosis.” or “A feed order is at least 20 t "
 "and arrives 3 days after it is placed.”"
@@ -9271,6 +9404,9 @@ msgid ""
 msgstr ""
 "Språket i konsollen og i e-postene denne personen får. Hvis feltet er tomt, følges nettleserens "
 "språk."
+
+msgid "The last day away; the days charged are counted without weekends and holidays."
+msgstr "Siste dag borte; dagene som belastes telles uten helger og helligdager."
 
 #, python-format
 msgid "The last day can be planned at most %(days)d days ahead."
@@ -9557,6 +9693,15 @@ msgstr "Rapporten beregnes på en nyere måte enn da den ble sendt inn."
 
 msgid "The report is for the week, month or year this day falls in."
 msgstr "Rapporten gjelder uken, måneden eller året denne dagen faller i."
+
+msgid "The request was approved."
+msgstr "Søknaden ble godkjent."
+
+msgid "The request was cancelled."
+msgstr "Søknaden ble kansellert."
+
+msgid "The request was rejected."
+msgstr "Søknaden ble avslått."
 
 msgid "The rest since the last shift is shorter than the minimum."
 msgstr "Hvilen siden forrige skift er kortere enn minimum."
@@ -9966,6 +10111,9 @@ msgstr ""
 "Dette er standardverdier selskapet kan endre, ikke loven: bekreft dem med avtalene deres. En "
 "grense kan bare settes strengere enn loven."
 
+msgid "These days are all weekends or holidays: nothing would be charged."
+msgstr "Disse dagene er alle helger eller helligdager: ingenting ville blitt belastet."
+
 #, python-format
 msgid ""
 "These fish of %(batch)s weigh as much as the book holds for %(unit)s on %(date)s, or more: weigh "
@@ -10020,6 +10168,10 @@ msgstr "Denne filen er ikke en PDF."
 msgid "This health event has a notice already: open it from the list."
 msgstr "Denne helsehendelsen har allerede et varsel: åpne det fra listen."
 
+#, python-format
+msgid "This is %(days)s days of %(kind)s in %(year)s and %(left)s are left."
+msgstr "Dette er %(days)s dager %(kind)s i %(year)s, og %(left)s er igjen."
+
 msgid "This item already has a lot with this number."
 msgstr "Denne varen har allerede et parti med dette nummeret."
 
@@ -10041,6 +10193,9 @@ msgstr "Denne eieren har allerede et punkt med dette navnet."
 
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Denne eieren har allerede et aktivt midtpunkt: det står for vannet dens."
+
+msgid "This person already has a leave request for some of these days."
+msgstr "Denne personen har allerede en permisjonssøknad for noen av disse dagene."
 
 msgid "This person already has a plan for this day."
 msgstr "Denne personen har allerede en plan for denne dagen."
@@ -11316,6 +11471,12 @@ msgstr "f.eks. 8"
 msgid "e.g. 923456789"
 msgstr "f.eks. 923456789"
 
+msgid "e.g. ANNUAL"
+msgstr "f.eks. FERIE"
+
+msgid "e.g. Annual leave"
+msgstr "f.eks. Ferie"
+
 msgid "e.g. Aquaculture"
 msgstr "f.eks. Aquaculture"
 
@@ -11665,6 +11826,18 @@ msgstr "kunnskapsoppføringer"
 
 msgid "knowledge entry"
 msgstr "kunnskapsoppføring"
+
+msgid "leave request"
+msgstr "permisjonssøknad"
+
+msgid "leave requests"
+msgstr "permisjonssøknader"
+
+msgid "leave type"
+msgstr "permisjonstype"
+
+msgid "leave types"
+msgstr "permisjonstyper"
 
 #, python-format
 msgid "loop %(system)s, %(age)s ago"

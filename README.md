@@ -2213,6 +2213,36 @@ warning is told after the save and written into the audit row. `hr.services.plan
 a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, the rules for each person;
 a person outside the team is a 404 and writes nothing); the page's batch route is `/hr/schedule/plan/` (POST).
 
+### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
+
+**Leave types** (`/hr/settings/leave-types/`, no menu line, reached from Scheduling settings): a name, a code, the days a
+year (empty: no limit) and whether a request needs approval; owner data, none seeded. **A request** (`hr.LeaveRequest`,
+`leave_requests`) is a person, a type, a first and a last day, a status (pending, approved, rejected, cancelled), the person's
+reason, the decider, the time and a note. Database rules: the last day is not before the first; an approved or rejected request
+has the time it was decided; **no overlap** for one person while a request is pending or approved (an exclusion constraint on
+the days, so two people filing at once cannot both win; adjacent days, rejected, cancelled and deleted requests do not block);
+and **nobody decides their own leave**, by the service and by a trigger whatever writes.
+
+What a request costs is read, never stored (`hr.leave`): the days whose weekday is a working weekday (a setting, Monday to Friday
+by default) minus the holidays of every site and of the person's site, split by year for a request that crosses New Year (the
+source charged calendar days, HR-07); the balance of a type with a yearly allowance is the allowance less the days of the year
+that pending and approved requests are charged for, and a request over it is refused on the form. `away_on(day, user_ids)` is the
+interface for the places that may only learn that someone is away, never why.
+
+**One approval step.** Staff hold Read and Create (they file for themselves and cancel their own); a lead holds Edit as well,
+and **Edit also approves, rejects and cancels** (the matrix has no extra column, as for a knowledge entry's review). The decider
+is someone with Edit whose team holds the person and who is not the person; a lead's own request therefore reaches whoever has
+them in their team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
+pending request is cancelled by the person or a decider at any time, an approved one only while its first day has not started on
+the site's clock; the decisions are `hr.services.decide_leave` and `cancel_leave` (POST routes, a dialog for the rejection
+note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
+
+**Privacy.** A lead sees the person, the type and the days; the reason is the person's own words, shown to them and to the holders
+of Everyone only (the list, the read page and the edit form leave it out for anyone else, and a lead cannot overwrite it). The reason
+and the decision note are masked in the activity log ("Private text") and in the database viewer, and leave requests appear in the log
+only for holders of Everyone. Approved leave is read over the roster: planning a shift on a day of approved leave is refused, and
+the week shows the cell as on leave. When a person leaves, their later pending requests are cancelled and later plans removed.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2234,7 +2264,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and

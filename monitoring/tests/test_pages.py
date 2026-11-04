@@ -157,7 +157,7 @@ class FragmentTests(MonitoringCase):
             self.client.get(after)                                  # the 204 path
             self.ask(f'mode=detailed&units={self.t1.pk}')           # a 200 path
         verbs = {query['sql'].lstrip().split(None, 1)[0].upper() for query in log}
-        self.assertLessEqual(verbs, {'SELECT', 'WITH'})
+        self.assertLessEqual(verbs, {'SELECT', 'WITH', 'SAVEPOINT', 'RELEASE'})      # savepoints: the chips' fail-open, no write
         now = [model.all_objects.count() if hasattr(model, 'all_objects') else model.objects.count() for model in tables]
         self.assertEqual(now, before)
 

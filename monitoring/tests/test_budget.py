@@ -29,7 +29,7 @@ class BudgetTests(MonitoringCase):
             found = read.cards(units, user, modes)
         self.assertEqual(len(found), len(units))
         for query in log:
-            self.assertTrue(query['sql'].lstrip().upper().startswith(('SELECT', 'WITH')), query['sql'][:80])
+            self.assertTrue(query['sql'].lstrip().upper().startswith(('SELECT', 'WITH', 'SAVEPOINT', 'RELEASE')), query['sql'][:80])   # a savepoint keeps a failing chip provider inside it: no write
         return len(log)
 
     def test_the_counts_at_six_and_twenty_four_units_are_equal_in_every_mode(self):

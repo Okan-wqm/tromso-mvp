@@ -82,6 +82,15 @@ def entity_type_of(model):
     return english(model._meta.verbose_name)
 
 
+LABEL_LENGTH = AuditLog._meta.get_field('entity_label').max_length
+
+
+def bounded(label):
+    """A label that fits the log's column: longer ones are cut, with an ellipsis (a record's own label is written to be short
+    and findable, a stock operation's shortens the units it lists first; this is what stops any other from failing the write)."""
+    return label if len(label) <= LABEL_LENGTH else label[:LABEL_LENGTH - 1] + '…'
+
+
 LATE_COMMIT = timedelta(minutes=5)
 
 
@@ -110,7 +119,7 @@ def record(user, action, instance, changes=None, entity_type=None, label=None, s
         entity_id=str(instance.pk),
         # The record's name as English at rest like everything else: a name built from choices (a water limit's
         # parameter, a plan's kind) would otherwise be stored in the language of the person making the change.
-        entity_label=label or english(instance),
+        entity_label=bounded(label or english(instance)),
         changes=changes or {},
         severity=severity,
     )

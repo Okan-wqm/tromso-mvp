@@ -326,16 +326,17 @@ def _earliest(result, batches):
     result.notes.append(result.earliest.text())
 
 
-def require_acknowledged(assessment, seen):
+def require_acknowledged(assessment, seen, field='handling_ack'):
     """Refuses a save with warnings the person has not gone on past exactly as they are now (`seen`: the
     fingerprint the form's box carried); they are asked, or asked again. `assessment` has `warnings` and a
-    `fingerprint` (an Assessment, or the treatment's over its units)."""
+    `fingerprint` (an Assessment, or the treatment's over its units, or an experiment's start). The error is
+    reported on `field`, the name of the form's box."""
     if assessment.warnings and seen != assessment.fingerprint:
         if not seen:
             message = _('Tick the box to go on despite these warnings.')
         else:
             message = _('The warnings changed since the form was shown: read them again, and tick the box to go on.')
-        raise ValidationError({'handling_ack': message})
+        raise ValidationError({field: message})
 
 
 def acknowledge(record, assessment):

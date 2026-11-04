@@ -109,6 +109,13 @@ WORKSPACES = [
                 Entry(_('Sea-lice counts'), 'farm:lice_counts', 'bug', 'farm.view_licecount'),
             ]),
         ]),
+        # Research: trials of one species on one site, with their design, their tanks and the days. It reads the farm
+        # and nothing reads it (README, Experiments).
+        Section(_('Research'), [
+            Group('', [
+                Entry(_('Experiments'), 'experiments:experiment_list', 'flask', 'experiments.view_experiment'),
+            ]),
+        ]),
         # What the farm tells the authorities, computed from the records above and filed by people: neither structure
         # nor a daily record, so a heading of its own (docs/regulatory-reports.md, 5.6).
         Section(_('Reports'), [

@@ -39,6 +39,7 @@ in `core/`, or by not porting the feature (satellite monitoring is deliberately 
 18. [Health](#health)
 19. [Tasks](#tasks)
 20. [Regulatory reports](#regulatory-reports)
+21. [Experiments](#experiments) (our own code: there is no source)
 
 ## Patterns that repeat across tabs
 
@@ -1254,3 +1255,18 @@ cage and a feeding names its target (D-1), not in the production figures (D-2); 
 emptied (D-8); count adjustments netted (D-9); a live delivery out of the company (D-10); the species that owe the lice
 report (D-11); Fiskeridirektoratet's form unconfirmed (D-12); the production form and the notices of land sites (D-13);
 the year class (D-14); the loss causes (D-15).
+
+## Experiments
+
+The platform has no experiment module, so there is no source to read: this section lists what building Research ›
+Experiments found wrong in the prototype's own code, each fixed where it lives with a test (**Fixed**) or left to say
+(**Open**). Paths are the prototype's own.
+
+| ID | Sev. | Where | What is wrong | Fix |
+|---|---|---|---|---|
+| EXP-01 | High | `farm/stock/services.py` `label()`; `core/audit.py` `record` | **A stocking into many tanks failed with a database error.** The activity-log label of a stock operation listed every unit's code, and `AuditLog.entity_label` is 255 characters: a batch stocked into about 35 tanks (a research trial's tanks) raised `DataError` and the stocking was lost. Found by stocking 60 tanks for the query-budget test. | **Fixed:** the label lists the units that fit, then an ellipsis, and keeps the batch and the date (every line stays in the entry's "Stock lines"); `audit.bounded` cuts any other label that would overflow, so no record's log write can fail on length. Tests: `farm/tests/test_stock.py`, `core/tests.py`. |
+| EXP-02 | Low | `tasks/tests/test_series.py` | The test that a recurring task is planned at every kind of place counted `horizon + 1` tasks from the first site's today, while a place without a site is on the company's clock (UTC): it failed in the first hour after midnight in Oslo. | **Fixed:** the count is read to the place's own clock. |
+| EXP-03 | Low | `farm/tests/test_water_points.py` `test_the_withdrawals_daily_mean_reads_the_same_places` | The sample is taken "one hour ago" and the day it must fall on is the unit's today (UTC when the site has no zone): in the first hour after midnight UTC (01:00 to 02:00 in Oslo) the sample is yesterday's and the mean is empty. | **Open:** a test taken at the clock, not a fault in the read; the sample should be put at the start of the unit's day, or the clock held. |
+| EXP-04 | Medium | `farm/handling/check.py` `require_acknowledged` | The refusal was always on the field `handling_ack`, so a form with another box (an experiment's start) could not use the rule. | **Fixed:** the field is a parameter (default unchanged); one rule for every acknowledgement box. |
+| EXP-05 | Low | `tasks/read.py`, `messaging/models.py` | The way a person is named (full name, else username) and the people "who can read" a page were written twice, in the tasks and in messages. | **Fixed:** one `core/people.py` (`person_name`, `who_can`), the tasks' `readers()` and the messages' `person_name` use it; the experiment's team is the third use. |
+| EXP-06 | Medium | `experiments/design.py` `check_experiment` | The 31-day registration window (`day_0_too_old`) was asked of every experiment, so a started experiment became "too old" 32 days after its day 0 and `design.problems` listed an error that could never be fixed (it was shown only for drafts, so no page said it). Found when `check_experiments` needed the design's rules for a started experiment. | **Fixed:** only a draft is held to the window (it is a rule of registering); `design.HOLDS_AFTER_START` names the checks that stay errors once it has started, `integrity` runs them. Test: `experiments/tests/test_design.py`. |

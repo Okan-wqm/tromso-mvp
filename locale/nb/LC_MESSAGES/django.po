@@ -76,6 +76,10 @@ msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: ikke veid siden den kom inn, så ingen fôrfaktor ennå"
 
 #, python-format
+msgid "%(code)s has no tank."
+msgstr "%(code)s har ikke noe kar."
+
+#, python-format
 msgid "%(code)s · %(name)s (loop)"
 msgstr "%(code)s · %(name)s (kretsløp)"
 
@@ -233,6 +237,12 @@ msgid "%(count)d open health event"
 msgid_plural "%(count)d open health events"
 msgstr[0] "%(count)d åpen helsehendelse"
 msgstr[1] "%(count)d åpne helsehendelser"
+
+#, python-format
+msgid "%(count)d person saved."
+msgid_plural "%(count)d people saved."
+msgstr[0] "%(count)d person lagret."
+msgstr[1] "%(count)d personer lagret."
 
 #, python-format
 msgid ""
@@ -475,6 +485,10 @@ msgstr ""
 "(Innkjøp › Leverandører, operatøren under Slakteanlegg)."
 
 #, python-format
+msgid "%(factor)s: number"
+msgstr "%(factor)s: tall"
+
+#, python-format
 msgid "%(feed)s fed, %(gain)s grown"
 msgstr "%(feed)s fôret, %(gain)s tilvekst"
 
@@ -507,6 +521,10 @@ msgid "%(first)s et al."
 msgstr "%(first)s mfl."
 
 #, python-format
+msgid "%(first)s to %(last)s"
+msgstr "%(first)s til %(last)s"
+
+#, python-format
 msgid "%(first)s–%(last)s of %(total)s"
 msgstr "%(first)s–%(last)s av %(total)s"
 
@@ -529,6 +547,18 @@ msgstr "%(fish)s fisk"
 #, python-format
 msgid "%(fish)s fish at %(weight)s est."
 msgstr "%(fish)s fisk på estimert %(weight)s"
+
+#, python-format
+msgid ""
+"%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, and %(tank)s is not a tank of the "
+"experiment."
+msgstr ""
+"%(fish)s fisk ble flyttet fra %(out)s til %(into)s den %(day)s, og %(tank)s er ikke et kar i "
+"forsøket."
+
+#, python-format
+msgid "%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, between two replicates."
+msgstr "%(fish)s fisk ble flyttet fra %(out)s til %(into)s den %(day)s, mellom to replikater."
 
 #, python-format
 msgid "%(fish)s fish · %(biomass)s est."
@@ -734,6 +764,10 @@ msgstr "%(medicine)s, %(method)s fra %(start)s til %(end)s: tilbakeholdelsestid 
 msgid "%(minutes)s min"
 msgstr "%(minutes)s min"
 
+#, python-format
+msgid "%(name)s (copy)"
+msgstr "%(name)s (kopi)"
+
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
 #, python-format
@@ -816,6 +850,18 @@ msgstr "%(record)s er den primære"
 #, python-format
 msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s ble ikke gjenopprettet: %(reasons)s"
+
+#, python-format
+msgid "%(replicate)s has no tank."
+msgstr "%(replicate)s har ikke noe kar."
+
+#, python-format
+msgid "%(replicate)s: the days are outside the experiment (%(first)s to %(last)s)."
+msgstr "%(replicate)s: dagene ligger utenfor forsøket (%(first)s til %(last)s)."
+
+#, python-format
+msgid "%(replicate)s: the last day comes on or after the first day."
+msgstr "%(replicate)s: siste dag kommer på eller etter første dag."
 
 #, python-format
 msgid "%(rule)s at %(time)s"
@@ -914,6 +960,88 @@ msgstr "%(supplier)s er ikke leverandør av %(category)s (Innkjøp › Leverand�
 #, python-format
 msgid "%(system)s is on another site than the production department."
 msgstr "%(system)s er på en annen lokalitet enn produksjonsavdelingen."
+
+#, python-format
+msgid ""
+"%(tank)s already has the feeding protocol %(protocol)s assigned (%(period)s): end it first, for "
+"starting an experiment never ends another record."
+msgstr ""
+"%(tank)s har allerede fôringsprotokollen %(protocol)s tildelt (%(period)s): avslutt den først, "
+"for å starte et forsøk avslutter aldri en annen post."
+
+#, python-format
+msgid ""
+"%(tank)s feeds batch %(batch)s by %(protocol)s (%(period)s): a protocol assigned to a batch in a "
+"unit beats the unit’s, so it would override the diet of %(group)s."
+msgstr ""
+"%(tank)s fôrer batch %(batch)s etter %(protocol)s (%(period)s): en protokoll tildelt en batch i "
+"et kar går foran karets, så den ville overstyre fôrregimet til %(group)s."
+
+#, python-format
+msgid ""
+"%(tank)s has no weighing on %(day)s, its last day: the feed conversion is read from the weighing "
+"of the first day to the weighing of the last."
+msgstr ""
+"%(tank)s har ingen veiing %(day)s, som er karets siste dag: fôrfaktoren leses fra veiingen første"
+" dag til veiingen siste dag."
+
+#, python-format
+msgid "%(tank)s holds more than one batch of %(species)s on day 0: its figures are the batches’ together."
+msgstr "%(tank)s har mer enn én batch av %(species)s på dag 0: tallene er batchenes samlet."
+
+#, python-format
+msgid "%(tank)s holds no fish of %(species)s on day 0."
+msgstr "%(tank)s har ingen fisk av %(species)s på dag 0."
+
+#, python-format
+msgid "%(tank)s is booked to %(experiment)s on some of these days."
+msgstr "%(tank)s er booket til %(experiment)s noen av disse dagene."
+
+#, python-format
+msgid "%(tank)s is in %(replicate)s from %(first)s to %(last)s."
+msgstr "%(tank)s står i %(replicate)s fra %(first)s til %(last)s."
+
+#, python-format
+msgid "%(tank)s is in the pool twice (alone and through a system)."
+msgstr "%(tank)s er med i utvalget to ganger (alene og gjennom et system)."
+
+#, python-format
+msgid "%(tank)s is not on the site of the experiment (%(site)s)."
+msgstr "%(tank)s er ikke på forsøkets lokalitet (%(site)s)."
+
+#, python-format
+msgid "%(tank)s is placed twice on some of the same days (%(first)s, %(second)s)."
+msgstr "%(tank)s er plassert to ganger noen av de samme dagene (%(first)s, %(second)s)."
+
+#, python-format
+msgid "%(tank)s left “%(experiment)s”."
+msgstr "%(tank)s gikk ut av «%(experiment)s»."
+
+#, python-format
+msgid "%(tank)s of %(replicate)s is booked outside the days of the experiment."
+msgstr "%(tank)s i %(replicate)s er booket utenfor forsøkets dager."
+
+#, python-format
+msgid "%(tank)s of %(replicate)s is not on the site of the experiment."
+msgstr "%(tank)s i %(replicate)s er ikke på forsøkets lokalitet."
+
+#, python-format
+msgid "%(tank)s was deleted meanwhile."
+msgstr "%(tank)s ble slettet i mellomtiden."
+
+#, python-format
+msgid "%(tank)s was fed %(feed)s (%(count)s feedings, %(kilos)s kg), which is on no band of %(protocol)s."
+msgstr ""
+"%(tank)s ble fôret med %(feed)s (%(count)s fôringer, %(kilos)s kg), som ikke står på noe bånd i "
+"%(protocol)s."
+
+#, python-format
+msgid "%(tank)s was replaced in “%(experiment)s”."
+msgstr "%(tank)s ble byttet ut i «%(experiment)s»."
+
+#, python-format
+msgid "%(tank)s would be booked to %(experiment)s on those days."
+msgstr "%(tank)s ville vært booket til %(experiment)s de dagene."
 
 #, python-format
 msgid "%(temperature)s °C"
@@ -1311,6 +1439,9 @@ msgstr "Et dybdepunkt har en dybde."
 msgid "A diagnosis is suspected or confirmed; without a diagnosis there is nothing to confirm."
 msgstr "En diagnose er mistenkt eller bekreftet; uten diagnose er det ingenting å bekrefte."
 
+msgid "A diet level names a protocol; another level has a label."
+msgstr "Et fôrregimenivå navngir en protokoll; andre nivåer har en etikett."
+
 msgid "A disease notice is about a health event; a welfare notice may be; no other report is."
 msgstr ""
 "Et sykdomsvarsel gjelder en helsehendelse; et velferdsvarsel kan gjøre det; ingen annen rapport "
@@ -1324,6 +1455,17 @@ msgstr "En dose trenger sin enhet, og en enhet sin dose."
 
 msgid "A draft copy with this table, to change and assign from a date."
 msgstr "En utkastkopi med denne tabellen, som kan endres og tildeles fra en dato."
+
+msgid ""
+"A factor is what the groups differ in: the diet, whose levels are feeding protocols (how the farm"
+" applies it), or another factor such as a temperature, whose levels are labels. Each group has "
+"one level of each factor and its replicates, the tanks of which are placed on the Places tab. The"
+" design is saved as a whole."
+msgstr ""
+"En faktor er det gruppene skiller seg på: fôrregimet, hvis nivåer er fôringsprotokoller (slik "
+"anlegget bruker det), eller en annen faktor som en temperatur, hvis nivåer er etiketter. Hver "
+"gruppe har ett nivå av hver faktor og sine replikater, hvis kar plasseres under fanen Plassering."
+" Designet lagres som en helhet."
 
 #, python-format
 msgid "A feed has at most %(num)d row."
@@ -1362,6 +1504,13 @@ msgstr ""
 
 msgid "A flow can be stated for an inlet or an outlet only."
 msgstr "En vannføring kan bare oppgis for et innløp eller et utløp."
+
+msgid ""
+"A group has fewer than two replicates: its variation within the group cannot be told from the "
+"difference between groups."
+msgstr ""
+"En gruppe har færre enn to replikater: variasjonen innad i gruppen kan ikke skilles fra "
+"forskjellen mellom gruppene."
 
 msgid "A harvest goes to a slaughter facility, a transport to a unit."
 msgstr "En høsting går til et slakteri, en transport til en enhet."
@@ -1423,6 +1572,9 @@ msgstr "En melding har høyst %(count)d tegn."
 
 msgid "A monthly task repeats on a day of the month; the others on none."
 msgstr "En månedlig oppgave gjentas på en dag i måneden; de andre på ingen."
+
+msgid "A new experiment"
+msgstr "Et nytt forsøk"
 
 msgid "A new protocol is a draft: fill in its feeding table, then set it active."
 msgstr "En ny protokoll er et utkast: fyll ut fôringstabellen, og gjør den deretter aktiv."
@@ -1521,6 +1673,9 @@ msgstr ""
 "enhet, så hel fiskegruppe. En rad kan endres eller slettes før første dag; etterpå avsluttes den "
 "ved å sette siste dag."
 
+msgid "A randomised allocation has its seed; one placed by hand has its reason."
+msgstr "En randomisert fordeling har sitt frø; en manuell plassering har sin begrunnelse."
+
 msgid "A recipe takes two reagents: choose at least two (the Reagents tab)."
 msgstr "En oppskrift bruker to kjemikalier: velg minst to (fanen Kjemikalier)."
 
@@ -1533,6 +1688,9 @@ msgstr ""
 "En gjentakende oppgave planlegger oppgavene sine opptil to uker fram; de står på siden <a "
 "href=\"%(url)s\">Oppgaver</a>. Å endre eller sette den på pause planlegger på nytt oppgavene fra "
 "i dag som ingen har rørt; de andre blir som de er."
+
+msgid "A replicate was removed meanwhile: reload the page."
+msgstr "Et replikat ble fjernet i mellomtiden: last siden på nytt."
 
 msgid "A report is for a period, a notice for an event."
 msgstr "En rapport gjelder en periode, et varsel en hendelse."
@@ -1593,6 +1751,9 @@ msgstr ""
 "En art som oppdrettes eller settes ut, som laks eller rognkjeks: navnene, kodene til rapportene "
 "og vannet den lever i."
 
+msgid "A started experiment has its day 0, hypothesis, primary endpoint and allocation."
+msgstr "Et startet forsøk har sin dag 0, hypotese, sitt primære endepunkt og sin fordeling."
+
 msgid ""
 "A storage location is a place on a site where stock is kept: a feed store, a silo, a cold room, a"
 " medicine cabinet."
@@ -1634,11 +1795,20 @@ msgstr "Et system blir værende på lokaliteten det ble opprettet på."
 msgid "A table has at most %(count)d temperature columns."
 msgstr "En tabell har høyst %(count)d temperaturkolonner."
 
+msgid "A tank was booked to another experiment meanwhile: look at the places and try again."
+msgstr "Et kar ble booket til et annet forsøk i mellomtiden: se på plasseringene og prøv igjen."
+
 msgid "A tank, a pond or a cage; it cannot be changed later."
 msgstr "Kar, dam eller merd; kan ikke endres senere."
 
 msgid "A task is a job at one place for the people who do it, due on a day."
 msgstr "En oppgave er en jobb på ett sted for dem som gjør den, med frist på en dag."
+
+#, python-format
+msgid "A team has at most %(num)d person."
+msgid_plural "A team has at most %(num)d people."
+msgstr[0] "Et team har høyst %(num)d person."
+msgstr[1] "Et team har høyst %(num)d personer."
 
 #, python-format
 msgid "A temperature column has at most one decimal: %(value)s."
@@ -1647,6 +1817,18 @@ msgstr "En temperaturkolonne har høyst én desimal: %(value)s."
 #, python-format
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
+
+msgid "A template"
+msgstr "En mal"
+
+msgid "A template has no tanks: it is a design to copy."
+msgstr "En mal har ingen kar: den er et design som skal kopieres."
+
+msgid "A template is a draft design without a start day or an allocation."
+msgstr "En mal er et utkast til design uten startdag eller fordeling."
+
+msgid "A template is not started: copy it into an experiment."
+msgstr "En mal startes ikke: kopier den til et forsøk."
 
 msgid ""
 "A transfer is a transport. A grading is checked against its own rule and the transport rule; the "
@@ -1670,6 +1852,15 @@ msgid ""
 "A treatment without a medicine names none: choose a bath, medicated feed, injection or dip as the"
 " method."
 msgstr "En behandling uten legemiddel oppgir ingen: velg bad, medisinfôr, injeksjon eller dypp som metode."
+
+msgid ""
+"A trial of one species on one site: its groups, their replicates and the tanks and days each is "
+"booked to. A draft reserves its tanks; starting it fixes its design, and the figures are read "
+"from the farm’s own records."
+msgstr ""
+"Et forsøk med én art på én lokalitet: gruppene, replikatene og karene og dagene hver av dem er "
+"booket til. Et utkast reserverer karene sine; å starte det låser designet, og tallene leses fra "
+"anleggets egne registre."
 
 msgid "A unit becomes active when fish are stocked in it (Operations › Production units)."
 msgstr "En enhet blir aktiv når det settes ut fisk i den (Drift › Produksjonsenheter)."
@@ -1706,6 +1897,9 @@ msgstr ""
 
 msgid "A weekly task repeats on at least one weekday; the others on none."
 msgstr "En ukentlig oppgave gjentas på minst én ukedag; de andre på ingen."
+
+msgid "A whole number: the same pool and seed always give the same placements."
+msgstr "Et helt tall: det samme utvalget og frøet gir alltid de samme plasseringene."
 
 msgid "A year class is a year, e.g. 2026."
 msgstr "En årsklasse er et år, for eksempel 2026."
@@ -1810,8 +2004,14 @@ msgstr "Legg til kalibrering"
 msgid "Add contact"
 msgstr "Legg til kontaktperson"
 
+msgid "Add factor"
+msgstr "Legg til faktor"
+
 msgid "Add feed"
 msgstr "Legg til fôr"
+
+msgid "Add group"
+msgstr "Legg til gruppe"
 
 msgid "Add knowledge from this document"
 msgstr "Legg til kunnskap fra dette dokumentet"
@@ -1824,6 +2024,9 @@ msgstr "Legg til medlemmer"
 
 msgid "Add note"
 msgstr "Legg til notat"
+
+msgid "Add person"
+msgstr "Legg til person"
 
 msgid "Add species"
 msgstr "Legg til art"
@@ -1848,6 +2051,9 @@ msgstr ""
 
 msgid "Add the first user; they get an email to set their password."
 msgstr "Legg til den første brukeren; vedkommende får en e-post for å velge passord."
+
+msgid "Add the tanks of a system"
+msgstr "Legg til karene i et system"
 
 msgid "Add them in Setup › Tanks, ponds & cages."
 msgstr "Legg dem til i Oppsett › Kar, dammer og merder."
@@ -1886,6 +2092,9 @@ msgstr "Voksne hunnlus per fisk"
 
 msgid "Adults"
 msgstr "Voksen fisk"
+
+msgid "Advisor"
+msgstr "Veileder"
 
 msgid "Aeration"
 msgstr "Lufting"
@@ -2082,6 +2291,12 @@ msgstr "Alle vanntyper"
 msgid "All years"
 msgstr "Alle år"
 
+msgid "Allocation"
+msgstr "Fordeling"
+
+msgid "Allocation seed"
+msgstr "Fordelingsfrø"
+
 msgid "Allows"
 msgstr "Tillater"
 
@@ -2189,6 +2404,12 @@ msgstr "En hendelse avsluttes på eller etter datoen sin."
 msgid "An expected FCR is between 0.50 and 3.00."
 msgstr "En forventet FCR er mellom 0,50 og 3,00."
 
+msgid "An experiment has one diet factor."
+msgstr "Et forsøk har én fôrregimefaktor."
+
+msgid "An experiment has one lead."
+msgstr "Et forsøk har én leder."
+
 msgid "An expert or our own observation"
 msgstr "En ekspert eller vår egen observasjon"
 
@@ -2210,6 +2431,9 @@ msgstr "Analyse"
 msgid "Another document in the library has this DOI."
 msgstr "Et annet dokument i biblioteket har denne DOI-en."
 
+msgid "Another factor of this experiment has this name."
+msgstr "En annen faktor i dette forsøket har dette navnet."
+
 msgid "Another feed already has this name."
 msgstr "Et annet fôr har allerede dette navnet."
 
@@ -2218,6 +2442,15 @@ msgstr "Et annet fôr bruker allerede denne koden."
 
 msgid "Another feeding protocol already has this name."
 msgstr "En annen fôringsprotokoll har allerede dette navnet."
+
+msgid "Another group of this experiment has this name."
+msgstr "En annen gruppe i dette forsøket har dette navnet."
+
+msgid "Another level of this diet has this protocol."
+msgstr "Et annet nivå av dette fôrregimet har denne protokollen."
+
+msgid "Another level of this factor has this label."
+msgstr "Et annet nivå av denne faktoren har denne etiketten."
 
 msgid "Another medicine already has this name."
 msgstr "Et annet legemiddel har allerede dette navnet."
@@ -2240,11 +2473,17 @@ msgstr "En annen protokoll er tildelt denne enheten på noen av disse dagene."
 msgid "Another protocol was assigned to these fish meanwhile: look at the list and try again."
 msgstr "En annen protokoll ble tildelt denne fisken i mellomtiden: se på listen og prøv igjen."
 
+msgid "Another protocol was assigned to these tanks meanwhile: look at the assignments and try again."
+msgstr "En annen protokoll ble tildelt disse karene i mellomtiden: se på tildelingene og prøv igjen."
+
 msgid "Another published source"
 msgstr "En annen publisert kilde"
 
 msgid "Another question has this number."
 msgstr "Et annet spørsmål har dette nummeret."
+
+msgid "Another replicate of this group has this number."
+msgstr "Et annet replikat i denne gruppen har dette nummeret."
 
 msgid "Another role already uses this name."
 msgstr "Dette navnet brukes allerede av en annen rolle."
@@ -2383,6 +2622,9 @@ msgstr "Slik den ble sendt inn."
 
 msgid "As given, to the gram (0.035 for 35 g)."
 msgstr "Som gitt, på grammet (0,035 for 35 g)."
+
+msgid "As many tanks or systems as replicates; a system gives all its tanks to one replicate."
+msgstr "Like mange kar eller systemer som replikater; et system gir alle karene sine til ett replikat."
 
 msgid "As nitrogen. A kit that reads NO₂⁻: divide by 3.29."
 msgstr "Som nitrogen. Et sett som leser NO₂⁻: del på 3,29."
@@ -2599,6 +2841,12 @@ msgid "Batch %(batch)s stocked: %(count)s fish into %(units)s."
 msgstr "Fiskegruppe %(batch)s satt ut: %(count)s fisk i %(units)s."
 
 #, python-format
+msgid ""
+"Batch %(batch)s was in %(tank)s, though it was not there on the first day of the tank in the "
+"experiment."
+msgstr "Parti %(batch)s sto i %(tank)s, selv om det ikke var der karets første dag i forsøket."
+
+#, python-format
 msgid "Batch %(batch)s: %(fish)s fish at %(weight)s"
 msgstr "Fiskegruppe %(batch)s: %(fish)s fisk på %(weight)s"
 
@@ -2673,6 +2921,16 @@ msgstr "Mellom de to dosene"
 msgid "Biofloc"
 msgstr "Biofloc"
 
+msgid "Biological FCR"
+msgstr "Biologisk FCR"
+
+msgid ""
+"Biological feed conversion ratio over the days of the tanks: the feed given per kg of growth, "
+"from the weighing on the first day to the latest weighing"
+msgstr ""
+"Biologisk fôrfaktor over karenes dager: fôret gitt per kg tilvekst, fra veiingen første dag til "
+"siste veiing"
+
 msgid ""
 "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from "
 "stocking to the last weighing"
@@ -2683,6 +2941,12 @@ msgstr "Biofilter"
 
 msgid "Biomass"
 msgstr "Biomasse"
+
+msgid "Biomass gain"
+msgstr "Biomassetilvekst"
+
+msgid "Biomass now"
+msgstr "Biomasse nå"
 
 msgid "Blocked"
 msgstr "Sperret"
@@ -2747,6 +3011,9 @@ msgstr "Flyteevne"
 
 msgid "By"
 msgstr "Av"
+
+msgid "By hand"
+msgstr "Manuelt"
 
 msgid "By unit and day"
 msgstr "Per enhet og dag"
@@ -3040,6 +3307,15 @@ msgstr "Velg en rømming fra en enhet på lokaliteten."
 msgid "Choose another location than the one it leaves."
 msgstr "Velg en annen lagerplass enn den det tas fra."
 
+msgid ""
+"Choose as many tanks or systems as there are replicates and a seed: they are dealt to the "
+"replicates by a fixed method, so the deal can be repeated and checked. The seed is kept with the "
+"placements."
+msgstr ""
+"Velg like mange kar eller systemer som det er replikater, og et frø: de fordeles på replikatene "
+"med en fast metode, slik at fordelingen kan gjentas og kontrolleres. Frøet lagres sammen med "
+"plasseringene."
+
 msgid "Choose at least one."
 msgstr "Velg minst én."
 
@@ -3301,6 +3577,12 @@ msgstr "Innhold slik det ble sendt inn"
 msgid "Content hash"
 msgstr "Innholdshash"
 
+msgid "Control"
+msgstr "Kontroll"
+
+msgid "Control group"
+msgstr "Kontrollgruppe"
+
 msgid "Control type"
 msgstr "Styringstype"
 
@@ -3320,11 +3602,31 @@ msgid "Copepodids and chalimus, in total."
 msgstr "Kopepoditter og chalimus, totalt."
 
 #, python-format
+msgid "Copied as “%(copy)s”: a draft, to change and start."
+msgstr "Kopiert som «%(copy)s»: et utkast som kan endres og startes."
+
+#, python-format
 msgid "Copied as “%(protocol)s”, a draft: change it, set it active and assign it."
 msgstr "Kopiert som «%(protocol)s», et utkast: endre den, gjør den aktiv og tildel den."
 
+msgid "Copied from"
+msgstr "Kopiert fra"
+
 msgid "Copper alloy"
 msgstr "Kobberlegering"
+
+msgid "Copy"
+msgstr "Kopier"
+
+#, python-format
+msgid "Copy %(experiment)s"
+msgstr "Kopier %(experiment)s"
+
+msgid "Copy as"
+msgstr "Kopier som"
+
+msgid "Copy as a new experiment"
+msgstr "Kopier som nytt forsøk"
 
 msgid "Corona discharge"
 msgstr "Koronautladning"
@@ -3512,11 +3814,48 @@ msgstr "Dato og klokkeslett etter lokalitetens klokke."
 msgid "Day"
 msgstr "Dag"
 
+#, python-format
+msgid "Day %(day)s of %(total)s"
+msgstr "Dag %(day)s av %(total)s"
+
+msgid "Day 0"
+msgstr "Dag 0"
+
+#, python-format
+msgid ""
+"Day 0 is further back than records can be dated: an experiment is registered at most %(days)d "
+"days after it begins."
+msgstr ""
+"Dag 0 ligger lenger tilbake enn registreringer kan dateres: et forsøk registreres høyst %(days)d "
+"dager etter at det begynner."
+
+#, python-format
+msgid "Day 0 is in %(days)s day"
+msgid_plural "Day 0 is in %(days)s days"
+msgstr[0] "Dag 0 er om %(days)s dag"
+msgstr[1] "Dag 0 er om %(days)s dager"
+
+msgid "Day 0 is not set."
+msgstr "Dag 0 er ikke satt."
+
+msgid "Day 0 of the new experiment, which can be set later. A template has none."
+msgstr "Dag 0 i det nye forsøket, som kan settes senere. En mal har ingen."
+
+msgid ""
+"Day 0, the baseline weighing, on the site’s clock. The last day, the final weighing, is this many"
+" days later."
+msgstr ""
+"Dag 0, grunnveiingen, etter lokalitetens klokke. Siste dag, sluttveiingen, er så mange dager "
+"senere."
+
 msgid "Day of the month"
 msgstr "Dag i måneden"
 
 msgid "Days"
 msgstr "Dager"
+
+msgid "Days from the baseline weighing to the final weighing."
+msgstr "Dager fra grunnveiingen til sluttveiingen."
 
 msgid "Days of cover"
 msgstr "Dager dekning"
@@ -3673,6 +4012,13 @@ msgstr "Beskriv behandlingen %(date)s (Drift › Helse): «annen» beskrives i r
 msgid "Description"
 msgstr "Beskrivelse"
 
+msgid "Design"
+msgstr "Design"
+
+#, python-format
+msgid "Design of “%(experiment)s” saved."
+msgstr "Designet til «%(experiment)s» er lagret."
+
 msgid "Detail"
 msgstr "Detalj"
 
@@ -3685,6 +4031,9 @@ msgstr "Detaljer"
 msgid "Deviation"
 msgstr "Avvik"
 
+msgid "Deviations from the design"
+msgstr "Avvik fra opplegget"
+
 msgid "Diagnosis"
 msgstr "Diagnose"
 
@@ -3696,6 +4045,9 @@ msgstr "Død"
 
 msgid "Diesel"
 msgstr "Diesel"
+
+msgid "Diet"
+msgstr "Fôrregime"
 
 msgid "Difference"
 msgstr "Differanse"
@@ -3845,6 +4197,9 @@ msgstr "Forfaller i dag"
 msgid "Duplicate"
 msgstr "Dupliser"
 
+msgid "Duration (days)"
+msgstr "Varighet (dager)"
+
 msgid "Duties outside this system"
 msgstr "Plikter utenfor dette systemet"
 
@@ -3922,6 +4277,14 @@ msgstr "Tidligste egnede høstedato: ukjent."
 
 msgid "Earthen"
 msgstr "Jord"
+
+msgid "Economic FCR"
+msgstr "Økonomisk FCR"
+
+msgid ""
+"Economic feed conversion ratio over the days of the tanks: dead, culled and lost fish are not "
+"credited"
+msgstr "Økonomisk fôrfaktor over karenes dager: døde, utsorterte og tapte fisk krediteres ikke"
 
 msgid ""
 "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, "
@@ -4077,6 +4440,9 @@ msgid_plural "Every %(count)d days"
 msgstr[0] "Hver dag"
 msgstr[1] "Hver %(count)d. dag"
 
+msgid "Every factor has a name."
+msgstr "Hver faktor har et navn."
+
 #, python-format
 msgid ""
 "Every fish of the site is planned for slaughter within %(days)d days of the day the count fell "
@@ -4084,6 +4450,9 @@ msgid ""
 msgstr ""
 "All fisk på lokaliteten er planlagt slaktet innen %(days)d dager etter dagen telling forfalt: "
 "telling trengs ikke (lakselusforskriften § 6)."
+
+msgid "Every group has a name."
+msgstr "Hver gruppe har et navn."
 
 msgid "Every handling"
 msgstr "All håndtering"
@@ -4175,7 +4544,16 @@ msgstr "Forventet FCR"
 msgid "Expected harvest"
 msgstr "Forventet høsting"
 
+msgid "Experiment"
+msgstr "Forsøk"
+
+msgid "Experiment number"
+msgstr "Forsøksnummer"
+
 msgid "Experimental"
+msgstr "Forsøk"
+
+msgid "Experiments"
 msgstr "Forsøk"
 
 msgid "Expired"
@@ -4227,6 +4605,16 @@ msgstr "Anlegg"
 
 msgid "Facility structure"
 msgstr "Anleggsstruktur"
+
+msgid "Factor"
+msgstr "Faktor"
+
+#, python-format
+msgid "Factor %(name)s was removed meanwhile: reload the page."
+msgstr "Faktoren %(name)s ble fjernet i mellomtiden: last siden på nytt."
+
+msgid "Factors"
+msgstr "Faktorer"
 
 msgid "Fallow"
 msgstr "Brakklagt"
@@ -4498,6 +4886,9 @@ msgstr "Første"
 msgid "First day"
 msgstr "Første dag"
 
+msgid "First day of the new tank"
+msgstr "Det nye karets første dag"
+
 msgid "First name"
 msgstr "Fornavn"
 
@@ -4551,6 +4942,9 @@ msgstr "Skadde fisk"
 msgid "Fish involved"
 msgstr "Berørte fisk"
 
+msgid "Fish now"
+msgstr "Fisk nå"
+
 msgid "Fish of the own hatchery are farmed, fish caught in the wild wild-caught."
 msgstr "Fisk fra eget klekkeri er oppdrett, fisk fanget i naturen er villfanget."
 
@@ -4588,6 +4982,9 @@ msgstr "Fastmedium"
 
 msgid "Fixed: fish of this species have been stocked, so whether it is a cleaner fish cannot change."
 msgstr "Låst: fisk av denne arten er satt ut, så om den er rensefisk kan ikke endres."
+
+msgid "Fixed: the experiment has started. Copy it to change the design."
+msgstr "Låst: forsøket er startet. Kopier det for å endre designet."
 
 msgid "Fixed: the protocol is assigned. Duplicate it to change it."
 msgstr "Låst: protokollen er tildelt. Dupliser den for å endre den."
@@ -4886,6 +5283,9 @@ msgstr "Oppgi kvitteringen eller referansen myndigheten ga."
 msgid "Give the sample, or the average weight."
 msgstr "Oppgi prøven eller snittvekten."
 
+msgid "Give the seed: a whole number the deal is repeated from."
+msgstr "Oppgi frøet: et helt tall fordelingen kan gjentas fra."
+
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Oppgi temperaturkolonnene først: rutenettet følger dem."
 
@@ -4925,6 +5325,64 @@ msgstr "Sortering registrert: %(count)s fisk av %(batch)s fra %(unit)s til %(uni
 
 msgid "Gross energy (MJ/kg)"
 msgstr "Bruttoenergi (MJ/kg)"
+
+msgid "Group"
+msgstr "Gruppe"
+
+#, python-format
+msgid "Group %(group)s has no level of %(factor)s."
+msgstr "Gruppe %(group)s har ikke noe nivå av %(factor)s."
+
+#, python-format
+msgid "Group %(group)s has no replicate."
+msgstr "Gruppe %(group)s har ikke noe replikat."
+
+#, python-format
+msgid "Group %(group)s has tanks placed: take them out on the Places tab before removing it."
+msgstr "Gruppe %(group)s har plasserte kar: ta dem ut under fanen Plassering før du fjerner den."
+
+#, python-format
+msgid "Group %(group)s: %(factor)s takes a label, not a protocol."
+msgstr "Gruppe %(group)s: %(factor)s tar en etikett, ikke en protokoll."
+
+#, python-format
+msgid "Group %(group)s: a level of %(factor)s with a value needs a label."
+msgstr "Gruppe %(group)s: et nivå av %(factor)s med en verdi trenger en etikett."
+
+#, python-format
+msgid "Group %(group)s: the diet is a protocol, not a label."
+msgstr "Gruppe %(group)s: fôrregimet er en protokoll, ikke en etikett."
+
+#, python-format
+msgid "Group %(group)s: the label %(label)s is too long."
+msgstr "Gruppe %(group)s: etiketten %(label)s er for lang."
+
+#, python-format
+msgid ""
+"Group %(group)s: the protocol %(protocol)s cannot be used, only an active feeding protocol of "
+"%(species)s can."
+msgstr ""
+"Gruppe %(group)s: protokollen %(protocol)s kan ikke brukes, bare en aktiv fôringsprotokoll for "
+"%(species)s kan det."
+
+#, python-format
+msgid "Group %(name)s has a cell for each factor."
+msgstr "Gruppe %(name)s har en celle for hver faktor."
+
+#, python-format
+msgid "Group %(name)s has between 1 and 99 replicates."
+msgstr "Gruppe %(name)s har mellom 1 og 99 replikater."
+
+#, python-format
+msgid "Group %(name)s was removed meanwhile: reload the page."
+msgstr "Gruppen %(name)s ble fjernet i mellomtiden: last siden på nytt."
+
+msgid "Groups"
+msgstr "Grupper"
+
+#, python-format
+msgid "Groups %(first)s and %(second)s have the same levels: they are one group."
+msgstr "Gruppene %(first)s og %(second)s har de samme nivåene: de er én gruppe."
 
 msgid "Grow-out"
 msgstr "Matfisk"
@@ -5132,6 +5590,9 @@ msgstr "Hydrogenperoksid"
 msgid "Hydrogen sulfide"
 msgstr "Hydrogensulfid"
 
+msgid "Hypothesis"
+msgstr "Hypotese"
+
 msgid "H₂S"
 msgstr "H₂S"
 
@@ -5290,6 +5751,9 @@ msgstr ""
 "Den har fôrkalibreringer, som bare en fôrautomat har: fjern dem på fanen Fôrkalibrering før du "
 "velger en annen type."
 
+msgid "It has started: it is kept as a record. Close it instead."
+msgstr "Det er startet: det beholdes som dokumentasjon. Avslutt det i stedet."
+
 msgid "It has started: set its last day instead. The days it fed keep their protocol."
 msgstr "Den har startet: sett siste dag i stedet. Dagene den fôret, beholder protokollen sin."
 
@@ -5370,6 +5834,10 @@ msgid ""
 msgstr ""
 "Nåværende status og de den kan gå til. Aktiv og høsting krever fisk i enheten; klargjøres, "
 "brakklagt, rengjøring og inaktiv krever at den er tom."
+
+#, python-format
+msgid "Its feed conversion leaves out %(tanks)s: no weighing at the move."
+msgstr "Fôrfaktoren utelater %(tanks)s: ingen veiing ved flyttingen."
 
 #, python-format
 msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
@@ -5502,6 +5970,9 @@ msgstr "Siste kalibrering"
 msgid "Last day"
 msgstr "Siste dag"
 
+msgid "Last day in the experiment"
+msgstr "Siste dag i forsøket"
+
 msgid "Last fed"
 msgstr "Sist fôret"
 
@@ -5544,6 +6015,9 @@ msgstr "Breddegrad og lengdegrad må oppgis sammen."
 msgid "Latitude is required for a sea cage."
 msgstr "Breddegrad er påkrevd for en merd."
 
+msgid "Lead"
+msgstr "Leder"
+
 msgid "Leave"
 msgstr "Forlat"
 
@@ -5565,6 +6039,9 @@ msgstr "La vanndybden stå tom, eller oppgi en over 0."
 
 msgid "Length (m)"
 msgstr "Lengde (m)"
+
+msgid "Level"
+msgstr "Nivå"
 
 msgid "Level sensor"
 msgstr "Nivåsensor"
@@ -5915,6 +6392,9 @@ msgstr "Metode"
 msgid "Middle"
 msgstr "Midten"
 
+msgid "Mine"
+msgstr "Mine"
+
 msgid "Minimum transmittance"
 msgstr "Minste transmittans"
 
@@ -6064,6 +6544,9 @@ msgstr "NO₃-N (mg/L)"
 msgid "Name"
 msgstr "Navn"
 
+msgid "Name a factor first: the groups follow its columns."
+msgstr "Gi en faktor et navn først: gruppene følger kolonnene dens."
+
 msgid "Name must be at least 2 characters."
 msgstr "Navnet må ha minst 2 tegn."
 
@@ -6101,6 +6584,9 @@ msgstr "Trenger saliniteten: ingen ble registrert her de 30 dagene før."
 msgid "Needs the temperature of the same sample."
 msgstr "Trenger temperaturen fra samme prøve."
 
+msgid "Negative control group"
+msgstr "Negativ kontrollgruppe"
+
 msgid "Net and frame"
 msgstr "Not og ramme"
 
@@ -6134,6 +6620,9 @@ msgstr "Ny melding"
 
 msgid "New password"
 msgstr "Nytt passord"
+
+msgid "New tank"
+msgstr "Nytt kar"
 
 msgid "New task"
 msgstr "Ny oppgave"
@@ -6212,6 +6701,9 @@ msgstr "Ingen telling samsvarer med disse filtrene."
 msgid "No count recorded yet"
 msgstr "Ingen telling registrert ennå"
 
+msgid "No deviation from the design is found in the farm’s records."
+msgstr "Ingen avvik fra opplegget er funnet i anleggets registre."
+
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
 
@@ -6239,6 +6731,14 @@ msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s:
 msgstr ""
 "Ingen fôring av denne fisken er registrert de %(days)d dagene før %(day)s: sultingen er ikke "
 "kontrollert."
+
+#, python-format
+msgid ""
+"No feeding protocol reaches %(tank)s, though %(protocol)s is the diet of its group, from "
+"%(first)s to %(last)s."
+msgstr ""
+"Ingen fôringsprotokoll gjelder for %(tank)s fra %(first)s til %(last)s, selv om %(protocol)s er "
+"gruppens fôr."
 
 msgid "No feeding recorded for these filters."
 msgstr "Ingen fôring registrert for disse filtrene."
@@ -6279,6 +6779,12 @@ msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
+
+msgid "No group yet. Use “Add group” to add a row."
+msgstr "Ingen gruppe ennå. Bruk «Legg til gruppe» for å legge til en rad."
+
+msgid "No group."
+msgstr "Ingen gruppe."
 
 msgid "No growth up to the last weighing."
 msgstr "Ingen tilvekst fram til siste veiing."
@@ -6342,6 +6848,12 @@ msgstr "Ingen midtpunkt"
 msgid "No notes yet."
 msgstr "Ingen notater ennå."
 
+msgid "No one in the team yet."
+msgstr "Ingen i teamet ennå."
+
+msgid "No one in the team yet. Use “Add person” to add a row."
+msgstr "Ingen i teamet ennå. Bruk «Legg til person» for å legge til en rad."
+
 msgid "No open tasks"
 msgstr "Ingen åpne oppgaver"
 
@@ -6374,6 +6886,9 @@ msgstr "Ingen ferske data"
 
 msgid "No reorder levels yet. Use “Add feed” to add a row."
 msgstr "Ingen bestillingspunkter ennå. Bruk «Legg til fôr» for å legge til en rad."
+
+msgid "No replicate yet: design the groups on the Design tab first."
+msgstr "Ingen replikater ennå: design gruppene under fanen Design først."
 
 msgid "No report is due."
 msgstr "Ingen rapport skal sendes."
@@ -6421,6 +6936,12 @@ msgstr ""
 
 msgid "No table yet"
 msgstr "Ingen tabell ennå"
+
+msgid "No tank"
+msgstr "Ingen kar"
+
+msgid "No tank is placed."
+msgstr "Ingen kar er plassert."
 
 msgid "No task completed or cancelled yet"
 msgstr "Ingen oppgaver fullført eller avlyst ennå"
@@ -6567,6 +7088,9 @@ msgstr "Ikke rensefisk"
 msgid "Not a sea-lice medicine"
 msgstr "Ikke et lakselusmiddel"
 
+msgid "Not allocated"
+msgstr "Ikke fordelt"
+
 msgid ""
 "Not built (decision D-3): the system holds no gutted kilos per quality class. A farm selling to a"
 " third-party slaughterhouse does not owe it; Q5 asks whether a farm may report the planned "
@@ -6588,6 +7112,9 @@ msgstr ""
 
 msgid "Not checked"
 msgstr "Ikke kontrollert"
+
+msgid "Not chosen"
+msgstr "Ikke valgt"
 
 msgid "Not chosen yet"
 msgstr "Ikke valgt ennå"
@@ -6846,6 +7373,12 @@ msgstr ""
 "utenfor første og siste temperaturkolonne, får ingen rasjon. I hver celle SFR, %% av kroppsvekten"
 " som fôres per dag; 0 betyr ingen fôring ved den temperaturen. Tom FCR betyr protokollens. "
 "Tabellen lagres samlet."
+
+msgid "One site per experiment: its clock gives the days."
+msgstr "Én lokalitet per forsøk: dens klokke gir dagene."
+
+msgid "One species per experiment: a unit holds one."
+msgstr "Én art per forsøk: et kar holder én."
 
 #, python-format
 msgid "Only %(available)s %(unit)s of %(item)s, lot %(lot)s, are in %(location)s on %(date)s."
@@ -7129,6 +7662,9 @@ msgstr "Annet utstyr har allerede dette serienummeret."
 msgid "Other equipment already uses this code."
 msgstr "Annet utstyr bruker allerede denne koden."
 
+msgid "Other factor"
+msgstr "Annen faktor"
+
 msgid "Other language"
 msgstr "Annet språk"
 
@@ -7365,8 +7901,25 @@ msgstr "Sted"
 msgid "Place deleted"
 msgstr "Sted slettet"
 
+msgid "Placed by hand"
+msgstr "Plassert manuelt"
+
+#, python-format
+msgid "Placed by hand: %(reason)s"
+msgstr "Plassert manuelt: %(reason)s"
+
+msgid "Places"
+msgstr "Plassering"
+
+#, python-format
+msgid "Places of “%(experiment)s” saved."
+msgstr "Plasseringene til «%(experiment)s» er lagret."
+
 msgid "Plan"
 msgstr "Plan"
+
+msgid "Plan a trial: its hypothesis, its groups and the tanks they get."
+msgstr "Planlegg et forsøk: hypotesen, gruppene og karene de får."
 
 msgid "Plan harvest"
 msgstr "Planlegg høsting"
@@ -7426,8 +7979,17 @@ msgstr "Damtype"
 msgid "Ponds"
 msgstr "Dammer"
 
+msgid "Pool"
+msgstr "Utvalg"
+
 msgid "Poor growth"
 msgstr "Dårlig vekst"
+
+msgid "Position"
+msgstr "Posisjon"
+
+msgid "Positive control group"
+msgstr "Positiv kontrollgruppe"
 
 msgid "Post-larvae"
 msgstr "Postlarver"
@@ -7489,6 +8051,9 @@ msgstr "Hovedkontakt"
 msgctxt "link"
 msgid "Primary"
 msgstr "Primær"
+
+msgid "Primary endpoint"
+msgstr "Primært endepunkt"
 
 msgid "Primary key"
 msgstr "Primærnøkkel"
@@ -7649,6 +8214,16 @@ msgstr "Raceway (strømkanal)"
 msgid "Rain and run-off"
 msgstr "Regn og overvann"
 
+msgid "Randomise"
+msgstr "Randomiser"
+
+msgid "Randomised"
+msgstr "Randomisert"
+
+#, python-format
+msgid "Randomised, seed %(seed)d."
+msgstr "Randomisert, frø %(seed)d."
+
 msgid "Rating"
 msgstr "Vurdering"
 
@@ -7681,11 +8256,17 @@ msgstr "Årsak"
 msgid "Reason for cancelling"
 msgstr "Grunn til avlysning"
 
+msgid "Reason for placing by hand"
+msgstr "Begrunnelse for manuell plassering"
+
 msgid "Reason for the status"
 msgstr "Årsak til statusen"
 
 msgid "Reason for voiding"
 msgstr "Årsak til annullering"
+
+msgid "Reason it left"
+msgstr "Begrunnelse for at det gikk ut"
 
 msgid "Recapture after an escape (akvakulturdriftsforskriften § 39 third paragraph)"
 msgstr "Gjenfangst etter rømming (akvakulturdriftsforskriften § 39 tredje ledd)"
@@ -7796,6 +8377,9 @@ msgstr "Registrert på helsehendelsen før varsler fantes: bare tidspunktet det 
 msgid "Records"
 msgstr "Registreringer"
 
+msgid "Records of the farm"
+msgstr "Anleggets registre"
+
 msgid "Records were added or voided since it was filed, but the figures are the same."
 msgstr "Registreringer er lagt til eller annullert siden den ble sendt inn, men tallene er de samme."
 
@@ -7853,6 +8437,12 @@ msgstr "Offisiell enhets-ID"
 msgid "Relationships"
 msgstr "Relasjoner"
 
+msgid "Release"
+msgstr "Frigi"
+
+msgid "Release a tank"
+msgstr "Frigi et kar"
+
 msgid "Remaining"
 msgstr "Gjenstår"
 
@@ -7892,8 +8482,24 @@ msgstr "Reparasjon"
 msgid "Repeats"
 msgstr "Gjentas"
 
+msgid "Replace"
+msgstr "Bytt ut"
+
+msgid "Replace a tank"
+msgstr "Bytt ut et kar"
+
 msgid "Replaced by a correction"
 msgstr "Erstattet av en korrigering"
+
+msgid "Replicate"
+msgstr "Replikat"
+
+#, python-format
+msgid "Replicate %(group)s R%(number)d holds tanks: take them out on the Places tab before removing it."
+msgstr "Replikat %(group)s R%(number)d har kar: ta dem ut under fanen Plassering før du fjerner det."
+
+msgid "Replicates"
+msgstr "Replikater"
 
 msgid "Report"
 msgstr "Rapport"
@@ -7922,8 +8528,14 @@ msgstr "Påkrevd for en merd."
 msgid "Required when fish stay in this unit: the grading weighs them too."
 msgstr "Påkrevd når fisk blir igjen i enheten: sorteringen veier dem også."
 
+msgid "Research"
+msgstr "Forskning"
+
 msgid "Research or other production"
 msgstr "Forskning eller annen produksjon"
+
+msgid "Researcher"
+msgstr "Forsker"
 
 msgid "Reset password"
 msgstr "Tilbakestill passord"
@@ -8134,6 +8746,9 @@ msgstr "Lagre"
 msgid "Save %(name)s"
 msgstr "Lagre %(name)s"
 
+msgid "Save as a template"
+msgstr "Lagre som mal"
+
 msgid "Save calibrations"
 msgstr "Lagre kalibreringer"
 
@@ -8146,8 +8761,14 @@ msgstr "Lagre sjekklisten"
 msgid "Save contacts"
 msgstr "Lagre kontaktpersoner"
 
+msgid "Save design"
+msgstr "Lagre designet"
+
 msgid "Save password"
 msgstr "Lagre passord"
+
+msgid "Save places"
+msgstr "Lagre plasseringene"
 
 msgid "Save reorder levels"
 msgstr "Lagre bestillingspunkter"
@@ -8160,6 +8781,9 @@ msgstr "Lagre mistanker"
 
 msgid "Save table"
 msgstr "Lagre tabell"
+
+msgid "Save team"
+msgstr "Lagre teamet"
 
 msgid "Save tests"
 msgstr "Lagre tester"
@@ -8224,8 +8848,18 @@ msgstr "Oppgi hvorfor den er lukket."
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
 
+msgid ""
+"Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
+"reason."
+msgstr ""
+"Si hvorfor karene er plassert manuelt: en plassering som ikke er randomisert registreres med "
+"begrunnelsen."
+
 msgid "Say why when it is another reason, and only then."
 msgstr "Si hvorfor når det er en annen grunn, og bare da."
+
+msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
+msgstr "Skriv hvorfor: et kar som går ut eller byttes ut, registreres med begrunnelsen."
 
 msgid "Scale loss"
 msgstr "Skjelltap"
@@ -8314,6 +8948,9 @@ msgstr "Søk på navn, virkestoff, MT-nummer eller produsent"
 msgid "Search by name, username or email"
 msgstr "Søk etter navn, brukernavn eller e-post"
 
+msgid "Search by number, name or hypothesis"
+msgstr "Søk etter nummer, navn eller hypotese"
+
 msgid "Search by number, question or answer"
 msgstr "Søk på nummer, spørsmål eller svar"
 
@@ -8373,6 +9010,9 @@ msgstr "Se alt i aktivitetsloggen"
 
 msgid "See the day-by-day book"
 msgstr "Se registeret dag for dag"
+
+msgid "Seed"
+msgstr "Frø"
 
 msgid "Select a batch"
 msgstr "Velg en fiskegruppe"
@@ -8434,6 +9074,9 @@ msgstr "Velg en leverandør"
 msgid "Select a system"
 msgstr "Velg et system"
 
+msgid "Select a tank"
+msgstr "Velg et kar"
+
 msgid "Select a type"
 msgstr "Velg en type"
 
@@ -8486,6 +9129,9 @@ msgstr "Serienummer"
 msgid "Set a new password"
 msgstr "Velg nytt passord"
 
+msgid "Set day 0 on the Details tab first: a tank is booked for days."
+msgstr "Sett dag 0 under fanen Detaljer først: et kar bookes for dager."
+
 msgid "Set it inactive instead."
 msgstr "Sett det heller inaktivt."
 
@@ -8503,6 +9149,13 @@ msgstr "Alvorlighet"
 
 msgid "Shape"
 msgstr "Form"
+
+msgid ""
+"Share of the fish of the first day that were not lost since: dead, culled or lost fish counted "
+"from the first day of the tank to its last day or today"
+msgstr ""
+"Andelen av fisken første dag som ikke er tapt siden: døde, utsorterte eller tapte fisk telles fra"
+" karets første dag til siste dag eller i dag"
 
 #, python-format
 msgid "Share of the outflow (%%)"
@@ -8691,6 +9344,13 @@ msgstr ""
 "versjon; gjør endringene dine på nytt."
 
 msgid ""
+"Someone else changed this experiment while you were editing it. The page now shows their version;"
+" make your changes again."
+msgstr ""
+"Noen andre endret dette forsøket mens du redigerte det. Siden viser nå deres versjon; gjør "
+"endringene dine på nytt."
+
+msgid ""
 "Someone else changed this feeding protocol while you were editing it. The table now shows their "
 "version; make your changes again."
 msgstr ""
@@ -8789,11 +9449,25 @@ msgstr "Reserve"
 msgid "Start"
 msgstr "Start"
 
+#, python-format
+msgid "Start %(experiment)s"
+msgstr "Start %(experiment)s"
+
 msgid "Start a correction"
 msgstr "Start en korrigering"
 
+msgid "Start despite these warnings"
+msgstr "Start til tross for disse advarslene"
+
 msgid "Start one"
 msgstr "Start en"
+
+msgid "Start the experiment"
+msgstr "Start forsøket"
+
+#, python-format
+msgid "Start “%(experiment)s”?"
+msgstr "Starte «%(experiment)s»?"
 
 msgid "Started"
 msgstr "Startet"
@@ -8807,8 +9481,25 @@ msgstr "Startet av"
 msgid "Starter feed"
 msgstr "Startfôr"
 
+msgid "Starting fixes the design for ever. Going on is logged with the warnings shown here."
+msgstr "Å starte låser designet for alltid. Å gå videre logges med advarslene som vises her."
+
+msgid ""
+"Starting fixes the design for ever: the hypothesis, the groups, their levels and replicates, the "
+"tanks and the days. For each group with a diet, its feeding protocol is assigned to its tanks for"
+" their days (Operations › Feeding › Assignments), so the meal board feeds by it. The figures are "
+"read from the farm’s own records over these days."
+msgstr ""
+"Å starte låser designet for alltid: hypotesen, gruppene, nivåene og replikatene deres, karene og "
+"dagene. For hver gruppe med et fôrregime tildeles fôringsprotokollen til karene for dagene deres "
+"(Drift › Fôring › Tildelinger), slik at måltidstavlen fôrer etter den. Tallene leses fra "
+"anleggets egne registre i disse dagene."
+
 msgid "Starting later"
 msgstr "Starter senere"
+
+msgid "Starts on"
+msgstr "Starter"
 
 msgid "Starvation"
 msgstr "Sult"
@@ -8924,6 +9615,9 @@ msgstr "Lufter CO₂ ned under de %(air)s mg/L luften etterlater i vannet: lufti
 msgid "Structure"
 msgstr "Struktur"
 
+msgid "Student"
+msgstr "Student"
+
 msgid "Submersible"
 msgstr "Nedsenkbar"
 
@@ -8998,6 +9692,14 @@ msgstr "Bytt panel"
 msgid "System"
 msgstr "System"
 
+#, python-format
+msgid ""
+"System %(system)s holds tanks of different groups (%(groups)s): its water, and a treatment in it,"
+" is shared between them."
+msgstr ""
+"Systemet %(system)s har kar fra ulike grupper (%(groups)s): vannet, og en behandling i det, deles"
+" mellom dem."
+
 msgid "System (its loop)"
 msgstr "System (kretsløpet)"
 
@@ -9070,8 +9772,14 @@ msgstr "Oppgaver"
 msgid "Tasks due today"
 msgstr "Oppgaver med frist i dag"
 
+msgid "Team"
+msgstr "Team"
+
 msgid "Technical specifications"
 msgstr "Tekniske spesifikasjoner"
+
+msgid "Technician"
+msgstr "Tekniker"
 
 msgid "Teflubenzuron"
 msgstr "Teflubenzuron"
@@ -9100,11 +9808,20 @@ msgstr "Temperatursensor"
 msgid "Temperatures"
 msgstr "Temperaturer"
 
+msgid "Template"
+msgstr "Mal"
+
+msgid "Templates"
+msgstr "Maler"
+
 msgid "Tenacibaculosis"
 msgstr "Tenacibakulose"
 
 msgid "Terms and notes"
 msgstr "Betingelser og notater"
+
+msgid "Test group"
+msgstr "Testgruppe"
 
 msgid "Tested on"
 msgstr "Testet"
@@ -9291,6 +10008,20 @@ msgstr ""
 "planlagt utsett ikke gjennomføres, rensefisk går til et annet anlegg, eller "
 "produksjonsteknologien endres."
 
+msgid ""
+"The copy is a draft with the same design: the factors and their levels (the same feeding "
+"protocols, so a repeat feeds identically), the groups, the replicates as empty places, the "
+"hypothesis and the duration. It has no tanks, no allocation and no team but you: place the tanks "
+"again, and start it when it is ready."
+msgstr ""
+"Kopien er et utkast med samme design: faktorene og nivåene deres (de samme fôringsprotokollene, "
+"så en gjentakelse fôrer likt), gruppene, replikatene som tomme plasser, hypotesen og varigheten. "
+"Den har ingen kar, ingen fordeling og ikke noe team utenom deg: plasser karene på nytt, og start "
+"den når den er klar."
+
+msgid "The copy needs a name."
+msgstr "Kopien trenger et navn."
+
 msgid "The criticality is from 1 to 5."
 msgstr "Kritikaliteten er fra 1 til 5."
 
@@ -9316,6 +10047,18 @@ msgstr "Dagene er dagene fisken forlater enhetene sine: kontroller at de er slak
 msgid "The days before yesterday keep their protocol: the last day is yesterday at the earliest."
 msgstr "Dagene før i går beholder protokollen sin: siste dag er tidligst i går."
 
+msgid "The days before yesterday keep what happened in them: a tank leaves yesterday at the earliest."
+msgstr "Dagene før i går beholder det som skjedde i dem: et kar går ut i går på det tidligste."
+
+msgid ""
+"The days it has been in the experiment stay as they are, and what it gave up to its last day "
+"stays in the figures. The replicate keeps its number. Its feeding assignment ends with it, and "
+"the new tank gets the diet of the group for its days."
+msgstr ""
+"Dagene karet har vært i forsøket blir stående som de er, og det det ga fram til siste dag blir "
+"stående i tallene. Replikatet beholder nummeret sitt. Fôringstildelingen avsluttes med det, og "
+"det nye karet får gruppens fôr for sine dager."
+
 msgid "The days of the week it is due."
 msgstr "Ukedagene den har frist."
 
@@ -9337,6 +10080,28 @@ msgstr ""
 
 msgid "The depth of the water taken, from the surface."
 msgstr "Dybden vannet tas fra, regnet fra overflaten."
+
+msgid "The design has no control group."
+msgstr "Designet har ingen kontrollgruppe."
+
+msgid "The design has no group."
+msgstr "Designet har ingen gruppe."
+
+msgid "The design has no replicate to place tanks in."
+msgstr "Designet har ingen replikater å plassere kar i."
+
+msgid "The design has one group: there is nothing to compare it with."
+msgstr "Designet har én gruppe: det er ingenting å sammenligne den med."
+
+msgid "The diet has no unit: its levels are protocols."
+msgstr "Fôrregimet har ingen enhet: nivåene er protokoller."
+
+msgid ""
+"The diets’ feeding tables differ in more than the feed (weight bands, meals, expected FCR or "
+"feeding rates): the groups would differ in more than the diet."
+msgstr ""
+"Fôrregimenes fôringstabeller skiller seg i mer enn fôret (vektbånd, måltider, forventet FCR eller"
+" fôringsrater): gruppene ville skille seg i mer enn fôrregimet."
 
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Den fordøyelige energien kan ikke være mer enn bruttoenergien."
@@ -9366,6 +10131,30 @@ msgid "The expected harvest comes after the stocking date."
 msgstr "Forventet høsting kommer etter utsettsdatoen."
 
 msgid ""
+"The experiment has started, so its design is fixed: it was registered before the first day and "
+"what is judged is what was planned. To change it, copy the experiment and change the copy."
+msgstr ""
+"Forsøket er startet, så designet er låst: det ble registrert før første dag, og det som bedømmes "
+"er det som var planlagt. For å endre det, kopier forsøket og endre kopien."
+
+msgid "The experiment has started: its design is fixed. Copy it to change the design."
+msgstr "Forsøket er startet: designet er låst. Kopier det for å endre designet."
+
+msgid ""
+"The experiment has started: its tanks and days are fixed. A tank that has to leave, or be "
+"replaced, is released from its page."
+msgstr ""
+"Forsøket er startet: karene og dagene er låst. Et kar som må gå ut, eller byttes, frigjøres fra "
+"siden."
+
+msgid "The experiment is not running: only a running experiment has tanks to release or replace."
+msgstr "Forsøket pågår ikke: bare et pågående forsøk har kar å frigi eller bytte ut."
+
+#, python-format
+msgid "The factor name %(name)s is too long."
+msgstr "Faktornavnet %(name)s er for langt."
+
+msgid ""
 "The fast before each kind of handling, per species or for every species. Without a rule the fast "
 "is not checked."
 msgstr ""
@@ -9392,6 +10181,22 @@ msgstr "Fôrfabrikken som lager det: en leverandør av fôr (Innkjøp › Levera
 #, python-format
 msgid "The feeding of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Fôringen %(date)s i %(unit)s ville ikke ha fisk: annuller den først."
+
+#, python-format
+msgid "The feeding protocol %(protocol)s is for %(species)s, not for %(trial)s."
+msgstr "Fôringsprotokollen %(protocol)s er for %(species)s, ikke for %(trial)s."
+
+#, python-format
+msgid "The feeding protocol %(protocol)s is not active."
+msgstr "Fôringsprotokollen %(protocol)s er ikke aktiv."
+
+#, python-format
+msgid ""
+"The feeding protocol %(protocol)s is not assigned yet: its table can still change until the "
+"experiment starts."
+msgstr ""
+"Fôringsprotokollen %(protocol)s er ikke tildelt ennå: tabellen kan fortsatt endres til forsøket "
+"starter."
 
 msgid "The feeding table can be filled in once the protocol is created."
 msgstr "Fôringstabellen kan fylles ut når protokollen er opprettet."
@@ -9425,6 +10230,12 @@ msgstr ""
 msgid "The file is %(size)s; the library takes PDFs of up to %(limit)s."
 msgstr "Filen er %(size)s; biblioteket tar PDF-er på opptil %(limit)s."
 
+#, python-format
+msgid "The final weighing was %(days)s day ago"
+msgid_plural "The final weighing was %(days)s days ago"
+msgstr[0] "Sluttveiingen var for %(days)s dag siden"
+msgstr[1] "Sluttveiingen var for %(days)s dager siden"
+
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Første dag det fôres etter den, etter anleggets klokke."
 
@@ -9446,6 +10257,17 @@ msgstr ""
 "eller dager (5 dager lagres som 120 timer). 0 til 720 timer (30 dager). For en høsting kan feltet"
 " stå tomt når rensingen oppgis i døgngrader."
 
+#, python-format
+msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
+msgstr "Fisken i %(tank)s er ikke veid på dag 0: grunnlaget for fôrutnyttelsen deres mangler."
+
+#, python-format
+msgid "The group name %(name)s is too long."
+msgstr "Gruppenavnet %(name)s er for langt."
+
+msgid "The groups have different numbers of replicates."
+msgstr "Gruppene har ulikt antall replikater."
+
 msgid "The half mesh, from one knot to the next; a stretched mesh is twice as long."
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
 
@@ -9464,6 +10286,9 @@ msgstr "Helsehendelsen er datert %(date)s, etter denne operasjonen."
 #, python-format
 msgid "The health event is dated %(date)s, after this treatment."
 msgstr "Helsehendelsen er datert %(date)s, etter denne behandlingen."
+
+msgid "The hypothesis is not written."
+msgstr "Hypotesen er ikke skrevet."
 
 msgid "The id the authority returned for the first filing was not recorded: it is needed to correct it."
 msgstr ""
@@ -9492,6 +10317,10 @@ msgstr ""
 "Kg fôr per kg tilvekst som tabellen forventer; en vektklasse kan ha sin egen. Den estimerte "
 "vekten mellom veiinger øker med fôret delt på den."
 
+#, python-format
+msgid "The kind of factor %(name)s is not one of the two."
+msgstr "Typen til faktoren %(name)s er ikke en av de to."
+
 msgid ""
 "The knowledge in your own words, as one statement someone can act on, e.g. “In Atlantic salmon "
 "under 50 g, free CO₂ above 15 mg/L leads to nephrocalcinosis.” or “A feed order is at least 20 t "
@@ -9517,6 +10346,10 @@ msgstr "Siste dag kan ikke være før første dag."
 
 msgid "The last day cannot be before the first."
 msgstr "Siste dag kan ikke være før første."
+
+#, python-format
+msgid "The last day comes on or after the first day (%(day)s)."
+msgstr "Siste dag kommer på eller etter første dag (%(day)s)."
 
 msgid "The last day comes on or after the first day."
 msgstr "Siste dag er på eller etter første dag."
@@ -9545,6 +10378,10 @@ msgid "The latest week of counts, per site."
 msgid_plural "The latest %(weeks)s weeks of counts, per site."
 msgstr[0] "Den siste uken med tellinger, per lokalitet."
 msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
+
+#, python-format
+msgid "The level %(label)s of %(factor)s has two different values."
+msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
 
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
@@ -9584,12 +10421,32 @@ msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller ko
 msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Navnet på selskapets eget språk, f.eks. Laks."
 
+msgid "The name of the copy is too long."
+msgstr "Navnet på kopien er for langt."
+
 msgid ""
 "The named wall screens of Monitoring: a name, how its cards are drawn by default and how often "
 "its screens ask."
 msgstr ""
 "De navngitte veggskjermene i Overvåking: et navn, hvordan kortene tegnes som standard og hvor "
 "ofte skjermene spør."
+
+#, python-format
+msgid "The new tank comes in after the day the placement began (%(day)s)."
+msgstr "Det nye karet kommer inn etter dagen plasseringen begynte (%(day)s)."
+
+#, python-format
+msgid "The new tank comes in on or before the last day of the placement (%(day)s)."
+msgstr "Det nye karet kommer inn på eller før plasseringens siste dag (%(day)s)."
+
+msgid "The new tank comes in today at the earliest."
+msgstr "Det nye karet kommer inn i dag på det tidligste."
+
+msgid "The new tank is the one that leaves."
+msgstr "Det nye karet er det som går ut."
+
+msgid "The new tank was deleted meanwhile."
+msgstr "Det nye karet ble slettet i mellomtiden."
 
 #, python-format
 msgid "The next meal on the Meal board: %(kilos)s, filled in below."
@@ -9604,6 +10461,9 @@ msgstr "Artskoden er tre store bokstaver, f.eks. SAL."
 #, python-format
 msgid "The official code of %(name)s is %(code)s."
 msgstr "Artskoden for %(name)s er %(code)s."
+
+msgid "The one variable the trial is judged on. Needed to start it."
+msgstr "Den ene variabelen forsøket bedømmes på. Trengs for å starte det."
 
 #, python-format
 msgid "The outlets of %(owner)s take %(total)s %% of its outflow, not 100 %%."
@@ -9653,6 +10513,13 @@ msgid "The pellet diameter, as a feeder’s calibrations write it."
 msgstr "Pelletdiameteren, slik fôrautomatens kalibreringer skriver den."
 
 msgid ""
+"The people of the experiment and their part; exactly one is the lead. Only people who can read "
+"Experiments are offered. The team is saved separately from the details."
+msgstr ""
+"Personene i forsøket og deres rolle; nøyaktig én er leder. Bare personer som kan lese Forsøk "
+"tilbys. Teamet lagres atskilt fra detaljene."
+
+msgid ""
 "The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
 " one can be the primary contact. Contacts are saved separately from the supplier details."
 msgstr ""
@@ -9687,8 +10554,19 @@ msgstr ""
 msgid "The points of %(owner)s."
 msgstr "Punktene på %(owner)s."
 
+#, python-format
+msgid ""
+"The pool has %(items)d items for %(slots)d replicates: choose as many tanks or systems as there "
+"are replicates."
+msgstr ""
+"Utvalget har %(items)d elementer for %(slots)d replikater: velg like mange kar eller systemer som"
+" det er replikater."
+
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
+
+msgid "The primary endpoint is not chosen."
+msgstr "Det primære endepunktet er ikke valgt."
 
 msgid "The product name, as on the bag, e.g. Nutra Olympic 3 mm."
 msgstr "Produktnavnet, slik det står på sekken, f.eks. Nutra Olympic 3 mm."
@@ -9742,6 +10620,17 @@ msgstr ""
 "regnes det neste ut på nytt. Over- og underfôring flagges ikke ennå: sammenlign mengdene som er "
 "fôret og som gjenstår."
 
+#, python-format
+msgid ""
+"The ration of %(tank)s follows %(actual)s, though %(protocol)s is the diet of its group, from "
+"%(first)s to %(last)s."
+msgstr ""
+"Rasjonen til %(tank)s følger %(actual)s fra %(first)s til %(last)s, selv om %(protocol)s er "
+"gruppens fôr."
+
+msgid "The reason is too long."
+msgstr "Begrunnelsen er for lang."
+
 msgid "The receipt or case number the authority gave, if any."
 msgstr "Kvitteringen eller saksnummeret myndigheten ga, hvis noen."
 
@@ -9785,6 +10674,14 @@ msgstr ""
 "Resultatet av en følsomhetsundersøkelse i uken (lakselusforskriften § 10 d): når, laboratoriet, "
 "virkestoffet og resultatet. Lagres atskilt fra rapporten."
 
+#, python-format
+msgid "The role of group %(name)s is not one of the four."
+msgstr "Rollen til gruppe %(name)s er ikke en av de fire."
+
+#, python-format
+msgid "The row ends on %(day)s already: it is only ever shortened."
+msgstr "Raden slutter allerede %(day)s: den kan bare forkortes."
+
 msgid "The safe zone lies in this band."
 msgstr "Den trygge sonen ligger i dette båndet."
 
@@ -9798,6 +10695,10 @@ msgid ""
 msgstr ""
 "Lakselus-endepunktet har ikke PUT: en korrigering sendes på nytt som POST (om den erstatter uken "
 "eller dupliserer er ikke bekreftet)."
+
+#, python-format
+msgid "The seed is a whole number from 0 to %(top)d."
+msgstr "Frøet er et helt tall fra 0 til %(top)d."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
@@ -9938,6 +10839,27 @@ msgstr ""
 "Systemene det betjener, på produksjonsavdelingens lokalitet: minst ett, og ett av dem dets "
 "primære system. Kritikalitet er hvor mye systemet er avhengig av det, fra 1 (lite) til 5 (helt)."
 
+#, python-format
+msgid "The tank is booked until %(day)s already: a placement is only ever shortened."
+msgstr "Karet er allerede booket til %(day)s: en plassering kan bare forkortes."
+
+#, python-format
+msgid ""
+"The tanks are booked for the days of the experiment, %(first)s to %(last)s, unless a row gives "
+"days of its own. The error degrees of freedom the design leaves are %(error_df)s."
+msgstr ""
+"Karene er booket for forsøkets dager, %(first)s til %(last)s, med mindre en rad gir egne dager. "
+"Feilfrihetsgradene designet gir er %(error_df)s."
+
+msgid "The tanks are not allocated: randomise them or place them by hand."
+msgstr "Karene er ikke fordelt: randomiser dem eller plasser dem manuelt."
+
+#, python-format
+msgid ""
+"The tanks of %(replicate)s are in different systems: the water they share is not the replicate’s "
+"own."
+msgstr "Karene i %(replicate)s er i ulike systemer: vannet de deler er ikke replikatets eget."
+
 msgid ""
 "The tanks, ponds and cages fish are held in, each in a production department and, when it has "
 "one, a system."
@@ -9958,6 +10880,15 @@ msgstr ""
 #, python-format
 msgid "The task is %(status)s: its checklist can no longer be ticked."
 msgstr "Oppgaven er %(status)s: sjekklisten kan ikke lenger krysses av."
+
+msgid "The team can be set once the experiment is created: its creator is the lead."
+msgstr "Teamet kan settes når forsøket er opprettet: den som oppretter det er leder."
+
+msgid "The team has no lead."
+msgstr "Teamet har ingen leder."
+
+msgid "The team needs a lead."
+msgstr "Teamet trenger en leder."
 
 msgid ""
 "The text as it was read from the PDF, without its layout. It is what the search finds and what "
@@ -10194,6 +11125,9 @@ msgstr ""
 msgid "They stay as they are, out of sight while this is deleted, and come back when it is restored."
 msgstr "De blir stående som de er, skjult mens denne er slettet, og kommer tilbake når den gjenopprettes."
 
+msgid "They stay as they are."
+msgstr "De blir som de er."
+
 msgid "They stay in the task lists, which show this as deleted, and show it again when it is restored."
 msgstr ""
 "De blir stående i oppgavelistene, som viser dette som slettet, og viser det igjen når det "
@@ -10202,6 +11136,9 @@ msgstr ""
 #, python-format
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
+
+msgid "This assignment was deleted meanwhile."
+msgstr "Denne tildelingen ble slettet i mellomtiden."
 
 msgid "This batch already has a production plan."
 msgstr "Denne fiskegruppen har allerede en produksjonsplan."
@@ -10223,6 +11160,15 @@ msgstr "Dette tømmer enheten for fiskegruppen"
 
 msgid "This escape has a notice already: open it from the list."
 msgstr "Denne rømmingen har allerede et varsel: åpne det fra listen."
+
+msgid "This experiment cannot be started."
+msgstr "Dette forsøket kan ikke startes."
+
+msgid "This experiment has started."
+msgstr "Dette forsøket er startet."
+
+msgid "This experiment was deleted meanwhile."
+msgstr "Dette forsøket ble slettet i mellomtiden."
 
 msgid "This file is not a PDF."
 msgstr "Denne filen er ikke en PDF."
@@ -10252,8 +11198,17 @@ msgstr "Denne eieren har allerede et punkt med dette navnet."
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Denne eieren har allerede et aktivt midtpunkt: det står for vannet dens."
 
+msgid "This person is already in the team."
+msgstr "Denne personen er allerede i teamet."
+
+msgid "This person is in the list twice."
+msgstr "Denne personen står to ganger i listen."
+
 msgid "This place is not on the chosen site."
 msgstr "Dette stedet er ikke på valgt lokalitet."
+
+msgid "This placement was removed meanwhile: reload the page."
+msgstr "Denne plasseringen ble fjernet i mellomtiden: last siden på nytt."
 
 msgid "This plan is cancelled."
 msgstr "Denne planen er avlyst."
@@ -10336,6 +11291,9 @@ msgid_plural "This unit holds %(count)d batches: the operation applies to the on
 msgstr[0] "Denne enheten har %(count)d fiskegruppe: operasjonen gjelder den som velges."
 msgstr[1] "Denne enheten har %(count)d fiskegrupper: operasjonen gjelder den som velges."
 
+msgid "This unit is booked to another experiment on some of these days."
+msgstr "Dette karet er booket til et annet forsøk noen av disse dagene."
+
 msgid "Three letters, e.g. NOK."
 msgstr "Tre bokstaver, f.eks. NOK."
 
@@ -10401,8 +11359,14 @@ msgstr "Til %(facility)s"
 msgid "To Fiskeridirektoratet; the form is not saved"
 msgstr "Til Fiskeridirektoratet; skjemaet er ikke lagret"
 
+msgid "To fix before it can start"
+msgstr "Må rettes før det kan starte"
+
 msgid "To location"
 msgstr "Til lagerplass"
+
+msgid "To read before it starts"
+msgstr "Les før det starter"
 
 msgid "To unit"
 msgstr "Til enhet"
@@ -10412,6 +11376,9 @@ msgstr "Til enheter"
 
 msgid "Today"
 msgstr "I dag"
+
+msgid "Today at the earliest; the last day of the old tank is the day before."
+msgstr "I dag på det tidligste; det gamle karets siste dag er dagen før."
 
 msgid "Today lists the overdue tasks, those due today and those done today."
 msgstr "I dag viser de forfalte oppgavene, dem med frist i dag og dem som er utført i dag."
@@ -10499,6 +11466,18 @@ msgstr "Turbiditet (NTU)"
 msgid "Turkish"
 msgstr "Tyrkisk"
 
+#, python-format
+msgid "Two factors are called %(name)s."
+msgstr "To faktorer heter %(name)s."
+
+#, python-format
+msgid "Two groups are called %(name)s."
+msgstr "To grupper heter %(name)s."
+
+#, python-format
+msgid "Two items of the pool have the code %(code)s."
+msgstr "To elementer i utvalget har koden %(code)s."
+
 msgid "Two rows are for the same species."
 msgstr "To rader gjelder samme art."
 
@@ -10583,6 +11562,9 @@ msgstr ""
 
 msgid "Unit cost"
 msgstr "Enhetskostnad"
+
+msgid "Unit of its levels"
+msgstr "Enhet for nivåene"
 
 msgid "Unit, system or equipment"
 msgstr "Enhet, system eller utstyr"
@@ -10784,6 +11766,9 @@ msgstr "Advarsel over"
 msgid "Warning below"
 msgstr "Advarsel under"
 
+msgid "Warnings acknowledged"
+msgstr "Anerkjente advarsler"
+
 msgid "Warranty end date"
 msgstr "Garantien utløper"
 
@@ -10975,6 +11960,13 @@ msgstr "Hva myndigheten sa, og hvor (e-posten, siden). Trengs for å merke det s
 msgid "What the farm pays per kg, with its currency."
 msgstr "Det anlegget betaler per kg, med valuta."
 
+msgid ""
+"What the farm’s records show on the days of the tanks that the design did not say. Nothing is "
+"refused for a design: these are facts to read."
+msgstr ""
+"Det anleggets registre viser på karenes dager som opplegget ikke sa noe om. Ingenting nektes på "
+"grunn av et opplegg: dette er fakta å lese."
+
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."
 
@@ -11002,6 +11994,9 @@ msgid ""
 msgstr ""
 "Det beholdningen tok ut for denne fisken: fiskegruppens snitt i enheten, den siste fisken resten "
 "av beholdningen"
+
+msgid "What the trial tests, before it starts. Needed to start it."
+msgstr "Hva forsøket tester, før det starter. Trengs for å starte det."
 
 msgid "What was delivered"
 msgstr "Det som ble levert"
@@ -11293,6 +12288,9 @@ msgstr "Ja"
 
 msgid "Yesterday"
 msgstr "I går"
+
+msgid "Yesterday at the earliest; the tank is booked to the experiment until then."
+msgstr "I går på det tidligste; karet er booket til forsøket fram til da."
 
 msgid "You"
 msgstr "Du"
@@ -11752,8 +12750,14 @@ msgstr "f.eks. kari.nordmann"
 msgid "e.g. sand, cartridge"
 msgstr "f.eks. sand, patron"
 
+msgid "e.g. tanks 1 to 4 share a drain"
+msgstr "t.eks. kar 1 til 4 deler et avløp"
+
 msgid "e.g. the vet, November 2026"
 msgstr "f.eks. veterinæren, november 2026"
+
+msgid "e.g. °C"
+msgstr "t.eks. °C"
 
 msgid "eFCR"
 msgstr "eFCR"
@@ -11808,6 +12812,42 @@ msgstr "hver lokalitet der fisk rømmer"
 
 msgid "every species"
 msgstr "alle arter"
+
+msgid "experiment"
+msgstr "forsøk"
+
+msgid "experiment factor"
+msgstr "forsøksfaktor"
+
+msgid "experiment factors"
+msgstr "forsøksfaktorer"
+
+msgid "experiment group"
+msgstr "forsøksgruppe"
+
+msgid "experiment groups"
+msgstr "forsøksgrupper"
+
+msgid "experiment member"
+msgstr "forsøksmedlem"
+
+msgid "experiment members"
+msgstr "forsøksmedlemmer"
+
+msgid "experiment placement"
+msgstr "forsøksplassering"
+
+msgid "experiment placements"
+msgstr "forsøksplasseringer"
+
+msgid "experiments"
+msgstr "forsøk"
+
+msgid "factor level"
+msgstr "faktornivå"
+
+msgid "factor levels"
+msgstr "faktornivåer"
 
 #, python-format
 msgid "fed %(fed)s, %(remaining)s to go"
@@ -11874,6 +12914,10 @@ msgid "from %(first)s"
 msgstr "fra %(first)s"
 
 #, python-format
+msgid "from %(first)s, with no last day"
+msgstr "fra %(first)s, uten siste dag"
+
+#, python-format
 msgid "from %(start)s to %(end)s"
 msgstr "fra %(start)s til %(end)s"
 
@@ -11886,6 +12930,12 @@ msgstr "g"
 
 msgid "g/kg"
 msgstr "g/kg"
+
+msgid "group level"
+msgstr "gruppenivå"
+
+msgid "group levels"
+msgstr "gruppenivåer"
 
 msgid "handling acknowledgement"
 msgstr "håndteringsbekreftelse"
@@ -12269,6 +13319,12 @@ msgstr "bestillingspunkter"
 msgid "replaces the filing with client reference"
 msgstr "erstatter innsendingen med klientreferanse"
 
+msgid "replicate"
+msgstr "replikat"
+
+msgid "replicates"
+msgstr "replikater"
+
 msgid ""
 "research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 "
 "l: only chapters 1, 2, 3 and 7 apply to it; unverified, Q10)"
@@ -12593,6 +13649,10 @@ msgstr "Ω kalsitt og aragonitt"
 
 msgid "Ω: needs the calcium and a salinity of 5 to 44 ‰, the range of Mucci (1983)."
 msgstr "Ω: trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (1983)."
+
+#, python-format
+msgid "“%(experiment)s” started."
+msgstr "«%(experiment)s» er startet."
 
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."

@@ -1,0 +1,26 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Copying an experiment (experiments.resources.ExperimentCopyView): a new draft experiment, or a template, with the design of this one.
+   What is copied and what is not is said here; the copy is made on Copy. {% endcomment %}
+{% block title %}{% blocktrans trimmed with experiment=object %}Copy {{ experiment }}{% endblocktrans %}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
+{% block heading %}{% blocktrans trimmed with experiment=object %}Copy {{ experiment }}{% endblocktrans %}{% endblock %}
+{% block content %}
+<div class="confirm">
+  <p>{% trans "The copy is a draft with the same design: the factors and their levels (the same feeding protocols, so a repeat feeds identically), the groups, the replicates as empty places, the hypothesis and the duration. It has no tanks, no allocation and no team but you: place the tanks again, and start it when it is ready." %}</p>
+  <form method="post" action="{{ request.get_full_path }}" novalidate>
+    {% csrf_token %}
+    {{ form.token }}
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid">
+      {% with field=form.name %}{% include "registration/_field.html" %}{% endwith %}
+      {% with field=form.kind %}{% include "registration/_field.html" %}{% endwith %}
+      {% with field=form.starts_on %}{% include "registration/_field.html" %}{% endwith %}
+    </div>
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline">{% trans "Copy" %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

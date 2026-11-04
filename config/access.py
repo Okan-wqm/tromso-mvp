@@ -70,5 +70,9 @@ AREAS = [
     Area(_('Tasks'), 'tasks.Task'),
     # Recurring tasks: the rules that plan tasks ahead; Create, Edit and Delete change the plan.
     Area(_('Recurring tasks'), 'tasks.TaskSeries'),
+    # Experiments: Read the list and the read pages, Create makes an experiment (and copies one), Edit changes it, designs
+    # and places it, starts it and releases or replaces a tank, Delete removes a draft. A started experiment is never
+    # deleted. Who may do what to which experiment (its team) comes with the permissions plan.
+    Area(_('Experiments'), 'experiments.Experiment'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

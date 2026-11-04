@@ -11,12 +11,11 @@ from datetime import datetime, time
 from functools import reduce
 from operator import or_
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.db.models import BooleanField, Case, Count, IntegerField, OuterRef, Q, Subquery, Value, When
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
+from core import people
 from farm.models import Site
 from farm.models.site import zone_of
 
@@ -154,13 +153,7 @@ def readers():
     """The people a task can be for: active users who can read Tasks (the platform admin among them). Someone
     who cannot read Tasks could never see a task given to them (the source mixed in workers without a login,
     TSK-02)."""
-    users = get_user_model().objects
-    perm = Permission.objects.filter(content_type__app_label='tasks', codename='view_task')
-    holders = (Q(is_superuser=True) | Q(pk__in=users.filter(groups__permissions__in=perm).values('pk'))
-               | Q(pk__in=users.filter(user_permissions__in=perm).values('pk')))
-    return users.filter(holders, is_active=True).order_by('first_name', 'last_name', 'username')
+    return people.who_can('tasks', 'view_task')
 
 
-def person(user):
-    """A person as the pages name them: their full name, else their username."""
-    return user.get_full_name() or user.get_username()
+person = people.person_name

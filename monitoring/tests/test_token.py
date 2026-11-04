@@ -142,5 +142,5 @@ class TokenTests(MonitoringCase):
             read.cards(units, self.reader, {unit.pk: 'detailed' for unit in units}, occupancy='all')
             self.token()
         verbs = {query['sql'].lstrip().split(None, 1)[0].upper() for query in log}
-        self.assertLessEqual(verbs, {'SELECT', 'WITH'})
+        self.assertLessEqual(verbs, {'SELECT', 'WITH', 'SAVEPOINT', 'RELEASE'})      # savepoints: the chips' fail-open, no write
         self.assertEqual(AuditLog.objects.count(), rows)

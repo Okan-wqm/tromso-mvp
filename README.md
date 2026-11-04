@@ -711,8 +711,9 @@ its table, to change and assign from a date.
 **An assignment** (table `protocol_assignments`) is one row per target: a unit (the protocol feeds whatever is in
 it), a whole batch (it follows the batch into every unit it is moved to, through transfers and splits) or a batch in
 one unit, from a day and optionally until a day (both included). The dialog offers the three as units and a batch to
-choose: units alone, a batch alone, or a batch and units; it writes a row per unit with one `group_id`, each logged,
-and says when a batch has not been in a chosen unit yet (a planned move is allowed). The database keeps one row in
+choose: units alone, a batch alone, or a batch and units; it writes a row per unit with one `group_id`, each logged
+(`farm/feeding/assignments.py`: the rows and their write path, which an experiment's start uses too, so its rows are the
+ones the dialog writes), and says when a batch has not been in a chosen unit yet (a planned move is allowed). The database keeps one row in
 force per unit, per batch and per batch in a unit on any day (three exclusion constraints among live rows; the form
 checks them by the constraint itself and says which unit clashes). For a batch in a unit on a day the most specific
 row wins: batch in unit, then unit, then whole batch (owner decision Q8); a unit's row for another species is read
@@ -861,6 +862,14 @@ notes, and **Void** while allowed.
   (the dash's title says which). Fish moved in by a plain transfer arrive at book weight, so they start a
   window only at their first weighing. Known bias, said in the drawer: dead fish leave at the last
   weighed average, so their growth since is not credited (bFCR a little high when many die).
+- **A bounded window** (`read.window(stay, first, last)`, `read.windows_in(unit_ids, first, last)`): the same window
+  with its ends put on the measured points of two given days (the last point of each day: the state at its end),
+  for a period that is not the whole stay (an experiment's days). A day without a measured point gives no window,
+  never an interpolated one, and a window must start before it ends; a bound left out is the stay's own end.
+  `measured_on(unit_ids, day)` says which batches have a measured point on a day (where a window can start or end).
+  `windows_in` walks the units' feeding once from the first day on and gives `{(unit, batch): window}` for the
+  units asked (a batch that came into a unit more than once has the window of its latest stay that has one); an
+  FCR over several windows is `Conversion` of them, ratio of sums, the formula of this page.
 - In the drawer: fed today (kilos, meals), the last 7 days' kilos and the **feed rate** (SFR, % of the
   biomass a day = 100 × feed / the sum of the book biomass of the days with fish; the book does not grow
   between weighings, so it reads high as the last weighing ages, and the drawer says how old it is), the
@@ -1834,6 +1843,211 @@ Differences from the source (details in the bug document, TSK-01 to TSK-23):
 `tasks.read.per_unit(unit_ids)` counts each unit's open, overdue and due-today tasks in one grouped query, with the same filters
 as the views above on each site's own clock (the monitoring cards).
 
+### Research › Experiments (`/research/experiments/`)
+
+Trials of one species on one site, for a research facility: the design (factors and their levels, groups and
+controls), the replicates, the tanks and the days each is booked to a replicate, how the tanks were allocated, and the
+team. The app `experiments` reads `farm` and nothing reads it: it stores only what no other record holds, and every
+figure (fish, feed, FCR, water, deaths) is read through the farm's own reads over the days a tank is booked; a diet is
+applied through the farm's own feeding-protocol assignments. No farm table has an experiment column.
+The reference (what a day means, the allocation method id, every constraint and trigger, what the code holds and what must be
+checked live) is [`docs/experiments.md`](docs/experiments.md).
+
+**What is stored** (tables `experiments`, `experiment_factors`, `experiment_levels`, `experiment_groups`,
+`experiment_group_levels`, `experiment_replicates`, `experiment_replicate_units`, `experiment_members`; migration
+`experiments/0001_initial`, which depends on the farm's migration 0018 only, so the order in which other branches add
+farm migrations does not matter):
+
+- An **experiment**: a generated number (`E-2026-001`, never reused, `core.codes.next_code`), a name, a template flag, its
+  status (draft, running, closed), its site and species (one of each: a unit holds one species, and one clock gives the
+  day key), the hypothesis, the primary endpoint (`experiments/variables.py`: biological FCR, economic FCR, survival,
+  biomass gain: what the farm's reads give today), the start day (day 0, the baseline weighing) and the duration in days
+  (the last day is the final weighing), how the tanks were allocated (not yet, randomised with a seed, or placed by hand
+  with the reason), the experiment it was copied from, notes and the key of the form that made it.
+- A **factor** (a thing the groups differ in: the diet, whose levels name feeding protocols, which is how the farm
+  applies it, or another factor with a unit) has **levels**: a diet level names its protocol and has no label; another
+  level has a label and optionally a number (a dose, a setting). A **group** has a role (test, control, negative or
+  positive control: both kinds of control may exist) and a level of every factor (**group levels**); it has
+  **replicates**, numbered within it (the number is stored: a replaced tank must not renumber R2). A **placement** books
+  one tank to one replicate for a range of days, both included (the tank, not a system: `Tank.system` changes and has no
+  history, so a system is only a shortcut on the page that books its tanks).
+- The **team**: a person and a role (lead, researcher, student, technician, advisor), one lead.
+
+**What the database holds** (constraints, tested one by one by writes that check nothing; the rest is said below):
+
+| Rule | Held by |
+|---|---|
+| a tank is in one experiment at a time, drafts included (a draft reserves its tanks), the days inclusive | exclusion constraint `excl_replicate_units_unit` on (tank, daterange), the twin of the feeding assignments'; a placement has both days, so it never books a tank for ever |
+| a window ends on or after the day it starts | check |
+| one level per factor per group; a level belongs to its factor; the group and the factor belong to the row's experiment; a level has its factor's kind | unique pair and four composite foreign keys (`fk_experiment_group_levels_*`, `fk_experiment_levels_factor_kind`; a wrong row would put another trial's level in a group and corrupt every factor column of the dataset) |
+| a diet level has a protocol and no label or number; another level has a label and no protocol | check (else a start would silently skip a diet) |
+| one diet factor; one lead; names unique among live rows, whatever the case; replicate numbers unique in a group; a number is never reused | unique constraints (partial among live rows where a row can be deleted) |
+| a template is a draft without a start day or an allocation; a started experiment has its day 0, hypothesis, primary endpoint and allocation; the allocation method, its seed and its reason belong together | checks |
+| a started design cannot change; a placement only gets shorter | triggers (below) |
+| a protocol or tank in a trial cannot be deleted | `PROTECT` and the delete plan (a deleted draft frees its tanks) |
+
+**A started design cannot change**, for any writer (pre-registration: what was planned is what is judged): triggers of
+migration `experiments/0002_design_frozen`, tried by raw SQL and the ORM with no form or service in between. Once an
+experiment is not a draft, every column of it but the status, name, notes and bookkeeping is fixed, the status goes
+forward only (draft, running, closed: the model's `TRANSITIONS`, which a test compares with the trigger on every pair)
+and the row is never deleted or soft-deleted; its factors, levels, groups, group levels and replicates take no insert,
+update or delete; its placements are free while it is a draft, a running one may get a new placement (a replacement)
+and shorten one with a reason (`until_on` never longer), a closed one allows nothing, a started experiment's placement
+is never deleted, and a template has none. A change of `created_by`, `updated_by` or `deleted_by` alone is always let
+through, so removing a person from the system never fails on what they once created. The refusals are
+`check_violation`, so the ORM raises them as an `IntegrityError` like a constraint. The team is not the design and is
+not guarded.
+
+What PostgreSQL cannot say without copying columns (a tank on the experiment's site, a window inside the experiment's
+span, a level for every factor, a diet applied at the start) is checked by the services and says so where it is.
+The owner decided five things: a draft reserves its tanks; no trial is registered beyond the farm's 31-day
+window; a tank that was ever in a trial is never deleted (set it inactive); a hypothesis and a primary endpoint are
+needed to start; one species and one site per experiment.
+
+**The pages** (Production panel, under a main heading of its own, **Research**, between Operations and Communication;
+the tab is a `core.crud` Resource, `experiments/resources.py`):
+
+- **The list** has three views, Experiments, Mine (the ones the person is in the team of) and Templates, filtered by
+  status, site and species and searched by number, name or hypothesis; each row opens the read page, with Edit and
+  Delete beside it for those who may (a started experiment has no Delete). The counts are of the live groups and
+  replicates.
+- **The form** has the tabs **Details** (name, species and site, chosen once; hypothesis; primary endpoint; day 0;
+  duration; notes), **Design**, **Places**, **Team** and History. Creating opens the details only, then opens the new experiment: its number is
+  given on saving, inside the creating transaction (`core.codes.next_code`, `E-<year of the site's clock>-<n>`), its
+  creator is its lead (logged as a change of its team), and a form sent twice creates one. Once the experiment has
+  started its hypothesis, endpoint, day 0 and duration are fixed beside their fields ("Copy it to change the design"),
+  and the name and notes stay editable.
+- **The Design tab** is two grids saved as a whole (`ExperimentDesignView`, `<id>/design/`; `experiments/services.save_design`):
+  the factors (name, kind, the unit of a quantity's levels; a new experiment starts with one diet factor) and the groups
+  (name, role, one cell for each factor, replicates). A diet cell chooses among the active feeding protocols of the
+  experiment's species (one retired since stays in its cell, and the design says so); another factor's cell is a label and
+  an optional number (a dose, a setting). Levels are made from the cells and never listed alone: two groups that give the same
+  protocol or label share one level, and a level no cell asks for goes. 3 diets by 2 replicates is three rows and no factor
+  language. Changing a factor's name or kind, or "Add factor", renders the grid again with the columns (the form's
+  `data-refresh`, nothing saved); a started experiment shows its design as it is. Rows are matched to the stored ones by their
+  id, so renaming a group keeps its replicates and the tanks placed in them (a factor whose kind changed is a new factor); the
+  replicates of a group are made equal to its count, the highest removed first and never one that holds a tank, and a group
+  with tanks is not removed. The save is one transaction that locks the experiment, refuses a stale version or a started
+  experiment, and writes one activity-log row on the experiment ("Design", before and after as text in English); the parts
+  it removes are deleted through the delete plan, one row each.
+- **What is wrong with a design** is one list, `design.problems(experiment)`, which the Design tab shows and the Start dialog and
+  `manage.py check_experiments` will: errors block Start (no hypothesis, primary endpoint, day 0 or lead; a day 0 older than
+  the farm's 31 days; no group; a group without a replicate or without a level of some factor; two groups with the same
+  levels; a diet protocol that is not active or is of another species), warnings are acknowledged at Start (one group;
+  fewer than two replicates in a group; no control; unequal replicates; a protocol not yet assigned, so its table can change
+  until Start; feeding tables that differ in more than the feed). It is derived on read: nothing about it is stored. `CHECKS`
+  is a list other areas append to, so a permit can block Start without this module knowing it. The warnings carry a
+  fingerprint, as the handling check's, so a start whose warnings changed meanwhile is asked again.
+- **The Places tab** (`ExperimentPlacesView`, `<id>/places/`; `services.save_places` and `randomise`) gives the replicates their
+  tanks, for the days of the experiment (day 0 to day 0 plus the duration, both included, on the site's clock) unless a row gives
+  days of its own. Either **Randomise**: a pool of tanks and systems of the site (as many as replicates, a system giving all its
+  tanks to one replicate) and a seed, dealt by the fixed method `sha256_v1` (`experiments/allocation.py`: the items sorted by the
+  SHA-256 of "seed:code", the i-th taking the i-th replicate in the order of the groups and the replicate numbers; fixed test
+  vectors guard it, and it is not `random.shuffle(seed)`, which only `random()` of Python's generators keeps stable across
+  versions); the method and the seed are stored with the placements, so the deal can be repeated and checked. Or **by hand**: a row
+  a replicate with its tanks (a multiple choice), "add the tanks of a system" (the tanks of the system and of the systems nested in
+  it are added; a system is never stored, only a shortcut, because `Tank.system` changes and keeps no history) and a reason, which is
+  needed (a placement that is not randomised is registered as "placed by hand: why"). A banner says which. A tank another
+  experiment holds on those days (drafts included: a draft reserves its tanks) is shown with that experiment's number and cannot
+  be chosen. Both are one transaction that locks the tanks (primary-key order) and then the experiment, refuses a stale version, a
+  started experiment, a template, a tank off the site, days outside the experiment, a tank in two places on one day and a booking by
+  another experiment (named by its number; the exclusion constraint holds it for any writer, and a booking that comes in between
+  is told the same way), and writes one row on the experiment ("Places", and "Allocation" when it changed). A draft's placements
+  are not evidence: the ones replaced are removed for good and the change is that one row. Changing a draft's day 0 or duration
+  moves the placements that equalled the old span (a placement with days of its own stays; the design says when it is outside the
+  span), and the form refuses a move onto days another experiment holds the tank, on the field that moved it. A template has no
+  tanks; a started experiment shows where its tanks stand.
+- **The design's warnings and errors about the tanks** (`design.problems`): errors, the tanks not allocated, a replicate without a
+  tank, a tank off the site, a placement outside the experiment's days; warnings, the tanks of one replicate in different systems,
+  and one system holding tanks of different groups (water-borne confounding, from the current `Tank.system`). The reads
+  (`experiments/read.py`): `cells` is the one definition of what belongs to the trial (each placement with its replicate, group,
+  tank and days), `booked` says which experiment holds which tanks on some days, and `error_df` is the replicates less the groups.
+- **Start** (the dialog `<id>/start/`, from the Design tab and the read page; `services.start`) fixes the design and applies the
+  diet. The dialog shows what is wrong with the design (`design.problems`): the errors block (the button is off), the
+  warnings are read and acknowledged with one box whose value is their fingerprint, so a start whose warnings changed
+  meanwhile is asked again (`check.require_acknowledged(…, field='start_ack')`, the handling check's rule and widget).
+  Besides the findings above, a draft asks that nothing stands in the diet's way: **a unit's own assignment on a tank in the
+  days it is booked is an error, listed, and never ended by the start** (the person ends it on Assignments); so is a protocol
+  assigned to a batch in the tank, which would beat the unit's (`farm/feeding/ration.py`); and, once day 0 has come, warnings
+  for a tank with no fish of the species that day, two batches of it, or fish not weighed that day (a measured point of the
+  stay on day 0, `feeding/read.measured_on`, is what the bounded FCR window starts from). Starting is one transaction that
+  locks the batches the tanks held, the tanks (primary-key order) and then the experiment, refuses a stale version, a second
+  start, a template and an error, and, for every group with a diet level, writes the farm's own assignment rows (unit scope, from
+  the first to the last day of each placement) through `farm/feeding/assignments.py`, the rows and log entries the assignment
+  dialog would write, so the meal board and the rations follow the diet; they are found later by (unit, protocol, first day),
+  with no link column on a farm table. The status goes draft to running through `TRANSITIONS`, and one row on the experiment
+  says "Status: Draft → Running" with the warnings acknowledged, in English. A feeding recorded while it starts waits for the tank
+  (a test races the two), and two starts at once give one winner and one assignment row each.
+- **Copy and templates** (the dialog `<id>/copy/`, **Copy as a new experiment** and **Save as a template** on the read page and the
+  Design tab; the add permission: Create creates and copies; `services.copy`). A copy is a new draft with the design of an
+  experiment of any status, or of a template: the factors, their levels (the same feeding-protocol rows, so a repeat of a started
+  experiment feeds identically, an assigned protocol being frozen), the groups with their levels and the replicates as empty
+  places, the hypothesis, endpoint, duration and notes; never the placements, the allocation or its seed, or the team, but the
+  copier, who leads it. `copied_from` says where it came from (and outlives a deleted source). A template is a design without a
+  day 0 (the list's Templates view); a copy of a template is an experiment. The number is the next one (never reused), a form
+  sent twice makes one copy, and the new experiment is logged as created with its design and its source.
+- **The team** is a list saved as a whole (`RowList`, logged on the experiment as "Team"): a person and their part,
+  exactly one lead; only people who can read Experiments are offered, and one kept from before stays in the list.
+- **The read page** (`<id>/view/`, for everyone who may read the tab) shows the details and, in the address's `?tab=`, **Overview**,
+  **Data** or **Team**. The **Overview** says where the experiment is ("Day 23 of 56", "Day 0 is in 5 days", "The final weighing was
+  4 days ago"), lists what is wrong with a draft (the errors and warnings of `design.problems`), and gives a row a replicate, by
+  group with a control badge: its tanks and their days, the batches of the species that were in them on those days (cleaner fish
+  never count), the fish and biomass now while it runs, the survival, and bFCR and eFCR. **Every figure is the farm's own number for the
+  same stay and the same days** (`experiments/read.overview`): the conversion is `Conversion` of `feeding.read.windows_in`
+  bounded by the placement's days (from the baseline weighing on day 0 to the latest weighing, or to the weighing of the
+  placement's last day once it has come), summed over the replicate's tanks as a ratio of sums, the fish and biomass come from
+  `stock_of`, the survival from the fish there on the first day (in the tanks the replicate began with: a replacement's are the same fish) less the fish lost since (mortality, culls, an adjustment down),
+  all bounded by the days: **no "since stocking" figure ever sits beside a trial figure**, no figure is stored or copied, and a draft
+  has none. A dash says why (hover it: not weighed, no feed, no growth); a replacement tank without a measured point at the
+  move leaves a gap in the replicate's conversion window, and the page says which tank it leaves out. No figure of a group is
+  made: a mean over replicates is a statistic, which the statistics come with. The queries do not grow with the tanks (a test counts
+  them for 6 and for 60). The **Data** tab lists each tank with its days, the feeding records of them and the feed given (one read of the feeding),
+  and links, for those who may read them, to the farm's own lists with the tank and the days chosen: Feeding records, Treatments,
+  Sea-lice counts, Water chemistry (its history) and the unit's drawer. `read.placements(unit_ids, day)` says which placement each
+  tank has on a day (at most one: the exclusion constraint), for whoever asks which experiment a tank is in (the record lock to
+  come).
+- **Running amendments** (the **Release** and **Replace** buttons on the Data tab of a running experiment, for those who may
+  edit; `services.release_unit`, `replace_unit`). A tank that leaves is released: its placement ends on the last day it was in
+  the experiment (yesterday at the earliest, the farm's rule for ending a row that has started; never later than it was booked,
+  never before it began), with its **reason**, which is asked. A tank that is replaced ends the day before the new tank's first day
+  (today at the earliest) and the new tank takes its replicate's place to the day the old one was booked to, so **the replicate keeps
+  its number**; the new tank must be on the site and free of every booking for those days (another experiment's, or this one's, named
+  by its number) and no assignment of its own may stand in the way of the diet. The diet follows through the farm's own
+  assignments (`farm/feeding/assignments.py`, as at the start): the old tank's row ends the same day (`assignments.end`, logged as an
+  edit of the assignment), the new tank gets its row for the group's protocol. The days the old tank was in stay as they are and what it
+  gave up to its last day stays in the figures (the figures are bounded by the placement's days, so a replacement without a
+  weighing at the move leaves a gap that the Overview names). One row "Places" and one "Reason it left" go on the experiment's log; the
+  tanks and batches are locked before the experiment, and a form older than the stored version is refused.
+- **The chip beside a tank** (`farm/placements.py`, filled by `experiments.read.chips`, registered in `experiments.ready()`). Production
+  units (the row and the drawer) and the meal board show "E-2026-001 · Control · R2" beside a tank that is booked to an experiment today
+  (the unit's site's today; a draft reserves its tank, so it shows too, as a draft), linking to the experiment, for those who may read
+  experiments. The registry is a list of providers, as the medicine withdrawal's is, and it **fails open**: with none registered, or
+  one that raises or breaks its transaction (it runs in its own savepoint), the page shows no chip and nothing else changes. One read of
+  the placements for each distinct day, so the farm's pages do not grow with their units.
+- **Deviations and `check_experiments`.** The Overview of a started experiment ends with **Deviations from the design**: what the farm's
+  own records show on the days of the placements that the design did not say, derived from them (`read.deviations`, never stored, and
+  nothing is ever refused for a design): **a batch** of the species that was in a tank on some day and not on its first day (cleaner
+  fish never count), **fish moved** between two replicates or between a tank of the experiment and one that is not in it (a move inside
+  one replicate, as a replacement makes, is not one), **a feed on no band** of the group's protocol, and **a ration that does not follow the
+  diet** (the farm's own `Policy.resolve` gives the batch in a tank another protocol than the group's, or none, on some day: a
+  protocol assigned to the batch in the unit beats the unit's, or the diet's row was ended). Each reads the days up to today or the last
+  day of the placement, and the queries do not grow with the tanks. `manage.py check_experiments` (`experiments/integrity.py`, as
+  `check_stock`) checks every started experiment from scratch for what the database cannot hold: a design that lost a part (a group
+  without replicates or without a level, the rules of `design.HOLDS_AFTER_START`), a tank off the site or booked outside the days of the experiment, a
+  tank deleted while it is in one, a team without a lead, and, while it runs, a placement of a diet group without its live feeding assignment
+  from its first day to its last. The test suite runs it after its scenarios.
+- **Delete** goes through the delete plan: a draft is deleted with its factors, levels, groups, replicates and placements
+  (one activity-log row each, its tanks free again), a started experiment is refused with the reason. A restored draft
+  comes back without its design (only the record itself returns). A copy of a deleted experiment keeps pointing at it.
+  A protocol a level names, a tank or a department a placement names, and a site or species an experiment names cannot
+  be deleted while it does.
+
+**Who may do what**: the area Experiments (Production · Research): Read the list and the read pages, Create makes and copies an
+experiment, Edit changes it, saves its design, its places and its team, and starts it, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
+student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
+experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
+deleted ones too, and restores an experiment (not its parts).
+
 ## Regulatory reports (Production › Reports, `/reports/`)
 
 The reports the farm owes Mattilsynet and Fiskeridirektoratet, made from the records and filed by people. Its own app
@@ -2569,6 +2783,13 @@ What one tab needed and the next ones will too lives in `core/`:
 - `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data (a type's technical
   specifications), the form fields and the check of the stored values from one definition.
 - `TreeMixin` (`core/models.py`): records nested under records of the same kind, without loops.
+- `next_code(model, prefix)` (`core/codes.py`): the next generated code of a kind of record (a batch's
+  `B-2026-001`, an experiment's `E-2026-001`): one more than the highest number under the prefix, deleted
+  records counted, so a number is never given twice; an advisory lock keyed on the table makes two creators
+  take turns, so call it inside the saving transaction.
+- `check.require_acknowledged(assessment, seen, field)` (`farm/handling/check.py`): a save with warnings
+  is refused until the person has ticked the box for exactly the warnings as they are now; the stock forms'
+  box is `handling_ack`, another form (an experiment's start) names its own.
 
 ### Restoring
 
@@ -2672,6 +2893,7 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
+| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/copy/` the copy dialog, `<id>/release/<placement>/` and `<id>/replace/<placement>/` release or replace a tank of a running experiment, `<id>/team/` saves the team, `<id>/delete/` |
 | `/reports/` | Production › Reports › Regulatory reports: a tab for every kind (`?kind=`) with where it stands for each site, what is due, the filed reports whose records changed, the reports and notices; `site=`, `status=` filter, `new/?kind=&site=&period=2026-W45` (or `&facility=`, `&health_event=`, `&escape=`) starts one |
 | `/reports/<id>/view/`, `<id>/`, `<id>/delete/` | A report's page (the figures as filed, or as the records give them now, and the differences), its form, discarding a draft; `<id>/treatments/`, `resistance/`, `sensitivity/`, `units/` save the answers of its kind |
 | `/reports/<id>/submit/`, `correct/`, `export.<csv or json>`, `print/` | Records the filing (POST); starts a correction (POST); the exports; the printable page |
@@ -2711,21 +2933,25 @@ real mail.
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |
+| `core/people.py` | People as the pages name and offer them: a person's name, and the active users who hold a permission (tasks' assignees, an experiment's team) |
+| `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
-| `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
+| `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`), the assignments' rows and write path that the dialog and an experiment's start share (`assignments.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
 | `farm/models/water_point.py`, `farm/water/points.py`, `farm/forms/water_point.py`, `farm/resources/water_point.py` | Sampling points: the model with its kinds, flow roles and rules, the default points and the share report, the form and the tab |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
+| `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |
 | `farm/water/degree_days.py` | The batch's daily mean water temperature and the degree-days it adds up to (a past day without a measurement at the species' assumed temperature, else 0 °C; a day ahead projected): the one definition the medicine withdrawal and the purging fast share |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `reports/` | Regulatory reports (its own app): the models (`models.py`), the kinds (`kinds.py`) and periods (`periods.py`), each report's computation from the records (`compute/`), the filing and corrections (`services.py`), what is due (`due.py`), the exports (`exports.py`), the check (`integrity.py`) and the provider the health records read (`health.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
+| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/datamap.py`, `<app>/screens.py`, `core/test_datamap.py`, `docs/data-map.md`, `docs/data-map.json` | The data map: every table's screens, read from the code and the declarations; `manage.py data_map [--check]` |

@@ -13,6 +13,7 @@ VIEWER = Viewer(
         Section(_('Messages'), ('messaging',)),
         Section(_('Reports'), ('reports',)),
         Section(_('Tasks'), ('tasks',)),
+        Section(_('Research'), ('experiments',)),
         Section(_('Monitoring'), ('monitoring',)),
         Section(_('Administration'), ('core', 'auth')),
     ],

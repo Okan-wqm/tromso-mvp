@@ -1,0 +1,10 @@
+{% load i18n %}{% comment %} One group of the design grid (experiments/_design.html): its name and role, a cell for each factor (the diet a
+   protocol, another factor a label and perhaps a number), its replicates, and Remove. The heading row names the fields.{% endcomment %}<tr class="group-row" data-row>
+  <td class="{% if row.name.errors or row.non_field_errors %}has-error{% endif %}">{{ row.id }}{% if row.non_field_errors %}<div class="form-error row-error">{{ row.non_field_errors }}</div>{% endif %}<label class="sr-only" for="{{ row.name.id_for_label }}">{{ row.name.label }}</label>{{ row.name }}{{ row.name.errors }}</td>
+  <td class="{% if row.role.errors %}has-error{% endif %}"><label class="sr-only" for="{{ row.role.id_for_label }}">{{ row.role.label }}</label>{{ row.role }}{{ row.role.errors }}</td>
+  {% for column, fields in row.cells %}
+  <td class="{% for field in fields %}{% if field.errors %}has-error {% endif %}{% endfor %}">{% for field in fields %}<label class="sr-only" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% endfor %}</td>
+  {% endfor %}
+  <td class="{% if row.replicates.errors %}has-error{% endif %}"><label class="sr-only" for="{{ row.replicates.id_for_label }}">{{ row.replicates.label }}</label>{{ row.replicates }}{{ row.replicates.errors }}</td>
+  <td><label class="check check-remove">{{ row.DELETE }} {% trans "Remove" %}</label></td>
+</tr>

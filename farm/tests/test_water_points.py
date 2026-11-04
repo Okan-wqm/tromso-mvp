@@ -640,9 +640,10 @@ class ReadTests(PointTestCase):
         from ..water.degree_days import Temperatures
         from ..stock.dates import local_today
         today = local_today(self.t1)
-        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='20')
-        self.sample(point=self.t1, hours=1, temperature_c='8')
-        self.sample(point=self.loop, hours=1, temperature_c='11')
+        # Taken now, not an hour ago: in the first hour of the farm's day an hour ago is yesterday's daily mean.
+        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=0, temperature_c='20')
+        self.sample(point=self.t1, hours=0, temperature_c='8')
+        self.sample(point=self.loop, hours=0, temperature_c='11')
         temperatures = Temperatures([self.t1, self.t2], today - timedelta(days=1), today)
         self.assertEqual(temperatures.of(self.t1.pk, today), D(8))                # the unit's own, not the inlet's
         self.assertEqual(temperatures.of(self.t2.pk, today), D(11))               # else its system's loop

@@ -331,6 +331,16 @@ mod tests {
     }
 
     #[test]
+    fn a_dead_letter_topic_is_cut_to_the_column_width() {
+        // MQTT topics may be 65535 bytes; the column holds 255 characters: a longer one would refuse the batch
+        let long: String = "ø".repeat(300);
+        let m = Msg { connection_id: conn(), topic: long, payload: b"{}".to_vec(), received_at: now() };
+        let out = process(&cfg(), &HashMap::new(), &mut DeadLimiter::new(10), &[m]);
+        assert_eq!(out.dead[0].topic.chars().count(), 255);
+        assert_eq!(out.dead[0].reason, DeadReason::NoRoute);
+    }
+
+    #[test]
     fn the_same_dead_message_twice_in_a_batch_is_one_row_counted_twice() {
         let m =
             Msg { connection_id: conn(), topic: "farm/plc".into(), payload: b"garbage".to_vec(), received_at: now() };

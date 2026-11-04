@@ -7,6 +7,7 @@ pub mod calib;
 pub mod config;
 pub mod db;
 pub mod decode;
+pub mod http;
 pub mod model;
 pub mod mqtt;
 pub mod pipeline;

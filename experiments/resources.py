@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
@@ -19,9 +20,10 @@ from farm.stock.dates import site_today
 
 from . import design as design_module, read, services
 from .forms import (
-    CopyForm, ExperimentForm, MemberFormSet, StartForm, design_forms, design_rows, place_rows, places_forms,
+    CopyForm, ExperimentForm, MemberFormSet, ReleaseForm, ReplaceForm, StartForm, design_forms, design_rows,
+    place_rows, places_forms,
 )
-from .models import AllocationMethod, Experiment, Member, Status
+from .models import AllocationMethod, Experiment, Member, ReplicateUnit, Status
 
 EXPERIMENTS, MINE, TEMPLATES = '', 'mine', 'templates'
 VIEWS = (EXPERIMENTS, MINE, TEMPLATES)
@@ -40,6 +42,12 @@ def data_links(user, cell):
         (_('Water chemistry'), 'farm:water', 'farm.view_watermeasurement', {**days, 'view': 'history'}),
         (_('Production units'), 'farm:production_units', 'farm.view_stockoperation', {'unit': cell.unit.pk}))
         if user.has_perm(perm)]
+
+
+def amend_links(experiment, cell):
+    """[(label, address)] of what can be done to a tank of a running experiment: release it, or replace it."""
+    return [(_('Release'), reverse('experiments:experiment_release', args=[experiment.pk, cell.id])),
+            (_('Replace'), reverse('experiments:experiment_replace', args=[experiment.pk, cell.id]))]
 
 
 class TeamList(RowList):
@@ -126,7 +134,10 @@ class ExperimentResource(Resource):
             if experiment.status == Status.DRAFT and not experiment.is_template:
                 extras['findings'] = design_module.assess(experiment)
         elif tab == 'data':
-            extras['tanks'] = [{'data': item, 'links': data_links(request.user, item.cell)} for item in read.data(experiment)]
+            can_amend = experiment.status == Status.RUNNING and request.user.has_perm(cls.perm('change'))
+            extras['tanks'] = [{'data': item, 'links': data_links(request.user, item.cell),
+                                'actions': amend_links(experiment, item.cell) if can_amend and item.cell.last >= today
+                                else []} for item in read.data(experiment)]
         return extras
 
     @classmethod
@@ -163,7 +174,11 @@ class ExperimentResource(Resource):
                 path(f'{p}/<uuid:pk>/design/', ExperimentDesignView.as_view(resource=cls), name='experiment_design'),
                 path(f'{p}/<uuid:pk>/places/', ExperimentPlacesView.as_view(resource=cls), name='experiment_places'),
                 path(f'{p}/<uuid:pk>/start/', ExperimentStartView.as_view(resource=cls), name='experiment_start'),
-                path(f'{p}/<uuid:pk>/copy/', ExperimentCopyView.as_view(resource=cls), name='experiment_copy')]
+                path(f'{p}/<uuid:pk>/copy/', ExperimentCopyView.as_view(resource=cls), name='experiment_copy'),
+                path(f'{p}/<uuid:pk>/release/<uuid:placement>/', ExperimentReleaseView.as_view(resource=cls),
+                     name='experiment_release'),
+                path(f'{p}/<uuid:pk>/replace/<uuid:placement>/', ExperimentReplaceView.as_view(resource=cls),
+                     name='experiment_replace')]
 
 
 def allocation_banner(experiment):
@@ -341,3 +356,76 @@ class ExperimentCopyView(ResourceView):
                     'copy': new})
                 return done(request, reverse(r.url_name('edit'), args=[new.pk]), stay=True)
         return self.page(form, source, status=422)
+
+
+
+class ExperimentAmendView(ResourceView):
+    """A tank of a running experiment leaves or is replaced (the change permission): a dialog with the tank, its replicate and
+    its days, the fields of its form and the reason, which is asked (experiments.services.release_unit, replace_unit)."""
+
+    action = 'change'
+    template = 'experiments/experiment_amend.html'
+    heading = ''
+    done_text = ''
+
+    def get_placement(self, experiment, placement):
+        return get_object_or_404(ReplicateUnit.objects.select_related('replicate__group', 'unit'), pk=placement,
+                                 replicate__group__experiment=experiment)
+
+    def page(self, form, experiment, placement, status=200):
+        response = render_page(self.request, self.template, self.context(
+            form=form, object=experiment, placement=placement, heading_text=self.heading,
+            back_url=reverse(self.resource.url_name('detail'), args=[experiment.pk]) + '?tab=data'))
+        response.status_code = status
+        return response
+
+    def get(self, request, pk, placement):
+        experiment = self.get_object(pk)
+        row = self.get_placement(experiment, placement)
+        today = site_today(experiment.site)
+        return self.page(self.form(experiment, row, initial={'version': experiment.version, **self.initial(today)}),
+                         experiment, row)
+
+    def post(self, request, pk, placement):
+        r = self.resource
+        experiment = self.get_object(pk)
+        row = self.get_placement(experiment, placement)
+        form = self.form(experiment, row, data=request.POST)
+        if form.is_valid():
+            try:
+                self.apply(request.user, row, form.cleaned_data)
+            except ValidationError as error:
+                for message in error.messages:
+                    form.add_error(None, message)
+            else:
+                messages.success(request, str(self.done_text) % {'tank': row.unit.code, 'experiment': experiment})
+                return done(request, reverse(r.url_name('detail'), args=[pk]) + '?tab=data')
+        return self.page(form, experiment, row, status=422)
+
+
+class ExperimentReleaseView(ExperimentAmendView):
+    heading = _('Release a tank')
+    done_text = _('%(tank)s left “%(experiment)s”.')
+
+    def initial(self, today):
+        return {'last_day': today}
+
+    def form(self, experiment, placement, data=None, initial=None):
+        return ReleaseForm(data, initial=initial)
+
+    def apply(self, user, row, data):
+        services.release_unit(user, row, data['last_day'], data['reason'], data['version'])
+
+
+class ExperimentReplaceView(ExperimentAmendView):
+    heading = _('Replace a tank')
+    done_text = _('%(tank)s was replaced in “%(experiment)s”.')
+
+    def initial(self, today):
+        return {'from_day': today}
+
+    def form(self, experiment, placement, data=None, initial=None):
+        return ReplaceForm(data, initial=initial, experiment=experiment, leaving=placement.unit)
+
+    def apply(self, user, row, data):
+        services.replace_unit(user, row, data['new_unit'], data['from_day'], data['reason'], data['version'])

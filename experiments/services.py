@@ -9,7 +9,8 @@ nothing is written.
   stored ones by their id (a renamed group keeps its replicates and the tanks placed in them);
 - `save_places`, `randomise`, `move_span`: the tanks of a draft's replicates and the days they are booked to them;
 - `start`: fixes the design and applies the diet through the farm's own assignments;
-- `copy`: a new draft (or a template) with the design of another, never its tanks, allocation or team."""
+- `copy`: a new draft (or a template) with the design of another, never its tanks, allocation or team;
+- `release_unit`, `replace_unit`: a tank leaves a running experiment, or is replaced by another, with its reason."""
 import itertools
 import uuid
 from dataclasses import dataclass, field
@@ -26,7 +27,7 @@ from core.codes import next_code
 from core.models import AuditLog
 from farm.feeding import assignments
 from farm.handling import check
-from farm.models import Batch, FeedingProtocol, Tank
+from farm.models import Batch, FeedingProtocol, ProtocolAssignment, Tank
 from farm.models.feeding_protocol import ProtocolStatus
 from farm.stock.dates import site_today
 from farm.stock.read import batches_ever_in
@@ -730,3 +731,156 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
             values[str(DESIGN)] = describe(new)
             audit.record_create(user, new, values)
         return new
+
+
+# ---- amending a running experiment ---------------------------------------------------------------------
+LEFT = gettext_lazy('Reason it left')
+
+
+def _locked_running(experiment, version):
+    """The experiment, locked for this transaction, when it is running and `version` is the one the person's form was built
+    on. A running experiment's design is fixed, but a tank may leave or be replaced (the trigger lets a placement get
+    shorter and a replacement come in, migration 0002)."""
+    locked = Experiment.objects.select_for_update().filter(pk=experiment.pk).first()
+    if locked is None:
+        raise _refused(_('This experiment was deleted meanwhile.'))
+    if locked.status != Status.RUNNING:
+        raise _refused(_('The experiment is not running: only a running experiment has tanks to release or replace.'))
+    if version != locked.version:
+        raise _refused(_('Someone else changed this experiment while you were editing it. The page now shows their '
+                         'version; make your changes again.'))
+    return locked
+
+
+def _the_placement(experiment, placement, reason):
+    """The placement as it is now, with its group's diet protocol (None without a diet), checked to be the experiment's, live
+    and still booked ahead; the reason, cut of its spaces, is needed."""
+    reason = reason.strip()
+    if not reason:
+        raise _refused(_('Say why: a tank that leaves, or is replaced, is registered with its reason.'))
+    if len(reason) > ReplicateUnit._meta.get_field('left_reason').max_length:
+        raise _refused(_('The reason is too long.'))
+    row = (ReplicateUnit.objects.select_related('replicate__group', 'unit__production_department__site')
+           .filter(pk=placement.pk, replicate__group__experiment=experiment).first())
+    if row is None:
+        raise _refused(_('This placement was removed meanwhile: reload the page.'))
+    diet = (GroupLevel.objects.filter(group=row.replicate.group, factor__kind=FactorKind.DIET)
+            .select_related('level__protocol').first())
+    return row, reason, diet.level.protocol if diet is not None else None
+
+
+def _end_diet(user, row, protocol, last_day):
+    """The assignment rows the start wrote for this placement (unit scope, its protocol, its first day: found by those, there
+    is no link column) end on `last_day`."""
+    if protocol is None:
+        return
+    for assignment in ProtocolAssignment.objects.filter(unit=row.unit, batch__isnull=True, protocol=protocol,
+                                                        valid_from=row.from_on):
+        assignments.end(user, assignment, last_day)
+
+
+def _log_amendment(user, experiment, before, reason, unit):
+    after = describe_places(experiment)
+    experiment.version += 1
+    experiment.updated_by = user
+    experiment.save(update_fields=['version', 'updated_by', 'updated_at'])
+    audit.record(user, AuditLog.Action.UPDATE, experiment, {
+        str(PLACES): [before, after], str(LEFT): [None, f'{unit.code}: {reason}']})
+
+
+def release_unit(user, placement, last_day, reason, version):
+    """A tank leaves a running experiment: its placement ends on `last_day` (the last day it was in it; never later than
+    it was, never before the placement began, and yesterday at the earliest, the farm's rule for ending a row that has
+    started), with the `reason`, which is needed. The diet's assignment row for it ends the same day (the farm's own
+    `assignments.end`, logged as an edit of the assignment). The replicate keeps its number, and what the tank gave up to
+    its last day stays in its figures. Logged on the experiment as "Places" and "Reason it left"; the tank is locked before
+    the experiment."""
+    experiment = placement.replicate.group.experiment
+    with transaction.atomic():
+        stock_locked(Tank, {placement.unit_id})
+        locked = _locked_running(experiment, version)
+        row, reason, protocol = _the_placement(locked, placement, reason)
+        yesterday = site_today(locked.site) - timedelta(days=1)
+        if last_day < row.from_on:
+            raise _refused(_('The last day comes on or after the first day (%(day)s).') % {'day': row.from_on.isoformat()})
+        if last_day >= row.until_on:
+            raise _refused(_('The tank is booked until %(day)s already: a placement is only ever shortened.') % {
+                'day': row.until_on.isoformat()})
+        if last_day < yesterday:
+            raise _refused(_('The days before yesterday keep what happened in them: a tank leaves yesterday at the '
+                             'earliest.'))
+        with audit.source_language():
+            before = describe_places(locked)
+            ReplicateUnit.objects.filter(pk=row.pk).update(
+                until_on=last_day, left_reason=reason, version=row.version + 1, updated_by=user,
+                updated_at=timezone.now())
+            _end_diet(user, row, protocol, last_day)
+            _log_amendment(user, locked, before, reason, row.unit)
+        return locked
+
+
+def replace_unit(user, placement, new_unit, from_day, reason, version):
+    """A tank in a running experiment is replaced by another: the placement ends the day before `from_day` (with the `reason`,
+    which is needed) and `new_unit` takes its replicate's place from `from_day` to the day the old one was booked to,
+    so the replicate keeps its number. `from_day` is today at the earliest (the old tank's last day is then yesterday at
+    the earliest) and after the placement began. The new tank must be on the site and free of every booking for those
+    days (another experiment's, named by its number, or this one's own), and its own feeding assignments must not stand
+    in the way of the diet (`design.feeding_conflicts`); the diet's rows are ended for the old tank and written for
+    the new one through the farm's own assignments. A replacement with no weighing at the move leaves a gap in the
+    replicate's feed conversion window: the overview says so. Logged on the experiment as "Places" and "Reason it left";
+    the batches the new tank held, the tanks and then the experiment are locked, in that order."""
+    experiment = placement.replicate.group.experiment
+    with transaction.atomic():
+        stock_locked(Batch, batches_ever_in({new_unit.pk}))
+        stock_locked(Tank, {placement.unit_id, new_unit.pk})
+        locked = _locked_running(experiment, version)
+        row, reason, protocol = _the_placement(locked, placement, reason)
+        new_unit = Tank.objects.select_related('production_department__site').filter(pk=new_unit.pk).first()
+        errors = []
+        if new_unit is None:
+            raise _refused(_('The new tank was deleted meanwhile.'))
+        if new_unit.pk == row.unit_id:
+            errors.append(_('The new tank is the one that leaves.'))
+        if new_unit.production_department.site_id != locked.site_id:
+            errors.append(_('%(tank)s is not on the site of the experiment (%(site)s).') % {
+                'tank': new_unit.code, 'site': locked.site.name})
+        today = site_today(locked.site)
+        if from_day < today:
+            errors.append(_('The new tank comes in today at the earliest.'))
+        if from_day <= row.from_on:
+            errors.append(_('The new tank comes in after the day the placement began (%(day)s).') % {
+                'day': row.from_on.isoformat()})
+        if from_day > row.until_on:
+            errors.append(_('The new tank comes in on or before the last day of the placement (%(day)s).') % {
+                'day': row.until_on.isoformat()})
+        if errors:
+            raise _refused(*dict.fromkeys(errors))
+        held = read.booked([new_unit.pk], from_day, row.until_on).get(new_unit.pk)
+        if held is not None:
+            raise _refused(_('%(tank)s is booked to %(experiment)s on some of these days.') % {
+                'tank': new_unit.code, 'experiment': held.code})
+        group = row.replicate.group
+        rows = []
+        if protocol is not None:
+            conflicts = list(design_module.feeding_conflicts([(group.name, new_unit, from_day, row.until_on)]))
+            if conflicts:
+                raise _refused(*[finding.text for finding in conflicts])
+            rows, found = assignments.rows(protocol, [new_unit], None, from_day, row.until_on,
+                                           notes=f'{locked.code} · {group.name}')
+            if found:
+                raise _refused(*dict.fromkeys(f'{new_unit.code}: {error.message}' for error in found))
+        with audit.source_language():
+            before = describe_places(locked)
+            ReplicateUnit.objects.filter(pk=row.pk).update(
+                until_on=from_day - timedelta(days=1), left_reason=reason, version=row.version + 1, updated_by=user,
+                updated_at=timezone.now())
+            _end_diet(user, row, protocol, from_day - timedelta(days=1))
+            try:
+                with transaction.atomic():
+                    ReplicateUnit.objects.create(replicate=row.replicate, unit=new_unit, from_on=from_day,
+                                                 until_on=row.until_on, created_by=user, updated_by=user)
+                    assignments.save(user, rows)
+            except IntegrityError:
+                raise _refused(_('A tank was booked to another experiment meanwhile: look at the places and try again.'))
+            _log_amendment(user, locked, before, reason, row.unit)
+        return locked

@@ -777,6 +777,10 @@ msgid "%(tank)s is booked to %(experiment)s on some of these days."
 msgstr "%(tank)s bu günlerin bazılarında %(experiment)s denemesine ayrılmış."
 
 #, python-format
+msgid "%(tank)s is in %(replicate)s from %(first)s to %(last)s."
+msgstr "%(tank)s, %(first)s ile %(last)s arasında %(replicate)s içinde."
+
+#, python-format
 msgid "%(tank)s is in the pool twice (alone and through a system)."
 msgstr "%(tank)s havuzda iki kez var (tek başına ve bir sistem aracılığıyla)."
 
@@ -789,6 +793,10 @@ msgid "%(tank)s is placed twice on some of the same days (%(first)s, %(second)s)
 msgstr "%(tank)s aynı günlerin bazılarında iki kez yerleştirilmiş (%(first)s, %(second)s)."
 
 #, python-format
+msgid "%(tank)s left “%(experiment)s”."
+msgstr "%(tank)s “%(experiment)s” denemesinden ayrıldı."
+
+#, python-format
 msgid "%(tank)s of %(replicate)s is booked outside the days of the experiment."
 msgstr "%(replicate)s için %(tank)s, deneyin günlerinin dışında ayrılmış."
 
@@ -799,6 +807,10 @@ msgstr "%(replicate)s için %(tank)s deneyin sahasında değil."
 #, python-format
 msgid "%(tank)s was deleted meanwhile."
 msgstr "%(tank)s bu arada silindi."
+
+#, python-format
+msgid "%(tank)s was replaced in “%(experiment)s”."
+msgstr "“%(experiment)s” denemesinde %(tank)s değiştirildi."
 
 #, python-format
 msgid "%(tank)s would be booked to %(experiment)s on those days."
@@ -4024,6 +4036,9 @@ msgstr "İlk"
 msgid "First day"
 msgstr "İlk gün"
 
+msgid "First day of the new tank"
+msgstr "Yeni tankın ilk günü"
+
 msgid "First name"
 msgstr "Ad"
 
@@ -4912,6 +4927,9 @@ msgstr "Son kalibrasyon"
 msgid "Last day"
 msgstr "Son gün"
 
+msgid "Last day in the experiment"
+msgstr "Denemedeki son gün"
+
 msgid "Last fed"
 msgstr "Son yemleme"
 
@@ -5500,6 +5518,9 @@ msgstr "Yeni mesaj"
 
 msgid "New password"
 msgstr "Yeni parola"
+
+msgid "New tank"
+msgstr "Yeni tank"
 
 msgid "New task"
 msgstr "Yeni görev"
@@ -6964,6 +6985,12 @@ msgstr "Resmî birim numarası"
 msgid "Relationships"
 msgstr "İlişkiler"
 
+msgid "Release"
+msgstr "Serbest bırak"
+
+msgid "Release a tank"
+msgstr "Bir tankı serbest bırak"
+
 msgid "Remaining"
 msgstr "Kalan"
 
@@ -6999,6 +7026,12 @@ msgstr "Onarımda"
 
 msgid "Repeats"
 msgstr "Yinelenme"
+
+msgid "Replace"
+msgstr "Değiştir"
+
+msgid "Replace a tank"
+msgstr "Bir tankı değiştir"
 
 msgid "Replicate"
 msgstr "Tekrar"
@@ -7269,6 +7302,9 @@ msgstr ""
 "Tankların neden elle yerleştirildiğini söyleyin: rastgele dağıtılmayan bir yerleşim gerekçesiyle "
 "kaydedilir."
 
+msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
+msgstr "Nedenini yazın: ayrılan veya değiştirilen bir tank gerekçesiyle kaydedilir."
+
 msgid "Scale loss"
 msgstr "Pul kaybı"
 
@@ -7466,6 +7502,9 @@ msgstr "Bir tedarikçi seçin"
 
 msgid "Select a system"
 msgstr "Bir sistem seçin"
+
+msgid "Select a tank"
+msgstr "Bir tank seçin"
 
 msgid "Select a type"
 msgstr "Bir tür seçin"
@@ -8324,6 +8363,18 @@ msgstr "Tarih ileride olamaz."
 msgid "The days before yesterday keep their protocol: the last day is yesterday at the earliest."
 msgstr "Dünden önceki günler protokollerini korur: son gün en erken dün olabilir."
 
+msgid "The days before yesterday keep what happened in them: a tank leaves yesterday at the earliest."
+msgstr "Dünden önceki günler içlerinde olanları korur: bir tank en erken dün ayrılır."
+
+msgid ""
+"The days it has been in the experiment stay as they are, and what it gave up to its last day "
+"stays in the figures. The replicate keeps its number. Its feeding assignment ends with it, and "
+"the new tank gets the diet of the group for its days."
+msgstr ""
+"Tankın denemede bulunduğu günler olduğu gibi kalır ve son gününe kadar verdiği değerler "
+"rakamlarda kalır. Tekrar numarasını korur. Besleme ataması onunla birlikte biter ve yeni tank, "
+"günleri için grubun yemini alır."
+
 msgid "The days of the week it is due."
 msgstr "Haftanın son tarih olan günleri."
 
@@ -8392,6 +8443,11 @@ msgid ""
 msgstr ""
 "Deney başladı: tankları ve günleri sabittir. Ayrılması veya değiştirilmesi gereken bir tank, "
 "sayfasından serbest bırakılır."
+
+msgid "The experiment is not running: only a running experiment has tanks to release or replace."
+msgstr ""
+"Deneme çalışmıyor: yalnızca çalışan bir denemenin serbest bırakılacak veya değiştirilecek "
+"tankları vardır."
 
 #, python-format
 msgid "The factor name %(name)s is too long."
@@ -8575,6 +8631,10 @@ msgstr "Son gün ilk günden önce olamaz."
 msgid "The last day cannot be before the first."
 msgstr "Son gün ilk günden önce olamaz."
 
+#, python-format
+msgid "The last day comes on or after the first day (%(day)s)."
+msgstr "Son gün, ilk gün (%(day)s) ile aynı veya sonrası olmalıdır."
+
 msgid "The last day comes on or after the first day."
 msgstr "Son gün, ilk günle aynı gün ya da ondan sonra olmalı."
 
@@ -8647,6 +8707,23 @@ msgstr "Çiftliğin kendi dilindeki adı, örn. Laks."
 
 msgid "The name of the copy is too long."
 msgstr "Kopyanın adı çok uzun."
+
+#, python-format
+msgid "The new tank comes in after the day the placement began (%(day)s)."
+msgstr "Yeni tank, yerleşimin başladığı günden (%(day)s) sonra girer."
+
+#, python-format
+msgid "The new tank comes in on or before the last day of the placement (%(day)s)."
+msgstr "Yeni tank, yerleşimin son günü (%(day)s) veya öncesinde girer."
+
+msgid "The new tank comes in today at the earliest."
+msgstr "Yeni tank en erken bugün girer."
+
+msgid "The new tank is the one that leaves."
+msgstr "Yeni tank, ayrılan tankın kendisidir."
+
+msgid "The new tank was deleted meanwhile."
+msgstr "Yeni tank bu sırada silindi."
 
 #, python-format
 msgid "The next meal on the Meal board: %(kilos)s, filled in below."
@@ -8785,6 +8862,9 @@ msgstr ""
 "yem büyüme sayılmaz); her öğünden sonra sonraki öğün yeniden hesaplanır. Fazla ve eksik yemleme "
 "henüz işaretlenmiyor: verilen ve kalan miktarları karşılaştırın."
 
+msgid "The reason is too long."
+msgstr "Gerekçe çok uzun."
+
 msgid ""
 "The recipes take two of them at a time; on the chart, one draws its direction, two their path to "
 "the target."
@@ -8795,6 +8875,10 @@ msgstr ""
 #, python-format
 msgid "The role of group %(name)s is not one of the four."
 msgstr "%(name)s grubunun rolü dört roldan biri değil."
+
+#, python-format
+msgid "The row ends on %(day)s already: it is only ever shortened."
+msgstr "Satır zaten %(day)s tarihinde bitiyor: yalnızca kısaltılabilir."
 
 msgid "The safe zone lies in this band."
 msgstr "Güvenli bölge bu aralıktadır."
@@ -8916,6 +9000,10 @@ msgid ""
 msgstr ""
 "Hizmet ettiği sistemler, üretim departmanının sahasında: en az biri ve bunlardan biri birincil "
 "sistemi. Kritiklik, sistemin ona ne kadar bağlı olduğudur: 1 (az) ile 5 (tamamen) arası."
+
+#, python-format
+msgid "The tank is booked until %(day)s already: a placement is only ever shortened."
+msgstr "Tank zaten %(day)s tarihine kadar ayrılmış: bir yerleşim yalnızca kısaltılabilir."
 
 #, python-format
 msgid ""
@@ -9136,6 +9224,9 @@ msgstr ""
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Bu kayıt (%(name)s) henüz silinemez."
 
+msgid "This assignment was deleted meanwhile."
+msgstr "Bu atama bu sırada silindi."
+
 msgid "This batch already has a production plan."
 msgstr "Bu partinin zaten bir üretim planı var."
 
@@ -9181,6 +9272,9 @@ msgstr "Bu kişi listede iki kez var."
 
 msgid "This place is not on the chosen site."
 msgstr "Bu yer seçilen sahada değil."
+
+msgid "This placement was removed meanwhile: reload the page."
+msgstr "Bu yerleşim bu sırada kaldırıldı: sayfayı yeniden yükleyin."
 
 msgid "This plan is cancelled."
 msgstr "Bu plan iptal edildi."
@@ -9313,6 +9407,9 @@ msgstr "Hedef birimler"
 
 msgid "Today"
 msgstr "Bugün"
+
+msgid "Today at the earliest; the last day of the old tank is the day before."
+msgstr "En erken bugün; eski tankın son günü bir önceki gündür."
 
 msgid "Today lists the overdue tasks, those due today and those done today."
 msgstr "Bugün; gecikmiş görevleri, bugün süresi dolanları ve bugün tamamlananları listeler."
@@ -10053,6 +10150,9 @@ msgstr "Evet"
 
 msgid "Yesterday"
 msgstr "Dün"
+
+msgid "Yesterday at the earliest; the tank is booked to the experiment until then."
+msgstr "En erken dün; tank o güne kadar denemeye ayrılmıştır."
 
 msgid "You"
 msgstr "Siz"

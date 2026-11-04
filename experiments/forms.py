@@ -529,3 +529,31 @@ class CopyForm(forms.Form):
                              choices=[(EXPERIMENT, _('A new experiment')), (TEMPLATE, _('A template'))])
     starts_on = forms.DateField(label=_('Starts on'), required=False, widget=DATE,
                                 help_text=_('Day 0 of the new experiment, which can be set later. A template has none.'))
+
+
+
+# ---- amending a running experiment ----------------------------------------------------------------------------------
+class ReleaseForm(forms.Form):
+    """A tank leaves a running experiment: the last day it is in it, and why."""
+
+    version = forms.IntegerField(widget=forms.HiddenInput)
+    last_day = forms.DateField(label=_('Last day in the experiment'), widget=DATE,
+                               help_text=_('Yesterday at the earliest; the tank is booked to the experiment until then.'))
+    reason = forms.CharField(label=_('Reason it left'), max_length=500, widget=forms.TextInput)
+
+
+class ReplaceForm(forms.Form):
+    """A tank is replaced by another in the same replicate: the new tank, its first day and why."""
+
+    version = forms.IntegerField(widget=forms.HiddenInput)
+    new_unit = forms.ModelChoiceField(label=_('New tank'), queryset=Tank.objects.none(),
+                                      empty_label=_('Select a tank'))
+    from_day = forms.DateField(label=_('First day of the new tank'), widget=DATE,
+                               help_text=_('Today at the earliest; the last day of the old tank is the day before.'))
+    reason = forms.CharField(label=_('Reason it left'), max_length=500, widget=forms.TextInput)
+
+    def __init__(self, *args, experiment=None, leaving=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if experiment is not None:
+            tanks = Tank.objects.filter(production_department__site=experiment.site).order_by('code')
+            self.fields['new_unit'].queryset = tanks.exclude(pk=leaving.pk) if leaving is not None else tanks

@@ -256,39 +256,47 @@ def _period(first, last):
     return _('%(first)s to %(last)s') % {'first': first.isoformat(), 'last': last.isoformat()}
 
 
-def check_feeding(design):
-    """The diet is applied through the farm's own assignments when the experiment starts, so a draft asks that nothing
-    stands in its way: no unit's own assignment on a tank in the days it is booked (starting an experiment never ends
-    another record silently: it is listed, and the person ends it), and no protocol assigned to a batch in the unit,
-    which would beat the unit's (farm/feeding/ration.py)."""
-    experiment = design.experiment
-    diet = next((factor for factor in design.factors if factor.kind == FactorKind.DIET), None)
-    if experiment.status != Status.DRAFT or diet is None:
-        return
-    fed = [(group, row) for group in design.groups
-           if (design.level_of(group, diet) is not None and design.level_of(group, diet).protocol_id)
-           for replicate in design.replicates.get(group.pk, []) for row in design.placements.get(replicate.pk, [])]
+def feeding_conflicts(entries):
+    """What stands in the way of feeding tanks by an experiment's diet: for each (group name, tank, first day, last day) a
+    finding for every assignment of the tank that meets those days and that the farm's own assignments would keep. A unit's own
+    assignment is an error that is listed (applying a diet never ends another record silently: the person ends it), and so is
+    a protocol assigned to a batch in the tank, which would beat the unit's (farm/feeding/ration.py). Shared by a draft's
+    start (`check_feeding`) and a tank that comes in while the experiment runs (services.replace_unit)."""
+    entries = list(entries)
     standing = {}
-    for assignment in (ProtocolAssignment.objects.filter(unit_id__in={row.unit_id for _group, row in fed})
+    for assignment in (ProtocolAssignment.objects.filter(unit_id__in={unit.pk for _group, unit, _f, _l in entries})
                        .select_related('protocol', 'batch').order_by('valid_from')):
         standing.setdefault(assignment.unit_id, []).append(assignment)
-    for group, row in fed:
-        for assignment in standing.get(row.unit_id, []):
-            if assignment.valid_from > row.until_on or (assignment.valid_until or row.from_on) < row.from_on:
+    for group, unit, first, last in entries:
+        for assignment in standing.get(unit.pk, []):
+            if assignment.valid_from > last or (assignment.valid_until or first) < first:
                 continue
-            values = {'tank': row.unit.code, 'protocol': assignment.protocol.name,
-                      'period': _period(assignment.valid_from, assignment.valid_until), 'group': group.name}
+            values = {'tank': unit.code, 'protocol': assignment.protocol.name,
+                      'period': _period(assignment.valid_from, assignment.valid_until), 'group': group}
             if assignment.batch_id:
                 values['batch'] = assignment.batch.code
                 yield Finding(ERROR, 'batch_assignment', _('%(tank)s feeds batch %(batch)s by %(protocol)s (%(period)s): a '
                                                            'protocol assigned to a batch in a unit beats the unit’s, so '
                                                            'it would override the diet of %(group)s.') % values,
-                              f'{row.unit.code}/{assignment.pk}')
+                              f'{unit.code}/{assignment.pk}')
             else:
                 yield Finding(ERROR, 'standing_assignment', _('%(tank)s already has the feeding protocol %(protocol)s '
                                                               'assigned (%(period)s): end it first, for starting an '
                                                               'experiment never ends another record.') % values,
-                              f'{row.unit.code}/{assignment.pk}')
+                              f'{unit.code}/{assignment.pk}')
+
+
+def check_feeding(design):
+    """The diet is applied through the farm's own assignments when the experiment starts, so a draft asks that nothing stands
+    in its way (`feeding_conflicts`) on any tank of a group with a diet level, in the days it is booked."""
+    experiment = design.experiment
+    diet = next((factor for factor in design.factors if factor.kind == FactorKind.DIET), None)
+    if experiment.status != Status.DRAFT or diet is None:
+        return
+    yield from feeding_conflicts(
+        (group.name, row.unit, row.from_on, row.until_on) for group in design.groups
+        if design.level_of(group, diet) is not None and design.level_of(group, diet).protocol_id
+        for replicate in design.replicates.get(group.pk, []) for row in design.placements.get(replicate.pk, []))
 
 
 def check_day_zero(design):

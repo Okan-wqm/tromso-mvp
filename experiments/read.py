@@ -34,6 +34,7 @@ class Cell:
     unit: object
     first: date
     last: date
+    id: object = None                 # the placement's own id (a tank is released or replaced by it)
 
 
 def cells(experiment):
@@ -44,7 +45,7 @@ def cells(experiment):
                   .order_by('replicate__group__position', 'replicate__group__name', 'replicate__number', 'from_on',
                             'unit__code'))
     return [Cell(placement.replicate, placement.replicate.group, placement.unit, placement.from_on,
-                 placement.until_on) for placement in placements]
+                 placement.until_on, placement.pk) for placement in placements]
 
 
 def booked(unit_ids, first, last, exclude=None):
@@ -74,7 +75,8 @@ def placements(unit_ids, day):
                                          replicate__is_deleted=False, replicate__group__is_deleted=False,
                                          replicate__group__experiment__is_deleted=False)
             .select_related('replicate__group__experiment', 'unit'))
-    return {row.unit_id: Cell(row.replicate, row.replicate.group, row.unit, row.from_on, row.until_on) for row in rows}
+    return {row.unit_id: Cell(row.replicate, row.replicate.group, row.unit, row.from_on, row.until_on, row.pk)
+            for row in rows}
 
 
 def progress(experiment, today):

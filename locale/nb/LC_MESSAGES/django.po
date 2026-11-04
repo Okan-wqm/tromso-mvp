@@ -773,6 +773,10 @@ msgid "%(tank)s is booked to %(experiment)s on some of these days."
 msgstr "%(tank)s er booket til %(experiment)s noen av disse dagene."
 
 #, python-format
+msgid "%(tank)s is in %(replicate)s from %(first)s to %(last)s."
+msgstr "%(tank)s står i %(replicate)s fra %(first)s til %(last)s."
+
+#, python-format
 msgid "%(tank)s is in the pool twice (alone and through a system)."
 msgstr "%(tank)s er med i utvalget to ganger (alene og gjennom et system)."
 
@@ -785,6 +789,10 @@ msgid "%(tank)s is placed twice on some of the same days (%(first)s, %(second)s)
 msgstr "%(tank)s er plassert to ganger noen av de samme dagene (%(first)s, %(second)s)."
 
 #, python-format
+msgid "%(tank)s left “%(experiment)s”."
+msgstr "%(tank)s gikk ut av «%(experiment)s»."
+
+#, python-format
 msgid "%(tank)s of %(replicate)s is booked outside the days of the experiment."
 msgstr "%(tank)s i %(replicate)s er booket utenfor forsøkets dager."
 
@@ -795,6 +803,10 @@ msgstr "%(tank)s i %(replicate)s er ikke på forsøkets lokalitet."
 #, python-format
 msgid "%(tank)s was deleted meanwhile."
 msgstr "%(tank)s ble slettet i mellomtiden."
+
+#, python-format
+msgid "%(tank)s was replaced in “%(experiment)s”."
+msgstr "%(tank)s ble byttet ut i «%(experiment)s»."
 
 #, python-format
 msgid "%(tank)s would be booked to %(experiment)s on those days."
@@ -4024,6 +4036,9 @@ msgstr "Første"
 msgid "First day"
 msgstr "Første dag"
 
+msgid "First day of the new tank"
+msgstr "Det nye karets første dag"
+
 msgid "First name"
 msgstr "Fornavn"
 
@@ -4908,6 +4923,9 @@ msgstr "Siste kalibrering"
 msgid "Last day"
 msgstr "Siste dag"
 
+msgid "Last day in the experiment"
+msgstr "Siste dag i forsøket"
+
 msgid "Last fed"
 msgstr "Sist fôret"
 
@@ -5496,6 +5514,9 @@ msgstr "Ny melding"
 
 msgid "New password"
 msgstr "Nytt passord"
+
+msgid "New tank"
+msgstr "Nytt kar"
 
 msgid "New task"
 msgstr "Ny oppgave"
@@ -6966,6 +6987,12 @@ msgstr "Offisiell enhets-ID"
 msgid "Relationships"
 msgstr "Relasjoner"
 
+msgid "Release"
+msgstr "Frigi"
+
+msgid "Release a tank"
+msgstr "Frigi et kar"
+
 msgid "Remaining"
 msgstr "Gjenstår"
 
@@ -7001,6 +7028,12 @@ msgstr "Reparasjon"
 
 msgid "Repeats"
 msgstr "Gjentas"
+
+msgid "Replace"
+msgstr "Bytt ut"
+
+msgid "Replace a tank"
+msgstr "Bytt ut et kar"
 
 msgid "Replicate"
 msgstr "Replikat"
@@ -7270,6 +7303,9 @@ msgstr ""
 "Si hvorfor karene er plassert manuelt: en plassering som ikke er randomisert registreres med "
 "begrunnelsen."
 
+msgid "Say why: a tank that leaves, or is replaced, is registered with its reason."
+msgstr "Skriv hvorfor: et kar som går ut eller byttes ut, registreres med begrunnelsen."
+
 msgid "Scale loss"
 msgstr "Skjelltap"
 
@@ -7467,6 +7503,9 @@ msgstr "Velg en leverandør"
 
 msgid "Select a system"
 msgstr "Velg et system"
+
+msgid "Select a tank"
+msgstr "Velg et kar"
 
 msgid "Select a type"
 msgstr "Velg en type"
@@ -8320,6 +8359,18 @@ msgstr "Datoen kan ikke være fram i tid."
 msgid "The days before yesterday keep their protocol: the last day is yesterday at the earliest."
 msgstr "Dagene før i går beholder protokollen sin: siste dag er tidligst i går."
 
+msgid "The days before yesterday keep what happened in them: a tank leaves yesterday at the earliest."
+msgstr "Dagene før i går beholder det som skjedde i dem: et kar går ut i går på det tidligste."
+
+msgid ""
+"The days it has been in the experiment stay as they are, and what it gave up to its last day "
+"stays in the figures. The replicate keeps its number. Its feeding assignment ends with it, and "
+"the new tank gets the diet of the group for its days."
+msgstr ""
+"Dagene karet har vært i forsøket blir stående som de er, og det det ga fram til siste dag blir "
+"stående i tallene. Replikatet beholder nummeret sitt. Fôringstildelingen avsluttes med det, og "
+"det nye karet får gruppens fôr for sine dager."
+
 msgid "The days of the week it is due."
 msgstr "Ukedagene den har frist."
 
@@ -8388,6 +8439,9 @@ msgid ""
 msgstr ""
 "Forsøket er startet: karene og dagene er låst. Et kar som må gå ut, eller byttes, frigjøres fra "
 "siden."
+
+msgid "The experiment is not running: only a running experiment has tanks to release or replace."
+msgstr "Forsøket pågår ikke: bare et pågående forsøk har kar å frigi eller bytte ut."
 
 #, python-format
 msgid "The factor name %(name)s is too long."
@@ -8575,6 +8629,10 @@ msgstr "Siste dag kan ikke være før første dag."
 msgid "The last day cannot be before the first."
 msgstr "Siste dag kan ikke være før første."
 
+#, python-format
+msgid "The last day comes on or after the first day (%(day)s)."
+msgstr "Siste dag kommer på eller etter første dag (%(day)s)."
+
 msgid "The last day comes on or after the first day."
 msgstr "Siste dag er på eller etter første dag."
 
@@ -8647,6 +8705,23 @@ msgstr "Navnet på selskapets eget språk, f.eks. Laks."
 
 msgid "The name of the copy is too long."
 msgstr "Navnet på kopien er for langt."
+
+#, python-format
+msgid "The new tank comes in after the day the placement began (%(day)s)."
+msgstr "Det nye karet kommer inn etter dagen plasseringen begynte (%(day)s)."
+
+#, python-format
+msgid "The new tank comes in on or before the last day of the placement (%(day)s)."
+msgstr "Det nye karet kommer inn på eller før plasseringens siste dag (%(day)s)."
+
+msgid "The new tank comes in today at the earliest."
+msgstr "Det nye karet kommer inn i dag på det tidligste."
+
+msgid "The new tank is the one that leaves."
+msgstr "Det nye karet er det som går ut."
+
+msgid "The new tank was deleted meanwhile."
+msgstr "Det nye karet ble slettet i mellomtiden."
 
 #, python-format
 msgid "The next meal on the Meal board: %(kilos)s, filled in below."
@@ -8785,6 +8860,9 @@ msgstr ""
 "regnes det neste ut på nytt. Over- og underfôring flagges ikke ennå: sammenlign mengdene som er "
 "fôret og som gjenstår."
 
+msgid "The reason is too long."
+msgstr "Begrunnelsen er for lang."
+
 msgid ""
 "The recipes take two of them at a time; on the chart, one draws its direction, two their path to "
 "the target."
@@ -8795,6 +8873,10 @@ msgstr ""
 #, python-format
 msgid "The role of group %(name)s is not one of the four."
 msgstr "Rollen til gruppe %(name)s er ikke en av de fire."
+
+#, python-format
+msgid "The row ends on %(day)s already: it is only ever shortened."
+msgstr "Raden slutter allerede %(day)s: den kan bare forkortes."
 
 msgid "The safe zone lies in this band."
 msgstr "Den trygge sonen ligger i dette båndet."
@@ -8917,6 +8999,10 @@ msgid ""
 msgstr ""
 "Systemene det betjener, på produksjonsavdelingens lokalitet: minst ett, og ett av dem dets "
 "primære system. Kritikalitet er hvor mye systemet er avhengig av det, fra 1 (lite) til 5 (helt)."
+
+#, python-format
+msgid "The tank is booked until %(day)s already: a placement is only ever shortened."
+msgstr "Karet er allerede booket til %(day)s: en plassering kan bare forkortes."
 
 #, python-format
 msgid ""
@@ -9134,6 +9220,9 @@ msgstr ""
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 
+msgid "This assignment was deleted meanwhile."
+msgstr "Denne tildelingen ble slettet i mellomtiden."
+
 msgid "This batch already has a production plan."
 msgstr "Denne fiskegruppen har allerede en produksjonsplan."
 
@@ -9179,6 +9268,9 @@ msgstr "Denne personen står to ganger i listen."
 
 msgid "This place is not on the chosen site."
 msgstr "Dette stedet er ikke på valgt lokalitet."
+
+msgid "This placement was removed meanwhile: reload the page."
+msgstr "Denne plasseringen ble fjernet i mellomtiden: last siden på nytt."
 
 msgid "This plan is cancelled."
 msgstr "Denne planen er avlyst."
@@ -9311,6 +9403,9 @@ msgstr "Til enheter"
 
 msgid "Today"
 msgstr "I dag"
+
+msgid "Today at the earliest; the last day of the old tank is the day before."
+msgstr "I dag på det tidligste; det gamle karets siste dag er dagen før."
 
 msgid "Today lists the overdue tasks, those due today and those done today."
 msgstr "I dag viser de forfalte oppgavene, dem med frist i dag og dem som er utført i dag."
@@ -10052,6 +10147,9 @@ msgstr "Ja"
 
 msgid "Yesterday"
 msgstr "I går"
+
+msgid "Yesterday at the earliest; the tank is booked to the experiment until then."
+msgstr "I går på det tidligste; karet er booket til forsøket fram til da."
 
 msgid "You"
 msgstr "Du"

@@ -1,0 +1,25 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} A tank of a running experiment leaves or is replaced (experiments.resources.ExperimentAmendView): the tank, its replicate and
+   its days, the form, and the reason, which is asked: a tank that leaves is registered with why. {% endcomment %}
+{% block title %}{{ heading_text }}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ object.code }}{% endblock %}
+{% block heading %}{{ heading_text }}{% endblock %}
+{% block content %}
+<div class="confirm">
+  <p class="confirm-question">{% blocktrans trimmed with tank=placement.unit.code replicate=placement.replicate group=placement.replicate.group.name first=placement.from_on|date:"DATE_FORMAT" last=placement.until_on|date:"DATE_FORMAT" %}{{ tank }} is in {{ replicate }} from {{ first }} to {{ last }}.{% endblocktrans %}</p>
+  <p>{% trans "The days it has been in the experiment stay as they are, and what it gave up to its last day stays in the figures. The replicate keeps its number. Its feeding assignment ends with it, and the new tank gets the diet of the group for its days." %}</p>
+  <form method="post" action="{{ request.get_full_path }}" novalidate>
+    {% csrf_token %}
+    {{ form.version }}
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid">
+      {% for field in form.visible_fields %}{% include "registration/_field.html" %}{% endfor %}
+    </div>
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline">{{ heading_text }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

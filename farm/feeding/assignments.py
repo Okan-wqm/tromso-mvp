@@ -1,16 +1,19 @@
 """The write path of protocol assignments: the rows for a protocol, a day range and the units or the batch it
-feeds (checked as the assignment dialog checks them), and writing them, each logged. The dialog
-(farm/forms/feeding_protocol.py, farm/resources/feeding_protocol.py) and an experiment's start
-(experiments/services.py) both come through here, so a row written for an experiment is the row the dialog
-would write and the log shows the same entry."""
+feeds (checked as the assignment dialog checks them), writing them, each logged, and ending one. The dialog
+(farm/forms/feeding_protocol.py, farm/resources/feeding_protocol.py) and an experiment's start and its amendments
+(experiments/services.py) come through here, so a row written or ended for an experiment is the row the dialog
+would write or end and the log shows the same entry."""
 import uuid
 from dataclasses import dataclass
+from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils.translation import gettext as _
 
 from core import audit
 from farm.models import ProtocolAssignment, Tank
+from farm.stock.dates import local_today
 
 # The fields the activity log shows of an assignment (and the assignment's form, on its one tab).
 FIELDS = ('protocol', 'unit', 'batch', 'valid_from', 'valid_until', 'notes')
@@ -61,3 +64,27 @@ def save(user, made):
             audit.record_create(user, row, recorded(row))
     return made
 
+
+def end(user, row, last_day):
+    """Ends a row on `last_day` (both included): the row is locked, its last day set, its version counted and the change logged
+    as the assignment's edit logs it (before and after). The farm's rule for a row that has started is kept: its past days
+    keep their protocol, so the last day is yesterday at the earliest; a day before the row's first day, or after its
+    own last day, is refused. Returns the row."""
+    with transaction.atomic():
+        row = ProtocolAssignment.all_objects.select_for_update().get(pk=row.pk)
+        if row.is_deleted:
+            raise ValidationError({'valid_until': _('This assignment was deleted meanwhile.')})
+        if last_day < row.valid_from:
+            raise ValidationError({'valid_until': _('The last day comes on or after the first day.')})
+        if row.valid_until is not None and last_day > row.valid_until:
+            raise ValidationError({'valid_until': _('The row ends on %(day)s already: it is only ever shortened.') % {
+                'day': row.valid_until.isoformat()}})
+        if row.valid_from <= local_today(row.unit) and last_day < local_today(row.unit) - timedelta(days=1):
+            raise ValidationError({'valid_until': _('The days before yesterday keep their protocol: the last day is '
+                                                    'yesterday at the earliest.')})
+        before = recorded(row)
+        row.valid_until, row.updated_by = last_day, user
+        row.version += 1
+        row.save()
+        audit.record_update(user, row, before, recorded(row))
+        return row

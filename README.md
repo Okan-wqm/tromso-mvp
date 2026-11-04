@@ -1785,6 +1785,18 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   Sea-lice counts, Water chemistry (its history) and the unit's drawer. `read.placements(unit_ids, day)` says which placement each
   tank has on a day (at most one: the exclusion constraint), for whoever asks which experiment a tank is in (the record lock to
   come).
+- **Running amendments** (the **Release** and **Replace** buttons on the Data tab of a running experiment, for those who may
+  edit; `services.release_unit`, `replace_unit`). A tank that leaves is released: its placement ends on the last day it was in
+  the experiment (yesterday at the earliest, the farm's rule for ending a row that has started; never later than it was booked,
+  never before it began), with its **reason**, which is asked. A tank that is replaced ends the day before the new tank's first day
+  (today at the earliest) and the new tank takes its replicate's place to the day the old one was booked to, so **the replicate keeps
+  its number**; the new tank must be on the site and free of every booking for those days (another experiment's, or this one's, named
+  by its number) and no assignment of its own may stand in the way of the diet. The diet follows through the farm's own
+  assignments (`farm/feeding/assignments.py`, as at the start): the old tank's row ends the same day (`assignments.end`, logged as an
+  edit of the assignment), the new tank gets its row for the group's protocol. The days the old tank was in stay as they are and what it
+  gave up to its last day stays in the figures (the figures are bounded by the placement's days, so a replacement without a
+  weighing at the move leaves a gap that the Overview names). One row "Places" and one "Reason it left" go on the experiment's log; the
+  tanks and batches are locked before the experiment, and a form older than the stored version is refused.
 - **Delete** goes through the delete plan: a draft is deleted with its factors, levels, groups, replicates and placements
   (one activity-log row each, its tanks free again), a started experiment is refused with the reason. A restored draft
   comes back without its design (only the record itself returns). A copy of a deleted experiment keeps pointing at it.
@@ -2403,7 +2415,7 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
-| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/copy/` the copy dialog, `<id>/team/` saves the team, `<id>/delete/` |
+| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/copy/` the copy dialog, `<id>/release/<placement>/` and `<id>/replace/<placement>/` release or replace a tank of a running experiment, `<id>/team/` saves the team, `<id>/delete/` |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |

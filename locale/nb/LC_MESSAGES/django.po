@@ -446,6 +446,18 @@ msgid "%(fish)s fish at %(weight)s est."
 msgstr "%(fish)s fisk på estimert %(weight)s"
 
 #, python-format
+msgid ""
+"%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, and %(tank)s is not a tank of the "
+"experiment."
+msgstr ""
+"%(fish)s fisk ble flyttet fra %(out)s til %(into)s den %(day)s, og %(tank)s er ikke et kar i "
+"forsøket."
+
+#, python-format
+msgid "%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, between two replicates."
+msgstr "%(fish)s fisk ble flyttet fra %(out)s til %(into)s den %(day)s, mellom to replikater."
+
+#, python-format
 msgid "%(fish)s fish · %(biomass)s est."
 msgstr "%(fish)s fisk · estimert %(biomass)s"
 
@@ -803,6 +815,12 @@ msgstr "%(tank)s i %(replicate)s er ikke på forsøkets lokalitet."
 #, python-format
 msgid "%(tank)s was deleted meanwhile."
 msgstr "%(tank)s ble slettet i mellomtiden."
+
+#, python-format
+msgid "%(tank)s was fed %(feed)s (%(count)s feedings, %(kilos)s kg), which is on no band of %(protocol)s."
+msgstr ""
+"%(tank)s ble fôret med %(feed)s (%(count)s fôringer, %(kilos)s kg), som ikke står på noe bånd i "
+"%(protocol)s."
 
 #, python-format
 msgid "%(tank)s was replaced in “%(experiment)s”."
@@ -2319,6 +2337,12 @@ msgid "Batch %(batch)s stocked: %(count)s fish into %(units)s."
 msgstr "Fiskegruppe %(batch)s satt ut: %(count)s fisk i %(units)s."
 
 #, python-format
+msgid ""
+"Batch %(batch)s was in %(tank)s, though it was not there on the first day of the tank in the "
+"experiment."
+msgstr "Parti %(batch)s sto i %(tank)s, selv om det ikke var der karets første dag i forsøket."
+
+#, python-format
 msgid "Batch %(batch)s: %(fish)s fish at %(weight)s"
 msgstr "Fiskegruppe %(batch)s: %(fish)s fisk på %(weight)s"
 
@@ -3325,6 +3349,9 @@ msgstr "Detaljer"
 
 msgid "Deviation"
 msgstr "Avvik"
+
+msgid "Deviations from the design"
+msgstr "Avvik fra opplegget"
 
 msgid "Diagnosis"
 msgstr "Diagnose"
@@ -5583,6 +5610,9 @@ msgstr "Ingen telling samsvarer med disse filtrene."
 msgid "No count recorded yet"
 msgstr "Ingen telling registrert ennå"
 
+msgid "No deviation from the design is found in the farm’s records."
+msgstr "Ingen avvik fra opplegget er funnet i anleggets registre."
+
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
 
@@ -5600,6 +5630,14 @@ msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s:
 msgstr ""
 "Ingen fôring av denne fisken er registrert de %(days)d dagene før %(day)s: sultingen er ikke "
 "kontrollert."
+
+#, python-format
+msgid ""
+"No feeding protocol reaches %(tank)s, though %(protocol)s is the diet of its group, from "
+"%(first)s to %(last)s."
+msgstr ""
+"Ingen fôringsprotokoll gjelder for %(tank)s fra %(first)s til %(last)s, selv om %(protocol)s er "
+"gruppens fôr."
 
 msgid "No feeding recorded for these filters."
 msgstr "Ingen fôring registrert for disse filtrene."
@@ -8860,6 +8898,14 @@ msgstr ""
 "regnes det neste ut på nytt. Over- og underfôring flagges ikke ennå: sammenlign mengdene som er "
 "fôret og som gjenstår."
 
+#, python-format
+msgid ""
+"The ration of %(tank)s follows %(actual)s, though %(protocol)s is the diet of its group, from "
+"%(first)s to %(last)s."
+msgstr ""
+"Rasjonen til %(tank)s følger %(actual)s fra %(first)s til %(last)s, selv om %(protocol)s er "
+"gruppens fôr."
+
 msgid "The reason is too long."
 msgstr "Begrunnelsen er for lang."
 
@@ -9891,6 +9937,13 @@ msgstr "Hva det er laget for. Medisinfôr gis etter resept fra veterinær."
 
 msgid "What the farm pays per kg, with its currency."
 msgstr "Det anlegget betaler per kg, med valuta."
+
+msgid ""
+"What the farm’s records show on the days of the tanks that the design did not say. Nothing is "
+"refused for a design: these are facts to read."
+msgstr ""
+"Det anleggets registre viser på karenes dager som opplegget ikke sa noe om. Ingenting nektes på "
+"grunn av et opplegg: dette er fakta å lese."
 
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Hva personen kan åpne og endre. Uten rolle ser vedkommende bare oversikten."

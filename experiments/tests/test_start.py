@@ -14,7 +14,7 @@ from farm.feeding import read as feeding_read
 from farm.models import ProtocolAssignment, Tank
 from farm.stock import integrity, services as stock_services
 
-from .. import design, services
+from .. import design, integrity as experiments_integrity, services
 from ..models import Experiment, Member, Replicate, ReplicateUnit
 from . import D
 from .test_design import DesignTestCase, diet
@@ -84,6 +84,7 @@ class StartTests(StartTestCase):
         self.assertEqual(entry.changes['Warnings acknowledged'][1].count('is not assigned yet'), 2)
         self.assertEqual((entry.severity, entry.user), ('normal', self.user))
         self.assertTrue(all(protocol.is_assigned() for protocol in (self.low, self.high)))
+        self.assertEqual(experiments_integrity.problems(), [])             # every placement has its row, to its last day
 
     def test_the_ration_follows_the_level_on_every_day_of_the_window(self):
         self.start()

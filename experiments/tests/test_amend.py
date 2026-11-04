@@ -7,6 +7,7 @@ from decimal import Decimal
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import IntegrityError, transaction
 from django.urls import reverse
+from django.utils import translation
 
 from core.models import AuditLog, Profile
 from farm.feeding import assignments, services as feeding_services
@@ -323,6 +324,7 @@ class AmendPageTests(AmendTestCase):
         self.assertEqual(self.placed(self.tanks[1]).until_on, self.end)
 
     def test_the_dialogs_speak_each_language(self):
+        self.addCleanup(translation.deactivate)
         for language, words in {'tr': ('Bir tankı serbest bırak', 'Ayrılma gerekçesi', 'Bir tankı değiştir'),
                                 'nb': ('Frigi et kar', 'Begrunnelse for at det gikk ut', 'Bytt ut et kar')}.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})

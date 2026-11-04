@@ -116,7 +116,8 @@ def table(design):
 # ---- the checks ----------------------------------------------------------------------------------
 def check_experiment(design):
     """What an experiment says of itself: its hypothesis, endpoint, day 0 and lead (the allocation comes with the
-    places)."""
+    places). The records' 31-day window is a rule of registering: only a draft is held to it, a started experiment is
+    not "too old" for the days that passed since."""
     experiment = design.experiment
     if not experiment.hypothesis:
         yield Finding(ERROR, 'no_hypothesis', _('The hypothesis is not written.'))
@@ -124,7 +125,7 @@ def check_experiment(design):
         yield Finding(ERROR, 'no_endpoint', _('The primary endpoint is not chosen.'))
     if experiment.starts_on is None:
         yield Finding(ERROR, 'no_start_day', _('Day 0 is not set.'))
-    elif experiment.starts_on < site_earliest(experiment.site):
+    elif experiment.status == Status.DRAFT and experiment.starts_on < site_earliest(experiment.site):
         yield Finding(ERROR, 'day_0_too_old', _('Day 0 is further back than records can be dated: an experiment is '
                                                 'registered at most %(days)d days after it begins.') % {
             'days': settings.STOCK_BACKDATE_DAYS})
@@ -331,6 +332,9 @@ def check_day_zero(design):
 
 
 CHECKS = [check_experiment, check_groups, check_protocols, check_balance, check_places, check_feeding, check_day_zero]
+# The checks whose errors stay errors once the experiment has started (`integrity`): the others ask about what can
+# still change, a protocol that may retire after its assignments ended, the stock of day 0.
+HOLDS_AFTER_START = [check_experiment, check_groups, check_places]
 
 
 def problems(experiment, design=None):

@@ -116,7 +116,8 @@ class ExperimentResource(Resource):
     @classmethod
     def detail_extras(cls, request, experiment):
         """The read page: the details, and one of its three parts (`?tab=`): the Overview (where the experiment is in its
-        days, what is wrong with a draft, and a replicate a row with its figures read from the farm's records), the Data
+        days, what is wrong with a draft or what a started one deviated from, and a replicate a row with its figures read from
+        the farm's records), the Data
         (per tank its days and links to the farm's own lists with the tank and the days chosen) and the Team."""
         tab = request.GET.get('tab', '')
         tab = tab if tab in READ_TABS else 'overview'
@@ -133,6 +134,8 @@ class ExperimentResource(Resource):
             extras['rows'] = read.overview(experiment, today)
             if experiment.status == Status.DRAFT and not experiment.is_template:
                 extras['findings'] = design_module.assess(experiment)
+            elif experiment.status != Status.DRAFT:
+                extras['deviations'] = read.deviations(experiment, today)
         elif tab == 'data':
             can_amend = experiment.status == Status.RUNNING and request.user.has_perm(cls.perm('change'))
             extras['tanks'] = [{'data': item, 'links': data_links(request.user, item.cell),

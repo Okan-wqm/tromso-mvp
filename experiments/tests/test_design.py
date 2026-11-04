@@ -345,6 +345,14 @@ class ProblemsTests(DesignTestCase):
         ReplicateUnit.objects.update(from_on=self.day(31), until_on=self.day(31) + timedelta(days=56))
         self.assertEqual(self.codes('error'), [])
 
+    def test_a_started_experiment_is_not_too_old_for_the_days_that_passed_since_day_0(self):
+        self.good()
+        Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.day(32))
+        ReplicateUnit.objects.update(from_on=self.day(32), until_on=self.day(32) + timedelta(days=56))
+        self.assertEqual(self.codes('error'), ['day_0_too_old'])
+        Experiment.objects.filter(pk=self.trial.pk).update(status='running')
+        self.assertEqual(self.codes('error'), [])
+
     def test_the_groups_have_replicates_and_a_level_of_every_factor_and_none_repeats_another(self):
         self.good()
         stored = design.load(self.trial)

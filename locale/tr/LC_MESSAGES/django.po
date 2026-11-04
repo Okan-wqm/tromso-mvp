@@ -446,6 +446,18 @@ msgid "%(fish)s fish at %(weight)s est."
 msgstr "%(fish)s balık, tahmini %(weight)s"
 
 #, python-format
+msgid ""
+"%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, and %(tank)s is not a tank of the "
+"experiment."
+msgstr ""
+"%(day)s tarihinde %(out)s tankından %(into)s tankına %(fish)s balık taşındı ve %(tank)s denemenin"
+" bir tankı değil."
+
+#, python-format
+msgid "%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, between two replicates."
+msgstr "%(day)s tarihinde %(out)s tankından %(into)s tankına %(fish)s balık taşındı: iki tekrar arasında."
+
+#, python-format
 msgid "%(fish)s fish · %(biomass)s est."
 msgstr "%(fish)s balık · tahmini %(biomass)s"
 
@@ -807,6 +819,12 @@ msgstr "%(replicate)s için %(tank)s deneyin sahasında değil."
 #, python-format
 msgid "%(tank)s was deleted meanwhile."
 msgstr "%(tank)s bu arada silindi."
+
+#, python-format
+msgid "%(tank)s was fed %(feed)s (%(count)s feedings, %(kilos)s kg), which is on no band of %(protocol)s."
+msgstr ""
+"%(tank)s tankına %(feed)s verildi (%(count)s besleme, %(kilos)s kg); bu yem %(protocol)s "
+"protokolünün hiçbir bandında yok."
 
 #, python-format
 msgid "%(tank)s was replaced in “%(experiment)s”."
@@ -2317,6 +2335,12 @@ msgid "Batch %(batch)s stocked: %(count)s fish into %(units)s."
 msgstr "%(batch)s partisi stoklandı: %(units)s içine %(count)s balık."
 
 #, python-format
+msgid ""
+"Batch %(batch)s was in %(tank)s, though it was not there on the first day of the tank in the "
+"experiment."
+msgstr "%(batch)s partisi %(tank)s tankındaydı, oysa tankın denemedeki ilk gününde orada değildi."
+
+#, python-format
 msgid "Batch %(batch)s: %(fish)s fish at %(weight)s"
 msgstr "Parti %(batch)s: %(fish)s balık, %(weight)s"
 
@@ -3325,6 +3349,9 @@ msgstr "Ayrıntılar"
 
 msgid "Deviation"
 msgstr "Sapma"
+
+msgid "Deviations from the design"
+msgstr "Tasarımdan sapmalar"
 
 msgid "Diagnosis"
 msgstr "Tanı"
@@ -5587,6 +5614,9 @@ msgstr "Bu filtrelere uyan sayım yok."
 msgid "No count recorded yet"
 msgstr "Henüz sayım kaydedilmedi"
 
+msgid "No deviation from the design is found in the farm’s records."
+msgstr "Çiftliğin kayıtlarında tasarımdan sapma bulunmadı."
+
 msgid "No diagnosis"
 msgstr "Tanı yok"
 
@@ -5602,6 +5632,14 @@ msgstr "Bu filtrelere uyan yemleme yok."
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
 msgstr "%(day)s öncesindeki %(days)d günde bu balıkların yemlemesi kaydedilmemiş: aç bırakma denetlenmedi."
+
+#, python-format
+msgid ""
+"No feeding protocol reaches %(tank)s, though %(protocol)s is the diet of its group, from "
+"%(first)s to %(last)s."
+msgstr ""
+"%(first)s ile %(last)s arasında %(tank)s tankına hiçbir besleme protokolü ulaşmıyor, oysa "
+"grubunun yemi %(protocol)s."
 
 msgid "No feeding recorded for these filters."
 msgstr "Bu filtrelerle kayıtlı yemleme yok."
@@ -8862,6 +8900,14 @@ msgstr ""
 "yem büyüme sayılmaz); her öğünden sonra sonraki öğün yeniden hesaplanır. Fazla ve eksik yemleme "
 "henüz işaretlenmiyor: verilen ve kalan miktarları karşılaştırın."
 
+#, python-format
+msgid ""
+"The ration of %(tank)s follows %(actual)s, though %(protocol)s is the diet of its group, from "
+"%(first)s to %(last)s."
+msgstr ""
+"%(tank)s rasyonu %(first)s ile %(last)s arasında %(actual)s protokolünü izliyor, oysa grubunun "
+"yemi %(protocol)s."
+
 msgid "The reason is too long."
 msgstr "Gerekçe çok uzun."
 
@@ -9895,6 +9941,13 @@ msgstr "Ne için yapıldığı. İlaçlı yem veteriner reçetesiyle verilir."
 
 msgid "What the farm pays per kg, with its currency."
 msgstr "Çiftliğin kg başına ödediği, para birimiyle."
+
+msgid ""
+"What the farm’s records show on the days of the tanks that the design did not say. Nothing is "
+"refused for a design: these are facts to read."
+msgstr ""
+"Çiftliğin kayıtlarının tankların günlerinde gösterdiği ve tasarımın söylemediği şeyler. Hiçbir "
+"şey bir tasarım yüzünden reddedilmez: bunlar okunacak olgulardır."
 
 msgid "What the person can open and change. Without a role they see only the overview."
 msgstr "Kişinin neleri açıp değiştirebileceği. Rolü yoksa yalnızca genel bakışı görür."

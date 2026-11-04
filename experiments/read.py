@@ -12,18 +12,26 @@ farm/feeding/read.py) over the days a placement gives, never copied, and the que
 - `overview(experiment)`: per replicate its tanks, the batches of the species that were in them on its days, fish and
   biomass now, survival over the days and the feed conversion over the days: every figure through the farm's own reads,
   bounded by the placement's days, with no "since stocking" figure beside them;
-- `data(experiment)`: per tank its days and the feeding records of them, for the Data tab."""
+- `data(experiment)`: per tank its days and the feeding records of them, for the Data tab;
+- `deviations(experiment)`: what happened on the days of the placements that the design did not say (a batch that came in,
+  fish moved between replicates or out of the trial, a feed on no band of the diet, a ration that does not follow the diet):
+  derived from the farm's own records, never stored, never blocking."""
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
 
+from django.utils import timezone
+from django.utils.formats import number_format
+from django.utils.translation import gettext as _
+
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import LOST
-from farm.models import Batch, StockMovement
+from farm.models import Batch, Feed, FeedingRecord, ProtocolBand, StockMovement, Tank
+from farm.models.stock import MovementKind
 from farm.stock import read as stock_read
 from farm.stock.dates import site_today
 
-from .models import ExperimentGroup, Replicate, ReplicateUnit, Status
+from .models import ExperimentGroup, FactorKind, GroupLevel, Replicate, ReplicateUnit, Status
 
 
 @dataclass(frozen=True)
@@ -241,3 +249,197 @@ def data(experiment):
         mine = [record for record in records if record.unit_id == cell.unit.pk and cell.first <= record.date <= cell.last]
         result.append(TankData(cell, len(mine), sum((record.amount_kg for record in mine), Decimal(0))))
     return result
+
+
+# ---- deviations: what happened that the design did not say ------------------------------------------------------------
+FOREIGN_BATCH, TRANSFER, FEED_OFF_BAND, RATION_OFF_DIET = 'foreign_batch', 'transfer', 'feed_off_band', 'ration_off_diet'
+
+
+@dataclass(frozen=True)
+class Deviation:
+    """A fact of a running or finished experiment that the design did not say, read from the farm's own records on the days
+    of a placement: derived, never stored, never blocking (a fish is never refused for a design): the one list the
+    Overview shows and the end-of-trial report will quote. `code` names the rule, `about` tells two of a rule on one
+    placement apart (a batch, a feed, a transfer)."""
+    code: str
+    cell: Cell
+    first: date
+    last: date
+    text: str
+    about: str = ''
+
+
+def _days(first, last):
+    day = first
+    while day <= last:
+        yield day
+        day += timedelta(days=1)
+
+
+def _runs(days):
+    """[(first, last)] of the runs of consecutive days in a sorted list."""
+    runs = []
+    for day in days:
+        if runs and day - runs[-1][1] == timedelta(days=1):
+            runs[-1] = (runs[-1][0], day)
+        else:
+            runs.append((day, day))
+    return runs
+
+
+def _diet_protocols(experiment):
+    """{group id: the feeding protocol of the group's diet level}: a group without a diet is not in it."""
+    rows = (GroupLevel.objects.filter(experiment=experiment, factor__kind=FactorKind.DIET, level__protocol__isnull=False)
+            .select_related('level__protocol'))
+    return {row.group_id: row.level.protocol for row in rows}
+
+
+def deviations(experiment, today=None):
+    """[Deviation] of an experiment over the days its placements have had (to today at the latest), in the order of its
+    design; a draft has none (nothing has begun). The queries do not grow with the tanks.
+    - `foreign_batch`: a batch of the experiment's species that is in a tank on some day of its placement and was not there on
+      the placement's first day (a stocking, or a transfer in, since the tank came in). Cleaner fish never count;
+    - `transfer`: fish moved between tanks of two replicates, or between a tank of the experiment and one that is not in it
+      (a move inside one replicate, as a replacement makes, is not one);
+    - `feed_off_band`: feed given to a tank on a day of its placement that is on no band of its group's protocol;
+    - `ration_off_diet`: the farm's own rule (`ration.Policy.resolve`) gives a batch in a tank another protocol than the
+      diet of its group, or none, on some day: a protocol assigned to the batch in the unit beats the unit's, or the diet's
+      own row is gone."""
+    if experiment.status == Status.DRAFT:
+        return []
+    today = today or site_today(experiment.site)
+    placed = [cell for cell in cells(experiment) if cell.first <= today]
+    if not placed:
+        return []
+    order = {cell.id: index for index, cell in enumerate(placed)}
+    units = {cell.unit.pk: cell.unit for cell in placed}
+    presence = stock_read.Presence.of_units(list(units))
+    batches = Batch.all_objects.in_bulk({batch_id for unit_id in units for batch_id in presence.batches.get(unit_id, ())})
+    mine = {pk for pk, batch in batches.items() if batch.species_id == experiment.species_id}
+    protocols = _diet_protocols(experiment)
+    found = (_foreign_batches(placed, presence, batches, mine, today) + _transfers(placed, today)
+             + _feed_off_band(placed, protocols, today)
+             + _ration_off_diet(placed, protocols, presence, mine, units, today))
+    return sorted(found, key=lambda item: (order[item.cell.id], item.first, item.code, item.about))
+
+
+def _until(cell, today):
+    return min(cell.last, today)
+
+
+def _foreign_batches(placed, presence, batches, mine, today):
+    found = []
+    for cell in placed:
+        unit_id = cell.unit.pk
+        for batch_id in sorted(presence.batches.get(unit_id, ()), key=lambda pk: batches[pk].code):
+            if batch_id not in mine or presence.present(unit_id, batch_id, cell.first):
+                continue
+            days = [day for day in _days(cell.first, _until(cell, today)) if presence.present(unit_id, batch_id, day)]
+            if days:
+                found.append(Deviation(FOREIGN_BATCH, cell, days[0], days[-1], _(
+                    'Batch %(batch)s was in %(tank)s, though it was not there on the first day of the tank in the '
+                    'experiment.') % {'batch': batches[batch_id].code, 'tank': cell.unit.code}, batches[batch_id].code))
+    return found
+
+
+def _transfers(placed, today):
+    by_unit = {}
+    for cell in placed:
+        by_unit.setdefault(cell.unit.pk, []).append(cell)
+    kinds = (MovementKind.TRANSFER_OUT, MovementKind.TRANSFER_IN)
+    touching = (StockMovement.objects.filter(kind__in=kinds, unit_id__in=list(by_unit), operation__is_deleted=False,
+                                             operation__date__gte=min(cell.first for cell in placed),
+                                             operation__date__lte=today).values('operation_id'))
+    lines = (StockMovement.objects.filter(kind__in=kinds, operation_id__in=touching)
+             .values_list('operation_id', 'pair', 'operation__date', 'unit_id', 'kind', 'count_delta'))
+    moves = {}
+    for operation_id, pair, day, unit_id, kind, delta in lines:
+        move = moves.setdefault((operation_id, pair), {'day': day, 'fish': 0})
+        if kind == MovementKind.TRANSFER_OUT:
+            move['out'], move['fish'] = unit_id, move['fish'] + abs(delta)
+        else:
+            move['into'] = unit_id
+    codes = dict(Tank.all_objects.filter(pk__in={unit_id for move in moves.values() for unit_id in
+                                                 (move.get('out'), move.get('into'))}).values_list('pk', 'code'))
+    found = []
+    for (operation_id, pair), move in moves.items():
+        if 'out' not in move or 'into' not in move:
+            continue
+        day, ends = move['day'], (move['out'], move['into'])
+        cover = {unit_id: next((cell for cell in by_unit.get(unit_id, ()) if cell.first <= day <= cell.last), None)
+                 for unit_id in ends}
+        if not any(cover.values()):
+            continue                                              # neither tank was in the experiment that day
+        if {cell.replicate.pk for cell in by_unit.get(ends[0], ())} & {cell.replicate.pk for cell in by_unit.get(ends[1], ())}:
+            continue                                              # inside one replicate: a replacement's move
+        values = {'fish': move['fish'], 'out': codes[ends[0]], 'into': codes[ends[1]], 'day': day.isoformat()}
+        outsider = next((unit_id for unit_id in ends if unit_id not in by_unit), None)
+        if outsider is not None:
+            values['tank'] = codes[outsider]
+            text = _('%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, and %(tank)s is not a tank of the '
+                     'experiment.') % values
+        else:
+            text = _('%(fish)s fish were moved from %(out)s to %(into)s on %(day)s, between two replicates.') % values
+        found.append(Deviation(TRANSFER, cover[ends[0]] or cover[ends[1]], day, day, text, f'{operation_id}/{pair}'))
+    return found
+
+
+def _feed_off_band(placed, protocols, today):
+    diet = [cell for cell in placed if cell.group.pk in protocols]
+    if not diet:
+        return []
+    bands = {}
+    for protocol_id, feed_id in ProtocolBand.objects.filter(
+            protocol_id__in={protocol.pk for protocol in protocols.values()}).values_list('protocol_id', 'feed_id'):
+        bands.setdefault(protocol_id, set()).add(feed_id)
+    given = {}
+    for unit_id, day, feed_id, kilos in (
+            FeedingRecord.objects.filter(unit_id__in={cell.unit.pk for cell in diet},
+                                         date__gte=min(cell.first for cell in diet), date__lte=today)
+            .order_by().values_list('unit_id', 'date', 'feed_id', 'amount_kg')):
+        given.setdefault(unit_id, []).append((day, feed_id, kilos))
+    feeds = Feed.all_objects.in_bulk({feed_id for rows in given.values() for _day, feed_id, _kilos in rows})
+    found = []
+    for cell in diet:
+        protocol = protocols[cell.group.pk]
+        off = {}
+        for day, feed_id, kilos in given.get(cell.unit.pk, ()):
+            if cell.first <= day <= _until(cell, today) and feed_id not in bands.get(protocol.pk, ()):
+                off.setdefault(feed_id, []).append((day, kilos))
+        for feed_id, rows in sorted(off.items(), key=lambda item: feeds[item[0]].name):
+            days = sorted(day for day, _kilos in rows)
+            found.append(Deviation(FEED_OFF_BAND, cell, days[0], days[-1], _(
+                '%(tank)s was fed %(feed)s (%(count)s feedings, %(kilos)s kg), which is on no band of %(protocol)s.') % {
+                'tank': cell.unit.code, 'feed': feeds[feed_id].name, 'count': len(rows),
+                'kilos': number_format(sum((kilos for _day, kilos in rows), Decimal(0)), 1),
+                'protocol': protocol.name}, feeds[feed_id].name))
+    return found
+
+
+def _ration_off_diet(placed, protocols, presence, mine, units, today):
+    diet = [cell for cell in placed if cell.group.pk in protocols]
+    if not diet:
+        return []
+    policy = feeding_read.policy({cell.unit.pk: units[cell.unit.pk] for cell in diet}, mine,
+                                 min(cell.first for cell in diet), timezone.now())
+    found = []
+    for cell in diet:
+        wanted, unit_id, off = protocols[cell.group.pk], cell.unit.pk, {}
+        for batch_id in presence.batches.get(unit_id, ()):
+            if batch_id not in mine:
+                continue
+            for day in _days(cell.first, _until(cell, today)):
+                if presence.present(unit_id, batch_id, day):
+                    row = policy.resolve(unit_id, batch_id, day)[0]
+                    if row is None or row.protocol_id != wanted.pk:
+                        off.setdefault(row.protocol.name if row is not None else '', []).append(day)
+        for actual, days in sorted(off.items()):
+            for first, last in _runs(sorted(set(days))):
+                values = {'tank': cell.unit.code, 'protocol': wanted.name, 'first': first.isoformat(),
+                          'last': last.isoformat(), 'actual': actual}
+                text = (_('The ration of %(tank)s follows %(actual)s, though %(protocol)s is the diet of its group, from '
+                         '%(first)s to %(last)s.') if actual else
+                        _('No feeding protocol reaches %(tank)s, though %(protocol)s is the diet of its group, from '
+                          '%(first)s to %(last)s.'))
+                found.append(Deviation(RATION_OFF_DIET, cell, first, last, text % values, actual))
+    return found

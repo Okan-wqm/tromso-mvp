@@ -1631,6 +1631,8 @@ controls), the replicates, the tanks and the days each is booked to a replicate,
 team. The app `experiments` reads `farm` and nothing reads it: it stores only what no other record holds, and every
 figure (fish, feed, FCR, water, deaths) is read through the farm's own reads over the days a tank is booked; a diet is
 applied through the farm's own feeding-protocol assignments. No farm table has an experiment column.
+The reference (what a day means, the allocation method id, every constraint and trigger, what the code holds and what must be
+checked live) is [`docs/experiments.md`](docs/experiments.md).
 
 **What is stored** (tables `experiments`, `experiment_factors`, `experiment_levels`, `experiment_groups`,
 `experiment_group_levels`, `experiment_replicates`, `experiment_replicate_units`, `experiment_members`; migration
@@ -1797,6 +1799,18 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   gave up to its last day stays in the figures (the figures are bounded by the placement's days, so a replacement without a
   weighing at the move leaves a gap that the Overview names). One row "Places" and one "Reason it left" go on the experiment's log; the
   tanks and batches are locked before the experiment, and a form older than the stored version is refused.
+- **Deviations and `check_experiments`.** The Overview of a started experiment ends with **Deviations from the design**: what the farm's
+  own records show on the days of the placements that the design did not say, derived from them (`read.deviations`, never stored, and
+  nothing is ever refused for a design): **a batch** of the species that was in a tank on some day and not on its first day (cleaner
+  fish never count), **fish moved** between two replicates or between a tank of the experiment and one that is not in it (a move inside
+  one replicate, as a replacement makes, is not one), **a feed on no band** of the group's protocol, and **a ration that does not follow the
+  diet** (the farm's own `Policy.resolve` gives the batch in a tank another protocol than the group's, or none, on some day: a
+  protocol assigned to the batch in the unit beats the unit's, or the diet's row was ended). Each reads the days up to today or the last
+  day of the placement, and the queries do not grow with the tanks. `manage.py check_experiments` (`experiments/integrity.py`, as
+  `check_stock`) checks every started experiment from scratch for what the database cannot hold: a design that lost a part (a group
+  without replicates or without a level, the rules of `design.HOLDS_AFTER_START`), a tank off the site or booked outside the days of the experiment, a
+  tank deleted while it is in one, a team without a lead, and, while it runs, a placement of a diet group without its live feeding assignment
+  from its first day to its last. The test suite runs it after its scenarios.
 - **Delete** goes through the delete plan: a draft is deleted with its factors, levels, groups, replicates and placements
   (one activity-log row each, its tanks free again), a started experiment is refused with the reason. A restored draft
   comes back without its design (only the record itself returns). A copy of a deleted experiment keeps pointing at it.
@@ -2467,7 +2481,7 @@ real mail.
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
-| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through (`read.py`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests |
+| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

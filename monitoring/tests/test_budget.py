@@ -54,6 +54,8 @@ class BudgetTests(MonitoringCase):
                 mock.patch.object(feeding_read, 'project', wraps=feeding_read.project) as project:
             read.cards(units, self.reader, modes)
         self.assertEqual((fold.call_count, project.call_count), (1, 1))
+        # (the fixture has no treatment, event, lice count or task: those sources' bulk reads are checked against the
+        # per-unit code in farm/tests/test_health.py, tasks/tests/test_read.py and farm/tests/test_water.py)
 
     def test_simple_cards_skip_the_detailed_sources(self):
         units = self.farm_of(4)

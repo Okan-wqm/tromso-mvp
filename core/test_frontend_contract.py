@@ -128,8 +128,8 @@ class WindowContractTests(SimpleTestCase):
 
     def test_the_wall_and_the_notices_are_styled_from_the_pages_own_hooks(self):
         css = (ROOT / 'static' / 'css' / 'monitor.css').read_text(encoding='utf-8')
-        for rule in ('html[data-wall] .rail', 'html[data-wall] .topbar', '[data-poll-state="stale"]::before',
-                     '[data-poll-state="gone"]::before', 'attr(data-stale-text)', 'attr(data-gone-text)',
+        for rule in ('html[data-wall] .rail', 'html[data-wall] .topbar', '.monitor-grid[data-poll-state="stale"]::before',
+                     '.monitor-grid[data-poll-state="gone"]::before', 'attr(data-stale-text)', 'attr(data-gone-text)',
                      '.monitor-window', '@media (max-width: 639px)', 'prefers-reduced-motion'):
             self.assertIn(rule, css)
         base = (ROOT / 'templates' / 'app_base.html').read_text(encoding='utf-8')

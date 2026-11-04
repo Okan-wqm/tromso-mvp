@@ -29,7 +29,7 @@
     <button type="submit" class="button button-ghost">{% trans "Show the chosen units" %}</button>
   </details>
   <div class="monitor-actions">
-    <a class="button button-ghost" href="{{ wall_url }}">{% include "icons/_icon.html" with name="monitor" %}{% trans "Wall" %}</a>
+    {% if wall %}<a class="button button-ghost" href="{{ page_url }}">{% include "icons/_icon.html" with name="monitor" %}{% trans "Leave the wall" %}</a>{% else %}<a class="button button-ghost" href="{{ wall_url }}">{% include "icons/_icon.html" with name="monitor" %}{% trans "Wall" %}</a>{% endif %}
     <button type="button" class="button button-ghost" data-fullscreen aria-pressed="false">{% include "icons/_icon.html" with name="maximize" %}{% trans "Full screen" %}</button>
   </div>
 </form>

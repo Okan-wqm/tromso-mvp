@@ -111,6 +111,17 @@ class LadderTests(SimpleTestCase):
         self.assertEqual(self.key(drift='now'), 'warning')
         self.assertEqual(self.key(drift='soon'), 'note')                  # soon is a note, now is a warning
 
+    def test_an_alert_of_another_point_does_not_change_the_state_and_so_not_with_the_mode(self):
+        drain = PointWater(SimpleNamespace(name='Bottom drain', kind='bottom_drain'),
+                           {'oxygen_mg_l': reading('oxygen_mg_l', 2, status=Status.CRITICAL)})
+        for mode in ('simple', 'detailed'):
+            with self.subTest(mode=mode):
+                state = card(mode=mode, water=(water(reading('temperature_c', 9), reading('oxygen_mg_l', 9)), drain)).state
+                self.assertEqual(state.key, 'ok')
+        # the middle point alone decides: the same reading at the middle is critical
+        self.assertEqual(self.key(water=(water(reading('temperature_c', 9),
+                                              reading('oxygen_mg_l', 2, status=Status.CRITICAL)),)), 'critical')
+
     def test_a_fresh_ph_does_not_hide_a_stale_oxygen(self):
         mixed = water(reading('ph', 7.2, hours=1), reading('temperature_c', 9),
                       reading('oxygen_mg_l', 9, hours=72, status=Status.STALE))

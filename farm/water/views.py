@@ -379,8 +379,9 @@ def unit_chart(request, pk):
                          'current': result.point is not None and point.pk == result.point.pk}
                         for point in result.points],
         'limit_rows': [(labels[name].label, offer) for name, offer in getattr(result, 'limits', {}).items()],
+        # (the fish present are the stock's to tell: a person who may read only water sees the values and the limits)
         'species': sorted({row.species.common_name for offer in getattr(result, 'limits', {}).values()
-                           for row in offer.rows}),
+                           for row in offer.rows}) if request.user.has_perm('farm.view_stockoperation') else [],
     })
 
 

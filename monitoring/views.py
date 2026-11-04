@@ -98,6 +98,7 @@ def monitor(request):
                        poll_seconds=board.seconds if board else settings.MONITOR_POLL_SECONDS,
                        wall=params.wall, windows_key=params.board or 'adhoc',
                        wall_url=f'{reverse("monitoring:monitor")}?{params.canonical(wall=True)}',
+                       page_url=reverse('monitoring:monitor') + (f'?{params.canonical(wall=False)}' if params.canonical(wall=False) else ''),
                        sites=Site.objects.order_by('name'), departments=ProductionDepartment.objects.order_by('name'),
                        systems=System.objects.order_by('name'), all_units=Tank.objects.order_by('code'),
                        kinds=[(Tank.Kind.TANK, _('Tanks')), (Tank.Kind.POND, _('Ponds')), (Tank.Kind.CAGE, _('Cages'))],

@@ -9,7 +9,7 @@
     <div class="monitor-card-state">
       {% include "monitoring/_state_word.html" %}
       {% if card.withdrawal %}<span class="badge badge-critical" title="{% for block in card.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}{% with until=card.withdrawal.0.until %}{% if until %} · {{ until|date:"DATE_FORMAT" }}{% endif %}{% endwith %}</span>{% endif %}
-      <a class="monitor-flip" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{% if card.detailed %}{% trans "Simple" %}{% else %}{% trans "Detailed" %}{% endif %}</a>
+      <a class="monitor-flip" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{% if card.detailed %}{% trans "Simple" %}{% else %}{% trans "Detailed" %}{% endif %}</a>
     </div>
   </header>
   {% if state.reasons %}<ul class="monitor-reasons" role="list">{% for reason in state.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>{% endif %}
@@ -22,7 +22,7 @@
   {% if card.detailed %}{% include "monitoring/_card_health.html" %}{% include "monitoring/_card_tasks.html" %}{% endif %}
   {% endif %}
   <footer class="monitor-card-foot">
-    {% if "water" in card.sections %}<button type="button" class="button button-ghost" data-window="{% url 'farm:water_unit_chart' unit.pk %}" data-window-title="{% blocktrans trimmed with unit=unit.code %}Deffeyes chart · {{ unit }}{% endblocktrans %}">{% trans "Deffeyes chart" %}</button>{% endif %}
+    {% if "water" in card.sections %}<button type="button" class="button button-ghost" id="chart-{{ unit.pk }}" data-window="{% url 'farm:water_unit_chart' unit.pk %}" data-window-title="{% blocktrans trimmed with unit=unit.code %}Deffeyes chart · {{ unit }}{% endblocktrans %}">{% trans "Deffeyes chart" %}</button>{% endif %}
     <p class="row-sub">{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
   </footer>
 </article>

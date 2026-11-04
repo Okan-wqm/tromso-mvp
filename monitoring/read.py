@@ -142,7 +142,10 @@ class Params:
 def units_for(params, board=None):
     """The units a page shows before occupancy: the cheap filters (site, department, system, kind, the units picked
     by hand or the board's, a text in the code or name), in the farm's one order (site, department, code). One query.
+    A board named in the address that has no cards, or no longer exists (deleted while a wall shows it), shows no unit.
     Occupancy needs the stock, which `cards` reads."""
+    if params.board and (board is None or not board.rows.all()):
+        return []                                               # a board with no cards, or one that is gone, shows none
     found = Tank.objects.select_related('production_department__site', 'system')
     if params.site:
         found = found.filter(production_department__site_id=params.site)
@@ -301,11 +304,16 @@ def cards(units, user, modes_of, occupancy=STOCKED, now=None):
 
 
 # ---- the state ---------------------------------------------------------------------------------------------------------
+def _middle(card):
+    """The PointWater of the card's middle point (always the first, when there is one), else None."""
+    first = card.water[0] if card.water else None
+    return first if first is not None and first.point is not None and first.point.kind == water_read.MIDDLE else None
+
+
 def _key_readings(card):
     """[(label, reading or None)] of the temperature and the oxygen at the card's middle point (oxygen: the mg/L or
     the saturation, whichever is there): None when the point has none, or no middle point."""
-    first = card.water[0] if card.water else None
-    middle = first if first is not None and first.point is not None and first.point.kind == water_read.MIDDLE else None
+    middle = _middle(card)
     found = []
     for code, label in ((parameters.TEMPERATURE, parameters.get(parameters.TEMPERATURE).label),
                         ('oxygen', parameters.get(parameters.OXYGEN_MG_L).label)):
@@ -339,7 +347,8 @@ def state_of(card):
     if card.stock is None:
         return State(EMPTY_STATE, (), basis)
     critical, warning, note = [], [], []
-    for point in card.water:
+    middle = _middle(card)                  # the unit's own water: a detailed card's other points do not change its state
+    for point in ([middle] if middle is not None else []):
         for reading in point.alerts:
             text = '{}: {}'.format(reading.parameter.label, Status(reading.status).label)
             (critical if reading.status == Status.CRITICAL else warning).append(text)

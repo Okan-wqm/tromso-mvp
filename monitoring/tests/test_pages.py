@@ -1,6 +1,7 @@
 """The page and the fragment: what a person sees, the fragment protocol (204 while nothing changed, 200 with the next
 address), the mode round trip, the wall, the menu and the role matrix; and that a poll writes nothing."""
 import re
+from unittest import mock
 
 from django.contrib.sessions.models import Session
 from django.db import connection
@@ -33,6 +34,8 @@ class PageTests(MonitoringCase):
             self.assertIn(text, html)
         self.assertNotIn('data-wall', html)
         self.assertEqual(response.context['title'], 'Monitoring')
+        for text in (f'id="flip-{self.t1.pk}"', f'id="chart-{self.t1.pk}"'):
+            self.assertIn(text, html)                                    # focus can be restored by id after a refresh
 
     def test_filters_occupancy_and_the_units_chosen_narrow_what_is_shown(self):
         shown = lambda **query: keys(self.client.get(PAGE, query).content.decode())[2:]
@@ -52,7 +55,7 @@ class PageTests(MonitoringCase):
         for text in ('monitor-tasks', 'monitor-health', 'Feed rate', 'Losses'):
             self.assertIn(text, detailed)
         # the link of one card flips it: its href is the page, its data-poll-url the fragment, for that state
-        link = re.search(rf'<article[^>]*card:{self.t1.pk}.*?<a class="monitor-flip" href="([^"]+)" data-poll-url="([^"]+)">'
+        link = re.search(rf'<article[^>]*card:{self.t1.pk}.*?<a class="monitor-flip" id="[^"]+" href="([^"]+)" data-poll-url="([^"]+)">'
                          r'([^<]+)</a>', simple, re.S)
         href, poll, word = (item.replace('&amp;', '&') for item in link.groups())
         self.assertEqual((href, word), (f'{PAGE}?flip={self.t1.pk}', 'Detailed'))
@@ -101,6 +104,12 @@ class PageTests(MonitoringCase):
 
 
 class FragmentTests(MonitoringCase):
+    def setUp(self):
+        super().setUp()
+        patch = mock.patch.object(read, 'TOKEN_BUCKET', 10 ** 9)          # the minute does not roll over under the test
+        patch.start()
+        self.addCleanup(patch.stop)
+
     def ask(self, query=''):
         return self.client.get(f'{CARDS}?{query}' if query else CARDS)
 
@@ -179,6 +188,8 @@ class WallTests(MonitoringCase):
     def test_a_wall_page_marks_the_document_and_keeps_its_session_once_a_day(self):
         html = self.client.get(PAGE, {'wall': '1'}).content.decode()
         self.assertIn('<html lang="en" data-wall>', html)
+        self.assertIn('data-fullscreen', html)                           # the wall keeps its Full screen button ...
+        self.assertIn('Leave the wall', html)                            # ... and a way out
         self.assertIn('wall=1', re.search(r'data-poll="([^"]+)"', html).group(1))
         self.assertEqual(self.client.session['monitoring_wall_day'], timezone.localdate().isoformat())
         key = self.client.session.session_key
@@ -211,5 +222,5 @@ class MenuAndRolesTests(MonitoringCase):
     def test_there_is_no_area_of_its_own_the_stock_right_reads_the_page(self):
         labels = [str(area.label) for area in access.areas()]
         self.assertIn('Production units', labels)
-        self.assertNotIn('Monitoring', labels)               # (the boards' area arrives with the boards)
+        self.assertEqual([label for label in labels if label.startswith('Monitoring')], ['Monitoring boards'])
         self.assertEqual(read.PERMISSIONS['stock'], 'farm.view_stockoperation')

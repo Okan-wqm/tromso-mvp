@@ -2,8 +2,10 @@
    shared tokens (base.css, app.css) and no colour of its own, so a new visual design replaces it in one place. */
 
 /* ---- notices printed from the polled element's state (frontend/poll.ts sets data-poll-state) ---------------- */
-[data-poll-state="stale"]::before,
-[data-poll-state="gone"]::before {
+.monitor-grid[data-poll-state="stale"]::before,
+.monitor-grid[data-poll-state="gone"]::before,
+.monitor-window-body[data-poll-state="stale"]::before,
+.monitor-window-body[data-poll-state="gone"]::before {
   display: block;
   grid-column: 1 / -1;
   margin-bottom: .5rem;
@@ -11,8 +13,10 @@
   border-radius: 6px;
   font-weight: 700;
 }
-[data-poll-state="stale"]::before { content: attr(data-stale-text); background: var(--sage); color: var(--speck); }
-[data-poll-state="gone"]::before { content: attr(data-gone-text); background: var(--error); color: var(--white); }
+.monitor-grid[data-poll-state="stale"]::before,
+.monitor-window-body[data-poll-state="stale"]::before { content: attr(data-stale-text); background: var(--sage); color: var(--speck); }
+.monitor-grid[data-poll-state="gone"]::before,
+.monitor-window-body[data-poll-state="gone"]::before { content: attr(data-gone-text); background: var(--error); color: var(--white); }
 .monitor-grid[data-poll-state="stale"]::before,
 .monitor-grid[data-poll-state="gone"]::before {
   padding: .75rem 1.25rem;
@@ -26,7 +30,8 @@ html[data-wall] .topbar,
 html[data-wall] .scrim,
 html[data-wall] .menu-button { display: none; }
 html[data-wall] .content { max-width: none; padding: clamp(8px, 1vw, 20px); }
-html[data-wall] .monitor-toolbar { display: none; }
+html[data-wall] .monitor-filters,
+html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Full screen and Leave buttons */
 
 /* ---- the movable windows (frontend/windows.ts) --------------------------------------------------------------- */
 .monitor-window {

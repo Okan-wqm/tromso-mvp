@@ -278,7 +278,18 @@ class OnThePageTests(BoardCase):
     def test_a_board_that_does_not_exist_shows_the_page_without_it(self):
         page = self.client.get(reverse('monitoring:monitor'), {'board': '6f7f1b3a-6c9e-4f43-8f0e-6a7d0d0b0a11'})
         self.assertEqual(page.status_code, 200)
-        self.assertEqual(page.context['shown'], 2)
+        self.assertEqual(page.context['shown'], 0)                       # never the whole farm for a wall that lost its board
+
+    def test_a_board_with_no_cards_or_deleted_under_a_running_wall_shows_no_unit(self):
+        board = self.board('Wall')
+        url = reverse('monitoring:cards')
+        empty = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)})
+        self.assertEqual(empty.context['shown'], 0)
+        self.save_units(board, [{'unit': str(self.t1.pk), 'mode': ''}])
+        self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)}).context['shown'], 1)
+        self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk]))
+        gone = self.client.get(url, {'board': str(board.pk)}).content.decode()
+        self.assertNotIn('data-key="card:', gone)                          # the poll of a deleted board draws no card
 
     def test_the_token_moves_when_a_board_is_saved(self):
         board = self.board('Wall')

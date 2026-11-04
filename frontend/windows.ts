@@ -41,6 +41,13 @@ interface Opened {
   stop: () => void;
 }
 
+/** A fragment's address as one spelling (path and query), so a button's relative address and a link's absolute one name the
+ *  same window. */
+function norm(url: string): string {
+  const parsed = new URL(url, window.location.href);
+  return parsed.pathname + parsed.search;
+}
+
 function openWindows(host: HTMLElement): void {
   const template = required<HTMLTemplateElement>(document, '#monitor-window-template');
   const storageKey = host.dataset.storageKey ?? 'monitoring:windows';
@@ -173,7 +180,7 @@ function openWindows(host: HTMLElement): void {
       const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-window-load]');
       if (!link) return;
       event.preventDefault();
-      load(element, link.href);
+      load(element, norm(link.href));
     });
     element.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
@@ -203,7 +210,7 @@ function openWindows(host: HTMLElement): void {
     const button = (event.target as Element).closest<HTMLElement>('[data-window]');
     if (!button || !host.isConnected) return;
     event.preventDefault();
-    const url = button.dataset.window ?? '';
+    const url = norm(button.dataset.window ?? '');
     const found = opened.get(url);
     if (found) {
       raise(found.element);

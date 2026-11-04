@@ -5381,6 +5381,9 @@ msgstr "Tüm sahayı ilgilendiriyorsa hiçbirini işaretlemeyin."
 msgid "Leave channel"
 msgstr "Kanaldan ayrıl"
 
+msgid "Leave the wall"
+msgstr "Duvar ekranından çık"
+
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
 

@@ -5370,6 +5370,9 @@ msgstr "La alle stå uten kryss når den gjelder hele lokaliteten."
 msgid "Leave channel"
 msgstr "Forlat kanalen"
 
+msgid "Leave the wall"
+msgstr "Forlat veggskjermen"
+
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "La vanndybden stå tom, eller oppgi en over 0."
 

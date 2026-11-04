@@ -935,9 +935,12 @@ class UnitChartTests(UnitWaterCase):
         page = self.client.get(url)
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, '<svg class="deffeyes-chart"', count=1)
-        self.assertContains(page, '<strong>T-01</strong> · Middle · Atlantic salmon')
-        for text in ('9.50', '7.12', 'Atlantic salmon', 'hours ago'):
+        self.assertContains(page, '<strong>T-01</strong> · Middle')
+        for text in ('9.50', '7.12', 'hours ago'):
             self.assertContains(page, text)
+        self.assertNotContains(page, 'Atlantic salmon')              # the fish present are the stock's to tell
+        self.user.groups.add(role('Stock reader', 'view_stockoperation'))
+        self.assertContains(self.client.get(url), '<strong>T-01</strong> · Middle · Atlantic salmon')
         other = self.make('T-06')
         foreign = point_of(other)
         self.assertEqual(self.client.get(url, {'point': str(foreign.pk)}).status_code, 404)

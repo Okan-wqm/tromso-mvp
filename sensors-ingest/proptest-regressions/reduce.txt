@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 501aeb15f6fe49cd445a59d1ca85b5912c46da36ca56e39e2efef49347d5b3f0 # shrinks to g = Gen { policy: Policy { reduction: All, heartbeat_s: 10 }, samples: [Sample { ts: 2026-11-04T00:00:01Z, value: 10.0, quality: 16, received_at: 2026-11-04T00:00:01Z }] }
+cc 05e37aaf64d12cde6344c2a13a785e8060ab34ae2c7dc4d448d9c34d8def4082 # shrinks to g = Gen { policy: Policy { reduction: All, heartbeat_s: 10 }, samples: [Sample { ts: 2026-11-04T00:00:01Z, value: 10.0, quality: 16, received_at: 2026-11-04T00:00:01Z }] }, cut = 0
+cc 231233dce01782cb9a5edd887b013f8c2e34636e40c03b79ee2310bd2c6ce201 # shrinks to g = Gen { policy: Policy { reduction: All, heartbeat_s: 10 }, samples: [Sample { ts: 2026-11-04T00:00:01Z, value: 10.0, quality: 16, received_at: 2026-11-04T00:00:01Z }] }, cut = 0
+cc f3ebb47e5aa062fd99e6fb1576c3a3f7d6596f561f9046f073544c02e70b8de5 # shrinks to g = Gen { policy: Policy { reduction: All, heartbeat_s: 10 }, samples: [Sample { ts: 2026-11-04T00:00:01Z, value: 10.0, quality: 16, received_at: 2026-11-04T00:00:01Z }] }, seed = 0

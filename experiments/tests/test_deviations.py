@@ -13,7 +13,10 @@ from django.urls import reverse
 from django.utils import translation
 
 from farm.feeding import assignments, services as feeding_services
+from farm.handling import check
 from farm.models import Feed, ProtocolAssignment, Tank
+from farm.models.handling import KIND_OF_OPERATION
+from farm.models.stock import OperationKind
 from farm.stock import services as stock_services
 from farm.tests.test_stock import make_unit
 
@@ -46,8 +49,11 @@ class DeviationCase(RanTrialCase):
         return [(item.code, item.cell.unit.code, item.first, item.last, item.about) for item in self.found(code)]
 
     def move(self, source, batch, destination, count, days_ago):
-        return stock_services.record_transfer(self.user, source=source, batch=batch, day=self.day(days_ago),
-                                              legs=[(destination, count)], reason='split')
+        """A transfer, the farm's handling warnings (fish fed shortly before a move) read and gone on past as a person would."""
+        day = self.day(days_ago)
+        seen = check.assess(KIND_OF_OPERATION[OperationKind.TRANSFER], source, day, batch, with_earliest=False).fingerprint
+        return stock_services.record_transfer(self.user, source=source, batch=batch, day=day,
+                                              legs=[(destination, count)], reason='split', handling_ack=seen)
 
 
 class NoDeviationTests(DeviationCase):

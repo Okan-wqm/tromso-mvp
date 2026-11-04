@@ -54,14 +54,19 @@ def _display(instance, field):
     return str(value)
 
 
-def snapshot(instance, field_names, labels=None):
+def snapshot(instance, field_names, labels=None, private=()):
     """{field label: display value} for the given fields, None for empty values. Labels come from
-    `labels` (e.g. a form's Meta.labels) and default to the model field's verbose name."""
+    `labels` (e.g. a form's Meta.labels) and default to the model field's verbose name. A `private` field
+    (a person's own words, Resource.private_fields) shows as the enumerated value "Private text" when it
+    is filled and never as its text: the log says that it was set or cleared, not what it says."""
     labels = labels or {}
     result = {}
     for name in field_names:
         field = instance._meta.get_field(name)
-        result[str(labels.get(name, capfirst(field.verbose_name)))] = _display(instance, field)
+        value = _display(instance, field)
+        if name in private and value is not None:
+            value = message(_('Private text'))
+        result[str(labels.get(name, capfirst(field.verbose_name)))] = value
     return result
 
 

@@ -2127,7 +2127,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Saving
+  Delete, and Everyone where an area offers it: see Row scope). Create, Edit, Delete and Everyone include Read: the form adds it and the browser ticks it. Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -2255,6 +2255,23 @@ the prototype does not, because Operations holds the daily records. The menu is 
 where a page sits: the role matrix and the small heading above a tab's title follow it
 (`core.navigation.place`). There are no built-in roles: the platform admin creates roles
 and grants permissions.
+
+### Row scope: which records a person may reach
+
+The role matrix says which verbs a person has; **`Resource.scoped(request, objects)`** says which rows. It is
+the one hook, and by default it returns every row. A tab whose rows depend on a relationship (the HR area:
+the people of the department a person manages) overrides it once, and the core applies it to the list (before
+its search and filters), to every lookup of a record (the edit, delete, read and row-list pages) and to the
+lock a save takes. A record outside the scope does not exist for the person: it is a 404 on every verb,
+whatever the address or the query, and nothing is written or logged. Nothing else decides who may see a
+record, so a rule is never written a second time.
+
+The matrix has one more column for the same purpose, **Everyone** (`all`): offered by the one area whose rows
+are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and the scope function reads it as
+"no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
+punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
+that the field was set or cleared, not what it says (and an edit between two filled texts is not shown; the
+record's version moves on).
 
 ### The delete plan
 

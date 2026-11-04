@@ -30,7 +30,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 31 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 32 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -494,7 +494,7 @@ A harvest or a transport planned for the fish of one batch in one unit on a day:
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › handling_plan_items
 - **forms**: `HandlingPlanItemForm`
 - **constraints**: chk_handling_plan_items_kind (check); chk_handling_plan_items_destination (check); chk_handling_plan_items_count (check); chk_handling_plan_items_kg (check); chk_handling_plan_items_other_unit (check); uq_handling_plan_items_operation (unique: operation)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_harvest.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_harvest.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -603,7 +603,7 @@ A health observation, a vet or fish-health visit, a lab result or a rise in mort
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › health_events
 - **forms**: `HealthEventForm`
 - **constraints**: chk_health_events_kind (check); chk_health_events_signs (check); chk_health_events_diagnosis (check); chk_health_events_confirmation (check); chk_health_events_closed_on (check); chk_health_events_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_health.py` and 2 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_health.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -866,7 +866,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_database.py`, `core/test_datamap.py` and 27 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_database.py`, `core/test_datamap.py` and 28 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1049,7 +1049,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `VoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_escape_delivery.py` and 7 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_escape_delivery.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2008,7 +2008,7 @@ A report to an authority for a site (a slaughter facility for the planned slaugh
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Reports › regulatory_reports
 - **forms**: `ReportForm`, `SubmitForm`
 - **constraints**: chk_regulatory_reports_kind (check); chk_regulatory_reports_scope (check); chk_regulatory_reports_when (check); chk_regulatory_reports_week (check); chk_regulatory_reports_month (check); chk_regulatory_reports_year (check); chk_regulatory_reports_site_notice (check); chk_regulatory_reports_escape (check); chk_regulatory_reports_health_event (check); chk_regulatory_reports_narrative (check); chk_regulatory_reports_channel (check); chk_regulatory_reports_submission (check); chk_regulatory_reports_kept (check); chk_regulatory_reports_not_itself (check); uq_regulatory_reports_period (unique: kind, site, facility, period_start); uq_regulatory_reports_site_notice (unique: kind, site, occurred_on); uq_regulatory_reports_event_notice (unique: kind, health_event); uq_regulatory_reports_escape_notice (unique: kind, escape); uq_regulatory_reports_correction (unique: corrects)
-- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `reports/tests/helpers.py` and 8 more
+- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `reports/tests/helpers.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

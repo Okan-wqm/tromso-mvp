@@ -1,9 +1,9 @@
-"""Harvest and handling: the handling check (fasting and medicine withdrawal, the acknowledgement and the
-critical log entry), the harvest's record, the Harvested list with the book against the scale, the plans and
+"""Harvest and handling: the handling check (fasting, and the medicine withdrawal asked before a harvest only, the
+acknowledgement and the critical log entry), the harvest's record, the Harvested list with the book against the scale, the plans and
 the fasts they ask for, and every new tab created, read, edited and deleted through its pages, each checked
 against the stored rows."""
 import uuid
-from datetime import time as clock, timedelta
+from datetime import datetime, time as clock, timedelta
 from decimal import Decimal
 from unittest import mock
 
@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.urls import reverse
+from django.utils import translation
 
 from core import access, database, navigation, softdelete
 from core.models import AuditLog, Profile
@@ -19,11 +20,12 @@ from ..feeding import services as feeding_services
 from ..handling import check, fasting, withdrawal
 from ..handling.withdrawal import WithdrawalBlock
 from ..models import (
-    HandlingAcknowledgement, HandlingPlanItem, HandlingRule, HarvestRecord, ProductionPlan, SlaughterFacility,
-    StockMovement, StockOperation, Supplier, Tank,
+    HandlingAcknowledgement, HandlingPlanItem, HandlingRule, HarvestRecord, ProductionPlan, SlaughterFacility, Species,
+    StockMovement, StockOperation, Supplier, Tank, WaterMeasurement,
 )
+from ..models.site import zone_of
 from ..stock import integrity, services
-from .helpers import make_facility, role
+from .helpers import make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_protocols import ProtocolTestCase
 from .test_stock import make_unit
@@ -175,11 +177,35 @@ class WithdrawalTests(HarvestTestCase):
             f'{services.shown_date(until)}.',
             f'Not suitable for harvest — medicine withdrawal of {self.batch.code}, its end unknown. No temperature '
             'recorded.'])
-        with provider(held):
-            self.assertTrue(self.assess('transport').messages()[0].startswith(
-                f'Medicine withdrawal of {self.batch.code} until'))
         with provider():
             self.assertIn('No medicine withdrawal in force.', self.assess().notes)
+
+    def test_live_fish_moved_or_graded_are_not_asked_for_a_withdrawal(self):
+        held = WithdrawalBlock(self.batch, self.day(-14), False, 'Treated with Slice until 20 Oct.', None)
+        unknown = WithdrawalBlock(self.batch, None, False, 'No temperature recorded.', None)
+        with provider(held, unknown):
+            self.assertEqual(len(self.assess('harvest').warnings), 2)              # the same blocks and batch
+            for kind in ('transport', 'grading', 'treatment'):
+                with self.subTest(kind=kind):
+                    result = self.assess(kind)
+                    self.assertEqual(result.warnings, [])
+                    self.assertEqual(result.fingerprint, '')
+                    self.assertFalse([note for note in result.notes if 'withdrawal' in note.lower()])
+        with no_provider():
+            for kind in ('transport', 'grading'):
+                self.assertFalse([note for note in self.assess(kind).notes if 'withdrawal' in note.lower()])
+            self.assertIn('Medicine withdrawal not checked: the health records are not in yet.',
+                          self.assess('harvest').notes)
+
+    def test_only_the_harvest_box_speaks_of_a_medicine_withdrawal(self):
+        words = 'Fish under a medicine withdrawal must not go to food. Going on is stored'
+        for name, speaks in (('farm:stock_harvest', True), ('farm:stock_transfer', False),
+                             ('farm:stock_grading', False)):
+            with self.subTest(dialog=name):
+                form = self.client.get(reverse(name, args=[self.t1.pk])).context['form']
+                text = str(form.fields['handling_ack'].help_text)
+                self.assertEqual(words in text, speaks)
+                self.assertIn('Going on is stored with what is shown here and logged as critical.', text)
 
     def test_the_dialog_shows_the_blocks_and_the_drawer_and_row_badge_too(self):
         held = WithdrawalBlock(self.batch, self.day(-14), False, '', None)
@@ -558,6 +584,378 @@ class FastsTests(HarvestTestCase):
         self.assertContains(response, 'A feeding can still be recorded.')
 
 
+class PurgingBase(HarvestTestCase):
+    """A harvest's fast in degree-days (purging) beside, or instead of, its hours: the 10,000 salmon of T-01 were last
+    fed 4 days ago at 18:00, so the full days since are 3 days ago to yesterday; the feeding day and the harvest's own
+    day are not counted."""
+
+    def setUp(self):
+        super().setUp()
+        self.purge(degrees=60)
+
+    def purge(self, hours=None, degrees=None, species=None):
+        """The harvest rule (for every species, or a species): its hours and degree-days."""
+        HandlingRule.objects.filter(kind='harvest', species=species).delete()
+        return HandlingRule.objects.create(kind='harvest', species=species, min_fasting_hours=hours,
+                                           min_fasting_degree_days=degrees)
+
+    def temperature(self, days_ago, value, unit=None):
+        site = (unit or self.t1).production_department.site
+        moment = datetime.combine(self.day(days_ago), clock(12), tzinfo=zone_of(site))
+        return WaterMeasurement.objects.create(point=point_of(unit or self.t1), measured_at=moment, source='manual',
+                                               temperature_c=Decimal(value), created_by=self.user)
+
+    def warm(self, *days_ago, value='10'):
+        for each in days_ago:
+            self.temperature(each, value)
+
+
+class PurgingTests(PurgingBase):
+    def test_degree_days_alone_add_up_the_full_days_between_the_feeding_and_the_harvest(self):
+        self.fed(4, at=clock(18, 0))
+        self.warm(3, 2, 1)                                      # 10 °C a day: 30 degree-days
+        self.warm(4, 0, value='30')                             # the feeding day and the harvest day: not counted
+        result = self.assess()
+        [warning] = result.warnings
+        self.assertEqual((warning.warning, warning.fasted_degree_days, warning.required_degree_days,
+                          warning.required_hours, warning.rule.kind),
+                         ('fasting', Decimal('30.0'), Decimal('60.0'), None, 'harvest'))
+        self.assertEqual(warning.fasted_hours, Decimal('78.0'))              # 18:00 four days ago to today's start
+        self.assertEqual(warning.message(),
+                         f'Last fed {services.shown_date(self.day(4))}, 18:00, 30 degree-days before '
+                         f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days.')
+        self.assertIn(f'Last fed {services.shown_date(self.day(4))}, 18:00: 30 degree-days before '
+                      f'{services.shown_date(self.today)}.', result.notes)
+        self.assertIn('The harvest rule for Atlantic salmon asks for 60 degree-days.', result.notes)
+        # Reached exactly: no warning; one degree-day short: a warning.
+        self.purge(degrees=30)
+        self.assertEqual(self.assess().warnings, [])
+        self.purge(degrees=Decimal('30.1'))
+        self.assertEqual(len(self.assess().warnings), 1)
+
+    def test_hours_and_degree_days_each_have_to_be_reached_and_the_later_decides(self):
+        self.purge(hours=72, degrees=60)
+        self.fed(5, at=clock(6, 0))                              # 114 h before today's start
+        self.warm(4, 3, 2, 1)                                    # 40 degree-days
+        [warning] = self.assess().warnings
+        self.assertEqual((warning.fasted_hours, warning.fasted_degree_days), (Decimal('114.0'), Decimal('40.0')))
+        self.assertTrue(warning.message().endswith(
+            'the harvest rule asks for 72 h and 60 degree-days.'), warning.message())
+        self.assertIn('114.0 h and 40 degree-days before', warning.message())
+        self.purge(hours=72, degrees=40)                          # the degrees reached, the hours too: clear
+        self.assertEqual(self.assess().warnings, [])
+        # Hours decide when the degrees are reached first: 52 h against 72 h, 20 degree-days against 20.
+        self.purge(hours=72, degrees=20)
+        self.fed(3, at=clock(20, 0))                              # the latest feeding
+        [warning] = self.assess().warnings
+        self.assertEqual((warning.fasted_hours, warning.fasted_degree_days), (Decimal('52.0'), Decimal('20.0')))
+        self.assertEqual((warning.required_hours, warning.required_degree_days), (72, Decimal('20.0')))
+
+    def test_days_work_like_hours(self):
+        # A rule typed as 3 days is 72 hours: the same warning, and the fast is the same.
+        self.purge(hours=3 * 24)
+        self.fed(3, at=clock(20, 0))                             # 52 h
+        [warning] = self.assess().warnings
+        self.assertIn('52.0 h before', warning.message())
+        self.assertTrue(warning.message().endswith('the harvest rule asks for 72 h.'))
+
+    def test_a_day_without_a_measured_temperature_counts_at_the_assumed_one_or_as_zero_and_says_so(self):
+        self.fed(4, at=clock(18, 0))
+        self.warm(3, 1)                                          # the middle day, 2 days ago, was not measured
+        [warning] = self.assess().warnings
+        self.assertEqual(warning.fasted_degree_days, Decimal('20.0'))
+        self.assertEqual(warning.accrual.missing, 1)
+        self.assertTrue(warning.message().endswith(
+            '1 day without a measured water temperature is counted as 0 °C: set the species’ assumed temperature '
+            'in Reference data › Species.'), warning.message())
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('8.0'))
+        result = self.assess()
+        [warning] = result.warnings
+        self.assertEqual(warning.fasted_degree_days, Decimal('28.0'))
+        self.assertTrue(warning.message().endswith(
+            '1 day without a measured water temperature is counted at the assumed 8.0 °C (the species’ setting in '
+            'Reference data).'), warning.message())
+        self.assertIn('1 day without a measured water temperature is counted at the assumed 8.0 °C (the species’ '
+                      'setting in Reference data).', result.notes)
+        # Exactly as the same day measured at that value would.
+        self.temperature(2, '8')
+        measured = self.assess().warnings[0]
+        self.assertEqual((measured.fasted_degree_days, measured.accrual.missing), (Decimal('28.0'), 0))
+
+    def test_a_transfer_and_a_grading_are_checked_on_hours_alone(self):
+        self.fed(4, at=clock(18, 0))
+        for kind in ('transport', 'grading'):
+            with self.subTest(kind=kind):
+                result = self.assess(kind)
+                self.assertEqual(result.warnings, [])                    # 78 h against 24 h
+                self.assertFalse([note for note in result.notes if 'degree-day' in note])
+        self.rule('transport', 100)
+        [warning] = self.assess('transport').warnings
+        self.assertEqual((warning.required_hours, warning.required_degree_days, warning.fasted_degree_days),
+                         (100, None, None))
+        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(4))}, 18:00, 78.0 h before '
+                                            f'{services.shown_date(self.today)}: the transport rule asks for 100 h.')
+
+    def test_going_on_stores_the_degree_days_and_a_new_temperature_asks_again(self):
+        self.fed(4, at=clock(18, 0))
+        self.warm(3, 2, 1)
+        seen = self.assess().fingerprint
+        self.assertEqual(self.refused(self.harvest, handling_ack=''), {
+            'handling_ack': ['Tick the box to go on despite these warnings.']})
+        self.temperature(0, '9')                                 # today's, not counted: the warning is the same
+        self.assertEqual(self.assess().fingerprint, seen)
+        WaterMeasurement.objects.filter(temperature_c=Decimal('10')).update(temperature_c=Decimal('11'))
+        self.assertNotEqual(self.assess().fingerprint, seen)
+        self.assertEqual(self.refused(self.harvest, handling_ack=seen), {'handling_ack': [
+            'The warnings changed since the form was shown: read them again, and tick the box to go on.']})
+        operation = self.harvest(handling_ack=self.assess().fingerprint)
+        [row] = HandlingAcknowledgement.objects.filter(operation=operation)
+        self.assertEqual((row.warning, row.fasted_hours, row.required_hours, row.fasted_degree_days,
+                          row.required_degree_days, row.rule.kind),
+                         ('fasting', Decimal('78.0'), None, Decimal('33.0'), Decimal('60.0'), 'harvest'))
+        entry = AuditLog.objects.get(entity_type='stock operation', action='create', entity_id=str(operation.pk))
+        self.assertEqual(entry.severity, 'critical')
+        self.assertIn('33 degree-days before', entry.changes['Handling warnings acknowledged'][1])
+        self.assertIn('the harvest rule asks for 60 degree-days.', entry.changes['Handling warnings acknowledged'][1])
+
+    def test_the_shape_of_a_fasting_row_with_degree_days_is_a_database_check(self):
+        operation = self.harvest()
+        rule = HandlingRule.objects.get(kind='harvest')
+        moment = operation.created_at
+        ok = {'warning': 'fasting', 'last_fed_at': moment, 'rule': rule, 'fasted_hours': Decimal(78)}
+        # Degrees unmet, hours not asked; hours met and degrees unmet; hours unmet and degrees met: each a warning.
+        for fields in ({'fasted_degree_days': Decimal(30), 'required_degree_days': Decimal(60)},
+                       {'required_hours': 72, 'fasted_degree_days': Decimal(30), 'required_degree_days': Decimal(60)},
+                       {'required_hours': 100, 'fasted_degree_days': Decimal(60), 'required_degree_days': Decimal(60)}):
+            with self.subTest(fields=fields), transaction.atomic():
+                HandlingAcknowledgement.objects.create(operation=operation, **ok, **fields).delete()
+        for fields in ({},                                                                  # nothing asked
+                       {'required_hours': 72},                                              # met: not a warning
+                       {'fasted_degree_days': Decimal(30)},                                 # degrees without the asked
+                       {'required_degree_days': Decimal(60)},                               # ... or the fasted
+                       {'fasted_degree_days': Decimal(60), 'required_degree_days': Decimal(60)},
+                       {'required_degree_days': Decimal(60), 'fasted_degree_days': Decimal(-1)}):
+            with self.subTest(refused=fields), self.assertRaises(IntegrityError), transaction.atomic():
+                HandlingAcknowledgement.objects.create(operation=operation, **ok, **fields)
+
+
+class PurgingFastsTests(PurgingBase):
+    """When feeding must stop for a planned harvest whose rule asks for degree-days: counted back from the planned day, a
+    past day at its measured temperature (or the species' assumed one, else 0), a day not over or still to come at the
+    mean of the last 7 measured days, else the species' assumed temperature."""
+
+    def plan(self, days_ahead, **fields):
+        return HandlingPlanItem.objects.create(kind='harvest', date=self.day(-days_ahead), unit=self.t1,
+                                               batch=self.batch, facility=self.facility, **fields)
+
+    def fast(self, item):
+        return fasting.fast_of(item)
+
+    def test_the_first_fasting_day_is_found_backwards_through_projected_and_measured_days(self):
+        self.warm(1, 2, 3, 4, 5)                                 # 10 °C a day measured; so the mean of the last 7 is 10
+        item = self.plan(5)                                      # the harvest is in 5 days: 60 degree-days is 6 days
+        fast = self.fast(item)
+        # The days counted are 4, 3, 2, 1 days ahead and today (projected at 10, today has none yet): 50, and yesterday:
+        # 60, so the fast starts yesterday and every day from then to the harvest is a fasting day.
+        self.assertEqual(fast.first_day, self.day(1))
+        self.assertTrue(fast.start.projected)
+        self.assertEqual(fast.why(), f'Fasting before the harvest of {services.shown_date(item.date)}: from '
+                                     f'{services.shown_date(self.day(1))}, 00:00 (60 degree-days). Projected at the '
+                                     'mean water temperature of the last days measured.')
+        days = fasting.fasts([self.t1], self.day(3), item.date)
+        self.assertEqual(sorted(day for _unit, day in days),
+                         [self.day(1) + timedelta(days=n) for n in range(0, 7)])
+        self.assertEqual(fasting.fasting_on(self.t1, self.day(2)), None)
+        self.assertEqual(fasting.fasting_on(self.t1, self.day(1)), fast.why())
+        # A planned harvest in 2 days: tomorrow and today projected, then 4 measured days back: 60 by 4 days ago.
+        near = self.plan(2)
+        self.assertEqual(self.fast(near).first_day, self.day(4))
+
+    def test_a_past_day_without_a_measurement_counts_at_the_assumed_temperature_or_zero(self):
+        self.purge(degrees=45)
+        self.warm(1, 3, 4, 5, 6, 7)                              # 2 days ago was not measured
+        item = self.plan(0)                                      # a harvest today: the days counted are all past
+        fast = self.fast(item)
+        # Yesterday 10, 2 days ago 0 (nothing assumed), then 10 a day: 40 by 5 days ago, 50 by 6 days ago.
+        self.assertEqual((fast.first_day, fast.start.missing, fast.start.assumed), (self.day(6), 1, None))
+        self.assertIn('1 day without a measured water temperature is counted as 0 °C: set the species’ assumed '
+                      'temperature in Reference data › Species.', fast.why())
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('8.0'))
+        fast = self.fast(item)
+        # 2 days ago counts 8: 10, 18, 28, 38, 48 by 5 days ago, so the fast starts a day later.
+        self.assertEqual((fast.first_day, fast.start.missing, fast.start.assumed), (self.day(5), 1, Decimal('8.0')))
+        self.assertIn('1 day without a measured water temperature is counted at the assumed 8.0 °C (the species’ '
+                      'setting in Reference data).', fast.why())
+        self.temperature(2, '8')                                 # measured at that value: the same day, and no missing
+        measured = self.fast(item)
+        self.assertEqual((measured.first_day, measured.start.missing), (self.day(5), 0))
+
+    def test_no_temperature_at_all_leaves_the_hours_alone_and_says_degree_days_are_unknown(self):
+        item = self.plan(3)
+        fast = self.fast(item)                                   # degree-days only: nothing can be counted ahead
+        self.assertIsNone(fast.first_day)
+        self.assertTrue(fast.start.unknown)
+        self.assertEqual(fast.why(), f'Fasting before the harvest of {services.shown_date(item.date)}: 60 degree-days. '
+                                     'Degree-days unknown: no temperature.')
+        self.assertEqual(fasting.fasts([self.t1], self.today, item.date), {})
+        self.purge(hours=72, degrees=60)                          # with hours too: the hours alone apply
+        fast = self.fast(item)
+        self.assertEqual(fast.first_day, item.date - timedelta(days=3))
+        self.assertTrue(fast.why().endswith('(72 h and 60 degree-days). Degree-days unknown: no temperature.'),
+                        fast.why())
+        self.assertEqual(sorted(day for _unit, day in fasting.fasts([self.t1], self.today, item.date)),
+                         [item.date - timedelta(days=n) for n in (3, 2, 1, 0)])
+        # The species' assumed temperature is what days ahead are projected at, when none was measured.
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('15.0'))
+        fast = self.fast(item)
+        self.assertFalse(fast.start.unknown)
+        self.assertTrue(fast.start.projected_at_assumed)
+        self.assertEqual(fast.first_day, item.date - timedelta(days=4))         # 4 days at 15 °C is 60
+        self.assertIn('Projected at the assumed 15.0 °C (the species’ setting in Reference data): no water '
+                      'temperature was measured in the last 30 days.', fast.why())
+
+    def test_the_later_of_the_hours_and_the_degree_days_starts_the_fast(self):
+        self.warm(1, 2, 3, 4, 5, 6, 7, value='5')
+        item = self.plan(0)
+        self.purge(hours=72, degrees=20)                          # 20 degree-days at 5 °C: 4 days; the hours: 3 days
+        self.assertEqual(self.fast(item).first_day, self.day(4))
+        self.purge(hours=120, degrees=20)                         # 5 days of hours decide
+        self.assertEqual(self.fast(item).first_day, self.day(5))
+        self.purge(hours=None, degrees=20)
+        self.assertEqual(self.fast(item).first_day, self.day(4))
+
+    def test_a_degree_days_rule_that_the_water_never_reaches_starts_at_the_limit_and_says_so(self):
+        self.warm(*range(1, 70), value='0')
+        item = self.plan(0)
+        fast = self.fast(item)
+        self.assertTrue(fast.start.unreached)
+        self.assertEqual(fast.first_day, self.today - timedelta(days=fasting.MAX_FAST_DAYS))
+        self.assertIn('The degree-days are not reached in 60 days at these temperatures.', fast.why())
+        # The 40 days before the fish were stocked had no water of theirs: counted without a measurement, as 0 °C.
+        self.assertEqual(fast.start.missing, 40)
+
+    def test_the_meal_board_gives_no_ration_from_that_day(self):
+        self.warm(1, 2, 3, 4, 5)
+        self.plan(5)
+        response = self.client.get(reverse('farm:feeding_record', args=[self.t1.pk]))
+        self.assertContains(response, 'Fasting before the harvest of')
+        self.assertContains(response, '(60 degree-days)')
+
+
+class EarliestTests(PurgingBase):
+    """The earliest suitable harvest date: the later of the end of the medicine withdrawal and the first day the purge can
+    be complete from the last feeding, and which decides."""
+
+    def setUp(self):
+        super().setUp()
+        self.purge(hours=72)                                     # a plain 72 h purge
+        self.fed(1, at=clock(18, 0))                             # last fed yesterday at 18:00: complete from 3 days ahead
+
+    def block(self, days_ahead, **fields):
+        return WithdrawalBlock(self.batch, None if days_ahead is None else self.day(-days_ahead),
+                               fields.pop('approximate', False), fields.pop('reason', ''), None)
+
+    def earliest(self, *blocks):
+        with provider(*blocks):
+            return check.earliest(self.t1, self.batch)
+
+    def test_the_purge_decides_when_it_ends_after_the_withdrawal_and_says_when_feeding_must_stop(self):
+        found = self.earliest(self.block(1))                     # the withdrawal ends tomorrow
+        self.assertEqual((found.decides, found.day, found.until), ('purging', self.day(-3), self.day(-1)))
+        self.assertEqual(found.stop_by, self.day(1))             # fed yesterday, the last day it may be
+        self.assertEqual(found.text(), f'Earliest suitable harvest date: {services.shown_date(self.day(-3))}. '
+                                       f'Purging decides: feeding must stop by {services.shown_date(self.day(1))}.')
+        self.assertTrue(found.holds(self.day(-2)))
+        self.assertFalse(found.holds(self.day(-3)))
+
+    def test_the_medicine_withdrawal_decides_when_it_ends_after_the_purge(self):
+        found = self.earliest(self.block(10))
+        self.assertEqual((found.decides, found.day, found.stop_by), ('withdrawal', self.day(-10), None))
+        self.assertEqual(found.text(), f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}. '
+                                       f'Medicine withdrawal decides: until {services.shown_date(self.day(-10))}.')
+        approximate = self.earliest(self.block(10, approximate=True))
+        self.assertIn('Medicine withdrawal decides: until about', approximate.text())
+        # A tie goes to the withdrawal: food safety first.
+        self.assertEqual(self.earliest(self.block(3)).decides, 'withdrawal')
+
+    def test_an_unknown_withdrawal_end_has_no_date(self):
+        found = self.earliest(self.block(None))
+        self.assertEqual((found.decides, found.day, found.unknown), ('withdrawal', None, True))
+        self.assertEqual(found.text(), 'Earliest suitable harvest date: not known. Medicine withdrawal decides: its '
+                                       'end is unknown.')
+        self.assertTrue(found.holds(self.day(-400)))
+
+    def test_with_nothing_holding_the_fish_there_is_no_date(self):
+        found = self.earliest(self.block(-5))                    # a block that ended 5 days ago is not in force
+        self.assertEqual(found.decides, 'purging')               # the 72 h purge still holds: fed yesterday
+        self.purge(hours=1)                                      # 6 h have gone since the last feeding: complete
+        found = self.earliest()
+        self.assertEqual((found.decides, found.text(), found.holds(self.today)), ('', '', False))
+        HandlingRule.objects.filter(kind='harvest').delete()     # no rule: no purge to wait for
+        self.assertEqual(self.earliest().decides, '')
+
+    def test_degree_days_decide_the_purge_day_through_the_projection(self):
+        self.purge(degrees=30)
+        self.warm(1, 2, 3, 4, 5)
+        found = self.earliest()
+        # Last fed yesterday: the days counted from the day after it, today (no sample yet, projected at 10 °C), and
+        # the next two days: 30 degree-days are complete by the start of the 4th day after today... exactly 3 days ahead.
+        self.assertEqual((found.decides, found.day), ('purging', self.day(-3)))
+        self.assertEqual(found.stop_by, self.day(1))
+
+    def test_the_harvest_dialog_and_the_drawer_say_it_and_a_harvest_before_it_still_goes_on_when_acknowledged(self):
+        with provider(self.block(10)):
+            form = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
+            drawer = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
+            self.assertContains(form, f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}.')
+            self.assertContains(form, f'Medicine withdrawal decides: until {services.shown_date(self.day(-10))}.')
+            self.assertContains(drawer, 'Earliest suitable harvest date:')
+            self.assertIsNotNone(form.context['form'].handling.earliest)
+            fingerprint = self.assess().fingerprint
+            operation = self.harvest(handling_ack=fingerprint)
+        self.assertEqual(AuditLog.objects.get(entity_type='stock operation', entity_id=str(operation.pk),
+                                              action='create').severity, 'critical')
+
+    def test_a_transfer_and_a_grading_do_not_say_it(self):
+        with provider(self.block(10)):
+            for kind in ('transport', 'grading'):
+                result = self.assess(kind)
+                self.assertIsNone(result.earliest)
+                self.assertFalse([note for note in result.notes if 'Earliest suitable' in note])
+
+    def test_the_plan_pages_show_it_and_mark_a_plan_dated_before_it(self):
+        early = HandlingPlanItem.objects.create(kind='harvest', date=self.day(-1), unit=self.t1, batch=self.batch,
+                                                facility=self.facility)
+        late = HandlingPlanItem.objects.create(kind='harvest', date=self.day(-20), unit=self.t1, batch=self.batch,
+                                               facility=self.facility)
+        with provider(self.block(10)):
+            page = self.client.get(reverse('farm:handlingplanitem_list'))
+            rows = {row['item'].pk: row for row in page.context['objects']}
+            self.assertTrue(rows[early.pk]['earliest'].holds(early.date))
+            self.assertFalse(rows[late.pk]['earliest'].holds(late.date))
+            self.assertContains(page, f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}.')
+            self.assertContains(page, 'class="row-sub over-text">Earliest suitable harvest date', count=1)
+            plans = self.client.get(reverse('farm:productionplan_list'))
+            self.assertContains(plans, f'Earliest suitable harvest date: {services.shown_date(self.day(-10))}.')
+
+    def test_the_texts_are_in_turkish_and_norwegian(self):
+        self.addCleanup(translation.activate, 'en')
+        words = {'tr': ('En erken uygun hasat tarihi: ', 'İlaç bekleme süresi belirler: ',
+                        'Arındırma belirler: yemleme en geç '),
+                 'nb': ('Tidligste egnede høstedato: ', 'Tilbakeholdelsestiden avgjør: til ',
+                        'Rensingen avgjør: fôringen må stoppe senest ')}
+        for language, (earliest, withdrawal_decides, purging_decides) in words.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            with provider(self.block(10)):
+                page = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
+            self.assertContains(page, earliest, msg_prefix=language)
+            self.assertContains(page, withdrawal_decides, msg_prefix=language)
+            with provider(self.block(1)):
+                page = self.client.get(reverse('farm:stock_harvest', args=[self.t1.pk]))
+            self.assertContains(page, purging_decides, msg_prefix=language)
+            self.assertNotContains(page, 'Earliest suitable', msg_prefix=language)
+
+
 class ForecastTests(HarvestTestCase):
     """One band at FCR 1.00 and 1 % of the body weight a day at 10 °C: the fish grow 1 % a day from 50 g."""
 
@@ -697,31 +1095,35 @@ class SlaughterFacilityTests(HarvestTestCase):
 class HandlingRuleTests(HarvestTestCase):
     list_url = reverse('farm:handlingrule_list')
 
+    def post(self, rule=None, **fields):
+        """What the rule dialog posts: an amount with its unit, the degree-days, the note."""
+        data = {'kind': 'harvest', 'species': '', 'fasting_amount': '', 'fasting_unit': 'hours',
+                'min_fasting_degree_days': '', 'note': '', **fields}
+        if rule is None:
+            return self.client.post(reverse('farm:handlingrule_create'), data)
+        data.setdefault('version', str(HandlingRule.all_objects.get(pk=rule.pk).version))
+        return self.client.post(reverse('farm:handlingrule_edit', args=[rule.pk]), data)
+
     def test_created_read_edited_and_deleted_through_the_pages(self):
-        create = reverse('farm:handlingrule_create')
-        self.client.post(create, {'kind': 'harvest', 'species': str(self.salmon.pk), 'min_fasting_hours': '96',
-                                  'note': 'The vet, Nov 2026'})
+        self.post(species=str(self.salmon.pk), fasting_amount='96', note='The vet, Nov 2026')
         rule = HandlingRule.objects.get(species=self.salmon)
-        self.assertEqual((rule.kind, rule.min_fasting_hours, rule.note), ('harvest', 96, 'The vet, Nov 2026'))
+        self.assertEqual((rule.kind, rule.min_fasting_hours, rule.min_fasting_degree_days, rule.note),
+                         ('harvest', 96, None, 'The vet, Nov 2026'))
         listed = self.client.get(self.list_url, {'species': self.salmon.pk})
         self.assertEqual(list(listed.context['objects']), [rule])
+        self.assertContains(listed, '4 days (96 h)')
         self.assertEqual(len(self.client.get(self.list_url, {'species': 'none'}).context['objects']), 4)
         self.assertContains(self.client.get(self.list_url), 'the starting values are to be checked with your '
                                                             'veterinarian')
-        edit = reverse('farm:handlingrule_edit', args=[rule.pk])
-        self.client.post(edit, {'kind': 'grading', 'species': str(self.salmon.pk), 'min_fasting_hours': '0',
-                                'note': '', 'version': '1'})
+        self.post(rule, kind='grading', species=str(self.salmon.pk), fasting_amount='0')
         rule.refresh_from_db()
         self.assertEqual((rule.kind, rule.min_fasting_hours, rule.note), ('grading', 0, ''))
-        same = self.client.post(edit, {'kind': 'grading', 'species': '', 'min_fasting_hours': '5', 'note': '',
-                                       'version': '2'})
+        same = self.post(rule, kind='grading', species='', fasting_amount='5')
         self.assertEqual(same.context['form'].errors['species'],
                          ['There is already a rule for this handling and species.'])
-        self.assertIn('min_fasting_hours', self.client.post(edit, {'kind': 'grading', 'min_fasting_hours': '721',
-                                                                   'version': '2'}).context['form'].errors)
+        self.assertIn('fasting_amount', self.post(rule, kind='grading', fasting_amount='721').context['form'].errors)
         general = HandlingRule.objects.get(kind='treatment', species__isnull=True)
-        self.client.post(reverse('farm:handlingrule_edit', args=[general.pk]), {
-            'kind': 'treatment', 'species': '', 'min_fasting_hours': '12', 'note': '', 'version': '1'})
+        self.post(general, kind='treatment', fasting_amount='12')
         general.refresh_from_db()
         self.assertEqual((general.min_fasting_hours, general.note), (12, ''))
         self.client.post(reverse('farm:handlingrule_delete', args=[rule.pk]))
@@ -732,6 +1134,109 @@ class HandlingRuleTests(HarvestTestCase):
         HandlingRule.objects.create(kind='harvest', species=self.trout, min_fasting_hours=1)
         self.assertEqual([str(record) for record in softdelete.plan_delete(self.trout).cascade],
                          ['Harvest · Rainbow trout'])
+
+    def test_a_fast_is_typed_in_hours_or_days_and_stored_in_hours(self):
+        # 5 days is 120 hours, shown back as 5 days.
+        self.post(species=str(self.salmon.pk), fasting_amount='5', fasting_unit='days')
+        rule = HandlingRule.objects.get(species=self.salmon)
+        self.assertEqual(rule.min_fasting_hours, 120)
+        edit = self.client.get(reverse('farm:handlingrule_edit', args=[rule.pk])).context['form']
+        self.assertEqual((edit['fasting_amount'].value(), edit['fasting_unit'].value()), (5, 'days'))
+        self.assertContains(self.client.get(self.list_url, {'species': self.salmon.pk}), '5 days (120 h)')
+        # Edited in hours that are not whole days: kept as hours; whole days come back as days.
+        self.post(rule, species=str(self.salmon.pk), fasting_amount='36', fasting_unit='hours')
+        rule.refresh_from_db()
+        self.assertEqual(rule.min_fasting_hours, 36)
+        edit = self.client.get(reverse('farm:handlingrule_edit', args=[rule.pk])).context['form']
+        self.assertEqual((edit['fasting_amount'].value(), edit['fasting_unit'].value()), (36, 'hours'))
+        self.assertContains(self.client.get(self.list_url, {'species': self.salmon.pk}), '36 h')
+        self.post(rule, species=str(self.salmon.pk), fasting_amount='48', fasting_unit='hours')     # whole days
+        rule.refresh_from_db()
+        edit = self.client.get(reverse('farm:handlingrule_edit', args=[rule.pk])).context['form']
+        self.assertEqual((rule.min_fasting_hours, edit['fasting_amount'].value(), edit['fasting_unit'].value()),
+                         (48, 2, 'days'))
+        self.post(rule, species=str(self.salmon.pk), fasting_amount='1', fasting_unit='days')
+        self.assertContains(self.client.get(self.list_url, {'species': self.salmon.pk}), '1 day (24 h)')
+        # 0 is hours, never "0 days"; 30 days is the most (720 hours).
+        self.post(rule, species=str(self.salmon.pk), fasting_amount='0', fasting_unit='days')
+        edit = self.client.get(reverse('farm:handlingrule_edit', args=[rule.pk])).context['form']
+        self.assertEqual((edit['fasting_amount'].value(), edit['fasting_unit'].value()), (0, 'hours'))
+        self.post(rule, species=str(self.salmon.pk), fasting_amount='30', fasting_unit='days')
+        self.assertEqual(HandlingRule.objects.get(pk=rule.pk).min_fasting_hours, 720)
+        for amount, unit in (('31', 'days'), ('721', 'hours')):
+            response = self.post(rule, species=str(self.salmon.pk), fasting_amount=amount, fasting_unit=unit)
+            self.assertEqual(response.context['form'].errors['fasting_amount'], ['At most 720 hours (30 days).'])
+        self.assertEqual(HandlingRule.objects.get(pk=rule.pk).min_fasting_hours, 720)
+
+    def test_degree_days_are_the_harvests_alone_and_a_rule_needs_one_thing_or_the_other(self):
+        # Degree-days only, hours only, and both, for a harvest.
+        self.post(species=str(self.salmon.pk), min_fasting_degree_days='60')
+        only = HandlingRule.objects.get(species=self.salmon)
+        self.assertEqual((only.min_fasting_hours, only.min_fasting_degree_days), (None, Decimal('60.0')))
+        edit = self.client.get(reverse('farm:handlingrule_edit', args=[only.pk])).context['form']
+        self.assertEqual((edit['fasting_amount'].value(), edit['min_fasting_degree_days'].value()),
+                         (None, Decimal('60.0')))
+        listing = self.client.get(self.list_url, {'species': self.salmon.pk})
+        self.assertContains(listing, '60 degree-days')
+        self.post(only, species=str(self.salmon.pk), fasting_amount='3', fasting_unit='days',
+                  min_fasting_degree_days='60.5')
+        only.refresh_from_db()
+        self.assertEqual((only.min_fasting_hours, only.min_fasting_degree_days), (72, Decimal('60.5')))
+        self.assertContains(self.client.get(self.list_url, {'species': self.salmon.pk}),
+                            '3 days (72 h) and 60.5 degree-days')
+        self.post(only, species=str(self.salmon.pk), fasting_amount='72')                  # the degree-days cleared
+        only.refresh_from_db()
+        self.assertEqual((only.min_fasting_hours, only.min_fasting_degree_days), (72, None))
+        # Nothing at all is refused, on the amount; so are degree-days for any other kind, and bad values.
+        response = self.post(only, species=str(self.salmon.pk))
+        self.assertEqual(response.context['form'].errors['fasting_amount'],
+                         ['Give the fast in hours or days, in degree-days, or both.'])
+        response = self.post(only, kind='transport', species=str(self.salmon.pk), fasting_amount='24',
+                             min_fasting_degree_days='10')
+        self.assertEqual(response.context['form'].errors['min_fasting_degree_days'],
+                         ['Degree-days are for the harvest only: fish that are moved or graded are not purged.'])
+        for value in ('-1', '1000.1', 'abc', '10.55'):
+            with self.subTest(value=value):
+                self.assertIn('min_fasting_degree_days',
+                              self.post(only, species=str(self.salmon.pk), fasting_amount='72',
+                                        min_fasting_degree_days=value).context['form'].errors)
+        only.refresh_from_db()
+        self.assertEqual((only.kind, only.min_fasting_hours, only.min_fasting_degree_days), ('harvest', 72, None))
+        self.post(only, species=str(self.salmon.pk), fasting_amount='72', min_fasting_degree_days='1000')
+        self.assertEqual(HandlingRule.objects.get(pk=only.pk).min_fasting_degree_days, Decimal('1000.0'))
+
+    def test_the_database_holds_the_rules_too(self):
+        def make(**fields):
+            return HandlingRule.objects.create(species=self.trout, **fields)
+
+        for fields in ({'kind': 'harvest'},                                                  # neither
+                       {'kind': 'transport', 'min_fasting_hours': 24, 'min_fasting_degree_days': Decimal(10)},
+                       {'kind': 'grading', 'min_fasting_degree_days': Decimal(10)},          # degree-days alone
+                       {'kind': 'harvest', 'min_fasting_degree_days': Decimal(-1)},
+                       {'kind': 'harvest', 'min_fasting_degree_days': Decimal('1000.1')},
+                       {'kind': 'harvest', 'min_fasting_hours': 721},
+                       {'kind': 'transport'}):
+            with self.subTest(fields=fields), self.assertRaises(IntegrityError), transaction.atomic():
+                make(**fields)
+        make(kind='harvest', min_fasting_degree_days=Decimal(0))                            # 0 is a value
+        make(kind='transport', min_fasting_hours=0)
+        make(kind='grading', min_fasting_hours=720)
+        HandlingRule.objects.create(kind='harvest', species=self.salmon, min_fasting_hours=72,
+                                    min_fasting_degree_days=Decimal(1000))
+
+    def test_the_page_speaks_each_language(self):
+        self.addCleanup(translation.activate, 'en')
+        rule = HandlingRule.objects.create(kind='harvest', species=self.salmon, min_fasting_hours=120,
+                                           min_fasting_degree_days=Decimal(60))
+        words = {'tr': ('5 gün (120 sa) ve 60 gün-derece', 'Arındırma', 'Birim'),
+                 'nb': ('5 dager (120 t) og 60 døgngrader', 'Rensing', 'Enhet')}
+        for language, (listed, purging, unit) in words.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            self.assertContains(self.client.get(self.list_url, {'species': self.salmon.pk}), listed, msg_prefix=language)
+            form = self.client.get(reverse('farm:handlingrule_edit', args=[rule.pk]))
+            self.assertContains(form, purging, msg_prefix=language)
+            self.assertContains(form, unit, msg_prefix=language)
+            self.assertNotContains(form, 'Purging', msg_prefix=language)
 
 
 # ---- integrations --------------------------------------------------------------------------------------
@@ -793,7 +1298,7 @@ class DatabaseViewerTests(HarvestTestCase):
                             ('harvest_records', 'Where a harvest went'),
                             ('production_plans', "A batch's target"),
                             ('handling_plan_items', 'A harvest or a transport planned'),
-                            ('handling_rules', 'How many hours the fish must have been without feed'),
+                            ('handling_rules', 'How long the fish must have been without feed'),
                             ('handling_acknowledgements', 'One warning a person went on past'),
                             ('slaughter_facility_species', 'Which species each slaughter facility takes.')):
             self.assertTrue(str(tables[name].description).startswith(start), name)

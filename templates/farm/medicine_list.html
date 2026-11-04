@@ -23,7 +23,7 @@
   <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
-{% block notice %}<p class="panel-help">{% trans "The withdrawal is the product’s, as its SPC states it, in degree-days, days or both; nothing is filled in for you. A treatment counts it from its last day, on the water temperature of the fish’s units (Operations › Treatments)." %}</p>{% endblock %}
+{% block notice %}<p class="panel-help">{% trans "The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, with your own safety margin on top; nothing is filled in for you. A treatment counts it from its last day, on the water temperature of the fish’s units (Operations › Treatments). Fish of a species with no withdrawal recorded are held with an unknown end." %}</p>{% endblock %}
 {% block empty_text %}{% trans "The medicines and vaccines the farm uses, with their withdrawal before harvest." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">
@@ -41,7 +41,7 @@
         <td>{{ medicine.get_kind_display }}<span class="row-sub">{{ medicine.get_administration_display }}</span></td>
         <td>{{ medicine.active_substance }}{% if medicine.lice_report_code %}<span class="row-sub">{{ medicine.get_lice_report_code_display }}</span>{% endif %}</td>
         <td class="nowrap">{% if medicine.strength_value is not None %}{{ medicine.strength_value|floatformat:"-3" }} {{ medicine.get_strength_unit_display }}{% else %}—{% endif %}</td>
-        <td>{{ medicine|withdrawal_rule }}</td>
+        <td>{% for who, rule in medicine|withdrawal_lines %}<span class="row-line">{% if medicine.withdrawals.all|length > 1 %}<strong>{{ who }}</strong>: {% endif %}{{ rule.text }}{% if rule.row.note %}<span class="row-sub">{{ rule.row.note }}</span>{% endif %}</span>{% empty %}<span class="muted" title="{% trans "A treatment with it holds the fish with an unknown end until a withdrawal is added." %}">{% trans "Not recorded" %}</span>{% endfor %}</td>
         <td>{% if medicine.manufacturer %}{{ medicine.manufacturer.name }}{% else %}—{% endif %}</td>
         <td><span class="badge badge-{{ medicine.status }}">{{ medicine.get_status_display }}</span></td>
         <td class="row-actions">

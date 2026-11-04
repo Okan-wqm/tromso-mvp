@@ -253,7 +253,12 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   scientific name, code, description.
 - **Classification**: category, family and the water environment: fresh, brackish and sea water,
   at least one. The genus is shown on an existing species; it is the first word of the scientific name.
-- **Regulatory**: the official code (artskode), and the cleaner-fish type (lumpfish or wrasse).
+- **Regulatory**: the official code (artskode), the cleaner-fish type (lumpfish or wrasse) and, under
+  **Medicine withdrawal**, the **assumed water temperature for withdrawal** (°C, 0 to 40, a database check, empty
+  allowed): the degree-days one day counts for when no water temperature was measured, so a past day without a
+  measurement and a withdrawal projected when none was measured at all do not silently count as nothing (see
+  Operations › Health). It is the farm's own assumption, never filled in from the catalogue; a low value is the
+  conservative choice, and empty keeps such a day at 0 °C.
 - **Status and notes**: active, experimental, inactive or discontinued; notes. Active and
   experimental species are the ones a new batch can take (Production units).
 
@@ -539,7 +544,8 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
 - Days stocked, survival and losses per unit over its current stay; survival counts deaths only, losses
   deaths and culls (owner decision Q2). Capacity and density computed on every read.
 - The medicine withdrawal of a unit's fish is on its row and in its drawer (see Operations › Health); the
-  harvest dialog's warning and acknowledgement are the handling check's (farm/handling).
+  harvest dialog's warning and acknowledgement are the handling check's (farm/handling). A transfer or a grading
+  moves live fish: it is not warned of a medicine withdrawal.
 - Not ported: the cleaner-fish track (later, as batches of a cleaner-fish species), sensors (the water
   comes from the samples, see Water chemistry), lot numbers, buyers and prices, batch documents and costs,
   count adjustments as a dialog (their lines and checks exist). Harvest plans and the handling check are on
@@ -860,8 +866,8 @@ fish and shown, but it never moves the unit's status. Nothing of a unit's DO, pH
 loop (the source passes on only what is the same all round a loop, and so does this). Its **temperature** is the
 one value that may come from a loop: the ration (`farm/feeding/temperature.py`) reads the unit's middle point, else
 the loop point of its system and of the systems that system is nested in, and the withdrawal's daily mean
-(`farm/health/withdrawal.py`) the unit's, else its own system's loop (a day without one counts as 0 °C and says so,
-the safe side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
+(`farm/health/withdrawal.py`) the unit's, else its own system's loop (a day without one counts at the species'
+assumed temperature, else as 0 °C, and says so: the safe side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
 and a test fails when another module reads the samples.
 
 **The calculator** (the third tab, `/operations/water/calculator/`) is laid out as the source's: where the
@@ -1318,9 +1324,14 @@ keeps its category and is not deleted either (`Supplier.delete_blockers` asks ev
 a record the delete plan does not follow says it blocks, `SupplierLink.blocker`).
 
 **Handling rules** (Setup › Reference data): per kind of handling (harvest, transport, grading, treatment) and
-species, or for every species (no species), how many hours the fish must have been without feed, 0 to 720, and
-where the value comes from. One live rule per kind and species, and one for every species (the database's
-`NULLS NOT DISTINCT`, checked on the form too). **These are the farm's own rules; the starting values are to be
+species, or for every species (no species), how long the fish must have been without feed and where the value comes
+from. **The fast is typed as a number with a unit, hours or days** (the same form for every kind) and stored in the one
+hours column (5 days is 120 hours; 0 to 720 hours, 30 days); a rule of whole days is shown back as days, in the form and
+in the list ("5 days (120 h)", "36 h"). A **harvest** can also ask for **purging in degree-days**: the fish are held
+without feed, in clean water, so that any off-flavour clears; only for fish that are harvested and sent to the factory
+(a database check: degree-days belong to the harvest rule alone). A rule has hours or days, degree-days, or both (a
+database check); with both, each must be reached and the later decides. One live rule per kind and species, and one for
+every species (the database's `NULLS NOT DISTINCT`, checked on the form too). **These are the farm's own rules; the starting values are to be
 checked with your veterinarian.** Migration `0017` writes four general rules, each with its source:
 
 | Handling | Hours | Why |
@@ -1330,41 +1341,68 @@ checked with your veterinarian.** Migration `0017` writes four general rules, ea
 | grading | 24 | BIM 2024: at least 24 to 48 h before grading; RSPCA (2015, FW 6.2): not above 48 h. A grading is also checked against the transport rule; the longer applies (owner). |
 | treatment | 24 | BIM 2024: commonly 24 to 48 h before handling; RSPCA (2024): at most 48 h before physical delousing, 72 h before a freshwater bath. The medicine's product information wins. |
 
-**The handling check** (`farm/handling/`, one for every dialog): before fish are harvested, transported (a
-transfer), graded or treated (the health tab's dialog), is a medicine withdrawal in force, and have they fasted
-long enough? Nothing is blocked (owner decision): both are warnings.
+**The handling check** (`farm/handling/`, one for every dialog): before fish are harvested, is a medicine
+withdrawal in force, and before they are harvested, transported (a transfer), graded or treated (the health tab's
+dialog), have they fasted long enough? Nothing is blocked (owner decision): both are warnings.
 
 - *Fasting*: the hours from the fish's **last feeding** to the **start of the handling's day** on the site's
-  clock (an operation has a date and no time). The last feeding is of the fish themselves, wherever they were
+  clock (an operation has a date and no time), and, **for a harvest whose rule asks for purging, the degree-days**: the
+  sum of the batch's daily mean water temperatures of the **full days after the day of the last feeding up to the day
+  before the harvest** (the day of the feeding and the harvest's own day are not counted). A day's temperature is the
+  one the medicine withdrawal adds up (`farm/water/degree_days.py`, one definition for both: the unit's middle point,
+  else its system's loop; a past day without a measured temperature counts at the species' assumed temperature, else as
+  0 °C, and the warning says so). Each thing the rule asks for must be reached, so the warning shows each: "Last fed
+  3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h and 60 degree-days." The last feeding is of the fish themselves, wherever they were
   fed: the feeding walk's split says which batches a record fed, so fish moved in yesterday bring their last
   meal in the old unit with them (`farm.feeding.read.last_fed_at`). A record without a time counts from the end
-  of its day and a feeding on the day gives 0 h, so **the fast is never overstated**. The rule is the species'
+  of its day and a feeding on the day gives 0 h, so **the fast is never overstated** (and the degree-days of several
+  batches in a unit are the fewest). The rule is the species'
   own, else the one for every species; a grading takes the longer of the grading and the transport rule. No
   rule, or no feeding in the 31 days before (longer than any rule), is said, not warned.
-- *Medicine withdrawal* (harvest, transport, grading; a treatment during a withdrawal harms nobody): every block
+- *Medicine withdrawal* (**a harvest only**: the fish go to food, to the slaughter facility the harvest names; a
+  medicine withdrawal is a meat withdrawal, so it means nothing when live fish are moved or graded, where the
+  fast and the live-transfer facts are what matter, and a treatment during a withdrawal harms nobody): every block
   a registered provider gives for the batch whose end is after the day, or unknown (unknown is a warning, never
   clear). The health records register their provider in `farm/apps.py` (`farm/handling/withdrawal.py`:
   `register(provider)`, `blocks(unit, day)`, `WithdrawalBlock(batch, until, approximate, reason, source)`; see
-  Operations › Health). With no provider registered a dialog would say "Medicine withdrawal not checked" and warn
-  nothing.
-  Before a harvest it reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026".
+  Operations › Health). With no provider registered the harvest dialog would say "Medicine withdrawal not
+  checked" and warn nothing.
+  It reads "Not suitable for harvest — medicine withdrawal of B-2026-001 until 14 Dec 2026". The informational
+  badges (Production units rows, the drawer's Harvest and handling section, the plans) say the same and stay.
 - *The dialogs* (harvest, transfer, grading) show the check for the form's date and batch under "Before
-  handling": the last feeding and its hours, the rule, the withdrawal, and with warnings the box "Go on despite
-  these warnings" ("Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown
+  handling": the last feeding and its hours, the rule, for a harvest the withdrawal, and with warnings the box "Go
+  on despite these warnings" (the harvest's: "Fish under a medicine withdrawal must not go to food. Going on is
+  stored with what is shown here and logged as critical."; the others': "Going on is stored with what is shown
   here and logged as critical."). The box carries the warnings' fingerprint.
 - *The save* runs the check again after the locks (a feeding of the unit takes turns with it). With warnings it
   needs the box ticked on exactly these warnings: a feeding recorded meanwhile, a treatment entered or another
   date asks again ("The warnings changed since the form was shown"). Going on stores one
   `HandlingAcknowledgement` per warning with what the person was shown (the withdrawal's end, estimated or not,
-  and reason; or the last feeding, the hours fasted, the hours asked and the rule), and the operation's
+  and reason; or the last feeding, the hours fasted and asked, a harvest's degree-days fasted and asked, and the rule;
+  a database check says a fasting row has at least one of the two not reached), and the operation's
   activity-log entry is **critical**, with the warnings. Who and when are the operation's.
 - *The meal board* gives **no ration on a fasting day**: the ration's policy (`farm/feeding/read.policy`) loads
   the fasts planned harvests and transports ask for (`farm.handling.fasting.fasts`, every day from the one the
   fast starts on to the planned day, in full, for the whole unit; where two overlap the one that starts first
   wins) and `ration.Policy.basis` answers `FASTING` with the reason, e.g. "Fasting before the harvest of 15 Nov
-  2026: from 12 Nov 2026, 00:00 (72 h)". The band stays, so a feeding recorded anyway is still credited at its
+  2026: from 12 Nov 2026, 00:00 (72 h)". **When feeding must stop** for a handling on day D is one function
+  (`fasting.start_of_fast`, which the board, the plan rows and the earliest harvest date ask): by hours, the start of D
+  less the hours; by degree-days, found **backwards from D**: the day s such that the full days s to D − 1 add up to the
+  rule's degree-days, a past day at its measured temperature (or the assumed one, else 0 °C), a day not over or still to
+  come at the mean of the unit's last 7 measured days within 30, else the species' assumed temperature; the later of
+  the two starts wins. With no temperature to project at, the degree-days are unknown: the hours alone apply and the
+  board says "Degree-days unknown: no temperature."; a fast the water never reaches in 60 days starts at 60 and says so.
+  It says what it projected, "(72 h and 60 degree-days)", and how many days were counted without a measurement. The band stays, so a feeding recorded anyway is still credited at its
   expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
   The feeding dialog says so on such a day ("A feeding can still be recorded").
+- *The earliest suitable harvest date* (`check.earliest`, on a harvest's dialog and the drawer's Harvest and handling
+  section, and on each harvest plan item and production plan row): the **later of the end of the batch's medicine
+  withdrawal and the first day its purge can be complete from the last feeding** (if it is not fed again), and **which
+  decides**: "Earliest suitable harvest date: 17 Nov 2026. Medicine withdrawal decides: until 17 Nov 2026." or "Earliest
+  suitable harvest date: 15 Nov 2026. Purging decides: feeding must stop by 11 Nov 2026." (a tie goes to the
+  withdrawal; an unknown withdrawal end is "not known"). It is worked out from the parts above on read, nothing is
+  stored; a plan dated before it is marked, and a harvest before it is a warning on the parts' terms, acknowledged and
+  logged as critical as before, never a block. A transfer and a grading do not say it.
 - *Production units*: a "Withdrawal" badge on a unit with a withdrawal in force today, and the drawer's
   **Harvest and handling** part: the check of a harvest today and the unit's open plans with their fasts.
 
@@ -1395,8 +1433,8 @@ Differences from the source (details in the bug document, HRV-01 to HRV-23):
   target weight (HRV-23).
 - Not ported: the slaughter result (gutted kilos per quality class, yield) and Mattilsynet's weekly slaughter
   reports, lot numbers, buyers and prices, customer deliveries, size-grade distribution, an approval workflow for
-  plans, temperature scenarios and a degree-day fasting rule, a "fasted too long" warning (6 days in a slaughter
-  pen, akvakulturdriftsforskriften § 54), and alarms.
+  plans, temperature scenarios, a "fasted too long" warning (6 days in a slaughter pen, akvakulturdriftsforskriften §
+  54), and alarms.
 
 ### Operations › Health and Reference data › Medicines
 
@@ -1413,10 +1451,24 @@ antiparasitic, antifungal, vaccine, anaesthetic, other), how it is given (bath, 
 active substance, for a sea-lice medicine its substance as Mattilsynet's weekly lice report names it (the
 official value is stored, e.g. `EMAMECTIN_BENZOAT`; other medicines have none), the strength with its unit
 (both or neither), the manufacturer (a supplier of medicines and vaccines, a `SupplierLink`), prescription only,
-status, notes, and **the withdrawal in degree-days, in days or both, at least one** (a database check; 0 means
-none; both given, the later end wins). Nothing is seeded: the values are the product's SPC, entered by the farm
-and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer (`PROTECT`): set it
-inactive.
+status, notes. **Its withdrawal is a list of rows per species** (the **Withdrawal** tab, saved apart from the
+medicine details once it exists, like a feed's suitability; table `medicine_withdrawals`): a row is for a species or,
+with no species, for every species that has no row of its own (the SPC states it per species), with **degree-days,
+days or both, at least one** (a database check; 0 means none; both given, the later end wins), the farm's own
+**safety margin** in percent (0 to 200, 0 when empty) on top of the label value, and a note. One row per species and
+one for every species (a database check, checked on the form too), at most 50. The label value stays stored as the SPC
+states it; the value used is `value × (1 + margin ÷ 100)` rounded up (150 degree-days and 20 % is 180, 7 days and 20 %
+is 9; with no margin the label value is used as it is), and the pages say both: "150 degree-days + 20 % safety margin
+= 180 degree-days". **Fish of a species that has no row and no row for every species are held with an unknown end**:
+"No withdrawal is recorded for Atlantic salmon of Salmosan vet.: add it in Reference data › Medicines." Never
+silently no withdrawal. The list shows each medicine's rows per species, "Not recorded" with none. The rows are owned by
+their medicine as a site's contacts are: they stay with it when it is deleted and come back when it is restored; a
+species keeps its rows out of sight while it is deleted, and cannot be erased from the database while a row names it.
+`farm/health/withdrawal.py`'s `row_for` is the one place that says which row applies to a species; the withdrawal, the
+Medicines pages and the treatment dialog's choice all ask it. Nothing is seeded: the values are the product's SPC,
+entered by the farm and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer
+(`PROTECT`): set it inactive. Migration `0021` copies each medicine's old two columns into a row for every species, and
+goes back when every medicine has one (it says why when it cannot).
 
 **Treatments** (a read page with dialogs, like Feeding records): one course given to the fish of one or more
 units of a site: the method (bath, in feed, injection, dip with a medicine; thermal, mechanical, freshwater or
@@ -1444,14 +1496,22 @@ corrected temperature or a backdated transfer changes it at once:
 
 - it **follows the fish**: every live treatment with a medicine whose treated batches include the batch holds
   it, wherever it is now; if only some of its units were treated, the whole batch is held;
+- **per species**: the medicine's row for the batch's species, else its row for every species, else the end is
+  unknown (see Medicines); the margin is applied to both values;
 - **days**: day 1 is the day after the last treatment day, the first day the fish may be harvested is the last
   day + the days + 1;
 - **degree-days**: the batch's daily mean water temperature is added up from the day after the last day until
-  it reaches the medicine's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
+  it reaches the row's degree-days, the next day is the first harvest day. A unit's daily mean is the mean
   of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
-  copy); with the batch in several units that day, the lowest counts. **A past day without a temperature counts
-  as 0 °C** and the warning says how many; not reached by today, the rest is projected at the mean of the last 7
-  measured days within 30 ("about"); with none at all the end is unknown ("record the water temperature");
+  copy); with the batch in several units that day, the lowest counts. **A past day without a measured
+  temperature counts at the batch species' assumed water temperature** (Reference data › Species; one query reads
+  the species of all the batches), **and as 0 °C when the species has none**, and the warning says how many days
+  and at what ("3 days without a measured water temperature are counted at the assumed 8.0 °C (the species'
+  setting in Reference data)", or "... are counted as 0 °C: set the species' assumed temperature in Reference data
+  › Species."); not reached by today, the rest is projected at the mean of the last 7 measured days within 30
+  ("about"); with none measured, at the species' assumed temperature when it has one ("Projected at the assumed
+  8.0 °C ... no water temperature was measured in the last 30 days"), else the end is unknown ("record the water
+  temperature");
 - both given, the later end wins; a running course counts from its planned last day;
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
@@ -1465,8 +1525,8 @@ Where it shows: the health records give it to the shared handling check through 
 may be harvested; the provider is registered in `farm/apps.py`). From there Production units marks the unit's
 row **Withdrawal** and the drawer's Harvest and handling section says **"Not suitable for harvest — medicine
 withdrawal of B-2026-001 until 14 Dec 2026."** ("about" when projected, "its end unknown") with why, to everyone
-who sees the page; the harvest, transfer and grading dialogs warn, never block (owner decision), and keep the
-acknowledgement. The Treatments list shows each batch's end as "until 13 Dec 2026 (harvest from 14 Dec 2026)".
+who sees the page; the harvest dialog warns, never blocks (owner decision), and keeps the acknowledgement (the
+transfer and grading dialogs are not asked for a withdrawal: live fish are not eaten). The Treatments list shows each batch's end as "until 13 Dec 2026 (harvest from 14 Dec 2026)".
 
 **Health events** (a tab: created and edited on their form, every change logged, voided with a reason instead of
 deleted): the site (chosen once) and some of its units or the whole site, the date, the kind (observation, vet or
@@ -2477,7 +2537,8 @@ real mail.
 | `farm/models/water_point.py`, `farm/water/points.py`, `farm/forms/water_point.py`, `farm/resources/water_point.py` | Sampling points: the model with its kinds, flow roles and rules, the default points and the share report, the form and the tab |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
-| `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting and the fasts plans ask for (`fasting.py`, `fasting_on`), the check and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
+| `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
+| `farm/water/degree_days.py` | The batch's daily mean water temperature and the degree-days it adds up to (a past day without a measurement at the species' assumed temperature, else 0 °C; a day ahead projected): the one definition the medicine withdrawal and the purging fast share |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |

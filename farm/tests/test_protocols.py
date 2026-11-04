@@ -343,6 +343,8 @@ class FastingOnTheBoardTests(WorkedExampleTestCase):
         self.assertIn('Fasting before the harvest of', line['why'])
         self.assertIn('(72 h)', line['why'])
         self.assertContains(response, 'Fasting before the harvest of')
+        # The water's temperature stays on the line of a fasting unit: the Water column still has it.
+        self.assertIsNotNone(line['share'].end.temperature)
         item.cancelled_reason = 'Moved to next month'
         item.save()
         response, row, line = self.board_line()

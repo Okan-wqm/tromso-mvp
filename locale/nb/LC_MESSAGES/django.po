@@ -120,16 +120,38 @@ msgstr[0] "%(count)d dag"
 msgstr[1] "%(count)d dager"
 
 #, python-format
-msgid "%(count)d day without a water temperature is counted as 0 °C."
-msgid_plural "%(count)d days without a water temperature are counted as 0 °C."
-msgstr[0] "%(count)d dag uten vanntemperatur er regnet som 0 °C."
-msgstr[1] "%(count)d dager uten vanntemperatur er regnet som 0 °C."
+msgid "%(count)d day (%(hours)d h)"
+msgid_plural "%(count)d days (%(hours)d h)"
+msgstr[0] "%(count)d dag (%(hours)d t)"
+msgstr[1] "%(count)d dager (%(hours)d t)"
 
 #, python-format
-msgid "%(count)d degree-day"
-msgid_plural "%(count)d degree-days"
-msgstr[0] "%(count)d døgngrad"
-msgstr[1] "%(count)d døgngrader"
+msgid ""
+"%(count)d day without a measured water temperature is counted as 0 °C: set the species’ assumed "
+"temperature in Reference data › Species."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted as 0 °C: set the species’ assumed"
+" temperature in Reference data › Species."
+msgstr[0] ""
+"%(count)d dag uten målt vanntemperatur telles som 0 °C: legg inn artens antatte temperatur i "
+"Referansedata › Arter."
+msgstr[1] ""
+"%(count)d dager uten målt vanntemperatur telles som 0 °C: legg inn artens antatte temperatur i "
+"Referansedata › Arter."
+
+#, python-format
+msgid ""
+"%(count)d day without a measured water temperature is counted at the assumed %(temperature)s °C "
+"(the species’ setting in Reference data)."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted at the assumed %(temperature)s °C"
+" (the species’ setting in Reference data)."
+msgstr[0] ""
+"%(count)d dag uten målt vanntemperatur telles med den antatte %(temperature)s °C (artens "
+"innstilling i Referansedata)."
+msgstr[1] ""
+"%(count)d dager uten målt vanntemperatur telles med den antatte %(temperature)s °C (artens "
+"innstilling i Referansedata)."
 
 #, python-format
 msgid "%(count)d delivery or return of the store names it for “%(category)s”: keep it ticked."
@@ -274,6 +296,12 @@ msgstr[0] "%(count)d vannprøve registrert."
 msgstr[1] "%(count)d vannprøver registrert."
 
 #, python-format
+msgid "%(count)d withdrawal row saved."
+msgid_plural "%(count)d withdrawal rows saved."
+msgstr[0] "%(count)d tilbakeholdelsesrad lagret."
+msgstr[1] "%(count)d tilbakeholdelsesrader lagret."
+
+#, python-format
 msgid "%(count)s column"
 msgid_plural "%(count)s columns"
 msgstr[0] "%(count)s kolonne"
@@ -284,6 +312,12 @@ msgid "%(count)s critical"
 msgid_plural "%(count)s critical"
 msgstr[0] "%(count)s kritisk"
 msgstr[1] "%(count)s kritiske"
+
+#, python-format
+msgid "%(count)s degree-day"
+msgid_plural "%(count)s degree-days"
+msgstr[0] "%(count)s døgngrad"
+msgstr[1] "%(count)s døgngrader"
 
 #, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
@@ -490,6 +524,10 @@ msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 
 #, python-format
+msgid "%(hours)s and %(degrees)s"
+msgstr "%(hours)s og %(degrees)s"
+
+#, python-format
 msgid "%(hours)s h"
 msgstr "%(hours)s t"
 
@@ -536,6 +574,10 @@ msgstr "%(kilos)s veid"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "Seksjoner i skjemaet: %(kind)s"
+
+#, python-format
+msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
+msgstr "%(label)s + %(margin)s %% sikkerhetsmargin = %(used)s"
 
 #, python-format
 msgid "%(label)s deleted with it"
@@ -616,6 +658,10 @@ msgstr "%(medicine)s gis som %(administration)s."
 #, python-format
 msgid "%(medicine)s is inactive: a new treatment takes an active medicine."
 msgstr "%(medicine)s er inaktivt: en ny behandling bruker et aktivt legemiddel."
+
+#, python-format
+msgid "%(medicine)s, %(method)s from %(start)s to %(end)s."
+msgstr "%(medicine)s, %(method)s fra %(start)s til %(end)s."
 
 #, python-format
 msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
@@ -1194,6 +1240,12 @@ msgid "A lot of %(category)s needs its number and its expiry date."
 msgstr "Et parti %(category)s trenger nummer og utløpsdato."
 
 #, python-format
+msgid "A medicine has at most %(num)d row."
+msgid_plural "A medicine has at most %(num)d rows."
+msgstr[0] "Et legemiddel har høyst %(num)d rad."
+msgstr[1] "Et legemiddel har høyst %(num)d rader."
+
+#, python-format
 msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."
@@ -1454,6 +1506,11 @@ msgstr ""
 
 msgid "A treatment is of the units of one site: record one for each site."
 msgstr "En behandling gjelder enhetene på én lokalitet: registrer én for hver lokalitet."
+
+msgid "A treatment with it holds the fish with an unknown end until a withdrawal is added."
+msgstr ""
+"En behandling med det holder fisken tilbake med ukjent slutt til en tilbakeholdelsestid er lagt "
+"inn."
 
 msgid "A treatment without a medicine names none."
 msgstr "En behandling uten legemiddel oppgir ingen."
@@ -2156,20 +2213,6 @@ msgstr "Som nitrogen. Et sett som leser NO₃⁻: del på 4,43."
 msgid "As the SPC names it, e.g. azamethiphos."
 msgstr "Slik preparatomtalen kaller det, f.eks. azametifos."
 
-msgid ""
-"As the SPC states it (døgngrader): the daily mean water temperatures after the last treatment day"
-" add up to this before the fish may be harvested. 0 when it has none."
-msgstr ""
-"Slik preparatomtalen oppgir det (døgngrader): døgnmiddeltemperaturene i vannet etter siste "
-"behandlingsdag summeres til dette før fisken kan høstes. 0 når den ikke har noen."
-
-msgid ""
-"As the SPC states it, in days after the last treatment day. Give it as well when the SPC gives "
-"both: the later end wins. 0 when it has none."
-msgstr ""
-"Slik preparatomtalen oppgir det, i dager etter siste behandlingsdag. Oppgi den også når "
-"preparatomtalen gir begge: den seneste slutten gjelder. 0 når den ikke har noen."
-
 msgid "As the document itself gives it."
 msgstr "Slik dokumentet selv oppgir den."
 
@@ -2200,6 +2243,9 @@ msgstr "Tildelinger"
 
 msgid "Assistant"
 msgstr "Assistent"
+
+msgid "Assumed water temperature for withdrawal (°C)"
+msgstr "Antatt vanntemperatur for tilbakeholdelsestid (°C)"
 
 #, python-format
 msgid "At least %(min)s."
@@ -3262,6 +3308,18 @@ msgstr "Deformert"
 msgid "Deformity"
 msgstr "Deformitet"
 
+msgid "Degree-days are for the harvest only: fish that are moved or graded are not purged."
+msgstr "Døgngrader gjelder bare høsting: fisk som flyttes eller sorteres renses ikke."
+
+msgid "Degree-days fasted"
+msgstr "Døgngrader sultet"
+
+msgid "Degree-days the rule asks for"
+msgstr "Døgngrader regelen krever"
+
+msgid "Degree-days unknown: no temperature."
+msgstr "Døgngrader ukjent: ingen temperatur."
+
 msgid "Delete"
 msgstr "Slett"
 
@@ -3550,6 +3608,13 @@ msgstr ""
 " prøve fra et kretsløp for hver enhet i kretsløpet. En enhet uten fisk viser verdiene uten "
 "grense. Hver verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets. "
 "Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
+
+#, python-format
+msgid "Earliest suitable harvest date: %(date)s."
+msgstr "Tidligste egnede høstedato: %(date)s."
+
+msgid "Earliest suitable harvest date: not known."
+msgstr "Tidligste egnede høstedato: ukjent."
 
 msgid "Earthen"
 msgstr "Jord"
@@ -3872,16 +3937,27 @@ msgstr "Driftskonsoll for kar, vannkvalitet og fiskebeholdning."
 msgid "Fasting"
 msgstr "Sulting"
 
+msgid "Fasting before it"
+msgstr "Sulting før"
+
 msgid "Fasting before it (hours)"
 msgstr "Sulting før (timer)"
 
 #, python-format
-msgid "Fasting before the harvest of %(date)s: from %(start)s (%(hours)d h)."
-msgstr "Sulting før høstingen %(date)s: fra %(start)s (%(hours)d t)."
+msgid "Fasting before the harvest of %(date)s: %(asks)s."
+msgstr "Sulting før høstingen %(date)s: %(asks)s."
 
 #, python-format
-msgid "Fasting before the transport of %(date)s: from %(start)s (%(hours)d h)."
-msgstr "Sulting før transporten %(date)s: fra %(start)s (%(hours)d t)."
+msgid "Fasting before the harvest of %(date)s: from %(start)s (%(asks)s)."
+msgstr "Sulting før høstingen %(date)s: fra %(start)s (%(asks)s)."
+
+#, python-format
+msgid "Fasting before the transport of %(date)s: %(asks)s."
+msgstr "Sulting før transporten %(date)s: %(asks)s."
+
+#, python-format
+msgid "Fasting before the transport of %(date)s: from %(start)s (%(asks)s)."
+msgstr "Sulting før transporten %(date)s: fra %(start)s (%(asks)s)."
 
 msgid "Fed"
 msgstr "Fôret"
@@ -4355,6 +4431,9 @@ msgstr "Gi kanalen et navn."
 msgid "Give the citation of the source, its web address, or both."
 msgstr "Oppgi kildehenvisningen, nettadressen eller begge."
 
+msgid "Give the fast in hours or days, in degree-days, or both."
+msgstr "Oppgi sultingen i timer eller dager, i døgngrader eller begge deler."
+
 msgid "Give the point a name."
 msgstr "Gi punktet et navn."
 
@@ -4384,6 +4463,9 @@ msgstr "Gitt %(given)s"
 
 msgid "Go on despite these warnings"
 msgstr "Fortsett tross disse advarslene"
+
+msgid "Going on is stored with what is shown here and logged as critical."
+msgstr "Å fortsette lagres med det som vises her og logges som kritisk."
 
 msgid "Grading"
 msgstr "Sortering"
@@ -4614,16 +4696,20 @@ msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 
 msgid ""
 "How long fish must have been without feed before they are harvested, transported, graded or "
-"treated, counted from their last feeding to the start of that day. A species’ own rule wins over "
+"treated, counted from their last feeding to the start of that day, in hours or days. A harvest "
+"can also ask for purging in degree-days: the fish are held without feed, in clean water, so that "
+"any off-flavour clears; both must be reached when both are given. A species’ own rule wins over "
 "the rule for every species; a grading takes the longer of its rule and the transport rule. Too "
 "short a fast is a warning, never a block: going on is recorded and logged as critical. These are "
 "the farm’s own rules: the starting values are to be checked with your veterinarian."
 msgstr ""
 "Hvor lenge fisken må ha vært uten fôr før den høstes, transporteres, sorteres eller behandles, "
-"regnet fra siste fôring til starten av den dagen. En arts egen regel går foran regelen for alle "
-"arter; en sortering tar den lengste av sin egen regel og transportregelen. For kort sulting er en"
-" advarsel, aldri en sperre: å fortsette registreres og logges som kritisk. Dette er anleggets "
-"egne regler: startverdiene skal sjekkes med veterinæren."
+"regnet fra siste fôring til starten av den dagen, i timer eller dager. En høsting kan også kreve "
+"rensing i døgngrader: fisken holdes uten fôr i rent vann slik at smaksavvik forsvinner; begge må "
+"nås når begge er oppgitt. En arts egen regel går foran regelen for alle arter; en sortering tar "
+"den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
+" fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
+"kontrolleres med veterinæren din."
 
 msgid "Hydrochloric acid"
 msgstr "Saltsyre"
@@ -4957,12 +5043,12 @@ msgid "Last fed"
 msgstr "Sist fôret"
 
 #, python-format
-msgid "Last fed %(moment)s, %(hours)s h before %(day)s: the %(kind)s rule asks for %(required)d h."
-msgstr "Sist fôret %(moment)s, %(hours)s t før %(day)s: regelen for %(kind)s krever %(required)d t."
+msgid "Last fed %(moment)s, %(fasted)s before %(day)s: the %(kind)s rule asks for %(asked)s."
+msgstr "Sist fôret %(moment)s, %(fasted)s før %(day)s: regelen for %(kind)s krever %(asked)s."
 
 #, python-format
-msgid "Last fed %(when)s: %(hours)s h before %(day)s."
-msgstr "Sist fôret %(when)s: %(hours)s t før %(day)s."
+msgid "Last fed %(when)s: %(fasted)s before %(day)s."
+msgstr "Sist fôret %(when)s: %(fasted)s før %(day)s."
 
 msgid "Last movement"
 msgstr "Siste bevegelse"
@@ -5270,23 +5356,22 @@ msgstr "Medisinskap"
 msgid "Medicine withdrawal"
 msgstr "Tilbakeholdelsestid"
 
+msgid "Medicine withdrawal decides: its end is unknown."
+msgstr "Tilbakeholdelsestiden avgjør: slutten er ukjent."
+
+#, python-format
+msgid "Medicine withdrawal decides: until %(date)s."
+msgstr "Tilbakeholdelsestiden avgjør: til %(date)s."
+
+#, python-format
+msgid "Medicine withdrawal decides: until about %(date)s."
+msgstr "Tilbakeholdelsestiden avgjør: til omtrent %(date)s."
+
 msgid "Medicine withdrawal not checked"
 msgstr "Tilbakeholdelsestid ikke kontrollert"
 
 msgid "Medicine withdrawal not checked: the health records are not in yet."
 msgstr "Tilbakeholdelsestid ikke kontrollert: helseregistreringene er ikke på plass ennå."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s until %(date)s."
-msgstr "Tilbakeholdelsestid for %(batch)s til %(date)s."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s until about %(date)s."
-msgstr "Tilbakeholdelsestid for %(batch)s til omtrent %(date)s."
-
-#, python-format
-msgid "Medicine withdrawal of %(batch)s, its end unknown."
-msgstr "Tilbakeholdelsestid for %(batch)s, slutten ukjent."
 
 msgid "Medicines"
 msgstr "Legemidler"
@@ -5882,6 +5967,15 @@ msgstr "Uten volum: bare dosene per m³."
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
 
+#, python-format
+msgid "No withdrawal is recorded for %(species)s of %(medicine)s: add it in Reference data › Medicines."
+msgstr ""
+"Ingen tilbakeholdelsestid er registrert for %(species)s av %(medicine)s: legg den inn i "
+"Referansedata › Legemidler."
+
+msgid "No withdrawal yet. Use “Add species” to add a row."
+msgstr "Ingen tilbakeholdelsestid ennå. Bruk «Legg til art» for å legge til en rad."
+
 msgid "Nobody"
 msgstr "Ingen"
 
@@ -5965,6 +6059,9 @@ msgstr "Ikke vurdert"
 #, python-format
 msgid "Not reached within %(days)d days at this rate."
 msgstr "Nås ikke innen %(days)d dager i dette tempoet."
+
+msgid "Not recorded"
+msgstr "Ikke registrert"
 
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
@@ -6374,6 +6471,9 @@ msgstr "Annet språk"
 
 msgid "Other parasites (e.g. AGD)"
 msgstr "Andre parasitter (f.eks. AGD)"
+
+msgid "Other species"
+msgstr "Andre arter"
 
 msgid "Other, without a medicine"
 msgstr "Annen, uten legemiddel"
@@ -6785,6 +6885,14 @@ msgstr "Produksjonsplaner"
 msgid "Production units"
 msgstr "Produksjonsenheter"
 
+#, python-format
+msgid ""
+"Projected at the assumed %(temperature)s °C (the species’ setting in Reference data): no water "
+"temperature was measured in the last %(days)d days."
+msgstr ""
+"Anslått med den antatte %(temperature)s °C (artens innstilling i Referansedata): ingen "
+"vanntemperatur ble målt de siste %(days)d dagene."
+
 msgid "Projected at the mean water temperature of the last days measured."
 msgstr "Fremskrevet med middeltemperaturen i vannet de siste målte dagene."
 
@@ -6828,6 +6936,27 @@ msgstr "Kjøpsdato"
 
 msgid "Purchasing"
 msgstr "Innkjøp"
+
+msgid "Purging before it (degree-days)"
+msgstr "Rensing før (døgngrader)"
+
+msgid "Purging decides."
+msgstr "Rensingen avgjør."
+
+#, python-format
+msgid "Purging decides: feeding must stop by %(date)s."
+msgstr "Rensingen avgjør: fôringen må stoppe senest %(date)s."
+
+msgid ""
+"Purging: the fish are held without feed, in clean water, so that any off-flavour clears, for this"
+" many degree-days (the daily mean water temperatures added up over the full days since the last "
+"feeding). Only for fish that are harvested and sent to the factory. Given with hours or days, "
+"both must be reached."
+msgstr ""
+"Rensing: fisken holdes uten fôr i rent vann, slik at smaksavvik forsvinner, i så mange døgngrader"
+" (de daglige gjennomsnittlige vanntemperaturene lagt sammen over hele døgn siden siste fôring). "
+"Bare for fisk som høstes og sendes til slakteriet. Oppgis den sammen med timer eller dager, må "
+"begge nås."
 
 msgid "Quality"
 msgstr "Kvalitet"
@@ -7237,6 +7366,9 @@ msgstr "Trygg sone: tegnes ikke, alkalitetsbåndet er tomt (den øvre enden er i
 msgid "Safety"
 msgstr "Sikkerhet"
 
+msgid "Safety margin (%)"
+msgstr "Sikkerhetsmargin (%)"
+
 msgid "Salinity"
 msgstr "Salinitet"
 
@@ -7321,6 +7453,9 @@ msgstr "Lagre teamet"
 
 msgid "Save the equipment with this feeder type first; then its calibrations can be added here."
 msgstr "Lagre utstyret med denne fôrautomattypen først; deretter kan kalibreringene legges til her."
+
+msgid "Save withdrawal"
+msgstr "Lagre tilbakeholdelsestid"
 
 msgid "Say what it was: the method or the reason is “other”."
 msgstr "Si hva det var: metoden eller årsaken er «annen»."
@@ -8250,8 +8385,8 @@ msgid "That unit or system is no longer there: the values are as entered."
 msgstr "Den enheten eller det systemet finnes ikke lenger: verdiene er som lagt inn."
 
 #, python-format
-msgid "The %(kind)s rule for %(species)s asks for %(hours)d h."
-msgstr "Regelen for %(kind)s for %(species)s krever %(hours)d t."
+msgid "The %(kind)s rule for %(species)s asks for %(asked)s."
+msgstr "Regelen for %(kind)s for %(species)s krever %(asked)s."
 
 #, python-format
 msgid ""
@@ -8414,6 +8549,19 @@ msgstr "Ukedagene den har frist."
 
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
+
+#, python-format
+msgid "The degree-days are not reached in %(days)d days at these temperatures."
+msgstr "Døgngradene nås ikke på %(days)d dager ved disse temperaturene."
+
+msgid ""
+"The degree-days one day counts for when no water temperature was measured: a past day without "
+"one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
+" low value is the conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C."
+msgstr ""
+"Døgngradene én dag teller for når ingen vanntemperatur er målt: en dag i fortiden uten måling, og"
+" en tilbakeholdelsestid som anslås når ingenting er målt. Det er driftens egen antakelse: en lav "
+"verdi er det forsiktige valget. Tom: en slik dag telles som 0 °C. 0 til 40 °C."
 
 msgid "The depth of the water taken, from the surface."
 msgstr "Dybden vannet tas fra, regnet fra overflaten."
@@ -8581,10 +8729,12 @@ msgstr "Fisken går til en annen enhet."
 
 msgid ""
 "The fish must have had no feed for at least this long before the handling, counted to the start "
-"of its day. 0 to 720."
+"of its day: hours or days (5 days is stored as 120 hours). 0 to 720 hours (30 days). For a "
+"harvest it can be left empty when the purging is given in degree-days."
 msgstr ""
-"Fisken må ha vært uten fôr minst så lenge før håndteringen, regnet til starten av dagen. 0 til "
-"720."
+"Fisken må ha vært uten fôr minst så lenge før håndteringen, regnet til starten av dagen: timer "
+"eller dager (5 dager lagres som 120 timer). 0 til 720 timer (30 dager). For en høsting kan feltet"
+" stå tomt når rensingen oppgis i døgngrader."
 
 #, python-format
 msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
@@ -9202,24 +9352,45 @@ msgstr "Veiingen %(date)s i %(unit)s ville ikke funnet fisk av %(batch)s. Annull
 msgid "The width cannot be more than the length."
 msgstr "Bredden kan ikke være større enn lengden."
 
+#, python-format
 msgid ""
-"The withdrawal counts from the last day of the course, with the medicine’s degree-days or days "
-"(Reference data › Medicines), and follows the fish wherever they are moved."
+"The withdrawal after the last treatment day, as the SPC states it: degree-days (døgngrader) and "
+"days, one or both, per species; leave the species empty for every species without a row of its "
+"own. Give both when the SPC gives both: the later end wins. 0 means none. The safety margin is "
+"your own, on top of the SPC’s value: the value used is rounded up, e.g. 150 degree-days and 20 %%"
+" is 180. Fish of a species with no row (and no row for every species) are held with an unknown "
+"end. One row per species, at most 50. They are saved separately from the medicine details."
 msgstr ""
-"Tilbakeholdelsestiden regnes fra siste behandlingsdag, med legemiddelets døgngrader eller dager "
-"(Referansedata › Legemidler), og følger fisken uansett hvor den flyttes."
+"Tilbakeholdelsestiden etter siste behandlingsdag, slik preparatomtalen oppgir den: døgngrader og "
+"dager, én eller begge, per art; la arten stå tom for alle arter uten en egen rad. Oppgi begge når"
+" preparatomtalen gir begge: det seneste utløpet gjelder. 0 betyr ingen. Sikkerhetsmarginen er din"
+" egen, oppå verdien i preparatomtalen: verdien som brukes rundes opp, f.eks. 150 døgngrader og 20"
+" %% blir 180. Fisk av en art uten rad (og uten rad for alle arter) holdes tilbake med ukjent "
+"slutt. Én rad per art, høyst 50. De lagres atskilt fra legemiddeldetaljene."
+
+msgid "The withdrawal can be added once the medicine is created."
+msgstr "Tilbakeholdelsestiden kan legges inn når legemidlet er opprettet."
+
+msgid ""
+"The withdrawal counts from the last day of the course, with the medicine’s withdrawal for the "
+"fish’s species (Reference data › Medicines), and follows the fish wherever they are moved."
+msgstr ""
+"Tilbakeholdelsestiden regnes fra siste behandlingsdag, med legemiddelets tilbakeholdelsestid for "
+"fiskens art (Referansedata › Legemidler), og følger fisken uansett hvor den flyttes."
 
 msgid "The withdrawal counts from the new last day; the change is logged."
 msgstr "Tilbakeholdelsestiden regnes fra den nye siste dagen; endringen logges."
 
 msgid ""
-"The withdrawal is the product’s, as its SPC states it, in degree-days, days or both; nothing is "
-"filled in for you. A treatment counts it from its last day, on the water temperature of the "
-"fish’s units (Operations › Treatments)."
+"The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, "
+"with your own safety margin on top; nothing is filled in for you. A treatment counts it from its "
+"last day, on the water temperature of the fish’s units (Operations › Treatments). Fish of a "
+"species with no withdrawal recorded are held with an unknown end."
 msgstr ""
-"Tilbakeholdelsestiden er produktets, slik preparatomtalen oppgir den, i døgngrader, dager eller "
-"begge; ingenting fylles inn for deg. En behandling regner den fra siste dag, på vanntemperaturen "
-"i fiskens enheter (Drift › Behandlinger)."
+"Tilbakeholdelsestiden er produktets, slik preparatomtalen oppgir den per art, i døgngrader, dager"
+" eller begge, med din egen sikkerhetsmargin oppå; ingenting fylles inn for deg. En behandling "
+"regner den fra siste dag, på vanntemperaturen i fiskens enheter (Drift › Behandlinger). Fisk av "
+"en art uten registrert tilbakeholdelsestid holdes tilbake med ukjent slutt."
 
 msgid "The year cannot be later than next year (in press)."
 msgstr "Året kan ikke være senere enn neste år (i trykken)."
@@ -9547,6 +9718,9 @@ msgstr "To grupper heter %(name)s."
 #, python-format
 msgid "Two items of the pool have the code %(code)s."
 msgstr "To elementer i utvalget har koden %(code)s."
+
+msgid "Two rows are for the same species."
+msgstr "To rader gjelder samme art."
 
 msgid "Two rows have the same feed size."
 msgstr "To rader har samme fôrstørrelse."
@@ -10330,6 +10504,9 @@ msgstr "kritisk under %(value)s"
 msgid "criticality %(level)d"
 msgstr "kritikalitet %(level)d"
 
+msgid "days"
+msgstr "dager"
+
 msgid "deleted"
 msgstr "slettet"
 
@@ -10385,6 +10562,9 @@ msgstr "f.eks. 150"
 msgid "e.g. 1–10 kg/h"
 msgstr "f.eks. 1–10 kg/h"
 
+msgid "e.g. 20"
+msgstr "f.eks. 20"
+
 msgid "e.g. 2000"
 msgstr "f.eks. 2000"
 
@@ -10424,8 +10604,17 @@ msgstr "f.eks. 5000"
 msgid "e.g. 50000"
 msgstr "f.eks. 50000"
 
+msgid "e.g. 60"
+msgstr "f.eks. 60"
+
 msgid "e.g. 60.3913"
 msgstr "f.eks. 60,3913"
+
+msgid "e.g. 7"
+msgstr "f.eks. 7"
+
+msgid "e.g. 8"
+msgstr "f.eks. 8"
 
 msgid "e.g. 923456789"
 msgstr "f.eks. 923456789"
@@ -10738,6 +10927,9 @@ msgstr "helsehendelse"
 msgid "health events"
 msgstr "helsehendelser"
 
+msgid "hours"
+msgstr "timer"
+
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."
 
@@ -10809,12 +11001,18 @@ msgstr "måltidene er gitt"
 msgid "medicine"
 msgstr "legemiddel"
 
+msgid "medicine withdrawal"
+msgstr "legemiddelets tilbakeholdelsestid"
+
 #, python-format
 msgid "medicine withdrawal until %(date)s"
 msgstr "tilbakeholdelsestid til %(date)s"
 
 msgid "medicine withdrawal, end unknown"
 msgstr "tilbakeholdelsestid, slutt ukjent"
+
+msgid "medicine withdrawals"
+msgstr "legemidlers tilbakeholdelsestider"
 
 msgid "medicines"
 msgstr "legemidler"

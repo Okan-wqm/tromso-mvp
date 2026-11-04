@@ -1,7 +1,8 @@
 """Handling fish: the farm's fasting rules (Setup › Reference data › Handling rules) and the acknowledgements
-people give when they go on past a handling warning (a medicine withdrawal, too short a fast). The check
-itself is farm/handling/; nothing here blocks anything (owner decision: warn, never block)."""
-from django.core.validators import MaxValueValidator
+people give when they go on past a handling warning (a medicine withdrawal before a harvest, too short a fast).
+The check itself is farm/handling/; nothing here blocks anything (owner decision: warn, never block)."""
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +13,10 @@ from .species import Species
 from .stock import OperationKind, StockOperation
 
 MAX_FASTING_HOURS = 720     # 30 days: a rule above it is a typing slip, not a fast
+MAX_FASTING_DEGREE_DAYS = 1000   # a purge of more degree-days is a typing slip, too
+HOURS_MESSAGE = _('At most 720 hours (30 days).')
+FAST_MESSAGE = _('Give the fast in hours or days, in degree-days, or both.')
+HARVEST_ONLY_MESSAGE = _('Degree-days are for the harvest only: fish that are moved or graded are not purged.')
 
 
 class HandlingKind(models.TextChoices):
@@ -32,9 +37,16 @@ KIND_OF_OPERATION = {
 
 
 class HandlingRule(AuditedModel):
-    """How many hours the fish must have been without feed before they are handled: one row per kind of
-    handling, for one species or for every species (no species). The species' row wins over the row for
-    every species; with neither, the fast is not checked and the dialog says so (no default is assumed).
+    """How long the fish must have been without feed before they are handled: one row per kind of handling, for
+    one species or for every species (no species). The species' row wins over the row for every species; with
+    neither, the fast is not checked and the dialog says so (no default is assumed).
+
+    The fast is in hours, stored in the one hours column (a form enters hours or days, 5 days is 120 hours, and
+    shows a rule of whole days back as days), and, **for a harvest only**, in degree-days: the purging of fish that
+    are sent to the factory, held without feed in clean water so that any off-flavour clears (the sum of the daily
+    mean water temperatures of the full days since the last feeding, farm/water/degree_days.py). A rule has the one
+    or the other or both (a database check) and, with both, each must be reached. Hours stay required for every
+    other kind.
 
     These are the farm's own rules: the starting values the migration writes (0017) are to be checked with
     the farm's veterinarian, and each says where it comes from. Too short a fast is a warning; going on
@@ -46,8 +58,12 @@ class HandlingRule(AuditedModel):
     # CASCADE: a species' rules go with it, as its water limits do (core.softdelete lists them).
     species = models.ForeignKey(Species, null=True, blank=True, on_delete=models.CASCADE,
                                 related_name='handling_rules', verbose_name=_('Species'))
-    min_fasting_hours = models.PositiveSmallIntegerField(_('Fasting before it (hours)'),
-                                                         validators=[MaxValueValidator(MAX_FASTING_HOURS)])
+    min_fasting_hours = models.PositiveSmallIntegerField(
+        _('Fasting before it (hours)'), null=True, blank=True,
+        validators=[MaxValueValidator(MAX_FASTING_HOURS, message=HOURS_MESSAGE)])
+    min_fasting_degree_days = models.DecimalField(
+        _('Purging before it (degree-days)'), max_digits=6, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(MAX_FASTING_DEGREE_DAYS)])
     note = models.CharField(_('Source of the value'), max_length=500, blank=True)
 
     class Meta:
@@ -63,13 +79,32 @@ class HandlingRule(AuditedModel):
                 violation_error_message=_('There is already a rule for this handling and species.')),
             models.CheckConstraint(condition=Q(kind__in=HandlingKind.values), name='chk_handling_rules_kind'),
             models.CheckConstraint(condition=Q(min_fasting_hours__lte=MAX_FASTING_HOURS),
-                                   name='chk_handling_rules_hours',
-                                   violation_error_message=_('At most 720 hours (30 days).')),
+                                   name='chk_handling_rules_hours', violation_error_message=HOURS_MESSAGE),
+            models.CheckConstraint(
+                condition=Q(min_fasting_degree_days__gte=0, min_fasting_degree_days__lte=MAX_FASTING_DEGREE_DAYS),
+                name='chk_handling_rules_degree_days'),
+            models.CheckConstraint(
+                condition=Q(min_fasting_hours__isnull=False) | Q(min_fasting_degree_days__isnull=False),
+                name='chk_handling_rules_fast', violation_error_message=FAST_MESSAGE),
+            models.CheckConstraint(
+                condition=Q(kind=HandlingKind.HARVEST) | Q(min_fasting_degree_days__isnull=True),
+                name='chk_handling_rules_degree_days_harvest', violation_error_message=HARVEST_ONLY_MESSAGE),
         ]
 
     def __str__(self):
         species = self.species.common_name if self.species_id else _('every species')
         return f'{self.get_kind_display()} · {species}'
+
+    def clean(self):
+        """The rules between fields, with the error on the field to change; the database checks them too."""
+        super().clean()
+        errors = {}
+        if self.min_fasting_degree_days is not None and self.kind != HandlingKind.HARVEST:
+            errors['min_fasting_degree_days'] = ValidationError(HARVEST_ONLY_MESSAGE)
+        elif self.min_fasting_hours is None and self.min_fasting_degree_days is None:
+            errors['min_fasting_hours'] = ValidationError(FAST_MESSAGE)
+        if errors:
+            raise ValidationError(errors)
 
 
 class AcknowledgedWarning(models.TextChoices):
@@ -79,18 +114,25 @@ class AcknowledgedWarning(models.TextChoices):
 
 def _shape():
     """A withdrawal row keeps what the person saw of the withdrawal, a fasting row what they saw of the fast;
-    the other's columns stay empty."""
-    fasting = ('last_fed_at', 'fasted_hours', 'required_hours', 'rule')
+    the other's columns stay empty. A fasting row has its last feeding, the hours fasted and the rule, and at least
+    one of the two things the rule asked for not reached: the hours (`fasted_hours < required_hours`) or, for a
+    harvest's purging, the degree-days; the degree-days are both given or both empty."""
+    fasting = ('last_fed_at', 'fasted_hours', 'required_hours', 'rule', 'fasted_degree_days', 'required_degree_days')
     no_withdrawal = Q(withdrawal_until__isnull=True, withdrawal_approximate=False, withdrawal_reason='')
+    unmet = (Q(required_hours__isnull=False, fasted_hours__lt=models.F('required_hours'))
+             | Q(required_degree_days__isnull=False, fasted_degree_days__lt=models.F('required_degree_days')))
+    both_or_neither = (Q(required_degree_days__isnull=True, fasted_degree_days__isnull=True)
+                       | Q(required_degree_days__isnull=False, fasted_degree_days__isnull=False))
     return (Q(warning=AcknowledgedWarning.WITHDRAWAL, **{f'{name}__isnull': True for name in fasting})
-            | (Q(warning=AcknowledgedWarning.FASTING, fasted_hours__lt=models.F('required_hours'),
-                 **{f'{name}__isnull': False for name in fasting}) & no_withdrawal))
+            | (Q(warning=AcknowledgedWarning.FASTING, last_fed_at__isnull=False, fasted_hours__isnull=False,
+                 rule__isnull=False) & unmet & both_or_neither & no_withdrawal))
 
 
 class HandlingAcknowledgement(models.Model):
     """One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a
     treatment): a medicine withdrawal in force, or too short a fast. It keeps what they were shown, the
-    withdrawal's end and reason, or the hours fasted against the hours the rule asked for, so the record says
+    withdrawal's end and reason, or the hours (and for a harvest's purging the degree-days) fasted against what the
+    rule asked for, so the record says
     what was known at the time. It belongs to the stock operation or to the treatment it was given for, exactly
     one (a database check). Who and when are that record's (it is written in the same transaction); its
     activity-log entry is critical. Rows are never edited; voiding the record leaves them as history."""
@@ -107,6 +149,10 @@ class HandlingAcknowledgement(models.Model):
     last_fed_at = models.DateTimeField(_('Last fed'), null=True, blank=True)
     fasted_hours = models.DecimalField(_('Hours fasted'), max_digits=6, decimal_places=1, null=True, blank=True)
     required_hours = models.PositiveSmallIntegerField(_('Hours the rule asks for'), null=True, blank=True)
+    fasted_degree_days = models.DecimalField(_('Degree-days fasted'), max_digits=6, decimal_places=1, null=True,
+                                             blank=True)
+    required_degree_days = models.DecimalField(_('Degree-days the rule asks for'), max_digits=6, decimal_places=1,
+                                               null=True, blank=True)
     rule = models.ForeignKey(HandlingRule, null=True, blank=True, on_delete=models.PROTECT,
                              related_name='acknowledgements', verbose_name=_('Handling rule'))
 
@@ -121,6 +167,8 @@ class HandlingAcknowledgement(models.Model):
             models.CheckConstraint(condition=_shape(), name='chk_handling_acknowledgements_shape'),
             models.CheckConstraint(condition=Q(fasted_hours__isnull=True) | Q(fasted_hours__gte=0),
                                    name='chk_handling_acknowledgements_fasted'),
+            models.CheckConstraint(condition=Q(fasted_degree_days__isnull=True) | Q(fasted_degree_days__gte=0),
+                                   name='chk_handling_acknowledgements_fasted_degree_days'),
             models.CheckConstraint(
                 condition=Q(operation__isnull=False, treatment__isnull=True)
                 | Q(operation__isnull=True, treatment__isnull=False),

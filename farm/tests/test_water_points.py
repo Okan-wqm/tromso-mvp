@@ -637,12 +637,13 @@ class ReadTests(PointTestCase):
         self.assertEqual((found.value_c, found.via, found.point, found.fresh), (D('9.0'), 'unit', self.t1, True))
 
     def test_the_withdrawals_daily_mean_reads_the_same_places(self):
-        from ..health.withdrawal import Temperatures
+        from ..water.degree_days import Temperatures
         from ..stock.dates import local_today
         today = local_today(self.t1)
-        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='20')
-        self.sample(point=self.t1, hours=1, temperature_c='8')
-        self.sample(point=self.loop, hours=1, temperature_c='11')
+        # Taken now, not an hour ago: in the first hour of the farm's day an hour ago is yesterday's daily mean.
+        self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=0, temperature_c='20')
+        self.sample(point=self.t1, hours=0, temperature_c='8')
+        self.sample(point=self.loop, hours=0, temperature_c='11')
         temperatures = Temperatures([self.t1, self.t2], today - timedelta(days=1), today)
         self.assertEqual(temperatures.of(self.t1.pk, today), D(8))                # the unit's own, not the inlet's
         self.assertEqual(temperatures.of(self.t2.pk, today), D(11))               # else its system's loop
@@ -672,7 +673,7 @@ class ReadTests(PointTestCase):
         the water module reads the samples: the places a unit's water is read from are defined once."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[1]
-        for module in ('feeding/temperature.py', 'health/withdrawal.py'):
+        for module in ('feeding/temperature.py', 'water/degree_days.py'):
             self.assertIn('water_sources(', (root / module).read_text(encoding='utf-8'), module)
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
                          if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)

@@ -290,6 +290,58 @@ async fn the_dead_letter_flood_is_capped_and_readings_never_are() {
     assert_eq!(r.get::<_, i32>(2), 6);
 }
 
+/// Late data and redeliveries into a COMPRESSED chunk (20 days back; compression runs after 14) and into a recent
+/// uncompressed one (5 days back): new keys are stored, existing keys are not stored twice, as the role.
+#[tokio::test]
+async fn late_rows_and_duplicates_reach_compressed_and_recent_chunks() {
+    let Some(url) = url() else { return };
+    let _g = serial();
+    let a = admin(&url).await;
+    let s = setup(&a).await;
+    let mut c = ingest(&url).await;
+    let old = DateTime::from_timestamp((Utc::now() - Duration::days(20)).timestamp(), 0).unwrap();
+    let row = |ts: DateTime<Utc>, v: f64| Reading {
+        channel_no: s.ch_b,
+        row: Row { ts, value: v, n: 1, quality: 0, run_sum: None, run_min: None, run_max: None },
+    };
+    let first = Output {
+        readings: (0..10).map(|i| row(old + Duration::seconds(i * 10), i as f64)).collect(),
+        ..Output::default()
+    };
+    db::write_batch(&mut c, &first, &status(&s.fx)).await.unwrap();
+    let compressed: i64 = a
+        .query_one(
+            "SELECT count(compress_chunk(ch, if_not_compressed => true)) FROM show_chunks('sensors_reading', older_than => now() - interval '12 days') ch",
+            &[],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert!(compressed >= 1, "a chunk 20 days back was compressed");
+    let recent = DateTime::from_timestamp((Utc::now() - Duration::days(5)).timestamp(), 0).unwrap();
+    let late = Output {
+        readings: vec![
+            row(old + Duration::seconds(5), 0.5),   // new key inside the compressed chunk
+            row(old + Duration::seconds(10), 99.0), // existing key: a redelivery, not stored twice
+            row(recent, 7.0),                       // five days late, uncompressed chunk
+            row(recent, 7.0),                       // the same key twice in one batch
+        ],
+        ..Output::default()
+    };
+    let w = db::write_batch(&mut c, &late, &status(&s.fx)).await.unwrap();
+    assert_eq!((w.readings_inserted, w.readings_existing), (2, 2));
+    let v: f64 = a
+        .query_one(
+            "SELECT value FROM sensors_reading WHERE channel_no = $1 AND ts = $2",
+            &[&s.ch_b, &(old + Duration::seconds(10))],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(v, 1.0, "the stored row is kept, never overwritten");
+    assert_eq!(count(&a, "SELECT count(*) FROM sensors_reading").await, 12);
+}
+
 #[tokio::test]
 async fn the_ingest_role_cannot_read_readings_or_configuration() {
     let Some(url) = url() else { return };

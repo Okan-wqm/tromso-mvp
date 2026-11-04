@@ -121,17 +121,27 @@ drain)
   out "WAL $(( (WAL1 - WAL0) / 1048576 )) MiB during the drain"
   out "healthz: $(healthz)"
   ;;
-brokerkill)
-  ( sleep 10; docker kill -s KILL bench-broker >/dev/null; sleep 3; docker start bench-broker >/dev/null ) &
-  P=$(publish RATE=500 SECONDS=40 DEVICES=1 CHANNELS=1 TOPIC_PREFIX=bench/kill- CLIENT_ID=bench-kill ACKED_FILE=/w/sensors-ingest/bench/.state/acked.txt)
-  wait
+brokerkill|brokerkill-queued)
+  if [ "$PHASE" = brokerkill ]; then
+    # the ingest is running: messages pass the broker within milliseconds
+    ( sleep 10; docker kill -s KILL bench-broker >/dev/null; sleep 3; docker start bench-broker >/dev/null ) &
+    P=$(publish RATE=500 SECONDS=40 DEVICES=1 CHANNELS=1 TOPIC_PREFIX=bench/kill- CLIENT_ID=bench-kill ACKED_FILE=/w/sensors-ingest/bench/.state/acked.txt)
+    wait
+  else
+    # the ingest is stopped: everything waits in its session in the broker's memory (saved every autosave_interval)
+    docker stop -t 60 bench-ingest >/dev/null
+    P=$(publish RATE=500 SECONDS=12 DEVICES=1 CHANNELS=1 TOPIC_PREFIX=bench/kill- CLIENT_ID=bench-kill ACKED_FILE=/w/sensors-ingest/bench/.state/acked.txt)
+    docker kill -s KILL bench-broker >/dev/null; sleep 2; docker start bench-broker >/dev/null; sleep 2
+    docker start bench-ingest >/dev/null
+  fi
   sleep 15
   BASE=$(echo "$P" | sed -n 's/.*base_ms=\([0-9]*\).*/\1/p'); STEP=$(echo "$P" | sed -n 's/.*step_ms=\([0-9]*\).*/\1/p')
   docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik -v "$(win "$PWD/$STATE"):/s:ro" "$PG_IMAGE" \
     psql -h db -U balik -d $DB -Atq -c "CREATE TEMP TABLE acked(d int, s bigint)" -c "\copy acked FROM '/s/acked.txt' DELIMITER ' '" \
     -c "SELECT count(*) || ' acknowledged by the broker, ' || count(*) FILTER (WHERE r.ts IS NULL) || ' of them never stored' FROM acked a LEFT JOIN sensors_reading r ON r.channel_no = (SELECT channel_no FROM sensors_channel WHERE code = 'K0') AND r.ts = to_timestamp(($BASE + a.s * $STEP) / 1000.0)" > "$STATE/kill.txt"
   out "publisher: $(echo "$P" | tail -1)"
-  out "broker SIGKILL 10 s into a 500 msg/s QoS 1 stream, restarted 3 s later: $(cat "$STATE/kill.txt")"
+  if [ "$PHASE" = brokerkill ]; then WHAT="broker SIGKILL 10 s into a 500 msg/s QoS 1 stream, ingest running"; else WHAT="12 s of 500 msg/s queued for the stopped ingest, broker SIGKILL right after the last PUBACK"; fi
+  out "$WHAT: $(cat "$STATE/kill.txt")"
   out "healthz: $(healthz)"
   ;;
 poison)

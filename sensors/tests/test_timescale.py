@@ -1,0 +1,257 @@
+"""The TimescaleDB objects of the sensors, checked in the catalogue and by behaviour (spikes S0b to S0d, kept as tests):
+the readings hypertable with its chunk interval, compression and retention; a managed model with a composite primary
+key read and written through the ORM; a late row and a redelivered row into a compressed chunk; the licence of the
+pinned image's build; the two continuous aggregates (1 minute over the readings, 1 hour over the minutes) with their
+policies, exact against a direct computation over the unreduced stream, bad rows left out; and a refresh after raw
+chunks are dropped keeps the rollups."""
+import json
+import random
+from datetime import datetime, timedelta, timezone as tz
+
+from django.db import IntegrityError, connection, transaction
+from django.test import TestCase, TransactionTestCase
+
+from sensors import quality
+from sensors.models import Contract, Reading
+
+from . import one, rows
+
+START = datetime(2026, 10, 1, tzinfo=tz.utc)
+
+
+def insert(rows_):
+    """(channel_no, ts, value, n, quality, run_sum, run_min, run_max) rows, as the ingest writes them."""
+    with connection.cursor() as cursor:
+        cursor.executemany(
+            'INSERT INTO sensors_reading (channel_no, ts, value, n, quality, run_sum, run_min, run_max) '
+            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (channel_no, ts) DO NOTHING', rows_)
+
+
+def stream(channel_no, start, count, step=timedelta(seconds=1), seed=1):
+    """A channel's unreduced messages: (ts, value), one per `step`, with plateaus and noise."""
+    generator = random.Random(seed)
+    value, found = 10.0, []
+    for number in range(count):
+        if generator.random() < 0.3:
+            value = round(value + generator.uniform(-0.3, 0.3), 2)
+        found.append((start + number * step, value))
+    return found
+
+
+def reduce(channel_no, messages, seed=2, bad_every=0):
+    """Stored rows of the messages, as the contract describes them: each row closes a run of messages (random length,
+    never across a minute border so the test also covers runs inside a bucket) and stands for them; every `bad_every`-th
+    row is flagged bad (out of range)."""
+    generator = random.Random(seed)
+    stored, run = [], []
+    for index, (moment, value) in enumerate(messages):
+        run.append((moment, value))
+        last = index == len(messages) - 1
+        crosses = not last and messages[index + 1][0].replace(second=0, microsecond=0) != moment.replace(second=0,
+                                                                                                        microsecond=0)
+        if last or crosses or generator.random() < 0.4:
+            values = [item[1] for item in run]
+            bad = bool(bad_every) and len(stored) % bad_every == bad_every - 1
+            flags = quality.OUT_OF_RANGE if bad else 0
+            if len(run) == 1:
+                stored.append((channel_no, moment, value, 1, flags, None, None, None))
+            else:
+                stored.append((channel_no, moment, value, len(run), flags, sum(values), min(values), max(values)))
+            run = []
+    return stored
+
+
+def expected(stored, width):
+    """{bucket start: (n, sum, min, max, last)} over the clean rows, worked out directly."""
+    found = {}
+    for channel_no, moment, value, n, flags, run_sum, run_min, run_max in stored:
+        if quality.is_bad(flags):
+            continue
+        seconds = int(width.total_seconds())
+        bucket = datetime.fromtimestamp(int(moment.timestamp()) // seconds * seconds, tz.utc)
+        n0, s0, lo, hi, last = found.get(bucket, (0, 0.0, None, None, None))
+        lo_v, hi_v = (run_min, run_max) if n > 1 else (value, value)
+        found[bucket] = (n0 + n, s0 + (run_sum if n > 1 else value), lo_v if lo is None else min(lo, lo_v),
+                         hi_v if hi is None else max(hi, hi_v), (moment, value) if last is None or moment > last[0]
+                         else last)
+    return {bucket: (n, total, lo, hi, last[1]) for bucket, (n, total, lo, hi, last) in found.items()}
+
+
+def rollup(view, channel_no):
+    return {bucket: (n, total, lo, hi, last) for bucket, n, total, lo, hi, last in rows(
+        f'SELECT bucket, n, sum_v, vmin, vmax, vlast FROM {view} WHERE channel_no = %s ORDER BY bucket', [channel_no])}
+
+
+class HypertableTests(TestCase):
+    def test_the_readings_are_a_hypertable_in_7_day_chunks(self):
+        self.assertEqual(one("SELECT time_interval FROM timescaledb_information.dimensions "
+                             "WHERE hypertable_name = 'sensors_reading' AND column_name = 'ts'"), timedelta(days=7))
+
+    def test_compression_is_per_channel_newest_first(self):
+        settings = rows("SELECT attname, segmentby_column_index, orderby_column_index, orderby_asc "
+                        "FROM timescaledb_information.compression_settings WHERE hypertable_name = 'sensors_reading' "
+                        "ORDER BY attname")
+        self.assertEqual(settings, [('channel_no', 1, None, None), ('ts', None, 1, False)])
+
+    def test_the_policies_compress_after_14_days_and_drop_after_the_contracts_retention(self):
+        jobs = {name: json.loads(config) for name, config in rows(
+            "SELECT proc_name, config FROM timescaledb_information.jobs WHERE hypertable_name = 'sensors_reading'")}
+        self.assertEqual(jobs['policy_compression']['compress_after'], '14 days')
+        retention_days = Contract.objects.get().retention_days
+        self.assertEqual(jobs['policy_retention']['drop_after'], f'{retention_days} days')
+
+    def test_the_licence_of_the_build_is_timescales_community_licence(self):
+        # Compression, continuous aggregates and policies are TSL features: the -oss build lacks them.
+        self.assertEqual(one('SHOW timescaledb.license'), 'timescale')
+        self.assertEqual(one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"), '2.17.2')
+
+    def test_the_orm_writes_and_reads_a_reading_by_its_composite_key(self):
+        moment = START + timedelta(minutes=5)
+        Reading.objects.create(channel_no=7, ts=moment, value=9.5)
+        reading = Reading.objects.get(pk=(7, moment))
+        self.assertEqual((reading.value, reading.n, reading.quality, reading.run_sum), (9.5, 1, 0, None))
+
+    def test_a_redelivered_row_is_stored_once(self):
+        row = (7, START, 9.5, 1, 0, None, None, None)
+        insert([row, row])
+        insert([(7, START, 9.9, 1, 0, None, None, None)])
+        self.assertEqual(rows('SELECT value FROM sensors_reading WHERE channel_no = 7'), [(9.5,)])
+
+    def test_the_rows_checks_hold_for_any_writer(self):
+        for constraint, row in (
+                ('chk_sensors_reading_value', (7, START, float('inf'), 1, 0, None, None, None)),
+                ('chk_sensors_reading_value', (7, START, float('nan'), 1, 0, None, None, None)),
+                ('chk_sensors_reading_quality', (7, START, 1.0, 1, 256, None, None, None)),
+                ('chk_sensors_reading_run', (7, START, 1.0, 0, 0, None, None, None)),
+                ('chk_sensors_reading_run', (7, START, 1.0, 1, 0, 1.0, 1.0, 1.0)),
+                ('chk_sensors_reading_run', (7, START, 1.0, 2, 0, None, None, None)),
+                ('chk_sensors_reading_run', (7, START, 1.0, 2, 0, 2.0, 1.0, None)),
+                ('chk_sensors_reading_run', (7, START, 5.0, 2, 0, 6.0, 1.0, 4.0)),
+                ('chk_sensors_reading_run', (7, START, 1.0, 2, 0, float('inf'), 1.0, 1.0))):
+            with self.subTest(row=row):
+                with self.assertRaises(IntegrityError) as caught, transaction.atomic():
+                    insert([row])
+                self.assertEqual(caught.exception.__cause__.diag.constraint_name, constraint)
+
+    def test_late_and_redelivered_rows_reach_a_compressed_chunk(self):
+        old = datetime(2026, 9, 1, 12, tzinfo=tz.utc)
+        insert([(7, old, 1.0, 1, 0, None, None, None), (7, old + timedelta(hours=1), 2.0, 1, 0, None, None, None)])
+        chunk = one("SELECT chunk_schema || '.' || chunk_name FROM timescaledb_information.chunks "
+                    "WHERE hypertable_name = 'sensors_reading' AND range_start <= %s AND range_end > %s", [old, old])
+        one('SELECT compress_chunk(%s::regclass)', [chunk])
+        self.assertTrue(one("SELECT is_compressed FROM timescaledb_information.chunks WHERE chunk_schema || '.' || "
+                            "chunk_name = %s", [chunk]))
+        insert([(7, old, 99.0, 1, 0, None, None, None),                           # redelivered: stays as it was
+                (7, old + timedelta(minutes=30), 1.5, 1, quality.LATE, None, None, None)])   # late: added
+        self.assertEqual(rows('SELECT ts, value FROM sensors_reading WHERE channel_no = 7 ORDER BY ts'),
+                         [(old, 1.0), (old + timedelta(minutes=30), 1.5), (old + timedelta(hours=1), 2.0)])
+
+
+class RollupCatalogueTests(TestCase):
+    def test_two_real_time_aggregates_the_hour_built_on_the_minute(self):
+        found = dict(rows("SELECT view_name, materialized_only FROM timescaledb_information.continuous_aggregates "
+                          "WHERE view_name LIKE 'sensors_rollup_%%'"))
+        self.assertEqual(found, {'sensors_rollup_1m': False, 'sensors_rollup_1h': False})
+        source = one("SELECT hypertable_name FROM timescaledb_information.continuous_aggregates "
+                     "WHERE view_name = 'sensors_rollup_1h'")
+        minute = one("SELECT materialization_hypertable_name FROM timescaledb_information.continuous_aggregates "
+                     "WHERE view_name = 'sensors_rollup_1m'")
+        self.assertEqual(source, minute)
+
+    def test_the_definition_takes_clean_rows_only_with_the_bad_mask_of_the_quality_module(self):
+        definition = one("SELECT view_definition FROM timescaledb_information.continuous_aggregates "
+                         "WHERE view_name = 'sensors_rollup_1m'")
+        self.assertIn(f'& {quality.BAD_MASK}) = 0', definition.replace('(quality ', '(quality '))
+
+    def jobs(self, view):
+        return {name: json.loads(config) for name, config in rows(
+            "SELECT j.proc_name, j.config FROM timescaledb_information.jobs j "
+            "JOIN timescaledb_information.continuous_aggregates c ON c.materialization_hypertable_name = j.hypertable_name "
+            "WHERE c.view_name = %s", [view])}
+
+    def test_the_policies(self):
+        minute, hour = self.jobs('sensors_rollup_1m'), self.jobs('sensors_rollup_1h')
+        self.assertEqual(minute['policy_refresh_continuous_aggregate'],
+                         {'end_offset': '00:01:00', 'start_offset': None, 'mat_hypertable_id':
+                          minute['policy_refresh_continuous_aggregate']['mat_hypertable_id']})
+        self.assertEqual(hour['policy_refresh_continuous_aggregate']['end_offset'], '01:00:00')
+        self.assertIsNone(hour['policy_refresh_continuous_aggregate']['start_offset'])
+        self.assertEqual(minute['policy_compression']['compress_after'], '60 days')
+        self.assertEqual(hour['policy_compression']['compress_after'], '90 days')
+        self.assertEqual(minute['policy_retention']['drop_after'], f'{Contract.objects.get().retention_days} days')
+        self.assertNotIn('policy_retention', hour)
+        schedules = dict(rows("SELECT c.view_name, j.schedule_interval FROM timescaledb_information.jobs j "
+                              "JOIN timescaledb_information.continuous_aggregates c "
+                              "ON c.materialization_hypertable_name = j.hypertable_name "
+                              "WHERE j.proc_name = 'policy_refresh_continuous_aggregate' "
+                              "AND c.view_name LIKE 'sensors_rollup_%%'"))
+        self.assertEqual(schedules, {'sensors_rollup_1m': timedelta(minutes=1), 'sensors_rollup_1h': timedelta(hours=1)})
+
+
+class RollupValueTests(TestCase):
+    """Real-time aggregation (materialized_only = false): what is not refreshed yet is worked out from the readings on
+    read, so these tests see the rows they insert without a refresh (which cannot run in a transaction)."""
+
+    def test_minute_and_hour_equal_a_direct_computation_over_the_unreduced_stream(self):
+        messages = stream(11, START, 3 * 3600)                   # three hours of one message a second
+        stored = reduce(11, messages)
+        insert(stored)
+        for view, width in (('sensors_rollup_1m', timedelta(minutes=1)), ('sensors_rollup_1h', timedelta(hours=1))):
+            with self.subTest(view=view):
+                found, wanted = rollup(view, 11), expected(stored, width)
+                self.assertEqual(found.keys(), wanted.keys())
+                for bucket, (n, total, lo, hi, last) in wanted.items():
+                    self.assertEqual(found[bucket][0], n)
+                    self.assertAlmostEqual(found[bucket][1], total, places=6)
+                    self.assertEqual(found[bucket][2:], (lo, hi, last))
+        # and the messages themselves: every message counted once, the mean exact
+        hours = expected(stored, timedelta(hours=1))
+        self.assertEqual(sum(n for n, *_rest in hours.values()), len(messages))
+        self.assertAlmostEqual(sum(total for _n, total, *_rest in hours.values()), sum(v for _t, v in messages), places=6)
+
+    def test_bad_rows_are_left_out(self):
+        stored = reduce(12, stream(12, START, 1800, seed=5), bad_every=4)
+        insert(stored)
+        wanted = expected(stored, timedelta(minutes=1))
+        self.assertEqual(rollup('sensors_rollup_1m', 12).keys(), wanted.keys())
+        self.assertEqual(sum(found[0] for found in rollup('sensors_rollup_1m', 12).values()),
+                         sum(n for n, *_rest in wanted.values()))
+
+    def test_a_shuffled_late_stream_gives_the_same_rollups(self):
+        stored = reduce(13, stream(13, START, 1200, seed=9))
+        shuffled = stored[:]
+        random.Random(3).shuffle(shuffled)
+        insert(shuffled)
+        self.assertEqual(rollup('sensors_rollup_1m', 13).keys(), expected(stored, timedelta(minutes=1)).keys())
+        for bucket, values in expected(stored, timedelta(minutes=1)).items():
+            self.assertEqual(rollup('sensors_rollup_1m', 13)[bucket][0], values[0])
+
+
+class RollupRefreshTests(TransactionTestCase):
+    """What only a committed refresh shows: a late row in a refreshed region is taken in by the next refresh (the policy's
+    start is NULL, so any invalidated region is recomputed), and dropping raw chunks does not drop the rollups."""
+    serialized_rollback = True
+
+    def refresh(self, view):
+        with connection.cursor() as cursor:
+            cursor.execute(f"CALL refresh_continuous_aggregate('{view}', NULL, NULL)")
+
+    def test_a_late_row_after_a_refresh_is_taken_in_and_dropped_raw_keeps_its_rollups(self):
+        early = datetime(2025, 1, 6, 10, tzinfo=tz.utc)        # far enough back for drop_chunks below
+        insert([(21, early, 1.0, 1, 0, None, None, None), (21, early + timedelta(seconds=30), 3.0, 1, 0, None, None, None)])
+        self.refresh('sensors_rollup_1m')
+        self.refresh('sensors_rollup_1h')
+        insert([(21, early + timedelta(seconds=10), 5.0, 1, quality.LATE, None, None, None)])
+        # Below the watermark the view shows what was materialized: the late row is not there until the next refresh.
+        self.assertEqual(rows("SELECT n FROM sensors_rollup_1m WHERE channel_no = 21"), [(2,)])
+        self.refresh("sensors_rollup_1m")
+        self.refresh("sensors_rollup_1h")
+        self.assertEqual(rows("SELECT n, sum_v, vmin, vmax, vlast FROM sensors_rollup_1m WHERE channel_no = 21"),
+                         [(3, 9.0, 1.0, 5.0, 3.0)])
+        self.assertEqual(rows("SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21"), [(3, 9.0)])
+        one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
+        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 21'), 0)
+        self.refresh('sensors_rollup_1m')
+        self.refresh('sensors_rollup_1h')
+        self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1m WHERE channel_no = 21'), [(3, 9.0)])
+        self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])

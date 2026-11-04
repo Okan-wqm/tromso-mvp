@@ -181,7 +181,8 @@
       },
       "viewer": {
         "section": "Administration",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_database.py",
@@ -221,7 +222,9 @@
         "tasks/tests/test_series.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_pages.py",
-        "monitoring/tests/test_token.py"
+        "monitoring/tests/test_token.py",
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_pages.py"
       ]
     },
     {
@@ -373,7 +376,8 @@
       },
       "viewer": {
         "section": "Administration",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -885,7 +889,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_datamap.py",
@@ -1042,7 +1047,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "farm/tests/test_escape_delivery.py"
@@ -1526,7 +1532,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -1537,7 +1544,9 @@
         "farm/tests/test_water_points.py",
         "inventory/tests/test_pages.py",
         "tasks/tests/__init__.py",
-        "tasks/tests/test_pages.py"
+        "tasks/tests/test_pages.py",
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_pages.py"
       ]
     },
     {
@@ -1752,7 +1761,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -1903,7 +1913,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -1912,7 +1923,9 @@
         "farm/tests/test_suppliers.py",
         "farm/tests/test_water_points.py",
         "inventory/tests/test_pages.py",
-        "tasks/tests/__init__.py"
+        "tasks/tests/__init__.py",
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_pages.py"
       ]
     },
     {
@@ -2092,7 +2105,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "farm/tests/test_escape_delivery.py"
@@ -2371,7 +2385,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "farm/tests/test_cleaner_fish.py",
@@ -2631,7 +2646,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -2875,7 +2891,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "farm/tests/test_protocols.py",
@@ -3049,7 +3066,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "farm/tests/test_protocols.py"
@@ -3357,7 +3375,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -3776,7 +3795,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -4431,7 +4451,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -4765,7 +4786,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "farm/tests/test_harvest.py",
@@ -5221,7 +5243,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -5560,7 +5583,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -5733,7 +5757,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -5877,7 +5902,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -6374,7 +6400,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -6740,7 +6767,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -7010,7 +7038,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -7476,7 +7505,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -7858,7 +7888,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_database.py",
@@ -7879,7 +7910,9 @@
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
         "reports/tests/helpers.py",
-        "tasks/tests/__init__.py"
+        "tasks/tests/__init__.py",
+        "sensors/tests/__init__.py",
+        "sensors/tests/test_bindings.py"
       ]
     },
     {
@@ -8146,7 +8179,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -8525,7 +8559,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -8755,7 +8790,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_database.py",
@@ -9489,7 +9525,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_catalogs.py",
@@ -9524,7 +9561,9 @@
         "reports/tests/test_tabs.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
-        "tasks/tests/test_read.py"
+        "tasks/tests/test_read.py",
+        "sensors/tests/__init__.py",
+        "sensors/tests/test_bindings.py"
       ]
     },
     {
@@ -9931,7 +9970,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -10077,7 +10117,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -10577,7 +10618,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -11128,7 +11170,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "farm/tests/test_cleaner_fish.py",
@@ -11642,7 +11685,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -11881,7 +11925,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -12022,7 +12067,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -12512,7 +12558,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -12928,7 +12975,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -12944,7 +12992,8 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
-        "tasks/tests/__init__.py"
+        "tasks/tests/__init__.py",
+        "sensors/tests/test_bindings.py"
       ]
     },
     {
@@ -13947,7 +13996,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_database.py",
@@ -13967,7 +14017,8 @@
         "inventory/tests/test_services.py",
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
-        "monitoring/tests/test_token.py"
+        "monitoring/tests/test_token.py",
+        "sensors/tests/test_pages.py"
       ]
     },
     {
@@ -14083,7 +14134,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -14652,7 +14704,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -15058,7 +15111,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -15625,7 +15679,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/test_languages.py",
@@ -16093,7 +16148,8 @@
       },
       "viewer": {
         "section": "Facility",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -16102,6 +16158,7 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_water_sources.py",
         "reports/tests/test_lice.py"
       ]
     },
@@ -16392,7 +16449,8 @@
       },
       "viewer": {
         "section": "Storage",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "inventory/tests/helpers.py",
@@ -16779,7 +16837,8 @@
       },
       "viewer": {
         "section": "Storage",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "inventory/tests/test_services.py"
@@ -17078,7 +17137,8 @@
       },
       "viewer": {
         "section": "Storage",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "inventory/tests/test_pages.py",
@@ -17566,7 +17626,8 @@
       },
       "viewer": {
         "section": "Storage",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -17773,7 +17834,8 @@
       },
       "viewer": {
         "section": "Storage",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "inventory/tests/test_pages.py"
@@ -18177,7 +18239,8 @@
       },
       "viewer": {
         "section": "Storage",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -18334,7 +18397,8 @@
       },
       "viewer": {
         "section": "Knowledge",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "knowledge/tests/test_documents.py"
@@ -18479,7 +18543,8 @@
       },
       "viewer": {
         "section": "Knowledge",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -19028,7 +19093,8 @@
       },
       "viewer": {
         "section": "Knowledge",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -19528,7 +19594,8 @@
       },
       "viewer": {
         "section": "Knowledge",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -19677,7 +19744,8 @@
       },
       "viewer": {
         "section": "Knowledge",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -19858,7 +19926,8 @@
       },
       "viewer": {
         "section": "Messages",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "messaging/tests/test_models.py"
@@ -20249,7 +20318,8 @@
       },
       "viewer": {
         "section": "Messages",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "messaging/tests/test_models.py",
@@ -20529,7 +20599,8 @@
       },
       "viewer": {
         "section": "Messages",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -20765,7 +20836,8 @@
         "section": "Messages",
         "masked": [
           "body"
-        ]
+        ],
+        "left_out": false
       },
       "tests": [
         "messaging/tests/test_models.py",
@@ -20977,7 +21049,8 @@
       },
       "viewer": {
         "section": "Monitoring",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "monitoring/tests/test_boards.py"
@@ -21272,7 +21345,8 @@
       },
       "viewer": {
         "section": "Monitoring",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -21529,7 +21603,8 @@
       },
       "viewer": {
         "section": "Reports",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "reports/tests/test_lice.py",
@@ -21794,7 +21869,8 @@
       },
       "viewer": {
         "section": "Reports",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "reports/tests/test_lice.py"
@@ -21969,7 +22045,8 @@
       },
       "viewer": {
         "section": "Reports",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "reports/tests/test_due.py",
@@ -22191,7 +22268,8 @@
       },
       "viewer": {
         "section": "Reports",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "reports/tests/test_lice.py"
@@ -22390,7 +22468,8 @@
       },
       "viewer": {
         "section": "Reports",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "reports/tests/test_compute.py",
@@ -23153,7 +23232,8 @@
       },
       "viewer": {
         "section": "Reports",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -23168,6 +23248,3940 @@
         "reports/tests/test_pages.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Binding",
+      "table": "sensors_binding",
+      "description": "Where a channel's values belong over a time range: a sampling point or a system for a water value (a system's own water as a whole, owner rule A1), a piece of equipment or a system for a process value.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "channel_id",
+          "field": "channel",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sensors_channel",
+            "model": "sensors.Channel",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "BindForm › Binding"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "point_id",
+          "field": "point",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "water_sampling_points",
+            "model": "farm.SamplingPoint",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "BindForm.target"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "system_id",
+          "field": "system",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "systems",
+            "model": "farm.System",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "BindForm.target"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "equipment_id",
+          "field": "equipment",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "equipment",
+            "model": "farm.Equipment",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "BindForm.target"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "role",
+          "field": "role",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "primary",
+            "backup"
+          ],
+          "link": null,
+          "on_form": [
+            "BindForm › Binding"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "valid_from",
+          "field": "valid_from",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "BindForm › Binding"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "valid_to",
+          "field": "valid_to",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "BindingForm › Binding"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "note",
+          "field": "note",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "BindForm › Binding",
+            "BindingForm › Binding"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_sensors_binding_one_target",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_binding_period",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_binding_role",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "ex_sensors_binding_channel_period",
+          "kind": "exclusion",
+          "fields": [
+            "channel",
+            "valid_from",
+            "valid_to"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channel bindings tab",
+              "url_names": [
+                "sensors:binding_create"
+              ],
+              "routes": [
+                "/sensors/bindings/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channel bindings tab",
+              "url_names": [
+                "sensors:binding_edit"
+              ],
+              "routes": [
+                "/sensors/bindings/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channel bindings tab",
+              "url_names": [
+                "sensors:binding_delete"
+              ],
+              "routes": [
+                "/sensors/bindings/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channel bindings tab",
+              "url_names": [
+                "sensors:binding_list"
+              ],
+              "routes": [
+                "/sensors/bindings/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same moment; an edit changes only the end and the note.",
+      "forms": [
+        {
+          "form": "BindForm",
+          "module": "sensors.forms",
+          "fields": {
+            "channel": "Binding",
+            "role": "Binding",
+            "valid_from": "Binding",
+            "note": "Binding",
+            "version": "",
+            "target": "Binding"
+          }
+        },
+        {
+          "form": "BindingForm",
+          "module": "sensors.forms",
+          "fields": {
+            "valid_to": "Binding",
+            "note": "Binding",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/test_bindings.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Calibration",
+      "table": "sensors_calibration",
+      "description": "A channel's calibration from a moment on: value = gain × raw + offset, applied by the ingest at the device time of each value, before the unit conversion.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "channel_id",
+          "field": "channel",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sensors_channel",
+            "model": "sensors.Channel",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the channel the row belongs to"
+        },
+        {
+          "name": "valid_from",
+          "field": "valid_from",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CalibrationForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "gain",
+          "field": "gain",
+          "type": "double precision",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CalibrationForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "offset",
+          "field": "offset",
+          "type": "double precision",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CalibrationForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "performed_by",
+          "field": "performed_by",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CalibrationForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "note",
+          "field": "note",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CalibrationForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_calibration_from",
+          "kind": "unique",
+          "fields": [
+            "channel",
+            "valid_from"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_calibration_gain",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_calibration_offset",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Calibrations list on the channels tab",
+              "url_names": [
+                "sensors:channel_calibrations"
+              ],
+              "routes": [
+                "/sensors/channels/<uuid:pk>/calibrations/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Calibrations list on the channels tab",
+              "url_names": [
+                "sensors:channel_calibrations"
+              ],
+              "routes": [
+                "/sensors/channels/<uuid:pk>/calibrations/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Calibrations list on the channels tab",
+              "url_names": [
+                "sensors:channel_calibrations"
+              ],
+              "routes": [
+                "/sensors/channels/<uuid:pk>/calibrations/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Calibrations list on the channels tab",
+              "url_names": [
+                "sensors:channel_edit"
+              ],
+              "routes": [
+                "/sensors/channels/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "CalibrationForm",
+          "module": "django.forms.widgets",
+          "fields": {
+            "valid_from": "",
+            "gain": "",
+            "offset": "",
+            "performed_by": "",
+            "note": ""
+          }
+        },
+        {
+          "form": "CalibrationForm",
+          "module": "sensors.forms",
+          "fields": {
+            "valid_from": "",
+            "gain": "",
+            "offset": "",
+            "performed_by": "",
+            "note": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_schema.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Channel",
+      "table": "sensors_channel",
+      "description": "One value a device sends: what it measures (a quantity of sensors/quantities.py), where it is in the message (a JSON pointer in an object, or the item's name in a list), the conversion from the instrument's unit to the quantity's (`unit_factor`, `unit_offset`; calibration is applied first), and how it is stored: every value, or a value when it moves past the deadband, and at least once per heartbeat.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "channel_no",
+          "field": "channel_no",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "device_id",
+          "field": "device",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sensors_device",
+            "model": "sensors.Device",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "ChannelForm › Source"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(60)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Source"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Source"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "quantity",
+          "field": "quantity",
+          "type": "varchar(30)",
+          "null": false,
+          "choices": [
+            "temperature_c",
+            "oxygen_mg_l",
+            "oxygen_saturation_pct",
+            "ph",
+            "alkalinity_mg_l",
+            "co2_mg_l",
+            "tan_mg_l",
+            "nitrite_n_mg_l",
+            "nitrate_n_mg_l",
+            "tgp_pct",
+            "salinity_ppt",
+            "turbidity_ntu",
+            "conductivity_us_cm",
+            "orp_mv",
+            "flow_m3_h",
+            "level_mm",
+            "pressure_bar",
+            "power_kw",
+            "current_a"
+          ],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Quantity and unit"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "is_water",
+          "field": "is_water",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "unit",
+          "field": "unit",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Quantity and unit"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "unit_factor",
+          "field": "unit_factor",
+          "type": "double precision",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Quantity and unit"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "unit_offset",
+          "field": "unit_offset",
+          "type": "double precision",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Quantity and unit"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "value_path",
+          "field": "value_path",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Source"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "item_name",
+          "field": "item_name",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Source"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "address_protocol",
+          "field": "address_protocol",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "mqtt",
+            "modbus_tcp",
+            "modbus_rtu",
+            "opcua",
+            "s7",
+            "other"
+          ],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Address"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "address",
+          "field": "address",
+          "type": "jsonb",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Address"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "reduction",
+          "field": "reduction",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "all",
+            "deadband"
+          ],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Storing"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "deadband",
+          "field": "deadband",
+          "type": "double precision",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Storing"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "heartbeat_s",
+          "field": "heartbeat_s",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Storing"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "fresh_s",
+          "field": "fresh_s",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "range_min",
+          "field": "range_min",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Storing"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "range_max",
+          "field": "range_max",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Storing"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "state",
+          "field": "state",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "active",
+            "maintenance",
+            "retired"
+          ],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Storing"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "note",
+          "field": "note",
+          "type": "text",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ChannelForm › Source"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_channel_code_live",
+          "kind": "unique",
+          "fields": [
+            "device",
+            "code"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_sensors_channel_code",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_name",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_quantity",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_unit_factor",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_unit_offset",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_source",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_value_path",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_protocol",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_address",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_reduction",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_deadband",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_heartbeat",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_range",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_channel_state",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channels tab",
+              "url_names": [
+                "sensors:channel_create"
+              ],
+              "routes": [
+                "/sensors/channels/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channels tab",
+              "url_names": [
+                "sensors:channel_edit"
+              ],
+              "routes": [
+                "/sensors/channels/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channels tab",
+              "url_names": [
+                "sensors:channel_delete"
+              ],
+              "routes": [
+                "/sensors/channels/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "channels tab",
+              "url_names": [
+                "sensors:channel_list"
+              ],
+              "routes": [
+                "/sensors/channels/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "ChannelForm",
+          "module": "sensors.forms",
+          "fields": {
+            "device": "Source",
+            "code": "Source",
+            "name": "Source",
+            "value_path": "Source",
+            "item_name": "Source",
+            "note": "Source",
+            "quantity": "Quantity and unit",
+            "unit": "Quantity and unit",
+            "unit_factor": "Quantity and unit",
+            "unit_offset": "Quantity and unit",
+            "address_protocol": "Address",
+            "address": "Address",
+            "reduction": "Storing",
+            "deadband": "Storing",
+            "heartbeat_s": "Storing",
+            "range_min": "Storing",
+            "range_max": "Storing",
+            "state": "Storing",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/__init__.py",
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_schema.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "ChannelState",
+      "table": "sensors_channel_state",
+      "description": "What the ingest service remembers of each sensor channel: its last value, the last stored value the deadband is measured from and the values not stored since.",
+      "columns": [
+        {
+          "name": "channel_no",
+          "field": "channel_no",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "last_seen_at",
+          "field": "last_seen_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "last_good_at",
+          "field": "last_good_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "last_value",
+          "field": "last_value",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "last_value_ts",
+          "field": "last_value_ts",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "last_quality",
+          "field": "last_quality",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "anchor_ts",
+          "field": "anchor_ts",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "anchor_value",
+          "field": "anchor_value",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "anchor_quality",
+          "field": "anchor_quality",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "run_n",
+          "field": "run_n",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "run_sum",
+          "field": "run_sum",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "run_min",
+          "field": "run_min",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "run_max",
+          "field": "run_max",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        },
+        {
+          "name": "high_ts",
+          "field": "high_ts",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's memory of the channel, updated with every batch it writes"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_sensors_channel_state_run_n",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the latest values (sensors/read.py)"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_contract.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Connection",
+      "table": "sensors_connection",
+      "description": "An MQTT broker the ingest service listens to: where it is, how the service signs in (a user name and the name of a secret file, never the secret) and its client id.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "host",
+          "field": "host",
+          "type": "varchar(255)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › Connection"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "port",
+          "field": "port",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › Connection"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "use_tls",
+          "field": "use_tls",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › Connection"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "username",
+          "field": "username",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › Connection"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "secret_file",
+          "field": "secret_file",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › Connection"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "client_id",
+          "field": "client_id",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › Connection"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "keepalive_s",
+          "field": "keepalive_s",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › Connection"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "is_active",
+          "field": "is_active",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ConnectionForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_connection_name_live",
+          "kind": "unique",
+          "fields": [
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_sensors_connection_client_live",
+          "kind": "unique",
+          "fields": [
+            "client_id"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_sensors_connection_name",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_connection_host",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_connection_client_id",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_connection_port",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_connection_keepalive",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_connection_secret_file",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_connection_secret_dots",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "connections tab",
+              "url_names": [
+                "sensors:connection_create"
+              ],
+              "routes": [
+                "/sensors/connections/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "connections tab",
+              "url_names": [
+                "sensors:connection_edit"
+              ],
+              "routes": [
+                "/sensors/connections/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "connections tab",
+              "url_names": [
+                "sensors:connection_delete"
+              ],
+              "routes": [
+                "/sensors/connections/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "connections tab",
+              "url_names": [
+                "sensors:connection_list"
+              ],
+              "routes": [
+                "/sensors/connections/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "ConnectionForm",
+          "module": "sensors.forms",
+          "fields": {
+            "name": "General",
+            "is_active": "General",
+            "host": "Connection",
+            "port": "Connection",
+            "use_tls": "Connection",
+            "username": "Connection",
+            "secret_file": "Connection",
+            "client_id": "Connection",
+            "keepalive_s": "Connection",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [
+          "secret_file"
+        ],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/__init__.py",
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_schema.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Contract",
+      "table": "sensors_contract",
+      "description": "The one row both Django and the ingest service read: the contract’s version, the configuration’s epoch and the time limits.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "schema_version",
+          "field": "schema_version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the contract row: its version, the epoch a trigger moves on every configuration change, and the time limits"
+        },
+        {
+          "name": "config_epoch",
+          "field": "config_epoch",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the contract row: its version, the epoch a trigger moves on every configuration change, and the time limits"
+        },
+        {
+          "name": "future_skew_s",
+          "field": "future_skew_s",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the contract row: its version, the epoch a trigger moves on every configuration change, and the time limits"
+        },
+        {
+          "name": "retention_days",
+          "field": "retention_days",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the contract row: its version, the epoch a trigger moves on every configuration change, and the time limits"
+        },
+        {
+          "name": "late_limit_days",
+          "field": "late_limit_days",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the contract row: its version, the epoch a trigger moves on every configuration change, and the time limits"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_sensors_contract_singleton",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_contract_skew",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_contract_retention",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_contract_late_limit",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "one row written by migration sensors 0001; the contract is changed by a migration, never by a page"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "one row written by migration sensors 0001; the contract is changed by a migration, never by a page"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "one row written by migration sensors 0001; the contract is changed by a migration, never by a page"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the ingest service; shown in the database viewer"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_timescale.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Credential",
+      "table": "sensors_credential",
+      "description": "A publisher's sign-in at the broker: a user name and the hash of its secret (Mosquitto's PBKDF2-SHA512 `$7$` format, sensors/credentials.py).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "username",
+          "field": "username",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CredentialForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "password_hash",
+          "field": "password_hash",
+          "type": "varchar(255)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "rotated_at",
+          "field": "rotated_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "is_enabled",
+          "field": "is_enabled",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CredentialForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_credential_username_live",
+          "kind": "unique",
+          "fields": [
+            "username"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_sensors_credential_username",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_credential_hash",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "sensor credentials tab",
+              "url_names": [
+                "sensors:credential_create"
+              ],
+              "routes": [
+                "/sensors/credentials/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "sensor credentials tab",
+              "url_names": [
+                "sensors:credential_edit"
+              ],
+              "routes": [
+                "/sensors/credentials/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "sensor credentials tab",
+              "url_names": [
+                "sensors:credential_delete"
+              ],
+              "routes": [
+                "/sensors/credentials/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "sensor credentials tab",
+              "url_names": [
+                "sensors:credential_list"
+              ],
+              "routes": [
+                "/sensors/credentials/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The secret is made on the server and shown once, on create and on Replace the secret; only its hash is stored (masked in the database viewer, never in the activity log).",
+      "forms": [
+        {
+          "form": "CredentialForm",
+          "module": "sensors.forms",
+          "fields": {
+            "username": "General",
+            "is_enabled": "General",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [
+          "password_hash"
+        ],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_schema.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "DeadLetter",
+      "table": "sensors_dead_letter",
+      "description": "Messages the ingest service could not store, kept as evidence and counted.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "connection_id",
+          "field": "connection_id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "device_id",
+          "field": "device_id",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "topic",
+          "field": "topic",
+          "type": "varchar(255)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "not_json",
+            "no_route",
+            "no_channel_match",
+            "missing_time",
+            "bad_time",
+            "too_old",
+            "missing_value",
+            "bad_value",
+            "oversize"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "payload_sha256",
+          "field": "payload_sha256",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "payload",
+          "field": "payload",
+          "type": "bytea",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "payload_len",
+          "field": "payload_len",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "count",
+          "field": "count",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "first_at",
+          "field": "first_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "last_at",
+          "field": "last_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service could not store, counted"
+        },
+        {
+          "name": "resolved_at",
+          "field": "resolved_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set when a person marks it resolved"
+        },
+        {
+          "name": "resolved_by_id",
+          "field": "resolved_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who marked it resolved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_dead_letter_message",
+          "kind": "unique",
+          "fields": [
+            "connection_id",
+            "topic",
+            "reason",
+            "payload_sha256"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_dead_letter_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_dead_letter_hash",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_dead_letter_payload",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_dead_letter_len",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_dead_letter_count",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_dead_letter_times",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_dead_letter_resolved",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "the message is evidence: only its resolution is set, by a person"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "pruned after 90 days by manage.py sensors_housekeeping"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the Sensors overview"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [
+          "payload"
+        ],
+        "left_out": false
+      },
+      "tests": [
+        "sensors/tests/test_contract.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Device",
+      "table": "sensors_device",
+      "description": "A field device that publishes on one topic of a connection: a probe, a PLC, a gateway for one instrument.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "connection_id",
+          "field": "connection",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sensors_connection",
+            "model": "sensors.Connection",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "payload_format_id",
+          "field": "payload_format",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sensors_payload_format",
+            "model": "sensors.PayloadFormat",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "DeviceForm › Payload"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "credential_id",
+          "field": "credential",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sensors_credential",
+            "model": "sensors.Credential",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "DeviceForm › Credential"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "equipment_id",
+          "field": "equipment",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "equipment",
+            "model": "farm.Equipment",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(60)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "topic",
+          "field": "topic",
+          "type": "varchar(255)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › Payload"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "expected_interval_s",
+          "field": "expected_interval_s",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › Payload"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "manufacturer",
+          "field": "manufacturer",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "model",
+          "field": "model",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "note",
+          "field": "note",
+          "type": "text",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "is_active",
+          "field": "is_active",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_device_code_live",
+          "kind": "unique",
+          "fields": [
+            "connection",
+            "code"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_sensors_device_topic_live",
+          "kind": "unique",
+          "fields": [
+            "connection",
+            "topic"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_sensors_device_code",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_name",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_interval",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_topic_given",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_topic_hash",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_topic_system",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_topic_plus",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_topic_level",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "devices tab",
+              "url_names": [
+                "sensors:device_create"
+              ],
+              "routes": [
+                "/sensors/devices/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "devices tab",
+              "url_names": [
+                "sensors:device_edit"
+              ],
+              "routes": [
+                "/sensors/devices/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "devices tab",
+              "url_names": [
+                "sensors:device_delete"
+              ],
+              "routes": [
+                "/sensors/devices/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "devices tab",
+              "url_names": [
+                "sensors:device_list"
+              ],
+              "routes": [
+                "/sensors/devices/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "DeviceForm",
+          "module": "sensors.forms",
+          "fields": {
+            "connection": "General",
+            "code": "General",
+            "name": "General",
+            "site": "General",
+            "equipment": "General",
+            "manufacturer": "General",
+            "model": "General",
+            "note": "General",
+            "is_active": "General",
+            "payload_format": "Payload",
+            "topic": "Payload",
+            "expected_interval_s": "Payload",
+            "credential": "Credential",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/__init__.py",
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_schema.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "DeviceState",
+      "table": "sensors_device_state",
+      "description": "What the ingest service has seen of each sensor device: its last message and how many it took, took late, could not store or ignored.",
+      "columns": [
+        {
+          "name": "device_id",
+          "field": "device_id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "last_message_at",
+          "field": "last_message_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service has seen of the device"
+        },
+        {
+          "name": "last_seq",
+          "field": "last_seq",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service has seen of the device"
+        },
+        {
+          "name": "accepted_total",
+          "field": "accepted_total",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service has seen of the device"
+        },
+        {
+          "name": "late_total",
+          "field": "late_total",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service has seen of the device"
+        },
+        {
+          "name": "dead_total",
+          "field": "dead_total",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service has seen of the device"
+        },
+        {
+          "name": "ignored_total",
+          "field": "ignored_total",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the ingest service has seen of the device"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the device status (sensors/read.py)"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "sensors/tests/test_contract.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "IngestStatus",
+      "table": "sensors_ingest_status",
+      "description": "The ingest service’s heartbeat per broker connection: connected or not, messages waiting and its last commit.",
+      "columns": [
+        {
+          "name": "connection_id",
+          "field": "connection_id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "heartbeat_at",
+          "field": "heartbeat_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's heartbeat per connection"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "varchar(50)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "connected",
+          "field": "connected",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's heartbeat per connection"
+        },
+        {
+          "name": "queue_depth",
+          "field": "queue_depth",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's heartbeat per connection"
+        },
+        {
+          "name": "last_commit_at",
+          "field": "last_commit_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's heartbeat per connection"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_sensors_ingest_status_queue",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the Sensors overview"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "sensors/tests/test_contract.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "PayloadFormat",
+      "table": "sensors_payload_format",
+      "description": "How the messages of a kind of device are written: one row shared by every device that writes the same way (a vendor's probes).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "encoding",
+          "field": "encoding",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "json"
+          ],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "shape",
+          "field": "shape",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "object",
+            "array"
+          ],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › Shape"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "time_path",
+          "field": "time_path",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › Time and sequence"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "time_unit",
+          "field": "time_unit",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "iso8601",
+            "epoch_s",
+            "epoch_ms"
+          ],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › Time and sequence"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "seq_path",
+          "field": "seq_path",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › Time and sequence"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "items_path",
+          "field": "items_path",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › Shape"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "name_key",
+          "field": "name_key",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › Shape"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "value_key",
+          "field": "value_key",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PayloadFormatForm › Shape"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_payload_format_name_live",
+          "kind": "unique",
+          "fields": [
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_sensors_payload_format_name",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_payload_format_encoding",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_payload_format_shape",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_payload_format_time_unit",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_payload_format_array_keys",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_payload_format_time_path",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_payload_format_seq_path",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_payload_format_items_path",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "payload formats tab",
+              "url_names": [
+                "sensors:payloadformat_create"
+              ],
+              "routes": [
+                "/sensors/payload-formats/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "payload formats tab",
+              "url_names": [
+                "sensors:payloadformat_edit"
+              ],
+              "routes": [
+                "/sensors/payload-formats/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "payload formats tab",
+              "url_names": [
+                "sensors:payloadformat_delete"
+              ],
+              "routes": [
+                "/sensors/payload-formats/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "payload formats tab",
+              "url_names": [
+                "sensors:payloadformat_list"
+              ],
+              "routes": [
+                "/sensors/payload-formats/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "PayloadFormatForm",
+          "module": "sensors.forms",
+          "fields": {
+            "name": "General",
+            "encoding": "General",
+            "time_path": "Time and sequence",
+            "time_unit": "Time and sequence",
+            "seq_path": "Time and sequence",
+            "shape": "Shape",
+            "items_path": "Shape",
+            "name_key": "Shape",
+            "value_key": "Shape",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/__init__.py",
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_schema.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "QualityFlag",
+      "table": "sensors_quality_flag",
+      "description": "The bits of a sensor reading’s quality and which of them make a reading bad.",
+      "columns": [
+        {
+          "name": "bit",
+          "field": "bit",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(30)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "sensors/quality.py, the one definition"
+        },
+        {
+          "name": "is_bad",
+          "field": "is_bad",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "sensors/quality.py, the one definition"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_sensors_quality_flag_bit",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "seeded by migration sensors 0001 from sensors/quality.py"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "the bits are the contract"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "the bits are the contract"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the ingest service and the tests; shown in the database viewer"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "sensors/tests/test_contract.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "Reading",
+      "table": "sensors_reading",
+      "description": "One stored value of a channel at the device's time: the hypertable `sensors_reading` (7-day chunks, compressed after 14 days, kept 730 days).",
+      "columns": [
+        {
+          "name": "channel_no",
+          "field": "channel_no",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        },
+        {
+          "name": "ts",
+          "field": "ts",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        },
+        {
+          "name": "value",
+          "field": "value",
+          "type": "double precision",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        },
+        {
+          "name": "n",
+          "field": "n",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        },
+        {
+          "name": "quality",
+          "field": "quality",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        },
+        {
+          "name": "run_sum",
+          "field": "run_sum",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        },
+        {
+          "name": "run_min",
+          "field": "run_min",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        },
+        {
+          "name": "run_max",
+          "field": "run_max",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the stored value of a channel at the device's time, with the run it closes"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_sensors_reading_value",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_reading_quality",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_reading_run",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a reading is never changed: stored values are calibrated at the device time"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "dropped with its chunk after the raw retention (730 days), never one by one"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read through the rollups and the reads of sensors/read.py, never through the database viewer"
+        }
+      },
+      "note": "A TimescaleDB hypertable; left out of the database viewer (billions of rows).",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": null,
+        "masked": [],
+        "left_out": true
+      },
+      "tests": [
+        "core/test_datamap.py",
+        "knowledge/tests/test_extraction.py",
+        "monitoring/tests/test_read.py",
+        "sensors/tests/test_timescale.py"
       ]
     },
     {
@@ -23311,7 +27325,8 @@
       },
       "viewer": {
         "section": "Tasks",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -23517,7 +27532,8 @@
       },
       "viewer": {
         "section": "Tasks",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "tasks/tests/test_models.py",
@@ -23669,7 +27685,8 @@
       },
       "viewer": {
         "section": "Tasks",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "tasks/tests/test_models.py",
@@ -24238,7 +28255,8 @@
       },
       "viewer": {
         "section": "Tasks",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",
@@ -24388,7 +28406,8 @@
       },
       "viewer": {
         "section": "Tasks",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -24552,7 +28571,8 @@
       },
       "viewer": {
         "section": "Tasks",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": []
     },
@@ -25233,7 +29253,8 @@
       },
       "viewer": {
         "section": "Tasks",
-        "masked": []
+        "masked": [],
+        "left_out": false
       },
       "tests": [
         "core/tests_workspaces.py",

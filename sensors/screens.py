@@ -10,9 +10,11 @@ MIGRATION = 'one row written by migration sensors 0001; the contract is changed 
 SCREENS = {
     'Credential': Screen(
         note='The secret is made on the server and shown once, on create and on Replace the secret; only its hash is '
-             'stored (masked in the database viewer, never in the activity log).',
-        columns={'password_hash': system('the hash of the secret made on create or on Replace the secret'),
-                 'rotated_at': system('when the secret was made')}),
+             'stored (masked in the database viewer, never in the activity log).'),
+    'Binding': Screen(
+        note='Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same '
+             'moment; an edit changes only the end and the note.',
+        fills={'BindForm.target': ['point', 'system', 'equipment']}),
     'Contract': Screen(
         create=no(MIGRATION), edit=no(MIGRATION), delete=no(MIGRATION), read=no('read by the ingest service; shown in '
                                                                               'the database viewer'),

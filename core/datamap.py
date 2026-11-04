@@ -463,7 +463,9 @@ class Map:
         soft = issubclass(model, AuditedModel)
         db_table = model._meta.db_table
         section, masked = self.viewer.get(db_table, (None, []))
-        if section is None:
+        # A table config/database.py leaves out on purpose (the sensor readings: billions of rows) is said so, not missed.
+        left_out = db_table in database.viewer().excluded
+        if section is None and not left_out:
             self.problems.append(
                 f'{label}: the database viewer does not show {db_table}: add the app {model._meta.app_label!r} to a '
                 f'section of config/database.py.')
@@ -483,7 +485,7 @@ class Map:
                             'no soft-delete column: a row goes, or stays, with what owns it'),
             'soft_delete': soft,
             'restore': self.restore(model, screen, soft),
-            'viewer': {'section': section, 'masked': masked},
+            'viewer': {'section': section, 'masked': masked, 'left_out': left_out},
             'tests': mentioned,
         }
 
@@ -724,7 +726,8 @@ def table_block(table):
     if table['note']:
         lines.append(f'- **how it works**: {table["note"]}')
     viewer = table['viewer']
-    shown = f'{viewer["section"]} › {table["table"]}' if viewer['section'] else 'not shown'
+    shown = (f'{viewer["section"]} › {table["table"]}' if viewer['section']
+             else 'left out on purpose (config/database.py)' if viewer.get('left_out') else 'not shown')
     masked = f' (never shown: {", ".join(viewer["masked"])})' if viewer['masked'] else ''
     restore = table['restore']
     back = {'admin': 'restored in the admin', 'none': f'not restored: {restore["why"]}',

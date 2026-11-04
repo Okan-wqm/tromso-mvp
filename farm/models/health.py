@@ -11,6 +11,7 @@ HLT-02). Treatments, events and counts are never hard-deleted: they are voided w
 operation (farm.stock.services.voided); the only writer is farm/health/services.py."""
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -23,11 +24,14 @@ from core.models import AuditedModel
 
 from ..health import diseases
 from .site import Site
+from .species import Species
 from .supplier import Supplier, SupplierLink, SupplyCategory
 from .tank import Tank
 
 MAX_WITHDRAWAL_DAYS = 1000          # a withdrawal far longer than any SPC states
 MAX_WITHDRAWAL_DEGREE_DAYS = 10000  # 500 degree-days is the usual statutory minimum for off-label use
+MAX_SAFETY_MARGIN_PCT = 200         # the farm's own margin on top of the label value
+SAME_SPECIES_MESSAGE = _('Two rows are for the same species.')
 PLANNED_DAYS = 28                   # a course's last day may be planned this far ahead
 MAX_FISH_COUNTED = 1000             # fish examined in one lice count
 MAX_LICE = 1000000                  # lice of one stage on the fish of one count
@@ -99,11 +103,11 @@ class MedicineStatus(models.TextChoices):
 
 
 class Medicine(AuditedModel):
-    """A medicine or vaccine the farm uses, with its withdrawal period as the product's SPC states it. Not the
-    source's chemical master (a stock item filtered by type, whose withdrawal nothing read, HLT-08).
+    """A medicine or vaccine the farm uses. Not the source's chemical master (a stock item filtered by type,
+    whose withdrawal nothing read, HLT-08).
 
-    The withdrawal is in degree-days, in days, or both, at least one (a database check): "unknown" is not a
-    value, 0 means none. Both given, the later end wins (farm/health/withdrawal.py). Nothing is seeded: the
+    Its withdrawal is not a column of the medicine: it is per species, the rows of MedicineWithdrawal (the SPC
+    states it per species, and a farm that grows several wants its own margin on each). Nothing is seeded: the
     values come from the product's SPC, entered by the farm, checked by its vet.
 
     A sea-lice medicine names its active substance as Mattilsynet's list has it (`lice_report_code`); other
@@ -125,11 +129,6 @@ class Medicine(AuditedModel):
     strength_value = models.DecimalField(_('Strength'), max_digits=10, decimal_places=3, null=True, blank=True,
                                          validators=[MinValueValidator(0)])
     strength_unit = models.CharField(_('Strength unit'), max_length=30, blank=True, choices=StrengthUnit.choices)
-    withdrawal_degree_days = models.PositiveIntegerField(
-        _('Withdrawal (degree-days)'), null=True, blank=True,
-        validators=[MaxValueValidator(MAX_WITHDRAWAL_DEGREE_DAYS)])
-    withdrawal_days = models.PositiveIntegerField(_('Withdrawal (days)'), null=True, blank=True,
-                                                  validators=[MaxValueValidator(MAX_WITHDRAWAL_DAYS)])
     prescription_only = models.BooleanField(_('Prescription only'), default=True)
     manufacturer = SupplierLink(
         Supplier, null=True, blank=True, on_delete=models.PROTECT, related_name='medicines',
@@ -160,16 +159,6 @@ class Medicine(AuditedModel):
                 name='chk_medicines_lice_report_code',
                 violation_error_message=_('A sea-lice medicine names its substance as the lice report has it; '
                                           'other medicines have none.')),
-            models.CheckConstraint(
-                condition=Q(withdrawal_degree_days__isnull=False) | Q(withdrawal_days__isnull=False),
-                name='chk_medicines_withdrawal',
-                violation_error_message=_('Give the withdrawal in degree-days, in days or both, as the SPC states '
-                                          'it (0 when it has none).')),
-            models.CheckConstraint(
-                condition=(Q(withdrawal_degree_days__isnull=True)
-                           | Q(withdrawal_degree_days__lte=MAX_WITHDRAWAL_DEGREE_DAYS))
-                & (Q(withdrawal_days__isnull=True) | Q(withdrawal_days__lte=MAX_WITHDRAWAL_DAYS)),
-                name='chk_medicines_withdrawal_bounds'),
             models.CheckConstraint(condition=_both_or_neither('strength_value', 'strength_unit'),
                                    name='chk_medicines_strength',
                                    violation_error_message=_('A strength needs its unit, and a unit its strength.')),
@@ -191,9 +180,6 @@ class Medicine(AuditedModel):
         elif self.kind != MedicineKind.LICE and self.lice_report_code:
             errors['lice_report_code'] = ValidationError(_('Only a sea-lice medicine has a substance in the lice '
                                                            'report.'))
-        if self.withdrawal_degree_days is None and self.withdrawal_days is None:
-            errors['withdrawal_degree_days'] = ValidationError(_('Give the withdrawal in degree-days, in days or '
-                                                                 'both, as the SPC states it (0 when it has none).'))
         _pair_error(self, 'strength_value', 'strength_unit', _('A strength needs its unit, and a unit its strength.'),
                     errors)
         if errors:
@@ -202,6 +188,87 @@ class Medicine(AuditedModel):
     @property
     def is_vaccine(self):
         return self.kind == MedicineKind.VACCINE
+
+
+class WithdrawalManager(models.Manager):
+    """The rows of live species and the rows for every species. A deleted species keeps its rows in the table, out
+    of sight, and they come back with it when it is restored; saving a medicine's list replaces only the rows it
+    shows (as FeedSuitability's)."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(Q(species__isnull=True) | Q(species__is_deleted=False))
+
+
+class MedicineWithdrawal(models.Model):
+    """A medicine's withdrawal for one species, or for every species without a row of its own (no species):
+    the days and the degree-days its SPC states, and the farm's safety margin on top. One row per medicine and
+    species, and one per medicine for every species (the database checks both). Source: the two withdrawal
+    columns of the medicine, which stated one value for every species.
+
+    The rows of a medicine are saved as a whole list on its Withdrawal tab (core.crud.RowList), so they have no
+    update or soft-delete columns, and they stay with their medicine when it is deleted and come back with it. The
+    label values are stored as the label states them: the margin is the farm's own and is applied when a
+    withdrawal is worked out, `used = value × (1 + margin ÷ 100)` rounded up (farm/health/withdrawal.py `Rule`).
+    At least one of days and degree-days (a database check): "unknown" is not a value, 0 means none. Both given, the
+    later end wins. A treatment with a medicine that has no row for the fish's species, nor one for every species,
+    holds them with an unknown end until one is added: never silently no withdrawal."""
+
+    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='withdrawals',
+                                 verbose_name=_('Medicine'))
+    # PROTECT: a species' withdrawals are the farm's food-safety data; a hard delete of the species is refused.
+    species = models.ForeignKey(Species, null=True, blank=True, on_delete=models.PROTECT,
+                                related_name='medicine_withdrawals', limit_choices_to={'is_deleted': False},
+                                verbose_name=_('Species'))
+    degree_days = models.DecimalField(_('Withdrawal (degree-days)'), max_digits=7, decimal_places=1, null=True,
+                                      blank=True, validators=[MinValueValidator(0),
+                                                              MaxValueValidator(MAX_WITHDRAWAL_DEGREE_DAYS)])
+    days = models.PositiveSmallIntegerField(_('Withdrawal (days)'), null=True, blank=True,
+                                            validators=[MaxValueValidator(MAX_WITHDRAWAL_DAYS)])
+    safety_margin_pct = models.DecimalField(_('Safety margin (%)'), max_digits=5, decimal_places=1, default=0,
+                                            validators=[MinValueValidator(0), MaxValueValidator(MAX_SAFETY_MARGIN_PCT)])
+    note = models.CharField(_('Note'), max_length=300, blank=True)
+    created_at = models.DateTimeField(_('Created at'), auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+        verbose_name=_('Created by'),
+    )
+
+    objects = WithdrawalManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        db_table = 'medicine_withdrawals'
+        ordering = ['medicine', models.F('species__common_name').asc(nulls_first=True)]
+        verbose_name = _('medicine withdrawal')
+        verbose_name_plural = _('medicine withdrawals')
+        constraints = [
+            # One row per medicine and species, and one per medicine for every species (NULL equal to NULL).
+            models.UniqueConstraint(fields=['medicine', 'species'], nulls_distinct=False,
+                                    name='uq_medicine_withdrawals_species',
+                                    violation_error_message=SAME_SPECIES_MESSAGE),
+            models.CheckConstraint(
+                condition=Q(degree_days__isnull=False) | Q(days__isnull=False), name='chk_medicine_withdrawals_value',
+                violation_error_message=_('Give the withdrawal in degree-days, in days or both, as the SPC states '
+                                          'it (0 when it has none).')),
+            models.CheckConstraint(
+                condition=Q(degree_days__gte=0, degree_days__lte=MAX_WITHDRAWAL_DEGREE_DAYS),
+                name='chk_medicine_withdrawals_degree_days'),
+            models.CheckConstraint(condition=Q(days__gte=0, days__lte=MAX_WITHDRAWAL_DAYS),
+                                   name='chk_medicine_withdrawals_days'),
+            models.CheckConstraint(
+                condition=Q(safety_margin_pct__gte=0, safety_margin_pct__lte=MAX_SAFETY_MARGIN_PCT),
+                name='chk_medicine_withdrawals_margin'),
+        ]
+
+    def __str__(self):
+        return f'{self.medicine} · {self.species.common_name if self.species_id else _("every species")}'
+
+    def clean(self):
+        """The rule between fields, with the error on the field to change; the database checks it too."""
+        super().clean()
+        if self.degree_days is None and self.days is None:
+            raise ValidationError({'degree_days': ValidationError(
+                _('Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none).'))})
 
 
 # ---- treatments ---------------------------------------------------------------------------------------

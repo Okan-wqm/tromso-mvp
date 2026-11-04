@@ -1,5 +1,6 @@
 """Fish health: the medicine withdrawal worked out on read (days, degree-days with known temperatures, a missing
-day counted as 0 °C, a running course, a void, the fish followed into another unit, medicated feed), the
+day counted at the species' assumed temperature or as 0 °C, a running course, a void, the fish followed into another
+unit, medicated feed, a withdrawal asked before a harvest only), the
 registry the harvest side reads, the statutory sea-lice limits, the write paths, and every page and dialog
 (medicines, treatments, health events, sea-lice counts, Production units) checked against the stored rows."""
 import io
@@ -12,25 +13,28 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.db.models import ProtectedError
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import translation
 
-from core import access, database, navigation
-from core.models import AuditLog
+from core import access, database, navigation, softdelete
+from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
 
 from ..handling import check as handling_check, withdrawal as registry
 from ..health import diseases, lice, notices, services, withdrawal
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
-    Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, Site, StockOperation, Supplier,
-    System, Tank, Treatment, WaterMeasurement,
+    Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species,
+    StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
 from ..feeding import services as feeding_services
-from .helpers import make_facility, point_of, role
+from .helpers import make_facility, make_species, point_of, role, rows_data
 from .test_stock import StockTestCase, make_unit
 
 
@@ -54,10 +58,18 @@ class HealthTestCase(StockTestCase):
 
     def medicine(self, name='Salmosan vet.', degree_days=None, days=None, administration='bath', kind='lice',
                  **fields):
+        """A medicine; with degree-days or days, its withdrawal for every species (its row without a species)."""
         values = {'active_substance': 'azamethiphos', 'lice_report_code': 'AZAMETHIPHOS' if kind == 'lice' else '',
                   **fields}
-        return Medicine.objects.create(name=name, kind=kind, administration=administration,
-                                       withdrawal_degree_days=degree_days, withdrawal_days=days, **values)
+        medicine = Medicine.objects.create(name=name, kind=kind, administration=administration, **values)
+        if degree_days is not None or days is not None:
+            self.withdraw(medicine, None, degree_days=degree_days, days=days)
+        return medicine
+
+    def withdraw(self, medicine, species, degree_days=None, days=None, margin=0, note=''):
+        """A medicine's withdrawal row for a species (None: for every species)."""
+        return MedicineWithdrawal.objects.create(medicine=medicine, species=species, degree_days=degree_days,
+                                                 days=days, safety_margin_pct=margin, note=note)
 
     def treat(self, medicine, start_ago, end_ago, units=None, reason='sea_lice', **fields):
         """A course from `start_ago` to `end_ago` days back (negative: ahead), through the service."""
@@ -119,7 +131,7 @@ class WithdrawalTests(HealthTestCase):
         [held] = self.held()
         self.assertEqual((held.until, held.estimated, held.remaining_degree_days), (self.day(-2), True, Decimal(10)))
 
-    def test_a_day_without_a_temperature_counts_as_zero_and_is_said(self):
+    def test_a_day_without_a_temperature_counts_as_zero_when_the_species_has_no_assumption_and_is_said(self):
         # 45 degree-days; 10 °C on four of the five days since the last day, the fourth day back not measured:
         # 40 by yesterday, 5 to go, about tomorrow. Had the missing day been filled in with 10 °C the sum
         # would have been 50 by yesterday and the fish free today.
@@ -127,15 +139,125 @@ class WithdrawalTests(HealthTestCase):
         for days_ago in (5, 3, 2, 1):
             self.temperature(self.t1, days_ago, '10')
         [held] = self.held()
-        self.assertEqual((held.until, held.estimated, held.days_without_temperature), (self.day(-1), True, 1))
-        self.assertIn('1 day without a water temperature is counted as 0 °C.', withdrawal.describe(held))
+        self.assertEqual((held.until, held.estimated, held.days_without_temperature, held.assumed_temperature),
+                         (self.day(-1), True, 1, None))
+        self.assertIn('1 day without a measured water temperature is counted as 0 °C: set the species’ assumed '
+                      'temperature in Reference data › Species.', withdrawal.describe(held))
 
-    def test_without_any_temperature_the_end_is_unknown(self):
+    def test_a_missing_day_counts_at_the_species_assumed_temperature_exactly_as_if_it_was_measured_there(self):
+        # 55 degree-days; 10 °C on four of the five days since the last day, the fourth day back not measured.
+        self.treat(self.medicine(degree_days=55), 6, 6)
+        for days_ago in (5, 3, 2, 1):
+            self.temperature(self.t1, days_ago, '10')
+        [unset] = self.held()
+        self.assertEqual((unset.until, unset.remaining_degree_days, unset.days_without_temperature),
+                         (self.day(-2), Decimal(15), 1))                 # 40 by yesterday, 15 to go at 10: 2 days
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('10.0'))
+        [assumed] = self.held()
+        self.assertEqual((assumed.until, assumed.estimated, assumed.remaining_degree_days,
+                          assumed.days_without_temperature, assumed.assumed_temperature),
+                         (self.day(-1), True, Decimal(5), 1, Decimal('10.0')))    # 50 by yesterday, 5 to go: 1 day
+        self.assertIn('1 day without a measured water temperature is counted at the assumed 10.0 °C (the species’ '
+                      'setting in Reference data).', withdrawal.describe(assumed))
+        self.assertNotIn('set the species’ assumed temperature', withdrawal.describe(assumed))
+        # A lower assumption is the conservative one: 4 °C for the missing day is 44 by yesterday, 11 to go.
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('4.0'))
+        [lower] = self.held()
+        self.assertEqual((lower.until, lower.remaining_degree_days, lower.assumed_temperature),
+                         (self.day(-2), Decimal(11), Decimal('4.0')))
+        self.assertIn('1 day without a measured water temperature is counted at the assumed 4.0 °C',
+                      withdrawal.describe(lower))
+        self.temperature(self.t1, 4, '10')                               # the same day, measured at that value
+        [measured] = self.held()
+        self.assertEqual((measured.until, measured.estimated, measured.remaining_degree_days),
+                         (assumed.until, assumed.estimated, assumed.remaining_degree_days))
+        self.assertEqual((measured.days_without_temperature, measured.until), (0, self.day(-1)))
+
+    def test_a_species_assumption_of_zero_is_a_value_not_an_absence(self):
+        self.treat(self.medicine(degree_days=45), 6, 6)
+        for days_ago in (5, 3, 2, 1):
+            self.temperature(self.t1, days_ago, '10')
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('0.0'))
+        [held] = self.held()
+        self.assertEqual((held.until, held.assumed_temperature), (self.day(-1), Decimal('0.0')))
+        self.assertIn('is counted at the assumed 0.0 °C (the species’ setting in Reference data)',
+                      withdrawal.describe(held))
+
+    def test_without_any_temperature_the_end_is_unknown_unless_the_species_has_an_assumption(self):
         self.treat(self.medicine(degree_days=50), 6, 6)
         [held] = self.held()
-        self.assertEqual((held.until, held.estimated, held.days_without_temperature), (None, True, 5))
+        self.assertEqual((held.until, held.estimated, held.days_without_temperature, held.projected_at_assumed),
+                         (None, True, 5, False))
         self.assertTrue(held.holds_on(self.day(-400)))
         self.assertIn('record the water temperature', withdrawal.describe(held))
+        self.assertIn('5 days without a measured water temperature are counted as 0 °C: set the species’ assumed '
+                      'temperature in Reference data › Species.', withdrawal.describe(held))
+        # The assumption fills the five past days (40) and projects the 10 left at 8 °C a day: 2 days, about the
+        # day after tomorrow.
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('8.0'))
+        [held] = self.held()
+        self.assertEqual((held.until, held.estimated, held.days_without_temperature, held.projected_at_assumed,
+                          held.remaining_degree_days), (self.day(-2), True, 5, True, Decimal(10)))
+        text = withdrawal.describe(held)
+        self.assertIn('Projected at the assumed 8.0 °C (the species’ setting in Reference data): no water '
+                      'temperature was measured in the last 30 days.', text)
+        self.assertIn('5 days without a measured water temperature are counted at the assumed 8.0 °C (the '
+                      'species’ setting in Reference data).', text)
+        self.assertNotIn('record the water temperature', text)
+        # A measured temperature in the window is projected at, not the assumption.
+        self.temperature(self.t1, 1, '10')
+        [held] = self.held()
+        self.assertFalse(held.projected_at_assumed)
+        self.assertIn('Projected at the mean water temperature of the last days measured.', withdrawal.describe(held))
+        # An assumed 0 °C cannot project an end.
+        WaterMeasurement.objects.all().delete()
+        Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('0.0'))
+        [held] = self.held()
+        self.assertEqual((held.until, held.projected_at_assumed), (None, False))
+
+    def test_the_assumed_temperature_texts_are_in_turkish_and_norwegian(self):
+        self.addCleanup(translation.activate, 'en')
+        self.treat(self.medicine(degree_days=50), 6, 6)        # five past days, none measured
+        words = {
+            'tr': ('Ölçülmüş su sıcaklığı olmayan 5 gün 0 °C sayıldı: Referans verileri › Balık türleri altında '
+                   'türün varsayılan sıcaklığını girin.',
+                   'Ölçülmüş su sıcaklığı olmayan 5 gün, varsayılan 8,0 °C ile sayıldı (Referans verilerindeki türün '
+                   'ayarı).',
+                   'Varsayılan 8,0 °C ile öngörüldü (Referans verilerindeki türün ayarı): son 30 günde su sıcaklığı '
+                   'ölçülmedi.'),
+            'nb': ('5 dager uten målt vanntemperatur telles som 0 °C: legg inn artens antatte temperatur i '
+                   'Referansedata › Arter.',
+                   '5 dager uten målt vanntemperatur telles med den antatte 8,0 °C (artens innstilling i '
+                   'Referansedata).',
+                   'Anslått med den antatte 8,0 °C (artens innstilling i Referansedata): ingen vanntemperatur ble '
+                   'målt de siste 30 dagene.'),
+        }
+        for language, (zero, assumed, projected) in words.items():
+            Profile.objects.update_or_create(user=self.user, defaults={'language': language})
+            Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=None)
+            self.assertContains(self.client.get(reverse('farm:treatments')), zero, msg_prefix=language)
+            Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal('8.0'))
+            page = self.client.get(reverse('farm:treatments'))
+            self.assertContains(page, assumed, msg_prefix=language)
+            self.assertContains(page, projected, msg_prefix=language)
+            self.assertNotContains(page, zero, msg_prefix=language)
+        # The same words in the harvest section of the unit's drawer, whose warning carries the reason.
+        page = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
+        self.assertContains(page, 'Ikke egnet for høsting')
+        self.assertContains(page, 'Anslått med den antatte 8,0 °C')
+
+    def test_the_species_of_the_batches_are_read_in_one_query_whatever_their_number(self):
+        other = self.stock(self.t2, count=500, species=self.trout)
+        third = self.stock(make_unit('T-03', self.hall), count=500)
+        self.treat(self.medicine(degree_days=50), 6, 6, units=[self.t1, self.t2])
+        counts = []
+        for ids in ({self.batch.pk}, {self.batch.pk, other.pk, third.pk}):
+            with CaptureQueriesContext(connection) as queries:
+                reader = withdrawal.Reader(ids, self.today)
+                reader.withdrawals()
+            counts.append(sum('FROM "batches"' in query['sql'] for query in queries.captured_queries))
+            self.assertEqual(set(reader.batches), ids)
+        self.assertEqual(counts, [1, 1])
 
     def test_the_later_of_days_and_degree_days_wins(self):
         for days_ago in range(1, 6):
@@ -149,6 +271,121 @@ class WithdrawalTests(HealthTestCase):
         self.treat(later, 6, 6)
         [held] = self.held()
         self.assertEqual((held.until, held.estimated), (self.day(-2), True))
+
+    # ---- the withdrawal per species (the rows of MedicineWithdrawal) ---------------------------------------
+    def test_the_species_row_beats_the_row_for_every_species(self):
+        # Treated 3 days ago: salmon 10 days, every other species 4 days. T-02 holds trout, treated with T-01.
+        trout = self.stock(self.t2, count=500, species=self.trout)
+        medicine = self.medicine(days=4)
+        self.withdraw(medicine, self.salmon, days=10)
+        self.treat(medicine, 3, 3, units=[self.t1, self.t2])
+        by_batch = {held.batch_id: held for held in self.held() + self.held(self.t2)}
+        self.assertEqual((by_batch[self.batch.pk].until, by_batch[trout.pk].until),
+                         (self.day(-8), self.day(-2)))              # 3 days ago + 10 + 1, and + 4 + 1
+        self.assertEqual(by_batch[self.batch.pk].rule.row.species, self.salmon)
+        self.assertIsNone(by_batch[trout.pk].rule.row.species)
+        self.assertEqual([each.until for each in registry.blocks(self.t1, self.today)], [self.day(-8)])
+
+    def test_no_row_for_the_species_and_none_for_every_species_is_an_unknown_end_and_said(self):
+        medicine = self.medicine()                                  # no row at all
+        self.withdraw(medicine, self.trout, days=4)               # a row, but for another species
+        self.treat(medicine, 3, 3)
+        [held] = self.held()
+        self.assertEqual((held.until, held.rule, held.holds_on(self.day(-400))), (None, None, True))
+        text = withdrawal.describe(held)
+        self.assertIn('No withdrawal is recorded for Atlantic salmon of Salmosan vet.: add it in Reference data › '
+                      'Medicines.', text)
+        self.assertNotIn('record the water temperature', text)
+        [block] = registry.blocks(self.t1, self.today)
+        self.assertEqual((block.until, block.approximate), (None, False))
+        # The harvest is warned: an unknown end is never clear.
+        [warning] = handling_check.check('harvest', self.t1, self.today)
+        self.assertIn('its end unknown', warning.message())
+        self.assertIn('No withdrawal is recorded for Atlantic salmon', warning.message())
+        # Adding the row for every species gives it its end at once.
+        self.withdraw(medicine, None, days=7)
+        self.assertEqual(self.held()[0].until, self.day(-5))
+
+    def test_the_safety_margin_is_added_to_both_values_and_rounded_up_and_the_label_value_is_kept(self):
+        # 7 days + 20 % = 8.4, so 9 days; 30 degree-days + 20 % = 36, reached by 4 days at 10 °C: the days decide.
+        medicine = self.medicine()
+        row = self.withdraw(medicine, None, degree_days=30, days=7, margin=20)
+        self.treat(medicine, 5, 5)
+        for days_ago in range(1, 5):
+            self.temperature(self.t1, days_ago, '10')
+        [held] = self.held()
+        self.assertEqual((held.rule.days, held.rule.degree_days), (9, Decimal(36)))
+        self.assertEqual((held.until, held.estimated), (self.day(-5), False))        # by days: 5 days ago + 9 + 1
+        row.refresh_from_db()
+        self.assertEqual((row.days, row.degree_days, row.safety_margin_pct), (7, Decimal('30.0'), Decimal('20.0')))
+        self.assertEqual(held.rule.text(), '30 degree-days + 20 % safety margin = 36 degree-days or 7 days + 20 % '
+                                           'safety margin = 9 days, whichever ends later')
+        self.assertIn('withdrawal 30 degree-days + 20 % safety margin = 36 degree-days or 7 days + 20 % safety '
+                      'margin = 9 days, whichever ends later.', withdrawal.describe(held))
+        # Without a margin the label value is used as it is, a value with a decimal too.
+        row.safety_margin_pct, row.degree_days = 0, Decimal('30.5')
+        row.save()
+        [held] = self.held()
+        self.assertEqual((held.rule.degree_days, held.rule.days), (Decimal('30.5'), 7))
+        self.assertEqual(held.rule.text(), '30.5 degree-days or 7 days, whichever ends later')
+        # Rounded up, never down: 35 + 10 % = 38.5, so 39.
+        row.safety_margin_pct, row.degree_days = Decimal('10'), Decimal(35)
+        row.save()
+        self.assertEqual(self.held()[0].rule.degree_days, Decimal(39))
+
+    def test_a_margin_on_the_degree_days_moves_the_end(self):
+        # 40 degree-days at 8 °C a day is 5 days; with 25 % it is 50 and 10 are still to come after yesterday.
+        medicine = self.medicine()
+        self.withdraw(medicine, None, degree_days=40)
+        self.treat(medicine, 6, 6)
+        for days_ago in range(1, 6):
+            self.temperature(self.t1, days_ago, '8')
+        self.assertEqual(self.held(day=self.day(1))[0].until, self.today)             # reached by yesterday
+        MedicineWithdrawal.objects.update(safety_margin_pct=25)
+        [held] = self.held()
+        self.assertEqual((held.rule.degree_days, held.estimated, held.remaining_degree_days),
+                         (Decimal(50), True, Decimal(10)))
+
+    def test_the_withdrawal_of_each_species_of_one_course_follows_its_own_row(self):
+        medicine = self.medicine()
+        self.withdraw(medicine, self.salmon, degree_days=50, margin=0)
+        self.withdraw(medicine, self.trout, degree_days=20)
+        trout = self.stock(self.t2, count=500, species=self.trout)
+        self.treat(medicine, 3, 3, units=[self.t1, self.t2])
+        for unit in (self.t1, self.t2):
+            for days_ago in (1, 2):
+                self.temperature(unit, days_ago, '10')
+        salmon_held, trout_held = self.held()[0], self.held(self.t2, day=self.day(1))[0]
+        self.assertEqual((salmon_held.batch_id, trout_held.batch_id), (self.batch.pk, trout.pk))
+        self.assertEqual((salmon_held.rule.degree_days, trout_held.rule.degree_days), (Decimal(50), Decimal(20)))
+        # 3 days ago is the last day: its 2 days after at 10 °C are 20, so the trout are free today...
+        self.assertEqual((trout_held.until, trout_held.estimated), (self.today, False))
+        self.assertEqual(self.held(self.t2), [])
+        # ...and the salmon need 30 more: projected at 10 °C, 3 days.
+        self.assertEqual((salmon_held.estimated, salmon_held.remaining_degree_days, salmon_held.until),
+                         (True, Decimal(30), self.day(-3)))
+
+    def test_the_rows_of_the_medicines_are_read_in_one_query(self):
+        first, second = self.medicine(days=3), self.medicine(name='Slice vet.', days=5)
+        self.treat(first, 4, 4)
+        self.treat(second, 4, 4)
+        with CaptureQueriesContext(connection) as queries:
+            reader = withdrawal.Reader({self.batch.pk}, self.today)
+            reader.withdrawals()
+        self.assertEqual(sum('FROM "medicine_withdrawals"' in query['sql'] for query in queries.captured_queries), 1)
+        self.assertEqual(sorted(reader.rows), sorted([first.pk, second.pk]))
+
+    def test_there_is_one_resolution_of_the_row(self):
+        medicine = self.medicine(days=3)
+        self.withdraw(medicine, self.salmon, days=9)
+        rows = list(medicine.withdrawals.all())
+        self.assertEqual(withdrawal.row_for(rows, self.salmon.pk).days, 9)
+        self.assertEqual(withdrawal.row_for(rows, self.trout.pk).days, 3)
+        self.assertIsNone(withdrawal.row_for([row for row in rows if row.species_id], self.trout.pk))
+        # The Reader asks it: the row it holds a batch by is the one row_for gives its species.
+        self.treat(medicine, 3, 3)
+        [held] = self.held()
+        self.assertEqual(held.rule.row, withdrawal.row_for(rows, self.salmon.pk))
 
     def test_a_running_course_counts_from_its_planned_last_day(self):
         treatment = self.treat(self.medicine(days=7), 1, -3)          # yesterday to 3 days ahead
@@ -176,9 +413,9 @@ class WithdrawalTests(HealthTestCase):
         # the mean 8 °C (12, 6, 6), about tomorrow. With T-01's water alone it would have been 36: free today.
         self.treat(self.medicine(degree_days=30), 4, 4)
         moving = handling_check.assess('transport', self.t1, self.day(2), self.batch)
-        self.assertEqual([warning.warning for warning in moving.warnings], ['withdrawal'])
+        self.assertEqual(moving.warnings, [])           # live fish moved: a meat withdrawal is not asked
         stock_services.record_transfer(self.user, source=self.t1, batch=self.batch, day=self.day(2),
-                                       legs=[(self.t2, 2000)], reason='density', handling_ack=moving.fingerprint)
+                                       legs=[(self.t2, 2000)], reason='density')
         for days_ago, unit, value in ((3, self.t1, '12'), (2, self.t1, '12'), (2, self.t2, '6'), (1, self.t1, '12'),
                                       (1, self.t2, '6')):
             self.temperature(unit, days_ago, value)
@@ -192,6 +429,28 @@ class WithdrawalTests(HealthTestCase):
         self.t1.refresh_from_db()
         self.stock(self.t1, count=500, days_ago=1)
         self.assertEqual(self.held(self.t1), [])
+
+    def test_only_a_harvest_is_warned_of_a_withdrawal_a_transport_and_a_grading_are_not(self):
+        # The same batch and treatment: held 3 days after its last, with 7 days of withdrawal.
+        self.treat(self.medicine(days=7), 3, 3)
+        harvest = handling_check.assess('harvest', self.t1, self.today, self.batch)
+        self.assertEqual([(warning.warning, warning.block.until) for warning in harvest.warnings],
+                         [('withdrawal', self.day(-5))])
+        self.assertTrue(harvest.messages()[0].startswith('Not suitable for harvest — medicine withdrawal of '))
+        for kind in ('transport', 'grading', 'treatment'):
+            with self.subTest(kind=kind):
+                result = handling_check.assess(kind, self.t1, self.today, self.batch)
+                self.assertEqual(result.warnings, [])
+                self.assertFalse([note for note in result.notes if 'withdrawal' in note.lower()])
+        # Through the stock service: a grading goes ahead unasked, a harvest is asked for its box.
+        stock_services.record_grading(self.user, source=self.t1, batch=self.batch, day=self.today,
+                                      outputs=[(self.t2, 500, Decimal(140), 'Large')],
+                                      remainder_avg_weight_g=Decimal(120))
+        self.assertFalse(HandlingAcknowledgement.objects.exists())
+        self.assertEqual(self.refused(stock_services.record_harvest, self.user, unit=self.t1, batch=self.batch,
+                                      day=self.today, count=100, measured_weight_kg=Decimal(12),
+                                      facility=make_facility()),
+                         {'handling_ack': ['Tick the box to go on despite these warnings.']})
 
     def test_a_unit_without_its_own_sample_takes_its_loops(self):
         loop = System.objects.create(name='RAS 1', code='R1', site=self.bergen, production_department=self.hall)
@@ -572,8 +831,7 @@ class DiseaseCatalogueTests(SimpleTestCase):
 def medicine_data(**overrides):
     data = {'name': 'Salmosan vet.', 'marketing_authorisation': '', 'kind': 'lice', 'administration': 'bath',
             'active_substance': 'azamethiphos', 'lice_report_code': 'AZAMETHIPHOS', 'strength_value': '',
-            'strength_unit': '', 'manufacturer': '', 'status': 'active', 'withdrawal_degree_days': '',
-            'withdrawal_days': '', 'notes': ''}
+            'strength_unit': '', 'manufacturer': '', 'status': 'active', 'notes': ''}
     data.update(overrides)
     return data
 
@@ -589,28 +847,33 @@ class MedicinePageTests(HealthTestCase):
     def test_create_read_edit_delete(self):
         self.create(name='Salmosan vet.', marketing_authorisation='MT-12345', strength_value='500',
                     strength_unit='MILLIGRAM_PER_GRAM', manufacturer=str(self.pharma.pk), prescription_only='on',
-                    status='active', withdrawal_degree_days='150', withdrawal_days='7', notes='Keep dry')
+                    status='active', notes='Keep dry')
         medicine = Medicine.objects.get()
         self.assertEqual(
             (medicine.name, medicine.marketing_authorisation, medicine.kind, medicine.administration,
              medicine.active_substance, medicine.lice_report_code, medicine.strength_value, medicine.strength_unit,
-             medicine.manufacturer, medicine.prescription_only, medicine.status, medicine.withdrawal_degree_days,
-             medicine.withdrawal_days, medicine.notes, medicine.created_by),
+             medicine.manufacturer, medicine.prescription_only, medicine.status, medicine.notes,
+             medicine.created_by),
             ('Salmosan vet.', 'MT-12345', 'lice', 'bath', 'azamethiphos', 'AZAMETHIPHOS', Decimal('500.000'),
-             'MILLIGRAM_PER_GRAM', self.pharma, True, 'active', 150, 7, 'Keep dry', self.user))
+             'MILLIGRAM_PER_GRAM', self.pharma, True, 'active', 'Keep dry', self.user))
+        # A medicine is made first, its withdrawal rows follow on their own tab: none yet.
+        self.assertEqual(medicine.withdrawals.count(), 0)
         page = self.client.get(reverse('farm:medicine_list'))
         self.assertEqual(list(page.context['objects']), [medicine])
-        self.assertContains(page, '150 degree-days or 7 days, whichever ends later')
+        self.assertContains(page, 'Not recorded')
+        self.withdraw(medicine, None, degree_days=150, days=7)
+        self.assertContains(self.client.get(reverse('farm:medicine_list')),
+                            '150 degree-days or 7 days, whichever ends later')
         # Edit: every optional field cleared, the kind changed.
         self.edit(medicine, name='Aqui-S vet.', kind='anaesthetic', active_substance='isoeugenol',
-                  lice_report_code='', withdrawal_degree_days='0', withdrawal_days='', status='inactive')
+                  lice_report_code='', status='inactive')
         medicine.refresh_from_db()
         self.assertEqual(
             (medicine.name, medicine.marketing_authorisation, medicine.kind, medicine.lice_report_code,
              medicine.strength_value, medicine.strength_unit, medicine.manufacturer, medicine.prescription_only,
-             medicine.status, medicine.withdrawal_degree_days, medicine.withdrawal_days, medicine.notes,
-             medicine.version),
-            ('Aqui-S vet.', '', 'anaesthetic', '', None, '', None, False, 'inactive', 0, None, '', 2))
+             medicine.status, medicine.notes, medicine.version),
+            ('Aqui-S vet.', '', 'anaesthetic', '', None, '', None, False, 'inactive', '', 2))
+        self.assertEqual(medicine.withdrawals.get().days, 7)                # editing the medicine leaves its rows
         self.client.post(reverse('farm:medicine_delete', args=[medicine.pk]))
         self.assertTrue(Medicine.all_objects.get(pk=medicine.pk).is_deleted)
         self.assertEqual(list(AuditLog.objects.filter(entity_type='medicine').values_list('action', flat=True)),
@@ -620,18 +883,16 @@ class MedicinePageTests(HealthTestCase):
         cases = [
             ({'lice_report_code': ''}, 'lice_report_code'),
             ({'kind': 'antibacterial'}, 'lice_report_code'),
-            ({}, 'withdrawal_degree_days'),
-            ({'withdrawal_days': '-1'}, 'withdrawal_days'),
-            ({'withdrawal_days': '1', 'strength_value': '5'}, 'strength_unit'),
-            ({'withdrawal_days': '1', 'strength_unit': 'PROSENT'}, 'strength_value'),
-            ({'withdrawal_days': '1', 'manufacturer': str(self.vet.pk)}, 'manufacturer'),
+            ({'strength_value': '5'}, 'strength_unit'),
+            ({'strength_unit': 'PROSENT'}, 'strength_value'),
+            ({'manufacturer': str(self.vet.pk)}, 'manufacturer'),
         ]
         for overrides, field in cases:
             with self.subTest(overrides=overrides):
                 response = self.create(**overrides)
                 self.assertIn(field, response.context['form'].errors)
-        self.create(withdrawal_days='1')
-        self.assertIn('name', self.create(name='SALMOSAN VET.', withdrawal_days='1').context['form'].errors)
+        self.create()
+        self.assertIn('name', self.create(name='SALMOSAN VET.').context['form'].errors)
 
     def test_a_medicine_a_treatment_used_is_not_deleted_and_its_maker_keeps_the_category(self):
         medicine = self.medicine(days=7, manufacturer=self.pharma)
@@ -643,6 +904,179 @@ class MedicinePageTests(HealthTestCase):
             self.pharma.full_clean()
         self.assertIn('1 medicine is made by it: keep “Medicines and vaccines” ticked.',
                       caught.exception.message_dict['supplies'])
+
+
+def withdrawal_data(rows, initial=0):
+    return rows_data('withdrawals', rows, initial)
+
+
+class MedicineWithdrawalPageTests(HealthTestCase):
+    """A medicine's withdrawal per species: the rows on the Withdrawal tab, saved as a list."""
+
+    def setUp(self):
+        super().setUp()
+        self.slice = self.medicine(name='Slice vet.', administration='in_feed', active_substance='emamectin benzoate',
+                                   lice_report_code='EMAMECTIN_BENZOAT')
+        self.url = reverse('farm:medicine_withdrawals', args=[self.slice.pk])
+        self.cod = make_species('COD', 'Atlantic cod', 'Gadus morhua', saltwater=True)
+
+    def rows(self):
+        return list(self.slice.withdrawals.values_list('species__code', 'degree_days', 'days', 'safety_margin_pct',
+                                                       'note'))
+
+    def test_create_read_edit_delete(self):
+        # Create: one for every species, two of their own, and a row left blank.
+        response = self.client.post(self.url, withdrawal_data([
+            {'species': '', 'degree_days': '150', 'days': '7', 'safety_margin_pct': '20', 'note': 'SPC 2024'},
+            {'species': str(self.salmon.pk), 'degree_days': '', 'days': '10', 'safety_margin_pct': '', 'note': ''},
+            {'species': str(self.trout.pk), 'degree_days': '0', 'days': '', 'safety_margin_pct': '12.5',
+             'note': 'Vet, Nov 2026'},
+            {'species': '', 'degree_days': '', 'days': '', 'safety_margin_pct': '', 'note': ''},
+        ]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.rows(), [
+            (None, Decimal('150.0'), 7, Decimal('20.0'), 'SPC 2024'),
+            ('SAL', None, 10, Decimal('0.0'), ''),
+            ('RBT', Decimal('0.0'), None, Decimal('12.5'), 'Vet, Nov 2026'),
+        ])
+        self.assertEqual(set(self.slice.withdrawals.values_list('created_by', flat=True)), {self.user.pk})
+        # Read: the edit page lists them on their tab, the list shows them per species.
+        page = self.client.get(reverse('farm:medicine_edit', args=[self.slice.pk]))
+        self.assertEqual([(form['species'].value(), form['days'].value()) for form in page.context['withdrawals'].forms],
+                         [(None, 7), (self.salmon.pk, 10), (self.trout.pk, None)])
+        self.assertContains(page, 'data-panel="withdrawal"')
+        self.assertContains(page, 'Save withdrawal')
+        listing = self.client.get(reverse('farm:medicine_list'))
+        self.assertContains(listing, 'Other species</strong>: 150 degree-days + 20 % safety margin = 180 '
+                                     'degree-days or 7 days + 20 % safety margin = 9 days, whichever ends later')
+        self.assertContains(listing, 'Atlantic salmon</strong>: 10 days')
+        self.assertContains(listing, 'Rainbow trout</strong>: 0 degree-days + 12.5 % safety margin = 0 degree-days')
+        self.assertContains(listing, 'SPC 2024')
+        # Edit: a value changes, a margin is cleared, a species is changed; Delete: a row is removed.
+        every, salmon, trout = self.slice.withdrawals.all()
+        self.client.post(self.url, withdrawal_data([
+            {'id': str(every.pk), 'species': '', 'degree_days': '', 'days': '14', 'safety_margin_pct': '',
+             'note': 'SPC 2025'},
+            {'id': str(salmon.pk), 'species': str(self.cod.pk), 'degree_days': '', 'days': '10',
+             'safety_margin_pct': '5', 'note': ''},
+            {'id': str(trout.pk), 'species': str(self.trout.pk), 'degree_days': '0', 'days': '', 'DELETE': True},
+        ], initial=3))
+        self.assertEqual(self.rows(), [
+            (None, None, 14, Decimal('0.0'), 'SPC 2025'),
+            ('COD', None, 10, Decimal('5.0'), ''),
+        ])
+        entry = AuditLog.objects.filter(entity_type='medicine', action='update').latest('created_at')
+        self.assertEqual(list(entry.changes), ['Withdrawal'])
+        before, after = entry.changes['Withdrawal']
+        self.assertIn('Rainbow trout: 0 degree-days + 12.5 % safety margin = 0 degree-days (Vet, Nov 2026)', before)
+        self.assertEqual(after, 'Every species: 14 days (SPC 2025); Atlantic cod: 10 days + 5 % safety margin = 11 days')
+        # Delete them all: the medicine has no withdrawal recorded.
+        self.client.post(self.url, withdrawal_data([]))
+        self.assertEqual(self.rows(), [])
+        self.assertContains(self.client.get(reverse('farm:medicine_list')), 'Not recorded')
+
+    def test_the_rules_of_the_rows_on_their_fields(self):
+        def post(*rows):
+            return self.client.post(self.url, withdrawal_data(list(rows)))
+
+        every = {'species': '', 'degree_days': '', 'days': '3'}
+        for row, field in (({'species': str(self.salmon.pk)}, 'degree_days'),                  # no value at all
+                           ({**every, 'days': '-1'}, 'days'), ({**every, 'days': '1001'}, 'days'),
+                           ({**every, 'degree_days': '10001'}, 'degree_days'),
+                           ({**every, 'degree_days': '-1'}, 'degree_days'),
+                           ({**every, 'safety_margin_pct': '200.1'}, 'safety_margin_pct'),
+                           ({**every, 'safety_margin_pct': '-1'}, 'safety_margin_pct'),
+                           ({**every, 'degree_days': '10.55'}, 'degree_days'),
+                           ({**every, 'note': 'x' * 301}, 'note')):
+            with self.subTest(row=row):
+                response = post(row)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(field, response.context['withdrawals'].forms[0].errors)
+        self.assertEqual(self.rows(), [])
+        # The bounds themselves are in; 0 means none.
+        self.assertEqual(post({**every, 'degree_days': '10000', 'days': '1000', 'safety_margin_pct': '200'}).status_code,
+                         302)
+        self.assertEqual(self.rows(), [(None, Decimal('10000.0'), 1000, Decimal('200.0'), '')])
+        # One row per species, and one for every species.
+        for rows in ([{'species': str(self.salmon.pk), 'days': '3'}, {'species': str(self.salmon.pk), 'days': '4'}],
+                     [every, {**every, 'days': '4'}]):
+            response = post(*rows)
+            self.assertIn('Two rows are for the same species.', response.context['withdrawals'].non_form_errors())
+            self.assertEqual(response.context['open_tab'], 'withdrawal')
+        # At most 50 rows; a species that is deleted is not offered.
+        response = post(*[{'species': '', 'days': '1'}] * 51)
+        self.assertIn('A medicine has at most 50 rows.', response.context['withdrawals'].non_form_errors())
+        self.cod.soft_delete(self.user)
+        page = self.client.get(reverse('farm:medicine_edit', args=[self.slice.pk]))
+        self.assertNotIn(self.cod, page.context['withdrawals'].empty_form.fields['species'].queryset)
+
+    def test_the_database_holds_the_rules_too(self):
+        def make(**fields):
+            return MedicineWithdrawal.objects.create(medicine=self.slice, **fields)
+
+        for fields in ({'species': None}, {'species': self.salmon, 'degree_days': None, 'days': None},
+                       {'species': None, 'days': -1}, {'species': None, 'days': 1001},
+                       {'species': None, 'degree_days': Decimal(-1)}, {'species': None, 'degree_days': Decimal(10001)},
+                       {'species': None, 'days': 1, 'safety_margin_pct': Decimal(-1)},
+                       {'species': None, 'days': 1, 'safety_margin_pct': Decimal(200.1)}):
+            with self.subTest(fields=fields), self.assertRaises(IntegrityError), transaction.atomic():
+                make(**fields)
+        make(species=None, days=1)
+        make(species=self.salmon, degree_days=Decimal(10000), days=1000, safety_margin_pct=Decimal(200))
+        make(species=self.trout, degree_days=Decimal(0))                         # 0 is a value: none
+        for fields in ({'species': None, 'days': 2}, {'species': self.salmon, 'days': 2}):     # a second row
+            with self.subTest(second=fields), self.assertRaises(IntegrityError), transaction.atomic():
+                make(**fields)
+        other = self.medicine(name='Other', days=1)
+        self.assertEqual(other.withdrawals.count(), 1)                          # the same species on another medicine
+
+    def test_the_rows_stay_with_their_medicine_when_it_is_deleted_and_come_back_when_it_is_restored(self):
+        self.withdraw(self.slice, None, days=14)
+        self.withdraw(self.slice, self.salmon, days=10, margin=10, note='x')
+        softdelete.execute(plan_delete(self.slice), self.user)
+        self.assertEqual(self.slice.withdrawals.count(), 2)                 # untouched: owned rows stay with the parent
+        self.assertEqual(AuditLog.objects.filter(entity_type='medicine withdrawal').count(), 0)
+        softdelete.restore(Medicine.all_objects.get(pk=self.slice.pk), self.user)
+        self.assertEqual(sorted(self.rows(), key=str), sorted([(None, None, 14, Decimal('0.0'), ''),
+                                                              ('SAL', None, 10, Decimal('10.0'), 'x')], key=str))
+
+    def test_a_species_keeps_its_rows_while_it_is_deleted_and_a_hard_delete_is_refused(self):
+        self.withdraw(self.slice, self.cod, days=10)
+        with self.assertRaises(ProtectedError), transaction.atomic():
+            Species.all_objects.get(pk=self.cod.pk).delete()
+        self.cod.soft_delete(self.user)
+        self.assertEqual(self.slice.withdrawals.count(), 0)                  # out of sight with the species
+        self.assertEqual(MedicineWithdrawal.all_objects.filter(medicine=self.slice).count(), 1)
+        softdelete.restore(Species.all_objects.get(pk=self.cod.pk), self.user)
+        self.assertEqual(self.slice.withdrawals.count(), 1)                  # and back with it
+
+    def test_it_needs_the_change_permission_of_the_medicine(self):
+        viewer = get_user_model().objects.create_user('kari', 'kari@example.com', 'x')
+        viewer.groups.add(role('Medicine viewer', 'view_medicine'))
+        self.client.force_login(viewer)
+        response = self.client.post(self.url, withdrawal_data([{'species': '', 'days': '3'}]))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.rows(), [])
+
+    def test_the_withdrawal_tab_is_the_form_after_the_medicine_exists(self):
+        page = self.client.get(reverse('farm:medicine_create'), headers={'X-Modal': '1'})
+        self.assertContains(page, 'The withdrawal can be added once the medicine is created.')
+        self.assertNotContains(page, 'Save withdrawal')
+        self.assertContains(page, 'data-tab="withdrawal">Withdrawal</button>')
+
+    def test_the_treatment_dialog_and_the_last_day_dialog_say_the_rule_of_the_medicine(self):
+        self.withdraw(self.slice, None, degree_days=150, margin=20)
+        self.withdraw(self.slice, self.trout, days=7)
+        page = self.client.get(reverse('farm:treatment_record'), {'unit': self.t1.pk})
+        self.assertContains(page, 'Slice vet. · emamectin benzoate · in feed · Other species: 150 degree-days + 20 % '
+                                  'safety margin = 180 degree-days; Rainbow trout: 7 days')
+        bare = self.medicine(name='Bare vet.')
+        self.assertContains(self.client.get(reverse('farm:treatment_record'), {'unit': self.t1.pk}),
+                            'Bare vet. · azamethiphos · bath · Not recorded')
+        treatment = self.treat(self.slice, 3, 3, method='in_feed')
+        self.assertContains(self.client.get(reverse('farm:treatment_last_day', args=[treatment.pk])),
+                            'withdrawal Other species: 150 degree-days')
+        self.assertIsNotNone(bare.pk)
 
 
 def event_data(site, **overrides):

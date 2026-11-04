@@ -1,5 +1,5 @@
 """How the health figures read on the page, in the person's language: a lice average to two decimals, a
-medicine's withdrawal rule, the withdrawal line of a unit or a batch, and whether a record may still be voided."""
+medicine's withdrawal rules per species, the withdrawal line of a unit or a batch, and whether a record may still be voided."""
 from django import template
 from django.utils import formats
 from django.utils.translation import gettext as _
@@ -31,8 +31,14 @@ def told_of(told, event):
 
 @register.filter
 def withdrawal_rule(medicine):
-    """150 degree-days, 7 days, or both."""
-    return withdrawal.rule(medicine)
+    """A medicine's withdrawal on one line: 150 degree-days, 7 days, or both; per species when they differ."""
+    return withdrawal.rules_text(medicine)
+
+
+@register.filter
+def withdrawal_lines(medicine):
+    """[(who, Rule)] of a medicine's withdrawal rows, for the Medicines list."""
+    return withdrawal.rule_lines(medicine)
 
 
 def _date(day):

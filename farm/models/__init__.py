@@ -12,7 +12,7 @@ from .feeding import FeedingRecord
 from .feeding_protocol import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
 from .handling import HandlingAcknowledgement, HandlingRule
 from .harvest import HandlingPlanItem, HarvestRecord, ProductionPlan, SlaughterFacility
-from .health import HealthEvent, LiceCount, Medicine, Treatment
+from .health import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Treatment
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
@@ -26,7 +26,7 @@ from .water_point import SamplingPoint
 __all__ = [
     'Batch', 'DeliveryRecord', 'EscapeRecord', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
     'FeedingProtocol', 'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
-    'HealthEvent', 'LiceCount', 'Medicine', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
+    'HealthEvent', 'LiceCount', 'Medicine', 'MedicineWithdrawal', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
     'ProtocolBand', 'ProtocolRate', 'SamplingPoint', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
     'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterLimit',
     'WaterMeasurement',

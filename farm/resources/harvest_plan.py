@@ -101,11 +101,13 @@ def plan_row(request, item):
     items only) and the link that records it."""
     today = local_today(item.unit)
     status = item.status_on(today)
-    row = {'item': item, 'status': status, 'fast': None, 'withdrawal': None, 'record_url': ''}
+    row = {'item': item, 'status': status, 'fast': None, 'withdrawal': None, 'earliest': None, 'record_url': ''}
     if not item.is_open:
         return row
     row['fast'] = fasting.fast_of(item)
     row['withdrawal'] = check.in_force(item.unit, item.date, [item.batch])
+    if item.kind == PlanKind.HARVEST:       # a transport moves live fish: no suitable date to a slaughter facility
+        row['earliest'] = check.earliest(item.unit, item.batch)
     if request.user.has_perm(RECORD) and stock_read.fish_of_batch(item.batch_id).get(item.unit_id):
         operation = 'harvest' if item.kind == PlanKind.HARVEST else 'transfer'
         here = request.get_full_path()
@@ -187,6 +189,7 @@ def share_row(request, unit, share, plan, feeding):
     today = local_today(unit)
     row = {'unit': unit, 'share': share, 'plan': plan, 'last_fed': feeding.last_fed if feeding else None,
            'today': today, 'withdrawal': check.in_force(unit, today, [share.batch]),
+           'earliest': check.earliest(unit, share.batch),
            'expected': share.batch.expected_harvest_date, 'plan_harvest_url': ''}
     if request.user.has_perm('farm.add_handlingplanitem'):
         prefill = {'kind': PlanKind.HARVEST, 'unit': unit.pk, 'batch': share.batch.pk,

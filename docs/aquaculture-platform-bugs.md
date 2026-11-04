@@ -900,12 +900,26 @@ veterinarian. Read 2026-11-03.
 
 Context, not rules: Norwegian law caps holding in the slaughter pen at 6 days (akvakulturdriftsforskriften § 54, per
 Mattilsynet's slaughter-pen guide); Scotland states the pre-slaughter fast in degree-days with veterinary input; the
-RSPCA trout standards (2025) cap it at 54 degree-days. A degree-day rule and a "fasted too long" warning are later.
+RSPCA trout standards (2025) cap it at 54 degree-days. A "fasted too long" warning is later; a harvest rule can now ask
+for purging in degree-days (below).
 
 ### Owner decisions taken for the MVP (they can be changed)
 
 - Nothing is blocked: a medicine withdrawal in force and too short a fast are warnings; going on stores an
   acknowledgement per warning (what was shown) and logs the operation as critical.
+- **A medicine withdrawal is asked before a harvest only** (owner, 2026-11-03): it is a meat withdrawal, so it means
+  nothing when live fish are moved or graded, where the fasting rule and the live-transfer facts are what matter. The
+  informational badges (Production units, the drawer, the plans) stay. Found and fixed with it: the acknowledgement
+  box's help text said "Fish under a medicine withdrawal must not go to food" on the treatment, transfer and grading
+  dialogs too, where no withdrawal warning can appear; only the harvest's box says it now.
+- **Two different "arınma" matter** (owner, 2026-11-03): the medicine withdrawal (the drug must leave the flesh; per
+  medicine and species, days and/or degree-days, with the farm's own safety margin; Reference data › Medicines) and
+  **purging** (the fish are held without feed, in clean water, so that any off-flavour clears; degree-days, the harvest
+  rule's own; Reference data › Handling rules). They can overlap; the later decides the earliest suitable harvest date,
+  which the harvest dialog, the drawer and the plans show with which one decides. The fast of a rule is typed in hours
+  or days and stored in hours (producers know the purge in days). The degree-days are the full days after the day of the
+  last feeding up to the day before the harvest; a past day without a measured temperature counts at the species'
+  assumed temperature (Reference data › Species), else 0 °C, the same function as the withdrawal's.
 - A grading is checked against the grading and the transport rule; the longer applies.
 - The fasting rules are editable data per kind and species (Setup › Reference data › Handling rules).
 - The slaughter facility is its own model; every harvest names one; no default facility.
@@ -1065,8 +1079,17 @@ FOR-2012-12-05-1140, last amended FOR-2023-12-14-2087; dyrehelseforskriften FOR-
 - A withdrawal holds from the treatment's first day to the day before `until`; a harvest dated before the
   treatment is not held.
 - Counting conventions to confirm with the farm's vet (owner decision pending): days count from the day after
-  the last treatment day; a day without a temperature counts 0 °C; with a batch in several units the lowest daily
-  mean counts; a measured negative daily mean counts as measured.
+  the last treatment day; with a batch in several units the lowest daily mean counts; a measured negative daily mean
+  counts as measured.
+- **A past day without a measured water temperature must not silently count as 0 °C** (owner, 2026-11-03): it counts at
+  the batch species' assumed temperature (`Species.withdrawal_temperature_c`, Reference data › Species, 0 to 40 °C, the
+  farm's own assumption, a low value the conservative one), 0 °C only when the species has none, and the warning says
+  which and how many days. A projection with no temperature measured lately is made at the assumed temperature when
+  there is one, else the end stays unknown.
+- **The withdrawal is per medicine and species, with a safety margin** (owner, 2026-11-03): rows of
+  `medicine_withdrawals` (a species, or every species without a row of its own; degree-days and/or days; the farm's
+  margin in percent, rounded up when applied; a note) replace the medicine's two columns. A species with no row and no
+  row for every species is held with an unknown end ("no withdrawal is recorded for ..."), never as no withdrawal.
 
 ## Tasks
 

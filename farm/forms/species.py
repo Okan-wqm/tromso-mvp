@@ -15,7 +15,10 @@ SPECIES_FORM_TABS = [
                  _('Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh '
                    'water and are farmed on in sea water: tick both.')),
     ]),
-    ('regulatory', _('Regulatory'), ['official_code', 'cleaner_fish_type']),
+    ('regulatory', _('Regulatory'), [
+        'official_code', 'cleaner_fish_type',
+        Fieldset(_('Medicine withdrawal'), ['withdrawal_temperature_c']),
+    ]),
     ('status', _('Status and notes'), ['status', 'notes']),
 ]
 
@@ -31,6 +34,7 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
     class Meta:
         model = Species
         fields = tab_fields(SPECIES_FORM_TABS)
+        localized_fields = ['withdrawal_temperature_c']
         help_texts = {
             'common_name': _('The English name, e.g. Atlantic salmon.'),
             'local_name': _('The name in the farm’s own language, e.g. Laks.'),
@@ -41,6 +45,10 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
             'official_code': _('The artskode of the Norwegian reports, three capital letters, e.g. SAL for '
                                'Atlantic salmon. Reports send this code, never your own code.'),
             'cleaner_fish_type': _('Lumpfish and wrasses are stocked with salmon to eat sea lice.'),
+            'withdrawal_temperature_c': _('The degree-days one day counts for when no water temperature was '
+                                          'measured: a past day without one, and a withdrawal projected when none '
+                                          'was measured at all. It is the farm’s own assumption: a low value is the '
+                                          'conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C.'),
             'status': _('Active: farmed now. Experimental: on trial. Inactive: not farmed at the moment. '
                         'Discontinued: no longer farmed.'),
         }
@@ -51,6 +59,7 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
             'code': forms.TextInput(attrs={'placeholder': _('e.g. SAL'), 'data-uppercase': ''}),
             'official_code': forms.TextInput(attrs={'placeholder': _('e.g. SAL'), 'data-uppercase': ''}),
             'family': forms.TextInput(attrs={'placeholder': _('e.g. Salmonidae')}),
+            'withdrawal_temperature_c': forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': _('e.g. 8')}),
             'description': forms.Textarea(attrs={'rows': 3}),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }

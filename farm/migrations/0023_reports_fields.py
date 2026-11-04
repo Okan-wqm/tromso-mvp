@@ -37,7 +37,7 @@ def provenances(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0019_water_points'),
+        ('farm', '0022_purging_degree_days'),
     ]
 
     operations = [

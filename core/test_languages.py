@@ -14,9 +14,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, HandlingRule, HealthEvent,
-                         LiceCount, Medicine, ProductionDepartment, Site, SiteContact, SlaughterFacility,
-                         Species, System, Tank, Treatment, WaterLimit,
-                         WaterMeasurement)
+                         LiceCount, Medicine, MedicineWithdrawal, ProductionDepartment, Site, SiteContact,
+                         SlaughterFacility, Species, System, Tank, Treatment, WaterLimit, WaterMeasurement)
 from farm.tests.helpers import SITE_MANAGER, contacts_data, point_of, role, site_data
 
 from .audit import message
@@ -150,8 +149,10 @@ class PagesInEveryLanguageTests(TestCase):
                                                      ph=Decimal('7.25'), tan_mg_l=Decimal('0.5'),
                                                      temperature_c=Decimal('9.5'), oxygen_mg_l=Decimal('10.5'))
         cls.medicine = Medicine.objects.create(name='Salmosan vet.', kind='lice', administration='bath',
-                                               active_substance='azamethiphos', lice_report_code='AZAMETHIPHOS',
-                                               withdrawal_degree_days=150, withdrawal_days=7)
+                                               active_substance='azamethiphos', lice_report_code='AZAMETHIPHOS')
+        MedicineWithdrawal.objects.create(medicine=cls.medicine, species=None, degree_days=150, days=7,
+                                          safety_margin_pct=20)
+        MedicineWithdrawal.objects.create(medicine=cls.medicine, species=cls.species, days=10)
         day = cls.unit.created_at.date()
         cls.treatment = Treatment.objects.create(method='bath', medicine=cls.medicine, reason='sea_lice', start_date=day,
                                                  end_date=day)

@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
@@ -18,6 +18,7 @@ SCIENTIFIC_NAME_MESSAGE = _('Write the genus and the species in Latin letters, e
                             'may follow as a third word.')
 OFFICIAL_CODE_MESSAGE = _('The official code is three capital letters, e.g. SAL.')
 WATER_MESSAGE = _('Tick at least one water environment.')
+MAX_WITHDRAWAL_TEMPERATURE_C = 40       # far above any water a farm holds fish in: a typing slip, not an assumption
 
 
 def normalise_scientific_name(text):
@@ -62,6 +63,12 @@ class Species(CodedMixin, AuditedModel):
     The official code is the artskode the Norwegian reports send. Report code must use it and never
     fall back to the internal `code` (the source sent the internal code when the official one was
     missing, SPC-02): a reportable species without an official code is a report that cannot be filed.
+
+    The assumed water temperature for a medicine withdrawal (`withdrawal_temperature_c`, 0 to 40 °C, a database
+    check; empty: none given) is the farm's own assumption, reference data like the handling rules: the degree-days
+    a past day without a measured water temperature adds to a batch of this species, and what a withdrawal is
+    projected at when no temperature was measured at all (farm/health/withdrawal.py). Empty counts a missing day
+    as 0 °C and leaves a projection without a temperature unknown. The catalogue never fills it in.
 
     Status: "active" and "experimental" species are the ones offered for new batches (the batches
     tab); "inactive" and "discontinued" ones are not. There is no second flag `isActive`.
@@ -108,6 +115,10 @@ class Species(CodedMixin, AuditedModel):
     cleaner_fish_type = models.CharField(
         _('Cleaner fish'), max_length=20, blank=True, choices=CleanerFishType.choices, default=CleanerFishType.NONE,
     )
+    withdrawal_temperature_c = models.DecimalField(
+        _('Assumed water temperature for withdrawal (°C)'), max_digits=4, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(MAX_WITHDRAWAL_TEMPERATURE_C)],
+    )
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
 
     class Meta:
@@ -143,6 +154,10 @@ class Species(CodedMixin, AuditedModel):
             ),
             models.CheckConstraint(
                 condition=Q(cleaner_fish_type__in=CleanerFishType.values), name='chk_species_cleaner_fish_type',
+            ),
+            models.CheckConstraint(
+                condition=Q(withdrawal_temperature_c__gte=0, withdrawal_temperature_c__lte=MAX_WITHDRAWAL_TEMPERATURE_C),
+                name='chk_species_withdrawal_temperature',      # empty passes: a check on NULL is unknown, not false
             ),
             models.CheckConstraint(
                 condition=Q(freshwater=True) | Q(brackish=True) | Q(saltwater=True), name='chk_species_water',

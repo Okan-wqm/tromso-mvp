@@ -3,7 +3,7 @@
 
 mod common;
 
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Duration, Utc};
 use common::*;
 use sensors_ingest::config::{self, VIEW_COLUMNS};
 use sensors_ingest::db::{self, Status};
@@ -23,11 +23,9 @@ fn serial() -> std::sync::MutexGuard<'static, ()> {
 }
 
 fn t0() -> DateTime<Utc> {
-    // recent enough for the 730-day retention, a fixed second for reproducible keys
-    let now = Utc::now();
-    Utc.with_ymd_and_hms(now.format("%Y").to_string().parse().unwrap(), 1, 1, 0, 0, 0)
-        .unwrap()
-        .max(now - Duration::days(20))
+    // twenty days ago at a whole second: inside the retention, before compression, reproducible keys
+    let t = Utc::now() - Duration::days(20);
+    DateTime::from_timestamp(t.timestamp(), 0).unwrap()
 }
 
 struct Setup {
@@ -218,8 +216,10 @@ async fn a_failing_statement_writes_nothing_and_is_a_data_error() {
     let good = Row { ts: t0(), value: 1.0, n: 1, quality: 0, run_sum: None, run_min: None, run_max: None };
     // n = 2 without run statistics breaks the table's CHECK
     let bad = Row { ts: t0() + Duration::seconds(1), n: 2, ..good };
-    let mut out = Output::default();
-    out.readings = vec![Reading { channel_no: s.ch_a, row: good }, Reading { channel_no: s.ch_a, row: bad }];
+    let mut out = Output {
+        readings: vec![Reading { channel_no: s.ch_a, row: good }, Reading { channel_no: s.ch_a, row: bad }],
+        ..Output::default()
+    };
     out.states.insert(s.ch_a, State { run_n: 3, ..State::default() });
     let e = db::write_batch(&mut c, &out, &status(&s.fx)).await.unwrap_err();
     assert!(db::is_data_error(&e), "{e:?}");
@@ -276,7 +276,7 @@ async fn the_dead_letter_flood_is_capped_and_readings_never_are() {
     let out = pipeline::process(&cfg, &HashMap::new(), &mut DeadLimiter::new(10), &msgs);
     db::write_batch(&mut c, &out, &status(&s.fx)).await.unwrap();
     assert_eq!(count(&a, "SELECT count(*) FROM sensors_dead_letter").await, 11);
-    assert_eq!(count(&a, "SELECT count FROM sensors_dead_letter WHERE payload_sha256 = 'overflow'").await, 20);
+    assert_eq!(count(&a, "SELECT count::int8 FROM sensors_dead_letter WHERE payload_sha256 = 'overflow'").await, 20);
     assert_eq!(count(&a, "SELECT count(*) FROM sensors_reading").await, 30);
     let r = a
         .query_one(

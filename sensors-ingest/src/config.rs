@@ -179,16 +179,28 @@ pub enum ConfigError {
 }
 
 /// Whether an MQTT topic filter (no `#`, `+` only as a whole level) matches a topic.
-pub fn topic_matches(_filter: &str, _topic: &str) -> bool {
-    todo!("topic_matches")
+pub fn topic_matches(filter: &str, topic: &str) -> bool {
+    let mut f = filter.split('/');
+    let mut t = topic.split('/');
+    loop {
+        match (f.next(), t.next()) {
+            (None, None) => return true,
+            (Some("+"), Some(_)) => {}
+            (Some(a), Some(b)) if a == b => {}
+            _ => return false,
+        }
+    }
 }
 
 impl Config {
     /// The device a message on `topic` of connection `conn` belongs to: an exact topic first, else the matching
-    /// filter with the fewest `+` levels, ties broken by device code (a deterministic choice; overlaps are logged
-    /// at load).
-    pub fn route(&self, _conn: Uuid, _topic: &str) -> Option<&DeviceCfg> {
-        todo!("route")
+    /// filter with the fewest `+` levels, ties broken by device code (a deterministic choice).
+    pub fn route(&self, conn: Uuid, topic: &str) -> Option<&DeviceCfg> {
+        let c = self.connections.get(&conn)?;
+        c.devices
+            .iter()
+            .filter(|d| topic_matches(&d.topic, topic))
+            .min_by(|x, y| wildcards(&x.topic).cmp(&wildcards(&y.topic)).then_with(|| x.code.cmp(&y.code)))
     }
 
     pub fn channel_nos(&self) -> Vec<i32> {
@@ -201,16 +213,225 @@ impl Config {
     }
 }
 
+fn wildcards(filter: &str) -> usize {
+    filter.split('/').filter(|l| *l == "+").count()
+}
+
+fn valid_topic(t: &str) -> bool {
+    !t.is_empty() && !t.contains('#') && !t.starts_with('$') && t.split('/').all(|l| l == "+" || !l.contains('+'))
+}
+
+type Checked = (Format, Policy, Option<(f64, f64)>, bool, u16, u16);
+
+/// Checks one view row; Err names what is wrong.
+fn check(r: &ViewRow) -> Result<Checked, String> {
+    let port = u16::try_from(r.port).ok().filter(|p| *p >= 1).ok_or_else(|| format!("port {}", r.port))?;
+    let keepalive = u16::try_from(r.keepalive_s)
+        .ok()
+        .filter(|k| (5..=600).contains(k))
+        .ok_or_else(|| format!("keepalive_s {}", r.keepalive_s))?;
+    if r.host.is_empty() || r.client_id.is_empty() {
+        return Err("host or client_id blank".into());
+    }
+    if r.secret_file.contains('/') || r.secret_file.contains('\\') || r.secret_file == "." || r.secret_file == ".." {
+        return Err(format!("secret_file {:?} is not a plain file name", r.secret_file));
+    }
+    if !valid_topic(&r.topic) {
+        return Err(format!("topic {:?}", r.topic));
+    }
+    if r.encoding != "json" {
+        return Err(format!("encoding {:?}", r.encoding));
+    }
+    let shape = match r.shape.as_str() {
+        "object" => Shape::Object,
+        "array" => Shape::Array,
+        s => return Err(format!("shape {s:?}")),
+    };
+    let time_unit = match r.time_unit.as_str() {
+        "iso8601" => TimeUnit::Iso8601,
+        "epoch_s" => TimeUnit::EpochS,
+        "epoch_ms" => TimeUnit::EpochMs,
+        s => return Err(format!("time_unit {s:?}")),
+    };
+    match shape {
+        Shape::Object if r.value_path.is_empty() => return Err("object shape without value_path".into()),
+        Shape::Array if r.item_name.is_empty() || r.name_key.is_empty() || r.value_key.is_empty() => {
+            return Err("array shape without item_name, name_key or value_key".into());
+        }
+        _ => {}
+    }
+    if !(10..=86_400).contains(&r.heartbeat_s) {
+        return Err(format!("heartbeat_s {}", r.heartbeat_s));
+    }
+    let reduction = match r.reduction.as_str() {
+        "all" => Reduction::All,
+        "deadband" if r.deadband.is_finite() && r.deadband > 0.0 => Reduction::Deadband(r.deadband),
+        s => return Err(format!("reduction {s:?} with deadband {}", r.deadband)),
+    };
+    let maintenance = match r.channel_state.as_str() {
+        "active" => false,
+        "maintenance" => true,
+        s => return Err(format!("channel_state {s:?}")),
+    };
+    let range = match (r.range_min, r.range_max) {
+        (None, None) => None,
+        (Some(lo), Some(hi)) if lo.is_finite() && hi.is_finite() && lo < hi => Some((lo, hi)),
+        (lo, hi) => return Err(format!("range {lo:?}..{hi:?}")),
+    };
+    if !(r.a.is_finite() && r.b.is_finite() && r.a != 0.0) {
+        return Err(format!("calibration a={} b={}", r.a, r.b));
+    }
+    let format = Format {
+        shape,
+        time_path: r.time_path.clone(),
+        time_unit,
+        seq_path: r.seq_path.clone(),
+        items_path: r.items_path.clone(),
+        name_key: r.name_key.clone(),
+        value_key: r.value_key.clone(),
+    };
+    Ok((format, Policy { reduction, heartbeat_s: i64::from(r.heartbeat_s) }, range, maintenance, port, keepalive))
+}
+
 /// Builds the configuration from the contract row and the view rows. A row with a value this build does not know
 /// (shape, time unit, reduction, state, encoding) or out of the contract's ranges is left out and named in
 /// `rejected`, never guessed.
-pub fn build(_contract: Contract, _rows: Vec<ViewRow>) -> Result<Config, ConfigError> {
-    todo!("build")
+pub fn build(contract: Contract, rows: Vec<ViewRow>) -> Result<Config, ConfigError> {
+    if contract.schema_version != SCHEMA_VERSION {
+        return Err(ConfigError::Version { found: contract.schema_version, expected: SCHEMA_VERSION });
+    }
+    let mut connections: BTreeMap<Uuid, ConnCfg> = BTreeMap::new();
+    let mut rejected = Vec::new();
+    for r in rows {
+        let (format, policy, range, maintenance, port, keepalive_s) = match check(&r) {
+            Ok(v) => v,
+            Err(why) => {
+                rejected.push(format!("channel {} of device {}: {why}", r.channel_no, r.device_code));
+                continue;
+            }
+        };
+        let conn = connections.entry(r.connection_id).or_insert_with(|| ConnCfg {
+            connection_id: r.connection_id,
+            host: r.host.clone(),
+            port,
+            use_tls: r.use_tls,
+            username: r.username.clone(),
+            secret_file: r.secret_file.clone(),
+            client_id: r.client_id.clone(),
+            keepalive_s,
+            devices: Vec::new(),
+        });
+        if !conn.devices.iter().any(|d| d.device_id == r.device_id) {
+            conn.devices.push(DeviceCfg {
+                device_id: r.device_id,
+                code: r.device_code.clone(),
+                topic: r.topic.clone(),
+                expected_interval_s: r.expected_interval_s,
+                format,
+                channels: Vec::new(),
+                maps: Vec::new(),
+            });
+        }
+        let Some(dev) = conn.devices.iter_mut().find(|d| d.device_id == r.device_id) else { continue };
+        let epoch = Epoch { valid_from: r.valid_from, a: r.a, b: r.b };
+        match dev.channels.iter_mut().find(|c| c.channel_no == r.channel_no) {
+            Some(ch) => ch.epochs.push(epoch),
+            None => dev.channels.push(ChannelCfg {
+                channel_no: r.channel_no,
+                code: r.channel_code.clone(),
+                quantity: r.quantity.clone(),
+                map: ChannelMap {
+                    channel_no: r.channel_no,
+                    value_path: r.value_path.clone(),
+                    item_name: r.item_name.clone(),
+                },
+                policy,
+                range,
+                maintenance,
+                epochs: vec![epoch],
+            }),
+        }
+    }
+    for conn in connections.values_mut() {
+        conn.devices.sort_by(|a, b| a.code.cmp(&b.code));
+        for dev in &mut conn.devices {
+            dev.channels.sort_by_key(|c| c.channel_no);
+            for ch in &mut dev.channels {
+                ch.epochs.sort_by(|a, b| a.valid_from.cmp(&b.valid_from));
+            }
+            dev.maps = dev.channels.iter().map(|c| c.map.clone()).collect();
+        }
+    }
+    Ok(Config { contract, connections, rejected })
 }
 
 /// Reads `sensors_contract` and the view in one REPEATABLE READ snapshot.
-pub async fn load(_client: &mut tokio_postgres::Client) -> Result<Config, ConfigError> {
-    todo!("load")
+pub async fn load(client: &mut tokio_postgres::Client) -> Result<Config, ConfigError> {
+    let tx = client
+        .build_transaction()
+        .isolation_level(tokio_postgres::IsolationLevel::RepeatableRead)
+        .read_only(true)
+        .start()
+        .await?;
+    let c = tx
+        .query_opt(
+            "SELECT schema_version, config_epoch, future_skew_s, retention_days FROM sensors_contract WHERE id = 1",
+            &[],
+        )
+        .await?
+        .ok_or(ConfigError::NoContract)?;
+    let contract = Contract {
+        schema_version: c.try_get(0)?,
+        config_epoch: c.try_get(1)?,
+        future_skew_s: i64::from(c.try_get::<_, i32>(2)?),
+        retention_days: i64::from(c.try_get::<_, i32>(3)?),
+    };
+    let sql = format!(
+        "SELECT {} FROM sensors_ingest_config ORDER BY channel_no, valid_from NULLS FIRST",
+        VIEW_COLUMNS.join(", ")
+    );
+    let mut rows = Vec::new();
+    for r in tx.query(&sql, &[]).await? {
+        rows.push(ViewRow {
+            connection_id: r.try_get("connection_id")?,
+            host: r.try_get("host")?,
+            port: r.try_get("port")?,
+            use_tls: r.try_get("use_tls")?,
+            username: r.try_get("username")?,
+            secret_file: r.try_get("secret_file")?,
+            client_id: r.try_get("client_id")?,
+            keepalive_s: r.try_get("keepalive_s")?,
+            device_id: r.try_get("device_id")?,
+            device_code: r.try_get("device_code")?,
+            topic: r.try_get("topic")?,
+            expected_interval_s: r.try_get("expected_interval_s")?,
+            encoding: r.try_get("encoding")?,
+            shape: r.try_get("shape")?,
+            time_path: r.try_get("time_path")?,
+            time_unit: r.try_get("time_unit")?,
+            seq_path: r.try_get("seq_path")?,
+            items_path: r.try_get("items_path")?,
+            name_key: r.try_get("name_key")?,
+            value_key: r.try_get("value_key")?,
+            channel_no: r.try_get("channel_no")?,
+            channel_code: r.try_get("channel_code")?,
+            quantity: r.try_get("quantity")?,
+            value_path: r.try_get("value_path")?,
+            item_name: r.try_get("item_name")?,
+            reduction: r.try_get("reduction")?,
+            deadband: r.try_get("deadband")?,
+            heartbeat_s: r.try_get("heartbeat_s")?,
+            range_min: r.try_get("range_min")?,
+            range_max: r.try_get("range_max")?,
+            channel_state: r.try_get("channel_state")?,
+            valid_from: r.try_get("valid_from")?,
+            valid_to: r.try_get("valid_to")?,
+            a: r.try_get("a")?,
+            b: r.try_get("b")?,
+        });
+    }
+    tx.commit().await?;
+    build(contract, rows)
 }
 
 #[cfg(test)]

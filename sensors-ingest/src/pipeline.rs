@@ -72,7 +72,7 @@ pub struct Output {
 #[derive(Debug, Clone)]
 pub struct DeadLimiter {
     cap: usize,
-    per_conn: HashMap<Uuid, (i64, HashSet<(String, DeadReason, String)>)>,
+    per_conn: HashMap<Uuid, (i64, HashSet<SeenKey>)>,
 }
 
 impl DeadLimiter {
@@ -81,8 +81,110 @@ impl DeadLimiter {
     }
 }
 
-pub fn process(_cfg: &Config, _committed: &HashMap<i32, State>, _limiter: &mut DeadLimiter, _msgs: &[Msg]) -> Output {
-    todo!("process")
+impl DeadLimiter {
+    /// The key a new dead letter is stored under: its own hash, or `overflow` once the hour's allowance is used.
+    fn key(&mut self, conn: Uuid, topic: &str, reason: DeadReason, sha: String, at: DateTime<Utc>) -> String {
+        let hour = at.timestamp().div_euclid(3600);
+        let (h, seen) = self.per_conn.entry(conn).or_insert_with(|| (hour, HashSet::new()));
+        if *h != hour {
+            *h = hour;
+            seen.clear();
+        }
+        let k = (topic.to_string(), reason, sha);
+        if seen.contains(&k) || seen.len() < self.cap {
+            let sha = k.2.clone();
+            seen.insert(k);
+            sha
+        } else {
+            OVERFLOW.to_string()
+        }
+    }
+}
+
+type SeenKey = (String, DeadReason, String);
+type DeadKey = (Uuid, String, DeadReason, String);
+
+struct Batch<'a> {
+    committed: &'a HashMap<i32, State>,
+    out: Output,
+    dead: BTreeMap<DeadKey, DeadLetter>,
+}
+
+impl Batch<'_> {
+    fn state(&mut self, channel_no: i32) -> &mut State {
+        let committed = self.committed;
+        self.out.states.entry(channel_no).or_insert_with(|| committed.get(&channel_no).cloned().unwrap_or_default())
+    }
+
+    fn dead_letter(&mut self, lim: &mut DeadLimiter, m: &Msg, device_id: Option<Uuid>, reason: DeadReason) {
+        let sha = lim.key(m.connection_id, &m.topic, reason, sha256_hex(&m.payload), m.received_at);
+        let overflow = sha == OVERFLOW;
+        let key = (m.connection_id, m.topic.clone(), reason, sha.clone());
+        let e = self.dead.entry(key).or_insert_with(|| DeadLetter {
+            connection_id: m.connection_id,
+            device_id,
+            topic: m.topic.clone(),
+            reason,
+            payload_sha256: sha,
+            payload: if overflow { Vec::new() } else { m.payload.iter().take(DEAD_PAYLOAD_MAX).copied().collect() },
+            payload_len: if overflow { 0 } else { i32::try_from(m.payload.len()).unwrap_or(i32::MAX) },
+            count: 0,
+            first_at: m.received_at,
+            last_at: m.received_at,
+        });
+        e.count = e.count.saturating_add(1);
+        e.first_at = e.first_at.min(m.received_at);
+        e.last_at = e.last_at.max(m.received_at);
+    }
+}
+
+pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut DeadLimiter, msgs: &[Msg]) -> Output {
+    let limits = Limits { future_skew_s: cfg.contract.future_skew_s, retention_days: cfg.contract.retention_days };
+    let mut b = Batch { committed, out: Output::default(), dead: BTreeMap::new() };
+    for m in msgs {
+        let Some(dev) = cfg.route(m.connection_id, &m.topic) else {
+            b.dead_letter(limiter, m, None, DeadReason::NoRoute);
+            continue;
+        };
+        let decoded = decode(&dev.format, &dev.maps, &m.payload);
+        let mut faults: Vec<DeadReason> = decoded.faults.clone();
+        let (mut used, mut late) = (false, false);
+        let received_at = crate::model::to_micros(m.received_at);
+        for raw in &decoded.samples {
+            let Some(ch) = dev.channels.iter().find(|c| c.channel_no == raw.channel_no) else { continue };
+            let (ts, time_q) = match timerule::resolve(raw.device_ts, m.received_at, limits) {
+                Ok(v) => v,
+                Err(r) => {
+                    faults.push(r);
+                    continue;
+                }
+            };
+            let Some(value) = calib::apply(&ch.epochs, ts, raw.value) else {
+                faults.push(DeadReason::BadValue);
+                continue;
+            };
+            let quality = time_q | calib::judge(value, ch.range, ch.maintenance);
+            let step = reduce::step(&ch.policy, b.state(ch.channel_no), Sample { ts, value, quality, received_at });
+            used = true;
+            late |= step.late;
+            b.out.readings.extend(step.rows.into_iter().map(|row| Reading { channel_no: ch.channel_no, row }));
+        }
+        faults.sort();
+        faults.dedup();
+        for r in &faults {
+            b.dead_letter(limiter, m, Some(dev.device_id), *r);
+        }
+        let d = b.out.devices.entry(dev.device_id).or_default();
+        d.last_message_at = Some(d.last_message_at.map_or(received_at, |t| t.max(received_at)));
+        if decoded.seq.is_some() {
+            d.last_seq = decoded.seq;
+        }
+        d.accepted += i64::from(used);
+        d.late += i64::from(late);
+        d.dead += i64::from(!faults.is_empty());
+    }
+    b.out.dead = b.dead.into_values().collect();
+    b.out
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {

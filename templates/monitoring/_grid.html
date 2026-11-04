@@ -1,0 +1,10 @@
+{% load i18n %}{% comment %} The children of the monitoring grid (the page includes this inside div.monitor-grid; the fragment is exactly this): a head, a
+   strip of the cards that need a look and one article per unit, each keyed by data-key so poll.ts replaces only what
+   changed and a card never moves when its state does (the order is the farm's). The "computed at" time keeps a frozen
+   screen visibly old. {% endcomment %}
+<p class="monitor-head" data-key="head">{{ count_line }} · {% blocktrans trimmed with time=computed_at|date:"TIME_FORMAT" %}computed at {{ time }}{% endblocktrans %}</p>
+<ul class="monitor-strip" data-key="strip" role="list" aria-label="{% trans "Needs a look" %}">{% for card in strip %}{% with state=card.state %}
+  <li class="monitor-strip-line monitor-{{ state.key }}"><a href="#card-{{ card.unit.pk }}"><strong>{{ card.unit.code }}</strong> {% include "monitoring/_state_word.html" %}{% if state.reasons %} · {{ state.reasons.0 }}{% endif %}</a></li>
+{% endwith %}{% endfor %}</ul>
+{% for row in rows %}{% include "monitoring/_card.html" %}
+{% empty %}<p class="empty" data-key="empty">{% trans "No unit matches." %}</p>{% endfor %}

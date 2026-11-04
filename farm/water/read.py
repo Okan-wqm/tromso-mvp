@@ -9,6 +9,10 @@ The functions, by what they answer:
   water (a unit's bulk, a system's loop, the inside of a piece of equipment): the one definition of it;
 - `unit_water(units)`: {unit id: PointWater} of the unit's middle point, what the Production units page, its
   drawer and the overview show;
+- `points_of(units, middle_only=...)`: {unit id: [SamplingPoint]}, every active point of each unit (its middle point
+  first), or its middle point alone for the units of `middle_only`; `points_water` reads them all in one `latest()`:
+  what a wall of monitoring cards shows;
+- `assumed_salinity(water_types)`: the salinity assumed where none was measured (the one rule: 0 in fresh water);
 - `water_sources(units, nested=...)`: {unit id: [Source]}, where a unit's temperature is read from: its middle
   point, then the loop point of its system (with `nested`, of the systems that system is nested in too, nearest
   first). The feeding temperature (farm/feeding/temperature.py) and the withdrawal's daily mean
@@ -66,6 +70,12 @@ POINT_RELATED = ('point__unit__production_department__site', 'point__system__sit
                  'point__equipment__production_department__site')
 # Where a unit's water is read from (Source.via).
 UNIT, SYSTEM = 'unit', 'system'
+
+
+def assumed_salinity(water_types):
+    """The salinity (ppt) to use where none was measured: 0 when every unit concerned (`water_types`: their
+    Tank.WaterType values) is in fresh water, else None, never a guess: the value is then not worked out."""
+    return Decimal(0) if set(water_types) == {Tank.WaterType.FRESHWATER} else None
 
 
 class First(Func):
@@ -288,9 +298,7 @@ class Context:
             found = None if where is None else self.salinity.latest(where.pk, sample.measured_at, WINDOW)
             if found is not None:
                 return found[1]
-        if self.water_types(point) == {Tank.WaterType.FRESHWATER}:
-            return Decimal(0)
-        return None
+        return assumed_salinity(self.water_types(point))
 
     # -- one sample's readings --
     def readings(self, sample):
@@ -418,6 +426,33 @@ def owner_water(owners, now=None):
 def unit_water(units, now=None):
     """{unit id: PointWater} of each unit's water (`owner_water`)."""
     return owner_water(units, now)
+
+
+MIDDLE = PointKind.MIDDLE
+
+
+def points_of(units, middle_only=()):
+    """{unit id: [SamplingPoint]} of every unit given: its active points, the middle point first (`middle_points`, the
+    one definition of it), the others by name; for the units of `middle_only` (ids) the middle point alone. A unit
+    without a middle point has only its others (or none): nothing stands in for it."""
+    units = list(units)
+    middles = middle_points(units)
+    narrow = set(middle_only)
+    wide = [unit.pk for unit in units if unit.pk not in narrow]
+    others = defaultdict(list)
+    if wide:
+        for point in (SamplingPoint.objects.filter(unit__in=wide, is_active=True).exclude(kind=MIDDLE)
+                      .with_owners()):
+            others[point.unit_id].append(point)
+    return {unit.pk: [*([middles[unit.pk]] if unit.pk in middles else []),
+                      *sorted(others[unit.pk], key=lambda point: point.name)] for unit in units}
+
+
+def points_water(units, now=None, middle_only=()):
+    """{unit id: [PointWater]} of every unit given: the readings of each of its `points_of`, all read by ONE `latest()`."""
+    chosen = points_of(units, middle_only)
+    water = latest([point for points in chosen.values() for point in points], now)
+    return {unit_id: [water[point.pk] for point in points] for unit_id, points in chosen.items()}
 
 
 # ---- the history ------------------------------------------------------------------------------------------

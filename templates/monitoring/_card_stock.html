@@ -1,0 +1,16 @@
+{% load i18n stock %}{% comment %} The fish of a card: the Production units figures, from one UnitStock; the metrics and the capacity bar are the
+   drawer's own partials. {% endcomment %}
+<section class="monitor-section monitor-stock">
+  <p class="row-sub">{% with species=stock.shares.0.batch.species %}{{ species.local_name|default:species.common_name }}{% endwith %}{% if card.detailed %} · {% blocktrans trimmed count days=card.days_stocked %}Stocked · {{ days }} day{% plural %}Stocked · {{ days }} days{% endblocktrans %}{% endif %}</p>
+  {% include "farm/_unit_metrics.html" with brief=card.brief conversion=card.feeding.conversion show_feeding=card.feeding %}
+  {% include "farm/_unit_capacity.html" with drawer=unit %}
+  {% if card.detailed %}
+  <dl class="metrics">
+    <div><dt>{% trans "Losses" %}</dt><dd>{{ card.losses|fish }}</dd><dd class="row-sub">{% blocktrans trimmed with deaths=stock.deaths|fish culls=stock.culls|fish %}{{ deaths }} dead · {{ culls }} culled{% endblocktrans %}</dd></div>
+    <div><dt>{% trans "Batches" %}</dt><dd>{{ stock.batches|length }}</dd><dd class="row-sub">{{ stock.batches|join_codes }}</dd></div>
+    <div><dt>{% trans "Last weighed" %}</dt><dd>{% if stock.last_weighed %}{{ stock.last_weighed|date:"DATE_FORMAT" }}{% else %}{% trans "as stocked" %}{% endif %}</dd></div>
+  </dl>
+  {% endif %}
+  {% if card.detailed and stock.cleaner %}{% with cleaner=stock.cleaner_stock %}<p class="row-sub">{% blocktrans trimmed with fish=cleaner.count|fish weight=cleaner.avg_weight_g|grams biomass=cleaner.biomass_kg|kilos %}Cleaner fish: {{ fish }} · {{ weight }} · {{ biomass }}{% endblocktrans %}</p>{% endwith %}{% endif %}
+  {% if card.drift == "now" %}<p class="row-sub over-text">{% trans "Weigh now: the estimate is not reliable" %}</p>{% elif card.drift == "soon" %}<p class="row-sub warn-text">{% trans "Weigh soon" %}</p>{% endif %}
+</section>

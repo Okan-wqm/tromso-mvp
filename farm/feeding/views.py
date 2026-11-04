@@ -11,7 +11,6 @@ from datetime import date, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from urllib.parse import urlencode
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
@@ -225,16 +224,6 @@ def _by_day(request):
 BOARD_FILTERS = ('site', 'department', 'system')
 
 
-def drift(today, measured_on):
-    """How far the estimate has run since its measured point (owner decision Q6): '', 'soon' or 'now'."""
-    if measured_on is None:
-        return ''
-    days = (today - measured_on).days
-    if days > settings.WEIGH_NOW_DAYS:
-        return 'now'
-    return 'soon' if days > settings.WEIGH_SOON_DAYS else ''
-
-
 def _attribute(item, dotted):
     for name in dotted.split('.'):
         item = getattr(item, name)
@@ -272,10 +261,7 @@ def meal_board(request):
     for unit in stocked:
         unit_day = projection.days.get((unit.pk, today[unit.pk]))
         batches = {share.batch.pk: share.batch for share in stock[unit.pk].shares}
-        lines = [{'share': share, 'batch': batches[share.batch_id], 'why': share.end.why(batches[share.batch_id]),
-                  'drift': drift(today[unit.pk], share.measured_on),
-                  'estimate_days': (today[unit.pk] - share.measured_on).days if share.measured_on else None}
-                 for share in (unit_day.shares if unit_day else [])]
+        lines = read.meal_lines(unit_day, batches, today[unit.pk])
         temperature = next((line['share'].end.temperature for line in lines if line['share'].end.temperature), None)
         rows.append({
             'unit': unit, 'stock': stock[unit.pk], 'day': unit_day, 'lines': lines, 'temperature': temperature,
@@ -398,6 +384,15 @@ def void_feeding(request, pk):
 
 
 # ---- what other pages show -----------------------------------------------------------------------
+def unit_figures(user, stock, **kwargs):
+    """The feeding figures of the units with fish on Production units (FCR, last fed, the drawer's week and
+    ration; read.figures, whose keywords it passes on), by unit id; nothing for a person who may not read the
+    feeding records. The twin of water.views.unit_water."""
+    if not user.has_perm(VIEW):
+        return {}
+    return read.figures(stock, **kwargs)
+
+
 def drawer(request, unit, stock, feeding, query):
     """The Feeding part of a unit's drawer on Production units: its figures (`feeding`, read.figures), its
     last feedings, voided ones struck through, each with Void while it may be voided."""

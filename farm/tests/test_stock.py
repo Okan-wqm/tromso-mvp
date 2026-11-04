@@ -747,6 +747,7 @@ class PageTests(StockTestCase):
         return [row['unit'].code for row in self.page(**query).context['rows']]
 
     def test_every_unit_with_its_numbers_from_the_ledger(self):
+        self.user.groups.add(role('Feeding reader', 'view_feedingrecord'))      # the FCR column is the feeding's
         response = self.page()
         self.assertEqual(self.codes(), ['T-01', 'T-02', 'P-01'])
         row = response.context['rows'][0]

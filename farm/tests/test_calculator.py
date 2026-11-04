@@ -20,8 +20,9 @@ from django.utils import timezone, translation
 
 from core.models import Profile
 
-from ..models import ProductionDepartment, Site, System, WaterLimit, WaterMeasurement
-from ..water import calculation, charts, chemistry, deffeyes, dosing, services
+from ..forms.water import CalculatorForm
+from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
+from ..water import calculation, charts, chemistry, deffeyes, dosing, parameters, services
 from ..water.deffeyes import Limits, Target, Water, analyse
 from ..water.evaluate import Status
 from .helpers import make_species, point_of, role, stock_fish
@@ -680,8 +681,10 @@ class CalculatorPageTests(TestCase):
 
 
 # ---- the values of a unit or a loop -----------------------------------------------------------------------------
-class ValuesFromAUnitTests(TestCase):
-    url = reverse('farm:water_calculator')
+class UnitWaterCase(TestCase):
+    """T-01 on a site at 120 m with its fish (salmon, limits for NH₃, CO₂, pH and the alkalinity band) and the latest
+    water of its middle point: 9.5 °C, pH 7.12 and TAN 0.8 three hours ago, alkalinity 95 and salinity 0.3 five days
+    ago; the water keeper may read the water and the units."""
 
     def setUp(self):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
@@ -706,6 +709,11 @@ class ValuesFromAUnitTests(TestCase):
         WaterLimit.objects.create(species=self.salmon, parameter='alkalinity_mg_l', warning_low=D('70'),
                                   warning_high=D('150'))
         self.samples = WaterMeasurement.all_objects.count()
+        self.site, self.hall = site, hall
+
+
+class ValuesFromAUnitTests(UnitWaterCase):
+    url = reverse('farm:water_calculator')
 
     def test_choosing_a_unit_puts_its_values_in_and_the_address_keeps_them(self):
         response = self.client.get(self.url, {'point': f'tank:{self.unit.pk}'})
@@ -767,3 +775,203 @@ class ValuesFromAUnitTests(TestCase):
         response = self.client.get(self.url, {'point': 'tank:00000000-0000-0000-0000-000000000000'}, follow=True)
         self.assertContains(response, 'That unit or system is no longer there')
         self.assertIsNotNone(response.context['chart'])                          # the defaults are drawn
+
+
+# ---- a unit's own chart ----------------------------------------------------------------------------------------
+def oracle_inputs(values):
+    """The mapping the calculator's form made before `inputs_from` (kept here as the oracle of its extraction)."""
+    water = Water(temperature_c=values['temperature_c'], salinity_ppt=values['salinity_ppt'], ph=values['ph'],
+                  alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values['tan_mg_l'],
+                  total_sulfide_ug_l=values['total_sulfide_ug_l'], calcium_mg_l=values['calcium_mg_l'],
+                  oxygen_mg_l=values['oxygen_mg_l'])
+    limits = Limits(nh3_n_mg_l=values['nh3_n_limit_mg_l'], co2_mg_l=values['co2_limit_mg_l'],
+                    h2s_ug_l=values['h2s_limit_ug_l'], alkalinity_low_mg_l=values['alkalinity_low_mg_l'],
+                    alkalinity_high_mg_l=values['alkalinity_high_mg_l'])
+    target = None
+    if values['target_ph'] is not None:
+        target = Target(values['target_ph'], values['target_alkalinity_mg_l'])
+    altitude = values['altitude_m']
+    return {'water': water, 'limits': limits, 'target': target,
+            'pressure': chemistry.pressure_atm(altitude) if altitude is not None else 1.0}
+
+
+class InputsFromTests(TestCase):
+    def test_the_form_and_the_old_mapping_agree_on_the_defaults_and_on_a_filled_form(self):
+        defaults = CalculatorForm()
+        values = {name: float(value) if isinstance(value, D) else value for name, value in defaults.values().items()}
+        mapped = defaults.inputs()
+        self.assertEqual({key: mapped[key] for key in ('water', 'limits', 'target', 'pressure')},
+                         oracle_inputs(values))
+        filled = dict(values, altitude_m=250.0, calcium_mg_l=40.0, oxygen_mg_l=8.0, target_ph=None)
+        self.assertEqual(calculation.inputs_from(filled), oracle_inputs(filled))
+        self.assertNotEqual(calculation.inputs_from(filled)['pressure'], 1.0)
+
+    def test_the_plots_can_be_left_out_and_nothing_else_changes(self):
+        values = {name: float(value) if isinstance(value, D) else value
+                  for name, value in CalculatorForm().values().items()}
+        arguments = {**calculation.inputs_from(values), 'layers': deffeyes.ALL_LAYERS}
+        full, bare = calculation.calculate(**arguments), calculation.calculate(**arguments, plots=False)
+        self.assertEqual(len(full.plots), 4)
+        self.assertEqual(bare.plots, {})
+        self.assertEqual((bare.analysis, bare.chart), (full.analysis, full.chart))
+
+
+class UnitChartTests(UnitWaterCase):
+    def middle(self, unit=None):
+        return point_of(unit or self.unit)
+
+    def sample(self, point, hours=1, **values):
+        return services.record(self.user, point=point, measured_at=timezone.now() - timedelta(hours=hours),
+                               source='manual', values={name: D(str(value)) for name, value in values.items()})
+
+    def make(self, code, water_type='freshwater', **fields):
+        unit = make_unit(code, self.hall, **fields)
+        Tank.objects.filter(pk=unit.pk).update(water_type=water_type)
+        unit = Tank.objects.select_related('production_department__site').get(pk=unit.pk)
+        stock_fish(self.user, unit, 500, '50', 10, species=self.salmon)
+        return unit
+
+    def test_the_chart_of_a_unit_is_the_calculators_for_the_same_values(self):
+        chart = calculation.chart_of(self.unit)
+        self.assertIsInstance(chart, calculation.UnitChart)
+        values = {'temperature_c': 9.5, 'ph': 7.12, 'alkalinity_mg_l': 95.0, 'salinity_ppt': 0.3, 'tan_mg_l': 0.8,
+                  'altitude_m': 120.0, 'nh3_n_limit_mg_l': 0.02, 'co2_limit_mg_l': 15.0,
+                  'alkalinity_low_mg_l': 70.0, 'alkalinity_high_mg_l': 150.0}
+        arguments = {**calculation.inputs_from(values), 'layers': deffeyes.ALL_LAYERS}
+        self.assertEqual(chart.calculation.analysis, calculation.calculate(**arguments, plots=False).analysis)
+        self.assertEqual(chart.calculation.chart, calculation.calculate(**arguments, plots=False).chart)
+        self.assertEqual(chart.calculation.plots, {})
+        water = chart.calculation.analysis.water
+        self.assertEqual((water.total_sulfide_ug_l, water.calcium_mg_l, water.oxygen_mg_l), (None, None, None))
+        self.assertEqual(chart.calculation.analysis.limits.h2s_ug_l, None)       # no H2S border: said, not defaulted
+        self.assertEqual([item.field for item in chart.inputs],
+                         ['temperature_c', 'ph', 'alkalinity_mg_l', 'salinity_ppt', 'tan_mg_l', 'altitude_m'])
+        self.assertEqual(chart.assumed, ())
+
+    def test_no_value_comes_from_the_calculators_example_water(self):
+        chart = calculation.chart_of(self.unit)
+        water = chart.calculation.analysis.water
+        for name, value in (('temperature_c', 9.5), ('ph', 7.12), ('alkalinity_mg_l', 95.0), ('salinity_ppt', 0.3)):
+            self.assertEqual(getattr(water, name), value)
+            self.assertNotEqual(float(CalculatorForm.DEFAULTS[name]), value)
+        empty = self.make('T-09')                           # a unit nobody has measured
+        point_of(empty)
+        refused = calculation.chart_of(empty)
+        self.assertIsInstance(refused, calculation.Refusal)
+        self.assertEqual([str(label) for label in refused.missing],       # fresh water: salinity is 0, said
+                         [str(parameters.get(name).label) for name in ('temperature_c', 'ph', 'alkalinity_mg_l')])
+
+    def test_a_fresh_water_unit_without_a_salinity_is_drawn_at_zero_and_says_so(self):
+        fresh = self.make('T-02')
+        self.sample(self.middle(fresh), temperature_c=11, ph='7.3', alkalinity_mg_l=80)
+        chart = calculation.chart_of(fresh)
+        self.assertEqual(chart.assumed, ('salinity_ppt',))
+        item = next(item for item in chart.inputs if item.field == 'salinity_ppt')
+        self.assertEqual((item.value, item.assumed, item.reading), (D(0), True, None))
+        self.assertEqual(chart.calculation.analysis.water.salinity_ppt, 0.0)
+        body = self.client.get(reverse('farm:water_unit_chart', args=[fresh.pk])).content.decode()
+        self.assertIn('assumed: fresh water', body)
+
+    def test_a_sea_unit_without_a_salinity_is_refused_naming_it(self):
+        sea = self.make('S-01', 'saltwater')
+        self.sample(self.middle(sea), temperature_c=8, ph='7.9', alkalinity_mg_l=110)
+        refused = calculation.chart_of(sea)
+        self.assertIsInstance(refused, calculation.Refusal)
+        label = str(parameters.get('salinity_ppt').label)
+        self.assertEqual([str(item) for item in refused.missing], [label])
+        body = self.client.get(reverse('farm:water_unit_chart', args=[sea.pk])).content.decode()
+        self.assertIn(label, body)
+        self.assertIn('Nothing is filled in', body)
+        self.assertNotIn('<svg', body)
+
+    def test_a_unit_without_a_middle_point_lists_its_points_and_draws_nothing(self):
+        other = self.make('T-03')
+        self.sample(point_of(other, 'inlet'), temperature_c=9, ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
+        SamplingPoint.objects.filter(unit=other, kind='middle').update(is_active=False)
+        refused = calculation.chart_of(other)
+        self.assertTrue(refused.no_point)
+        self.assertEqual({point.kind for point in refused.points}, {'inlet', 'side_outlet', 'bottom_drain'})
+        page = self.client.get(reverse('farm:water_unit_chart', args=[other.pk]))
+        self.assertContains(page, 'has no active middle sampling point')
+        self.assertContains(page, 'data-window-load', count=len(refused.points))
+        self.assertNotContains(page, '<svg')
+        # Choosing the inlet draws its own readings.
+        inlet = next(point for point in refused.points if point.kind == 'inlet')
+        drawn = calculation.chart_of(other, inlet)
+        self.assertIsInstance(drawn, calculation.UnitChart)
+        self.assertEqual(drawn.calculation.analysis.water.temperature_c, 9.0)
+
+    def test_an_impossible_ph_and_alkalinity_pair_is_refused_with_the_reason(self):
+        odd = self.make('T-04')
+        self.sample(self.middle(odd), temperature_c=10, ph=11, alkalinity_mg_l=3, salinity_ppt='0.2')
+        refused = calculation.chart_of(odd)
+        self.assertIsInstance(refused, calculation.Refusal)
+        self.assertEqual(refused.missing, [])
+        self.assertIn('At this pH the alkalinity is above', refused.impossible)
+        self.assertEqual(refused.impossible, deffeyes.why_impossible(10, 0.2, 11, 3))
+        self.assertFalse(deffeyes.possible(10, 0.2, 11, 3))
+        self.assertTrue(deffeyes.possible(10, 0.2, 7.2, 90))
+
+    def test_the_temperature_is_the_points_own_never_the_loops(self):
+        loop_only = self.make('T-05')
+        Tank.objects.filter(pk=loop_only.pk).update(system=self.loop)
+        self.sample(point_of(self.loop), temperature_c=13)
+        self.sample(self.middle(loop_only), ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
+        refused = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
+        self.assertEqual([str(label) for label in refused.missing], [str(parameters.get('temperature_c').label)])
+
+    def test_offers_of_a_point_are_that_points_and_the_default_is_unchanged(self):
+        middle = self.middle()
+        inlet = point_of(self.unit, 'inlet')
+        self.sample(inlet, temperature_c=8.1)
+        by_default, by_point = calculation.offers(self.unit), calculation.offers(self.unit, point=middle)
+        self.assertEqual({name: offer.value for name, offer in by_default.items()},
+                         {name: offer.value for name, offer in by_point.items()})
+        self.assertEqual(calculation.offers(self.unit, point=inlet)['temperature_c'].value, D('8.1'))
+        self.assertNotIn('ph', calculation.offers(self.unit, point=inlet))
+
+    def test_the_endpoint_needs_only_the_water_right_and_refuses_a_foreign_point(self):
+        url = reverse('farm:water_unit_chart', args=[self.unit.pk])
+        page = self.client.get(url)
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, '<svg class="deffeyes-chart"', count=1)
+        self.assertContains(page, '<strong>T-01</strong> · Middle')
+        for text in ('9.50', '7.12', 'hours ago'):
+            self.assertContains(page, text)
+        self.assertNotContains(page, 'Atlantic salmon')              # the fish present are the stock's to tell
+        self.user.groups.add(role('Stock reader', 'view_stockoperation'))
+        self.assertContains(self.client.get(url), '<strong>T-01</strong> · Middle · Atlantic salmon')
+        other = self.make('T-06')
+        foreign = point_of(other)
+        self.assertEqual(self.client.get(url, {'point': str(foreign.pk)}).status_code, 404)
+        self.assertEqual(self.client.get(url, {'point': 'not-a-point'}).status_code, 404)
+        self.assertEqual(self.client.get(reverse('farm:water_unit_chart',
+                                                 args=['00000000-0000-0000-0000-000000000000'])).status_code, 404)
+        reader = get_user_model().objects.create_user('only', 'only@example.com', 'x')
+        reader.groups.add(role('Water only', 'view_watermeasurement'))
+        self.client.force_login(reader)
+        self.assertEqual(self.client.get(url).status_code, 200)           # no stock or unit right needed
+        blind = get_user_model().objects.create_user('blind', 'blind@example.com', 'x')
+        blind.groups.add(role('Stock only', 'view_stockoperation', 'view_tank'))
+        self.client.force_login(blind)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_two_windows_never_share_an_svg_id_and_the_calculators_ids_are_unchanged(self):
+        inlet = point_of(self.unit, 'inlet')
+        self.sample(inlet, temperature_c=8.1, ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
+        url = reverse('farm:water_unit_chart', args=[self.unit.pk])
+        first = self.client.get(url).content.decode()
+        second = self.client.get(url, {'point': str(inlet.pk)}).content.decode()
+        ids = lambda html: set(re.findall(r'id="(deffeyes-[a-z-]+[^"]*)"', html))
+        self.assertTrue(ids(first) and ids(second))
+        self.assertEqual(ids(first) & ids(second), set())
+        calculator = self.client.get(reverse('farm:water_calculator'), {'drawn': '1', 'temperature_c': '12', 'ph': '7',
+                                                                         'salinity_ppt': '1', 'alkalinity_mg_l': '80'})
+        self.assertContains(calculator, 'id="deffeyes-title"')
+        self.assertContains(calculator, 'aria-labelledby="deffeyes-title deffeyes-desc"')
+
+    def test_the_points_of_the_unit_are_links_and_the_current_one_is_not(self):
+        page = self.client.get(reverse('farm:water_unit_chart', args=[self.unit.pk]))
+        self.assertContains(page, 'data-window-load', count=len(page.context['point_links']) - 1)
+        self.assertEqual([link['current'] for link in page.context['point_links']][:1], [True])
+        self.assertEqual(WaterMeasurement.all_objects.count(), self.samples)       # nothing was written

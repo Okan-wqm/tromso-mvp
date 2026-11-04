@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -403,6 +404,70 @@ class LatestTests(WaterTestCase):
         reading = self.latest(self.ras).get('co2_mg_l')
         self.assertEqual((reading.status, {row.species for row in reading.limits}),
                          (Status.CRITICAL, {self.salmon, trout}))
+
+
+class PointsWaterTests(WaterTestCase):
+    """read.points_water: every active point of many units from one latest(), against unit_water for the middle."""
+
+    def setUp(self):
+        super().setUp()
+        self.t3 = make_unit('T-03', self.hall)                      # no sampling point at all
+        self.units = [self.t1, self.t2, self.t3]
+        self.drain, self.inlet = point_of(self.t1, 'bottom_drain'), point_of(self.t1, 'inlet')
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.sample(self.t1, hours=2, temperature_c='9', oxygen_mg_l='8')
+        self.sample(self.drain, hours=3, temperature_c='9.4', oxygen_mg_l='5')
+        self.sample(self.inlet, hours=1, temperature_c='8.8')
+        self.sample(self.t2, hours=1, temperature_c='11')
+        self.now = timezone.now()
+
+    def test_the_middle_alone_is_unit_water(self):
+        found = read.points_water(self.units, self.now, middle_only=[unit.pk for unit in self.units])
+        oracle = read.unit_water(self.units, self.now)
+        self.assertEqual(found[self.t1.pk], [oracle[self.t1.pk]])
+        self.assertEqual(found[self.t2.pk], [oracle[self.t2.pk]])
+        self.assertEqual(found[self.t3.pk], [])                    # no middle point: nothing stands in for it
+        self.assertEqual(oracle[self.t3.pk].point, None)
+
+    def test_a_detailed_unit_has_every_active_point_the_middle_first_the_others_by_name(self):
+        found = read.points_water(self.units, self.now, middle_only=[self.t2.pk])
+        names = [water.point.name for water in found[self.t1.pk]]
+        self.assertEqual(names[0], self.mid1.name)
+        self.assertEqual(names[1:], sorted(names[1:]))
+        self.assertEqual(set(names), {point.name for point in SamplingPoint.objects.filter(unit=self.t1)})
+        self.assertEqual(found[self.t1.pk][0], read.unit_water([self.t1], self.now)[self.t1.pk])
+        by_name = {water.point.name: water for water in found[self.t1.pk]}
+        self.assertEqual(by_name[self.drain.name].get('oxygen_mg_l').status, Status.CRITICAL)
+        self.assertEqual(by_name[self.inlet.name].get('temperature_c').value, D('8.8'))
+        self.assertEqual(len(found[self.t2.pk]), 1)                # narrowed to its middle
+
+    def test_an_inactive_point_is_left_out(self):
+        SamplingPoint.objects.filter(pk=self.drain.pk).update(is_active=False)
+        found = read.points_water([self.t1], self.now)
+        self.assertNotIn(self.drain.name, [water.point.name for water in found[self.t1.pk]])
+
+    def test_the_queries_do_not_grow_with_the_units(self):
+        def count(units, narrow):
+            with CaptureQueriesContext(connection) as queries:
+                read.points_water(units, self.now, middle_only=narrow)
+            return len(queries)
+        for narrow in (lambda units: [], lambda units: [unit.pk for unit in units]):
+            count(self.units, narrow(self.units))
+            one = count(self.units[:1], narrow(self.units[:1]))
+            self.assertEqual(count(self.units[:2], narrow(self.units[:2])), one)
+            self.assertEqual(count(self.units, narrow(self.units)), one)
+
+    def test_the_assumed_salinity_is_one_rule_for_the_calculation_and_the_ammonia(self):
+        fresh, sea = Tank.WaterType.FRESHWATER, Tank.WaterType.SALTWATER
+        self.assertEqual([read.assumed_salinity(types) for types in ({fresh}, [fresh, fresh], {sea}, {fresh, sea}, ())],
+                         [D(0), D(0), None, None, None])
+        sample = self.sample(self.t1, hours=1, tan_mg_l='1', ph='7.5', temperature_c='10')
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        with mock.patch.object(read, 'assumed_salinity', return_value=D('35')) as rule:
+            self.assertEqual(context.salinity_for(sample), D('35'))
+        rule.assert_called_once_with({fresh})
+        self.assertEqual(context.salinity_for(sample), D(0))
 
 
 class DerivedTests(WaterTestCase):

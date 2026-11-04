@@ -566,7 +566,10 @@ entry. Voiding a stocking voids its batch; a batch number is never given twice. 
 operations and batches but does not restore them (a restore would skip the checks).
 
 **Who may do what:** the area Production units in the role matrix (Production · Operations): Read the
-page, Create records an operation, Delete voids one. A unit with fish cannot be deleted, nor resized,
+page, Create records an operation, Delete voids one. The feeding figures (bFCR, last fed, the batches' fed and
+bFCR, the drawer's eFCR and Feeding part) are shown only to people who may read the feeding records, as the
+Temp. and O₂ columns are to those who may read the water (`feeding.views.unit_figures`); a role with the stock
+right alone sees the stock. A unit with fish cannot be deleted, nor resized,
 nor set to a status that needs it empty; a species with batches and a supplier fish were bought from
 cannot be deleted (`PROTECT`). `manage.py check_stock` checks the whole ledger from scratch (counts,
 operations made of their lines, stocking dates, unit statuses, species, feedings without fish) and the
@@ -591,7 +594,91 @@ Differences from the source (details in the bug document, STK-01 to STK-73):
   documents and costs, a dialog for a count correction (an escape is the one count adjustment with a dialog). Harvest
   plans and the handling check are on
   Operations › Harvest; the medicine withdrawal they check is the health records' (Operations › Health),
-  through the registry of farm/handling/withdrawal.py.
+  through the registry of farm/handling/withdrawal.py. The registry answers for many units at once (a provider
+  takes `(units, day)` and gives `{unit id: blocks}`; `blocks_of`, `check.in_force_of`), so a page of fifty units
+  costs what a page of one does.
+
+### Operations › Monitoring (`/operations/monitoring/`)
+
+A live card per tank, pond or cage, simple or detailed, in one grid that doubles as a wall screen for a control room, with a
+unit's Deffeyes chart in a movable window. The app `monitoring` is composition only: it stores nothing but (later) shared
+wall boards, derives no figure and writes nothing, a poll included. Every number on a card comes from the module that owns
+it, through a read that answers for many units at once (the table is `monitoring/read.py`'s docstring):
+
+| Card figure | Owner |
+|---|---|
+| fish, average g, biomass, volume, density, capacity, over capacity, since, deaths, culls, survival, last weighed, batches | `UnitStock` (farm/stock/read.py), `stock_of` |
+| ration, fed today, remaining, next meal, why there is no ration (a fast too), weigh soon or now | `feeding.read.figures(details, ration=True)`: one walk of the projected weight for all the cards, then `meal_lines` and `drift`, which the meal board prints too |
+| bFCR, eFCR, last fed, feed rate, feed in use | `UnitFeeding`, `Week` |
+| water per parameter with age and status | `water.read.points_water`: one `latest()`, the middle point of a simple card, every active point of a detailed one |
+| medicine withdrawal | the registry's one bulk answer (`harvest.views.withdrawals`), with the stock right, as Production units |
+| open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
+| open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
+| the Deffeyes chart | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
+
+**The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
+empty, all), the all-cards mode, a text search, a unit picker, Wall and Full screen) and the grid: a head ("2 of 3 units
+shown", "computed at" a time, so a frozen screen is visibly old), a strip naming each critical, warning or no-recent-data
+card, and one article per unit in the farm's one order (site, department, code), so a card never moves when its state does.
+Each card has its Simple or Detailed link (the page with that card flipped; with script the grid refetches), its state word
+and shape, the withdrawal with its date, and a Deffeyes chart button that opens the window. A **section the person may not read
+is not read at all** (no query) and the card says so ("Water: not shown to you" and "State from: Fish"); one right for each
+section (`monitoring.read.sections_for`, the one place that spells a permission). Detailed never widens access.
+
+**The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
+critical); warning (a warning reading, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
+temperature or oxygen is missing or older than its 24 hours, or with no middle point: the water's own status ranks OK above
+stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is printed; not worked out when the water
+is hidden); note (a withdrawal in force, weigh soon, a ration that cannot be worked out with its reason, an open health event);
+ok; empty. Word, shape and reasons, never colour alone.
+
+**Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
+fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
+how many lie in the five minutes up to it, two indexed queries, read before any data; the minute, the language, what the person
+may read, the board and the canonical address), answers **204** with the same `X-Poll-Next` while it is equal, else 200 with the
+cards and the next address; the minute re-draws the figures that run on the clock at most once a minute. A writer that does not
+write its audit entry would leave a card up to a minute old: the token test enumerates the writers. The fragment is rendered
+without a request, so the shell's context (the menu, the unread count) is never worked out for a poll.
+
+**The wall.** `?wall=1` puts `data-wall` on `<html>` (no rail, no top bar, no width limit, larger figures), and the page and its
+polls keep the session alive once a day (the default session is two weeks and a wall must not sign itself out); the grid prints a
+large notice from `data-poll-state` when the server cannot be reached or the person is signed out.
+
+**Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`): the only thing the app stores. A board is a
+named, shared wall screen: a name (unique among the live boards in any case), a description, how its cards are drawn by
+default (simple or detailed), how often its screens ask (10 to 600 seconds, empty: the system's 15), and its **Units** tab, one
+card per unit with its own mode (empty: the board's), saved as a whole list with the board's version (a list based on an outdated
+board is refused) and one activity-log entry. Tables `monitor_boards` and `monitor_board_units`; every rule the database can
+hold is a constraint (the name, the modes, the refresh range, one card per unit and board). A board holds only live units: the
+form offers live units, and a unit that is deleted keeps its row (a configuration, not history), its card hidden by the live join
+and back when the unit is restored; saving the list drops the row. There is no position: cards go in the farm's one order. A
+board is deleted and restored like any record (nothing depends on it). Anyone who may read Monitoring may choose a board in the
+picker (a board is configuration, not a record); the area Monitoring boards in the role matrix, after Tanks, ponds & cages, is for
+making and changing them. A window's place is remembered per board on each device.
+
+**Cleaner fish and placements.** A detailed card says the cleaner fish beside the production fish (`UnitStock.cleaner_stock`:
+the unit's own figures never count them). When the placement registry (`farm.placements`, a trial's replicate) is present, its
+chips are on the cards, from one call for all the units; it fails open (no registry, or one that raises: no chip, nothing else
+changes).
+
+**Who may do what.** Reading the page needs the right to read stock operations (Production units' area; the menu entry follows
+Production units, which keeps the page title and eyebrow); the fragment has the same gate; the chart needs the water right.
+
+Decisions of the owner (2026-11-04): a wall page extends its session once a day; Production units stops printing bFCR and last fed
+to roles without feeding rights; the chart's temperature is the unit's own point's, never the loop's, and the chart refuses and
+says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind.
+
+Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
+sparklines, a stored calculation, a server cache or a push channel (a measured miss first), a stored status, an "open in the
+calculator" link.
+
+**Measured at 100 units** (a throwaway test database, the test client, 100 stocked units with water and 19 days of feeding each; the
+real figures need the live farm): a simple card page costs 48 queries (264 ms of them), the fragment 43, a detailed page 55 and its
+fragment 50, the 204 path 7 queries and 20 ms; the render takes 1.7 to 2.8 s and the body 395 to 548 KB (about 4 to 5 KB a card), so
+the time is Python and template work, not the database: the change token is what spares an unchanged poll, and a measured slow
+screen would first bound the feeding walk (`project` reads every feeding of the lineage) or cache the rendered card, never the other
+way round. The queries stay equal from 6 to 100 units (pinned at 6 and 24 in `monitoring/tests/test_budget.py`). `CONN_MAX_AGE` is
+left alone: the queries are a tenth of the time, so there is no evidence for it.
 
 ### Operations › Feeding: Meal board, Records, Protocols and Assignments
 
@@ -705,6 +792,13 @@ Production units, nobody notified. Also later: sensors as temperature sources, a
 times and feeding windows, fasting and medication calendars, catch-up of missed meals, stored day plans and pours,
 hysteresis and manual band pins, rate adjustments and FCR overrides per assignment, a learned FCR from the realised
 intervals, forecasts and the production plan.
+
+**Read for many units.** `feeding.read.figures(stock, details=(), ration=False)` answers for any number of units in one walk of
+the projected weight: for each unit of `details` its last 7 days (`weeks`: two queries for all of them, the records of the days
+and the feed in use), today's ration and the corrections of its weighings; with `ration`, today's ration of every unit with fish.
+The drawer, the meal board and the monitoring cards all read it. The meal board's per-batch lines and the weigh soon or now
+drift live in `feeding.read` (`meal_lines`, `drift`), and the board and the cards print the same lines. A person who may not read
+the feeding records is not given the figures (`feeding.views.unit_figures`).
 
 ### Operations › Feeding › Records: the feeding records (`/operations/feeding/`)
 
@@ -1025,13 +1119,22 @@ without values it shows its defaults.
 - **Not ported**: the fish type and size (they changed nothing, WQ-37: here the fish come with a unit),
   the measurement points' reading sources and sensor sets of the values bar (no sensors here yet).
 
-**Next: a chart per unit or loop.** The chart and the calculation take a `Water`, `Limits` and a `Target`,
-not a form, and the calculator already fills them from a point (`calculation.offers`), so a unit's or a
-loop's own chart in the drawer or its history needs no change to them. Three things come with it: total
-sulfide, calcium and H₂S become parameters (a column each, a migration, a limit parameter for H₂S); the pH
-and the alkalinity are taken from the same sample, or their age difference is shown, since the latest value
-of each may come from different samples (the calculator shows each value's age); and a point's history can
-draw its samples as a track.
+**A unit's own chart** (`/operations/water/units/<id>/chart/`, for the monitoring cards' window): the same chart
+and calculation, from the latest readings of one of the unit's sampling points (its middle point by default,
+`?point=` another of its own active points, 404 for any other) and the limits of its fish
+(`calculation.chart_of`). It never makes a value up: a unit chart refuses and lists the readings the point lacks
+(temperature, pH, alkalinity, salinity), or says that the unit has no middle point and lists its points, or that
+the pH and the alkalinity cannot go together (`deffeyes.why_impossible`, the calculator's own check). The one
+assumption is a fresh-water unit's salinity of 0 (`read.assumed_salinity`, also the ammonia's rule), shown as
+"assumed". The temperature is the point's own, never the loop's. TAN, oxygen and the site's altitude are drawn
+when there; no total sulfide or calcium is measured, so there is no H₂S or Ω layer, and a limit the fish do not
+have is said, not drawn. Each reading shows its age, status and point; the chart's SVG ids carry the point
+(`uid`), so several windows on one page never clash. The endpoint needs only the right to read water samples.
+`calculation.inputs_from` is the one mapping from field values to the analysis, used by the calculator's form
+and by this chart. Still to come: total sulfide, calcium and H₂S become parameters (a column each, a migration,
+a limit parameter for H₂S); the pH and the alkalinity are taken from the same sample, or their age difference
+is shown, since the latest value of each may come from different samples (the calculator shows each value's
+age); and a point's history can draw its samples as a track.
 
 **Who may do what**: the area Water chemistry (Production · Operations): Read the page (the calculator
 too), Create records a sample or a round, Delete voids one; the area Water limits (Production · Setup ·
@@ -1626,6 +1729,10 @@ Differences from the source (details in the bug document, HLT-01 to HLT-23):
   master as a medicine catalogue, welfare scores, escape incidents, vaccination details, medicine stock, lab
   result values, the reports to Mattilsynet, treatment effect and resistance tests, cleaner-fish health
   (health-maturity §4d). The water temperature at a treatment is not typed on it: it is the water samples'.
+**Read for many units.** `health.read.recent_treatments(units)`, `open_events(units)` and `latest_counts(unit_ids)` (one
+`DISTINCT ON` row a unit) answer for many units in a constant number of queries; the drawer calls them with its one unit and the
+monitoring cards with all of theirs.
+
 ### Operations › Tasks (`/operations/tasks/`) and Recurring tasks (`/operations/tasks/recurring/`)
 
 The farm's jobs: "clean the drum filter of T-01", "report the lice count to Mattilsynet", each at one place,
@@ -1723,6 +1830,9 @@ Differences from the source (details in the bug document, TSK-01 to TSK-23):
 - Every action has its page and test; the status changes only through its own actions with who and when;
   the checklist keeps who ticked what; a form sent twice creates once (TSK-05, TSK-07, TSK-10, TSK-11, TSK-16).
 - Not ported: tags, the time estimate, auto rules, the calendar, notifications, the AI tools.
+
+`tasks.read.per_unit(unit_ids)` counts each unit's open, overdue and due-today tasks in one grouped query, with the same filters
+as the views above on each site's own clock (the monitoring cards).
 
 ## Regulatory reports (Production › Reports, `/reports/`)
 
@@ -2334,7 +2444,33 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   conversation, the list of conversations, a menu entry's number), a GET form whose results the server
   draws again as it is filled in (`data-live`: its `data-live-part`s are swapped, its fields' errors put
   under them, the address kept in step; the water calculator), a list that follows new rows
-  (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`).
+  (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`). It is THE one polling
+  implementation, and `watch(element)` is what other scripts import. Every request has a 20 s timeout, each
+  wait a few per cent shorter or longer by chance (screens never line up), a failure doubles the wait up to
+  a minute, nothing is asked while the page is hidden, one shared listener serves every element and an
+  element that left the page is let go. The element carries `data-poll-state` (`live`, `stale` after two
+  failures in a row, `gone` after a 401, 403, 404 or a redirect to sign-in, with a bubbling `poll:gone`
+  event), so the page's CSS can say so in its own words (the script has no text); the event `poll:now`
+  asks at once (`detail.url`: the address from now on); `data-poll-merge="<attr>"` replaces a keyed child
+  only when its markup differs, inserts a new key where the answer has it and drops a child the answer
+  lacks (focus stays on the same id; an unkeyed child in the answer replaces everything);
+  `data-poll-skip-same` leaves an answer equal to the last alone. Messages' append mode and the
+  calculator's live form are unchanged, and pinned by `core/test_frontend_contract.py`, which also checks
+  that every hook a template uses is one the script documents and reads.
+- `windows.ts` movable, non-modal windows (the monitoring cards' Deffeyes chart) and the full-screen button
+  of a wall: `<button data-window="<url>" data-window-title>` opens the fragment in a `section[role=dialog]`
+  made from the server-rendered `#monitor-window-template` (templates/monitoring/_windows.html, in the
+  person's language) inside `#monitor-windows`, a sibling of the polled grid so a refresh never touches a
+  window and a window shows in full screen. The title bar drags it (pointer events), the arrow keys move it
+  16 px and Shift+arrows resize it, it comes forward when touched or focused, Escape closes it and returns
+  the focus to its button, the same address is focused, never opened twice, and a link marked
+  `data-window-load` loads in the same window. The body is polled through poll.ts (every 60 s, skipping an
+  identical answer, stopping when the window closes; a 403 or 404 closes it). Each window's place is kept
+  per device in `localStorage` (fractions of the screen, in a try/catch: losing it centres the window); below
+  640 px a window is a sheet at the bottom of the screen. It never uses `<dialog>.showModal`, which would
+  make the page inert and stop the wall. All the styles of the module, the wall (`?wall=1` puts
+  `data-wall` on `<html>` through the `html_attrs` block of `app_base.html`: no rail, no top bar, no width
+  limit) and the notices CSS prints from `data-poll-state`, are in `static/css/monitor.css`.
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
 compiled modules are reached through an import map (`{% module_map %}`), so a browser never shows a
@@ -2493,6 +2629,8 @@ real mail.
 | `/feeds/` | Reference data › Feeds; `<id>/suitability/` saves the species and fish weights a feed suits |
 | `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
 | `/operations/units/` | Operations › Production units; `?unit=<id>` opens a unit's drawer |
+| `/operations/monitoring/` | Operations › Monitoring: a live card per unit, simple or detailed; `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
+| `/operations/monitoring/cards/` | The grid's children for the same address; `&after=<token>` answers 204 while nothing changed, `X-Poll-Next` is the next address |
 | `/operations/units/new-batch/` | A new batch (`?unit=<id>` chooses the unit) |
 | `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |
 | `/operations/units/void/<id>/` | Voids a stock operation |
@@ -2509,6 +2647,7 @@ real mail.
 | `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
 | `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
 | `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |
+| `/operations/water/units/<id>/chart/` | A unit's own Water Quality Management Chart from one of its points' latest readings (`?point=`), or what is missing; a fragment |
 | `/operations/water/record/` | Record a water sample (`?unit=<id>`, `?system=<id>` or `?equipment=<id>` offers that owner's points with its middle one chosen; `?point=<id>` names one) |
 | `/operations/water/round/` | A water round: the middle points of the units and loops of a site, production department or system (`include=` adds other kinds of point, or the equipment's) |
 | `/operations/water/void/<id>/` | Voids a water sample |

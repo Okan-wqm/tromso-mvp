@@ -8,31 +8,36 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
 from types import SimpleNamespace
+from unittest import mock
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
 from core import access, database, navigation
 from core.models import AuditLog, Profile
 
-from ..feeding import ration
+from ..feeding import ration, read
 from ..feeding.fold import Feeding, walk
 from ..feeding.projection import Projector
 from ..feeding.ration import Band, Cell, Policy, Table, sfr_at
 from ..feeding.temperature import Temperature
 from ..models import (
-    Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, ProtocolAssignment, ProtocolBand, ProtocolRate,
+    Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, ProtocolAssignment, ProtocolBand, ProtocolRate, Site,
     StockOperation, System, Tank,
     WaterMeasurement,
 )
-from ..stock import services as stock_services
+from ..stock import read as stock_read, services as stock_services
+from ..stock.dates import local_today
 from ..stock.fold import Line, Op
 from ..water import services as water_services
 from .helpers import make_facility, point_of, role
 from .test_feeding import FeedingTestCase
+from .test_stock import make_unit
 
 D = Decimal
 
@@ -792,3 +797,100 @@ class LanguageTests(WorkedExampleTestCase):
             response = self.client.get(reverse('farm:meal_board'))
             for word in words:
                 self.assertContains(response, word, msg_prefix=language)
+
+
+# ---- figures for many units in one walk -------------------------------------------------------------------
+def old_week(unit, stock, today, days, walked):
+    """The drawer's Week as read.figures built it for one unit (kept here as the oracle of the bulk `weeks`)."""
+    first = days[0][1]
+    records = list(FeedingRecord.objects.filter(unit=unit, date__gte=first, target='production')
+                   .select_related('feed'))
+    of_today = [record for record in records if record.date == today]
+    meals = [record.meals for record in of_today]
+    latest = (FeedingRecord.objects.filter(unit=unit, date__gte=stock.since, target='production')
+              .select_related('feed').first()) if stock.since else None
+    return read.Week(
+        first=first,
+        today_kg=sum((record.amount_kg for record in of_today), read.ZERO),
+        today_meals=sum(meals) if meals and None not in meals else None,
+        kg=sum((record.amount_kg for record in records if record.date <= today), read.ZERO),
+        biomass_days_kg=sum((walked.days[key].production.biomass_kg for key in days), read.ZERO),
+        feed=latest.feed if latest else None)
+
+
+class BulkFiguresTests(WorkedExampleTestCase):
+    """read.figures(stock, details, ration): the weeks of several units, the rations of all, in one walk."""
+
+    def setUp(self):
+        super().setUp()
+        Site.objects.filter(pk=self.tromso.pk).update(timezone='Pacific/Auckland')
+        self.s1 = make_unit('S-01', self.sea, 'pond', status=Tank.Status.ACTIVE)
+        self.fish_s1 = self.stock(self.s1, count=3000, weight='80', days_ago=20)
+        for unit in (self.t1, self.s1):
+            self.assign(self.protocol, unit=unit)
+            self.record(kilos='4', days_ago=2, unit=unit)
+            self.record(kilos='3', days_ago=0, unit=unit, meals=2)
+            self.water('13', unit=unit, hours=0)
+        self.units = [Tank.objects.select_related('production_department__site').get(pk=unit.pk)
+                      for unit in (self.t1, self.t2, self.s1)]
+        self.t1, self.t2, self.s1 = self.units
+        self.stock_now = stock_read.stock_of(self.units)
+
+    def today_of(self, unit):
+        return local_today(unit)
+
+    def test_the_weeks_equal_the_one_unit_oracle_in_two_time_zones(self):
+        found = read.figures(self.stock_now, details=[self.t1, self.s1])
+        for unit in (self.t1, self.s1):
+            today = self.today_of(unit)
+            days = [(unit.pk, today - timedelta(days=6) + timedelta(days=n)) for n in range(7)]
+            walked = read.project(list(self.stock_now), days).walked
+            self.assertEqual(found[unit.pk].week, old_week(unit, self.stock_now[unit.pk], today, days, walked))
+            self.assertGreater(found[unit.pk].week.kg, 0)
+        self.assertIsNone(found[self.t2.pk].week)
+        self.assertIsNone(found[self.t2.pk].ration)         # not a detailed unit, and no ration asked
+
+    def test_every_units_ration_equals_the_meal_boards_for_it(self):
+        found = read.figures(self.stock_now, ration=True)
+        for unit in self.units:
+            today = self.today_of(unit)
+            own = read.project([unit.pk], [(unit.pk, today)]).days[(unit.pk, today)]
+            ours = found[unit.pk].ration
+            self.assertEqual([getattr(ours, name) for name in ('fed_kg', 'meals_done', 'ration_kg', 'remaining_kg',
+                                                              'next_meal_kg', 'calculated_kg')],
+                             [getattr(own, name) for name in ('fed_kg', 'meals_done', 'ration_kg', 'remaining_kg',
+                                                             'next_meal_kg', 'calculated_kg')])
+        self.assertIsNotNone(found[self.t2.pk].ration.ration_kg)        # the fixture does compute a ration
+        self.assertEqual(found[self.t1.pk].ration.fed_kg, 3)
+
+    def test_one_walk_serves_the_page_the_drawer_and_the_cards(self):
+        with mock.patch.object(read, 'project', wraps=read.project) as project, \
+                mock.patch('farm.feeding.read.walk', wraps=read.walk) as walking:
+            read.figures(self.stock_now, details=[self.t1, self.s1], ration=True)
+        self.assertEqual((project.call_count, walking.call_count), (1, 1))
+
+    def test_the_queries_do_not_grow_with_the_units(self):
+        def count(units, **kwargs):
+            with CaptureQueriesContext(connection) as queries:
+                read.figures(stock_read.stock_of(units), **kwargs)
+            return len(queries)
+        count([self.t1], details=[self.t1], ration=True)                 # warm the caches
+        one = count([self.t1], details=[self.t1], ration=True)
+        self.assertEqual(count([self.t1, self.t2], details=[self.t1, self.t2], ration=True), one)
+        self.assertEqual(count(self.units, details=self.units, ration=True), one)
+
+    def test_the_meal_boards_lines_are_meal_lines(self):
+        response = self.client.get(reverse('farm:meal_board'))
+        for row in response.context['rows']:
+            unit, today = row['unit'], local_today(row['unit'])
+            batches = {share.batch.pk: share.batch for share in row['stock'].shares}
+            again = read.meal_lines(row['day'], batches, today)
+            self.assertEqual([(line['batch'], line['why'], line['drift'], line['estimate_days'])
+                              for line in row['lines']],
+                             [(line['batch'], line['why'], line['drift'], line['estimate_days']) for line in again])
+
+    def test_drift_is_soon_after_the_soon_days_and_now_after_the_now_days(self):
+        today, soon, now = self.today, settings.WEIGH_SOON_DAYS, settings.WEIGH_NOW_DAYS
+        self.assertEqual([read.drift(today, None)] + [read.drift(today, today - timedelta(days=days))
+                                                      for days in (0, soon, soon + 1, now, now + 1)],
+                         ['', '', '', 'soon', 'soon', 'now'])

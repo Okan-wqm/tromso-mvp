@@ -38,7 +38,6 @@ COUNTS = {'view': 'farm.view_licecount', 'add': 'farm.add_licecount', 'delete': 
 EVENTS = {'view': 'farm.view_healthevent', 'add': 'farm.add_healthevent', 'delete': 'farm.delete_healthevent'}
 PAGE_SIZE = 50
 LICE_WEEKS = 12        # the weeks of site averages the lice page shows
-RECENT_DAYS = 90       # a unit's treatments the drawer lists
 UNDER_WITHDRAWAL, VACCINATIONS = 'withdrawal', 'vaccinations'
 
 
@@ -378,16 +377,11 @@ def drawer(request, unit, back):
     context = {}
     shown = False
     if user.has_perm(TREATMENTS['view']):
-        since = local_today(unit) - timedelta(days=RECENT_DAYS)
-        context['health_treatments'] = list(unit.treatments.filter(end_date__gte=since).select_related('medicine')
-                                            .order_by('-start_date'))
+        context['health_treatments'] = read.recent_treatments([unit])[unit.pk]
         context['health_treatments_url'] = f'{reverse("farm:treatments")}?{urlencode({"unit": unit.pk})}'
         shown = True
     if user.has_perm(EVENTS['view']):
-        site = unit.production_department.site
-        events = HealthEvent.objects.filter(site=site, closed_on__isnull=True).prefetch_related('units') \
-            if site is not None else HealthEvent.objects.none()
-        context['health_events'] = [event for event in events if not event.units.all() or unit in event.units.all()]
+        context['health_events'] = read.open_events([unit])[unit.pk]
         context['health_notify'] = {event.pk for event in notices.pending(context['health_events']) or []}
         shown = True
     if user.has_perm(COUNTS['view']):

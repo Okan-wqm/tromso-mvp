@@ -8,18 +8,21 @@ average is the sum of the units' averages divided by the number of units counted
 same. The limit is § 8's for the site's area and that week (farm/health/lice.py)."""
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import OuterRef, Subquery, Sum
 from django.db.models.functions import Coalesce
 
-from farm.models import LiceCount, StockMovement, Treatment
+from farm.models import HealthEvent, LiceCount, StockMovement, Treatment
 from farm.models.stock import MovementKind
+from farm.stock.dates import local_today
 
 from . import lice
 
 STAGES = ('adult_females', 'mobile', 'attached')
 ZERO = Decimal(0)
+RECENT_DAYS = 90       # a unit's treatments the drawer and the cards list
 
 
 def dated_records(unit_ids, since=None):
@@ -134,10 +137,45 @@ def lice_weeks(counts):
 
 
 def latest_counts(unit_ids):
-    """{unit id: its latest live lice count}."""
-    found = {}
-    for count in LiceCount.objects.filter(unit_id__in=unit_ids).order_by('date', 'created_at'):
-        found[count.unit_id] = count
+    """{unit id: its latest live lice count}: one row per unit, the newest by date, then by entry."""
+    rows = (LiceCount.objects.filter(unit_id__in=unit_ids).order_by('unit_id', '-date', '-created_at')
+            .distinct('unit_id'))
+    return {count.unit_id: count for count in rows}
+
+
+def recent_treatments(units, days=RECENT_DAYS):
+    """{unit id: [Treatment]} of every unit given: its live treatments that ended no longer than `days` before the
+    unit's own today (a course still running too), newest first, with the medicine. Two queries for all the units."""
+    since = {unit.pk: local_today(unit) - timedelta(days=days) for unit in units}
+    found = {unit_id: [] for unit_id in since}
+    if not since:
+        return found
+    rows = (Treatment.units.through.objects
+            .filter(tank_id__in=since, treatment__is_deleted=False, treatment__end_date__gte=min(since.values()))
+            .select_related('treatment__medicine'))
+    for row in rows:
+        if row.treatment.end_date >= since[row.tank_id]:
+            found[row.tank_id].append(row.treatment)
+    for treatments in found.values():
+        treatments.sort(key=lambda treatment: (treatment.start_date, treatment.created_at), reverse=True)
+    return found
+
+
+def open_events(units):
+    """{unit id: [HealthEvent]} of every unit given: the open health events of its site that name it or name no unit
+    (the whole site), in the events' own order. Two queries for all the units."""
+    found = {unit.pk: [] for unit in units}
+    by_site = defaultdict(list)
+    for unit in units:
+        if unit.production_department.site_id is not None:
+            by_site[unit.production_department.site_id].append(unit)
+    if not by_site:
+        return found
+    for event in HealthEvent.objects.filter(site_id__in=by_site, closed_on__isnull=True).prefetch_related('units'):
+        named = {unit.pk for unit in event.units.all()}
+        for unit in by_site[event.site_id]:
+            if not named or unit.pk in named:
+                found[unit.pk].append(event)
     return found
 
 

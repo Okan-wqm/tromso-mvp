@@ -376,6 +376,18 @@ mod tests {
     }
 
     #[test]
+    fn a_run_whose_sum_would_overflow_is_closed_before_it_does() {
+        // the table refuses a non-finite run_sum: a run of huge values must never produce one
+        let mut st = State::default();
+        let samples: Vec<Sample> = (0..6).map(|i| smp(i, 1e308, 0)).collect();
+        let rows = run(&db(1.0, 600), &mut st, &samples);
+        assert!(rows.iter().all(|r| r.run_sum.is_none_or(f64::is_finite)), "{rows:?}");
+        assert!(st.run_sum.is_none_or(f64::is_finite));
+        let n: i32 = rows.iter().map(|r| r.n).sum::<i32>() + st.run_n;
+        assert_eq!(n, 6);
+    }
+
+    #[test]
     fn late_keeps_the_sample_quality_bits() {
         let mut st = State::default();
         run(&db(1.0, 600), &mut st, &[smp(10, 5.0, 0)]);

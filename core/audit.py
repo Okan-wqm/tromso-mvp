@@ -79,6 +79,15 @@ def entity_type_of(model):
     return english(model._meta.verbose_name)
 
 
+LABEL_LENGTH = AuditLog._meta.get_field('entity_label').max_length
+
+
+def bounded(label):
+    """A label that fits the log's column: longer ones are cut, with an ellipsis (a record's own label is written to be short
+    and findable, a stock operation's shortens the units it lists first; this is what stops any other from failing the write)."""
+    return label if len(label) <= LABEL_LENGTH else label[:LABEL_LENGTH - 1] + '…'
+
+
 def record(user, action, instance, changes=None, entity_type=None, label=None, severity=AuditLog.Severity.NORMAL):
     """One entry. `severity` critical marks someone going on past a warning that protects fish or food
     (farm/handling): the activity log shows it apart and the later alarms read it."""
@@ -88,7 +97,7 @@ def record(user, action, instance, changes=None, entity_type=None, label=None, s
         action=action,
         entity_type=english(entity_type or entity_type_of(type(instance))),
         entity_id=str(instance.pk),
-        entity_label=label or str(instance),
+        entity_label=bounded(label or str(instance)),
         changes=changes or {},
         severity=severity,
     )

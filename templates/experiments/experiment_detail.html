@@ -1,10 +1,11 @@
 {% extends "crud/detail.html" %}
 {% load i18n %}
-{% comment %} An experiment's read page for everyone who may read the tab (experiments.resources.ExperimentResource): its
-   details and its team. The design, the places and the figures come with their own parts of the page.{% endcomment %}
+{% comment %} An experiment's read page for everyone who may read the tab (experiments.resources.ExperimentResource): its details, then
+   one of three parts chosen in the address (`?tab=`): the Overview (where it is in its days, what is wrong with a draft, a replicate a
+   row with its figures), the Data (per tank its days and links to the farm's lists) and the Team. {% endcomment %}
 {% block details %}
 <section class="detail-section">
-  <p>{% include "experiments/_status.html" with experiment=object %}</p>
+  <p>{% include "experiments/_status.html" with experiment=object %}{% if phase %} <span class="status-line">{% if phase.0 == "during" %}{% blocktrans trimmed with day=phase.1 total=phase.2 %}Day {{ day }} of {{ total }}{% endblocktrans %}{% elif phase.0 == "before" %}{% blocktrans trimmed count days=phase.3 %}Day 0 is in {{ days }} day{% plural %}Day 0 is in {{ days }} days{% endblocktrans %}{% else %}{% blocktrans trimmed count days=phase.3 %}The final weighing was {{ days }} day ago{% plural %}The final weighing was {{ days }} days ago{% endblocktrans %}{% endif %}</span>{% endif %}</p>
   <dl class="facts">
     <div><dt>{% trans "Experiment number" %}</dt><dd>{{ object.code }}</dd></div>
     <div><dt>{% trans "Site" %}</dt><dd>{{ object.site.name }}</dd></div>
@@ -19,10 +20,17 @@
 </section>
 {% if can_start %}<p><a class="button button-inline" href="{{ start_url }}" data-modal>{% trans "Start the experiment" %}</a></p>{% endif %}
 {% include "experiments/_copy_buttons.html" %}
+<nav class="view-tabs" aria-label="{% trans "Experiment" %}">
+  {% for key, label, href in tabs %}<a class="view-tab" href="{{ href }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
+{% if tab == "overview" %}{% include "experiments/_overview.html" %}
+{% elif tab == "data" %}{% include "experiments/_data.html" %}
+{% else %}
 <section class="detail-section">
   <h2 class="section-title">{% trans "Team" %}</h2>
   <ul class="plain-list">
     {% for member in team %}<li>{{ member }}</li>{% empty %}<li class="muted">{% trans "No one in the team yet." %}</li>{% endfor %}
   </ul>
 </section>
+{% endif %}
 {% endblock %}

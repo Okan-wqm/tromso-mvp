@@ -2369,6 +2369,13 @@ msgid "Biological FCR"
 msgstr "Biyolojik FCR"
 
 msgid ""
+"Biological feed conversion ratio over the days of the tanks: the feed given per kg of growth, "
+"from the weighing on the first day to the latest weighing"
+msgstr ""
+"Tankların günleri boyunca biyolojik yem dönüşüm oranı: büyümenin kg’ı başına verilen yem, ilk "
+"günkü tartımdan son tartıma kadar"
+
+msgid ""
 "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from "
 "stocking to the last weighing"
 msgstr ""
@@ -2383,6 +2390,9 @@ msgstr "Biyokütle"
 
 msgid "Biomass gain"
 msgstr "Biyokütle artışı"
+
+msgid "Biomass now"
+msgstr "Şimdiki biyokütle"
 
 msgid "Blocked"
 msgstr "Engellendi"
@@ -3134,6 +3144,10 @@ msgstr "Tarih"
 msgid "Date and time on the site’s clock."
 msgstr "Sahanın saatine göre tarih ve saat."
 
+#, python-format
+msgid "Day %(day)s of %(total)s"
+msgstr "%(total)s günün %(day)s. günü"
+
 msgid "Day 0"
 msgstr "0. gün"
 
@@ -3144,6 +3158,12 @@ msgid ""
 msgstr ""
 "0. gün, kayıtların tarihlenebileceğinden daha geride: bir deney, başlamasından en fazla %(days)d "
 "gün sonra kaydedilir."
+
+#, python-format
+msgid "Day 0 is in %(days)s day"
+msgid_plural "Day 0 is in %(days)s days"
+msgstr[0] "0. güne %(days)s gün var"
+msgstr[1] "0. güne %(days)s gün var"
 
 msgid "Day 0 is not set."
 msgstr "0. gün belirlenmedi."
@@ -3491,6 +3511,13 @@ msgstr "Toprak"
 
 msgid "Economic FCR"
 msgstr "Ekonomik FCR"
+
+msgid ""
+"Economic feed conversion ratio over the days of the tanks: dead, culled and lost fish are not "
+"credited"
+msgstr ""
+"Tankların günleri boyunca ekonomik yem dönüşüm oranı: ölen, ayıklanan ve kaybolan balıklar hesaba"
+" katılmaz"
 
 msgid ""
 "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, "
@@ -4028,6 +4055,9 @@ msgstr "Hasat edilen balık"
 msgctxt "task category"
 msgid "Fish health"
 msgstr "Balık sağlığı"
+
+msgid "Fish now"
+msgstr "Şimdiki balık"
 
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Kayıtta sayımın üstünde kalan balıklar o zaman açıklanamayan kayıp olarak kaydedilir."
@@ -4774,6 +4804,10 @@ msgid ""
 msgstr ""
 "Mevcut durumu ve geçebileceği durumlar. Aktif ve hasat için birimde balık olmalı; hazırlanıyor, "
 "dinlendirmede, temizlik ve pasif için birim boş olmalı."
+
+#, python-format
+msgid "Its feed conversion leaves out %(tanks)s: no weighing at the move."
+msgstr "Yem dönüşümü %(tanks)s tankını dışarıda bırakır: taşınma anında tartım yok."
 
 #, python-format
 msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
@@ -5714,6 +5748,9 @@ msgstr "Seçilecek sistem yok: üretim departmanının sahasında sistem yok ya 
 
 msgid "No table yet"
 msgstr "Henüz tablo yok"
+
+msgid "No tank"
+msgstr "Tank yok"
 
 msgid "No tank is placed."
 msgstr "Yerleştirilmiş tank yok."
@@ -6888,6 +6925,9 @@ msgstr "Kaydeden"
 msgid "Records"
 msgstr "Kayıtlar"
 
+msgid "Records of the farm"
+msgstr "Çiftliğin kayıtları"
+
 msgid "Rectangular"
 msgstr "Dikdörtgen"
 
@@ -7493,6 +7533,13 @@ msgstr "Önem"
 
 msgid "Shape"
 msgstr "Şekil"
+
+msgid ""
+"Share of the fish of the first day that were not lost since: dead, culled or lost fish counted "
+"from the first day of the tank to its last day or today"
+msgstr ""
+"İlk günkü balıkların o günden beri kaybolmayanların payı: ölen, ayıklanan veya kaybolan balıklar "
+"tankın ilk gününden son gününe veya bugüne kadar sayılır"
 
 #, python-format
 msgid "Share of the outflow (%%)"
@@ -8423,6 +8470,12 @@ msgstr ""
 #, python-format
 msgid "The file is %(size)s; the library takes PDFs of up to %(limit)s."
 msgstr "Dosya %(size)s; kütüphane en fazla %(limit)s büyüklüğünde PDF alır."
+
+#, python-format
+msgid "The final weighing was %(days)s day ago"
+msgid_plural "The final weighing was %(days)s days ago"
+msgstr[0] "Son tartım %(days)s gün önceydi"
+msgstr[1] "Son tartım %(days)s gün önceydi"
 
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Bu protokolle yemlenen ilk gün, çiftliğin saatine göre."

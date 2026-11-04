@@ -429,9 +429,19 @@ def label(operation, lines=None):
     """How the activity log names an operation: what, where, which batch and when, so a search for a
     unit's or a batch's code finds it."""
     lines = lines if lines is not None else list(operation.movements.select_related('unit', 'batch'))
-    units = ', '.join(dict.fromkeys(line.unit.code for line in lines))
+    codes = list(dict.fromkeys(line.unit.code for line in lines))
     batches = ', '.join(dict.fromkeys(line.batch.code for line in lines))
-    return f'{audit.english(operation.get_kind_display())} · {units} · {batches} · {operation.date.isoformat()}'
+    head, tail = f'{audit.english(operation.get_kind_display())} · ', f' · {batches} · {operation.date.isoformat()}'
+    units = ', '.join(codes)
+    room = audit.LABEL_LENGTH - len(head) - len(tail)
+    if len(units) > room:                      # a stocking into many tanks: the first ones, then an ellipsis, never a failed write
+        shown = []
+        for code in codes:
+            if len(', '.join([*shown, code])) + len(', …') > room:
+                break
+            shown.append(code)
+        units = ', '.join([*shown, '…'])
+    return f'{head}{units}{tail}'
 
 
 def _log(user, action, operation, assessment=None):

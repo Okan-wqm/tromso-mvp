@@ -110,6 +110,14 @@ class AuditLogTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
 
+    def test_a_label_too_long_for_the_column_is_cut_with_an_ellipsis_and_never_fails_the_write(self):
+        site = Site.objects.create(name='Bergen', code='BG')
+        entry = audit.record(self.user, AuditLog.Action.UPDATE, site, {'Name': ['a', 'b']}, label='x' * 400)
+        entry.refresh_from_db()
+        self.assertEqual((len(entry.entity_label), entry.entity_label[-2:]), (255, 'x…'))
+        short = audit.record(self.user, AuditLog.Action.UPDATE, site, {}, label='y' * 255)
+        self.assertEqual(short.entity_label, 'y' * 255)
+
     def make_entry(self, **fields):
         defaults = dict(user=self.user, user_name='ali', action=AuditLog.Action.UPDATE,
                         entity_type='site', entity_id='1', entity_label='Site A (SA)')

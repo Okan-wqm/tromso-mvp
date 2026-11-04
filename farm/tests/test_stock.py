@@ -193,6 +193,25 @@ class InputTests(StockTestCase):
         self.assertEqual((self.fish(self.t1), self.fish(self.t2)), (3000, 2000))
         self.assertStockAddsUp()
 
+    def test_a_stocking_into_sixty_tanks_is_logged_with_a_label_that_fits_the_log_and_keeps_its_batch_and_date(self):
+        """A research facility stocks one batch into every tank of a trial: the log's label listed every unit's code and
+        overflowed its column at about 35 tanks, so the stocking failed with a database error."""
+        units = [make_unit(f'RESEARCH-TANK-{number:02d}', self.hall) for number in range(60)]
+        operation = services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
+                                          day=self.day(3), lines=[(unit, 10, Decimal(5)) for unit in units])
+        entry = AuditLog.objects.get(entity_type='stock operation', action='create')
+        batch = Batch.objects.get()
+        self.assertLessEqual(len(entry.entity_label), 255)
+        self.assertTrue(entry.entity_label.startswith('Stocking · RESEARCH-TANK-00, RESEARCH-TANK-01, '))
+        self.assertTrue(entry.entity_label.endswith(f', … · {batch.code} · {self.day(3).isoformat()}'))
+        self.assertEqual(entry.changes['Stock lines'][1].count('RESEARCH-TANK-'), 60)      # every line is still there
+        self.assertEqual(StockMovement.objects.filter(operation=operation).count(), 60)
+        self.assertEqual(services.label(operation), entry.entity_label)
+        small = services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
+                                      day=self.day(2), lines=[(self.t1, 10, Decimal(5)), (self.t2, 10, Decimal(5))])
+        self.assertEqual(services.label(small), f'Stocking · T-01, T-02 · {Batch.objects.latest("created_at").code} · '
+                                                f'{self.day(2).isoformat()}')
+
     def test_batch_numbers_follow_the_year_and_are_never_given_twice(self):
         first = self.stock()
         second = self.stock(self.t2)

@@ -25,10 +25,13 @@ class StartTestCase(DesignTestCase):
     """A design that can start: two groups of two replicates on four stocked tanks, by hand, a lead, the endpoint and the
     hypothesis; neither protocol is assigned yet (starting assigns it)."""
 
+    days_ago = 0            # day 0: today, or some days back (the overview's tests read a trial that has run)
+
     def setUp(self):
         super().setUp()
+        self.first = self.day(self.days_ago)
         self.trial.hypothesis, self.trial.primary_endpoint = 'More protein, faster growth', 'bfcr'
-        self.trial.starts_on = self.today
+        self.trial.starts_on = self.first
         self.trial.save()
         self.member(self.trial, self.user, 'lead')
         groups = [self.group_row('Control', 'control', 2, [services.Cell(protocol=self.low)]),
@@ -40,8 +43,8 @@ class StartTestCase(DesignTestCase):
         services.save_places(self.user, self.trial, [services.Place(replicate, [tank])
                                                      for tank, (_group, replicate) in zip(self.tanks, slots)],
                              self.trial.version, 'Tanks 1 to 4 stand in one row')
-        self.batches = [self.stock(tank, count=1000, weight='50', days_ago=0) for tank in self.tanks[:4]]
-        self.end = self.today + timedelta(days=56)
+        self.batches = [self.stock(tank, count=1000, weight='50', days_ago=self.days_ago) for tank in self.tanks[:4]]
+        self.end = self.first + timedelta(days=56)
 
     def assess(self):
         self.trial.refresh_from_db()

@@ -3,6 +3,8 @@ Details, Design, Places and Team tabs (the design is a grid of factors and a gri
 replicates with a seeded deal, each saved as a whole by its own view),
 the read page, and delete through the delete plan (a draft only: the model says so). The creator is the lead of a new
 experiment."""
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
@@ -13,6 +15,7 @@ from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by, render_page
 from core.people import person_name
 from farm.models import Site, Species, System, Tank
+from farm.stock.dates import site_today
 
 from . import design as design_module, read, services
 from .forms import (
@@ -23,6 +26,20 @@ from .models import AllocationMethod, Experiment, Member, Status
 EXPERIMENTS, MINE, TEMPLATES = '', 'mine', 'templates'
 VIEWS = (EXPERIMENTS, MINE, TEMPLATES)
 ADD_FACTOR = 'add_factor'          # the marker of the button that adds a factor row to the design grid
+READ_TABS = {'overview': _('Overview'), 'data': _('Data'), 'team': _('Team')}
+
+
+def data_links(user, cell):
+    """The farm's own lists with this tank and these days chosen (their `unit`, `from` and `to` filters), those the person
+    may read: the feeding records, the treatments, the sea-lice counts, the water, and the unit's drawer."""
+    days = {'unit': cell.unit.pk, 'from': cell.first.isoformat(), 'to': cell.last.isoformat()}
+    return [(label, f'{reverse(name)}?{urlencode(query)}') for label, name, perm, query in (
+        (_('Feeding records'), 'farm:feeding_records', 'farm.view_feedingrecord', days),
+        (_('Treatments'), 'farm:treatments', 'farm.view_treatment', days),
+        (_('Sea-lice counts'), 'farm:lice_counts', 'farm.view_licecount', days),
+        (_('Water chemistry'), 'farm:water', 'farm.view_watermeasurement', {**days, 'view': 'history'}),
+        (_('Production units'), 'farm:production_units', 'farm.view_stockoperation', {'unit': cell.unit.pk}))
+        if user.has_perm(perm)]
 
 
 class TeamList(RowList):
@@ -90,11 +107,27 @@ class ExperimentResource(Resource):
 
     @classmethod
     def detail_extras(cls, request, experiment):
-        return {'team': TeamList.rows(experiment),
-                'start_url': reverse('experiments:experiment_start', args=[experiment.pk]),
-                'copy_url': reverse('experiments:experiment_copy', args=[experiment.pk]),
-                'can_start': request.user.has_perm(cls.perm('change')) and experiment.status == Status.DRAFT
-                and not experiment.is_template}
+        """The read page: the details, and one of its three parts (`?tab=`): the Overview (where the experiment is in its
+        days, what is wrong with a draft, and a replicate a row with its figures read from the farm's records), the Data
+        (per tank its days and links to the farm's own lists with the tank and the days chosen) and the Team."""
+        tab = request.GET.get('tab', '')
+        tab = tab if tab in READ_TABS else 'overview'
+        today = site_today(experiment.site)
+        extras = {
+            'tab': tab, 'tabs': [(key, label, f'?tab={key}') for key, label in READ_TABS.items()],
+            'team': TeamList.rows(experiment),
+            'start_url': reverse('experiments:experiment_start', args=[experiment.pk]),
+            'copy_url': reverse('experiments:experiment_copy', args=[experiment.pk]),
+            'can_start': request.user.has_perm(cls.perm('change')) and experiment.status == Status.DRAFT
+            and not experiment.is_template,
+            'phase': read.progress(experiment, today), 'today': today}
+        if tab == 'overview':
+            extras['rows'] = read.overview(experiment, today)
+            if experiment.status == Status.DRAFT and not experiment.is_template:
+                extras['findings'] = design_module.assess(experiment)
+        elif tab == 'data':
+            extras['tanks'] = [{'data': item, 'links': data_links(request.user, item.cell)} for item in read.data(experiment)]
+        return extras
 
     @classmethod
     def form(cls, request, *args, **kwargs):

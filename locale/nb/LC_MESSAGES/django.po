@@ -2371,6 +2371,13 @@ msgid "Biological FCR"
 msgstr "Biologisk FCR"
 
 msgid ""
+"Biological feed conversion ratio over the days of the tanks: the feed given per kg of growth, "
+"from the weighing on the first day to the latest weighing"
+msgstr ""
+"Biologisk fôrfaktor over karenes dager: fôret gitt per kg tilvekst, fra veiingen første dag til "
+"siste veiing"
+
+msgid ""
 "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from "
 "stocking to the last weighing"
 msgstr "Biologisk fôrfaktor: fôr gitt per kg tilvekst, dødfisk medregnet, fra utsett til siste veiing"
@@ -2383,6 +2390,9 @@ msgstr "Biomasse"
 
 msgid "Biomass gain"
 msgstr "Biomassetilvekst"
+
+msgid "Biomass now"
+msgstr "Biomasse nå"
 
 msgid "Blocked"
 msgstr "Sperret"
@@ -3132,6 +3142,10 @@ msgstr "Dato"
 msgid "Date and time on the site’s clock."
 msgstr "Dato og klokkeslett etter lokalitetens klokke."
 
+#, python-format
+msgid "Day %(day)s of %(total)s"
+msgstr "Dag %(day)s av %(total)s"
+
 msgid "Day 0"
 msgstr "Dag 0"
 
@@ -3142,6 +3156,12 @@ msgid ""
 msgstr ""
 "Dag 0 ligger lenger tilbake enn registreringer kan dateres: et forsøk registreres høyst %(days)d "
 "dager etter at det begynner."
+
+#, python-format
+msgid "Day 0 is in %(days)s day"
+msgid_plural "Day 0 is in %(days)s days"
+msgstr[0] "Dag 0 er om %(days)s dag"
+msgstr[1] "Dag 0 er om %(days)s dager"
 
 msgid "Day 0 is not set."
 msgstr "Dag 0 er ikke satt."
@@ -3497,6 +3517,11 @@ msgstr "Jord"
 
 msgid "Economic FCR"
 msgstr "Økonomisk FCR"
+
+msgid ""
+"Economic feed conversion ratio over the days of the tanks: dead, culled and lost fish are not "
+"credited"
+msgstr "Økonomisk fôrfaktor over karenes dager: døde, utsorterte og tapte fisk krediteres ikke"
 
 msgid ""
 "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, "
@@ -4030,6 +4055,9 @@ msgstr "Høstet fisk"
 msgctxt "task category"
 msgid "Fish health"
 msgstr "Fiskehelse"
+
+msgid "Fish now"
+msgstr "Fisk nå"
 
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Fisk beholdningen fortsatt har utover tellingen, registreres da som uforklart svinn."
@@ -4772,6 +4800,10 @@ msgid ""
 msgstr ""
 "Nåværende status og de den kan gå til. Aktiv og høsting krever fisk i enheten; klargjøres, "
 "brakklagt, rengjøring og inaktiv krever at den er tom."
+
+#, python-format
+msgid "Its feed conversion leaves out %(tanks)s: no weighing at the move."
+msgstr "Fôrfaktoren utelater %(tanks)s: ingen veiing ved flyttingen."
 
 #, python-format
 msgid "Its links to deleted systems (%(systems)s) are dropped when it is saved."
@@ -5716,6 +5748,9 @@ msgstr ""
 
 msgid "No table yet"
 msgstr "Ingen tabell ennå"
+
+msgid "No tank"
+msgstr "Ingen kar"
 
 msgid "No tank is placed."
 msgstr "Ingen kar er plassert."
@@ -6892,6 +6927,9 @@ msgstr "Registrert av"
 msgid "Records"
 msgstr "Registreringer"
 
+msgid "Records of the farm"
+msgstr "Anleggets registre"
+
 msgid "Rectangular"
 msgstr "Rektangulær"
 
@@ -7496,6 +7534,13 @@ msgstr "Alvorlighet"
 
 msgid "Shape"
 msgstr "Form"
+
+msgid ""
+"Share of the fish of the first day that were not lost since: dead, culled or lost fish counted "
+"from the first day of the tank to its last day or today"
+msgstr ""
+"Andelen av fisken første dag som ikke er tapt siden: døde, utsorterte eller tapte fisk telles fra"
+" karets første dag til siste dag eller i dag"
 
 #, python-format
 msgid "Share of the outflow (%%)"
@@ -8423,6 +8468,12 @@ msgstr ""
 #, python-format
 msgid "The file is %(size)s; the library takes PDFs of up to %(limit)s."
 msgstr "Filen er %(size)s; biblioteket tar PDF-er på opptil %(limit)s."
+
+#, python-format
+msgid "The final weighing was %(days)s day ago"
+msgid_plural "The final weighing was %(days)s days ago"
+msgstr[0] "Sluttveiingen var for %(days)s dag siden"
+msgstr[1] "Sluttveiingen var for %(days)s dager siden"
 
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Første dag det fôres etter den, etter anleggets klokke."

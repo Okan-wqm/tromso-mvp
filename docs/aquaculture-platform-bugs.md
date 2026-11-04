@@ -38,6 +38,7 @@ in `core/`, or by not porting the feature (satellite monitoring is deliberately 
 17. [Storage](#storage)
 18. [Health](#health)
 19. [Tasks](#tasks)
+20. [Experiments](#experiments) (our own code: there is no source)
 
 ## Patterns that repeat across tabs
 
@@ -1123,3 +1124,18 @@ links.
    deleted", and shows the place again when it is restored. A recurring task goes with its place (`CASCADE`),
    with the planned tasks nobody touched.
 8. **The creator has no rights of their own** beyond the role matrix (TSK-21).
+
+
+## Experiments
+
+The platform has no experiment module, so there is no source to read: this section lists what building Research ›
+Experiments found wrong in the prototype's own code, each fixed where it lives with a test (**Fixed**) or left to say
+(**Open**). Paths are the prototype's own.
+
+| ID | Sev. | Where | What is wrong | Fix |
+|---|---|---|---|---|
+| EXP-01 | High | `farm/stock/services.py` `label()`; `core/audit.py` `record` | **A stocking into many tanks failed with a database error.** The activity-log label of a stock operation listed every unit's code, and `AuditLog.entity_label` is 255 characters: a batch stocked into about 35 tanks (a research trial's tanks) raised `DataError` and the stocking was lost. Found by stocking 60 tanks for the query-budget test. | **Fixed:** the label lists the units that fit, then an ellipsis, and keeps the batch and the date (every line stays in the entry's "Stock lines"); `audit.bounded` cuts any other label that would overflow, so no record's log write can fail on length. Tests: `farm/tests/test_stock.py`, `core/tests.py`. |
+| EXP-02 | Low | `tasks/tests/test_series.py` | The test that a recurring task is planned at every kind of place counted `horizon + 1` tasks from the first site's today, while a place without a site is on the company's clock (UTC): it failed in the first hour after midnight in Oslo. | **Fixed:** the count is read to the place's own clock. |
+| EXP-03 | Low | `farm/tests/test_water_points.py` `test_the_withdrawals_daily_mean_reads_the_same_places` | The sample is taken "one hour ago" and the day it must fall on is the unit's today (UTC when the site has no zone): in the first hour after midnight UTC (01:00 to 02:00 in Oslo) the sample is yesterday's and the mean is empty. | **Open:** a test taken at the clock, not a fault in the read; the sample should be put at the start of the unit's day, or the clock held. |
+| EXP-04 | Medium | `farm/handling/check.py` `require_acknowledged` | The refusal was always on the field `handling_ack`, so a form with another box (an experiment's start) could not use the rule. | **Fixed:** the field is a parameter (default unchanged); one rule for every acknowledgement box. |
+| EXP-05 | Low | `tasks/read.py`, `messaging/models.py` | The way a person is named (full name, else username) and the people "who can read" a page were written twice, in the tasks and in messages. | **Fixed:** one `core/people.py` (`person_name`, `who_can`), the tasks' `readers()` and the messages' `person_name` use it; the experiment's team is the third use. |

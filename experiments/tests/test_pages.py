@@ -205,8 +205,10 @@ class ReadTests(PageTestCase):
         self.assertNotContains(listing, f'href="{reverse("experiments:experiment_edit", args=[trial.pk])}"')
         page = self.client.get(reverse('experiments:experiment_detail', args=[trial.pk]))
         for text in (trial.code, 'Bergen', 'Atlantic salmon', 'More protein grows salmon faster', 'Biological FCR',
-                     'Hall A', 'ali (Lead)', '56'):
+                     'Hall A', '56'):
             self.assertContains(page, text)
+        self.assertContains(self.client.get(reverse('experiments:experiment_detail', args=[trial.pk]), {'tab': 'team'}),
+                            'ali (Lead)')
         self.assertNotContains(page, f'href="{reverse("experiments:experiment_edit", args=[trial.pk])}"')
 
     def test_a_researcher_sees_the_edit_and_delete_links_and_a_started_one_has_no_delete(self):

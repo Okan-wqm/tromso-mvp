@@ -1767,7 +1767,24 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   sent twice makes one copy, and the new experiment is logged as created with its design and its source.
 - **The team** is a list saved as a whole (`RowList`, logged on the experiment as "Team"): a person and their part,
   exactly one lead; only people who can read Experiments are offered, and one kept from before stays in the list.
-- **The read page** (`<id>/view/`) shows the details and the team to everyone who may read the tab.
+- **The read page** (`<id>/view/`, for everyone who may read the tab) shows the details and, in the address's `?tab=`, **Overview**,
+  **Data** or **Team**. The **Overview** says where the experiment is ("Day 23 of 56", "Day 0 is in 5 days", "The final weighing was
+  4 days ago"), lists what is wrong with a draft (the errors and warnings of `design.problems`), and gives a row a replicate, by
+  group with a control badge: its tanks and their days, the batches of the species that were in them on those days (cleaner fish
+  never count), the fish and biomass now while it runs, the survival, and bFCR and eFCR. **Every figure is the farm's own number for the
+  same stay and the same days** (`experiments/read.overview`): the conversion is `Conversion` of `feeding.read.windows_in`
+  bounded by the placement's days (from the baseline weighing on day 0 to the latest weighing, or to the weighing of the
+  placement's last day once it has come), summed over the replicate's tanks as a ratio of sums, the fish and biomass come from
+  `stock_of`, the survival from the fish there on the first day less the fish lost since (mortality, culls, an adjustment down),
+  all bounded by the days: **no "since stocking" figure ever sits beside a trial figure**, no figure is stored or copied, and a draft
+  has none. A dash says why (hover it: not weighed, no feed, no growth); a replacement tank without a measured point at the
+  move leaves a gap in the replicate's conversion window, and the page says which tank it leaves out. No figure of a group is
+  made: a mean over replicates is a statistic, which the statistics come with. The queries do not grow with the tanks (a test counts
+  them for 6 and for 60). The **Data** tab lists each tank with its days, the feeding records of them and the feed given (one read of the feeding),
+  and links, for those who may read them, to the farm's own lists with the tank and the days chosen: Feeding records, Treatments,
+  Sea-lice counts, Water chemistry (its history) and the unit's drawer. `read.placements(unit_ids, day)` says which placement each
+  tank has on a day (at most one: the exclusion constraint), for whoever asks which experiment a tank is in (the record lock to
+  come).
 - **Delete** goes through the delete plan: a draft is deleted with its factors, levels, groups, replicates and placements
   (one activity-log row each, its tanks free again), a started experiment is refused with the reason. A restored draft
   comes back without its design (only the record itself returns). A copy of a deleted experiment keeps pointing at it.
@@ -2438,7 +2455,7 @@ real mail.
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
-| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads (`read.py`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests |
+| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through (`read.py`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |

@@ -1204,6 +1204,12 @@ msgstr "En dag i perioden"
 msgid "A delivery puts stock into a location."
 msgstr "Et varemottak legger beholdning inn på en lagerplass."
 
+msgid "A department cannot be its own parent."
+msgstr "En avdeling kan ikke være sin egen overordnede."
+
+msgid "A department cannot be nested under itself or under one of its own departments."
+msgstr "En avdeling kan ikke plasseres under seg selv eller under en av sine egne avdelinger."
+
 msgid "A depth point has a depth, and no other point does."
 msgstr "Et dybdepunkt har en dybde, og ingen andre punkter har det."
 
@@ -2109,6 +2115,9 @@ msgstr "En annen fôringsprotokoll har allerede dette navnet."
 msgid "Another medicine already has this name."
 msgstr "Et annet legemiddel har allerede dette navnet."
 
+msgid "Another office department already uses this code."
+msgstr "En annen kontoravdeling bruker allerede denne koden."
+
 msgid "Another production department already uses this code."
 msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
 
@@ -2198,6 +2207,9 @@ msgstr "Alle alvorlighetsgrader"
 
 msgid "Any species"
 msgstr "Alle arter"
+
+msgid "Any status"
+msgstr "Alle statuser"
 
 msgid "Any time"
 msgstr "Når som helst"
@@ -3454,6 +3466,19 @@ msgstr "Tetthetsstyring"
 msgid "Density · capacity"
 msgstr "Tetthet · kapasitet"
 
+msgid "Department"
+msgstr "Avdeling"
+
+msgid "Departments"
+msgstr "Avdelinger"
+
+msgid ""
+"Departments of the company: the production departments appear here by themselves; add the office "
+"departments, such as Finance."
+msgstr ""
+"Selskapets avdelinger: produksjonsavdelingene vises her av seg selv; legg til kontoravdelingene, "
+"som Økonomi."
+
 msgid "Depth"
 msgstr "Dybde"
 
@@ -3906,6 +3931,9 @@ msgid "Every week on %(days)s"
 msgid_plural "Every %(count)d weeks on %(days)s"
 msgstr[0] "Hver uke på %(days)s"
 msgstr[1] "Hver %(count)d. uke på %(days)s"
+
+msgid "Everyone"
+msgstr "Alle"
 
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Alle i samtalen ser at en melding ble slettet, ikke hva den sa."
@@ -4679,6 +4707,12 @@ msgstr "HCO₃⁻"
 msgid "HDPE"
 msgstr "HDPE"
 
+msgid "HR"
+msgstr "HR"
+
+msgid "HR dashboard"
+msgstr "HR-oversikt"
+
 msgid "HS⁻"
 msgstr "HS⁻"
 
@@ -4937,6 +4971,9 @@ msgstr "Inaktiv"
 
 msgid "Inactive people cannot sign in."
 msgstr "Inaktive personer kan ikke logge inn."
+
+msgid "Inactive: kept, shown as such, not offered for new placements."
+msgstr "Inaktiv: beholdes, vises som inaktiv og tilbys ikke for nye plasseringer."
 
 msgid "Increased mortality"
 msgstr "Økt dødelighet"
@@ -5967,6 +6004,9 @@ msgstr "Ikke lenger i beholdningen"
 msgid "No lot number"
 msgstr "Uten partinummer"
 
+msgid "No manager"
+msgstr "Ingen leder"
+
 msgid "No medicine withdrawal in force."
 msgstr "Ingen tilbakeholdelsestid gjelder."
 
@@ -5993,6 +6033,9 @@ msgstr "Ingen operasjon registrert ennå"
 
 msgid "No other table."
 msgstr "Ingen andre tabeller."
+
+msgid "No parent (top level)"
+msgstr "Ingen overordnet (øverste nivå)"
 
 msgid "No parent (top-level system)"
 msgstr "Ingen overordnet (system på øverste nivå)"
@@ -6343,6 +6386,9 @@ msgstr "Observert"
 
 msgid "Offered"
 msgstr "Tilbys"
+
+msgid "Office"
+msgstr "Kontor"
 
 msgid "Official code"
 msgstr "Artskode"
@@ -6794,6 +6840,9 @@ msgstr "Parameter"
 msgid "Parameters"
 msgstr "Parametere"
 
+msgid "Parent department"
+msgstr "Overordnet avdeling"
+
 msgid "Parent equipment"
 msgstr "Overordnet utstyr"
 
@@ -6823,6 +6872,9 @@ msgstr "Pellet"
 
 msgid "Pellet size (mm)"
 msgstr "Pelletstørrelse (mm)"
+
+msgid "People"
+msgstr "Personer"
 
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Personer som kan logge inn: kontoopplysninger og en hash av passordet."
@@ -7022,6 +7074,9 @@ msgstr "Skriv ut rapport"
 
 msgid "Priority"
 msgstr "Prioritet"
+
+msgid "Private text"
+msgstr "Privat tekst"
 
 msgid "Processing"
 msgstr "Bearbeiding"
@@ -7827,6 +7882,16 @@ msgstr "Se alt i aktivitetsloggen"
 
 msgid "See the day-by-day book"
 msgstr "Se registeret dag for dag"
+
+msgid "Sees and plans this department’s people in HR (with a role that gives the HR pages)."
+msgstr "Ser og planlegger avdelingens folk i HR (med en rolle som gir HR-sidene)."
+
+msgid ""
+"Sees and plans this department’s people, and those of the departments below it, in HR (with a "
+"role that gives the HR pages)."
+msgstr ""
+"Ser og planlegger folkene i avdelingen og i avdelingene under den i HR (med en rolle som gir HR-"
+"sidene)."
 
 msgid "Select a batch"
 msgstr "Velg en fiskegruppe"
@@ -8736,6 +8801,9 @@ msgstr ""
 " en tilbakeholdelsestid som anslås når ingenting er målt. Det er driftens egen antakelse: en lav "
 "verdi er det forsiktige valget. Tom: en slik dag telles som 0 °C. 0 til 40 °C."
 
+msgid "The department this one belongs to in the organisation chart; none for a top-level one."
+msgstr "Avdelingen denne hører under i organisasjonskartet; ingen for en på øverste nivå."
+
 msgid "The depth of the water taken, from the surface."
 msgstr "Dybden vannet tas fra, regnet fra overflaten."
 
@@ -9166,6 +9234,13 @@ msgstr "Lokaliteten har allerede enheter med nummer %(numbers)s."
 msgid "The site still holds fish at the end of that day."
 msgstr "Lokaliteten har fortsatt fisk ved slutten av den dagen."
 
+msgid ""
+"The site whose clock the department’s people work on: the day and the time of every HR page. Set "
+"the site’s time zone on the site."
+msgstr ""
+"Lokaliteten hvis klokke avdelingens folk arbeider etter: dagen og tiden på hver HR-side. Angi "
+"lokalitetens tidssone på lokaliteten."
+
 msgid "The sites it delivers to or works at."
 msgstr "Lokalitetene den leverer til eller arbeider på."
 
@@ -9532,6 +9607,9 @@ msgstr "Denne fiskegruppen har allerede en produksjonsplan."
 
 msgid "This batch has been voided."
 msgstr "Denne gruppen er annullert."
+
+msgid "This department already has a department with this name."
+msgstr "Denne avdelingen har allerede en avdeling med dette navnet."
 
 msgid "This empties the unit of this batch"
 msgstr "Dette tømmer enheten for fiskegruppen"
@@ -10808,6 +10886,9 @@ msgstr "f.eks. Sjekk oksygenet i hvert kar"
 msgid "e.g. Clean the drum filter"
 msgstr "f.eks. Rengjør trommelfilteret"
 
+msgid "e.g. FIN"
+msgstr "f.eks. ØKO"
+
 msgid "e.g. FJF"
 msgstr "f.eks. FJF"
 
@@ -10816,6 +10897,9 @@ msgstr "f.eks. FS-01"
 
 msgid "e.g. Feed store 1"
 msgstr "f.eks. Fôrlager 1"
+
+msgid "e.g. Finance"
+msgstr "f.eks. Økonomi"
 
 msgid "e.g. Fjord Feed AS"
 msgstr "f.eks. Fjord Feed AS"
@@ -11223,6 +11307,12 @@ msgstr "nås ikke ved noen pH"
 
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "nås ikke i diagrammets område (4 til 12,5)"
+
+msgid "office department"
+msgstr "kontoravdeling"
+
+msgid "office departments"
+msgstr "kontoravdelinger"
 
 msgid "open"
 msgstr "åpen"

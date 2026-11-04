@@ -54,7 +54,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Activity log', 'Roles', 'Users', 'Database'])
+                                                 'Activity log', 'Roles', 'Users', 'Database', 'Departments'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
@@ -164,11 +164,13 @@ class MainHeadingTests(WorkspaceTestCase):
         self.assertContains(response, '<p class="rail-group">Harvest and logistics</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Purchasing</p>', html=True)
 
-    def test_company_has_no_main_headings(self):
+    def test_company_has_one_main_heading_hr(self):
         self.sign_in(self.admin)
         response = self.page(reverse('home'))
-        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration'])])
-        self.assertNotContains(response, 'rail-section')
+        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration']),
+                                                    ('HR', ['HR dashboard'])])
+        self.assertContains(response, '<p class="rail-section">HR</p>', html=True, count=1)
+        self.assertContains(response, 'rail-section', count=1)
 
     def test_a_heading_with_nothing_the_person_may_read_is_not_shown(self):
         self.sign_in(self.user)
@@ -223,6 +225,7 @@ class MenuPlacementTests(TestCase):
             'tasks.TaskSeries': 'Production · Operations',
             'knowledge.Document': 'Company · Knowledge',
             'knowledge.KnowledgeEntry': 'Company · Knowledge',
+            'hr.OfficeDepartment': 'Company · HR · HR dashboard',
             'core.AuditLog': 'Company · Administration',
         })
 

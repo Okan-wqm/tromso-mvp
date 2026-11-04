@@ -1,0 +1,55 @@
+{% extends "crud/list.html" %}
+{% load i18n assets %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block search_placeholder %}{% trans "Search by name or code" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="kind-filter">{% trans "Kind" %}</label>
+  <select id="kind-filter" name="kind" data-autosubmit>
+    <option value="">{% trans "All kinds" %}</option>
+    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "Any status" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block empty_text %}{% trans "Departments of the company: the production departments appear here by themselves; add the office departments, such as Finance." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Department" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Manager" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for row in objects %}
+      <tr>
+        <td class="depth-{% if row.depth > 5 %}5{% else %}{{ row.depth }}{% endif %}">
+          {% if row.depth %}<span class="nested-mark" aria-hidden="true">↳</span>{% endif %}
+          {% if row.kind == production %}
+            {% if perms.farm.change_productiondepartment %}<a class="row-title row-title-inline" href="{% url 'farm:productiondepartment_edit' row.pk %}" data-modal>{{ row.name }}</a>{% else %}<span class="row-title row-title-inline">{{ row.name }}</span>{% endif %}
+          {% else %}
+            {% if can_change %}<a class="row-title row-title-inline" href="{% url 'hr:officedepartment_edit' row.pk %}" data-modal>{{ row.name }}</a>{% else %}<span class="row-title row-title-inline">{{ row.name }}</span>{% endif %}
+          {% endif %}
+          <span class="row-sub">{{ row.code }}{% if row.parent %} · {% blocktrans with name=row.parent.name %}in {{ name }}{% endblocktrans %}{% endif %}</span>
+        </td>
+        <td>{% if row.kind == production %}{% trans "Production" %}{% else %}{% trans "Office" %}{% endif %}</td>
+        <td><span class="badge badge-{{ row.status }}">{% if row.status == "active" %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}</span></td>
+        <td>{% if row.site %}{{ row.site.name }}{% else %}<span class="text-warning">{% trans "No site" %}</span>{% endif %}</td>
+        <td>{% if row.manager %}{{ row.manager.get_full_name|default:row.manager.get_username }}{% else %}<span class="text-warning">{% trans "No manager" %}</span>{% endif %}</td>
+        <td class="row-actions">
+          {% if row.kind != production %}
+          {% if can_change %}<a class="icon-button" href="{% url 'hr:officedepartment_edit' row.pk %}" data-modal title="{% blocktrans with name=row.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=row.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'hr:officedepartment_delete' row.pk %}" data-modal title="{% blocktrans with name=row.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=row.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

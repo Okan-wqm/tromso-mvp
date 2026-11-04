@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     # Regulatory reports, computed from the farm's records and filed by people (Production › Reports).
     'reports',
     'tasks',
+    # The people of the company, where they work and their time: Company › HR.
+    'hr',
 ]
 
 MIDDLEWARE = [

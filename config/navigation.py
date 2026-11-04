@@ -38,6 +38,13 @@ WORKSPACES = [
                 Entry(_('Database'), 'core:database', 'database', 'core.browse_database'),
             ]),
         ]),
+        # The company's people: who they are, where they work (the production departments appear by themselves,
+        # beside the office ones) and, from here on, their time. A team lead reads and plans only their own team.
+        Section(_('HR'), [
+            Group(_('HR dashboard'), [
+                Entry(_('Departments'), 'hr:officedepartment_list', 'layout-grid', 'hr.view_officedepartment'),
+            ]),
+        ]),
     ]),
     Workspace('production', _('Production'), sections=[
         Section('', [Group('', [Entry(_('Overview'), 'production_home', 'home')])]),

@@ -64,5 +64,7 @@ AREAS = [
     Area(_('Tasks'), 'tasks.Task'),
     # Recurring tasks: the rules that plan tasks ahead; Create, Edit and Delete change the plan.
     Area(_('Recurring tasks'), 'tasks.TaskSeries'),
+    # HR: the office departments (the production departments are the farm's own, edited under Production).
+    Area(_('Departments'), 'hr.OfficeDepartment'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

@@ -17,7 +17,7 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
-  Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
+  Knowledge, Administration, and HR) and **Production** (overview, production departments, systems, equipment, tanks,
   ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
   under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
   the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
@@ -85,7 +85,9 @@ the source:
   constraints; capacity cannot be negative.
 - Not carried over: `settings` and `area` (accepted but never stored), the second status flag
   `isActive`, the load figure that was never filled in. Notes can be shown and cleared.
-- The manager is a user of this system, and can be removed.
+- The manager is a user of this system, and can be removed. It is chosen on the form among the people who can sign in
+  (a person already chosen stays offered after their account is deactivated) and is what makes a team in HR: a manager
+  with a role that gives the HR pages sees and plans the department's people there (see Human resources).
 
 The bugs found in the source while porting are listed in
 [docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), with how each is avoided here.
@@ -2099,6 +2101,42 @@ Not built now: OCR of scanned PDFs, other file types (Word, images), reading the
 embeddings, the rules and their evaluator, exporting references (BibTeX, RIS), fetching a reference from its
 DOI (Crossref), versions of a document's file, phrase search ("…" in the query).
 
+## Human resources (Company › HR: `/hr/`)
+
+The company's people, where they work and, as the pages arrive, their time. It is one piece of the Company
+panel, not a module of its own: the same roles, delete plans, activity log, database viewer and languages. It is
+built by reading the source platform's HR service and listing what was wrong with it
+([docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), "Human resources"). The rules it holds:
+
+- **One source for departments.** Every production department is an HR department by itself: the Departments page
+  reads the farm's own rows (`hr.read.departments`), so a production department created, renamed or deleted under
+  Production is there at once with no HR write and no copy. Only the white-collar departments (Finance, administration,
+  management) are HR's own rows (`hr.OfficeDepartment`, table `office_departments`); they nest under one another for the
+  organisation chart.
+- **A team lead sees and plans their own team only, and never pay.** The role matrix gives the verbs; the rows come from
+  the relationship, in one place (`hr.scope.team`, see Row scope under One format for every tab). There is no pay, bank
+  or identity-number column anywhere in `hr` (a test fails on one); pay will be an app of its own that points at the
+  person and is never offered to a team role.
+- **State is read, not stored:** who is present, late, absent or on leave, worked minutes, leave days, balances, head
+  counts and the department of a past day are worked out on the site's clock when a page is read.
+- **The law is owner data.** Limits (rest, weekly hours, days in a row) are settings that warn by default and may only be
+  stricter than the statute; none is a database constraint.
+
+The team lead is the **Manager** of a production department (chosen on the production department's form, shown in its
+list and logged) or of an office department, plus a role with the HR areas. The Manager field has no other effect.
+
+### Departments (`/hr/departments/`)
+
+One list over two kinds, production departments (never edited here: their name links to the farm's own form for
+whoever may change them) and office departments (created, edited and deleted here). A table with kind, status, site
+and manager, search by name or code, and filters for kind and status. An office department has a name, a code (unique
+among live ones, capital letters, digits, hyphens and underscores), a parent (the chart), a site (the clock of its
+people: set the site's time zone on the site), a manager, a status and a description. Database rules, tested with raw
+SQL: code unique among live rows (free again after a delete), name unique under one parent and among the top-level
+ones (`nulls_distinct=False`), not its own parent, a trigger that refuses a cycle however it is written (it walks up
+through deleted rows too, so a restore cannot close a loop), code and status checks. A department with departments
+below it is not deleted (the delete plan names them); a deleted one is restored from the admin, checked like a new one.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2120,7 +2158,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry) and Activity log (read).
+  also reviews an entry), Departments (the office departments: read, create, edit, delete) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and

@@ -1204,6 +1204,12 @@ msgstr "Dönemdeki bir gün"
 msgid "A delivery puts stock into a location."
 msgstr "Teslimat bir yere stok koyar."
 
+msgid "A department cannot be its own parent."
+msgstr "Bir departman kendi üst departmanı olamaz."
+
+msgid "A department cannot be nested under itself or under one of its own departments."
+msgstr "Bir departman kendi altına ya da kendi alt departmanlarından birinin altına yerleştirilemez."
+
 msgid "A depth point has a depth, and no other point does."
 msgstr "Derinlik noktasının bir derinliği vardır, başka hiçbir noktanın yoktur."
 
@@ -2109,6 +2115,9 @@ msgstr "Bu ad başka bir yemleme protokolünde zaten var."
 msgid "Another medicine already has this name."
 msgstr "Bu ad başka bir ilaçta zaten var."
 
+msgid "Another office department already uses this code."
+msgstr "Başka bir ofis departmanı bu kodu zaten kullanıyor."
+
 msgid "Another production department already uses this code."
 msgstr "Bu kodu başka bir üretim departmanı zaten kullanıyor."
 
@@ -2198,6 +2207,9 @@ msgstr "Her önem düzeyi"
 
 msgid "Any species"
 msgstr "Her balık türü"
+
+msgid "Any status"
+msgstr "Tüm durumlar"
 
 msgid "Any time"
 msgstr "Tüm zamanlar"
@@ -3459,6 +3471,19 @@ msgstr "Yoğunluk yönetimi"
 msgid "Density · capacity"
 msgstr "Yoğunluk · kapasite"
 
+msgid "Department"
+msgstr "Departman"
+
+msgid "Departments"
+msgstr "Departmanlar"
+
+msgid ""
+"Departments of the company: the production departments appear here by themselves; add the office "
+"departments, such as Finance."
+msgstr ""
+"Şirketin departmanları: üretim departmanları burada kendiliğinden görünür; Finans gibi ofis "
+"departmanlarını siz ekleyin."
+
 msgid "Depth"
 msgstr "Derinlik"
 
@@ -3910,6 +3935,9 @@ msgid "Every week on %(days)s"
 msgid_plural "Every %(count)d weeks on %(days)s"
 msgstr[0] "Her hafta: %(days)s"
 msgstr[1] "%(count)d haftada bir: %(days)s"
+
+msgid "Everyone"
+msgstr "Herkes"
 
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Konuşmadaki herkes bir mesajın silindiğini görür, içeriğini görmez."
@@ -4688,6 +4716,12 @@ msgstr "HCO₃⁻"
 msgid "HDPE"
 msgstr "HDPE"
 
+msgid "HR"
+msgstr "İK"
+
+msgid "HR dashboard"
+msgstr "İK panosu"
+
 msgid "HS⁻"
 msgstr "HS⁻"
 
@@ -4948,6 +4982,9 @@ msgstr "Pasif"
 
 msgid "Inactive people cannot sign in."
 msgstr "Pasif kişiler giriş yapamaz."
+
+msgid "Inactive: kept, shown as such, not offered for new placements."
+msgstr "Pasif: saklanır, pasif olarak gösterilir, yeni yerleştirmeler için önerilmez."
 
 msgid "Increased mortality"
 msgstr "Artan ölüm"
@@ -5976,6 +6013,9 @@ msgstr "Artık stokta değil"
 msgid "No lot number"
 msgstr "Lot numarası yok"
 
+msgid "No manager"
+msgstr "Yönetici yok"
+
 msgid "No medicine withdrawal in force."
 msgstr "Yürürlükte ilaç bekleme süresi yok."
 
@@ -6002,6 +6042,9 @@ msgstr "Henüz işlem kaydedilmedi"
 
 msgid "No other table."
 msgstr "Başka tablo yok."
+
+msgid "No parent (top level)"
+msgstr "Üst departman yok (en üst düzey)"
 
 msgid "No parent (top-level system)"
 msgstr "Üst sistem yok (en üst düzey sistem)"
@@ -6350,6 +6393,9 @@ msgstr "Gözlem tarihi"
 
 msgid "Offered"
 msgstr "Sunuluyor"
+
+msgid "Office"
+msgstr "Ofis"
 
 msgid "Official code"
 msgstr "Resmî tür kodu"
@@ -6801,6 +6847,9 @@ msgstr "Parametre"
 msgid "Parameters"
 msgstr "Parametreler"
 
+msgid "Parent department"
+msgstr "Üst departman"
+
 msgid "Parent equipment"
 msgstr "Üst ekipman"
 
@@ -6830,6 +6879,9 @@ msgstr "Pelet"
 
 msgid "Pellet size (mm)"
 msgstr "Pelet boyutu (mm)"
+
+msgid "People"
+msgstr "Kişiler"
 
 msgid "People who can sign in: account details and a hash of the password."
 msgstr "Giriş yapabilen kişiler: hesap bilgileri ve parolanın özeti (hash)."
@@ -7029,6 +7081,9 @@ msgstr "Raporu yazdır"
 
 msgid "Priority"
 msgstr "Öncelik"
+
+msgid "Private text"
+msgstr "Özel metin"
 
 msgid "Processing"
 msgstr "İşleme"
@@ -7833,6 +7888,16 @@ msgstr "Etkinlik günlüğünde tümünü gör"
 
 msgid "See the day-by-day book"
 msgstr "Günlük kaydı görün"
+
+msgid "Sees and plans this department’s people in HR (with a role that gives the HR pages)."
+msgstr "Bu departmanın çalışanlarını İK’da görür ve planlar (İK sayfalarını veren bir rolle)."
+
+msgid ""
+"Sees and plans this department’s people, and those of the departments below it, in HR (with a "
+"role that gives the HR pages)."
+msgstr ""
+"Bu departmanın ve altındaki departmanların çalışanlarını İK’da görür ve planlar (İK sayfalarını "
+"veren bir rolle)."
 
 msgid "Select a batch"
 msgstr "Bir parti seçin"
@@ -8745,6 +8810,9 @@ msgstr ""
 " ölçüm yokken öngörülen bekleme süresi. Çiftliğin kendi varsayımıdır: düşük bir değer temkinli "
 "seçimdir. Boş: böyle bir gün 0 °C sayılır. 0 ila 40 °C."
 
+msgid "The department this one belongs to in the organisation chart; none for a top-level one."
+msgstr "Bu departmanın organizasyon şemasında bağlı olduğu departman; en üst düzey için boş bırakın."
+
 msgid "The depth of the water taken, from the surface."
 msgstr "Alınan suyun yüzeyden itibaren derinliği."
 
@@ -9175,6 +9243,13 @@ msgstr "Sahada zaten %(numbers)s numaralı birimler var."
 msgid "The site still holds fish at the end of that day."
 msgstr "Saha o günün sonunda hâlâ balık tutuyor."
 
+msgid ""
+"The site whose clock the department’s people work on: the day and the time of every HR page. Set "
+"the site’s time zone on the site."
+msgstr ""
+"Departman çalışanlarının saatini belirleyen saha: her İK sayfasındaki gün ve saat. Sahanın saat "
+"dilimini sahada ayarlayın."
+
 msgid "The sites it delivers to or works at."
 msgstr "Teslimat yaptığı ya da çalıştığı sahalar."
 
@@ -9543,6 +9618,9 @@ msgstr "Bu partinin zaten bir üretim planı var."
 
 msgid "This batch has been voided."
 msgstr "Bu parti iptal edildi."
+
+msgid "This department already has a department with this name."
+msgstr "Bu departmanın altında aynı adlı bir departman zaten var."
 
 msgid "This empties the unit of this batch"
 msgstr "Bu, birimi bu partiden boşaltır"
@@ -10817,6 +10895,9 @@ msgstr "örn. Her tanktaki oksijeni kontrol et"
 msgid "e.g. Clean the drum filter"
 msgstr "örn. Tambur filtreyi temizle"
 
+msgid "e.g. FIN"
+msgstr "ör. FIN"
+
 msgid "e.g. FJF"
 msgstr "örn. FJF"
 
@@ -10825,6 +10906,9 @@ msgstr "ör. FS-01"
 
 msgid "e.g. Feed store 1"
 msgstr "ör. Yem deposu 1"
+
+msgid "e.g. Finance"
+msgstr "ör. Finans"
 
 msgid "e.g. Fjord Feed AS"
 msgstr "örn. Fjord Feed AS"
@@ -11232,6 +11316,12 @@ msgstr "hiçbir pH'de ulaşılmaz"
 
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "çizelgenin aralığında ulaşılmaz (4 ile 12,5)"
+
+msgid "office department"
+msgstr "ofis departmanı"
+
+msgid "office departments"
+msgstr "ofis departmanları"
 
 msgid "open"
 msgstr "süresiz"

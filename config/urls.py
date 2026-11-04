@@ -35,6 +35,7 @@ urlpatterns = [
     path('', include('inventory.urls')),
     path('', include('reports.urls')),
     path('', include('tasks.urls')),
+    path('', include('hr.urls')),
     path('', include('core.urls')),
     path('admin/', admin.site.urls),
 ]

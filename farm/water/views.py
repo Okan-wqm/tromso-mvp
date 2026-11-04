@@ -21,7 +21,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, BadRequest, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import Http404
@@ -354,28 +354,40 @@ def calculator_report(request):
     return render(request, 'farm/water_calculator_report.html', context)
 
 
-# ---- a unit's own chart ----------------------------------------------------------------------------------------
-@permission_required(VIEW, raise_exception=True)
-def unit_chart(request, pk):
-    """The Deffeyes chart of one unit's water, as the body of the monitoring cards' window (the fragment is polled):
-    the chart, the readings it is drawn from with their age, status and point, the limits and species of the fish, and
-    the unit's points as links to the same fragment for another one. `?point=` is one of the unit's own active points
-    (404 for any other); without it, the middle point. A water that cannot be drawn is refused with what it lacks
-    (farm/water/calculation.chart_of). Gated by the right to read water samples alone: it shows nothing else of the
-    unit's records."""
-    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+# ---- a unit's or a system's own chart ----------------------------------------------------------------------------
+def _moment(request, owner):
+    """The past moment `?at=` names, on the clock of the owner's site (A4: the Deffeyes as it was then); None without
+    one. A value that is not a time, or a time the clocks skip or repeat, is refused (400): never read as now."""
+    value = request.GET.get('at', '')
+    if not value:
+        return None
+    try:
+        wall = datetime.strptime(value, '%Y-%m-%dT%H:%M')
+    except ValueError:
+        raise BadRequest('at')
+    zone = zone_of(site_of(owner))
+    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
+    if first.utcoffset() != second.utcoffset() or timezone.make_naive(first.astimezone(zone), zone) != wall:
+        raise BadRequest('at')
+    if first > timezone.now():
+        raise BadRequest('at')
+    return first
+
+
+def _owner_chart(request, owner, here):
     chosen = None
     if request.GET.get('point'):
-        chosen = next((point for point in read.points_of([unit])[unit.pk] if str(point.pk) == request.GET['point']), None)
+        chosen = next((point for point in calculation.points_for(owner) if str(point.pk) == request.GET['point']), None)
         if chosen is None:
             raise Http404
-    result = calculation.chart_of(unit, chosen)
-    here = reverse('farm:water_unit_chart', args=[unit.pk])
+    at = _moment(request, owner)
+    result = calculation.chart_of(owner, chosen, at=at)
     labels = CalculatorForm().fields
+    kept = {'at': request.GET['at']} if at is not None else {}
     return render(request, 'farm/_unit_chart.html', {
-        'unit': unit, 'result': result, 'uid': f'chart-{result.point.pk}' if result.point else 'chart',
+        'unit': owner, 'result': result, 'uid': f'chart-{result.point.pk}' if result.point else 'chart', 'at': at,
         'chart': getattr(getattr(result, 'calculation', None), 'chart', None),
-        'point_links': [{'point': point, 'url': f'{here}?{urlencode({"point": point.pk})}',
+        'point_links': [{'point': point, 'url': f'{here}?{urlencode({"point": point.pk, **kept})}',
                          'current': result.point is not None and point.pk == result.point.pk}
                         for point in result.points],
         'limit_rows': [(labels[name].label, offer) for name, offer in getattr(result, 'limits', {}).items()],
@@ -383,6 +395,25 @@ def unit_chart(request, pk):
         'species': sorted({row.species.common_name for offer in getattr(result, 'limits', {}).values()
                            for row in offer.rows}) if request.user.has_perm('farm.view_stockoperation') else [],
     })
+
+
+@permission_required(VIEW, raise_exception=True)
+def unit_chart(request, pk):
+    """The Deffeyes chart of one unit's water, as the body of the monitoring cards' window (the fragment is polled):
+    the chart, the readings it is drawn from with their origin, age, status and point, the limits and species of the
+    fish, and the unit's points as links to the same fragment for another one. `?point=` is one of the unit's own active
+    points (404 for any other); without it, the middle point. `?at=` draws the water as it was at a past moment (on the
+    site's clock). A water that cannot be drawn is refused with what it lacks (farm/water/calculation.chart_of). Gated
+    by the right to read water samples alone: it shows nothing else of the unit's records."""
+    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+    return _owner_chart(request, unit, reverse('farm:water_unit_chart', args=[unit.pk]))
+
+
+@permission_required(VIEW, raise_exception=True)
+def system_chart(request, pk):
+    """A system's own Deffeyes chart (A4): its loop's water and the system's sensors, as a unit's (`unit_chart`)."""
+    system = get_object_or_404(System.objects.select_related('site'), pk=pk)
+    return _owner_chart(request, system, reverse('farm:water_system_chart', args=[system.pk]))
 
 
 # ---- the dialogs ---------------------------------------------------------------------------------------

@@ -105,10 +105,14 @@ def short_age(moment, now=None):
 
 
 @register.filter
-def source_line(reading):
+def source_line(reading, now=None):
     """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1):
-    "unit sensor · 12 s ago", "system sensor · 40 s ago", "manual · 2 days ago"."""
+    "unit sensor #12 · 12 s ago", "system sensor #3 · 40 s ago", "manual · 2 days ago"; `now`: the moment the age is
+    counted to (a past moment's Deffeyes), else now."""
     if not reading:
         return ''
-    # Translators: %(origin)s is where a value comes from (manual, lab, unit sensor, system sensor); %(age)s how old it is.
-    return _('%(origin)s · %(age)s ago') % {'origin': reading.sample.origin_label, 'age': short_age(reading.at)}
+    origin = reading.sample.origin_label
+    if reading.sample.channel_no is not None:
+        origin = f'{origin} #{reading.sample.channel_no}'        # the channel that feeds it (A4)
+    # Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor); %(age)s how old.
+    return _('%(origin)s · %(age)s ago') % {'origin': origin, 'age': short_age(reading.at, now or None)}

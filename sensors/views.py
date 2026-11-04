@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -23,7 +23,7 @@ from core.crud import done, render_page
 from core.models import AuditLog
 from farm.models import Equipment, SamplingPoint, System, Tank
 
-from . import chart, credentials, quantities, read
+from . import chart, credentials, quantities, read, trail
 from .forms import on_site_clock
 from .models import Binding, Channel, ChannelStatus, Credential
 from .resources import (ChannelResource, ConnectionResource, CredentialResource, DeviceResource, PayloadFormatResource,
@@ -207,3 +207,21 @@ def live(request):
     rows = [{'channel': channel, 'state': states[channel.channel_no], 'binding': places.get(channel.pk)}
             for channel in channels]
     return render_page(request, 'sensors/live.html', _context('sensors:live', rows=rows, now=now))
+
+
+@permission_required((READ, 'farm.view_watermeasurement'), raise_exception=True)
+def trail_points(request):
+    """The trail of a unit's or a system's water on the Deffeyes diagram over a preset time (A4), hour by hour, as JSON
+    for the card designer's chart: the hours drawn and the hours without every input. It joins the sensors and the water
+    samples, so it needs the right to read both."""
+    target = parse_target(request.GET.get('target'))
+    if not isinstance(target, (Tank, System)):
+        raise Http404
+    key = request.GET.get('range') if request.GET.get('range') in dict(RANGES) else '24h'
+    end = timezone.now().replace(minute=0, second=0, microsecond=0)
+    found = trail.trail(target, end - dict(RANGES)[key], end)
+    return JsonResponse({
+        'points': [{'at': point.at.isoformat(), 'temperature_c': point.temperature_c, 'ph': point.ph,
+                    'alkalinity_mg_l': point.alkalinity_mg_l, 'salinity_ppt': point.salinity_ppt, 'dic': point.dic,
+                    'alkalinity_meq': point.alkalinity_meq} for point in found.points],
+        'missing': [moment.isoformat() for moment in found.missing]})

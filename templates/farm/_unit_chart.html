@@ -6,6 +6,7 @@
 <div class="unit-chart" data-unit-chart>
   {% if result.sensors_failed %}<p class="notice notice-warning" role="status">{% trans "The live sensor values could not be read: the values below come from the water samples only." %}</p>{% endif %}
   <p class="unit-chart-head"><strong>{{ unit.code }}</strong>{% if result.point %} · {{ result.point.name }}{% endif %}{% if species %} · {{ species|join:", " }}{% endif %}</p>
+  {% if at %}<p class="notice" role="status">{% blocktrans trimmed with moment=at|date:"DATETIME_FORMAT" %}The water as it was at {{ moment }}: each value as its source gave it then, its age counted from then.{% endblocktrans %}</p>{% endif %}
   {% if result.no_point %}
   <p class="notice notice-warning" role="status">{% trans "This unit has no active middle sampling point, so its chart cannot be drawn. Choose one of its points:" %}</p>
   {% elif result.missing %}

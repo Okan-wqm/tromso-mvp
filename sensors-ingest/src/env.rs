@@ -12,14 +12,50 @@
 //! | `INGEST_BATCH_MAX` | 5000 | largest batch |
 //! | `INGEST_QUEUE` | 10000 | queue between readers and writer (>= broker `max_inflight_messages`) |
 
+use crate::service::Settings;
 use crate::supervisor::Options;
+use std::str::FromStr;
 
 /// Builds the options from a variable lookup and a file reader (both injected for tests).
 pub fn options(
-    _var: impl Fn(&str) -> Option<String>,
-    _read: impl Fn(&str) -> std::io::Result<String>,
+    var: impl Fn(&str) -> Option<String>,
+    read: impl Fn(&str) -> std::io::Result<String>,
 ) -> Result<Options, String> {
-    todo!("env options")
+    let conninfo = var("INGEST_DB").filter(|s| !s.trim().is_empty()).ok_or("INGEST_DB is not set")?;
+    let parsed = tokio_postgres::Config::from_str(&conninfo).map_err(|e| format!("INGEST_DB: {e}"))?;
+    if parsed.get_password().is_some() {
+        return Err("INGEST_DB must not hold a password: put it in INGEST_DB_PASSWORD_FILE".into());
+    }
+    let pw_file = var("INGEST_DB_PASSWORD_FILE").unwrap_or_else(|| "/run/secrets/sensors_ingest_db".into());
+    let password = read(&pw_file).map_err(|e| format!("INGEST_DB_PASSWORD_FILE {pw_file}: {e}"))?;
+    let password = password.lines().next().unwrap_or("").to_string();
+    fn num<T: std::str::FromStr + PartialOrd + From<u8>>(
+        var: &impl Fn(&str) -> Option<String>,
+        name: &str,
+        default: T,
+    ) -> Result<T, String> {
+        match var(name) {
+            None => Ok(default),
+            Some(s) => match s.trim().parse::<T>() {
+                Ok(v) if v >= T::from(1u8) => Ok(v),
+                _ => Err(format!("{name}={s:?} is not a positive whole number")),
+            },
+        }
+    }
+    let mut settings = Settings::new(&conninfo);
+    settings.password = Some(password);
+    settings.batch_ms = num(&var, "INGEST_BATCH_MS", 250u64)?;
+    settings.batch_max = num(&var, "INGEST_BATCH_MAX", 5000usize)?;
+    let queue_capacity = num(&var, "INGEST_QUEUE", 10_000usize)?;
+    let http = var("INGEST_HTTP").unwrap_or_else(|| "0.0.0.0:8080".into());
+    let http_addr = Some(http.parse().map_err(|e| format!("INGEST_HTTP={http:?}: {e}"))?);
+    Ok(Options {
+        settings,
+        secrets_dir: var("INGEST_SECRETS_DIR").unwrap_or_else(|| "/run/secrets".into()).into(),
+        ca_file: var("INGEST_MQTT_CA_FILE").unwrap_or_else(|| "/etc/ssl/certs/ca-certificates.crt".into()),
+        queue_capacity,
+        http_addr,
+    })
 }
 
 #[cfg(test)]

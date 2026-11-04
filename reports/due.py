@@ -21,7 +21,7 @@ from farm.health import diseases, notices
 from django.utils.translation import gettext as _, gettext_lazy
 
 from farm.models import (
-    Batch, EscapeRecord, HandlingPlanItem, HealthEvent, Site, SlaughterFacility, StockMovement, Tank,
+    Batch, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, Site, SlaughterFacility, StockMovement, Tank,
 )
 from farm.models.harvest import FacilityStatus, PlanKind
 from farm.models.species import SALMONID_CODES
@@ -29,7 +29,7 @@ from farm.stock.read import Presence
 
 from . import compute, periods
 from .kinds import EVENTS, KINDS, PERIODIC, ReportKind
-from .models import Report
+from .models import DueClosure, Report
 
 SEA_SITE = Site.Type.SEA_CAGE
 PRODUCTION_FORM = Site.ProductionForm
@@ -100,6 +100,7 @@ class DueList:
     rows: list = field(default_factory=list)
     not_set_up: list = field(default_factory=list)
     lines: list = field(default_factory=list)
+    closed: list = field(default_factory=list)
 
     def lines_of(self, kind):
         return [line for line in self.lines if line.kind == kind]
@@ -138,6 +139,7 @@ def due(today=None):
     today = today or periods.oslo_today()
     found = DueList()
     existing = _existing()
+    found.closed = list(DueClosure.objects.select_related('site', 'facility', 'closed_by'))
     sites = list(Site.objects.order_by('name'))
     for site in sites:
         _site(site, today, existing, found)
@@ -150,9 +152,16 @@ def due(today=None):
     return found
 
 
+class Existing(dict):
+    """The reports started, by key, and the keys a person closed with a reason (DueClosure): neither is owed."""
+    closed = frozenset()
+
+
 def _existing():
     """{(kind, site id, facility id, period start, event id): the live original report} of every report started."""
-    index = {}
+    index = Existing()
+    index.closed = frozenset((closure.kind, closure.site_id, closure.facility_id, closure.period_start, None)
+                             for closure in DueClosure.objects.all())
     for report in Report.objects.filter(corrects__isnull=True):
         key = (report.kind, report.site_id, report.facility_id, report.period_start,
                report.health_event_id or report.escape_id)
@@ -166,7 +175,7 @@ def _row(kind, place, period, today, existing, event=None, agreed=None):
            place.pk if kind == ReportKind.SLAUGHTER_PLANNED else None, period.start if period else None,
            event.pk if event is not None else None)
     report = existing.get(key)
-    if report is not None and report.submitted_at is not None:
+    if report is not None and report.submitted_at is not None or key in existing.closed:
         return None
     rule = KINDS[kind].deadline
     deadline = rule(period) if rule and period else None
@@ -286,25 +295,37 @@ def _lines_of_slaughter(found):
             found.lines.append(Line(ReportKind.SLAUGHTER_PLANNED, facility, DUE, count=counts[facility.pk]))
         else:
             found.lines.append(Line(ReportKind.SLAUGHTER_PLANNED, facility, NOT_DUE,
-                                    _('no harvest is planned to %(facility)s from this week on') % {
+                                    _('no planned or recorded harvest to %(facility)s is waiting for its notice') % {
                                         'facility': facility.name}))
 
 
 def _slaughter(today, existing, rows):
-    """A planned slaughter per facility and week, from this week on, for the open harvest plans."""
-    items = HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', operation__isnull=True,
-                                            facility__isnull=False, date__gte=periods.week_start(today)
-                                            ).select_related('facility')
-    weeks = {}
-    agreed = {}
-    for item in items:
+    """A planned slaughter per facility and week, from the first week the site reports (its reports-from date): the duty
+    arises from the harvest, planned or done (restkontrollforskriften § 9a), so a harvest that was never planned owes it
+    too, and a week stays owed after it has passed until the notice is filed or a person closes it with a reason."""
+    weeks, agreed = {}, {}
+    plans = (HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', facility__isnull=False)
+             .filter(Q(operation__isnull=True) | Q(operation__is_deleted=False))
+             .select_related('facility', 'unit__production_department__site'))
+    for item in plans:
+        site = item.unit.production_department.site
+        if site is None or site.reports_from is None or item.date < site.reports_from:
+            continue
         key = (item.facility_id, periods.Period.of(periods.WEEK, item.date))
         weeks[key] = item.facility
         day = periods.oslo_today(item.created_at)
         agreed[key] = min(agreed.get(key, day), day)
-    for (_facility, period), facility in weeks.items():
+    lines = Prefetch('operation__movements', StockMovement.objects.select_related(
+        'unit__production_department__site').order_by('id'))
+    for record in HarvestRecord.objects.select_related('facility', 'operation').prefetch_related(lines):
+        first = next(iter(record.operation.movements.all()), None)
+        site = first.unit.production_department.site if first is not None else None
+        if site is None or site.reports_from is None or record.operation.date < site.reports_from:
+            continue
+        weeks.setdefault((record.facility_id, periods.Period.of(periods.WEEK, record.operation.date)), record.facility)
+    for (facility_id, period), facility in weeks.items():
         row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing,
-                   agreed=agreed[(_facility, period)])
+                   agreed=agreed.get((facility_id, period)))
         if row is not None:
             rows.append(row)
 

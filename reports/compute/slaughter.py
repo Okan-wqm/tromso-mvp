@@ -9,16 +9,29 @@ Thursday 24:00 of the week before and the day the fish start fasting for the fir
 import re
 from collections import defaultdict
 from decimal import Decimal
+from typing import NamedTuple
 
 from django.utils.translation import gettext as _
 
 from farm.handling.fasting import fast_of
-from farm.models import HandlingPlanItem, Site, SlaughterFacility, Tank
+from farm.models import HandlingPlanItem, Site, SlaughterFacility, StockMovement, StockOperation, Tank
+from farm.models.stock import OperationKind
 
 from .common import Result, identity, note, species_code, whole
 
 WEEKDAYS = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
 ZERO = Decimal(0)
+
+
+class Entry(NamedTuple):
+    """A harvest of the week as the report reads it: planned (a plan item, with its planned kilos) or never planned (a
+    harvest recorded with no plan item: its weighed kilos)."""
+    id: str
+    unit: object
+    batch: object
+    date: object
+    planned_kg: object
+    planned: bool
 
 
 def items_of(facility, period):
@@ -29,9 +42,30 @@ def items_of(facility, period):
                 .order_by('date', 'created_at'))
 
 
+def unplanned_of(facility, period, items):
+    """The harvests to the facility in the week that no plan item of it names: the fish went and nobody planned them
+    (the duty arises from the harvest, § 9a), read from the harvest's own weighed kilos."""
+    planned = {item.operation_id for item in items if item.operation_id}
+    found = []
+    for operation in (StockOperation.objects.filter(kind=OperationKind.HARVEST, harvest_record__facility=facility,
+                                                    date__gte=period.start, date__lte=period.end)
+                      .exclude(pk__in=planned).order_by('date', 'created_at')):
+        for line in (StockMovement.objects.filter(operation=operation, kind='harvest')
+                     .select_related('unit__production_department__site', 'batch__species').order_by('id')):
+            found.append(Entry(str(operation.pk), line.unit, line.batch, operation.date, line.measured_weight_kg, False))
+    return found
+
+
+def entries_of(facility, period):
+    """Every harvest of the week the report is about: the planned ones, then the unplanned."""
+    items = items_of(facility, period)
+    return [Entry(str(item.pk), item.unit, item.batch, item.date, item.planned_kg, True) for item in items] + \
+        unplanned_of(facility, period, items)
+
+
 def compute(facility, period):
     problems, warnings = [], []
-    items = items_of(facility, period)
+    items = entries_of(facility, period)
     sites = {}
     planned = defaultdict(lambda: ZERO)
     for item in items:
@@ -41,6 +75,9 @@ def compute(facility, period):
             continue
         sites[site.pk] = site
         code = species_code(item.batch.species, problems)
+        if not item.planned:
+            warnings.append(_('The harvest of %(unit)s on %(date)s was not planned: its weighed kilos are reported, '
+                              'late.') % {'unit': item.unit.code, 'date': item.date.isoformat()})
         if item.planned_kg is None:
             problems.append(_('The planned harvest of %(unit)s on %(date)s has no planned kilos (Operations › Harvest '
                               '› Harvest plan).') % {'unit': item.unit.code, 'date': item.date.isoformat()})
@@ -63,21 +100,23 @@ def compute(facility, period):
     content = {
         'kind': 'slaughter_planned', 'period': period.key,
         'facility': {'name': facility.name, 'approval_number': facility.approval_number, 'organisation_number': filer},
-        'localities': localities, 'items': [str(item.pk) for item in items],
+        'localities': localities, 'items': [item.id for item in items],
     }
     return Result(content, problems, warnings, scope(facility, period, items))
 
 
 def scope(facility, period, items=None):
     """The rows the week's figures are read from (for the fingerprint), without computing them."""
-    items = items if items is not None else items_of(facility, period)
+    items = items if items is not None else entries_of(facility, period)
     sites = {item.unit.production_department.site_id for item in items if item.unit.production_department.site_id}
     return [
         ('plan_items', HandlingPlanItem.all_objects.filter(kind=HandlingPlanItem.Kind.HARVEST, facility=facility,
                                                            date__gte=period.start, date__lte=period.end)),
+        ('harvests', StockOperation.all_objects.filter(kind=OperationKind.HARVEST, harvest_record__facility=facility,
+                                                       date__gte=period.start, date__lte=period.end)),
         ('facility', SlaughterFacility.all_objects.filter(pk=facility.pk)),
         ('sites', Site.all_objects.filter(pk__in=sites)),
-        ('units', Tank.all_objects.filter(pk__in={item.unit_id for item in items})),
+        ('units', Tank.all_objects.filter(pk__in={item.unit.pk for item in items})),
     ]
 
 
@@ -93,6 +132,6 @@ def _filer(facility):
 def deadline(facility, period, rule_deadline):
     """The earlier of the rule's deadline (Thursday of the week before) and the first day the fish fast for a
     harvest of the week (restkontrollforskriften § 9a: "senest når fisken er satt til sulting")."""
-    fasts = [fast_of(item) for item in items_of(facility, period)]
+    fasts = [fast_of(item) for item in items_of(facility, period)]      # an unplanned harvest has no fast to read
     days = [fast.first_day for fast in fasts if fast is not None]
     return min([rule_deadline, *days])

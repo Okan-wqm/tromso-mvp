@@ -51,6 +51,15 @@
   </div>
 </section>
 {% endif %}
+{% if closed %}
+<section class="notice" aria-labelledby="closed-title">
+  <strong id="closed-title">{% trans "Closed without filing" %}</strong>
+  <ul>
+    {% for closure in closed %}<li>{{ closure.get_kind_display }} · {{ closure.site|default:closure.facility }} · {{ closure.period_start|date:"DATE_FORMAT" }} · {{ closure.reason }} · {{ closure.closed_by }}, {{ closure.closed_at|date:"DATE_FORMAT" }}
+      {% if can_change %}<form method="post" action="{% url 'reports:due_reopen' closure.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Reopen" %}</button></form>{% endif %}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
 {% if changed %}
 <div class="notice notice-error" role="alert">
   <strong>{% trans "The records no longer give what was filed" %}</strong>
@@ -65,6 +74,7 @@
       {{ row.kind.label }} · {{ row.place }}{% if row.period %} · {{ row.period.label }}{% endif %}{% if row.event and not row.period %} · {{ row.event }}{% endif %}
       · {% if row.deadline %}{{ row.deadline|date:"DATE_FORMAT" }}{% if row.overdue %} <span class="badge badge-closed">{% trans "Overdue" %}</span>{% endif %}{% else %}{% trans "at once" %}{% endif %}
       {% if row.report %}· <a href="{% url 'reports:report_detail' row.report.pk %}">{% trans "Open the draft" %}</a>{% elif start_url %}· <a href="{{ start_url }}?{{ row.start_query|urlencode_query }}">{% trans "Start" %}</a>{% endif %}
+      {% if can_change and row.period %}· <a href="{% url 'reports:due_close' %}?{{ row.start_query|urlencode_query }}" data-modal>{% trans "Close without filing" %}</a>{% endif %}
     </li>{% endfor %}
   </ul>
 </section>

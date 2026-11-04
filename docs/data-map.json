@@ -216,6 +216,7 @@
         "inventory/tests/test_services.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py"
@@ -5225,6 +5226,7 @@
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py"
       ]
     },
@@ -20754,6 +20756,241 @@
     },
     {
       "app": "reports",
+      "model": "DueClosure",
+      "table": "regulatory_due_closures",
+      "description": "A report that was owed and will not be filed, closed by a person with the reason (a slaughter that never took place, a period filed elsewhere): the due list stops listing it.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "sea_lice",
+            "smolt",
+            "cleaner_fish",
+            "biomass",
+            "land_stock",
+            "site_in_use",
+            "site_emptied",
+            "slaughter_planned",
+            "escape",
+            "disease",
+            "welfare"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "facility_id",
+          "field": "facility",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "slaughter_facilities",
+            "model": "farm.SlaughterFacility",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "period_start",
+          "field": "period_start",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CloseForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "closed_by_id",
+          "field": "closed_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who closed it"
+        },
+        {
+          "name": "closed_at",
+          "field": "closed_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set when saved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_due_closures_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_due_closures_place",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_due_closures_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_due_closures_period",
+          "kind": "unique",
+          "fields": [
+            "kind",
+            "site",
+            "facility",
+            "period_start"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.close",
+              "url_names": [
+                "reports:due_close"
+              ],
+              "routes": [
+                "/reports/close/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a closure is reopened, not edited: reopening deletes it"
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.reopen",
+              "url_names": [
+                "reports:due_reopen"
+              ],
+              "routes": [
+                "/reports/closed/<uuid:pk>/reopen/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "regulatory reports tab",
+              "url_names": [
+                "reports:report_list",
+                "reports:report_detail",
+                "reports:report_edit"
+              ],
+              "routes": [
+                "/reports/",
+                "/reports/<uuid:pk>/view/",
+                "/reports/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A report that was owed and will not be filed, closed with the reason (the due list stops listing it).",
+      "forms": [
+        {
+          "form": "CloseForm",
+          "module": "reports.forms",
+          "fields": {
+            "reason": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": []
+      },
+      "tests": [
+        "reports/tests/test_slaughter_duty.py"
+      ]
+    },
+    {
+      "app": "reports",
       "model": "ResistanceSuspicion",
       "table": "regulatory_report_resistance_suspicions",
       "description": "A suspicion of resistance to a lice treatment reported for the week (lakselusforskriften § 10 e).",
@@ -22639,6 +22876,7 @@
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
       ]

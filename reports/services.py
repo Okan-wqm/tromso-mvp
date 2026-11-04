@@ -8,9 +8,9 @@ from django.utils.translation import gettext as _
 from core import audit
 from core.models import AuditLog
 
-from . import compute
+from . import compute, due, periods
 from .kinds import EVENTS
-from .models import NARRATIVE, WITHOUT_REFERENCE, Channel, Report, ReportSnapshot
+from .models import NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, Report, ReportSnapshot
 
 # The format of a notice that was recorded on the health event before notices existed (its time only).
 LEGACY_FORMAT = 0
@@ -77,6 +77,37 @@ def submit(user, report, *, submitted_at, channel, reference, version):
             }
             audit.record(user, AuditLog.Action.UPDATE, current, changes, entity_type=Report._meta.verbose_name)
     return current
+
+
+def close_due(user, *, kind, place, period, reason):
+    """Closes a report that is owed and will not be filed, with the reason: the due list stops listing it. Refused when
+    nothing is owed there (it was filed, or is not due), or without a reason. Logged; `reopen` undoes it."""
+    if not reason.strip():
+        raise ValidationError({'reason': [_('Say why it is closed.')]})
+    if not any(row.kind == kind and row.place == place and row.period == period for row in due.due().rows):
+        _refuse(_('Nothing is owed there: it was filed, closed already or is not due.'))
+    with transaction.atomic():
+        closure = DueClosure(kind=kind, period_start=period.start, reason=reason.strip(), closed_by=user,
+                             **{'facility' if kind == 'slaughter_planned' else 'site': place})
+        closure.full_clean()
+        closure.save()
+        with audit.source_language():
+            audit.record_create(user, closure, {
+                str(_('Report')): audit.message(closure.get_kind_display()), str(_('Site')): closure.site and str(closure.site),
+                str(_('Slaughter facility')): closure.facility and str(closure.facility),
+                str(_('Period')): closure.period_start.isoformat(), str(_('Why it is closed')): closure.reason})
+    return closure
+
+
+def reopen(user, closure):
+    """Takes a closure away: the report is owed again. Logged."""
+    with transaction.atomic():
+        pk = closure.pk
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.DELETE, closure, entity_type=DueClosure._meta.verbose_name,
+                         label=audit.english(closure))
+        closure.delete()
+    return pk
 
 
 def start_correction(user, report):

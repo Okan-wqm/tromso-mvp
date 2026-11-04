@@ -152,7 +152,8 @@ class ReportResource(Resource):
                      if not chosen_site or line.place.pk == _uuid_or_none(chosen_site)
                      or not isinstance(line.place, Site)]
         start_url = reverse('reports:report_create') if request.user.has_perm(cls.perm('add')) else ''
-        return objects, {'sites': sites, 'chosen_kind': chosen_kind,
+        closed = [closure for closure in owed.closed if not chosen_kind or closure.kind == chosen_kind]
+        return objects, {'sites': sites, 'chosen_kind': chosen_kind, 'closed': closed,
                          'chosen_site': chosen_site, 'statuses': STATUSES, 'chosen_status': chosen_status,
                          'today': periods.oslo_today(), 'due': rows, 'changed': changed, 'lines': lines,
                          'not_set_up': [] if chosen_kind else owed.not_set_up,

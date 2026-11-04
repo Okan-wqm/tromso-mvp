@@ -3000,11 +3000,33 @@ msgstr "Fjern filtrene"
 msgid "Close"
 msgstr "Lukk"
 
+#, python-format
+msgid "Close %(kind)s · %(place)s · %(period)s without filing it?"
+msgstr "Lukke %(kind)s · %(place)s · %(period)s uten å sende inn?"
+
+msgid "Close it"
+msgstr "Lukk den"
+
+msgid "Close without filing"
+msgstr "Lukk uten innsending"
+
 msgid "Closed"
 msgstr "Stengt"
 
+msgid "Closed at"
+msgstr "Lukket"
+
+msgid "Closed by"
+msgstr "Lukket av"
+
 msgid "Closed on"
 msgstr "Avsluttet"
+
+msgid "Closed without filing"
+msgstr "Lukket uten innsending"
+
+msgid "Closed: it is not owed any more. It can be reopened from its tab."
+msgstr "Lukket: den skal ikke sendes lenger. Den kan åpnes igjen fra fanen sin."
 
 msgid "Closing"
 msgstr "Avslutning"
@@ -4426,6 +4448,13 @@ msgid ""
 msgstr ""
 "For hver fôrstørrelse: hvor mye fôr ett skudd gir og hvor mye siloen rommer; høyst 50 rader. De "
 "lagres separat fra utstyrsdetaljene."
+
+msgid ""
+"For example: the slaughter did not take place, or the notice was filed elsewhere. It is kept with"
+" your name and the day."
+msgstr ""
+"For eksempel: slaktingen ble ikke gjennomført, eller varselet ble sendt et annet sted. Det lagres"
+" med navnet ditt og dagen."
 
 msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
 msgstr "For kalsitt- og aragonittmetningen, i vann på 5 til 44 ‰."
@@ -6333,6 +6362,9 @@ msgstr "Ingenting på lager ennå"
 msgid "Nothing is in stock: receive a delivery first."
 msgstr "Ingen beholdning: ta imot et varemottak først."
 
+msgid "Nothing is owed there: it was filed, closed already or is not due."
+msgstr "Ingenting skal sendes der: det er sendt inn, allerede lukket eller ikke aktuelt."
+
 msgid "Nothing recorded for this item yet"
 msgstr "Ingenting registrert for denne varen ennå"
 
@@ -7406,6 +7438,9 @@ msgstr "Gi protokollen nytt navn først: kopiene har brukt opp alle navnene."
 msgid "Reopen"
 msgstr "Åpne igjen"
 
+msgid "Reopened: it is owed again."
+msgstr "Åpnet igjen: den skal sendes igjen."
+
 msgid "Reorder level"
 msgstr "Bestillingspunkt"
 
@@ -7730,6 +7765,9 @@ msgstr "Oppgi hvem fôret er til: produksjonsfisken eller rensefisken."
 
 msgid "Say why it is cancelled."
 msgstr "Skriv hvorfor den avlyses."
+
+msgid "Say why it is closed."
+msgstr "Oppgi hvorfor den er lukket."
 
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
@@ -8898,6 +8936,10 @@ msgid "The half mesh, from one knot to the next; a stretched mesh is twice as lo
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
 
 #, python-format
+msgid "The harvest of %(unit)s on %(date)s was not planned: its weighed kilos are reported, late."
+msgstr "Slaktingen fra %(unit)s %(date)s var ikke planlagt: de veide kiloene rapporteres, for sent."
+
+#, python-format
 msgid "The harvest plan of %(unit)s"
 msgstr "Høsteplanen for %(unit)s"
 
@@ -9644,6 +9686,9 @@ msgstr "Denne rapporten har allerede en korrigering: åpne den fra listen."
 
 msgid "This report has already been started for this period: open it from the list."
 msgstr "Denne rapporten er allerede startet for denne perioden: åpne den fra listen."
+
+msgid "This report is closed already."
+msgstr "Denne rapporten er allerede lukket."
 
 msgid "This sample is already voided."
 msgstr "Denne prøven er allerede annullert."
@@ -10477,6 +10522,9 @@ msgstr ""
 msgid "Why"
 msgstr "Hvorfor"
 
+msgid "Why it is closed"
+msgstr "Hvorfor den er lukket"
+
 msgid "Why the text could not be read"
 msgstr "Hvorfor teksten ikke kunne leses"
 
@@ -10712,6 +10760,12 @@ msgstr "rensefisk"
 #, python-format
 msgid "cleaner fish %(batches)s: %(fish)s fish"
 msgstr "rensefisk %(batches)s: %(fish)s fisk"
+
+msgid "closed report"
+msgstr "lukket rapport"
+
+msgid "closed reports"
+msgstr "lukkede rapporter"
 
 msgid "combination"
 msgstr "kombinasjon"
@@ -11275,10 +11329,6 @@ msgid "no fish held at %(site)s since %(date)s"
 msgstr "ingen fisk på %(site)s siden %(date)s"
 
 #, python-format
-msgid "no harvest is planned to %(facility)s from this week on"
-msgstr "ingen slakting er planlagt til %(facility)s fra denne uken"
-
-#, python-format
 msgid "no listed disease without a filed notice since %(date)s"
 msgstr "ingen listeført sykdom uten sendt varsel siden %(date)s"
 
@@ -11292,6 +11342,10 @@ msgstr "uten nummer, utløper %(date)s"
 #, python-format
 msgid "no official code for %(species)s"
 msgstr "ingen offisiell kode for %(species)s"
+
+#, python-format
+msgid "no planned or recorded harvest to %(facility)s is waiting for its notice"
+msgstr "ingen planlagt eller registrert slakting til %(facility)s venter på varsel"
 
 #, python-format
 msgid "no production fish held at %(site)s since %(date)s"

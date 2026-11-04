@@ -142,6 +142,14 @@ class ReportForm(TabbedForm):
         return cleaned
 
 
+class CloseForm(forms.Form):
+    """Closing a report that is owed and will not be filed: why."""
+
+    reason = forms.CharField(label=_('Why it is closed'), max_length=500, widget=forms.Textarea(attrs={'rows': 3}),
+                             help_text=_('For example: the slaughter did not take place, or the notice was filed '
+                                         'elsewhere. It is kept with your name and the day.'))
+
+
 class SubmitForm(forms.Form):
     """Recording that a person filed the report: when, how, and the receipt or reference the authority gave."""
 

@@ -14,4 +14,6 @@ urlpatterns += [
     path('reports/<uuid:pk>/correct/', views.correct, name='report_correct'),
     path('reports/<uuid:pk>/export.<str:fmt>', views.export, name='report_export'),
     path('reports/<uuid:pk>/print/', views.print_page, name='report_print'),
+    path('reports/close/', views.close, name='due_close'),
+    path('reports/closed/<uuid:pk>/reopen/', views.reopen, name='due_reopen'),
 ]

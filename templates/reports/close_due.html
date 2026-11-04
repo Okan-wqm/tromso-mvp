@@ -1,0 +1,21 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Closing a report that is owed and will not be filed (reports.views.close): it stops being listed as due, with the
+   reason, until a person reopens it.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<div class="confirm">
+  <p class="confirm-question">{% blocktrans trimmed with kind=row.kind.label place=row.place period=row.period.label %}Close {{ kind }} · {{ place }} · {{ period }} without filing it?{% endblocktrans %}</p>
+  <form method="post" action="{{ request.get_full_path }}" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% with field=form.reason %}{% include "registration/_field.html" %}{% endwith %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline button-danger">{% trans "Close it" %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

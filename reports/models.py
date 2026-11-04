@@ -1,6 +1,8 @@
 """Regulatory reports (Production › Reports): a report a person files with an authority, its frozen content once filed,
 and the few answers no record holds. Every figure of a report is computed from the farm's records on read
 (reports/compute); nothing here holds a count, a weight or a feed amount (docs/regulatory-reports.md, section 5)."""
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -258,6 +260,45 @@ class ReportSnapshot(models.Model):
 
     def __str__(self):
         return str(self.report)
+
+
+class DueClosure(models.Model):
+    """A report that was owed and will not be filed, closed by a person with the reason (a slaughter that never took place,
+    a period filed elsewhere): the due list stops listing it. Reopening deletes the row; both are in the activity log.
+    Nothing here is a report and nothing is sent."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(_('Report'), max_length=20, choices=ReportKind.choices)
+    site = models.ForeignKey(Site, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                             verbose_name=_('Site'))
+    facility = models.ForeignKey(SlaughterFacility, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                                 verbose_name=_('Slaughter facility'))
+    period_start = models.DateField(_('Period'))
+    reason = models.CharField(_('Why it is closed'), max_length=500)
+    closed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+', verbose_name=_('Closed by'))
+    closed_at = models.DateTimeField(_('Closed at'), auto_now_add=True)
+
+    class Meta:
+        db_table = 'regulatory_due_closures'
+        ordering = ['-closed_at']
+        verbose_name = _('closed report')
+        verbose_name_plural = _('closed reports')
+        constraints = [
+            models.CheckConstraint(condition=Q(kind__in=PERIODIC), name='chk_due_closures_kind'),
+            models.CheckConstraint(
+                condition=Q(kind=ReportKind.SLAUGHTER_PLANNED, facility__isnull=False, site__isnull=True)
+                | (~Q(kind=ReportKind.SLAUGHTER_PLANNED) & Q(site__isnull=False, facility__isnull=True)),
+                name='chk_due_closures_place'),
+            models.CheckConstraint(condition=~Q(reason=''), name='chk_due_closures_reason',
+                                   violation_error_message=_('Say why it is closed.')),
+            models.UniqueConstraint(fields=['kind', 'site', 'facility', 'period_start'], nulls_distinct=False,
+                                    name='uq_due_closures_period',
+                                    violation_error_message=_('This report is closed already.')),
+        ]
+
+    def __str__(self):
+        return f'{self.get_kind_display()} · {self.site or self.facility} · {self.period_start.isoformat()}'
 
 
 # ---- the answers no record holds (row lists of a report) --------------------------------------------------

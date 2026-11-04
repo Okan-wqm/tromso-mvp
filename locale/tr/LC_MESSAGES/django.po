@@ -3005,11 +3005,33 @@ msgstr "Filtreleri temizle"
 msgid "Close"
 msgstr "Kapat"
 
+#, python-format
+msgid "Close %(kind)s · %(place)s · %(period)s without filing it?"
+msgstr "%(kind)s · %(place)s · %(period)s bildirilmeden kapatılsın mı?"
+
+msgid "Close it"
+msgstr "Kapat"
+
+msgid "Close without filing"
+msgstr "Bildirmeden kapat"
+
 msgid "Closed"
 msgstr "Kapalı"
 
+msgid "Closed at"
+msgstr "Kapatılma zamanı"
+
+msgid "Closed by"
+msgstr "Kapatan"
+
 msgid "Closed on"
 msgstr "Kapanış tarihi"
+
+msgid "Closed without filing"
+msgstr "Bildirilmeden kapatılanlar"
+
+msgid "Closed: it is not owed any more. It can be reopened from its tab."
+msgstr "Kapatıldı: artık gerekmiyor. Sekmesinden yeniden açılabilir."
 
 msgid "Closing"
 msgstr "Kapanış"
@@ -4437,6 +4459,11 @@ msgid ""
 msgstr ""
 "Her yem boyutu için bir atışın ne kadar yem verdiği ve silonun ne kadar aldığı; en fazla 50 "
 "satır. Ekipman ayrıntılarından ayrı kaydedilir."
+
+msgid ""
+"For example: the slaughter did not take place, or the notice was filed elsewhere. It is kept with"
+" your name and the day."
+msgstr "Örneğin: kesim yapılmadı veya bildirim başka yerde yapıldı. Adınız ve günle birlikte saklanır."
 
 msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
 msgstr "Kalsit ve aragonit doygunluğu için, 5 ile 44 ‰ arasındaki suda."
@@ -6340,6 +6367,9 @@ msgstr "Depoda henüz hiçbir şey yok"
 msgid "Nothing is in stock: receive a delivery first."
 msgstr "Stokta hiçbir şey yok: önce bir teslimat alın."
 
+msgid "Nothing is owed there: it was filed, closed already or is not due."
+msgstr "Orada bir şey gerekmiyor: bildirildi, zaten kapatıldı veya zamanı gelmedi."
+
 msgid "Nothing recorded for this item yet"
 msgstr "Bu kalem için henüz kayıt yok"
 
@@ -7411,6 +7441,9 @@ msgstr "Önce protokolün adını değiştirin: kopyaları tüm adları kullanm�
 msgid "Reopen"
 msgstr "Yeniden aç"
 
+msgid "Reopened: it is owed again."
+msgstr "Yeniden açıldı: yine gerekiyor."
+
 msgid "Reorder level"
 msgstr "Yeniden sipariş seviyesi"
 
@@ -7736,6 +7769,9 @@ msgstr "Yemin kime verildiğini belirtin: üretim balığı mı temizleyici bal�
 
 msgid "Say why it is cancelled."
 msgstr "Neden iptal edildiğini yazın."
+
+msgid "Say why it is closed."
+msgstr "Neden kapatıldığını yazın."
 
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
@@ -8907,6 +8943,10 @@ msgid "The half mesh, from one knot to the next; a stretched mesh is twice as lo
 msgstr "Yarım göz: bir düğümden ötekine; gerilmiş tam göz bunun iki katıdır."
 
 #, python-format
+msgid "The harvest of %(unit)s on %(date)s was not planned: its weighed kilos are reported, late."
+msgstr "%(unit)s biriminin %(date)s tarihli hasadı planlanmamıştı: tartılan kilosu geç olarak bildirilir."
+
+#, python-format
 msgid "The harvest plan of %(unit)s"
 msgstr "%(unit)s hasat planı"
 
@@ -9655,6 +9695,9 @@ msgstr "Bu raporun zaten bir düzeltmesi var: listeden açın."
 
 msgid "This report has already been started for this period: open it from the list."
 msgstr "Bu rapor bu dönem için zaten başlatılmış: listeden açın."
+
+msgid "This report is closed already."
+msgstr "Bu rapor zaten kapatıldı."
 
 msgid "This sample is already voided."
 msgstr "Bu numune zaten iptal edildi."
@@ -10488,6 +10531,9 @@ msgstr ""
 msgid "Why"
 msgstr "Neden"
 
+msgid "Why it is closed"
+msgstr "Neden kapatıldı"
+
 msgid "Why the text could not be read"
 msgstr "Metnin neden okunamadığı"
 
@@ -10721,6 +10767,12 @@ msgstr "temizleyici balık"
 #, python-format
 msgid "cleaner fish %(batches)s: %(fish)s fish"
 msgstr "temizleyici balık %(batches)s: %(fish)s balık"
+
+msgid "closed report"
+msgstr "kapatılmış rapor"
+
+msgid "closed reports"
+msgstr "kapatılmış raporlar"
 
 msgid "combination"
 msgstr "kombinasyon"
@@ -11284,10 +11336,6 @@ msgid "no fish held at %(site)s since %(date)s"
 msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
 
 #, python-format
-msgid "no harvest is planned to %(facility)s from this week on"
-msgstr "bu haftadan itibaren %(facility)s için planlanmış hasat yok"
-
-#, python-format
 msgid "no listed disease without a filed notice since %(date)s"
 msgstr "%(date)s tarihinden beri bildirimi yapılmamış listeli hastalık yok"
 
@@ -11301,6 +11349,10 @@ msgstr "numarasız, son kullanma %(date)s"
 #, python-format
 msgid "no official code for %(species)s"
 msgstr "%(species)s için resmî kod yok"
+
+#, python-format
+msgid "no planned or recorded harvest to %(facility)s is waiting for its notice"
+msgstr "%(facility)s için bildirimi bekleyen planlı veya kaydedilmiş hasat yok"
 
 #, python-format
 msgid "no production fish held at %(site)s since %(date)s"

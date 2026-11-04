@@ -139,7 +139,7 @@ class NotSetUpTests(DueTestCase):
 
 
 class NoticesTests(DueTestCase):
-    def test_a_planned_slaughter_of_this_week_or_later_is_owed_per_facility_and_week(self):
+    def test_a_planned_slaughter_is_owed_per_facility_and_week_and_a_week_that_has_passed_stays_owed(self):
         batch = self.stock(self.m1, 1000, '4000', day(10, 1))
         agreed = datetime(2026, 10, 20, 9, 0, tzinfo=utc.utc)             # long before this week's Thursday
         for on, kilos in ((date(2026, 11, 5), 2500), (date(2026, 10, 20), 100)):
@@ -148,10 +148,11 @@ class NoticesTests(DueTestCase):
                                                    created_by=self.user)
             HandlingPlanItem.objects.filter(pk=item.pk).update(created_at=agreed)
         rows = self.rows(ReportKind.SLAUGHTER_PLANNED)
+        # The 20 October week is not forgotten when it has passed (§ 9a: the duty arises from the harvest).
         self.assertEqual([(row.place, row.period.key, row.overdue) for row in rows],
-                         [(self.facility, '2026-W45', True)])                 # Thursday 29 October has passed
-        self.assertEqual(rows[0].deadline, date(2026, 10, 29))
-        self.assertEqual(rows[0].start_query, {'kind': 'slaughter_planned', 'facility': self.facility.pk,
+                         [(self.facility, '2026-W43', True), (self.facility, '2026-W45', True)])
+        self.assertEqual(rows[1].deadline, date(2026, 10, 29))
+        self.assertEqual(rows[1].start_query, {'kind': 'slaughter_planned', 'facility': self.facility.pk,
                                                 'period': '2026-W45'})
 
     def test_a_slaughter_agreed_after_its_deadline_is_owed_from_the_day_it_was_agreed(self):

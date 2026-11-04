@@ -17,7 +17,9 @@ from core import navigation
 from core.crud import done, render_page
 
 from . import compute, due, exports, periods, services
-from .forms import SubmitForm
+from .forms import CloseForm, SubmitForm
+from .kinds import ReportKind
+from .models import DueClosure
 from .resources import ReportResource
 
 
@@ -68,6 +70,60 @@ def submit(request, pk):
             for text in errors:
                 messages.error(request, f'{form.fields[field].label}: {text}' if field in form.fields else text)
     return done(request, detail)
+
+
+def _due_row(request):
+    """The due row a closing link names (?kind=&site= or &facility=, &period=): None when it is not owed."""
+    kind, period = request.GET.get('kind', ''), request.GET.get('period', '')
+    try:
+        found = periods.Period.from_key(period)
+    except ValueError:
+        return None
+    key = 'facility' if kind == ReportKind.SLAUGHTER_PLANNED else 'site'
+    for row in due.due().rows:
+        if row.kind == kind and row.period == found and str(row.place.pk) == request.GET.get(key, ''):
+            return row
+    return None
+
+
+@permission_required('reports.change_report', raise_exception=True)
+def close(request):
+    """Closes a report that is owed and will not be filed, with the reason (a dialog)."""
+    row = _due_row(request)
+    if row is None:
+        raise Http404
+    place = navigation.place(ReportResource.perm('view'))
+    back = reverse('reports:report_list') + f'?kind={row.kind}'
+    context = {'row': row, 'heading': _('Close without filing'), 'back_url': back, 'title': _('Close without filing'),
+               'eyebrow': f'{place.heading} · {place.entry.label}'}
+    if request.method == 'POST':
+        form = CloseForm(request.POST)
+        if form.is_valid():
+            try:
+                services.close_due(request.user, kind=row.kind, place=row.place, period=row.period,
+                                   reason=form.cleaned_data['reason'])
+            except ValidationError as error:
+                for field, texts in error.message_dict.items():
+                    for text in texts:
+                        form.add_error(field if field in form.fields else None, text)
+            else:
+                messages.success(request, _('Closed: it is not owed any more. It can be reopened from its tab.'))
+                return done(request, back)
+        response = render_page(request, 'reports/close_due.html', {**context, 'form': form})
+        response.status_code = 422
+        return response
+    return render_page(request, 'reports/close_due.html', {**context, 'form': CloseForm()})
+
+
+@permission_required('reports.change_report', raise_exception=True)
+@require_POST
+def reopen(request, pk):
+    """Takes a closure away: the report is owed again."""
+    closure = get_object_or_404(DueClosure, pk=pk)
+    kind = closure.kind
+    services.reopen(request.user, closure)
+    messages.success(request, _('Reopened: it is owed again.'))
+    return done(request, reverse('reports:report_list') + f'?kind={kind}')
 
 
 @permission_required('reports.add_report', raise_exception=True)

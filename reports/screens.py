@@ -4,12 +4,24 @@ resistance suspicions, sensitivity tests, unit answers) are row lists of the tab
 from core.datamap import Screen, no, system
 
 from . import views
-from .forms import SubmitForm
+from .forms import CloseForm, SubmitForm
 from .resources import ReportResource
 
 APPEND_ONLY = 'append-only: a database trigger refuses UPDATE and DELETE'
 
 SCREENS = {
+    'DueClosure': Screen(
+        create=(views.close,),
+        edit=no('a closure is reopened, not edited: reopening deletes it'),
+        delete=(views.reopen,),
+        read=(ReportResource,),
+        note='A report that was owed and will not be filed, closed with the reason (the due list stops listing it).',
+        forms=(CloseForm,),
+        columns={'kind': system('the due row the closing link names'), 'site': system('the due row the closing link names'),
+                 'facility': system('the due row the closing link names'),
+                 'period_start': system('the due row the closing link names'),
+                 'closed_by': system('the person who closed it')},
+    ),
     'Report': Screen(
         create=(views.correct,),
         edit=(views.submit,),

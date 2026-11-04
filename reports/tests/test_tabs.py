@@ -107,7 +107,7 @@ class PeriodicReasonsTests(LinesTestCase):
 
     def test_planned_slaughter(self):
         self.assertEqual(self.reason(ReportKind.SLAUGHTER_PLANNED, self.facility),
-                         'no harvest is planned to Fjord Slakteri from this week on')
+                         'no planned or recorded harvest to Fjord Slakteri is waiting for its notice')
         batch = self.stock(self.m1, 1000, '4000', day(10, 1))
         HandlingPlanItem.objects.create(kind='harvest', date=date(2026, 11, 5), unit=self.m1, batch=batch,
                                         planned_kg=Decimal(2500), facility=self.facility, created_by=self.user)

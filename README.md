@@ -1755,8 +1755,11 @@ what was filed: a correction is needed", figure by figure; a correction is a new
 nothing); it is listed from its **reports-from** date to the last closed period, minus the filed ones, a draft staying listed
 with its deadline and an **Overdue** mark. A site that holds fish and has no reports-from date, no production form or a species with no official code (not known to be
 a salmonid) is listed as "Not set up for reports" with what is missing and a link to its form, never hidden. Planned slaughters
-come from the open harvest plans (a facility and a week: a plan item that is cancelled or already recorded as a harvest is not
-owed), escapes and listed diseases from their records since the site's reports-from date until a notice of each is filed (a
+are owed per facility and week from the first week the site reports, and the duty arises from the harvest, planned or done
+(restkontrollforskriften § 9a): a plan item that is not cancelled (still open or already recorded as a harvest) and a harvest
+recorded with no plan at all each owe their week, and a week that has passed stays owed, with its deadline and an Overdue
+mark, until its notice is filed or a person closes it with a reason (*Close without filing*, in the activity log, shown under
+the kind's tab and reopened from there). Escapes and listed diseases from their records since the site's reports-from date until a notice of each is filed (a
 notice told by telephone counts). The days are Oslo's calendar, whatever
 clock the site keeps, and the ISO week of 28 December to 3 January is 2026-W53. The page also lists the **filed reports whose
 records changed**: only the rows a report read are compared with the ones it was filed from (never a ledger folded again), and a

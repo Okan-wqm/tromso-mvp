@@ -906,10 +906,6 @@ class MedicinePageTests(HealthTestCase):
                       caught.exception.message_dict['supplies'])
 
 
-def withdrawal_data(rows, initial=0):
-    return rows_data('withdrawals', rows, initial)
-
-
 class MedicineWithdrawalPageTests(HealthTestCase):
     """A medicine's withdrawal per species: the rows on the Withdrawal tab, saved as a list."""
 
@@ -920,13 +916,18 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         self.url = reverse('farm:medicine_withdrawals', args=[self.slice.pk])
         self.cod = make_species('COD', 'Atlantic cod', 'Gadus morhua', saltwater=True)
 
+    def data(self, rows, initial=0):
+        """What the Withdrawal tab posts: its rows, and the medicine's version as stored now (a list saved on an outdated
+        record is refused)."""
+        return rows_data('withdrawals', rows, initial, record=self.slice)
+
     def rows(self):
         return list(self.slice.withdrawals.values_list('species__code', 'degree_days', 'days', 'safety_margin_pct',
                                                        'note'))
 
     def test_create_read_edit_delete(self):
         # Create: one for every species, two of their own, and a row left blank.
-        response = self.client.post(self.url, withdrawal_data([
+        response = self.client.post(self.url, self.data([
             {'species': '', 'degree_days': '150', 'days': '7', 'safety_margin_pct': '20', 'note': 'SPC 2024'},
             {'species': str(self.salmon.pk), 'degree_days': '', 'days': '10', 'safety_margin_pct': '', 'note': ''},
             {'species': str(self.trout.pk), 'degree_days': '0', 'days': '', 'safety_margin_pct': '12.5',
@@ -954,7 +955,7 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         self.assertContains(listing, 'SPC 2024')
         # Edit: a value changes, a margin is cleared, a species is changed; Delete: a row is removed.
         every, salmon, trout = self.slice.withdrawals.all()
-        self.client.post(self.url, withdrawal_data([
+        self.client.post(self.url, self.data([
             {'id': str(every.pk), 'species': '', 'degree_days': '', 'days': '14', 'safety_margin_pct': '',
              'note': 'SPC 2025'},
             {'id': str(salmon.pk), 'species': str(self.cod.pk), 'degree_days': '', 'days': '10',
@@ -971,13 +972,13 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         self.assertIn('Rainbow trout: 0 degree-days + 12.5 % safety margin = 0 degree-days (Vet, Nov 2026)', before)
         self.assertEqual(after, 'Every species: 14 days (SPC 2025); Atlantic cod: 10 days + 5 % safety margin = 11 days')
         # Delete them all: the medicine has no withdrawal recorded.
-        self.client.post(self.url, withdrawal_data([]))
+        self.client.post(self.url, self.data([]))
         self.assertEqual(self.rows(), [])
         self.assertContains(self.client.get(reverse('farm:medicine_list')), 'Not recorded')
 
     def test_the_rules_of_the_rows_on_their_fields(self):
         def post(*rows):
-            return self.client.post(self.url, withdrawal_data(list(rows)))
+            return self.client.post(self.url, self.data(list(rows)))
 
         every = {'species': '', 'degree_days': '', 'days': '3'}
         for row, field in (({'species': str(self.salmon.pk)}, 'degree_days'),                  # no value at all
@@ -1054,7 +1055,7 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         viewer = get_user_model().objects.create_user('kari', 'kari@example.com', 'x')
         viewer.groups.add(role('Medicine viewer', 'view_medicine'))
         self.client.force_login(viewer)
-        response = self.client.post(self.url, withdrawal_data([{'species': '', 'days': '3'}]))
+        response = self.client.post(self.url, self.data([{'species': '', 'days': '3'}]))
         self.assertEqual(response.status_code, 403)
         self.assertEqual(self.rows(), [])
 

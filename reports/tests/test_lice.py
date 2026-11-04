@@ -1,7 +1,6 @@
 """The weekly sea-lice report: the counts and the site's average, the cages that were due a count, the exceptions of
 lakselusforskriften § 6, the treatments with their substances and the answers of the person, the temperature, and the
 JSON as Mattilsynet's API takes it (validated against its OpenAPI)."""
-import json
 from datetime import date, datetime, time
 from decimal import Decimal
 from unittest import mock
@@ -45,8 +44,7 @@ class LiceTestCase(ReportTestCase):
         self.draft = self.report(Report.Kind.SEA_LICE, WEEK_44, site=self.sea)
         self.medicine = Medicine.objects.create(
             name='Salmosan', kind='lice', administration='bath', active_substance='azamethiphos',
-            lice_report_code='AZAMETHIPHOS', strength_value=Decimal(500), strength_unit='MILLIGRAM_PER_GRAM',
-            withdrawal_days=0)
+            lice_report_code='AZAMETHIPHOS', strength_value=Decimal(500), strength_unit='MILLIGRAM_PER_GRAM')
 
     def count(self, unit, month, number, fish=20, females=4, mobile=10, attached=20):
         return health.record_lice_count(self.user, unit=unit, day=day(month, number), fish_counted=fish,
@@ -317,7 +315,7 @@ class TreatmentTests(LiceTestCase):
 
     def test_a_medicine_without_a_substance_or_a_strength_and_a_treatment_without_an_amount_are_problems(self):
         other = Medicine.objects.create(name='Other', kind='antiparasitic', administration='bath',
-                                        active_substance='x', withdrawal_days=0)
+                                        active_substance='x')
         self.medicine = other
         self.treat([self.m1, self.m2], day(10, 26), day(10, 26), amount_value=None, amount_unit='')
         self.assertEqual(self.result().problems, [

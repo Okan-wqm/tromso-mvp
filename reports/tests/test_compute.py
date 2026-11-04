@@ -7,7 +7,7 @@ from django.test import SimpleTestCase
 
 from farm.feeding import services as feeding_services
 from farm.models import (
-    Batch, Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, HandlingRule, ProtocolAssignment, ProtocolBand,
+    Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, HandlingRule, ProtocolAssignment, ProtocolBand,
     Supplier,
 )
 from farm.models.handling import HandlingKind

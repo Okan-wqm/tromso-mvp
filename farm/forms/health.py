@@ -7,7 +7,6 @@ import uuid
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
@@ -17,7 +16,6 @@ from ..health.withdrawal import rules_text
 from ..models import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species, Supplier, Tank, Treatment
 from ..models.health import SAME_SPECIES_MESSAGE
 from ..models.handling import HandlingKind
-from ..models.site import zone_of
 from ..stock.dates import local_today, site_earliest, site_today
 from .stock import DATE, DECIMAL, NOTES, EventChoice, ServiceErrors, handling_ack_field
 

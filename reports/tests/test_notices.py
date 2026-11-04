@@ -5,7 +5,6 @@ times the health events kept into filed notices (reports migration 0005) both wa
 import hashlib
 import json
 from datetime import datetime, time, timezone as utc
-from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -24,7 +23,7 @@ from farm.tests.helpers import role
 from .. import compute
 from ..models import Report, ReportSnapshot
 from ..periods import OSLO
-from .helpers import REPORTER, ReportTestCase, day
+from .helpers import day
 from .test_pages import FILED_AT, ReportPagesTestCase, report_data
 
 

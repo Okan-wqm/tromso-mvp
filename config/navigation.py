@@ -148,6 +148,9 @@ WORKSPACES = [
                 Entry(_('Live values'), 'sensors:live', 'radio', 'sensors.view_reading'),
                 # What the ingest could not store, kept as evidence and counted.
                 Entry(_('Dead letters'), 'sensors:dead_letters', 'inbox', 'sensors.view_deadletter'),
+                # Alarms are shown, not sent: nobody is notified yet.
+                Entry(_('Alarm rules'), 'sensors:alarmrule_list', 'bell', 'sensors.view_alarmrule'),
+                Entry(_('Alarm events'), 'sensors:alarm_events', 'alert', 'sensors.view_alarmevent'),
             ]),
         ]),
         Section(_('Administration'), [

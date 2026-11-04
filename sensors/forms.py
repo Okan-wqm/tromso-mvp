@@ -17,7 +17,8 @@ from farm.models import Equipment, SamplingPoint, Site, System
 from farm.models.site import zone_of
 
 from . import quantities
-from .models import Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape, TimeUnit
+from .models import (AlarmRule, Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape,
+                     TimeUnit)
 
 DECIMAL = {'inputmode': 'decimal'}
 # A whole-second device time cannot tell apart two messages of one second, and the readings' key is (channel, time):
@@ -461,3 +462,30 @@ class BindingForm(TabbedForm):
         if value is not None and value > timezone.now():
             raise ValidationError(_('A binding cannot end in the future.'))
         return value
+
+
+ALARM_TABS = [('general', gettext_lazy('Alarm rule'), ['channel', 'quantity', 'kind', 'threshold', 'for_s', 'hysteresis',
+                                                        'severity', 'is_active'])]
+
+
+class AlarmRuleForm(TabbedForm):
+    """An alarm rule: on one channel or on every channel of a quantity. Shown on the Sensors pages, never sent."""
+
+    tabs = ALARM_TABS
+
+    class Meta:
+        model = AlarmRule
+        fields = tab_fields(ALARM_TABS)
+        localized_fields = ['threshold', 'hysteresis']
+        widgets = {'threshold': forms.TextInput(attrs=DECIMAL), 'hysteresis': forms.TextInput(attrs=DECIMAL)}
+        help_texts = {
+            'quantity': gettext_lazy('Instead of one channel: every active channel of this quantity.'),
+            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below.'),
+            'for_s': gettext_lazy('Above or below: every value of this time must be past the threshold. No fresh value: '
+                                  'this long past the channel’s freshness. A rate: the change over this time.'),
+            'hysteresis': gettext_lazy('An open alarm closes only once the value is back past the threshold by this much.'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['channel'].queryset = Channel.objects.select_related('device').order_by('device__code', 'code')

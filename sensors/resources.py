@@ -17,9 +17,9 @@ from core.crud import CreateView, Resource, RowList, done, render_page
 from farm.models.site import zone_of
 
 from . import bindings, credentials
-from .forms import (BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm, CredentialForm, DeviceForm,
-                    PayloadFormatForm)
-from .models import Binding, Channel, Connection, Credential, Device, PayloadFormat
+from .forms import (AlarmRuleForm, BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm,
+                    CredentialForm, DeviceForm, PayloadFormatForm)
+from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat
 
 
 def _count(model, link, **condition):
@@ -232,3 +232,18 @@ class BindingResource(Resource):
         if _uuid(channel):
             return objects.filter(channel_id=channel), {'channel': channel}
         return objects, {'channel': ''}
+
+
+class AlarmRuleResource(Resource):
+    model = AlarmRule
+    form_class = AlarmRuleForm
+    name, plural = _('alarm rule'), _('alarm rules')
+    url_prefix = 'sensors/alarm-rules'
+    search_fields = ['channel__code', 'quantity']
+    list_template = 'sensors/alarmrule_list.html'
+    icon = 'bell'
+    page_size = 100
+
+    @classmethod
+    def queryset(cls):
+        return super().queryset().select_related('channel__device')

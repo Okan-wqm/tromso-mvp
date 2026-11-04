@@ -223,7 +223,9 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_token.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py"
       ]
     },
@@ -9563,7 +9565,8 @@
         "tasks/tests/test_pages.py",
         "tasks/tests/test_read.py",
         "sensors/tests/__init__.py",
-        "sensors/tests/test_bindings.py"
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_read.py"
       ]
     },
     {
@@ -12993,7 +12996,9 @@
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
         "tasks/tests/__init__.py",
-        "sensors/tests/test_bindings.py"
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_history.py",
+        "sensors/tests/test_read.py"
       ]
     },
     {
@@ -23252,6 +23257,591 @@
     },
     {
       "app": "sensors",
+      "model": "AlarmEvent",
+      "table": "sensors_alarm_event",
+      "description": "A time a rule held for a channel: when it opened and closed, the furthest value it reached, and who acknowledged it.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "rule_id",
+          "field": "rule",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sensors_alarm_rule",
+            "model": "sensors.AlarmRule",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "written by manage.py check_sensors from the channels’ state"
+        },
+        {
+          "name": "channel_no",
+          "field": "channel_no",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "written by manage.py check_sensors from the channels’ state"
+        },
+        {
+          "name": "opened_at",
+          "field": "opened_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "written by manage.py check_sensors from the channels’ state"
+        },
+        {
+          "name": "closed_at",
+          "field": "closed_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "written by manage.py check_sensors from the channels’ state"
+        },
+        {
+          "name": "peak",
+          "field": "peak",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "written by manage.py check_sensors from the channels’ state"
+        },
+        {
+          "name": "acknowledged_by_id",
+          "field": "acknowledged_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who acknowledged it"
+        },
+        {
+          "name": "acknowledged_at",
+          "field": "acknowledged_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "when it was acknowledged"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_sensors_alarm_event_open",
+          "kind": "unique",
+          "fields": [
+            "rule",
+            "channel_no"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_sensors_alarm_event_period",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by manage.py check_sensors when a rule holds"
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "sensors.views.alarm_event_acknowledge",
+              "url_names": [
+                "sensors:alarm_event_acknowledge"
+              ],
+              "routes": [
+                "/sensors/alarm-events/<int:pk>/acknowledge/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "history of the alarms; deleted with its rule only"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "sensors.views.alarm_events",
+              "url_names": [
+                "sensors:alarm_events"
+              ],
+              "routes": [
+                "/sensors/alarm-events/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.home",
+              "url_names": [
+                "sensors:home"
+              ],
+              "routes": [
+                "/sensors/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/test_alarms.py"
+      ]
+    },
+    {
+      "app": "sensors",
+      "model": "AlarmRule",
+      "table": "sensors_alarm_rule",
+      "description": "When a channel needs a look: no fresh value, its device offline, above or below a threshold for a time, or a change faster than a rate over a time.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "channel_id",
+          "field": "channel",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sensors_channel",
+            "model": "sensors.Channel",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "quantity",
+          "field": "quantity",
+          "type": "varchar(30)",
+          "null": false,
+          "choices": [
+            "temperature_c",
+            "oxygen_mg_l",
+            "oxygen_saturation_pct",
+            "ph",
+            "alkalinity_mg_l",
+            "co2_mg_l",
+            "tan_mg_l",
+            "nitrite_n_mg_l",
+            "nitrate_n_mg_l",
+            "tgp_pct",
+            "salinity_ppt",
+            "turbidity_ntu",
+            "conductivity_us_cm",
+            "orp_mv",
+            "flow_m3_h",
+            "level_mm",
+            "pressure_bar",
+            "power_kw",
+            "current_a"
+          ],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "no_data",
+            "device_offline",
+            "high",
+            "low",
+            "rate"
+          ],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "threshold",
+          "field": "threshold",
+          "type": "double precision",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "for_s",
+          "field": "for_s",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "hysteresis",
+          "field": "hysteresis",
+          "type": "double precision",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "severity",
+          "field": "severity",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "warning",
+            "critical"
+          ],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "is_active",
+          "field": "is_active",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_sensors_alarm_rule_scope",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_alarm_rule_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_alarm_rule_severity",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_alarm_rule_quantity",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_alarm_rule_threshold",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_alarm_rule_numbers",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm rules tab",
+              "url_names": [
+                "sensors:alarmrule_create"
+              ],
+              "routes": [
+                "/sensors/alarm-rules/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm rules tab",
+              "url_names": [
+                "sensors:alarmrule_edit"
+              ],
+              "routes": [
+                "/sensors/alarm-rules/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm rules tab",
+              "url_names": [
+                "sensors:alarmrule_delete"
+              ],
+              "routes": [
+                "/sensors/alarm-rules/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm rules tab",
+              "url_names": [
+                "sensors:alarmrule_list"
+              ],
+              "routes": [
+                "/sensors/alarm-rules/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "AlarmRuleForm",
+          "module": "sensors.forms",
+          "fields": {
+            "channel": "Alarm rule",
+            "quantity": "Alarm rule",
+            "kind": "Alarm rule",
+            "threshold": "Alarm rule",
+            "for_s": "Alarm rule",
+            "hysteresis": "Alarm rule",
+            "severity": "Alarm rule",
+            "is_active": "Alarm rule",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Sensors",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/test_alarms.py"
+      ]
+    },
+    {
+      "app": "sensors",
       "model": "Binding",
       "table": "sensors_binding",
       "description": "Where a channel's values belong over a time range: a sampling point or a system for a water value (a system's own water as a whole, owner rule A1), a piece of equipment or a system for a process value.",
@@ -23625,7 +24215,8 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "sensors/tests/test_bindings.py"
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_history.py"
       ]
     },
     {
@@ -24720,8 +25311,12 @@
         "left_out": false
       },
       "tests": [
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
-        "sensors/tests/test_contract.py"
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_history.py",
+        "sensors/tests/test_operations.py",
+        "sensors/tests/test_read.py"
       ]
     },
     {
@@ -25544,6 +26139,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_schema.py"
       ]
@@ -25774,9 +26370,20 @@
           "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
         },
         "edit": {
-          "status": "none",
-          "paths": [],
-          "why": "the message is evidence: only its resolution is set, by a person"
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "sensors.views.dead_letter_resolve",
+              "url_names": [
+                "sensors:dead_letter_resolve"
+              ],
+              "routes": [
+                "/sensors/dead-letters/<int:pk>/resolve/"
+              ]
+            }
+          ],
+          "why": ""
         },
         "delete": {
           "status": "none",
@@ -25784,12 +26391,33 @@
           "why": "pruned after 90 days by manage.py sensors_housekeeping"
         },
         "read": {
-          "status": "none",
-          "paths": [],
-          "why": "read by the Sensors overview"
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "sensors.views.dead_letters",
+              "url_names": [
+                "sensors:dead_letters"
+              ],
+              "routes": [
+                "/sensors/dead-letters/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.home",
+              "url_names": [
+                "sensors:home"
+              ],
+              "routes": [
+                "/sensors/"
+              ]
+            }
+          ],
+          "why": ""
         }
       },
-      "note": "",
+      "note": "The message is evidence: only its resolution is set, by a person (logged).",
       "forms": [],
       "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
       "soft_delete": false,
@@ -25805,7 +26433,9 @@
         "left_out": false
       },
       "tests": [
-        "sensors/tests/test_contract.py"
+        "core/tests_workspaces.py",
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_operations.py"
       ]
     },
     {
@@ -26287,7 +26917,9 @@
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_contract.py",
+        "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_read.py",
         "sensors/tests/test_schema.py"
       ]
     },
@@ -26412,7 +27044,10 @@
         "left_out": false
       },
       "tests": [
-        "sensors/tests/test_contract.py"
+        "sensors/tests/test_alarms.py",
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_operations.py",
+        "sensors/tests/test_read.py"
       ]
     },
     {
@@ -26513,9 +27148,20 @@
           "why": "written by the ingest service (sensors/CONTRACT.md), never by a page"
         },
         "read": {
-          "status": "none",
-          "paths": [],
-          "why": "read by the Sensors overview"
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "sensors.views.home",
+              "url_names": [
+                "sensors:home"
+              ],
+              "routes": [
+                "/sensors/"
+              ]
+            }
+          ],
+          "why": ""
         }
       },
       "note": "",
@@ -26532,7 +27178,8 @@
         "left_out": false
       },
       "tests": [
-        "sensors/tests/test_contract.py"
+        "sensors/tests/test_contract.py",
+        "sensors/tests/test_operations.py"
       ]
     },
     {
@@ -27179,6 +27826,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/tests_workspaces.py",
         "knowledge/tests/test_extraction.py",
         "monitoring/tests/test_read.py",
         "sensors/tests/test_timescale.py"

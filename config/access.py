@@ -82,6 +82,9 @@ AREAS = [
     Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
     # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
     Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
+    # Alarms are shown, not sent. Rules: read, create, edit, delete. Events: Read is their page, Edit acknowledges one.
+    Area(_('Alarm rules'), 'sensors.AlarmRule'),
+    Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view', 'change')),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),

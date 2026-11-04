@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import F
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -26,8 +27,8 @@ from farm.models import Equipment, SamplingPoint, System, Tank
 
 from . import chart, credentials, quantities, read, trail
 from .forms import on_site_clock
-from .models import (Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason, Device,
-                     IngestStatus)
+from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason,
+                     Device, IngestStatus)
 from .resources import (ChannelResource, ConnectionResource, CredentialResource, DeviceResource, PayloadFormatResource,
                         secret_page)
 
@@ -303,7 +304,37 @@ def state_tiles(user, now):
                     if not state.fresh)
         tiles.append({'label': _('Channels without a fresh value'), 'count': stale,
                       'url': reverse('sensors:channel_list')})
+    if user.has_perm('sensors.view_alarmevent'):
+        tiles.append({'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
+                      'count': AlarmEvent.objects.filter(closed_at__isnull=True).count()})
     if user.has_perm('sensors.view_deadletter'):
         tiles.append({'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
                       'count': DeadLetter.objects.filter(last_at__gte=now - timedelta(days=1)).count()})
     return tiles
+
+
+# ---- alarm events ----------------------------------------------------------------------------------------------
+@permission_required('sensors.view_alarmevent', raise_exception=True)
+def alarm_events(request):
+    """Sensors › Operations › Alarm events: the times a rule held, the open ones first. Shown, never sent."""
+    events = AlarmEvent.objects.select_related('rule__channel__device', 'acknowledged_by').order_by(
+        F('closed_at').desc(nulls_first=True), '-opened_at')
+    page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
+    return render_page(request, 'sensors/alarm_events.html', _context(
+        'sensors:alarm_events', page=page, events=page.object_list,
+        can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))
+
+
+@require_POST
+@permission_required('sensors.change_alarmevent', raise_exception=True)
+def alarm_event_acknowledge(request, pk):
+    """A person says they saw an alarm event (logged); it stays open until its rule no longer holds."""
+    with transaction.atomic():
+        event = get_object_or_404(AlarmEvent.objects.select_for_update(), pk=pk)
+        if event.acknowledged_at is None:
+            event.acknowledged_at, event.acknowledged_by = timezone.now(), request.user
+            event.save(update_fields=['acknowledged_at', 'acknowledged_by'])
+            with audit.source_language():
+                audit.record(request.user, AuditLog.Action.UPDATE, event, {'Acknowledged': [None, 'yes']})
+    messages.success(request, _('Alarm event acknowledged.'))
+    return redirect(reverse('sensors:alarm_events'))

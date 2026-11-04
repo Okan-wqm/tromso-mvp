@@ -5,6 +5,7 @@ the read page, and delete through the delete plan (a draft only: the model says 
 experiment."""
 from django.contrib import messages
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.db import transaction
 from django.db.models import Count, Q
 from django.urls import path, reverse
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
@@ -15,7 +16,7 @@ from farm.models import Site, Species, System, Tank
 
 from . import design as design_module, read, services
 from .forms import (
-    ExperimentForm, MemberFormSet, StartForm, design_forms, design_rows, place_rows, places_forms,
+    CopyForm, ExperimentForm, MemberFormSet, StartForm, design_forms, design_rows, place_rows, places_forms,
 )
 from .models import AllocationMethod, Experiment, Member, Status
 
@@ -91,6 +92,7 @@ class ExperimentResource(Resource):
     def detail_extras(cls, request, experiment):
         return {'team': TeamList.rows(experiment),
                 'start_url': reverse('experiments:experiment_start', args=[experiment.pk]),
+                'copy_url': reverse('experiments:experiment_copy', args=[experiment.pk]),
                 'can_start': request.user.has_perm(cls.perm('change')) and experiment.status == Status.DRAFT
                 and not experiment.is_template}
 
@@ -118,7 +120,8 @@ class ExperimentResource(Resource):
                 'cells': read.cells(experiment) if frozen else [],
                 'allocation': allocation_banner(experiment), 'error_df': read.error_df(experiment),
                 'places_url': reverse('experiments:experiment_places', args=[experiment.pk]),
-                'start_url': reverse('experiments:experiment_start', args=[experiment.pk])}
+                'start_url': reverse('experiments:experiment_start', args=[experiment.pk]),
+                'copy_url': reverse('experiments:experiment_copy', args=[experiment.pk])}
 
     @classmethod
     def urls(cls):
@@ -126,7 +129,8 @@ class ExperimentResource(Resource):
         return [*super().urls(),
                 path(f'{p}/<uuid:pk>/design/', ExperimentDesignView.as_view(resource=cls), name='experiment_design'),
                 path(f'{p}/<uuid:pk>/places/', ExperimentPlacesView.as_view(resource=cls), name='experiment_places'),
-                path(f'{p}/<uuid:pk>/start/', ExperimentStartView.as_view(resource=cls), name='experiment_start')]
+                path(f'{p}/<uuid:pk>/start/', ExperimentStartView.as_view(resource=cls), name='experiment_start'),
+                path(f'{p}/<uuid:pk>/copy/', ExperimentCopyView.as_view(resource=cls), name='experiment_copy')]
 
 
 def allocation_banner(experiment):
@@ -262,3 +266,45 @@ class ExperimentStartView(ResourceView):
                 messages.success(request, gettext('“%(experiment)s” started.') % {'experiment': experiment})
                 return done(request, reverse(r.url_name('edit'), args=[pk]), stay=True)
         return self.page(form, experiment, status=422)
+
+
+class ExperimentCopyView(ResourceView):
+    """The copy dialog (the add permission: Create creates and copies): a new draft experiment, or a template, with the design
+    of this one, never its tanks, allocation or team; the copier leads it (experiments.services.copy)."""
+
+    action = 'add'
+    template = 'experiments/experiment_copy.html'
+
+    def page(self, form, source, status=200):
+        response = render_page(self.request, self.template, self.context(
+            form=form, object=source, back_url=reverse(self.resource.url_name('list'))))
+        response.status_code = status
+        return response
+
+    def get(self, request, pk):
+        source = self.get_object(pk)
+        kind = CopyForm.TEMPLATE if request.GET.get('as') == CopyForm.TEMPLATE else CopyForm.EXPERIMENT
+        return self.page(CopyForm(initial={'name': gettext('%(name)s (copy)') % {'name': source.name}, 'kind': kind}),
+                         source)
+
+    def post(self, request, pk):
+        r = self.resource
+        source = self.get_object(pk)
+        form = CopyForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                with transaction.atomic():
+                    new = services.copy(request.user, source, data['name'], data['starts_on'],
+                                        data['kind'] == CopyForm.TEMPLATE, data['token'])
+                    if not new.members.exists():            # a form sent twice finds the copy it made, with its lead
+                        TeamList.save(request.user, new, [{'user': request.user, 'role': Member.Role.LEAD}],
+                                      r.entity_type())
+            except ValidationError as error:
+                for message in error.messages:
+                    form.add_error(None, message)
+            else:
+                messages.success(request, gettext('Copied as “%(copy)s”: a draft, to change and start.') % {
+                    'copy': new})
+                return done(request, reverse(r.url_name('edit'), args=[new.pk]), stay=True)
+        return self.page(form, source, status=422)

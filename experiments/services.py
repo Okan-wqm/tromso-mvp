@@ -8,7 +8,8 @@ nothing is written.
 - `save_design`: the factors, groups, levels and replicates of a draft, saved as a whole, the grid's rows matched to the
   stored ones by their id (a renamed group keeps its replicates and the tanks placed in them);
 - `save_places`, `randomise`, `move_span`: the tanks of a draft's replicates and the days they are booked to them;
-- `start`: fixes the design and applies the diet through the farm's own assignments."""
+- `start`: fixes the design and applies the diet through the farm's own assignments;
+- `copy`: a new draft (or a template) with the design of another, never its tanks, allocation or team."""
 import itertools
 import uuid
 from dataclasses import dataclass, field
@@ -21,18 +22,20 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit, softdelete
+from core.codes import next_code
 from core.models import AuditLog
 from farm.feeding import assignments
 from farm.handling import check
 from farm.models import Batch, FeedingProtocol, Tank
 from farm.models.feeding_protocol import ProtocolStatus
+from farm.stock.dates import site_today
 from farm.stock.read import batches_ever_in
 from farm.stock.services import locked as stock_locked
 
 from . import allocation, read
 from . import design as design_module
 from .models import (
-    TRANSITIONS, AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level,
+    DETAIL_FIELDS, TRANSITIONS, AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level,
     Replicate, ReplicateUnit, Status,
 )
 
@@ -672,3 +675,58 @@ def start(user, experiment, seen, version):
                 changes[str(ACKNOWLEDGED)] = [None, '\n'.join(warned)]
             audit.record(user, AuditLog.Action.UPDATE, locked, changes)
         return locked
+
+
+# ---- copying ------------------------------------------------------------------------------------
+def copy(user, source, name, starts_on=None, as_template=False, token=None):
+    """A new draft with the design of `source` (an experiment of any status, or a template): the factors, the levels (the
+    same feeding-protocol rows, so a repeat of a started experiment feeds identically: an assigned protocol is frozen),
+    the groups with their levels and as many empty replicates as they had; never the placements, the allocation or its
+    seed, or the team, but the copier, who leads it. `as_template` makes a design to copy (no day 0); else `starts_on` is
+    the new day 0, which may be left for later. `copied_from` says where it came from. The number comes from
+    core.codes.next_code inside the transaction; a form sent twice (`token`) makes one copy. Logged as created, with
+    its design, and the copier's team row as any other."""
+    with transaction.atomic():
+        if token is not None:
+            sent = Experiment.all_objects.filter(entry_key=token).first()
+            if sent is not None:
+                return sent
+        name = name.strip()
+        if not name:
+            raise _refused(_('The copy needs a name.'))
+        if len(name) > Experiment._meta.get_field('name').max_length:
+            raise _refused(_('The name of the copy is too long.'))
+        source = Experiment.all_objects.get(pk=source.pk)
+        if source.is_deleted:
+            raise _refused(_('This experiment was deleted meanwhile.'))
+        new = Experiment(
+            code=next_code(Experiment, f'E-{site_today(source.site).year}-'), name=name, is_template=as_template,
+            site=source.site, species=source.species, hypothesis=source.hypothesis,
+            primary_endpoint=source.primary_endpoint, starts_on=None if as_template else starts_on,
+            duration_days=source.duration_days, notes=source.notes, copied_from=source, entry_key=token,
+            created_by=user, updated_by=user)
+        new.full_clean(exclude=['code', 'entry_key'])
+        new.save()
+        factors, levels = {}, {}
+        for factor in Factor.objects.filter(experiment=source):
+            factors[factor.pk] = Factor.objects.create(
+                experiment=new, name=factor.name, kind=factor.kind, unit=factor.unit, position=factor.position,
+                created_by=user, updated_by=user)
+            for level in Level.objects.filter(factor=factor):
+                levels[level.pk] = Level.objects.create(
+                    factor=factors[factor.pk], label=level.label, protocol=level.protocol, value=level.value,
+                    created_by=user, updated_by=user)
+        for group in ExperimentGroup.objects.filter(experiment=source):
+            made = ExperimentGroup.objects.create(experiment=new, name=group.name, role=group.role,
+                                                  position=group.position, created_by=user, updated_by=user)
+            for replicate in Replicate.objects.filter(group=group):
+                Replicate.objects.create(group=made, number=replicate.number, created_by=user, updated_by=user)
+            GroupLevel.objects.bulk_create([
+                GroupLevel(experiment=new, group=made, factor=factors[row.factor_id], level=levels[row.level_id])
+                for row in GroupLevel.objects.filter(group=group)
+                if row.factor_id in factors and row.level_id in levels])
+        with audit.source_language():
+            values = audit.snapshot(new, [*DETAIL_FIELDS, 'copied_from'])
+            values[str(DESIGN)] = describe(new)
+            audit.record_create(user, new, values)
+        return new

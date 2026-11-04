@@ -613,6 +613,10 @@ msgstr "%(medicine)s, %(method)s fra %(start)s til %(end)s: tilbakeholdelsestid 
 msgid "%(minutes)s min"
 msgstr "%(minutes)s min"
 
+#, python-format
+msgid "%(name)s (copy)"
+msgstr "%(name)s (kopi)"
+
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
 #, python-format
@@ -1174,6 +1178,9 @@ msgstr "En melding har høyst %(count)d tegn."
 msgid "A monthly task repeats on a day of the month; the others on none."
 msgstr "En månedlig oppgave gjentas på en dag i måneden; de andre på ingen."
 
+msgid "A new experiment"
+msgstr "Et nytt forsøk"
+
 msgid "A new protocol is a draft: fill in its feeding table, then set it active."
 msgstr "En ny protokoll er et utkast: fyll ut fôringstabellen, og gjør den deretter aktiv."
 
@@ -1395,6 +1402,9 @@ msgstr "En temperaturkolonne har høyst én desimal: %(value)s."
 #, python-format
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
+
+msgid "A template"
+msgstr "En mal"
 
 msgid "A template has no tanks: it is a design to copy."
 msgstr "En mal har ingen kar: den er et design som skal kopieres."
@@ -2922,6 +2932,10 @@ msgid "Copepodids and chalimus, in total."
 msgstr "Kopepoditter og chalimus, totalt."
 
 #, python-format
+msgid "Copied as “%(copy)s”: a draft, to change and start."
+msgstr "Kopiert som «%(copy)s»: et utkast som kan endres og startes."
+
+#, python-format
 msgid "Copied as “%(protocol)s”, a draft: change it, set it active and assign it."
 msgstr "Kopiert som «%(protocol)s», et utkast: endre den, gjør den aktiv og tildel den."
 
@@ -2930,6 +2944,19 @@ msgstr "Kopiert fra"
 
 msgid "Copper alloy"
 msgstr "Kobberlegering"
+
+msgid "Copy"
+msgstr "Kopier"
+
+#, python-format
+msgid "Copy %(experiment)s"
+msgstr "Kopier %(experiment)s"
+
+msgid "Copy as"
+msgstr "Kopier som"
+
+msgid "Copy as a new experiment"
+msgstr "Kopier som nytt forsøk"
 
 msgid "Corona discharge"
 msgstr "Koronautladning"
@@ -3118,6 +3145,9 @@ msgstr ""
 
 msgid "Day 0 is not set."
 msgstr "Dag 0 er ikke satt."
+
+msgid "Day 0 of the new experiment, which can be set later. A template has none."
+msgstr "Dag 0 i det nye forsøket, som kan settes senere. En mal har ingen."
 
 msgid ""
 "Day 0, the baseline weighing, on the site’s clock. The last day, the final weighing, is this many"
@@ -7147,6 +7177,9 @@ msgstr "Lørdag"
 msgid "Save %(name)s"
 msgstr "Lagre %(name)s"
 
+msgid "Save as a template"
+msgstr "Lagre som mal"
+
 msgid "Save calibrations"
 msgstr "Lagre kalibreringer"
 
@@ -8216,6 +8249,20 @@ msgstr ""
 msgid "The company that runs it: a supplier of slaughter and processing (Purchasing › Suppliers)."
 msgstr "Selskapet som driver det: en leverandør av slakting og foredling (Innkjøp › Leverandører)."
 
+msgid ""
+"The copy is a draft with the same design: the factors and their levels (the same feeding "
+"protocols, so a repeat feeds identically), the groups, the replicates as empty places, the "
+"hypothesis and the duration. It has no tanks, no allocation and no team but you: place the tanks "
+"again, and start it when it is ready."
+msgstr ""
+"Kopien er et utkast med samme design: faktorene og nivåene deres (de samme fôringsprotokollene, "
+"så en gjentakelse fôrer likt), gruppene, replikatene som tomme plasser, hypotesen og varigheten. "
+"Den har ingen kar, ingen fordeling og ikke noe team utenom deg: plasser karene på nytt, og start "
+"den når den er klar."
+
+msgid "The copy needs a name."
+msgstr "Kopien trenger et navn."
+
 msgid "The criticality is from 1 to 5."
 msgstr "Kritikaliteten er fra 1 til 5."
 
@@ -8546,6 +8593,9 @@ msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller ko
 
 msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Navnet på selskapets eget språk, f.eks. Laks."
+
+msgid "The name of the copy is too long."
+msgstr "Navnet på kopien er for langt."
 
 #, python-format
 msgid "The next meal on the Meal board: %(kilos)s, filled in below."

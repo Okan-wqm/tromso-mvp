@@ -1,6 +1,7 @@
 """The forms of Research › Experiments: an experiment's details (a tab of core.crud; its design and its places are grids
 of their own, saved as wholes) and its team (a list of rows saved as a whole, core.crud.RowList)."""
 import secrets
+import uuid
 
 from django import forms
 from django.contrib.auth import get_user_model
@@ -19,10 +20,9 @@ from farm.stock.services import STOCKABLE_SPECIES
 
 from . import read, services
 from .design import load
-from .models import Experiment, FactorKind, GroupRole, Level, Member, Replicate, Status
+from .models import DETAIL_FIELDS, Experiment, FactorKind, GroupRole, Level, Member, Replicate, Status
 
-DETAILS_TABS = [('details', _('Details'), ['name', 'species', 'site', 'hypothesis', 'primary_endpoint', 'starts_on',
-                                           'duration_days', 'notes'])]
+DETAILS_TABS = [('details', _('Details'), DETAIL_FIELDS)]
 # What a started experiment fixes (the database refuses a change too: migration 0002).
 FIXED_WHEN_STARTED = ('hypothesis', 'primary_endpoint', 'starts_on', 'duration_days')
 # A trial uses a species the farm grows or tries out (STOCKABLE_SPECIES: the batch's own rule).
@@ -514,3 +514,18 @@ class StartForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.assessment = assessment
         self.fields['start_ack'].widget.fingerprint = assessment.fingerprint if assessment else ''
+
+
+# ---- copying ------------------------------------------------------------------------------------------------------
+class CopyForm(forms.Form):
+    """The copy dialog: a name, whether the copy is a new experiment or a template, and the new day 0. A hidden token makes
+    a form sent twice one copy."""
+
+    EXPERIMENT, TEMPLATE = 'experiment', 'template'
+
+    token = forms.UUIDField(widget=forms.HiddenInput, initial=uuid.uuid4)
+    name = forms.CharField(label=_('Name'), max_length=150)
+    kind = forms.ChoiceField(label=_('Copy as'), widget=forms.RadioSelect, initial=EXPERIMENT,
+                             choices=[(EXPERIMENT, _('A new experiment')), (TEMPLATE, _('A template'))])
+    starts_on = forms.DateField(label=_('Starts on'), required=False, widget=DATE,
+                                help_text=_('Day 0 of the new experiment, which can be set later. A template has none.'))

@@ -1757,6 +1757,14 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   with no link column on a farm table. The status goes draft to running through `TRANSITIONS`, and one row on the experiment
   says "Status: Draft → Running" with the warnings acknowledged, in English. A feeding recorded while it starts waits for the tank
   (a test races the two), and two starts at once give one winner and one assignment row each.
+- **Copy and templates** (the dialog `<id>/copy/`, **Copy as a new experiment** and **Save as a template** on the read page and the
+  Design tab; the add permission: Create creates and copies; `services.copy`). A copy is a new draft with the design of an
+  experiment of any status, or of a template: the factors, their levels (the same feeding-protocol rows, so a repeat of a started
+  experiment feeds identically, an assigned protocol being frozen), the groups with their levels and the replicates as empty
+  places, the hypothesis, endpoint, duration and notes; never the placements, the allocation or its seed, or the team, but the
+  copier, who leads it. `copied_from` says where it came from (and outlives a deleted source). A template is a design without a
+  day 0 (the list's Templates view); a copy of a template is an experiment. The number is the next one (never reused), a form
+  sent twice makes one copy, and the new experiment is logged as created with its design and its source.
 - **The team** is a list saved as a whole (`RowList`, logged on the experiment as "Team"): a person and their part,
   exactly one lead; only people who can read Experiments are offered, and one kept from before stays in the list.
 - **The read page** (`<id>/view/`) shows the details and the team to everyone who may read the tab.
@@ -1766,7 +1774,7 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   A protocol a level names, a tank or a department a placement names, and a site or species an experiment names cannot
   be deleted while it does.
 
-**Who may do what**: the area Experiments (Production · Research): Read the list and the read pages, Create makes an
+**Who may do what**: the area Experiments (Production · Research): Read the list and the read pages, Create makes and copies an
 experiment, Edit changes it, saves its design, its places and its team, and starts it, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
 student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
@@ -2378,7 +2386,7 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
-| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/team/` saves the team, `<id>/delete/` |
+| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/copy/` the copy dialog, `<id>/team/` saves the team, `<id>/delete/` |
 | `/messages/` | Communication › Messages: the person's conversations |
 | `/messages/<id>/` | A conversation (`?before=<message>`: the messages before one); `post/` sends, `new/?after=<message>` is its poll |
 | `/messages/new/`, `/messages/new-channel/` | New message (a direct conversation), New channel |

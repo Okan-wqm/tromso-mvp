@@ -35,6 +35,8 @@ from .variables import ENDPOINTS, Endpoint
 MAX_DURATION_DAYS = 1095
 MAX_REPLICATE_NUMBER = 99
 CODE_PATTERN = r'^E-[0-9]{4}-[0-9]{3,}$'
+# The fields of an experiment's Details tab, which the activity log shows of a new one.
+DETAIL_FIELDS = ['name', 'species', 'site', 'hypothesis', 'primary_endpoint', 'starts_on', 'duration_days', 'notes']
 
 
 class Status(models.TextChoices):

@@ -614,6 +614,10 @@ msgstr "%(medicine)s, %(method)s, %(start)s – %(end)s: bekleme süresi %(rule)
 msgid "%(minutes)s min"
 msgstr "%(minutes)s dk"
 
+#, python-format
+msgid "%(name)s (copy)"
+msgstr "%(name)s (kopya)"
+
 #. Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the
 #. record; %(reasons)s are sentences saying what is in the way.
 #, python-format
@@ -1176,6 +1180,9 @@ msgstr "Bir mesaj en fazla %(count)d karakter olabilir."
 msgid "A monthly task repeats on a day of the month; the others on none."
 msgstr "Aylık bir görev ayın bir gününde yinelenir; diğerleri hiçbirinde."
 
+msgid "A new experiment"
+msgstr "Yeni bir deney"
+
 msgid "A new protocol is a draft: fill in its feeding table, then set it active."
 msgstr "Yeni bir protokol taslaktır: yemleme tablosunu doldurun, ardından aktif yapın."
 
@@ -1396,6 +1403,9 @@ msgstr "Bir sıcaklık sütununda en fazla bir ondalık basamak olabilir: %(valu
 #, python-format
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "Bir sıcaklık sütunu %(low)s ile %(high)s °C arasındadır."
+
+msgid "A template"
+msgstr "Bir şablon"
 
 msgid "A template has no tanks: it is a design to copy."
 msgstr "Şablonun tankı yoktur: kopyalanacak bir tasarımdır."
@@ -2924,6 +2934,10 @@ msgid "Copepodids and chalimus, in total."
 msgstr "Kopepoditler ve chalimuslar, toplam."
 
 #, python-format
+msgid "Copied as “%(copy)s”: a draft, to change and start."
+msgstr "“%(copy)s” olarak kopyalandı: değiştirilecek ve başlatılacak bir taslak."
+
+#, python-format
 msgid "Copied as “%(protocol)s”, a draft: change it, set it active and assign it."
 msgstr "“%(protocol)s” adıyla taslak olarak kopyalandı: değiştirin, aktif yapın ve atayın."
 
@@ -2932,6 +2946,19 @@ msgstr "Kopyalandığı deney"
 
 msgid "Copper alloy"
 msgstr "Bakır alaşımı"
+
+msgid "Copy"
+msgstr "Kopyala"
+
+#, python-format
+msgid "Copy %(experiment)s"
+msgstr "%(experiment)s deneyini kopyala"
+
+msgid "Copy as"
+msgstr "Şu olarak kopyala"
+
+msgid "Copy as a new experiment"
+msgstr "Yeni deney olarak kopyala"
 
 msgid "Corona discharge"
 msgstr "Korona deşarjı"
@@ -3120,6 +3147,9 @@ msgstr ""
 
 msgid "Day 0 is not set."
 msgstr "0. gün belirlenmedi."
+
+msgid "Day 0 of the new experiment, which can be set later. A template has none."
+msgstr "Yeni deneyin 0. günü, sonra da belirlenebilir. Şablonun 0. günü yoktur."
 
 msgid ""
 "Day 0, the baseline weighing, on the site’s clock. The last day, the final weighing, is this many"
@@ -7144,6 +7174,9 @@ msgstr "Cumartesi"
 msgid "Save %(name)s"
 msgstr "Kaydet: %(name)s"
 
+msgid "Save as a template"
+msgstr "Şablon olarak kaydet"
+
 msgid "Save calibrations"
 msgstr "Kalibrasyonları kaydet"
 
@@ -8218,6 +8251,20 @@ msgstr ""
 msgid "The company that runs it: a supplier of slaughter and processing (Purchasing › Suppliers)."
 msgstr "Onu işleten şirket: bir kesim ve işleme tedarikçisi (Satın alma › Tedarikçiler)."
 
+msgid ""
+"The copy is a draft with the same design: the factors and their levels (the same feeding "
+"protocols, so a repeat feeds identically), the groups, the replicates as empty places, the "
+"hypothesis and the duration. It has no tanks, no allocation and no team but you: place the tanks "
+"again, and start it when it is ready."
+msgstr ""
+"Kopya, aynı tasarıma sahip bir taslaktır: faktörler ve düzeyleri (aynı yemleme protokolleri, "
+"böylece tekrar aynı şekilde besler), gruplar, boş yerler olarak tekrarlar, hipotez ve süre. "
+"Tankı, dağıtımı ve sizden başka ekibi yoktur: tankları yeniden yerleştirin ve hazır olduğunda "
+"başlatın."
+
+msgid "The copy needs a name."
+msgstr "Kopyanın bir adı olmalı."
+
 msgid "The criticality is from 1 to 5."
 msgstr "Kritiklik 1 ile 5 arasındadır."
 
@@ -8544,6 +8591,9 @@ msgstr "Birimin m³ su başına tutabileceği en fazla balık: türün refah sı
 
 msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Çiftliğin kendi dilindeki adı, örn. Laks."
+
+msgid "The name of the copy is too long."
+msgstr "Kopyanın adı çok uzun."
 
 #, python-format
 msgid "The next meal on the Meal board: %(kilos)s, filled in below."

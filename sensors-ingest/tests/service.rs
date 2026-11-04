@@ -136,7 +136,14 @@ async fn messages_are_acknowledged_only_after_their_batch_is_committed_and_in_or
     let (generation, cfg) = h.ready().await;
     assert_eq!(cfg.channel_nos(), vec![ch]);
     for i in 0..250u64 {
-        h.send(generation, i, "zz/plc", body(t0() + Duration::seconds(i as i64), i as f64), t0()).await;
+        h.send(
+            generation,
+            i,
+            "zz/plc",
+            body(t0() + Duration::seconds(i as i64), i as f64),
+            t0() + Duration::seconds(i as i64),
+        )
+        .await;
     }
     h.wait_acked(250).await;
     let log = h.stop().await;
@@ -157,15 +164,17 @@ async fn a_database_failure_acknowledges_nothing_and_asks_for_redelivery() {
     let mut h = start(settings(&url), fx.connection);
     let (g1, _) = h.ready().await;
     for i in 0..10u64 {
-        h.send(g1, i, "zz/plc", body(t0() + Duration::seconds(i as i64), i as f64), t0()).await;
+        h.send(g1, i, "zz/plc", body(t0() + Duration::seconds(i as i64), i as f64), t0() + Duration::seconds(i as i64))
+            .await;
     }
     h.wait_acked(10).await;
     // the writer's session is killed (a database restart, a network cut)
-    a.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'sensors-ingest' AND datname = current_database()", &[])
+    a.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'sensors-ingest' AND datname = current_database() AND pid <> pg_backend_pid()", &[])
         .await
         .unwrap();
     for i in 10..20u64 {
-        h.send(g1, i, "zz/plc", body(t0() + Duration::seconds(i as i64), i as f64), t0()).await;
+        h.send(g1, i, "zz/plc", body(t0() + Duration::seconds(i as i64), i as f64), t0() + Duration::seconds(i as i64))
+            .await;
     }
     let mut asked = false;
     let g2 = loop {
@@ -181,7 +190,14 @@ async fn a_database_failure_acknowledges_nothing_and_asks_for_redelivery() {
     assert_eq!(h.log.ids(), (0..10).collect::<Vec<_>>(), "nothing after the failure was acknowledged");
     // the broker redelivers 10..20 on the new sessions
     for i in 10..20u64 {
-        h.send(g2, 100 + i, "zz/plc", body(t0() + Duration::seconds(i as i64), i as f64), t0()).await;
+        h.send(
+            g2,
+            100 + i,
+            "zz/plc",
+            body(t0() + Duration::seconds(i as i64), i as f64),
+            t0() + Duration::seconds(i as i64),
+        )
+        .await;
     }
     h.wait_acked(20).await;
     h.stop().await;
@@ -207,7 +223,8 @@ async fn a_message_that_breaks_its_batch_is_isolated_and_dead_lettered_and_the_r
     let mut h = start(settings(&url), fx.connection);
     let (g, _) = h.ready().await;
     for (i, v) in [1.0, 2.0, 666.0, 3.0, 4.0].iter().enumerate() {
-        h.send(g, i as u64, "zz/plc", body(t0() + Duration::seconds(i as i64), *v), t0()).await;
+        h.send(g, i as u64, "zz/plc", body(t0() + Duration::seconds(i as i64), *v), t0() + Duration::seconds(i as i64))
+            .await;
     }
     h.wait_acked(5).await;
     let shared = h.shared.clone();
@@ -245,7 +262,14 @@ async fn shutdown_commits_and_acknowledges_everything_queued() {
     let mut h = start(s, fx.connection);
     let (g, _) = h.ready().await;
     for i in 0..300u64 {
-        h.send(g, i, "zz/plc", body(t0() + Duration::seconds(i as i64), (i * 7 % 13) as f64), t0()).await;
+        h.send(
+            g,
+            i,
+            "zz/plc",
+            body(t0() + Duration::seconds(i as i64), (i * 7 % 13) as f64),
+            t0() + Duration::seconds(i as i64),
+        )
+        .await;
     }
     let log = h.stop().await;
     assert_eq!(log.ids(), (0..300).collect::<Vec<_>>());

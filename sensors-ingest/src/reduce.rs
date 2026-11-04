@@ -11,7 +11,8 @@
 //! - a suppressed GOOD sample joins the open run (`run_n`, `run_sum`, `run_min`, `run_max`); the next stored good row
 //!   of the same class closes the run and carries `n = run_n + 1` and the run statistics including its own value;
 //! - the run is closed early, by a row at the run's last sample (`last_value_ts`, `last_value`), when the next sample
-//!   has another quality class or comes more than a heartbeat after that last sample (a data gap); so a suppressed
+//!   has another quality class, comes more than a heartbeat after that last sample (a data gap), or would make the
+//!   run sum overflow; so a suppressed
 //!   sample is counted at a row less than two heartbeats after it and never across a gap or a quality change;
 //! - a suppressed BAD sample is not counted (bad rows are excluded from every statistic) and leaves no row; its
 //!   evidence is the stored bad row it was within the deadband of.
@@ -101,7 +102,9 @@ pub fn step(policy: &Policy, st: &mut State, s: Sample) -> Step {
     if st.run_n > 0 {
         let changed = st.anchor_quality.is_none_or(|aq| quality::class(aq) != quality::class(s.quality));
         let gap = st.last_value_ts.is_none_or(|last| s.ts - last > heartbeat);
-        if changed || gap {
+        // the table refuses a non-finite run sum: close the run before adding a value would overflow it
+        let overflow = !(st.run_sum.unwrap_or(0.0) + s.value).is_finite();
+        if changed || gap || overflow {
             if let Some(row) = close_run_at_last(st) {
                 rows.push(row);
             }

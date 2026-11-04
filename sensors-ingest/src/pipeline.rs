@@ -187,6 +187,21 @@ pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut Dead
     b.out
 }
 
+/// The output for a message the database refused: one `bad_value` dead letter (no limiter: a poison message is rare
+/// and must stay visible) and the device's dead counter.
+pub fn poison(cfg: &Config, m: &Msg) -> Output {
+    let device_id = cfg.route(m.connection_id, &m.topic).map(|d| d.device_id);
+    let mut lim = DeadLimiter::new(1);
+    let mut b = Batch { committed: &HashMap::new(), out: Output::default(), dead: BTreeMap::new() };
+    b.dead_letter(&mut lim, m, device_id, DeadReason::BadValue);
+    if let Some(id) = device_id {
+        let at = crate::model::to_micros(m.received_at);
+        b.out.devices.insert(id, DeviceDelta { last_message_at: Some(at), dead: 1, ..DeviceDelta::default() });
+    }
+    b.out.dead = b.dead.into_values().collect();
+    b.out
+}
+
 pub fn sha256_hex(bytes: &[u8]) -> String {
     let mut h = Sha256::new();
     h.update(bytes);

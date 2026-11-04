@@ -4,6 +4,7 @@ import django.contrib.postgres.constraints
 import django.core.validators
 import django.db.models.deletion
 import django.db.models.functions.text
+import core.ranges
 import farm.models.feeding_protocol
 import uuid
 from decimal import Decimal
@@ -129,15 +130,15 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='protocolassignment',
-            constraint=django.contrib.postgres.constraints.ExclusionConstraint(condition=models.Q(('batch__isnull', True), ('is_deleted', False)), expressions=[(models.F('unit'), '='), (farm.models.feeding_protocol.DateRange(models.F('valid_from'), models.F('valid_until'), models.Value('[]')), '&&')], name='excl_protocol_assignments_unit', violation_error_message='Another protocol is assigned to this unit on some of these days.'),
+            constraint=django.contrib.postgres.constraints.ExclusionConstraint(condition=models.Q(('batch__isnull', True), ('is_deleted', False)), expressions=[(models.F('unit'), '='), (core.ranges.DateRange(models.F('valid_from'), models.F('valid_until'), models.Value('[]')), '&&')], name='excl_protocol_assignments_unit', violation_error_message='Another protocol is assigned to this unit on some of these days.'),
         ),
         migrations.AddConstraint(
             model_name='protocolassignment',
-            constraint=django.contrib.postgres.constraints.ExclusionConstraint(condition=models.Q(('is_deleted', False), ('unit__isnull', True)), expressions=[(models.F('batch'), '='), (farm.models.feeding_protocol.DateRange(models.F('valid_from'), models.F('valid_until'), models.Value('[]')), '&&')], name='excl_protocol_assignments_batch', violation_error_message='Another protocol is assigned to this batch on some of these days.'),
+            constraint=django.contrib.postgres.constraints.ExclusionConstraint(condition=models.Q(('is_deleted', False), ('unit__isnull', True)), expressions=[(models.F('batch'), '='), (core.ranges.DateRange(models.F('valid_from'), models.F('valid_until'), models.Value('[]')), '&&')], name='excl_protocol_assignments_batch', violation_error_message='Another protocol is assigned to this batch on some of these days.'),
         ),
         migrations.AddConstraint(
             model_name='protocolassignment',
-            constraint=django.contrib.postgres.constraints.ExclusionConstraint(condition=models.Q(('batch__isnull', False), ('is_deleted', False), ('unit__isnull', False)), expressions=[(models.F('unit'), '='), (models.F('batch'), '='), (farm.models.feeding_protocol.DateRange(models.F('valid_from'), models.F('valid_until'), models.Value('[]')), '&&')], name='excl_protocol_assignments_batch_in_unit', violation_error_message='Another protocol is assigned to this batch in this unit on some of these days.'),
+            constraint=django.contrib.postgres.constraints.ExclusionConstraint(condition=models.Q(('batch__isnull', False), ('is_deleted', False), ('unit__isnull', False)), expressions=[(models.F('unit'), '='), (models.F('batch'), '='), (core.ranges.DateRange(models.F('valid_from'), models.F('valid_until'), models.Value('[]')), '&&')], name='excl_protocol_assignments_batch_in_unit', violation_error_message='Another protocol is assigned to this batch in this unit on some of these days.'),
         ),
         migrations.AddConstraint(
             model_name='protocolband',

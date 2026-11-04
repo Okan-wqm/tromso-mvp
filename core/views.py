@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.translation import gettext
 from django.views import i18n
 
+from . import audit
 from .language import is_supported, save_account_language
 from .models import AuditLog
 
@@ -34,7 +35,8 @@ def _day(value, end=False):
 @permission_required('core.view_auditlog', raise_exception=True)
 def activity_log(request):
     """Every recorded change, newest first, filterable by person, record type, action and dates."""
-    entries = AuditLog.objects.all()
+    readable = audit.readable(request.user)
+    entries = readable
     filters = {key: request.GET.get(key, '').strip()
                for key in ('q', 'user', 'type', 'action', 'severity', 'from', 'to')}
     if filters['q']:
@@ -61,9 +63,9 @@ def activity_log(request):
         'page': page,
         'filters': filters,
         'query': query.urlencode(),
-        'users': AuditLog.objects.order_by('user_name').values_list('user_name', flat=True).distinct(),
+        'users': readable.order_by('user_name').values_list('user_name', flat=True).distinct(),
         'types': [(name, gettext(name)) for name in
-                  AuditLog.objects.order_by('entity_type').values_list('entity_type', flat=True).distinct()],
+                  readable.order_by('entity_type').values_list('entity_type', flat=True).distinct()],
         'actions': AuditLog.Action.choices,
         'severities': AuditLog.Severity.choices,
     })

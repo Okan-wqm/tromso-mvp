@@ -37,6 +37,8 @@ class Entry:
     icon: str
     perm: str = ''          # empty: every signed-in user
     badge: str = ''         # the dotted path of a function(user) -> Badge, for a number beside the entry
+    hidden: bool = False    # no line in the menu (a settings page reached from another page's links); it still
+                            # has its place: the role matrix and the page heading read it, and it is current there
 
     def url(self):
         return reverse(self.url_name)
@@ -161,7 +163,7 @@ def rail(request):
                 shown = [
                     {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
                      'current': entry.url() == current_url, 'badge': entry.badge_for(user)}
-                    for entry in group.entries if entry.allowed_for(user)
+                    for entry in group.entries if entry.allowed_for(user) and not entry.hidden
                 ]
                 if shown:
                     groups.append({'label': group.label, 'entries': shown})

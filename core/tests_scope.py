@@ -12,8 +12,9 @@ from farm.models import Site
 from farm.resources.site import SiteResource
 from farm.tests.helpers import site_data
 
-from . import access, audit
+from . import access, audit, navigation
 from .access import Area
+from .navigation import Entry, Group as MenuGroup, Section, Workspace
 from .models import AuditLog
 
 # An area set with an Everyone column on Sites, for the matrix tests (ACCESS_AREAS names it).
@@ -133,3 +134,94 @@ class EveryoneColumnTests(TestCase):
         cells = {label: re.findall(r'<td>(.*?)</td>', body, re.S) for label, body in rows}
         self.assertEqual(len(cells['Species']), 5)
         self.assertEqual(cells['Species'][4].strip(), '')       # Species has no Everyone box
+
+
+# A menu with one entry no line of which is shown (a settings page reached by links), for the hidden-entry tests.
+HIDDEN_MENU = [
+    Workspace('company', 'Company', always=True, sections=[Section("", [MenuGroup('', [
+        Entry('Overview', 'home', 'home'),
+        Entry('Sites', 'farm:site_list', 'building', 'farm.view_site'),
+        Entry('Species', 'farm:species_list', 'fish', 'farm.view_species', hidden=True),
+    ])])]),
+]
+
+
+@override_settings(RAIL_MENU='core.tests_scope.HIDDEN_MENU')
+class HiddenEntryTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+
+    def test_a_hidden_entry_has_no_line_but_keeps_its_place_and_its_page(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('farm:species_list'))
+        self.assertEqual(response.status_code, 200)
+        shown = [entry['label'] for section in response.context['rail_sections']
+                 for group in section['groups'] for entry in group['entries']]
+        self.assertEqual(shown, ['Overview', 'Sites'])
+        # the page is in the menu's data: its heading and the matrix read it, and its workspace is the panel's
+        place = navigation.place('farm.view_species')
+        self.assertTrue(place.entry.hidden)
+        self.assertEqual(navigation.workspace_of(reverse('farm:species_list')), 'company')
+        self.assertIn('farm.view_species', {entry.perm for entry in navigation.entries()})
+
+
+class RestrictedLogTests(TestCase):
+    """audit.restrict: some record types are in the log only for people who hold a permission."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.limited = get_user_model().objects.create_user('limited', password='x')
+        role = Group.objects.create(name='Log reader')
+        role.permissions.set(Permission.objects.filter(codename='view_auditlog'))
+        cls.limited.groups.add(role)
+        cls.holder = get_user_model().objects.create_user('holder', password='x')
+        cls.holder.groups.add(role)
+        cls.holder.user_permissions.add(Permission.objects.get(content_type__app_label='farm', codename='view_site'))
+        for kind, user in (('site', 'ola'), ('species', 'kari')):
+            AuditLog.objects.create(user=None, user_name=user, action='create', entity_type=kind, entity_id='1',
+                                    entity_label=kind)
+
+    def setUp(self):
+        patcher = mock.patch.dict(audit._restricted, {'site': 'farm.view_site'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def listed(self, user):
+        self.client.force_login(user)
+        response = self.client.get(reverse('core:activity_log'))
+        return response, [entry.entity_type for entry in response.context['page'].object_list]
+
+    def test_the_log_leaves_out_a_restricted_type_for_those_without_its_permission(self):
+        response, types = self.listed(self.limited)
+        self.assertEqual(types, ['species'])
+        # the filters do not offer it, nor the name of the person who made the entry
+        self.assertEqual([name for name, _label in response.context['types']], ['species'])
+        self.assertEqual(list(response.context['users']), ['kari'])
+        # asking for it by the address finds nothing
+        found = self.client.get(reverse('core:activity_log'), {'type': 'site'}).context['page'].object_list
+        self.assertEqual(list(found), [])
+
+    def test_a_holder_of_the_permission_reads_every_entry(self):
+        _response, types = self.listed(self.holder)
+        self.assertEqual(sorted(types), ['site', 'species'])
+
+    def test_nothing_is_restricted_by_default(self):
+        with mock.patch.dict(audit._restricted, clear=True):
+            _response, types = self.listed(self.limited)
+        self.assertEqual(sorted(types), ['site', 'species'])
+
+
+class RangeTests(TestCase):
+    def test_the_range_functions_build_the_postgres_ranges(self):
+        from datetime import date, datetime, timezone as tz
+        from django.db.models import Value
+        from .ranges import DateRange, InstantRange
+        row = Site.objects.create(name='Pond', code='PND')
+        days = Site.objects.filter(pk=row.pk).annotate(
+            span=DateRange(Value(date(2026, 3, 1)), Value(None, output_field=None), Value('[]'))).get().span
+        self.assertEqual((days.lower, days.upper), (date(2026, 3, 1), None))
+        instants = Site.objects.filter(pk=row.pk).annotate(
+            span=InstantRange(Value(datetime(2026, 3, 1, 8, tzinfo=tz.utc)), Value(datetime(2026, 3, 1, 16, tzinfo=tz.utc)),
+                              Value('[)'))).get().span
+        self.assertEqual((instants.lower.hour, instants.upper.hour), (8, 16))

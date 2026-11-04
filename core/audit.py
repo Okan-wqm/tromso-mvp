@@ -15,6 +15,29 @@ from django.utils.translation import gettext_lazy as _
 from .models import AuditLog
 
 
+# Record types whose entries only some people may read in the activity log: {entity type: permission}. An app that
+# keeps personal records (hr) registers them when it is ready; the log lists the others to everyone who may open it.
+_restricted = {}
+
+
+def restrict(entity_type, perm):
+    """The log's entries about `entity_type` (its English name, `entity_type_of`) are shown only to people who
+    hold `perm`: the activity log's list, its filters and its counts leave them out for everyone else."""
+    _restricted[entity_type] = perm
+
+
+def hidden_types(user):
+    """The record types whose log entries `user` may not read."""
+    return [entity_type for entity_type, perm in _restricted.items() if not user.has_perm(perm)]
+
+
+def readable(user, entries=None):
+    """The log entries `user` may read: every one but those of a restricted record type they lack the permission for."""
+    entries = AuditLog.objects.all() if entries is None else entries
+    hidden = hidden_types(user)
+    return entries.exclude(entity_type__in=hidden) if hidden else entries
+
+
 def source_language():
     """Text built inside this block comes out as the msgids themselves, ready to be stored."""
     return translation.override(settings.LANGUAGE_CODE)

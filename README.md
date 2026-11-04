@@ -16,13 +16,13 @@ What works today:
 - Roles (`/roles/`) and users (`/users/`), managed by the platform admin only (see Roles and users).
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
-- Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
+- Three panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
   Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
   ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
   under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
   the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
   Harvest: harvested, harvest plan, production plans, and Health: treatments, health events and sea-lice
-  counts; and under Communication the messages). Each has its own overview. A
+  counts; and under Communication the messages). The third, **Sensors**, holds the MQTT connections, devices, channels and their bindings, the charts and live values, dead letters and alarms (see Sensors). Each has its own overview. A
   panel is offered only to people who can use something in it (Company to everyone), and the panel
   a person works in is remembered for pages that belong to neither (change password).
 - Messages (`/messages/`): direct conversations and channels between people, with the unread count in the
@@ -2221,6 +2221,94 @@ would take.
 Not built now: OCR of scanned PDFs, other file types (Word, images), reading the text in a background worker,
 embeddings, the rules and their evaluator, exporting references (BibTeX, RIS), fetching a reference from its
 DOI (Crossref), versions of a document's file, phrase search ("…" in the query).
+
+## Sensors (the Sensors panel, `/sensors/`)
+
+Live values from field devices over MQTT, stored in TimescaleDB, drawn as charts, and joined to the water of the tanks,
+ponds, cages and systems. A panel of its own, chosen from the panel switcher like Production, offered to people who can
+use something in it. Django owns every table, view, trigger and page; a Rust service (`sensors-ingest/`, its own branch
+and README) subscribes to the brokers, decodes, validates, reduces and writes. The contract between the two is
+`sensors/CONTRACT.md`, held by the database itself and checked by `sensors/tests/test_contract.py`.
+
+What works:
+
+- **Setup**: Connections (the MQTT brokers; the ingest's own sign-in is a secret *file* name, never a secret), Payload
+  formats (how a kind of device writes its messages: one object with a value per channel, or a list of named items;
+  where the device time and the sequence number are, as JSON pointers; no time: the receive time, flagged), Devices (one
+  topic each, on a site, optionally the instrument of a piece of equipment; offline after three intervals without a
+  message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; where it is in the
+  message; the unit conversion; how it is stored: every value, or a value that moves past the deadband and at least once
+  per heartbeat; fresh for three heartbeats; a range outside which a value is stored but flagged and used nowhere;
+  maintenance and retired states; calibrations as a list on the site's clock, applied by the ingest at the device time,
+  never rewriting stored values), Bindings (where a channel's values belong over time: a sampling point or a system for a
+  water value, a piece of equipment or a system for a process value; one primary and one backup per place and quantity;
+  a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in).
+- **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
+  the drawn buckets), Live values (every channel listened to, its last value, its age, fresh or stale, where it is bound),
+  Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
+  person, logged), Alarm rules and Alarm events (**shown, not sent**: nobody is notified until a delivery path exists, and
+  the pages say so).
+- **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
+  when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
+  the activity log).
+- **Overview**: the ingest alive or down (a heartbeat within 90 s), devices online, channels without a fresh value, dead
+  letters of the last day, open alarms; each tile for the right that may read it.
+
+### The water's latest value (owner rule A1)
+
+Per unit and parameter, each on its own, in one place (`farm/water/read.py` `latest`, the sensors reach it through the
+registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): a fresh
+value of a sensor on the unit's own point (primary, then backup); else, for the middle point, a fresh value of a sensor
+on the unit's system; else a fresh manual or lab sample; else the newest of all, shown stale. A channel in maintenance
+or retired is skipped. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
+limits. Derived values follow their base value's source (a sensor TAN gives NH₃ only with fresh sensor pH and
+temperature, at the oldest input's time; a manual TAN only with its own sample's). Every latest value on the water page,
+the monitoring cards and the Deffeyes window says where it comes from and how old it is ("unit sensor #12 · 12 s ago",
+"system sensor #3 · 40 s ago", "manual · 2 days"); when the sensors cannot be read, the pages say the values come from
+the samples only. The ration's temperature takes a fresh sensor value at its moment too.
+
+A unit's or a system's Deffeyes can be drawn as it was at a past moment (`?at=` on the window's address, the site's
+clock): the samples taken up to then and each channel's value then, from the bindings that held then. The hourly trail of
+a unit's point on the diagram is `sensors:trail` (JSON, from the hour rollup). The monitoring card's own buttons for
+these, for a place's charts (`sensors:target_charts`) and for binding a channel from a card (`sensors:binding_create`
+with `?channel=&target=`) are left to the card-template designer.
+
+### Storage
+
+- `sensors_reading`: a hypertable in 7-day chunks, compressed after 14 days (per channel, newest first), dropped after
+  730 days; primary key (channel, time) so a redelivered message is stored once; a row carries how many messages it stands
+  for and, for more than one, their sum, lowest and highest, so every mean is exact (a sum of sums over a sum of counts,
+  never a mean of means). Quality is one bitset (`sensors/quality.py`): bad rows (out of range, device bad, maintenance,
+  simulated) are stored as evidence and left out of everything drawn or judged.
+- Two continuous aggregates over clean rows: per minute, and per hour built on the minutes. Charts take the bucketed raw
+  rows below a minute, the minute rollup up to an hour, the hour rollup above, and the site's local days from the hours
+  (a day the clocks go back has 25 hours). The rollups refresh every minute and every hour over the last 35 and 75 days;
+  a daily job takes in later readings back to the contract's late limit (728 days). The refresh never reaches back into
+  dropped raw data: TimescaleDB 2.17 invalidates a dropped region and a refresh there would empty the rollups.
+- The database viewer counts a hypertable by the database's estimate and leaves the readings out (billions of rows).
+- Licences: compression, continuous aggregates and their policies are TimescaleDB's TSL features of the community build
+  (free for an application that owns its schema, as this one; a test asserts `timescaledb.license = 'timescale'`). No new
+  Python package; the credential hash is the standard library's `hashlib`.
+
+### Running it
+
+- `manage.py sensors_ingest_role --password-file FILE` lets the ingest's database role (NOLOGIN after the migration) sign
+  in; `--disable` closes it.
+- `manage.py sensor_broker_sync --passwd PATH --acl PATH [--extra OPS_LINES] [--check]` writes Mosquitto's files from the
+  credentials and devices (atomic replace), then `docker compose kill -s HUP mosquitto` makes the broker read them.
+- `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py sensors_housekeeping` (daily) deletes dead
+  letters older than 90 days.
+- `manage.py bench_sensors --confirm-database NAME` writes synthetic readings into a database named on the command line
+  (never a farm's) and prints the storage and read figures.
+
+### Measured figures (bench_sensors on the local container)
+
+- A channel stored at every 1 s message: the minute rollup holds 1.7 % of the raw rows.
+- A channel stored once a minute (a deadband channel with a 60 s heartbeat, the common case): the minute rollup holds as
+  many rows as the raw table (100 %). **This fails the plan's 40 % gate**: the owner decides whether the hour rollup is
+  built from the raw readings instead of the minutes (one migration).
+- 20 channels × 30 days at one row a minute: a chart of one channel over the whole span in about 0.3 s (real-time
+  aggregation, nothing refreshed yet), the latest values of 20 channels in about 40 ms.
 
 ## Roles and users
 

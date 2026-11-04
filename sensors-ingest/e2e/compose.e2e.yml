@@ -11,8 +11,15 @@ services:
       - mosquitto-data:/mosquitto/data
     networks: [e2e]
   sensors-ingest:
+    # the test build: with the crash failpoint (off unless E2E_FAILPOINT is set)
+    build:
+      context: ./sensors-ingest
+      args:
+        FEATURES: failpoints
+    image: sensors-ingest:e2e-failpoints
     depends_on: !reset []
     environment:
+      INGEST_FAILPOINT_ABORT_AFTER_COMMIT: ${E2E_FAILPOINT:-0}
       INGEST_DB: host=db port=5432 dbname=sensors_e2e user=sensors_ingest_e2e
       INGEST_BATCH_MS: ${E2E_BATCH_MS:-250}
       RUST_LOG: info

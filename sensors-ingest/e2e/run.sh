@@ -95,7 +95,8 @@ press sw_late; sleep 3
 check "$(sql "SELECT (count(*) = 2)::int FROM sensors_reading WHERE channel_no = $O2 AND quality & 8 <> 0 AND ts < now() - interval '2 days'")" "late messages (3 and 20 days) stored on the late path"
 
 press sw_skew_ahead; sleep 5; press sw_skew_off
-check "$(sql "SELECT (count(*) >= 3)::int FROM sensors_reading WHERE channel_no = $FLOW AND quality & 4 <> 0 AND ts <= now()")" "clock running 10 min ahead: stored at receive time, flagged clock_suspect"
+check "$(sql "SELECT (count(*) >= 1 AND bool_and(ts <= now()))::int FROM sensors_reading WHERE channel_no = $FLOW AND quality & 4 <> 0")" "clock running 10 min ahead: stored at receive time, flagged clock_suspect (deadband: the first of the run stored)"
+check "$(sql "SELECT (high_ts <= now() + interval '60 s')::int FROM sensors_channel_state WHERE channel_no = $FLOW")" "clock running ahead never pushed the channel newest time into the future"
 
 T0=$(now); press sw_outage_start; sleep 12; press sw_outage_replay; sleep 6; T1=$(now)
 read -r G MAXG N <<<"$(gaps "$O2" "$T0" "$T1" | tr '|' ' ')"
@@ -117,6 +118,19 @@ docker kill -s KILL "$ING" >/dev/null; sleep 5; "${COMPOSE[@]}" start sensors-in
 read -r G MAXG N <<<"$(gaps "$O2" "$T0" "$T1" | tr '|' ' ')"
 check "$([ "$G" = 0 ] && echo 1)" "SIGKILL: no O2 second lost ($N rows, longest step ${MAXG} s)"
 note "SIGKILL: $(( $(late_rows) - B )) extra LATE rows (redelivered suppressed samples; bounded by the unacked window)"
+
+echo "== crash right after a COMMIT, before its acknowledgements (failpoint)"
+T0=$(now); B=$(late_rows); BD=$(sql "SELECT sum(ignored_total) FROM sensors_device_state")
+E2E_FAILPOINT=15 "${COMPOSE[@]}" up -d --no-deps sensors-ingest >/dev/null 2>&1
+ING=$("${COMPOSE[@]}" ps -q sensors-ingest)
+sleep 40; T1=$(now)
+RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$ING")
+check "$([ "$RESTARTS" -ge 1 ] && echo 1)" "failpoint: the ingest aborted after a COMMIT and was restarted ($RESTARTS restart)"
+read -r G MAXG N <<<"$(gaps "$O2" "$T0" "$T1" | tr '|' ' ')"
+check "$([ "$G" = 0 ] && echo 1)" "crash between COMMIT and PUBACK: no O2 second lost ($N rows, longest step ${MAXG} s)"
+DUPKEYS=$(sql "SELECT count(*) FROM (SELECT channel_no, ts FROM sensors_reading GROUP BY 1, 2 HAVING count(*) > 1) d")
+check "$([ "$DUPKEYS" = 0 ] && echo 1)" "crash between COMMIT and PUBACK: the redelivered batch stored nothing twice"
+note "crash between COMMIT and PUBACK: $(( $(late_rows) - B )) extra LATE rows (redelivered suppressed samples), $(( $(sql "SELECT sum(ignored_total) FROM sensors_device_state") - BD )) duplicates ignored"
 
 echo "== database session killed"
 T0=$(now)

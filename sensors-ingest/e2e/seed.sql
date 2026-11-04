@@ -30,8 +30,6 @@ INSERT INTO sensors_device (id, created_at, updated_at, version, is_deleted, cod
   '00000000-0000-0000-0000-0000000c0e2e', '00000000-0000-0000-0000-00000000e2e1', '00000000-0000-0000-0000-0000000f0003');
 
 -- code, device, quantity, unit, value_path, item_name, reduction, deadband, heartbeat, range
--- (the flow channels use quantity level_mm as a stand-in: the catalogue has no flow quantity yet, see
--- sensors-ingest/CONTRACT-REQUESTS.md)
 INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, unit, unit_factor,
   unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, range_min, range_max,
   state, note, device_id)
@@ -42,11 +40,11 @@ FROM (VALUES
   ('TEMP-OUT', '00000000-0000-0000-0000-0000000d0001', 'temperature_c', 'C', '/tags/temp_outlet/value', '', 'deadband', 0.1, 60, -2.0, 40.0),
   ('O2-SUMP', '00000000-0000-0000-0000-0000000d0001', 'oxygen_mg_l', 'mg/L', '/tags/o2_sump/value', '', 'all', 0.0, 60, 0.0, 30.0),
   ('PH-SUMP', '00000000-0000-0000-0000-0000000d0001', 'ph', 'pH', '/tags/ph_sump/value', '', 'deadband', 0.02, 300, 4.0, 10.0),
-  ('FLOW-MAIN', '00000000-0000-0000-0000-0000000d0001', 'level_mm', 'm3/h', '/tags/flow_main/value', '', 'deadband', 2.0, 60, 0.0, 500.0),
+  ('FLOW-MAIN', '00000000-0000-0000-0000-0000000d0001', 'flow_m3_h', 'm3/h', '/tags/flow_main/value', '', 'deadband', 2.0, 60, 0.0, 500.0),
   ('DO', '00000000-0000-0000-0000-0000000d0002', 'oxygen_mg_l', 'mg/L', '', 'do', 'all', 0.0, 60, 0.0, 30.0),
   ('TEMP', '00000000-0000-0000-0000-0000000d0002', 'temperature_c', 'C', '', 'temp', 'deadband', 0.1, 60, -2.0, 40.0),
   ('SAT', '00000000-0000-0000-0000-0000000d0002', 'oxygen_saturation_pct', '%', '', 'sat', 'deadband', 1.0, 60, 0.0, 300.0),
-  ('FLOW', '00000000-0000-0000-0000-0000000d0003', 'level_mm', 'm3/h', '/flow_m3h', '', 'deadband', 0.5, 60, 0.0, 500.0)
+  ('FLOW', '00000000-0000-0000-0000-0000000d0003', 'flow_m3_h', 'm3/h', '/flow_m3h', '', 'deadband', 0.5, 60, 0.0, 500.0)
 ) AS c(code, device_id, quantity, unit, value_path, item_name, reduction, deadband, heartbeat_s, range_min, range_max);
 
 -- the inlet probe was calibrated a day ago: +0.1 C from then on

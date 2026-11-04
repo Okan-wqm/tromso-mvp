@@ -317,7 +317,7 @@ msgstr[1] "%(count)s gün-derece"
 msgid "%(count)s due"
 msgid_plural "%(count)s due"
 msgstr[0] "%(count)s tane zamanı geldi"
-msgstr[1] ""
+msgstr[1] "%(count)s tane zamanı geldi"
 
 #, python-format
 msgid "%(count)s fish stay in %(unit)s: weigh them too."
@@ -333,7 +333,7 @@ msgstr[1] "%(count)s üye"
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s tane gecikmiş"
-msgstr[1] ""
+msgstr[1] "%(count)s tane gecikmiş"
 
 #, python-format
 msgid "%(count)s overdue task"

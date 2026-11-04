@@ -8,6 +8,8 @@ Differences from the source platform (docs/aquaculture-platform-bugs.md, "Human 
 - What can be read is never stored: who is present, late, absent or on leave, worked minutes, leave days, balances,
   head counts and the department of a past day.
 """
+from .employee import Employee, EmploymentType
 from .office_department import OfficeDepartment
+from .posting import Posting
 
-__all__ = ['OfficeDepartment']
+__all__ = ['Employee', 'EmploymentType', 'OfficeDepartment', 'Posting']

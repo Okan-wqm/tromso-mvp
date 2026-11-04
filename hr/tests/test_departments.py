@@ -113,10 +113,10 @@ class ConstraintTests(OfficeDepartmentTestCase):
 
     def test_a_name_is_unique_under_one_parent_and_among_the_top_level_ones(self):
         top = self.make(name='Top', code='TOP')
-        self.make(name='Payroll', code='PAY', parent=top)
-        self.refused(name='Payroll', code='PAY2', parent=top)
-        self.make(name='Payroll', code='PAY3')                    # under no parent: another place
-        self.refused(name='Payroll', code='PAY4')                 # the top level counts the missing parent as one value
+        self.make(name='Ledger', code='LED', parent=top)
+        self.refused(name='Ledger', code='LED2', parent=top)
+        self.make(name='Ledger', code='LED3')                    # under no parent: another place
+        self.refused(name='Ledger', code='LED4')                 # the top level counts the missing parent as one value
 
     def test_a_department_cannot_be_its_own_parent(self):
         department = self.make()

@@ -42,6 +42,7 @@ WORKSPACES = [
         # beside the office ones) and, from here on, their time. A team lead reads and plans only their own team.
         Section(_('HR'), [
             Group(_('HR dashboard'), [
+                Entry(_('Team list'), 'hr:employee_list', 'users', 'hr.view_employee'),
                 Entry(_('Departments'), 'hr:officedepartment_list', 'layout-grid', 'hr.view_officedepartment'),
             ]),
         ]),

@@ -25,6 +25,10 @@ VIEWER = Viewer(
     masked={'auth_user': ('password',), 'messages': ('body',)},
     # One line per table where the model's docstring does not say it in the project's words.
     descriptions={
+        'employees': _('The people of the company for HR: number, name (or the account that names them), type and the '
+                       'first and last day. No pay, bank or identity number is kept.'),
+        'postings': _('Where each person works from a day: one department, production or office, and the title.'),
+        'office_departments': _('The company’s office departments (finance, administration), nested under one another.'),
         'auth_user': _('People who can sign in: account details and a hash of the password.'),
         'auth_group': _('Roles: a name and the permissions it allows.'),
         'auth_permission': _('Every permission that exists: view, add, change and delete of each model, and the custom ones.'),

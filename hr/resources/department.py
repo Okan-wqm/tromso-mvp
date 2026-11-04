@@ -28,7 +28,7 @@ class OfficeDepartmentResource(Resource):
 
     @classmethod
     def list_queryset(cls, request):
-        return read.departments()
+        return read.departments(request.user)
 
     @classmethod
     def search(cls, objects, query):

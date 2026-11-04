@@ -1356,12 +1356,30 @@ msgid_plural "A page shows at most %(days)s days: the first day was moved."
 msgstr[0] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
 msgstr[1] "Bir sayfa en fazla %(days)s gün gösterir: ilk gün kaydırıldı."
 
+msgid "A person cannot be placed before they joined."
+msgstr "Bir kişi işe girmeden önceki bir güne yerleştirilemez."
+
+msgid "A person cannot leave before they joined."
+msgstr "Bir kişi işe girmeden önce ayrılamaz."
+
+msgid "A person who has left cannot be placed after their last day."
+msgstr "İşten ayrılan bir kişi son gününden sonra yerleştirilemez."
+
+msgid "A person with an account is named by it; one without needs a last name."
+msgstr "Hesabı olan kişi hesabın adıyla anılır; hesabı olmayanın soyadı gerekir."
+
+msgid "A person without an account needs a last name."
+msgstr "Hesabı olmayan kişinin soyadı gerekir."
+
 msgid ""
 "A piece of knowledge in your own words, with its source: a document of the library, another "
 "published source, or an expert’s or your own observation."
 msgstr ""
 "Kendi sözlerinizle bir bilgi ve kaynağı: kütüphaneden bir belge, yayımlanmış başka bir kaynak ya "
 "da bir uzmanın veya sizin gözleminiz."
+
+msgid "A placement cannot end before it starts."
+msgstr "Bir yerleştirme başlamadan bitemez."
 
 #, python-format
 msgid "A plan can be dated at most %(days)d days back."
@@ -1790,6 +1808,9 @@ msgstr "Balık başına ergin dişi"
 msgid "Adults"
 msgstr "Ergin"
 
+msgid "Advisor"
+msgstr "Danışman"
+
 msgid "Aeration"
 msgstr "Havalandırma"
 
@@ -1873,6 +1894,9 @@ msgstr "Tüm kategoriler"
 
 msgid "All conversations"
 msgstr "Tüm konuşmalar"
+
+msgid "All departments"
+msgstr "Tüm departmanlar"
 
 msgid "All feed types"
 msgstr "Tüm yem türleri"
@@ -2102,6 +2126,9 @@ msgstr "Analiz"
 
 msgid "Another document in the library has this DOI."
 msgstr "Kütüphanedeki başka bir belge bu DOI’ye sahip."
+
+msgid "Another employee already has this number."
+msgstr "Başka bir çalışan bu numaraya zaten sahip."
 
 msgid "Another feed already has this name."
 msgstr "Bu ad başka bir yemde zaten var."
@@ -2892,6 +2919,9 @@ msgstr "Çıktığı yerden başka bir yer seçin."
 msgid "Choose at least one."
 msgstr "En az birini seçin."
 
+msgid "Choose one department: a production department or an office department."
+msgstr "Bir departman seçin: üretim departmanı ya da ofis departmanı."
+
 msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
 msgstr "Tek bir yer seçin: bütün bir saha, bir üretim departmanı, bir sistem, bir birim veya ekipman."
 
@@ -3121,6 +3151,9 @@ msgstr "Sunulduğu haliyle içerik"
 
 msgid "Content hash"
 msgstr "İçerik özeti"
+
+msgid "Contractor"
+msgstr "Yüklenici"
 
 msgid "Control type"
 msgstr "Kontrol tipi"
@@ -3771,6 +3804,21 @@ msgstr "E-posta"
 
 msgid "Emamectin benzoate"
 msgstr "Emamektin benzoat"
+
+msgid "Employee"
+msgstr "Çalışan"
+
+msgid "Employee number"
+msgstr "Çalışan numarası"
+
+msgid "Employees"
+msgstr "Çalışanlar"
+
+msgid "Employment"
+msgstr "İstihdam"
+
+msgid "Employment type"
+msgstr "İstihdam türü"
 
 msgid "Empty"
 msgstr "Boş"
@@ -5179,6 +5227,12 @@ msgstr "Hacmi şeklinden hesaplanamaz: ölçüldüğü veya çizimdeki gibi giri
 msgid "JSON for Mattilsynet’s reporting API"
 msgstr "Mattilsynet’in raporlama API’si için JSON"
 
+msgid "Joined"
+msgstr "İşe giriş"
+
+msgid "Joined on"
+msgstr "İşe giriş tarihi"
+
 msgid "Juveniles"
 msgstr "Juvenil"
 
@@ -5308,6 +5362,12 @@ msgstr "Kanaldan ayrıl"
 
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
+
+msgid "Left"
+msgstr "Ayrıldı"
+
+msgid "Left on"
+msgstr "Ayrılış tarihi"
 
 msgid "Length (m)"
 msgstr "Uzunluk (m)"
@@ -5874,6 +5934,9 @@ msgstr "Henüz %(plural)s yok"
 msgid "No PDF: the document is known by its reference only."
 msgstr "PDF yok: belge yalnızca künyesiyle biliniyor."
 
+msgid "No account"
+msgstr "Hesap yok"
+
 msgid "No band yet. Use “Add band” to add a row."
 msgstr "Henüz ağırlık aralığı yok. Satır eklemek için “Ağırlık aralığı ekle”yi kullanın."
 
@@ -6272,6 +6335,12 @@ msgstr "Orada son 30 günde ölçülmemiş, girildiği gibi:"
 msgid "Not needed for a notice given by telephone."
 msgstr "Telefonla verilen bir bildirim için gerekmez."
 
+msgid "Not placed"
+msgstr "Yerleştirilmemiş"
+
+msgid "Not placed in any department."
+msgstr "Hiçbir departmana yerleştirilmemiş."
+
 msgid "Not rated"
 msgstr "Puanlanmadı"
 
@@ -6397,6 +6466,12 @@ msgstr "Sunuluyor"
 msgid "Office"
 msgstr "Ofis"
 
+msgid "Office department"
+msgstr "Ofis departmanı"
+
+msgid "Office departments"
+msgstr "Ofis departmanları"
+
 msgid "Official code"
 msgstr "Resmî tür kodu"
 
@@ -6499,6 +6574,9 @@ msgstr "Yalnızca satın alınan balığın tedarikçisi olur."
 
 msgid "Only deleted rows"
 msgstr "Yalnızca silinmiş satırlar"
+
+msgid "Only for a person without an account."
+msgstr "Yalnızca hesabı olmayan kişi için."
 
 msgid "Only one contact can be the primary contact."
 msgstr "Yalnızca bir kişi birincil kişi olabilir."
@@ -6941,6 +7019,12 @@ msgstr "Yer"
 
 msgid "Place deleted"
 msgstr "Yer silindi"
+
+msgid "Placement"
+msgstr "Yerleştirme"
+
+msgid "Placements"
+msgstr "Yerleştirmeler"
 
 msgid "Plan"
 msgstr "Plan"
@@ -7464,11 +7548,17 @@ msgstr "Raporların başlangıcı"
 msgid "Request a new link"
 msgstr "Yeni bağlantı iste"
 
+msgid "Required for a person without an account."
+msgstr "Hesabı olmayan kişi için zorunludur."
+
 msgid "Required for a sea cage."
 msgstr "Deniz kafesi için zorunludur."
 
 msgid "Required when fish stay in this unit: the grading weighs them too."
 msgstr "Bu birimde balık kalıyorsa gerekli: boylama onları da tartar."
+
+msgid "Researcher"
+msgstr "Araştırmacı"
 
 msgid "Reset password"
 msgstr "Parolayı sıfırla"
@@ -7713,6 +7803,12 @@ msgstr "Birimleri kaydet"
 msgid "Save withdrawal"
 msgstr "Bekleme süresini kaydet"
 
+msgid "Say from which day the change counts."
+msgstr "Değişikliğin hangi günden itibaren geçerli olduğunu belirtin."
+
+msgid "Say from which day the person is placed."
+msgstr "Kişinin hangi günden itibaren yerleştirildiğini belirtin."
+
 msgid "Say what caused it, or what is thought to have."
 msgstr "Nedenini veya neden olduğu düşünülen şeyi yazın."
 
@@ -7804,6 +7900,9 @@ msgstr "Ada göre ara"
 
 msgid "Search by name or code"
 msgstr "Ada veya koda göre ara"
+
+msgid "Search by name or number"
+msgstr "Ada ya da numaraya göre ara"
 
 msgid "Search by name, approval number, place or operator"
 msgstr "Ad, onay numarası, yer veya işletmeciye göre ara"
@@ -7904,6 +8003,12 @@ msgstr "Bir parti seçin"
 
 msgid "Select a category"
 msgstr "Bir kategori seçin"
+
+msgid "Select a department"
+msgstr "Bir departman seçin"
+
+msgid "Select a department."
+msgstr "Bir departman seçin."
 
 msgid "Select a feed"
 msgstr "Bir yem seçin"
@@ -8044,6 +8149,10 @@ msgstr "Kısa eksen (m)"
 
 msgid "Show"
 msgstr "Göster"
+
+#, python-format
+msgid "Show %(name)s"
+msgstr "%(name)s göster"
 
 msgid "Show all"
 msgstr "Tümünü göster"
@@ -8283,6 +8392,9 @@ msgstr "Kaynak suyu"
 msgid "Square"
 msgstr "Kare"
 
+msgid "Staff"
+msgstr "Personel"
+
 msgid "Stage at input"
 msgstr "Giriş evresi"
 
@@ -8426,6 +8538,9 @@ msgstr "CO₂’yi havanın suda bıraktığı %(air)s mg/L’nin altına sıyı
 
 msgid "Structure"
 msgstr "Yapı"
+
+msgid "Student"
+msgstr "Öğrenci"
 
 msgid "Submersible"
 msgstr "Batırılabilir"
@@ -8573,8 +8688,14 @@ msgstr "Görevler"
 msgid "Tasks due today"
 msgstr "Bugün süresi dolan görevler"
 
+msgid "Team list"
+msgstr "Ekip listesi"
+
 msgid "Technical specifications"
 msgstr "Teknik özellikler"
+
+msgid "Technician"
+msgstr "Teknisyen"
 
 msgid "Teflubenzuron"
 msgstr "Teflubenzuron"
@@ -8665,6 +8786,13 @@ msgstr "İlacın varsa ruhsat (MT) numarası."
 msgid "The abstract or summary, as the document gives it."
 msgstr "Belgenin verdiği haliyle özet."
 
+msgid ""
+"The account the person signs in with. Their name is then the account’s; leave it empty for "
+"someone who never signs in (a student, a visiting researcher)."
+msgstr ""
+"Kişinin oturum açtığı hesap. Adı o zaman hesabın adıdır; hiç oturum açmayan biri (öğrenci, "
+"ziyaretçi araştırmacı) için boş bırakın."
+
 msgid "The address for orders and questions; contact persons have their own below."
 msgstr "Siparişler ve sorular için adres; kişilerin kendi adresleri aşağıdadır."
 
@@ -8750,6 +8878,10 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Hesaplayıcının değerleri"
 
+#, python-format
+msgid "The change cannot start before the current placement did (%(day)s)."
+msgstr "Değişiklik, mevcut yerleştirmenin başladığı günden (%(day)s) önce başlayamaz."
+
 msgid "The charts and the values show again once every value is right."
 msgstr "Her değer doğru olduğunda çizelgeler ve değerler yeniden görünür."
 
@@ -8765,6 +8897,9 @@ msgstr ""
 
 msgid "The company that runs it: a supplier of slaughter and processing (Purchasing › Suppliers)."
 msgstr "Onu işleten şirket: bir kesim ve işleme tedarikçisi (Satın alma › Tedarikçiler)."
+
+msgid "The company’s office departments (finance, administration), nested under one another."
+msgstr "Şirketin ofis departmanları (finans, idari işler), birbirinin altında."
 
 msgid "The criticality is from 1 to 5."
 msgstr "Kritiklik 1 ile 5 arasındadır."
@@ -8784,6 +8919,11 @@ msgid ""
 msgstr ""
 "Olayın olduğu gün (kullanıma alınan veya boşaltılan saha için: ilk balığının geldiği veya son "
 "balığının ayrıldığı gün)."
+
+msgid ""
+"The day the new placement starts; the old one ends the day before. For a new person: their first "
+"day."
+msgstr "Yeni yerleştirmenin başladığı gün; eskisi bir gün önce biter. Yeni kişi için: ilk günü."
 
 msgid "The days are the days the fish leave their units: check they are the slaughter days."
 msgstr "Günler, balıkların birimlerinden ayrıldığı günlerdir: kesim günleri olduklarını kontrol edin."
@@ -8903,6 +9043,9 @@ msgstr "Dosya %(size)s; kütüphane en fazla %(limit)s büyüklüğünde PDF al�
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Bu protokolle yemlenen ilk gün, çiftliğin saatine göre."
 
+msgid "The first day of employment."
+msgstr "İstihdamın ilk günü."
+
 msgid "The first day of the course."
 msgstr "Kürün ilk günü."
 
@@ -8985,6 +9128,9 @@ msgstr "Son gün ilk günden önce olamaz."
 msgid "The last day comes on or after the first day."
 msgstr "Son gün, ilk günle aynı gün ya da ondan sonra olmalı."
 
+msgid "The last day of employment; the placement then ends with it. Empty while they work here."
+msgstr "İstihdamın son günü; yerleştirme de onunla biter. Burada çalıştığı sürece boş."
+
 msgid "The last day of the course, planned up to 28 days ahead. The withdrawal counts from it."
 msgstr "Kürün son günü, en fazla 28 gün ileriye planlanabilir. Bekleme süresi ondan sayılır."
 
@@ -9049,11 +9195,18 @@ msgid "The name in the farm’s own language, e.g. Laks."
 msgstr "Çiftliğin kendi dilindeki adı, örn. Laks."
 
 #, python-format
+msgid "The new placement must start after the last one ended (%(day)s)."
+msgstr "Yeni yerleştirme, öncekinin bittiği günden (%(day)s) sonra başlamalıdır."
+
+#, python-format
 msgid "The next meal on the Meal board: %(kilos)s, filled in below."
 msgstr "Öğün panosundaki sonraki öğün: %(kilos)s; aşağıya dolduruldu."
 
 msgid "The nitrogen-free extract: what is left when the other parts are taken away."
 msgstr "Azotsuz öz madde: diğer parçalar çıkarıldığında kalan."
+
+msgid "The number the company knows the person by."
+msgstr "Şirketin kişiyi tanıdığı numara."
 
 msgid "The official code is three capital letters, e.g. SAL."
 msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."
@@ -9110,6 +9263,20 @@ msgstr "Brüt enerjinin balığın sindirebildiği kısmı."
 
 msgid "The pellet diameter, as a feeder’s calibrations write it."
 msgstr "Pelet çapı, yemleme makinesinin kalibrasyonlarında yazıldığı gibi."
+
+msgid ""
+"The people of the company for HR: number, name (or the account that names them), type and the "
+"first and last day. No pay, bank or identity number is kept."
+msgstr ""
+"Şirketin İK için kişileri: numara, ad (ya da onları adlandıran hesap), tür ve ilk ile son gün. "
+"Maaş, banka veya kimlik numarası tutulmaz."
+
+msgid ""
+"The people of your team appear here. Someone who manages a department sees the people placed in "
+"it."
+msgstr ""
+"Ekibinizin kişileri burada görünür. Bir departmanı yöneten kişi, o departmana yerleştirilenleri "
+"görür."
 
 msgid ""
 "The people to contact at the supplier: sales, orders, technical support, the vet on call. At most"
@@ -9613,6 +9780,9 @@ msgstr ""
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Bu kayıt (%(name)s) henüz silinemez."
 
+msgid "This account already belongs to another employee."
+msgstr "Bu hesap zaten başka bir çalışana ait."
+
 msgid "This batch already has a production plan."
 msgstr "Bu partinin zaten bir üretim planı var."
 
@@ -9655,6 +9825,9 @@ msgstr "Bu sahibin bu adda bir noktası zaten var."
 
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Bu sahibin zaten aktif bir orta noktası var: suyunu o temsil eder."
+
+msgid "This person is already placed in a department on some of these days."
+msgstr "Bu kişi, bu günlerin bir kısmında zaten bir departmana yerleştirilmiş."
 
 msgid "This place is not on the chosen site."
 msgstr "Bu yer seçilen sahada değil."
@@ -10031,6 +10204,9 @@ msgstr "Yalnızca büyük harf, rakam, kısa çizgi ve alt çizgi kullanın."
 msgid "Use letters, digits and hyphens only, e.g. 923456789 or NO923456789MVA."
 msgstr "Yalnızca harf, rakam ve kısa çizgi kullanın, örn. 923456789 ya da NO923456789MVA."
 
+msgid "Use letters, digits, dots, hyphens, slashes and underscores only."
+msgstr "Yalnızca harf, rakam, nokta, tire, eğik çizgi ve alt çizgi kullanın."
+
 msgid "Use your username and password to open the farm console."
 msgstr "Çiftlik konsolunu açmak için kullanıcı adınızı ve parolanızı kullanın."
 
@@ -10141,6 +10317,9 @@ msgstr "Cilt"
 
 msgid "Volume (m³)"
 msgstr "Hacim (m³)"
+
+msgid "Volunteer"
+msgstr "Gönüllü"
 
 msgid "Warehouse"
 msgstr "Depo binası"
@@ -10395,6 +10574,9 @@ msgstr ""
 " adlandırılmış bir yer; akımın girişini, içindeki suyu veya çıkan akımı görüp görmediğini "
 "söyleyen bir türde."
 
+msgid "Where each person works from a day: one department, production or office, and the title."
+msgstr "Her kişinin bir günden itibaren çalıştığı yer: bir departman (üretim ya da ofis) ve unvan."
+
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Belgenin neresinde, örn. 4 ya da 12–13."
 
@@ -10562,6 +10744,9 @@ msgstr ""
 
 msgid "Worked out from the values"
 msgstr "Değerlerden hesaplanan"
+
+msgid "Working here"
+msgstr "Burada çalışıyor"
 
 msgid "Worth checking:"
 msgstr "Kontrol etmeye değer:"
@@ -10895,6 +11080,9 @@ msgstr "örn. Her tanktaki oksijeni kontrol et"
 msgid "e.g. Clean the drum filter"
 msgstr "örn. Tambur filtreyi temizle"
 
+msgid "e.g. E-1042"
+msgstr "ör. E-1042"
+
 msgid "e.g. FIN"
 msgstr "ör. FIN"
 
@@ -11020,6 +11208,12 @@ msgstr "örn. veteriner, Kasım 2026"
 
 msgid "eFCR"
 msgstr "eFCR"
+
+msgid "employee"
+msgstr "çalışan"
+
+msgid "employees"
+msgstr "çalışanlar"
 
 msgid "empty"
 msgstr "boş"
@@ -11378,6 +11572,12 @@ msgstr "katılımcılar"
 
 msgid "passed at every pH of the chart's range (4 to 12.5)"
 msgstr "çizelgenin aralığındaki her pH'de aşılır (4 ile 12,5)"
+
+msgid "placement"
+msgstr "yerleştirme"
+
+msgid "placements"
+msgstr "yerleştirmeler"
 
 #, python-format
 msgid "planned for %(date)s"

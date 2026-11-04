@@ -2137,6 +2137,36 @@ ones (`nulls_distinct=False`), not its own parent, a trigger that refuses a cycl
 through deleted rows too, so a restore cannot close a loop), code and status checks. A department with departments
 below it is not deleted (the delete plan names them); a deleted one is restored from the admin, checked like a new one.
 
+### Team list (`/hr/team/`) and the team scope
+
+One row per person (`hr.Employee`, table `employees`): number, name, employment type (staff, student, researcher,
+technician, advisor, contractor, volunteer), first and last day. A person with an account is named by it (first and last
+name stay empty here, a database check); one who never signs in carries their own name, a last name at least. The account
+is optional, so a student or a visiting researcher needs no login (and gets no invitation mail). A person is never deleted:
+a last day closes the record and the history stays readable. There is no pay, bank, identity-number, address or contact
+column (`hr/tests/test_boundary.py` fails on one).
+
+**Where a person works is a dated placement** (`hr.Posting`, table `postings`): exactly one department, a production
+department or an office department (a database check, as a task's place is), a title, from a day and until a day (empty
+while open). One placement covers any day (an exclusion constraint), so the department of a past day is read, not
+overwritten. The form's Placement tab shows the current one; changing the department or the title needs the day the
+change counts from, and `hr.services.move` closes the open placement the day before and opens the next (one transaction,
+both logged; a change dated the first day of the current placement corrects it in place). A department with people placed
+in it is made inactive, not deleted (both links are PROTECT; the delete plan says so).
+
+**The team** (`hr.scope.team(user, day)`) is the one place that says who may reach whom: the person themselves, the people
+placed on that day in a production department the user manages (its Manager) or in an office department they manage or
+any below it, and, for a holder of Everyone (`hr.all_employee`, a column on the Employees row of the role matrix), every
+employee. `EmployeeResource.scoped` is that function, so the list, a person's read page, the edit and the placement given
+are all of the team, whatever the address or the query. A lead with a role that gives Read on Employees reads their
+team's read pages; the form needs Edit, and only a holder of Everyone can create someone (a new person has no team yet).
+A person who moved belongs to the old manager up to the move and to the new one from it (`scope.visible_days`, for the
+reads that run over several days). A manager without a role, or a role without a department, reaches nothing beyond
+themselves. The Departments page counts, per department, the people placed there today that the viewer may reach.
+
+The activity log shows the employees and their placements only to holders of Everyone (`core.audit.restrict`); a lead
+who reads the log sees everything else but not the people.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2158,7 +2188,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Departments (the office departments: read, create, edit, delete) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and

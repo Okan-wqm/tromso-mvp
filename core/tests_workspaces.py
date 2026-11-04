@@ -54,7 +54,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Activity log', 'Roles', 'Users', 'Database', 'Departments'])
+                                                 'Activity log', 'Roles', 'Users', 'Database', 'Team list', 'Departments'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
@@ -225,6 +225,7 @@ class MenuPlacementTests(TestCase):
             'tasks.TaskSeries': 'Production · Operations',
             'knowledge.Document': 'Company · Knowledge',
             'knowledge.KnowledgeEntry': 'Company · Knowledge',
+            'hr.Employee': 'Company · HR · HR dashboard',
             'hr.OfficeDepartment': 'Company · HR · HR dashboard',
             'core.AuditLog': 'Company · Administration',
         })

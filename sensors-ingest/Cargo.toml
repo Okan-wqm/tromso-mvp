@@ -24,6 +24,7 @@ futures-util = { version = "0.3.31", default-features = false, features = ["std"
 
 [dev-dependencies]
 proptest = { version = "1.7", default-features = false, features = ["std"] }
+uuid = { version = "1.17", features = ["v4"] }
 
 [profile.release]
 debug = 1

@@ -4,8 +4,11 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing))]
 
 pub mod calib;
+pub mod config;
+pub mod db;
 pub mod decode;
 pub mod model;
+pub mod pipeline;
 pub mod quality;
 pub mod reduce;
 pub mod timerule;

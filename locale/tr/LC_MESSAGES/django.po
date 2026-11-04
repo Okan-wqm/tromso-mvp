@@ -5319,8 +5319,12 @@ msgstr "Juvenil"
 msgid "Juveniles (settefisk)"
 msgstr "Yavru balık (settefisk)"
 
-msgid "Juveniles, food fish or broodstock: it decides the reports the site owes."
-msgstr "Yavru balık, pazar balığı veya damızlık: sahanın hangi raporları vermesi gerektiğini belirler."
+msgid ""
+"Juveniles, food fish, broodstock, or research and other production: it decides the reports the "
+"site owes."
+msgstr ""
+"Yavru balık, besi balığı, damızlık veya araştırma ve diğer üretim: lokasyonun borçlu olduğu "
+"raporları belirler."
 
 msgid "Key"
 msgstr "Anahtar"
@@ -7723,6 +7727,9 @@ msgstr "Deniz kafesi için zorunludur."
 
 msgid "Required when fish stay in this unit: the grading weighs them too."
 msgstr "Bu birimde balık kalıyorsa gerekli: boylama onları da tartar."
+
+msgid "Research or other production"
+msgstr "Araştırma veya diğer üretim"
 
 msgid "Reset password"
 msgstr "Parolayı sıfırla"
@@ -11960,6 +11967,13 @@ msgstr "yeniden sipariş seviyesi"
 
 msgid "reorder levels"
 msgstr "yeniden sipariş seviyeleri"
+
+msgid ""
+"research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 "
+"l: only chapters 1, 2, 3 and 7 apply to it; unverified, Q10)"
+msgstr ""
+"araştırma veya diğer üretim yavru balık, biyokütle veya yıllık stok raporlarının hiçbirini vermez"
+" (§ 3 l: yalnızca 1, 2, 3 ve 7. bölümler uygulanır; doğrulanmadı, Q10)"
 
 msgid "resistance suspicion"
 msgstr "direnç şüphesi"

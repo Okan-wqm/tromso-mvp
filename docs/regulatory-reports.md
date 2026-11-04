@@ -838,6 +838,13 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   built. They are reminded on the Reports page and the company overview. The page *Duties outside this system* adds § 45 (land
   broodstock, 15 July), § 39 (recapture), the executed slaughter, the county governor's yearly report and the cleaner-fish
   broodstock report. The consequence of filing late is unverified for the two plans (Q6).
+- **A research or other production form (coverage review R32, gap 7):** `Site.production_form` gains *Research or other production*
+  (`other`; checked by the database). Its basis is § 3 l and § 4 nr. 20 of akvakulturdriftsforskriften as the review read them: "annen
+  produksjon" falls under chapters 1, 2, 3 and 7 only, so such a site owes **no** juvenile (chapter 5), monthly biomass (§ 44) or § 44a
+  report, and has no driftsplan (food fish or broodstock only). What still follows the fish and is owed: the sea-lice report (it follows
+  salmonids at sea whatever the production), the cleaner-fish report at a sea site (the Altinn form is for all permit types, research
+  included) and the notices of an escape, a disease or a welfare event. Every line of it says "unverified, Q10": how a land research site
+  is classified and which duties follow is a question for the authority, and the rule is only what the verified text supports.
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
   (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.

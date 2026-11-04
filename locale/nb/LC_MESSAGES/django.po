@@ -5308,8 +5308,12 @@ msgstr "Ungfisk"
 msgid "Juveniles (settefisk)"
 msgstr "Settefisk"
 
-msgid "Juveniles, food fish or broodstock: it decides the reports the site owes."
-msgstr "Settefisk, matfisk eller stamfisk: det avgjør hvilke rapporter lokaliteten skylder."
+msgid ""
+"Juveniles, food fish, broodstock, or research and other production: it decides the reports the "
+"site owes."
+msgstr ""
+"Settefisk, matfisk, stamfisk, eller forskning og annen produksjon: det avgjør hvilke rapporter "
+"lokaliteten skal sende."
 
 msgid "Key"
 msgstr "Nøkkel"
@@ -7718,6 +7722,9 @@ msgstr "Påkrevd for en merd."
 
 msgid "Required when fish stay in this unit: the grading weighs them too."
 msgstr "Påkrevd når fisk blir igjen i enheten: sorteringen veier dem også."
+
+msgid "Research or other production"
+msgstr "Forskning eller annen produksjon"
 
 msgid "Reset password"
 msgstr "Tilbakestill passord"
@@ -11955,6 +11962,13 @@ msgstr "bestillingspunkt"
 
 msgid "reorder levels"
 msgstr "bestillingspunkter"
+
+msgid ""
+"research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 "
+"l: only chapters 1, 2, 3 and 7 apply to it; unverified, Q10)"
+msgstr ""
+"forskning eller annen produksjon sender ingen av settefisk-, biomasse- eller "
+"årsbeholdningsrapportene (§ 3 l: bare kapittel 1, 2, 3 og 7 gjelder; ikke bekreftet, Q10)"
 
 msgid "resistance suspicion"
 msgstr "resistensmistanke"

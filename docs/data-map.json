@@ -8936,7 +8936,8 @@
           "choices": [
             "settefisk",
             "matfisk",
-            "stamfisk"
+            "stamfisk",
+            "other"
           ],
           "link": null,
           "on_form": [
@@ -9517,6 +9518,7 @@
         "reports/tests/test_duties.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_research.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py"

@@ -1806,6 +1806,10 @@ condition the harvested fish are weighed (round or gutted weight) and is not rea
 month with no feed recorded is a problem unless the person says none was given. The cleaner-fish file for the API has one row per
 species, with the mixed origin when both farmed and wild-caught fish are in it.
 
+**A research site.** A site's production form can be *Research or other production*: it owes no juvenile, biomass or yearly stock report
+(only chapters 1, 2, 3 and 7 of the regulation apply, § 3 l) and has no operating plan; the sea-lice and cleaner-fish reports and the
+notices still follow the fish, and the lines of the Reports page say it is unverified with the authority (question Q10).
+
 **Duties outside this system.** The operating plan (driftsplan, due 1 October each year for every sea site of food fish or broodstock, idle
 ones too) and the lice coordination plan (§ 4, before 1 October each year, sea sites with salmonids) are listed as due lines with a
 reminder on the Reports page and the company overview; you file them in Altinn and record here when and with what reference. The page

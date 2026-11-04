@@ -250,6 +250,10 @@ def _not_owed(site, kind):
         return _('%(site)s is not a sea site') % {'site': site.name}
     if not site.production_form:
         return _('site not set up: no production form')
+    if site.production_form == PRODUCTION_FORM.OTHER:
+        # Chapters 1, 2, 3 and 7 only apply to "annen produksjon" (§ 3 l); what else follows is not known (Q10).
+        return _('research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 l: '
+                 'only chapters 1, 2, 3 and 7 apply to it; unverified, Q10)')
     if kind == ReportKind.SMOLT:
         return _('%(site)s is not a juvenile (settefisk) site') % {'site': site.name}
     if kind == ReportKind.BIOMASS:

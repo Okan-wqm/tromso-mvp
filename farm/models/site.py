@@ -43,6 +43,9 @@ class Site(CodedMixin, AuditedModel):
         SETTEFISK = 'settefisk', _('Juveniles (settefisk)')
         MATFISK = 'matfisk', _('Food fish (matfisk)')
         STAMFISK = 'stamfisk', _('Broodstock (stamfisk)')
+        # "annen produksjon" (§ 3 l, § 4 nr. 20): research and other production fall under chapters 1, 2, 3 and 7 of the
+        # regulation only, so no juvenile, biomass or § 44a report follows from it; what else does is unverified (Q10).
+        OTHER = 'other', _('Research or other production')
 
     TIMEZONES = [
         ('UTC', 'UTC'),
@@ -148,7 +151,7 @@ class Site(CodedMixin, AuditedModel):
                 violation_error_message=_('An organisation number is 9 digits.'),
             ),
             models.CheckConstraint(
-                condition=Q(production_form='') | Q(production_form__in=['settefisk', 'matfisk', 'stamfisk']),
+                condition=Q(production_form='') | Q(production_form__in=['settefisk', 'matfisk', 'stamfisk', 'other']),
                 name='chk_sites_production_form',
             ),
             models.CheckConstraint(

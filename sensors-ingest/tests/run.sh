@@ -33,10 +33,25 @@ psql -d postgres -qc "CREATE DATABASE $TEST_DB" >/dev/null
 docker run --rm --network "$NET" -v "$REPO:/app" -w /app -e DB_HOST="$DB_HOST" -e DB_PORT=5432 -e DB_NAME="$TEST_DB" \
   "$DJANGO_IMAGE" python manage.py migrate --no-input >/dev/null
 
+# a broker with the production configuration (users ingest/ingest-pw and dev/dev-pw) for the live tests
+MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+BROKER=sensors-ingest-test-broker
+cleanup() { docker rm -f "$BROKER" >/dev/null 2>&1 || true; docker volume rm si-test-broker-auth >/dev/null 2>&1 || true; }
+cleanup
+trap cleanup EXIT
+docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '
+  mosquitto_passwd -c -b /mosquitto/auth/passwd ingest ingest-pw 2>/dev/null
+  mosquitto_passwd -b /mosquitto/auth/passwd dev dev-pw 2>/dev/null
+  printf "user ingest\ntopic read #\nuser dev\ntopic write #\n" > /mosquitto/auth/acl
+  chown -R mosquitto:mosquitto /mosquitto/auth && chmod 0700 /mosquitto/auth/passwd /mosquitto/auth/acl'
+docker run -d --name "$BROKER" --network "$NET" -v "$REPO/sensors-ingest/mosquitto:/mosquitto/config:ro" \
+  -v si-test-broker-auth:/mosquitto/auth --tmpfs /mosquitto/data --entrypoint sh "$MOSQ" \
+  /mosquitto/config/entrypoint.sh >/dev/null
+
 docker run --rm --network "$NET" -v "$REPO:/w" -v si-cargo:/usr/local/cargo/registry -v si-target:/t \
   -e CARGO_TARGET_DIR=/t/target -e PATH=/t/tools/bin:/usr/local/cargo/bin:/usr/bin:/bin \
   -e TEST_DATABASE_URL="host=$DB_HOST port=5432 user=${DB_USER:-balik} password=${DB_PASSWORD:-balik} dbname=$TEST_DB" \
-  -e REQUIRE_DB=1 -w /w/sensors-ingest "$RUST_IMAGE" sh -ec '
+  -e REQUIRE_DB=1 -e TEST_MQTT_HOST="$BROKER" -w /w/sensors-ingest "$RUST_IMAGE" sh -ec '
     cargo fmt --check
     cargo test --all-targets
     cargo clippy --all-targets -- -D warnings

@@ -14,4 +14,5 @@ pub mod pipeline;
 pub mod quality;
 pub mod reduce;
 pub mod service;
+pub mod supervisor;
 pub mod timerule;

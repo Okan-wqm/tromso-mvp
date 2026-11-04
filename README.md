@@ -2242,7 +2242,19 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   conversation, the list of conversations, a menu entry's number), a GET form whose results the server
   draws again as it is filled in (`data-live`: its `data-live-part`s are swapped, its fields' errors put
   under them, the address kept in step; the water calculator), a list that follows new rows
-  (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`).
+  (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`). It is THE one polling
+  implementation, and `watch(element)` is what other scripts import. Every request has a 20 s timeout, each
+  wait a few per cent shorter or longer by chance (screens never line up), a failure doubles the wait up to
+  a minute, nothing is asked while the page is hidden, one shared listener serves every element and an
+  element that left the page is let go. The element carries `data-poll-state` (`live`, `stale` after two
+  failures in a row, `gone` after a 401, 403, 404 or a redirect to sign-in, with a bubbling `poll:gone`
+  event), so the page's CSS can say so in its own words (the script has no text); the event `poll:now`
+  asks at once (`detail.url`: the address from now on); `data-poll-merge="<attr>"` replaces a keyed child
+  only when its markup differs, inserts a new key where the answer has it and drops a child the answer
+  lacks (focus stays on the same id; an unkeyed child in the answer replaces everything);
+  `data-poll-skip-same` leaves an answer equal to the last alone. Messages' append mode and the
+  calculator's live form are unchanged, and pinned by `core/test_frontend_contract.py`, which also checks
+  that every hook a template uses is one the script documents and reads.
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
 compiled modules are reached through an import map (`{% module_map %}`), so a browser never shows a

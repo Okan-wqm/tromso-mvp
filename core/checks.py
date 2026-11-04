@@ -4,7 +4,7 @@ from django.core.checks import Warning, register
 from . import catalogs
 
 # The browser code is TypeScript compiled into static/js, which is not committed.
-ENTRY_SCRIPTS = ['js/nav-boot.js', 'js/shell.js', 'js/components.js', 'js/auth.js']
+ENTRY_SCRIPTS = ['js/nav-boot.js', 'js/shell.js', 'js/components.js', 'js/auth.js', 'js/poll.js']
 
 
 @register()

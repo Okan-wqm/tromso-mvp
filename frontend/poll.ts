@@ -1,12 +1,25 @@
 // Parts of a page that the server renders again while the page is in view (Messages: the open conversation,
-// the list of conversations, the menu's unread badge; the water calculator's results as its form changes).
-// There is no push yet: a timer, or a change of a form, asks for the fragment. Server-sent events or a
-// WebSocket replace the timer later and ask for the same fragments.
+// the list of conversations, the menu's unread badge; the water calculator's results as its form changes; the
+// monitoring grid and its windows). There is no push yet: a timer, or a change of a form, asks for the fragment.
+// Server-sent events or a WebSocket replace the timer later and ask for the same fragments. THE one
+// implementation of polling: `watch(element)` is exported for the code that makes an element later (windows.ts).
 //   data-poll="<url>"          the fragment's address
-//   data-poll-every="<s>"      seconds between two requests; none while the page is hidden, one at once when it
-//                              is shown again
+//   data-poll-every="<s>"      seconds between two requests, each wait a little shorter or longer by chance so
+//                              screens never line up; none while the page is hidden, one at once when it is shown
+//                              again; after a failure the wait doubles, up to a minute
 //   data-poll-append           the fragment's rows go at the end (new messages) instead of replacing the content;
 //                              the response's X-Poll-Next header is the address of the next request
+//   data-poll-merge="<attr>"   the fragment's elements each carry <attr> (a key); the one of the page with the same
+//                              key is replaced only when its markup differs, a new key is inserted where the
+//                              fragment has it, a key the fragment lacks goes, focus stays on the element of the
+//                              same id; a fragment with an element without the key replaces the whole content
+//   data-poll-skip-same        an answer equal to the previous one changes nothing (a chart keeps its scroll)
+//   data-poll-state="live|stale|gone"
+//                              set by this script: live after an answer, stale after two failures in a row (the
+//                              server cannot be reached), gone when the person may no longer read it (401, 403,
+//                              404 or a redirect to sign-in); the page's CSS says so in its own words. A
+//                              `poll:gone` event (detail.status) bubbles from the element when it is gone.
+//   `poll:now` event           asks at once; detail.url (optional) is the address to ask from now on
 //   data-scroll-end            a list that opens scrolled to its end and follows new rows while it is there
 //   data-submit-on-enter       a textarea whose form is sent with Enter; Shift+Enter starts a new line
 //   data-live="<url>"          a GET form whose results the server draws again as it is filled in: on a change (a
@@ -19,55 +32,186 @@
 //                              A field with data-autosubmit sends the form instead (the page is drawn anew);
 //                              without the script the form is sent by its <noscript> button.
 //   data-live-delay="<ms>"     the pause after typing before asking (default 300)
-// A fragment the person may no longer read (signed out, removed from the conversation) stops its timer; a live
-// form then opens its own page, which says why.
+// An element that leaves the page stops being asked for; a request takes at most 20 seconds.
 
 // How close to the end (px) a list must be to follow new rows.
 const NEAR_END = 48;
 // Answers after which asking again is pointless.
 const GONE = new Set([401, 403, 404]);
+// How long (ms) a request may take, and the longest wait (ms) after failures.
+const TIMEOUT = 20000;
+const SLOWEST = 60000;
+// A wait is its interval times 1 ± JITTER.
+const JITTER = 0.1;
+// Failures in a row after which the element says it is stale.
+const STALE_AFTER = 2;
+
+type PollState = 'live' | 'stale' | 'gone';
 
 function atEnd(list: HTMLElement): boolean {
   return list.scrollHeight - list.scrollTop - list.clientHeight < NEAR_END;
 }
 
-function poll(element: HTMLElement): void {
+/** Replaces `container`'s keyed children by those of `html`: a child of the same key is kept when its markup is the
+ *  same and replaced when it differs, a new key is inserted at its place in the answer, a child the answer lacks is removed (keyed or not).
+ *  False (nothing done) when an element of the answer has no key: the caller then replaces everything. */
+function merge(container: HTMLElement, html: string, key: string): boolean {
+  const template = document.createElement('template');
+  template.innerHTML = html.trim();
+  const incoming = Array.from(template.content.children) as HTMLElement[];
+  if (incoming.some((node) => !node.hasAttribute(key))) return false;
+  const focused = document.activeElement instanceof HTMLElement && container.contains(document.activeElement)
+    ? document.activeElement.id : '';
+  const current = new Map<string, HTMLElement>();
+  for (const child of Array.from(container.children) as HTMLElement[]) {
+    const id = child.getAttribute(key);
+    if (id !== null) current.set(id, child);
+  }
+  const kept = new Set<Element>();
+  incoming.forEach((node, index) => {
+    const id = node.getAttribute(key) ?? '';
+    const old = current.get(id);
+    let target = node;
+    if (old !== undefined) {
+      if (old.outerHTML === node.outerHTML) target = old;
+      else old.replaceWith(node);
+    }
+    kept.add(target);
+    const here = container.children[index] ?? null;
+    if (here !== target) container.insertBefore(target, here);
+  });
+  Array.from(container.children).forEach((child) => { if (!kept.has(child)) child.remove(); });
+  if (focused && document.activeElement?.id !== focused) document.getElementById(focused)?.focus();
+  return true;
+}
+
+// The elements asked for, so one listener serves them all and a gone element is let go.
+interface Watched { element: HTMLElement; refresh: () => Promise<void>; }
+const watching = new Set<Watched>();
+const stoppers = new WeakMap<HTMLElement, () => void>();
+let listening = false;
+
+function shown(): void {
+  if (document.visibilityState !== 'visible') return;
+  watching.forEach((each) => {
+    if (each.element.isConnected) void each.refresh();
+    else watching.delete(each);
+  });
+}
+
+/** Starts asking for the fragment of `element` (data-poll, data-poll-every, and the attributes above); returns the
+ *  function that stops it. An element asked for already is not asked for twice. */
+export function watch(element: HTMLElement): () => void {
+  const already = stoppers.get(element);
+  if (already) return already;
   let url = element.dataset.poll ?? '';
   const seconds = Number(element.dataset.pollEvery);
-  if (!url || !(seconds > 0)) return;
+  if (!url || !(seconds > 0)) return () => undefined;
   const append = element.hasAttribute('data-poll-append');
-  let busy = false;
+  const mergeBy = element.dataset.pollMerge ?? '';
+  const skipSame = element.hasAttribute('data-poll-skip-same');
+  const dropped = new WeakSet<AbortController>();
+  let running: AbortController | null = null;
+  let failures = 0;
   let timer = 0;
+  let last = '';
+  let stopped = false;
 
-  const refresh = async (): Promise<void> => {
-    if (busy || document.visibilityState !== 'visible') return;
-    busy = true;
-    try {
-      const response = await fetch(url, { credentials: 'same-origin' });
-      if (response.redirected || GONE.has(response.status)) {
-        window.clearInterval(timer);
-        return;
-      }
-      if (!response.ok) return;   // a passing server error: the next tick asks again
-      url = response.headers.get('X-Poll-Next') ?? url;
-      if (response.status === 204) return;
-      const html = await response.text();
-      if (append) {
-        const follow = atEnd(element);
-        element.insertAdjacentHTML('beforeend', html);
-        if (follow) element.scrollTop = element.scrollHeight;
-      } else {
-        element.innerHTML = html.trim();
-      }
-    } catch {
-      // offline for a moment: the next tick asks again
-    } finally {
-      busy = false;
+  const state = (value: PollState): void => { element.dataset.pollState = value; };
+  const failed = (): void => {
+    failures += 1;   // the next wait is longer
+    if (failures >= STALE_AFTER) state('stale');
+  };
+  const schedule = (): void => {
+    window.clearTimeout(timer);
+    if (stopped) return;
+    const interval = Math.min(seconds * 1000 * 2 ** failures, Math.max(SLOWEST, seconds * 1000));
+    timer = window.setTimeout(() => { void refresh(); }, interval * (1 + JITTER * (Math.random() * 2 - 1)));
+  };
+  const stop = (): void => {
+    stopped = true;
+    window.clearTimeout(timer);
+    running?.abort();
+    watching.delete(entry);
+    stoppers.delete(element);
+  };
+  const gone = (status: number): void => {
+    stop();
+    state('gone');
+    element.dispatchEvent(new CustomEvent('poll:gone', { bubbles: true, detail: { status } }));
+  };
+  const apply = (html: string): void => {
+    if (append) {
+      const follow = atEnd(element);
+      element.insertAdjacentHTML('beforeend', html);
+      if (follow) element.scrollTop = element.scrollHeight;
+    } else if (mergeBy) {
+      if (!merge(element, html, mergeBy)) element.innerHTML = html.trim();
+    } else if (!(skipSame && html === last)) {
+      element.innerHTML = html.trim();
     }
+    last = html;
   };
 
-  timer = window.setInterval(() => { void refresh(); }, seconds * 1000);
-  document.addEventListener('visibilitychange', () => { void refresh(); });
+  async function refresh(): Promise<void> {
+    if (stopped) return;
+    if (!element.isConnected) {
+      stop();
+      return;
+    }
+    if (running || document.visibilityState !== 'visible') return;
+    const request = new AbortController();
+    running = request;
+    const timeout = window.setTimeout(() => request.abort(), TIMEOUT);
+    try {
+      const response = await fetch(url, { credentials: 'same-origin', signal: request.signal });
+      if (response.redirected || GONE.has(response.status)) {
+        gone(response.status);
+        return;
+      }
+      if (!response.ok) {   // a server error: asked for again, after a longer wait
+        failed();
+        return;
+      }
+      url = response.headers.get('X-Poll-Next') ?? url;
+      failures = 0;
+      state('live');
+      if (response.status === 204) return;
+      const html = await response.text();
+      if (!dropped.has(request)) apply(html);
+    } catch {
+      if (!dropped.has(request)) failed();   // offline, or too slow
+    } finally {
+      window.clearTimeout(timeout);
+      if (running === request) running = null;
+      schedule();
+    }
+  }
+
+  const entry: Watched = { element, refresh };
+  element.addEventListener('poll:now', (event) => {
+    if (stopped) return;
+    const next = (event as CustomEvent<{ url?: string } | null>).detail?.url;
+    if (next) {
+      url = next;
+      last = '';
+    }
+    if (running) {
+      dropped.add(running);
+      running.abort();
+      running = null;
+    }
+    void refresh();
+  });
+  watching.add(entry);
+  stoppers.set(element, stop);
+  if (!listening) {
+    document.addEventListener('visibilitychange', shown);
+    listening = true;
+  }
+  state('live');
+  schedule();
+  return stop;
 }
 
 function sendOnEnter(area: HTMLTextAreaElement): void {
@@ -179,6 +323,6 @@ function live(form: HTMLFormElement): void {
 }
 
 document.querySelectorAll<HTMLElement>('[data-scroll-end]').forEach((list) => { list.scrollTop = list.scrollHeight; });
-document.querySelectorAll<HTMLElement>('[data-poll]').forEach(poll);
+document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
 document.querySelectorAll<HTMLTextAreaElement>('textarea[data-submit-on-enter]').forEach(sendOnEnter);
 document.querySelectorAll<HTMLFormElement>('form[data-live]').forEach(live);

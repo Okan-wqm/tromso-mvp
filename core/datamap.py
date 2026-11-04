@@ -16,7 +16,7 @@ service, a row a parent owns, a table the code fills) needs one, and it names th
 and the pages that show it. A view is named by the function itself, so a renamed or unrouted view fails to import
 or here. What is missing on purpose is said with `no(why)`; what is missing and should not be is said with
 `gap(why)`, which is reported (docs/data-map.md, Gaps) and not forgotten. A column no form covers is said once in
-`Screen.columns`: `computed`, `system` or `gap`.
+`Screen.columns`: `computed`, `system`, `dynamic` or `gap`.
 
 The rules the test enforces are `problems()`; a new app is picked up from INSTALLED_APPS, and its tables fail the
 test until its `screens.py` declares them, with a message that names the model and where to declare it."""
@@ -44,6 +44,8 @@ CAPABILITIES = ('create', 'edit', 'delete', 'read')
 DOCS = Path(settings.BASE_DIR) / 'docs'
 MARKDOWN, JSON = DOCS / 'data-map.md', DOCS / 'data-map.json'
 # How much a missing path weighs in the Gaps ranking: nobody can fill it, nobody can read it, ...
+# In Screen.columns: the reason for every column that no form covers and nothing else says (a table the code writes).
+ALL = '*'
 WEIGHT = {'create': 4, 'edit': 3, 'read': 3, 'delete': 2, 'column': 1}
 
 
@@ -71,6 +73,12 @@ def computed(why):
     return Reason('computed', why)
 
 
+def dynamic(why):
+    """A column a form fills with fields it makes per record (the specifications of an equipment type, a water
+    sample's parameters), so no field of the form carries its name."""
+    return Reason('dynamic', why)
+
+
 def system(why):
     """A column the system sets as part of the work (who, when, which parent)."""
     return Reason('system', why)
@@ -85,16 +93,22 @@ class Screen:
     part_of   'farm.StockOperation': written with that record, so its create, edit and delete are that record's
     forms     form classes that are not model forms of this table but fill its columns by the same name (a dialog's
               form: the service writes the row), and the model forms the table's own tab does not use
-    columns   column -> computed / system / gap, for a column no form covers
-    extra_fields   a model form's field that is not a column of its table -> why (a language kept on the profile)"""
+    fills     form field -> the column or columns it fills, where the names differ (a count typed in a dialog is the
+              ledger line's `count_delta`; an amount and a unit are stored as hours)
+    columns   column -> computed / system / dynamic / gap, for a column no form covers; '*' for all the rest
+    extra_fields   a form field that is not a column and fills none -> why (a form's token, a choice that only
+              narrows another)
+    note      one line on how it works that the paths do not say (voiding a stocking voids its batch)"""
     create: object = ()
     edit: object = ()
     delete: object = ()
     read: object = ()
     part_of: str = ''
     forms: tuple = ()
+    fills: dict = field(default_factory=dict)
     columns: dict = field(default_factory=dict)
     extra_fields: dict = field(default_factory=dict)
+    note: str = ''
 
 
 # --- what the code says --------------------------------------------------------------------------------------
@@ -169,13 +183,7 @@ def model_forms(model):
     """The model forms of a table found in the code: a tab's form, the forms of its row lists, and any other model
     form of it (a dialog's)."""
     found = {}
-
-    def all_subclasses(cls):
-        for sub in cls.__subclasses__():
-            yield sub
-            yield from all_subclasses(sub)
-
-    for form in all_subclasses(forms.ModelForm):
+    for form in all_model_forms():
         if getattr(getattr(form, 'Meta', None), 'model', None) is model:
             found[form] = None
     for tab in tabs_of(model):
@@ -185,6 +193,24 @@ def model_forms(model):
             if rows.formset.model is model:
                 found[rows.formset.form] = None
     return sorted(found, key=lambda form: (form.__module__, form.__qualname__))
+
+
+def link_lists(model):
+    """[(form, field name, field)] of the link lists (core.links.LinkList) that save rows of this table with their
+    parent's form."""
+    from .links import LinkList
+    return [(form, name, item) for form in all_model_forms() for name, item in form.base_fields.items()
+            if isinstance(item, LinkList) and item.through is model]
+
+
+def all_subclasses(cls):
+    for sub in cls.__subclasses__():
+        yield sub
+        yield from all_subclasses(sub)
+
+
+def all_model_forms():
+    return sorted(all_subclasses(forms.ModelForm), key=lambda form: (form.__module__, form.__qualname__))
 
 
 def form_fields(form):
@@ -284,19 +310,37 @@ class Map:
 
     # -- paths ---------------------------------------------------------------------------------------------------
     def view_paths(self, label, capability, views):
-        """The paths of declared views; a view that no route answers to is a problem."""
+        """The paths of declared views, a view being a function (a route answers to it) or a tab (a Resource class);
+        a view that no route answers to is a problem."""
         paths = []
         for view in views:
+            if isinstance(view, type) and issubclass(view, Resource):
+                paths.append(self.tab_path(view, capability))
+                continue
+            if isinstance(view, str):
+                if view not in self.routes.by_name:
+                    self.problems.append(f'{label}: the {capability} URL name {view!r} is not routed.')
+                else:
+                    paths.append(self.url_paths('view', view, [view]))
+                continue
             names = self.routes.by_view.get(unwrapped(view))
             if not names:
                 self.problems.append(
                     f'{label}: the {capability} view {getattr(view, "__module__", "?")}.'
-                    f'{getattr(view, "__qualname__", view)} has no route: add it to the app\'s urls.py or declare '
+                    f'{getattr(view, "__qualname__", view)} has no route: add it to the app urls.py or declare '
                     f'another view in screens.py.')
                 continue
             paths.append({'how': 'view', 'label': f'{view.__module__}.{view.__qualname__}', 'url_names': sorted(names),
                           'routes': [self.routes.by_name[name] for name in sorted(names)]})
         return paths
+
+    def tab_path(self, tab, capability):
+        """A tab as the place where something is done: its pages for the capability (read: its list, its read page
+        and its form, which shows the record)."""
+        names = {'create': ['create'], 'edit': ['edit'], 'delete': ['delete'], 'read': ['list', 'detail', 'edit']}
+        urls = [tab.url_name(action) for action in names[capability]
+                if action != 'detail' or tab.detail_template]
+        return self.url_paths('tab', f'{tab.plural} tab', urls)
 
     def url_paths(self, how, label, names):
         return {'how': how, 'label': label, 'url_names': names, 'routes': [self.routes.by_name.get(n, '') for n in names]}
@@ -324,6 +368,12 @@ class Map:
                 for capability in ('create', 'edit', 'delete'):
                     paths[capability].append(saved)
                 paths['read'].append(self.url_paths('rowlist', label, [tab.url_name('edit')]))
+        for form, name, _ in link_lists(model):
+            parent = form._meta.model
+            for capability in CAPABILITIES:
+                for path in self.resolve(parent._meta.label)['paths']['edit' if capability == 'delete' else capability]:
+                    paths[capability].append({**path, 'how': 'linklist',
+                                              'label': f'field {name} of {form.__name__}: {path["label"]}'})
         parent = model._meta.auto_created
         if parent:
             link = next(f for f in parent._meta.many_to_many if f.remote_field.through is model)
@@ -409,6 +459,7 @@ class Map:
             'columns': columns,
             'constraints': constraints_of(model),
             'screens': capabilities,
+            'note': screen.note,
             'forms': [{'form': form.__name__, 'module': form.__module__,
                        'fields': form_fields(form)} for form in self.all_forms(model)],
             'delete_kind': ('soft delete through the delete plan' if soft else 'rows are removed'),
@@ -422,20 +473,41 @@ class Map:
         label = model._meta.label
         parents = {rows.formset.fk.name for tab in Resource.registry for rows in tab.row_lists
                    if rows.formset.model is model}
+        parents |= {column.name for form, _, item in link_lists(model) for column in model._meta.concrete_fields
+                    if column.is_relation and column.related_model is form._meta.model and column.name != item.target}
         forms_here = self.all_forms(model)
         covered = {}
         for form in forms_here:
             for name, tab in form_fields(form).items():
                 covered.setdefault(name, []).append(f'{form.__name__}' + (f' › {tab}' if tab else ''))
+        for key, targets in screen.fills.items():
+            form_name, _, field_name = key.rpartition('.')
+            holders = [form for form in forms_here if field_name in form.base_fields
+                       and (not form_name or form.__name__ == form_name)]
+            if not holders:
+                self.problems.append(f'{label}: Screen.fills names the form field {key!r}, which no form of the table '
+                                     f'has.')
+            for column in ([targets] if isinstance(targets, str) else targets):
+                if column not in {f.name for f in model._meta.concrete_fields}:
+                    self.problems.append(f'{label}: Screen.fills sends {key!r} to {column!r}, which is not a '
+                                         f'column of the table.')
+                covered.setdefault(column, []).extend(f'{form.__name__}.{field_name}' for form in holders)
+        for form, name, item in link_lists(model):
+            for column in (item.target, item.primary, *item.detail_names):
+                if column:
+                    covered.setdefault(column, []).append(f'{form.__name__}.{name}')
         through = model._meta.auto_created
         link = next((f for f in through._meta.many_to_many if f.remote_field.through is model), None) if through else None
-        extra = {}
+        reported = set()
+        filled = {key.rpartition('.')[2] for key in screen.fills}
+        exempt = set(screen.extra_fields) | filled
         for form in forms_here:
             if not issubclass(form, forms.ModelForm) or getattr(form.Meta, 'model', None) is not model:
                 continue
             names = {f.name for f in model._meta.get_fields()} | AUDIT_COLUMNS | {ENTRY_KEY}
             for name in form.base_fields:
-                if name not in names and name not in screen.extra_fields:
+                if name not in names and name not in exempt and name not in reported:
+                    reported.add(name)
                     self.problems.append(
                         f'{label}: the field {name!r} of {form.__name__} is not a column of {model._meta.db_table}: '
                         f'give it a model field or list it in Screen.extra_fields in '
@@ -443,7 +515,9 @@ class Map:
         for name in screen.extra_fields:
             if not any(name in form.base_fields for form in forms_here):
                 self.problems.append(f'{label}: Screen.extra_fields names {name!r}, which no form of the table has.')
-        result, undeclared = [], []
+            if name in filled:
+                self.problems.append(f'{label}: {name!r} is in both Screen.fills and Screen.extra_fields.')
+        result, undeclared, used_rest = [], [], False
         for column in model._meta.concrete_fields:
             entry = {'name': column.column, 'field': column.name, 'type': column_type(column), 'null': column.null,
                      'choices': [str(value) for value, _ in column.choices] if column.choices else [],
@@ -453,6 +527,7 @@ class Map:
                                  'model': column.related_model._meta.label,
                                  'on_delete': column.remote_field.on_delete.__name__}
             declared = screen.columns.get(column.name)
+            rest = screen.columns.get(ALL)
             reason = system_reason(model, column, parents)
             if link is not None:
                 entry.update(how='m2m', why=f'the link {link.name} of {through._meta.object_name}')
@@ -467,8 +542,9 @@ class Map:
                     self.problems.append(
                         f'{label}.{column.name} is on a form ({covered[column.name][0]}); the declaration in '
                         f'screens.py is stale: remove it.')
-            elif declared is not None:
-                entry.update(how=declared.kind, why=declared.why)
+            elif declared is not None or rest is not None:
+                entry.update(how=(declared or rest).kind, why=(declared or rest).why)
+                used_rest = used_rest or declared is None
             else:
                 entry.update(how='undeclared')
                 undeclared.append(column.name)
@@ -479,7 +555,9 @@ class Map:
                 f'says why: put the field on a form, or declare it in {model._meta.app_label}/screens.py '
                 f'(SCREENS[{model._meta.object_name!r}] = Screen(columns={{<column>: computed(why) | system(why) | '
                 f'gap(why)}})).')
-        names = {column.name for column in model._meta.concrete_fields}
+        if ALL in screen.columns and not used_rest:
+            self.problems.append(f'{label}: Screen.columns[{ALL!r}] covers no column: remove it.')
+        names = {column.name for column in model._meta.concrete_fields} | {ALL}
         for name in screen.columns:
             if name not in names:
                 self.problems.append(f'{label}: Screen.columns names {name!r}, which is not a column of the table.')
@@ -604,6 +682,8 @@ def table_block(table):
              table['description'], '']
     for capability in CAPABILITIES:
         lines.append(f'- **{capability}**: {capability_text(table["screens"][capability])}')
+    if table['note']:
+        lines.append(f'- **how it works**: {table["note"]}')
     viewer = table['viewer']
     shown = f'{viewer["section"]} › {table["table"]}' if viewer['section'] else 'not shown'
     masked = f' (never shown: {", ".join(viewer["masked"])})' if viewer['masked'] else ''

@@ -67,7 +67,7 @@ impl Settings {
             password: None,
             role: None,
             batch_ms: 250,
-            batch_max: 5000,
+            batch_max: 20_000,
             heartbeat: Duration::from_secs(10),
             config_poll: Duration::from_secs(30),
             version: env!("CARGO_PKG_VERSION").to_string(),

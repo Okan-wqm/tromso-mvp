@@ -2,7 +2,8 @@
 # S10 extreme bench: the production ingest image and broker configuration against the database sensors_bench of the
 # existing database container. One heavy phase at a time (the machine is shared):
 #   bench/run.sh throughput [RATE] [SECONDS]   QoS 1 at RATE msg/s (default 10000) over 100 devices x 5 channels
-#   bench/run.sh brokerkill                    broker SIGKILL under load, acknowledged-but-lost messages counted
+#   bench/run.sh drain [N]                     the ingest's own capacity: N messages queued while it is stopped
+#   bench/run.sh brokerkill                   broker SIGKILL under load, acknowledged-but-lost messages counted
 #   bench/run.sh poison                        50 000 distinct garbage messages beside a normal stream
 # Results are appended to bench/.state/results.txt. Containers are removed at the end (KEEP=1 keeps them).
 set -uo pipefail
@@ -56,11 +57,21 @@ docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik -v "$(win "
   psql -h db -U balik -d $DB -q -f /b/seed.sql >/dev/null || { echo "seed failed"; exit 1; }
 
 docker build -q -t sensors-ingest:bench sensors-ingest >/dev/null || exit 1
-docker run -d --name bench-broker --network "$NET" -v "$REPO/sensors-ingest/mosquitto:/mosquitto/config:ro" \
+# BENCH_INFLIGHT (default: the repository value 5000) tries another broker window on a copy of the configuration
+CONF="$REPO/sensors-ingest/mosquitto"
+if [ -n "${BENCH_INFLIGHT:-}" ]; then
+  mkdir -p "$STATE/conf/conf.d"
+  sed "s/^max_inflight_messages .*/max_inflight_messages $BENCH_INFLIGHT/" sensors-ingest/mosquitto/mosquitto.conf > "$STATE/conf/mosquitto.conf"
+  cp sensors-ingest/mosquitto/entrypoint.sh "$STATE/conf/"
+  CONF=$(win "$PWD/$STATE/conf")
+fi
+docker run -d --name bench-broker --network "$NET" -v "$CONF:/mosquitto/config:ro" \
   -v "$(win "$PWD/$STATE/auth"):/mosquitto/auth" -v bench-broker-data:/mosquitto/data --entrypoint sh "$MOSQ" \
   /mosquitto/config/entrypoint.sh >/dev/null
 docker run -d --name bench-ingest --network "$NET" -v "$(win "$PWD/$STATE/secrets"):/run/secrets:ro" \
-  -e INGEST_DB="host=db port=5432 dbname=$DB user=sensors_ingest_e2e" -e RUST_LOG=warn sensors-ingest:bench >/dev/null
+  -e INGEST_DB="host=db port=5432 dbname=$DB user=sensors_ingest_e2e" -e RUST_LOG=warn \
+  -e INGEST_QUEUE="${BENCH_QUEUE:-10000}" -e INGEST_BATCH_MAX="${BENCH_BATCH_MAX:-5000}" \
+  -e INGEST_BATCH_MS="${BENCH_BATCH_MS:-250}" sensors-ingest:bench >/dev/null
 docker network connect balik-ciftligi_default bench-ingest
 for _ in $(seq 1 60); do healthz 2>/dev/null | grep -q '"status":"ok"' && break; sleep 2; done
 healthz | grep -q '"status":"ok"' || { echo "ingest not healthy"; docker logs bench-ingest | tail; exit 1; }
@@ -72,18 +83,43 @@ throughput)
   ( for _ in $(seq 1 $((SECS / 5 + 30))); do docker stats --no-stream --format '{{.MemUsage}} {{.CPUPerc}}' bench-ingest; sleep 4; done ) > "$STATE/stats.txt" 2>/dev/null &
   STATS=$!
   START=$(date +%s)
-  P=$(publish RATE="$RATE" SECONDS="$SECS" DEVICES=100 CHANNELS=5 CLIENT_ID=bench-pub)
+  # two publishers (one TCP session tops out near 7000 QoS 1 msg/s here), 50 devices each
+  publish RATE="$((RATE / 2))" SECONDS="$SECS" DEVICES=50 CHANNELS=5 CLIENT_ID=bench-pub2 DEVICE_OFFSET=50 > "$STATE/pub2.txt" &
+  P=$(publish RATE="$((RATE / 2))" SECONDS="$SECS" DEVICES=50 CHANNELS=5 CLIENT_ID=bench-pub)
+  wait
+  P="$P; $(tail -1 "$STATE/pub2.txt")"
   PUB_END=$(date +%s)
-  SENT=$(echo "$P" | sed -n 's/.*sent=\([0-9]*\).*/\1/p')
+  SENT=0
+  for s in $(echo "$P" | grep -o 'sent=[0-9]*' | cut -d= -f2); do SENT=$((SENT + s)); done
   for _ in $(seq 1 600); do [ "$(( $(accepted) - A0 ))" -ge "$SENT" ] && break; sleep 1; done
   DONE=$(date +%s); kill $STATS 2>/dev/null
   WAL1=$(sql "SELECT wal_bytes FROM pg_stat_wal")
+  out "settings: broker window ${BENCH_INFLIGHT:-5000}, queue ${BENCH_QUEUE:-10000}, batch max ${BENCH_BATCH_MAX:-5000}, batch ${BENCH_BATCH_MS:-250} ms"
   out "publisher: $P"
   out "messages stored (accepted on their device): $(( $(accepted) - A0 )) of $SENT; ingest done $(( DONE - START )) s after start, $(( DONE - PUB_END )) s after the last publish"
   out "rows $(sql "SELECT count(*) FROM sensors_reading") for $((SENT * 5)) samples; samples accounted $(sql "SELECT sum(n) FROM sensors_reading") in rows + $(sql "SELECT sum(run_n) FROM sensors_channel_state") in open runs"
-  out "WAL $(( (WAL1 - WAL0) / 1048576 )) MiB in $(( DONE - START )) s (cluster-wide), $(( (WAL1 - WAL0) / 1048576 / (DONE - START + 1) )) MiB/s"
+  out "WAL $(( (WAL1 - WAL0) / 1048576 )) MiB in $(( DONE - START )) s (cluster-wide), $(( (WAL1 - WAL0) / 1024 / (DONE - START + 1) )) KiB/s"
   out "healthz: $(healthz)"
   out "ingest memory/cpu samples: $(tr '\n' ';' < "$STATE/stats.txt" | cut -c1-400)"
+  ;;
+drain)
+  # the ingest's own capacity, apart from the publishers: a backlog queued in its persistent session while it is
+  # stopped, then drained as fast as it can (also the catch-up after an ingest outage)
+  N=${2:-300000}
+  docker stop -t 60 bench-ingest >/dev/null
+  P=$(publish RATE=7000 SECONDS=$((N / 7000)) DEVICES=100 CHANNELS=5 CLIENT_ID=bench-pub)
+  SENT=$(echo "$P" | grep -o 'sent=[0-9]*' | cut -d= -f2)
+  A0=$(accepted); WAL0=$(sql "SELECT wal_bytes FROM pg_stat_wal")
+  START=$(date +%s.%N)
+  docker start bench-ingest >/dev/null
+  for _ in $(seq 1 1200); do [ "$(( $(accepted) - A0 ))" -ge "$SENT" ] && break; sleep 0.5; done
+  END=$(date +%s.%N)
+  WAL1=$(sql "SELECT wal_bytes FROM pg_stat_wal")
+  SECS_D=$(echo "$START $END" | awk '{printf "%.1f", $2 - $1}')
+  out "settings: broker window ${BENCH_INFLIGHT:-5000}, queue ${BENCH_QUEUE:-10000}, batch max ${BENCH_BATCH_MAX:-5000}, batch ${BENCH_BATCH_MS:-250} ms"
+  out "backlog of $SENT messages ($((SENT * 5)) samples, 500 channels) drained in ${SECS_D} s from the ingest start: $(echo "$SENT $SECS_D" | awk '{printf "%.0f", $1 / $2}') msg/s, $(echo "$SENT $SECS_D" | awk '{printf "%.0f", 5 * $1 / $2}') samples/s (start-up included)"
+  out "WAL $(( (WAL1 - WAL0) / 1048576 )) MiB during the drain"
+  out "healthz: $(healthz)"
   ;;
 brokerkill)
   ( sleep 10; docker kill -s KILL bench-broker >/dev/null; sleep 3; docker start bench-broker >/dev/null ) &

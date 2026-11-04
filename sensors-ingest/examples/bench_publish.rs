@@ -3,7 +3,8 @@
 //!
 //! Env: BROKER (host), MQTT_USER, MQTT_PASSWORD, DEVICES (topics bench/dev-<i>), CHANNELS (values per message),
 //! RATE (messages per second, all devices), SECONDS, GARBAGE (1: distinct non-JSON payloads instead), ACKED_FILE
-//! (optional: writes "device seq" per acknowledged message), CLIENT_ID.
+//! (optional: writes "device seq" per acknowledged message), CLIENT_ID, TOPIC_PREFIX (default bench/dev-),
+//! DEVICE_OFFSET (first device number, so several publishers can share the load).
 //! Payload: {"t": <epoch ms>, "seq": n, "v": {"c0": x, ...}}; device times are unique per device (1 ms apart at least).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
 
@@ -24,6 +25,8 @@ async fn main() {
     let rate: u64 = env("RATE", 10_000);
     let seconds: u64 = env("SECONDS", 60);
     let garbage: u8 = env("GARBAGE", 0);
+    let prefix: String = env("TOPIC_PREFIX", "bench/dev-".to_string());
+    let offset: usize = env("DEVICE_OFFSET", 0);
     let mut o = MqttOptions::new(env("CLIENT_ID", "bench-publisher".to_string()), host, 1883);
     o.set_credentials(env("MQTT_USER", "bench".to_string()), env("MQTT_PASSWORD", String::new()))
         .set_inflight(1000)
@@ -62,6 +65,8 @@ async fn main() {
     });
     let start = Instant::now();
     let base_ms = chrono::Utc::now().timestamp_millis() - 1000 * (seconds as i64 + 5);
+    let step_ms = (devices as u64 * 1000 / rate).max(1) as i64;
+    println!("base_ms={base_ms} step_ms={step_ms}");
     let mut seq = vec![0u64; devices];
     let mut tick = tokio::time::interval(Duration::from_millis(10));
     let per_tick = (rate / 100).max(1) as usize;
@@ -90,11 +95,10 @@ async fn main() {
                     v.insert(format!("c{k}"), serde_json::json!(val));
                 }
                 // device time: base + seq * (1000 / per-device rate) ms, unique per device
-                let step_ms = (devices as u64 * 1000 / rate).max(1) as i64;
                 serde_json::to_vec(&serde_json::json!({"t": base_ms + s as i64 * step_ms, "seq": s, "v": v})).unwrap()
             };
             order.lock().unwrap().push_back((d, s));
-            c.publish(format!("bench/dev-{d}"), QoS::AtLeastOnce, false, payload).await.unwrap();
+            c.publish(format!("{prefix}{}", d + offset), QoS::AtLeastOnce, false, payload).await.unwrap();
             sent += 1;
         }
     }

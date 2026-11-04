@@ -9,8 +9,8 @@
 //! | `INGEST_MQTT_CA_FILE` | `/etc/ssl/certs/ca-certificates.crt` | CA bundle for TLS connections |
 //! | `INGEST_HTTP` | `0.0.0.0:8080` | /healthz and /decode |
 //! | `INGEST_BATCH_MS` | 250 | longest wait before a batch is committed |
-//! | `INGEST_BATCH_MAX` | 5000 | largest batch |
-//! | `INGEST_QUEUE` | 10000 | queue between readers and writer (>= broker `max_inflight_messages`) |
+//! | `INGEST_BATCH_MAX` | 20000 | largest batch |
+//! | `INGEST_QUEUE` | 40000 | queue between readers and writer (>= broker `max_inflight_messages`, 20000) |
 
 use crate::service::Settings;
 use crate::supervisor::Options;
@@ -45,8 +45,8 @@ pub fn options(
     let mut settings = Settings::new(&conninfo);
     settings.password = Some(password);
     settings.batch_ms = num(&var, "INGEST_BATCH_MS", 250u64)?;
-    settings.batch_max = num(&var, "INGEST_BATCH_MAX", 5000usize)?;
-    let queue_capacity = num(&var, "INGEST_QUEUE", 10_000usize)?;
+    settings.batch_max = num(&var, "INGEST_BATCH_MAX", 20_000usize)?;
+    let queue_capacity = num(&var, "INGEST_QUEUE", 40_000usize)?;
     let http = var("INGEST_HTTP").unwrap_or_else(|| "0.0.0.0:8080".into());
     let http_addr = Some(http.parse().map_err(|e| format!("INGEST_HTTP={http:?}: {e}"))?);
     Ok(Options {

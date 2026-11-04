@@ -14,7 +14,8 @@ from django.utils import translation
 
 from farm.feeding import assignments, services as feeding_services
 from farm.handling import check
-from farm.models import Feed, ProtocolAssignment, Tank
+from farm.models import Feed, ProtocolAssignment, Site, Tank
+from farm.tests.helpers import make_species
 from farm.models.handling import KIND_OF_OPERATION
 from farm.models.stock import OperationKind
 from farm.stock import services as stock_services
@@ -336,3 +337,28 @@ class IntegrityTests(DeviationCase):
             call_command('check_experiments', stdout=out)
         self.assertEqual(out.getvalue().strip(), f'{self.trial.code}: The team has no lead.')
         self.assertEqual(str(caught.exception), '1 problem(s) in the experiments.')
+
+
+class CleanerFishTests(DeviationCase):
+    """Cleaner fish share a sea unit with the production fish and have their own feeding (the record's target): none of it is
+    the trial's, in the figures, the data or the deviations."""
+
+    def setUp(self):
+        super().setUp()
+        Site.objects.filter(pk=self.bergen.pk).update(type='sea_cage', latitude=D('60.1'), longitude=D('5.1'))
+        lump = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='Rognkjeks', freshwater=False,
+                            cleaner_fish_type='lumpfish')
+        self.block = Feed.objects.create(name='Lumpfish block', code='LB', feed_type='grower')
+        self.lumps = self.stock(self.tanks[0], count=1000, weight='50', days_ago=10, species=lump)
+        for ago in (5, 4):
+            feeding_services.record_feeding(self.user, unit=self.tanks[0], day=self.day(ago), feed=self.block,
+                                            amount_kg=D('3'), target='cleaner_fish')
+
+    def test_the_cleaner_fish_and_their_feed_are_not_the_trials(self):
+        self.assertEqual(self.found(), [])
+        self.assertEqual(integrity.problems(), [])
+        row = self.row()
+        self.assertEqual([batch.code for batch in row.batches], [self.batches[0].code])
+        self.assertEqual((row.conversion.feed_kg, row.conversion.biological, row.fish), (26, Decimal('1.3'), 980))
+        data = read.data(self.trial)[0]
+        self.assertEqual((data.cell.unit.code, data.records, data.kilos), ('T-01', 13, Decimal(26)))

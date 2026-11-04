@@ -31,6 +31,7 @@ from farm import placements as farm_placements
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import LOST
 from farm.models import Batch, Feed, FeedingRecord, ProtocolBand, StockMovement, Tank
+from farm.models.feeding import FeedTarget
 from farm.models.stock import MovementKind
 from farm.stock import read as stock_read
 from farm.stock.dates import local_today, site_today
@@ -241,16 +242,25 @@ class TankData:
     kilos: Decimal
 
 
+def feed_target(experiment):
+    """Whom the experiment's feeding records are for: the farm splits a unit's feed between its production fish and the cleaner
+    fish beside them (the record's `target`), and the experiment's species says which of the two its fish are: the other
+    kind's feeding is never the trial's."""
+    return FeedTarget.CLEANER_FISH if experiment.species.is_cleaner_fish else FeedTarget.PRODUCTION
+
+
 def data(experiment):
     """[TankData] of the experiment's tanks, in the order of the design: per placement its days and the feeding records
     of the tank on them (one read of the units' feeding, `feeding.read.feedings`: the count and the feed given)."""
     found = cells(experiment)
     if not found:
         return []
+    target = feed_target(experiment)
     records = feeding_read.feedings({cell.unit.pk for cell in found}, since=min(cell.first for cell in found))
     result = []
     for cell in found:
-        mine = [record for record in records if record.unit_id == cell.unit.pk and cell.first <= record.date <= cell.last]
+        mine = [record for record in records if record.unit_id == cell.unit.pk and cell.first <= record.date <= cell.last
+                and record.target == target]
         result.append(TankData(cell, len(mine), sum((record.amount_kg for record in mine), Decimal(0))))
     return result
 
@@ -322,7 +332,7 @@ def deviations(experiment, today=None):
     mine = {pk for pk, batch in batches.items() if batch.species_id == experiment.species_id}
     protocols = _diet_protocols(experiment)
     found = (_foreign_batches(placed, presence, batches, mine, today) + _transfers(placed, today)
-             + _feed_off_band(placed, protocols, today)
+             + _feed_off_band(placed, protocols, today, feed_target(experiment))
              + _ration_off_diet(placed, protocols, presence, mine, units, today))
     return sorted(found, key=lambda item: (order[item.cell.id], item.first, item.code, item.about))
 
@@ -388,7 +398,7 @@ def _transfers(placed, today):
     return found
 
 
-def _feed_off_band(placed, protocols, today):
+def _feed_off_band(placed, protocols, today, target):
     diet = [cell for cell in placed if cell.group.pk in protocols]
     if not diet:
         return []
@@ -399,7 +409,7 @@ def _feed_off_band(placed, protocols, today):
     given = {}
     for unit_id, day, feed_id, kilos in (
             FeedingRecord.objects.filter(unit_id__in={cell.unit.pk for cell in diet},
-                                         date__gte=min(cell.first for cell in diet), date__lte=today)
+                                         date__gte=min(cell.first for cell in diet), date__lte=today, target=target)
             .order_by().values_list('unit_id', 'date', 'feed_id', 'amount_kg')):
         given.setdefault(unit_id, []).append((day, feed_id, kilos))
     feeds = Feed.all_objects.in_bulk({feed_id for rows in given.values() for _day, feed_id, _kilos in rows})

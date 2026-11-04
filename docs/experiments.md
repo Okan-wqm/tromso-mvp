@@ -116,7 +116,9 @@ query count and that a failing provider never breaks a farm page.
 `read.cells` (the one definition of "which tank, which days, which replicate"), `read.booked`, `read.placements`, `read.overview`,
 `read.data`, `read.progress`, `read.error_df` (replicates less groups, the pooled degrees of freedom) and `read.deviations`. Every figure goes through the
 farm's own reads (`feeding.read.windows_in`, `stock.read.stock_of`, `stock.read.Presence`, `ration.Policy`), and the queries do not
-grow with the tanks (tests count them for 6 and 60). Cleaner fish, and any batch of another species, never count.
+grow with the tanks (tests count them for 6 and 60). Cleaner fish, and any batch of another species, never count: the figures read only the
+batches of the experiment's species, and a unit's feeding records are read for the fish the species is (the record's `target`: production fish or
+cleaner fish beside them), so a cleaner fish's feed is never the trial's feed in the Data tab or in a deviation.
 
 ## Locking
 

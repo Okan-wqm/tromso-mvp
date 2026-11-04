@@ -3,14 +3,18 @@
 {% comment %} Production › Reports › Regulatory reports (reports.resources.ReportResource): the reports and notices the
    farm files with the authorities, each computed from the records; a filed one is kept as it was filed.{% endcomment %}
 {% block search_placeholder %}{% trans "Search by site, facility or receipt" %}{% endblock %}
+{% block above %}
+<nav class="view-tabs report-tabs" aria-label="{% trans "Kinds of report" %}">
+  {% for group in tabs %}
+  {% if group.label %}<span class="view-tab-group">{{ group.label }}</span>{% endif %}
+  {% for tab in group.tabs %}<a class="view-tab" href="{{ tab.url }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}{% if tab.count %} <span class="view-count">{{ tab.count }}</span>{% endif %}</a>{% endfor %}
+  {% endfor %}
+</nav>
+{% endblock %}
 {% block filters %}
 <form method="get" class="toolbar-filter">
   {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
-  <label class="sr-only" for="kind-filter">{% trans "Report" %}</label>
-  <select id="kind-filter" name="kind" data-autosubmit>
-    <option value="">{% trans "All reports" %}</option>
-    {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
-  </select>
+  {% if chosen_kind %}<input type="hidden" name="kind" value="{{ chosen_kind }}">{% endif %}
   <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
   <select id="site-filter" name="site" data-autosubmit>
     <option value="">{% trans "All sites" %}</option>
@@ -25,6 +29,28 @@
 </form>
 {% endblock %}
 {% block notice %}
+{% if chosen_kind %}
+<section class="report-lines" aria-labelledby="lines-title">
+  <h2 id="lines-title" class="section-title">{% trans "Where it stands" %}</h2>
+  {% if kind_start_url %}<p><a class="button button-inline" href="{{ kind_start_url }}">{% include "icons/_icon.html" with name="plus" %}{% trans "Start one" %}</a></p>{% endif %}
+  <div class="table-wrap">
+    <table class="data-table report-lines-table">
+      <thead><tr><th scope="col">{% trans "For" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Why" %}</th></tr></thead>
+      <tbody>
+        {% for line in lines %}
+        <tr>
+          <td>{% if line.place.pk and line.kind != "slaughter_planned" %}<a href="{% url 'farm:site_edit' line.place.pk %}">{{ line.place.name }}</a>{% else %}{{ line.place }}{% endif %}</td>
+          <td class="nowrap">{% if line.status == "due" %}<span class="badge badge-closed">{% blocktrans trimmed count count=line.count %}{{ count }} due{% plural %}{{ count }} due{% endblocktrans %}</span>{% elif line.status == "up_to_date" %}<span class="badge badge-active">{% trans "Up to date" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Not due" %}</span>{% endif %}</td>
+          <td>{{ line.reason }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">{% trans "No site or facility to report for." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
 {% if changed %}
 <div class="notice notice-error" role="alert">
   <strong>{% trans "The records no longer give what was filed" %}</strong>

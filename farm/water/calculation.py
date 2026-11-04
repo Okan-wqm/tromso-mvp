@@ -13,14 +13,22 @@ report draw from one `Calculation`, so they never disagree; nothing is stored.
   altitude, and the limits of the fish in it today (read.limits_now): the critical high of
   NH₃-N and of CO₂ (the calculator has one limit for each and its own 0.2 pH alert band: a species' warning
   bound for them is not used), the warning bounds of the alkalinity as the safe zone's band, and the four pH
-  bounds; where several species are in it, the strictest."""
+  bounds; where several species are in it, the strictest.
+- `inputs_from`: the one mapping from the calculator's field values to the analysis's water, limits, target and
+  pressure; the calculator's form and a unit's chart both call it.
+- `chart_of`: a unit's own Deffeyes chart, from the readings of one of its sampling points and the limits of its
+  fish, or a `Refusal` that lists what is missing. It never fills a value in: the calculator's example water
+  (forms/water.py DEFAULTS) does not reach a unit; the one assumption is a fresh-water unit's salinity of 0, which
+  the chart says (read.assumed_salinity)."""
 from dataclasses import dataclass, field
 from decimal import Decimal
 
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from ..models import SamplingPoint
 from ..models.water_point import site_of
-from . import charts, chemistry, deffeyes, dosing, read
+from . import charts, chemistry, deffeyes, dosing, parameters, read
 from .evaluate import Status, judge as judge_bounds
 
 # The calculator's fields a unit or a loop measures, by the parameter they are.
@@ -89,6 +97,28 @@ def judge_step(analysis, step, ph_bounds=PhBounds()):
         None if sulfide is None else sulfide * chemistry.H2S_PER_S * eq.h2s_share(ph), h2s)
 
 
+# ---- the calculator's values as the analysis takes them ---------------------------------------------------
+def inputs_from(values):
+    """{water, limits, target, pressure} for `calculate` from the calculator's field values (`values`: by field name,
+    numbers as floats, a missing optional one None or absent): the water a sample holds, the limits, the target and
+    the pressure at the altitude. THE mapping: the calculator's form and a unit's chart both go through it."""
+    water = deffeyes.Water(
+        temperature_c=values['temperature_c'], salinity_ppt=values['salinity_ppt'], ph=values['ph'],
+        alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values.get('tan_mg_l'),
+        total_sulfide_ug_l=values.get('total_sulfide_ug_l'), calcium_mg_l=values.get('calcium_mg_l'),
+        oxygen_mg_l=values.get('oxygen_mg_l'))
+    limits = deffeyes.Limits(
+        nh3_n_mg_l=values.get('nh3_n_limit_mg_l'), co2_mg_l=values.get('co2_limit_mg_l'),
+        h2s_ug_l=values.get('h2s_limit_ug_l'), alkalinity_low_mg_l=values.get('alkalinity_low_mg_l'),
+        alkalinity_high_mg_l=values.get('alkalinity_high_mg_l'))
+    target = None
+    if values.get('target_ph') is not None:
+        target = deffeyes.Target(values['target_ph'], values['target_alkalinity_mg_l'])
+    altitude = values.get('altitude_m')
+    return {'water': water, 'limits': limits, 'target': target,
+            'pressure': chemistry.pressure_atm(altitude) if altitude is not None else 1.0}
+
+
 # ---- one calculation --------------------------------------------------------------------------------------
 @dataclass
 class Calculation:
@@ -126,10 +156,11 @@ class Calculation:
 
 
 def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, amounts=None, all_layers=False,
-              ph_bounds=PhBounds()):
+              ph_bounds=PhBounds(), plots=True):
     """Everything the calculator shows. `chosen`: the reagents' keys in the order chosen; `amounts`: grams by
     reagent key for the simulator, its steps' pH judged by `ph_bounds`; `all_layers`: draw every layer whatever
-    `layers` says (the printed report, as the source's forces its safety overlays)."""
+    `layers` says (the printed report, as the source's forces its safety overlays); `plots`: the four small charts
+    too (a unit's chart leaves them out)."""
     analysis = deffeyes.analyse(water, limits, target, pressure)
     eq = analysis.equilibria
     start = (analysis.dic, analysis.alkalinity_meq)
@@ -162,7 +193,8 @@ def calculate(water, limits, target, pressure, layers, chosen=(), volume=None, a
     simulator = [(judged.step.dic, judged.step.alkalinity) for judged in calculation.steps
                  if judged.step.ph is not None]
     calculation.chart = deffeyes.draw(analysis, shown, dosing.visual(start, end, list(chosen)), simulator)
-    calculation.plots = {key: charts.draw(plot) for key, plot in charts.plots(analysis).items()}
+    if plots:
+        calculation.plots = {key: charts.draw(plot) for key, plot in charts.plots(analysis).items()}
     return calculation
 
 
@@ -182,10 +214,12 @@ def _strictest(rows, bound, pick):
     return (pick(values), tuple(row for row in rows if getattr(row, bound) is not None)) if values else (None, ())
 
 
-def offers(owner):
-    """{field: Offer} of what a unit or a loop gives the calculator now."""
+def offers(owner, now=None, point=None):
+    """{field: Offer} of what a unit or a loop gives the calculator now. `point`: a sampling point of the owner whose
+    readings are given instead of its middle point's (a unit's inlet, its outlet); nothing is borrowed from any other
+    point."""
     found = {}
-    water = read.owner_water([owner])[owner.pk]
+    water = read.owner_water([owner], now)[owner.pk] if point is None else read.latest([point], now)[point.pk]
     for name in MEASURED_FIELDS:
         reading = water.get(name)
         if reading is not None and reading.value is not None:
@@ -210,3 +244,94 @@ def offers(owner):
         found['alkalinity_low_mg_l'] = Offer('alkalinity_low_mg_l', low, rows=low_rows)
         found['alkalinity_high_mg_l'] = Offer('alkalinity_high_mg_l', high, rows=high_rows)
     return found
+
+
+# ---- a unit's own chart ---------------------------------------------------------------------------------------
+# What a unit's chart must have, in the order they are listed when missing.
+REQUIRED = ['temperature_c', 'ph', 'alkalinity_mg_l', 'salinity_ppt']
+OPTIONAL = ['tan_mg_l', 'oxygen_mg_l']
+# The limits a unit's chart takes from the fish, by the calculator field they fill.
+LIMIT_FIELDS = ['nh3_n_limit_mg_l', 'co2_limit_mg_l', 'alkalinity_low_mg_l', 'alkalinity_high_mg_l']
+
+
+@dataclass(frozen=True)
+class ChartInput:
+    """One value a unit's chart is drawn from: a reading (with its sample, age and status), or the assumed salinity
+    of fresh water, or the site's altitude."""
+    field: str
+    label: object
+    value: Decimal
+    reading: object = None             # read.Reading; None when `assumed` or the altitude
+    assumed: bool = False
+
+
+@dataclass(frozen=True)
+class UnitChart:
+    """A unit's Deffeyes chart for one of its sampling points: the inputs it was drawn from, the limits of its fish with
+    the rows they come from, the calculation, and `absent`, the labels of the limits the fish do not have (so that
+    border is missing from the chart)."""
+    unit: object
+    point: SamplingPoint
+    now: object
+    inputs: list
+    limits: dict                       # calculator field -> Offer
+    calculation: Calculation
+    assumed: tuple = ()                # the fields that are assumed, never measured: ('salinity_ppt',)
+    absent: tuple = ()
+    points: tuple = ()                 # the unit's active points, middle first (the window's links)
+
+
+@dataclass(frozen=True)
+class Refusal:
+    """A unit's chart that cannot be drawn, and why: `missing` the labels of the readings the point lacks, `impossible`
+    the reason a pH and an alkalinity cannot go together, `no_point` that the unit has no middle point and none was
+    chosen; `points` are the unit's active points, to choose another."""
+    unit: object
+    point: SamplingPoint | None
+    missing: list
+    points: tuple = ()
+    impossible: str = ''
+    no_point: bool = False
+
+
+def chart_of(unit, point=None, now=None):
+    """The Deffeyes chart (UnitChart) of a unit's water at `point` (one of its sampling points; the middle point by
+    default), or a Refusal. The temperature, pH, alkalinity and salinity are the point's own latest readings (a
+    sea unit without a salinity is refused; a fresh-water unit's is 0, said); the TAN and the oxygen are drawn when
+    they are there; the sulfide and the calcium are measured nowhere, so there is no H2S or calcite layer. The limits
+    are the fish's (`offers`). Never a default: what is missing is listed."""
+    now = now or timezone.now()
+    points = tuple(read.points_of([unit])[unit.pk])
+    if point is None:
+        point = next((each for each in points if each.kind == read.MIDDLE), None)
+        if point is None:
+            return Refusal(unit, None, [], points, no_point=True)
+    found = offers(unit, now, point)
+    values = {name: float(found[name].value) for name in (*REQUIRED, *OPTIONAL) if name in found}
+    inputs = {name: ChartInput(name, parameters.get(name).label, found[name].value, found[name].reading)
+              for name in (*REQUIRED, *OPTIONAL) if name in found}
+    assumed = ()
+    if 'salinity_ppt' not in found:
+        salinity = read.assumed_salinity({unit.water_type})
+        if salinity is not None:
+            values['salinity_ppt'] = float(salinity)
+            inputs['salinity_ppt'] = ChartInput('salinity_ppt', parameters.get('salinity_ppt').label, salinity,
+                                                assumed=True)
+            assumed = ('salinity_ppt',)
+    missing = [parameters.get(name).label for name in REQUIRED if name not in values]
+    if missing:
+        return Refusal(unit, point, missing, points)
+    why = deffeyes.why_impossible(values['temperature_c'], values['salinity_ppt'], values['ph'],
+                                  values['alkalinity_mg_l'])
+    if why:
+        return Refusal(unit, point, [], points, impossible=why)
+    if 'altitude_m' in found:
+        values['altitude_m'] = float(found['altitude_m'].value)
+        inputs['altitude_m'] = ChartInput('altitude_m', _('Altitude (m)'), found['altitude_m'].value)
+    limits = {name: found[name] for name in LIMIT_FIELDS if name in found}
+    values.update({name: float(offer.value) for name, offer in limits.items()})
+    made = calculate(**inputs_from(values), layers=deffeyes.ALL_LAYERS, plots=False)
+    absent = tuple(label for name, label in (('nh3_n_limit_mg_l', _('NH₃-N limit')), ('co2_limit_mg_l', _('CO₂ limit')))
+                   if name not in limits)
+    ordered = [inputs[name] for name in (*REQUIRED, *OPTIONAL, 'altitude_m') if name in inputs]
+    return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points)

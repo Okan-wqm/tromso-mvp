@@ -3,15 +3,17 @@
 The health records (treatments and medicines) register a provider in their app's `ready()`:
 
     from farm.handling import withdrawal
-    withdrawal.register(provider)      # provider(unit, day) -> iterable of WithdrawalBlock
+    withdrawal.register(provider)      # provider(units, day) -> {unit id: [WithdrawalBlock]}
 
-A provider returns the withdrawals of the fish in `unit` on `day`: one block per batch and cause, following
-the batch wherever it was treated. `until` is the first day the fish may be harvested, None when it cannot be
+A provider returns the withdrawals of the fish in `units` on `day` (None: each unit's own today), the units that
+have none left out: one block per batch and cause, following the batch wherever it was treated. It answers for
+all the units at once, so a page of fifty units costs what a page of one does. `until` is the first day the fish may be harvested, None when it cannot be
 worked out ("unknown", which counts as a warning, never as clear); `approximate` when it is projected (degree
 days still accruing). A block whose `until` is on or before the day is clear.
 
-`blocks(unit, day)` asks every provider. With none registered it returns None, not an empty list: the check
-then says "Medicine withdrawal not checked" instead of reading it as clear."""
+`blocks_of(units, day=None)` asks every provider; `blocks(unit, day)` is its case of one unit. With none registered
+they return None, not an empty list: the check then says "Medicine withdrawal not checked" instead of reading it
+as clear."""
 from dataclasses import dataclass
 from datetime import date
 
@@ -33,8 +35,19 @@ def register(provider):
         _providers.append(provider)
 
 
-def blocks(unit, day):
-    """Every provider's blocks for the fish in `unit` on `day`; None when no provider is registered."""
+def blocks_of(units, day=None):
+    """{unit id: [WithdrawalBlock]} of every unit given (an empty list for one with none), every provider's blocks
+    for the fish in them on `day` (None: each unit's today); None when no provider is registered."""
     if not _providers:
         return None
-    return [block for provider in _providers for block in provider(unit, day)]
+    found = {unit.pk: [] for unit in units}
+    for provider in _providers:
+        for unit_id, blocks in provider(units, day).items():
+            found[unit_id].extend(blocks)
+    return found
+
+
+def blocks(unit, day):
+    """Every provider's blocks for the fish in `unit` on `day`; None when no provider is registered."""
+    found = blocks_of([unit], day)
+    return None if found is None else found[unit.pk]

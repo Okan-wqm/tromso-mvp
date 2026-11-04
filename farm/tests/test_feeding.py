@@ -17,8 +17,9 @@ from django.urls import reverse
 from core import access, database, navigation
 from core.models import AuditLog, Profile
 
-from ..feeding import read, services
+from ..feeding import read, services, views as feeding_views
 from ..feeding.fold import Feeding, Point, PointKind, walk
+from ..handling import check
 from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, Tank
 from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.fold import Line, Op
@@ -155,6 +156,50 @@ class WalkTests(SimpleTestCase):
                  line(4, op(4, 'weighing', oct_(9)), 'weighing', 0, weight='130')]
         end = walk(lines).stays[('T1', 'B1')][-1].points[-1]
         self.assertEqual((end.removed_kg, end.lost_kg), (7, 7))     # 6 kg weighed + 10 culls at 100 g
+    def test_a_bounded_window_runs_between_the_measured_points_of_the_days_given(self):
+        """Two consecutive windows add up to the whole stay's (the statistics will read consecutive windows)."""
+        lines = [line(1, op(1, 'input', oct_(1)), 'input', 1000, weight='100'),
+                 line(2, op(2, 'weighing', oct_(8)), 'weighing', 0, weight='120'),
+                 line(3, op(3, 'weighing', oct_(15)), 'weighing', 0, weight='150')]
+        stay = walk(lines, [fed(oct_(day), 5) for day in range(1, 15)]).stays[('T1', 'B1')][-1]
+        whole, first = read.window(stay), read.window(stay, oct_(1), oct_(8))
+        second = read.window(stay, oct_(8), oct_(15))
+        self.assertEqual((whole.feed_kg, whole.gain_kg), (70, 50))
+        self.assertEqual((first.feed_kg, first.gain_kg), (35, 20))            # the days 1 to 7 and 100 -> 120 kg
+        self.assertEqual((second.feed_kg, second.gain_kg), (35, 30))          # the days 8 to 14 and 120 -> 150 kg
+        self.assertEqual(read.window(stay, oct_(1), oct_(15)), whole)
+        self.assertEqual(read.window(stay, None, oct_(8)), first)             # no bound: the stay's own end
+        self.assertEqual(read.window(stay, oct_(8), None), second)
+        self.assertEqual(read.Conversion([first, second]).biological, read.Conversion([whole]).biological)
+
+    def test_a_bound_without_a_measured_point_that_day_gives_no_window_and_never_an_interpolated_one(self):
+        lines = [line(1, op(1, 'input', oct_(1)), 'input', 1000, weight='100'),
+                 line(2, op(2, 'weighing', oct_(8)), 'weighing', 0, weight='120'),
+                 line(3, op(3, 'weighing', oct_(15)), 'weighing', 0, weight='150')]
+        stay = walk(lines, [fed(oct_(day), 5) for day in range(1, 15)]).stays[('T1', 'B1')][-1]
+        for first, last in ((oct_(2), oct_(15)), (oct_(1), oct_(9)), (oct_(2), None), (None, oct_(14)),
+                            (oct_(16), None), (None, oct_(1)),            # a window ends after it starts
+                            (oct_(8), oct_(8)), (oct_(15), oct_(8)), (oct_(15), None)):
+            with self.subTest(first=first, last=last):
+                self.assertIsNone(read.window(stay, first, last))
+
+    def test_the_last_point_of_a_day_is_the_state_at_the_end_of_it(self):
+        lines = [line(1, op(1, 'input', oct_(1)), 'input', 1000, weight='100'),
+                 line(2, op(2, 'weighing', oct_(8)), 'weighing', 0, weight='120'),
+                 line(3, op(3, 'weighing', oct_(8)), 'weighing', 0, weight='130'),
+                 line(4, op(4, 'weighing', oct_(15)), 'weighing', 0, weight='150')]
+        stay = walk(lines, [fed(oct_(day), 5) for day in range(1, 15)]).stays[('T1', 'B1')][-1]
+        self.assertEqual(read.window(stay, oct_(1), oct_(8)).gain_kg, 30)     # 100 -> 130 kg, the second weighing
+        self.assertEqual(read.window(stay, oct_(8), oct_(15)).gain_kg, 20)    # 130 -> 150 kg
+
+    def test_the_harvest_that_closes_a_stay_ends_a_bounded_window_with_its_day_fed(self):
+        lines = [line(1, op(1, 'input', oct_(1)), 'input', 1000, weight='100'),
+                 line(2, op(2, 'weighing', oct_(5)), 'weighing', 0, weight='110'),
+                 line(3, op(3, 'harvest', oct_(10)), 'harvest', -1000, measured='120')]
+        stay = walk(lines, [fed(oct_(day), 1) for day in range(1, 11)]).stays[('T1', 'B1')][-1]
+        closed = read.window(stay, oct_(5), oct_(10))
+        self.assertEqual((closed.end.kind, closed.feed_kg), (PointKind.CLOSE, 6))        # the days 5 to 10
+        self.assertEqual(read.window(stay, oct_(5)), closed)
 
 
 # ---- the write path and the pages ------------------------------------------------------------------
@@ -415,7 +460,7 @@ class FiguresTests(FeedingTestCase):
 
     def test_bfcr_efcr_and_the_feed_rate_from_the_records_and_the_ledger(self):
         units = list(Tank.objects.all())
-        figures = read.figures(stock_read.stock_of(units), detail=self.t1)[self.t1.pk]
+        figures = read.figures(stock_read.stock_of(units), details=[self.t1])[self.t1.pk]
         conversion = figures.conversion
         self.assertEqual((conversion.feed_kg, conversion.gain_kg, conversion.economic_gain_kg), (168, 196, 186))
         self.assertEqual((figures.last_fed, figures.week.today_kg, figures.week.today_meals, figures.week.kg),
@@ -455,6 +500,69 @@ class FiguresTests(FeedingTestCase):
         tiles = self.client.get(reverse('production_home')).context['feeding_tiles']
         self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
                          [('Feed today', '10 kg'), ('Feed, last 7 days', '10 kg')])
+
+class WindowsInTests(FeedingTestCase):
+    """The windows of the units over days (read.windows_in), against the figures of the same worked example."""
+
+    def setUp(self):
+        super().setUp()
+        self.mortality(self.batch, 200, days_ago=16)
+        for days_ago in range(20, 6, -1):
+            self.record(days_ago=days_ago)
+        stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(6),
+                                       avg_weight_g=Decimal(70))
+
+    def move(self, source, target, days_ago):
+        """All the batch's fish from one unit to the other (the handling warnings of the recent feeding read)."""
+        day = self.day(days_ago)
+        stock_services.record_transfer(
+            self.user, source=source, batch=self.batch, day=day, legs=[(target, 9800)], reason='grading',
+            handling_ack=check.assess('transport', source, day, self.batch).fingerprint)
+
+    def test_unbounded_and_bounded_by_its_measured_days_they_are_the_figures_window(self):
+        shown = read.figures(stock_read.stock_of([self.t1]))[self.t1.pk].conversion
+        for first, last in ((None, None), (self.day(20), self.day(6)), (self.day(20), None), (None, self.day(6))):
+            with self.subTest(first=first, last=last):
+                found = read.windows_in([self.t1.pk], first, last)
+                self.assertEqual(list(found), [(self.t1.pk, self.batch.pk)])
+                conversion = read.Conversion(list(found.values()))
+                self.assertEqual((conversion.feed_kg, conversion.gain_kg, conversion.economic_gain_kg),
+                                 (shown.feed_kg, shown.gain_kg, shown.economic_gain_kg))
+                self.assertEqual((conversion.feed_kg, conversion.gain_kg), (168, 196))
+        for first, last in ((self.day(19), None), (None, self.day(5)), (self.day(6), None),
+                            (self.day(20), self.day(7))):
+            with self.subTest(first=first, last=last):
+                self.assertEqual(read.windows_in([self.t1.pk], first, last), {})
+
+    def test_the_measured_points_of_a_day_are_the_ones_a_window_can_start_or_end_on(self):
+        self.assertEqual(read.measured_on([self.t1.pk], self.day(20)), {(self.t1.pk, self.batch.pk)})     # stocked
+        self.assertEqual(read.measured_on([self.t1.pk], self.day(6)), {(self.t1.pk, self.batch.pk)})      # weighed
+        for day in (self.day(19), self.day(10), self.day(5), self.day(21)):
+            self.assertEqual(read.measured_on([self.t1.pk], day), set())
+        self.assertEqual(read.measured_on([self.t2.pk], self.day(20)), set())
+        self.assertEqual(read.measured_on([], self.day(20)), set())
+
+    def test_only_the_units_asked_for_and_only_the_feed_of_their_days(self):
+        self.assertEqual(read.windows_in([]), {})
+        self.assertEqual(read.windows_in([self.t2.pk]), {})
+        self.record(unit=self.t1, days_ago=5, kilos='7')              # after the weighing: not in the window
+        found = read.windows_in([self.t1.pk], self.day(20))
+        self.assertEqual(read.Conversion(list(found.values())).feed_kg, 168)
+        # The fish moved on: the window is of the unit that fed them, not of the one they went to.
+        self.move(self.t1, self.t2, 4)
+        self.assertEqual(list(read.windows_in([self.t1.pk], self.day(20))), [(self.t1.pk, self.batch.pk)])
+        self.assertEqual(read.windows_in([self.t2.pk], self.day(20)), {})        # no measured point in T-02 yet
+
+    def test_a_batch_that_came_back_has_the_window_of_its_latest_stay_that_has_one(self):
+        self.move(self.t1, self.t2, 5)
+        self.move(self.t2, self.t1, 4)
+        stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(2),
+                                       avg_weight_g=Decimal(75))
+        # The second stay in T-01 begins with a plain transfer: its first point is a weighing, so it has no window
+        # (the figures page shows the same dash); the first stay still has its own.
+        found = read.windows_in([self.t1.pk])
+        self.assertEqual(read.Conversion(list(found.values())).feed_kg, 168)
+        self.assertIsNone(read.figures(stock_read.stock_of([self.t1]))[self.t1.pk].shares[0].window)
 
 
 class ListTests(FeedingTestCase):
@@ -521,6 +629,34 @@ class PermissionTests(FeedingTestCase):
         drawer = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
         self.assertNotContains(drawer, reverse('farm:feeding_records'))
         self.assertNotContains(drawer, 'Recent feedings')
+
+    def test_production_units_prints_no_feeding_figure_without_the_right_to_read_feeding(self):
+        self.record()
+        url = reverse('farm:production_units')
+        self.as_role('view_stockoperation')
+        page = self.client.get(url, {'unit': self.t1.pk})
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.context['feeding'], None)
+        self.assertEqual(page.context['rows'][0]['feeding'], None)
+        # (the drawer's harvest check says when the fish were last fed against the rule: not this figure)
+        for text in ('>bFCR<', '>eFCR<', '>Last fed</th>', '<dt>Last fed</dt>', '>Yesterday<', '>Fed<', 'Recent feedings'):
+            self.assertNotContains(page, text)
+        self.assertContains(page, '>Fish<')                     # the stock figures stay
+        self.as_role('view_stockoperation', 'view_feedingrecord')
+        page = self.client.get(url, {'unit': self.t1.pk})
+        for text in ('>bFCR<', '>eFCR<', '>Last fed</th>', '<dt>Last fed</dt>', '>Fed<', '>Yesterday<'):
+            self.assertContains(page, text)
+        self.assertIsNotNone(page.context['rows'][0]['feeding'])
+
+    def test_unit_figures_is_empty_without_the_right_and_the_read_with_it(self):
+        stock = stock_read.stock_of([self.t1])
+        reader = get_user_model().objects.create_user('reader', 'reader@example.com')
+        reader.groups.add(role('Reader', 'view_feedingrecord'))
+        blind = get_user_model().objects.create_user('blind', 'blind@example.com')
+        blind.groups.add(role('Blind', 'view_stockoperation'))
+        self.assertEqual(feeding_views.unit_figures(blind, stock), {})
+        self.assertEqual(feeding_views.unit_figures(reader, stock, details=[self.t1]).keys(),
+                         read.figures(stock, details=[self.t1]).keys())
 
     def test_the_menu_and_the_role_matrix_place_it_under_operations(self):
         self.assertEqual(str(navigation.place('farm.view_feedingrecord').path), 'Production · Operations · Feeding')

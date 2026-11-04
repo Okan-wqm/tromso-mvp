@@ -5,6 +5,7 @@
 {% block heading %}{% trans "Overview" %}{% endblock %}
 {% block content %}
 {% include "_overview_tiles.html" %}
+{% if upcoming %}{% include "reports/_upcoming.html" %}{% endif %}
 <section class="placeholder">
   <p>{% blocktrans trimmed with name=user.get_username %}Welcome, {{ name }}. The company’s figures will appear here.{% endblocktrans %}</p>
 </section>

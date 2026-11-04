@@ -69,6 +69,8 @@ WORKSPACES = [
                 Entry(_('Systems'), 'farm:system_list', 'waves', 'farm.view_system'),
                 Entry(_('Equipment'), 'farm:equipment_list', 'wrench', 'farm.view_equipment'),
                 Entry(_('Tanks, ponds & cages'), 'farm:tank_list', 'cylinder', 'farm.view_tank'),
+                # The named wall screens of Operations › Monitoring: which units, how each card is drawn.
+                Entry(_('Monitoring boards'), 'monitoring:monitorboard_list', 'monitor', 'monitoring.view_monitorboard'),
                 # Where in the water a sample is taken: a place on a unit, a loop or a piece of equipment.
                 Entry(_('Sampling points'), 'farm:samplingpoint_list', 'droplet', 'farm.view_samplingpoint'),
             ]),
@@ -100,6 +102,8 @@ WORKSPACES = [
         Section(_('Operations'), [
             Group('', [
                 Entry(_('Production units'), 'farm:production_units', 'layers', 'farm.view_stockoperation'),
+                # A live card per unit for the control room's wall, from the same records (the page needs the same right).
+                Entry(_('Monitoring'), 'monitoring:monitor', 'monitor', 'farm.view_stockoperation'),
                 Entry(_('Water chemistry'), 'farm:water', 'droplet', 'farm.view_watermeasurement'),
                 # The store: what is on hand where, deliveries, moves, write-offs and counts; the feed fed is read
                 # from the feeding records.
@@ -124,6 +128,13 @@ WORKSPACES = [
                 Entry(_('Treatments'), 'farm:treatments', 'syringe', 'farm.view_treatment'),
                 Entry(_('Health events'), 'farm:healthevent_list', 'stethoscope', 'farm.view_healthevent'),
                 Entry(_('Sea-lice counts'), 'farm:lice_counts', 'bug', 'farm.view_licecount'),
+            ]),
+        ]),
+        # Research: trials of one species on one site, with their design, their tanks and the days. It reads the farm
+        # and nothing reads it (README, Experiments).
+        Section(_('Research'), [
+            Group('', [
+                Entry(_('Experiments'), 'experiments:experiment_list', 'flask', 'experiments.view_experiment'),
             ]),
         ]),
         # What the farm tells the authorities, computed from the records above and filed by people: neither structure

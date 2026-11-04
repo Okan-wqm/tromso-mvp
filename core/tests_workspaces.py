@@ -59,12 +59,12 @@ class PanelSwitcherTests(WorkspaceTestCase):
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                    'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
+                                                    'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
                                                     'Water limits', 'Medicines', 'Handling rules', 'Slaughter facilities',
-                                                    'Suppliers', 'Production units', 'Water chemistry', 'Storage', 'Tasks',
+                                                    'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
                                                     'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                     'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                    'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
+                                                    'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -118,12 +118,12 @@ class PanelMemoryTests(WorkspaceTestCase):
         response = self.page(reverse('password_change'))
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
-                                                  'Tanks, ponds & cages', 'Sampling points', 'Species', 'Feeds',
+                                                  'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
                                                   'Water limits', 'Medicines', 'Handling rules', 'Slaughter facilities',
-                                                  'Suppliers', 'Production units', 'Water chemistry', 'Storage', 'Tasks',
+                                                  'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
                                                   'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                   'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                  'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
+                                                  'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -156,7 +156,7 @@ class MainHeadingTests(WorkspaceTestCase):
         self.assertEqual(self.headings(response),
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
                                                  'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Reports', ['']),
+                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']), ('Reports', ['']),
                           ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
@@ -200,6 +200,7 @@ class MenuPlacementTests(TestCase):
             'farm.System': 'Production · Setup · Facility structure',
             'farm.Equipment': 'Production · Setup · Facility structure',
             'farm.Tank': 'Production · Setup · Facility structure',
+            'monitoring.MonitorBoard': 'Production · Setup · Facility structure',
             'farm.SamplingPoint': 'Production · Setup · Facility structure',
             'farm.Species': 'Production · Setup · Reference data',
             'farm.Feed': 'Production · Setup · Reference data',
@@ -220,6 +221,7 @@ class MenuPlacementTests(TestCase):
             'farm.Treatment': 'Production · Operations · Health',
             'farm.HealthEvent': 'Production · Operations · Health',
             'farm.LiceCount': 'Production · Operations · Health',
+            'experiments.Experiment': 'Production · Research',
             'reports.Report': 'Production · Reports',
             'messaging.Conversation': 'Production · Communication',
             'tasks.Task': 'Production · Operations',

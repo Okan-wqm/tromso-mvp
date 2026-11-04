@@ -300,7 +300,17 @@ class StockOperation(AuditedModel):
         ]
         indexes = [models.Index(fields=['date'])]
 
+    @property
+    def escape(self):
+        """Its escape record, or None: a count adjustment with one is an escape, and is named so wherever it is listed."""
+        return getattr(self, 'escape_record', None)
+
     def __str__(self):
+        if self.escape is not None:
+            line = next(iter(self.movements.all()), None)
+            if line is not None:
+                return gettext('Escape of %(fish)d fish from %(unit)s, %(date)s') % {
+                    'fish': abs(line.count_delta), 'unit': line.unit.code, 'date': self.date.isoformat()}
         return f'{self.get_kind_display()} {self.date.isoformat()}'
 
 
@@ -433,7 +443,7 @@ class EscapeRecord(models.Model):
         constraints = [models.CheckConstraint(condition=~Q(cause=''), name='chk_escape_records_cause')]
 
     def __str__(self):
-        return f'{self.operation} · {self.cause[:60]}'
+        return str(self.operation)
 
 
 SITE_NUMBER = [MinValueValidator(10000), MaxValueValidator(99999)]

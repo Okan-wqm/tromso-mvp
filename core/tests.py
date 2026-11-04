@@ -1,6 +1,8 @@
 import io
 import re
 import warnings
+from datetime import timedelta
+from unittest import mock
 from importlib import import_module
 
 from django.contrib.auth import get_user_model
@@ -12,6 +14,7 @@ from django.core.management import call_command
 from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from farm.models import Site
 from farm.tests.helpers import site_data
@@ -110,6 +113,14 @@ class AuditLogTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
 
+    def test_a_label_too_long_for_the_column_is_cut_with_an_ellipsis_and_never_fails_the_write(self):
+        site = Site.objects.create(name='Bergen', code='BG')
+        entry = audit.record(self.user, AuditLog.Action.UPDATE, site, {'Name': ['a', 'b']}, label='x' * 400)
+        entry.refresh_from_db()
+        self.assertEqual((len(entry.entity_label), entry.entity_label[-2:]), (255, 'x…'))
+        short = audit.record(self.user, AuditLog.Action.UPDATE, site, {}, label='y' * 255)
+        self.assertEqual(short.entity_label, 'y' * 255)
+
     def make_entry(self, **fields):
         defaults = dict(user=self.user, user_name='ali', action=AuditLog.Action.UPDATE,
                         entity_type='site', entity_id='1', entity_label='Site A (SA)')
@@ -164,6 +175,44 @@ def user_data(**overrides):
             'is_active': 'on', 'groups': []}
     data.update(overrides)
     return data
+
+
+class RevisionTests(TestCase):
+    """audit.revision(): the change signal the monitoring wall polls on."""
+
+    def write(self, label='Bergen'):
+        site = Site.objects.create(name=label, code=label[:2].upper())
+        return audit.record(None, AuditLog.Action.CREATE, site)
+
+    def test_an_empty_log_has_a_token_and_it_does_not_move_without_a_write(self):
+        self.assertEqual(audit.revision(), '0')
+        self.assertEqual(audit.revision(), audit.revision())
+
+    def test_every_entry_moves_it_and_nothing_else_does(self):
+        seen = [audit.revision()]
+        for label in ('Alta', 'Bodo', 'Vardo'):
+            self.write(label)
+            seen.append(audit.revision())
+            self.assertEqual(audit.revision(), seen[-1])            # reading never changes it
+        self.assertEqual(len(set(seen)), 4)
+        Site.objects.create(name='Silent', code='SI')             # a write that is not logged is not seen: the
+        self.assertEqual(audit.revision(), seen[-1])             # token test of the writers is what guards that
+
+    def test_an_entry_stamped_before_the_newest_one_moves_it_through_the_count(self):
+        first = self.write('Alta')
+        before = audit.revision()
+        late = timezone.now() - timedelta(minutes=2)
+        with mock.patch('django.utils.timezone.now', return_value=late):        # created_at is taken at make time
+            second = self.write('Bodo')
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.assertLess(second.created_at, first.created_at)
+        self.assertNotEqual(audit.revision(), before)
+
+    def test_it_costs_two_queries(self):
+        self.write()
+        with self.assertNumQueries(2):
+            audit.revision()
 
 
 class AdminTestCase(TestCase):

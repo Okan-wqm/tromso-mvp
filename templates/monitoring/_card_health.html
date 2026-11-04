@@ -1,0 +1,7 @@
+{% load i18n health %}
+<section class="monitor-section monitor-health">
+  {% if "health" in card.hidden %}{% include "monitoring/_card_hidden.html" with section=_("Health") %}
+  {% else %}
+  {% include "farm/_unit_health_lines.html" with events=card.events treatments=card.treatments lice=card.lice treatments_shown=card.can.treatments %}
+  {% endif %}
+</section>

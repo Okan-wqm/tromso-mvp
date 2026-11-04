@@ -189,6 +189,7 @@
         "core/tests.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_assignments.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_delete_plan.py",
@@ -217,6 +218,7 @@
         "inventory/tests/test_services.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py",
         "hr/tests/test_attendance.py",
@@ -227,7 +229,16 @@
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
         "hr/tests/test_scope.py",
-        "hr/tests/test_services.py"
+        "hr/tests/test_services.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_copy.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_places.py",
+        "experiments/tests/test_start.py",
+        "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_token.py"
       ]
     },
     {
@@ -400,7 +411,2488 @@
         "knowledge/tests/test_languages.py",
         "messaging/tests/test_pages.py",
         "inventory/tests/test_pages.py",
-        "tasks/tests/test_pages.py"
+        "tasks/tests/test_pages.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_placements.py",
+        "monitoring/tests/test_pages.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "Factor",
+      "table": "experiment_factors",
+      "description": "A thing the groups differ in: the diet (each of its levels names a feeding protocol, which is how the farm applies it) or another factor (a temperature, a density) whose levels are labelled values.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "experiment_id",
+          "field": "experiment",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiments",
+            "model": "experiments.Experiment",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the experiment the design belongs to"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(60)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "FactorRowForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "diet",
+            "other"
+          ],
+          "link": null,
+          "on_form": [
+            "FactorRowForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "unit",
+          "field": "unit",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "FactorRowForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "position",
+          "field": "position",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the order the rows have on the Design tab"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_experiment_factors_name_live",
+          "kind": "unique",
+          "fields": [
+            "name",
+            "experiment"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_experiment_factors_diet",
+          "kind": "unique",
+          "fields": [
+            "experiment"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_experiment_factors_id_experiment",
+          "kind": "unique",
+          "fields": [
+            "id",
+            "experiment"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "uq_experiment_factors_id_kind",
+          "kind": "unique",
+          "fields": [
+            "id",
+            "kind"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiment_factors_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiment_factors_diet_unit",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_detail",
+              "url_names": [
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Saved with the experiment's design on the Design tab (services.save_design), logged as one \"Design\" entry of the experiment; a row the design no longer has is deleted with the delete plan, and a started design cannot change.",
+      "forms": [
+        {
+          "form": "FactorRowForm",
+          "module": "experiments.forms",
+          "fields": {
+            "id": "",
+            "name": "",
+            "kind": "",
+            "unit": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "none",
+        "why": "listed read-only in the admin: a voided record is entered again on its page, where the checks run"
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_copy.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_triggers.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "GroupLevel",
+      "table": "experiment_group_levels",
+      "description": "The level a group has of a factor: one row per group and factor.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "experiment_id",
+          "field": "experiment",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiments",
+            "model": "experiments.Experiment",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "rebuilt from the cells of the group's row when the design is saved"
+        },
+        {
+          "name": "group_id",
+          "field": "group",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiment_groups",
+            "model": "experiments.ExperimentGroup",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "rebuilt from the cells of the group's row when the design is saved"
+        },
+        {
+          "name": "factor_id",
+          "field": "factor",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiment_factors",
+            "model": "experiments.Factor",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "rebuilt from the cells of the group's row when the design is saved"
+        },
+        {
+          "name": "level_id",
+          "field": "level",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiment_levels",
+            "model": "experiments.Level",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "rebuilt from the cells of the group's row when the design is saved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_experiment_group_levels_group_factor",
+          "kind": "unique",
+          "fields": [
+            "group",
+            "factor"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_detail",
+              "url_names": [
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Saved with the experiment's design on the Design tab (services.save_design), logged as one \"Design\" entry of the experiment; a row the design no longer has is deleted with the delete plan, and a started design cannot change.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_triggers.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "ExperimentGroup",
+      "table": "experiment_groups",
+      "description": "A group of replicates that get the same level of every factor.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "experiment_id",
+          "field": "experiment",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiments",
+            "model": "experiments.Experiment",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the experiment the design belongs to"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(60)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "GroupRowForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "role",
+          "field": "role",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "test",
+            "control",
+            "negative_control",
+            "positive_control"
+          ],
+          "link": null,
+          "on_form": [
+            "GroupRowForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "position",
+          "field": "position",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the order the rows have on the Design tab"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_experiment_groups_name_live",
+          "kind": "unique",
+          "fields": [
+            "name",
+            "experiment"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_experiment_groups_id_experiment",
+          "kind": "unique",
+          "fields": [
+            "id",
+            "experiment"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiment_groups_role",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_detail",
+              "url_names": [
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Saved with the experiment's design on the Design tab (services.save_design), logged as one \"Design\" entry of the experiment; a row the design no longer has is deleted with the delete plan, and a started design cannot change.",
+      "forms": [
+        {
+          "form": "GroupRowForm",
+          "module": "experiments.forms",
+          "fields": {
+            "id": "",
+            "name": "",
+            "role": "",
+            "replicates": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "none",
+        "why": "listed read-only in the admin: a voided record is entered again on its page, where the checks run"
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_overview.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_triggers.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "Level",
+      "table": "experiment_levels",
+      "description": "A value of a factor.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "factor_id",
+          "field": "factor",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiment_factors",
+            "model": "experiments.Factor",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the factor the level is of"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "diet",
+            "other"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "label",
+          "field": "label",
+          "type": "varchar(60)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the cell typed in the group's row for another factor"
+        },
+        {
+          "name": "protocol_id",
+          "field": "protocol",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "feeding_protocols",
+            "model": "farm.FeedingProtocol",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the protocol chosen in the group's row for the diet"
+        },
+        {
+          "name": "value",
+          "field": "value",
+          "type": "numeric(12, 4)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the number typed in the group's row with its label"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_experiment_levels_label_live",
+          "kind": "unique",
+          "fields": [
+            "label",
+            "factor"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_experiment_levels_protocol_live",
+          "kind": "unique",
+          "fields": [
+            "factor",
+            "protocol"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_experiment_levels_id_factor",
+          "kind": "unique",
+          "fields": [
+            "id",
+            "factor"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiment_levels_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiment_levels_by_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_detail",
+              "url_names": [
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A level is made from the cells of the group rows: one per distinct protocol or label. Saved with the experiment's design on the Design tab (services.save_design), logged as one \"Design\" entry of the experiment; a row the design no longer has is deleted with the delete plan, and a started design cannot change.",
+      "forms": [
+        {
+          "form": "GroupRowForm",
+          "module": "experiments.forms",
+          "fields": {
+            "id": "",
+            "name": "",
+            "role": "",
+            "replicates": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "none",
+        "why": "listed read-only in the admin: a voided record is entered again on its page, where the checks run"
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_copy.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_triggers.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "Member",
+      "table": "experiment_members",
+      "description": "A person of the experiment's team, with their part.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "experiment_id",
+          "field": "experiment",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiments",
+            "model": "experiments.Experiment",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the experiment the row belongs to"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "MemberForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "role",
+          "field": "role",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "lead",
+            "researcher",
+            "student",
+            "technician",
+            "advisor"
+          ],
+          "link": null,
+          "on_form": [
+            "MemberForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_experiment_members_user",
+          "kind": "unique",
+          "fields": [
+            "experiment",
+            "user"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "uq_experiment_members_lead",
+          "kind": "unique",
+          "fields": [
+            "experiment"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_experiment_members_role",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Team list on the experiments tab",
+              "url_names": [
+                "experiments:experiment_team"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/team/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Team list on the experiments tab",
+              "url_names": [
+                "experiments:experiment_team"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/team/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Team list on the experiments tab",
+              "url_names": [
+                "experiments:experiment_team"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/team/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Team list on the experiments tab",
+              "url_names": [
+                "experiments:experiment_edit"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "MemberForm",
+          "module": "django.forms.widgets",
+          "fields": {
+            "user": "",
+            "role": ""
+          }
+        },
+        {
+          "form": "MemberForm",
+          "module": "experiments.forms",
+          "fields": {
+            "user": "",
+            "role": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_start.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "ReplicateUnit",
+      "table": "experiment_replicate_units",
+      "description": "A tank booked to a replicate for a range of days, both included, on the site's clock: day 0 is the experiment's `starts_on` (the baseline weighing), the last day `starts_on + duration_days` (the final weighing).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "replicate_id",
+          "field": "replicate",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiment_replicates",
+            "model": "experiments.Replicate",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "PlaceRowForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "unit_id",
+          "field": "unit",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "tanks",
+            "model": "farm.Tank",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "written by the Places tab from the tanks and days of the replicate's row"
+        },
+        {
+          "name": "from_on",
+          "field": "from_on",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "written by the Places tab from the tanks and days of the replicate's row"
+        },
+        {
+          "name": "until_on",
+          "field": "until_on",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "written by the Places tab from the tanks and days of the replicate's row"
+        },
+        {
+          "name": "left_reason",
+          "field": "left_reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "typed in the Release or Replace dialog"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_experiment_placements_period",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "excl_replicate_units_unit",
+          "kind": "exclusion",
+          "fields": [
+            "unit",
+            "from_on",
+            "until_on"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_places",
+              "url_names": [
+                "experiments:experiment_places"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/places/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_replace",
+              "url_names": [
+                "experiments:experiment_replace"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/replace/<uuid:placement>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_places",
+              "url_names": [
+                "experiments:experiment_places"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/places/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_release",
+              "url_names": [
+                "experiments:experiment_release"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/release/<uuid:placement>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_places",
+              "url_names": [
+                "experiments:experiment_places"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/places/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_detail",
+              "url_names": [
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_detail",
+              "url_names": [
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A draft's placements are saved on the Places tab (services.save_places, randomise); a running one only gets shorter (Release) or a replacement (Replace), and is never deleted.",
+      "forms": [
+        {
+          "form": "PlaceRowForm",
+          "module": "experiments.forms",
+          "fields": {
+            "replicate": "",
+            "tanks": "",
+            "system": "",
+            "first": "",
+            "last": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "none",
+        "why": "listed read-only in the admin: a voided record is entered again on its page, where the checks run"
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_copy.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_overview.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_placements.py",
+        "experiments/tests/test_places.py",
+        "experiments/tests/test_start.py",
+        "experiments/tests/test_triggers.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "Replicate",
+      "table": "experiment_replicates",
+      "description": "One experimental unit of a group, numbered within it.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "group_id",
+          "field": "group",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "experiment_groups",
+            "model": "experiments.ExperimentGroup",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the group whose replicates count is typed"
+        },
+        {
+          "name": "number",
+          "field": "number",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "numbered within the group when the replicates count changes; never renumbered"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_experiment_replicates_number_live",
+          "kind": "unique",
+          "fields": [
+            "group",
+            "number"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_experiment_replicates_number",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "experiments:experiment_detail",
+              "url_names": [
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "experiments:experiment_design",
+              "url_names": [
+                "experiments:experiment_design"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/design/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "One slot for each of the group's replicates; a slot holding tanks is never removed. Saved with the experiment's design on the Design tab (services.save_design), logged as one \"Design\" entry of the experiment; a row the design no longer has is deleted with the delete plan, and a started design cannot change.",
+      "forms": [],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "none",
+        "why": "listed read-only in the admin: a voided record is entered again on its page, where the checks run"
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_overview.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_start.py",
+        "experiments/tests/test_triggers.py"
+      ]
+    },
+    {
+      "app": "experiments",
+      "model": "Experiment",
+      "table": "experiments",
+      "description": "A trial of one species on one site: its design, its allocation and its dates; also a template to copy.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(150)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "is_template",
+          "field": "is_template",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set by Save as a template (the copy dialog), never typed"
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "draft",
+            "running",
+            "closed"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by Start (draft to running) and by closing; the database allows only that order"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "species_id",
+          "field": "species",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "species",
+            "model": "farm.Species",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "hypothesis",
+          "field": "hypothesis",
+          "type": "varchar(4000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "primary_endpoint",
+          "field": "primary_endpoint",
+          "type": "varchar(40)",
+          "null": false,
+          "choices": [
+            "bfcr",
+            "efcr",
+            "survival",
+            "biomass_gain"
+          ],
+          "link": null,
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "starts_on",
+          "field": "starts_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "duration_days",
+          "field": "duration_days",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "allocation_method",
+          "field": "allocation_method",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "",
+            "sha256_v1",
+            "manual"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set by the Places tab: randomised with a seed, or placed by hand with a reason"
+        },
+        {
+          "name": "allocation_seed",
+          "field": "allocation_seed",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the seed of a randomised deal, written by the Places tab"
+        },
+        {
+          "name": "allocation_note",
+          "field": "allocation_note",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the reason a placement by hand was made, written by the Places tab"
+        },
+        {
+          "name": "copied_from_id",
+          "field": "copied_from",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "experiments",
+            "model": "experiments.Experiment",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the experiment a copy was made from, written by the Copy dialog"
+        },
+        {
+          "name": "notes",
+          "field": "notes",
+          "type": "varchar(2000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ExperimentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "entry_key",
+          "field": "entry_key",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_experiments_code",
+          "kind": "unique",
+          "fields": [
+            "code"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiments_code",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiments_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiments_endpoint",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiments_duration",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiments_template",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiments_started",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_experiments_allocation",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "experiments tab",
+              "url_names": [
+                "experiments:experiment_create"
+              ],
+              "routes": [
+                "/research/experiments/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "experiments tab",
+              "url_names": [
+                "experiments:experiment_edit"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "experiments tab",
+              "url_names": [
+                "experiments:experiment_delete"
+              ],
+              "routes": [
+                "/research/experiments/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "experiments tab",
+              "url_names": [
+                "experiments:experiment_list",
+                "experiments:experiment_detail"
+              ],
+              "routes": [
+                "/research/experiments/",
+                "/research/experiments/<uuid:pk>/view/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A started experiment keeps every column but its status, name and notes (trg_experiments_frozen).",
+      "forms": [
+        {
+          "form": "ExperimentForm",
+          "module": "experiments.forms",
+          "fields": {
+            "name": "Details",
+            "species": "Details",
+            "site": "Details",
+            "hypothesis": "Details",
+            "primary_endpoint": "Details",
+            "starts_on": "Details",
+            "duration_days": "Details",
+            "notes": "Details",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Research",
+        "masked": []
+      },
+      "tests": [
+        "core/test_datamap.py",
+        "core/tests_workspaces.py",
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_copy.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_overview.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_places.py",
+        "experiments/tests/test_start.py",
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -896,12 +3388,14 @@
         "core/test_datamap.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_health.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_lice.py",
-        "tasks/tests/test_pages.py"
+        "tasks/tests/test_pages.py",
+        "experiments/tests/test_deviations.py"
       ]
     },
     {
@@ -2883,7 +5377,11 @@
       },
       "tests": [
         "farm/tests/test_protocols.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_start.py"
       ]
     },
     {
@@ -3056,7 +5554,11 @@
         "masked": []
       },
       "tests": [
-        "farm/tests/test_protocols.py"
+        "farm/tests/test_protocols.py",
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_start.py"
       ]
     },
     {
@@ -3366,7 +5868,12 @@
       "tests": [
         "core/tests_workspaces.py",
         "farm/tests/test_protocols.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_copy.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_start.py"
       ]
     },
     {
@@ -3787,7 +6294,8 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_protocols.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -4455,7 +6963,14 @@
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_due.py",
-        "tasks/tests/test_series.py"
+        "tasks/tests/test_series.py",
+        "experiments/tests/__init__.py",
+        "experiments/tests/test_constraints.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_start.py",
+        "experiments/tests/test_triggers.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -5233,7 +7748,9 @@
         "reports/tests/test_compute.py",
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
-        "reports/tests/test_pages.py"
+        "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
+        "monitoring/tests/test_read.py"
       ]
     },
     {
@@ -6381,7 +8898,9 @@
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "reports/tests/test_due.py",
-        "reports/tests/test_notices.py"
+        "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
+        "monitoring/tests/test_read.py"
       ]
     },
     {
@@ -7483,7 +10002,9 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_species.py",
-        "reports/tests/test_lice.py"
+        "reports/tests/test_lice.py",
+        "monitoring/tests/test_read.py",
+        "monitoring/tests/test_token.py"
       ]
     },
     {
@@ -7887,7 +10408,10 @@
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scope.py"
+        "hr/tests/test_scope.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_places.py",
+        "experiments/tests/test_start.py"
       ]
     },
     {
@@ -8537,8 +11061,13 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_assignments.py",
         "farm/tests/test_protocols.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_start.py"
       ]
     },
     {
@@ -9501,6 +12030,7 @@
       },
       "tests": [
         "core/test_catalogs.py",
+        "core/test_codes.py",
         "core/test_database.py",
         "core/test_datamap.py",
         "core/test_languages.py",
@@ -9517,6 +12047,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
+        "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
@@ -9530,8 +12061,10 @@
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_read.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
@@ -9539,7 +12072,12 @@
         "hr/tests/test_leave.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "experiments/tests/test_amend.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_pages.py",
+        "experiments/tests/test_places.py",
+        "experiments/tests/test_start.py"
       ]
     },
     {
@@ -10609,7 +13147,9 @@
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "experiments/tests/test_overview.py",
+        "experiments/tests/test_pages.py"
       ]
     },
     {
@@ -11151,7 +13691,8 @@
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_stock.py",
-        "reports/tests/test_cleaner.py"
+        "reports/tests/test_cleaner.py",
+        "experiments/tests/test_overview.py"
       ]
     },
     {
@@ -11670,7 +14211,9 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
-        "reports/tests/test_notices.py"
+        "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -12958,7 +15501,9 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
-        "tasks/tests/__init__.py"
+        "tasks/tests/__init__.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_places.py"
       ]
     },
     {
@@ -13967,6 +16512,7 @@
         "core/test_database.py",
         "core/test_languages.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_calculator.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_harvest.py",
@@ -13977,7 +16523,14 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
-        "inventory/tests/test_services.py"
+        "inventory/tests/test_services.py",
+        "experiments/tests/test_design.py",
+        "experiments/tests/test_deviations.py",
+        "experiments/tests/test_places.py",
+        "experiments/tests/test_start.py",
+        "monitoring/tests/__init__.py",
+        "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_token.py"
       ]
     },
     {
@@ -15074,7 +17627,8 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
-        "farm/tests/test_water.py"
+        "farm/tests/test_water.py",
+        "monitoring/tests/__init__.py"
       ]
     },
     {
@@ -15647,7 +18201,8 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -16106,6 +18661,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
+        "farm/tests/test_calculator.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
@@ -24228,6 +26784,512 @@
       ]
     },
     {
+      "app": "monitoring",
+      "model": "MonitorBoardUnit",
+      "table": "monitor_board_units",
+      "description": "The cards of each monitoring board: a unit and, when it differs from the board, how its card is drawn.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "board_id",
+          "field": "board",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "monitor_boards",
+            "model": "monitoring.MonitorBoard",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the monitoring board the row belongs to"
+        },
+        {
+          "name": "unit_id",
+          "field": "unit",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "tanks",
+            "model": "farm.Tank",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "MonitorBoardUnitForm",
+            "BoardUnitForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "mode",
+          "field": "mode",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "simple",
+            "detailed"
+          ],
+          "link": null,
+          "on_form": [
+            "MonitorBoardUnitForm",
+            "BoardUnitForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_monitor_board_units_unit",
+          "kind": "unique",
+          "fields": [
+            "board",
+            "unit"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_board_units_mode",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_units"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/units/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_units"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/units/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_units"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/units/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_edit"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A deleted unit keeps its row (configuration, not history): its card is hidden while the unit is deleted and comes back when it is restored; saving the board's Units list drops the row.",
+      "forms": [
+        {
+          "form": "MonitorBoardUnitForm",
+          "module": "django.forms.widgets",
+          "fields": {
+            "unit": "",
+            "mode": ""
+          }
+        },
+        {
+          "form": "BoardUnitForm",
+          "module": "monitoring.forms",
+          "fields": {
+            "unit": "",
+            "mode": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Monitoring",
+        "masked": []
+      },
+      "tests": [
+        "monitoring/tests/test_boards.py"
+      ]
+    },
+    {
+      "app": "monitoring",
+      "model": "MonitorBoard",
+      "table": "monitor_boards",
+      "description": "The named wall screens of Monitoring: a name, how its cards are drawn by default and how often its screens ask.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "description",
+          "field": "description",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "default_mode",
+          "field": "default_mode",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "simple",
+            "detailed"
+          ],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "refresh_seconds",
+          "field": "refresh_seconds",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_monitor_boards_name_live",
+          "kind": "unique",
+          "fields": [
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_monitor_boards_name",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_mode",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_refresh",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_create"
+              ],
+              "routes": [
+                "/monitoring-boards/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_edit"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_delete"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_list"
+              ],
+              "routes": [
+                "/monitoring-boards/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Deleting a board is a soft delete; its card rows stay and come back with it when it is restored.",
+      "forms": [
+        {
+          "form": "MonitorBoardForm",
+          "module": "monitoring.forms",
+          "fields": {
+            "name": "General",
+            "description": "General",
+            "default_mode": "General",
+            "refresh_seconds": "General",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Monitoring",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "monitoring/tests/test_boards.py"
+      ]
+    },
+    {
       "app": "reports",
       "model": "ResistanceSuspicion",
       "table": "regulatory_report_resistance_suspicions",
@@ -26114,6 +29176,7 @@
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
       ]
     },
@@ -28187,7 +31250,9 @@
         "tasks/tests/__init__.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
-        "tasks/tests/test_series.py"
+        "tasks/tests/test_read.py",
+        "tasks/tests/test_series.py",
+        "monitoring/tests/test_token.py"
       ]
     }
   ],

@@ -309,6 +309,7 @@
 .suitability-row {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, .7fr) minmax(0, 1.2fr) 5.5rem;
 }
+.team-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 5.5rem; }
 .withdrawal-row {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, .8fr) minmax(0, 1.2fr) 5.5rem;
 }
@@ -1068,6 +1069,14 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
   border-bottom: 2px solid var(--stripe); color: var(--stripe-dark);
   font-size: 1.25rem; font-weight: 600;
 }
+.report-tabs { flex-wrap: wrap; gap: .25rem 1.25rem; }
+.report-tabs .view-tab { font-size: 1rem; }
+.view-tab-group { align-self: center; color: var(--muted); font-size: .8125rem; text-transform: uppercase; letter-spacing: .04em; }
+.report-lines { margin: 0 0 1rem; }
+.upcoming-reports { margin: 0 0 1.5rem; }
+.upcoming-reports ul { margin: 0; padding: 0; list-style: none; }
+.upcoming-reports li { display: flex; flex-wrap: wrap; gap: .25rem .75rem; padding: .375rem 0; border-bottom: 1px solid var(--line); }
+.upcoming-reports .overdue { color: var(--error); font-weight: 600; }
 .view-count {
   padding: .0625rem .5rem; border-radius: 4px; background: var(--active-bg);
   color: var(--stripe-dark); font-size: .8125rem; font-weight: 600;
@@ -1266,9 +1275,9 @@ mark { padding: 0 .125rem; border-radius: 3px; background: #FBF0D9; color: inher
 .receipt-row {
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, .9fr) minmax(0, .9fr) 4.5rem;
 }
-.reorder-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 5.5rem; }
+.reorder-row, .monitor-board-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 5.5rem; }
 @media (max-width: 767px) {
-  .receipt-row, .reorder-row { grid-template-columns: minmax(0, 1fr); }
+  .receipt-row, .reorder-row, .monitor-board-row { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Regulatory reports (Production › Reports): the answers' row lists, the figures, what differs from the records */

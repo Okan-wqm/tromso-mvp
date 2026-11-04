@@ -16,15 +16,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.models import AuditedModel
+from core.people import person_name
 
 # The longest message, in characters: a long report fits, a pasted log file does not.
 MAX_BODY = 4000
 CHANNEL_NAME_TAKEN = _('A channel with this name already exists.')
-
-
-def person_name(user):
-    """How Messages names a person: the full name, else the username."""
-    return user.get_full_name() or user.get_username()
 
 
 class Assistant(AuditedModel):

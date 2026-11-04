@@ -320,7 +320,7 @@ class FeedingTargetTests(CleanerFishTestCase):
         self.feed_cage('10', days_ago=2)
         self.feed_cage('4', FeedTarget.CLEANER_FISH, self.block, days_ago=2)
         stock = stock_read.stock_of([self.cage])
-        figures = read.figures(stock, detail=self.cage)[self.cage.pk]
+        figures = read.figures(stock, details=[self.cage])[self.cage.pk]
         self.assertEqual([(share.batch, share.cleaner, share.fed_kg) for share in figures.shares],
                          [(self.salmon_batch, False, 10), (self.lump_batch, True, 4)])
         self.assertEqual(figures.unweighed, [self.salmon_batch])

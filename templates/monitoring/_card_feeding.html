@@ -1,0 +1,24 @@
+{% load i18n stock feeding %}
+<section class="monitor-section monitor-feeding">
+  {% if "feeding" in card.hidden %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") %}
+  {% else %}
+  {% with day=card.day %}
+  <dl class="metrics">
+    <div><dt>{% trans "Ration" %}</dt><dd>{{ day.ration_kg|feed_kg }}</dd></div>
+    <div><dt>{% trans "Fed today" %}</dt><dd>{{ day.fed_kg|feed_kg }}</dd><dd class="row-sub">{% blocktrans trimmed count meals=day.meals_done %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</dd></div>
+    <div><dt>{% trans "Remaining" %}</dt><dd>{{ day.remaining_kg|feed_kg }}</dd></div>
+    <div><dt>{% trans "Next meal" %}</dt><dd>{{ day.next_meal_kg|feed_kg }}</dd></div>
+  </dl>
+  {% endwith %}
+  {% for line in card.lines %}{% if line.why %}<p class="row-sub warn-text">{{ line.batch.code }}: {{ line.why }}</p>{% endif %}{% endfor %}
+  {% if card.detailed and card.feeding %}
+  {% with week=card.feeding.week %}
+  <dl class="metrics">
+    <div><dt>{% trans "Feed rate" %}</dt><dd>{{ week.sfr|percent:2 }}</dd></div>
+    <div><dt>{% trans "Last fed" %}</dt><dd>{{ card.feeding.last_fed|fed_on:card.feeding.today }}</dd></div>
+    <div><dt>{% trans "Feed in use" %}</dt><dd>{{ week.feed|default:"—" }}</dd></div>
+  </dl>
+  {% endwith %}
+  {% endif %}
+  {% endif %}
+</section>

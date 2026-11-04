@@ -50,12 +50,11 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db import connection, transaction
-from django.db.models import IntegerField, Max
-from django.db.models.functions import Cast, Substr
+from django.db import transaction
 from django.utils.translation import gettext as _
 
 from core import audit
+from core.codes import next_code
 from core.models import AuditLog
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
@@ -133,17 +132,6 @@ def _already(token):
             raise AlreadyRecorded(done)
 
 
-def _next_code(year):
-    """B-<year>-<n>, n one more than any number of that year, voided batches included: a number is
-    never given twice. An advisory lock makes two stockings take turns for it."""
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT pg_advisory_xact_lock(hashtext('batches.code'))")
-    prefix = f'B-{year}-'
-    last = (Batch.all_objects.filter(code__startswith=prefix)
-            .annotate(n=Cast(Substr('code', len(prefix) + 1), IntegerField())).aggregate(last=Max('n'))['last'])
-    return f'{prefix}{(last or 0) + 1:03d}'
-
-
 def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None, handling_ack=None,
             harvest=None, plan_item=None, health_event=None, escape=None, delivery=None):
     """Writes an operation and its lines (see the module's docstring); returns the operation. A harvest is
@@ -162,7 +150,7 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
         assessment = _handling(kind, day, entries, batches, units, handling_ack)
         before = read.unit_counts(list(units))
         if new_batch is not None:
-            batch = Batch(**new_batch.fields, code=_next_code(day.year), input_date=day, created_by=user,
+            batch = Batch(**new_batch.fields, code=next_code(Batch, f'B-{day.year}-'), input_date=day, created_by=user,
                           updated_by=user)
             batch.full_clean(exclude=['code'])
             batch.save()
@@ -467,9 +455,20 @@ def label(operation, lines=None):
     """How the activity log names an operation: what, where, which batch and when, so a search for a
     unit's or a batch's code finds it."""
     lines = lines if lines is not None else list(operation.movements.select_related('unit', 'batch'))
-    units = ', '.join(dict.fromkeys(line.unit.code for line in lines))
+    codes = list(dict.fromkeys(line.unit.code for line in lines))
     batches = ', '.join(dict.fromkeys(line.batch.code for line in lines))
-    return f'{audit.english(operation.get_kind_display())} · {units} · {batches} · {operation.date.isoformat()}'
+    kind = _('Escape') if operation.escape is not None else operation.get_kind_display()
+    head, tail = f'{audit.english(kind)} · ', f' · {batches} · {operation.date.isoformat()}'
+    units = ', '.join(codes)
+    room = audit.LABEL_LENGTH - len(head) - len(tail)
+    if len(units) > room:                      # a stocking into many tanks: the first ones, then an ellipsis, never a failed write
+        shown = []
+        for code in codes:
+            if len(', '.join([*shown, code])) + len(', …') > room:
+                break
+            shown.append(code)
+        units = ', '.join([*shown, '…'])
+    return f'{head}{units}{tail}'
 
 
 def _log(user, action, operation, assessment=None):

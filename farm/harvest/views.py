@@ -137,11 +137,5 @@ def drawer(request, unit, stock):
 def withdrawals(units):
     """{unit id: [WithdrawalBlock]} of the units with a medicine withdrawal in force today, for the row badge;
     empty when no provider is registered."""
-    found = {}
-    for unit in units:
-        blocks = check.in_force(unit, local_today(unit))
-        if blocks is None:
-            return {}
-        if blocks:
-            found[unit.pk] = blocks
-    return found
+    found = check.in_force_of(units)
+    return {unit_id: blocks for unit_id, blocks in (found or {}).items() if blocks}

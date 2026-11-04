@@ -6,7 +6,7 @@ registry the harvest side reads, the statutory sea-lice limits, the write paths,
 import io
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from unittest import mock
 
@@ -25,17 +25,23 @@ from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
 
 from ..handling import check as handling_check, withdrawal as registry
+from ..handling.withdrawal import WithdrawalBlock
+from ..harvest import views as harvest_views
 from ..health import diseases, lice, notices, services, withdrawal
+from ..health import read
 from ..health.read import LiceWeek, lice_weeks
 from ..models import (
-    Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species,
-    StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
+    Batch, Feed, HandlingAcknowledgement, HandlingRule, HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site,
+    Species, StockOperation, Supplier, System, Tank, Treatment, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
+from ..stock.dates import local_today
 from ..feeding import services as feeding_services
 from .helpers import make_facility, make_species, point_of, role, rows_data
 from .test_stock import StockTestCase, make_unit
+
+Status = Tank.Status
 
 
 def setUpModule():
@@ -505,6 +511,162 @@ class WithdrawalTests(HealthTestCase):
                    reason='vaccination')
         self.assertEqual(self.held(), [])
         self.assertEqual(self.held(day=self.day(1))[0].until, self.today)
+
+
+class BulkRegistryTests(HealthTestCase):
+    """The registry answers for many units at once; the old one-unit provider is kept here as the oracle."""
+
+    def setUp(self):
+        super().setUp()
+        Site.objects.filter(pk=self.bergen.pk).update(timezone='America/Los_Angeles')
+        Site.objects.filter(pk=self.tromso.pk).update(timezone='Pacific/Auckland')
+        self.s1 = make_unit('S-01', self.sea, 'pond', status=Status.ACTIVE)
+        self.t1, self.t2, self.s1 = (Tank.objects.select_related('production_department__site').get(pk=unit.pk)
+                                     for unit in (self.t1, self.t2, self.s1))
+        self.b2, self.b3 = self.stock(self.t2, count=500), self.stock(self.s1, count=300)
+        self.treat(self.medicine(days=7), 5, 3, units=[self.t1])
+        other = self.medicine(name='Other', days=12)
+        self.treat(other, 5, 2, units=[self.t2])
+        self.treat(other, 5, 2, units=[self.s1])
+        self.units = [self.t1, self.t2, self.s1]
+
+    def one_unit_provider(self, unit, day):
+        """The provider as it was: one unit, one day."""
+        withdrawals = withdrawal.of_units([unit], day).get(unit.pk, [])
+        batches = Batch.all_objects.in_bulk({each.batch_id for each in withdrawals})
+        return [WithdrawalBlock(batches[each.batch_id], each.until, each.estimated, withdrawal.describe(each),
+                                each.source) for each in withdrawals]
+
+    def test_blocks_of_equals_the_one_unit_answers_in_two_time_zones(self):
+        for day in (None, self.day(-3), self.day(2)):
+            with self.subTest(day=day):
+                found = registry.blocks_of(self.units, day)
+                self.assertEqual(set(found), {unit.pk for unit in self.units})
+                for unit in self.units:
+                    self.assertEqual(found[unit.pk], self.one_unit_provider(unit, day or local_today(unit)))
+                    self.assertEqual(registry.blocks(unit, day or local_today(unit)), found[unit.pk])
+        self.assertTrue(all(registry.blocks_of(self.units).values()))       # the fixture does hold every unit
+
+    def test_in_force_of_equals_in_force_for_each_unit(self):
+        for day in (None, self.day(-4)):
+            found = handling_check.in_force_of(self.units, day)
+            for unit in self.units:
+                self.assertEqual(found[unit.pk], handling_check.in_force(unit, day or local_today(unit)))
+        self.assertEqual(handling_check.in_force(self.t2, local_today(self.t2), [self.b3]), [])
+
+    def test_the_row_badges_of_production_units_are_the_units_with_a_block_in_force(self):
+        self.assertEqual(set(harvest_views.withdrawals(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})
+        self.assertEqual(harvest_views.withdrawals([self.t1])[self.t1.pk][0].batch, self.batch)
+        self.assertEqual(harvest_views.withdrawals([]), {})
+        kept = list(registry._providers)
+        registry._providers.clear()
+        try:
+            self.assertEqual(harvest_views.withdrawals(self.units), {})
+            self.assertIsNone(handling_check.in_force_of(self.units))
+        finally:
+            registry._providers.extend(kept)
+
+    def test_the_queries_do_not_grow_with_the_units_of_a_time_zone(self):
+        with CaptureQueriesContext(connection) as one:
+            registry.blocks_of([self.t1])
+        with CaptureQueriesContext(connection) as two:
+            registry.blocks_of([self.t1, self.t2])
+        self.assertEqual(len(one), len(two))
+        with CaptureQueriesContext(connection) as three:
+            registry.blocks_of(self.units)
+        self.assertLessEqual(len(three), 2 * len(one))        # a second time zone costs one more reader
+
+
+class BulkHealthReadTests(HealthTestCase):
+    """The treatments, open events and latest counts of many units, each against the per-unit code the drawer had."""
+
+    def setUp(self):
+        super().setUp()
+        Site.objects.filter(pk=self.tromso.pk).update(timezone='Pacific/Auckland')
+        self.m1 = make_unit('M-01', self.sea, status=Tank.Status.PREPARING)
+        self.stock(self.t2, count=500, days_ago=30)
+        self.stock(self.m1, count=300, days_ago=30)
+        bath = self.medicine(days=7)
+        self.recent, self.running = self.treat(bath, 9, 5), self.treat(bath, 2, -3)
+        self.old = self.treat(bath, 29, 28, units=[self.t2])
+        Treatment.objects.filter(pk=self.old.pk).update(start_date=self.day(150), end_date=self.day(120))
+        self.old.refresh_from_db()
+        self.other_unit = self.treat(bath, 20, 18, units=[self.t2])
+        self.at_sea = self.treat(bath, 4, 3, units=[self.m1])
+        self.wide = HealthEvent.objects.create(site=self.bergen, date=self.day(3), kind='observation')
+        self.named = HealthEvent.objects.create(site=self.bergen, date=self.day(2), kind='observation')
+        self.named.units.add(self.t2)
+        HealthEvent.objects.create(site=self.bergen, date=self.day(5), kind='observation', closed_on=self.day(1))
+        self.sea_event = HealthEvent.objects.create(site=self.tromso, date=self.day(1), kind='observation')
+        for unit, days_ago, females in ((self.t1, 3, 1), (self.t1, 1, 4), (self.m1, 2, 2)):
+            services.record_lice_count(self.user, unit=unit, day=self.day(days_ago), fish_counted=10,
+                                       adult_females=females, mobile=0, attached=0)
+        self.units = [Tank.objects.select_related('production_department__site').get(pk=unit.pk)
+                      for unit in (self.t1, self.t2, self.m1)]
+
+    # The code the drawer ran for one unit, kept as the oracle.
+    def old_treatments(self, unit):
+        since = local_today(unit) - timedelta(days=90)
+        return list(unit.treatments.filter(end_date__gte=since).select_related('medicine').order_by('-start_date'))
+
+    def old_events(self, unit):
+        site = unit.production_department.site
+        events = HealthEvent.objects.filter(site=site, closed_on__isnull=True).prefetch_related('units')
+        return [event for event in events if not event.units.all() or unit in event.units.all()]
+
+    def old_latest(self, unit_ids):
+        found = {}
+        for count in LiceCount.objects.filter(unit_id__in=unit_ids).order_by('date', 'created_at'):
+            found[count.unit_id] = count
+        return found
+
+    def test_recent_treatments_equal_the_one_unit_query(self):
+        found = read.recent_treatments(self.units)
+        for unit in self.units:
+            self.assertEqual(found[unit.pk], self.old_treatments(unit))
+        self.assertEqual(found[self.t1.pk], [self.running, self.recent])
+        self.assertEqual(found[self.t2.pk], [self.other_unit])          # the course of 120 days ago is out
+        self.assertEqual(found[self.m1.pk], [self.at_sea])
+        self.assertEqual(read.recent_treatments([self.t2], days=200)[self.t2.pk], [self.other_unit, self.old])
+
+    def test_open_events_equal_the_one_unit_filter(self):
+        found = read.open_events(self.units)
+        for unit in self.units:
+            self.assertEqual(found[unit.pk], self.old_events(unit))
+        self.assertEqual(found[self.t1.pk], [self.wide])
+        self.assertEqual(found[self.t2.pk], [self.named, self.wide])      # the newest first
+        self.assertEqual(found[self.m1.pk], [self.sea_event])
+
+    def test_the_latest_counts_are_one_row_a_unit_and_equal_the_old_loop(self):
+        ids = [unit.pk for unit in self.units]
+        found = read.latest_counts(ids)
+        self.assertEqual(found, self.old_latest(ids))
+        self.assertEqual((found[self.t1.pk].date, found[self.t1.pk].adult_females), (self.day(1), 4))
+        self.assertNotIn(self.t2.pk, found)
+        self.assertEqual(read.latest_counts([]), {})
+
+    def test_the_queries_do_not_grow_with_the_units(self):
+        for name in ('recent_treatments', 'open_events'):
+            function = getattr(read, name)
+            function(self.units)                                          # warm the units' own relations
+            counts = []
+            for units in (self.units[:1], self.units[:2], self.units):
+                with CaptureQueriesContext(connection) as queries:
+                    function(units)
+                counts.append(len(queries))
+            self.assertEqual(counts[0], counts[1], name)
+            self.assertLessEqual(counts[2], counts[0] + 1, name)          # the other site's events are one more filter
+        counts = []
+        for ids in ([self.t1.pk], [self.t1.pk, self.t2.pk], [unit.pk for unit in self.units]):
+            with CaptureQueriesContext(connection) as queries:
+                read.latest_counts(ids)
+            counts.append(len(queries))
+        self.assertEqual(counts, [1, 1, 1])
+
+    def test_the_drawer_shows_the_same_lists(self):
+        page = self.client.get(reverse('farm:production_units'), {'unit': self.t2.pk})
+        self.assertEqual(page.context['health_treatments'], [self.other_unit])
+        self.assertEqual({event.pk for event in page.context['health_events']}, {self.wide.pk, self.named.pk})
 
 
 class RegistryTests(SimpleTestCase):

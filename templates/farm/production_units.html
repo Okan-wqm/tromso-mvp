@@ -76,17 +76,17 @@
             <th scope="col" class="num">{% trans "Avg. weight" %}</th>
             <th scope="col" class="num">{% trans "Biomass" %}</th>
             <th scope="col" class="num">{% trans "Density · capacity" %}</th>
-            <th scope="col" class="num"><abbr title="{% trans "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing" %}">{% trans "bFCR" %}</abbr></th>
+            {% if show_feeding %}<th scope="col" class="num"><abbr title="{% trans "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing" %}">{% trans "bFCR" %}</abbr></th>{% endif %}
             <th scope="col" class="num">{% trans "Survival" %}</th>
             {% if show_water %}<th scope="col" class="num">{% trans "Temp. (°C)" %}</th><th scope="col" class="num">{% trans "O₂ (mg/L)" %}</th>{% endif %}
-            <th scope="col">{% trans "Last fed" %}</th>
+            {% if show_feeding %}<th scope="col">{% trans "Last fed" %}</th>{% endif %}
           </tr>
         </thead>
         <tbody>
           {% for row in rows %}{% with unit=row.unit stock=row.stock %}
           <tr class="unit-row{% if row.selected %} is-selected{% endif %}{% if stock.over_capacity %} is-over{% endif %}"{% if row.selected %} aria-current="true"{% endif %}>
             <td>
-              <a class="unit-code row-link" href="{{ row.href }}">{{ unit.code }}</a>{% if row.water %} {% include "farm/_water_dot.html" with status=row.water.status %}{% endif %}{% if row.withdrawal %} <span class="badge badge-critical" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
+              <a class="unit-code row-link" href="{{ row.href }}">{{ unit.code }}</a>{% if row.placements %} {% include "farm/_placements.html" with chips=row.placements %}{% endif %}{% if row.water %} {% include "farm/_water_dot.html" with status=row.water.status %}{% endif %}{% if row.withdrawal %} <span class="badge badge-critical" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
               <span class="row-sub nowrap">{{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</span>
             </td>
             <td>
@@ -113,10 +113,10 @@
               </span>
               {% else %}—{% endif %}
             </td>
-            {% with conversion=row.feeding.conversion %}<td class="num"{% if row.feeding and not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}
+            {% if show_feeding %}{% with conversion=row.feeding.conversion %}<td class="num"{% if row.feeding and not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}{% endif %}
             <td class="num">{{ stock.survival|percent:1 }}</td>
             {% if show_water %}{% with reading=row.water.readings.temperature_c %}{% include "farm/_water_cell.html" with latest=True %}{% endwith %}{% with reading=row.water.readings.oxygen_mg_l %}{% include "farm/_water_cell.html" with latest=True %}{% endwith %}{% endif %}
-            <td class="nowrap">{% if row.feeding %}{{ row.feeding.last_fed|fed_on:row.feeding.today }}{% else %}—{% endif %}</td>
+            {% if show_feeding %}<td class="nowrap">{% if row.feeding %}{{ row.feeding.last_fed|fed_on:row.feeding.today }}{% else %}—{% endif %}</td>{% endif %}
           </tr>
           {% endwith %}{% endfor %}
         </tbody>

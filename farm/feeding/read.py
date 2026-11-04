@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.db.models import Max, Prefetch, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -244,15 +245,58 @@ def last_fed_at(unit, day, batch=None, since=None):
 
 
 # ---- FCR -----------------------------------------------------------------------------------------
-def window(stay):
-    if not stay.points:
+def _last_on(points, day):
+    """The index of the last measured point on `day` (the state at the end of that day), else None."""
+    found = [index for index, point in enumerate(points) if point.day == day]
+    return found[-1] if found else None
+
+
+def window(stay, first=None, last=None):
+    """The stay's FCR window: from its first measured point to its last weighing (or the harvest that closed it).
+    A bound `first` or `last` (a day) puts that end on the stay's measured point of that day (the last of the day);
+    a day without a measured point gives None, never an interpolated one, and so does a window that would not
+    start before it ends. Unbounded it is the whole stay's."""
+    points = stay.points
+    start = (0 if points else None) if first is None else _last_on(points, first)
+    if start is None:
         return None
-    first = stay.points[0]
-    ends = [point for point in stay.points[1:] if point.kind in (PointKind.WEIGHING, PointKind.CLOSE)]
-    if not ends:
+    if last is None:
+        ends = [index for index, point in enumerate(points) if index > start
+                and point.kind in (PointKind.WEIGHING, PointKind.CLOSE)]
+        end = ends[-1] if ends else None
+    else:
+        end = _last_on(points, last)
+    if end is None or end <= start:
         return None
-    last = ends[-1]
-    return Window(first, last, stay.fed_kg(first.day, last.day, closing=last.kind == PointKind.CLOSE))
+    start, end = points[start], points[end]
+    return Window(start, end, stay.fed_kg(start.day, end.day, closing=end.kind == PointKind.CLOSE))
+
+
+def measured_on(unit_ids, day):
+    """{(unit id, batch id)} of the batches in these units whose stay has a measured point (stocking, fish graded in, a
+    weighing, the harvest that closed it) on `day`: a window can start or end there (`window`)."""
+    unit_ids = list(unit_ids)
+    walked = _walk(unit_ids, [])
+    return {key for key, stays in walked.stays.items()
+            if key[0] in unit_ids and any(point.day == day for stay in stays for point in stay.points)}
+
+
+def windows_in(unit_ids, first=None, last=None):
+    """{(unit id, batch id): Window} of the batches that were in these units, over the days `first` and `last`
+    (window(): each a day with a measured point of the stay, else the share has no window; None: the stay's own
+    end). One walk of the units' feeding from `first` on. A batch that came into a unit more than once has the
+    window of its latest stay that has one. A replicate's FCR is `Conversion` of the windows of its tanks."""
+    unit_ids = list(unit_ids)
+    walked = _walk(unit_ids, feedings(unit_ids, since=first))
+    found = {}
+    for key, stays in walked.stays.items():
+        if key[0] not in unit_ids:           # the ledger follows the batches into other units too
+            continue
+        for stay in stays:
+            made = window(stay, first, last)
+            if made is not None:
+                found[key] = made
+    return found
 
 
 @dataclass
@@ -330,7 +374,7 @@ class Week:
 
 @dataclass
 class UnitFeeding:
-    """The feeding figures of a unit with fish; for the drawer's unit also its last WEEK days, today's ration
+    """The feeding figures of a unit with fish; for a detailed unit (the drawer, a detailed card) also its last WEEK days, today's ration
     (projection.UnitDay) and the corrections of its weighings."""
     today: date
     last_fed: date = None
@@ -350,20 +394,23 @@ class UnitFeeding:
         return [share.batch for share in self.shares if not share.window and not share.cleaner]
 
 
-def figures(stock, detail=None):
-    """{unit id: UnitFeeding} of the units with fish (`stock`: read.stock_of), and the last WEEK days, today's
-    ration and the weighings' corrections of `detail` (the drawer's unit), whose walk keeps the projected weight.
-    One walk for the page."""
+def figures(stock, details=(), ration=False):
+    """{unit id: UnitFeeding} of the units with fish (`stock`: read.stock_of). For each unit of `details` (Tank
+    objects) also its last WEEK days (`weeks`), today's ration (projection.UnitDay) and the corrections of its
+    weighings; with `ration`, today's ration of every unit with fish. Whatever walks the projected weight
+    (`project`) walks once for all of them, the page, the drawer and a wall of cards alike."""
     if not stock:
         return {}
     unit_ids = list(stock)
     today = {unit_id: local_today(item.unit) for unit_id, item in stock.items()}
     since = min(item.since for item in stock.values())
-    days = []
-    if detail is not None and detail.pk in stock:
-        first = today[detail.pk] - timedelta(days=WEEK - 1)
-        days = [(detail.pk, first + timedelta(days=n)) for n in range(WEEK)]
+    detailed = [unit for unit in details if unit.pk in stock]
+    days = {(unit_id, today[unit_id]): None for unit_id in unit_ids} if ration else {}
+    for unit in detailed:
+        first = today[unit.pk] - timedelta(days=WEEK - 1)
+        days.update({(unit.pk, first + timedelta(days=n)): None for n in range(WEEK)})
         since = min(since, first)
+    days = list(days)
     projection = project(unit_ids, days) if days else None
     walked = projection.walked if projection else _walk(unit_ids, feedings(unit_ids, since), days)
     last = dict(FeedingRecord.objects.filter(unit_id__in=unit_ids, target=FeedTarget.PRODUCTION).order_by()
@@ -375,28 +422,67 @@ def figures(stock, detail=None):
         for share in item.shares:
             stay = walked.stays[(unit_id, share.batch.pk)][-1]
             unit.shares.append(ShareFeeding(share.batch, stay, window(stay), share.cleaner))
-    if days:
-        drawer = result[detail.pk]
-        drawer.week = _week(detail, stock[detail.pk], today[detail.pk], days, walked)
-        drawer.ration = projection.days.get((detail.pk, today[detail.pk]))
-        drawer.corrections = projection.corrections(detail.pk)
+        if ration:
+            unit.ration = projection.days.get((unit_id, today[unit_id]))
+    for unit, week in weeks(detailed, stock, today, walked).items():
+        result[unit.pk].week = week
+        result[unit.pk].ration = projection.days.get((unit.pk, today[unit.pk]))
+        result[unit.pk].corrections = projection.corrections(unit.pk)
     return result
 
 
-def _week(unit, stock, today, days, walked):
-    first = days[0][1]
+def weeks(units, stock, today, walked):
+    """{unit: Week} of the units (Tank objects with fish, `stock` and `today` by unit id, `walked` the walk that
+    kept their last WEEK days): two queries for all of them, the records of the days and the feed in use."""
+    if not units:
+        return {}
+    ids = [unit.pk for unit in units]
+    first = {unit.pk: today[unit.pk] - timedelta(days=WEEK - 1) for unit in units}
     # The production fish's feed against their biomass; the cleaner fish's feedings are theirs (D-1, D-2).
-    records = list(FeedingRecord.objects.filter(unit=unit, date__gte=first, target=FeedTarget.PRODUCTION)
-                   .select_related('feed'))
-    of_today = [record for record in records if record.date == today]
-    meals = [record.meals for record in of_today]
-    latest = (FeedingRecord.objects.filter(unit=unit, date__gte=stock.since, target=FeedTarget.PRODUCTION)
-              .select_related('feed').first()) if stock.since else None
-    return Week(
-        first=first,
-        today_kg=sum((record.amount_kg for record in of_today), ZERO),
-        today_meals=sum(meals) if meals and None not in meals else None,
-        kg=sum((record.amount_kg for record in records if record.date <= today), ZERO),
-        biomass_days_kg=sum((walked.days[key].production.biomass_kg for key in days), ZERO),
-        feed=latest.feed if latest else None,
-    )
+    records = {unit_id: [] for unit_id in ids}
+    for record in (FeedingRecord.objects.filter(unit_id__in=ids, date__gte=min(first.values()),
+                                                target=FeedTarget.PRODUCTION).select_related('feed')):
+        if record.date >= first[record.unit_id]:
+            records[record.unit_id].append(record)
+    # The latest record of each unit's current stay: the feed in use (the record order of FeedingRecord.Meta).
+    latest = {record.unit_id: record for record in
+              FeedingRecord.objects.filter(unit_id__in=ids, target=FeedTarget.PRODUCTION).select_related('feed')
+              .order_by('unit_id', *FeedingRecord._meta.ordering).distinct('unit_id')}
+    found = {}
+    for unit in units:
+        mine, day = records[unit.pk], today[unit.pk]
+        of_today = [record for record in mine if record.date == day]
+        meals = [record.meals for record in of_today]
+        current = latest.get(unit.pk)
+        in_use = current if current is not None and stock[unit.pk].since and current.date >= stock[unit.pk].since             else None
+        found[unit] = Week(
+            first=first[unit.pk],
+            today_kg=sum((record.amount_kg for record in of_today), ZERO),
+            today_meals=sum(meals) if meals and None not in meals else None,
+            kg=sum((record.amount_kg for record in mine if record.date <= day), ZERO),
+            biomass_days_kg=sum((walked.days[(unit.pk, first[unit.pk] + timedelta(days=n))].production.biomass_kg
+                                 for n in range(WEEK)), ZERO),
+            feed=in_use.feed if in_use else None,
+        )
+    return found
+
+
+# ---- the meal board's lines ---------------------------------------------------------------------------------
+def drift(today, measured_on):
+    """How far the estimate has run since its measured point (owner decision Q6): '', 'soon' or 'now'."""
+    if measured_on is None:
+        return ''
+    days = (today - measured_on).days
+    if days > settings.WEIGH_NOW_DAYS:
+        return 'now'
+    return 'soon' if days > settings.WEIGH_SOON_DAYS else ''
+
+
+def meal_lines(unit_day, batches, today):
+    """The line of each batch of a unit's day (projection.UnitDay, None: no day): its ShareDay, its batch (`batches`:
+    by id), why it has no ration, the drift of its estimate and the days since its measured point. The meal board
+    and the monitoring cards print these and nothing computed beside them."""
+    return [{'share': share, 'batch': batches[share.batch_id], 'why': share.end.why(batches[share.batch_id]),
+             'drift': drift(today, share.measured_on),
+             'estimate_days': (today - share.measured_on).days if share.measured_on else None}
+            for share in (unit_day.shares if unit_day else [])]

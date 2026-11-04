@@ -35,6 +35,7 @@ from ..forms.stock import (
     PlannedForm, TransferForm, VoidForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
+from .. import placements
 from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
 from ..models.stock import ARRIVAL_STATUSES
 from ..templatetags.stock import fish, number, tonnes
@@ -138,18 +139,21 @@ def production_units(request):
     kinds_present = {unit.kind for unit in units}
     biomass = sum((stock[unit.pk].biomass_kg for unit in shown if unit.pk in stock), start=0)
     drawer_unit = next((unit for unit in units if str(unit.pk) == params['unit']), None)
-    feeding = feeding_read.figures(stock, detail=drawer_unit)
+    feeding = feeding_views.unit_figures(request.user, stock, details=[drawer_unit] if drawer_unit else ())
     water = water_views.unit_water(request.user, shown)
     withdrawals = harvest_views.withdrawals([unit for unit in shown if unit.pk in stock])
+    chips = placements.of(shown, request.user)
 
     context = _context(
         units=units, stocked=len(stock),
         rows=[{'unit': unit, 'stock': stock.get(unit.pk), 'feeding': feeding.get(unit.pk),
-               'water': water.get(unit.pk), 'withdrawal': withdrawals.get(unit.pk), 'selected': unit is drawer_unit,
+               'water': water.get(unit.pk), 'withdrawal': withdrawals.get(unit.pk), 'placements': chips.get(unit.pk, ()),
+               'selected': unit is drawer_unit,
                'href': page_url(params, unit=str(unit.pk)), 'takes_fish': unit.status in ARRIVAL_STATUSES}
               for unit in shown],
         biomass=biomass,
         count_line=ngettext('%(count)d unit', '%(count)d units', len(shown)) % {'count': len(shown)},
+        show_feeding=request.user.has_perm(feeding_views.VIEW),
         show_water=request.user.has_perm(water_views.VIEW), water_critical=water_views.critical_count(water),
         params=params, query=params['q'],
         search_hidden=[(key, params[key]) for key in (*FILTERS, 'unit') if key != 'q' and params[key]],
@@ -225,11 +229,13 @@ def _drawer(request, unit, stock, feeding, params):
         **harvest_views.drawer(request, unit, stock),
         **health_views.drawer(request, unit, page_url(params, unit=str(unit.pk))),
         'feeding': feeding,
-        # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares).
-        'batch_rows': list(zip(stock.shares, feeding.shares)) if stock is not None else [],
+        # Each batch with its feed and FCR (read.figures keeps the order of the stock's shares; None: no feeding rights).
+        'batch_rows': list(zip(stock.shares, feeding.shares if feeding else [None] * len(stock.shares)))
+        if stock is not None else [],
         # Today's ration of each batch, at its estimated weight (farm/feeding/projection.py).
         'ration_rows': _ration_rows(stock, feeding),
         'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,
+        'drawer_placements': placements.of([unit], request.user).get(unit.pk, ()),
         'drawer_days': stock.days(services.local_today(unit)) if stock else None,
         'stock_url': reverse('farm:stock_input') + query if can_record and takes_fish else '',
         'close_url': page_url(params, unit=''),

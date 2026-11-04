@@ -1,0 +1,24 @@
+{% load i18n health %}{% comment %} The health lines of a unit: its open health events (`events`, with `notify`: the ids to tell Mattilsynet of), its treatments of the last 90 days (`treatments`, shown when
+   `treatments_shown` or `treatments_url`, which also gives the link to all of them) and its latest sea-lice count (`lice`). Shared by the drawer of Production units and the
+   monitoring cards. {% endcomment %}
+{% if events %}
+<p class="op-meta">{% trans "Open health events" %}</p>
+<ul class="op-lines" role="list">
+  {% for event in events %}<li>{{ event.date|date:"DATE_FORMAT" }} · {{ event }}{% if event.pk in notify %} · <strong class="over-text">{% trans "Notify Mattilsynet" %}</strong>{% endif %}</li>{% endfor %}
+</ul>
+{% endif %}
+{% if treatments_url or treatments_shown %}
+<p class="op-meta">{% trans "Treatments, last 90 days" %}</p>
+{% if treatments %}
+<ul class="op-lines" role="list">
+  {% for treatment in treatments %}<li>{% blocktrans trimmed with start=treatment.start_date|date:"DATE_FORMAT" end=treatment.end_date|date:"DATE_FORMAT" %}{{ start }} – {{ end }}{% endblocktrans %} · {% if treatment.medicine %}{{ treatment.medicine.name }}{% else %}{{ treatment.get_method_display }}{% endif %} · {{ treatment.get_reason_display }}</li>{% endfor %}
+</ul>
+{% else %}
+<p class="muted">{% trans "No treatment in this unit in the last 90 days." %}</p>
+{% endif %}
+{% if treatments_url %}<p><a href="{{ treatments_url }}">{% blocktrans trimmed with unit=unit_code %}All treatments of {{ unit }}{% endblocktrans %}</a></p>{% endif %}
+{% endif %}
+{% if lice %}
+<p class="op-meta">{% blocktrans trimmed with date=lice.date|date:"DATE_FORMAT" fish=lice.fish_counted %}Latest sea-lice count {{ date }}, {{ fish }} fish examined{% endblocktrans %}</p>
+<p>{% blocktrans trimmed with females=lice|per_fish:"adult_females" mobile=lice|per_fish:"mobile" attached=lice|per_fish:"attached" %}{{ females }} adult female · {{ mobile }} mobile · {{ attached }} attached lice per fish{% endblocktrans %}</p>
+{% endif %}

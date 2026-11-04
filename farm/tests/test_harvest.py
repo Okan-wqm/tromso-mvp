@@ -44,7 +44,8 @@ def no_provider():
 
 def provider(*blocks):
     """A fake health provider: these blocks for any unit and day."""
-    return mock.patch.object(withdrawal, '_providers', [lambda unit, day: list(blocks)])
+    return mock.patch.object(withdrawal, '_providers',
+                             [lambda units, day: {unit.pk: list(blocks) for unit in units}])
 
 
 class HarvestTestCase(FeedingTestCase):
@@ -253,6 +254,22 @@ class AcknowledgementTests(HarvestTestCase):
             'The warnings changed since the form was shown: read them again, and tick the box to go on.']})
         self.harvest(handling_ack=self.assess().fingerprint)
         self.assertEqual(HandlingAcknowledgement.objects.get().fasted_hours, Decimal('6.0'))
+
+    def test_the_error_is_reported_on_the_field_the_caller_names(self):
+        """Another form's box (an experiment's start) has its own name; the default is the stock forms'."""
+        from types import SimpleNamespace
+        shown = SimpleNamespace(warnings=['a warning'], fingerprint='abc')
+        for field, call in (('handling_ack', lambda seen: check.require_acknowledged(shown, seen)),
+                            ('start_ack', lambda seen: check.require_acknowledged(shown, seen, field='start_ack'))):
+            with self.assertRaises(ValidationError) as caught:
+                call('')
+            self.assertEqual(list(caught.exception.message_dict), [field])
+            with self.assertRaises(ValidationError) as caught:
+                call('stale')
+            self.assertEqual(caught.exception.message_dict[field],
+                             ['The warnings changed since the form was shown: read them again, and tick the box to go on.'])
+            call('abc')                                                       # exactly what was shown: goes on
+        check.require_acknowledged(SimpleNamespace(warnings=[], fingerprint='x'), '', field='start_ack')
 
     def test_without_warnings_nothing_is_asked_or_stored(self):
         operation = self.harvest()

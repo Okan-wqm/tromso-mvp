@@ -6,17 +6,17 @@ date or completing a task needs no second write.
 
 The page's views (Today, Open, Completed) are each a query of their own, filtered and paged on the server
 (the source filtered the first 50 tasks in the browser, TSK-04)."""
+from dataclasses import dataclass
 from functools import reduce
 from operator import or_
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.db.models import BooleanField, Case, Count, IntegerField, OuterRef, Q, Subquery, Value, When
 from django.db.models.functions import Coalesce
 
+from core import people
 from farm.clocks import clocks
 
-from .models import CLOSED_STATUSES, OPEN_STATUSES, PRIORITY_RANK, Status, TaskChecklistItem
+from .models import CLOSED_STATUSES, OPEN_STATUSES, PRIORITY_RANK, Status, Task, TaskChecklistItem
 
 TODAY, OPEN, COMPLETED = 'today', 'open', 'completed'
 VIEWS = (TODAY, OPEN, COMPLETED)
@@ -97,17 +97,31 @@ def counts(tasks, moment=None):
     }
 
 
+@dataclass(frozen=True)
+class UnitTasks:
+    """The open tasks of one unit: all of them, those overdue and those due today (not overdue yet), the Tasks
+    page's own counts for that place."""
+    open: int = 0
+    overdue: int = 0
+    due_today: int = 0
+
+
+def per_unit(unit_ids, moment=None):
+    """{unit id: UnitTasks} of the units that have an open or in-progress task, one grouped query: the filters of the
+    views above (`overdue`, `due_today`) counted per unit, so a card says what the page would list."""
+    now = clocks(moment)
+    rows = (Task.objects.with_site().filter(unit_id__in=unit_ids, status__in=OPEN_STATUSES).order_by()
+            .values('unit_id')
+            .annotate(total=Count('pk'), late=Count('pk', filter=overdue(now)),
+                      today=Count('pk', filter=due_today(now))))
+    return {row['unit_id']: UnitTasks(row['total'], row['late'], row['today']) for row in rows}
+
+
 def readers():
     """The people a task can be for: active users who can read Tasks (the platform admin among them). Someone
     who cannot read Tasks could never see a task given to them (the source mixed in workers without a login,
     TSK-02)."""
-    users = get_user_model().objects
-    perm = Permission.objects.filter(content_type__app_label='tasks', codename='view_task')
-    holders = (Q(is_superuser=True) | Q(pk__in=users.filter(groups__permissions__in=perm).values('pk'))
-               | Q(pk__in=users.filter(user_permissions__in=perm).values('pk')))
-    return users.filter(holders, is_active=True).order_by('first_name', 'last_name', 'username')
+    return people.who_can('tasks', 'view_task')
 
 
-def person(user):
-    """A person as the pages name them: their full name, else their username."""
-    return user.get_full_name() or user.get_username()
+person = people.person_name

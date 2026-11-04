@@ -1,0 +1,2 @@
+{% load i18n %}{% comment %} Copy an experiment (experiments.resources.ExperimentCopyView): as a new experiment, or as a template. Offered to
+   those who may create experiments. {% endcomment %}{% if can_add %}<p class="copy-actions"><a class="button button-ghost" href="{{ copy_url }}" data-modal>{% trans "Copy as a new experiment" %}</a> <a class="button button-ghost" href="{{ copy_url }}?as=template" data-modal>{% trans "Save as a template" %}</a></p>{% endif %}

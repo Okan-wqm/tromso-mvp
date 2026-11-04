@@ -1,0 +1,23 @@
+{% load i18n feeding %}{% comment %} The Data of an experiment (experiments.read.data): each tank with its days and the feeding records of them,
+   and links to the farm's own lists with the tank and the days chosen (feeding records, treatments, sea-lice counts, water, the
+   unit's drawer: those the person may read). A count stands only where one of the farm's reads gives it. {% endcomment %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Group" %}</th><th scope="col">{% trans "Replicate" %}</th><th scope="col">{% trans "Tank" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th><th scope="col" class="num">{% trans "Feeding records" %}</th><th scope="col" class="num">{% trans "Feed given" %}</th><th scope="col">{% trans "Records of the farm" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for tank in tanks %}{% with cell=tank.data.cell %}
+      <tr>
+        <td>{{ cell.group.name }}</td><td>R{{ cell.replicate.number }}</td><td>{{ cell.unit.code }} · {{ cell.unit.name }}</td>
+        <td class="nowrap">{{ cell.first|date:"DATE_FORMAT" }}</td><td class="nowrap">{{ cell.last|date:"DATE_FORMAT" }}</td>
+        <td class="num">{{ tank.data.records }}</td><td class="num">{{ tank.data.kilos|feed_kg }}</td>
+        <td>{% for label, url in tank.links %}<a href="{{ url }}">{{ label }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</td>
+        <td class="row-actions">{% for label, url in tank.actions %}<a class="button button-ghost" href="{{ url }}" data-modal>{{ label }}</a> {% endfor %}</td>
+      </tr>
+      {% endwith %}{% empty %}
+      <tr><td colspan="9" class="muted">{% trans "No tank is placed." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

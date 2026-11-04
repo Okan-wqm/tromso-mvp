@@ -215,6 +215,7 @@
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py",
         "reports/tests/test_ack.py",
+        "reports/tests/test_api_call.py",
         "reports/tests/test_duties.py",
         "reports/tests/test_gaps789.py",
         "reports/tests/test_notices.py",
@@ -23152,6 +23153,19 @@
           "why": ""
         },
         {
+          "name": "authority_id",
+          "field": "authority_id",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SubmitForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(2000)",
@@ -23273,6 +23287,12 @@
         },
         {
           "name": "chk_regulatory_reports_no_cleaner_feed",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_authority_id_when_filed",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -23512,6 +23532,7 @@
             "submitted_at": "",
             "channel": "",
             "reference": "",
+            "authority_id": "",
             "version": "",
             "content_sha256": "",
             "acknowledged": ""
@@ -23533,6 +23554,7 @@
         "knowledge/tests/test_documents.py",
         "reports/tests/helpers.py",
         "reports/tests/test_ack.py",
+        "reports/tests/test_api_call.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_delivery.py",

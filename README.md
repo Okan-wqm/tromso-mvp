@@ -1806,6 +1806,11 @@ condition the harvested fish are weighed (round or gutted weight) and is not rea
 month with no feed recorded is a problem unless the person says none was given. The cleaner-fish file for the API has one row per
 species, with the mixed origin when both farmed and wild-caught fish are in it.
 
+**Through the reporting API.** The system sends nothing, but a person who files through the API can record the id it returned (the filing
+form); the JSON export of a correction then says how the API takes it, `PUT` to that id, with the client reference of the filing it
+replaces (`X-Api-Method`, `X-Api-Path`, `X-Corrects-Client-Reference`; the print page says the same), and the sea-lice endpoint, which
+has POST only, is said to. The facts of the contract (scopes, headers, methods, errors) are in docs/regulatory-reports.md, 7.2.
+
 **A research site.** A site's production form can be *Research or other production*: it owes no juvenile, biomass or yearly stock report
 (only chapters 1, 2, 3 and 7 of the regulation apply, § 3 l) and has no operating plan; the sea-lice and cleaner-fish reports and the
 notices still follow the fish, and the lines of the Reports page say it is unverified with the authority (question Q10).

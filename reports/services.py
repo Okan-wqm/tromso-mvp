@@ -38,7 +38,8 @@ def _refuse(message):
     raise ValidationError({NON_FIELD_ERRORS: [message]})
 
 
-def submit(user, report, *, submitted_at, channel, reference, version, content_sha256, acknowledged=()):
+def submit(user, report, *, submitted_at, channel, reference, version, content_sha256, acknowledged=(),
+           authority_id=''):
     """Records that `report` was filed (when, how, the receipt) and freezes its content as it is computed now: the content
     the person was shown, named by its hash (`content_sha256`, what the page and the print gave before the filing). Refused
     for a stale form, a report already filed, one not ready (its problems), a time in the future, a channel with a
@@ -83,6 +84,7 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
         current.filed_late = (periods.oslo_today(submitted_at) > current.deadline_on) if current.deadline_on else False
         current.submitted_at, current.submitted_by = submitted_at, user
         current.channel, current.reference = channel, reference.strip()
+        current.authority_id = authority_id.strip()
         current.updated_by, current.version = user, current.version + 1
         current.save()
         with audit.source_language():
@@ -92,6 +94,7 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
                 str(Report._meta.get_field('submitted_by').verbose_name): [None, user.get_username()],
                 str(Report._meta.get_field('channel').verbose_name): [None, audit.message(current.get_channel_display())],
                 str(Report._meta.get_field('reference').verbose_name): [None, current.reference or None],
+                str(Report._meta.get_field('authority_id').verbose_name): [None, current.authority_id or None],
                 str(_('Content hash')): [None, digest],
                 str(Report._meta.get_field('deadline_on').verbose_name): [None, current.deadline_on and
                                                                             current.deadline_on.isoformat()],

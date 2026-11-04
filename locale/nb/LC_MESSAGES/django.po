@@ -1663,6 +1663,9 @@ msgstr "En ukentlig oppgave gjentas på minst én ukedag; de andre på ingen."
 msgid "A year class is a year, e.g. 2026."
 msgstr "En årsklasse er et år, for eksempel 2026."
 
+msgid "API id"
+msgstr "API-id"
+
 msgid "Abnormal swimming"
 msgstr "Unormal svømming"
 
@@ -5063,6 +5066,9 @@ msgstr "Jeg har sjekket dette for hånd."
 msgid "Icelandic"
 msgstr "Islandsk"
 
+msgid "Id returned by the authority’s API"
+msgstr "Id returnert av myndighetens API"
+
 msgid "Identity"
 msgstr "Identitet"
 
@@ -6685,6 +6691,9 @@ msgstr "Bare bad, dypp eller ferskvannsbad har badetid."
 msgid "Only a feeder has feed calibrations."
 msgstr "Bare en fôrautomat har fôrkalibreringer."
 
+msgid "Only a filed report has the id the authority’s API returned."
+msgstr "Bare en innsendt rapport har id-en myndighetens API returnerte."
+
 msgid "Only a filed report is corrected: change the draft itself."
 msgstr "Bare en innsendt rapport korrigeres: endre selve utkastet."
 
@@ -6712,6 +6721,13 @@ msgstr "Bare kjøpt fisk har en leverandør."
 
 msgid "Only deleted rows"
 msgstr "Bare slettede rader"
+
+msgid ""
+"Only for a filing through the reporting API: the id its answer gave. A correction of the report "
+"is sent to that id."
+msgstr ""
+"Bare for innsending gjennom rapporterings-API-et: id-en svaret ga. En korrigering av rapporten "
+"sendes til denne id-en."
 
 msgid "Only one contact can be the primary contact."
 msgstr "Bare én kontaktperson kan være hovedkontakt."
@@ -9228,6 +9244,11 @@ msgstr "Helsehendelsen er datert %(date)s, etter denne operasjonen."
 msgid "The health event is dated %(date)s, after this treatment."
 msgstr "Helsehendelsen er datert %(date)s, etter denne behandlingen."
 
+msgid "The id the authority returned for the first filing was not recorded: it is needed to correct it."
+msgstr ""
+"Id-en myndigheten returnerte for den første innsendingen ble ikke registrert: den trengs for å "
+"korrigere den."
+
 msgid "The invitation to set a password is sent here."
 msgstr "Invitasjonen til å velge passord sendes hit."
 
@@ -9542,6 +9563,13 @@ msgstr "Den trygge sonen ligger i dette båndet."
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
+
+msgid ""
+"The sea-lice endpoint has no PUT: a correction is sent again as a POST (whether it replaces the "
+"week or duplicates it is unverified)."
+msgstr ""
+"Lakselus-endepunktet har ikke PUT: en korrigering sendes på nytt som POST (om den erstatter uken "
+"eller dupliserer er ikke bekreftet)."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Den korteste avstanden over, vinkelrett på den lange aksen."
@@ -10078,6 +10106,9 @@ msgstr "Tre bokstaver, f.eks. NOK."
 
 msgid "Three-phase"
 msgstr "Trefase"
+
+msgid "Through the reporting API"
+msgstr "Gjennom rapporterings-API-et"
 
 msgid "Thursday"
 msgstr "Torsdag"
@@ -11165,6 +11196,9 @@ msgstr "rensefisk"
 msgid "cleaner fish %(batches)s: %(fish)s fish"
 msgstr "rensefisk %(batches)s: %(fish)s fisk"
 
+msgid "client reference"
+msgstr "klientreferanse"
+
 msgid "closed report"
 msgstr "lukket rapport"
 
@@ -11962,6 +11996,9 @@ msgstr "bestillingspunkt"
 
 msgid "reorder levels"
 msgstr "bestillingspunkter"
+
+msgid "replaces the filing with client reference"
+msgstr "erstatter innsendingen med klientreferanse"
 
 msgid ""
 "research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 "

@@ -190,6 +190,9 @@ class SubmitForm(forms.Form):
     channel = forms.ChoiceField(label=_('Filed through'), choices=Channel.choices)
     reference = forms.CharField(label=_('Receipt or reference'), max_length=200, required=False,
                                 help_text=_('Not needed for a notice given by telephone.'))
+    authority_id = forms.CharField(label=_('Id returned by the authority’s API'), max_length=100, required=False,
+                                   help_text=_('Only for a filing through the reporting API: the id its answer gave. A '
+                                               'correction of the report is sent to that id.'))
     version = forms.IntegerField(widget=forms.HiddenInput)
     # The hash of the content the page showed (reports.compute.content_hash): what is recorded is exactly that.
     content_sha256 = forms.CharField(widget=forms.HiddenInput, min_length=64, max_length=64)

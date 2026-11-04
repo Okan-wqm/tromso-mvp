@@ -6,6 +6,8 @@ authority writes them."""
 import csv
 import io
 
+from django.utils.translation import gettext
+
 from core.dbgrid import formula_safe
 
 from .kinds import ReportKind
@@ -100,6 +102,41 @@ def _per_species(rows):
         origins = {ORIGINS.get(origin) for origin in row['origins']}
         found.append({**row, 'origin': BOTH_ORIGINS if len(origins) > 1 else origins.pop()})
     return found
+
+
+# The reporting API's endpoints (docs/regulatory-reports.md, 7.2): a report is a POST; a correction of the kinds that have it is a
+# PUT to the id the first POST returned. The sea-lice endpoint has POST only.
+ENDPOINTS = {ReportKind.SEA_LICE: '/api/lakselus/v1/lakselus', ReportKind.SMOLT: '/api/settefisk/v1/settefisk',
+             ReportKind.CLEANER_FISH: '/api/rensefisk/v1/rensefisk',
+             ReportKind.SLAUGHTER_PLANNED: '/api/slakt/v1/planlagt'}
+PUT_KINDS = (ReportKind.SMOLT, ReportKind.CLEANER_FISH, ReportKind.SLAUGHTER_PLANNED)
+
+
+def api_call(report):
+    """How the reporting API takes this report: {'method', 'path', 'client_reference', 'corrects_client_reference',
+    'note'}; None for a kind it has no endpoint for. A correction of a smolt, cleaner-fish or planned-slaughter report is a PUT to
+    the id the authority returned for the original (`Report.authority_id`; the note says when it was not recorded), under its own
+    client reference; the original's is given so the sender can find what it replaces. A correction of a sea-lice report is a
+    POST again (the endpoint has no PUT: whether a second POST for the week replaces or duplicates is unverified, R02)."""
+    path = ENDPOINTS.get(report.kind)
+    if path is None:
+        return None
+    call = {'method': 'POST', 'path': path, 'client_reference': str(report.pk), 'corrects_client_reference': None,
+            'note': ''}
+    original = report.corrects
+    if original is None:
+        return call
+    call['corrects_client_reference'] = str(original.pk)
+    if report.kind in PUT_KINDS:
+        if original.authority_id:
+            call.update(method='PUT', path=f'{path}/{original.authority_id}')
+        else:
+            call.update(method='PUT', path=f'{path}/{{id}}', note=gettext(
+                'The id the authority returned for the first filing was not recorded: it is needed to correct it.'))
+    else:
+        call['note'] = gettext('The sea-lice endpoint has no PUT: a correction is sent again as a POST (whether it '
+                               'replaces the week or duplicates it is unverified).')
+    return call
 
 
 def api_json(report, content):

@@ -212,12 +212,17 @@ def export(request, pk, fmt):
         shaped = exports.api_json(report, content)
         if shaped is None:
             raise Http404
+        call = exports.api_call(report)
         response = HttpResponse(json.dumps(shaped, ensure_ascii=False, indent=2),
                                 content_type='application/json; charset=utf-8')
     else:
         raise Http404
     response['Content-Disposition'] = content_disposition_header(True, f'{name}.{fmt}')
     response['X-Content-SHA256'] = compute.content_hash(content)       # the content the file was made from
+    if fmt == 'json':
+        response['X-Api-Method'], response['X-Api-Path'] = call['method'], call['path']
+        if call['corrects_client_reference']:
+            response['X-Corrects-Client-Reference'] = call['corrects_client_reference']
     return response
 
 
@@ -229,7 +234,7 @@ def print_page(request, pk):
     place = navigation.place(ReportResource.perm('view'))
     return render_page(request, 'reports/report_print.html', {
         'object': report, 'content': content, 'filed': filed, 'title': str(report),
-        'content_hash': compute.content_hash(content),
+        'content_hash': compute.content_hash(content), 'api_call': exports.api_call(report),
         'eyebrow': f'{place.heading} · {place.entry.label}',
         'rows': exports.rows(report, content), 'list_url': reverse('reports:report_list'),
         'detail_url': reverse('reports:report_detail', args=[report.pk]),

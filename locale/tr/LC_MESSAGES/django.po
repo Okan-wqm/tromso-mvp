@@ -1665,6 +1665,9 @@ msgstr "Haftalık bir görev en az bir hafta gününde yinelenir; diğerleri hi�
 msgid "A year class is a year, e.g. 2026."
 msgstr "Yıl sınıfı bir yıldır, örneğin 2026."
 
+msgid "API id"
+msgstr "API kimliği"
+
 msgid "Abnormal swimming"
 msgstr "Anormal yüzme"
 
@@ -5074,6 +5077,9 @@ msgstr "Bunu elle kontrol ettim."
 msgid "Icelandic"
 msgstr "İzlandaca"
 
+msgid "Id returned by the authority’s API"
+msgstr "Kurumun API’sinin döndürdüğü kimlik"
+
 msgid "Identity"
 msgstr "Kimlik"
 
@@ -6692,6 +6698,9 @@ msgstr "Yalnızca banyo, daldırma veya tatlı su banyosunun banyo süresi vard�
 msgid "Only a feeder has feed calibrations."
 msgstr "Yem kalibrasyonu yalnızca yemleme makinelerinde olur."
 
+msgid "Only a filed report has the id the authority’s API returned."
+msgstr "Yalnızca bildirilmiş bir raporun, kurumun API’sinin döndürdüğü kimliği vardır."
+
 msgid "Only a filed report is corrected: change the draft itself."
 msgstr "Yalnızca sunulmuş bir rapor düzeltilir: taslağın kendisini değiştirin."
 
@@ -6719,6 +6728,13 @@ msgstr "Yalnızca satın alınan balığın tedarikçisi olur."
 
 msgid "Only deleted rows"
 msgstr "Yalnızca silinmiş satırlar"
+
+msgid ""
+"Only for a filing through the reporting API: the id its answer gave. A correction of the report "
+"is sent to that id."
+msgstr ""
+"Yalnızca raporlama API’si üzerinden yapılan bildirim için: yanıtının verdiği kimlik. Raporun "
+"düzeltmesi bu kimliğe gönderilir."
 
 msgid "Only one contact can be the primary contact."
 msgstr "Yalnızca bir kişi birincil kişi olabilir."
@@ -9236,6 +9252,9 @@ msgstr "Sağlık olayının tarihi %(date)s, bu işlemden sonra."
 msgid "The health event is dated %(date)s, after this treatment."
 msgstr "Sağlık olayının tarihi %(date)s, bu tedaviden sonra."
 
+msgid "The id the authority returned for the first filing was not recorded: it is needed to correct it."
+msgstr "Kurumun ilk bildirim için döndürdüğü kimlik kaydedilmedi: düzeltmek için gerekli."
+
 msgid "The invitation to set a password is sent here."
 msgstr "Parola belirleme daveti buraya gönderilir."
 
@@ -9548,6 +9567,13 @@ msgstr "Güvenli bölge bu aralıktadır."
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımının balığı kalmaz: önce onu iptal edin."
+
+msgid ""
+"The sea-lice endpoint has no PUT: a correction is sent again as a POST (whether it replaces the "
+"week or duplicates it is unverified)."
+msgstr ""
+"Deniz biti uç noktasında PUT yok: düzeltme yeniden POST olarak gönderilir (haftanın yerine geçip "
+"geçmediği veya çoğaltıp çoğaltmadığı doğrulanmadı)."
 
 msgid "The shortest distance across, at right angles to the long axis."
 msgstr "Uzun eksene dik en kısa çap."
@@ -10085,6 +10111,9 @@ msgstr "Üç harf, örn. NOK."
 
 msgid "Three-phase"
 msgstr "Üç faz"
+
+msgid "Through the reporting API"
+msgstr "Raporlama API’si üzerinden"
 
 msgid "Thursday"
 msgstr "Perşembe"
@@ -11168,6 +11197,9 @@ msgstr "temizleyici balık"
 msgid "cleaner fish %(batches)s: %(fish)s fish"
 msgstr "temizleyici balık %(batches)s: %(fish)s balık"
 
+msgid "client reference"
+msgstr "istemci referansı"
+
 msgid "closed report"
 msgstr "kapatılmış rapor"
 
@@ -11967,6 +11999,9 @@ msgstr "yeniden sipariş seviyesi"
 
 msgid "reorder levels"
 msgstr "yeniden sipariş seviyeleri"
+
+msgid "replaces the filing with client reference"
+msgstr "şu istemci referanslı bildirimin yerini alır"
 
 msgid ""
 "research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 "

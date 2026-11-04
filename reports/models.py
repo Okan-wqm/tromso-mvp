@@ -104,6 +104,9 @@ class Report(AuditedModel):
                                      related_name='+', verbose_name=_('Recorded by'))
     channel = models.CharField(_('Filed through'), max_length=20, blank=True, choices=Channel.choices)
     reference = models.CharField(_('Receipt or reference'), max_length=200, blank=True)
+    # The id the authority's reporting API answered with when the report was filed through it: a correction of a settefisk,
+    # cleaner-fish or planned-slaughter report is a PUT to that id (the sea-lice endpoint has POST only).
+    authority_id = models.CharField(_('Id returned by the authority’s API'), max_length=100, blank=True)
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
     # The two facts no record holds that a monthly report needs said: in what condition the harvest weights of the biomass
     # report are given, and that no feed was given to the cleaner fish (so that 0 kg is a statement, not a silence).
@@ -140,6 +143,8 @@ class Report(AuditedModel):
                    _('Only the biomass report has a condition of the harvested fish.')),
             _check('no_cleaner_feed', Q(no_cleaner_feed=False) | Q(kind=ReportKind.CLEANER_FISH),
                    _('Only the cleaner-fish report says that no feed was given.')),
+            _check('authority_id_when_filed', Q(authority_id='') | Q(submitted_at__isnull=False),
+                   _('Only a filed report has the id the authority’s API returned.')),
             _check('late_when_filed', Q(filed_late__isnull=True, deadline_on__isnull=True) | Q(submitted_at__isnull=False),
                    _('Only a filed report is late or on time.')),
             _check('health_event', Q(kind=ReportKind.DISEASE, health_event__isnull=False)

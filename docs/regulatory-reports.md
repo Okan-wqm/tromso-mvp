@@ -871,6 +871,11 @@ override one; the change is then recorded here). Taken as recommended unless the
 | D-13 | A site's production form (settefisk, matfisk, stamfisk), which decides its reports (5.2): and the § 44a notices of matfisk and stamfisk sites on land or in fresh water (taken into use, emptied, yearly stock by 7 January), build them? | The production form is needed (a land grow-out site is not a hatchery, E1, E3). The § 44a notices: **yes** (the MVP goes to a university that may run a land site), as a yearly report and two event notices. |
 | D-14 | What is a batch's year class (årsklasse): the hatch year, or the year it went to sea, and how do spring and autumn stockings (§ 44 second paragraph) show? | Entered per batch, **no default**; the definition (hatch year or sea year) and the spring/autumn rule are **unverified**, noted on the field. |
 | D-15 | How our loss reasons map to Fiskeridirektoratet's causes (Dødfisk, Utkast fra slakteri, Rømming, Annet, Tellefeil) | Mortality and culls → Dødfisk; escape → Rømming; count corrections → Tellefeil; unaccounted loss → Annet; Utkast from the slaughter result only. As proposed, **unverified** until the form is confirmed (D-12). |
+| D-16 | The driftsplan and the lice coordination plan (1 October each year) are the farm's duties and are not in the system (coverage R16, R17) | **Listed, not built:** due lines per sea site and year with a person's record that they were done (the day and the reference), reminders on the Reports page and the company overview, and the page of duties outside this system; no form, nothing sent. The consequence of filing late is unverified (Q6). |
+| D-17 | A research or other production site (§ 3 l) | A production form of its own: no juvenile, biomass, § 44a report or driftsplan; the lice and cleaner-fish reports and the notices still follow the fish; marked unverified (Q10). |
+| D-18 | The unexplained-mortality notice (§ 7 second paragraph) | Raised from an increased-mortality health event with no diagnosis and not closed after 14 days, as a welfare notice; the reassessment itself is not in the records (5.13). |
+| D-19 | Is the planned-slaughter duty the plan's or the harvest's (§ 9a)? | The harvest's, planned or done: a week stays owed until filed or closed with a reason; an unplanned harvest owes it too (5.13). |
+| D-20 | What a filing stores and shows | The content hash is shown before and must match at the recording; a filing is marked late with its deadline; a value on an open question needs the person's confirmation; the API id is kept for a correction (5.13, 7.2). |
 
 ## 7. The coverage review of 2026-11-04
 
@@ -889,3 +894,26 @@ three treatment types; Q3 a unit emptied in the month and two species in one tan
 Q5 who reports a planned slaughter, the kilo basis; Q6 the driftsplan and lice plan channels and the consequence of lateness;
 Q7 Fiskeridirektoratet's channels (biomass, land stock, escape); Q8 the cleaner-fish broodstock annual report; Q9 the county
 report; Q10 a land research site; Q11 Arctic char and the lice duty; Q12 weekend deadlines and the week-year.
+
+### 7.2 The transport contract (not built: the system sends nothing)
+
+What the authority's published definitions say about sending, kept so that an API sender can be built on facts (coverage review C01 to
+C05; the live and test definitions read 2026-11-04). None of it is required: the entry page says reports may always be filed manually in
+Altinn.
+
+- **Scopes.** Five Maskinporten scopes, one per area, one scope per token: the entry page names four (lice, juveniles, cleaner fish, slaughter,
+  which carries both planned and executed), the definition adds one for the driftsplan; the automatic lice-count endpoint rides on the lice
+  scope and needs enrolment and an agreement with Mattilsynet.
+- **Headers and tokens.** A `Client-Id` header on every operation; a JWT grant from Maskinporten valid at most 120 seconds (`exp - iat`);
+  `consumer_org` in the token for a supplier acting for a farm, delegated in Altinn.
+- **Methods.** POST creates a report; **PUT `/{id}`**, with the id the POST answered with, corrects a settefisk, cleaner-fish, planned or executed
+  slaughter report; the sea-lice endpoint has **POST only**. All information is sent again in a correction.
+- **Errors.** 400 lists every fault found (`errors[]`), 503 when a register the server reads is down.
+- **`klientReferanse`** must be unique for each reporting: the export uses the report's id, so a correction, a new report, has its own.
+- **Environments.** The test definition equals the production one except the token URL; one client for both is unverified.
+- **What the system keeps for it.** The id the API returned is recorded at the filing (`Report.authority_id`, optional, only for a filed
+  report: a database check) and a correction's JSON export says how the API takes it: `X-Api-Method` and `X-Api-Path` (`PUT
+  /api/settefisk/v1/settefisk/<id>`, or `{id}` with a note when it was not recorded), and `X-Corrects-Client-Reference` with the client
+  reference of the filing it replaces; the print page says the same. The body of the file is the DTO alone, unchanged (`exports.api_call`).
+- **Unverified:** whether a second POST for the same week of sea lice replaces or duplicates (no PUT exists), whether a repeated
+  `klientReferanse` is refused, whether `unknownProperties` is wanted: only a run against the test environment settles them (R02, R07, R09).

@@ -119,11 +119,13 @@ impl Batch<'_> {
     fn dead_letter(&mut self, lim: &mut DeadLimiter, m: &Msg, device_id: Option<Uuid>, reason: DeadReason) {
         let sha = lim.key(m.connection_id, &m.topic, reason, sha256_hex(&m.payload), m.received_at);
         let overflow = sha == OVERFLOW;
-        let key = (m.connection_id, m.topic.clone(), reason, sha.clone());
+        // the column holds 255 characters; MQTT allows 65535 bytes
+        let topic: String = m.topic.chars().take(255).collect();
+        let key = (m.connection_id, topic.clone(), reason, sha.clone());
         let e = self.dead.entry(key).or_insert_with(|| DeadLetter {
             connection_id: m.connection_id,
             device_id,
-            topic: m.topic.clone(),
+            topic,
             reason,
             payload_sha256: sha,
             payload: if overflow { Vec::new() } else { m.payload.iter().take(DEAD_PAYLOAD_MAX).copied().collect() },

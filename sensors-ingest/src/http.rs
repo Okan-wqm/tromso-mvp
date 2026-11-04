@@ -3,7 +3,15 @@
 //! no secrets). Bound inside the compose network only, never published.
 
 use crate::config::Config;
+use crate::model::{ChannelMap, Format};
 use crate::service::Shared;
+use crate::timerule::{self, Limits};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock};
 
 /// A database write older than this makes the service unhealthy (the heartbeat writes every 10 s).
@@ -17,8 +25,96 @@ pub struct AppState {
     pub config: Arc<RwLock<Option<Arc<Config>>>>,
 }
 
-pub fn router(_state: AppState) -> axum::Router {
-    todo!("router")
+pub fn router(state: AppState) -> axum::Router {
+    axum::Router::new()
+        .route("/healthz", axum::routing::get(healthz))
+        .route("/decode", axum::routing::post(decode))
+        .layer(axum::extract::DefaultBodyLimit::max(BODY_LIMIT))
+        .with_state(state)
+}
+
+fn current(state: &AppState) -> Option<Arc<Config>> {
+    match state.config.read() {
+        Ok(g) => g.clone(),
+        Err(p) => p.into_inner().clone(),
+    }
+}
+
+async fn healthz(State(state): State<AppState>) -> (StatusCode, Json<serde_json::Value>) {
+    let sh = &state.shared;
+    let mut problems: Vec<String> = Vec::new();
+    if !sh.ready.load(Ordering::SeqCst) {
+        problems.push("writer not ready (database, lock or configuration)".into());
+    }
+    let age = chrono::Utc::now().timestamp() - sh.last_db_ok.load(Ordering::SeqCst);
+    if age > DB_STALE_S {
+        problems.push(format!("no database write for {age} s"));
+    }
+    let connected = match sh.connected.lock() {
+        Ok(g) => g.clone(),
+        Err(p) => p.into_inner().clone(),
+    };
+    let mut brokers = serde_json::Map::new();
+    if let Some(cfg) = current(&state) {
+        for id in cfg.connections.keys() {
+            let up = connected.get(id).copied().unwrap_or(false);
+            if !up {
+                problems.push(format!("broker connection {id} down"));
+            }
+            brokers.insert(id.to_string(), serde_json::Value::Bool(up));
+        }
+    }
+    let body = serde_json::json!({
+        "status": if problems.is_empty() { "ok" } else { "unhealthy" },
+        "problems": problems,
+        "brokers": brokers,
+        "generation": sh.current_generation(),
+        "commits": sh.commits.load(Ordering::SeqCst),
+        "acked": sh.acked.load(Ordering::SeqCst),
+        "queue_depth": sh.queue_depth.load(Ordering::SeqCst),
+        "qos0_dropped": sh.qos0_dropped.load(Ordering::SeqCst),
+        "discarded_stale": sh.discarded.load(Ordering::SeqCst),
+        "poison": sh.poison.load(Ordering::SeqCst),
+        "version": env!("CARGO_PKG_VERSION"),
+    });
+    let code = if problems.is_empty() { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
+    (code, Json(body))
+}
+
+#[derive(Deserialize)]
+struct DecodeRequest {
+    format: Format,
+    channels: Vec<ChannelMap>,
+    payload: String,
+    received_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize)]
+struct DecodedSample {
+    channel_no: i32,
+    /// The value as decoded, before calibration (the box has no channel calibration).
+    value: f64,
+    ts: DateTime<Utc>,
+    quality: i16,
+}
+
+async fn decode(State(state): State<AppState>, Json(req): Json<DecodeRequest>) -> Json<serde_json::Value> {
+    let limits = current(&state)
+        .map(|c| Limits { future_skew_s: c.contract.future_skew_s, late_limit_days: c.contract.late_limit_days })
+        .unwrap_or(Limits { future_skew_s: 60, late_limit_days: 728 });
+    let received_at = req.received_at.unwrap_or_else(Utc::now);
+    let d = crate::decode::decode(&req.format, &req.channels, req.payload.as_bytes());
+    let mut faults = d.faults.clone();
+    let mut samples = Vec::new();
+    for s in &d.samples {
+        match timerule::resolve(s.device_ts, received_at, limits) {
+            Ok((ts, quality)) => samples.push(DecodedSample { channel_no: s.channel_no, value: s.value, ts, quality }),
+            Err(r) => faults.push(r),
+        }
+    }
+    faults.sort();
+    faults.dedup();
+    Json(serde_json::json!({"seq": d.seq, "samples": samples, "faults": faults}))
 }
 
 #[cfg(test)]

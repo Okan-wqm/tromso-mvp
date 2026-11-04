@@ -28,3 +28,30 @@ Consequences for `sensor_broker_sync` (Django side): write `passwd` and `acl` to
 (write a temp file in the same directory, then rename), file mode 0700 or the broker warns (future versions refuse a
 world-readable file), then signal the broker (SIGHUP). Rotating the ingest's own credential disconnects the ingest
 once; it reconnects with its persistent session (no loss: unacked messages are redelivered).
+
+## S0e: rumqttc 0.25.1 manual acks with Mosquitto 2.0.20, 5000 in-flight window (PASS)
+
+Script: `s0e_live.sh` runs `examples/s0e_manual_ack.rs` against a broker with `max_inflight_messages 5000`
+(6000 QoS 1 messages published, the subscriber has `clean_session=false`, `manual_acks=true`).
+
+Results (all PASS):
+- Without acks the broker delivers exactly 5000 messages and stops: the broker's in-flight window is the brake;
+  the ingest's memory is bounded by it, so the internal queue only has to hold one window.
+- Acking 2500 in order releases exactly the next 1000 (all that was left), in publish order.
+- Crash without DISCONNECT, reconnect with the same client id: `session_present=true`; all 3500 unacked messages
+  are redelivered, none of the 2500 acked; same order; DUP set on 3500 of 3500; same packet id on 3500 of 3500.
+- A PUBACK for an already-acked packet id, and one for an unknown id, are ignored by the broker: the connection stays
+  up and delivery continues. So a PUBACK left in rumqttc's request queue from before a reconnect is harmless.
+- A QoS 0 publish reaches a QoS 1 subscriber at QoS 0: outside the window, not redelivered, no broker brake.
+
+Consequences for the ingest:
+- PUBACK only after COMMIT, in delivery order; the eventloop is polled on its own task at all times (PINGREQ and
+  PUBACK leave through `poll`), never blocked by the writer.
+- Internal queue capacity >= broker `max_inflight_messages` for QoS 1 traffic; QoS 0 traffic is not braked by the
+  broker, so the reader never awaits a full queue: a QoS 0 message that finds the queue full is counted and logged as
+  dropped (`qos0_dropped`), a QoS 1 message cannot find it full (window <= capacity), and if it ever does the ingest
+  disconnects without acking (redelivery) instead of blocking the loop.
+- Redelivered messages (DUP) are written again: rows are idempotent through the `(channel_no, ts)` key and a
+  previously suppressed sample takes the late path (plan decision 4).
+- rumqttc's default incoming packet limit is 10 KiB: the ingest raises it above the broker's `max_packet_size`, so
+  a large message can never make the client drop the connection in a redelivery loop.

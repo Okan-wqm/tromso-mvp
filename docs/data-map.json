@@ -217,6 +217,7 @@
         "inventory/tests/test_services.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py",
         "experiments/tests/test_amend.py",
@@ -224,7 +225,10 @@
         "experiments/tests/test_design.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_start.py"
+        "experiments/tests/test_start.py",
+        "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_token.py"
       ]
     },
     {
@@ -401,7 +405,8 @@
         "experiments/tests/test_amend.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
-        "experiments/tests/test_placements.py"
+        "experiments/tests/test_placements.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -3373,6 +3378,7 @@
         "core/test_datamap.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_health.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
@@ -6278,7 +6284,8 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_protocols.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -6952,7 +6959,8 @@
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_start.py",
-        "experiments/tests/test_triggers.py"
+        "experiments/tests/test_triggers.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -7730,7 +7738,9 @@
         "reports/tests/test_compute.py",
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
-        "reports/tests/test_pages.py"
+        "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
+        "monitoring/tests/test_read.py"
       ]
     },
     {
@@ -8878,7 +8888,9 @@
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "reports/tests/test_due.py",
-        "reports/tests/test_notices.py"
+        "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
+        "monitoring/tests/test_read.py"
       ]
     },
     {
@@ -9980,7 +9992,9 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_species.py",
-        "reports/tests/test_lice.py"
+        "reports/tests/test_lice.py",
+        "monitoring/tests/test_read.py",
+        "monitoring/tests/test_token.py"
       ]
     },
     {
@@ -12009,6 +12023,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
+        "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
@@ -12022,8 +12037,10 @@
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_read.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
@@ -14161,7 +14178,9 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
-        "reports/tests/test_notices.py"
+        "reports/tests/test_notices.py",
+        "reports/tests/test_tabs.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -16460,6 +16479,7 @@
         "core/test_database.py",
         "core/test_languages.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_calculator.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_harvest.py",
@@ -16474,7 +16494,10 @@
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_start.py"
+        "experiments/tests/test_start.py",
+        "monitoring/tests/__init__.py",
+        "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_token.py"
       ]
     },
     {
@@ -17571,7 +17594,8 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
-        "farm/tests/test_water.py"
+        "farm/tests/test_water.py",
+        "monitoring/tests/__init__.py"
       ]
     },
     {
@@ -18144,7 +18168,8 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "monitoring/tests/test_pages.py"
       ]
     },
     {
@@ -18603,6 +18628,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
+        "farm/tests/test_calculator.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
@@ -23278,6 +23304,512 @@
       ]
     },
     {
+      "app": "monitoring",
+      "model": "MonitorBoardUnit",
+      "table": "monitor_board_units",
+      "description": "The cards of each monitoring board: a unit and, when it differs from the board, how its card is drawn.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "board_id",
+          "field": "board",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "monitor_boards",
+            "model": "monitoring.MonitorBoard",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the monitoring board the row belongs to"
+        },
+        {
+          "name": "unit_id",
+          "field": "unit",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "tanks",
+            "model": "farm.Tank",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "MonitorBoardUnitForm",
+            "BoardUnitForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "mode",
+          "field": "mode",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "simple",
+            "detailed"
+          ],
+          "link": null,
+          "on_form": [
+            "MonitorBoardUnitForm",
+            "BoardUnitForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_monitor_board_units_unit",
+          "kind": "unique",
+          "fields": [
+            "board",
+            "unit"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_board_units_mode",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_units"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/units/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_units"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/units/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_units"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/units/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Units list on the monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_edit"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A deleted unit keeps its row (configuration, not history): its card is hidden while the unit is deleted and comes back when it is restored; saving the board's Units list drops the row.",
+      "forms": [
+        {
+          "form": "MonitorBoardUnitForm",
+          "module": "django.forms.widgets",
+          "fields": {
+            "unit": "",
+            "mode": ""
+          }
+        },
+        {
+          "form": "BoardUnitForm",
+          "module": "monitoring.forms",
+          "fields": {
+            "unit": "",
+            "mode": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Monitoring",
+        "masked": []
+      },
+      "tests": [
+        "monitoring/tests/test_boards.py"
+      ]
+    },
+    {
+      "app": "monitoring",
+      "model": "MonitorBoard",
+      "table": "monitor_boards",
+      "description": "The named wall screens of Monitoring: a name, how its cards are drawn by default and how often its screens ask.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "description",
+          "field": "description",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "default_mode",
+          "field": "default_mode",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "simple",
+            "detailed"
+          ],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "refresh_seconds",
+          "field": "refresh_seconds",
+          "type": "smallint",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_monitor_boards_name_live",
+          "kind": "unique",
+          "fields": [
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_monitor_boards_name",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_mode",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_refresh",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_create"
+              ],
+              "routes": [
+                "/monitoring-boards/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_edit"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_delete"
+              ],
+              "routes": [
+                "/monitoring-boards/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "monitoring boards tab",
+              "url_names": [
+                "monitoring:monitorboard_list"
+              ],
+              "routes": [
+                "/monitoring-boards/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Deleting a board is a soft delete; its card rows stay and come back with it when it is restored.",
+      "forms": [
+        {
+          "form": "MonitorBoardForm",
+          "module": "monitoring.forms",
+          "fields": {
+            "name": "General",
+            "description": "General",
+            "default_mode": "General",
+            "refresh_seconds": "General",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Monitoring",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "monitoring/tests/test_boards.py"
+      ]
+    },
+    {
       "app": "reports",
       "model": "ResistanceSuspicion",
       "table": "regulatory_report_resistance_suspicions",
@@ -25164,6 +25696,7 @@
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
       ]
     },
@@ -27237,7 +27770,9 @@
         "tasks/tests/__init__.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
-        "tasks/tests/test_series.py"
+        "tasks/tests/test_read.py",
+        "tasks/tests/test_series.py",
+        "monitoring/tests/test_token.py"
       ]
     }
   ],

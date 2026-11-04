@@ -9,8 +9,9 @@ and components/DeffeyesChart.tsx); the chemistry is farm/water/chemistry.py. Pur
 templates/farm/_deffeyes_chart.html shows, server-rendered, without JavaScript.
 
 The calculator (Operations › Water chemistry › Calculator) fills `Water`, `Limits` and `Target` from its
-form. A unit's or a loop's own chart will fill `Water` from its latest values and `Limits` from the water
-limits of its fish; nothing here changes for that (README, Water chemistry, the calculator).
+form; a unit's own chart (calculation.chart_of, the monitoring cards' window) fills `Water` from its latest
+readings and `Limits` from the water limits of its fish, through the same `calculation.inputs_from`; nothing
+here changes for either (README, Water chemistry).
 
 What the chart shows, as the source draws it (the corrections are in the bug document, WQ-30 to WQ-39):
 - Axes: DIC (mmol/L) across, alkalinity (meq/L) up, 0 to 6 each; wider when the water's point, the
@@ -214,6 +215,28 @@ def analyse(water, limits=Limits(), target=None, pressure=1.0):
         oxygen_solubility_mg_l=solubility,
         oxygen_saturation_pct=None if water.oxygen_mg_l is None else 100 * water.oxygen_mg_l / solubility,
         pressure_atm=pressure)
+
+
+def alkalinity_floor(temperature_c, salinity_ppt, ph):
+    """The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so
+    at a high pH the alkalinity has a floor, below which the DIC would be negative."""
+    return (chemistry.equilibria(float(temperature_c), float(salinity_ppt)).isoline(float(ph))[1]
+            * chemistry.MG_CACO3_PER_MEQ)
+
+
+def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l):
+    """Why a water of this pH and alkalinity cannot be (its alkalinity at or below the floor of `alkalinity_floor`),
+    in the active language; '' when it can. The calculator's form and a unit's chart ask here."""
+    floor = alkalinity_floor(temperature_c, salinity_ppt, ph)
+    if float(alkalinity_mg_l) > floor:
+        return ''
+    return str(_('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide and borate alone are '
+                 'that much.') % {'floor': shown(floor, 1)})
+
+
+def possible(temperature_c, salinity_ppt, ph, alkalinity_mg_l):
+    """Whether a water of this pH and alkalinity can be (`why_impossible` has nothing to say)."""
+    return not why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l)
 
 
 # ---- the chart in its own units: DIC (mmol/L) across, alkalinity (meq/L) up --------------------------------

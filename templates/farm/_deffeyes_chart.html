@@ -2,11 +2,12 @@
 {% comment %} The Water Quality Management Chart (farm.water.deffeyes.draw): a Deffeyes diagram, DIC across and
    alkalinity up, drawn on the server, no script. `chart` is a deffeyes.Chart: every coordinate is in pixels
    with a dot decimal whatever the language, so it is printed as it is. A region's name is its <title>, which
-   a browser shows on hover; the legend and the values table say the same in text. {% endcomment %}
+   a browser shows on hover; the legend and the values table say the same in text. `uid` (optional) makes the ids
+   of this figure its own, for several charts on one page (the monitoring cards' windows). {% endcomment %}
 <figure class="deffeyes">
-  <figcaption class="deffeyes-title" id="deffeyes-title">{% trans "Water Quality Management Chart" %}</figcaption>
-  <svg class="deffeyes-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-labelledby="deffeyes-title deffeyes-desc" xmlns="http://www.w3.org/2000/svg">
-    <desc id="deffeyes-desc">{% blocktrans trimmed %}A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values are in the results under the charts.{% endblocktrans %}</desc>
+  <figcaption class="deffeyes-title" id="deffeyes-title{% if uid %}-{{ uid }}{% endif %}">{% trans "Water Quality Management Chart" %}</figcaption>
+  <svg class="deffeyes-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-labelledby="deffeyes-title{% if uid %}-{{ uid }}{% endif %} deffeyes-desc{% if uid %}-{{ uid }}{% endif %}" xmlns="http://www.w3.org/2000/svg">
+    <desc id="deffeyes-desc{% if uid %}-{{ uid }}{% endif %}">{% blocktrans trimmed %}A Deffeyes diagram: dissolved inorganic carbon across, alkalinity up, lines of equal pH, the regions where CO₂, NH₃ and H₂S pass their limits, the safe zone and the water's point. The values are in the results under the charts.{% endblocktrans %}</desc>
     <g class="deffeyes-grid">
       {% for tick in chart.x_ticks %}<line x1="{{ tick.at }}" y1="{{ chart.plot.top }}" x2="{{ tick.at }}" y2="{{ chart.plot.bottom }}"/>{% endfor %}
       {% for tick in chart.y_ticks %}<line x1="{{ chart.plot.left }}" y1="{{ tick.at }}" x2="{{ chart.plot.right }}" y2="{{ tick.at }}"/>{% endfor %}

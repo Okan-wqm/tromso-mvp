@@ -44,7 +44,8 @@ def no_provider():
 
 def provider(*blocks):
     """A fake health provider: these blocks for any unit and day."""
-    return mock.patch.object(withdrawal, '_providers', [lambda unit, day: list(blocks)])
+    return mock.patch.object(withdrawal, '_providers',
+                             [lambda units, day: {unit.pk: list(blocks) for unit in units}])
 
 
 class HarvestTestCase(FeedingTestCase):

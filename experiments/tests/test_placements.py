@@ -132,3 +132,13 @@ class PageTests(RanTrialCase):
                 page = self.client.get(url)
                 self.assertContains(page, self.label(), msg_prefix=language)
                 self.assertNotIn('%(', page.content.decode())
+
+
+class MonitoringTests(RanTrialCase):
+    """The monitoring card asks the same registry: a booked tank's card carries its experiment's chip."""
+
+    def test_the_card_of_a_booked_tank_shows_its_experiment(self):
+        from monitoring.tests import ALL_RIGHTS
+        self.user.groups.add(role('Monitor', *ALL_RIGHTS))
+        page = self.client.get(reverse('monitoring:monitor'), {'units': f'{self.tanks[0].pk},{self.tanks[4].pk}'})
+        self.assertContains(page, f'{self.trial.code} · Control · R1', count=1)

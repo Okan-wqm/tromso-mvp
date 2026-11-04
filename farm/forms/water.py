@@ -27,7 +27,7 @@ from ..models.site import zone_of
 from ..models.water import BOUNDS
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
 from ..templatetags.water import limit_text
-from ..water import calculation, chemistry, deffeyes, dosing, parameters, services
+from ..water import calculation, deffeyes, dosing, parameters, services
 from ..water.parameters import GROUPS, MEASURED
 from .stock import DECIMAL, ServiceErrors, VoidForm
 
@@ -545,15 +545,13 @@ class CalculatorForm(forms.Form):
         values are in."""
         if data.get('temperature_c') is None or data.get('salinity_ppt') is None:
             return
-        eq = chemistry.equilibria(float(data['temperature_c']), float(data['salinity_ppt']))
         for ph_name, alkalinity_name in (('ph', 'alkalinity_mg_l'), ('target_ph', 'target_alkalinity_mg_l')):
             if data.get(ph_name) is None or data.get(alkalinity_name) is None:
                 continue
-            floor = eq.isoline(float(data[ph_name]))[1] * chemistry.MG_CACO3_PER_MEQ
-            if float(data[alkalinity_name]) <= floor:
-                self.add_error(alkalinity_name, _('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: '
-                                                  'the hydroxide and borate alone are that much.')
-                               % {'floor': deffeyes.shown(floor, 1)})
+            why = deffeyes.why_impossible(data['temperature_c'], data['salinity_ppt'], data[ph_name],
+                                          data[alkalinity_name])
+            if why:
+                self.add_error(alkalinity_name, why)
 
     def values(self):
         """The values the chart is drawn for: those of a submitted form, DEFAULTS before."""
@@ -562,23 +560,10 @@ class CalculatorForm(forms.Form):
     def inputs(self):
         """The keyword arguments of farm/water/calculation.calculate."""
         values = {name: float(value) if isinstance(value, Decimal) else value for name, value in self.values().items()}
-        water = deffeyes.Water(
-            temperature_c=values['temperature_c'], salinity_ppt=values['salinity_ppt'], ph=values['ph'],
-            alkalinity_mg_l=values['alkalinity_mg_l'], tan_mg_l=values['tan_mg_l'],
-            total_sulfide_ug_l=values['total_sulfide_ug_l'], calcium_mg_l=values['calcium_mg_l'],
-            oxygen_mg_l=values['oxygen_mg_l'])
-        limits = deffeyes.Limits(
-            nh3_n_mg_l=values['nh3_n_limit_mg_l'], co2_mg_l=values['co2_limit_mg_l'],
-            h2s_ug_l=values['h2s_limit_ug_l'], alkalinity_low_mg_l=values['alkalinity_low_mg_l'],
-            alkalinity_high_mg_l=values['alkalinity_high_mg_l'])
-        target = None
-        if values['target_ph'] is not None:
-            target = deffeyes.Target(values['target_ph'], values['target_alkalinity_mg_l'])
-        altitude = values['altitude_m']
+        mapped = calculation.inputs_from(values)
         amounts = {reagent.key: values[dose_name(reagent)] for reagent in dosing.REAGENTS
                    if values[dose_name(reagent)]}
-        return {'water': water, 'limits': limits, 'target': target,
-                'pressure': chemistry.pressure_atm(altitude) if altitude is not None else 1.0,
+        return {**mapped,
                 'layers': frozenset(values['layers']), 'chosen': list(values['reagents']),
                 'volume': values['volume_m3'], 'amounts': amounts,
                 'ph_bounds': calculation.PhBounds(*(values[name] for name in PH_FIELDS))}

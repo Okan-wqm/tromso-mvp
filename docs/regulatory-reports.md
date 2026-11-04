@@ -791,6 +791,11 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   the reports asked for them.
 - **Unverified:** whether § 10 c's amount of a medicinal treatment is the product's or the active substance's (the report says
   which it holds and warns); which year Mattilsynet expects in the ISO week-year of 28 December to 3 January.
+- **Tabs and lines (owner feedback after the first live test):** the Reports page has a tab for every kind (all 11, urgent before
+  scheduled as the source groups them) and each site or facility has a line per kind: due (a count), up to date, or not due with the
+  reason. The reasons are returned by `reports/due.py` (`DueList.lines`, `Line`) from the same rules that decide what is owed
+  (`owed`, the periods with fish), so there is no second copy of the rule to drift; the company overview reads the due list for
+  its upcoming reports. Nothing is stored and nothing is sent; the executed slaughter stays out (D-3).
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
   (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the disease notice for a mortality
   left unexplained 14 days (5.2); the § 44a "continuous operation" refinements beyond the yearly stock and the two site

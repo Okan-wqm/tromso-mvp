@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     # Research: experiments (trials of one species on one site: the design, the allocation, the tanks and
     # the days), reading the farm and read by nothing.
     'experiments',
+    # The monitoring cards: one live card per unit for the control room's wall, composed from the other apps' reads.
+    'monitoring',
 ]
 
 MIDDLEWARE = [
@@ -224,6 +226,10 @@ TEMPERATURE_USABLE_DAYS = 7
 # since the last measured point, and "weigh now: the estimate is unreliable" after the second (owner decision Q6).
 WEIGH_SOON_DAYS = 14
 WEIGH_NOW_DAYS = 28
+
+# Seconds between two asks of a monitoring wall (a board may say its own, 10 to 600): the screen asks "has anything
+# changed?" and is answered without a body while nothing has (monitoring/read.py change_token).
+MONITOR_POLL_SECONDS = 15
 
 # How far ahead a recurring task's tasks are made, and how many days back missed ones are made after a gap (they
 # are overdue): tasks/services.py, owner decision 3.

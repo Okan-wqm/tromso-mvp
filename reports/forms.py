@@ -27,10 +27,9 @@ REPORT_FORM_TABS = [
 
 
 def escape_label(escape):
-    """An escape in a list: its day, unit and fish, 2026-10-30 · M-01 · 300 · A net tore (its line was loaded with the
-    list: `ReportForm.__init__`)."""
-    line = escape.operation.movements.all()[0]
-    return f'{escape.operation.date.isoformat()} · {line.unit.code} · {-line.count_delta} · {escape.cause[:50]}'
+    """An escape in a list, as the escape names itself: "Escape of 300 fish from M-01, 2026-10-30" (its line was loaded
+    with the list: `ReportForm.__init__`), and what caused it."""
+    return f'{escape} · {escape.cause[:50]}'
 
 
 class ReportForm(TabbedForm):

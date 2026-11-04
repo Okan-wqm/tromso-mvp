@@ -130,7 +130,8 @@ class RegistryTests(DatabaseViewerTestCase):
 
     def test_tables_come_from_the_models_of_the_listed_apps(self):
         expected = {model._meta.db_table
-                    for label in ('farm', 'inventory', 'knowledge', 'messaging', 'reports', 'tasks', 'experiments', 'core', 'auth')
+                    for label in ('farm', 'inventory', 'knowledge', 'messaging', 'reports', 'tasks', 'experiments',
+                                  'monitoring', 'core', 'auth')
                     for model in apps.get_app_config(label).get_models(include_auto_created=True)}
         self.assertEqual(set(names()), expected)
         self.assertTrue({'sites', 'site_contacts', 'production_departments', 'audit_log', 'auth_user',

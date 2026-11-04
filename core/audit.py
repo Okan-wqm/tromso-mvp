@@ -5,9 +5,12 @@ The log is language-neutral at rest: labels, record types and enumerated values 
 English msgids whatever language the person who made the change was using, and shown translated
 (AuditLog.shown_changes). Build every snapshot inside `source_language()` (core.crud does); a person's
 own text (names, descriptions) is stored as written and never translated."""
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import Max
 from django.utils import translation
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
@@ -86,6 +89,23 @@ def bounded(label):
     """A label that fits the log's column: longer ones are cut, with an ellipsis (a record's own label is written to be short
     and findable, a stock operation's shortens the units it lists first; this is what stops any other from failing the write)."""
     return label if len(label) <= LABEL_LENGTH else label[:LABEL_LENGTH - 1] + '…'
+
+
+LATE_COMMIT = timedelta(minutes=5)
+
+
+def revision():
+    """A token that changes whenever the log gets a row: the newest entry's time and how many entries lie in the five
+    minutes up to it. Every change to a farm record writes its entry in the same transaction (this module), so a
+    page that shows records can ask "did anything change?" in two indexed queries (`created_at`) instead of
+    reading them. The count catches an entry committed late with a stamp earlier than the newest one (the stamp is
+    taken when the row is made, the row appears when its transaction commits). Read it BEFORE the data it stands
+    for: a change that lands between the two reads then makes the next read differ, never the other way round."""
+    newest = AuditLog.objects.aggregate(newest=Max('created_at'))['newest']
+    if newest is None:
+        return '0'
+    recent = AuditLog.objects.filter(created_at__gte=newest - LATE_COMMIT, created_at__lte=newest).count()
+    return f'{newest.isoformat()}/{recent}'
 
 
 def record(user, action, instance, changes=None, entity_type=None, label=None, severity=AuditLog.Severity.NORMAL):

@@ -1,0 +1,16 @@
+{% load i18n %}
+{% comment %} Where the movable windows of a page go (frontend/windows.ts), and their skeleton in the person's language. A
+   sibling of the polled grid, never inside it, so a refresh of the grid does not touch a window and a window shows in
+   full screen. `windows_key`: where this device remembers the windows' places (the board's id, or "adhoc"). The two
+   notices are printed by CSS from data-poll-state (static/css/monitor.css); the script has no text of its own.
+   {% endcomment %}
+<div id="monitor-windows" data-every="60" data-storage-key="monitoring:{{ windows_key|default:'adhoc' }}" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}"></div>
+<template id="monitor-window-template">
+  <section class="monitor-window" role="dialog" tabindex="-1">
+    <header class="monitor-window-bar" data-window-handle>
+      <h2 class="monitor-window-title" data-window-title></h2>
+      <button type="button" class="icon-button" data-window-close title="{% trans "Close" %}">{% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Close" %}</span></button>
+    </header>
+    <div class="monitor-window-body" data-window-body><p class="muted">{% trans "Loading…" %}</p></div>
+  </section>
+</template>

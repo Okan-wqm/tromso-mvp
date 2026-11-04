@@ -17,7 +17,7 @@ from django.urls import reverse
 from core import access, database, navigation
 from core.models import AuditLog, Profile
 
-from ..feeding import read, services
+from ..feeding import read, services, views as feeding_views
 from ..feeding.fold import Feeding, Point, PointKind, walk
 from ..handling import check
 from ..models import Equipment, EquipmentType, Feed, FeedingRecord, FeedSuitability, Tank
@@ -460,7 +460,7 @@ class FiguresTests(FeedingTestCase):
 
     def test_bfcr_efcr_and_the_feed_rate_from_the_records_and_the_ledger(self):
         units = list(Tank.objects.all())
-        figures = read.figures(stock_read.stock_of(units), detail=self.t1)[self.t1.pk]
+        figures = read.figures(stock_read.stock_of(units), details=[self.t1])[self.t1.pk]
         conversion = figures.conversion
         self.assertEqual((conversion.feed_kg, conversion.gain_kg, conversion.economic_gain_kg), (168, 196, 186))
         self.assertEqual((figures.last_fed, figures.week.today_kg, figures.week.today_meals, figures.week.kg),
@@ -629,6 +629,34 @@ class PermissionTests(FeedingTestCase):
         drawer = self.client.get(reverse('farm:production_units'), {'unit': self.t1.pk})
         self.assertNotContains(drawer, reverse('farm:feeding_records'))
         self.assertNotContains(drawer, 'Recent feedings')
+
+    def test_production_units_prints_no_feeding_figure_without_the_right_to_read_feeding(self):
+        self.record()
+        url = reverse('farm:production_units')
+        self.as_role('view_stockoperation')
+        page = self.client.get(url, {'unit': self.t1.pk})
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.context['feeding'], None)
+        self.assertEqual(page.context['rows'][0]['feeding'], None)
+        # (the drawer's harvest check says when the fish were last fed against the rule: not this figure)
+        for text in ('>bFCR<', '>eFCR<', '>Last fed</th>', '<dt>Last fed</dt>', '>Yesterday<', '>Fed<', 'Recent feedings'):
+            self.assertNotContains(page, text)
+        self.assertContains(page, '>Fish<')                     # the stock figures stay
+        self.as_role('view_stockoperation', 'view_feedingrecord')
+        page = self.client.get(url, {'unit': self.t1.pk})
+        for text in ('>bFCR<', '>eFCR<', '>Last fed</th>', '<dt>Last fed</dt>', '>Fed<', '>Yesterday<'):
+            self.assertContains(page, text)
+        self.assertIsNotNone(page.context['rows'][0]['feeding'])
+
+    def test_unit_figures_is_empty_without_the_right_and_the_read_with_it(self):
+        stock = stock_read.stock_of([self.t1])
+        reader = get_user_model().objects.create_user('reader', 'reader@example.com')
+        reader.groups.add(role('Reader', 'view_feedingrecord'))
+        blind = get_user_model().objects.create_user('blind', 'blind@example.com')
+        blind.groups.add(role('Blind', 'view_stockoperation'))
+        self.assertEqual(feeding_views.unit_figures(blind, stock), {})
+        self.assertEqual(feeding_views.unit_figures(reader, stock, details=[self.t1]).keys(),
+                         read.figures(stock, details=[self.t1]).keys())
 
     def test_the_menu_and_the_role_matrix_place_it_under_operations(self):
         self.assertEqual(str(navigation.place('farm.view_feedingrecord').path), 'Production · Operations · Feeding')

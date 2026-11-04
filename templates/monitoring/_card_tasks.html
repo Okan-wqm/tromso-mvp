@@ -1,0 +1,13 @@
+{% load i18n %}
+<section class="monitor-section monitor-tasks">
+  {% if "tasks" in card.hidden %}{% include "monitoring/_card_hidden.html" with section=_("Tasks") %}
+  {% else %}
+  {% with tasks=card.tasks %}
+  <dl class="metrics">
+    <div><dt>{% trans "Open" %}</dt><dd>{{ tasks.open|default:0 }}</dd></div>
+    <div><dt>{% trans "Overdue" %}</dt><dd>{{ tasks.overdue|default:0 }}</dd></div>
+    <div><dt>{% trans "Due today" %}</dt><dd>{{ tasks.due_today|default:0 }}</dd></div>
+  </dl>
+  {% endwith %}
+  {% endif %}
+</section>

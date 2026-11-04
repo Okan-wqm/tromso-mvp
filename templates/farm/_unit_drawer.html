@@ -23,28 +23,15 @@
 
   <div class="drawer-body">
     {% if stock %}
-    <dl class="metrics">
-      <div><dt>{% trans "Fish" %}</dt><dd>{{ stock.count|fish }}</dd></div>
-      <div><dt>{% trans "Avg. weight" %}</dt><dd>{{ stock.avg_weight_g|grams }}</dd></div>
-      <div><dt>{% trans "Biomass" %}</dt><dd>{{ stock.biomass_kg|kilos }}</dd></div>
-      {% with conversion=feeding.conversion %}
-      <div><dt><abbr title="{% trans "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing" %}">{% trans "bFCR" %}</abbr></dt><dd title="{% if conversion.biological %}{% blocktrans trimmed with feed=conversion.feed_kg|kilos gain=conversion.gain_kg|kilos %}{{ feed }} fed, {{ gain }} grown{% endblocktrans %}{% else %}{{ conversion.why_no_biological }}{% endif %}">{{ conversion.biological|fcr }}</dd></div>
-      <div><dt><abbr title="{% trans "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited" %}">{% trans "eFCR" %}</abbr></dt><dd title="{% if conversion.economic %}{% blocktrans trimmed with feed=conversion.feed_kg|kilos gain=conversion.economic_gain_kg|kilos %}{{ feed }} fed, {{ gain }} grown{% endblocktrans %}{% else %}{{ conversion.why_no_economic }}{% endif %}">{{ conversion.economic|fcr }}</dd></div>
-      {% endwith %}
-      <div><dt>{% trans "Survival" %}</dt><dd>{{ stock.survival|percent:1 }}</dd></div>
-    </dl>
+    {% include "farm/_unit_metrics.html" with conversion=feeding.conversion %}
 
-    <div class="drawer-capacity{% if stock.over_capacity %} is-over{% endif %}">
-      <p class="capacity-line"><span>{% trans "Density · capacity" %}</span><span>{{ stock.density|density }} · <strong>{{ stock.capacity|percent }}</strong></span></p>
-      <span class="capacity-bar capacity-bar-large" aria-hidden="true"><span style="width: {{ stock.capacity|bar_width }}%"></span></span>
-      <p class="capacity-note">{% blocktrans trimmed with volume=stock.volume_m3|floatformat:"-1g" %}{{ volume }} m³{% endblocktrans %} · {% blocktrans trimmed with density=unit.max_density_kg_m3|floatformat:"-2g" biomass=unit.max_biomass_kg|kilos %}Max {{ density }} kg/m³, {{ biomass }}{% endblocktrans %}{% if stock.over_capacity %} · <strong class="over-text">{% trans "Over capacity" %}</strong>{% endif %}</p>
-    </div>
+    {% include "farm/_unit_capacity.html" %}
 
     <section class="drawer-section">
       <h3>{% trans "Batches" %}</h3>
       <div class="table-wrap">
         <table class="data-table drawer-table">
-          <thead><tr><th scope="col">{% trans "Batch" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col" class="num">{% trans "Avg. weight" %}</th><th scope="col" class="num">{% trans "Biomass" %}</th><th scope="col" class="num">{% trans "Survival" %}</th><th scope="col" class="num">{% trans "Losses" %}</th><th scope="col" class="num">{% trans "Fed" %}</th><th scope="col" class="num">{% trans "bFCR" %}</th></tr></thead>
+          <thead><tr><th scope="col">{% trans "Batch" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col" class="num">{% trans "Avg. weight" %}</th><th scope="col" class="num">{% trans "Biomass" %}</th><th scope="col" class="num">{% trans "Survival" %}</th><th scope="col" class="num">{% trans "Losses" %}</th>{% if show_feeding %}<th scope="col" class="num">{% trans "Fed" %}</th><th scope="col" class="num">{% trans "bFCR" %}</th>{% endif %}</tr></thead>
           <tbody>
             {% for share, fed in batch_rows %}
             <tr>
@@ -54,8 +41,8 @@
               <td class="num">{{ share.biomass_kg|kilos }}</td>
               <td class="num">{{ share.survival|percent:1 }}</td>
               <td class="num">{{ share.losses|fish }}<span class="row-sub">{% blocktrans trimmed with deaths=share.deaths|fish culls=share.culls|fish %}{{ deaths }} dead · {{ culls }} culled{% endblocktrans %}</span></td>
-              <td class="num">{{ fed.fed_kg|kilos }}</td>
-              {% with conversion=fed.conversion %}<td class="num"{% if not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}
+              {% if show_feeding %}<td class="num">{{ fed.fed_kg|kilos }}</td>
+              {% with conversion=fed.conversion %}<td class="num"{% if not conversion.biological %} title="{{ conversion.why_no_biological }}"{% endif %}>{{ conversion.biological|fcr }}</td>{% endwith %}{% endif %}
             </tr>
             {% endfor %}
           </tbody>

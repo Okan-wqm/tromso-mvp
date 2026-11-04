@@ -457,7 +457,8 @@ def label(operation, lines=None):
     lines = lines if lines is not None else list(operation.movements.select_related('unit', 'batch'))
     codes = list(dict.fromkeys(line.unit.code for line in lines))
     batches = ', '.join(dict.fromkeys(line.batch.code for line in lines))
-    head, tail = f'{audit.english(operation.get_kind_display())} · ', f' · {batches} · {operation.date.isoformat()}'
+    kind = _('Escape') if operation.escape is not None else operation.get_kind_display()
+    head, tail = f'{audit.english(kind)} · ', f' · {batches} · {operation.date.isoformat()}'
     units = ', '.join(codes)
     room = audit.LABEL_LENGTH - len(head) - len(tail)
     if len(units) > room:                      # a stocking into many tanks: the first ones, then an ellipsis, never a failed write

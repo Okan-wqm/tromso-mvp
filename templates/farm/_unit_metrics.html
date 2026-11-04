@@ -1,0 +1,13 @@
+{% load i18n stock feeding %}{% comment %} The fish figures of a unit as a list of metrics: its fish, average weight and biomass, and, for a person who may read the feeding records
+   (`show_feeding`), its bFCR and eFCR from `conversion` (feeding.read.Conversion); `brief` leaves out the survival. The drawer of Production units
+   and the monitoring cards print these and nothing else of their own. {% endcomment %}
+<dl class="metrics">
+  <div><dt>{% trans "Fish" %}</dt><dd>{{ stock.count|fish }}</dd></div>
+  <div><dt>{% trans "Avg. weight" %}</dt><dd>{{ stock.avg_weight_g|grams }}</dd></div>
+  <div><dt>{% trans "Biomass" %}</dt><dd>{{ stock.biomass_kg|kilos }}</dd></div>
+  {% if show_feeding %}
+  <div><dt><abbr title="{% trans "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing" %}">{% trans "bFCR" %}</abbr></dt><dd title="{% if conversion.biological %}{% blocktrans trimmed with feed=conversion.feed_kg|kilos gain=conversion.gain_kg|kilos %}{{ feed }} fed, {{ gain }} grown{% endblocktrans %}{% else %}{{ conversion.why_no_biological }}{% endif %}">{{ conversion.biological|fcr }}</dd></div>
+  <div><dt><abbr title="{% trans "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited" %}">{% trans "eFCR" %}</abbr></dt><dd title="{% if conversion.economic %}{% blocktrans trimmed with feed=conversion.feed_kg|kilos gain=conversion.economic_gain_kg|kilos %}{{ feed }} fed, {{ gain }} grown{% endblocktrans %}{% else %}{{ conversion.why_no_economic }}{% endif %}">{{ conversion.economic|fcr }}</dd></div>
+  {% endif %}
+  {% if not brief %}<div><dt>{% trans "Survival" %}</dt><dd>{{ stock.survival|percent:1 }}</dd></div>{% endif %}
+</dl>

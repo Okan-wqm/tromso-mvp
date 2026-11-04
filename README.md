@@ -2187,6 +2187,63 @@ searched (that would reveal it a character at a time) and the export leaves it o
 holds a secret belongs in that list; a test fails when a column named like a password, secret, token
 or session is not in it.
 
+## Data map
+
+Every table can be filled, read, changed and deleted on some screen, and a table that cannot says so. The map of which
+screen does what is **generated from the code**, never kept by hand: `manage.py data_map` writes
+[docs/data-map.md](docs/data-map.md) (for people and for the visual design: per table its description, columns, links
+and their `on_delete`, constraints, the create, edit, delete and read screens with their routes, the forms and inner
+tabs each column is on, soft delete and restore, its database viewer entry, the tests that mention it, and a last
+section, **Gaps**, ranked) and [docs/data-map.json](docs/data-map.json) (the same, for tools). `manage.py data_map
+--check` fails when the committed files are stale; run `manage.py data_map` and commit the result after any change to
+a model, a form, a tab or a `screens.py`. It reads the code only, so it needs no database. A merge that conflicts in
+the two files is settled by running it again.
+
+What the code already says is read from it: the models (tables, columns, `on_delete`, constraints), a tab
+(`core.crud.Resource`: its create, edit and delete pages, its list and read pages, its form's fields and inner
+tabs, the delete plan), its row lists (a site's contacts), the field of a many-to-many link or a `LinkList` on a
+form, the routes, the admin's Restore, the database viewer and the model docstrings. A **tab needs no declaration**.
+
+What it cannot say is declared once, next to the app that owns the table, in `<app>/screens.py`: a `SCREENS` dict
+from a model's name to a `Screen` (`core/datamap.py`). It is needed for a table that is not a tab (a record a dialog
+writes through a service, a row the code fills) and for what a tab's form leaves out:
+
+```python
+SCREENS = {
+    'FeedingRecord': Screen(
+        create=(feeding.record_feeding,),             # the dialog's view (a function, a tab, or a URL name)
+        edit=no('a ledger is never edited: a mistake is voided and recorded again'),
+        delete=(feeding.void_feeding,),
+        read=(feeding.feeding_records, feeding.meal_board),
+        extra_fields={'token': 'the form's one-time token'},      # a form field that is no column
+        columns={'void_reason': system('typed in the void dialog')},  # a column no form has, and why
+    ),
+}
+```
+
+- `create`, `edit`, `delete`, `read`: the views that do it, or `no(why)` (missing on purpose) or `gap(why)` (missing and
+  should not be: it is listed under Gaps). A view is named by its function, so a renamed or unrouted view fails. A
+  tab, a row list and a many-to-many link have their paths from the code; a declaration is added to them (a health
+  event is voided as well as edited).
+- `part_of='farm.StockOperation'`: written with that record, so its create, edit and delete are that record's.
+- `forms`: form classes that are not model forms of the table but fill its columns by the same name (a dialog's plain
+  form). `fills={'count': 'count_delta'}`: a form field that fills a column of another name (`'VoidForm.reason'`
+  names the form).
+- `columns`: a column no form covers: `computed` (the code fills it), `system` (set as part of the work),
+  `dynamic` (a form makes its fields per record) or `gap` (a person should fill it and no form has it); `'*'` for all
+  the rest. The audit columns, a primary key, an uneditable column and the parent of a row list need nothing.
+- `extra_fields`: a form field that is not a column and fills none. `restore=no(why)`: a soft-deleted record the admin
+  does not restore. `note`: a line the paths do not say.
+
+`core.test_datamap.DataMapTests` enforces it: a model with no create, edit, delete or read path, a column on no form
+with no reason, a form field that is no column, a declaration for what is not there or already covered, a declared
+view that no route answers to, a table the database viewer does not show (its app is missing from
+`config/database.py`), and committed files out of date all fail, the message naming the model and the `screens.py` to
+declare it in. A new app is picked up from `INSTALLED_APPS` (the apps whose code is under the project directory), so
+its tables fail the test until its `screens.py` declares them. **Adding a feature** therefore ends with its tables
+on the map: a tab declares nothing but its fields on its form; a dialog that writes through a service names its
+views in `screens.py`.
+
 ## Local setup
 
 ```
@@ -2366,7 +2423,10 @@ A tab is done only when all of this exists; the first three are enforced by `Tab
 5. Tests that create, read, edit and delete through the pages and check the stored rows, the
    validation and link rules, the delete plan, the activity-log rows and the permissions.
 6. The bugs found in the source in `docs/aquaculture-platform-bugs.md`.
-7. **Translatable text**: names, labels, help texts, choices and messages written with
+7. **The data map**: a tab's table comes from the code; run `manage.py data_map` and commit
+   `docs/data-map.md` and `.json`. Whatever the tab's form leaves out of the model is said in `<app>/screens.py`
+   (Data map); `core.test_datamap` fails otherwise.
+8. **Translatable text**: names, labels, help texts, choices and messages written with
    `gettext_lazy` / `{% trans %}`, `manage.py update_catalogs`, and the Turkish and Norwegian
    translations (`docs/i18n.md`); `TabTranslationTests` and the catalog tests in `core/test_catalogs.py`
    fail otherwise.
@@ -2493,6 +2553,7 @@ real mail.
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
+| `core/datamap.py`, `<app>/screens.py`, `core/test_datamap.py`, `docs/data-map.md`, `docs/data-map.json` | The data map: every table's screens, read from the code and the declarations; `manage.py data_map [--check]` |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
 | `core/dbgrid.py`, `core/dbview.py`, `templates/core/database/` | The viewer's grid (search, filters, sort, cells, export) and its three pages |
 | `core/softdelete.py` | The delete plan: what deleting a record does to the records that point at it |

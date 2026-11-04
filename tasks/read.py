@@ -20,7 +20,7 @@ from django.utils import timezone
 from farm.models import Site
 from farm.models.site import zone_of
 
-from .models import CLOSED_STATUSES, OPEN_STATUSES, PRIORITY_RANK, Status, TaskChecklistItem
+from .models import CLOSED_STATUSES, OPEN_STATUSES, PRIORITY_RANK, Status, Task, TaskChecklistItem
 
 TODAY, OPEN, COMPLETED = 'today', 'open', 'completed'
 VIEWS = (TODAY, OPEN, COMPLETED)
@@ -128,6 +128,26 @@ def counts(tasks, moment=None):
         OPEN: tasks.filter(status__in=OPEN_STATUSES).count(),
         'overdue': tasks.filter(late).count(),
     }
+
+
+@dataclass(frozen=True)
+class UnitTasks:
+    """The open tasks of one unit: all of them, those overdue and those due today (not overdue yet), the Tasks
+    page's own counts for that place."""
+    open: int = 0
+    overdue: int = 0
+    due_today: int = 0
+
+
+def per_unit(unit_ids, moment=None):
+    """{unit id: UnitTasks} of the units that have an open or in-progress task, one grouped query: the filters of the
+    views above (`overdue`, `due_today`) counted per unit, so a card says what the page would list."""
+    now = clocks(moment)
+    rows = (Task.objects.with_site().filter(unit_id__in=unit_ids, status__in=OPEN_STATUSES).order_by()
+            .values('unit_id')
+            .annotate(total=Count('pk'), late=Count('pk', filter=overdue(now)),
+                      today=Count('pk', filter=due_today(now))))
+    return {row['unit_id']: UnitTasks(row['total'], row['late'], row['today']) for row in rows}
 
 
 def readers():

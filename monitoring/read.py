@@ -45,7 +45,7 @@ from farm.models import Tank
 from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
 from farm.water import parameters, read as water_read, views as water_views
-from farm.water.evaluate import Status, is_fresh
+from farm.water.evaluate import Status
 from tasks import read as tasks_read, views as tasks_views
 
 logger = logging.getLogger(__name__)
@@ -365,7 +365,7 @@ def state_of(card):
         for label, reading in _key_readings(card):
             if reading is None:
                 stale.append(_('%(label)s: no recent data') % {'label': label})
-            elif not is_fresh(reading.parameter, reading.at, card.now):
+            elif not reading.fresh(card.now):
                 stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label,
                                                                                'age': _age(reading, card.now)})
         if stale:

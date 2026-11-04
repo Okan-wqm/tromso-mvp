@@ -1,4 +1,4 @@
 {% load i18n water %}{% comment %} One value in a water table (a cell of farm/_water_value.html): at its parameter's precision, coloured by its status, worked-out values
    in italics; the title says when it was measured, its status and why a value is missing. `latest`: a
-   latest value, whose age is in the title.{% endcomment %}
+   latest value, whose origin and age are in the title (`source`: shown too).{% endcomment %}
 {% include "farm/_water_value.html" with tag="td" %}

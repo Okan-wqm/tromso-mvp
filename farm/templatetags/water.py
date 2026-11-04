@@ -91,3 +91,24 @@ def signed_amount(value, decimals):
         return DASH
     rounded = round(value, int(decimals))
     return ('+' if rounded > 0 else '−' if rounded < 0 else '') + number(abs(rounded), int(decimals))
+
+
+def short_age(moment, now=None):
+    """How long ago: the seconds of a live value under a minute ("12 s"), else as `age` says it ("3 hours")."""
+    if not moment:
+        return DASH
+    now = now or timezone.now()
+    seconds = int((now - moment).total_seconds())
+    if seconds < 60:
+        return _('%(count)d s') % {'count': max(seconds, 0)}
+    return timesince(moment, now, depth=1)
+
+
+@register.filter
+def source_line(reading):
+    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1):
+    "unit sensor · 12 s ago", "system sensor · 40 s ago", "manual · 2 days ago"."""
+    if not reading:
+        return ''
+    # Translators: %(origin)s is where a value comes from (manual, lab, unit sensor, system sensor); %(age)s how old it is.
+    return _('%(origin)s · %(age)s ago') % {'origin': reading.sample.origin_label, 'age': short_age(reading.at)}

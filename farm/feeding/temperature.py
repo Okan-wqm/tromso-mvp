@@ -1,7 +1,8 @@
 """The water temperature a ration is read at: the unit's own manual sample, else its system's loop, then the
 loops of the systems that system is nested in, read from the water samples (farm/water/read.py: the places the
-unit's water is read from, `water_sources`, and the lookup in them, `Series`). Sensors will be one more source of
-the same lookup; the ration only ever sees a Temperature.
+unit's water is read from, `water_sources`, and the lookup in them, `Series`, which takes the sensors too: a fresh
+sensor value at the moment wins at its point, and a sensor value counts as fresh for its channel's three heartbeats).
+The ration only ever sees a Temperature.
 
 - The candidates are the live samples with a temperature at the unit's middle point, at the loop point of its
   system and of that system's parents, measured at or before the moment asked and at most
@@ -49,7 +50,7 @@ class TemperatureBook:
     def __init__(self, units, since, until):
         self.sources = water_sources(units, nested=True)
         points = [source.point for sources in self.sources.values() for source in sources]
-        self.series = Series(points, TEMPERATURE.code, since - usable(), until)
+        self.series = Series(points, TEMPERATURE.code, since - usable(), until, live=True)
 
     def at(self, unit, moment):
         """The Temperature the unit's ration reads at `moment`, or None."""
@@ -57,9 +58,8 @@ class TemperatureBook:
         for source in self.sources.get(unit.pk, []):
             found = self.series.latest(source.point.pk, moment, usable())
             if found is not None:
-                measured_at, value = found
-                candidates.append(Temperature(value, measured_at, source.owner, source.via, moment - measured_at,
-                                              is_fresh(TEMPERATURE, measured_at, moment)))
+                candidates.append(Temperature(found.value, found.at, source.owner, source.via, moment - found.at,
+                                              is_fresh(TEMPERATURE, found.at, moment, found.fresh_for)))
         fresh = [candidate for candidate in candidates if candidate.fresh]
         if fresh:
             return fresh[0]           # the unit's own, else the nearest loop's

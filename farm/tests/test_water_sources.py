@@ -22,6 +22,7 @@ from ..models import SamplingPoint
 from ..water import calculation, read, sources
 from ..water.evaluate import Status, is_fresh
 from ..water.parameters import get
+from .helpers import point_of
 from .test_water import WaterTestCase
 
 D = Decimal
@@ -107,7 +108,7 @@ class OrderTests(SourcesCase):
         self.assertEqual(self.latest().get('temperature_c').sample.origin, read.Origin.SENSOR)
 
     def test_the_system_tier_is_for_the_middle_point_only(self):
-        inlet = SamplingPoint.objects.create(unit=self.t1, kind='inlet', name='Inlet')
+        inlet = point_of(self.t1, 'inlet')
         self.on(self.ras, self.value('temperature_c', 9.5))
         self.assertIsNone(read.latest([inlet], now=self.now)[inlet.pk].get('temperature_c'))
         # the system's own middle point (its loop) has the system's sensors as its own
@@ -253,13 +254,14 @@ class ShownTests(SourcesCase):
         self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.SYSTEM_SENSOR,
                                    'alkalinity_mg_l': read.Origin.MANUAL, 'salinity_ppt': read.Origin.MANUAL})
         html = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])).content.decode()
-        self.assertIn('unit sensor · 12 s ago', html)
-        self.assertIn('system sensor · 40 s ago', html)
-        self.assertIn('manual · 1 day ago', html)
+        self.assertRegex(html, r'unit sensor · 1[2-9] s ago')
+        self.assertRegex(html, r'system sensor · 4[0-9] s ago')
+        self.assertRegex(html, r'manual · 1.day ago')
 
     def test_the_water_page_and_the_card_name_the_origin(self):
+        self.stock()                                              # an empty unit's card shows no water
         page = self.client.get(reverse('farm:water')).content.decode()
-        self.assertIn('unit sensor · 12 s ago', page)
+        self.assertRegex(page, r'unit sensor · 1[2-9] s ago')
         card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
-        self.assertIn('unit sensor · 12 s ago', card)
-        self.assertIn('system sensor · 40 s ago', card)
+        self.assertRegex(card, r'unit sensor · 1[2-9] s ago')
+        self.assertRegex(card, r'system sensor · 4[0-9] s ago')

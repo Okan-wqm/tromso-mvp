@@ -1,6 +1,6 @@
 """The query budget: what a wall of cards costs does not grow with the number of units. The counts at six and at
 twenty-four units are EQUAL for every mode, ledger fold and the feeding walk run once per snapshot, and a card
-read runs nothing but SELECTs (a poll writes nothing). A hundred units is a live measurement (README, Monitoring)."""
+read runs nothing but SELECTs and savepoints (a poll writes nothing). A hundred units is a live measurement (README, Monitoring)."""
 import itertools
 from unittest import mock
 
@@ -29,7 +29,9 @@ class BudgetTests(MonitoringCase):
             found = read.cards(units, user, modes)
         self.assertEqual(len(found), len(units))
         for query in log:
-            self.assertTrue(query['sql'].lstrip().upper().startswith(('SELECT', 'WITH')), query['sql'][:80])
+            # Reads only; a savepoint (the live water sources run in one, farm/water/sources.py) writes nothing.
+            self.assertTrue(query['sql'].lstrip().upper().startswith(('SELECT', 'WITH', 'SAVEPOINT', 'RELEASE')),
+                            query['sql'][:80])
         return len(log)
 
     def test_the_counts_at_six_and_twenty_four_units_are_equal_in_every_mode(self):

@@ -47,3 +47,12 @@ class BenchTests(SensorsCase):
             call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
         call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, '--drop',
                      stdout=StringIO())
+
+    def test_measure_only_times_what_is_there_and_writes_nothing(self):
+        name = connection.settings_dict['NAME']
+        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
+        out = StringIO()
+        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, '--measure-only',
+                     stdout=out)
+        self.assertIn('written: 0 rows', out.getvalue())
+        self.assertIn('raw rows: 1440', out.getvalue())

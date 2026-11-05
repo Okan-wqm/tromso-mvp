@@ -2947,7 +2947,7 @@ C:\Python312\python.exe -m venv .venv
 ```
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
-defaults match the local container in `docker-compose.yml`. Uploaded files (the library's PDFs) go to
+defaults match the local container in `docker-compose.yml`. `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request; the development server through the Docker VM is much faster with 60); a kept connection is health-checked before reuse. Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.
 

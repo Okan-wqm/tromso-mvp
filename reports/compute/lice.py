@@ -100,7 +100,19 @@ def compute(site, period, report):
              'other_substance': row.other_substance or None, 'result': row.result}
             for row in report.sensitivity_tests.all()],
     }
-    return Result(content, problems, warnings, scope(site, period, units))
+    return Result(content, problems, warnings, scope(site, period, units), _questions(content['treatments']))
+
+
+def _questions(treatments):
+    """The open questions the week's treatments rest on: the amount of a medicinal treatment is the product's, and the
+    authority asks for the active substance's (Q1, R03); a medicated feed and an injection are given the types the
+    authority has not defined (Q2, R04)."""
+    found = []
+    if any(row['medicinal'] for row in treatments):
+        found.append('Q1')
+    if any(row['type'] == 'FORBEHANDLING' or row['description'] == 'Injeksjon' for row in treatments):
+        found.append('Q2')
+    return found
 
 
 def scope(site, period, units=None):

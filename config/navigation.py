@@ -142,6 +142,8 @@ WORKSPACES = [
         Section(_('Reports'), [
             Group('', [
                 Entry(_('Regulatory reports'), 'reports:report_list', 'file-text', 'reports.view_report'),
+                Entry(_('Questions for the authority'), 'reports:openquestion_list', 'list-checks',
+                      'reports.view_openquestion'),
             ]),
         ]),
         # Messages between the people running production, direct and in channels; their AI assistants join the

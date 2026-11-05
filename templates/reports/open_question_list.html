@@ -1,0 +1,44 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% comment %} Production › Reports › Questions for the authority (reports.resources.OpenQuestionResource): the owner's work
+   list for the authorities; a report rule that rests on an open question is unverified.{% endcomment %}
+{% block search_placeholder %}{% trans "Search by number, question or answer" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <select id="status-filter" name="status" data-autosubmit>
+    <option value="">{% trans "All statuses" %}</option>
+    {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block notice %}<p class="panel-help">{% trans "What only the authority can answer, and on which a rule of a report rests. Until a question is answered the rule is unverified: the report says so when it is filed. Send the questions, write down who asked and when, and record the answer here." %}</p>{% endblock %}
+{% block empty_text %}{% trans "No question for the authority is recorded." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Number" %}</th><th scope="col">{% trans "Question" %}</th><th scope="col">{% trans "Asked of" %}</th><th scope="col">{% trans "The report rule it affects" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col">{% trans "Asked" %}</th><th scope="col">{% trans "Answer" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for question in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'reports:openquestion_edit' question.pk %}" data-modal>{{ question.code }}</a>{% else %}<span class="row-title">{{ question.code }}</span>{% endif %}</td>
+        <td>{{ question.question }}</td>
+        <td>{{ question.authority }}</td>
+        <td>{{ question.affects }}</td>
+        <td class="nowrap"><span class="badge badge-{% if question.status == 'answered' %}active{% else %}draft{% endif %}">{{ question.get_status_display }}</span></td>
+        <td class="nowrap">{% if question.asked_on %}{{ question.asked_on|date:"DATE_FORMAT" }}{% else %}—{% endif %}{% if question.asked_by %}<span class="row-sub">{{ question.asked_by }}</span>{% endif %}</td>
+        <td>{{ question.answer|default:"—" }}{% if question.answered_on %}<span class="row-sub">{{ question.answered_on|date:"DATE_FORMAT" }}</span>{% endif %}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'reports:openquestion_edit' question.pk %}" data-modal title="{% blocktrans with name=question.code %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=question.code %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'reports:openquestion_delete' question.pk %}" data-modal title="{% blocktrans with name=question.code %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=question.code %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

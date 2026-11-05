@@ -217,8 +217,14 @@
         "messaging/tests/test_services.py",
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py",
+        "reports/tests/test_ack.py",
+        "reports/tests/test_api_call.py",
+        "reports/tests/test_duties.py",
+        "reports/tests/test_gaps789.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_questions.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py",
@@ -7783,6 +7789,7 @@
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "monitoring/tests/test_read.py"
       ]
@@ -8938,6 +8945,7 @@
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
+        "reports/tests/test_unexplained.py",
         "monitoring/tests/test_read.py"
       ]
     },
@@ -11524,7 +11532,8 @@
           "choices": [
             "settefisk",
             "matfisk",
-            "stamfisk"
+            "stamfisk",
+            "other"
           ],
           "link": null,
           "on_form": [
@@ -12107,8 +12116,10 @@
         "inventory/tests/helpers.py",
         "reports/tests/helpers.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_duties.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_research.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
@@ -15565,8 +15576,10 @@
         "experiments/tests/test_design.py",
         "experiments/tests/test_places.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
-        "sensors/tests/test_read.py"
+        "sensors/tests/test_read.py",
+        "sensors/tests/test_replay.py"
       ]
     },
     {
@@ -27389,6 +27402,825 @@
     },
     {
       "app": "reports",
+      "model": "DueClosure",
+      "table": "regulatory_due_closures",
+      "description": "A report that was owed and will not be filed, closed by a person with the reason (a slaughter that never took place, a period filed elsewhere): the due list stops listing it.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "sea_lice",
+            "smolt",
+            "cleaner_fish",
+            "biomass",
+            "land_stock",
+            "site_in_use",
+            "site_emptied",
+            "slaughter_planned",
+            "escape",
+            "disease",
+            "welfare"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "facility_id",
+          "field": "facility",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "slaughter_facilities",
+            "model": "farm.SlaughterFacility",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "period_start",
+          "field": "period_start",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CloseForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "closed_by_id",
+          "field": "closed_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who closed it"
+        },
+        {
+          "name": "closed_at",
+          "field": "closed_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set when saved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_due_closures_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_due_closures_place",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_due_closures_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_due_closures_period",
+          "kind": "unique",
+          "fields": [
+            "kind",
+            "site",
+            "facility",
+            "period_start"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.close",
+              "url_names": [
+                "reports:due_close"
+              ],
+              "routes": [
+                "/reports/close/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a closure is reopened, not edited: reopening deletes it"
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.reopen",
+              "url_names": [
+                "reports:due_reopen"
+              ],
+              "routes": [
+                "/reports/closed/<uuid:pk>/reopen/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "regulatory reports tab",
+              "url_names": [
+                "reports:report_list",
+                "reports:report_detail",
+                "reports:report_edit"
+              ],
+              "routes": [
+                "/reports/",
+                "/reports/<uuid:pk>/view/",
+                "/reports/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A report that was owed and will not be filed, closed with the reason (the due list stops listing it).",
+      "forms": [
+        {
+          "form": "CloseForm",
+          "module": "reports.forms",
+          "fields": {
+            "reason": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "reports/tests/test_slaughter_duty.py"
+      ]
+    },
+    {
+      "app": "reports",
+      "model": "OutsideDutyDone",
+      "table": "regulatory_duties_done",
+      "description": "A person's record that an annual duty outside this system was done for a site and a year: the day and the reference the authority gave.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "duty",
+          "field": "duty",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "driftsplan",
+            "lice_plan"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the duty the link names"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the site the link names"
+        },
+        {
+          "name": "year",
+          "field": "year",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the year the link names"
+        },
+        {
+          "name": "done_on",
+          "field": "done_on",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DutyDoneForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "reference",
+          "field": "reference",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DutyDoneForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "recorded_by_id",
+          "field": "recorded_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who recorded it"
+        },
+        {
+          "name": "recorded_at",
+          "field": "recorded_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set when saved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_duties_done_duty",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_duties_done_year",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_duties_done_year",
+          "kind": "unique",
+          "fields": [
+            "duty",
+            "site",
+            "year"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.duty_done",
+              "url_names": [
+                "reports:duty_done"
+              ],
+              "routes": [
+                "/reports/duties/done/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a record is undone, not edited: undoing deletes it"
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.duty_undo",
+              "url_names": [
+                "reports:duty_undo"
+              ],
+              "routes": [
+                "/reports/duties/done/<uuid:pk>/undo/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.outside_duties",
+              "url_names": [
+                "reports:outside_duties"
+              ],
+              "routes": [
+                "/reports/duties/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The record of a person that an annual duty outside this system (the driftsplan, the lice coordination plan) was done.",
+      "forms": [
+        {
+          "form": "DutyDoneForm",
+          "module": "reports.forms",
+          "fields": {
+            "done_on": "",
+            "reference": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "reports/tests/test_duties.py"
+      ]
+    },
+    {
+      "app": "reports",
+      "model": "OpenQuestion",
+      "table": "regulatory_open_questions",
+      "description": "A question only the authority can answer, on which a rule of a report rests (docs/regulatory-reports.md, section 7): the owner's work list for Mattilsynet, Fiskeridirektoratet or the county.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "question",
+          "field": "question",
+          "type": "varchar(1000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "authority",
+          "field": "authority",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "affects",
+          "field": "affects",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "open",
+            "answered"
+          ],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "asked_by",
+          "field": "asked_by",
+          "type": "varchar(150)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "asked_on",
+          "field": "asked_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "answer",
+          "field": "answer",
+          "type": "varchar(2000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "answered_on",
+          "field": "answered_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_open_questions_code_live",
+          "kind": "unique",
+          "fields": [
+            "code"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_open_questions_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_open_questions_answer",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_open_questions_days",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_create"
+              ],
+              "routes": [
+                "/authority-questions/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_edit"
+              ],
+              "routes": [
+                "/authority-questions/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_delete"
+              ],
+              "routes": [
+                "/authority-questions/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_list"
+              ],
+              "routes": [
+                "/authority-questions/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "OpenQuestionForm",
+          "module": "reports.forms",
+          "fields": {
+            "code": "Question",
+            "question": "Question",
+            "authority": "Question",
+            "affects": "Question",
+            "status": "Question",
+            "asked_by": "Question",
+            "asked_on": "Question",
+            "answer": "Question",
+            "answered_on": "Question",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "reports/tests/test_ack.py",
+        "reports/tests/test_questions.py"
+      ]
+    },
+    {
+      "app": "reports",
       "model": "ResistanceSuspicion",
       "table": "regulatory_report_resistance_suspicions",
       "description": "A suspicion of resistance to a lice treatment reported for the week (lakselusforskriften § 10 e).",
@@ -28085,7 +28917,8 @@
       "tests": [
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
-        "reports/tests/test_pages.py"
+        "reports/tests/test_pages.py",
+        "reports/tests/test_preview.py"
       ]
     },
     {
@@ -28965,6 +29798,19 @@
           "why": ""
         },
         {
+          "name": "authority_id",
+          "field": "authority_id",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SubmitForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(2000)",
@@ -28976,6 +29822,57 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "harvest_condition",
+          "field": "harvest_condition",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "round",
+            "gutted"
+          ],
+          "link": null,
+          "on_form": [
+            "ReportForm › Report"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "no_cleaner_feed",
+          "field": "no_cleaner_feed",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ReportForm › Report"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "deadline_on",
+          "field": "deadline_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the deadline when the filing is recorded"
+        },
+        {
+          "name": "filed_late",
+          "field": "filed_late",
+          "type": "boolean",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "whether the filing came after the deadline, set when it is recorded"
         }
       ],
       "constraints": [
@@ -29023,6 +29920,30 @@
         },
         {
           "name": "chk_regulatory_reports_escape",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_harvest_condition",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_no_cleaner_feed",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_authority_id_when_filed",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_late_when_filed",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -29232,6 +30153,8 @@
             "health_event": "Report",
             "escape": "Report",
             "occurred_on": "Report",
+            "harvest_condition": "Report",
+            "no_cleaner_feed": "Report",
             "contact_name": "Contact person",
             "contact_email": "Contact person",
             "contact_phone": "Contact person",
@@ -29254,7 +30177,10 @@
             "submitted_at": "",
             "channel": "",
             "reference": "",
-            "version": ""
+            "authority_id": "",
+            "version": "",
+            "content_sha256": "",
+            "acknowledged": ""
           }
         }
       ],
@@ -29273,13 +30199,18 @@
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "reports/tests/helpers.py",
+        "reports/tests/test_ack.py",
+        "reports/tests/test_api_call.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_delivery.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_gaps789.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_preview.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
       ]
@@ -30245,6 +31176,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py"
       ]
     },
@@ -31131,7 +32063,9 @@
         "sensors/tests/__init__.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_replay.py",
         "sensors/tests/test_schema.py"
       ]
     },
@@ -31343,6 +32277,7 @@
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_read.py"
@@ -31744,6 +32679,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_schema.py"
       ]
@@ -32168,6 +33104,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_schema.py"
@@ -32960,6 +33897,7 @@
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_contract.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_read.py",
@@ -33648,6 +34586,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_schema.py"
       ]

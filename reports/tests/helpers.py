@@ -11,7 +11,7 @@ from farm.stock import services
 from farm.tests.helpers import make_facility, make_species, role
 from farm.tests.test_stock import make_unit
 
-from .. import integrity
+from .. import compute, integrity
 from ..models import Report
 from ..periods import MONTH, WEEK, Period
 
@@ -22,6 +22,11 @@ WEEK_47 = Period(WEEK, date(2026, 11, 16))
 
 def day(month, number):
     return date(2026, month, number)
+
+
+def previewed(report):
+    """The hash of the content the report's page shows now: what a person sends back when recording the filing."""
+    return compute.content_hash(compute.compute(report).content)
 
 
 # The records are dated in October 2026: far enough back for the backdating window of the stock to need widening.

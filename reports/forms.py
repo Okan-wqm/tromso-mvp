@@ -14,12 +14,13 @@ from . import periods
 from .compute import COMPUTE, lice
 from .kinds import BY_FACILITY, EVENTS, PERIODIC, info
 from .models import (
-    HEALTH_EVENT_KINDS, NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, TreatmentAnswer,
+    HEALTH_EVENT_KINDS, OpenQuestion, NARRATIVE, NARRATIVE_KINDS, SITE_NOTICES, Channel, Report, ResistanceSuspicion, SensitivityTest, TreatmentAnswer,
     UnitAnswer,
 )
 
 REPORT_FORM_TABS = [
-    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on']),
+    ('report', _('Report'), ['kind', 'site', 'facility', 'period_start', 'health_event', 'escape', 'occurred_on',
+                             'harvest_condition', 'no_cleaner_feed']),
     ('contact', _('Contact person'), ['contact_name', 'contact_email', 'contact_phone']),
     ('event', _('What happened'), list(NARRATIVE)),
     ('notes', _('Notes'), ['notes']),
@@ -97,6 +98,10 @@ class ReportForm(TabbedForm):
             keep.add('health_event')
         if kind == Report.Kind.ESCAPE:
             keep.add('escape')
+        if kind == Report.Kind.BIOMASS:
+            keep.add('harvest_condition')
+        if kind == Report.Kind.CLEANER_FISH:
+            keep.add('no_cleaner_feed')
         for name in list(self.fields):
             if name not in keep and name != 'version':
                 del self.fields[name]
@@ -142,6 +147,42 @@ class ReportForm(TabbedForm):
         return cleaned
 
 
+OPEN_QUESTION_TABS = [('question', _('Question'), ['code', 'question', 'authority', 'affects', 'status', 'asked_by',
+                                                    'asked_on', 'answer', 'answered_on'])]
+
+
+class OpenQuestionForm(TabbedForm):
+    """A question for the authority, its answer and who asked when."""
+
+    tabs = OPEN_QUESTION_TABS
+
+    class Meta:
+        model = OpenQuestion
+        fields = tab_fields(OPEN_QUESTION_TABS)
+        widgets = {'question': forms.Textarea(attrs={'rows': 3}), 'answer': forms.Textarea(attrs={'rows': 3}),
+                   'asked_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+                   'answered_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')}
+        help_texts = {'affects': _('Which rule of which report rests on the answer, e.g. “the sea-lice report, the amount '
+                                   'of an active substance”.'),
+                      'answer': _('What the authority said, and where (the mail, the page). Needed to mark it answered.')}
+
+
+class DutyDoneForm(forms.Form):
+    """Recording that a duty outside this system was done: the day and the reference the authority gave."""
+
+    done_on = forms.DateField(label=_('Done on'), widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+    reference = forms.CharField(label=_('Receipt or reference'), max_length=200, required=False,
+                                help_text=_('The receipt or case number the authority gave, if any.'))
+
+
+class CloseForm(forms.Form):
+    """Closing a report that is owed and will not be filed: why."""
+
+    reason = forms.CharField(label=_('Why it is closed'), max_length=500, widget=forms.Textarea(attrs={'rows': 3}),
+                             help_text=_('For example: the slaughter did not take place, or the notice was filed '
+                                         'elsewhere. It is kept with your name and the day.'))
+
+
 class SubmitForm(forms.Form):
     """Recording that a person filed the report: when, how, and the receipt or reference the authority gave."""
 
@@ -149,7 +190,18 @@ class SubmitForm(forms.Form):
     channel = forms.ChoiceField(label=_('Filed through'), choices=Channel.choices)
     reference = forms.CharField(label=_('Receipt or reference'), max_length=200, required=False,
                                 help_text=_('Not needed for a notice given by telephone.'))
+    authority_id = forms.CharField(label=_('Id returned by the authority’s API'), max_length=100, required=False,
+                                   help_text=_('Only for a filing through the reporting API: the id its answer gave. A '
+                                               'correction of the report is sent to that id.'))
     version = forms.IntegerField(widget=forms.HiddenInput)
+    # The hash of the content the page showed (reports.compute.content_hash): what is recorded is exactly that.
+    content_sha256 = forms.CharField(widget=forms.HiddenInput, min_length=64, max_length=64)
+    # The open questions the person confirmed by hand (the numbers of reports.OpenQuestion); the service says which are needed.
+    acknowledged = forms.MultipleChoiceField(required=False, widget=forms.MultipleHiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['acknowledged'].choices = [(code, code) for code in OpenQuestion.objects.values_list('code', flat=True)]
 
 
 class ResistanceSuspicionForm(forms.ModelForm):

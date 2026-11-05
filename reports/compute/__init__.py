@@ -10,7 +10,7 @@ from .common import FORMAT_VERSION, Result, content_hash, fingerprint, flatten  
 COMPUTE = {
     ReportKind.SEA_LICE: lambda report: lice.compute(report.site, report.period, report),
     ReportKind.SMOLT: lambda report: smolt.compute(report.site, report.period),
-    ReportKind.CLEANER_FISH: lambda report: cleaner.compute(report.site, report.period),
+    ReportKind.CLEANER_FISH: lambda report: cleaner.compute(report.site, report.period, report),
     ReportKind.BIOMASS: lambda report: biomass.compute(report.site, report.period, report),
     ReportKind.SLAUGHTER_PLANNED: lambda report: slaughter.compute(report.facility, report.period),
     ReportKind.LAND_STOCK: notices.land_stock,

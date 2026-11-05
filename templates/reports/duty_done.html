@@ -1,0 +1,22 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Recording that an annual duty outside this system was done (reports.views.duty_done): the day and the reference; not a
+   report, nothing is sent.{% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block content %}
+<div class="confirm">
+  <p class="confirm-question">{% blocktrans trimmed with duty=duty.title site=site.name year=year %}{{ duty }} · {{ site }} · {{ year }}: record that it was done.{% endblocktrans %}</p>
+  <p class="panel-help">{% trans "The system does not send it: you filed it outside the system. This records when and the receipt, so the reminder stops." %}</p>
+  <form method="post" action="{{ request.get_full_path }}" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form.visible_fields %}{% include "registration/_field.html" %}{% endfor %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline">{% trans "Record as done" %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

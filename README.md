@@ -2081,8 +2081,12 @@ what was filed: a correction is needed", figure by figure; a correction is a new
 nothing); it is listed from its **reports-from** date to the last closed period, minus the filed ones, a draft staying listed
 with its deadline and an **Overdue** mark. A site that holds fish and has no reports-from date, no production form or a species with no official code (not known to be
 a salmonid) is listed as "Not set up for reports" with what is missing and a link to its form, never hidden. Planned slaughters
-come from the open harvest plans (a facility and a week: a plan item that is cancelled or already recorded as a harvest is not
-owed), escapes and listed diseases from their records since the site's reports-from date until a notice of each is filed (a
+are owed per facility and week from the first week the site reports, and the duty arises from the harvest, planned or done
+(restkontrollforskriften § 9a): a plan item that is not cancelled (still open or already recorded as a harvest) and a harvest
+recorded with no plan at all each owe their week, and a week that has passed stays owed, with its deadline and an Overdue
+mark, until its notice is filed or a person closes it with a reason (*Close without filing*, in the activity log, shown under
+the kind's tab and reopened from there). Escapes and listed diseases, and an increased-mortality event still unexplained 14 days on (no diagnosis, not closed:
+dyrehelseforskriften § 7 second paragraph; a welfare notice), from their records since the site's reports-from date until a notice of each is filed (a
 notice told by telephone counts). The days are Oslo's calendar, whatever
 clock the site keeps, and the ISO week of 28 December to 3 January is 2026-W53. The page also lists the **filed reports whose
 records changed**: only the rows a report read are compared with the ones it was filed from (never a ledger folded again), and a
@@ -2116,6 +2120,38 @@ sensitivity tests; for the biomass report, the units used for production of redu
 
 **Clocks.** The time of a filing is Oslo's, as the authority keeps it; the time something was found is typed on the site's own
 clock (Facility › Sites) and stored as the moment it was; the browser's zone is never used.
+
+**A value the authority has not confirmed** (the amount of a lice treatment, the type of a medicated feed or an injection: questions
+Q1 and Q2 of the register Production › Reports › Questions for the authority) is shown with its question on the report's
+page, and the filing is refused until the person confirms it was checked by hand; the confirmation is logged. Answering the
+question in the register lifts it.
+
+**Filed late.** Recording a filing stores the deadline and whether it came after it (the day in Oslo); the report and the list say
+"Filed 2 days after its deadline" and a notice, filed at once, is never late. **Said, not assumed:** the biomass report asks in what
+condition the harvested fish are weighed (round or gutted weight) and is not ready with a harvest until it is said; a cleaner-fish
+month with no feed recorded is a problem unless the person says none was given. The cleaner-fish file for the API has one row per
+species, with the mixed origin when both farmed and wild-caught fish are in it.
+
+**Through the reporting API.** The system sends nothing, but a person who files through the API can record the id it returned (the filing
+form); the JSON export of a correction then says how the API takes it, `PUT` to that id, with the client reference of the filing it
+replaces (`X-Api-Method`, `X-Api-Path`, `X-Corrects-Client-Reference`; the print page says the same), and the sea-lice endpoint, which
+has POST only, is said to. The facts of the contract (scopes, headers, methods, errors) are in docs/regulatory-reports.md, 7.2.
+
+**A research site.** A site's production form can be *Research or other production*: it owes no juvenile, biomass or yearly stock report
+(only chapters 1, 2, 3 and 7 of the regulation apply, § 3 l) and has no operating plan; the sea-lice and cleaner-fish reports and the
+notices still follow the fish, and the lines of the Reports page say it is unverified with the authority (question Q10).
+
+**Duties outside this system.** The operating plan (driftsplan, due 1 October each year for every sea site of food fish or broodstock, idle
+ones too) and the lice coordination plan (§ 4, before 1 October each year, sea sites with salmonids) are listed as due lines with a
+reminder on the Reports page and the company overview; you file them in Altinn and record here when and with what reference. The page
+*Duties outside this system* lists them and the others (the land broodstock report of 15 July, recapture, executed slaughter, the county
+governor's report, the cleaner-fish broodstock report) with their deadline, channel, whom they bind by production form, a link to the text
+and what is not verified. Nothing is sent and no form is built for them.
+
+**What you are about to record.** Before a filing is recorded, the report's page says "What you are about to record as filed", with
+the content hash and a link to the print page (the exact values to type, field by field in the authority's names); every export
+carries the same hash. The recording posts that hash, and if the records changed meanwhile (a backdated record) it is refused
+with "review it again": what is frozen is exactly what was previewed.
 
 **Recording the filing** (Edit): when, through what (Altinn, the reporting API from another system, e-mail, telephone, other)
 and the receipt or reference (none for a call). In one transaction the report is locked, its version checked, its content computed

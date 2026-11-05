@@ -20,7 +20,7 @@ from .. import compute, due, integrity, services
 from ..kinds import ReportKind
 from ..models import Report, ReportSnapshot
 from ..periods import MONTH, WEEK, YEAR, Period
-from .helpers import OCTOBER, ReportTestCase, day
+from .helpers import OCTOBER, ReportTestCase, day, previewed
 
 TODAY = date(2026, 11, 3)             # a Tuesday
 
@@ -139,7 +139,7 @@ class NotSetUpTests(DueTestCase):
 
 
 class NoticesTests(DueTestCase):
-    def test_a_planned_slaughter_of_this_week_or_later_is_owed_per_facility_and_week(self):
+    def test_a_planned_slaughter_is_owed_per_facility_and_week_and_a_week_that_has_passed_stays_owed(self):
         batch = self.stock(self.m1, 1000, '4000', day(10, 1))
         agreed = datetime(2026, 10, 20, 9, 0, tzinfo=utc.utc)             # long before this week's Thursday
         for on, kilos in ((date(2026, 11, 5), 2500), (date(2026, 10, 20), 100)):
@@ -148,10 +148,11 @@ class NoticesTests(DueTestCase):
                                                    created_by=self.user)
             HandlingPlanItem.objects.filter(pk=item.pk).update(created_at=agreed)
         rows = self.rows(ReportKind.SLAUGHTER_PLANNED)
+        # The 20 October week is not forgotten when it has passed (§ 9a: the duty arises from the harvest).
         self.assertEqual([(row.place, row.period.key, row.overdue) for row in rows],
-                         [(self.facility, '2026-W45', True)])                 # Thursday 29 October has passed
-        self.assertEqual(rows[0].deadline, date(2026, 10, 29))
-        self.assertEqual(rows[0].start_query, {'kind': 'slaughter_planned', 'facility': self.facility.pk,
+                         [(self.facility, '2026-W43', True), (self.facility, '2026-W45', True)])
+        self.assertEqual(rows[1].deadline, date(2026, 10, 29))
+        self.assertEqual(rows[1].start_query, {'kind': 'slaughter_planned', 'facility': self.facility.pk,
                                                 'period': '2026-W45'})
 
     def test_a_slaughter_agreed_after_its_deadline_is_owed_from_the_day_it_was_agreed(self):
@@ -225,7 +226,7 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             self.assertEqual(due.no_longer_match(TODAY), [])
             stock.void(self.user, self.out, 'Wrong unit')
             self.assertEqual(due.no_longer_match(TODAY), [Report.objects.get(pk=report.pk)])
@@ -235,7 +236,7 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
             with mock.patch.object(compute, 'compute', side_effect=AssertionError('the list folded a ledger')):
                 self.assertEqual(len(due.no_longer_match(TODAY)), 1)
@@ -245,13 +246,13 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
             self.assertEqual([found.pk for found in due.no_longer_match(TODAY)], [report.pk])
             correction = services.start_correction(self.user, Report.objects.get(pk=report.pk))
             self.assertEqual([found.pk for found in due.no_longer_match(TODAY)], [report.pk])   # a draft replaces nothing
             services.submit(self.user, correction, submitted_at=datetime(2026, 11, 3, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-3', version=correction.version)
+                            channel='altinn', reference='AR-3', version=correction.version, content_sha256=previewed(correction))
             self.assertEqual(due.no_longer_match(TODAY), [])
 
     def test_a_notice_is_read_again_whatever_its_day(self):
@@ -263,7 +264,7 @@ class ChangedSinceFilingTests(DueTestCase):
                              found_at=datetime(2026, 10, 25, 8, 0, tzinfo=utc.utc))
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, notice, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-4', version=notice.version)
+                            channel='altinn', reference='AR-4', version=notice.version, content_sha256=previewed(notice))
             self.assertEqual(due.no_longer_match(TODAY), [])
             stock.void(self.user, operation, 'Entered twice')
         with override_settings(STOCK_BACKDATE_DAYS=31):
@@ -274,7 +275,7 @@ class ChangedSinceFilingTests(DueTestCase):
         report = self.report(Report.Kind.SMOLT, OCTOBER)
         with override_settings(STOCK_BACKDATE_DAYS=3650):
             services.submit(self.user, report, submitted_at=datetime(2026, 11, 2, 9, 0, tzinfo=utc.utc),
-                            channel='altinn', reference='AR-2', version=report.version)
+                            channel='altinn', reference='AR-2', version=report.version, content_sha256=previewed(report))
             stock.void(self.user, self.out, 'Wrong unit')
         with override_settings(STOCK_BACKDATE_DAYS=31):
             self.assertEqual(due.no_longer_match(date(2027, 3, 1)), [])

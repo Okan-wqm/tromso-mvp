@@ -26,7 +26,7 @@ from farm.tests.helpers import role, rows_data
 from .. import compute, services
 from ..models import Report, ReportSnapshot, ResistanceSuspicion, UnitAnswer
 from ..periods import OSLO
-from .helpers import OCTOBER, ReportTestCase, day
+from .helpers import OCTOBER, ReportTestCase, day, previewed
 from .schema import errors
 
 FILED_AT = '2026-11-03T09:30'
@@ -53,7 +53,8 @@ class ReportPagesTestCase(ReportTestCase):
 
     def file(self, report, **overrides):
         data = {'submitted_at': FILED_AT, 'channel': 'altinn', 'reference': 'AR123456',
-                'version': str(Report.objects.get(pk=report.pk).version), **overrides}
+                'version': str(Report.objects.get(pk=report.pk).version),
+                'content_sha256': previewed(Report.objects.get(pk=report.pk)), **overrides}
         return self.client.post(reverse('reports:report_submit', args=[report.pk]), data, follow=True)
 
 

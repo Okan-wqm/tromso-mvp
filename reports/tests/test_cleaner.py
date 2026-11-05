@@ -14,7 +14,7 @@ from farm.tests.test_stock import make_unit
 
 from .. import compute, exports
 from ..models import Report
-from .helpers import OCTOBER, ReportTestCase, day
+from .helpers import OCTOBER, ReportTestCase, day, previewed
 from .schema import errors
 
 
@@ -90,12 +90,19 @@ class FiguresTests(CleanerFishTestCase):
         self.assertEqual(self.result(self.hatchery).problems,
                          ['No unit of the site held cleaner fish in the month: the report has nothing to file.'])
 
-    def test_no_feed_recorded_for_the_cleaner_fish_is_said(self):
-        warning = ('No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg '
-                   '(Operations › Feeding: choose the cleaner fish as the target).')
-        self.assertIn(warning, self.result().warnings)
+    def test_no_feed_recorded_for_the_cleaner_fish_is_a_problem_unless_the_person_says_none_was_given(self):
+        problem = ('No feeding of the cleaner fish is recorded in the month: record it (Operations › Feeding: choose the '
+                   'cleaner fish as the target), or say that none was given (the Report tab).')
+        self.assertIn(problem, self.result().problems)
+        Report.objects.filter(site=self.sea).delete()
+        report = self.report(Report.Kind.CLEANER_FISH, OCTOBER, site=self.sea, no_cleaner_feed=True)
+        self.assertEqual(compute.compute(report).problems, [])
+        self.assertEqual(exports.api_json(report, compute.compute(report).content)['tørrforKg'], 0)
         self.feed_cleaner(self.dry, '6.6', day(10, 3))
-        self.assertNotIn(warning, self.result().warnings)
+        self.assertIn('Feed was recorded for the cleaner fish this month, but the report says none was given.',
+                      compute.compute(report).problems)
+        Report.objects.filter(pk=report.pk).update(no_cleaner_feed=False)
+        self.assertNotIn(problem, self.result().problems)
 
     def test_the_feed_is_the_cleaner_fishs_in_whole_kilos_dry_and_wet(self):
         self.feed_cleaner(self.dry, '6.6', day(10, 3))
@@ -136,6 +143,7 @@ class FiguresTests(CleanerFishTestCase):
         bought = self.cleaner(self.m2, 300, '60', day(10, 6), origin='purchased', supplier=supplier,
                               provenance='wild_caught')
         Batch.all_objects.filter(pk=bought.pk).update(provenance='')
+        self.feed_cleaner(self.dry, '1', day(10, 3))
         self.assertEqual(self.result().problems, [
             f'Batch {bought.code} has no origin, farmed or wild-caught (Operations › Production units): the report asks '
             'it of every cleaner fish.'])
@@ -143,6 +151,7 @@ class FiguresTests(CleanerFishTestCase):
     def test_a_species_without_its_code_keeps_it_from_being_ready(self):
         self.lump.official_code = ''
         self.lump.save()
+        self.feed_cleaner(self.dry, '1', day(10, 3))
         self.assertEqual(self.result().problems, ['Lumpfish (LUM) has no official code (Setup › Reference data › '
                                                   'Species).'])
 
@@ -158,16 +167,19 @@ class ExportAndPageTests(CleanerFishTestCase):
                           body['organisasjonsnummer'], body['lokalitetsnummer']), (2026, 10, 7, 2, '987654321', 23456))
         first = body['produksjonsenheter'][0]
         self.assertEqual(first['merdId'], '1')
+        # One row per species (`ArtDto` is per species): the farmed and the wild-caught lumpfish of the cage are added
+        # together and the origin is the mixed value.
+        self.assertEqual(len(first['arter']), 1)
         self.assertEqual(first['arter'][0], {
-            'artskode': 'LUM', 'opprinnelse': 'OPPDRETTET', 'beholdningVedForrigeMånedsslutt': 10000,
-            'utsett': {'antallNy': 0, 'antallFlyttetInn': 0},
+            'artskode': 'LUM', 'opprinnelse': 'VILLFANGET_OG_OPPDRETTET', 'beholdningVedForrigeMånedsslutt': 10000,
+            'utsett': {'antallNy': 2000, 'antallFlyttetInn': 0},
             'uttak': {'antallAvlivetSykdom': 50, 'antallAvlivetSkader': 0, 'antallAvlivetAvmagret': 20,
                       'antallAvlivetForeståendeHåndteringAvLaksen': 0,
                       'antallAvlivetForeståendeUgunstigLevemiljø': 0, 'antallAvlivetSkalIkkeBrukes': 30,
                       'antallSelvdød': 100, 'antallFlyttetUt': 500, 'antallKanIkkeGjøresRedeFor': 40}})
-        self.assertEqual(first['arter'][1]['opprinnelse'], 'VILLFANGET')
 
     def test_the_report_is_started_filed_and_exported_through_the_pages(self):
+        self.feed_cleaner(self.dry, '6.6', day(10, 3))
         response = self.client.post(reverse('reports:report_create'), {
             'kind': 'cleaner_fish', 'site': str(self.sea.pk), 'period_start': '2026-10-17',
             'contact_name': 'Kari Nord', 'contact_email': 'kari@example.com', 'contact_phone': '+47 98989898',
@@ -178,7 +190,8 @@ class ExportAndPageTests(CleanerFishTestCase):
         detail = self.client.get(reverse('reports:report_detail', args=[report.pk]))
         self.assertEqual(detail.context['problems'], [])
         self.client.post(reverse('reports:report_submit', args=[report.pk]), {
-            'submitted_at': '2026-11-03T09:30', 'channel': 'altinn', 'reference': 'AR1', 'version': str(report.version)})
+            'submitted_at': '2026-11-03T09:30', 'channel': 'altinn', 'reference': 'AR1', 'version': str(report.version),
+            'content_sha256': previewed(report)})
         report.refresh_from_db()
         self.assertEqual(report.status, 'submitted')
         self.assertEqual(report.snapshot.content['units'].popitem()[1]['species'][0]['species'], 'LUM')

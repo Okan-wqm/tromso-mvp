@@ -21,7 +21,7 @@ from farm.health import diseases, notices
 from django.utils.translation import gettext as _, gettext_lazy
 
 from farm.models import (
-    Batch, EscapeRecord, HandlingPlanItem, HealthEvent, Site, SlaughterFacility, StockMovement, Tank,
+    Batch, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, Site, SlaughterFacility, StockMovement, Tank,
 )
 from farm.models.harvest import FacilityStatus, PlanKind
 from farm.models.species import SALMONID_CODES
@@ -29,7 +29,8 @@ from farm.stock.read import Presence
 
 from . import compute, periods
 from .kinds import EVENTS, KINDS, PERIODIC, ReportKind
-from .models import Report
+from . import duties
+from .models import DueClosure, OutsideDutyDone, Report
 
 SEA_SITE = Site.Type.SEA_CAGE
 PRODUCTION_FORM = Site.ProductionForm
@@ -100,6 +101,8 @@ class DueList:
     rows: list = field(default_factory=list)
     not_set_up: list = field(default_factory=list)
     lines: list = field(default_factory=list)
+    closed: list = field(default_factory=list)
+    duties: list = field(default_factory=list)       # reports.duties.DutyLine: the annual duties outside this system
 
     def lines_of(self, kind):
         return [line for line in self.lines if line.kind == kind]
@@ -138,21 +141,34 @@ def due(today=None):
     today = today or periods.oslo_today()
     found = DueList()
     existing = _existing()
+    found.closed = list(DueClosure.objects.select_related('site', 'facility', 'closed_by'))
     sites = list(Site.objects.order_by('name'))
     for site in sites:
         _site(site, today, existing, found)
     _slaughter(today, existing, found.rows)
     _escapes(today, existing, found.rows)
     _diseases(today, existing, found.rows)
+    _unexplained(today, existing, found.rows)
     _lines_of_notices(sites, found)
     _lines_of_slaughter(found)
     found.rows.sort(key=lambda row: (not row.overdue, row.deadline or date.min, str(row.kind), str(row.place)))
+    found.duties.sort(key=lambda line: (line.status != duties.OVERDUE, line.deadline, line.site.name, line.duty.code))
     return found
+
+
+class Existing(dict):
+    """The reports started, by key, and the keys a person closed with a reason (DueClosure): neither is owed."""
+    closed = frozenset()
+    done = {}
 
 
 def _existing():
     """{(kind, site id, facility id, period start, event id): the live original report} of every report started."""
-    index = {}
+    index = Existing()
+    index.done = {(record.duty, record.site_id, record.year): record
+                  for record in OutsideDutyDone.objects.select_related('recorded_by')}
+    index.closed = frozenset((closure.kind, closure.site_id, closure.facility_id, closure.period_start, None)
+                             for closure in DueClosure.objects.all())
     for report in Report.objects.filter(corrects__isnull=True):
         key = (report.kind, report.site_id, report.facility_id, report.period_start,
                report.health_event_id or report.escape_id)
@@ -166,7 +182,7 @@ def _row(kind, place, period, today, existing, event=None, agreed=None):
            place.pk if kind == ReportKind.SLAUGHTER_PLANNED else None, period.start if period else None,
            event.pk if event is not None else None)
     report = existing.get(key)
-    if report is not None and report.submitted_at is not None:
+    if report is not None and report.submitted_at is not None or key in existing.closed:
         return None
     rule = KINDS[kind].deadline
     deadline = rule(period) if rule and period else None
@@ -190,6 +206,8 @@ def _site(site, today, existing, found):
     if (site.reports_from is None or not site.production_form or uncoded) and holds:
         found.not_set_up.append(SetUp(site, reports_from=site.reports_from is None,
                                       production_form=not site.production_form, species=uncoded))
+    salmonids = any(_category(batch)[SALMONID] for batch in batches.values())
+    found.duties.extend(duties.lines_of(site, today, existing.done, salmonids))
     for kind in SITE_KINDS:
         if KINDS[kind].grain == 'event':
             continue
@@ -232,6 +250,10 @@ def _not_owed(site, kind):
         return _('%(site)s is not a sea site') % {'site': site.name}
     if not site.production_form:
         return _('site not set up: no production form')
+    if site.production_form == PRODUCTION_FORM.OTHER:
+        # Chapters 1, 2, 3 and 7 only apply to "annen produksjon" (§ 3 l); what else follows is not known (Q10).
+        return _('research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 l: '
+                 'only chapters 1, 2, 3 and 7 apply to it; unverified, Q10)')
     if kind == ReportKind.SMOLT:
         return _('%(site)s is not a juvenile (settefisk) site') % {'site': site.name}
     if kind == ReportKind.BIOMASS:
@@ -248,7 +270,7 @@ def _lines_of_notices(sites, found):
     two notices of a land site are started by a person when something happens."""
     counts = {}
     for row in found.rows:
-        if row.kind in (ReportKind.ESCAPE, ReportKind.DISEASE):
+        if row.kind in (ReportKind.ESCAPE, ReportKind.DISEASE, ReportKind.WELFARE):
             counts[(row.kind, row.place.pk)] = counts.get((row.kind, row.place.pk), 0) + 1
     nothing = {ReportKind.ESCAPE: _('no escape without a filed notice since %(date)s'),
                ReportKind.DISEASE: _('no listed disease without a filed notice since %(date)s')}
@@ -263,7 +285,12 @@ def _lines_of_notices(sites, found):
                     found.lines.append(Line(kind, site, NOT_DUE, nothing[kind] % {
                         'date': site.reports_from.isoformat()}))
             elif kind == ReportKind.WELFARE:
-                found.lines.append(Line(kind, site, NOT_DUE, _('started by a person when an event happens')))
+                if counts.get((kind, site.pk)):
+                    found.lines.append(Line(kind, site, DUE, count=counts[(kind, site.pk)]))
+                else:
+                    found.lines.append(Line(kind, site, NOT_DUE, _(
+                        'no increased mortality has stayed unexplained for 14 days; otherwise started by a person '
+                        'when an event happens')))
             elif not site.production_form:
                 found.lines.append(Line(kind, site, NOT_DUE, _('site not set up: no production form')))
             elif site.type != SEA_SITE and site.production_form in (PRODUCTION_FORM.MATFISK, PRODUCTION_FORM.STAMFISK):
@@ -286,25 +313,37 @@ def _lines_of_slaughter(found):
             found.lines.append(Line(ReportKind.SLAUGHTER_PLANNED, facility, DUE, count=counts[facility.pk]))
         else:
             found.lines.append(Line(ReportKind.SLAUGHTER_PLANNED, facility, NOT_DUE,
-                                    _('no harvest is planned to %(facility)s from this week on') % {
+                                    _('no planned or recorded harvest to %(facility)s is waiting for its notice') % {
                                         'facility': facility.name}))
 
 
 def _slaughter(today, existing, rows):
-    """A planned slaughter per facility and week, from this week on, for the open harvest plans."""
-    items = HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', operation__isnull=True,
-                                            facility__isnull=False, date__gte=periods.week_start(today)
-                                            ).select_related('facility')
-    weeks = {}
-    agreed = {}
-    for item in items:
+    """A planned slaughter per facility and week, from the first week the site reports (its reports-from date): the duty
+    arises from the harvest, planned or done (restkontrollforskriften § 9a), so a harvest that was never planned owes it
+    too, and a week stays owed after it has passed until the notice is filed or a person closes it with a reason."""
+    weeks, agreed = {}, {}
+    plans = (HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', facility__isnull=False)
+             .filter(Q(operation__isnull=True) | Q(operation__is_deleted=False))
+             .select_related('facility', 'unit__production_department__site'))
+    for item in plans:
+        site = item.unit.production_department.site
+        if site is None or site.reports_from is None or item.date < site.reports_from:
+            continue
         key = (item.facility_id, periods.Period.of(periods.WEEK, item.date))
         weeks[key] = item.facility
         day = periods.oslo_today(item.created_at)
         agreed[key] = min(agreed.get(key, day), day)
-    for (_facility, period), facility in weeks.items():
+    lines = Prefetch('operation__movements', StockMovement.objects.select_related(
+        'unit__production_department__site').order_by('id'))
+    for record in HarvestRecord.objects.select_related('facility', 'operation').prefetch_related(lines):
+        first = next(iter(record.operation.movements.all()), None)
+        site = first.unit.production_department.site if first is not None else None
+        if site is None or site.reports_from is None or record.operation.date < site.reports_from:
+            continue
+        weeks.setdefault((record.facility_id, periods.Period.of(periods.WEEK, record.operation.date)), record.facility)
+    for (facility_id, period), facility in weeks.items():
         row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing,
-                   agreed=agreed[(_facility, period)])
+                   agreed=agreed.get((facility_id, period)))
         if row is not None:
             rows.append(row)
 
@@ -331,6 +370,28 @@ def _diseases(today, existing, rows):
         if event.site.reports_from is None or event.date < event.site.reports_from:
             continue
         row = _row(ReportKind.DISEASE, event.site, None, today, existing, event)
+        if row is not None:
+            rows.append(row)
+
+
+REASSESS_DAYS = 14          # dyrehelseforskriften § 7 second paragraph: a new assessment within 14 days
+
+
+def _unexplained(today, existing, rows):
+    """A welfare notice for an increased-mortality event still unexplained after the 14 days the regulation gives for the
+    vet's reassessment (§ 7 second paragraph: notify as soon as practicable when the cause is still unclear after it). The
+    records model it as a health event of the kind increased mortality with no diagnosis and not closed: giving the event a
+    diagnosis, or closing it with its outcome, says the cause is clear and ends the duty. The system holds no field for
+    the reassessment itself, only these two ways to say it is explained. Other signs of disease and a reduced production
+    rate, which the paragraph also names, are not events the records hold."""
+    events = list(HealthEvent.objects.filter(
+        kind=HealthEvent.Kind.MORTALITY, diagnosis='', closed_on__isnull=True,
+        date__lte=today - timedelta(days=REASSESS_DAYS)).select_related('site'))
+    told = notices.told(events) or {}
+    for event in events:
+        if event.pk in told or event.site.reports_from is None or event.date < event.site.reports_from:
+            continue
+        row = _row(ReportKind.WELFARE, event.site, None, today, existing, event)
         if row is not None:
             rows.append(row)
 

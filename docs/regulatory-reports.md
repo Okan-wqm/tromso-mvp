@@ -229,7 +229,7 @@ start and end are reported (§ 39 ✔). The notice form's own fields are **unver
 | `artskode` | `[A-Z]{3}`, "store bokstaver etter FAO-standarden" (ASFIS) ✔ | `Species.official_code`, `^[A-Z]{3}$` (`farm/models/species.py:15`, `:92-95` ✔) | exists; the cleaner-fish codes in our catalogue are wrong (3.4) |
 | `godkjenningsnummer` | `[a-zA-Z\d]{1,6}` ✔ | `SlaughterFacility.approval_number`, `^[A-Z0-9]{1,6}$`, stored in capitals (`farm/models/harvest.py:26-29`, `:63-64`, `:114-116` ✔) | exists; consistent with the API's pattern (which also accepts lower case; we store capitals) |
 | `kontaktperson {navn, epost, telefonnummer}` | required on every report ✔ | the person filing; `Site.contact_email`/`contact_phone`, `SiteContact` (`farm/models/site.py:79-81`, `:144-162` ✔) | entered on the report, prefilled from the person |
-| `klientReferanse` | unique per submission ✔ | — | only for API filing; the export carries the report's id |
+| `klientReferanse` | "must be unique for each reporting" ✔ | — | only for API filing; the export carries the **report's** id (`str(report.pk)`): one per report, and a correction is a new report with its own id (coverage review C05) |
 
 ## 2. Where each field comes from here
 
@@ -519,10 +519,11 @@ for reports" with what is missing, rather than hidden (E4).
 | Smolt | site, month | a settefisk site (cleaner-fish hatcheries included, § 3 i ✔) held fish of start-feeding stage or older at any time in the month (D-8) | the 7th of the next month |
 | Cleaner fish | site, month | **every sea site**, whatever its production form or permit (Altinn: "gjelder alle typer akvakulturtillatelser ... for fisk med produksjon i sjøvann"), that held cleaner fish (a species with `cleaner_fish_type`) at any time in the month; a land hatchery of cleaner-fish juveniles reports them in the yearly stock instead (§ 44a, § 3 i) | the 7th of the next month |
 | Monthly biomass | site, month | a matfisk or stamfisk sea site held production fish (not cleaner fish: they may stay through fallowing, § 40 fifth paragraph ✔) at any time in the month | the 7th of the next month |
-| Planned slaughter | slaughter facility, ISO week | live planned harvests (`HandlingPlanItem` kind harvest, not cancelled) to the facility in the week (D-3) | the earlier of Thursday 24:00 of the week before and the day the fish start fasting for it (restkontrollforskriften § 9a ✔; the fast's start is `fast_of(item)`, `farm/handling/fasting.py:12-14`, `:119-122` ✔); a slaughter agreed later: at once; corrections until Tuesday 09:00 of the slaughter week (E1) |
+| Planned slaughter | slaughter facility, ISO week | **the harvest, planned or done** (§ 9a is the farmer's duty and arises from the harvest, not from the plan): a plan item (kind harvest, not cancelled, open or recorded) or a live `HarvestRecord` of the facility in the week, from the site's reports-from date; the week stays owed after it has passed until filed or closed with a reason (`DueClosure`, coverage review R13) (D-3) | the earlier of Thursday 24:00 of the week before and the day the fish start fasting for it (restkontrollforskriften § 9a ✔; the fast's start is `fast_of(item)`, `farm/handling/fasting.py:12-14`, `:119-122` ✔); a slaughter agreed later: at once; corrections until Tuesday 09:00 of the slaughter week (E1) |
 | Escape | an escape record | every escape record dated on or after its site's reports-from date (D-6) with no filed notice (a draft stays owed) | at once ("straks") |
-| Disease | a health event | a health event with a listed diagnosis, suspected or confirmed, dated on or after its site's reports-from date, that the health records' registry (`farm/health/notices.py`) does not know to be told of; and a mortality event whose cause is still unexplained 14 days after the first assessment (dyrehelseforskriften § 7, E1) | at once ("umiddelbart"); the second case "så snart som praktisk mulig" |
-| Welfare | started by a person | — | at once ("umiddelbart") |
+| Disease | a health event | a health event with a listed diagnosis, suspected or confirmed, dated on or after its site's reports-from date, that the health records' registry (`farm/health/notices.py`) does not know to be told of (dyrehelseforskriften § 7 first paragraph) | at once ("umiddelbart") |
+| Welfare (unexplained mortality) | a health event | **built** (coverage review R27, `due._unexplained`): a health event of the kind increased mortality, live, with no diagnosis and not closed, dated 14 or more days ago and on or after the site's reports-from date, that no notice has told Mattilsynet of: a **welfare** notice about the event (§ 7 second paragraph: when the cause is still unclear after the reassessment within 14 days). The records have no field for the reassessment: giving the event a diagnosis or closing it with its outcome says the cause is clear and ends the duty. Other signs of disease and a reduced production rate, which the paragraph also names, are not events the records hold | "så snart som praktisk mulig" |
+| Welfare (anything else) | started by a person | — | at once ("umiddelbart") |
 
 The window's eligibility is read from summed live `count_delta`: one query per kind for each site's net count of
 the relevant fish before the window and its daily deltas and arrival days inside it, then a walk over the periods
@@ -642,11 +643,13 @@ that take the fish out of the units (OUR-03; the stock stays the only writer of 
   numbers are written as numbers, so a sea temperature of −0.4 °C stays a number.
 - **JSON in the shape of Mattilsynet's API** for the lice, smolt, cleaner-fish and planned-slaughter reports, for a
   person or another system that files through the API. A copy of the relevant schemas of the OpenAPI read
-  2026-11-03 (NLOD licence, E1) is kept with the tests, and every export is validated against it with `jsonschema`
-  (a new pinned dependency) or a hand-written validator of the subset used (decided in Phase 2 by what the subset
-  needs). The OpenAPI lists `unknownProperties` as required on several objects, a Java artefact (E1): the export
-  leaves it out and the test copy drops it from `required`, saying so (whether Mattilsynet's server wants `{}` is
-  unverified).
+  2026-11-03 (NLOD licence, E1) is kept with the tests (`reports/tests/schema.py`, a hand-written validator of the subset
+  the schemas use). **What is true (coverage review C08, C09):** the application does not validate an export when it makes
+  it; a few tests assert specific exports against the copy, so it proves the output of those cases, not every export. The
+  validator does not read `anyOf`, `maxLength` or `format`, so a value outside an enum that the schema writes as `anyOf` is
+  not caught by it. The OpenAPI lists `unknownProperties` as required on several objects, a Java artefact (E1): the export
+  leaves it out, the copy keeps it in `required` and the validator skips that one name (whether Mattilsynet's server wants
+  `{}` is unverified, R02).
 - The biomass report: print and CSV only (Fiskeridirektoratet's current form is unverified, 1.5).
 
 ### 5.6 Menu and pages
@@ -796,9 +799,54 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   reason. The reasons are returned by `reports/due.py` (`DueList.lines`, `Line`) from the same rules that decide what is owed
   (`owed`, the periods with fish), so there is no second copy of the rule to drift; the company overview reads the due list for
   its upcoming reports. Nothing is stored and nothing is sent; the executed slaughter stays out (D-3).
+- **The planned-slaughter duty does not forget (coverage review R13, gap 3):** `reports/due.py` `_slaughter` lists every week with
+  a plan item that is not cancelled or a live harvest of the facility, since the reports-from date of the unit's site, not only
+  the open plans of this week on; a harvest nobody planned owes its week with the Thursday deadline (no fast to read), and the
+  report of that week reads the harvest's weighed kilos with a warning that it was not planned. A person can **close** an owed
+  report with a reason (`DueClosure`: a check that its place fits its kind, one per place and period, a reason; created through
+  the dialog, deleted by *Reopen*, both in the activity log); it is a record of a decision, not a report, and nothing is sent.
+- **What is about to be recorded is shown first (coverage review C06, gap 5):** the report's page shows the content hash and
+  links the print page, which lists the exact values to type in the authority's names, and every export carries the hash
+  (`X-Content-SHA256`; the print page prints it). The filing form posts that hash and `services.submit` refuses to record
+  when the records now give another content ("The records changed after you looked at the report: review it again"), so what
+  is frozen is always the content that was previewed (the hash of the snapshot equals the previewed one). The system still
+  cannot know what was typed into Altinn: the person is trained to type from the print page.
+- **A value on an unconfirmed reading is made visible at the filing (coverage review R03, R04):** `Result.questions` names the open
+  questions (7.1) a content rests on: the amount of a medicinal lice treatment (Q1: the product's amount is filed where the
+  authority's `virkestoff.mengde` may mean the active substance's) and the types given to a medicated feed and an injection
+  (Q2). While such a question is open, `services.submit` refuses to record the filing until the person has confirmed each by
+  hand (a checkbox with the question's text on the report's page); the confirmation is logged with the question's text
+  ("Open questions acknowledged"). Answering the question in the register ends the requirement; it does not change the filed
+  value by itself, so an answer that says the active substance is meant is a change of the computation to be made.
+- **Filed late, and the silent defaults (coverage review C07, R19, R11, R09):** recording a filing stores the deadline
+  (`Report.deadline_on`) and whether the day of the filing in Oslo came after it (`filed_late`; empty for a filing recorded before this
+  was kept, `False` for a notice, which is filed at once), shown on the report ("Filed 2 days after its deadline") and the
+  list, and in the log entry; the database holds that only a filed report has them. The biomass report's `slaktetilstand`
+  is no longer a constant: the person says round or gutted weight (`Report.harvest_condition`, only on the biomass report,
+  checked by the database) and a month with a harvest is not ready until they have. A cleaner-fish month with no feed
+  recorded is a **problem**, not a silent 0 kg, unless the person says none was given (`Report.no_cleaner_feed`, only on the
+  cleaner-fish report), and feed recorded beside "none given" is a problem too. The cleaner-fish **API** rows are one per
+  species (`ArtDto` is per species): the figures of the farmed and the wild-caught fish of a species are added and the
+  origin is `VILLFANGET_OG_OPPDRETTET` when both are there; the stored content keeps the rows per origin (`exports._per_species`).
+- **Duties outside this system (coverage review R16, R17, R23, R25, R15, R29, R31, gap 6):** `reports/duties.py` lists them with what the
+  saved official texts say (deadline, channel, whom each binds by production form, the text it is written in, a source link where one was
+  saved) and what is not known (marked unverified, with the question of the register it rests on). The **driftsplan** (1 October each
+  year, for the two next calendar years: "alle akvakulturanlegg i sjø som produserer matfisk eller stamfisk", idle sites too; the
+  official page of 2026-09-18) and the **lice coordination plan** (lakselusforskriften § 4: sent each year before 1 October) are due
+  lines (`DueList.duties`, one per site and year from 2026: overdue, due within 60 days, upcoming, done) with a person's record that
+  they were done (`OutsideDutyDone`: the day and the reference, undone by deleting it, both logged); nothing is sent and no form is
+  built. They are reminded on the Reports page and the company overview. The page *Duties outside this system* adds § 45 (land
+  broodstock, 15 July), § 39 (recapture), the executed slaughter, the county governor's yearly report and the cleaner-fish
+  broodstock report. The consequence of filing late is unverified for the two plans (Q6).
+- **A research or other production form (coverage review R32, gap 7):** `Site.production_form` gains *Research or other production*
+  (`other`; checked by the database). Its basis is § 3 l and § 4 nr. 20 of akvakulturdriftsforskriften as the review read them: "annen
+  produksjon" falls under chapters 1, 2, 3 and 7 only, so such a site owes **no** juvenile (chapter 5), monthly biomass (§ 44) or § 44a
+  report, and has no driftsplan (food fish or broodstock only). What still follows the fish and is owed: the sea-lice report (it follows
+  salmonids at sea whatever the production), the cleaner-fish report at a sea site (the Altinn form is for all permit types, research
+  included) and the notices of an escape, a disease or a welfare event. Every line of it says "unverified, Q10": how a land research site
+  is classified and which duties follow is a question for the authority, and the rule is only what the verified text supports.
 - **Not built:** the season (spring or autumn) broodstock at sea were put out in and the permit a shared site reports for
-  (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the disease notice for a mortality
-  left unexplained 14 days (5.2); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
+  (§ 44 second paragraph: the biomass report warns that it has no field for them); the executed slaughter report and the slaughter result (D-3, OUR-18); the § 44a "continuous operation" refinements beyond the yearly stock and the two site
   notices; the mod-11 check of an organisation number; a dialog for a count correction.
 
 ## 6. Decisions
@@ -823,3 +871,49 @@ override one; the change is then recorded here). Taken as recommended unless the
 | D-13 | A site's production form (settefisk, matfisk, stamfisk), which decides its reports (5.2): and the § 44a notices of matfisk and stamfisk sites on land or in fresh water (taken into use, emptied, yearly stock by 7 January), build them? | The production form is needed (a land grow-out site is not a hatchery, E1, E3). The § 44a notices: **yes** (the MVP goes to a university that may run a land site), as a yearly report and two event notices. |
 | D-14 | What is a batch's year class (årsklasse): the hatch year, or the year it went to sea, and how do spring and autumn stockings (§ 44 second paragraph) show? | Entered per batch, **no default**; the definition (hatch year or sea year) and the spring/autumn rule are **unverified**, noted on the field. |
 | D-15 | How our loss reasons map to Fiskeridirektoratet's causes (Dødfisk, Utkast fra slakteri, Rømming, Annet, Tellefeil) | Mortality and culls → Dødfisk; escape → Rømming; count corrections → Tellefeil; unaccounted loss → Annet; Utkast from the slaughter result only. As proposed, **unverified** until the form is confirmed (D-12). |
+| D-16 | The driftsplan and the lice coordination plan (1 October each year) are the farm's duties and are not in the system (coverage R16, R17) | **Listed, not built:** due lines per sea site and year with a person's record that they were done (the day and the reference), reminders on the Reports page and the company overview, and the page of duties outside this system; no form, nothing sent. The consequence of filing late is unverified (Q6). |
+| D-17 | A research or other production site (§ 3 l) | A production form of its own: no juvenile, biomass, § 44a report or driftsplan; the lice and cleaner-fish reports and the notices still follow the fish; marked unverified (Q10). |
+| D-18 | The unexplained-mortality notice (§ 7 second paragraph) | Raised from an increased-mortality health event with no diagnosis and not closed after 14 days, as a welfare notice; the reassessment itself is not in the records (5.13). |
+| D-19 | Is the planned-slaughter duty the plan's or the harvest's (§ 9a)? | The harvest's, planned or done: a week stays owed until filed or closed with a reason; an unplanned harvest owes it too (5.13). |
+| D-20 | What a filing stores and shows | The content hash is shown before and must match at the recording; a filing is marked late with its deadline; a value on an open question needs the person's confirmation; the API id is kept for a correction (5.13, 7.2). |
+
+## 7. The coverage review of 2026-11-04
+
+Five experts compared this system with the authorities' machine-reporting pages and every sub-link; the lead's report is kept
+with the planning material (`coverage/COVERAGE.md`). Its claims were re-checked against the code and the saved official texts
+before anything was changed; what was built from it is in 5.13, and what could not be settled is here.
+
+### 7.1 Open questions for the authority
+
+What only the authority can answer is a **register** in the application (Production › Reports › Questions for the authority;
+`reports.OpenQuestion`, seeded by reports migration 0009 with Q1 to Q12 of the review, all open): the question, whom it is for,
+the report rule it affects, who asked and when, the answer and the day it came. The people who run the reports keep it (its own
+area in the role matrix). A report rule that rests on an open question is **unverified**: where the system files such a
+value it says so to the person at filing (see 5.13). The questions: Q1 `virkestoff.mengde`, product or active substance; Q2 the
+three treatment types; Q3 a unit emptied in the month and two species in one tank; Q4 cleaner fish delivered out, and the feed;
+Q5 who reports a planned slaughter, the kilo basis; Q6 the driftsplan and lice plan channels and the consequence of lateness;
+Q7 Fiskeridirektoratet's channels (biomass, land stock, escape); Q8 the cleaner-fish broodstock annual report; Q9 the county
+report; Q10 a land research site; Q11 Arctic char and the lice duty; Q12 weekend deadlines and the week-year.
+
+### 7.2 The transport contract (not built: the system sends nothing)
+
+What the authority's published definitions say about sending, kept so that an API sender can be built on facts (coverage review C01 to
+C05; the live and test definitions read 2026-11-04). None of it is required: the entry page says reports may always be filed manually in
+Altinn.
+
+- **Scopes.** Five Maskinporten scopes, one per area, one scope per token: the entry page names four (lice, juveniles, cleaner fish, slaughter,
+  which carries both planned and executed), the definition adds one for the driftsplan; the automatic lice-count endpoint rides on the lice
+  scope and needs enrolment and an agreement with Mattilsynet.
+- **Headers and tokens.** A `Client-Id` header on every operation; a JWT grant from Maskinporten valid at most 120 seconds (`exp - iat`);
+  `consumer_org` in the token for a supplier acting for a farm, delegated in Altinn.
+- **Methods.** POST creates a report; **PUT `/{id}`**, with the id the POST answered with, corrects a settefisk, cleaner-fish, planned or executed
+  slaughter report; the sea-lice endpoint has **POST only**. All information is sent again in a correction.
+- **Errors.** 400 lists every fault found (`errors[]`), 503 when a register the server reads is down.
+- **`klientReferanse`** must be unique for each reporting: the export uses the report's id, so a correction, a new report, has its own.
+- **Environments.** The test definition equals the production one except the token URL; one client for both is unverified.
+- **What the system keeps for it.** The id the API returned is recorded at the filing (`Report.authority_id`, optional, only for a filed
+  report: a database check) and a correction's JSON export says how the API takes it: `X-Api-Method` and `X-Api-Path` (`PUT
+  /api/settefisk/v1/settefisk/<id>`, or `{id}` with a note when it was not recorded), and `X-Corrects-Client-Reference` with the client
+  reference of the filing it replaces; the print page says the same. The body of the file is the DTO alone, unchanged (`exports.api_call`).
+- **Unverified:** whether a second POST for the same week of sea lice replaces or duplicates (no PUT exists), whether a repeated
+  `klientReferanse` is refused, whether `unknownProperties` is wanted: only a run against the test environment settles them (R02, R07, R09).

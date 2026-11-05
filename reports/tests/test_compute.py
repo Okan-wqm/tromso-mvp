@@ -7,7 +7,7 @@ from django.test import SimpleTestCase
 
 from farm.feeding import services as feeding_services
 from farm.models import (
-    Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, HandlingRule, ProtocolAssignment, ProtocolBand,
+    Batch, Feed, FeedingProtocol, FeedingRecord, HandlingPlanItem, HandlingRule, ProtocolAssignment, ProtocolBand,
     Supplier,
 )
 from farm.models.handling import HandlingKind
@@ -224,7 +224,14 @@ class BiomassTests(ReportTestCase):
         services.record_cull(self.user, unit=self.m1, batch=batch, day=day(10, 4), count=5, reason='deformed')
         services.record_harvest(self.user, unit=self.m1, batch=batch, day=day(10, 20), count=980,
                                 measured_weight_kg=Decimal(490), facility=self.facility, everything=True)
-        result = compute.compute(self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea))
+        Batch.all_objects.update(year_class=2026)
+        report = self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea)
+        self.assertIn('Say in what condition the harvested fish are weighed in this report: round or gutted weight (the '
+                      'Report tab; slaktetilstand).', compute.compute(report).problems)
+        Report.objects.filter(pk=report.pk).update(harvest_condition='round')
+        report.refresh_from_db()
+        result = compute.compute(report)
+        self.assertEqual(result.problems, [])
         row, = result.content['units'].values()
         self.assertEqual(row['losses'], [
             {'species': 'SAL', 'cause': 'dead', 'fish': 10, 'kg': '4.0'},

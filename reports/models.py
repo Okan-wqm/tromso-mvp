@@ -1,6 +1,8 @@
 """Regulatory reports (Production › Reports): a report a person files with an authority, its frozen content once filed,
 and the few answers no record holds. Every figure of a report is computed from the farm's records on read
 (reports/compute); nothing here holds a count, a weight or a feed amount (docs/regulatory-reports.md, section 5)."""
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -14,6 +16,12 @@ from . import periods
 from .kinds import BY_FACILITY, EVENTS, KINDS, PERIODIC, ReportKind, info
 
 SHA256 = r'^[0-9a-f]{64}$'
+
+
+class HarvestCondition(models.TextChoices):
+    """The condition of the harvested fish the biomass report's slaughter weights are given in (`slaktetilstand`)."""
+    ROUND = 'round', _('Round weight (as weighed at harvest)')
+    GUTTED = 'gutted', _('Gutted weight')
 
 
 class Channel(models.TextChoices):
@@ -96,7 +104,19 @@ class Report(AuditedModel):
                                      related_name='+', verbose_name=_('Recorded by'))
     channel = models.CharField(_('Filed through'), max_length=20, blank=True, choices=Channel.choices)
     reference = models.CharField(_('Receipt or reference'), max_length=200, blank=True)
+    # The id the authority's reporting API answered with when the report was filed through it: a correction of a settefisk,
+    # cleaner-fish or planned-slaughter report is a PUT to that id (the sea-lice endpoint has POST only).
+    authority_id = models.CharField(_('Id returned by the authority’s API'), max_length=100, blank=True)
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
+    # The two facts no record holds that a monthly report needs said: in what condition the harvest weights of the biomass
+    # report are given, and that no feed was given to the cleaner fish (so that 0 kg is a statement, not a silence).
+    harvest_condition = models.CharField(_('Condition of the harvested fish'), max_length=10, blank=True,
+                                         choices=HarvestCondition.choices)
+    no_cleaner_feed = models.BooleanField(_('No feed was given to the cleaner fish'), default=False)
+    # Set when the filing is recorded: the deadline then, and whether the filing came after it (the day in Oslo). Empty for a
+    # notice (filed at once) and for a filing recorded before this was kept.
+    deadline_on = models.DateField(_('Deadline'), null=True, blank=True)
+    filed_late = models.BooleanField(_('Filed late'), null=True, blank=True)
 
     class Meta:
         db_table = 'regulatory_reports'
@@ -118,6 +138,15 @@ class Report(AuditedModel):
             _check('escape', Q(kind=ReportKind.ESCAPE, escape__isnull=False)
                    | (~Q(kind=ReportKind.ESCAPE) & Q(escape__isnull=True)),
                    _('An escape notice is about an escape, and no other report is.')),
+            _check('harvest_condition', Q(harvest_condition='')
+                   | Q(kind=ReportKind.BIOMASS, harvest_condition__in=HarvestCondition.values),
+                   _('Only the biomass report has a condition of the harvested fish.')),
+            _check('no_cleaner_feed', Q(no_cleaner_feed=False) | Q(kind=ReportKind.CLEANER_FISH),
+                   _('Only the cleaner-fish report says that no feed was given.')),
+            _check('authority_id_when_filed', Q(authority_id='') | Q(submitted_at__isnull=False),
+                   _('Only a filed report has the id the authority’s API returned.')),
+            _check('late_when_filed', Q(filed_late__isnull=True, deadline_on__isnull=True) | Q(submitted_at__isnull=False),
+                   _('Only a filed report is late or on time.')),
             _check('health_event', Q(kind=ReportKind.DISEASE, health_event__isnull=False)
                    | (~Q(kind=ReportKind.DISEASE) & (Q(kind=ReportKind.WELFARE) | Q(health_event__isnull=True))),
                    _('A disease notice is about a health event; a welfare notice may be; no other report is.')),
@@ -169,6 +198,13 @@ class Report(AuditedModel):
     @property
     def info(self):
         return info(self.kind)
+
+    @property
+    def days_late(self):
+        """How many days after its deadline (in Oslo) it was filed; 0 when it was on time or has no deadline."""
+        if not self.filed_late:
+            return 0
+        return (periods.oslo_today(self.submitted_at) - self.deadline_on).days
 
     @property
     def period(self):
@@ -258,6 +294,127 @@ class ReportSnapshot(models.Model):
 
     def __str__(self):
         return str(self.report)
+
+
+class QuestionStatus(models.TextChoices):
+    OPEN = 'open', _('Open')
+    ANSWERED = 'answered', _('Answered')
+
+
+class OpenQuestion(AuditedModel):
+    """A question only the authority can answer, on which a rule of a report rests (docs/regulatory-reports.md, section 7):
+    the owner's work list for Mattilsynet, Fiskeridirektoratet or the county. While it is open the report rule it affects is
+    unverified and the pages say so; the answer, who asked and when are kept here."""
+
+    code = models.CharField(_('Number'), max_length=10)
+    question = models.CharField(_('Question'), max_length=1000)
+    authority = models.CharField(_('Asked of'), max_length=100)
+    affects = models.CharField(_('The report rule it affects'), max_length=500)
+    status = models.CharField(_('Status'), max_length=10, choices=QuestionStatus.choices, default=QuestionStatus.OPEN)
+    asked_by = models.CharField(_('Asked by'), max_length=150, blank=True)
+    asked_on = models.DateField(_('Asked on'), null=True, blank=True)
+    answer = models.CharField(_('Answer'), max_length=2000, blank=True)
+    answered_on = models.DateField(_('Answered on'), null=True, blank=True)
+
+    class Meta:
+        db_table = 'regulatory_open_questions'
+        ordering = ['code']
+        verbose_name = _('open question')
+        verbose_name_plural = _('open questions')
+        constraints = [
+            models.UniqueConstraint(fields=['code'], condition=Q(is_deleted=False), name='uq_open_questions_code_live',
+                                    violation_error_message=_('Another question has this number.')),
+            models.CheckConstraint(condition=Q(status__in=QuestionStatus.values), name='chk_open_questions_status'),
+            models.CheckConstraint(
+                condition=Q(status=QuestionStatus.ANSWERED, answer__gt='', answered_on__isnull=False)
+                | Q(status=QuestionStatus.OPEN, answered_on__isnull=True),
+                name='chk_open_questions_answer',
+                violation_error_message=_('An answered question has its answer and the day it came; an open one has '
+                                          'no answer day.')),
+            models.CheckConstraint(
+                condition=Q(asked_on__isnull=True) | Q(answered_on__isnull=True) | Q(answered_on__gte=F('asked_on')),
+                name='chk_open_questions_days',
+                violation_error_message=_('It was answered on or after the day it was asked.')),
+        ]
+
+    def __str__(self):
+        return f'{self.code} · {self.question[:60]}'
+
+
+class OutsideDuty(models.TextChoices):
+    """The annual duties outside this system a person records as done (reports/duties.py): nothing here is a report."""
+    DRIFTSPLAN = 'driftsplan', _('Operating plan (driftsplan)')
+    LICE_PLAN = 'lice_plan', _('Lice coordination plan')
+
+
+class OutsideDutyDone(models.Model):
+    """A person's record that an annual duty outside this system was done for a site and a year: the day and the reference the
+    authority gave. Not a report, nothing is sent; undoing it deletes the row. Both are in the activity log."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    duty = models.CharField(_('Duty'), max_length=20, choices=OutsideDuty.choices)
+    site = models.ForeignKey(Site, on_delete=models.PROTECT, related_name='+', verbose_name=_('Site'))
+    year = models.PositiveSmallIntegerField(_('Year'))
+    done_on = models.DateField(_('Done on'))
+    reference = models.CharField(_('Receipt or reference'), max_length=200, blank=True)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                    related_name='+', verbose_name=_('Recorded by'))
+    recorded_at = models.DateTimeField(_('Recorded at'), auto_now_add=True)
+
+    class Meta:
+        db_table = 'regulatory_duties_done'
+        ordering = ['-year', 'duty']
+        verbose_name = _('duty done')
+        verbose_name_plural = _('duties done')
+        constraints = [
+            models.CheckConstraint(condition=Q(duty__in=OutsideDuty.values), name='chk_duties_done_duty'),
+            models.CheckConstraint(condition=Q(year__gte=2026, year__lte=2100), name='chk_duties_done_year',
+                                   violation_error_message=_('Give a year from 2026.')),
+            models.UniqueConstraint(fields=['duty', 'site', 'year'], name='uq_duties_done_year',
+                                    violation_error_message=_('This duty is recorded as done for this site and year.')),
+        ]
+
+    def __str__(self):
+        return f'{self.get_duty_display()} · {self.site} · {self.year}'
+
+
+class DueClosure(models.Model):
+    """A report that was owed and will not be filed, closed by a person with the reason (a slaughter that never took place,
+    a period filed elsewhere): the due list stops listing it. Reopening deletes the row; both are in the activity log.
+    Nothing here is a report and nothing is sent."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(_('Report'), max_length=20, choices=ReportKind.choices)
+    site = models.ForeignKey(Site, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                             verbose_name=_('Site'))
+    facility = models.ForeignKey(SlaughterFacility, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                                 verbose_name=_('Slaughter facility'))
+    period_start = models.DateField(_('Period'))
+    reason = models.CharField(_('Why it is closed'), max_length=500)
+    closed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+', verbose_name=_('Closed by'))
+    closed_at = models.DateTimeField(_('Closed at'), auto_now_add=True)
+
+    class Meta:
+        db_table = 'regulatory_due_closures'
+        ordering = ['-closed_at']
+        verbose_name = _('closed report')
+        verbose_name_plural = _('closed reports')
+        constraints = [
+            models.CheckConstraint(condition=Q(kind__in=PERIODIC), name='chk_due_closures_kind'),
+            models.CheckConstraint(
+                condition=Q(kind=ReportKind.SLAUGHTER_PLANNED, facility__isnull=False, site__isnull=True)
+                | (~Q(kind=ReportKind.SLAUGHTER_PLANNED) & Q(site__isnull=False, facility__isnull=True)),
+                name='chk_due_closures_place'),
+            models.CheckConstraint(condition=~Q(reason=''), name='chk_due_closures_reason',
+                                   violation_error_message=_('Say why it is closed.')),
+            models.UniqueConstraint(fields=['kind', 'site', 'facility', 'period_start'], nulls_distinct=False,
+                                    name='uq_due_closures_period',
+                                    violation_error_message=_('This report is closed already.')),
+        ]
+
+    def __str__(self):
+        return f'{self.get_kind_display()} · {self.site or self.facility} · {self.period_start.isoformat()}'
 
 
 # ---- the answers no record holds (row lists of a report) --------------------------------------------------

@@ -15,6 +15,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+msgid "\"oversendes årlig til Mattilsynet innen 1. oktober\"; changes of the plan are notified at once"
+msgstr "«oversendes årlig til Mattilsynet innen 1. oktober»; endringer av planen varsles umiddelbart"
+
 msgid "%"
 msgstr "%"
 
@@ -440,6 +443,12 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
 
 #, python-format
+msgid "%(days)s day late"
+msgid_plural "%(days)s days late"
+msgstr[0] "%(days)s dag for sent"
+msgstr[1] "%(days)s dager for sent"
+
+#, python-format
 msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "%(days)s dag siden siste målte vekt"
@@ -476,6 +485,10 @@ msgstr[1] "%(direct)s personer"
 #, python-format
 msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
+
+#, python-format
+msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
+msgstr "%(duty)s · %(site)s · %(year)s: registrer at det er gjort."
 
 #, python-format
 msgid "%(energy)s MJ/kg digestible"
@@ -1312,6 +1325,13 @@ msgstr "0 rader"
 msgid "0 rows match"
 msgstr "0 rader samsvarer"
 
+msgid ""
+"1 October each year, for the two next calendar years (the saved page: \"Fristen for å sende inn "
+"driftsplan for 2027 og 2028 er 1. oktober 2026\")"
+msgstr ""
+"1. oktober hvert år, for de to neste kalenderårene (den lagrede siden: «Fristen for å sende inn "
+"driftsplan for 2027 og 2028 er 1. oktober 2026»)"
+
 msgid "1 for every day, 2 for every other day, up to 52."
 msgstr "1 for hver dag, 2 for annenhver dag, opptil 52."
 
@@ -1330,6 +1350,9 @@ msgstr "1 til 31; i en kortere måned faller den 29., 30. og 31. på månedens s
 
 msgid "1 to 6 letters or digits, as Mattilsynet gives it."
 msgstr "1 til 6 bokstaver eller sifre, slik Mattilsynet gir det."
+
+msgid "15 July each year, for 1 June to 31 May, by year class"
+msgstr "15. juli hvert år, for 1. juni til 31. mai, per årsklasse"
 
 msgid "7 January"
 msgstr "7. januar"
@@ -2211,6 +2234,9 @@ msgstr "En årsklasse er et år, for eksempel 2026."
 msgid "A “+” stands for a whole level of the topic, between slashes."
 msgstr "En «+» står for et helt nivå i emnet, mellom skråstreker."
 
+msgid "API id"
+msgstr "API-id"
+
 msgid "Abnormal swimming"
 msgstr "Unormal svømming"
 
@@ -2474,6 +2500,12 @@ msgstr "Luft"
 msgid "Airflow"
 msgstr "Luftmengde"
 
+msgid "Akvakulturdriftsforskriften § 39"
+msgstr "Akvakulturdriftsforskriften § 39"
+
+msgid "Akvakulturdriftsforskriften § 45"
+msgstr "Akvakulturdriftsforskriften § 45"
+
 msgid "Akvakulturregisteret locality number (5 digits)."
 msgstr "Lokalitetsnummer fra Akvakulturregisteret (5 siffer)."
 
@@ -2621,6 +2653,9 @@ msgstr "Alle leverandører"
 msgid "All systems"
 msgstr "Alle systemer"
 
+msgid "All the duties"
+msgstr "Alle pliktene"
+
 msgid "All the energy in the feed, in MJ per kg as fed."
 msgstr "All energien i fôret, i MJ per kg slik det fôres."
 
@@ -2737,6 +2772,9 @@ msgstr "En aktiv protokoll har en tabell."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
+
+msgid "An answered question has its answer and the day it came; an open one has no answer day."
+msgstr "Et besvart spørsmål har svaret og dagen det kom; et åpent har ingen svardag."
 
 msgid "An approved or rejected request has the time it was decided."
 msgstr "En godkjent eller avslått søknad har tidspunktet den ble avgjort."
@@ -2891,6 +2929,9 @@ msgstr "En annen protokoll ble tildelt disse karene i mellomtiden: se på tildel
 msgid "Another published source"
 msgstr "En annen publisert kilde"
 
+msgid "Another question has this number."
+msgstr "Et annet spørsmål har dette nummeret."
+
 msgid "Another replicate of this group has this number."
 msgstr "Et annet replikat i denne gruppen har dette nummeret."
 
@@ -2944,6 +2985,15 @@ msgstr "En annen enhet på lokaliteten har allerede denne offisielle enhets-ID-e
 
 msgid "Another user already uses this email."
 msgstr "Denne e-postadressen brukes allerede av en annen bruker."
+
+msgid "Answer"
+msgstr "Svar"
+
+msgid "Answered"
+msgstr "Besvart"
+
+msgid "Answered on"
+msgstr "Besvart den"
 
 msgid "Antibacterial"
 msgstr "Antibakterielt"
@@ -3078,6 +3128,18 @@ msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
 
 msgid "Ash (%)"
 msgstr "Aske (%)"
+
+msgid "Asked"
+msgstr "Spurt"
+
+msgid "Asked by"
+msgstr "Spurt av"
+
+msgid "Asked of"
+msgstr "Stilt til"
+
+msgid "Asked on"
+msgstr "Spurt den"
 
 msgid "Assignee"
 msgstr "Ansvarlig"
@@ -3942,14 +4004,33 @@ msgstr "Stemplet inn siden %(since)s."
 msgid "Close"
 msgstr "Lukk"
 
+#, python-format
+msgid "Close %(kind)s · %(place)s · %(period)s without filing it?"
+msgstr "Lukke %(kind)s · %(place)s · %(period)s uten å sende inn?"
+
+msgid "Close it"
+msgstr "Lukk den"
+
+msgid "Close without filing"
+msgstr "Lukk uten innsending"
+
 msgid "Closed"
 msgstr "Stengt"
 
 msgid "Closed at"
-msgstr "Lukket tidspunkt"
+msgstr "Lukket"
+
+msgid "Closed by"
+msgstr "Lukket av"
 
 msgid "Closed on"
 msgstr "Avsluttet"
+
+msgid "Closed without filing"
+msgstr "Lukket uten innsending"
+
+msgid "Closed: it is not owed any more. It can be reopened from its tab."
+msgstr "Lukket: den skal ikke sendes lenger. Den kan åpnes igjen fra fanen sin."
 
 msgid "Closing"
 msgstr "Avslutning"
@@ -4014,6 +4095,9 @@ msgstr "Sammensetning slik det fôres"
 
 msgid "Concrete"
 msgstr "Betong"
+
+msgid "Condition of the harvested fish"
+msgstr "Tilstand på den slaktede fisken"
 
 msgid "Conductivity"
 msgstr "Ledningsevne"
@@ -4709,6 +4793,9 @@ msgctxt "task status"
 msgid "Done"
 msgstr "Utført"
 
+msgid "Done on"
+msgstr "Gjort den"
+
 msgid "Dose"
 msgstr "Dose"
 
@@ -4793,6 +4880,9 @@ msgstr "Fristdato"
 msgid "Due from"
 msgstr "Frist fra"
 
+msgid "Due soon"
+msgstr "Snart aktuell"
+
 msgid "Due time"
 msgstr "Klokkeslett for frist"
 
@@ -4805,8 +4895,17 @@ msgstr "Dupliser"
 msgid "Duration (days)"
 msgstr "Varighet (dager)"
 
+msgid "Duties outside this system"
+msgstr "Plikter utenfor dette systemet"
+
+msgid "Duty"
+msgstr "Plikt"
+
 msgid "E-mail"
 msgstr "E-post"
+
+msgid "E-mail to the county governor; unverified for other counties"
+msgstr "E-post til statsforvalteren; ikke bekreftet for andre fylker"
 
 msgid "E.g. AquaGen, SalmoBreed."
 msgstr "F.eks. AquaGen, SalmoBreed."
@@ -5182,6 +5281,9 @@ msgstr "Undersøkt av"
 msgid "Exclusion"
 msgstr "Eksklusjon"
 
+msgid "Executed slaughter"
+msgstr "Gjennomført slakting"
+
 msgid "Exophthalmia"
 msgstr "Eksoftalmus"
 
@@ -5382,6 +5484,9 @@ msgstr "Fôr i dag"
 msgid "Feed type"
 msgstr "Fôrtype"
 
+msgid "Feed was recorded for the cleaner fish this month, but the report says none was given."
+msgstr "Det er registrert fôr til rensefisken denne måneden, men rapporten sier at det ikke ble gitt noe."
+
 msgid "Feed, last 7 days"
 msgstr "Fôr, siste 7 dager"
 
@@ -5474,8 +5579,17 @@ msgstr "Filstørrelse (byte)"
 msgid "Filed"
 msgstr "Innsendt"
 
+#, python-format
+msgid "Filed %(days)s day after its deadline, %(deadline)s"
+msgid_plural "Filed %(days)s days after its deadline, %(deadline)s"
+msgstr[0] "Sendt inn %(days)s dag etter fristen, %(deadline)s"
+msgstr[1] "Sendt inn %(days)s dager etter fristen, %(deadline)s"
+
 msgid "Filed at"
 msgstr "Sendt inn"
+
+msgid "Filed late"
+msgstr "Sendt inn for sent"
 
 msgid "Filed through"
 msgstr "Sendt inn via"
@@ -5685,6 +5799,13 @@ msgstr ""
 "For hver fôrstørrelse: hvor mye fôr ett skudd gir og hvor mye siloen rommer; høyst 50 rader. De "
 "lagres separat fra utstyrsdetaljene."
 
+msgid ""
+"For example: the slaughter did not take place, or the notice was filed elsewhere. It is kept with"
+" your name and the day."
+msgstr ""
+"For eksempel: slaktingen ble ikke gjennomført, eller varselet ble sendt et annet sted. Det lagres"
+" med navnet ditt og dagen."
+
 msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
 msgstr "For kalsitt- og aragonittmetningen, i vann på 5 til 44 ‰."
 
@@ -5716,6 +5837,9 @@ msgstr "Fremmednøkkel til %(target)s"
 
 msgid "Forgot your password?"
 msgstr "Glemt passordet?"
+
+msgid "Form, deadline and channel are unverified (Q8). Not built."
+msgstr "Skjema, frist og kanal er ikke bekreftet (Q8). Ikke bygget."
 
 msgid "Format version"
 msgstr "Formatversjon"
@@ -5893,8 +6017,14 @@ msgstr "Gjellesykdom"
 msgid "Give a client id."
 msgstr "Oppgi en klient-ID."
 
+msgid "Give a start before the end on the site’s clock, and a step in seconds."
+msgstr ""
+
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Oppgi en mål-pH og en målalkalitet for oppskriftene."
+
+msgid "Give a year from 2026."
+msgstr "Oppgi et år fra 2026."
 
 msgid "Give at least one bound."
 msgstr "Oppgi minst én grense."
@@ -6086,6 +6216,9 @@ msgstr "Vekst"
 
 msgid "Growth stage"
 msgstr "Vekststadium"
+
+msgid "Gutted weight"
+msgstr "Sløyd vekt"
 
 msgid "Gyrodactylus salaris infection"
 msgstr "Infeksjon med Gyrodactylus salaris"
@@ -6366,11 +6499,17 @@ msgstr "H₂S: grensen nås ikke noe sted i dette diagrammet."
 msgid "H₂S: the total sulfide cannot give the limit at any pH."
 msgstr "H₂S: det totale sulfidet kan ikke gi grensen ved noen pH."
 
+msgid "I checked this by hand."
+msgstr "Jeg har sjekket dette for hånd."
+
 msgid "ISO 8601 text"
 msgstr "ISO 8601-tekst"
 
 msgid "Icelandic"
 msgstr "Islandsk"
+
+msgid "Id returned by the authority’s API"
+msgstr "Id returnert av myndighetens API"
 
 msgid "Identity"
 msgstr "Identitet"
@@ -6416,6 +6555,9 @@ msgstr "I biblioteket"
 
 msgid "In the quantity’s unit; for a rate, the change over the time below."
 msgstr "I parameterens enhet; for en endringsrate, endringen over tidsrommet nedenfor."
+
+msgid "In time"
+msgstr "I tide"
 
 msgid "Inactive"
 msgstr "Inaktiv"
@@ -6566,6 +6708,9 @@ msgstr ""
 "Den slutter å telle: de siste verdiene og statusene regnes ut igjen uten den. For å rette en "
 "prøve, annuller den og legg den inn på nytt."
 
+msgid "It was answered on or after the day it was asked."
+msgstr "Det ble besvart samme dag som det ble stilt eller senere."
+
 msgid "It was filed already."
 msgstr "Den er allerede sendt inn."
 
@@ -6662,8 +6807,12 @@ msgstr "Ungfisk"
 msgid "Juveniles (settefisk)"
 msgstr "Settefisk"
 
-msgid "Juveniles, food fish or broodstock: it decides the reports the site owes."
-msgstr "Settefisk, matfisk eller stamfisk: det avgjør hvilke rapporter lokaliteten skylder."
+msgid ""
+"Juveniles, food fish, broodstock, or research and other production: it decides the reports the "
+"site owes."
+msgstr ""
+"Settefisk, matfisk, stamfisk, eller forskning og annen produksjon: det avgjør hvilke rapporter "
+"lokaliteten skal sende."
 
 msgid "Keep-alive (seconds)"
 msgstr "Keep-alive (sekunder)"
@@ -6706,6 +6855,9 @@ msgstr "Laboratoriets referanse"
 
 msgid "Lake or reservoir"
 msgstr "Innsjø eller magasin"
+
+msgid "Lakselusforskriften § 4"
+msgstr "Lakselusforskriften § 4"
 
 msgid "Lamp life"
 msgstr "Lampelevetid"
@@ -6875,6 +7027,12 @@ msgid ""
 "Lice are counted at least every 7 days at 4 °C or above, every 14 days below (lakselusforskriften"
 " § 6)."
 msgstr "Lus telles minst hver 7. dag ved 4 °C eller over, hver 14. dag under (lakselusforskriften § 6)."
+
+msgid "Lice coordination plan"
+msgstr "Samordningsplan for lakselus"
+
+msgid "Lice coordination plan (lakselusforskriften § 4)"
+msgstr "Samordningsplan for lakselus (lakselusforskriften § 4)"
 
 msgid "Life stage"
 msgstr "Livsstadium"
@@ -7068,10 +7226,25 @@ msgstr "Mattilsynet"
 msgid "Mattilsynet notified at"
 msgstr "Mattilsynet varslet"
 
+msgid "Mattilsynet: \"Slik sender du inn driftsplan i Mattilsynets nye løsning\" (reviewed 2026-09-18)"
+msgstr ""
+"Mattilsynet: «Slik sender du inn driftsplan i Mattilsynets nye løsning» (faglig gjennomgått "
+"2026-09-18)"
+
+msgid "Mattilsynet: guide on cleaner fish (\"årlig rapportering om stamfisk av rensefisk\")"
+msgstr "Mattilsynet: veileder om rensefisk («årlig rapportering om stamfisk av rensefisk»)"
+
 msgid ""
 "Mattilsynet’s approval number of the slaughterhouse (godkjenningsnummer), as the slaughter "
 "reports name it."
 msgstr "Slakteriets godkjenningsnummer fra Mattilsynet, slik slakterapportene oppgir det."
+
+msgid ""
+"Mattilsynet’s new solution in Altinn 3; the reporting API also has an endpoint for it (not on the"
+" entry page)"
+msgstr ""
+"Mattilsynets nye løsning i Altinn 3; rapporterings-API-et har også et endepunkt for den (ikke på "
+"inngangssiden)"
 
 #, python-format
 msgid "Max %(density)s kg/m³, %(biomass)s"
@@ -7620,15 +7793,18 @@ msgstr "Ingen utløpsdato registrert."
 msgid "No feed recorded up to the last weighing."
 msgstr "Ingen fôring registrert fram til siste veiing."
 
+msgid "No feed was given to the cleaner fish"
+msgstr "Rensefisken fikk ikke fôr"
+
 msgid "No feeding matches these filters."
 msgstr "Ingen fôring passer disse filtrene."
 
 msgid ""
-"No feeding of the cleaner fish is recorded in the month, so their feed is filed as 0 kg "
-"(Operations › Feeding: choose the cleaner fish as the target)."
+"No feeding of the cleaner fish is recorded in the month: record it (Operations › Feeding: choose "
+"the cleaner fish as the target), or say that none was given (the Report tab)."
 msgstr ""
-"Ingen fôring av rensefisken er registrert i måneden, så fôret rapporteres som 0 kg (Drift › "
-"Fôring: velg rensefisken som mottaker)."
+"Ingen fôring av rensefisken er registrert i måneden: registrer den (Drift › Fôring: velg "
+"rensefisken som mottaker), eller si at det ikke ble gitt noe (fanen Rapport)."
 
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
@@ -7800,6 +7976,9 @@ msgstr "Ingen produksjonsenheter ennå"
 msgid "No protocol is assigned to these fish."
 msgstr "Ingen protokoll er tildelt denne fisken."
 
+msgid "No question for the authority is recorded."
+msgstr "Ingen spørsmål til myndighetene er registrert."
+
 msgid "No recent data"
 msgstr "Ingen ferske data"
 
@@ -7851,6 +8030,9 @@ msgstr "Ingen skift ennå."
 
 msgid "No site"
 msgstr "Ingen lokalitet"
+
+msgid "No site is bound by an annual duty outside this system."
+msgstr "Ingen lokalitet er bundet av en årlig plikt utenfor dette systemet."
 
 msgid "No site or facility to report for."
 msgstr "Ingen lokalitet eller anlegg å rapportere for."
@@ -8056,6 +8238,25 @@ msgstr "Ikke fordelt"
 msgid "Not bound"
 msgstr "Ikke knyttet"
 
+msgid ""
+"Not built (decision D-3): the system holds no gutted kilos per quality class. A farm selling to a"
+" third-party slaughterhouse does not owe it; Q5 asks whether a farm may report the planned "
+"slaughter."
+msgstr ""
+"Ikke bygget (beslutning D-3): systemet har ikke sløyde kilo per kvalitetsklasse. Et anlegg som "
+"selger til et slakteri det ikke eier skylder det ikke; Q5 spør om et anlegg kan rapportere "
+"planlagt slakting."
+
+msgid "Not built. The form and the channel are unverified."
+msgstr "Ikke bygget. Skjema og kanal er ikke bekreftet."
+
+msgid ""
+"Not built: no notice kind for the start and end of a recapture. The escape notice (Escape tab) is"
+" the report."
+msgstr ""
+"Ikke bygget: ingen varseltype for start og slutt på en gjenfangst. Rømmingsvarselet (fanen "
+"Rømming) er rapporten."
+
 msgid "Not checked"
 msgstr "Ikke kontrollert"
 
@@ -8065,11 +8266,17 @@ msgstr "Ikke valgt"
 msgid "Not chosen yet"
 msgstr "Ikke valgt ennå"
 
+msgid "Not confirmed by the authority"
+msgstr "Ikke bekreftet av myndigheten"
+
 msgid "Not due"
 msgstr "Ikke aktuell"
 
 msgid "Not filed: as the records give it now."
 msgstr "Ikke sendt inn: slik registreringene gir den nå."
+
+msgid "Not found"
+msgstr "Ikke funnet"
 
 msgid "Not given"
 msgstr "Ikke oppgitt"
@@ -8126,6 +8333,9 @@ msgstr "Ikke registrert"
 msgid "Not reviewed yet. AI agents will act on reviewed entries only."
 msgstr "Ikke gjennomgått ennå. KI-agentene vil bare handle på gjennomgåtte oppføringer."
 
+msgid "Not saved; unverified"
+msgstr "Ikke lagret; ikke bekreftet"
+
 msgid "Not set"
 msgstr "Ikke satt"
 
@@ -8134,6 +8344,9 @@ msgstr "Ikke satt opp for rapporter"
 
 msgid "Not stated"
 msgstr "Ikke oppgitt"
+
+msgid "Not stated in the text saved; unverified (Q6)"
+msgstr "Ikke oppgitt i den lagrede teksten; ikke bekreftet (Q6)"
 
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s until %(date)s."
@@ -8146,6 +8359,9 @@ msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til omtren
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
 msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s, slutten ukjent."
+
+msgid "Not verified"
+msgstr "Ikke bekreftet"
 
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
@@ -8176,6 +8392,9 @@ msgstr "Ingenting fylles inn for en manglende verdi."
 
 msgid "Nothing is in stock: receive a delivery first."
 msgstr "Ingen beholdning: ta imot et varemottak først."
+
+msgid "Nothing is owed there: it was filed, closed already or is not due."
+msgstr "Ingenting skal sendes der: det er sendt inn, allerede lukket eller ikke aktuelt."
 
 msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
 msgstr "Du har ikke tilgang til noe av sensorene ennå: be om en rettighet på Roller-siden."
@@ -8213,6 +8432,9 @@ msgstr "Varsle straks"
 
 msgid "Nullable"
 msgstr "Kan være tom"
+
+msgid "Number"
+msgstr "Nummer"
 
 msgid "Number of lamps"
 msgstr "Antall lamper"
@@ -8324,6 +8546,9 @@ msgstr ""
 msgid "One card per unit."
 msgstr "Ett kort per enhet."
 
+msgid "One county names 1 March of the next year, by e-mail (Møre og Romsdal, 2027)"
+msgstr "Ett fylke oppgir 1. mars året etter, på e-post (Møre og Romsdal, 2027)"
+
 msgid "One object per message: a JSON pointer to this channel’s value, e.g. /tags/o2/value."
 msgstr "Ett objekt per melding: en JSON pointer til denne kanalens verdi, f.eks. /tags/o2/value."
 
@@ -8383,8 +8608,14 @@ msgstr "Bare bad, dypp eller ferskvannsbad har badetid."
 msgid "Only a feeder has feed calibrations."
 msgstr "Bare en fôrautomat har fôrkalibreringer."
 
+msgid "Only a filed report has the id the authority’s API returned."
+msgstr "Bare en innsendt rapport har id-en myndighetens API returnerte."
+
 msgid "Only a filed report is corrected: change the draft itself."
 msgstr "Bare en innsendt rapport korrigeres: endre selve utkastet."
+
+msgid "Only a filed report is late or on time."
+msgstr "Bare en innsendt rapport er sen eller i tide."
 
 msgid "Only a pending request can be changed."
 msgstr "Bare en ventende søknad kan endres."
@@ -8411,6 +8642,13 @@ msgstr "Bare kjøpt fisk har en leverandør."
 msgid "Only deleted rows"
 msgstr "Bare slettede rader"
 
+msgid ""
+"Only for a filing through the reporting API: the id its answer gave. A correction of the report "
+"is sent to that id."
+msgstr ""
+"Bare for innsending gjennom rapporterings-API-et: id-en svaret ga. En korrigering av rapporten "
+"sendes til denne id-en."
+
 msgid "Only for a person without an account."
 msgstr "Bare for en person uten konto."
 
@@ -8426,6 +8664,12 @@ msgstr "Bare ett system kan være det primære."
 
 msgid "Only suspected"
 msgstr "Bare mistenkt"
+
+msgid "Only the biomass report has a condition of the harvested fish."
+msgstr "Bare biomasserapporten har tilstand på den slaktede fisken."
+
+msgid "Only the cleaner-fish report says that no feed was given."
+msgstr "Bare rensefiskrapporten sier at det ikke ble gitt fôr."
 
 msgid "Only the last band can be without an upper weight."
 msgstr "Bare den siste vektklassen kan være uten øvre vekt."
@@ -8478,6 +8722,17 @@ msgstr "Åpne menyen"
 msgid "Open ones"
 msgstr "Åpne"
 
+#, python-format
+msgid ""
+"Open question %(code)s: %(question)s Confirm that you checked this by hand before you record the "
+"filing."
+msgstr ""
+"Åpent spørsmål %(code)s: %(question)s Bekreft at du har sjekket dette for hånd før du registrerer"
+" innsendingen."
+
+msgid "Open questions acknowledged"
+msgstr "Bekreftede åpne spørsmål"
+
 msgid "Open the PDF"
 msgstr "Åpne PDF-en"
 
@@ -8492,6 +8747,9 @@ msgstr "Åpnet"
 
 msgid "Opened at"
 msgstr "Åpnet tidspunkt"
+
+msgid "Operating plan (driftsplan)"
+msgstr "Driftsplan"
 
 msgid "Operation"
 msgstr "Operasjon"
@@ -8681,6 +8939,9 @@ msgstr "Utløp"
 msgid "Outside the channel’s range: kept as evidence, not used."
 msgstr "Utenfor kanalens område: beholdt som dokumentasjon, ikke brukt."
 
+msgid "Outside this system"
+msgstr "Utenfor dette systemet"
+
 msgid "Oval"
 msgstr "Oval"
 
@@ -8744,6 +9005,9 @@ msgstr "O₂ (mg/L)"
 
 msgid "PDF file"
 msgstr "PDF-fil"
+
+msgid "POST /api/slakt/v1/utfort, or the Altinn form \"Gjennomført slakting av oppdrettsfisk\""
+msgstr "POST /api/slakt/v1/utfort, eller Altinn-skjemaet «Gjennomført slakting av oppdrettsfisk»"
 
 msgid "PSU is the same number: 0 in fresh water, about 35 in the sea."
 msgstr "PSU er samme tall: 0 i ferskvann, omkring 35 i sjøen."
@@ -9255,6 +9519,12 @@ msgstr "Parameter og enhet"
 msgid "Quarantine"
 msgstr "Karantene"
 
+msgid "Question"
+msgstr "Spørsmål"
+
+msgid "Questions for the authority"
+msgstr "Spørsmål til myndighetene"
+
 msgid "Quote"
 msgstr "Sitat"
 
@@ -9330,6 +9600,9 @@ msgstr "Årsak til annullering"
 msgid "Reason it left"
 msgstr "Begrunnelse for at det gikk ut"
 
+msgid "Recapture after an escape (akvakulturdriftsforskriften § 39 third paragraph)"
+msgstr "Gjenfangst etter rømming (akvakulturdriftsforskriften § 39 tredje ledd)"
+
 msgid "Receipt or reference"
 msgstr "Kvittering eller referanse"
 
@@ -9360,6 +9633,9 @@ msgid ""
 msgstr ""
 "Registrer et varemottak for å legge fôr på en lagerplass (Selskap › Anlegg › Lagerplasser). Fôret"
 " som gis leses fra fôringene."
+
+msgid "Record as done"
+msgstr "Registrer som gjort"
 
 msgid "Record as filed"
 msgstr "Registrer som innsendt"
@@ -9415,8 +9691,14 @@ msgstr "Registrer vannprøve"
 msgid "Recorded as"
 msgstr "Registrert som"
 
+msgid "Recorded as done."
+msgstr "Registrert som gjort."
+
 msgid "Recorded as filed. What was filed is kept as it is."
 msgstr "Registrert som innsendt. Det som ble sendt inn, beholdes slik det er."
+
+msgid "Recorded at"
+msgstr "Registrert"
 
 msgid "Recorded by"
 msgstr "Registrert av"
@@ -9531,6 +9813,9 @@ msgstr "Gi protokollen nytt navn først: kopiene har brukt opp alle navnene."
 msgid "Reopen"
 msgstr "Åpne igjen"
 
+msgid "Reopened: it is owed again."
+msgstr "Åpnet igjen: den skal sendes igjen."
+
 msgid "Reorder level"
 msgstr "Bestillingspunkt"
 
@@ -9617,6 +9902,9 @@ msgstr "Påkrevd når fisk blir igjen i enheten: sorteringen veier dem også."
 msgid "Research"
 msgstr "Forskning"
 
+msgid "Research or other production"
+msgstr "Forskning eller annen produksjon"
+
 msgid "Researcher"
 msgstr "Forsker"
 
@@ -9649,6 +9937,9 @@ msgstr "Løst av"
 
 msgid "Resolved ones too"
 msgstr "Også løste"
+
+msgid "Restkontrollforskriften; Mattilsynet: slaughter of fish"
+msgstr "Restkontrollforskriften; Mattilsynet: slakting av fisk"
 
 msgid "Restore the selected deleted records"
 msgstr "Gjenopprett de valgte slettede postene"
@@ -9710,6 +10001,9 @@ msgstr "Runde"
 
 msgid "Round weight"
 msgstr "Rund vekt"
+
+msgid "Round weight (as weighed at harvest)"
+msgstr "Rund vekt (slik veid ved slakting)"
 
 msgid "Round weight (kg)"
 msgstr "Rund vekt (kg)"
@@ -9901,6 +10195,13 @@ msgstr "Si fra hvilken dag endringen gjelder."
 msgid "Say from which day the person is placed."
 msgstr "Si fra hvilken dag personen er plassert."
 
+msgid ""
+"Say in what condition the harvested fish are weighed in this report: round or gutted weight (the "
+"Report tab; slaktetilstand)."
+msgstr ""
+"Oppgi i hvilken tilstand den slaktede fisken er veid i denne rapporten: rund eller sløyd vekt "
+"(fanen Rapport; slaktetilstand)."
+
 msgid "Say what caused it, or what is thought to have."
 msgstr "Si hva som forårsaket det, eller hva som antas å ha gjort det."
 
@@ -9935,6 +10236,9 @@ msgstr "Oppgi hvem fôret er til: produksjonsfisken eller rensefisken."
 
 msgid "Say why it is cancelled."
 msgstr "Skriv hvorfor den avlyses."
+
+msgid "Say why it is closed."
+msgstr "Oppgi hvorfor den er lukket."
 
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
@@ -10068,6 +10372,9 @@ msgstr "Søk etter navn, brukernavn eller e-post"
 
 msgid "Search by number, name or hypothesis"
 msgstr "Søk etter nummer, navn eller hypotese"
+
+msgid "Search by number, question or answer"
+msgstr "Søk på nummer, spørsmål eller svar"
 
 msgid "Search by point or owner"
 msgstr "Søk etter punkt eller eier"
@@ -11104,6 +11411,9 @@ msgstr ""
 "Operasjonen %(operation)s %(date)s i %(unit)s ville stått uten fisk: bare %(available)s fisk av "
 "%(batch)s ville vært der den dagen. Annuller den operasjonen først, eller rett denne."
 
+msgid "The 7th of the following month, for every slaughter week"
+msgstr "Den 7. i påfølgende måned, for hver slaktevekt"
+
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "Det engelske navnet, f.eks. Atlantic salmon."
 
@@ -11142,6 +11452,9 @@ msgstr ""
 
 msgid "The amount of the medicine used, as the lice report asks for it."
 msgstr "Mengden legemiddel som ble brukt, slik luserapporten ber om den."
+
+msgid "The annual duties of each site"
+msgstr "Hver lokalitets årlige plikter"
 
 msgid ""
 "The artskode of the Norwegian reports, three capital letters, e.g. SAL for Atlantic salmon. "
@@ -11239,6 +11552,9 @@ msgstr "Endringen kan ikke starte før den gjeldende plasseringen gjorde det (%(
 msgid "The channel already has a calibration from this moment."
 msgstr "Kanalen har allerede en kalibrering fra dette tidspunktet."
 
+msgid "The channel and the consequence of filing late are unverified (Q6)."
+msgstr "Kanalen og konsekvensen av å sende inn for sent er ikke bekreftet (Q6)."
+
 msgid "The channel is bound elsewhere at that time: a channel is in one place at a time."
 msgstr "Kanalen er knyttet et annet sted på det tidspunktet: en kanal er på ett sted om gangen."
 
@@ -11276,6 +11592,18 @@ msgstr "Selskapet som driver det: en leverandør av slakting og foredling (Innkj
 
 msgid "The company’s office departments (finance, administration), nested under one another."
 msgstr "Selskapets kontoravdelinger (økonomi, administrasjon), plassert under hverandre."
+
+msgid ""
+"The consequence of filing late, and whether the API is allowed for it, are unverified (Q6). A "
+"plan is updated when the fallowing or a move changes by more than a month, a move by more than "
+"100 000 fish, a stocking by more than a month or 10 %, a planned move or stocking is not made, "
+"cleaner fish go to another site, or the production technology changes."
+msgstr ""
+"Konsekvensen av å sende inn for sent, og om API-et kan brukes for den, er ikke bekreftet (Q6). "
+"Planen oppdateres når brakklegging eller flytting endres med mer enn en måned, en flytting med "
+"mer enn 100 000 fisk, et utsett med mer enn en måned eller 10 %, en planlagt flytting eller et "
+"planlagt utsett ikke gjennomføres, rensefisk går til et annet anlegg, eller "
+"produksjonsteknologien endres."
 
 msgid ""
 "The copy is a draft with the same design: the factors and their levels (the same feeding "
@@ -11400,6 +11728,9 @@ msgstr ""
 
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Den fordøyelige energien kan ikke være mer enn bruttoenergien."
+
+msgid "The discharge permit of a land site"
+msgstr "Utslippstillatelsen til en landlokalitet"
 
 msgid "The document in the library the knowledge comes from."
 msgstr "Dokumentet i biblioteket kunnskapen kommer fra."
@@ -11582,6 +11913,10 @@ msgid "The half mesh, from one knot to the next; a stretched mesh is twice as lo
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
 
 #, python-format
+msgid "The harvest of %(unit)s on %(date)s was not planned: its weighed kilos are reported, late."
+msgstr "Slaktingen fra %(unit)s %(date)s var ikke planlagt: de veide kiloene rapporteres, for sent."
+
+#, python-format
 msgid "The harvest plan of %(unit)s"
 msgstr "Høsteplanen for %(unit)s"
 
@@ -11595,6 +11930,11 @@ msgstr "Helsehendelsen er datert %(date)s, etter denne behandlingen."
 
 msgid "The hypothesis is not written."
 msgstr "Hypotesen er ikke skrevet."
+
+msgid "The id the authority returned for the first filing was not recorded: it is needed to correct it."
+msgstr ""
+"Id-en myndigheten returnerte for den første innsendingen ble ikke registrert: den trengs for å "
+"korrigere den."
 
 msgid ""
 "The ingest service’s heartbeat per broker connection: connected or not, messages waiting and its "
@@ -12006,6 +12346,13 @@ msgstr ""
 "Protokollen er tildelt, så tabellen er låst: rasjonene for dagene den fôret, leses fra den. For å"
 " endre den: dupliser protokollen, endre kopien og tildel den fra en dato."
 
+msgid ""
+"The question is in the register of questions for the authority. Recording the filing is refused "
+"until you confirm it, and your confirmation is logged."
+msgstr ""
+"Spørsmålet står i registeret over spørsmål til myndighetene. Registreringen avvises til du "
+"bekrefter, og bekreftelsen loggføres."
+
 #, python-format
 msgid "The range %(low)s to %(high)s is outside what %(quantity)s can be: %(min)s to %(max)s."
 msgstr "Området %(low)s til %(high)s er utenfor det %(quantity)s kan være: %(min)s til %(max)s."
@@ -12034,12 +12381,23 @@ msgstr ""
 msgid "The reason is too long."
 msgstr "Begrunnelsen er for lang."
 
+msgid "The receipt or case number the authority gave, if any."
+msgstr "Kvitteringen eller saksnummeret myndigheten ga, hvis noen."
+
 msgid ""
 "The recipes take two of them at a time; on the chart, one draws its direction, two their path to "
 "the target."
 msgstr ""
 "Oppskriftene bruker to av dem om gangen; i diagrammet tegner ett retningen sin, to banen sin til "
 "målet."
+
+msgid "The record is removed: the duty is owed again."
+msgstr "Registreringen er fjernet: plikten gjelder igjen."
+
+msgid "The records changed after you looked at the report: review it again before you record the filing."
+msgstr ""
+"Postene er endret etter at du så på rapporten: se gjennom den på nytt før du registrerer "
+"innsendingen."
 
 msgid "The records no longer give what was filed"
 msgstr "Registreringene gir ikke lenger det som ble sendt inn"
@@ -12055,6 +12413,9 @@ msgstr "Rapporten beregnes på en nyere måte enn da den ble sendt inn."
 
 msgid "The report is for the week, month or year this day falls in."
 msgstr "Rapporten gjelder uken, måneden eller året denne dagen faller i."
+
+msgid "The report rule it affects"
+msgstr "Rapportregelen den gjelder"
 
 msgid "The request was approved."
 msgstr "Søknaden ble godkjent."
@@ -12089,6 +12450,13 @@ msgstr "Den trygge sonen ligger i dette båndet."
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
+
+msgid ""
+"The sea-lice endpoint has no PUT: a correction is sent again as a POST (whether it replaces the "
+"week or duplicates it is unverified)."
+msgstr ""
+"Lakselus-endepunktet har ikke PUT: en korrigering sendes på nytt som POST (om den erstatter uken "
+"eller dupliserer er ikke bekreftet)."
 
 msgid "The secret was replaced."
 msgstr "Hemmeligheten ble byttet."
@@ -12242,6 +12610,13 @@ msgstr ""
 msgid "The system belongs to another production department: %(department)s."
 msgstr "Systemet hører til en annen produksjonsavdeling: %(department)s."
 
+msgid ""
+"The system does not send it: you filed it outside the system. This records when and the receipt, "
+"so the reminder stops."
+msgstr ""
+"Systemet sender den ikke: du sendte den utenfor systemet. Dette registrerer når og kvitteringen, "
+"så påminnelsen stopper."
+
 msgid "The system is on another site than the production department."
 msgstr "Systemet er på en annen lokalitet enn produksjonsavdelingen."
 
@@ -12392,6 +12767,18 @@ msgstr "Verdien mangler"
 
 msgid "The value is not a number"
 msgstr "Verdien er ikke et tall"
+
+msgid ""
+"The values above, field by field in the authority’s names, are on the print page: type them from "
+"there. What is recorded is exactly this content; if the records change before you record it, you "
+"are asked to look again."
+msgstr ""
+"Verdiene over, felt for felt med myndighetens navn, står på utskriftssiden: skriv dem derfra. Det"
+" som registreres er nøyaktig dette innholdet; endres postene før du registrerer, blir du bedt om "
+"å se på nytt."
+
+msgid "The values to type"
+msgstr "Verdiene som skal skrives"
 
 msgid "The vet or fish-health biologist, or who observed it."
 msgstr "Veterinæren eller fiskehelsebiologen, eller den som observerte det."
@@ -12554,6 +12941,17 @@ msgstr ""
 "Dette er standardverdier selskapet kan endre, ikke loven: bekreft dem med avtalene deres. En "
 "grense kan bare settes strengere enn loven."
 
+msgid ""
+"These are duties the system does not file and does not build forms for. Each is listed with what "
+"the saved official text says; what is not known is marked unverified and rests on a question in "
+"the register of questions for the authority. File them in Altinn or as the authority says, and "
+"record here that you did."
+msgstr ""
+"Dette er plikter systemet ikke sender inn og ikke bygger skjema for. Hver er oppført med det den "
+"lagrede offisielle teksten sier; det som ikke er kjent er merket som ikke bekreftet og hviler på "
+"et spørsmål i registeret over spørsmål til myndighetene. Send dem i Altinn eller slik myndigheten"
+" sier, og registrer her at du gjorde det."
+
 msgid "These days are all weekends or holidays: nothing would be charged."
 msgstr "Disse dagene er alle helger eller helligdager: ingenting ville blitt belastet."
 
@@ -12614,6 +13012,15 @@ msgstr "Denne dagen er allerede en fridag for denne lokaliteten."
 
 msgid "This department already has a department with this name."
 msgstr "Denne avdelingen har allerede en avdeling med dette navnet."
+
+msgid "This duty does not bind this site."
+msgstr "Denne plikten gjelder ikke denne lokaliteten."
+
+msgid "This duty is not recorded here."
+msgstr "Denne plikten registreres ikke her."
+
+msgid "This duty is recorded as done for this site and year."
+msgstr "Denne plikten er registrert som gjort for denne lokaliteten og dette året."
 
 msgid "This empties the unit of this batch"
 msgstr "Dette tømmer enheten for fiskegruppen"
@@ -12711,6 +13118,9 @@ msgstr "Denne rapporten har allerede en korrigering: åpne den fra listen."
 msgid "This report has already been started for this period: open it from the list."
 msgstr "Denne rapporten er allerede startet for denne perioden: åpne den fra listen."
 
+msgid "This report is closed already."
+msgstr "Denne rapporten er allerede lukket."
+
 msgid "This sample is already voided."
 msgstr "Denne prøven er allerede annullert."
 
@@ -12786,6 +13196,9 @@ msgstr "Trefase"
 
 msgid "Threshold"
 msgstr "Terskel"
+
+msgid "Through the reporting API"
+msgstr "Gjennom rapporterings-API-et"
 
 msgid "Thursday"
 msgstr "Torsdag"
@@ -12865,6 +13278,9 @@ msgstr "Til %(destination)s"
 #, python-format
 msgid "To %(facility)s"
 msgstr "Til %(facility)s"
+
+msgid "To Fiskeridirektoratet; the form is not saved"
+msgstr "Til Fiskeridirektoratet; skjemaet er ikke lagret"
 
 msgid "To fix before it can start"
 msgstr "Må rettes før det kan starte"
@@ -13038,6 +13454,9 @@ msgstr "Under vedlikehold"
 
 msgid "Under withdrawal today"
 msgstr "Under tilbakeholdelsestid i dag"
+
+msgid "Undo"
+msgstr "Angre"
 
 msgid "Unique"
 msgstr "Unik"
@@ -13511,6 +13930,18 @@ msgstr "Hva det handler om. Kunnskapsoppføringene hentet fra det har egne emner
 msgid "What it is made for. A medicated feed is given on a vet’s prescription."
 msgstr "Hva det er laget for. Medisinfôr gis etter resept fra veterinær."
 
+msgid ""
+"What only the authority can answer, and on which a rule of a report rests. Until a question is "
+"answered the rule is unverified: the report says so when it is filed. Send the questions, write "
+"down who asked and when, and record the answer here."
+msgstr ""
+"Det bare myndigheten kan svare på, og som en rapportregel hviler på. Til et spørsmål er besvart "
+"er regelen ikke bekreftet: rapporten sier det når den sendes inn. Send spørsmålene, skriv ned "
+"hvem som spurte og når, og registrer svaret her."
+
+msgid "What the authority said, and where (the mail, the page). Needed to mark it answered."
+msgstr "Hva myndigheten sa, og hvor (e-posten, siden). Trengs for å merke det som besvart."
+
 msgid "What the farm pays per kg, with its currency."
 msgstr "Det anlegget betaler per kg, med valuta."
 
@@ -13579,8 +14010,14 @@ msgstr ""
 "Det som ble sett, funnet eller anbefalt om fiskens helse: observasjoner, veterinær- og "
 "fiskehelsebesøk, laboratoriesvar og økt dødelighet."
 
+msgid "What you are about to record as filed"
+msgstr "Det du er i ferd med å registrere som sendt inn"
+
 msgid "When"
 msgstr "Når"
+
+msgid "When a recapture starts and when it ends"
+msgstr "Når en gjenfangst starter og når den slutter"
 
 msgid "When and who"
 msgstr "Når og hvem"
@@ -13667,6 +14104,9 @@ msgstr "Hvor den sendes inn"
 msgid "Where “%(query)s” is in the text"
 msgstr "Hvor «%(query)s» står i teksten"
 
+msgid "Whether it applies to the permit and county of the farm is unknown (Q9). Not built."
+msgstr "Om den gjelder for anleggets tillatelse og fylke er ukjent (Q9). Ikke bygget."
+
 msgid "Which feeding protocol feeds which fish, from which day."
 msgstr "Hvilken fôringsprotokoll som fôrer hvilken fisk, fra hvilken dag."
 
@@ -13678,6 +14118,13 @@ msgstr "Hvilke tillatelser hver rolle gir."
 
 msgid "Which roles each user has."
 msgstr "Hvilke roller hver bruker har."
+
+msgid ""
+"Which rule of which report rests on the answer, e.g. “the sea-lice report, the amount of an "
+"active substance”."
+msgstr ""
+"Hvilken regel i hvilken rapport som hviler på svaret, f.eks. «lakselusrapporten, mengden "
+"virkestoff»."
 
 msgid "Which sites each supplier delivers to or works at."
 msgstr "Hvilke lokaliteter hver leverandør leverer til eller arbeider på."
@@ -13732,6 +14179,9 @@ msgstr "Hele fiskegruppen"
 msgid "Whole site"
 msgstr "Hele lokaliteten"
 
+msgid "Whom it binds, by production form"
+msgstr "Hvem den gjelder, per produksjonsform"
+
 msgid "Whose observation or advice it is, e.g. “Kari Nordmann, fish health vet” or your own name."
 msgstr ""
 "Hvem observasjonen eller rådet kommer fra, f.eks. «Kari Nordmann, fiskehelseveterinær» eller ditt"
@@ -13739,6 +14189,9 @@ msgstr ""
 
 msgid "Why"
 msgstr "Hvorfor"
+
+msgid "Why it is closed"
+msgstr "Hvorfor den er lukket"
 
 msgid "Why the text could not be read"
 msgstr "Hvorfor teksten ikke kunne leses"
@@ -13848,6 +14301,15 @@ msgstr "År"
 msgid "Year class"
 msgstr "Årsklasse"
 
+msgid "Yearly report of broodstock on land (akvakulturdriftsforskriften § 45)"
+msgstr "Årlig rapport om stamfisk på land (akvakulturdriftsforskriften § 45)"
+
+msgid "Yearly report of cleaner-fish broodstock"
+msgstr "Årlig rapport om stamfisk av rensefisk"
+
+msgid "Yearly report to the county governor (Statsforvalteren)"
+msgstr "Årsrapport til statsforvalteren"
+
 msgid "Yearly stock of a land site"
 msgstr "Årlig beholdning på en landlokalitet"
 
@@ -13926,6 +14388,21 @@ msgstr "en korrigering"
 msgid "a juvenile site reports smolt, not the monthly biomass"
 msgstr "en settefiskslokalitet rapporterer smolt, ikke månedlig biomasse"
 
+msgid "a land site with a discharge permit"
+msgstr "en landlokalitet med utslippstillatelse"
+
+msgid "a land site with broodstock of salmon, trout, rainbow trout or cleaner fish"
+msgstr "en landlokalitet med stamfisk av laks, ørret, regnbueørret eller rensefisk"
+
+msgid "a sea site with salmonids"
+msgstr "en sjølokalitet med laksefisk"
+
+msgid "a sea site with salmonids (the duty follows the fish, not the production form)"
+msgstr "en sjølokalitet med laksefisk (plikten følger fisken, ikke produksjonsformen)"
+
+msgid "a site with cleaner-fish broodstock"
+msgstr "en lokalitet med rensefiskstamfisk"
+
 msgid "after the count"
 msgstr "etter tellingen"
 
@@ -13948,6 +14425,9 @@ msgstr "og %(count)s til: alle rapporter"
 #, python-format
 msgid "and %(kilos)s to the cleaner fish"
 msgstr "og %(kilos)s til rensefisken"
+
+msgid "as for food fish"
+msgstr "som for matfisk"
 
 msgid "as stocked"
 msgstr "som ved utsett"
@@ -14073,6 +14553,15 @@ msgstr "rensefisk"
 msgid "cleaner fish %(batches)s: %(fish)s fish"
 msgstr "rensefisk %(batches)s: %(fish)s fisk"
 
+msgid "client reference"
+msgstr "klientreferanse"
+
+msgid "closed report"
+msgstr "lukket rapport"
+
+msgid "closed reports"
+msgstr "lukkede rapporter"
+
 msgid "combination"
 msgstr "kombinasjon"
 
@@ -14155,6 +14644,12 @@ msgstr "dokumentsider"
 
 msgid "documents"
 msgstr "dokumenter"
+
+msgid "duties done"
+msgstr "utførte plikter"
+
+msgid "duty done"
+msgstr "utført plikt"
 
 msgid "e.g. 0–10 bar"
 msgstr "f.eks. 0–10 bar"
@@ -14472,6 +14967,15 @@ msgstr "estimert %(estimated)s (målt %(measured)s)"
 msgid "every period since %(date)s with fish is filed"
 msgstr "alle perioder med fisk siden %(date)s er sendt inn"
 
+msgid "every sea site that produces broodstock: also a site not to be in use in the period"
+msgstr "hver sjølokalitet som produserer stamfisk: også en lokalitet som ikke skal brukes i perioden"
+
+msgid "every sea site that produces food fish: also a site not to be in use in the period"
+msgstr "hver sjølokalitet som produserer matfisk: også en lokalitet som ikke skal brukes i perioden"
+
+msgid "every site where fish escape"
+msgstr "hver lokalitet der fisk rømmer"
+
 msgid "every species"
 msgstr "alle arter"
 
@@ -14557,6 +15061,9 @@ msgstr "celler i fôringstabell"
 
 msgid "feeds"
 msgstr "fôr"
+
+msgid "filed by the slaughterhouse or packing plant: a farm owes it only when it runs its own"
+msgstr "sendes av slakteriet eller pakkeriet: et anlegg skylder det bare når det driver eget"
 
 msgid "filed report content"
 msgstr "innsendt rapportinnhold"
@@ -14801,9 +15308,10 @@ msgstr "ingen fisk"
 msgid "no fish held at %(site)s since %(date)s"
 msgstr "ingen fisk på %(site)s siden %(date)s"
 
-#, python-format
-msgid "no harvest is planned to %(facility)s from this week on"
-msgstr "ingen slakting er planlagt til %(facility)s fra denne uken"
+msgid ""
+"no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
+"event happens"
+msgstr "ingen økt dødelighet har vært uforklart i 14 dager; ellers startes den av en person når noe skjer"
 
 #, python-format
 msgid "no listed disease without a filed notice since %(date)s"
@@ -14819,6 +15327,10 @@ msgstr "uten nummer, utløper %(date)s"
 #, python-format
 msgid "no official code for %(species)s"
 msgstr "ingen offisiell kode for %(species)s"
+
+#, python-format
+msgid "no planned or recorded harvest to %(facility)s is waiting for its notice"
+msgstr "ingen planlagt eller registrert slakting til %(facility)s venter på varsel"
 
 #, python-format
 msgid "no production fish held at %(site)s since %(date)s"
@@ -14837,6 +15349,10 @@ msgid "no reports-from date: nothing is counted"
 msgstr "ingen rapporteringsdato: ingenting telles"
 
 #, python-format
+msgid "no salmonids have been held at %(site)s"
+msgstr "det har ikke vært laksefisk på %(site)s"
+
+#, python-format
 msgid "no salmonids in the sea at %(site)s since %(date)s"
 msgstr "ingen laksefisk i sjøen på %(site)s siden %(date)s"
 
@@ -14851,6 +15367,15 @@ msgstr "ikke håndhevet av databasen"
 
 msgid "not in the model"
 msgstr "ikke i modellen"
+
+msgid "not named"
+msgstr "ikke nevnt"
+
+msgid "not named: a juvenile site is not a \"matfisk or stamfisk\" site"
+msgstr "ikke nevnt: en settefiskslokalitet er ikke en «matfisk- eller stamfisk»-lokalitet"
+
+msgid "not named: research and other production is not food fish or broodstock"
+msgstr "ikke nevnt: forskning og annen produksjon er ikke matfisk eller stamfisk"
 
 msgid "not reached at any pH"
 msgstr "nås ikke ved noen pH"
@@ -14870,14 +15395,26 @@ msgstr "kontoravdeling"
 msgid "office departments"
 msgstr "kontoravdelinger"
 
+msgid "only a sea site of food fish or broodstock has a driftsplan"
+msgstr "bare en sjølokalitet med matfisk eller stamfisk har driftsplan"
+
 msgid "only a site of food fish or broodstock on land reports it"
 msgstr "bare en landlokalitet med matfisk eller stamfisk rapporterer det"
 
 msgid "only a site of food fish, broodstock or cleaner-fish juveniles on land reports it"
 msgstr "bare en landlokalitet med matfisk, stamfisk eller rensefiskyngel rapporterer det"
 
+msgid "only if it keeps broodstock of those species on land"
+msgstr "bare hvis den holder stamfisk av disse artene på land"
+
 msgid "open"
 msgstr "åpen"
+
+msgid "open question"
+msgstr "åpent spørsmål"
+
+msgid "open questions"
+msgstr "åpne spørsmål"
 
 msgid "owed once the month or week now running has closed"
 msgstr "forfaller når måneden eller uken som pågår er over"
@@ -14993,6 +15530,9 @@ msgstr "kvalitetsflagg"
 msgid "quality flags"
 msgstr "kvalitetsflagg"
 
+msgid "read it"
+msgstr "les den"
+
 msgid "recurring"
 msgstr "gjentakende"
 
@@ -15017,11 +15557,21 @@ msgstr "bestillingspunkt"
 msgid "reorder levels"
 msgstr "bestillingspunkter"
 
+msgid "replaces the filing with client reference"
+msgstr "erstatter innsendingen med klientreferanse"
+
 msgid "replicate"
 msgstr "replikat"
 
 msgid "replicates"
 msgstr "replikater"
+
+msgid ""
+"research or other production reports none of the juvenile, biomass or yearly stock reports (§ 3 "
+"l: only chapters 1, 2, 3 and 7 apply to it; unverified, Q10)"
+msgstr ""
+"forskning eller annen produksjon sender ingen av settefisk-, biomasse- eller "
+"årsbeholdningsrapportene (§ 3 l: bare kapittel 1, 2, 3 og 7 gjelder; ikke bekreftet, Q10)"
 
 msgid "resistance suspicion"
 msgstr "resistensmistanke"
@@ -15112,9 +15662,6 @@ msgstr "arter"
 msgid "stale"
 msgstr "utdatert"
 
-msgid "started by a person when an event happens"
-msgstr "startes av en person når noe skjer"
-
 msgid "started by a person when it happens"
 msgstr "startes av en person når det skjer"
 
@@ -15187,6 +15734,13 @@ msgstr "oppgaver"
 
 msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"
+
+msgid ""
+"the operating plan, the lice coordination plan and the others the authorities require that are "
+"not filed here."
+msgstr ""
+"driftsplanen, samordningsplanen for lakselus og de andre myndighetene krever som ikke sendes inn "
+"her."
 
 msgid "the site’s altitude"
 msgstr "lokalitetens høyde over havet"

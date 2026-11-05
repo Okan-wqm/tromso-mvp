@@ -2481,11 +2481,10 @@ panel, not a module of its own: the same roles, delete plans, activity log, data
 built by reading the source platform's HR service and listing what was wrong with it
 ([docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), "Human resources"). The rules it holds:
 
-- **One source for departments.** Every production department is an HR department by itself: the Departments page
-  reads the farm's own rows (`hr.read.departments`), so a production department created, renamed or deleted under
-  Production is there at once with no HR write and no copy. Only the white-collar departments (Finance, administration,
-  management) are HR's own rows (`hr.OfficeDepartment`, table `office_departments`); they nest under one another for the
-  organisation chart.
+- **One source for departments.** The production departments are the farm's own rows (Production › Setup), never copied
+  into HR: Company › HR › Departments lists only the white-collar departments (Finance, administration, management), HR's
+  own rows (`hr.OfficeDepartment`, table `office_departments`), which nest under one another for the organisation chart;
+  the production departments and their people are under Production › Team (below).
 - **A team lead sees and plans their own team only, and never pay.** The role matrix gives the verbs; the rows come from
   the relationship, in one place (`hr.scope.team`, see Row scope under One format for every tab). There is no pay, bank
   or identity-number column anywhere in `hr` (a test fails on one); pay will be an app of its own that points at the
@@ -2500,10 +2499,9 @@ list and logged) or of an office department, plus a role with the HR areas. The 
 
 ### Departments (`/hr/departments/`)
 
-One list over two kinds, production departments (never edited here: their name links to the farm's own form for
-whoever may change them) and office departments (created, edited and deleted here). A table with kind, status, site
-and manager, search by name or code, and filters for kind and status. An office department has a name, a code (unique
-among live ones, capital letters, digits, hyphens and underscores), a parent (the chart), a site (the clock of its
+The office departments (created, edited and deleted here; the production departments are the farm's, under Production).
+A table with status, site, manager and head count, in tree order, search by name or code and a status filter. An office
+department has a name, a code (unique among live ones, capital letters, digits, hyphens and underscores), a parent (the chart), a site (the clock of its
 people: set the site's time zone on the site), a manager, a status and a description. Database rules, tested with raw
 SQL: code unique among live rows (free again after a delete), name unique under one parent and among the top-level
 ones (`nulls_distinct=False`), not its own parent, a trigger that refuses a cycle however it is written (it walks up
@@ -2610,7 +2608,9 @@ pending request is cancelled by the person or a decider at any time, an approved
 the site's clock; the decisions are `hr.services.decide_leave` and `cancel_leave` (POST routes, a dialog for the rejection
 note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
 
-**Privacy.** A lead sees the person, the type and the days; the reason is the person's own words, shown to them and to the holders
+**Privacy.** A lead sees the person and the days; the **type** (sick, annual) only the person, who may decide the request (Edit) and the
+holders of Everyone see: in the list, on the read page and in the search (the scope marks each request `type_shown` and a search for a
+type reads the mark, so a search for "sick" tells nothing). The reason is the person's own words, shown to them and to the holders
 of Everyone only (the list, the read page and the edit form leave it out for anyone else, and a lead cannot overwrite it). The reason
 and the decision note are masked in the activity log ("Private text") and in the database viewer, and leave requests appear in the log
 only for holders of Everyone. Approved leave is read over the roster: planning a shift on a day of approved leave is refused, and
@@ -2650,7 +2650,9 @@ standard week (a setting; a week over it is marked), and per day how many work, 
 filters and the "n of m" paging of the schedule, needs Read on the Shift schedule, and runs in a fixed number of queries.
 
 **Organization chart** is the company as nested lists, drawn by the server (no script, no layout algorithm; the browser's print makes a
-printed page of it): the sites with their production departments, then the office departments under their parents, each box with its manager
+printed page of it), one per panel (`hr.read.org_tree(user, realm)`): Company's office departments under their parents and one
+**Production** box with the production people the viewer may count (computed, never a row, so nothing to delete; there with no production
+department; a link to Production's chart for who may open it), and Production's sites with their production departments; each box with its manager
 and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
 production department created, renamed or deleted under Production is in the chart at once, from the same rows.
 
@@ -2661,6 +2663,43 @@ are worked out from the days the viewer reaches only. A lead does not plan or wr
 Manager of a production department and the account of an employee are chosen by those who administer HR (`hr.change_officedepartment`
 or Everyone), because they decide whose rows and whose private words a person reaches. A pending request carries no decider and a
 hand-entered note has words, as database checks; a decision note over 500 characters is an error on the page.
+
+### Production › Team (`/production/team/`): the production people, and Company › HR left with the office's
+
+The HR pages are served twice over **one set of records**: Company › HR for the office people and Production › Team for the people
+placed in a production department. Nothing is copied and nothing is stored to split them: the **realm** (`hr.scope`) is read from
+the placements on the day asked (production: a live placement in a live production department; office: everyone else, so an unplaced
+person is never lost), and it only narrows the reach the role and the team already give. A person who moves changes sides by a dated
+placement and appears in each panel on its own days. The HR administrator (Everyone) reaches the office people in Company and the
+production people in Production, with the same permission.
+
+- **Pages.** Team › Time & attendance: Today & attendance (`/production/team/`, own clock in and out), Shift schedule
+  (`/production/team/schedule/`), Leave requests (`/production/team/leave/`, the number beside it is the pending requests the person
+  may decide), Attendance (`/production/team/attendance/`: the same right as Today, so a Today reader has it) and Team overview (shown
+  in the menu to the people who lead production); Team › People: Team list (`/production/team/people/`) and Organization chart
+  (`/production/team/organization/`), both with Read on Employees. Company › HR keeps its pages for the office; its lines that
+  Production repeats are not shown to a person whose HR is all in Production (`Entry.show_when`, a menu courtesy, never a permission:
+  the pages still answer whoever holds their permission). Roles & permissions stay in Company › Administration: roles are company-wide.
+- **How.** `core.crud.Mount` serves a tab a second time under another address and panel: one Resource, one registry entry, the same
+  views; the request carries the mount, the tab's `scoped` narrows to it, and every link (`{% url ...|mounted:request %}`), redirect and
+  heading stays in it. A record of the other realm is a 404 on every address. A decision, a cancel, a plan or a punch returns to the
+  page it came from (a checked local `next`). New people and new plans are chosen in the panel's realm; a move offers every department.
+- **All production** (`hr.all_production_employee`, a matrix column on Employees): every person in a live production department, a
+  department without a manager (a new one, or one whose manager's account is gone) too; never an office person and, being no Everyone,
+  never a leave reason. The head of production's reach.
+- **Crew** (`hr.crew_shiftassignment`, a matrix column on the Shift schedule): under their own week a production worker sees the name
+  and the shift code and times of the people in their own production department on each day (`hr.read.crew_week`), built from plain
+  values: no note, finding, leave or its type, punch, employee number, hours or link. A day off, a day on leave and a day with nothing
+  planned are the same empty cell.
+- **Approving leave** opens a dialog with the person's planned shifts inside the request (`hr.read.leave_impact`) to cover; it never
+  blocks the approval. Nobody decides their own leave (service and trigger), so a sole production manager's own request goes to a head
+  of production or HR.
+- **Roles.** `manage.py hr_roles` creates **Production manager** (Today, Attendance, Shift schedule with planning, Leave requests with
+  deciding, All production; no Team list, chart, settings or office people) and **Production worker** (own Today, own week with Crew,
+  own leave) when they do not exist, and keeps a role an administrator changed as it is (`hr/roles.py`, never run on migrate).
+- **Not built here** (decided with the owner): a minimum crew per shift and an on-site count. The legal items (information and
+  discussion on attendance recording, impact assessment, working-time figures, retention, the undeletable log) are on
+  [docs/hr-launch-checklist.md](docs/hr-launch-checklist.md) for HR and the data-protection officer: nothing there is encoded as law.
 
 ### HR: checks, the demonstration company, the browser code and the tests
 
@@ -2675,7 +2714,9 @@ hand-entered note has words, as database checks; a decision note over 500 charac
 - **Browser code** (`frontend/roster.ts`, TypeScript only): on the Shift schedule the arrow keys move between cells, and the paint
   form (hidden without the script) picks a shift, selects cells and posts them to the batch route, which plans all or none; the page's
   Print button is the shared `data-print`. The script has no text of its own.
-- **Tests** (`hr/tests/`): per model the create, read, edit, delete and restore round trips against stored rows with a test that
+- **Tests** (`hr/tests/`): the realm, the mounted pages and the role presets walked for every role (`test_realm`,
+  `test_production_team`, `test_crew`, `test_roles`, `test_leave_impact`, `test_leave_type_privacy`); per model the create, read, edit,
+  delete and restore round trips against stored rows with a test that
   names every column; the constraints through `IntegrityError` on raw rows, including both triggers, the open punch and the
   exclusions; the team scope by function and by URL for every actor (404 on every verb outside it, nothing written or logged, every
   route needs a row in the matrix or the suite fails); the boundary (no pay, bank, tax or identity column, form field, template word
@@ -2705,14 +2746,14 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete, and Everyone where an area offers it: see Row scope). Create, Edit, Delete and Everyone include Read: the form adds it and the browser ticks it. Saving
+  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit, Delete, Crew, All production and Everyone include Read: the form adds it and the browser ticks it. Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -2939,7 +2980,11 @@ are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and t
 "no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
 punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
 that the field was set, replaced or cleared, not what it says (a short keyed digest of the text is kept so that
-a replacement is a change the log shows). A tab can also refuse a verb on a record it reaches (`Resource.allowed`: HR
+a replacement is a change the log shows). Two more columns widen HR's rows for production, each offered by one area: **All
+production** (Employees: every production person) and **Crew** (Shift schedule: one's production colleagues' shifts). A tab can
+also be served a second time under another address and panel (`Resource.mounts`, `core.crud.Mount`: HR's pages under Production ›
+Team); the request carries the mount (`mount_of`), `scoped` narrows the rows to it, and the links, redirects and heading stay in it.
+A tab can also refuse a verb on a record it reaches (`Resource.allowed`: HR
 refuses editing, voiding and planning one's own attendance and plan).
 
 ### The delete plan

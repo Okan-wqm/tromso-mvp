@@ -80,7 +80,7 @@ class WalkTests(PeopleTestCase):
             'core:activity_log': 403})
         self.client.force_login(self.manager)
         week = self.client.get(reverse('hr:production_shiftassignment_list')).context['week']
-        self.assertEqual([row.employee.last_name for row in week.rows], ['Alfa', 'Bravo'])     # every production person
+        self.assertEqual({row.employee.pk for row in week.rows}, {self.in_a.pk, self.in_b.pk})   # every production person
         self.assertEqual(self.client.get(reverse('hr:employee_detail', args=[self.in_fin.pk])).status_code, 403)
 
     def test_the_production_worker_has_their_own_pages_and_nothing_else(self):

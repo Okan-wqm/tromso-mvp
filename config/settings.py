@@ -115,9 +115,9 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'balik'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5433'),
-        # Seconds a connection stays open for the next request (0, Django's default: one per request). The development
-        # server, which reaches the container through the Docker VM, is much faster with e.g. DB_CONN_MAX_AGE=60. A
-        # kept connection is checked before it is reused, so a restarted database never fails a request.
+        # Seconds a connection stays open for the next request (0, Django's default: one per request), for a server with
+        # long-lived workers (gunicorn). Never with runserver: it starts a thread per request, so every request would
+        # leave its own connection open until the database refuses clients. A kept connection is checked before reuse.
         'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '0')),
         'CONN_HEALTH_CHECKS': True,
         # Lets two checkouts run tests at the same time on separate test databases.

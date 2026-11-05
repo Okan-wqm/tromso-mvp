@@ -14,9 +14,11 @@ from core.models import AuditLog, Profile
 from farm.models import FeedingRecord, StockOperation, WaterMeasurement
 
 from .. import read
+from ..cards import builtin
 from . import ALL_RIGHTS, MonitoringCase
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
+DETAILED_CARD = f'data-template="{builtin.DETAILED}"'
 
 
 def keys(html):
@@ -34,7 +36,7 @@ class PageTests(MonitoringCase):
             self.assertIn(text, html)
         self.assertNotIn('data-wall', html)
         self.assertEqual(response.context['title'], 'Monitoring')
-        for text in (f'id="flip-{self.t1.pk}"', f'id="chart-{self.t1.pk}"'):
+        for text in (f'id="flip-{self.t1.pk}"', f'id="w-{self.t1.pk}-w5"'):
             self.assertIn(text, html)                                    # focus can be restored by id after a refresh
 
     def test_filters_occupancy_and_the_units_chosen_narrow_what_is_shown(self):
@@ -48,11 +50,11 @@ class PageTests(MonitoringCase):
 
     def test_simple_and_detailed_and_the_round_trip_of_the_toggle(self):
         simple = self.client.get(PAGE).content.decode()
-        self.assertNotIn('is-detailed', simple)
-        self.assertNotIn('monitor-tasks', simple)
+        self.assertNotIn(DETAILED_CARD, simple)
+        self.assertNotIn('w-tasks', simple)
         detailed = self.client.get(PAGE, {'mode': 'detailed'}).content.decode()
-        self.assertEqual(detailed.count('is-detailed'), 2)
-        for text in ('monitor-tasks', 'monitor-health', 'Feed rate', 'Losses'):
+        self.assertEqual(detailed.count(DETAILED_CARD), 2)
+        for text in ('w-tasks', 'w-health', 'Feed rate', 'Losses'):
             self.assertIn(text, detailed)
         # the link of one card flips it: its href is the page, its data-poll-url the fragment, for that state
         link = re.search(rf'<article[^>]*card:{self.t1.pk}.*?<a class="monitor-flip" id="[^"]+" href="([^"]+)" data-poll-url="([^"]+)">'
@@ -61,9 +63,9 @@ class PageTests(MonitoringCase):
         self.assertEqual((href, word), (f'{PAGE}?flip={self.t1.pk}', 'Detailed'))
         self.assertEqual(poll, f'{CARDS}?flip={self.t1.pk}')
         flipped = self.client.get(href).content.decode()
-        self.assertEqual(flipped.count('is-detailed'), 1)
+        self.assertEqual(flipped.count(DETAILED_CARD), 1)
         fragment = self.client.get(poll).content.decode()
-        self.assertEqual(fragment.count('is-detailed'), 1)
+        self.assertEqual(fragment.count(DETAILED_CARD), 1)
         self.assertEqual(keys(fragment), keys(flipped)[:4][:len(keys(fragment))])
 
     def test_a_card_shows_the_pages_figures_for_its_unit(self):

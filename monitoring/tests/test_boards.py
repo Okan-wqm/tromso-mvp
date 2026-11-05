@@ -272,13 +272,13 @@ class OnThePageTests(BoardCase):
         html = page.content.decode()
         self.assertEqual(page.context['shown'], 2)
         self.assertIn('data-poll-every="45"', html)
-        self.assertEqual(html.count('is-detailed'), 1)                    # T-01 by its row, T-02 by the board's default
+        self.assertEqual(html.count(f'data-template="{DETAILED}"'), 1)                    # T-01 by its row, T-02 by the board's default
         self.assertIn(f'<option value="{board.pk}" selected>Wall</option>', html)
         self.assertIn(f'data-storage-key="monitoring:{board.pk}"', html)
         # the board's default template applies to every card without a template of its own
         MonitorBoard.objects.filter(pk=board.pk).update(default_template_id=DETAILED)
         self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)}).content.decode()
-                         .count('is-detailed'), 2)
+                         .count(f'data-template="{DETAILED}"'), 2)
 
     def test_a_board_that_does_not_exist_shows_the_page_without_it(self):
         page = self.client.get(reverse('monitoring:monitor'), {'board': '6f7f1b3a-6c9e-4f43-8f0e-6a7d0d0b0a11'})

@@ -104,6 +104,16 @@ class B1Tests(SimpleTestCase):
             self.assertLessEqual(abs(theirs - 12.0), 1e-8)
         for case, ours, theirs, _extra in self.disagreements('analysis.h2s_border'):
             self.assertTrue((ours < 4.0 and theirs == 3.0) or (ours > 12.5 and theirs == 13.5), (ours, theirs))
+        # the chart's lines and corners that differ are drawn from such a border: NH3 above 12, H2S outside 4 to 12
+        for quantity in ('chart.nh3_boundary', 'chart.safe_zone_nh3_side', 'analysis.nh3_share_at_border_pct',
+                         'chart.h2s_boundary', 'chart.h2s_zone_drawn'):
+            for case, _ours, _theirs, _extra in self.disagreements(quantity):
+                analysis = deffeyes.analyse(deffeyes.Water(**case['water']), deffeyes.Limits(**case['limits']))
+                with self.subTest(quantity=quantity):
+                    if 'nh3' in quantity:
+                        self.assertGreater(analysis.nh3.ph, 12.0)
+                    else:
+                        self.assertTrue(analysis.h2s.ph < 4.0 or analysis.h2s.ph > 12.0, analysis.h2s.ph)
 
     def test_b1_04_the_molar_masses_explain_every_recipe_difference(self):
         for case, ours, theirs in self.b1.recipe_doses(self.source):
@@ -121,14 +131,20 @@ class B1Tests(SimpleTestCase):
         for case, ours, theirs, _extra in self.disagreements('dosing.simulate_dic'):
             self.assertTrue(ours < 0 and theirs == 0 or math.isclose(ours, theirs, rel_tol=1e-4), (ours, theirs))
 
-    def test_b1_07_the_safe_zone_differs_where_the_source_ignores_h2s_or_crosses_itself(self):
-        """Ours draws none where the source draws one: either H2S narrows the band away (ours without the sulfide
-        draws it, WQ-30) or the source's quadrilateral is inverted (its CO2 corner left of its NH3 corner: no pH of the
-        band is inside both limits)."""
+    def test_b1_07_the_safe_zone_differs_where_the_source_ignores_h2s_crosses_itself_or_vanishes(self):
+        """WQ-30, three ways. Ours draws none where the source draws one: H2S narrows the band away (ours without the
+        sulfide draws it), or the source's quadrilateral is inverted (its CO2 corner left of its NH3 corner: no pH of
+        the band is inside both limits). Ours draws one where the source draws none: the TAN cannot reach the NH3
+        limit, the safest water, where the source's NH3 border is NaN and its zone vanishes."""
         for case, ours, theirs, corners in self.disagreements('chart.safe_zone_drawn'):
-            self.assertEqual((ours, theirs), (False, True))
-            water = deffeyes.Water(**{**case['water'], 'total_sulfide_ug_l': None})
-            analysis = deffeyes.analyse(water, deffeyes.Limits(**{**case['limits'], 'h2s_ug_l': None}))
+            water, limits = case['water'], case['limits']
+            if ours:
+                self.assertFalse(theirs)
+                self.assertLessEqual(water['tan_mg_l'], limits['nh3_n_mg_l'], case)
+                continue
+            self.assertTrue(theirs)
+            analysis = deffeyes.analyse(deffeyes.Water(**{**water, 'total_sulfide_ug_l': None}),
+                                        deffeyes.Limits(**{**limits, 'h2s_ug_l': None}))
             without_h2s = bool(deffeyes.safe_zone(analysis, deffeyes.box_of(analysis)))
             top_left, top_right, bottom_right, bottom_left = corners
             inverted = top_left[0] >= top_right[0] or bottom_left[0] >= bottom_right[0]

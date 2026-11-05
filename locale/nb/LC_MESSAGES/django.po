@@ -1364,6 +1364,10 @@ msgstr ""
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "En kapasitet trenger sin enhet, og en enhet sin kapasitet."
 
+#, python-format
+msgid "A card holds at most %(max)d widgets."
+msgstr "Et kort har høyst %(max)d elementer."
+
 msgid "A channel needs an owner: make another member an owner first."
 msgstr "En kanal trenger en eier: gjør først et annet medlem til eier."
 
@@ -1501,6 +1505,9 @@ msgstr "En jobb som kommer igjen: hver dag, på valgte ukedager eller på en dag
 #, python-format
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "En siste dag eldre enn %(date)s kan ikke endres."
+
+msgid "A layout is a set of named values with a list of widgets, and nothing else."
+msgstr "Et oppsett er et sett navngitte verdier med en liste over elementer, og ikke noe annet."
 
 msgid ""
 "A listed disease is notified to Mattilsynet at once, already on suspicion (dyrehelseforskriften §"
@@ -4166,6 +4173,11 @@ msgstr ""
 "grense. Hver verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets. "
 "Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
 
+msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
+msgstr ""
+"Hvert element trenger et kort navn: en liten bokstav, deretter opptil 15 bokstaver, sifre, - "
+"eller _."
+
 #, python-format
 msgid "Earliest suitable harvest date: %(date)s."
 msgstr "Tidligste egnede høstedato: %(date)s."
@@ -4325,6 +4337,9 @@ msgstr "Hendelse"
 msgid "Every"
 msgstr "Hver"
 
+msgid "Every active point"
+msgstr "Hvert aktive punkt"
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -4340,6 +4355,9 @@ msgstr[1] "Hver %(count)d. dag"
 
 msgid "Every factor has a name."
 msgstr "Hver faktor har et navn."
+
+msgid "Every figure"
+msgstr "Hvert tall"
 
 #, python-format
 msgid ""
@@ -4385,6 +4403,9 @@ msgid ""
 msgstr ""
 "Alle enheter som hadde fisk er oppført, også egg og larver; § 58 gjelder enheter med startfôret "
 "yngel eller eldre fisk (D-8): ta bort de som ikke var det."
+
+msgid "Every value measured"
+msgstr "Hver målte verdi"
 
 msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
@@ -4699,6 +4720,9 @@ msgstr "Glassfiber (GRP)"
 
 msgid "Field"
 msgstr "Felt"
+
+msgid "Figures"
+msgstr "Tall"
 
 msgid "File"
 msgstr "Fil"
@@ -5800,6 +5824,9 @@ msgstr "Landbasert anlegg"
 msgid "Language"
 msgstr "Språk"
 
+msgid "Large"
+msgstr "Stor"
+
 msgid "Larvae"
 msgstr "Larver"
 
@@ -6268,8 +6295,15 @@ msgid "Monthly biomass"
 msgstr "Månedlig biomasse"
 
 #, python-format
+msgid "More than %(count)d widgets: a card this full is hard to read from a distance."
+msgstr "Mer enn %(count)d elementer: et så fullt kort er vanskelig å lese på avstand."
+
+#, python-format
 msgid "More than %(rows)d points: choose a production department or a system."
 msgstr "Mer enn %(rows)d punkter: velg en produksjonsavdeling eller et system."
+
+msgid "More than two widgets are large: the large ones no longer stand out."
+msgstr "Mer enn to elementer er store: de store skiller seg ikke lenger ut."
 
 msgid "Mortality"
 msgstr "Dødelighet"
@@ -6849,6 +6883,9 @@ msgstr "Uten volum: bare dosene per m³."
 
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
+
+msgid "No widget shows the oxygen."
+msgstr "Ingen elementer viser oksygenet."
 
 #, python-format
 msgid "No withdrawal is recorded for %(species)s of %(medicine)s: add it in Reference data › Medicines."
@@ -7693,6 +7730,9 @@ msgstr "Punkt"
 
 msgid "Pointed at by"
 msgstr "Det pekes på av"
+
+msgid "Points"
+msgstr "Punkter"
 
 msgid "Points of equipment"
 msgstr "Punkter på utstyr"
@@ -9970,6 +10010,12 @@ msgstr "Tidsskriftets hefte."
 msgid "The journal’s volume."
 msgstr "Tidsskriftets volum."
 
+msgid "The key figures"
+msgstr "Nøkkeltallene"
+
+msgid "The key values"
+msgstr "Nøkkelverdiene"
+
 msgid ""
 "The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
 "between weighings grows by the feed divided by it."
@@ -10072,6 +10118,9 @@ msgid ""
 msgstr ""
 "mg/L og % avviker med mer enn 10 % ved denne temperaturen og saliniteten: kontroller målerens "
 "innstillinger."
+
+msgid "The middle point"
+msgstr "Midtpunktet"
 
 msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
@@ -10633,6 +10682,9 @@ msgstr "Vannflaten når dammen er full."
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Vannet mengdene gjelder: et kar eller et kretsløp. Tomt: bare dosene per m³."
 
+msgid "The week too (feed rate, last fed, feed in use)"
+msgstr "Uken også (fôringsgrad, sist fôret, fôr i bruk)"
+
 #, python-format
 msgid "The weighing of %(date)s in %(unit)s would find no fish of %(batch)s. Void that weighing first."
 msgstr "Veiingen %(date)s i %(unit)s ville ikke funnet fisk av %(batch)s. Annuller den veiingen først."
@@ -10771,6 +10823,13 @@ msgstr "Denne helsehendelsen har allerede et varsel: åpne det fra listen."
 
 msgid "This item already has a lot with this number."
 msgstr "Denne varen har allerede et parti med dette nummeret."
+
+#, python-format
+msgid "This layout is of an unknown version (%(version)s)."
+msgstr "Dette oppsettet har en ukjent versjon (%(version)s)."
+
+msgid "This layout is too large to store."
+msgstr "Dette oppsettet er for stort til å lagres."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -11032,6 +11091,9 @@ msgstr "Behandlinger"
 msgid "Treatments, last 90 days"
 msgstr "Behandlinger, siste 90 dager"
 
+msgid "Trend"
+msgstr "Trend"
+
 msgid "Try another search."
 msgstr "Prøv et annet søk."
 
@@ -11073,6 +11135,10 @@ msgstr "To rader har samme art og livsstadium."
 
 msgid "Two weight bands of this protocol overlap."
 msgstr "To vektklasser i denne protokollen overlapper."
+
+#, python-format
+msgid "Two widgets are called %(widget)s."
+msgstr "To elementer heter %(widget)s."
 
 msgid "Type"
 msgstr "Type"
@@ -11241,6 +11307,9 @@ msgstr "Vaksine"
 
 msgid "Value"
 msgstr "Verdi"
+
+msgid "Value against its limits"
+msgstr "Verdi mot grensene"
 
 msgid "Value on hand"
 msgstr "Verdi på lager"
@@ -11728,6 +11797,46 @@ msgid ""
 msgstr ""
 "Hvorfor enheten har nåværende status, f.eks. «notskifte». Når statusen endres, slettes en årsak "
 "som står uendret."
+
+#, python-format
+msgid "Widget %(widget)s has a field it may not have, or lacks one it needs."
+msgstr "Elementet %(widget)s har et felt det ikke kan ha, eller mangler et det trenger."
+
+#, python-format
+msgid "Widget %(widget)s is of a kind the card does not know."
+msgstr "Elementet %(widget)s er av en type kortet ikke kjenner."
+
+#, python-format
+msgid "Widget %(widget)s lies outside the card (12 columns, from the top)."
+msgstr "Elementet %(widget)s ligger utenfor kortet (12 kolonner, fra toppen)."
+
+#, python-format
+msgid "Widget %(widget)s must be from %(min_w)d×%(min_h)d to %(max_w)d×%(max_h)d cells."
+msgstr "Elementet %(widget)s må være fra %(min_w)d×%(min_h)d til %(max_w)d×%(max_h)d celler."
+
+#, python-format
+msgid "Widget %(widget)s shows no single water parameter: it cannot be bound to one."
+msgstr "Elementet %(widget)s viser ikke én enkelt vannparameter: det kan ikke knyttes til en."
+
+#, python-format
+msgid "Widget %(widget)s: %(detail)s"
+msgstr "Elementet %(widget)s: %(detail)s"
+
+#, python-format
+msgid "Widget %(widget)s: %(label)s cannot be placed yet."
+msgstr "Elementet %(widget)s: %(label)s kan ikke plasseres ennå."
+
+#, python-format
+msgid "Widget %(widget)s: choose the water parameter it shows (and, if not the middle, its point)."
+msgstr "Elementet %(widget)s: velg vannparameteren det viser (og, hvis ikke midten, punktet)."
+
+#, python-format
+msgid "Widget %(widget)s: its place and size must be whole numbers."
+msgstr "Elementet %(widget)s: plassering og størrelse må være hele tall."
+
+#, python-format
+msgid "Widgets %(widget)s and %(other)s overlap."
+msgstr "Elementene %(widget)s og %(other)s overlapper."
 
 msgid "Width (m)"
 msgstr "Bredde (m)"
@@ -12914,6 +13023,9 @@ msgstr "oppgaver"
 msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"
 
+msgid "the options must be a set of named values."
+msgstr "valgene må være et sett navngitte verdier."
+
 msgid "the site’s altitude"
 msgstr "lokalitetens høyde over havet"
 
@@ -13100,6 +13212,14 @@ msgstr "«%(experiment)s» er startet."
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "«%(name)s» er ikke en av spesifikasjonene for denne typen."
+
+#, python-format
+msgid "“%(option)s” has no value."
+msgstr "«%(option)s» har ingen verdi."
+
+#, python-format
+msgid "“%(option)s” is not an option of this widget."
+msgstr "«%(option)s» er ikke et valg for dette elementet."
 
 #, python-format
 msgid "“%(task)s” is cancelled."

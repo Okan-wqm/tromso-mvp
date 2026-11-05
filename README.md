@@ -680,6 +680,22 @@ screen would first bound the feeding walk (`project` reads every feeding of the 
 way round. The queries stay equal from 6 to 100 units (pinned at 6 and 24 in `monitoring/tests/test_budget.py`). `CONN_MAX_AGE` is
 left alone: the queries are a tenth of the time, so there is no evidence for it.
 
+**Card templates: the widget catalogue and the validator** (`monitoring/cards/`). A card will be a fixed **frame** (the unit,
+its state word, shape and reasons, the withdrawal, what the state is from, the flip link: never data, so no template can
+remove it) and a **template**, a JSON layout of widgets on a 12-column grid. `catalogue.py` is the one truth of what a card
+can hold: each widget type's label, minimum, maximum and default size in cells, the card read's sources it shows, whether it
+is bound to a water parameter (and point), and its options as `core.schema.Schema` descriptors (only how it is drawn: no
+colour, font, threshold, unit or free text); `as_data()` hands it to the designer in the person's language. The v1 widgets:
+value and value-against-limits (one parameter), water (the middle point's key values or every point's every value), fish
+(the key figures or every figure), feeding (the week too or not), health, tasks, experiments, the Deffeyes chart button,
+and a trend that is catalogued but refused until a bulk series read exists. `validate.py` is the one validator (pure, no
+query; the model, the form, the preview and the tests call it): errors block (the shape, an unknown version, more than 40
+widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or outside its sizes, each overlapping
+pair named once, a binding the widget cannot have, an option its schema refuses), warnings never do (no oxygen anywhere,
+more than two large widgets, more than 16 widgets). An older layout version is upgraded one pure step at a time and checked
+as upgraded, never changed in place; a fixture per version passes. The geometry is shared with the designer's TypeScript
+through `monitoring/tests/layout_vectors.json`, which both suites run.
+
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
 an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the
@@ -2657,6 +2673,16 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   make the page inert and stop the wall. All the styles of the module, the wall (`?wall=1` puts
   `data-wall` on `<html>` through the `html_attrs` block of `app_base.html`: no rail, no top bar, no width
   limit) and the notices CSS prints from `data-poll-state`, are in `static/css/monitor.css`.
+- `grid/` the card designer's grid library, our own (no grid package): `layout.ts` pure functions over an immutable
+  layout (`catalogueOf` reads the server's widget catalogue, `parse`/`serialize` a stored layout, `check` the geometry the
+  server's validator also checks, `clamp`, `compact`, `move`, `resize`, `add`, `remove`, `readingOrder`, `changes`,
+  `cellFromPoint`, `keyToDelta`), `history.ts` undo and redo (a gesture is one entry, 100 kept, a new entry clears redo),
+  `types.ts`. A gesture places the moved, grown or dropped widget first, pushes what it lands on straight down and then
+  compacts (floats every widget up as far as it goes, in reading order, stable on ties); compaction exists only here, the
+  server never moves a widget. Nothing changes its input and garbage is a typed answer, never a throw. Its tests
+  (`*.test.ts`, `frontend/test/random.ts`) are examples, the geometry vectors shared with the server and seeded
+  properties over 2,000 random layouts and gestures each (mulberry32; a failure prints the seed, `GRID_SEED=<n> npm test`
+  replays it): no overlap, in bounds and sizes, ids kept, compaction idempotent and never downwards, undo exact, round trip.
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
 compiled modules are reached through an import map (`{% module_map %}`), so a browser never shows a
@@ -2673,16 +2699,6 @@ delete pages. Every tab gets the same behaviour from it: a role needs view/add/c
 model for each page (the platform admin has all of them), every change is written to the activity
 log in the same transaction, an outdated `version` is refused, models with soft delete are hidden
 rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
-- `grid/` the card designer's grid library, our own (no grid package): `layout.ts` pure functions over an immutable
-  layout (`catalogueOf` reads the server's widget catalogue, `parse`/`serialize` a stored layout, `check` the geometry the
-  server's validator also checks, `clamp`, `compact`, `move`, `resize`, `add`, `remove`, `readingOrder`, `changes`,
-  `cellFromPoint`, `keyToDelta`), `history.ts` undo and redo (a gesture is one entry, 100 kept, a new entry clears redo),
-  `types.ts`. A gesture places the moved, grown or dropped widget first, pushes what it lands on straight down and then
-  compacts (floats every widget up as far as it goes, in reading order, stable on ties); compaction exists only here, the
-  server never moves a widget. Nothing changes its input and garbage is a typed answer, never a throw. Its tests
-  (`*.test.ts`, `frontend/test/random.ts`) are examples, the geometry vectors shared with the server and seeded
-  properties over 2,000 random layouts and gestures each (mulberry32; a failure prints the seed, `GRID_SEED=<n> npm test`
-  replays it): no overlap, in bounds and sizes, ids kept, compaction idempotent and never downwards, undo exact, round trip.
 opened directly, as a page. The menu is data (`config/navigation.py`: panels, main headings, groups,
 entries) and shows each entry only to people allowed to read it; an entry can carry a number (a `Badge`, the
 unread messages) that the page polls. Production's menu has two main headings, as in the platform: **Setup** (the farm's structure under Facility structure, the

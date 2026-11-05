@@ -1367,6 +1367,10 @@ msgstr ""
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "Kapasitenin birimi, birimin de kapasitesi olmalı."
 
+#, python-format
+msgid "A card holds at most %(max)d widgets."
+msgstr "Bir kartta en fazla %(max)d bileşen olabilir."
+
 msgid "A channel needs an owner: make another member an owner first."
 msgstr "Bir kanalın sahibi olmalı: önce başka bir üyeyi sahip yapın."
 
@@ -1502,6 +1506,9 @@ msgstr "Tekrar eden bir iş: her gün, seçilen hafta günlerinde veya ayın bir
 #, python-format
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "%(date)s tarihinden eski bir son gün değiştirilemez."
+
+msgid "A layout is a set of named values with a list of widgets, and nothing else."
+msgstr "Bir yerleşim, bileşen listesi içeren adlandırılmış değerler kümesidir; başka bir şey değildir."
 
 msgid ""
 "A listed disease is notified to Mattilsynet at once, already on suspicion (dyrehelseforskriften §"
@@ -4166,6 +4173,9 @@ msgstr ""
 "sınırsız gösterir. Her değer hangi numune noktasında alındığını söyler; bir birimin suyu orta "
 "noktasının suyudur. Kimseye uyarı gitmez: kritik değerler burada gösterilir, gönderilmez."
 
+msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
+msgstr "Her bileşenin kısa bir adı olmalı: küçük bir harf, ardından en fazla 15 harf, rakam, - veya _."
+
 #, python-format
 msgid "Earliest suitable harvest date: %(date)s."
 msgstr "En erken uygun hasat tarihi: %(date)s."
@@ -4329,6 +4339,9 @@ msgstr "Olay"
 msgid "Every"
 msgstr "Her"
 
+msgid "Every active point"
+msgstr "Her etkin nokta"
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -4344,6 +4357,9 @@ msgstr[1] "%(count)d günde bir"
 
 msgid "Every factor has a name."
 msgstr "Her faktörün bir adı vardır."
+
+msgid "Every figure"
+msgstr "Her rakam"
 
 #, python-format
 msgid ""
@@ -4390,6 +4406,9 @@ msgid ""
 msgstr ""
 "Balık barındıran her birim listelenir, yumurta ve larvalar dahil; § 58 ilk yemlemeli yavru veya "
 "daha büyük balıkların birimlerini ister (D-8): olmayanları çıkarın."
+
+msgid "Every value measured"
+msgstr "Ölçülen her değer"
 
 msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
@@ -4707,6 +4726,9 @@ msgstr "Cam elyaf (CTP)"
 
 msgid "Field"
 msgstr "Alan"
+
+msgid "Figures"
+msgstr "Rakamlar"
 
 msgid "File"
 msgstr "Dosya"
@@ -5814,6 +5836,9 @@ msgstr "Kara tesisi"
 msgid "Language"
 msgstr "Dil"
 
+msgid "Large"
+msgstr "Büyük"
+
 msgid "Larvae"
 msgstr "Larva"
 
@@ -6282,8 +6307,15 @@ msgid "Monthly biomass"
 msgstr "Aylık biyokütle"
 
 #, python-format
+msgid "More than %(count)d widgets: a card this full is hard to read from a distance."
+msgstr "%(count)d bileşenden fazla: bu kadar dolu bir kart uzaktan zor okunur."
+
+#, python-format
 msgid "More than %(rows)d points: choose a production department or a system."
 msgstr "%(rows)d noktadan fazla: bir üretim bölümü veya sistem seçin."
+
+msgid "More than two widgets are large: the large ones no longer stand out."
+msgstr "İkiden fazla bileşen büyük: büyükler artık öne çıkmıyor."
 
 msgid "Mortality"
 msgstr "Ölüm"
@@ -6859,6 +6891,9 @@ msgstr "Hacim yok: yalnızca m³ başına dozlar."
 
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
+
+msgid "No widget shows the oxygen."
+msgstr "Oksijeni gösteren bir bileşen yok."
 
 #, python-format
 msgid "No withdrawal is recorded for %(species)s of %(medicine)s: add it in Reference data › Medicines."
@@ -7703,6 +7738,9 @@ msgstr "Nokta"
 
 msgid "Pointed at by"
 msgstr "Şunlar tarafından işaret edilir"
+
+msgid "Points"
+msgstr "Noktalar"
 
 msgid "Points of equipment"
 msgstr "Ekipman noktaları"
@@ -9982,6 +10020,12 @@ msgstr "Derginin sayısı."
 msgid "The journal’s volume."
 msgstr "Derginin cildi."
 
+msgid "The key figures"
+msgstr "Temel rakamlar"
+
+msgid "The key values"
+msgstr "Temel değerler"
+
 msgid ""
 "The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
 "between weighings grows by the feed divided by it."
@@ -10082,6 +10126,9 @@ msgid ""
 msgstr ""
 "Bu sıcaklık ve tuzlulukta mg/L ile % arasında %10'dan fazla fark var: ölçerin ayarlarını kontrol "
 "edin."
+
+msgid "The middle point"
+msgstr "Orta nokta"
 
 msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
@@ -10644,6 +10691,9 @@ msgstr "Havuz doluyken su yüzeyi."
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
 
+msgid "The week too (feed rate, last fed, feed in use)"
+msgstr "Haftası da (yemleme oranı, son yemleme, kullanılan yem)"
+
 #, python-format
 msgid "The weighing of %(date)s in %(unit)s would find no fish of %(batch)s. Void that weighing first."
 msgstr "%(unit)s içindeki %(date)s tarihli tartım %(batch)s balığı bulamazdı. Önce o tartımı iptal edin."
@@ -10783,6 +10833,13 @@ msgstr "Bu sağlık olayı için zaten bir bildirim var: listeden açın."
 
 msgid "This item already has a lot with this number."
 msgstr "Bu kalemin bu numarada bir lotu zaten var."
+
+#, python-format
+msgid "This layout is of an unknown version (%(version)s)."
+msgstr "Bu yerleşimin sürümü bilinmiyor (%(version)s)."
+
+msgid "This layout is too large to store."
+msgstr "Bu yerleşim kaydedilemeyecek kadar büyük."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -11044,6 +11101,9 @@ msgstr "Tedaviler"
 msgid "Treatments, last 90 days"
 msgstr "Tedaviler, son 90 gün"
 
+msgid "Trend"
+msgstr "Eğilim"
+
 msgid "Try another search."
 msgstr "Başka bir arama deneyin."
 
@@ -11085,6 +11145,10 @@ msgstr "İki satırda aynı balık türü ve yaşam evresi var."
 
 msgid "Two weight bands of this protocol overlap."
 msgstr "Bu protokolün iki ağırlık aralığı çakışıyor."
+
+#, python-format
+msgid "Two widgets are called %(widget)s."
+msgstr "İki bileşenin adı %(widget)s."
 
 msgid "Type"
 msgstr "Tür"
@@ -11253,6 +11317,9 @@ msgstr "Aşı"
 
 msgid "Value"
 msgstr "Değer"
+
+msgid "Value against its limits"
+msgstr "Sınırlarına göre değer"
 
 msgid "Value on hand"
 msgstr "Eldeki değer"
@@ -11740,6 +11807,46 @@ msgid ""
 msgstr ""
 "Birimin neden bu durumda olduğu, örn. “ağ değişimi”. Durum değiştiğinde, olduğu gibi bırakılan "
 "neden silinir."
+
+#, python-format
+msgid "Widget %(widget)s has a field it may not have, or lacks one it needs."
+msgstr "%(widget)s bileşeninde olmaması gereken bir alan var ya da gereken bir alan eksik."
+
+#, python-format
+msgid "Widget %(widget)s is of a kind the card does not know."
+msgstr "%(widget)s bileşeni kartın tanımadığı bir türde."
+
+#, python-format
+msgid "Widget %(widget)s lies outside the card (12 columns, from the top)."
+msgstr "%(widget)s bileşeni kartın dışında (12 sütun, üstten başlayarak)."
+
+#, python-format
+msgid "Widget %(widget)s must be from %(min_w)d×%(min_h)d to %(max_w)d×%(max_h)d cells."
+msgstr "%(widget)s bileşeni %(min_w)d×%(min_h)d ile %(max_w)d×%(max_h)d hücre arasında olmalı."
+
+#, python-format
+msgid "Widget %(widget)s shows no single water parameter: it cannot be bound to one."
+msgstr "%(widget)s bileşeni tek bir su parametresi göstermez: bir parametreye bağlanamaz."
+
+#, python-format
+msgid "Widget %(widget)s: %(detail)s"
+msgstr "%(widget)s bileşeni: %(detail)s"
+
+#, python-format
+msgid "Widget %(widget)s: %(label)s cannot be placed yet."
+msgstr "%(widget)s bileşeni: %(label)s henüz yerleştirilemez."
+
+#, python-format
+msgid "Widget %(widget)s: choose the water parameter it shows (and, if not the middle, its point)."
+msgstr "%(widget)s bileşeni: göstereceği su parametresini (ve orta nokta değilse noktasını) seçin."
+
+#, python-format
+msgid "Widget %(widget)s: its place and size must be whole numbers."
+msgstr "%(widget)s bileşeni: yeri ve boyutu tam sayı olmalı."
+
+#, python-format
+msgid "Widgets %(widget)s and %(other)s overlap."
+msgstr "%(widget)s ve %(other)s bileşenleri üst üste biniyor."
 
 msgid "Width (m)"
 msgstr "Genişlik (m)"
@@ -12924,6 +13031,9 @@ msgstr "görevler"
 msgid "the 7th of the next month"
 msgstr "sonraki ayın 7’si"
 
+msgid "the options must be a set of named values."
+msgstr "seçenekler adlandırılmış değerler kümesi olmalı."
+
 msgid "the site’s altitude"
 msgstr "sahanın rakımı"
 
@@ -13110,6 +13220,14 @@ msgstr "“%(experiment)s” deneyi başladı."
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "“%(name)s” bu türün teknik özelliklerinden biri değil."
+
+#, python-format
+msgid "“%(option)s” has no value."
+msgstr "“%(option)s” için değer yok."
+
+#, python-format
+msgid "“%(option)s” is not an option of this widget."
+msgstr "“%(option)s” bu bileşenin bir seçeneği değil."
 
 #, python-format
 msgid "“%(task)s” is cancelled."

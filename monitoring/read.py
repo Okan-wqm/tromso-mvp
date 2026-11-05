@@ -48,6 +48,8 @@ from farm.water import parameters, read as water_read, views as water_views
 from farm.water.evaluate import Status, is_fresh
 from tasks import read as tasks_read, views as tasks_views
 
+from .cards import catalogue
+
 logger = logging.getLogger(__name__)
 
 STOCK, FEEDING, WATER, TREATMENTS, EVENTS, LICE, TASKS = (
@@ -63,7 +65,7 @@ PERMISSIONS = {
 HEALTH = 'health'
 SIMPLE, DETAILED = 'simple', 'detailed'
 # The water values a simple card shows, from the middle point (the parameters' own short labels).
-KEY_WATER = (parameters.TEMPERATURE, parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT, parameters.PH, parameters.TAN)
+KEY_WATER = catalogue.KEY_WATER
 MODES = (SIMPLE, DETAILED)
 STOCKED, EMPTY, ALL = 'stocked', 'empty', 'all'
 OCCUPANCIES = (STOCKED, EMPTY, ALL)

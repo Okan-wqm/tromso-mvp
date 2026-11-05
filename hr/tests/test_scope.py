@@ -8,7 +8,7 @@ from django.urls import reverse
 from core.models import AuditLog
 from farm.models import ProductionDepartment
 
-from .. import scope
+from .. import read, scope
 from ..models import Employee, OfficeDepartment, Posting
 from ..units import token
 from .helpers import user
@@ -243,17 +243,20 @@ class DepartmentHeadCountTests(PeopleTestCase):
 
     def test_a_head_count_is_the_people_in_it_today_that_the_viewer_may_reach(self):
         everyone = self.counts(self.hr)
-        self.assertEqual(everyone, {'Hatchery A': 1, 'Nursery B': 1, 'Administration': 0, 'Finance': 1})
+        self.assertEqual(everyone, {'Administration': 0, 'Finance': 1})                   # the office departments only
         self.hr_dept_viewer = user('viewer', 'view_officedepartment')
         self.assertEqual(set(self.counts(self.hr_dept_viewer).values()), {0})            # no team, no count
         lead = user('lead', 'view_officedepartment', 'view_employee', group='Lead role')
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=lead)
         counts = self.counts(lead)
-        self.assertEqual((counts['Hatchery A'], counts['Nursery B'], counts['Finance']), (1, 0, 0))
+        self.assertEqual(counts, {'Administration': 0, 'Finance': 0})                     # their people are in Production
+        production = {node.label: node.direct for site in read.org_tree(lead, read.PRODUCTION).children
+                      for node in site.children}
+        self.assertEqual(production, {'Hatchery A': 1, 'Nursery B': 0})
 
     def test_head_counts_follow_the_placements_not_a_stored_number(self):
-        before = self.counts(self.hr)['Nursery B']
-        place(employee('E-9', 'India'), self.dept_b, date(2026, 1, 1))
-        self.assertEqual(self.counts(self.hr)['Nursery B'], before + 1)
+        before = self.counts(self.hr)['Finance']
+        place(employee('E-9', 'India'), self.finance, date(2026, 1, 1))
+        self.assertEqual(self.counts(self.hr)['Finance'], before + 1)
         Posting.objects.filter(employee__employee_number='E-9').update(valid_until=date(2026, 1, 31))
-        self.assertEqual(self.counts(self.hr)['Nursery B'], before)
+        self.assertEqual(self.counts(self.hr)['Finance'], before)

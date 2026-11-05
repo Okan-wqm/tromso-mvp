@@ -703,8 +703,9 @@ the layout's shape (an object whose widgets are a list), at most 40 widgets, at 
 edit cannot store what no card can read; everything that needs the catalogue is the validator's. Three templates are built in
 (`monitoring/cards/builtin.py`, frozen the same in migration 0002, a test keeps them equal): **Simple** and **Detailed**, the
 cards as they were (each flips to the other), and **Operator view** (the oxygen and the temperature large and first, then
-O₂ %, pH and TAN; offered, not a default). A trigger refuses any insert of a built-in, any change and any delete of one,
-whoever writes; a CHECK allows only those three ids to be built in and never deleted. Copy a built-in to change it.
+O₂ %, pH and TAN; offered, not a default). A trigger refuses any change and any delete of a built-in,
+whoever writes; a CHECK allows only those three ids to be built in and never deleted (so a database emptied and loaded
+again, a test run's rollback or a restored dump, gets them back). Copy a built-in to change it.
 `monitor_card_assignments`: which template a unit's card gets, a rule for one unit, system, system type (hatchery and nursery
 reachable here), species or unit kind, or with none the global rule (migration 0002 makes it: every unit gets Simple). One
 scope per rule and one live rule per scope (NULLs equal, so one global) are a CHECK and a partial unique index. A rule of a

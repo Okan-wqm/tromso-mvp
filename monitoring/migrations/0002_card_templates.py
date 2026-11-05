@@ -1,7 +1,8 @@
 """Card templates and their rules (monitoring/models.py): the two tables with every constraint the database can hold, the
 three built-in templates frozen as they were made (monitoring/cards/builtin.py says the same; a test keeps them equal),
-the global rule (every unit gets Simple), and the trigger that keeps any writer from changing, deleting or adding a
-built-in. A later change to a built-in is a migration that disables the trigger around its own update.
+the global rule (every unit gets Simple), and the trigger that keeps any writer from changing or deleting a built-in
+(an insert of one is the CHECK's: only the three ids, so a database emptied and loaded again gets them back). A later
+change to a built-in is a migration that disables the trigger around its own update.
 
 A refusal of the trigger is `check_violation`, so the ORM raises it as IntegrityError like a constraint. A change of the
 user columns alone (created_by, updated_by, deleted_by: SET NULL when a person is removed) is let through."""
@@ -49,13 +50,6 @@ GLOBAL_RULE = '5f1c2a6e-0000-4000-8000-00000000a001'
 FROZEN = """
 CREATE FUNCTION monitor_card_template_builtin() RETURNS trigger AS $$
 BEGIN
-    IF TG_OP = 'INSERT' THEN
-        IF NEW.is_builtin THEN
-            RAISE EXCEPTION 'card template %: only the migrations make a built-in', NEW.name
-                USING ERRCODE = 'check_violation';
-        END IF;
-        RETURN NEW;
-    END IF;
     IF TG_OP = 'DELETE' THEN
         IF OLD.is_builtin THEN
             RAISE EXCEPTION 'card template %: a built-in is never deleted', OLD.name USING ERRCODE = 'check_violation';
@@ -77,7 +71,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_monitor_card_templates_builtin
-    BEFORE INSERT OR UPDATE OR DELETE ON monitor_card_templates
+    BEFORE UPDATE OR DELETE ON monitor_card_templates
     FOR EACH ROW EXECUTE FUNCTION monitor_card_template_builtin();
 """
 

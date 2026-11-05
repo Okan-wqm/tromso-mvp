@@ -7240,6 +7240,9 @@ msgstr "List opp det som ble levert."
 msgid "Live fish and eggs"
 msgstr "Levende fisk og rogn"
 
+msgid "Live sensor values could not be read: samples only."
+msgstr "Sanntidsverdier fra sensorene kunne ikke leses: bare prøver."
+
 msgid "Live values"
 msgstr "Sanntidsverdier"
 

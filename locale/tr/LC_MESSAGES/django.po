@@ -7250,6 +7250,9 @@ msgstr "Teslim edileni listeleyin."
 msgid "Live fish and eggs"
 msgstr "Canlı balık ve yumurta"
 
+msgid "Live sensor values could not be read: samples only."
+msgstr "Canlı sensör değerleri okunamadı: yalnızca numuneler."
+
 msgid "Live values"
 msgstr "Canlı değerler"
 

@@ -7,7 +7,7 @@ from django.utils.translation import gettext as _
 
 from ..models.site import zone_of
 from ..models.water_point import site_of
-from ..water import parameters
+from ..water import parameters, read as water_read
 from ..water.evaluate import ANY_WATER, Status
 from .stock import DASH, number
 
@@ -111,8 +111,6 @@ def source_line(reading, now=None):
     counted to (a past moment's Deffeyes), else now."""
     if not reading:
         return ''
-    origin = reading.sample.origin_label
-    if reading.sample.channel_no is not None:
-        origin = f'{origin} #{reading.sample.channel_no}'        # the channel that feeds it (A4)
+    origin = water_read.origin_text(reading)
     # Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor); %(age)s how old.
     return _('%(origin)s · %(age)s ago') % {'origin': origin, 'age': short_age(reading.at, now or None)}

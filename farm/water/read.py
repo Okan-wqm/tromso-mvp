@@ -172,6 +172,15 @@ SENSOR_LABELS = {'unit': gettext_lazy('unit sensor'), 'system': gettext_lazy('sy
                  'equipment': gettext_lazy('equipment sensor')}
 
 
+def origin_text(reading):
+    """Where a latest value comes from, as every page says it (owner rule A1): 'unit sensor #12', 'system sensor #3', 'manual',
+    'lab'; a live value names the channel that feeds it."""
+    observation = reading.sample
+    if observation.channel_no is not None:
+        return f'{observation.origin_label} #{observation.channel_no}'
+    return str(observation.origin_label)
+
+
 def as_parameter(code, value):
     """A live value as the water parameter's Decimal at its decimals, exactly as a typed value: the unit's chart, the
     water pages and the replay read a sensor's value so."""

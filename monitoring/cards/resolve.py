@@ -23,8 +23,8 @@ from . import builtin, validate
 
 logger = logging.getLogger(__name__)
 
-ROW, UNIT, SYSTEM, SYSTEM_TYPE, SPECIES, KIND, BOARD, ADDRESS, GLOBAL, FLIP, FALLBACK = (
-    'row', 'unit', 'system', 'system_type', 'species', 'kind', 'board', 'address', 'global', 'flip', 'fallback')
+ROW, UNIT, SYSTEM, SYSTEM_TYPE, SPECIES, KIND, BOARD, ADDRESS, GLOBAL, FLIP, FALLBACK, PREVIEW = (
+    'row', 'unit', 'system', 'system_type', 'species', 'kind', 'board', 'address', 'global', 'flip', 'fallback', 'preview')
 BECAUSE = {
     ROW: _('chosen for this card on the board'),
     UNIT: _('the rule for this unit'),
@@ -37,6 +37,7 @@ BECAUSE = {
     GLOBAL: _('the rule for every unit'),
     FLIP: _('flipped on this page'),
     FALLBACK: _('no rule applies'),
+    PREVIEW: _('the layout being designed'),
 }
 # The templates a page's `mode=` chooses (no board), as the cards before templates did.
 ADDRESS_TEMPLATES = {'simple': builtin.SIMPLE, 'detailed': builtin.DETAILED}
@@ -91,6 +92,7 @@ class Choice:
     board: object = None
     address: object = None
     flip: frozenset = frozenset()
+    preview: object = None          # a Resolved every card is drawn with (the designer's preview), no query
 
     @classmethod
     def of(cls, board, params):
@@ -144,6 +146,8 @@ def template_of(unit, species_id, row_template, board_template, rules, templates
 
 def templates_for(units, species_of, choice):
     """{unit id: Resolved} of the units ({unit id: species id} of the stocked ones), in two queries."""
+    if choice.preview is not None:
+        return {unit.pk: choice.preview for unit in units}
     from ..models import CardTemplate, CardTemplateAssignment
     templates = {template.pk: template for template in CardTemplate.objects.all()}
     rules = Rules(CardTemplateAssignment.objects.filter(

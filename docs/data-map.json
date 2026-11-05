@@ -227,6 +227,7 @@
         "experiments/tests/test_places.py",
         "experiments/tests/test_start.py",
         "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_template_pages.py",
         "monitoring/tests/test_token.py"
@@ -407,6 +408,7 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_placements.py",
+        "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_template_pages.py"
       ]
@@ -24234,7 +24236,9 @@
         "masked": []
       },
       "tests": [
+        "core/tests_workspaces.py",
         "monitoring/tests/test_frame.py",
+        "monitoring/tests/test_load.py",
         "monitoring/tests/test_render.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_template_pages.py",
@@ -24592,7 +24596,10 @@
         "masked": []
       },
       "tests": [
+        "core/tests_workspaces.py",
+        "monitoring/tests/test_designer.py",
         "monitoring/tests/test_frame.py",
+        "monitoring/tests/test_load.py",
         "monitoring/tests/test_render.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_template_pages.py",

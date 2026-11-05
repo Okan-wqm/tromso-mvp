@@ -3,6 +3,7 @@ default template, card width and how often its screens ask; and its Units list, 
 template), saved as a whole list (monitoring/resources.py). The templates
 offered are the live ones (Reference data › Card templates), a built-in by its name in the person's language."""
 from django import forms
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
@@ -100,6 +101,20 @@ TEMPLATE_TABS = [
 ]
 
 
+class CardDesignerWidget(forms.Textarea):
+    """The layout's textarea inside the card designer (templates/monitoring/widgets/_designer.html, frontend/designer.ts):
+    with it the widget catalogue and the live units to preview on, as json_script, in the person's language."""
+
+    template_name = 'monitoring/widgets/_designer.html'
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget'].update(
+            catalogue=catalogue.as_data(), preview_url=reverse('monitoring:cardtemplate_preview'),
+            units=[{'value': str(pk), 'label': code} for pk, code in Tank.objects.order_by('code').values_list('pk', 'code')])
+        return context
+
+
 class LayoutField(forms.JSONField):
     """A card template's layout: JSON, checked by THE validator (monitoring/cards/validate.py); each error names its
     widget. The designer (frontend/designer.ts) fills it; without script it is the JSON itself."""
@@ -119,7 +134,7 @@ class CardTemplateForm(TabbedForm):
         model = CardTemplate
         fields = tab_fields(TEMPLATE_TABS)
         field_classes = {'layout': LayoutField}
-        widgets = {'layout': forms.Textarea(attrs={'rows': 12, 'spellcheck': 'false', 'class': 'mono'})}
+        widgets = {'layout': CardDesignerWidget(attrs={'rows': 12, 'spellcheck': 'false', 'class': 'mono'})}
         help_texts = {
             'name': _('Shown in the template choices of boards and rules.'),
             'expanded': _('The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link.'),

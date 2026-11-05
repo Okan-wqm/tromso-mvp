@@ -2028,6 +2028,9 @@ msgstr "Legg til et notat"
 msgid "Add a point to it"
 msgstr "Legg til et punkt"
 
+msgid "Add a widget"
+msgstr "Legg til et element"
+
 msgid "Add band"
 msgstr "Legg til vektklasse"
 
@@ -3173,6 +3176,13 @@ msgstr ""
 
 msgid "Card"
 msgstr "Kort"
+
+msgid ""
+"Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow "
+"keys, remove it with Delete."
+msgstr ""
+"Kortoppsett: velg et element, flytt det med piltastene, endre størrelsen med Shift og piltastene,"
+" fjern det med Delete."
 
 msgid "Card template rules"
 msgstr "Kortmalregler"
@@ -5326,6 +5336,9 @@ msgstr "Sortering"
 msgid "Grading recorded: %(count)s fish of %(batch)s from %(unit)s to %(units)s."
 msgstr "Sortering registrert: %(count)s fisk av %(batch)s fra %(unit)s til %(units)s."
 
+msgid "Grid lines"
+msgstr "Rutenett"
+
 msgid "Gross energy (MJ/kg)"
 msgstr "Bruttoenergi (MJ/kg)"
 
@@ -5527,6 +5540,9 @@ msgstr "Oppvarming og kjøling"
 
 msgid "Heating capacity"
 msgstr "Varmekapasitet"
+
+msgid "Height"
+msgstr "Høyde"
 
 #, python-format
 msgid "Hi %(name)s,"
@@ -5847,6 +5863,9 @@ msgstr ""
 
 msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
 msgstr "Nummeret i rapporter til myndighetene (kar- eller merdnummeret), når det ikke er koden."
+
+msgid "Its own state"
+msgstr "Egen tilstand"
 
 #, python-format
 msgid "Its parts are on another site: %(parts)s. Move them first."
@@ -6539,6 +6558,9 @@ msgstr "Navn eller kode"
 msgid "Name the person whose observation or advice it is."
 msgstr "Oppgi hvem observasjonen eller rådet kommer fra."
 
+msgid "Narrow"
+msgstr "Smal"
+
 msgid "Narrows the list of types."
 msgstr "Snevrer inn listen over typer."
 
@@ -6609,6 +6631,9 @@ msgstr "Nytt kar"
 
 msgid "New task"
 msgstr "Ny oppgave"
+
+msgid "New template"
+msgstr "Ny mal"
 
 msgid "Newer"
 msgstr "Nyere"
@@ -7940,6 +7965,12 @@ msgstr "Trykk"
 msgid "Pressure sensor"
 msgstr "Trykksensor"
 
+msgid "Preview on"
+msgstr "Forhåndsvis på"
+
+msgid "Preview updated."
+msgstr "Forhåndsvisningen er oppdatert."
+
 msgid "Previous"
 msgstr "Forrige"
 
@@ -8142,6 +8173,9 @@ msgstr ""
 msgid "Read the text, page by page"
 msgstr "Les teksten side for side"
 
+msgid "Reading order"
+msgstr "Lesestrekkefølge"
+
 msgid "Reagents"
 msgstr "Kjemikalier"
 
@@ -8277,6 +8311,9 @@ msgstr "Gjentakende oppgave"
 
 msgid "Recurring tasks"
 msgstr "Gjentakende oppgaver"
+
+msgid "Redo"
+msgstr "Gjør om"
 
 msgid "Reduced appetite"
 msgstr "Nedsatt appetitt"
@@ -8449,6 +8486,9 @@ msgstr "Retur"
 
 msgid "Return to supplier"
 msgstr "Retur til leverandør"
+
+msgid "Revert"
+msgstr "Tilbakestill"
 
 msgid "Review"
 msgstr "Gjennomgang"
@@ -8953,6 +8993,9 @@ msgstr "Velg en enhet"
 msgid "Select a water type"
 msgstr "Velg en vanntype"
 
+msgid "Select a widget to change it."
+msgstr "Velg et element for å endre det."
+
 msgid "Select an active protocol"
 msgstr "Velg en aktiv protokoll"
 
@@ -9046,6 +9089,9 @@ msgstr "Vis alle"
 #, python-format
 msgid "Show all %(plural)s"
 msgstr "Vis alle %(plural)s"
+
+msgid "Show as"
+msgstr "Vis som"
 
 msgid "Show deleted rows"
 msgstr "Vis slettede rader"
@@ -9848,6 +9894,9 @@ msgstr ""
 "Kortene på hvert overvåkingspanel: en enhet og, når den avviker fra panelet, malen kortet tegnes "
 "med."
 
+msgid "The card’s frame: the unit, its state and why, the withdrawal. Always shown."
+msgstr "Kortets ramme: enheten, tilstanden og hvorfor, tilbakeholdelsen. Vises alltid."
+
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Diagrammet kan ikke tegnes: dette punktet har ingen ferske verdier for"
 
@@ -10238,6 +10287,9 @@ msgid_plural "The latest %(weeks)s weeks of counts, per site."
 msgstr[0] "Den siste uken med tellinger, per lokalitet."
 msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
 
+msgid "The layout as text"
+msgstr "Oppsettet som tekst"
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
@@ -10433,6 +10485,9 @@ msgstr ""
 
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
+
+msgid "The preview shows only what you may read yourself."
+msgstr "Forhåndsvisningen viser bare det du selv har lov til å lese."
 
 msgid "The primary endpoint is not chosen."
 msgstr "Det primære endepunktet er ikke valgt."
@@ -11178,6 +11233,9 @@ msgstr "Til %(facility)s"
 msgid "To fix before it can start"
 msgstr "Må rettes før det kan starte"
 
+msgid "To fix before saving"
+msgstr "Må rettes før lagring"
+
 msgid "To location"
 msgstr "Til lagerplass"
 
@@ -11345,6 +11403,9 @@ msgstr "Under vedlikehold"
 
 msgid "Under withdrawal today"
 msgstr "Under tilbakeholdelsestid i dag"
+
+msgid "Undo"
+msgstr "Angre"
 
 msgid "Unique"
 msgstr "Unik"
@@ -11652,6 +11713,9 @@ msgstr "Vannbehandling"
 
 msgid "Water type"
 msgstr "Vanntype"
+
+msgid "Water value"
+msgstr "Vannverdi"
 
 msgid "Water volume"
 msgstr "Vannvolum"
@@ -12028,6 +12092,9 @@ msgstr "Elementet %(widget)s: plassering og størrelse må være hele tall."
 msgid "Widgets %(widget)s and %(other)s overlap."
 msgstr "Elementene %(widget)s og %(other)s overlapper."
 
+msgid "Width"
+msgstr "Bredde"
+
 msgid "Width (m)"
 msgstr "Bredde (m)"
 
@@ -12076,6 +12143,9 @@ msgstr ""
 
 msgid "Worked out from the values"
 msgstr "Regnet ut fra verdiene"
+
+msgid "Worth a look"
+msgstr "Verdt en titt"
 
 msgid "Worth checking:"
 msgstr "Verdt å sjekke:"
@@ -13258,6 +13328,9 @@ msgstr "den 7. i neste måned"
 msgid "the board’s default"
 msgstr "panelets standard"
 
+msgid "the layout being designed"
+msgstr "oppsettet som utformes"
+
 msgid "the options must be a set of named values."
 msgstr "valgene må være et sett navngitte verdier."
 
@@ -13432,6 +13505,22 @@ msgstr "deg"
 #, python-format
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "du la inn %(weight)s: %(grams)s g, %(percent)s %%"
+
+#, python-brace-format
+msgid "{label} added at column {x}, row {y}."
+msgstr "{label} lagt til i kolonne {x}, rad {y}."
+
+#, python-brace-format
+msgid "{label} is now {w} columns wide and {h} rows high."
+msgstr "{label} er nå {w} kolonner bred og {h} rader høy."
+
+#, python-brace-format
+msgid "{label} moved to column {x}, row {y}."
+msgstr "{label} flyttet til kolonne {x}, rad {y}."
+
+#, python-brace-format
+msgid "{label} removed."
+msgstr "{label} fjernet."
 
 #, python-format
 msgid "ΔCO₂ %(value)s mg/L"

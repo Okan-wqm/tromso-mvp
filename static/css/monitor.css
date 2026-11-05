@@ -186,3 +186,56 @@ html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700;
   .monitor-bar-svg .band { forced-color-adjust: none; fill: Canvas; stroke: CanvasText; }
   .monitor-bar-svg .marker { forced-color-adjust: none; fill: CanvasText; }
 }
+
+/* ---- the card designer (Reference data › Card templates, Design tab; frontend/designer.ts) -------------------- */
+.designer { grid-column: 1 / -1; display: grid; gap: .75rem; }
+.designer-bar, .designer-tools, .designer-palette, .designer-preview-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .75rem; }
+.designer-bar { justify-content: space-between; }
+.designer-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem); gap: 1rem; align-items: start; }
+@media (max-width: 799px) { .designer-main { grid-template-columns: minmax(0, 1fr); } }
+/* The canvas is the card's 12 columns at a fixed row height (--row-px tells the script the same height in pixels). */
+.designer-canvas {
+  --row-px: 28;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 12), minmax(0, 1fr));
+  grid-auto-rows: 28px;
+  min-height: calc(28px * 8);
+  padding-top: 2.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--white);
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: calc(100% / 12) 28px;
+  background-position: 0 2.25rem;
+  touch-action: none;
+}
+.designer-canvas.no-lines { background-image: none; }
+.designer-frame { position: absolute; inset: 0 0 auto 0; height: 2rem; padding: .375rem .75rem; border-bottom: 2px solid var(--muted); background: var(--mist); color: var(--muted); font-size: .8125rem; pointer-events: none; }
+.designer-item {
+  position: relative;
+  grid-column: calc(var(--x) + 1) / span var(--w);
+  grid-row: calc(var(--y) + 1) / span var(--h);
+  margin: 2px;
+  padding: .25rem .5rem;
+  overflow: hidden;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  background: var(--mist);
+  color: var(--speck);
+  font: inherit;
+  text-align: left;
+  cursor: grab;
+}
+.designer-item[aria-pressed="true"] { border: 2px solid var(--olive-deep); background: var(--white); }
+.designer-item[aria-invalid] { border: 2px dashed var(--error); }
+.designer-item:focus-visible { outline: 3px solid var(--stripe); outline-offset: 1px; }
+.designer-handle { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; border-left: 2px solid var(--muted); border-top: 2px solid var(--muted); cursor: nwse-resize; }
+.designer-inspector { display: grid; gap: .5rem; padding: .75rem; border: 1px solid var(--line); border-radius: 8px; }
+.designer-inspector label { display: grid; gap: .125rem; }
+.designer-inspector .designer-check, .designer-check { display: flex; align-items: center; gap: .375rem; }
+.designer-order ol { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 0; padding-left: 1.25rem; }
+.designer-problems ul { margin: .25rem 0; padding-left: 1.25rem; }
+.designer-preview { --card-min: 26rem; max-width: calc(var(--card-min) * 1.05); }
+.designer-json textarea { width: 100%; font-family: var(--font-mono); }
+@media (forced-colors: active) { .designer-item[aria-pressed="true"] { border-color: Highlight; } }

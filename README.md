@@ -765,7 +765,10 @@ that lose their pointer; restoring brings back the template only. A rule's form 
 system, system type, species, kind (none: every unit); the list is in the ladder's order, the global rule last, which
 cannot be deleted or narrowed. Role matrix areas **Card templates** and **Card template rules** (after Handling rules);
 reading Monitoring needs neither, and a reader of cards without them cannot open the designer. A template saved writes an
-activity-log entry, so every wall's change token moves.
+activity-log entry, so every wall's change token moves. The designer's **preview** (`POST /card-templates/preview/`, JSON `{layout,
+unit, name, state}`, the change right, at most 64 KB) checks the layout first (an error draws nothing and is listed), then
+draws the same card the wall would for that one unit with the previewer's own rights, marked `data-preview`; it writes and
+logs nothing, and `state` (a forced state for a look at it) is accepted there only.
 
 **The frame says more** (owner decision 4: a unit in maintenance, cleaning or quarantine rolls up as before): the unit's status
 when it is not active ("Maintenance"), the withdrawal as a note chip (it lasts weeks; not an alarm), a dashed line when the
@@ -2753,6 +2756,18 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   make the page inert and stop the wall. All the styles of the module, the wall (`?wall=1` puts
   `data-wall` on `<html>` through the `html_attrs` block of `app_base.html`: no rail, no top bar, no width
   limit) and the notices CSS prints from `data-poll-state`, are in `static/css/monitor.css`.
+- `designer.ts` the card designer of Reference data › Card templates (the Design tab, `templates/monitoring/widgets/_designer.html`):
+  it edits the form's own layout textarea (without script the layout is edited as text); a palette (click or Enter adds), a
+  canvas of the 12 columns under the card's fixed frame band (select; drag to move, the corner handle to resize, one history
+  entry per gesture; the arrow keys move, Shift and the arrow keys resize, Delete removes and selects the next, on the
+  focused widget: `grid/keyboard.ts`), an inspector (column, row, width, height counted from 1, the water value and point,
+  the widget's options from its descriptors), the reading order as links, undo, redo and revert (Ctrl+Z, Ctrl+Y), the
+  problems the server's validator finds (each links its widget, a refused widget is marked), and the preview: the server's
+  card for a unit chosen from the live units, optionally shown in a forced state, refreshed 400 ms after a change (a newer
+  request aborts the older); it replaces only the preview pane, so the focus on the canvas stays. A change is announced in a
+  polite live region from the `data-announce-*` sentences. Its browser test (`frontend/test/designer.browser.test.ts`)
+  runs Playwright on the machine's own Chrome or Edge with a stub preview server (keyboard, drag, palette, inspector, the
+  focus through a preview, axe-core finding no serious violation); it is skipped where there is no such browser.
 - `grid/` the card designer's grid library, our own (no grid package): `layout.ts` pure functions over an immutable
   layout (`catalogueOf` reads the server's widget catalogue, `parse`/`serialize` a stored layout, `check` the geometry the
   server's validator also checks, `clamp`, `compact`, `move`, `resize`, `add`, `remove`, `readingOrder`, `changes`,
@@ -2928,7 +2943,9 @@ real mail.
 | `/feeds/` | Reference data › Feeds; `<id>/suitability/` saves the species and fish weights a feed suits |
 | `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
 | `/operations/units/` | Operations › Production units; `?unit=<id>` opens a unit's drawer |
-| `/operations/monitoring/` | Operations › Monitoring: a live card per unit, simple or detailed; `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
+| `/card-templates/`, `/card-templates/<id>/copy/` (POST), `/card-templates/preview/` (POST JSON) | Setup › Reference data › Card templates: the designer, Copy, the designer's preview |
+| `/card-template-rules/` | Setup › Reference data › Card template rules |
+| `/operations/monitoring/` | Operations › Monitoring: a live card per unit, drawn with its card template (`?mode=simple|detailed` picks a built-in for a page without a board); `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
 | `/operations/monitoring/cards/` | The grid's children for the same address; `&after=<token>` answers 204 while nothing changed, `X-Poll-Next` is the next address |
 | `/operations/units/new-batch/` | A new batch (`?unit=<id>` chooses the unit) |
 | `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |

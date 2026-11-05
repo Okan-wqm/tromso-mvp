@@ -11,3 +11,5 @@ Used to build and test the browser code on a developer's machine or in CI; never
 |---|---|---|
 | `typescript` | Apache-2.0 | Compiles and type-checks `frontend/` |
 | `@types/node` | MIT | Types of Node's test runner and assertions, for the TypeScript unit tests only (`tsconfig.test.json`) |
+| `playwright-core` | Apache-2.0 | Drives the machine's own Chrome or Edge for the designer's browser test (`frontend/test/designer.browser.test.ts`); no browser is downloaded |
+| `axe-core` | MPL-2.0 | Accessibility rules run in that browser test on the designer (serious and critical violations fail it) |

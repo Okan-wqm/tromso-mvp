@@ -76,6 +76,7 @@ class CardTemplateResource(Resource):
     url_prefix = 'card-templates'
     search_fields = ['name', 'description']
     list_template = 'monitoring/template_list.html'
+    form_template = 'monitoring/template_form.html'
     icon = 'layout-dashboard'
     page_size = 50
 
@@ -97,8 +98,8 @@ class CardTemplateResource(Resource):
     @classmethod
     def urls(cls):
         from . import views
-        return super().urls() + [path(f'{cls.url_prefix}/<uuid:pk>/copy/', views.copy_template,
-                                      name='cardtemplate_copy')]
+        return [path(f'{cls.url_prefix}/preview/', views.preview, name='cardtemplate_preview'), *super().urls(),
+                path(f'{cls.url_prefix}/<uuid:pk>/copy/', views.copy_template, name='cardtemplate_copy')]
 
 
 class CardTemplateAssignmentResource(Resource):

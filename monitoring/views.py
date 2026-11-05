@@ -8,12 +8,15 @@ Who may read it: the right to read stock operations (the page's gate, as Product
 its own right (monitoring/read.py `sections_for`) and the card says so for one the person may not read. The fragment has
 the same gate. The Deffeyes chart in a card's window is the water page's endpoint (farm:water_unit_chart), which needs
 the right to read water samples."""
+import json
+from types import SimpleNamespace
 from urllib.parse import urlencode
+from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -27,7 +30,7 @@ from farm.models import ProductionDepartment, Site, System, Tank
 from farm.stock.views import VIEW
 
 from . import read
-from .cards import resolve
+from .cards import resolve, validate
 from .models import CardTemplate, CardWidth, MonitorBoard
 
 POLL = 'monitoring:cards'
@@ -169,3 +172,41 @@ def copy_template(request, pk):
         audit.record_create(request.user, copy, CardTemplateResource.recorded(copy),
                             entity_type=CardTemplateResource.entity_type())
     return redirect('monitoring:cardtemplate_edit', pk=copy.pk)
+
+
+PREVIEW_BYTES = 65536
+
+
+@require_POST
+@permission_required('monitoring.change_cardtemplate', raise_exception=True)
+def preview(request):
+    """The designer's preview: {layout, unit, name?, state?} as JSON; answers {html, problems}. The layout is checked by
+    the validator first (an error draws nothing), then the same card read and the same _card.html as the wall draw it for
+    that one unit, with the previewer's own rights. Nothing is written and nothing is logged. `state` forces the frame's
+    state for a look at it; it is accepted here only, and the card says it is a preview."""
+    if len(request.body) > PREVIEW_BYTES:
+        return JsonResponse({'error': 'too large'}, status=413)
+    try:
+        asked = json.loads(request.body)
+        unit = Tank.objects.select_related('production_department__site', 'system').get(pk=UUID(str(asked['unit'])))
+    except (ValueError, KeyError, TypeError, Tank.DoesNotExist):
+        return JsonResponse({'error': 'bad request'}, status=400)
+    layout = asked.get('layout')
+    problems = validate.validate(layout)
+    found = [problem.as_data() for problem in problems]
+    if any(problem.severity == validate.ERROR for problem in problems):
+        return JsonResponse({'html': '', 'problems': found})
+    name = str(asked.get('name') or '').strip()[:100] or _('New template')
+    chosen = resolve.Resolved(SimpleNamespace(pk='', shown_name=name, expanded_id=None), validate.upgrade(layout),
+                              resolve.PREVIEW)
+    try:
+        cards = read.cards([unit], request.user, resolve.Choice(preview=chosen), read.ALL)
+    except read.Unavailable:
+        return _unavailable()
+    if not cards:
+        return JsonResponse({'html': '', 'problems': found})
+    card = cards[0]
+    if asked.get('state') in read.RANK and asked['state'] != read.EMPTY_STATE:
+        card.__dict__['state'] = read.State(asked['state'], card.state.reasons, card.state.basis)   # the preview only
+    html = render_to_string('monitoring/_card.html', {'row': {'card': card, 'flip': {}, 'preview': True}}, request)
+    return JsonResponse({'html': html, 'problems': found})

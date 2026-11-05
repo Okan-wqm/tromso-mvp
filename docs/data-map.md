@@ -32,7 +32,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 43 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 44 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -59,7 +59,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_calculator.py`, `farm/tests/test_deffeyes.py` and 22 more
+- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_calculator.py`, `farm/tests/test_deffeyes.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2191,7 +2191,7 @@ Which template a unit’s card gets: a rule for one unit, system, system type, s
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_assignments
 - **forms**: `CardTemplateAssignmentForm`
 - **constraints**: chk_monitor_card_assignments_one_scope (check); uq_monitor_card_assignments_scope (unique: unit, system, system_type, species, kind); chk_monitor_card_assignments_system_type (check); chk_monitor_card_assignments_kind (check)
-- **tests that mention it**: `monitoring/tests/test_frame.py`, `monitoring/tests/test_render.py`, `monitoring/tests/test_resolve.py` and 2 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_frame.py`, `monitoring/tests/test_load.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2224,7 +2224,7 @@ The monitoring card templates: a name, the widgets of the card as a layout and t
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_templates
 - **forms**: `CardTemplateForm`
 - **constraints**: uq_monitor_card_templates_name_live (unique: name); chk_monitor_card_templates_name (check); chk_monitor_card_templates_schema (check); chk_monitor_card_templates_object (check); chk_monitor_card_templates_widgets (check); chk_monitor_card_templates_count (check); chk_monitor_card_templates_bytes (check); chk_monitor_card_templates_stamp (check); chk_monitor_card_templates_expanded (check); chk_monitor_card_templates_builtin (check)
-- **tests that mention it**: `monitoring/tests/test_frame.py`, `monitoring/tests/test_render.py`, `monitoring/tests/test_resolve.py` and 2 more
+- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_designer.py`, `monitoring/tests/test_frame.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

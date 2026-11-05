@@ -3,7 +3,7 @@
    template draws the card and why; a template cannot move, shrink or remove it), then the template's widgets placed on a 12-column CSS grid
    in reading order (monitoring/cards/render.py build). Below a narrow container the grid is one column in the same order
    (static/css/monitor.css); the wall runs no layout script. {% endcomment %}{% with card=row.card unit=row.card.unit state=row.card.state stock=row.card.stock chosen=row.card.template %}
-<article class="monitor-card monitor-{{ state.key }}" data-key="card:{{ unit.pk }}" data-template="{{ chosen.template.pk|default:'' }}" id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
+<article class="monitor-card monitor-{{ state.key }}" data-key="card:{{ unit.pk }}" data-template="{{ chosen.template.pk|default:'' }}"{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
   <header class="monitor-card-head">
     <div>
       <h3 id="card-title-{{ unit.pk }}"><a href="{% url 'farm:production_units' %}?unit={{ unit.pk }}">{{ unit.code }}</a></h3>

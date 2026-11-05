@@ -2029,6 +2029,9 @@ msgstr "Not ekle"
 msgid "Add a point to it"
 msgstr "Ona bir nokta ekle"
 
+msgid "Add a widget"
+msgstr "Bileşen ekle"
+
 msgid "Add band"
 msgstr "Ağırlık aralığı ekle"
 
@@ -3175,6 +3178,13 @@ msgstr ""
 
 msgid "Card"
 msgstr "Kart"
+
+msgid ""
+"Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow "
+"keys, remove it with Delete."
+msgstr ""
+"Kart yerleşimi: bir bileşen seçin, ok tuşlarıyla taşıyın, Shift ve ok tuşlarıyla boyutlandırın, "
+"Delete ile kaldırın."
 
 msgid "Card template rules"
 msgstr "Kart şablonu kuralları"
@@ -5334,6 +5344,9 @@ msgstr "Boylama"
 msgid "Grading recorded: %(count)s fish of %(batch)s from %(unit)s to %(units)s."
 msgstr "Boylama kaydedildi: %(batch)s partisinden %(count)s balık %(unit)s biriminden %(units)s birimine."
 
+msgid "Grid lines"
+msgstr "Izgara çizgileri"
+
 msgid "Gross energy (MJ/kg)"
 msgstr "Brüt enerji (MJ/kg)"
 
@@ -5539,6 +5552,9 @@ msgstr "Isıtma ve soğutma"
 
 msgid "Heating capacity"
 msgstr "Isıtma kapasitesi"
+
+msgid "Height"
+msgstr "Yükseklik"
 
 #, python-format
 msgid "Hi %(name)s,"
@@ -5855,6 +5871,9 @@ msgstr ""
 
 msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
 msgstr "Resmî makamlara yapılan bildirimlerdeki numarası (kar veya merd numarası), koddan farklıysa."
+
+msgid "Its own state"
+msgstr "Kendi durumu"
 
 #, python-format
 msgid "Its parts are on another site: %(parts)s. Move them first."
@@ -6549,6 +6568,9 @@ msgstr "Ad veya kod"
 msgid "Name the person whose observation or advice it is."
 msgstr "Gözlemin ya da önerinin kime ait olduğunu yazın."
 
+msgid "Narrow"
+msgstr "Dar"
+
 msgid "Narrows the list of types."
 msgstr "Tür listesini daraltır."
 
@@ -6619,6 +6641,9 @@ msgstr "Yeni tank"
 
 msgid "New task"
 msgstr "Yeni görev"
+
+msgid "New template"
+msgstr "Yeni şablon"
 
 msgid "Newer"
 msgstr "Daha yeni"
@@ -7946,6 +7971,12 @@ msgstr "Basınç"
 msgid "Pressure sensor"
 msgstr "Basınç sensörü"
 
+msgid "Preview on"
+msgstr "Önizleme birimi"
+
+msgid "Preview updated."
+msgstr "Önizleme güncellendi."
+
 msgid "Previous"
 msgstr "Önceki"
 
@@ -8146,6 +8177,9 @@ msgstr ""
 msgid "Read the text, page by page"
 msgstr "Metni sayfa sayfa oku"
 
+msgid "Reading order"
+msgstr "Okuma sırası"
+
 msgid "Reagents"
 msgstr "Kimyasallar"
 
@@ -8281,6 +8315,9 @@ msgstr "Yinelenen görev"
 
 msgid "Recurring tasks"
 msgstr "Yinelenen görevler"
+
+msgid "Redo"
+msgstr "Yinele"
 
 msgid "Reduced appetite"
 msgstr "Azalmış iştah"
@@ -8453,6 +8490,9 @@ msgstr "İade"
 
 msgid "Return to supplier"
 msgstr "Tedarikçiye iade"
+
+msgid "Revert"
+msgstr "Geri al (kayıtlı hâle)"
 
 msgid "Review"
 msgstr "İnceleme"
@@ -8958,6 +8998,9 @@ msgstr "Bir birim seçin"
 msgid "Select a water type"
 msgstr "Bir su tipi seçin"
 
+msgid "Select a widget to change it."
+msgstr "Değiştirmek için bir bileşen seçin."
+
 msgid "Select an active protocol"
 msgstr "Aktif bir protokol seçin"
 
@@ -9051,6 +9094,9 @@ msgstr "Tümünü göster"
 #, python-format
 msgid "Show all %(plural)s"
 msgstr "Tüm %(plural)s"
+
+msgid "Show as"
+msgstr "Şöyle göster"
 
 msgid "Show deleted rows"
 msgstr "Silinmiş satırları göster"
@@ -9856,6 +9902,9 @@ msgid ""
 "card is drawn with."
 msgstr "Her izleme panosunun kartları: bir birim ve panodan farklıysa kartının çizildiği şablon."
 
+msgid "The card’s frame: the unit, its state and why, the withdrawal. Always shown."
+msgstr "Kartın çerçevesi: birim, durumu ve nedeni, bekleme süresi. Her zaman gösterilir."
+
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Grafik çizilemiyor: bu noktanın güncel bir değeri yok:"
 
@@ -10244,6 +10293,9 @@ msgid_plural "The latest %(weeks)s weeks of counts, per site."
 msgstr[0] "Saha başına son haftanın sayımları."
 msgstr[1] "Saha başına son %(weeks)s haftanın sayımları."
 
+msgid "The layout as text"
+msgstr "Metin olarak yerleşim"
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
@@ -10439,6 +10491,9 @@ msgstr "Havuzda %(slots)d tekrar için %(items)d öğe var: tekrar sayısı kada
 
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reçeteyle verilen bir ilaç için reçetenin numarası."
+
+msgid "The preview shows only what you may read yourself."
+msgstr "Önizleme yalnızca sizin okuyabildiklerinizi gösterir."
 
 msgid "The primary endpoint is not chosen."
 msgstr "Birincil sonuç değişkeni seçilmedi."
@@ -11188,6 +11243,9 @@ msgstr "%(facility)s tesisine"
 msgid "To fix before it can start"
 msgstr "Başlamadan önce düzeltilecekler"
 
+msgid "To fix before saving"
+msgstr "Kaydetmeden önce düzeltilecekler"
+
 msgid "To location"
 msgstr "Hedef yer"
 
@@ -11355,6 +11413,9 @@ msgstr "Bakımda"
 
 msgid "Under withdrawal today"
 msgstr "Bugün bekleme süresinde"
+
+msgid "Undo"
+msgstr "Geri al"
 
 msgid "Unique"
 msgstr "Benzersiz"
@@ -11662,6 +11723,9 @@ msgstr "Su arıtma"
 
 msgid "Water type"
 msgstr "Su tipi"
+
+msgid "Water value"
+msgstr "Su değeri"
 
 msgid "Water volume"
 msgstr "Su hacmi"
@@ -12038,6 +12102,9 @@ msgstr "%(widget)s bileşeni: yeri ve boyutu tam sayı olmalı."
 msgid "Widgets %(widget)s and %(other)s overlap."
 msgstr "%(widget)s ve %(other)s bileşenleri üst üste biniyor."
 
+msgid "Width"
+msgstr "Genişlik"
+
 msgid "Width (m)"
 msgstr "Genişlik (m)"
 
@@ -12086,6 +12153,9 @@ msgstr ""
 
 msgid "Worked out from the values"
 msgstr "Değerlerden hesaplanan"
+
+msgid "Worth a look"
+msgstr "Bakmaya değer"
 
 msgid "Worth checking:"
 msgstr "Kontrol etmeye değer:"
@@ -13266,6 +13336,9 @@ msgstr "sonraki ayın 7’si"
 msgid "the board’s default"
 msgstr "panonun varsayılanı"
 
+msgid "the layout being designed"
+msgstr "tasarlanan yerleşim"
+
 msgid "the options must be a set of named values."
 msgstr "seçenekler adlandırılmış değerler kümesi olmalı."
 
@@ -13440,6 +13513,22 @@ msgstr "siz"
 #, python-format
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "girdiğiniz %(weight)s: %(grams)s g, %%%(percent)s"
+
+#, python-brace-format
+msgid "{label} added at column {x}, row {y}."
+msgstr "{label}, {x}. sütun {y}. satıra eklendi."
+
+#, python-brace-format
+msgid "{label} is now {w} columns wide and {h} rows high."
+msgstr "{label} artık {w} sütun genişliğinde ve {h} satır yüksekliğinde."
+
+#, python-brace-format
+msgid "{label} moved to column {x}, row {y}."
+msgstr "{label}, {x}. sütun {y}. satıra taşındı."
+
+#, python-brace-format
+msgid "{label} removed."
+msgstr "{label} kaldırıldı."
 
 #, python-format
 msgid "ΔCO₂ %(value)s mg/L"

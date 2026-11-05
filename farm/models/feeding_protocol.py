@@ -16,7 +16,7 @@ import uuid
 from decimal import Decimal
 
 from django.contrib.postgres.constraints import ExclusionConstraint
-from django.contrib.postgres.fields import DateRangeField, DecimalRangeField, RangeOperators
+from django.contrib.postgres.fields import DecimalRangeField, RangeOperators
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -26,6 +26,7 @@ from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
+from core.ranges import DateRange
 
 from ..water import parameters
 from .feed import MAX_WEIGHT_G, Feed
@@ -54,12 +55,6 @@ class NumRange(Func):
     """numrange(lower, upper, bounds): a weight band as PostgreSQL compares it."""
     function = 'numrange'
     output_field = DecimalRangeField()
-
-
-class DateRange(Func):
-    """daterange(lower, upper, bounds): the days an assignment covers; an empty upper end is open."""
-    function = 'daterange'
-    output_field = DateRangeField()
 
 
 class ProtocolStatus(models.TextChoices):

@@ -17,7 +17,7 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Two panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
-  Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
+  Knowledge, Administration, and HR) and **Production** (overview, production departments, systems, equipment, tanks,
   ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
   under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
   the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
@@ -85,7 +85,9 @@ the source:
   constraints; capacity cannot be negative.
 - Not carried over: `settings` and `area` (accepted but never stored), the second status flag
   `isActive`, the load figure that was never filled in. Notes can be shown and cleared.
-- The manager is a user of this system, and can be removed.
+- The manager is a user of this system, and can be removed. It is chosen on the form among the people who can sign in
+  (a person already chosen stays offered after their account is deactivated) and is what makes a team in HR: a manager
+  with a role that gives the HR pages sees and plans the department's people there (see Human resources).
 
 The bugs found in the source while porting are listed in
 [docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), with how each is avoided here.
@@ -2472,6 +2474,216 @@ Not built now: OCR of scanned PDFs, other file types (Word, images), reading the
 embeddings, the rules and their evaluator, exporting references (BibTeX, RIS), fetching a reference from its
 DOI (Crossref), versions of a document's file, phrase search ("…" in the query).
 
+## Human resources (Company › HR: `/hr/`)
+
+The company's people, where they work and, as the pages arrive, their time. It is one piece of the Company
+panel, not a module of its own: the same roles, delete plans, activity log, database viewer and languages. It is
+built by reading the source platform's HR service and listing what was wrong with it
+([docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), "Human resources"). The rules it holds:
+
+- **One source for departments.** Every production department is an HR department by itself: the Departments page
+  reads the farm's own rows (`hr.read.departments`), so a production department created, renamed or deleted under
+  Production is there at once with no HR write and no copy. Only the white-collar departments (Finance, administration,
+  management) are HR's own rows (`hr.OfficeDepartment`, table `office_departments`); they nest under one another for the
+  organisation chart.
+- **A team lead sees and plans their own team only, and never pay.** The role matrix gives the verbs; the rows come from
+  the relationship, in one place (`hr.scope.team`, see Row scope under One format for every tab). There is no pay, bank
+  or identity-number column anywhere in `hr` (a test fails on one); pay will be an app of its own that points at the
+  person and is never offered to a team role.
+- **State is read, not stored:** who is present, late, absent or on leave, worked minutes, leave days, balances, head
+  counts and the department of a past day are worked out on the site's clock when a page is read.
+- **The law is owner data.** Limits (rest, weekly hours, days in a row) are settings that warn by default and may only be
+  stricter than the statute; none is a database constraint.
+
+The team lead is the **Manager** of a production department (chosen on the production department's form, shown in its
+list and logged) or of an office department, plus a role with the HR areas. The Manager field has no other effect.
+
+### Departments (`/hr/departments/`)
+
+One list over two kinds, production departments (never edited here: their name links to the farm's own form for
+whoever may change them) and office departments (created, edited and deleted here). A table with kind, status, site
+and manager, search by name or code, and filters for kind and status. An office department has a name, a code (unique
+among live ones, capital letters, digits, hyphens and underscores), a parent (the chart), a site (the clock of its
+people: set the site's time zone on the site), a manager, a status and a description. Database rules, tested with raw
+SQL: code unique among live rows (free again after a delete), name unique under one parent and among the top-level
+ones (`nulls_distinct=False`), not its own parent, a trigger that refuses a cycle however it is written (it walks up
+through deleted rows too, so a restore cannot close a loop), code and status checks. A department with departments
+below it is not deleted (the delete plan names them); a deleted one is restored from the admin, checked like a new one.
+
+### Team list (`/hr/team/`) and the team scope
+
+One row per person (`hr.Employee`, table `employees`): number, name, employment type (staff, student, researcher,
+technician, advisor, contractor, volunteer), first and last day. A person with an account is named by it (first and last
+name stay empty here, a database check); one who never signs in carries their own name, a last name at least. The account
+is optional, so a student or a visiting researcher needs no login (and gets no invitation mail). A person is never deleted:
+a last day closes the record and the history stays readable. There is no pay, bank, identity-number, address or contact
+column (`hr/tests/test_boundary.py` fails on one).
+
+**Where a person works is a dated placement** (`hr.Posting`, table `postings`): exactly one department, a production
+department or an office department (a database check, as a task's place is), a title, from a day and until a day (empty
+while open). One placement covers any day (an exclusion constraint), so the department of a past day is read, not
+overwritten. The form's Placement tab shows the current one; changing the department or the title needs the day the
+change counts from, and `hr.services.move` closes the open placement the day before and opens the next (one transaction,
+both logged; a change dated the first day of the current placement corrects it in place). A department with people placed
+in it is made inactive, not deleted (both links are PROTECT; the delete plan says so).
+
+**The team** (`hr.scope.team(user, day)`) is the one place that says who may reach whom: the person themselves, the people
+placed on that day in a production department the user manages (its Manager) or in an office department they manage or
+any below it, and, for a holder of Everyone (`hr.all_employee`, a column on the Employees row of the role matrix), every
+employee. `EmployeeResource.scoped` is that function, so the list, a person's read page, the edit and the placement given
+are all of the team, whatever the address or the query. A lead with a role that gives Read on Employees reads their
+team's read pages; the form needs Edit, and only a holder of Everyone can create someone (a new person has no team yet).
+A person who moved belongs to the old manager up to the move and to the new one from it (`scope.visible_days`, for the
+reads that run over several days). A manager without a role, or a role without a department, reaches nothing beyond
+themselves. The Departments page counts, per department, the people placed there today that the viewer may reach.
+
+The activity log shows the employees and their placements only to holders of Everyone (`core.audit.restrict`); a lead
+who reads the log sees everything else but not the people.
+
+### Time & shifts › Scheduling settings (`/hr/settings/scheduling/`), Shifts and Holidays
+
+**Scheduling settings** is the one row of limits and defaults (table `scheduling_settings`; a unique `singleton` column
+with a check keeps it one; the migration makes it, the only seed: no shift, holiday or leave type is seeded). It is
+changed, never added or deleted. Every setting has exactly one reader: the standard week (the Team overview), the
+minimum rest, the most days in a row and the rest rule, warn or block (the rules of the roster), the working weekdays
+(the days a leave request is charged for) and the punch window and the absent-after minutes (Today). The figures are
+labelled defaults on the page, **not the law**: none of the statutory figures is verified, so none is a database
+constraint (a rest of 60 minutes can be stored); the settings may only be set stricter than the statute, and the owner
+confirms them. Sanity checks only: ranges and the enumerations.
+
+**Shifts** (`/hr/settings/shifts/`, no menu line, reached from the settings page; Shifts is its own matrix area): a name,
+a code (capital letters, digits, hyphens, underscores; unique among live shifts, free again after a delete), the start
+and end on the wall clock of the site (an end at or before the start is the next day), a break (0-240, shorter than the
+shift: a database check on the two time columns), a grace (0-120), a tone 1-8 (a CSS class: no colour value is stored,
+HR-27) and a status. **Holidays** (`/hr/settings/holidays/`): a day, a name and a site or every site, one per day for
+every site and one per site (`nulls_distinct=False`); typed in by HR, never seeded, because the country's days are the
+owner's data. A site with holidays is not deleted.
+
+### Time & shifts › Shift schedule (`/hr/schedule/`)
+
+A week of the viewer's people as a table: a row per person (their department under the name), a cell per day, the planned
+hours at the end. A cell shows the shift (its code in its tone), "Off" for planned off, the holiday of the person's site, and
+a "!" with the finding when a rule is broken; it opens the plan of that person and day in a dialog (a plus on an empty cell
+when the viewer may create). The week is the ISO week (Monday first, no setting); `?week=` takes any date of it, `?department=`
+and the search narrow the people and never widen them, and the list says "n of m" with its own paging. Everything on the page is
+worked out on the server (`hr.read.week`: one query each for the page's people, their plan a fortnight either side, their
+placements and the holidays, whatever the number of people), and a person who moved is shown to each manager on their days
+only (`hr.scope.visible_days`).
+
+**One roster table** (`hr.ShiftAssignment`, `shift_assignments`, shown as "plan" in the log): a person and the day a shift
+starts (a night shift ends on the next day), the shift or none (planned off, which is not the same as no plan), a note (private:
+masked in the log and the viewer). One row per person and day among live rows; a cleared cell is a soft delete. Leave and
+holidays are joined when the week is read, there is no publish step, and every change is logged with its before and after.
+
+**Real instants, not wall-clock sums** (`hr/clock.py`): a shift on a day becomes two UTC instants through the site's time zone, so
+22:00-06:00 is 7 hours on the night the clocks go forward and 9 on the night they go back, and the rest between shifts is the
+real gap, across a week's border and for a night shift (the source computed 1920 minutes where 480 is right: HR-08).
+
+**The rules** (`hr/rules.py`, pure functions, one place each): two shifts that overlap and a shift on a day of approved leave
+always block; a rest shorter than the minimum warns or blocks by the setting; more hours than the standard week, more days in a
+row than the maximum and work on a holiday warn. They run on every save: a blocking finding is an error on the form and a
+warning is told after the save and written into the audit row. `hr.services.plan_shifts` sets a shift, planned off or nothing on
+a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, the rules for each person;
+a person outside the team is a 404 and writes nothing); the page's batch route is `/hr/schedule/plan/` (POST).
+
+### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
+
+**Leave types** (`/hr/settings/leave-types/`, no menu line, reached from Scheduling settings): a name, a code, the days a
+year (empty: no limit) and whether a request needs approval; owner data, none seeded. **A request** (`hr.LeaveRequest`,
+`leave_requests`) is a person, a type, a first and a last day, a status (pending, approved, rejected, cancelled), the person's
+reason, the decider, the time and a note. Database rules: the last day is not before the first; an approved or rejected request
+has the time it was decided; **no overlap** for one person while a request is pending or approved (an exclusion constraint on
+the days, so two people filing at once cannot both win; adjacent days, rejected, cancelled and deleted requests do not block);
+and **nobody decides their own leave**, by the service and by a trigger whatever writes.
+
+What a request costs is read, never stored (`hr.leave`): the days whose weekday is a working weekday (a setting, Monday to Friday
+by default) minus the holidays of every site and of the person's site, split by year for a request that crosses New Year (the
+source charged calendar days, HR-07); the balance of a type with a yearly allowance is the allowance less the days of the year
+that pending and approved requests are charged for, and a request over it is refused on the form. `away_on(day, user_ids)` is the
+interface for the places that may only learn that someone is away, never why.
+
+**One approval step.** Staff hold Read and Create (they file for themselves and cancel their own); a lead holds Edit as well,
+and **Edit also approves, rejects and cancels** (the matrix has no extra column, as for a knowledge entry's review). The decider
+is someone with Edit whose team holds the person and who is not the person; a lead's own request therefore reaches whoever has
+them in their team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
+pending request is cancelled by the person or a decider at any time, an approved one only while its first day has not started on
+the site's clock; the decisions are `hr.services.decide_leave` and `cancel_leave` (POST routes, a dialog for the rejection
+note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
+
+**Privacy.** A lead sees the person, the type and the days; the reason is the person's own words, shown to them and to the holders
+of Everyone only (the list, the read page and the edit form leave it out for anyone else, and a lead cannot overwrite it). The reason
+and the decision note are masked in the activity log ("Private text") and in the database viewer, and leave requests appear in the log
+only for holders of Everyone. Approved leave is read over the roster: planning a shift on a day of approved leave is refused, and
+the week shows the cell as on leave. When a person leaves, their later pending requests are cancelled and later plans removed.
+
+### HR dashboard › Today & attendance (`/hr/`) and Time & shifts › Attendance (`/hr/time/attendance/`)
+
+**A punch is a stretch, not a day** (`hr.AttendanceRecord`, `attendance_records`): a clock-in and a clock-out (none while the person
+is in), who made it (`self`: the person clocked in at the server's time, never the browser's; `entered`: a lead typed the time, on
+the site's clock, and must say why) and a note (private: masked in the log and the viewer). A person can work in two stretches and a
+night shift crosses midnight, so there is **no one-row-a-day rule** (the source's was a racy application check, HR-10, HR-14). The
+database holds the rest: the out is after the in, an entered stretch has its reason, no two stretches of a person overlap and at
+most one is open (an exclusion constraint on `tstzrange(clock_in, clock_out)`: an open stretch runs on to infinity, so it also
+forbids a second open one). A stretch has no stored day, site or state.
+
+**Who is where is read** (`hr.read.board`, `hr.rules.status`, pure): for each person of the viewer's team the planned shift today on the
+person's own site clock (or the night that began yesterday and is still running), their stretches from the punch window before the start
+(a setting) and their approved leave give one state: *upcoming* (before the start plus the grace), *not in yet* (until the later of the
+grace and the absent-after minutes), *absent*, *present* or *late* (clocked in, past the grace) while in, *done* once out, *on leave*. A
+record is a fact and the plan an intent: a person who is there but not planned is listed as present, "not planned". People planned off,
+with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
+leave. Today shows the figures (planned, here, late, not in yet, absent, on leave) and the people; the board is a fragment the page
+polls (`data-poll`, 30 seconds) and the server draws every number and every time, on the clock of each person's site. The person's own
+**Clock in** and **Clock out** buttons need Read on Attendance and an employee row of their own, and are refused while a stretch is open
+or none is.
+
+**The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the site's clock,
+with **Mark present** (Create: a person of the team, the times, the reason), a correction (Edit, logged with what it was before) and a
+void (Delete). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
+HR dashboard, where its Read page first sits).
+
+### HR dashboard › Organization chart (`/hr/organization/`) and Time & shifts › Team overview (`/hr/overview/`)
+
+**Team overview** is the Shift schedule's week as numbers (`hr.read.overview`, built from the same cells and the same scope, so the two pages
+cannot disagree): per person the days working, planned off and on leave, the planned hours and how many minutes they stand above or below the
+standard week (a setting; a week over it is marked), and per day how many work, are off or are away. It has the week, department and search
+filters and the "n of m" paging of the schedule, needs Read on the Shift schedule, and runs in a fixed number of queries.
+
+**Organization chart** is the company as nested lists, drawn by the server (no script, no layout algorithm; the browser's print makes a
+printed page of it): the sites with their production departments, then the office departments under their parents, each box with its manager
+and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
+production department created, renamed or deleted under Production is in the chart at once, from the same rows.
+
+**Rules the review of the branch added.** A record of a person belongs to the manager of the department the person was placed in
+on the record's own day (`hr.scope.by_day`: a plan, a punch, a leave request), so a person who moved leaves their old records with
+the old manager on every verb; the week names the department and the clock of the first day the viewer reaches, and its findings
+are worked out from the days the viewer reaches only. A lead does not plan or write their own attendance (Everyone may). The
+Manager of a production department and the account of an employee are chosen by those who administer HR (`hr.change_officedepartment`
+or Everyone), because they decide whose rows and whose private words a person reaches. A pending request carries no decider and a
+hand-entered note has words, as database checks; a decision note over 500 characters is an error on the page.
+
+### HR: checks, the demonstration company, the browser code and the tests
+
+- **`manage.py check_hr`** reads what no database constraint can hold because it looks at several rows and changes with time, and
+  fails with the list: a last day with a placement after it, leave after it, a placement before the person joined, a person placed in
+  no department today, an office department with people but no site (they would be read on the company clock) and an inactive
+  department with people. It changes nothing; a person decides.
+- **`manage.py seed_hr_demo`** (only with `DEBUG` on, idempotent) makes a small company for a walk-through in a browser: a site on
+  Oslo time, two production departments with managers, an office department, nine people placed in them, three shifts, a week of
+  plans, a holiday, leave types, a pending leave request, a punch, and four roles made like any role (Demo lead, Demo staff, Demo
+  HR admin, Demo auditor) with a sign-in each (`demo_lead_hatchery`, `demo_lead_nursery`, `demo_staff`, `demo_hr`, `demo_auditor`).
+- **Browser code** (`frontend/roster.ts`, TypeScript only): on the Shift schedule the arrow keys move between cells, and the paint
+  form (hidden without the script) picks a shift, selects cells and posts them to the batch route, which plans all or none; the page's
+  Print button is the shared `data-print`. The script has no text of its own.
+- **Tests** (`hr/tests/`): per model the create, read, edit, delete and restore round trips against stored rows with a test that
+  names every column; the constraints through `IntegrityError` on raw rows, including both triggers, the open punch and the
+  exclusions; the team scope by function and by URL for every actor (404 on every verb outside it, nothing written or logged, every
+  route needs a row in the matrix or the suite fails); the boundary (no pay, bank, tax or identity column, form field, template word
+  or import, and every free-text column named and masked); derived state at a fixed `now` for sites ahead of and behind UTC and the
+  7 and 9 hour nights; the rules as pure functions; the services' refusals leaving rows and log unchanged; query budgets (the same
+  number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
+  list; and the migrations back to nothing and forward again.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2493,14 +2705,14 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Saving
+  Delete, and Everyone where an area offers it: see Row scope). Create, Edit, Delete and Everyone include Read: the form adds it and the browser ticks it. Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -2711,6 +2923,24 @@ the prototype does not, because Operations holds the daily records. The menu is 
 where a page sits: the role matrix and the small heading above a tab's title follow it
 (`core.navigation.place`). There are no built-in roles: the platform admin creates roles
 and grants permissions.
+
+### Row scope: which records a person may reach
+
+The role matrix says which verbs a person has; **`Resource.scoped(request, objects)`** says which rows. It is
+the one hook, and by default it returns every row. A tab whose rows depend on a relationship (the HR area:
+the people of the department a person manages) overrides it once, and the core applies it to the list (before
+its search and filters), to every lookup of a record (the edit, delete, read and row-list pages) and to the
+lock a save takes. A record outside the scope does not exist for the person: it is a 404 on every verb,
+whatever the address or the query, and nothing is written or logged. Nothing else decides who may see a
+record, so a rule is never written a second time.
+
+The matrix has one more column for the same purpose, **Everyone** (`all`): offered by the one area whose rows
+are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and the scope function reads it as
+"no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
+punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
+that the field was set, replaced or cleared, not what it says (a short keyed digest of the text is kept so that
+a replacement is a change the log shows). A tab can also refuse a verb on a record it reaches (`Resource.allowed`: HR
+refuses editing, voiding and planning one's own attendance and plan).
 
 ### The delete plan
 

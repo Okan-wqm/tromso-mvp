@@ -354,6 +354,8 @@ class Resource:
     row_lists = ()        # RowList classes edited on the record's tabs (a site's contacts)
     page_size = None      # rows per page of the list; None lists every record on one page (nested lists)
     detail_template = ''  # a read page for one record (extends crud/detail.html); '' for none
+    private_fields = ()   # form fields holding a person's own text (a leave reason): the activity log says
+                          # "Private text" for a filled one and never stores the words
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -398,6 +400,27 @@ class Resource:
         return cls.queryset()
 
     @classmethod
+    def scoped(cls, request, objects):
+        """The records the person may reach at all: `objects` narrowed to the rows their relationship to the
+        data allows (HR: their own team). The role matrix says which verbs; this says which rows. A record
+        outside it does not exist for them: its page, its edit, its delete and its lists are a 404, whatever
+        the address or the query. The default is every row. It is applied to the list, to every record
+        lookup and to the locks a save takes, so a rule written here holds on every verb."""
+        return objects
+
+    @classmethod
+    def allowed(cls, request, obj, action):
+        """Whether the person may `action` ('change' or 'delete') this record they can reach: the verbs and the rows are
+        settled by the role and `scoped`; this is for a rule about the record itself (HR: not one's own attendance or plan).
+        The default allows it."""
+        return True
+
+    @classmethod
+    def visible(cls, request):
+        """Every live record of the tab the person may reach: `queryset` narrowed by `scoped`."""
+        return cls.scoped(request, cls.queryset())
+
+    @classmethod
     def form(cls, request, *args, **kwargs):
         """The tab's form; override to hand it more, e.g. who is editing."""
         return cls.form_class(*args, **kwargs)
@@ -410,7 +433,8 @@ class Resource:
     @classmethod
     def snapshot(cls, obj):
         """What the audit log compares before and after a save: the form's fields under its labels."""
-        return audit.snapshot(obj, tab_fields(cls.form_class.tabs), getattr(cls.form_class.Meta, 'labels', {}))
+        return audit.snapshot(obj, tab_fields(cls.form_class.tabs), getattr(cls.form_class.Meta, 'labels', {}),
+                              private=cls.private_fields)
 
     @classmethod
     def recorded(cls, obj):
@@ -498,7 +522,10 @@ class ResourceView:
         }
 
     def get_object(self, pk):
-        return get_object_or_404(self.resource.queryset(), pk=pk)
+        obj = get_object_or_404(self.resource.visible(self.request), pk=pk)
+        if self.action in ('change', 'delete') and not self.resource.allowed(self.request, obj, self.action):
+            raise PermissionDenied
+        return obj
 
 
 # NONE (core.widgets, imported above): a list filter's value for "records without one" (production departments
@@ -526,6 +553,10 @@ class ListView(ResourceView):
     def get(self, request):
         query = request.GET.get('q', '').strip()
         objects = self.resource.list_queryset(request)
+        if isinstance(objects, models.QuerySet):
+            # A tab whose list is not a queryset (a union of two kinds, a week) narrows it to the rows the person may
+            # reach in its own read; it cannot be narrowed afterwards.
+            objects = self.resource.scoped(request, objects)
         if query:
             objects = self.resource.search(objects, query)
         objects, filters = self.resource.filter_list(request, objects)
@@ -622,7 +653,7 @@ class UpdateView(FormView):
         if not form.is_valid():
             return self.page(form, obj)
         with transaction.atomic():
-            current = r.queryset().select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
+            current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
             versioned = 'version' in form.fields
             if versioned and form.cleaned_data.get('version') != current.version:
                 # Translators: %(name)s is the kind of record in lower case (e.g. site).
@@ -668,7 +699,9 @@ class DeleteView(ResourceView):
     def post(self, request, pk):
         r = self.resource
         with transaction.atomic():
-            obj = get_object_or_404(r.queryset().select_for_update(of=('self',)), pk=pk)
+            obj = get_object_or_404(r.visible(request).select_for_update(of=('self',)), pk=pk)
+            if not r.allowed(request, obj, 'delete'):
+                raise PermissionDenied
             if isinstance(obj, AuditedModel):
                 plan = plan_delete(obj)
                 if not plan.can_delete:
@@ -711,7 +744,7 @@ class RowListView(ResourceView):
             # As an edit of the record: locked, refused when it changed since the list was opened (its version
             # travels with the list), its version moved on. Asked again under the lock whether the record has
             # the list: a report filed meanwhile has no answers to change any more.
-            current = r.queryset().select_for_update(of=('self',)).get(pk=pk)
+            current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)
             versioned = isinstance(current, AuditedModel)
             if versioned and request.POST.get('version') != str(current.version):
                 # Translators: %(name)s is the kind of record in lower case (e.g. site).

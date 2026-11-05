@@ -22,6 +22,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from core.models import AuditLog
+from farm.clocks import clocks
 from farm.stock.dates import site_today
 
 from . import places, read
@@ -256,7 +257,7 @@ def materialise(series):
 def materialise_due():
     """Makes the planned tasks of every active recurring task that is behind (called before the task pages and
     the overview read, and by `manage.py generate_tasks`)."""
-    latest = max(clock.today for clock in read.clocks()) + timedelta(days=settings.TASK_HORIZON_DAYS)
+    latest = max(clock.today for clock in clocks()) + timedelta(days=settings.TASK_HORIZON_DAYS)
     behind = TaskSeries.objects.filter(is_active=True).exclude(generated_until__gte=latest)
     return [task for series in behind for task in materialise(series)]
 

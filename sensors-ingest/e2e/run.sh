@@ -67,6 +67,8 @@ done
 check "$([ "$(docker inspect -f '{{.State.Health.Status}}' "$ING")" = healthy ] && echo 1)" "ingest container healthy (/healthz: database, lock, broker)"
 O2=$(ch O2-SUMP); DO=$(ch DO); TEMP=$(ch TEMP-IN); FLOW=$(ch FLOW)
 
+# the simulator may start later than the ingest on a loaded machine: the window opens once the field is publishing
+for _ in $(seq 1 60); do [ "$(sql "SELECT count(*) FROM sensors_reading WHERE channel_no = $O2")" -gt 5 ] && break; sleep 3; done
 echo "== steady stream (60 s)"
 T0=$(now); sleep 60; T1=$(now)
 read -r G MAXG N <<<"$(gaps "$O2" "$T0" "$T1" | tr '|' ' ')"

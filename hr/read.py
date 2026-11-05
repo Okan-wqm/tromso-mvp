@@ -257,6 +257,67 @@ def week(user, week_start, department=None, page=1, per_page=50, query='', realm
     return Week(start, days, rows, len(rows), paginator.count, shown.number, paginator.num_pages)
 
 
+# ---- the crew: what a production worker sees of their colleagues ---------------------------------------------------
+@dataclass
+class CrewCell:
+    """A colleague working on a day: the shift's code, times and tone, and nothing else."""
+    day: date
+    shift_code: str
+    starts_at: object
+    ends_at: object
+    tone: int
+
+
+@dataclass
+class CrewRow:
+    """A colleague's week: their name, the department they share with the viewer, and a cell per day; None where they do not
+    work (planned off, on leave, nothing planned, or not in the viewer's department that day: the same empty cell)."""
+    name: str
+    department: str
+    cells: list
+
+
+@dataclass
+class CrewWeek:
+    days: list
+    rows: list
+
+
+def crew_week(user, week_start):
+    """The week of the viewer's crew (hr.scope.colleagues) for the Crew block of their schedule. Built from plain values, never
+    from a plan, a leave request or a punch, so it cannot carry a note, a finding, a leave type, an absence or a number of
+    hours, whatever a page does with it; and nothing in it opens a record. In a fixed number of queries."""
+    start = monday(week_start)
+    days = [start + timedelta(days=n) for n in range(7)]
+    crew = scope.colleagues(user, days[0], days[-1])
+    if not crew:
+        return CrewWeek(days, [])
+    people = list(Employee.objects.filter(pk__in=list(crew), joined_on__lte=days[-1]).filter(
+        Q(left_on__isnull=True) | Q(left_on__gte=days[0])).select_related('user').order_by(
+        'last_name', 'first_name', 'employee_number'))
+    ids = [person.pk for person in people]
+    plan = {(row.employee_id, row.day): row.shift for row in ShiftAssignment.objects.filter(
+        employee__in=ids, day__range=(days[0], days[-1]), shift__isnull=False).select_related('shift')}
+    away = leave.approved_days(ids, days[0], days[-1])
+    placed = defaultdict(list)
+    for posting in Posting.objects.filter(scope.overlapping(days[0], days[-1]), employee__in=ids,
+                                          production_department__isnull=False).select_related(
+            'production_department').order_by('valid_from'):
+        placed[posting.employee_id].append(posting)
+    rows = []
+    for person in people:
+        cells = []
+        for day in days:
+            shift = plan.get((person.pk, day))
+            works = day in crew[person.pk] and shift is not None and day not in away.get(person.pk, set())
+            cells.append(CrewCell(day, shift.code, shift.starts_at, shift.ends_at, shift.tone) if works else None)
+        first = min(crew[person.pk])       # the department they share with the viewer, on the first day they do
+        shared = next((p for p in placed[person.pk]
+                       if p.valid_from <= first and (p.valid_until is None or p.valid_until >= first)), None)
+        rows.append(CrewRow(person.full_name, shared.production_department.name if shared else '', cells))
+    return CrewWeek(days, rows)
+
+
 # ---- today: who is where ----------------------------------------------------------------------------------------
 @dataclass
 class BoardRow:

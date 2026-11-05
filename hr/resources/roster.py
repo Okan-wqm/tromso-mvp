@@ -74,7 +74,16 @@ class ShiftAssignmentResource(Resource):
         week = objects
         return week.rows, {'week': week, 'departments': units.choices(kinds=[scope.realm_for(request)]),
                            'chosen_department': request.GET.get('department', ''),
-                           'shifts': cls.shifts()}
+                           'shifts': cls.shifts(), 'crew': cls.crew(request, week)}
+
+    CREW = 'hr.crew_shiftassignment'
+
+    @classmethod
+    def crew(cls, request, week):
+        """The Crew block under the viewer's own week: in Production › Team, for a holder of Crew (hr.read.crew_week)."""
+        if scope.realm_for(request) != scope.PRODUCTION or not request.user.has_perm(cls.CREW):
+            return None
+        return read.crew_week(request.user, week.start)
 
     @classmethod
     def shifts(cls):

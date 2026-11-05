@@ -3653,6 +3653,9 @@ msgstr "Soğuk oda"
 msgid "Collapse menu"
 msgstr "Menüyü daralt"
 
+msgid "Colleague"
+msgstr "Çalışma arkadaşı"
+
 msgid "Column"
 msgstr "Sütun"
 
@@ -3928,6 +3931,9 @@ msgstr "Oluşturan"
 
 msgid "Crew"
 msgstr "Ekip"
+
+msgid "Crew this week"
+msgstr "Bu haftaki ekip"
 
 msgid "Critical"
 msgstr "Kritik"
@@ -7430,6 +7436,9 @@ msgid "Nobody else can use Messages yet: the platform admin gives it to a role (
 msgstr ""
 "Henüz başka kimse Mesajlar'ı kullanamıyor: platform yöneticisi bunu bir role verir (Roller, "
 "Mesajlar: Görüntüle)."
+
+msgid "Nobody else is placed in your department this week."
+msgstr ""
 
 msgid "Nobody is expected today"
 msgstr "Bugün kimse beklenmiyor"

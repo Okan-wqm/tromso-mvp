@@ -3647,6 +3647,9 @@ msgstr "Kjølerom"
 msgid "Collapse menu"
 msgstr "Skjul menyen"
 
+msgid "Colleague"
+msgstr "Kollega"
+
 msgid "Column"
 msgstr "Kolonne"
 
@@ -3922,6 +3925,9 @@ msgstr "Opprettet av"
 
 msgid "Crew"
 msgstr "Skiftlag"
+
+msgid "Crew this week"
+msgstr "Skiftlaget denne uken"
 
 msgid "Critical"
 msgstr "Kritisk"
@@ -7420,6 +7426,9 @@ msgid "Nobody else can use Messages yet: the platform admin gives it to a role (
 msgstr ""
 "Ingen andre kan bruke Meldinger ennå: plattformadministratoren gir det til en rolle (Roller, "
 "Meldinger: Les)."
+
+msgid "Nobody else is placed in your department this week."
+msgstr ""
 
 msgid "Nobody is expected today"
 msgstr "Ingen forventes i dag"

@@ -779,6 +779,16 @@ dot that carries meaning at least 3:1 (the water page's warning dot moved from #
 sage never carries meaning (a note card's border is the muted green, an empty one's dotted); `@media (forced-colors: active)`
 keeps the shapes, the bands of a bar and the state borders in high-contrast mode.
 
+**Measured with templates** (2026-11-05, , run with ; the test database on this
+development machine, the test client): a wall of 200 cards drawn with a 12-widget template (four values, a bar, every
+figure of the fish, the feeding week, every point's water, health, tasks, the Deffeyes button) costs 67 queries, 3.4 s and
+1,512 KB for the page, 62 queries, 3.1 s and 1,477 KB for the fragment (about 7.5 KB a card: each value now says its
+origin and age), and the unchanged poll 7 queries in 0.03 s. Decision: no card cache, no widget hash or patch protocol and
+no gzip in Django now. The queries stay flat with the units and the 204 path answers every unchanged poll, so a wall pays
+the 3 s at most once a minute (the token's bucket) or after a change; gzip belongs to the web server in front (compressing
+pages with a CSRF token in Django invites BREACH), and a cache or a patch protocol waits for a measured miss on the wall's
+own hardware (the live check of the plan: 20 polls, 30 % of the cards changing, long tasks, a 24 h memory soak).
+
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
 an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the

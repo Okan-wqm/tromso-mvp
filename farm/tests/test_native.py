@@ -3,6 +3,7 @@ runs only with the chemcore build that chemcore/EXPECTED names, and never withou
 import ast
 import importlib
 import sys
+import types
 from pathlib import Path
 from unittest import mock
 
@@ -52,6 +53,18 @@ class NoFallback(SimpleTestCase):
         try:
             with mock.patch.dict(sys.modules, {'chemcore': None}):
                 with self.assertRaises(ImportError):
+                    importlib.reload(native)
+        finally:
+            importlib.reload(native)
+
+    def test_the_source_directory_is_not_the_module(self):
+        """Without the wheel, `import chemcore` finds the checkout's chemcore/ directory as an empty namespace
+        package (seen in the old runner image): the door refuses it, by name, at import."""
+        empty = types.ModuleType('chemcore')
+        empty.__path__ = [str(Path(settings.BASE_DIR) / 'chemcore')]
+        try:
+            with mock.patch.dict(sys.modules, {'chemcore': empty}):
+                with self.assertRaisesRegex(ImportError, 'not installed'):
                     importlib.reload(native)
         finally:
             importlib.reload(native)

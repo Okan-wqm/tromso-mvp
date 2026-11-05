@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Case, Q, Value, When
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import Mount, Resource
@@ -25,8 +25,9 @@ class LeaveTypeResource(Resource):
 
 
 class LeaveRequestResource(Resource):
-    """Leave requests. Everyone with Read sees their own team's requests (`scoped`); a request's person and type are the
-    team lead's to see, its reason only the person's and the holders of Everyone's. Edit also approves, rejects and cancels
+    """Leave requests. Everyone with Read sees their own team's requests (`scoped`); a request's person and dates are the
+    team lead's to see, its type only the person's, a decider's (Edit) and Everyone's, its reason only the person's and the
+    holders of Everyone's. Edit also approves, rejects and cancels
     (the matrix has no extra column): the decision is `hr.services.decide_leave`, never the form. Nobody deletes a request:
     a wrong one is cancelled."""
 
@@ -47,7 +48,19 @@ class LeaveRequestResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return scope.by_day(request.user, objects, 'employee', 'first_day', scope.realm_for(request))
+        """The team's requests, each marked with whether the viewer may read its type (`type_shown`): the search reads the
+        mark, so a search for a type finds only the requests whose type the viewer sees."""
+        objects = scope.by_day(request.user, objects, 'employee', 'first_day', scope.realm_for(request))
+        if cls.sees_every_type(request.user):
+            return objects.annotate(type_shown=Value(True))
+        return objects.annotate(type_shown=Case(When(employee__user=request.user, then=Value(True)), default=Value(False)))
+
+    @classmethod
+    def sees_every_type(cls, user):
+        """Whether the user may read the type (sick, annual) of every request they reach: a holder of Everyone, or who may
+        decide them (Edit), to replace a shift. Anyone else reads only the type of their own requests: a type is health
+        data when it says sick, and a reader without the right to decide has no need of it."""
+        return user.has_perm(scope.ALL) or user.has_perm(cls.perm('change'))
 
     @classmethod
     def form(cls, request, *args, **kwargs):
@@ -59,7 +72,7 @@ class LeaveRequestResource(Resource):
     def search(cls, objects, query):
         return objects.filter(Q(employee__employee_number__icontains=query) | Q(employee__first_name__icontains=query)
                               | Q(employee__last_name__icontains=query) | Q(employee__user__username__icontains=query)
-                              | Q(leave_type__name__icontains=query))
+                              | Q(leave_type__name__icontains=query, type_shown=True))
 
     LIMIT = 200       # the requests of a tab shown at once; the page says how many there are
 
@@ -84,6 +97,7 @@ class LeaveRequestResource(Resource):
         and the people's sites read once), the reason (the person's and Everyone's only) and the buttons. The requests are
         the viewer's team's already (`scoped`), so the team is not asked again per row."""
         everyone = request.user.has_perm(scope.ALL)
+        sees_types = cls.sees_every_type(request.user)
         sites = read.sites_of([(item.employee_id, item.first_day) for item in requests])
         holidays = leave.holiday_table([item.first_day for item in requests], [item.last_day for item in requests])
         weekdays = SchedulingSettings.get().working_weekdays
@@ -96,6 +110,7 @@ class LeaveRequestResource(Resource):
                 'days': leave.leave_days(item.first_day, item.last_day, sites[(item.employee_id, item.first_day)],
                                          weekdays, holidays),
                 'show_reason': own or everyone,
+                'show_type': own or sees_types,
                 'can_decide': can_edit and not own and item.status == LeaveStatus.PENDING,
                 'can_cancel': services.can_cancel(request.user, item, listed=True,
                                                   today=site_today(sites[(item.employee_id, item.first_day)])),

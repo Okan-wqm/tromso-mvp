@@ -1,13 +1,13 @@
 {% extends "crud/detail.html" %}
 {% load i18n crud %}
 {% comment %} One leave request as the viewer reads it (hr.resources.LeaveRequestResource.detail_extras): the type and the dates
-   to the team's lead, the reason only to the person and the holders of Everyone. {% endcomment %}
+   to the team's lead (the type only to who may decide it), the reason only to the person and the holders of Everyone. {% endcomment %}
 {% block title %}{{ object.employee.full_name }}{% endblock %}
 {% block heading %}{{ object.employee.full_name }}{% endblock %}
 {% block details %}
 <section class="detail-section">
   <dl class="facts">
-    <div><dt>{% trans "Leave type" %}</dt><dd>{{ object.leave_type.name }}</dd></div>
+    {% if row.show_type %}<div><dt>{% trans "Leave type" %}</dt><dd>{{ object.leave_type.name }}</dd></div>{% endif %}
     <div><dt>{% trans "First day" %}</dt><dd>{{ object.first_day|date:"DATE_FORMAT" }}</dd></div>
     <div><dt>{% trans "Last day" %}</dt><dd>{{ object.last_day|date:"DATE_FORMAT" }}</dd></div>
     <div><dt>{% trans "Charged" %}</dt><dd>{{ row.days|floatformat:"-2" }}</dd></div>

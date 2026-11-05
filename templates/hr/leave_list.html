@@ -25,7 +25,7 @@
           <a class="row-title" href="{% url 'hr:leaverequest_detail'|mounted:request row.request.pk %}" data-modal>{{ row.request.employee.full_name }}</a>
           {% if row.show_reason and row.request.reason %}<span class="row-sub">{{ row.request.reason|truncatechars:80 }}</span>{% endif %}
         </td>
-        <td>{{ row.request.leave_type.name }}</td>
+        <td>{% if row.show_type %}{{ row.request.leave_type.name }}{% else %}<span class="muted">–</span>{% endif %}</td>
         <td>{{ row.request.first_day|date:"DATE_FORMAT" }} – {{ row.request.last_day|date:"DATE_FORMAT" }}</td>
         <td class="num">{{ row.days|floatformat:"-2" }}</td>
         <td><span class="badge badge-leave-{{ row.request.status }}">{{ row.request.get_status_display }}</span></td>

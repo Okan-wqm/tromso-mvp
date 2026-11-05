@@ -112,9 +112,15 @@ class EveryParameterShowsTests(DemoCase):
         for channel in tank_device.channels.all():
             self.assertRegex(page, rf'unit sensor #{channel.channel_no} · \d+ s ago', channel.quantity)
         system_device = Device.objects.get(code=f'{demo.CODE_PREFIX}{self.ras.code}')
-        loop = point_of(self.ras)
-        for channel in system_device.channels.all():
+        own = set(tank_device.channels.values_list('quantity', flat=True))
+        for channel in system_device.channels.exclude(quantity__in=own):          # the tank's own sensors come first (A1)
             self.assertRegex(page, rf'system sensor #{channel.channel_no} · \d+ s ago', channel.quantity)
+        loop = point_of(self.ras)
+        water = water_read.latest([loop])[loop.pk]
+        for channel in system_device.channels.all():
+            reading = water.get(channel.quantity)
+            self.assertEqual((reading.origin, reading.sample.channel_no),
+                             (water_read.Origin.SYSTEM_SENSOR, channel.channel_no))
         start = now - timedelta(hours=1)
         for target, device in ((self.units[0], tank_device), (self.ras, system_device)):
             for code in device.channels.values_list('quantity', flat=True):

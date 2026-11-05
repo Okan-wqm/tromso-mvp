@@ -20,6 +20,7 @@
 A unit's chart reads its middle point's channels, then its system's; a system's, the system's and its loop's; a point's,
 its own (and the system's when it is a system's middle point); a piece of equipment's, its own. Bucket boundaries are on
 the tier's grid: a sensor moved in the middle of an hour is counted in the hour rollup at the place its hour began."""
+from bisect import bisect_right
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone as dt_timezone
 
@@ -376,26 +377,39 @@ def replay_step(start, end, step):
 
 def replay_rows(found, moments, tier):
     """{(segment index, moment): (ts, value)}: each segment's newest clean value at or before each moment taken while
-    it was bound there (the raw readings below an hour; the last value of each hour ENDED by the moment above). ONE
-    query for every segment and moment."""
+    it was bound there. ONE query for every segment and moment: below an hour a step-after lookup of the readings per
+    segment and moment (the primary key's index); above, the hours of the range read once and each moment given the last
+    value of the newest hour ENDED by it (never an hour still running at the moment)."""
     if not found or not moments:
         return {}
     numbers = [segment.channel_no for segment in found]
     starts = [segment.start for segment in found]
     ends = [segment.end for segment in found]
     if tier == RAW:
-        lateral = (f'SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= m.at '
-                   f'AND ts >= s.valid_from AND ts < s.valid_to AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1')
-    else:
-        lateral = ("SELECT last_ts AS ts, vlast AS value FROM sensors_rollup_1h WHERE channel_no = s.channel_no "
-                   "AND bucket + INTERVAL '1 hour' <= m.at AND bucket >= s.valid_from AND bucket < s.valid_to "
-                   "ORDER BY bucket DESC LIMIT 1")
-    sql = (f'SELECT s.ord, m.at, r.ts, r.value FROM unnest(%s::timestamptz[]) AS m(at) '
-           f'CROSS JOIN unnest(%s::int[], %s::timestamptz[], %s::timestamptz[]) WITH ORDINALITY '
-           f'AS s(channel_no, valid_from, valid_to, ord) CROSS JOIN LATERAL ({lateral}) r')
+        sql = (f'SELECT s.ord, m.at, r.ts, r.value FROM unnest(%s::timestamptz[]) AS m(at) '
+               f'CROSS JOIN unnest(%s::int[], %s::timestamptz[], %s::timestamptz[]) WITH ORDINALITY '
+               f'AS s(channel_no, valid_from, valid_to, ord) CROSS JOIN LATERAL ('
+               f'SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= m.at '
+               f'AND ts >= s.valid_from AND ts < s.valid_to AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r')
+        with connection.cursor() as cursor:
+            cursor.execute(sql, [moments, numbers, starts, ends])
+            return {(int(ordinal) - 1, at): (ts, value) for ordinal, at, ts, value in cursor.fetchall()}
     with connection.cursor() as cursor:
-        cursor.execute(sql, [moments, numbers, starts, ends])
-        return {(int(ordinal) - 1, at): (ts, value) for ordinal, at, ts, value in cursor.fetchall()}
+        cursor.execute('SELECT channel_no, bucket, last_ts, vlast FROM sensors_rollup_1h WHERE channel_no = ANY(%s) '
+                       'AND bucket >= %s AND bucket < %s ORDER BY channel_no, bucket',
+                       [list(set(numbers)), min(starts), max(moments)])
+        hours = {}
+        for number, bucket, last_ts, value in cursor.fetchall():
+            hours.setdefault(number, []).append((bucket, last_ts, value))
+    found_rows = {}
+    for index, segment in enumerate(found):
+        rows = [row for row in hours.get(segment.channel_no, []) if segment.start <= row[0] < segment.end]
+        ended = [row[0] + HOUR for row in rows]
+        for at in moments:
+            position = bisect_right(ended, at) - 1
+            if position >= 0:
+                found_rows[(index, at)] = (rows[position][1], rows[position][2])
+    return found_rows
 
 
 def _water_types(target):

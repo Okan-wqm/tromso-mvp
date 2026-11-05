@@ -32,7 +32,7 @@ echo "== the runner's lock names the pins of requirements.txt"
 python3 - <<'PY' || fail "docker/requirements.lock and requirements.txt disagree"
 import re
 pins = lambda path: {m.group(1).lower().replace('_', '-'): m.group(2) for m in
-                     (re.match(r'^([A-Za-z0-9_.-]+)==([^ \]+)', line) for line in open(path)) if m}
+                     (re.match(r'^([A-Za-z0-9_.-]+)==([0-9A-Za-z.+!-]+)', line) for line in open(path)) if m}
 wanted, locked = pins('../requirements.txt'), pins('../docker/requirements.lock')
 wrong = {name: (version, locked.get(name)) for name, version in wanted.items() if locked.get(name) != version}
 assert not wrong, wrong

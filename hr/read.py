@@ -19,7 +19,7 @@ from . import clock, leave, rules, scope, units
 from .models import (AttendanceRecord, Employee, Holiday, OfficeDepartment, Posting, SchedulingSettings,
                      ShiftAssignment)
 
-PRODUCTION, OFFICE = 'production', 'office'
+from .scope import OFFICE, PRODUCTION      # the two kinds of department are the two realms
 
 
 @dataclass

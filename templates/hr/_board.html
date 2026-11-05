@@ -1,0 +1,29 @@
+{% load i18n hr %}{# The board's fragment (hr.views.today_board): the figures and the people, drawn by the server. #}
+<ul class="tiles" role="list">
+  <li><span class="tile"><span class="tile-count">{{ board.planned }}</span><span class="tile-label">{% trans "Planned today" %}</span></span></li>
+  <li><span class="tile"><span class="tile-count">{{ board.here }}</span><span class="tile-label">{% trans "Here now" %}</span></span></li>
+  <li><span class="tile"><span class="tile-count">{{ board.counts.late|default:0 }}</span><span class="tile-label">{% trans "Late" %}</span></span></li>
+  <li><span class="tile"><span class="tile-count">{{ board.counts.not_in|default:0 }}</span><span class="tile-label">{% trans "Not in yet" %}</span></span></li>
+  <li><span class="tile"><span class="tile-count">{{ board.counts.absent|default:0 }}</span><span class="tile-label">{% trans "Absent" %}</span></span></li>
+  <li><span class="tile"><span class="tile-count">{{ board.counts.on_leave|default:0 }}</span><span class="tile-label">{% trans "On leave" %}</span></span></li>
+</ul>
+{% if board.rows %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Employee" %}</th><th scope="col">{% trans "Shift" %}</th><th scope="col">{% trans "In" %}</th><th scope="col">{% trans "Out" %}</th><th scope="col">{% trans "State" %}</th></tr></thead>
+    <tbody>
+      {% for row in board.rows %}
+      <tr>
+        <th scope="row"><span class="row-title">{{ row.employee.full_name }}</span><span class="row-sub">{% if row.department %}{{ row.department.name }}{% else %}{% trans "Not placed" %}{% endif %}</span></th>
+        <td>{% if row.shift %}<span class="shift-chip tone-{{ row.shift.tone }}">{{ row.shift.code }}</span> {{ row.shift.starts_at|time:"H:i" }}–{{ row.shift.ends_at|time:"H:i" }}{% elif row.unscheduled %}<span class="muted">{% trans "Not planned" %}</span>{% else %}–{% endif %}</td>
+        <td>{% if row.standing.first_in %}{{ row.standing.first_in|on_clock:row.zone|date:"H:i" }}{% else %}–{% endif %}</td>
+        <td>{% if row.standing.last_out %}{{ row.standing.last_out|on_clock:row.zone|date:"H:i" }}{% else %}–{% endif %}</td>
+        <td><span class="badge badge-state-{{ row.state }}">{% if row.state == "upcoming" %}{% trans "Upcoming" %}{% elif row.state == "present" %}{% trans "Present" %}{% elif row.state == "late" %}{% blocktrans trimmed with minutes=row.standing.late_minutes %}Late {{ minutes }} min{% endblocktrans %}{% elif row.state == "not_in" %}{% trans "Not in yet" %}{% elif row.state == "absent" %}{% trans "Absent" %}{% elif row.state == "on_leave" %}{% trans "On leave" %}{% else %}{% trans "Done" %}{% endif %}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty"><h2>{% trans "Nobody is expected today" %}</h2><p>{% trans "The people of your team who are planned today, on leave or here appear on this page." %}</p></div>
+{% endif %}

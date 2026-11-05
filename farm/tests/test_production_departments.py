@@ -155,3 +155,51 @@ class DepartmentAuditAndPermissionTests(ProductionDepartmentTestCase):
             self.client.post(reverse('farm:productiondepartment_create'), production_department_data(self.bergen)).status_code, 403)
         self.assertEqual(self.client.post(reverse('farm:productiondepartment_delete', args=[department.pk])).status_code, 403)
         self.assertNotContains(self.client.get(reverse('home')), reverse('farm:site_list'))
+
+
+class DepartmentManagerTests(ProductionDepartmentTestCase):
+    """The manager sees and plans the department's people in HR: settable here, and nowhere else."""
+
+    def setUp(self):
+        super().setUp()
+        self.user.groups.add(role('HR administration', 'change_officedepartment'))     # who may choose the manager
+        self.kari = get_user_model().objects.create_user('kari', 'kari@example.com', 'x')
+        self.ola = get_user_model().objects.create_user('ola', 'ola@example.com', 'x', is_active=False)
+
+    def test_create_read_edit_clear_and_log_the_manager(self):
+        # Create
+        self.client.post(reverse('farm:productiondepartment_create'),
+                         production_department_data(self.bergen, manager=str(self.kari.pk)))
+        department = ProductionDepartment.objects.get()
+        self.assertEqual(department.manager, self.kari)
+        # Read: the edit form shows it, the list names the person
+        form = self.client.get(reverse('farm:productiondepartment_edit', args=[department.pk])).context['form']
+        self.assertEqual(form['manager'].value(), self.kari.pk)
+        self.assertContains(self.client.get(reverse('farm:productiondepartment_list')), 'kari')
+        # Edit to another person, then clear
+        other = get_user_model().objects.create_user('nora', 'nora@example.com', 'x')
+        self.client.post(reverse('farm:productiondepartment_edit', args=[department.pk]),
+                         production_department_data(self.bergen, manager=str(other.pk), version='1'))
+        department.refresh_from_db()
+        self.assertEqual(department.manager, other)
+        self.client.post(reverse('farm:productiondepartment_edit', args=[department.pk]),
+                         production_department_data(self.bergen, manager='', version='2'))
+        department.refresh_from_db()
+        self.assertIsNone(department.manager)
+        changes = [row.changes.get('Manager') for row in AuditLog.objects.order_by('created_at')]
+        self.assertEqual(changes, [[None, 'kari'], ['kari', 'nora'], ['nora', None]])
+
+    def test_only_people_who_can_sign_in_are_offered_and_one_already_chosen_stays(self):
+        department = self.make()
+        offered = self.client.get(reverse('farm:productiondepartment_edit', args=[department.pk])
+                                  ).context['form'].fields['manager'].queryset
+        self.assertNotIn(self.ola, offered)
+        self.assertIn(self.kari, offered)
+        errors = self.client.post(reverse('farm:productiondepartment_edit', args=[department.pk]),
+                                  production_department_data(self.bergen, manager=str(self.ola.pk), version='1')
+                                  ).context['form'].errors
+        self.assertIn('manager', errors)
+        ProductionDepartment.objects.filter(pk=department.pk).update(manager=self.ola)    # deactivated afterwards
+        offered = self.client.get(reverse('farm:productiondepartment_edit', args=[department.pk])
+                                  ).context['form'].fields['manager'].queryset
+        self.assertIn(self.ola, offered)

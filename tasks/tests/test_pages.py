@@ -504,6 +504,6 @@ class IntegrationTests(TasksTestCase):
         self.assertContains(self.client.get(LIST), 'Oppgaver')
 
     def test_the_moment_a_task_is_due_now_is_not_yet_overdue(self):
-        with mock.patch('tasks.read.timezone.now', return_value=timezone.now()):
+        with mock.patch('farm.clocks.timezone.now', return_value=timezone.now()):
             self.make_task(due_date=self.today, due_time=None)
             self.assertEqual(read.counts(Task.objects.all())['overdue'], 0)

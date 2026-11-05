@@ -23,7 +23,7 @@
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">{% trans "Production department" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col" class="num">{% trans "Capacity" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+      <tr><th scope="col">{% trans "Production department" %}</th><th scope="col">{% trans "Type" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Manager" %}</th><th scope="col" class="num">{% trans "Capacity" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     <tbody>
       {% for department in objects %}
@@ -34,6 +34,7 @@
         </td>
         <td>{{ department.get_type_display }}</td>
         <td>{% if department.site %}{{ department.site.name }}{% else %}<span class="text-warning">{% trans "No site" %}</span>{% endif %}</td>
+        <td>{% if department.manager %}{{ department.manager.get_full_name|default:department.manager.get_username }}{% else %}–{% endif %}</td>
         <td class="num">{% if department.capacity is not None %}{{ department.capacity|floatformat:"-2g" }}{% else %}–{% endif %}</td>
         <td class="row-actions">
           {% if can_change %}<a class="icon-button" href="{% url 'farm:productiondepartment_edit' department.pk %}" data-modal title="{% blocktrans with name=department.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=department.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}

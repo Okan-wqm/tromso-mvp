@@ -7,52 +7,19 @@ date or completing a task needs no second write.
 The page's views (Today, Open, Completed) are each a query of their own, filtered and paged on the server
 (the source filtered the first 50 tasks in the browser, TSK-04)."""
 from dataclasses import dataclass
-from datetime import datetime, time
 from functools import reduce
 from operator import or_
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.db.models import BooleanField, Case, Count, IntegerField, OuterRef, Q, Subquery, Value, When
 from django.db.models.functions import Coalesce
-from django.utils import timezone
 
-from farm.models import Site
-from farm.models.site import zone_of
+from core import people
+from farm.clocks import clocks
 
 from .models import CLOSED_STATUSES, OPEN_STATUSES, PRIORITY_RANK, Status, Task, TaskChecklistItem
 
 TODAY, OPEN, COMPLETED = 'today', 'open', 'completed'
 VIEWS = (TODAY, OPEN, COMPLETED)
-
-
-@dataclass(frozen=True)
-class Clock:
-    """The day and the time now on one time zone, and which sites read it (None: the places without a site,
-    on the company's clock)."""
-    sites: tuple
-    today: object
-    now: time
-    start: datetime     # the start of today, an aware moment
-
-    @property
-    def on(self):
-        return Q(site_key__isnull=True) if self.sites is None else Q(site_key__in=self.sites)
-
-
-def clocks(moment=None):
-    """One Clock per time zone the sites use, and one for the places without a site."""
-    moment = moment or timezone.now()
-    zones = {}
-    for site in Site.all_objects.only('pk', 'timezone'):
-        zones.setdefault(zone_of(site), []).append(site.pk)
-    found = [(tuple(ids), zone) for zone, ids in zones.items()] + [(None, zone_of(None))]
-    result = []
-    for sites, zone in found:
-        local = timezone.localtime(moment, zone)
-        start = datetime.combine(local.date(), time.min, tzinfo=zone)
-        result.append(Clock(sites, local.date(), local.time().replace(tzinfo=None), start))
-    return result
 
 
 def _any(conditions):
@@ -63,17 +30,17 @@ def overdue(now):
     """Open or in progress, and past the due date, or due today with the due time passed, on its site's clock
     (`now`: the clocks). Use on a queryset `with_site()`."""
     return Q(status__in=OPEN_STATUSES) & _any(
-        clock.on & (Q(due_date__lt=clock.today) | Q(due_date=clock.today, due_time__lt=clock.now)) for clock in now)
+        clock.on() & (Q(due_date__lt=clock.today) | Q(due_date=clock.today, due_time__lt=clock.now)) for clock in now)
 
 
 def due_today(now):
     """Open or in progress and due today on its site's clock, not yet overdue."""
-    return Q(status__in=OPEN_STATUSES) & _any(clock.on & Q(due_date=clock.today) for clock in now) & ~overdue(now)
+    return Q(status__in=OPEN_STATUSES) & _any(clock.on() & Q(due_date=clock.today) for clock in now) & ~overdue(now)
 
 
 def done_today(now):
     """Completed today on its site's clock."""
-    return Q(status=Status.DONE) & _any(clock.on & Q(completed_at__gte=clock.start) for clock in now)
+    return Q(status=Status.DONE) & _any(clock.on() & Q(completed_at__gte=clock.start) for clock in now)
 
 
 def _count(rows):
@@ -154,13 +121,7 @@ def readers():
     """The people a task can be for: active users who can read Tasks (the platform admin among them). Someone
     who cannot read Tasks could never see a task given to them (the source mixed in workers without a login,
     TSK-02)."""
-    users = get_user_model().objects
-    perm = Permission.objects.filter(content_type__app_label='tasks', codename='view_task')
-    holders = (Q(is_superuser=True) | Q(pk__in=users.filter(groups__permissions__in=perm).values('pk'))
-               | Q(pk__in=users.filter(user_permissions__in=perm).values('pk')))
-    return users.filter(holders, is_active=True).order_by('first_name', 'last_name', 'username')
+    return people.who_can('tasks', 'view_task')
 
 
-def person(user):
-    """A person as the pages name them: their full name, else their username."""
-    return user.get_full_name() or user.get_username()
+person = people.person_name

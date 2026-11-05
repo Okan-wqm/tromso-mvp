@@ -54,7 +54,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Activity log', 'Roles', 'Users', 'Database'])
+                                                 'Activity log', 'Roles', 'Users', 'Database', 'Today & attendance', 'Team list', 'Departments',
+                                                 'Organization chart', 'Shift schedule', 'Team overview', 'Attendance', 'Leave requests', 'Scheduling settings'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
@@ -63,7 +64,7 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                                     'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
                                                     'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                     'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                    'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
+                                                    'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Messages'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -123,7 +124,7 @@ class PanelMemoryTests(WorkspaceTestCase):
                                                   'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
                                                   'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                   'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
-                                                  'Health events', 'Sea-lice counts', 'Regulatory reports', 'Messages'])
+                                                  'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Messages'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -156,7 +157,7 @@ class MainHeadingTests(WorkspaceTestCase):
         self.assertEqual(self.headings(response),
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
                                                  'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Reports', ['']),
+                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']), ('Reports', ['']),
                           ('Communication', [''])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
@@ -165,11 +166,13 @@ class MainHeadingTests(WorkspaceTestCase):
         self.assertContains(response, '<p class="rail-group">Harvest and logistics</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Purchasing</p>', html=True)
 
-    def test_company_has_no_main_headings(self):
+    def test_company_has_one_main_heading_hr(self):
         self.sign_in(self.admin)
         response = self.page(reverse('home'))
-        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration'])])
-        self.assertNotContains(response, 'rail-section')
+        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration']),
+                                                    ('HR', ['HR dashboard', 'Time & shifts'])])
+        self.assertContains(response, '<p class="rail-section">HR</p>', html=True, count=1)
+        self.assertContains(response, 'rail-section', count=1)
 
     def test_a_heading_with_nothing_the_person_may_read_is_not_shown(self):
         self.sign_in(self.user)
@@ -219,12 +222,22 @@ class MenuPlacementTests(TestCase):
             'farm.Treatment': 'Production · Operations · Health',
             'farm.HealthEvent': 'Production · Operations · Health',
             'farm.LiceCount': 'Production · Operations · Health',
+            'experiments.Experiment': 'Production · Research',
             'reports.Report': 'Production · Reports',
             'messaging.Conversation': 'Production · Communication',
             'tasks.Task': 'Production · Operations',
             'tasks.TaskSeries': 'Production · Operations',
             'knowledge.Document': 'Company · Knowledge',
             'knowledge.KnowledgeEntry': 'Company · Knowledge',
+            'hr.Employee': 'Company · HR · HR dashboard',
+            'hr.OfficeDepartment': 'Company · HR · HR dashboard',
+            'hr.Shift': 'Company · HR · Time & shifts',
+            'hr.ShiftAssignment': 'Company · HR · Time & shifts',
+            'hr.AttendanceRecord': 'Company · HR · HR dashboard',
+            'hr.LeaveRequest': 'Company · HR · Time & shifts',
+            'hr.LeaveType': 'Company · HR · Time & shifts',
+            'hr.Holiday': 'Company · HR · Time & shifts',
+            'hr.SchedulingSettings': 'Company · HR · Time & shifts',
             'sensors.Connection': 'Sensors · Setup',
             'sensors.PayloadFormat': 'Sensors · Setup',
             'sensors.Device': 'Sensors · Setup',

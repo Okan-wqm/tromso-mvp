@@ -1,0 +1,41 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Starting an experiment (experiments.resources.ExperimentStartView): what is wrong with the design (the errors block
+   starting, the warnings are read and acknowledged with one box that carries their fingerprint, so changed warnings are
+   asked again), and what starting does. Nothing here changes a farm record until Start.{% endcomment %}
+{% block title %}{% blocktrans trimmed with experiment=object %}Start {{ experiment }}{% endblocktrans %}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
+{% block heading %}{% blocktrans trimmed with experiment=object %}Start {{ experiment }}{% endblocktrans %}{% endblock %}
+{% block content %}
+<div class="confirm">
+  {% if object.status != "draft" %}
+  <p class="notice">{% trans "This experiment has started." %}</p>
+  {% elif object.is_template %}
+  <p class="notice notice-warning">{% trans "A template is not started: copy it into an experiment." %}</p>
+  {% else %}
+  <p class="confirm-question">{% blocktrans trimmed with experiment=object %}Start “{{ experiment }}”?{% endblocktrans %}</p>
+  <p>{% trans "Starting fixes the design for ever: the hypothesis, the groups, their levels and replicates, the tanks and the days. For each group with a diet, its feeding protocol is assigned to its tanks for their days (Operations › Feeding › Assignments), so the meal board feeds by it. The figures are read from the farm’s own records over these days." %}</p>
+  {% include "experiments/_findings.html" %}
+  <form method="post" action="{{ request.get_full_path }}" novalidate>
+    {% csrf_token %}
+    {{ form.version }}
+    {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% if findings.warnings %}
+    {% with field=form.start_ack %}
+    <div class="field{% if field.errors %} has-error{% endif %}">
+      <label class="check">{{ field }} {{ field.label }}</label>
+      <div class="help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>
+      {{ field.errors }}
+    </div>
+    {% endwith %}
+    {% elif form.start_ack.errors %}
+    <div class="notice notice-warning" role="alert">{{ form.start_ack.errors }}</div>
+    {% endif %}
+    <div class="form-actions">
+      <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
+      <button type="submit" class="button button-inline"{% if findings.errors %} disabled{% endif %}>{% trans "Start" %}</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% load i18n stock feeding %}{% comment %} The Overview of an experiment (experiments.read.overview): what is wrong with a draft, then a replicate a row, by
+   group, each with its tanks, the batches of the species that were in them on their days, the fish and the biomass now (while it
+   runs), the survival over the days and the feed conversion over the days, read from the farm's own records. No figure of a
+   group is made here: a mean over replicates is a statistic, which the statistics come with. A dash says why: hover it. {% endcomment %}
+{% if findings %}{% include "experiments/_findings.html" %}{% endif %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Replicate" %}</th><th scope="col">{% trans "Tanks" %}</th><th scope="col">{% trans "Batches" %}</th><th scope="col" class="num">{% trans "Fish now" %}</th><th scope="col" class="num">{% trans "Biomass now" %}</th><th scope="col" class="num"><abbr title="{% trans "Share of the fish of the first day that were not lost since: dead, culled or lost fish counted from the first day of the tank to its last day or today" %}">{% trans "Survival" %}</abbr></th><th scope="col" class="num"><abbr title="{% trans "Biological feed conversion ratio over the days of the tanks: the feed given per kg of growth, from the weighing on the first day to the latest weighing" %}">{% trans "bFCR" %}</abbr></th><th scope="col" class="num"><abbr title="{% trans "Economic feed conversion ratio over the days of the tanks: dead, culled and lost fish are not credited" %}">{% trans "eFCR" %}</abbr></th></tr>
+    </thead>
+    <tbody>
+      {% regroup rows by group as groups %}
+      {% for group in groups %}
+      <tr class="group-head"><th scope="colgroup" colspan="8">{{ group.grouper.name }}{% if group.grouper.is_control %} <span class="badge badge-experimental">{% trans "Control" %}</span>{% endif %} <span class="muted">{{ group.grouper.get_role_display }}</span></th></tr>
+      {% for row in group.list %}
+      <tr>
+        <th scope="row">R{{ row.replicate.number }}</th>
+        <td>{% for cell in row.cells %}<span class="row-line nowrap">{{ cell.unit.code }} <span class="muted">{{ cell.first|date:"SHORT_DATE_FORMAT" }} – {{ cell.last|date:"SHORT_DATE_FORMAT" }}</span></span>{% empty %}<span class="muted">{% trans "No tank" %}</span>{% endfor %}{% if row.gap %}<span class="row-sub notice-cell">{% blocktrans trimmed with tanks=row.gap|join:", " %}Its feed conversion leaves out {{ tanks }}: no weighing at the move.{% endblocktrans %}</span>{% endif %}</td>
+        <td>{% for batch in row.batches %}{{ batch.code }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="muted">—</span>{% endfor %}</td>
+        <td class="num">{{ row.fish|fish }}</td>
+        <td class="num">{{ row.biomass_kg|kilos }}</td>
+        <td class="num">{{ row.survival|percent:1 }}</td>
+        {% with conversion=row.conversion %}
+        <td class="num"{% if not conversion.biological %} title="{% if row.unmeasured %}{{ row.unmeasured }}{% else %}{{ conversion.why_no_biological }}{% endif %}"{% endif %}>{{ conversion.biological|fcr }}</td>
+        <td class="num"{% if not conversion.economic %} title="{% if row.unmeasured %}{{ row.unmeasured }}{% else %}{{ conversion.why_no_economic }}{% endif %}"{% endif %}>{{ conversion.economic|fcr }}</td>
+        {% endwith %}
+      </tr>
+      {% endfor %}
+      {% empty %}
+      <tr><td colspan="8" class="muted">{% trans "No group." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if deviations is not None %}
+<div class="notice {% if deviations %}notice-warning{% endif %}">
+  <strong>{% trans "Deviations from the design" %}</strong>
+  {% if deviations %}
+  <p class="muted">{% trans "What the farm’s records show on the days of the tanks that the design did not say. Nothing is refused for a design: these are facts to read." %}</p>
+  <ul>{% for item in deviations %}<li><strong>{{ item.cell.group.name }} R{{ item.cell.replicate.number }}</strong> · {{ item.cell.unit.code }} <span class="muted">{{ item.first|date:"SHORT_DATE_FORMAT" }}{% if item.last != item.first %} – {{ item.last|date:"SHORT_DATE_FORMAT" }}{% endif %}</span><br>{{ item.text }}</li>{% endfor %}</ul>
+  {% else %}
+  <p class="muted">{% trans "No deviation from the design is found in the farm’s records." %}</p>
+  {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,67 @@
+{% load i18n %}{% comment %} The Design tab of an experiment (experiments.resources.ExperimentDesignView): a grid of the factors (the diet,
+   whose levels are feeding protocols, and any other factor) and a grid of the groups, each with its level of each factor and its
+   replicates, saved as a whole. Levels are made from the cells and never listed alone. Changing a factor's name or kind
+   renders the grid again with the column (data-refresh); "Add factor" does the same with an empty row. Once the experiment has
+   started the design is shown as it is. The add-row script reads the first TOTAL_FORMS of the form, so the groups'
+   management form comes first.{% endcomment %}
+<section class="tab-panel experiment-design" data-panel="design" aria-labelledby="design-title"{% if design_form.errors or factors.non_form_errors or factors.errors or groups.non_form_errors or groups.errors %} data-has-errors{% endif %}>
+  <h3 class="panel-title" id="design-title">{% trans "Design" %}</h3>
+  {% if frozen %}
+  <p class="notice">{% trans "The experiment has started, so its design is fixed: it was registered before the first day and what is judged is what was planned. To change it, copy the experiment and change the copy." %}</p>
+  {% include "experiments/_design_table.html" %}
+  {% include "experiments/_copy_buttons.html" %}
+  {% else %}
+  {% include "experiments/_findings.html" %}
+  {% if not object.is_template %}<p><a class="button button-inline" href="{{ start_url }}" data-modal>{% trans "Start the experiment" %}</a></p>{% endif %}
+  {% include "experiments/_copy_buttons.html" %}
+  <p class="panel-help">{% trans "A factor is what the groups differ in: the diet, whose levels are feeding protocols (how the farm applies it), or another factor such as a temperature, whose levels are labels. Each group has one level of each factor and its replicates, the tanks of which are placed on the Places tab. The design is saved as a whole." %}</p>
+  <form method="post" action="{{ design_url }}" novalidate data-formset>
+    {% csrf_token %}
+    {{ design_form.version }}
+    {% if design_form.non_field_errors %}<div class="form-error" role="alert">{{ design_form.non_field_errors }}</div>{% endif %}
+    {% if factors.non_form_errors %}<div class="form-error" role="alert">{{ factors.non_form_errors }}</div>{% endif %}
+    {% if groups.non_form_errors %}<div class="form-error" role="alert">{{ groups.non_form_errors }}</div>{% endif %}
+    {{ groups.management_form }}
+    {{ factors.management_form }}
+    <h4 class="section-title">{% trans "Factors" %}</h4>
+    <div class="table-wrap">
+      <table class="data-table grid-table">
+        <thead><tr><th scope="col">{% trans "Factor" %}</th><th scope="col">{% trans "Kind" %}</th><th scope="col">{% trans "Unit of its levels" %}</th><th scope="col"><span class="sr-only">{% trans "Remove" %}</span></th></tr></thead>
+        <tbody>
+          {% for row in factors %}
+          <tr class="factor-row">
+            <td class="{% if row.name.errors %}has-error{% endif %}">{{ row.id }}{% if row.non_field_errors %}<div class="form-error row-error">{{ row.non_field_errors }}</div>{% endif %}<label class="sr-only" for="{{ row.name.id_for_label }}">{{ row.name.label }}</label>{{ row.name }}{{ row.name.errors }}</td>
+            <td class="{% if row.kind.errors %}has-error{% endif %}"><label class="sr-only" for="{{ row.kind.id_for_label }}">{{ row.kind.label }}</label>{{ row.kind }}{{ row.kind.errors }}</td>
+            <td class="{% if row.unit.errors %}has-error{% endif %}"><label class="sr-only" for="{{ row.unit.id_for_label }}">{{ row.unit.label }}</label>{{ row.unit }}{{ row.unit.errors }}</td>
+            <td><label class="check check-remove">{{ row.DELETE }} {% trans "Remove" %}</label></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p><button type="submit" name="_draft" value="{{ add_factor }}" class="button button-ghost">{% include "icons/_icon.html" with name="plus" %}{% trans "Add factor" %}</button></p>
+    <h4 class="section-title">{% trans "Groups" %}</h4>
+    {% if groups.columns %}
+    <div class="table-wrap">
+      <table class="data-table grid-table">
+        <thead>
+          <tr><th scope="col">{% trans "Group" %}</th><th scope="col">{% trans "Role" %}</th>{% for column in groups.columns %}<th scope="col">{{ column.name }}{% if column.unit %} ({{ column.unit }}){% endif %}</th>{% endfor %}<th scope="col">{% trans "Replicates" %}</th><th scope="col"><span class="sr-only">{% trans "Remove" %}</span></th></tr>
+        </thead>
+        <tbody data-rows>
+          {% for row in groups %}{% include "experiments/_group_row.html" %}{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="contact-empty" data-empty{% if groups.forms %} hidden{% endif %}>{% trans "No group yet. Use “Add group” to add a row." %}</p>
+    <template data-row-template>{% with row=groups.empty_form %}{% include "experiments/_group_row.html" %}{% endwith %}</template>
+    {% else %}
+    <p class="contact-empty">{% trans "Name a factor first: the groups follow its columns." %}</p>
+    <template data-row-template></template>
+    {% endif %}
+    <div class="form-actions">
+      <button type="button" class="button button-ghost" data-add-row{% if not groups.columns %} disabled{% endif %}>{% include "icons/_icon.html" with name="plus" %}{% trans "Add group" %}</button>
+      <button type="submit" class="button button-inline">{% trans "Save design" %}</button>
+    </div>
+  </form>
+  {% endif %}
+</section>

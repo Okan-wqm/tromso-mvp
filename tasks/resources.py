@@ -10,6 +10,7 @@ from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
 from core.crud import Resource, RowList
 from core.widgets import NONE
+from farm.clocks import clocks
 from farm.stock.dates import site_today
 
 from . import places, read, services
@@ -162,7 +163,7 @@ class TaskResource(Resource):
         except ValueError:
             drawer_pk = None
         if drawer_pk is not None:
-            drawer = read.annotated(Task.objects.filter(pk=drawer_pk), read.clocks()).first()
+            drawer = read.annotated(Task.objects.filter(pk=drawer_pk), clocks()).first()
         if drawer is not None:
             context.update(drawer_context(request, drawer, address(task=str(drawer.pk)), address(task='')))
         return shown, context

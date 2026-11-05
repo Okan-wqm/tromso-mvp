@@ -69,7 +69,7 @@
       {% for line in row.lines %}{% with share=line.share basis=line.share.end %}
       <tr>
         {% if forloop.first %}
-        <th scope="rowgroup" rowspan="{{ count }}"><span class="row-title">{{ unit.code }}</span><span class="row-sub nowrap">{{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</span></th>
+        <th scope="rowgroup" rowspan="{{ count }}"><span class="row-title">{{ unit.code }}</span>{% if row.placements %}<span class="row-sub">{% include "farm/_placements.html" with chips=row.placements %}</span>{% endif %}<span class="row-sub nowrap">{{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</span></th>
         {% endif %}
         <td><span class="nowrap">{{ line.batch.code }}</span><span class="row-sub">{% blocktrans trimmed with fish=share.fish|fish biomass=share.biomass_kg|kilos %}{{ fish }} fish · {{ biomass }} est.{% endblocktrans %}</span></td>
         <td class="num">

@@ -17,7 +17,7 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Three panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
-  Knowledge, Administration) and **Production** (overview, production departments, systems, equipment, tanks,
+  Knowledge, Administration, and HR) and **Production** (overview, production departments, systems, equipment, tanks,
   ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
   under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
   the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
@@ -85,7 +85,9 @@ the source:
   constraints; capacity cannot be negative.
 - Not carried over: `settings` and `area` (accepted but never stored), the second status flag
   `isActive`, the load figure that was never filled in. Notes can be shown and cleared.
-- The manager is a user of this system, and can be removed.
+- The manager is a user of this system, and can be removed. It is chosen on the form among the people who can sign in
+  (a person already chosen stays offered after their account is deactivated) and is what makes a team in HR: a manager
+  with a role that gives the HR pages sees and plans the department's people there (see Human resources).
 
 The bugs found in the source while porting are listed in
 [docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), with how each is avoided here.
@@ -711,8 +713,9 @@ its table, to change and assign from a date.
 **An assignment** (table `protocol_assignments`) is one row per target: a unit (the protocol feeds whatever is in
 it), a whole batch (it follows the batch into every unit it is moved to, through transfers and splits) or a batch in
 one unit, from a day and optionally until a day (both included). The dialog offers the three as units and a batch to
-choose: units alone, a batch alone, or a batch and units; it writes a row per unit with one `group_id`, each logged,
-and says when a batch has not been in a chosen unit yet (a planned move is allowed). The database keeps one row in
+choose: units alone, a batch alone, or a batch and units; it writes a row per unit with one `group_id`, each logged
+(`farm/feeding/assignments.py`: the rows and their write path, which an experiment's start uses too, so its rows are the
+ones the dialog writes), and says when a batch has not been in a chosen unit yet (a planned move is allowed). The database keeps one row in
 force per unit, per batch and per batch in a unit on any day (three exclusion constraints among live rows; the form
 checks them by the constraint itself and says which unit clashes). For a batch in a unit on a day the most specific
 row wins: batch in unit, then unit, then whole batch (owner decision Q8); a unit's row for another species is read
@@ -861,6 +864,14 @@ notes, and **Void** while allowed.
   (the dash's title says which). Fish moved in by a plain transfer arrive at book weight, so they start a
   window only at their first weighing. Known bias, said in the drawer: dead fish leave at the last
   weighed average, so their growth since is not credited (bFCR a little high when many die).
+- **A bounded window** (`read.window(stay, first, last)`, `read.windows_in(unit_ids, first, last)`): the same window
+  with its ends put on the measured points of two given days (the last point of each day: the state at its end),
+  for a period that is not the whole stay (an experiment's days). A day without a measured point gives no window,
+  never an interpolated one, and a window must start before it ends; a bound left out is the stay's own end.
+  `measured_on(unit_ids, day)` says which batches have a measured point on a day (where a window can start or end).
+  `windows_in` walks the units' feeding once from the first day on and gives `{(unit, batch): window}` for the
+  units asked (a batch that came into a unit more than once has the window of its latest stay that has one); an
+  FCR over several windows is `Conversion` of them, ratio of sums, the formula of this page.
 - In the drawer: fed today (kilos, meals), the last 7 days' kilos and the **feed rate** (SFR, % of the
   biomass a day = 100 × feed / the sum of the book biomass of the days with fish; the book does not grow
   between weighings, so it reads high as the last weighing ages, and the drawer says how old it is), the
@@ -1834,6 +1845,211 @@ Differences from the source (details in the bug document, TSK-01 to TSK-23):
 `tasks.read.per_unit(unit_ids)` counts each unit's open, overdue and due-today tasks in one grouped query, with the same filters
 as the views above on each site's own clock (the monitoring cards).
 
+### Research › Experiments (`/research/experiments/`)
+
+Trials of one species on one site, for a research facility: the design (factors and their levels, groups and
+controls), the replicates, the tanks and the days each is booked to a replicate, how the tanks were allocated, and the
+team. The app `experiments` reads `farm` and nothing reads it: it stores only what no other record holds, and every
+figure (fish, feed, FCR, water, deaths) is read through the farm's own reads over the days a tank is booked; a diet is
+applied through the farm's own feeding-protocol assignments. No farm table has an experiment column.
+The reference (what a day means, the allocation method id, every constraint and trigger, what the code holds and what must be
+checked live) is [`docs/experiments.md`](docs/experiments.md).
+
+**What is stored** (tables `experiments`, `experiment_factors`, `experiment_levels`, `experiment_groups`,
+`experiment_group_levels`, `experiment_replicates`, `experiment_replicate_units`, `experiment_members`; migration
+`experiments/0001_initial`, which depends on the farm's migration 0018 only, so the order in which other branches add
+farm migrations does not matter):
+
+- An **experiment**: a generated number (`E-2026-001`, never reused, `core.codes.next_code`), a name, a template flag, its
+  status (draft, running, closed), its site and species (one of each: a unit holds one species, and one clock gives the
+  day key), the hypothesis, the primary endpoint (`experiments/variables.py`: biological FCR, economic FCR, survival,
+  biomass gain: what the farm's reads give today), the start day (day 0, the baseline weighing) and the duration in days
+  (the last day is the final weighing), how the tanks were allocated (not yet, randomised with a seed, or placed by hand
+  with the reason), the experiment it was copied from, notes and the key of the form that made it.
+- A **factor** (a thing the groups differ in: the diet, whose levels name feeding protocols, which is how the farm
+  applies it, or another factor with a unit) has **levels**: a diet level names its protocol and has no label; another
+  level has a label and optionally a number (a dose, a setting). A **group** has a role (test, control, negative or
+  positive control: both kinds of control may exist) and a level of every factor (**group levels**); it has
+  **replicates**, numbered within it (the number is stored: a replaced tank must not renumber R2). A **placement** books
+  one tank to one replicate for a range of days, both included (the tank, not a system: `Tank.system` changes and has no
+  history, so a system is only a shortcut on the page that books its tanks).
+- The **team**: a person and a role (lead, researcher, student, technician, advisor), one lead.
+
+**What the database holds** (constraints, tested one by one by writes that check nothing; the rest is said below):
+
+| Rule | Held by |
+|---|---|
+| a tank is in one experiment at a time, drafts included (a draft reserves its tanks), the days inclusive | exclusion constraint `excl_replicate_units_unit` on (tank, daterange), the twin of the feeding assignments'; a placement has both days, so it never books a tank for ever |
+| a window ends on or after the day it starts | check |
+| one level per factor per group; a level belongs to its factor; the group and the factor belong to the row's experiment; a level has its factor's kind | unique pair and four composite foreign keys (`fk_experiment_group_levels_*`, `fk_experiment_levels_factor_kind`; a wrong row would put another trial's level in a group and corrupt every factor column of the dataset) |
+| a diet level has a protocol and no label or number; another level has a label and no protocol | check (else a start would silently skip a diet) |
+| one diet factor; one lead; names unique among live rows, whatever the case; replicate numbers unique in a group; a number is never reused | unique constraints (partial among live rows where a row can be deleted) |
+| a template is a draft without a start day or an allocation; a started experiment has its day 0, hypothesis, primary endpoint and allocation; the allocation method, its seed and its reason belong together | checks |
+| a started design cannot change; a placement only gets shorter | triggers (below) |
+| a protocol or tank in a trial cannot be deleted | `PROTECT` and the delete plan (a deleted draft frees its tanks) |
+
+**A started design cannot change**, for any writer (pre-registration: what was planned is what is judged): triggers of
+migration `experiments/0002_design_frozen`, tried by raw SQL and the ORM with no form or service in between. Once an
+experiment is not a draft, every column of it but the status, name, notes and bookkeeping is fixed, the status goes
+forward only (draft, running, closed: the model's `TRANSITIONS`, which a test compares with the trigger on every pair)
+and the row is never deleted or soft-deleted; its factors, levels, groups, group levels and replicates take no insert,
+update or delete; its placements are free while it is a draft, a running one may get a new placement (a replacement)
+and shorten one with a reason (`until_on` never longer), a closed one allows nothing, a started experiment's placement
+is never deleted, and a template has none. A change of `created_by`, `updated_by` or `deleted_by` alone is always let
+through, so removing a person from the system never fails on what they once created. The refusals are
+`check_violation`, so the ORM raises them as an `IntegrityError` like a constraint. The team is not the design and is
+not guarded.
+
+What PostgreSQL cannot say without copying columns (a tank on the experiment's site, a window inside the experiment's
+span, a level for every factor, a diet applied at the start) is checked by the services and says so where it is.
+The owner decided five things: a draft reserves its tanks; no trial is registered beyond the farm's 31-day
+window; a tank that was ever in a trial is never deleted (set it inactive); a hypothesis and a primary endpoint are
+needed to start; one species and one site per experiment.
+
+**The pages** (Production panel, under a main heading of its own, **Research**, between Operations and Communication;
+the tab is a `core.crud` Resource, `experiments/resources.py`):
+
+- **The list** has three views, Experiments, Mine (the ones the person is in the team of) and Templates, filtered by
+  status, site and species and searched by number, name or hypothesis; each row opens the read page, with Edit and
+  Delete beside it for those who may (a started experiment has no Delete). The counts are of the live groups and
+  replicates.
+- **The form** has the tabs **Details** (name, species and site, chosen once; hypothesis; primary endpoint; day 0;
+  duration; notes), **Design**, **Places**, **Team** and History. Creating opens the details only, then opens the new experiment: its number is
+  given on saving, inside the creating transaction (`core.codes.next_code`, `E-<year of the site's clock>-<n>`), its
+  creator is its lead (logged as a change of its team), and a form sent twice creates one. Once the experiment has
+  started its hypothesis, endpoint, day 0 and duration are fixed beside their fields ("Copy it to change the design"),
+  and the name and notes stay editable.
+- **The Design tab** is two grids saved as a whole (`ExperimentDesignView`, `<id>/design/`; `experiments/services.save_design`):
+  the factors (name, kind, the unit of a quantity's levels; a new experiment starts with one diet factor) and the groups
+  (name, role, one cell for each factor, replicates). A diet cell chooses among the active feeding protocols of the
+  experiment's species (one retired since stays in its cell, and the design says so); another factor's cell is a label and
+  an optional number (a dose, a setting). Levels are made from the cells and never listed alone: two groups that give the same
+  protocol or label share one level, and a level no cell asks for goes. 3 diets by 2 replicates is three rows and no factor
+  language. Changing a factor's name or kind, or "Add factor", renders the grid again with the columns (the form's
+  `data-refresh`, nothing saved); a started experiment shows its design as it is. Rows are matched to the stored ones by their
+  id, so renaming a group keeps its replicates and the tanks placed in them (a factor whose kind changed is a new factor); the
+  replicates of a group are made equal to its count, the highest removed first and never one that holds a tank, and a group
+  with tanks is not removed. The save is one transaction that locks the experiment, refuses a stale version or a started
+  experiment, and writes one activity-log row on the experiment ("Design", before and after as text in English); the parts
+  it removes are deleted through the delete plan, one row each.
+- **What is wrong with a design** is one list, `design.problems(experiment)`, which the Design tab shows and the Start dialog and
+  `manage.py check_experiments` will: errors block Start (no hypothesis, primary endpoint, day 0 or lead; a day 0 older than
+  the farm's 31 days; no group; a group without a replicate or without a level of some factor; two groups with the same
+  levels; a diet protocol that is not active or is of another species), warnings are acknowledged at Start (one group;
+  fewer than two replicates in a group; no control; unequal replicates; a protocol not yet assigned, so its table can change
+  until Start; feeding tables that differ in more than the feed). It is derived on read: nothing about it is stored. `CHECKS`
+  is a list other areas append to, so a permit can block Start without this module knowing it. The warnings carry a
+  fingerprint, as the handling check's, so a start whose warnings changed meanwhile is asked again.
+- **The Places tab** (`ExperimentPlacesView`, `<id>/places/`; `services.save_places` and `randomise`) gives the replicates their
+  tanks, for the days of the experiment (day 0 to day 0 plus the duration, both included, on the site's clock) unless a row gives
+  days of its own. Either **Randomise**: a pool of tanks and systems of the site (as many as replicates, a system giving all its
+  tanks to one replicate) and a seed, dealt by the fixed method `sha256_v1` (`experiments/allocation.py`: the items sorted by the
+  SHA-256 of "seed:code", the i-th taking the i-th replicate in the order of the groups and the replicate numbers; fixed test
+  vectors guard it, and it is not `random.shuffle(seed)`, which only `random()` of Python's generators keeps stable across
+  versions); the method and the seed are stored with the placements, so the deal can be repeated and checked. Or **by hand**: a row
+  a replicate with its tanks (a multiple choice), "add the tanks of a system" (the tanks of the system and of the systems nested in
+  it are added; a system is never stored, only a shortcut, because `Tank.system` changes and keeps no history) and a reason, which is
+  needed (a placement that is not randomised is registered as "placed by hand: why"). A banner says which. A tank another
+  experiment holds on those days (drafts included: a draft reserves its tanks) is shown with that experiment's number and cannot
+  be chosen. Both are one transaction that locks the tanks (primary-key order) and then the experiment, refuses a stale version, a
+  started experiment, a template, a tank off the site, days outside the experiment, a tank in two places on one day and a booking by
+  another experiment (named by its number; the exclusion constraint holds it for any writer, and a booking that comes in between
+  is told the same way), and writes one row on the experiment ("Places", and "Allocation" when it changed). A draft's placements
+  are not evidence: the ones replaced are removed for good and the change is that one row. Changing a draft's day 0 or duration
+  moves the placements that equalled the old span (a placement with days of its own stays; the design says when it is outside the
+  span), and the form refuses a move onto days another experiment holds the tank, on the field that moved it. A template has no
+  tanks; a started experiment shows where its tanks stand.
+- **The design's warnings and errors about the tanks** (`design.problems`): errors, the tanks not allocated, a replicate without a
+  tank, a tank off the site, a placement outside the experiment's days; warnings, the tanks of one replicate in different systems,
+  and one system holding tanks of different groups (water-borne confounding, from the current `Tank.system`). The reads
+  (`experiments/read.py`): `cells` is the one definition of what belongs to the trial (each placement with its replicate, group,
+  tank and days), `booked` says which experiment holds which tanks on some days, and `error_df` is the replicates less the groups.
+- **Start** (the dialog `<id>/start/`, from the Design tab and the read page; `services.start`) fixes the design and applies the
+  diet. The dialog shows what is wrong with the design (`design.problems`): the errors block (the button is off), the
+  warnings are read and acknowledged with one box whose value is their fingerprint, so a start whose warnings changed
+  meanwhile is asked again (`check.require_acknowledged(…, field='start_ack')`, the handling check's rule and widget).
+  Besides the findings above, a draft asks that nothing stands in the diet's way: **a unit's own assignment on a tank in the
+  days it is booked is an error, listed, and never ended by the start** (the person ends it on Assignments); so is a protocol
+  assigned to a batch in the tank, which would beat the unit's (`farm/feeding/ration.py`); and, once day 0 has come, warnings
+  for a tank with no fish of the species that day, two batches of it, or fish not weighed that day (a measured point of the
+  stay on day 0, `feeding/read.measured_on`, is what the bounded FCR window starts from). Starting is one transaction that
+  locks the batches the tanks held, the tanks (primary-key order) and then the experiment, refuses a stale version, a second
+  start, a template and an error, and, for every group with a diet level, writes the farm's own assignment rows (unit scope, from
+  the first to the last day of each placement) through `farm/feeding/assignments.py`, the rows and log entries the assignment
+  dialog would write, so the meal board and the rations follow the diet; they are found later by (unit, protocol, first day),
+  with no link column on a farm table. The status goes draft to running through `TRANSITIONS`, and one row on the experiment
+  says "Status: Draft → Running" with the warnings acknowledged, in English. A feeding recorded while it starts waits for the tank
+  (a test races the two), and two starts at once give one winner and one assignment row each.
+- **Copy and templates** (the dialog `<id>/copy/`, **Copy as a new experiment** and **Save as a template** on the read page and the
+  Design tab; the add permission: Create creates and copies; `services.copy`). A copy is a new draft with the design of an
+  experiment of any status, or of a template: the factors, their levels (the same feeding-protocol rows, so a repeat of a started
+  experiment feeds identically, an assigned protocol being frozen), the groups with their levels and the replicates as empty
+  places, the hypothesis, endpoint, duration and notes; never the placements, the allocation or its seed, or the team, but the
+  copier, who leads it. `copied_from` says where it came from (and outlives a deleted source). A template is a design without a
+  day 0 (the list's Templates view); a copy of a template is an experiment. The number is the next one (never reused), a form
+  sent twice makes one copy, and the new experiment is logged as created with its design and its source.
+- **The team** is a list saved as a whole (`RowList`, logged on the experiment as "Team"): a person and their part,
+  exactly one lead; only people who can read Experiments are offered, and one kept from before stays in the list.
+- **The read page** (`<id>/view/`, for everyone who may read the tab) shows the details and, in the address's `?tab=`, **Overview**,
+  **Data** or **Team**. The **Overview** says where the experiment is ("Day 23 of 56", "Day 0 is in 5 days", "The final weighing was
+  4 days ago"), lists what is wrong with a draft (the errors and warnings of `design.problems`), and gives a row a replicate, by
+  group with a control badge: its tanks and their days, the batches of the species that were in them on those days (cleaner fish
+  never count), the fish and biomass now while it runs, the survival, and bFCR and eFCR. **Every figure is the farm's own number for the
+  same stay and the same days** (`experiments/read.overview`): the conversion is `Conversion` of `feeding.read.windows_in`
+  bounded by the placement's days (from the baseline weighing on day 0 to the latest weighing, or to the weighing of the
+  placement's last day once it has come), summed over the replicate's tanks as a ratio of sums, the fish and biomass come from
+  `stock_of`, the survival from the fish there on the first day (in the tanks the replicate began with: a replacement's are the same fish) less the fish lost since (mortality, culls, an adjustment down),
+  all bounded by the days: **no "since stocking" figure ever sits beside a trial figure**, no figure is stored or copied, and a draft
+  has none. A dash says why (hover it: not weighed, no feed, no growth); a replacement tank without a measured point at the
+  move leaves a gap in the replicate's conversion window, and the page says which tank it leaves out. No figure of a group is
+  made: a mean over replicates is a statistic, which the statistics come with. The queries do not grow with the tanks (a test counts
+  them for 6 and for 60). The **Data** tab lists each tank with its days, the feeding records of them and the feed given (one read of the feeding),
+  and links, for those who may read them, to the farm's own lists with the tank and the days chosen: Feeding records, Treatments,
+  Sea-lice counts, Water chemistry (its history) and the unit's drawer. `read.placements(unit_ids, day)` says which placement each
+  tank has on a day (at most one: the exclusion constraint), for whoever asks which experiment a tank is in (the record lock to
+  come).
+- **Running amendments** (the **Release** and **Replace** buttons on the Data tab of a running experiment, for those who may
+  edit; `services.release_unit`, `replace_unit`). A tank that leaves is released: its placement ends on the last day it was in
+  the experiment (yesterday at the earliest, the farm's rule for ending a row that has started; never later than it was booked,
+  never before it began), with its **reason**, which is asked. A tank that is replaced ends the day before the new tank's first day
+  (today at the earliest) and the new tank takes its replicate's place to the day the old one was booked to, so **the replicate keeps
+  its number**; the new tank must be on the site and free of every booking for those days (another experiment's, or this one's, named
+  by its number) and no assignment of its own may stand in the way of the diet. The diet follows through the farm's own
+  assignments (`farm/feeding/assignments.py`, as at the start): the old tank's row ends the same day (`assignments.end`, logged as an
+  edit of the assignment), the new tank gets its row for the group's protocol. The days the old tank was in stay as they are and what it
+  gave up to its last day stays in the figures (the figures are bounded by the placement's days, so a replacement without a
+  weighing at the move leaves a gap that the Overview names). One row "Places" and one "Reason it left" go on the experiment's log; the
+  tanks and batches are locked before the experiment, and a form older than the stored version is refused.
+- **The chip beside a tank** (`farm/placements.py`, filled by `experiments.read.chips`, registered in `experiments.ready()`). Production
+  units (the row and the drawer) and the meal board show "E-2026-001 · Control · R2" beside a tank that is booked to an experiment today
+  (the unit's site's today; a draft reserves its tank, so it shows too, as a draft), linking to the experiment, for those who may read
+  experiments. The registry is a list of providers, as the medicine withdrawal's is, and it **fails open**: with none registered, or
+  one that raises or breaks its transaction (it runs in its own savepoint), the page shows no chip and nothing else changes. One read of
+  the placements for each distinct day, so the farm's pages do not grow with their units.
+- **Deviations and `check_experiments`.** The Overview of a started experiment ends with **Deviations from the design**: what the farm's
+  own records show on the days of the placements that the design did not say, derived from them (`read.deviations`, never stored, and
+  nothing is ever refused for a design): **a batch** of the species that was in a tank on some day and not on its first day (cleaner
+  fish never count), **fish moved** between two replicates or between a tank of the experiment and one that is not in it (a move inside
+  one replicate, as a replacement makes, is not one), **a feed on no band** of the group's protocol, and **a ration that does not follow the
+  diet** (the farm's own `Policy.resolve` gives the batch in a tank another protocol than the group's, or none, on some day: a
+  protocol assigned to the batch in the unit beats the unit's, or the diet's row was ended). Each reads the days up to today or the last
+  day of the placement, and the queries do not grow with the tanks. `manage.py check_experiments` (`experiments/integrity.py`, as
+  `check_stock`) checks every started experiment from scratch for what the database cannot hold: a design that lost a part (a group
+  without replicates or without a level, the rules of `design.HOLDS_AFTER_START`), a tank off the site or booked outside the days of the experiment, a
+  tank deleted while it is in one, a team without a lead, and, while it runs, a placement of a diet group without its live feeding assignment
+  from its first day to its last. The test suite runs it after its scenarios.
+- **Delete** goes through the delete plan: a draft is deleted with its factors, levels, groups, replicates and placements
+  (one activity-log row each, its tanks free again), a started experiment is refused with the reason. A restored draft
+  comes back without its design (only the record itself returns). A copy of a deleted experiment keeps pointing at it.
+  A protocol a level names, a tank or a department a placement names, and a site or species an experiment names cannot
+  be deleted while it does.
+
+**Who may do what**: the area Experiments (Production · Research): Read the list and the read pages, Create makes and copies an
+experiment, Edit changes it, saves its design, its places and its team, and starts it, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
+student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
+experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
+deleted ones too, and restores an experiment (not its parts).
+
 ## Regulatory reports (Production › Reports, `/reports/`)
 
 The reports the farm owes Mattilsynet and Fiskeridirektoratet, made from the records and filed by people. Its own app
@@ -2310,6 +2526,216 @@ with `?channel=&target=`) are left to the card-template designer.
 - 20 channels × 30 days at one row a minute: a chart of one channel over the whole span in about 0.3 s (real-time
   aggregation, nothing refreshed yet), the latest values of 20 channels in about 40 ms.
 
+## Human resources (Company › HR: `/hr/`)
+
+The company's people, where they work and, as the pages arrive, their time. It is one piece of the Company
+panel, not a module of its own: the same roles, delete plans, activity log, database viewer and languages. It is
+built by reading the source platform's HR service and listing what was wrong with it
+([docs/aquaculture-platform-bugs.md](docs/aquaculture-platform-bugs.md), "Human resources"). The rules it holds:
+
+- **One source for departments.** Every production department is an HR department by itself: the Departments page
+  reads the farm's own rows (`hr.read.departments`), so a production department created, renamed or deleted under
+  Production is there at once with no HR write and no copy. Only the white-collar departments (Finance, administration,
+  management) are HR's own rows (`hr.OfficeDepartment`, table `office_departments`); they nest under one another for the
+  organisation chart.
+- **A team lead sees and plans their own team only, and never pay.** The role matrix gives the verbs; the rows come from
+  the relationship, in one place (`hr.scope.team`, see Row scope under One format for every tab). There is no pay, bank
+  or identity-number column anywhere in `hr` (a test fails on one); pay will be an app of its own that points at the
+  person and is never offered to a team role.
+- **State is read, not stored:** who is present, late, absent or on leave, worked minutes, leave days, balances, head
+  counts and the department of a past day are worked out on the site's clock when a page is read.
+- **The law is owner data.** Limits (rest, weekly hours, days in a row) are settings that warn by default and may only be
+  stricter than the statute; none is a database constraint.
+
+The team lead is the **Manager** of a production department (chosen on the production department's form, shown in its
+list and logged) or of an office department, plus a role with the HR areas. The Manager field has no other effect.
+
+### Departments (`/hr/departments/`)
+
+One list over two kinds, production departments (never edited here: their name links to the farm's own form for
+whoever may change them) and office departments (created, edited and deleted here). A table with kind, status, site
+and manager, search by name or code, and filters for kind and status. An office department has a name, a code (unique
+among live ones, capital letters, digits, hyphens and underscores), a parent (the chart), a site (the clock of its
+people: set the site's time zone on the site), a manager, a status and a description. Database rules, tested with raw
+SQL: code unique among live rows (free again after a delete), name unique under one parent and among the top-level
+ones (`nulls_distinct=False`), not its own parent, a trigger that refuses a cycle however it is written (it walks up
+through deleted rows too, so a restore cannot close a loop), code and status checks. A department with departments
+below it is not deleted (the delete plan names them); a deleted one is restored from the admin, checked like a new one.
+
+### Team list (`/hr/team/`) and the team scope
+
+One row per person (`hr.Employee`, table `employees`): number, name, employment type (staff, student, researcher,
+technician, advisor, contractor, volunteer), first and last day. A person with an account is named by it (first and last
+name stay empty here, a database check); one who never signs in carries their own name, a last name at least. The account
+is optional, so a student or a visiting researcher needs no login (and gets no invitation mail). A person is never deleted:
+a last day closes the record and the history stays readable. There is no pay, bank, identity-number, address or contact
+column (`hr/tests/test_boundary.py` fails on one).
+
+**Where a person works is a dated placement** (`hr.Posting`, table `postings`): exactly one department, a production
+department or an office department (a database check, as a task's place is), a title, from a day and until a day (empty
+while open). One placement covers any day (an exclusion constraint), so the department of a past day is read, not
+overwritten. The form's Placement tab shows the current one; changing the department or the title needs the day the
+change counts from, and `hr.services.move` closes the open placement the day before and opens the next (one transaction,
+both logged; a change dated the first day of the current placement corrects it in place). A department with people placed
+in it is made inactive, not deleted (both links are PROTECT; the delete plan says so).
+
+**The team** (`hr.scope.team(user, day)`) is the one place that says who may reach whom: the person themselves, the people
+placed on that day in a production department the user manages (its Manager) or in an office department they manage or
+any below it, and, for a holder of Everyone (`hr.all_employee`, a column on the Employees row of the role matrix), every
+employee. `EmployeeResource.scoped` is that function, so the list, a person's read page, the edit and the placement given
+are all of the team, whatever the address or the query. A lead with a role that gives Read on Employees reads their
+team's read pages; the form needs Edit, and only a holder of Everyone can create someone (a new person has no team yet).
+A person who moved belongs to the old manager up to the move and to the new one from it (`scope.visible_days`, for the
+reads that run over several days). A manager without a role, or a role without a department, reaches nothing beyond
+themselves. The Departments page counts, per department, the people placed there today that the viewer may reach.
+
+The activity log shows the employees and their placements only to holders of Everyone (`core.audit.restrict`); a lead
+who reads the log sees everything else but not the people.
+
+### Time & shifts › Scheduling settings (`/hr/settings/scheduling/`), Shifts and Holidays
+
+**Scheduling settings** is the one row of limits and defaults (table `scheduling_settings`; a unique `singleton` column
+with a check keeps it one; the migration makes it, the only seed: no shift, holiday or leave type is seeded). It is
+changed, never added or deleted. Every setting has exactly one reader: the standard week (the Team overview), the
+minimum rest, the most days in a row and the rest rule, warn or block (the rules of the roster), the working weekdays
+(the days a leave request is charged for) and the punch window and the absent-after minutes (Today). The figures are
+labelled defaults on the page, **not the law**: none of the statutory figures is verified, so none is a database
+constraint (a rest of 60 minutes can be stored); the settings may only be set stricter than the statute, and the owner
+confirms them. Sanity checks only: ranges and the enumerations.
+
+**Shifts** (`/hr/settings/shifts/`, no menu line, reached from the settings page; Shifts is its own matrix area): a name,
+a code (capital letters, digits, hyphens, underscores; unique among live shifts, free again after a delete), the start
+and end on the wall clock of the site (an end at or before the start is the next day), a break (0-240, shorter than the
+shift: a database check on the two time columns), a grace (0-120), a tone 1-8 (a CSS class: no colour value is stored,
+HR-27) and a status. **Holidays** (`/hr/settings/holidays/`): a day, a name and a site or every site, one per day for
+every site and one per site (`nulls_distinct=False`); typed in by HR, never seeded, because the country's days are the
+owner's data. A site with holidays is not deleted.
+
+### Time & shifts › Shift schedule (`/hr/schedule/`)
+
+A week of the viewer's people as a table: a row per person (their department under the name), a cell per day, the planned
+hours at the end. A cell shows the shift (its code in its tone), "Off" for planned off, the holiday of the person's site, and
+a "!" with the finding when a rule is broken; it opens the plan of that person and day in a dialog (a plus on an empty cell
+when the viewer may create). The week is the ISO week (Monday first, no setting); `?week=` takes any date of it, `?department=`
+and the search narrow the people and never widen them, and the list says "n of m" with its own paging. Everything on the page is
+worked out on the server (`hr.read.week`: one query each for the page's people, their plan a fortnight either side, their
+placements and the holidays, whatever the number of people), and a person who moved is shown to each manager on their days
+only (`hr.scope.visible_days`).
+
+**One roster table** (`hr.ShiftAssignment`, `shift_assignments`, shown as "plan" in the log): a person and the day a shift
+starts (a night shift ends on the next day), the shift or none (planned off, which is not the same as no plan), a note (private:
+masked in the log and the viewer). One row per person and day among live rows; a cleared cell is a soft delete. Leave and
+holidays are joined when the week is read, there is no publish step, and every change is logged with its before and after.
+
+**Real instants, not wall-clock sums** (`hr/clock.py`): a shift on a day becomes two UTC instants through the site's time zone, so
+22:00-06:00 is 7 hours on the night the clocks go forward and 9 on the night they go back, and the rest between shifts is the
+real gap, across a week's border and for a night shift (the source computed 1920 minutes where 480 is right: HR-08).
+
+**The rules** (`hr/rules.py`, pure functions, one place each): two shifts that overlap and a shift on a day of approved leave
+always block; a rest shorter than the minimum warns or blocks by the setting; more hours than the standard week, more days in a
+row than the maximum and work on a holiday warn. They run on every save: a blocking finding is an error on the form and a
+warning is told after the save and written into the audit row. `hr.services.plan_shifts` sets a shift, planned off or nothing on
+a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, the rules for each person;
+a person outside the team is a 404 and writes nothing); the page's batch route is `/hr/schedule/plan/` (POST).
+
+### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
+
+**Leave types** (`/hr/settings/leave-types/`, no menu line, reached from Scheduling settings): a name, a code, the days a
+year (empty: no limit) and whether a request needs approval; owner data, none seeded. **A request** (`hr.LeaveRequest`,
+`leave_requests`) is a person, a type, a first and a last day, a status (pending, approved, rejected, cancelled), the person's
+reason, the decider, the time and a note. Database rules: the last day is not before the first; an approved or rejected request
+has the time it was decided; **no overlap** for one person while a request is pending or approved (an exclusion constraint on
+the days, so two people filing at once cannot both win; adjacent days, rejected, cancelled and deleted requests do not block);
+and **nobody decides their own leave**, by the service and by a trigger whatever writes.
+
+What a request costs is read, never stored (`hr.leave`): the days whose weekday is a working weekday (a setting, Monday to Friday
+by default) minus the holidays of every site and of the person's site, split by year for a request that crosses New Year (the
+source charged calendar days, HR-07); the balance of a type with a yearly allowance is the allowance less the days of the year
+that pending and approved requests are charged for, and a request over it is refused on the form. `away_on(day, user_ids)` is the
+interface for the places that may only learn that someone is away, never why.
+
+**One approval step.** Staff hold Read and Create (they file for themselves and cancel their own); a lead holds Edit as well,
+and **Edit also approves, rejects and cancels** (the matrix has no extra column, as for a knowledge entry's review). The decider
+is someone with Edit whose team holds the person and who is not the person; a lead's own request therefore reaches whoever has
+them in their team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
+pending request is cancelled by the person or a decider at any time, an approved one only while its first day has not started on
+the site's clock; the decisions are `hr.services.decide_leave` and `cancel_leave` (POST routes, a dialog for the rejection
+note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
+
+**Privacy.** A lead sees the person, the type and the days; the reason is the person's own words, shown to them and to the holders
+of Everyone only (the list, the read page and the edit form leave it out for anyone else, and a lead cannot overwrite it). The reason
+and the decision note are masked in the activity log ("Private text") and in the database viewer, and leave requests appear in the log
+only for holders of Everyone. Approved leave is read over the roster: planning a shift on a day of approved leave is refused, and
+the week shows the cell as on leave. When a person leaves, their later pending requests are cancelled and later plans removed.
+
+### HR dashboard › Today & attendance (`/hr/`) and Time & shifts › Attendance (`/hr/time/attendance/`)
+
+**A punch is a stretch, not a day** (`hr.AttendanceRecord`, `attendance_records`): a clock-in and a clock-out (none while the person
+is in), who made it (`self`: the person clocked in at the server's time, never the browser's; `entered`: a lead typed the time, on
+the site's clock, and must say why) and a note (private: masked in the log and the viewer). A person can work in two stretches and a
+night shift crosses midnight, so there is **no one-row-a-day rule** (the source's was a racy application check, HR-10, HR-14). The
+database holds the rest: the out is after the in, an entered stretch has its reason, no two stretches of a person overlap and at
+most one is open (an exclusion constraint on `tstzrange(clock_in, clock_out)`: an open stretch runs on to infinity, so it also
+forbids a second open one). A stretch has no stored day, site or state.
+
+**Who is where is read** (`hr.read.board`, `hr.rules.status`, pure): for each person of the viewer's team the planned shift today on the
+person's own site clock (or the night that began yesterday and is still running), their stretches from the punch window before the start
+(a setting) and their approved leave give one state: *upcoming* (before the start plus the grace), *not in yet* (until the later of the
+grace and the absent-after minutes), *absent*, *present* or *late* (clocked in, past the grace) while in, *done* once out, *on leave*. A
+record is a fact and the plan an intent: a person who is there but not planned is listed as present, "not planned". People planned off,
+with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
+leave. Today shows the figures (planned, here, late, not in yet, absent, on leave) and the people; the board is a fragment the page
+polls (`data-poll`, 30 seconds) and the server draws every number and every time, on the clock of each person's site. The person's own
+**Clock in** and **Clock out** buttons need Read on Attendance and an employee row of their own, and are refused while a stretch is open
+or none is.
+
+**The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the site's clock,
+with **Mark present** (Create: a person of the team, the times, the reason), a correction (Edit, logged with what it was before) and a
+void (Delete). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
+HR dashboard, where its Read page first sits).
+
+### HR dashboard › Organization chart (`/hr/organization/`) and Time & shifts › Team overview (`/hr/overview/`)
+
+**Team overview** is the Shift schedule's week as numbers (`hr.read.overview`, built from the same cells and the same scope, so the two pages
+cannot disagree): per person the days working, planned off and on leave, the planned hours and how many minutes they stand above or below the
+standard week (a setting; a week over it is marked), and per day how many work, are off or are away. It has the week, department and search
+filters and the "n of m" paging of the schedule, needs Read on the Shift schedule, and runs in a fixed number of queries.
+
+**Organization chart** is the company as nested lists, drawn by the server (no script, no layout algorithm; the browser's print makes a
+printed page of it): the sites with their production departments, then the office departments under their parents, each box with its manager
+and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
+production department created, renamed or deleted under Production is in the chart at once, from the same rows.
+
+**Rules the review of the branch added.** A record of a person belongs to the manager of the department the person was placed in
+on the record's own day (`hr.scope.by_day`: a plan, a punch, a leave request), so a person who moved leaves their old records with
+the old manager on every verb; the week names the department and the clock of the first day the viewer reaches, and its findings
+are worked out from the days the viewer reaches only. A lead does not plan or write their own attendance (Everyone may). The
+Manager of a production department and the account of an employee are chosen by those who administer HR (`hr.change_officedepartment`
+or Everyone), because they decide whose rows and whose private words a person reaches. A pending request carries no decider and a
+hand-entered note has words, as database checks; a decision note over 500 characters is an error on the page.
+
+### HR: checks, the demonstration company, the browser code and the tests
+
+- **`manage.py check_hr`** reads what no database constraint can hold because it looks at several rows and changes with time, and
+  fails with the list: a last day with a placement after it, leave after it, a placement before the person joined, a person placed in
+  no department today, an office department with people but no site (they would be read on the company clock) and an inactive
+  department with people. It changes nothing; a person decides.
+- **`manage.py seed_hr_demo`** (only with `DEBUG` on, idempotent) makes a small company for a walk-through in a browser: a site on
+  Oslo time, two production departments with managers, an office department, nine people placed in them, three shifts, a week of
+  plans, a holiday, leave types, a pending leave request, a punch, and four roles made like any role (Demo lead, Demo staff, Demo
+  HR admin, Demo auditor) with a sign-in each (`demo_lead_hatchery`, `demo_lead_nursery`, `demo_staff`, `demo_hr`, `demo_auditor`).
+- **Browser code** (`frontend/roster.ts`, TypeScript only): on the Shift schedule the arrow keys move between cells, and the paint
+  form (hidden without the script) picks a shift, selects cells and posts them to the batch route, which plans all or none; the page's
+  Print button is the shared `data-print`. The script has no text of its own.
+- **Tests** (`hr/tests/`): per model the create, read, edit, delete and restore round trips against stored rows with a test that
+  names every column; the constraints through `IntegrityError` on raw rows, including both triggers, the open punch and the
+  exclusions; the team scope by function and by URL for every actor (404 on every verb outside it, nothing written or logged, every
+  route needs a row in the matrix or the suite fails); the boundary (no pay, bank, tax or identity column, form field, template word
+  or import, and every free-text column named and masked); derived state at a fixed `now` for sites ahead of and behind UTC and the
+  7 and 9 hour nights; the rules as pure functions; the services' refusals leaving rows and log unchanged; query budgets (the same
+  number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
+  list; and the migrations back to nothing and forward again.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2331,14 +2757,14 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule, Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
   users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Saving
+  Delete, and Everyone where an area offers it: see Row scope). Create, Edit, Delete and Everyone include Read: the form adds it and the browser ticks it. Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -2550,6 +2976,24 @@ where a page sits: the role matrix and the small heading above a tab's title fol
 (`core.navigation.place`). There are no built-in roles: the platform admin creates roles
 and grants permissions.
 
+### Row scope: which records a person may reach
+
+The role matrix says which verbs a person has; **`Resource.scoped(request, objects)`** says which rows. It is
+the one hook, and by default it returns every row. A tab whose rows depend on a relationship (the HR area:
+the people of the department a person manages) overrides it once, and the core applies it to the list (before
+its search and filters), to every lookup of a record (the edit, delete, read and row-list pages) and to the
+lock a save takes. A record outside the scope does not exist for the person: it is a 404 on every verb,
+whatever the address or the query, and nothing is written or logged. Nothing else decides who may see a
+record, so a rule is never written a second time.
+
+The matrix has one more column for the same purpose, **Everyone** (`all`): offered by the one area whose rows
+are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and the scope function reads it as
+"no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
+punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
+that the field was set, replaced or cleared, not what it says (a short keyed digest of the text is kept so that
+a replacement is a change the log shows). A tab can also refuse a verb on a record it reaches (`Resource.allowed`: HR
+refuses editing, voiding and planning one's own attendance and plan).
+
 ### The delete plan
 
 Records are soft-deleted, so the database's own `on_delete` never runs. `core/softdelete.py` reads
@@ -2621,6 +3065,13 @@ What one tab needed and the next ones will too lives in `core/`:
 - `Schema` and `SchemaValuesField` (`core/schema.py`): fields described by data (a type's technical
   specifications), the form fields and the check of the stored values from one definition.
 - `TreeMixin` (`core/models.py`): records nested under records of the same kind, without loops.
+- `next_code(model, prefix)` (`core/codes.py`): the next generated code of a kind of record (a batch's
+  `B-2026-001`, an experiment's `E-2026-001`): one more than the highest number under the prefix, deleted
+  records counted, so a number is never given twice; an advisory lock keyed on the table makes two creators
+  take turns, so call it inside the saving transaction.
+- `check.require_acknowledged(assessment, seen, field)` (`farm/handling/check.py`): a save with warnings
+  is refused until the person has ticked the box for exactly the warnings as they are now; the stock forms'
+  box is `handling_ack`, another form (an experiment's start) names its own.
 
 ### Restoring
 
@@ -2724,6 +3175,7 @@ real mail.
 | `/operations/tasks/new/`, `/operations/tasks/<id>/`, `<id>/delete/`, `<id>/checklist/` | A new task (`?place=unit:<id>` starts at a place), edit, delete, save its checklist |
 | `/operations/tasks/<id>/start/`, `complete/`, `cancel/`, `reopen/`, `checklist/<line>/`, `notes/` | Start, complete, cancel, reopen a task, tick a line, add a note (`?next=` goes back to the page) |
 | `/operations/tasks/recurring/` | Operations › Recurring tasks; `new/`, `<id>/`, `<id>/delete/`, `<id>/checklist/` |
+| `/research/experiments/` | Research › Experiments; `?view=mine` or `templates`, `new/`, `<id>/` the form, `<id>/view/` the read page, `<id>/design/` saves the design, `<id>/places/` places or randomises the tanks, `<id>/start/` the Start dialog, `<id>/copy/` the copy dialog, `<id>/release/<placement>/` and `<id>/replace/<placement>/` release or replace a tank of a running experiment, `<id>/team/` saves the team, `<id>/delete/` |
 | `/reports/` | Production › Reports › Regulatory reports: a tab for every kind (`?kind=`) with where it stands for each site, what is due, the filed reports whose records changed, the reports and notices; `site=`, `status=` filter, `new/?kind=&site=&period=2026-W45` (or `&facility=`, `&health_event=`, `&escape=`) starts one |
 | `/reports/<id>/view/`, `<id>/`, `<id>/delete/` | A report's page (the figures as filed, or as the records give them now, and the differences), its form, discarding a draft; `<id>/treatments/`, `resistance/`, `sensitivity/`, `units/` save the answers of its kind |
 | `/reports/<id>/submit/`, `correct/`, `export.<csv or json>`, `print/` | Records the filing (POST); starts a correction (POST); the exports; the printable page |
@@ -2763,21 +3215,25 @@ real mail.
 | `farm/` | Farm module, one module per tab under `models/`, `forms/`, `resources/`; tests |
 | `core/widgets.py`, `core/links.py` | `DependentSelect`: a choice that belongs to another field's value (a production department to its site); `Output`: a value shown, not typed; `LinkList`: check boxes for a record's links, with their details |
 | `core/fields.py` | Model fields the tabs share: `ChoiceArrayField`, several choices stored as an array |
+| `core/people.py` | People as the pages name and offer them: a person's name, and the active users who hold a permission (tasks' assignees, an experiment's team) |
+| `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
-| `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
+| `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`), the assignments' rows and write path that the dialog and an experiment's start share (`assignments.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
 | `farm/models/water_point.py`, `farm/water/points.py`, `farm/forms/water_point.py`, `farm/resources/water_point.py` | Sampling points: the model with its kinds, flow roles and rules, the default points and the share report, the form and the tab |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
+| `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |
 | `farm/water/degree_days.py` | The batch's daily mean water temperature and the degree-days it adds up to (a past day without a measurement at the species' assumed temperature, else 0 °C; a day ahead projected): the one definition the medicine withdrawal and the purging fast share |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `reports/` | Regulatory reports (its own app): the models (`models.py`), the kinds (`kinds.py`) and periods (`periods.py`), each report's computation from the records (`compute/`), the filing and corrections (`services.py`), what is due (`due.py`), the exports (`exports.py`), the check (`integrity.py`) and the provider the health records read (`health.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
+| `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/datamap.py`, `<app>/screens.py`, `core/test_datamap.py`, `docs/data-map.md`, `docs/data-map.json` | The data map: every table's screens, read from the code and the declarations; `manage.py data_map [--check]` |

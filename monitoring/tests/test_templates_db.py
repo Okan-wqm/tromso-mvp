@@ -117,6 +117,16 @@ class BuiltinTests(Fixture):
         with self.assertRaises(IntegrityError), transaction.atomic():
             simple.delete()
 
+    def test_a_database_emptied_and_loaded_again_gets_its_built_ins_back(self):
+        """What a test run's serialized rollback and a restore of a dump do: TRUNCATE (no row trigger) and INSERT the rows
+        as they were. A built-in's id is one of the three (the CHECK), so only they can come back."""
+        rows = [(pk, name, layout) for pk, (name, layout, _expanded) in builtin.BUILTINS.items()]
+        with connection.cursor() as cursor:
+            cursor.execute('TRUNCATE monitor_card_templates CASCADE')
+        for pk, name, layout in rows:
+            CardTemplate.objects.create(id=pk, name=name, layout=layout, is_builtin=True)
+        self.assertEqual(CardTemplate.objects.filter(is_builtin=True).count(), 3)
+
     def test_a_built_in_shows_its_name_in_the_persons_language_a_template_of_ones_own_as_typed(self):
         simple = CardTemplate.objects.get(pk=builtin.SIMPLE)
         with translation.override('nb'):

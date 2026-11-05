@@ -29,7 +29,8 @@ const PLC = 'sim/plc-1/tags', PROBE = 'sim/o2-probe-1/data', FLOW = 'sim/flow-me
 async function main() {
   const c = mqtt.connect(BROKER, {
     username: process.env.MQTT_USER, password: process.env.MQTT_PASSWORD,
-    clientId: 'sim-check-' + process.pid, clean: true,
+    // unique per run: process.pid is 1 in every container, and a shared id makes the broker drop one session
+    clientId: 'sim-check-' + require('crypto').randomUUID(), clean: true,
   });
   c.on('message', (topic, payload, packet) => seen.push({ topic, payload, qos: packet.qos, at: Date.now() }));
   await new Promise((res, rej) => { c.on('connect', res); c.on('error', rej); });

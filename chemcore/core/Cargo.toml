@@ -1,0 +1,18 @@
+[package]
+name = "chemcore-core"
+description = "The water chemistry of the Deffeyes chart: pure functions of floats, no I/O, no state"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+[lib]
+name = "chemcore_core"
+
+[dependencies]
+libm.workspace = true
+
+[lints]
+workspace = true

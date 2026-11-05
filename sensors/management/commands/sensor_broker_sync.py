@@ -6,14 +6,16 @@ credentials and topics reach Mosquitto, so the database stays the only source of
 - acl: per connection, its ingest user may read the topic of each live active device; per credential, it may write the
   topic of each live active device that publishes with it. Nothing else may read or write.
 
-Each file is written next to itself and moved into place, so the broker never reads half a file; then the broker is told
-to read them again (`docker compose kill -s HUP mosquitto`, the README's Sensors section). `--check` writes nothing and
-fails when a file differs from what the rows say."""
+By default both go to SENSORS_BROKER_AUTH_DIR, which the broker container mounts at /mosquitto/auth; its entrypoint
+reloads them within 5 s (sensors-ingest/mosquitto, spike S0f: connected clients stay, a removed or rotated credential is
+cut off). Each file is written next to itself and moved into place, so the broker never reads half a file. `--check`
+writes nothing and fails when a file differs from what the rows say."""
 import os
 import re
 import tempfile
 from pathlib import Path
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from sensors.models import Connection, Credential, Device
@@ -58,8 +60,8 @@ class Command(BaseCommand):
     help = 'Writes the MQTT broker\'s passwd and acl files from the sensors configuration.'
 
     def add_arguments(self, parser):
-        parser.add_argument('--passwd', required=True, help='The password file the broker reads.')
-        parser.add_argument('--acl', required=True, help='The access list the broker reads.')
+        parser.add_argument('--passwd', help='The broker’s password file (default: SENSORS_BROKER_AUTH_DIR/passwd).')
+        parser.add_argument('--acl', help='The broker’s access list (default: SENSORS_BROKER_AUTH_DIR/acl).')
         parser.add_argument('--extra', help='A file of passwd lines kept by operations (the ingest\'s own user).')
         parser.add_argument('--check', action='store_true', help='Write nothing; fail when a file is not current.')
 
@@ -72,7 +74,10 @@ class Command(BaseCommand):
                 if not LINE.match(line.strip()):
                     raise CommandError(f'{options["extra"]} line {number} is not a "user:$7$..." passwd line.')
                 extra.append(line.strip())
-        wanted = {Path(options['passwd']): passwd_text(extra), Path(options['acl']): acl_text()}
+        folder = Path(settings.SENSORS_BROKER_AUTH_DIR)
+        passwd = Path(options['passwd']) if options['passwd'] else folder / 'passwd'
+        acl = Path(options['acl']) if options['acl'] else folder / 'acl'
+        wanted = {passwd: passwd_text(extra), acl: acl_text()}
         if options['check']:
             stale = [str(path) for path, text in wanted.items()
                      if not path.exists() or path.read_text(encoding='utf-8') != text]
@@ -81,6 +86,6 @@ class Command(BaseCommand):
             self.stdout.write('The broker files are current.')
             return
         for path, text in wanted.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
             write(path, text)
-        self.stdout.write(f'Wrote {", ".join(str(path) for path in wanted)}. Tell the broker to read them again '
-                          f'(docker compose kill -s HUP mosquitto).')
+        self.stdout.write(f'Wrote {", ".join(str(path) for path in wanted)}; the broker reads them again within 5 s.')

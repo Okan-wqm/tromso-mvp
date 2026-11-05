@@ -42,7 +42,8 @@ class ConnectionForm(TabbedForm):
             'is_active': gettext_lazy('An inactive connection is not listened to: its devices send to no one.'),
             'username': gettext_lazy('The ingest service’s own user name at the broker.'),
             'secret_file': gettext_lazy('The name of the file under /run/secrets that holds the ingest service’s password '
-                                        'at the broker. The password itself is never typed or stored here.'),
+                                        'at the broker (the compose secret mqtt_ingest). The password itself is never '
+                                        'typed or stored here.'),
             'client_id': gettext_lazy('The MQTT client id the ingest service connects with; unique among connections.'),
             'keepalive_s': gettext_lazy('From 5 to 600 seconds.'),
         }
@@ -75,7 +76,7 @@ class PayloadFormatForm(TabbedForm):
 
 DEVICE_TABS = [
     ('general', gettext_lazy('General'), ['connection', 'code', 'name', 'site', 'equipment', 'manufacturer', 'model',
-                                          'note', 'is_active']),
+                                          'note', 'is_active', 'is_simulated']),
     ('payload', gettext_lazy('Payload'), ['payload_format', 'topic', 'expected_interval_s']),
     ('credential', gettext_lazy('Credential'), ['credential']),
 ]
@@ -99,6 +100,8 @@ class DeviceForm(CodedFormMixin, TabbedForm):
             'equipment': gettext_lazy('The piece of equipment this device is, if it is one on the Equipment tab.'),
             'credential': gettext_lazy('The broker credential the device publishes with; one gateway may serve many '
                                        'devices.'),
+            'is_simulated': gettext_lazy('A simulator or test device: its values are stored marked simulated and used '
+                                         'nowhere.'),
         }
         widgets = {'note': forms.Textarea(attrs={'rows': 3})}
 

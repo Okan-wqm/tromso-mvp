@@ -46,9 +46,10 @@ One row per (channel, calibration epoch) of the live, active configuration, colu
 | `channel_state` | varchar | `active` or `maintenance` (store flagged 64); retired channels are not in the view |
 | `valid_from`, `valid_to` | timestamptz or NULL | the calibration epoch `[valid_from, valid_to)` by DEVICE time; `valid_from` NULL is "from the beginning" (the first epoch, never `-infinity`: client libraries cannot hold it), `valid_to` NULL is open |
 | `a`, `b` | float8 | stored value = `a * raw + b` (calibration first, then the unit conversion: `a = unit_factor * gain`, `b = unit_factor * offset + unit_offset`) |
+| `is_simulated` | bool | the device is a simulator or a test device: store its values flagged 128 (used nowhere) |
 
-Read it ordered by `channel_no, valid_from NULLS FIRST`. Left out: deleted or retired channels, deleted or inactive
-devices and connections, deleted payload formats. No credential is in the view.
+Read it by column name, ordered by `channel_no, valid_from NULLS FIRST`. Left out: deleted or retired channels, deleted
+or inactive devices and connections, deleted payload formats. No credential is in the view.
 
 ## Change notification
 
@@ -91,23 +92,37 @@ Bad = `quality & 240 <> 0`. A bad reading is stored and is left out of the rollu
 | `quality` | int2 NOT NULL DEFAULT 0 | 0..255 |
 | `run_sum`, `run_min`, `run_max` | float8 NULL | all NULL when `n = 1`; all set and finite when `n > 1`, and then `run_min <= value <= run_max` |
 
-Primary key `(channel_no, ts)`: write with `INSERT ... ON CONFLICT (channel_no, ts) DO NOTHING` (a redelivered message
-is not stored twice). The run columns cover the `n` messages the row closes (the good values not stored since the
-previous stored row, and this one), so a mean is `sum(coalesce(run_sum, value)) / sum(n)` over clean rows, exactly.
-No other index, no foreign key. The ingest never updates or deletes a reading.
+Primary key `(channel_no, ts)`: write with `INSERT ... ON CONFLICT DO NOTHING` WITHOUT a conflict target (the primary
+key is the only unique index, so the effect is the same; a target would need SELECT on the key columns, which the role
+does not have), so a redelivered message is not stored twice. **Late rows and any row older than 13 days are written ONE
+PER STATEMENT**: TimescaleDB 2.17.2 silently drops the rest of a multi-row `INSERT ... ON CONFLICT DO NOTHING` once one
+row conflicts inside a compressed chunk (`sensors/tests/test_timescale.py` `CompressedChunkInsertTests` pins it). The run
+columns cover the `n` messages the row closes (the good values not stored since the previous stored row, and this one),
+so a mean is `sum(coalesce(run_sum, value)) / sum(n)` over clean rows, exactly. A run is closed at its own last sample,
+on a quality change, after a gap longer than a heartbeat, or before its sum would overflow: a sample is counted less
+than two heartbeats after it, never across a gap or a quality change. Bad rows always have `n = 1`. No other index, no
+foreign key. The ingest never updates or deletes a reading.
 
 ## Runtime tables
 
-- `sensors_channel_state` (channel_no pk; `run_n` defaults to 0, the rest NULL until written): `last_seen_at`,
-  `last_good_at`, `last_value`, `last_value_ts`, `last_quality`, `anchor_ts`, `anchor_value`, `anchor_quality`,
-  `run_n`, `run_sum`, `run_min`, `run_max`, `high_ts`. Upserted in the same transaction as the readings it describes.
-  Django's latest value reads `last_value`, `last_value_ts` and `last_good_at` (a value is fresh while
-  `now - last_good_at <= sensors_channel.fresh_s`, three heartbeats).
+- `sensors_channel_state` (channel_no pk; `run_n` defaults to 0, the rest NULL until written): `last_seen_at` (receive
+  time of the newest message carrying the channel, any quality, any path), `last_good_at` (RECEIVE time of the newest
+  good forward sample), `last_value` and `last_value_ts` (that sample, stored or suppressed, and its stored time: device
+  time, or receive time when flagged 2 or 4), `last_quality` (its quality without the row bits heartbeat and late),
+  `anchor_ts`, `anchor_value`, `anchor_quality` (the last STORED value the deadband is measured from), `run_n`,
+  `run_sum`, `run_min`, `run_max` (the open run), `high_ts` (the newest time processed, stored or not: a sample at an
+  older or equal time is late or a duplicate). Upserted in the same transaction as the readings it describes. Django's
+  latest value reads `last_value`, `last_value_ts` and `last_good_at`: a value is fresh while
+  `now - least(last_good_at, last_value_ts) <= sensors_channel.fresh_s` (three heartbeats), so a replayed backlog,
+  received now but measured long ago, is not fresh.
 - `sensors_device_state` (device_id pk): `last_message_at`, `last_seq`, `accepted_total`, `late_total`, `dead_total`,
-  `ignored_total` (counters default 0).
+  `ignored_total` (counters default 0; ignored counts duplicates: a sample at exactly the channel's newest time writes
+  nothing).
 - `sensors_ingest_status` (connection_id pk): `heartbeat_at` NOT NULL, `version` (default ''), `connected`
-  (default false), `queue_depth` (default 0, never negative), `last_commit_at`. Written at least every 30 s while the
-  service runs; the Sensors overview calls the ingest dead after 90 s without a heartbeat.
+  (default false), `queue_depth` (default 0, never negative), `last_commit_at`, `qos0_dropped` (QoS 0 messages dropped
+  on a full queue) and `poison_total` (messages the database refused, also dead-lettered `bad_value`), both default 0.
+  Written at least every 30 s while the service runs; the Sensors overview calls the ingest dead after 90 s without a
+  heartbeat and shows both counters.
 - `sensors_dead_letter` (id bigint identity): `connection_id`, `device_id` (NULL when no device matched), `topic`,
   `reason` (one of `not_json, no_route, no_channel_match, missing_time, bad_time, too_old, missing_value, bad_value,
   oversize`), `payload_sha256` (64 lowercase hex, or `overflow`), `payload` (at most the first 4096 bytes),
@@ -117,7 +132,16 @@ No other index, no foreign key. The ingest never updates or deletes a reading.
   `ON CONFLICT (connection_id, topic, reason, payload_sha256) DO UPDATE SET count = sensors_dead_letter.count + 1,
   last_at = EXCLUDED.last_at`. Beyond 1000 new rows per connection and hour, further distinct messages are counted on
   the row with `payload_sha256 = 'overflow'` (empty payload). Readings are never capped. Django deletes rows older
-  than 90 days (`manage.py sensors_housekeeping`).
+  than 90 days (`manage.py sensors_housekeeping`). With one subscription per device topic, `no_route` cannot occur (a
+  message on a topic no device has never reaches the ingest); the reason stays for a wider subscription later.
+
+## The broker's files
+
+`manage.py sensor_broker_sync` writes `passwd` and `acl` atomically into `SENSORS_BROKER_AUTH_DIR` (default
+`.sensors/broker-auth`, mounted at `/mosquitto/auth`; the broker reloads them within 5 s). Lines: per enabled
+credential `user <username>` then `topic write <topic>` for each of its devices' topics; per active connection its
+`username` (the ingest) with `topic read <topic>` for every device topic of the connection. The ingest's own broker
+password is the file its connection's `secret_file` names under `/run/secrets` (compose secret `mqtt_ingest`).
 
 ## Golden payload vectors
 

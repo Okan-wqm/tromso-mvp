@@ -14,7 +14,7 @@ LEFT, RIGHT, TOP, BOTTOM = 56, 16, 30, 34
 
 
 def tier_text(tier):
-    return {read.RAW: _('stored values'), read.ROLLUP_1M: _('minute summaries'), read.ROLLUP_1H: _('hourly summaries'),
+    return {read.RAW: _('stored values'), read.ROLLUP_1H: _('hourly summaries'),
             read.LOCAL_DAY: _('days on the site’s clock')}[tier]
 
 
@@ -104,7 +104,7 @@ def notes(chart):
     found = []
     if chart.reduced:
         found.append(_('A channel that stores a value when it moves counts the values it did not store at the row that '
-                       'closes their run: at most one heartbeat late.'))
+                       'closes their run: less than two heartbeats late.'))
     if chart.tier != read.RAW:
         found.append(_('Each point is the mean of its time; the band is its lowest and highest value.'))
     if chart.samples:

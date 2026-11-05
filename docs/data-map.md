@@ -3035,6 +3035,7 @@ A field device that publishes on one topic of a connection: a probe, a PLC, a ga
 | model | varchar(100) |  |  | DeviceForm › General |
 | note | text |  |  | DeviceForm › General |
 | is_active | boolean |  |  | DeviceForm › General |
+| is_simulated | boolean |  |  | DeviceForm › General |
 
 <a id="sensorsdevicestate"></a>
 ### sensors.DeviceState (`sensors_device_state`)
@@ -3079,6 +3080,8 @@ The ingest service’s heartbeat per broker connection: connected or not, messag
 | connected | boolean |  |  | computed: the ingest service's heartbeat per connection |
 | queue_depth | integer |  |  | computed: the ingest service's heartbeat per connection |
 | last_commit_at | timestamp with time zone | yes |  | computed: the ingest service's heartbeat per connection |
+| qos0_dropped | bigint |  |  | computed: the ingest service's heartbeat per connection |
+| poison_total | bigint |  |  | computed: the ingest service's heartbeat per connection |
 
 <a id="sensorspayloadformat"></a>
 ### sensors.PayloadFormat (`sensors_payload_format`)

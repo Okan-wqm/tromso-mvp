@@ -293,6 +293,12 @@ def state_tiles(user, now):
             text = _('Down')
         tiles.append({'label': _('Ingest'), 'text': text, 'count': text,
                       'url': reverse('sensors:connection_list')})
+        # What the ingest could not keep: QoS 0 messages it dropped on a full queue, messages the database refused (they
+        # are dead letters too). Counted since the service started.
+        tiles.append({'label': _('QoS 0 messages dropped on a full queue'), 'url': reverse('sensors:connection_list'),
+                      'count': sum(status.qos0_dropped for status in statuses)})
+        tiles.append({'label': _('Messages the database refused'), 'url': reverse('sensors:connection_list'),
+                      'count': sum(status.poison_total for status in statuses)})
     if user.has_perm('sensors.view_device'):
         devices = list(Device.objects.filter(is_active=True))
         online = sum(1 for status in read.device_status(devices, now).values() if status.online)

@@ -240,3 +240,7 @@ MONITOR_POLL_SECONDS = 15
 # are overdue): tasks/services.py, owner decision 3.
 TASK_HORIZON_DAYS = 14
 TASK_BACKFILL_DAYS = 7
+
+# Where manage.py sensor_broker_sync writes the MQTT broker's passwd and acl files; the broker container mounts it at
+# /mosquitto/auth and reloads them when they change (sensors-ingest/mosquitto).
+SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR / '.sensors' / 'broker-auth'))

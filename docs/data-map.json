@@ -32772,6 +32772,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "is_simulated",
+          "field": "is_simulated",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DeviceForm › General"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -32923,6 +32936,7 @@
             "model": "General",
             "note": "General",
             "is_active": "General",
+            "is_simulated": "General",
             "payload_format": "Payload",
             "topic": "Payload",
             "expected_interval_s": "Payload",
@@ -33145,6 +33159,28 @@
           "field": "last_commit_at",
           "type": "timestamp with time zone",
           "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's heartbeat per connection"
+        },
+        {
+          "name": "qos0_dropped",
+          "field": "qos0_dropped",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the ingest service's heartbeat per connection"
+        },
+        {
+          "name": "poison_total",
+          "field": "poison_total",
+          "type": "bigint",
+          "null": false,
           "choices": [],
           "link": null,
           "on_form": [],

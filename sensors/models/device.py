@@ -48,6 +48,8 @@ class Device(CodedMixin, AuditedModel):
     model = models.CharField(_('Model'), max_length=100, blank=True)
     note = models.TextField(_('Note'), blank=True)
     is_active = models.BooleanField(_('Active'), default=True)
+    # The field simulator (Node-RED) or any test device: its values are stored flagged simulated and used nowhere.
+    is_simulated = models.BooleanField(_('Simulated'), default=False)
 
     kept_note = _('They stay, out of sight while it is deleted, and come back when it is restored.')
 

@@ -8,9 +8,9 @@
   there, in the order they count (A1: the point's own, primary then backup, then the system's); a moved sensor gives one
   segment per place;
 - `series(target, quantity, start, end)`: the buckets a chart draws. The bucket width is the window over `max_points`
-  snapped up to the LADDER (each width a multiple of the one before, so regrouping is exact); below a minute the clean
-  readings themselves are bucketed, up to an hour the minute rollup, up to a day the hour rollup, and days and weeks are
-  the site's local days built from the hours (a day the clocks go back has 25 hours). Every bucket's mean is
+  snapped up to the LADDER (each width a multiple of the one before, so regrouping is exact); below an hour the clean
+  readings themselves are bucketed (no minute rollup: the plan's gate removed it, migration 0003), up to a day the hour
+  rollup, and days and weeks are the site's local days built from the hours (a day the clocks go back has 25 hours). Every bucket's mean is
   sum(sum)/sum(n) and its range the runs' extremes: exact, never a mean of means. Per bucket the first segment in order
   that has data is drawn; a backup or the system's channel only where the ones before it have none, and the bucket says
   which. A gap is a spacing between two drawn values longer than the channel's freshness: it is shown, never filled;
@@ -19,7 +19,7 @@
 
 A unit's chart reads its middle point's channels, then its system's; a system's, the system's and its loop's; a point's,
 its own (and the system's when it is a system's middle point); a piece of equipment's, its own. Bucket boundaries are on
-the tier's grid: a sensor moved in the middle of a minute is counted in the minute rollup at the place its minute began."""
+the tier's grid: a sensor moved in the middle of an hour is counted in the hour rollup at the place its hour began."""
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone as dt_timezone
 
@@ -40,7 +40,7 @@ MAX_POINTS, CAP = 600, 1500
 SECOND, MINUTE, HOUR, DAY = timedelta(seconds=1), timedelta(minutes=1), timedelta(hours=1), timedelta(days=1)
 LADDER = [SECOND, 5 * SECOND, 15 * SECOND, 30 * SECOND, MINUTE, 5 * MINUTE, 15 * MINUTE, 30 * MINUTE, HOUR, 3 * HOUR,
           6 * HOUR, 12 * HOUR, DAY, 7 * DAY]
-RAW, ROLLUP_1M, ROLLUP_1H, LOCAL_DAY = 'raw', '1m', '1h', 'day'
+RAW, ROLLUP_1H, LOCAL_DAY = 'raw', '1h', 'day'
 # Where a segment's channel is bound, in the order the places count (A1).
 SENSOR, SYSTEM_SENSOR, EQUIPMENT_SENSOR = 'sensor', 'system_sensor', 'equipment_sensor'
 ORIGIN_RANK = {SENSOR: 0, SYSTEM_SENSOR: 1, EQUIPMENT_SENSOR: 0}
@@ -62,7 +62,11 @@ class State:
 
     @property
     def fresh(self):
-        return self.good_at is not None and self.now - self.good_at <= timedelta(seconds=self.fresh_s)
+        """Fresh while both the device time of the value and its receipt are within the channel's freshness: a gateway
+        replaying an old backlog delivers values received now but measured long ago, which are not fresh."""
+        if self.good_at is None or self.at is None:
+            return False
+        return self.now - min(self.good_at, self.at) <= timedelta(seconds=self.fresh_s)
 
 
 def latest(channel_nos, now=None):
@@ -194,20 +198,20 @@ def width_for(start, end, max_points=MAX_POINTS):
 
 
 def tier_of(width):
-    return RAW if width < MINUTE else ROLLUP_1M if width < HOUR else ROLLUP_1H if width < DAY else LOCAL_DAY
+    return RAW if width < HOUR else ROLLUP_1H if width < DAY else LOCAL_DAY
 
 
-def _query(segment, width, tier, zone):
+def chart_rows(segment, width, tier, zone):
     """The segment's buckets: (start, n, sum, min, max, first, last), clean values only."""
     if tier == RAW:
-        sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value)), min(coalesce(run_min, value)), '
-               f'max(coalesce(run_max, value)), min(ts), max(ts) FROM sensors_reading '
+        sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value)), '
+               f'min(coalesce(run_min, value)), max(coalesce(run_max, value)), min(ts), max(ts) FROM sensors_reading '
                f'WHERE channel_no = %s AND ts >= %s AND ts < %s AND (quality & {BAD_MASK}) = 0 GROUP BY b ORDER BY b')
         params = [width, segment.channel_no, segment.start, segment.end]
     else:
-        view = 'sensors_rollup_1m' if tier == ROLLUP_1M else 'sensors_rollup_1h'
         bucket = 'time_bucket(%s, bucket, %s)' if tier == LOCAL_DAY else 'time_bucket(%s, bucket)'
-        sql = (f'SELECT {bucket} AS b, sum(n)::bigint, sum(sum_v), min(vmin), max(vmax), min(first_ts), max(last_ts) FROM {view} '
+        sql = (f'SELECT {bucket} AS b, sum(n)::bigint, sum(sum_v), min(vmin), max(vmax), min(first_ts), max(last_ts) '
+               f'FROM sensors_rollup_1h '
                f'WHERE channel_no = %s AND bucket >= %s AND bucket < %s GROUP BY b ORDER BY b')
         params = [width, *([zone.key] if tier == LOCAL_DAY else []), segment.channel_no, segment.start, segment.end]
     with connection.cursor() as cursor:
@@ -239,7 +243,7 @@ def series(target, quantity, start, end, *, max_points=MAX_POINTS, now=None):
     found = segments(target, quantity, start, end)
     chosen = {}
     for segment in found:
-        for row in _query(segment, width, tier, zone):
+        for row in chart_rows(segment, width, tier, zone):
             begin, n, total, low, high, first, last = row
             if begin in chosen or not n:
                 continue

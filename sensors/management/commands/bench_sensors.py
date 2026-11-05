@@ -2,7 +2,8 @@
 `--channels` channels (numbers from 1,000,000 on, bound to nothing, so no page shows them) for `--days` days, one stored
 row every `--interval` seconds (a reduced channel's row stands for its messages), then prints the raw rows, the hour
 rollup rows, the time of a chart of one channel over the whole span (local days from the hour rollup), of ten channels
-over seven days in 15-minute buckets of the readings themselves, and of the latest values. It refuses a range that already
+over seven days in 15-minute buckets of the readings themselves, of the Deffeyes replay (seven days hourly; a page of
+`--frames` frames at one minute, its readings and its diagrams), and of the latest values. It refuses a range that already
 holds rows (TimescaleDB 2.17.2 loses rows of a multi-row insert that meets a row in a compressed chunk). It writes into
 the database it is pointed at: it refuses to run unless `--confirm-database` names that database. Never run it on a
 farm's database; use a copy or a test database, and drop the rows after (`--drop`)."""

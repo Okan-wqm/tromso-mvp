@@ -6027,8 +6027,10 @@ msgstr "Solungaç hastalığı"
 msgid "Give a client id."
 msgstr "Bir istemci kimliği girin."
 
-msgid "Give a start before the end on the site’s clock, and a step in seconds."
+msgid "Give a start before the end on the site’s clock, a step in seconds and a cursor inside the range."
 msgstr ""
+"Tesisin saatine göre bitişten önce bir başlangıç, saniye cinsinden bir adım ve aralığın içinde "
+"bir imleç verin."
 
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Reçeteler için bir hedef pH ve alkalinite girin."

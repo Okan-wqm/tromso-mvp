@@ -2525,6 +2525,34 @@ a unit's point on the diagram is `sensors:trail` (JSON, from the hour rollup). T
 these, for a place's charts (`sensors:target_charts`) and for binding a channel from a card (`sensors:binding_create`
 with `?channel=&target=`) are left to the card-template designer.
 
+### The Deffeyes replay (owner amendments A6, A7, A8)
+
+`sensors.read.deffeyes_frames(target, start, end, step, cursor)` and its JSON endpoint `sensors:deffeyes_frames`
+(`?target=unit:<id>|system:<id>&start=&end=` on the site's clock, or `range=`; `step` in seconds; `cursor`) give a unit's
+or a system's water at every step of a range, for a player that moves it over the diagram (the player, its speed and its
+controls are the UI's, not built here):
+
+- The user's step is kept, snapped up to the chart ladder (1 min, 5 min, 15 min, 1 h, 1 day ...), never widened: five
+  days at one minute are 7 200 frames, served in pages of at most 2 000 (`cursor` the page's first frame, `next` the
+  following page's, None after the last).
+- Each frame reads what a unit's chart reads (temperature, pH, alkalinity, salinity required; TAN and oxygen when
+  there), each in the A1 order at that moment: a sensor value at or before it, no older than its channel's freshness
+  (three heartbeats), at the parameter's decimals as the chart takes it; else a fresh manual or lab sample; else for the
+  salinity of fresh water the assumption; else missing. Nothing is interpolated or carried past its freshness. A moved
+  sensor counts for the place it was in.
+- One query of the readings per tier and page: below an hour the readings of the page's span, the newest of each step,
+  and the newest still fresh before the page; from an hour the page's hours of the hour rollup read once, each frame
+  given the last value of the newest hour ended by it.
+- Every frame with its required inputs carries the whole diagram of its water (A8): isolines, regions, borders, Ω
+  lines, names and notes, with the fish's limits, computed only by `farm/water/deffeyes.py` as `deffeyes.figure`, a
+  JSON shape of flat number arrays. The server's SVG is drawn from the same shape (`deffeyes.draw` is
+  `deffeyes.render(deffeyes.figure(...))`, tested equal through JSON). Frames whose diagram reads exactly the same values
+  share one figure (an exact key; only the oxygen, which the diagram never reads, is left out of it); a page's figures
+  share one box, holding every point of the page. A water whose pH and alkalinity cannot go together has no diagram and
+  says why.
+- The endpoint sends the page's figures once each and the frames as columns (figure index, point, missing, reason, and
+  per input its values, origins, ages and channels); it needs the rights to read readings and water samples.
+
 ### Storage
 
 - `sensors_reading`: a hypertable in 7-day chunks, compressed after 14 days (per channel, newest first), dropped after
@@ -2532,11 +2560,18 @@ with `?channel=&target=`) are left to the card-template designer.
   for and, for more than one, their sum, lowest and highest, so every mean is exact (a sum of sums over a sum of counts,
   never a mean of means). Quality is one bitset (`sensors/quality.py`): bad rows (out of range, device bad, maintenance,
   simulated) are stored as evidence and left out of everything drawn or judged.
-- Two continuous aggregates over clean rows: per minute, and per hour built on the minutes. Charts take the bucketed raw
-  rows below a minute, the minute rollup up to an hour, the hour rollup above, and the site's local days from the hours
-  (a day the clocks go back has 25 hours). The rollups refresh every minute and every hour over the last 35 and 75 days;
-  a daily job takes in later readings back to the contract's late limit (728 days). The refresh never reaches back into
-  dropped raw data: TimescaleDB 2.17 invalidates a dropped region and a refresh there would empty the rollups.
+- One continuous aggregate, per hour, built from the clean raw readings (no minute rollup: at the common one row a
+  minute it held as many rows as the raw table, failing the plan's 40 % gate, so the owner removed it). Charts take the
+  raw readings bucketed below an hour, the hour rollup up to a day, and the site's local days from the hours (a day the
+  clocks go back has 25 hours). The rollup refreshes every hour over the last 75 days and is compressed after 90; a daily
+  job takes in later readings back to the contract's late limit (728 days). The refresh never reaches back into dropped
+  raw data: TimescaleDB 2.17 invalidates a dropped region and a refresh there would empty the rollup.
+- Late or old readings are written one row per statement: TimescaleDB 2.17.2 silently drops the remaining rows of a
+  multi-row `INSERT ... ON CONFLICT` that meets a compressed chunk (`sensors/tests/test_timescale.py` holds the case).
+  A `DELETE` of rows in a compressed chunk fails in 2.17.2 ("btree index keys must be ordered by attribute"); nothing in
+  the application deletes readings (retention drops whole chunks).
+- A value is fresh while both its device time and its receipt are within the channel's freshness (three heartbeats): a
+  gateway replaying an old backlog delivers values received now but measured long ago, which are not fresh.
 - The database viewer counts a hypertable by the database's estimate and leaves the readings out (billions of rows).
 - Licences: compression, continuous aggregates and their policies are TimescaleDB's TSL features of the community build
   (free for an application that owns its schema, as this one; a test asserts `timescaledb.license = 'timescale'`). No new
@@ -2546,21 +2581,34 @@ with `?channel=&target=`) are left to the card-template designer.
 
 - `manage.py sensors_ingest_role --password-file FILE` lets the ingest's database role (NOLOGIN after the migration) sign
   in; `--disable` closes it.
-- `manage.py sensor_broker_sync --passwd PATH --acl PATH [--extra OPS_LINES] [--check]` writes Mosquitto's files from the
-  credentials and devices (atomic replace), then `docker compose kill -s HUP mosquitto` makes the broker read them.
+- `manage.py sensor_broker_sync [--passwd PATH] [--acl PATH] [--extra OPS_LINES] [--check]` writes Mosquitto's files from
+  the credentials and devices (atomic replace; by default into `SENSORS_BROKER_AUTH_DIR`, `.sensors/broker-auth`), then
+  `docker compose kill -s HUP mosquitto` makes the broker read them. Replacing a credential's secret (Credentials, Replace the secret)
+  shows the new secret once; the broker takes it at the next sync.
+- `manage.py sensors_demo_setup --confirm [--secret-file FILE]` makes the live demo's sensors for the existing tanks and
+  systems (one connection, one JSON payload format, a device per tank with a middle point and per system on topic
+  `demo/<code>`, eight water channels each covering every measured parameter together, bound to the tank's middle point
+  or the system, a simulator credential with its secret shown once); it is idempotent, touches only what it made (found
+  again by its connection's client id, its format's name and its credential's user name), and `--remove` deletes exactly that.
 - `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py sensors_housekeeping` (daily) deletes dead
   letters older than 90 days.
 - `manage.py bench_sensors --confirm-database NAME` writes synthetic readings into a database named on the command line
-  (never a farm's) and prints the storage and read figures.
+  (never a farm's) and prints the storage and read figures, the replay's page and its diagrams included (`--frames`,
+  `--measure-only` to time rows already there, refreshed and compressed).
+- The overview shows the ingest's counters: messages dropped at QoS 0 and refused (poison) since it started.
 
-### Measured figures (bench_sensors on the local container)
+### Measured figures (bench_sensors on the local container, a shared developer machine)
 
-- A channel stored at every 1 s message: the minute rollup holds 1.7 % of the raw rows.
-- A channel stored once a minute (a deadband channel with a 60 s heartbeat, the common case): the minute rollup holds as
-  many rows as the raw table (100 %). **This fails the plan's 40 % gate**: the owner decides whether the hour rollup is
-  built from the raw readings instead of the minutes (one migration).
-- 20 channels × 30 days at one row a minute: a chart of one channel over the whole span in about 0.3 s (real-time
-  aggregation, nothing refreshed yet), the latest values of 20 channels in about 40 ms.
+- 10 channels × 2 years at one row a minute, refreshed and compressed as in use: a chart of one channel over the whole
+  span 71-131 ms; ten channels over seven days in 15-minute buckets from the raw readings 196-379 ms (the plan's 300 ms
+  is met only on a quiet machine); the replay of seven days hourly 15-37 ms; the latest values of ten channels 29-50 ms.
+- 4 channels × 30 days at one row a minute: one replay page of 2 000 frames at one minute, the readings in one query,
+  69-218 ms. At one stored row a second (4 channels × 3 days) the same page takes 1.2-2.1 s (its 33 hours hold 480 000
+  rows); a lookup per frame and channel is 0.6-0.9 s. Neither meets 300 ms at that rate.
+- **The page's diagrams (A8) do not meet 300 ms**: the whole diagram of a frame takes 18-26 ms to compute in Python, so
+  2 000 frames at the readings' resolution (every frame a different water) take 38-53 s and 28 MB as JSON; at the
+  parameters' decimals, as the replay reads the values, 903 different waters of 2 000 in 15-17 s and 12.6 MB. This is the
+  measured trigger the owner named for moving the water chemistry core to Rust; nothing is approximated to go faster.
 
 ## Human resources (Company › HR: `/hr/`)
 

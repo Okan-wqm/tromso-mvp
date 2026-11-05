@@ -6017,8 +6017,10 @@ msgstr "Gjellesykdom"
 msgid "Give a client id."
 msgstr "Oppgi en klient-ID."
 
-msgid "Give a start before the end on the site’s clock, and a step in seconds."
+msgid "Give a start before the end on the site’s clock, a step in seconds and a cursor inside the range."
 msgstr ""
+"Oppgi en start før slutten etter anleggets klokke, et steg i sekunder og en markør innenfor "
+"perioden."
 
 msgid "Give a target pH and alkalinity for the recipes."
 msgstr "Oppgi en mål-pH og en målalkalitet for oppskriftene."

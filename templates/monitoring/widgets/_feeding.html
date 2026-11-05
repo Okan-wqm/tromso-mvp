@@ -1,7 +1,6 @@
-{% load i18n stock feeding %}
+{% load i18n stock feeding %}{% comment %} The feeding of a card: today's ration, what was fed, what remains, the next meal and why there is none;
+   "The week too" adds the feed rate, the last feeding and the feed in use. {% endcomment %}
 <section class="monitor-section monitor-feeding">
-  {% if "feeding" in card.hidden %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") %}
-  {% else %}
   {% with day=card.day %}
   <dl class="metrics">
     <div><dt>{% trans "Ration" %}</dt><dd>{{ day.ration_kg|feed_kg }}</dd></div>
@@ -11,7 +10,7 @@
   </dl>
   {% endwith %}
   {% for line in card.lines %}{% if line.why %}<p class="row-sub warn-text">{{ line.batch.code }}: {{ line.why }}</p>{% endif %}{% endfor %}
-  {% if card.detailed and card.feeding %}
+  {% if view.opts.week and card.feeding %}
   {% with week=card.feeding.week %}
   <dl class="metrics">
     <div><dt>{% trans "Feed rate" %}</dt><dd>{{ week.sfr|percent:2 }}</dd></div>
@@ -19,6 +18,5 @@
     <div><dt>{% trans "Feed in use" %}</dt><dd>{{ week.feed|default:"—" }}</dd></div>
   </dl>
   {% endwith %}
-  {% endif %}
   {% endif %}
 </section>

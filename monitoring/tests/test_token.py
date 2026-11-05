@@ -24,7 +24,7 @@ from tasks import services as task_services
 from tasks.models import Task
 
 from .. import read
-from . import ALL_RIGHTS, MonitoringCase
+from . import ALL_RIGHTS, MonitoringCase, chosen
 
 MOMENT = datetime(2026, 11, 4, 12, 0, 30, tzinfo=utc.utc)
 
@@ -37,7 +37,7 @@ class TokenTests(MonitoringCase):
 
     def test_a_read_does_not_move_it_and_the_next_minute_does(self):
         first = self.token()
-        read.cards(read.units_for(read.Params()), self.reader, {})
+        read.cards(read.units_for(read.Params()), self.reader, chosen({}))
         self.assertEqual(self.token(), first)
         self.assertEqual(self.token(now=MOMENT + timedelta(seconds=20)), first)           # the same minute
         self.assertNotEqual(self.token(now=MOMENT + timedelta(seconds=40)), first)        # the next one
@@ -139,7 +139,7 @@ class TokenTests(MonitoringCase):
         units = read.units_for(read.Params())
         rows = AuditLog.objects.count()
         with CaptureQueriesContext(connection) as log:
-            read.cards(units, self.reader, {unit.pk: 'detailed' for unit in units}, occupancy='all')
+            read.cards(units, self.reader, chosen({unit.pk: 'detailed' for unit in units}), occupancy='all')
             self.token()
         verbs = {query['sql'].lstrip().split(None, 1)[0].upper() for query in log}
         self.assertLessEqual(verbs, {'SELECT', 'WITH', 'SAVEPOINT', 'RELEASE'})      # savepoints: the chips' fail-open, no write

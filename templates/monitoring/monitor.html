@@ -6,7 +6,7 @@
    replaced; the windows sit beside it (frontend/windows.ts). {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block html_attrs %}{% if wall %} data-wall{% endif %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><script type="module" src="{% asset 'js/windows.js' %}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><script type="module" src="{% asset 'js/windows.js' %}"></script><script type="module" src="{% asset 'js/announce.js' %}"></script>{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
@@ -34,7 +34,13 @@
   </div>
 </form>
 
-<div class="monitor-grid" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% include "monitoring/_grid.html" %}</div>
+<div class="monitor-grid" data-card-width="{{ card_width }}" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% include "monitoring/_grid.html" %}</div>
 
+{% comment %} What frontend/announce.ts says aloud when a card gets worse: two live regions beside the grid, never inside it
+   (a poll replaces the grid's cards, not these), and the sentences and state words in the person's language. {% endcomment %}
+<div id="monitor-announce" class="sr-only" data-announce-worse="{% trans "{unit} is now {state}." %}" data-announce-more="{% trans "{count} more cards got worse." %}" data-state-critical="{% trans "Critical" %}" data-state-warning="{% trans "Warning" %}" data-state-blind="{% trans "No recent data" %}" data-state-note="{% trans "Note" %}">
+  <p data-announcer aria-live="assertive"></p>
+  <p data-announcer aria-live="polite"></p>
+</div>
 {% include "monitoring/_windows.html" %}
 {% endblock %}

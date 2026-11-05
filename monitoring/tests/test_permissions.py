@@ -12,7 +12,7 @@ from farm.water import read as water_read
 from tasks import read as tasks_read
 
 from .. import read
-from . import ALL_RIGHTS, MonitoringCase
+from . import ALL_RIGHTS, MonitoringCase, chosen
 
 # What a section's records live in, to look for in the SQL a card ran.
 TABLES = {
@@ -32,8 +32,8 @@ class SectionsTests(MonitoringCase):
             with self.subTest(section=section):
                 self.assertEqual(read.sections_for(self.as_person(f'only-{section}', right)), frozenset({section}))
         # the rights are the owners' own constants
-        self.assertEqual(read.PERMISSIONS['water'], 'farm.view_watermeasurement')
-        self.assertEqual(read.PERMISSIONS['tasks'], 'tasks.view_task')
+        rights = {source.name: source.permission for source in read.SOURCES}
+        self.assertEqual((rights['water'], rights['tasks']), ('farm.view_watermeasurement', 'tasks.view_task'))
 
 
 class HiddenSectionsTests(MonitoringCase):
@@ -43,7 +43,7 @@ class HiddenSectionsTests(MonitoringCase):
         units = read.units_for(read.Params())
         with mock.patch.object(read.harvest_views, 'withdrawals', return_value={}), \
                 CaptureQueriesContext(connection) as log:         # (the withdrawal registry reads its own tables)
-            found = read.cards(units, user, {unit.pk: mode for unit in units})
+            found = read.cards(units, user, chosen({unit.pk: mode for unit in units}))
         return found, ' '.join(query['sql'] for query in log)
 
     def test_per_missing_right_no_statement_on_its_tables_and_no_value(self):
@@ -73,7 +73,7 @@ class HiddenSectionsTests(MonitoringCase):
                 mock.patch.object(health_read, 'recent_treatments') as treatments, \
                 mock.patch.object(health_read, 'latest_counts') as counts, \
                 mock.patch.object(tasks_read, 'per_unit') as tasks:
-            found = read.cards(units, user, modes)
+            found = read.cards(units, user, chosen(modes))
         for owner in (feeding, water, events, treatments, counts, tasks):
             owner.assert_not_called()
         card = found[0]
@@ -88,10 +88,10 @@ class HiddenSectionsTests(MonitoringCase):
         block = WithdrawalBlock(self.fish, self.today + timedelta(days=3), False, 'x', None)
         units = read.units_for(read.Params())
         with mock.patch('farm.handling.withdrawal._providers', [lambda each, day: {unit.pk: [block] for unit in each}]):
-            found = read.cards(units, user, {unit.pk: 'simple' for unit in units})
+            found = read.cards(units, user, chosen({unit.pk: 'simple' for unit in units}))
         self.assertTrue(all(card.withdrawal for card in found))
 
     def test_without_the_stock_right_there_are_no_fish_and_no_card_of_them(self):
         user = self.as_person('water-only', 'view_watermeasurement')
         units = read.units_for(read.Params())
-        self.assertEqual(read.cards(units, user, {unit.pk: 'simple' for unit in units}), [])
+        self.assertEqual(read.cards(units, user, chosen({unit.pk: 'simple' for unit in units})), [])

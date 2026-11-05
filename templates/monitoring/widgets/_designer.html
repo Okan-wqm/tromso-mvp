@@ -1,0 +1,45 @@
+{% load i18n %}{% comment %} The card designer (monitoring.forms.CardDesignerWidget; frontend/designer.ts). The layout is the form's own field, a
+   JSON textarea: without script it is edited as text and the validator answers on save; with script the canvas fills it.
+   Every word the script shows comes from here or from the catalogue, in the person's language (the script has none). {% endcomment %}
+<div class="designer" data-designer data-preview-url="{{ widget.preview_url }}"
+     data-announce-moved="{% trans "{label} moved to column {x}, row {y}." %}"
+     data-announce-resized="{% trans "{label} is now {w} columns wide and {h} rows high." %}"
+     data-announce-added="{% trans "{label} added at column {x}, row {y}." %}"
+     data-announce-removed="{% trans "{label} removed." %}"
+     data-announce-preview="{% trans "Preview updated." %}"
+     data-label-undo="{% trans "Undo" %}" data-label-redo="{% trans "Redo" %}" data-label-revert="{% trans "Revert" %}"
+     data-label-remove="{% trans "Remove" %}" data-label-x="{% trans "Column" %}" data-label-y="{% trans "Row" %}"
+     data-label-w="{% trans "Width" %}" data-label-h="{% trans "Height" %}" data-label-binding="{% trans "Water value" %}"
+     data-label-point="{% trans "Sampling point" %}" data-label-middle="{% trans "The middle point" %}"
+     data-label-palette="{% trans "Add a widget" %}" data-label-canvas="{% trans "Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow keys, remove it with Delete." %}"
+     data-label-order="{% trans "Reading order" %}" data-label-none="{% trans "Select a widget to change it." %}"
+     data-label-errors="{% trans "To fix before saving" %}" data-label-warnings="{% trans "Worth a look" %}"
+     data-label-frame="{% trans "The card’s frame: the unit, its state and why, the withdrawal. Always shown." %}">
+  <div class="designer-bar">
+    <div class="designer-palette" data-designer-palette role="group"></div>
+    <div class="designer-tools">
+      <button type="button" class="button button-ghost" data-designer-undo disabled>{% trans "Undo" %}</button>
+      <button type="button" class="button button-ghost" data-designer-redo disabled>{% trans "Redo" %}</button>
+      <button type="button" class="button button-ghost" data-designer-revert>{% trans "Revert" %}</button>
+      <label class="designer-check"><input type="checkbox" data-designer-lines checked> {% trans "Grid lines" %}</label>
+    </div>
+  </div>
+  <div class="designer-main">
+    <div class="designer-canvas" data-designer-canvas></div>
+    <aside class="designer-inspector" data-designer-inspector aria-live="polite"></aside>
+  </div>
+  <nav class="designer-order" data-designer-order></nav>
+  <div class="designer-problems" data-designer-problems role="status"></div>
+  <div class="designer-preview-bar">
+    <label>{% trans "Preview on" %} <select data-designer-unit>{% for unit in widget.units %}<option value="{{ unit.value }}">{{ unit.label }}</option>{% endfor %}</select></label>
+    <label>{% trans "Show as" %} <select data-designer-state><option value="">{% trans "Its own state" %}</option><option value="critical">{% trans "Critical" %}</option><option value="warning">{% trans "Warning" %}</option><option value="blind">{% trans "No recent data" %}</option><option value="note">{% trans "Note" %}</option><option value="ok">{% trans "OK" %}</option></select></label>
+    <label>{% trans "Width" %} <select data-designer-width><option value="26rem">{% trans "Card" %}</option><option value="20rem">{% trans "Narrow" %}</option><option value="34rem">{% trans "Wall" %}</option></select></label>
+  </div>
+  <p class="panel-help">{% trans "The preview shows only what you may read yourself." %}</p>
+  <div class="designer-preview monitor-grid" data-designer-preview></div>
+  <p class="sr-only" data-designer-status aria-live="polite"></p>
+  <details class="designer-json"><summary>{% trans "The layout as text" %}</summary>
+    <textarea name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %} data-designer-layout>{% if widget.value %}{{ widget.value }}{% endif %}</textarea>
+  </details>
+</div>
+{{ widget.catalogue|json_script:"card-catalogue" }}{{ widget.units|json_script:"card-units" }}

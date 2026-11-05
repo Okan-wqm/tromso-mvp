@@ -17,3 +17,5 @@ node_modules/
 
 # Sensors services: secrets and the broker files (docker-compose.yml profile sensors)
 .sensors/
+# The TypeScript test build (`npm test`)
+.build/

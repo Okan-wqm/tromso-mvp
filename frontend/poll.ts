@@ -20,6 +20,8 @@
 //                              404 or a redirect to sign-in); the page's CSS says so in its own words. A
 //                              `poll:gone` event (detail.status) bubbles from the element when it is gone.
 //   `poll:now` event           asks at once; detail.url (optional) is the address to ask from now on
+//   `poll:merged` event        sent by a merged element after each merge: detail.replaced ({old, node}), inserted,
+//                              removed (what frontend/announce.ts reads a state's rise from)
 //   data-poll-url="<url>"      on a link inside a polled element: a click asks that element for <url> at once (the
 //                              state the link stands for, e.g. a card drawn in detail) and the address bar follows
 //                              the link's href (history.replaceState); without the script the link navigates
@@ -55,14 +57,22 @@ function atEnd(list: HTMLElement): boolean {
   return list.scrollHeight - list.scrollTop - list.clientHeight < NEAR_END;
 }
 
+/** What a merge did: the children replaced (the old node and the new), inserted and removed. */
+export interface Merged {
+  replaced: { old: Element; node: Element }[];
+  inserted: Element[];
+  removed: Element[];
+}
+
 /** Replaces `container`'s keyed children by those of `html`: a child of the same key is kept when its markup is the
  *  same and replaced when it differs, a new key is inserted at its place in the answer, a child the answer lacks is removed (keyed or not).
- *  False (nothing done) when an element of the answer has no key: the caller then replaces everything. */
-function merge(container: HTMLElement, html: string, key: string): boolean {
+ *  Null (nothing done) when an element of the answer has no key: the caller then replaces everything. */
+function merge(container: HTMLElement, html: string, key: string): Merged | null {
   const template = document.createElement('template');
   template.innerHTML = html.trim();
   const incoming = Array.from(template.content.children) as HTMLElement[];
-  if (incoming.some((node) => !node.hasAttribute(key))) return false;
+  if (incoming.some((node) => !node.hasAttribute(key))) return null;
+  const done: Merged = { replaced: [], inserted: [], removed: [] };
   const focused = document.activeElement instanceof HTMLElement && container.contains(document.activeElement)
     ? document.activeElement.id : '';
   const current = new Map<string, HTMLElement>();
@@ -77,15 +87,25 @@ function merge(container: HTMLElement, html: string, key: string): boolean {
     let target = node;
     if (old !== undefined) {
       if (old.outerHTML === node.outerHTML) target = old;
-      else old.replaceWith(node);
+      else {
+        old.replaceWith(node);
+        done.replaced.push({ old, node });
+      }
+    } else {
+      done.inserted.push(node);
     }
     kept.add(target);
     const here = container.children[index] ?? null;
     if (here !== target) container.insertBefore(target, here);
   });
-  Array.from(container.children).forEach((child) => { if (!kept.has(child)) child.remove(); });
+  Array.from(container.children).forEach((child) => {
+    if (!kept.has(child)) {
+      child.remove();
+      done.removed.push(child);
+    }
+  });
   if (focused && document.activeElement?.id !== focused) document.getElementById(focused)?.focus();
-  return true;
+  return done;
 }
 
 // The elements asked for, so one listener serves them all and a gone element is let go.
@@ -149,7 +169,9 @@ export function watch(element: HTMLElement): () => void {
       element.insertAdjacentHTML('beforeend', html);
       if (follow) element.scrollTop = element.scrollHeight;
     } else if (mergeBy) {
-      if (!merge(element, html, mergeBy)) element.innerHTML = html.trim();
+      const done = merge(element, html, mergeBy);
+      if (done === null) element.innerHTML = html.trim();
+      else element.dispatchEvent(new CustomEvent<Merged>('poll:merged', { bubbles: true, detail: done }));
     } else if (!(skipSame && html === last)) {
       element.innerHTML = html.trim();
     }

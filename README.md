@@ -646,10 +646,11 @@ without a request, so the shell's context (the menu, the unread count) is never 
 polls keep the session alive once a day (the default session is two weeks and a wall must not sign itself out); the grid prints a
 large notice from `data-poll-state` when the server cannot be reached or the person is signed out.
 
-**Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`): the only thing the app stores. A board is a
-named, shared wall screen: a name (unique among the live boards in any case), a description, how its cards are drawn by
-default (simple or detailed), how often its screens ask (10 to 600 seconds, empty: the system's 15), and its **Units** tab, one
-card per unit with its own mode (empty: the board's), saved as a whole list with the board's version (a list based on an outdated
+**Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`). A board is a
+named, shared wall screen: a name (unique among the live boards in any case), a description, the template its cards are drawn
+with by default (empty: the rules decide; it ranks below the rules, as its default mode did), its card width (compact,
+automatic, comfortable), how often its screens ask (10 to 600 seconds, empty: the system's 15), and its **Units** tab, one
+card per unit with its own template (empty: the board's or the rules'; above every rule), saved as a whole list with the board's version (a list based on an outdated
 board is refused) and one activity-log entry. Tables `monitor_boards` and `monitor_board_units`; every rule the database can
 hold is a constraint (the name, the modes, the refresh range, one card per unit and board). A board holds only live units: the
 form offers live units, and a unit that is deleted keeps its row (a configuration, not history), its card hidden by the live join
@@ -681,6 +682,122 @@ the time is Python and template work, not the database: the change token is what
 screen would first bound the feeding walk (`project` reads every feeding of the lineage) or cache the rendered card, never the other
 way round. The queries stay equal from 6 to 100 units (pinned at 6 and 24 in `monitoring/tests/test_budget.py`). `CONN_MAX_AGE` is
 left alone: the queries are a tenth of the time, so there is no evidence for it.
+
+**Card templates: the widget catalogue and the validator** (`monitoring/cards/`). A card will be a fixed **frame** (the unit,
+its state word, shape and reasons, the withdrawal, what the state is from, the flip link: never data, so no template can
+remove it) and a **template**, a JSON layout of widgets on a 12-column grid. `catalogue.py` is the one truth of what a card
+can hold: each widget type's label, minimum, maximum and default size in cells, the card read's sources it shows, whether it
+is bound to a water parameter (and point), and its options as `core.schema.Schema` descriptors (only how it is drawn: no
+colour, font, threshold, unit or free text); `as_data()` hands it to the designer in the person's language. The v1 widgets:
+value and value-against-limits (one parameter), water (the middle point's key values or every point's every value), fish
+(the key figures or every figure), feeding (the week too or not), health, tasks, experiments, the Deffeyes chart button,
+and a trend that is catalogued but refused until a bulk series read exists. `validate.py` is the one validator (pure, no
+query; the model, the form, the preview and the tests call it): errors block (the shape, an unknown version, more than 40
+widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or outside its sizes, each overlapping
+pair named once, a binding the widget cannot have, an option its schema refuses), warnings never do (no oxygen anywhere,
+more than two large widgets, more than 16 widgets). An older layout version is upgraded one pure step at a time and checked
+as upgraded, never changed in place; a fixture per version passes. The geometry is shared with the designer's TypeScript
+through `monitoring/tests/layout_vectors.json`, which both suites run.
+
+**Card templates in the database** (`monitoring/models.py`, migrations 0002 to 0004). `monitor_card_templates`: a name (unique
+among the live templates in any case, not blank), a description, whether it is built in, the layout's version (stamped in
+the layout too) and the layout (JSONB), and the template its flip link shows (`expanded`, never itself). The database holds
+the layout's shape (an object whose widgets are a list), at most 40 widgets, at most 32 KB and the version stamp, so a hand
+edit cannot store what no card can read; everything that needs the catalogue is the validator's. Three templates are built in
+(`monitoring/cards/builtin.py`, frozen the same in migration 0002, a test keeps them equal): **Simple** and **Detailed**, the
+cards as they were (each flips to the other), and **Operator view** (the oxygen and the temperature large and first, then
+O₂ %, pH and TAN; offered, not a default). A trigger refuses any change and any delete of a built-in,
+whoever writes; a CHECK allows only those three ids to be built in and never deleted (so a database emptied and loaded
+again, a test run's rollback or a restored dump, gets them back). Copy a built-in to change it.
+`monitor_card_assignments`: which template a unit's card gets, a rule for one unit, system, system type (hatchery and nursery
+reachable here), species or unit kind, or with none the global rule (migration 0002 makes it: every unit gets Simple). One
+scope per rule and one live rule per scope (NULLs equal, so one global) are a CHECK and a partial unique index. A rule of a
+deleted unit, system or species stays and counts again on restore; deleting a template deletes its rules, detaches the
+boards' defaults and the templates that flip to it (each logged); a built-in and the template of the global rule cannot be
+deleted, nor the global rule. A board gets its default template and a card width (compact, automatic, comfortable); a
+board's card row its own template. Migration 0004 copies each board's default mode and each row's mode into the built-in
+templates; back, a built-in maps to its mode again. The mode columns stay for one release, so a rollback loses nothing.
+
+**Which template a card gets** (`monitoring/cards/resolve.py`), first hit wins: the board's row for the unit, a rule for the
+unit, for its system, for its system's type, for the species of its fish (an empty unit has none and falls through), for
+its kind, the board's default (no board: the page's `mode=simple|detailed`, the built-ins), the global rule, and with no rule
+at all Simple from the code. `?flip=` shows a card's flip target and its link goes back. Only live templates and live rules
+of live units, systems and species count; a rule of something deleted counts again when it is restored. A stored layout the
+validator refuses (a hand edit) never blanks a card: it is drawn with the built-in Detailed layout from the code and the error
+is logged once per template per process. The live templates and rules are two queries, whatever the number of units.
+
+**What the read reads** (`monitoring/read.py`): `SOURCES` is the one table of the card's sources, each with the right that reads
+it and whether the card can be drawn without it (it replaced `PERMISSIONS`). `needs` is the union of the sources of every
+widget of the shown cards' templates, plus the roll-up's set (fish, feeding, the middle point's water, open events) for every
+card, so the state never depends on the template: a card with no water widget is still critical. A source no shown widget
+needs runs no query (every active point's water and the feeding week only for the cards that show them). An optional source
+(treatments, lice counts, tasks, placement chips) that fails is read in its own savepoint, its widgets say so, and it is logged
+at most once a minute; a required one that fails answers **503** (the page and the fragment), so a polling screen backs off
+and keeps its last picture with its stale notice. The two template queries are the only reads card templates add: 33
+reads simple, 40 detailed and mixed at 6, 24 and 200 units (the recording's 31 and 38 reads, plus the two; the recording
+also counted 4 savepoint statements, the chips' and the placement registry's own), and each optional source now has a
+savepoint of its own: 4 savepoint statements simple, 10 detailed (`RecordedCountsTests`).
+
+**How a card is drawn** (`monitoring/cards/render.py`, `templates/monitoring/_card.html`, `templates/monitoring/widgets/`). The
+frame (the unit and its link, the state word, shape and reasons, the withdrawal, the flip link named after the template it
+shows, "Empty", what the state is from) is not data and no template can remove it. Below it `div.card-grid`: one
+`div.w.w-<type>` per widget with `--x --y --w --h`, placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
+least `--row` 1.75 rem high, growing with its content) and, below 30 rem of card, one column in the same order; the wall runs no
+layout script. `build(card)` (no query) gives the widgets in reading order (y, then x), so what is read, what Tab visits and
+what is seen agree; a unit with no fish shows only the experiments and the Deffeyes button; a widget whose sources the person
+may not read says "Feeding: not shown to you" (the Deffeyes button is left out); a widget whose optional source failed says
+"no data". A focusable element of a widget is `w-<unit>-<widget id>` (poll.ts restores the focus by id). `face(reading, now)`
+is the one way a single value is said: the figure at the parameter's precision, its status in words, where it came from
+(the sample's source) and its age in bands ("just now", "40 s ago", "12 min ago", "3 h ago", "2 d ago", so a card changes
+once per band, not per poll), "old" past the parameter's freshness, and "no data" rather than a dash; the water table keeps the
+water page's own value markup and adds the origin and age under each value. A bar is the value against the four bounds of
+the limit that judged it, an SVG with `role="img"` named by the same sentence, its bands told apart by dash pattern as well as
+tone (no `<meter>`: browser colours, three cut points); without a limit it says so. A board's card width sets `--card-min`
+(17, 21 or 28 rem, 15 % more on a wall). The old per-section partials are gone: the built-ins Simple and Detailed draw what
+they drew, value for value (`test_golden`).
+
+**Setup › Reference data › Card templates** (`/card-templates/`) and **Card template rules** (`/card-template-rules/`), tabs on
+`core.crud` (`monitoring/resources.py`). A template's form has a General tab (name, description, the template its flip link
+shows) and a Design tab (the layout, checked by the validator; each refusal names its widget, nothing is stored); the
+version guards two designers (the second is told). The list shows the built-ins first with a mark, and how many rules,
+boards and board cards use each; a built-in opens read-only (saving it is refused, as by the database) and **Copy** makes an
+editable one ("Simple (copy)", "(copy 2)" …), with the add right. The activity log says the layout as one English line per
+widget ("w1 value 3x2 at 0,0 binds oxygen_mg_l"). Deleting one lists the rules that go with it and the boards and templates
+that lose their pointer; restoring brings back the template only. A rule's form is a template and at most one of unit,
+system, system type, species, kind (none: every unit); the list is in the ladder's order, the global rule last, which
+cannot be deleted or narrowed. Role matrix areas **Card templates** and **Card template rules** (after Handling rules);
+reading Monitoring needs neither, and a reader of cards without them cannot open the designer. A template saved writes an
+activity-log entry, so every wall's change token moves. The designer's **preview** (`POST /card-templates/preview/`, JSON `{layout,
+unit, name, state}`, the change right, at most 64 KB) checks the layout first (an error draws nothing and is listed), then
+draws the same card the wall would for that one unit with the previewer's own rights, marked `data-preview`; it writes and
+logs nothing, and `state` (a forced state for a look at it) is accepted there only.
+
+**The frame says more** (owner decision 4: a unit in maintenance, cleaning or quarantine rolls up as before): the unit's status
+when it is not active ("Maintenance"), the withdrawal as a note chip (it lasts weeks; not an alarm), a dashed line when the
+stored template cannot be drawn ("Template error: … this card is shown as Detailed"), and under the basis which template
+draws the card and why ("Template: Simple · the rule for every unit"). **Colours** are checked against the token table by
+`monitoring/tests/test_frame.py`: text that says something at least 4.5:1 on white (the warning amber is #7A5410), a border or a
+dot that carries meaning at least 3:1 (the water page's warning dot moved from #C58A16, 2.99:1, to the text's amber), the pale
+sage never carries meaning (a note card's border is the muted green, an empty one's dotted); `@media (forced-colors: active)`
+keeps the shapes, the bands of a bar and the state borders in high-contrast mode.
+
+**Measured with templates** (2026-11-05, `monitoring/tests/test_load.py`, run with `MONITOR_LOAD=1`; the test database on this
+development machine, the test client): a wall of 200 cards drawn with a 12-widget template (four values, a bar, every
+figure of the fish, the feeding week, every point's water, health, tasks, the Deffeyes button) costs 67 queries, 3.4 s and
+1,512 KB for the page, 62 queries, 3.1 s and 1,477 KB for the fragment (about 7.5 KB a card: each value now says its
+origin and age), and the unchanged poll 7 queries in 0.03 s. Decision: no card cache, no widget hash or patch protocol and
+no gzip in Django now. The queries stay flat with the units and the 204 path answers every unchanged poll, so a wall pays
+the 3 s at most once a minute (the token's bucket) or after a change; gzip belongs to the web server in front (compressing
+pages with a CSRF token in Django invites BREACH), and a cache or a patch protocol waits for a measured miss on the wall's
+own hardware (the live check of the plan: 20 polls, 30 % of the cards changing, long tasks, a 24 h memory soak).
+
+**Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
+every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
+an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the
+fragment, and two people who may not read every section) and compares what each card says with `golden_cards.json`
+(`monitoring/tests/golden.py`: the state word, the reasons, every labelled figure, the links, and every text and title, which a
+card may add to but never lose; ids, dates and ages normalised). The card read's queries were recorded at 6, 24 and 200 units:
+35 simple, 42 detailed, 42 mixed, equal at every size (`RecordedCountsTests`).
 
 ### Operations › Feeding: Meal board, Records, Protocols and Assignments
 
@@ -3033,6 +3150,34 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   make the page inert and stop the wall. All the styles of the module, the wall (`?wall=1` puts
   `data-wall` on `<html>` through the `html_attrs` block of `app_base.html`: no rail, no top bar, no width
   limit) and the notices CSS prints from `data-poll-state`, are in `static/css/monitor.css`.
+- `announce.ts` what the monitoring wall says aloud: after each merge of the grid poll.ts sends `poll:merged` (what it replaced,
+  inserted and removed); a card whose `data-state` got worse (ok, note, no recent data, warning, critical) is said in one of two
+  live regions beside the grid (`#monitor-announce`, never inside the polled grid): a critical one assertively, the others
+  politely, the first in full ("T-01 is now Critical.") and the rest as a count, at most one announcement per region in 5 s with
+  the latest held for after. A first load, a better state, a card coming into view or going say nothing. The sentences and
+  the state words are the page's (`data-announce-*`, `data-state-*`).
+- `designer.ts` the card designer of Reference data › Card templates (the Design tab, `templates/monitoring/widgets/_designer.html`):
+  it edits the form's own layout textarea (without script the layout is edited as text); a palette (click or Enter adds), a
+  canvas of the 12 columns under the card's fixed frame band (select; drag to move, the corner handle to resize, one history
+  entry per gesture; the arrow keys move, Shift and the arrow keys resize, Delete removes and selects the next, on the
+  focused widget: `grid/keyboard.ts`), an inspector (column, row, width, height counted from 1, the water value and point,
+  the widget's options from its descriptors), the reading order as links, undo, redo and revert (Ctrl+Z, Ctrl+Y), the
+  problems the server's validator finds (each links its widget, a refused widget is marked), and the preview: the server's
+  card for a unit chosen from the live units, optionally shown in a forced state, refreshed 400 ms after a change (a newer
+  request aborts the older); it replaces only the preview pane, so the focus on the canvas stays. A change is announced in a
+  polite live region from the `data-announce-*` sentences. Its browser test (`frontend/test/designer.browser.test.ts`)
+  runs Playwright on the machine's own Chrome or Edge with a stub preview server (keyboard, drag, palette, inspector, the
+  focus through a preview, axe-core finding no serious violation); it is skipped where there is no such browser.
+- `grid/` the card designer's grid library, our own (no grid package): `layout.ts` pure functions over an immutable
+  layout (`catalogueOf` reads the server's widget catalogue, `parse`/`serialize` a stored layout, `check` the geometry the
+  server's validator also checks, `clamp`, `compact`, `move`, `resize`, `add`, `remove`, `readingOrder`, `changes`,
+  `cellFromPoint`, `keyToDelta`), `history.ts` undo and redo (a gesture is one entry, 100 kept, a new entry clears redo),
+  `types.ts`. A gesture places the moved, grown or dropped widget first, pushes what it lands on straight down and then
+  compacts (floats every widget up as far as it goes, in reading order, stable on ties); compaction exists only here, the
+  server never moves a widget. Nothing changes its input and garbage is a typed answer, never a throw. Its tests
+  (`*.test.ts`, `frontend/test/random.ts`) are examples, the geometry vectors shared with the server and seeded
+  properties over 2,000 random layouts and gestures each (mulberry32; a failure prints the seed, `GRID_SEED=<n> npm test`
+  replays it): no overlap, in bounds and sizes, ids kept, compaction idempotent and never downwards, undo exact, round trip.
 
 Asset URLs carry the file's modification time (`{% asset %}`, core/templatetags/assets.py) and the
 compiled modules are reached through an import map (`{% module_map %}`), so a browser never shows a
@@ -3216,7 +3361,9 @@ real mail.
 | `/feeds/` | Reference data › Feeds; `<id>/suitability/` saves the species and fish weights a feed suits |
 | `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
 | `/operations/units/` | Operations › Production units; `?unit=<id>` opens a unit's drawer |
-| `/operations/monitoring/` | Operations › Monitoring: a live card per unit, simple or detailed; `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
+| `/card-templates/`, `/card-templates/<id>/copy/` (POST), `/card-templates/preview/` (POST JSON) | Setup › Reference data › Card templates: the designer, Copy, the designer's preview |
+| `/card-template-rules/` | Setup › Reference data › Card template rules |
+| `/operations/monitoring/` | Operations › Monitoring: a live card per unit, drawn with its card template (`?mode=simple|detailed` picks a built-in for a page without a board); `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
 | `/operations/monitoring/cards/` | The grid's children for the same address; `&after=<token>` answers 204 while nothing changed, `X-Poll-Next` is the next address |
 | `/operations/units/new-batch/` | A new batch (`?unit=<id>` chooses the unit) |
 | `/operations/units/<id>/<operation>/` | An operation on a unit's fish: `mortality`, `weighing`, `transfer`, `grading`, `cull`, `harvest` |
@@ -3335,6 +3482,7 @@ real mail.
 | `static/css/auth.css` | Sign-in layout |
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |
+| `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
 
 ## Tests
 
@@ -3343,5 +3491,9 @@ real mail.
 ```
 
 Tests build the catalogs first and hash passwords quickly (`config/test_runner.py`); the TypeScript is
-type-checked by a test when Node and `npm install` are there. The tests need the database container running (they check the timescaledb extension too). Set
+type-checked by a test when Node and `npm install` are there, and its unit tests run by another (`npm test`: `tsconfig.test.json`
+builds `frontend/` with its `*.test.ts` and `frontend/test/` into `.build/test`, not committed, `scripts/mark-esm.mjs` marks it
+as ES modules and `node --test` runs it; without Node the test is skipped, under `CI=1` it fails). The browser build
+(`tsconfig.json`) leaves the tests out, and the no-UI-text rule reads every folder of `frontend/` but the tests. The
+development-only tools and their licences are in [`THIRD_PARTY.md`](THIRD_PARTY.md); none of them is shipped to the browser. The tests need the database container running (they check the timescaledb extension too). Set
 `DB_TEST_NAME` to give a checkout its own test database when two test runs overlap.

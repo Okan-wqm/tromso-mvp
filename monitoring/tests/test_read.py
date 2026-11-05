@@ -1,4 +1,4 @@
-"""The monitoring read model: the address, the filters and the modes, the state ladder (each rung, with the blind
+"""The monitoring read model: the address, the filters, the state ladder (each rung, with the blind
 rule), and that every figure a card holds is the owning read's own, checked on one fixture against the pages that
 show the same figure."""
 from datetime import timedelta
@@ -18,9 +18,12 @@ from farm.water.evaluate import Status
 from farm.water.read import Observation, Origin, PointWater, Reading
 
 from .. import read
-from . import D, MonitoringCase
+from ..cards import builtin, resolve
+from . import D, MonitoringCase, chosen
 
 NOW = timezone.now()
+SIMPLE = resolve.Resolved(None, builtin.SIMPLE_LAYOUT, resolve.FALLBACK)
+DETAILED = resolve.Resolved(None, builtin.DETAILED_LAYOUT, resolve.ADDRESS)
 
 
 # ---- the address -------------------------------------------------------------------------------------------------
@@ -42,27 +45,6 @@ class ParamsTests(SimpleTestCase):
         self.assertEqual(first.canonical(kind=''), 'occupancy=all&q=a')
 
 
-class ModesTests(SimpleTestCase):
-    def rows(self, **modes):
-        return SimpleNamespace(all=lambda: [SimpleNamespace(unit_id=unit, mode=mode) for unit, mode in modes.items()])
-
-    def test_the_rule_in_one_place(self):
-        a, b, c = SimpleNamespace(pk='a'), SimpleNamespace(pk='b'), SimpleNamespace(pk='c')
-        units = [a, b, c]
-        params = read.Params(mode=read.DETAILED)
-        # no board: the address's mode, else simple
-        self.assertEqual(read.modes(units, None, read.Params()), {'a': 'simple', 'b': 'simple', 'c': 'simple'})
-        self.assertEqual(read.modes(units, None, params), {'a': 'detailed', 'b': 'detailed', 'c': 'detailed'})
-        # a board: its row, else its default (the address's mode is not asked)
-        board = SimpleNamespace(default_mode='simple', rows=self.rows(a='detailed', b=''))
-        self.assertEqual(read.modes(units, board, params), {'a': 'detailed', 'b': 'simple', 'c': 'simple'})
-        # flip inverts whatever the base was, for the cards named
-        flipped = read.Params(flip=frozenset({'a', 'c'}))
-        self.assertEqual(read.modes(units, board, flipped), {'a': 'simple', 'b': 'simple', 'c': 'detailed'})
-        self.assertEqual(read.modes(units, None, read.Params(mode='detailed', flip=frozenset({'b'}))),
-                         {'a': 'detailed', 'b': 'simple', 'c': 'detailed'})
-
-
 # ---- the state ladder, on hand-made cards ---------------------------------------------------------------------------
 def reading(code, value, hours=1, status=Status.OK, point=None):
     point = point or SimpleNamespace(name='Middle', kind='middle')
@@ -77,7 +59,7 @@ def water(*readings, kind='middle'):
 
 def card(**changes):
     values = dict(
-        unit=SimpleNamespace(code='T-01'), mode='simple', today=None, stock=SimpleNamespace(over_capacity=False),
+        unit=SimpleNamespace(code='T-01'), template=SIMPLE, today=None, stock=SimpleNamespace(over_capacity=False),
         water=(water(reading('temperature_c', 9), reading('oxygen_mg_l', 9)),), sections=frozenset(read.SECTIONS),
         now=NOW)
     values.update(changes)
@@ -111,12 +93,13 @@ class LadderTests(SimpleTestCase):
         self.assertEqual(self.key(drift='now'), 'warning')
         self.assertEqual(self.key(drift='soon'), 'note')                  # soon is a note, now is a warning
 
-    def test_an_alert_of_another_point_does_not_change_the_state_and_so_not_with_the_mode(self):
+    def test_an_alert_of_another_point_does_not_change_the_state_and_so_not_with_the_template(self):
         drain = PointWater(SimpleNamespace(name='Bottom drain', kind='bottom_drain'),
                            {'oxygen_mg_l': reading('oxygen_mg_l', 2, status=Status.CRITICAL)})
-        for mode in ('simple', 'detailed'):
-            with self.subTest(mode=mode):
-                state = card(mode=mode, water=(water(reading('temperature_c', 9), reading('oxygen_mg_l', 9)), drain)).state
+        for template in (SIMPLE, DETAILED):
+            with self.subTest(template=template.why):
+                middle = water(reading('temperature_c', 9), reading('oxygen_mg_l', 9))
+                state = card(template=template, water=(middle, drain)).state
                 self.assertEqual(state.key, 'ok')
         # the middle point alone decides: the same reading at the middle is critical
         self.assertEqual(self.key(water=(water(reading('temperature_c', 9),
@@ -198,7 +181,7 @@ class UnitsForTests(MonitoringCase):
 class CardsTests(MonitoringCase):
     def cards(self, occupancy='stocked', mode='simple', units=None, user=None):
         units = units or read.units_for(read.Params())
-        return read.cards(units, user or self.reader, {unit.pk: mode for unit in units}, occupancy)
+        return read.cards(units, user or self.reader, chosen({unit.pk: mode for unit in units}), occupancy)
 
     def test_occupancy_keeps_the_stocked_the_empty_or_all(self):
         self.assertEqual({card.unit.code for card in self.cards()}, {'T-01', 'T-02'})

@@ -60,7 +60,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                     'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                                    'Water limits', 'Medicines', 'Handling rules', 'Slaughter facilities',
+                                                    'Water limits', 'Medicines', 'Handling rules', 'Card templates',
+                                                    'Card template rules', 'Slaughter facilities',
                                                     'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
                                                     'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                     'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
@@ -121,7 +122,8 @@ class PanelMemoryTests(WorkspaceTestCase):
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production departments', 'Systems', 'Equipment',
                                                   'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                                  'Water limits', 'Medicines', 'Handling rules', 'Slaughter facilities',
+                                                  'Water limits', 'Medicines', 'Handling rules', 'Card templates',
+                                                    'Card template rules', 'Slaughter facilities',
                                                   'Suppliers', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
                                                   'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                   'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
@@ -211,6 +213,8 @@ class MenuPlacementTests(TestCase):
             'farm.Medicine': 'Production · Setup · Reference data',
             'farm.SlaughterFacility': 'Production · Setup · Harvest and logistics',
             'farm.HandlingRule': 'Production · Setup · Reference data',
+            'monitoring.CardTemplate': 'Production · Setup · Reference data',
+            'monitoring.CardTemplateAssignment': 'Production · Setup · Reference data',
             'farm.Supplier': 'Production · Setup · Purchasing',
             'farm.StockOperation': 'Production · Operations',
             'farm.FeedingRecord': 'Production · Operations · Feeding',

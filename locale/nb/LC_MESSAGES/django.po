@@ -443,6 +443,10 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
 
 #, python-format
+msgid "%(days)d d ago"
+msgstr "%(days)d d siden"
+
+#, python-format
 msgid "%(days)s day late"
 msgid_plural "%(days)s days late"
 msgstr[0] "%(days)s dag for sent"
@@ -615,6 +619,10 @@ msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 
 #, python-format
+msgid "%(hours)d h ago"
+msgstr "%(hours)d t siden"
+
+#, python-format
 msgid "%(hours)s and %(degrees)s"
 msgstr "%(hours)s og %(degrees)s"
 
@@ -665,6 +673,10 @@ msgstr "%(kilos)s veid"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "Seksjoner i skjemaet: %(kind)s"
+
+#, python-format
+msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
+msgstr "%(label)s %(value)s, %(status)s; grenser: %(limits)s"
 
 #, python-format
 msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
@@ -779,8 +791,16 @@ msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
 msgstr "%(medicine)s, %(method)s fra %(start)s til %(end)s: tilbakeholdelsestid %(rule)s."
 
 #, python-format
+msgid "%(minutes)d min ago"
+msgstr "%(minutes)d min siden"
+
+#, python-format
 msgid "%(minutes)s min"
 msgstr "%(minutes)s min"
+
+#, python-format
+msgid "%(name)s (copy %(number)d)"
+msgstr "%(name)s (kopi %(number)d)"
 
 #, python-format
 msgid "%(name)s (copy)"
@@ -894,6 +914,10 @@ msgstr "%(replicate)s: siste dag kommer på eller etter første dag."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
+
+#, python-format
+msgid "%(seconds)d s ago"
+msgstr "%(seconds)d s siden"
 
 #, python-format
 msgid "%(section)s: not shown to you"
@@ -1479,8 +1503,25 @@ msgstr ""
 "Et panel er en navngitt veggskjerm: enhetene den viser og hvordan hvert kort tegnes. Alle som kan"
 " lese Overvåking kan åpne det."
 
+msgid "A built-in template cannot be changed; copy it to make one of your own."
+msgstr "En innebygd mal kan ikke endres; kopier den for å lage din egen."
+
+msgid "A built-in template is never deleted; copy it to make one of your own."
+msgstr "En innebygd mal slettes aldri; kopier den for å lage din egen."
+
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "En kapasitet trenger sin enhet, og en enhet sin kapasitet."
+
+#, python-format
+msgid "A card holds at most %(max)d widgets."
+msgstr "Et kort har høyst %(max)d elementer."
+
+msgid ""
+"A card template places widgets on a monitoring card; the card’s frame (the unit, its state and "
+"why) is always shown."
+msgstr ""
+"En kortmal plasserer elementer på et overvåkingskort; kortets ramme (enheten, tilstanden og "
+"hvorfor) vises alltid."
 
 #, python-format
 msgid "A channel has at most %(num)d calibration."
@@ -1702,6 +1743,9 @@ msgstr "En keep-alive fra 5 til 600 sekunder."
 #, python-format
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "En siste dag eldre enn %(date)s kan ikke endres."
+
+msgid "A layout is a set of named values with a list of widgets, and nothing else."
+msgstr "Et oppsett er et sett navngitte verdier med en liste over elementer, og ikke noe annet."
 
 msgid "A leave type is a kind of leave, such as annual or parental leave. Add the types the company uses."
 msgstr ""
@@ -1960,6 +2004,18 @@ msgstr ""
 msgid "A round takes at most %(rows)d rows."
 msgstr "En runde tar høyst %(rows)d rader."
 
+msgid ""
+"A rule gives a template to a unit, a system, a type of system, a species or a kind of unit; the "
+"most specific rule wins."
+msgstr ""
+"En regel gir en mal til en enhet, et system, en systemtype, en art eller en type enhet; den mest "
+"spesifikke regelen vinner."
+
+msgid "A rule is for one unit, system, system type, species or kind, or for every unit."
+msgstr ""
+"En regel gjelder én enhet, ett system, én systemtype, én art eller én type enhet, eller alle "
+"enheter."
+
 msgid "A rule is on one channel or on every channel of a quantity."
 msgstr "En regel gjelder én kanal eller hver kanal for en parameter."
 
@@ -2103,6 +2159,9 @@ msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
 
 msgid "A template"
 msgstr "En mal"
+
+msgid "A template cannot flip to itself."
+msgstr "En mal kan ikke bytte til seg selv."
 
 msgid "A template has no tanks: it is a design to copy."
 msgstr "En mal har ingen kar: den er et design som skal kopieres."
@@ -2358,6 +2417,9 @@ msgstr "Legg til et notat"
 
 msgid "Add a point to it"
 msgstr "Legg til et punkt"
+
+msgid "Add a widget"
+msgstr "Legg til et element"
 
 msgid "Add band"
 msgstr "Legg til vektklasse"
@@ -2848,6 +2910,9 @@ msgstr "Ankertid"
 msgid "Anchor value"
 msgstr "Ankerverdi"
 
+msgid "Another card template already has this name."
+msgstr "En annen kortmal har allerede dette navnet."
+
 msgid "Another channel of this device has this code."
 msgstr "En annen kanal på dette apparatet har denne koden."
 
@@ -3122,6 +3187,9 @@ msgstr ""
 
 msgid "As the records give it now"
 msgstr "Slik registreringene gir den nå"
+
+msgid "As the rules say"
+msgstr "Som reglene sier"
 
 msgid "As weighed on arrival; to 0.0001 g for eggs and larvae."
 msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
@@ -3450,6 +3518,9 @@ msgstr "Luftblåser"
 msgid "Board"
 msgstr "Panel"
 
+msgid "Boards"
+msgstr "Paneler"
+
 msgid "Book"
 msgstr "Beholdning"
 
@@ -3507,6 +3578,9 @@ msgstr ""
 
 msgid "Browser default"
 msgstr "Nettleserens standard"
+
+msgid "Built in"
+msgstr "Innebygd"
 
 msgid "Buoyancy"
 msgstr "Flyteevne"
@@ -3689,6 +3763,22 @@ msgstr ""
 msgid "Card"
 msgstr "Kort"
 
+msgid ""
+"Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow "
+"keys, remove it with Delete."
+msgstr ""
+"Kortoppsett: velg et element, flytt det med piltastene, endre størrelsen med Shift og piltastene,"
+" fjern det med Delete."
+
+msgid "Card template rules"
+msgstr "Kortmalregler"
+
+msgid "Card templates"
+msgstr "Kortmaler"
+
+msgid "Card width"
+msgstr "Kortbredde"
+
 msgid "Cardiomyopathy syndrome (CMS)"
 msgstr "Kardiomyopatisyndrom (CMS)"
 
@@ -3697,6 +3787,9 @@ msgstr "Kort"
 
 msgid "Cards are"
 msgstr "Kortene er"
+
+msgid "Cards are drawn with"
+msgstr "Kortene tegnes med"
 
 msgid "Cards can be added once the board is created."
 msgstr "Kort kan legges til når panelet er opprettet."
@@ -3882,6 +3975,15 @@ msgstr "Velg minst én."
 msgid "Choose one department: a production department or an office department."
 msgstr "Velg én avdeling: en produksjonsavdeling eller en kontoravdeling."
 
+msgid ""
+"Choose one of unit, system, system type, species or kind, or none for every unit. The most "
+"specific rule wins: a unit’s own, then its system’s, its system type’s, its species’, its kind’s;"
+" a board’s card and default come before and after the rules."
+msgstr ""
+"Velg én av enhet, system, systemtype, art eller type, eller ingen for alle enheter. Den mest "
+"spesifikke regelen vinner: enhetens egen, så systemets, systemtypens, artens, typens; et korts "
+"valg på et panel kommer før reglene og panelets standard etter."
+
 msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
 msgstr "Velg ett sted: en hel lokalitet, en produksjonsavdeling, et system, en enhet eller utstyr."
 
@@ -4057,11 +4159,17 @@ msgstr "Kolonner"
 msgid "Combination %(number)d is of one treatment: a combination is of at least two."
 msgstr "Kombinasjon %(number)d har én behandling: en kombinasjon har minst to."
 
+msgid "Comfortable"
+msgstr "Romslig"
+
 msgid "Common name"
 msgstr "Vanlig navn"
 
 msgid "Communication"
 msgstr "Kommunikasjon"
+
+msgid "Compact"
+msgstr "Kompakt"
 
 msgid "Compacted clay"
 msgstr "Komprimert leire"
@@ -4230,6 +4338,10 @@ msgstr "Kopier"
 #, python-format
 msgid "Copy %(experiment)s"
 msgstr "Kopier %(experiment)s"
+
+#, python-format
+msgid "Copy %(name)s"
+msgstr "Kopier %(name)s"
 
 msgid "Copy as"
 msgstr "Kopier som"
@@ -4969,6 +5081,11 @@ msgstr ""
 "grense. Hver verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets. "
 "Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
 
+msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
+msgstr ""
+"Hvert element trenger et kort navn: en liten bokstav, deretter opptil 15 bokstaver, sifre, - "
+"eller _."
+
 #, python-format
 msgid "Earliest suitable harvest date: %(date)s."
 msgstr "Tidligste egnede høstedato: %(date)s."
@@ -5164,6 +5281,9 @@ msgstr "Hendelse"
 msgid "Every"
 msgstr "Hver"
 
+msgid "Every active point"
+msgstr "Hvert aktive punkt"
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -5182,6 +5302,9 @@ msgstr[1] "Hver %(count)d. dag"
 
 msgid "Every factor has a name."
 msgstr "Hver faktor har et navn."
+
+msgid "Every figure"
+msgstr "Hvert tall"
 
 #, python-format
 msgid ""
@@ -5227,6 +5350,14 @@ msgstr ""
 "Alle tabeller applikasjonen lagrer, slik de er i databasen. Ingenting her kan endres. Slettede "
 "poster er bare merket som slettet, så de ligger fortsatt i tabellene og telles her."
 
+msgid "Every unit"
+msgstr "Alle enheter"
+
+msgid "Every unit no other rule names gets this template: give the global rule another template first."
+msgstr ""
+"Alle enheter som ingen annen regel nevner får denne malen: gi den globale regelen en annen mal "
+"først."
+
 msgid ""
 "Every unit that held fish is listed, eggs and larvae included; § 58 asks for the units of start-"
 "feeding fry or older (D-8): leave out those that were not."
@@ -5236,6 +5367,9 @@ msgstr ""
 
 msgid "Every value"
 msgstr "Hver verdi"
+
+msgid "Every value measured"
+msgstr "Hver målte verdi"
 
 msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
@@ -5560,6 +5694,9 @@ msgstr "Glassfiber (GRP)"
 msgid "Field"
 msgstr "Felt"
 
+msgid "Figures"
+msgstr "Tall"
+
 msgid "File"
 msgstr "Fil"
 
@@ -5746,6 +5883,9 @@ msgstr "Låst: protokollen er tildelt. Dupliser den for å endre den."
 
 msgid "Fixed: the row has started. End it and add another to change it."
 msgstr "Låst: raden har startet. Avslutt den og legg til en ny for å endre den."
+
+msgid "Flip link shows"
+msgstr "Byttelenken viser"
 
 msgid "Floating"
 msgstr "Flytende"
@@ -6100,6 +6240,9 @@ msgstr "Oppgi frøet: et helt tall fordelingen kan gjentas fra."
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Oppgi temperaturkolonnene først: rutenettet følger dem."
 
+msgid "Give the template a name."
+msgstr "Gi malen et navn."
+
 msgid "Give the topic the device publishes on."
 msgstr "Oppgi emnet apparatet publiserer på."
 
@@ -6145,6 +6288,9 @@ msgstr "Sortering registrert: %(count)s fisk av %(batch)s fra %(unit)s til %(uni
 
 msgid "Granted at once"
 msgstr "Innvilget med en gang"
+
+msgid "Grid lines"
+msgstr "Rutenett"
 
 msgid "Gross energy (MJ/kg)"
 msgstr "Bruttoenergi (MJ/kg)"
@@ -6310,6 +6456,9 @@ msgstr ""
 msgid "Hatchery"
 msgstr "Klekkeri"
 
+msgid "Hatchery and nursery systems are reached here."
+msgstr "Klekkeri- og yngelsystemer nås her."
+
 #. Translators: the delivery head of a pump, the height it lifts water to.
 msgid "Head"
 msgstr "Løftehøyde"
@@ -6362,6 +6511,9 @@ msgstr "Oppvarming og kjøling"
 
 msgid "Heating capacity"
 msgstr "Varmekapasitet"
+
+msgid "Height"
+msgstr "Høyde"
 
 msgid "Here now"
 msgstr "Her nå"
@@ -6417,9 +6569,6 @@ msgstr "Timer regelen krever"
 msgid "How"
 msgstr "Hvordan"
 
-msgid "How a card is drawn unless its row says otherwise: simple (the key figures) or detailed."
-msgstr "Hvordan et kort tegnes med mindre raden sier noe annet: enkelt (nøkkeltallene) eller detaljert."
-
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
 
@@ -6448,6 +6597,13 @@ msgstr ""
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
+
+msgid ""
+"How wide the cards are at the least: compact fits more on a wall, comfortable is easier to read "
+"from a distance."
+msgstr ""
+"Hvor brede kortene er minst: kompakt får plass til flere på en vegg, romslig er lettere å lese på"
+" avstand."
 
 msgid "Hydrochloric acid"
 msgstr "Saltsyre"
@@ -6762,6 +6918,9 @@ msgstr ""
 msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
 msgstr "Nummeret i rapporter til myndighetene (kar- eller merdnummeret), når det ikke er koden."
 
+msgid "Its own state"
+msgstr "Egen tilstand"
+
 #, python-format
 msgid "Its parts are on another site: %(parts)s. Move them first."
 msgstr "Delene er på en annen lokalitet: %(parts)s. Flytt dem først."
@@ -6873,6 +7032,9 @@ msgstr "Landbasert anlegg"
 msgid "Language"
 msgstr "Språk"
 
+msgid "Large"
+msgstr "Stor"
+
 msgid "Larvae"
 msgstr "Larver"
 
@@ -6966,6 +7128,12 @@ msgstr "Breddegrad og lengdegrad må oppgis sammen."
 
 msgid "Latitude is required for a sea cage."
 msgstr "Breddegrad er påkrevd for en merd."
+
+msgid "Layout"
+msgstr "Oppsett"
+
+msgid "Layout version"
+msgstr "Oppsettversjon"
 
 msgid "Lead"
 msgstr "Leder"
@@ -7071,9 +7239,6 @@ msgstr "List opp det som ble levert."
 
 msgid "Live fish and eggs"
 msgstr "Levende fisk og rogn"
-
-msgid "Live sensor values could not be read: samples only."
-msgstr "Sanntidsverdier fra sensorene kunne ikke leses: bare prøver."
 
 msgid "Live values"
 msgstr "Sanntidsverdier"
@@ -7471,11 +7636,18 @@ msgid "Monthly biomass"
 msgstr "Månedlig biomasse"
 
 #, python-format
+msgid "More than %(count)d widgets: a card this full is hard to read from a distance."
+msgstr "Mer enn %(count)d elementer: et så fullt kort er vanskelig å lese på avstand."
+
+#, python-format
 msgid "More than %(rows)d points: choose a production department or a system."
 msgstr "Mer enn %(rows)d punkter: velg en produksjonsavdeling eller et system."
 
 msgid "More than the standard week"
 msgstr "Mer enn standarduken"
+
+msgid "More than two widgets are large: the large ones no longer stand out."
+msgstr "Mer enn to elementer er store: de store skiller seg ikke lenger ut."
 
 msgid "Mortality"
 msgstr "Dødelighet"
@@ -7599,6 +7771,9 @@ msgstr "Navn eller kode"
 msgid "Name the person whose observation or advice it is."
 msgstr "Oppgi hvem observasjonen eller rådet kommer fra."
 
+msgid "Narrow"
+msgstr "Smal"
+
 msgid "Narrows the list of types."
 msgstr "Snevrer inn listen over typer."
 
@@ -7678,6 +7853,9 @@ msgstr "Nytt kar"
 
 msgid "New task"
 msgstr "Ny oppgave"
+
+msgid "New template"
+msgstr "Ny mal"
 
 msgid "Newer"
 msgstr "Nyere"
@@ -7861,6 +8039,9 @@ msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
+
+msgid "No flip link"
+msgstr "Ingen byttelenke"
 
 msgid "No fresh value"
 msgstr "Ingen fersk verdi"
@@ -8161,6 +8342,9 @@ msgstr "Uten volum: bare dosene per m³."
 
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
+
+msgid "No widget shows the oxygen."
+msgstr "Ingen elementer viser oksygenet."
 
 #, python-format
 msgid "No withdrawal is recorded for %(species)s of %(medicine)s: add it in Reference data › Medicines."
@@ -8773,6 +8957,9 @@ msgstr "Operasjoner eldre enn %(days)d dager kan ikke annulleres."
 msgid "Operator"
 msgstr "Driftsselskap"
 
+msgid "Operator view"
+msgstr "Operatørvisning"
+
 msgid "Optional"
 msgstr "Valgfritt"
 
@@ -9253,6 +9440,9 @@ msgstr "Punkt"
 msgid "Pointed at by"
 msgstr "Det pekes på av"
 
+msgid "Points"
+msgstr "Punkter"
+
 msgid "Points of equipment"
 msgstr "Punkter på utstyr"
 
@@ -9342,6 +9532,12 @@ msgstr "Trykk (bar)"
 
 msgid "Pressure sensor"
 msgstr "Trykksensor"
+
+msgid "Preview on"
+msgstr "Forhåndsvis på"
+
+msgid "Preview updated."
+msgstr "Forhåndsvisningen er oppdatert."
 
 msgid "Previous"
 msgstr "Forrige"
@@ -9578,6 +9774,9 @@ msgstr ""
 msgid "Read the text, page by page"
 msgstr "Les teksten side for side"
 
+msgid "Reading order"
+msgstr "Lesestrekkefølge"
+
 msgid "Reagents"
 msgstr "Kjemikalier"
 
@@ -9725,6 +9924,9 @@ msgstr "Gjentakende oppgave"
 
 msgid "Recurring tasks"
 msgstr "Gjentakende oppgaver"
+
+msgid "Redo"
+msgstr "Gjør om"
 
 msgid "Redox potential, ORP (mV)"
 msgstr "Redokspotensial, ORP (mV)"
@@ -9961,6 +10163,9 @@ msgstr "Retur"
 msgid "Return to supplier"
 msgstr "Retur til leverandør"
 
+msgid "Revert"
+msgstr "Tilbakestill"
+
 msgid "Review"
 msgstr "Gjennomgang"
 
@@ -10029,6 +10234,9 @@ msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
 
 msgid "Rule"
 msgstr "Regel"
+
+msgid "Rules"
+msgstr "Regler"
 
 msgid "Running"
 msgstr "Pågår"
@@ -10390,6 +10598,9 @@ msgstr "Søk etter lokalitet, slakteri eller kvittering"
 msgid "Search by species or source"
 msgstr "Søk etter art eller kilde"
 
+msgid "Search by template, unit, system or species"
+msgstr "Søk etter mal, enhet, system eller art"
+
 msgid "Search by unit, batch, facility or vessel"
 msgstr "Søk på enhet, fiskegruppe, slakteri eller fartøy"
 
@@ -10544,6 +10755,9 @@ msgstr "Velg en enhet"
 msgid "Select a water type"
 msgstr "Velg en vanntype"
 
+msgid "Select a widget to change it."
+msgstr "Velg et element for å endre det."
+
 msgid "Select an active protocol"
 msgstr "Velg en aktiv protokoll"
 
@@ -10672,6 +10886,9 @@ msgstr "Vis alle"
 msgid "Show all %(plural)s"
 msgstr "Vis alle %(plural)s"
 
+msgid "Show as"
+msgstr "Vis som"
+
 msgid "Show deleted rows"
 msgstr "Vis slettede rader"
 
@@ -10706,6 +10923,9 @@ msgid ""
 msgstr ""
 "Vises i panelvelgeren på Overvåking-siden. Alle som kan lese Overvåking kan velge et panel: et "
 "panel er oppsett, ikke en registrering."
+
+msgid "Shown in the template choices of boards and rules."
+msgstr "Vises i malvalgene til paneler og regler."
 
 msgid "Shrimp"
 msgstr "Reke"
@@ -11241,6 +11461,9 @@ msgstr ""
 msgid "System (its loop)"
 msgstr "System (kretsløpet)"
 
+msgid "System type"
+msgstr "Systemtype"
+
 msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
 msgstr "Systemisk infeksjon med Flavobacterium psychrophilum (regnbueørret)"
 
@@ -11354,6 +11577,10 @@ msgstr "Temperaturer"
 
 msgid "Template"
 msgstr "Mal"
+
+#, python-format
+msgid "Template error: “%(name)s” cannot be drawn; this card is shown as Detailed."
+msgstr "Malfeil: «%(name)s» kan ikke tegnes; dette kortet vises som Detaljert."
 
 msgid "Templates"
 msgstr "Maler"
@@ -11540,12 +11767,18 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Kalkulatorens verdier"
 
+msgid "The cards cannot be read just now. The screen keeps its last picture; try again shortly."
+msgstr "Kortene kan ikke leses akkurat nå. Skjermen beholder det siste bildet; prøv igjen om litt."
+
 msgid ""
-"The cards of each monitoring board: a unit and, when it differs from the board, how its card is "
-"drawn."
+"The cards of each monitoring board: a unit and, when it differs from the board, the template its "
+"card is drawn with."
 msgstr ""
-"Kortene på hvert overvåkingspanel: en enhet og, når det avviker fra panelet, hvordan kortet "
-"tegnes."
+"Kortene på hvert overvåkingspanel: en enhet og, når den avviker fra panelet, malen kortet tegnes "
+"med."
+
+msgid "The card’s frame: the unit, its state and why, the withdrawal. Always shown."
+msgstr "Kortets ramme: enheten, tilstanden og hvorfor, tilbakeholdelsen. Vises alltid."
 
 #, python-format
 msgid "The change cannot start before the current placement did (%(day)s)."
@@ -11901,6 +12134,12 @@ msgstr "Fisken i %(tank)s er ikke veid på dag 0: grunnlaget for fôrutnyttelsen
 msgid "The gain is a number other than 0."
 msgstr "Forsterkningen er et tall forskjellig fra 0."
 
+msgid "The global rule is never deleted: every unit must get a template. Change its template instead."
+msgstr "Den globale regelen slettes aldri: hver enhet må få en mal. Endre malen i stedet."
+
+msgid "The global rule stays for every unit: change its template only."
+msgstr "Den globale regelen gjelder fortsatt alle enheter: endre bare malen."
+
 msgid "The grace is between 0 and 120 minutes."
 msgstr "Toleransen er mellom 0 og 120 minutter."
 
@@ -11962,6 +12201,12 @@ msgstr "Tidsskriftets hefte."
 
 msgid "The journal’s volume."
 msgstr "Tidsskriftets volum."
+
+msgid "The key figures"
+msgstr "Nøkkeltallene"
+
+msgid "The key values"
+msgstr "Nøkkelverdiene"
 
 msgid ""
 "The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
@@ -12045,6 +12290,9 @@ msgid_plural "The latest %(weeks)s weeks of counts, per site."
 msgstr[0] "Den siste uken med tellinger, per lokalitet."
 msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
 
+msgid "The layout as text"
+msgstr "Oppsettet som tekst"
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
@@ -12088,6 +12336,16 @@ msgstr ""
 "mg/L og % avviker med mer enn 10 % ved denne temperaturen og saliniteten: kontroller målerens "
 "innstillinger."
 
+msgid "The middle point"
+msgstr "Midtpunktet"
+
+msgid ""
+"The monitoring card templates: a name, the widgets of the card as a layout and the template its "
+"flip link shows. Three are built in and never change."
+msgstr ""
+"Malene for overvåkingskort: et navn, kortets elementer som et oppsett og malen byttelenken viser."
+" Tre er innebygd og endres aldri."
+
 msgid "The most days in a row one person is planned. Default 6."
 msgstr "Flest dager på rad én person planlegges. Standard 6."
 
@@ -12113,11 +12371,11 @@ msgid "The name the device or gateway signs in to the broker with. Letters, digi
 msgstr "Navnet apparatet eller gatewayen logger inn på brokeren med. Bare bokstaver, sifre og . _ @ -."
 
 msgid ""
-"The named wall screens of Monitoring: a name, how its cards are drawn by default and how often "
-"its screens ask."
+"The named wall screens of Monitoring: a name, the template its cards are drawn with by default, "
+"how wide its cards are and how often its screens ask."
 msgstr ""
-"De navngitte veggskjermene i Overvåking: et navn, hvordan kortene tegnes som standard og hvor "
-"ofte skjermene spør."
+"Overvåkingens navngitte veggskjermer: et navn, malen kortene tegnes med som standard, hvor brede "
+"kortene er og hvor ofte skjermene spør."
 
 #, python-format
 msgid "The new placement must start after the last one ended (%(day)s)."
@@ -12312,6 +12570,9 @@ msgstr ""
 
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
+
+msgid "The preview shows only what you may read yourself."
+msgstr "Forhåndsvisningen viser bare det du selv har lov til å lese."
 
 msgid "The primary endpoint is not chosen."
 msgstr "Det primære endepunktet er ikke valgt."
@@ -12681,6 +12942,16 @@ msgstr "Teamet har ingen leder."
 msgid "The team needs a lead."
 msgstr "Teamet trenger en leder."
 
+msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
+msgstr "Malen et korts byttelenke viser (Enkel bytter til Detaljert). Tomt: ingen byttelenke."
+
+msgid ""
+"The template of a card that neither its row nor a rule names (Reference data › Card template "
+"rules). Empty: the global rule decides."
+msgstr ""
+"Malen til et kort som verken raden eller en regel nevner (Referansedata › Kortmalregler). Tomt: "
+"den globale regelen avgjør."
+
 msgid ""
 "The text as it was read from the PDF, without its layout. It is what the search finds and what "
 "the AI agents will read; a page without text is an image."
@@ -12860,6 +13131,9 @@ msgstr ""
 "Uken teamoversikten sammenligner planlagte timer med. Standard 40 timer; en standard, ikke loven:"
 " bekreft den med selskapets avtaler."
 
+msgid "The week too (feed rate, last fed, feed in use)"
+msgstr "Uken også (fôringsgrad, sist fôret, fôr i bruk)"
+
 #, python-format
 msgid "The weighing of %(date)s in %(unit)s would find no fish of %(batch)s. Void that weighing first."
 msgstr "Veiingen %(date)s i %(unit)s ville ikke funnet fisk av %(batch)s. Annuller den veiingen først."
@@ -12932,6 +13206,9 @@ msgstr "Samlet vekt (kg)"
 
 msgid "There is already a rule for this handling and species."
 msgstr "Det finnes allerede en regel for denne håndteringen og arten."
+
+msgid "There is already a rule for this."
+msgstr "Det finnes allerede en regel for dette."
 
 msgid "Thermal delousing"
 msgstr "Termisk avlusing"
@@ -13051,6 +13328,13 @@ msgstr "Dette er %(days)s dager %(kind)s i %(year)s, og %(left)s er igjen."
 
 msgid "This item already has a lot with this number."
 msgstr "Denne varen har allerede et parti med dette nummeret."
+
+#, python-format
+msgid "This layout is of an unknown version (%(version)s)."
+msgstr "Dette oppsettet har en ukjent versjon (%(version)s)."
+
+msgid "This layout is too large to store."
+msgstr "Dette oppsettet er for stort til å lagres."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -13287,6 +13571,9 @@ msgstr "Til Fiskeridirektoratet; skjemaet er ikke lagret"
 msgid "To fix before it can start"
 msgstr "Må rettes før det kan starte"
 
+msgid "To fix before saving"
+msgstr "Må rettes før lagring"
+
 msgid "To location"
 msgstr "Til lagerplass"
 
@@ -13379,6 +13666,9 @@ msgstr "Behandlinger"
 msgid "Treatments, last 90 days"
 msgstr "Behandlinger, siste 90 dager"
 
+msgid "Trend"
+msgstr "Trend"
+
 msgid "Try another search."
 msgstr "Prøv et annet søk."
 
@@ -13423,6 +13713,10 @@ msgstr "To rader har samme art og livsstadium."
 
 msgid "Two weight bands of this protocol overlap."
 msgstr "To vektklasser i denne protokollen overlapper."
+
+#, python-format
+msgid "Two widgets are called %(widget)s."
+msgstr "To elementer heter %(widget)s."
 
 msgid "Type"
 msgstr "Type"
@@ -13499,6 +13793,9 @@ msgstr "Enhetskostnad"
 
 msgid "Unit factor"
 msgstr "Enhetsfaktor"
+
+msgid "Unit kind"
+msgstr "Type enhet"
 
 msgid "Unit of its levels"
 msgstr "Enhet for nivåene"
@@ -13626,6 +13923,9 @@ msgstr ""
 "klokke, brukt av innhentingen på apparatets tid før enhetskonverteringen. Lagrede verdier er "
 "kalibrert; en senere kalibrering endrer dem aldri. Den tidligste kalibreringen dekker også tiden "
 "før den. Kalibreringene lagres separat fra kanalens detaljer."
+
+msgid "Value against its limits"
+msgstr "Verdi mot grensene"
 
 msgid "Value key"
 msgstr "Verdinøkkel"
@@ -13816,6 +14116,9 @@ msgstr "Vannbehandling"
 
 msgid "Water type"
 msgstr "Vanntype"
+
+msgid "Water value"
+msgstr "Vannverdi"
 
 msgid "Water volume"
 msgstr "Vannvolum"
@@ -14059,6 +14362,13 @@ msgstr ""
 msgid "Where each person works from a day: one department, production or office, and the title."
 msgstr "Hvor hver person arbeider fra en dag: én avdeling, produksjon eller kontor, og tittelen."
 
+msgid ""
+"Where each widget sits on the card’s 12 columns. The frame of a card (the unit, its state and "
+"why, the withdrawal) is always shown and is not part of the layout."
+msgstr ""
+"Hvor hvert element står på kortets 12 kolonner. Kortets ramme (enheten, tilstanden og hvorfor, "
+"tilbakeholdelsen) vises alltid og er ikke en del av oppsettet."
+
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Hvor i dokumentet, f.eks. 4 eller 12–13."
 
@@ -14140,6 +14450,13 @@ msgstr "Hvilke arter hvert dokument i biblioteket handler om."
 msgid "Which species each slaughter facility takes."
 msgstr "Hvilke arter hvert slakteri tar imot."
 
+msgid ""
+"Which template a unit’s card gets: a rule for one unit, system, system type, species or kind of "
+"unit, or the one rule for every unit."
+msgstr ""
+"Hvilken mal en enhets kort får: en regel for én enhet, ett system, én systemtype, én art eller én"
+" type enhet, eller den ene regelen for alle enheter."
+
 msgid "Which units each health event concerns; none for the whole site."
 msgstr "Hvilke enheter hver helsehendelse gjelder; ingen for hele lokaliteten."
 
@@ -14208,6 +14525,49 @@ msgstr ""
 "Hvorfor enheten har nåværende status, f.eks. «notskifte». Når statusen endres, slettes en årsak "
 "som står uendret."
 
+#, python-format
+msgid "Widget %(widget)s has a field it may not have, or lacks one it needs."
+msgstr "Elementet %(widget)s har et felt det ikke kan ha, eller mangler et det trenger."
+
+#, python-format
+msgid "Widget %(widget)s is of a kind the card does not know."
+msgstr "Elementet %(widget)s er av en type kortet ikke kjenner."
+
+#, python-format
+msgid "Widget %(widget)s lies outside the card (12 columns, from the top)."
+msgstr "Elementet %(widget)s ligger utenfor kortet (12 kolonner, fra toppen)."
+
+#, python-format
+msgid "Widget %(widget)s must be from %(min_w)d×%(min_h)d to %(max_w)d×%(max_h)d cells."
+msgstr "Elementet %(widget)s må være fra %(min_w)d×%(min_h)d til %(max_w)d×%(max_h)d celler."
+
+#, python-format
+msgid "Widget %(widget)s shows no single water parameter: it cannot be bound to one."
+msgstr "Elementet %(widget)s viser ikke én enkelt vannparameter: det kan ikke knyttes til en."
+
+#, python-format
+msgid "Widget %(widget)s: %(detail)s"
+msgstr "Elementet %(widget)s: %(detail)s"
+
+#, python-format
+msgid "Widget %(widget)s: %(label)s cannot be placed yet."
+msgstr "Elementet %(widget)s: %(label)s kan ikke plasseres ennå."
+
+#, python-format
+msgid "Widget %(widget)s: choose the water parameter it shows (and, if not the middle, its point)."
+msgstr "Elementet %(widget)s: velg vannparameteren det viser (og, hvis ikke midten, punktet)."
+
+#, python-format
+msgid "Widget %(widget)s: its place and size must be whole numbers."
+msgstr "Elementet %(widget)s: plassering og størrelse må være hele tall."
+
+#, python-format
+msgid "Widgets %(widget)s and %(other)s overlap."
+msgstr "Elementene %(widget)s og %(other)s overlapper."
+
+msgid "Width"
+msgstr "Bredde"
+
 msgid "Width (m)"
 msgstr "Bredde (m)"
 
@@ -14268,6 +14628,9 @@ msgstr "Jobber her"
 
 msgid "Working weekdays"
 msgstr "Arbeidsdager"
+
+msgid "Worth a look"
+msgstr "Verdt en titt"
 
 msgid "Worth checking:"
 msgstr "Verdt å sjekke:"
@@ -14524,6 +14887,18 @@ msgstr "kalibreringer"
 msgid "card of a monitoring board"
 msgstr "kort på et overvåkingspanel"
 
+msgid "card template"
+msgstr "kortmal"
+
+msgid "card template rule"
+msgstr "kortmalregel"
+
+msgid "card template rules"
+msgstr "kortmalregler"
+
+msgid "card templates"
+msgstr "kortmaler"
+
 msgid "cards of a monitoring board"
 msgstr "kort på et overvåkingspanel"
 
@@ -14547,6 +14922,12 @@ msgstr "kanalstatuser"
 
 msgid "channels"
 msgstr "kanaler"
+
+msgid "chosen for this card on the board"
+msgstr "valgt for dette kortet på panelet"
+
+msgid "chosen on this page"
+msgstr "valgt på denne siden"
 
 msgid "cleaner fish"
 msgstr "rensefisk"
@@ -14590,9 +14971,15 @@ msgstr "samtaler"
 msgid "counted %(quantity)s"
 msgstr "telt %(quantity)s"
 
+msgid "critical above"
+msgstr "kritisk over"
+
 #, python-format
 msgid "critical above %(value)s"
 msgstr "kritisk over %(value)s"
+
+msgid "critical below"
+msgstr "kritisk under"
 
 #, python-format
 msgid "critical below %(value)s"
@@ -15073,6 +15460,9 @@ msgstr "innsendt rapportinnhold"
 msgid "filed report contents"
 msgstr "innsendte rapportinnhold"
 
+msgid "flipped on this page"
+msgstr "byttet på denne siden"
+
 #, python-format
 msgid "found %(time)s"
 msgstr "funnet %(time)s"
@@ -15185,6 +15575,9 @@ msgstr "lageroperasjoner"
 
 msgid "its fish have no such bound"
 msgstr "fisken har ingen slik grense"
+
+msgid "just now"
+msgstr "akkurat nå"
 
 msgid "kg"
 msgstr "kg"
@@ -15299,6 +15692,9 @@ msgstr "nei"
 msgid "no cleaner fish held at %(site)s since %(date)s"
 msgstr "ingen rensefisk på %(site)s siden %(date)s"
 
+msgid "no data"
+msgstr "ingen data"
+
 #, python-format
 msgid "no escape without a filed notice since %(date)s"
 msgstr "ingen rømming uten sendt varsel siden %(date)s"
@@ -15314,6 +15710,9 @@ msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
 msgstr "ingen økt dødelighet har vært uforklart i 14 dager; ellers startes den av en person når noe skjer"
+
+msgid "no limit set for this value"
+msgstr "ingen grense satt for denne verdien"
 
 #, python-format
 msgid "no listed disease without a filed notice since %(date)s"
@@ -15349,6 +15748,9 @@ msgstr "ingen rapporteringsdato: periodene telles ikke"
 
 msgid "no reports-from date: nothing is counted"
 msgstr "ingen rapporteringsdato: ingenting telles"
+
+msgid "no rule applies"
+msgstr "ingen regel gjelder"
 
 #, python-format
 msgid "no salmonids have been held at %(site)s"
@@ -15396,6 +15798,9 @@ msgstr "kontoravdeling"
 
 msgid "office departments"
 msgstr "kontoravdelinger"
+
+msgid "old"
+msgstr "gammel"
 
 msgid "only a sea site of food fish or broodstock has a driftsplan"
 msgstr "bare en sjølokalitet med matfisk eller stamfisk har driftsplan"
@@ -15737,12 +16142,39 @@ msgstr "oppgaver"
 msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"
 
+msgid "the board’s default"
+msgstr "panelets standard"
+
+msgid "the layout being designed"
+msgstr "oppsettet som utformes"
+
 msgid ""
 "the operating plan, the lice coordination plan and the others the authorities require that are "
 "not filed here."
 msgstr ""
 "driftsplanen, samordningsplanen for lakselus og de andre myndighetene krever som ikke sendes inn "
 "her."
+
+msgid "the options must be a set of named values."
+msgstr "valgene må være et sett navngitte verdier."
+
+msgid "the rule for every unit"
+msgstr "regelen for alle enheter"
+
+msgid "the rule for its kind of unit"
+msgstr "regelen for typen enhet"
+
+msgid "the rule for its species"
+msgstr "regelen for arten"
+
+msgid "the rule for its system"
+msgstr "regelen for systemet"
+
+msgid "the rule for its type of system"
+msgstr "regelen for systemtypen"
+
+msgid "the rule for this unit"
+msgstr "regelen for denne enheten"
 
 msgid "the site’s altitude"
 msgstr "lokalitetens høyde over havet"
@@ -15845,9 +16277,15 @@ msgstr "annullert av %(name)s: %(reason)s"
 msgid "voided: %(reason)s"
 msgstr "annullert: %(reason)s"
 
+msgid "warning above"
+msgstr "varsel over"
+
 #, python-format
 msgid "warning above %(value)s"
 msgstr "advarsel over %(value)s"
+
+msgid "warning below"
+msgstr "varsel under"
 
 #, python-format
 msgid "warning below %(value)s"
@@ -15898,6 +16336,30 @@ msgstr "deg"
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "du la inn %(weight)s: %(grams)s g, %(percent)s %%"
 
+#, python-brace-format
+msgid "{count} more cards got worse."
+msgstr "{count} kort til ble verre."
+
+#, python-brace-format
+msgid "{label} added at column {x}, row {y}."
+msgstr "{label} lagt til i kolonne {x}, rad {y}."
+
+#, python-brace-format
+msgid "{label} is now {w} columns wide and {h} rows high."
+msgstr "{label} er nå {w} kolonner bred og {h} rader høy."
+
+#, python-brace-format
+msgid "{label} moved to column {x}, row {y}."
+msgstr "{label} flyttet til kolonne {x}, rad {y}."
+
+#, python-brace-format
+msgid "{label} removed."
+msgstr "{label} fjernet."
+
+#, python-brace-format
+msgid "{unit} is now {state}."
+msgstr "{unit} er nå {state}."
+
 #, python-format
 msgid "ΔCO₂ %(value)s mg/L"
 msgstr "ΔCO₂ %(value)s mg/L"
@@ -15936,6 +16398,14 @@ msgstr "«%(experiment)s» er startet."
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "«%(name)s» er ikke en av spesifikasjonene for denne typen."
+
+#, python-format
+msgid "“%(option)s” has no value."
+msgstr "«%(option)s» har ingen verdi."
+
+#, python-format
+msgid "“%(option)s” is not an option of this widget."
+msgstr "«%(option)s» er ikke et valg for dette elementet."
 
 #, python-format
 msgid "“%(task)s” is cancelled."

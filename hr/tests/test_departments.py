@@ -153,49 +153,44 @@ class ConstraintTests(OfficeDepartmentTestCase):
             OfficeDepartment.all_objects.filter(pk=a.pk).update(parent=b)
 
 
-class UnionReadTests(OfficeDepartmentTestCase):
-    """The production departments are HR departments by themselves: the same row, never a copy."""
+class OfficeOnlyTests(OfficeDepartmentTestCase):
+    """Company › HR › Departments lists the office departments only: the production departments are the farm's, under
+    Production (Setup › Production departments, and Production › Team's chart), never a second list here."""
 
     def rows(self, **query):
         response = self.client.get(reverse('hr:officedepartment_list'), query)
-        return [(row.kind, row.name) for row in response.context['objects']]
+        return [row.name for row in response.context['objects']]
 
-    def test_a_production_department_appears_renames_and_goes_with_no_hr_write(self):
+    def test_a_production_department_is_never_listed_and_nothing_is_written(self):
         before = (OfficeDepartment.all_objects.count(), AuditLog.objects.count())
+        ProductionDepartment.objects.create(site=self.bergen, name='Hatchery hall', code='HAT')
         self.assertEqual(self.rows(), [])
-        hall = ProductionDepartment.objects.create(site=self.bergen, name='Hatchery hall', code='HAT')
-        self.assertEqual(self.rows(), [('production', 'Hatchery hall')])
-        ProductionDepartment.objects.filter(pk=hall.pk).update(name='Hatchery A')
-        self.assertEqual(self.rows(), [('production', 'Hatchery A')])
-        hall.soft_delete(self.user)
-        self.assertEqual(self.rows(), [])
+        self.assertEqual(self.rows(q='HAT'), [])
         self.assertEqual((OfficeDepartment.all_objects.count(), AuditLog.objects.count()), before)
 
-    def test_both_kinds_are_listed_production_first_and_the_office_ones_in_tree_order(self):
+    def test_the_office_ones_in_tree_order_with_no_kind_filter(self):
         ProductionDepartment.objects.create(site=self.bergen, name='Hatchery hall', code='HAT')
         top = self.make(name='Administration', code='ADM')
         self.make(name='Finance', code='FIN', parent=top)
         response = self.client.get(reverse('hr:officedepartment_list'))
-        self.assertEqual([(row.kind, row.name, row.depth) for row in response.context['objects']],
-                         [('production', 'Hatchery hall', 0), ('office', 'Administration', 0), ('office', 'Finance', 1)])
+        self.assertEqual([(row.name, row.depth) for row in response.context['objects']],
+                         [('Administration', 0), ('Finance', 1)])
+        self.assertNotIn('kinds', response.context)
+        self.assertNotContains(response, 'kind-filter')
         self.assertContains(response, reverse('hr:officedepartment_edit', args=[top.pk]))
 
-    def test_search_and_the_filters_narrow_the_one_list(self):
-        ProductionDepartment.objects.create(site=self.bergen, name='Hatchery hall', code='HAT')
+    def test_search_and_the_status_filter_narrow_the_list(self):
         self.make(name='Finance', code='FIN', status='inactive')
-        self.assertEqual(self.rows(q='fin'), [('office', 'Finance')])
-        self.assertEqual(self.rows(q='HAT'), [('production', 'Hatchery hall')])
-        self.assertEqual(self.rows(kind='production'), [('production', 'Hatchery hall')])
-        self.assertEqual(self.rows(status='inactive'), [('office', 'Finance')])
-        self.assertEqual(len(self.rows(kind='nonsense', status='nonsense')), 2)
+        self.make(name='Legal', code='LEG')
+        self.assertEqual(self.rows(q='fin'), ['Finance'])
+        self.assertEqual(self.rows(status='inactive'), ['Finance'])
+        self.assertEqual(len(self.rows(kind='production', status='nonsense')), 2)
 
-    def test_a_production_row_links_to_the_farms_own_form_only_for_who_may_edit_it(self):
-        hall = ProductionDepartment.objects.create(site=self.bergen, name='Hatchery hall', code='HAT')
-        edit = reverse('farm:productiondepartment_edit', args=[hall.pk])
-        self.assertNotContains(self.client.get(reverse('hr:officedepartment_list')), edit)
-        self.client.force_login(user('boss', 'view_officedepartment', 'change_productiondepartment',
-                                     'view_productiondepartment'))
-        self.assertContains(self.client.get(reverse('hr:officedepartment_list')), edit)
+    def test_the_read_has_no_production_rows(self):
+        from .. import read
+        ProductionDepartment.objects.create(site=self.bergen, name='Hatchery hall', code='HAT')
+        self.make()
+        self.assertEqual([row.obj.__class__ for row in read.departments(self.user)], [OfficeDepartment])
 
 
 class DeleteAndRestoreTests(OfficeDepartmentTestCase):

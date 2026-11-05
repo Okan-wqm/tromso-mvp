@@ -1,0 +1,30 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% comment %} Setup › Reference data › Card templates (monitoring.resources.CardTemplateResource): what a monitoring card holds,
+   the built-ins first (shown, copied, never changed), each with how many rules, boards and board cards use it. {% endcomment %}
+{% block search_placeholder %}{% trans "Search by name" %}{% endblock %}
+{% block empty_text %}{% trans "A card template places widgets on a monitoring card; the card’s frame (the unit, its state and why) is always shown." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Template" %}</th><th scope="col" class="num">{% trans "Rules" %}</th><th scope="col" class="num">{% trans "Boards" %}</th><th scope="col" class="num">{% trans "Cards" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for template in objects %}
+      <tr>
+        <td>{% if can_change and not template.is_builtin %}<a class="row-title" href="{% url 'monitoring:cardtemplate_edit' template.pk %}">{{ template.shown_name }}</a>{% else %}<span class="row-title">{{ template.shown_name }}</span>{% endif %}{% if template.is_builtin %} <span class="badge badge-inactive">{% trans "Built in" %}</span>{% endif %}{% if template.description %}<span class="row-sub">{{ template.description }}</span>{% endif %}</td>
+        <td class="num">{{ template.rules }}</td>
+        <td class="num">{{ template.boards }}</td>
+        <td class="num">{{ template.cards }}</td>
+        <td class="row-actions">
+          {% if can_add %}<form method="post" action="{% url 'monitoring:cardtemplate_copy' template.pk %}">{% csrf_token %}<button type="submit" class="icon-button" title="{% blocktrans with name=template.shown_name %}Copy {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="plus" %}<span class="sr-only">{% blocktrans with name=template.shown_name %}Copy {{ name }}{% endblocktrans %}</span></button></form>{% endif %}
+          {% if can_change and not template.is_builtin %}<a class="icon-button" href="{% url 'monitoring:cardtemplate_edit' template.pk %}" title="{% blocktrans with name=template.shown_name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=template.shown_name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete and not template.is_builtin %}<a class="icon-button icon-button-danger" href="{% url 'monitoring:cardtemplate_delete' template.pk %}" data-modal title="{% blocktrans with name=template.shown_name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=template.shown_name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

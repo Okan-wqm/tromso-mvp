@@ -8,24 +8,30 @@ Who may read it: the right to read stock operations (the page's gate, as Product
 its own right (monitoring/read.py `sections_for`) and the card says so for one the person may not read. The fragment has
 the same gate. The Deffeyes chart in a card's window is the water page's endpoint (farm:water_unit_chart), which needs
 the right to read water samples."""
+import json
+from types import SimpleNamespace
 from urllib.parse import urlencode
+from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth.decorators import permission_required
-from django.http import HttpResponse
+from django.db import transaction
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext, pgettext
+from django.views.decorators.http import require_POST
 
-from core import navigation
+from core import audit, navigation
 from core.crud import render_page
 from farm.models import ProductionDepartment, Site, System, Tank
-from farm.water import parameters
 from farm.stock.views import VIEW
 
 from . import read
-from .models import MonitorBoard
+from .cards import resolve, validate
+from .models import CardTemplate, CardWidth, MonitorBoard
 
 POLL = 'monitoring:cards'
 SESSION_DAY = 'monitoring_wall_day'
@@ -57,17 +63,24 @@ def _board(params):
     return MonitorBoard.objects.prefetch_related('rows').filter(pk=params.board).first()
 
 
+def _unavailable():
+    """A source the cards' state needs could not be read: 503, so a polling screen backs off and keeps its last
+    picture with its stale notice (frontend/poll.ts), and a page says so rather than draw a guess."""
+    return HttpResponse(_('The cards cannot be read just now. The screen keeps its last picture; try again shortly.'),
+                        status=503, headers={'Cache-Control': 'no-store', 'Retry-After': '30'},
+                        content_type='text/plain; charset=utf-8')
+
+
 def _grid(request, params, board, now=None):
     """The context of the grid: the cards after the filters and the occupancy, how many units are not shown, and the
     strip of the cards that need a look."""
     units = read.units_for(params, board)
-    modes = read.modes(units, board, params)
-    found = read.cards(units, request.user, modes, params.occupancy, now)
+    found = read.cards(units, request.user, resolve.Choice.of(board, params), params.occupancy, now)
     farm = Tank.objects.count()
     return {
         'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'strip': read.attention(found),
-        'water_labels': [(code, parameters.get(code).short) for code in read.KEY_WATER],
-        'params': params, 'computed_at': timezone.localtime(now), 'shown': len(found), 'on_farm': farm,
+        'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
+        'computed_at': timezone.localtime(now), 'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)
         % {'shown': len(found), 'farm': farm},
     }
@@ -92,7 +105,11 @@ def monitor(request):
     token = read.change_token(request.user, params.canonical(), board=params.board)
     now = timezone.now()
     board = _board(params)
-    context = _context(**_grid(request, params, board, now), token=token, query=params.canonical(), board=board,
+    try:
+        grid = _grid(request, params, board, now)
+    except read.Unavailable:
+        return _unavailable()
+    context = _context(**grid, token=token, query=params.canonical(), board=board,
                        boards=MonitorBoard.objects.order_by('name'),
                        poll_url=_poll_url(params.canonical(), token),
                        poll_seconds=board.seconds if board else settings.MONITOR_POLL_SECONDS,
@@ -120,5 +137,76 @@ def cards(request):
     if request.GET.get('after') == token:
         return HttpResponse(status=204, headers=headers)
     now = timezone.now()
-    html = render_to_string('monitoring/_grid.html', {**_grid(request, params, _board(params), now), 'wall': params.wall})
+    try:
+        grid = _grid(request, params, _board(params), now)
+    except read.Unavailable:
+        return _unavailable()
+    html = render_to_string('monitoring/_grid.html', {**grid, 'wall': params.wall})
     return HttpResponse(html, headers=headers)
+
+
+# ---- Reference data › Card templates --------------------------------------------------------------------------------
+def _copy_name(source):
+    """'<name> (copy)', or '(copy 2)', '(copy 3)' … while the name is taken by a live template (any case)."""
+    base = source.shown_name
+    names = {name.lower() for name in CardTemplate.objects.values_list('name', flat=True)}
+    candidate, number = _('%(name)s (copy)') % {'name': base}, 2
+    while candidate.lower() in names:
+        candidate = _('%(name)s (copy %(number)d)') % {'name': base, 'number': number}
+        number += 1
+    return candidate
+
+
+@require_POST
+@permission_required('monitoring.add_cardtemplate', raise_exception=True)
+def copy_template(request, pk):
+    """A copy of a template (the way to change a built-in): its description, layout and flip target, a name of its
+    own; logged as a new record, then its form opens."""
+    from .resources import CardTemplateResource
+    source = get_object_or_404(CardTemplate, pk=pk)
+    with transaction.atomic():
+        copy = CardTemplate.objects.create(
+            name=_copy_name(source), description=source.description, layout=source.layout,
+            schema_version=source.schema_version, expanded=source.expanded, created_by=request.user,
+            updated_by=request.user)
+        audit.record_create(request.user, copy, CardTemplateResource.recorded(copy),
+                            entity_type=CardTemplateResource.entity_type())
+    return redirect('monitoring:cardtemplate_edit', pk=copy.pk)
+
+
+PREVIEW_BYTES = 65536
+
+
+@require_POST
+@permission_required('monitoring.change_cardtemplate', raise_exception=True)
+def preview(request):
+    """The designer's preview: {layout, unit, name?, state?} as JSON; answers {html, problems}. The layout is checked by
+    the validator first (an error draws nothing), then the same card read and the same _card.html as the wall draw it for
+    that one unit, with the previewer's own rights. Nothing is written and nothing is logged. `state` forces the frame's
+    state for a look at it; it is accepted here only, and the card says it is a preview."""
+    if len(request.body) > PREVIEW_BYTES:
+        return JsonResponse({'error': 'too large'}, status=413)
+    try:
+        asked = json.loads(request.body)
+        unit = Tank.objects.select_related('production_department__site', 'system').get(pk=UUID(str(asked['unit'])))
+    except (ValueError, KeyError, TypeError, Tank.DoesNotExist):
+        return JsonResponse({'error': 'bad request'}, status=400)
+    layout = asked.get('layout')
+    problems = validate.validate(layout)
+    found = [problem.as_data() for problem in problems]
+    if any(problem.severity == validate.ERROR for problem in problems):
+        return JsonResponse({'html': '', 'problems': found})
+    name = str(asked.get('name') or '').strip()[:100] or _('New template')
+    chosen = resolve.Resolved(SimpleNamespace(pk='', shown_name=name, expanded_id=None), validate.upgrade(layout),
+                              resolve.PREVIEW)
+    try:
+        cards = read.cards([unit], request.user, resolve.Choice(preview=chosen), read.ALL)
+    except read.Unavailable:
+        return _unavailable()
+    if not cards:
+        return JsonResponse({'html': '', 'problems': found})
+    card = cards[0]
+    if asked.get('state') in read.RANK and asked['state'] != read.EMPTY_STATE:
+        card.__dict__['state'] = read.State(asked['state'], card.state.reasons, card.state.basis)   # the preview only
+    html = render_to_string('monitoring/_card.html', {'row': {'card': card, 'flip': {}, 'preview': True}}, request)
+    return JsonResponse({'html': html, 'problems': found})

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": ".build/test",
+    "types": ["node"],
+    "moduleResolution": "bundler",
+    "noEmitOnError": true
+  },
+  "exclude": []
+}

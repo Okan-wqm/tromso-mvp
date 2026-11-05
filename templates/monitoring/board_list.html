@@ -9,13 +9,13 @@
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">{% trans "Board" %}</th><th scope="col">{% trans "Cards are" %}</th><th scope="col" class="num">{% trans "Cards" %}</th><th scope="col" class="num">{% trans "Refresh (s)" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+      <tr><th scope="col">{% trans "Board" %}</th><th scope="col">{% trans "Cards are drawn with" %}</th><th scope="col" class="num">{% trans "Cards" %}</th><th scope="col" class="num">{% trans "Refresh (s)" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     <tbody>
       {% for board in objects %}
       <tr>
         <td>{% if can_change %}<a class="row-title" href="{% url 'monitoring:monitorboard_edit' board.pk %}" data-modal>{{ board.name }}</a>{% else %}<span class="row-title">{{ board.name }}</span>{% endif %}{% if board.description %}<span class="row-sub">{{ board.description }}</span>{% endif %}</td>
-        <td>{{ board.get_default_mode_display }}</td>
+        <td>{% if board.default_template %}{{ board.default_template }}{% else %}{% trans "As the rules say" %}{% endif %}</td>
         <td class="num">{{ board.cards }}</td>
         <td class="num">{{ board.refresh_seconds|default:"—" }}</td>
         <td class="row-actions">

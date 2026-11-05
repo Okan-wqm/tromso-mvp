@@ -22,6 +22,10 @@ AREAS = [
     Area(_('Medicines'), 'farm.Medicine'),
     Area(_('Slaughter facilities'), 'farm.SlaughterFacility'),
     Area(_('Handling rules'), 'farm.HandlingRule'),
+    # What a monitoring card holds and which unit's card gets which. Reading Monitoring needs neither: a card never asks
+    # for a template right.
+    Area(_('Card templates'), 'monitoring.CardTemplate'),
+    Area(_('Card template rules'), 'monitoring.CardTemplateAssignment'),
     Area(_('Suppliers'), 'farm.Supplier'),
     Area(_('Library'), 'knowledge.Document'),
     # Edit also reviews an entry (marks it reviewed, or takes it back to draft).

@@ -12,10 +12,23 @@ from farm.tests.test_protocols import WorkedExampleTestCase
 from farm.tests.test_stock import make_unit
 from farm.water import services as water_services
 
+from ..cards import builtin
+from ..cards.resolve import Choice
+
 D = Decimal
 # Everything a card can show: one right for each section.
 ALL_RIGHTS = ('view_stockoperation', 'view_feedingrecord', 'view_watermeasurement', 'view_treatment',
               'view_healthevent', 'view_licecount', 'view_task')
+
+
+# The built-in that draws a card as each mode drew it before templates.
+TEMPLATE = {'simple': builtin.SIMPLE, 'detailed': builtin.DETAILED}
+
+
+def chosen(modes):
+    """The page's choice that draws each unit's card ({unit id: 'simple' | 'detailed'}) with the built-in of its mode,
+    as a board's row for the unit would."""
+    return Choice(rows={unit_id: TEMPLATE[mode] for unit_id, mode in modes.items()})
 
 
 class MonitoringCase(WorkedExampleTestCase):

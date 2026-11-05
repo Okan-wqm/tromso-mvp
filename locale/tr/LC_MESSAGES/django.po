@@ -435,6 +435,10 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, saat kaydedilmemiş: günün sonundan sayıldı"
 
 #, python-format
+msgid "%(days)d d ago"
+msgstr "%(days)d gün önce"
+
+#, python-format
 msgid "%(days)s day late"
 msgid_plural "%(days)s days late"
 msgstr[0] "%(days)s gün geç"
@@ -611,6 +615,10 @@ msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%%%(percent)s, %(kilos)s kg)"
 
 #, python-format
+msgid "%(hours)d h ago"
+msgstr "%(hours)d sa önce"
+
+#, python-format
 msgid "%(hours)s and %(degrees)s"
 msgstr "%(hours)s ve %(degrees)s"
 
@@ -662,6 +670,10 @@ msgstr "%(kilos)s tartıldı"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
+
+#, python-format
+msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
+msgstr "%(label)s %(value)s, %(status)s; sınırlar: %(limits)s"
 
 #, python-format
 msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
@@ -776,8 +788,16 @@ msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
 msgstr "%(medicine)s, %(method)s, %(start)s – %(end)s: bekleme süresi %(rule)s."
 
 #, python-format
+msgid "%(minutes)d min ago"
+msgstr "%(minutes)d dk önce"
+
+#, python-format
 msgid "%(minutes)s min"
 msgstr "%(minutes)s dk"
+
+#, python-format
+msgid "%(name)s (copy %(number)d)"
+msgstr "%(name)s (kopya %(number)d)"
 
 #, python-format
 msgid "%(name)s (copy)"
@@ -885,6 +905,10 @@ msgstr "%(replicate)s: son gün ilk günde veya ondan sonra gelir."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s, saat %(time)s"
+
+#, python-format
+msgid "%(seconds)d s ago"
+msgstr "%(seconds)d sn önce"
 
 #, python-format
 msgid "%(section)s: not shown to you"
@@ -1427,8 +1451,25 @@ msgstr ""
 "Pano, adı olan bir duvar ekranıdır: gösterdiği birimler ve her kartın nasıl çizildiği. İzleme'yi "
 "okuyabilen herkes açabilir."
 
+msgid "A built-in template cannot be changed; copy it to make one of your own."
+msgstr "Yerleşik bir şablon değiştirilemez; kendinize ait bir tane yapmak için kopyalayın."
+
+msgid "A built-in template is never deleted; copy it to make one of your own."
+msgstr "Yerleşik bir şablon asla silinmez; kendinize ait bir tane yapmak için kopyalayın."
+
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "Kapasitenin birimi, birimin de kapasitesi olmalı."
+
+#, python-format
+msgid "A card holds at most %(max)d widgets."
+msgstr "Bir kartta en fazla %(max)d bileşen olabilir."
+
+msgid ""
+"A card template places widgets on a monitoring card; the card’s frame (the unit, its state and "
+"why) is always shown."
+msgstr ""
+"Bir kart şablonu, izleme kartına bileşenler yerleştirir; kartın çerçevesi (birim, durumu ve "
+"nedeni) her zaman gösterilir."
 
 msgid "A channel needs an owner: make another member an owner first."
 msgstr "Bir kanalın sahibi olmalı: önce başka bir üyeyi sahip yapın."
@@ -1571,6 +1612,9 @@ msgstr "Tekrar eden bir iş: her gün, seçilen hafta günlerinde veya ayın bir
 #, python-format
 msgid "A last day older than %(date)s cannot be changed."
 msgstr "%(date)s tarihinden eski bir son gün değiştirilemez."
+
+msgid "A layout is a set of named values with a list of widgets, and nothing else."
+msgstr "Bir yerleşim, bileşen listesi içeren adlandırılmış değerler kümesidir; başka bir şey değildir."
 
 msgid "A leave type is a kind of leave, such as annual or parental leave. Add the types the company uses."
 msgstr "İzin türü, yıllık ya da ebeveyn izni gibi bir izin çeşididir. Şirketin kullandığı türleri ekleyin."
@@ -1788,6 +1832,18 @@ msgstr ""
 msgid "A round takes at most %(rows)d rows."
 msgstr "Bir tur en çok %(rows)d satır alır."
 
+msgid ""
+"A rule gives a template to a unit, a system, a type of system, a species or a kind of unit; the "
+"most specific rule wins."
+msgstr ""
+"Bir kural; bir birime, sisteme, sistem türüne, türe veya birim çeşidine şablon verir; en özgül "
+"kural kazanır."
+
+msgid "A rule is for one unit, system, system type, species or kind, or for every unit."
+msgstr ""
+"Bir kural tek bir birim, sistem, sistem türü, tür veya birim çeşidi içindir ya da her birim "
+"içindir."
+
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "Bir örnek, tartılan balık sayısı ile toplam ağırlıklarıdır."
 
@@ -1913,6 +1969,9 @@ msgstr "Bir sıcaklık sütunu %(low)s ile %(high)s °C arasındadır."
 
 msgid "A template"
 msgstr "Bir şablon"
+
+msgid "A template cannot flip to itself."
+msgstr "Bir şablon kendisine geçiş yapamaz."
 
 msgid "A template has no tanks: it is a design to copy."
 msgstr "Şablonun tankı yoktur: kopyalanacak bir tasarımdır."
@@ -2094,6 +2153,9 @@ msgstr "Not ekle"
 
 msgid "Add a point to it"
 msgstr "Ona bir nokta ekle"
+
+msgid "Add a widget"
+msgstr "Bileşen ekle"
 
 msgid "Add band"
 msgstr "Ağırlık aralığı ekle"
@@ -2545,6 +2607,9 @@ msgstr "Analog"
 msgid "Analysis"
 msgstr "Analiz"
 
+msgid "Another card template already has this name."
+msgstr "Bu ad başka bir kart şablonunda zaten var."
+
 msgid "Another document in the library has this DOI."
 msgstr "Kütüphanedeki başka bir belge bu DOI’ye sahip."
 
@@ -2803,6 +2868,9 @@ msgstr "Ölçerin veya kitin okuduğu gibi. Sıcaklıkla birlikte, girilmezse do
 
 msgid "As the records give it now"
 msgstr "Kayıtların şimdi verdiği gibi"
+
+msgid "As the rules say"
+msgstr "Kuralların dediği gibi"
 
 msgid "As weighed on arrival; to 0.0001 g for eggs and larvae."
 msgstr "Gelişte tartıldığı gibi; yumurta ve larvalar için 0,0001 g’a kadar."
@@ -3113,6 +3181,9 @@ msgstr "Hava üfleyici (blower)"
 msgid "Board"
 msgstr "Pano"
 
+msgid "Boards"
+msgstr "Panolar"
+
 msgid "Book"
 msgstr "Kayıtta"
 
@@ -3167,6 +3238,9 @@ msgstr ""
 
 msgid "Browser default"
 msgstr "Tarayıcı varsayılanı"
+
+msgid "Built in"
+msgstr "Yerleşik"
 
 msgid "Buoyancy"
 msgstr "Yüzerlik"
@@ -3334,6 +3408,22 @@ msgstr ""
 msgid "Card"
 msgstr "Kart"
 
+msgid ""
+"Card layout: select a widget, move it with the arrow keys, resize it with Shift and the arrow "
+"keys, remove it with Delete."
+msgstr ""
+"Kart yerleşimi: bir bileşen seçin, ok tuşlarıyla taşıyın, Shift ve ok tuşlarıyla boyutlandırın, "
+"Delete ile kaldırın."
+
+msgid "Card template rules"
+msgstr "Kart şablonu kuralları"
+
+msgid "Card templates"
+msgstr "Kart şablonları"
+
+msgid "Card width"
+msgstr "Kart genişliği"
+
 msgid "Cardiomyopathy syndrome (CMS)"
 msgstr "Kardiyomiyopati sendromu (CMS)"
 
@@ -3342,6 +3432,9 @@ msgstr "Kartlar"
 
 msgid "Cards are"
 msgstr "Kartlar"
+
+msgid "Cards are drawn with"
+msgstr "Kartların şablonu"
 
 msgid "Cards can be added once the board is created."
 msgstr "Kartlar, pano oluşturulduktan sonra eklenebilir."
@@ -3493,6 +3586,15 @@ msgstr "En az birini seçin."
 
 msgid "Choose one department: a production department or an office department."
 msgstr "Bir departman seçin: üretim departmanı ya da ofis departmanı."
+
+msgid ""
+"Choose one of unit, system, system type, species or kind, or none for every unit. The most "
+"specific rule wins: a unit’s own, then its system’s, its system type’s, its species’, its kind’s;"
+" a board’s card and default come before and after the rules."
+msgstr ""
+"Birim, sistem, sistem türü, tür veya birim çeşidinden birini seçin ya da her birim için hiçbirini"
+" seçmeyin. En özgül kural kazanır: önce birimin kendi kuralı, sonra sisteminin, sistem türünün, "
+"türünün, birim çeşidinin; bir panonun kartı kurallardan önce, varsayılanı sonra gelir."
 
 msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
 msgstr "Tek bir yer seçin: bütün bir saha, bir üretim departmanı, bir sistem, bir birim veya ekipman."
@@ -3673,11 +3775,17 @@ msgstr "Sütunlar"
 msgid "Combination %(number)d is of one treatment: a combination is of at least two."
 msgstr "%(number)d numaralı kombinasyon tek bir tedavidir: bir kombinasyon en az iki tedaviden oluşur."
 
+msgid "Comfortable"
+msgstr "Geniş"
+
 msgid "Common name"
 msgstr "Yaygın ad"
 
 msgid "Communication"
 msgstr "İletişim"
+
+msgid "Compact"
+msgstr "Sıkı"
 
 msgid "Compacted clay"
 msgstr "Sıkıştırılmış kil"
@@ -3825,6 +3933,10 @@ msgstr "Kopyala"
 #, python-format
 msgid "Copy %(experiment)s"
 msgstr "%(experiment)s deneyini kopyala"
+
+#, python-format
+msgid "Copy %(name)s"
+msgstr "%(name)s kopyala"
 
 msgid "Copy as"
 msgstr "Şu olarak kopyala"
@@ -4502,6 +4614,9 @@ msgstr ""
 "sınırsız gösterir. Her değer hangi numune noktasında alındığını söyler; bir birimin suyu orta "
 "noktasının suyudur. Kimseye uyarı gitmez: kritik değerler burada gösterilir, gönderilmez."
 
+msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
+msgstr "Her bileşenin kısa bir adı olmalı: küçük bir harf, ardından en fazla 15 harf, rakam, - veya _."
+
 #, python-format
 msgid "Earliest suitable harvest date: %(date)s."
 msgstr "En erken uygun hasat tarihi: %(date)s."
@@ -4692,6 +4807,9 @@ msgstr "Olay"
 msgid "Every"
 msgstr "Her"
 
+msgid "Every active point"
+msgstr "Her etkin nokta"
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -4707,6 +4825,9 @@ msgstr[1] "%(count)d günde bir"
 
 msgid "Every factor has a name."
 msgstr "Her faktörün bir adı vardır."
+
+msgid "Every figure"
+msgstr "Her rakam"
 
 #, python-format
 msgid ""
@@ -4750,12 +4871,23 @@ msgstr ""
 "Silinen kayıtlar yalnızca silinmiş olarak işaretlenir; bu yüzden tablolarda durur ve burada "
 "sayılır."
 
+msgid "Every unit"
+msgstr "Her birim"
+
+msgid "Every unit no other rule names gets this template: give the global rule another template first."
+msgstr ""
+"Başka bir kuralın adlandırmadığı her birim bu şablonu alır: önce genel kurala başka bir şablon "
+"verin."
+
 msgid ""
 "Every unit that held fish is listed, eggs and larvae included; § 58 asks for the units of start-"
 "feeding fry or older (D-8): leave out those that were not."
 msgstr ""
 "Balık barındıran her birim listelenir, yumurta ve larvalar dahil; § 58 ilk yemlemeli yavru veya "
 "daha büyük balıkların birimlerini ister (D-8): olmayanları çıkarın."
+
+msgid "Every value measured"
+msgstr "Ölçülen her değer"
 
 msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "
@@ -5083,6 +5215,9 @@ msgstr "Cam elyaf (CTP)"
 msgid "Field"
 msgstr "Alan"
 
+msgid "Figures"
+msgstr "Rakamlar"
+
 msgid "File"
 msgstr "Dosya"
 
@@ -5268,6 +5403,9 @@ msgstr "Kilitli: protokol atanmış. Değiştirmek için kopyalayın."
 
 msgid "Fixed: the row has started. End it and add another to change it."
 msgstr "Kilitli: satır başladı. Değiştirmek için onu sona erdirip yeni bir satır ekleyin."
+
+msgid "Flip link shows"
+msgstr "Geçiş bağlantısının gösterdiği"
 
 msgid "Floating"
 msgstr "Yüzer"
@@ -5566,6 +5704,9 @@ msgstr "Tohumu girin: dağıtımın yinelenebileceği bir tam sayı."
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Önce sıcaklık sütunlarını girin: tablo onlara göre oluşur."
 
+msgid "Give the template a name."
+msgstr "Şablona bir ad verin."
+
 msgid "Give the volume to follow the amounts."
 msgstr "Miktarları izlemek için hacmi girin."
 
@@ -5603,6 +5744,9 @@ msgstr "Boylama kaydedildi: %(batch)s partisinden %(count)s balık %(unit)s biri
 
 msgid "Granted at once"
 msgstr "Hemen verildi"
+
+msgid "Grid lines"
+msgstr "Izgara çizgileri"
 
 msgid "Gross energy (MJ/kg)"
 msgstr "Brüt enerji (MJ/kg)"
@@ -5772,6 +5916,9 @@ msgstr ""
 msgid "Hatchery"
 msgstr "Kuluçkahane"
 
+msgid "Hatchery and nursery systems are reached here."
+msgstr "Kuluçkahane ve yavru yetiştirme sistemlerine buradan ulaşılır."
+
 #. Translators: the delivery head of a pump, the height it lifts water to.
 msgid "Head"
 msgstr "Basma yüksekliği"
@@ -5815,6 +5962,9 @@ msgstr "Isıtma ve soğutma"
 
 msgid "Heating capacity"
 msgstr "Isıtma kapasitesi"
+
+msgid "Height"
+msgstr "Yükseklik"
 
 msgid "Here now"
 msgstr "Şu an burada"
@@ -5861,9 +6011,6 @@ msgstr "Kuralın istediği saat"
 msgid "How"
 msgstr "Nasıl"
 
-msgid "How a card is drawn unless its row says otherwise: simple (the key figures) or detailed."
-msgstr "Satırı aksini söylemedikçe bir kartın nasıl çizileceği: basit (ana rakamlar) veya ayrıntılı."
-
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
@@ -5889,6 +6036,11 @@ msgstr ""
 " olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
 "aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
+
+msgid ""
+"How wide the cards are at the least: compact fits more on a wall, comfortable is easier to read "
+"from a distance."
+msgstr "Kartların en az genişliği: sıkı, duvara daha çok kart sığdırır; geniş, uzaktan daha kolay okunur."
 
 msgid "Hydrochloric acid"
 msgstr "Hidroklorik asit"
@@ -6169,6 +6321,9 @@ msgstr ""
 msgid "Its number in reports to the authorities (the kar or merd number), when it is not the code."
 msgstr "Resmî makamlara yapılan bildirimlerdeki numarası (kar veya merd numarası), koddan farklıysa."
 
+msgid "Its own state"
+msgstr "Kendi durumu"
+
 #, python-format
 msgid "Its parts are on another site: %(parts)s. Move them first."
 msgstr "Parçaları başka bir sahada: %(parts)s. Önce onları taşıyın."
@@ -6276,6 +6431,9 @@ msgstr "Kara tesisi"
 msgid "Language"
 msgstr "Dil"
 
+msgid "Large"
+msgstr "Büyük"
+
 msgid "Larvae"
 msgstr "Larva"
 
@@ -6345,6 +6503,12 @@ msgstr "Enlem ve boylam birlikte girilmelidir."
 
 msgid "Latitude is required for a sea cage."
 msgstr "Deniz kafesi için enlem zorunludur."
+
+msgid "Layout"
+msgstr "Yerleşim"
+
+msgid "Layout version"
+msgstr "Yerleşim sürümü"
 
 msgid "Lead"
 msgstr "Yürütücü"
@@ -6810,11 +6974,18 @@ msgid "Monthly biomass"
 msgstr "Aylık biyokütle"
 
 #, python-format
+msgid "More than %(count)d widgets: a card this full is hard to read from a distance."
+msgstr "%(count)d bileşenden fazla: bu kadar dolu bir kart uzaktan zor okunur."
+
+#, python-format
 msgid "More than %(rows)d points: choose a production department or a system."
 msgstr "%(rows)d noktadan fazla: bir üretim bölümü veya sistem seçin."
 
 msgid "More than the standard week"
 msgstr "Standart haftadan fazla"
+
+msgid "More than two widgets are large: the large ones no longer stand out."
+msgstr "İkiden fazla bileşen büyük: büyükler artık öne çıkmıyor."
 
 msgid "Mortality"
 msgstr "Ölüm"
@@ -6931,6 +7102,9 @@ msgstr "Ad veya kod"
 msgid "Name the person whose observation or advice it is."
 msgstr "Gözlemin ya da önerinin kime ait olduğunu yazın."
 
+msgid "Narrow"
+msgstr "Dar"
+
 msgid "Narrows the list of types."
 msgstr "Tür listesini daraltır."
 
@@ -7004,6 +7178,9 @@ msgstr "Yeni tank"
 
 msgid "New task"
 msgstr "Yeni görev"
+
+msgid "New template"
+msgstr "Yeni şablon"
 
 msgid "Newer"
 msgstr "Daha yeni"
@@ -7161,6 +7338,9 @@ msgstr "%(date)s tarihinde %(unit)s içinde tartılacak %(batch)s balığı yok.
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
+
+msgid "No flip link"
+msgstr "Geçiş bağlantısı yok"
 
 msgid "No group yet. Use “Add group” to add a row."
 msgstr "Henüz grup yok. Satır eklemek için “Grup ekle”yi kullanın."
@@ -7423,6 +7603,9 @@ msgstr "Hacim yok: yalnızca m³ başına dozlar."
 
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
+
+msgid "No widget shows the oxygen."
+msgstr "Oksijeni gösteren bir bileşen yok."
 
 #, python-format
 msgid "No withdrawal is recorded for %(species)s of %(medicine)s: add it in Reference data › Medicines."
@@ -7995,6 +8178,9 @@ msgstr "%(days)d günden eski işlemler iptal edilemez."
 msgid "Operator"
 msgstr "İşletmeci"
 
+msgid "Operator view"
+msgstr "Operatör görünümü"
+
 msgid "Optional"
 msgstr "İsteğe bağlı"
 
@@ -8454,6 +8640,9 @@ msgstr "Nokta"
 msgid "Pointed at by"
 msgstr "Şunlar tarafından işaret edilir"
 
+msgid "Points"
+msgstr "Noktalar"
+
 msgid "Points of equipment"
 msgstr "Ekipman noktaları"
 
@@ -8534,6 +8723,12 @@ msgstr "Basınç"
 
 msgid "Pressure sensor"
 msgstr "Basınç sensörü"
+
+msgid "Preview on"
+msgstr "Önizleme birimi"
+
+msgid "Preview updated."
+msgstr "Önizleme güncellendi."
 
 msgid "Previous"
 msgstr "Önceki"
@@ -8750,6 +8945,9 @@ msgstr ""
 msgid "Read the text, page by page"
 msgstr "Metni sayfa sayfa oku"
 
+msgid "Reading order"
+msgstr "Okuma sırası"
+
 msgid "Reagents"
 msgstr "Kimyasallar"
 
@@ -8897,6 +9095,9 @@ msgstr "Yinelenen görev"
 
 msgid "Recurring tasks"
 msgstr "Yinelenen görevler"
+
+msgid "Redo"
+msgstr "Yinele"
 
 msgid "Reduced appetite"
 msgstr "Azalmış iştah"
@@ -9105,6 +9306,9 @@ msgstr "İade"
 msgid "Return to supplier"
 msgstr "Tedarikçiye iade"
 
+msgid "Revert"
+msgstr "Geri al (kayıtlı hâle)"
+
 msgid "Review"
 msgstr "İnceleme"
 
@@ -9174,6 +9378,9 @@ msgstr "Satır %(first)s–%(last)s / %(total)s eşleşiyor"
 
 msgid "Rule"
 msgstr "Kural"
+
+msgid "Rules"
+msgstr "Kurallar"
 
 msgid "Running"
 msgstr "Sürüyor"
@@ -9517,6 +9724,9 @@ msgstr "Saha, kesimhane veya makbuza göre ara"
 msgid "Search by species or source"
 msgstr "Balık türüne veya kaynağa göre ara"
 
+msgid "Search by template, unit, system or species"
+msgstr "Şablon, birim, sistem veya türe göre ara"
+
 msgid "Search by unit, batch, facility or vessel"
 msgstr "Birim, parti, kesimhane veya tekneye göre ara"
 
@@ -9656,6 +9866,9 @@ msgstr "Bir birim seçin"
 msgid "Select a water type"
 msgstr "Bir su tipi seçin"
 
+msgid "Select a widget to change it."
+msgstr "Değiştirmek için bir bileşen seçin."
+
 msgid "Select an active protocol"
 msgstr "Aktif bir protokol seçin"
 
@@ -9763,6 +9976,9 @@ msgstr "Tümünü göster"
 msgid "Show all %(plural)s"
 msgstr "Tüm %(plural)s"
 
+msgid "Show as"
+msgstr "Şöyle göster"
+
 msgid "Show deleted rows"
 msgstr "Silinmiş satırları göster"
 
@@ -9797,6 +10013,9 @@ msgid ""
 msgstr ""
 "İzleme sayfasının pano seçicisinde gösterilir. İzleme'yi okuyabilen herkes bir pano seçebilir: "
 "pano bir kayıt değil, bir yapılandırmadır."
+
+msgid "Shown in the template choices of boards and rules."
+msgstr "Panoların ve kuralların şablon seçeneklerinde gösterilir."
 
 msgid "Shrimp"
 msgstr "Karides"
@@ -10307,6 +10526,9 @@ msgstr ""
 msgid "System (its loop)"
 msgstr "Sistem (döngüsü)"
 
+msgid "System type"
+msgstr "Sistem türü"
+
 msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
 msgstr "Sistemik Flavobacterium psychrophilum enfeksiyonu (gökkuşağı alabalığı)"
 
@@ -10420,6 +10642,10 @@ msgstr "Sıcaklıklar"
 
 msgid "Template"
 msgstr "Şablon"
+
+#, python-format
+msgid "Template error: “%(name)s” cannot be drawn; this card is shown as Detailed."
+msgstr "Şablon hatası: “%(name)s” çizilemiyor; bu kart Ayrıntılı olarak gösteriliyor."
 
 msgid "Templates"
 msgstr "Şablonlar"
@@ -10593,10 +10819,16 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Hesaplayıcının değerleri"
 
+msgid "The cards cannot be read just now. The screen keeps its last picture; try again shortly."
+msgstr "Kartlar şu anda okunamıyor. Ekran son görüntüsünü koruyor; birazdan yeniden deneyin."
+
 msgid ""
-"The cards of each monitoring board: a unit and, when it differs from the board, how its card is "
-"drawn."
-msgstr "Her izleme panosunun kartları: bir birim ve panodan farklıysa kartının nasıl çizildiği."
+"The cards of each monitoring board: a unit and, when it differs from the board, the template its "
+"card is drawn with."
+msgstr "Her izleme panosunun kartları: bir birim ve panodan farklıysa kartının çizildiği şablon."
+
+msgid "The card’s frame: the unit, its state and why, the withdrawal. Always shown."
+msgstr "Kartın çerçevesi: birim, durumu ve nedeni, bekleme süresi. Her zaman gösterilir."
 
 #, python-format
 msgid "The change cannot start before the current placement did (%(day)s)."
@@ -10917,6 +11149,12 @@ msgstr ""
 msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
 msgstr "%(tank)s balıkları 0. günde tartılmamış: yem dönüşümlerinin başlangıç değeri eksik."
 
+msgid "The global rule is never deleted: every unit must get a template. Change its template instead."
+msgstr "Genel kural asla silinmez: her birimin bir şablonu olmalı. Bunun yerine şablonunu değiştirin."
+
+msgid "The global rule stays for every unit: change its template only."
+msgstr "Genel kural her birim için kalır: yalnızca şablonunu değiştirin."
+
 msgid "The grace is between 0 and 120 minutes."
 msgstr "Tolerans 0 ile 120 dakika arasındadır."
 
@@ -10966,6 +11204,12 @@ msgstr "Derginin sayısı."
 
 msgid "The journal’s volume."
 msgstr "Derginin cildi."
+
+msgid "The key figures"
+msgstr "Temel rakamlar"
+
+msgid "The key values"
+msgstr "Temel değerler"
 
 msgid ""
 "The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
@@ -11047,6 +11291,9 @@ msgid_plural "The latest %(weeks)s weeks of counts, per site."
 msgstr[0] "Saha başına son haftanın sayımları."
 msgstr[1] "Saha başına son %(weeks)s haftanın sayımları."
 
+msgid "The layout as text"
+msgstr "Metin olarak yerleşim"
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
@@ -11081,6 +11328,16 @@ msgstr ""
 "Bu sıcaklık ve tuzlulukta mg/L ile % arasında %10'dan fazla fark var: ölçerin ayarlarını kontrol "
 "edin."
 
+msgid "The middle point"
+msgstr "Orta nokta"
+
+msgid ""
+"The monitoring card templates: a name, the widgets of the card as a layout and the template its "
+"flip link shows. Three are built in and never change."
+msgstr ""
+"İzleme kartı şablonları: bir ad, bir yerleşim olarak kartın bileşenleri ve geçiş bağlantısının "
+"gösterdiği şablon. Üçü yerleşiktir ve hiç değişmez."
+
 msgid "The most days in a row one person is planned. Default 6."
 msgstr "Bir kişinin art arda planlanabileceği en çok gün. Varsayılan 6."
 
@@ -11096,11 +11353,11 @@ msgid "The name of the copy is too long."
 msgstr "Kopyanın adı çok uzun."
 
 msgid ""
-"The named wall screens of Monitoring: a name, how its cards are drawn by default and how often "
-"its screens ask."
+"The named wall screens of Monitoring: a name, the template its cards are drawn with by default, "
+"how wide its cards are and how often its screens ask."
 msgstr ""
-"İzleme'nin adlı duvar ekranları: bir ad, kartlarının varsayılan çizimi ve ekranlarının ne "
-"sıklıkla sorduğu."
+"İzlemenin adlandırılmış duvar ekranları: bir ad, kartlarının varsayılan olarak çizildiği şablon, "
+"kartlarının genişliği ve ekranlarının ne sıklıkla sorduğu."
 
 #, python-format
 msgid "The new placement must start after the last one ended (%(day)s)."
@@ -11295,6 +11552,9 @@ msgstr "Havuzda %(slots)d tekrar için %(items)d öğe var: tekrar sayısı kada
 
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reçeteyle verilen bir ilaç için reçetenin numarası."
+
+msgid "The preview shows only what you may read yourself."
+msgstr "Önizleme yalnızca sizin okuyabildiklerinizi gösterir."
 
 msgid "The primary endpoint is not chosen."
 msgstr "Birincil sonuç değişkeni seçilmedi."
@@ -11655,6 +11915,18 @@ msgstr "Ekibin yürütücüsü yok."
 msgid "The team needs a lead."
 msgstr "Ekibin bir yürütücüsü olmalı."
 
+msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
+msgstr ""
+"Bir kartın geçiş bağlantısının gösterdiği şablon (Basit, Ayrıntılı'ya geçer). Boş: geçiş "
+"bağlantısı yok."
+
+msgid ""
+"The template of a card that neither its row nor a rule names (Reference data › Card template "
+"rules). Empty: the global rule decides."
+msgstr ""
+"Ne satırının ne de bir kuralın adlandırdığı bir kartın şablonu (Referans verileri › Kart şablonu "
+"kuralları). Boş: genel kural belirler."
+
 msgid ""
 "The text as it was read from the PDF, without its layout. It is what the search finds and what "
 "the AI agents will read; a page without text is an image."
@@ -11798,6 +12070,9 @@ msgstr ""
 "Ekip özetinin planlanan saatleri karşılaştırdığı hafta. Varsayılan 40 saat; bir varsayılandır, "
 "yasa değil: şirketin sözleşmeleriyle doğrulayın."
 
+msgid "The week too (feed rate, last fed, feed in use)"
+msgstr "Haftası da (yemleme oranı, son yemleme, kullanılan yem)"
+
 #, python-format
 msgid "The weighing of %(date)s in %(unit)s would find no fish of %(batch)s. Void that weighing first."
 msgstr "%(unit)s içindeki %(date)s tarihli tartım %(batch)s balığı bulamazdı. Önce o tartımı iptal edin."
@@ -11871,6 +12146,9 @@ msgstr "Toplam ağırlıkları (kg)"
 
 msgid "There is already a rule for this handling and species."
 msgstr "Bu elleçleme ve tür için zaten bir kural var."
+
+msgid "There is already a rule for this."
+msgstr "Bunun için zaten bir kural var."
 
 msgid "Thermal delousing"
 msgstr "Termal bitten arındırma"
@@ -11980,6 +12258,13 @@ msgstr "%(year)s yılında %(kind)s için %(days)s gün isteniyor, geriye %(left
 
 msgid "This item already has a lot with this number."
 msgstr "Bu kalemin bu numarada bir lotu zaten var."
+
+#, python-format
+msgid "This layout is of an unknown version (%(version)s)."
+msgstr "Bu yerleşimin sürümü bilinmiyor (%(version)s)."
+
+msgid "This layout is too large to store."
+msgstr "Bu yerleşim kaydedilemeyecek kadar büyük."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
@@ -12185,6 +12470,9 @@ msgstr "Fiskeridirektoratet’e; form kaydedilmedi"
 msgid "To fix before it can start"
 msgstr "Başlamadan önce düzeltilecekler"
 
+msgid "To fix before saving"
+msgstr "Kaydetmeden önce düzeltilecekler"
+
 msgid "To location"
 msgstr "Hedef yer"
 
@@ -12277,6 +12565,9 @@ msgstr "Tedaviler"
 msgid "Treatments, last 90 days"
 msgstr "Tedaviler, son 90 gün"
 
+msgid "Trend"
+msgstr "Eğilim"
+
 msgid "Try another search."
 msgstr "Başka bir arama deneyin."
 
@@ -12318,6 +12609,10 @@ msgstr "İki satırda aynı balık türü ve yaşam evresi var."
 
 msgid "Two weight bands of this protocol overlap."
 msgstr "Bu protokolün iki ağırlık aralığı çakışıyor."
+
+#, python-format
+msgid "Two widgets are called %(widget)s."
+msgstr "İki bileşenin adı %(widget)s."
 
 msgid "Type"
 msgstr "Tür"
@@ -12391,6 +12686,9 @@ msgstr ""
 
 msgid "Unit cost"
 msgstr "Birim maliyet"
+
+msgid "Unit kind"
+msgstr "Birim çeşidi"
 
 msgid "Unit of its levels"
 msgstr "Düzeylerinin birimi"
@@ -12498,6 +12796,9 @@ msgstr "Aşı"
 
 msgid "Value"
 msgstr "Değer"
+
+msgid "Value against its limits"
+msgstr "Sınırlarına göre değer"
 
 msgid "Value on hand"
 msgstr "Eldeki değer"
@@ -12676,6 +12977,9 @@ msgstr "Su arıtma"
 
 msgid "Water type"
 msgstr "Su tipi"
+
+msgid "Water value"
+msgstr "Su değeri"
 
 msgid "Water volume"
 msgstr "Su hacmi"
@@ -12894,6 +13198,13 @@ msgstr ""
 msgid "Where each person works from a day: one department, production or office, and the title."
 msgstr "Her kişinin bir günden itibaren çalıştığı yer: bir departman (üretim ya da ofis) ve unvan."
 
+msgid ""
+"Where each widget sits on the card’s 12 columns. The frame of a card (the unit, its state and "
+"why, the withdrawal) is always shown and is not part of the layout."
+msgstr ""
+"Her bileşenin kartın 12 sütunundaki yeri. Kartın çerçevesi (birim, durumu ve nedeni, bekleme "
+"süresi) her zaman gösterilir ve yerleşimin parçası değildir."
+
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Belgenin neresinde, örn. 4 ya da 12–13."
 
@@ -12971,6 +13282,13 @@ msgstr "Her kütüphane belgesinin hangi balık türleriyle ilgili olduğu."
 msgid "Which species each slaughter facility takes."
 msgstr "Her kesimhanenin hangi türleri aldığı."
 
+msgid ""
+"Which template a unit’s card gets: a rule for one unit, system, system type, species or kind of "
+"unit, or the one rule for every unit."
+msgstr ""
+"Bir birimin kartının aldığı şablon: tek bir birim, sistem, sistem türü, tür veya birim çeşidi "
+"için bir kural ya da her birim için tek kural."
+
 msgid "Which units each health event concerns; none for the whole site."
 msgstr "Her sağlık olayının ilgilendirdiği birimler; tüm saha için hiçbiri."
 
@@ -13039,6 +13357,49 @@ msgstr ""
 "Birimin neden bu durumda olduğu, örn. “ağ değişimi”. Durum değiştiğinde, olduğu gibi bırakılan "
 "neden silinir."
 
+#, python-format
+msgid "Widget %(widget)s has a field it may not have, or lacks one it needs."
+msgstr "%(widget)s bileşeninde olmaması gereken bir alan var ya da gereken bir alan eksik."
+
+#, python-format
+msgid "Widget %(widget)s is of a kind the card does not know."
+msgstr "%(widget)s bileşeni kartın tanımadığı bir türde."
+
+#, python-format
+msgid "Widget %(widget)s lies outside the card (12 columns, from the top)."
+msgstr "%(widget)s bileşeni kartın dışında (12 sütun, üstten başlayarak)."
+
+#, python-format
+msgid "Widget %(widget)s must be from %(min_w)d×%(min_h)d to %(max_w)d×%(max_h)d cells."
+msgstr "%(widget)s bileşeni %(min_w)d×%(min_h)d ile %(max_w)d×%(max_h)d hücre arasında olmalı."
+
+#, python-format
+msgid "Widget %(widget)s shows no single water parameter: it cannot be bound to one."
+msgstr "%(widget)s bileşeni tek bir su parametresi göstermez: bir parametreye bağlanamaz."
+
+#, python-format
+msgid "Widget %(widget)s: %(detail)s"
+msgstr "%(widget)s bileşeni: %(detail)s"
+
+#, python-format
+msgid "Widget %(widget)s: %(label)s cannot be placed yet."
+msgstr "%(widget)s bileşeni: %(label)s henüz yerleştirilemez."
+
+#, python-format
+msgid "Widget %(widget)s: choose the water parameter it shows (and, if not the middle, its point)."
+msgstr "%(widget)s bileşeni: göstereceği su parametresini (ve orta nokta değilse noktasını) seçin."
+
+#, python-format
+msgid "Widget %(widget)s: its place and size must be whole numbers."
+msgstr "%(widget)s bileşeni: yeri ve boyutu tam sayı olmalı."
+
+#, python-format
+msgid "Widgets %(widget)s and %(other)s overlap."
+msgstr "%(widget)s ve %(other)s bileşenleri üst üste biniyor."
+
+msgid "Width"
+msgstr "Genişlik"
+
 msgid "Width (m)"
 msgstr "Genişlik (m)"
 
@@ -13099,6 +13460,9 @@ msgstr "Burada çalışıyor"
 
 msgid "Working weekdays"
 msgstr "Çalışma günleri"
+
+msgid "Worth a look"
+msgstr "Bakmaya değer"
 
 msgid "Worth checking:"
 msgstr "Kontrol etmeye değer:"
@@ -13328,6 +13692,18 @@ msgstr "hesaplanan %(calculated)s"
 msgid "card of a monitoring board"
 msgstr "izleme panosu kartı"
 
+msgid "card template"
+msgstr "kart şablonu"
+
+msgid "card template rule"
+msgstr "kart şablonu kuralı"
+
+msgid "card template rules"
+msgstr "kart şablonu kuralları"
+
+msgid "card templates"
+msgstr "kart şablonları"
+
 msgid "cards of a monitoring board"
 msgstr "izleme panosu kartları"
 
@@ -13336,6 +13712,12 @@ msgstr "burada değiştirildi"
 
 msgid "channel"
 msgstr "kanal"
+
+msgid "chosen for this card on the board"
+msgstr "panoda bu kart için seçildi"
+
+msgid "chosen on this page"
+msgstr "bu sayfada seçildi"
 
 msgid "cleaner fish"
 msgstr "temizleyici balık"
@@ -13373,9 +13755,15 @@ msgstr "konuşmalar"
 msgid "counted %(quantity)s"
 msgstr "sayılan %(quantity)s"
 
+msgid "critical above"
+msgstr "kritik üst"
+
 #, python-format
 msgid "critical above %(value)s"
 msgstr "%(value)s üstü kritik"
+
+msgid "critical below"
+msgstr "kritik alt"
 
 #, python-format
 msgid "critical below %(value)s"
@@ -13831,6 +14219,9 @@ msgstr "sunulan rapor içeriği"
 msgid "filed report contents"
 msgstr "sunulan rapor içerikleri"
 
+msgid "flipped on this page"
+msgstr "bu sayfada değiştirildi"
+
 #, python-format
 msgid "found %(time)s"
 msgstr "saat %(time)s’te bulundu"
@@ -13931,6 +14322,9 @@ msgstr "depo işlemleri"
 
 msgid "its fish have no such bound"
 msgstr "balıklarının böyle bir sınırı yok"
+
+msgid "just now"
+msgstr "az önce"
 
 msgid "kg"
 msgstr "kg"
@@ -14039,6 +14433,9 @@ msgstr "hayır"
 msgid "no cleaner fish held at %(site)s since %(date)s"
 msgstr "%(date)s tarihinden beri %(site)s lokasyonunda temizleyici balık yok"
 
+msgid "no data"
+msgstr "veri yok"
+
 #, python-format
 msgid "no escape without a filed notice since %(date)s"
 msgstr "%(date)s tarihinden beri bildirimi yapılmamış kaçış yok"
@@ -14054,6 +14451,9 @@ msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
 msgstr "14 gündür açıklanamayan artmış ölüm yok; aksi halde bir olay olduğunda bir kişi başlatır"
+
+msgid "no limit set for this value"
+msgstr "bu değer için sınır tanımlı değil"
 
 #, python-format
 msgid "no listed disease without a filed notice since %(date)s"
@@ -14089,6 +14489,9 @@ msgstr "rapor başlangıç tarihi yok: dönemleri sayılmaz"
 
 msgid "no reports-from date: nothing is counted"
 msgstr "rapor başlangıç tarihi yok: hiçbir şey sayılmaz"
+
+msgid "no rule applies"
+msgstr "hiçbir kural geçerli değil"
 
 #, python-format
 msgid "no salmonids have been held at %(site)s"
@@ -14133,6 +14536,9 @@ msgstr "ofis departmanı"
 
 msgid "office departments"
 msgstr "ofis departmanları"
+
+msgid "old"
+msgstr "eski"
 
 msgid "only a sea site of food fish or broodstock has a driftsplan"
 msgstr "yalnızca besi balığı veya damızlık deniz lokasyonunun driftsplan’ı vardır"
@@ -14441,12 +14847,39 @@ msgstr "görevler"
 msgid "the 7th of the next month"
 msgstr "sonraki ayın 7’si"
 
+msgid "the board’s default"
+msgstr "panonun varsayılanı"
+
+msgid "the layout being designed"
+msgstr "tasarlanan yerleşim"
+
 msgid ""
 "the operating plan, the lice coordination plan and the others the authorities require that are "
 "not filed here."
 msgstr ""
 "işletme planı, deniz biti koordinasyon planı ve kurumların istediği, burada bildirilmeyen "
 "diğerleri."
+
+msgid "the options must be a set of named values."
+msgstr "seçenekler adlandırılmış değerler kümesi olmalı."
+
+msgid "the rule for every unit"
+msgstr "her birim için kural"
+
+msgid "the rule for its kind of unit"
+msgstr "birim çeşidi için kural"
+
+msgid "the rule for its species"
+msgstr "türü için kural"
+
+msgid "the rule for its system"
+msgstr "sistemi için kural"
+
+msgid "the rule for its type of system"
+msgstr "sistem türü için kural"
+
+msgid "the rule for this unit"
+msgstr "bu birim için kural"
 
 msgid "the site’s altitude"
 msgstr "sahanın rakımı"
@@ -14546,9 +14979,15 @@ msgstr "%(name)s tarafından iptal edildi: %(reason)s"
 msgid "voided: %(reason)s"
 msgstr "iptal edildi: %(reason)s"
 
+msgid "warning above"
+msgstr "uyarı üst"
+
 #, python-format
 msgid "warning above %(value)s"
 msgstr "%(value)s üstü uyarı"
+
+msgid "warning below"
+msgstr "uyarı alt"
 
 #, python-format
 msgid "warning below %(value)s"
@@ -14596,6 +15035,30 @@ msgstr "siz"
 msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "girdiğiniz %(weight)s: %(grams)s g, %%%(percent)s"
 
+#, python-brace-format
+msgid "{count} more cards got worse."
+msgstr "{count} kart daha kötüleşti."
+
+#, python-brace-format
+msgid "{label} added at column {x}, row {y}."
+msgstr "{label}, {x}. sütun {y}. satıra eklendi."
+
+#, python-brace-format
+msgid "{label} is now {w} columns wide and {h} rows high."
+msgstr "{label} artık {w} sütun genişliğinde ve {h} satır yüksekliğinde."
+
+#, python-brace-format
+msgid "{label} moved to column {x}, row {y}."
+msgstr "{label}, {x}. sütun {y}. satıra taşındı."
+
+#, python-brace-format
+msgid "{label} removed."
+msgstr "{label} kaldırıldı."
+
+#, python-brace-format
+msgid "{unit} is now {state}."
+msgstr "{unit} şimdi: {state}."
+
 #, python-format
 msgid "ΔCO₂ %(value)s mg/L"
 msgstr "ΔCO₂ %(value)s mg/L"
@@ -14634,6 +15097,14 @@ msgstr "“%(experiment)s” deneyi başladı."
 #, python-format
 msgid "“%(name)s” is not one of the specifications of this type."
 msgstr "“%(name)s” bu türün teknik özelliklerinden biri değil."
+
+#, python-format
+msgid "“%(option)s” has no value."
+msgstr "“%(option)s” için değer yok."
+
+#, python-format
+msgid "“%(option)s” is not an option of this widget."
+msgstr "“%(option)s” bu bileşenin bir seçeneği değil."
 
 #, python-format
 msgid "“%(task)s” is cancelled."

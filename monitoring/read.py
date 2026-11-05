@@ -5,8 +5,9 @@ comes from the read that owns it (README, Monitoring).
     sections_for(user) -> frozenset                  what a person may read (the one place that spells a permission)
     Params.from_query(query)                         the page's address: filters, occupancy, mode, the units chosen
     units_for(params, board=None) -> [Tank]          the cheap filters, one query, the farm's one order
-    modes(units, board, params) -> {unit id: mode}   simple or detailed, one rule
-    cards(units, user, modes, ...) -> [Card]         ONE bulk call per source for all the units
+    cards(units, user, choice, ...) -> [Card]        each unit's template (monitoring/cards/resolve.py), then ONE bulk
+                                                     call per source some card needs, for all the units
+    needs(resolved) -> {source: unit ids}            what the templates' widgets show, and the roll-up's fixed set
     state_of(card) -> State                          the one roll-up of a card, a ladder
     attention(cards) -> [Card]                       the cards that need a look first, for the wall's strip
     change_token(user, query, ...) -> str            what changed since the screen last looked, without reading it
@@ -14,14 +15,20 @@ comes from the read that owns it (README, Monitoring).
 The sources, each read once for every card and only for a person who may read it:
 - the fish: `stock_of` (farm/stock/read.py), then the occupancy filter, so the heavy reads cover the kept units;
 - the feeding: `feeding.read.figures(details, ration=True)`, one walk of the projected weight (today's ration of every
-  unit, the week and corrections of the detailed ones), and `meal_lines` for why a unit has no ration and its drift;
-- the water: `water.read.points_water`, one `latest()` (the middle point of a simple card, every active point of a
-  detailed one);
+  unit, the week and corrections of the cards whose feeding widget shows the week), and `meal_lines` for why a unit
+  has no ration and its drift;
+- the water: `water.read.points_water`, one `latest()` (the middle point, and every active point of a card whose
+  widgets show another point);
 - the medicine withdrawal: the registry's one bulk answer (`harvest.views.withdrawals`), with the stock right, as on
   Production units;
-- the health (open events for the state; treatments and the latest sea-lice count of a detailed card) and the tasks
-  (a detailed card).
+- the health (open events for the state; treatments and the latest sea-lice count of a card with a health widget), the
+  tasks (a card with a tasks widget) and the placement chips (a card with an experiments widget).
 
+SOURCES is the one table of them: each with the right that reads it and whether the card can be drawn without it. The
+roll-up's set (the fish, the feeding, the middle point's water, the open events) is read for every card whatever its
+template, so the state never depends on the template; a source no widget of any shown card needs runs no query. An
+optional source that fails (its own savepoint) leaves the cards, its widgets say "no data", and it is logged at most once
+a minute; a required one that fails raises Unavailable (the fragment answers 503 and the screen keeps its last picture).
 A section the person may not read is not read at all (no query), and the card says so; the state then says what it
 is from. Nothing here writes, and a poll writes nothing."""
 import hashlib
@@ -48,22 +55,43 @@ from farm.water import parameters, read as water_read, views as water_views
 from farm.water.evaluate import Status, is_fresh
 from tasks import read as tasks_read, views as tasks_views
 
+from .cards import catalogue, render, resolve
+
 logger = logging.getLogger(__name__)
 
-STOCK, FEEDING, WATER, TREATMENTS, EVENTS, LICE, TASKS = (
-    'stock', 'feeding', 'water', 'treatments', 'events', 'lice', 'tasks')
-SECTIONS = (STOCK, FEEDING, WATER, TREATMENTS, EVENTS, LICE, TASKS)
-# The permission of each section, from the module that owns the records.
-PERMISSIONS = {
-    STOCK: stock_views.VIEW, FEEDING: feeding_views.VIEW, WATER: water_views.VIEW,
-    TREATMENTS: health_views.TREATMENTS['view'], EVENTS: health_views.EVENTS['view'],
-    LICE: health_views.COUNTS['view'], TASKS: tasks_views.VIEW,
-}
+STOCK, FEEDING, WATER, TREATMENTS, EVENTS, LICE, TASKS, CHIPS = (
+    'stock', 'feeding', 'water', 'treatments', 'events', 'lice', 'tasks', 'chips')
+
+
+@dataclass(frozen=True)
+class Source:
+    name: str
+    permission: str        # the right that reads it, from the module that owns the records ('' : the provider decides)
+    required: bool         # the roll-up needs it: a card is not drawn without it
+
+
+SOURCES = (
+    Source(STOCK, stock_views.VIEW, True), Source(FEEDING, feeding_views.VIEW, True),
+    Source(WATER, water_views.VIEW, True), Source(TREATMENTS, health_views.TREATMENTS['view'], False),
+    Source(EVENTS, health_views.EVENTS['view'], True), Source(LICE, health_views.COUNTS['view'], False),
+    Source(TASKS, tasks_views.VIEW, False), Source(CHIPS, '', False),
+)
+# The sections of a card a right reads.
+SECTIONS = tuple(source.name for source in SOURCES if source.permission)
+# Read for every card whatever its template: what the state is worked out from.
+ROLL_UP = (STOCK, FEEDING, WATER, EVENTS)
+# Beyond the sources: the cards that need every active point's water, and the feeding week.
+POINTS, WEEK = 'points', 'week'
+# When each optional source last failed and was logged ({name: time}): at most once a minute each.
+FAILED_AT = {}
+FAIL_LOG_SECONDS = 60
+
+
+class Unavailable(Exception):
+    """A source the roll-up needs could not be read: no card can be drawn honestly."""
 # What a card names as hidden: the health records are one block of the card.
 HEALTH = 'health'
 SIMPLE, DETAILED = 'simple', 'detailed'
-# The water values a simple card shows, from the middle point (the parameters' own short labels).
-KEY_WATER = (parameters.TEMPERATURE, parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT, parameters.PH, parameters.TAN)
 MODES = (SIMPLE, DETAILED)
 STOCKED, EMPTY, ALL = 'stocked', 'empty', 'all'
 OCCUPANCIES = (STOCKED, EMPTY, ALL)
@@ -79,7 +107,7 @@ TOKEN_BUCKET = 60
 def sections_for(user):
     """The sections of the card the person may read (STOCK ... TASKS): the one definition. The page, the fragment, the
     token and the tests call it; nothing else spells a permission."""
-    return frozenset(section for section, permission in PERMISSIONS.items() if user.has_perm(permission))
+    return frozenset(source.name for source in SOURCES if source.permission and user.has_perm(source.permission))
 
 
 # ---- the address -----------------------------------------------------------------------------------------------
@@ -167,20 +195,6 @@ def units_for(params, board=None):
     return units
 
 
-def modes(units, board, params):
-    """{unit id: 'simple' | 'detailed'}: the base is the board's row for the unit, else the board's default, else the
-    address's `mode`, else simple; the cards in `flip` take the other one. One rule, one place."""
-    rows = {} if board is None else {row.unit_id: row.mode for row in board.rows.all() if row.mode}
-    base = (board.default_mode if board is not None else params.mode) or SIMPLE
-    found = {}
-    for unit in units:
-        mode = rows.get(unit.pk) or base
-        if str(unit.pk) in params.flip:
-            mode = DETAILED if mode == SIMPLE else SIMPLE
-        found[unit.pk] = mode
-    return found
-
-
 # ---- a card ---------------------------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class State:
@@ -195,7 +209,7 @@ class State:
 @dataclass(frozen=True)
 class Card:
     unit: object
-    mode: str
+    template: object                    # resolve.Resolved: the template it is drawn with, and why
     today: object                       # the unit's own farm-local day
     stock: object = None                # farm.stock.read.UnitStock, None when the unit holds no fish
     day: object = None                  # feeding.projection.UnitDay of today
@@ -211,15 +225,18 @@ class Card:
     tasks: object = None                # tasks.read.UnitTasks
     hidden: tuple = ()                  # what the person may not read: FEEDING, WATER, HEALTH, TASKS
     sections: frozenset = frozenset()
+    failed: frozenset = frozenset()     # the optional sources that failed: their widgets say "no data"
     now: object = None
 
-    @property
-    def detailed(self):
-        return self.mode == DETAILED
+    @cached_property
+    def widgets(self):
+        """The widgets its template draws, in reading order (monitoring/cards/render.py)."""
+        return render.build(self)
 
     @property
-    def brief(self):
-        return not self.detailed
+    def middle_water(self):
+        """The PointWater of its middle point, or None."""
+        return _middle(self)
 
     @cached_property
     def state(self):
@@ -245,43 +262,93 @@ def _weigh(lines):
     return 'now' if 'now' in found else 'soon' if 'soon' in found else ''
 
 
-def _chips(units, user):
+def _optional(name, loader, *args):
+    """An optional source read in its own savepoint: its answer, or {} and the name among the failed when it raises
+    (logged at most once a minute per source). A chip, a task count or a treatment list is never a reason a card cannot
+    be shown."""
+    try:
+        with transaction.atomic():
+            return loader(*args), False
+    except Exception:                                           # fail open
+        now = timezone.now()
+        last = FAILED_AT.get(name)
+        if last is None or (now - last).total_seconds() >= FAIL_LOG_SECONDS:
+            FAILED_AT[name] = now
+            logger.exception('The %s source of the monitoring cards failed; its widgets say "no data".', name)
+        return {}, True
+
+
+def _placements(units, user):
     """{unit id: [Placement]} from the farm's placement registry (a trial's replicate), one call for all the units; none
-    when the registry is not there, and none when it fails: a chip is a convenience, never a reason a card cannot be
-    shown (its own savepoint keeps a database error inside it)."""
+    when the registry is not there."""
     try:
         from farm import placements
     except ImportError:
         return {}
-    try:
-        with transaction.atomic():
-            return placements.of(units, user)
-    except Exception:                                           # fail open
-        logger.exception('The placement registry failed; its chips are left out of the cards.')
-        return {}
+    return placements.of(units, user)
 
 
-def cards(units, user, modes_of, occupancy=STOCKED, now=None):
-    """[Card] of the units (their mode in `modes_of`), after the occupancy filter. ONE bulk call per source for all the
-    units, none for a source the person may not read, and the sources only a detailed card shows only when one is."""
+def needs(resolved):
+    """{source: unit ids} for {unit id: Resolved}: the sources of every widget of each unit's layout, the roll-up's set
+    for every unit, and POINTS (every active point's water) and WEEK (the feeding week) for the cards that show them."""
+    found = {source.name: set() for source in SOURCES}
+    found[POINTS], found[WEEK] = set(), set()
+    for unit_id, chosen in resolved.items():
+        for name in ROLL_UP:
+            found[name].add(unit_id)
+        for widget in chosen.layout['widgets']:
+            for name in catalogue.WIDGETS[widget['type']].sources:
+                found[name].add(unit_id)
+            opts = widget.get('opts', {})
+            if (widget['type'] == 'water_table' and opts.get('points') == 'all') or \
+                    widget.get('bind', {}).get('point', water_read.MIDDLE) != water_read.MIDDLE:
+                found[POINTS].add(unit_id)
+            if widget['type'] == 'feeding' and opts.get('week'):
+                found[WEEK].add(unit_id)
+    return found
+
+
+def _species(own):
+    return own.shares[0].batch.species_id if own is not None and own.shares else None
+
+
+def cards(units, user, choice, occupancy=STOCKED, now=None):
+    """[Card] of the units after the occupancy filter, each with its template (resolve.templates_for, two queries). ONE
+    bulk call per source some card needs, for all the units; none for a source the person may not read. Raises
+    Unavailable when a source of the roll-up fails."""
     now = now or timezone.now()
     sections = sections_for(user)
     units = list(units)
-    stock = stock_read.stock_of(units) if STOCK in sections else {}
-    kept = [unit for unit in units if occupancy == ALL or (unit.pk in stock) == (occupancy == STOCKED)]
-    stocked = [unit for unit in kept if unit.pk in stock]
-    detailed = [unit for unit in kept if modes_of.get(unit.pk) == DETAILED]
-    simple_ids = [unit.pk for unit in kept if modes_of.get(unit.pk) != DETAILED]
-    feeding = (feeding_read.figures({unit.pk: stock[unit.pk] for unit in stocked},
-                                    details=[unit for unit in detailed if unit.pk in stock], ration=True)
-               if FEEDING in sections and stocked else {})
-    water = water_read.points_water(kept, now, middle_only=simple_ids) if WATER in sections and kept else {}
-    withdrawals = harvest_views.withdrawals(stocked) if STOCK in sections and stocked else {}
-    events = health_read.open_events(kept) if EVENTS in sections and kept else {}
-    treatments = health_read.recent_treatments(detailed) if TREATMENTS in sections and detailed else {}
-    counts = health_read.latest_counts([unit.pk for unit in detailed]) if LICE in sections and detailed else {}
-    tasks = tasks_read.per_unit([unit.pk for unit in detailed], now) if TASKS in sections and detailed else {}
-    chips = _chips(kept, user) if kept else {}
+    try:
+        stock = stock_read.stock_of(units) if STOCK in sections else {}
+        kept = [unit for unit in units if occupancy == ALL or (unit.pk in stock) == (occupancy == STOCKED)]
+        stocked = [unit for unit in kept if unit.pk in stock]
+        resolved = resolve.templates_for(kept, {unit.pk: _species(stock[unit.pk]) for unit in stocked}, choice)
+        need = needs(resolved)
+        feeding = (feeding_read.figures({unit.pk: stock[unit.pk] for unit in stocked},
+                                        details=[unit for unit in stocked if unit.pk in need[WEEK]], ration=True)
+                   if FEEDING in sections and stocked else {})
+        water = (water_read.points_water(kept, now, middle_only=[unit.pk for unit in kept if unit.pk not in need[POINTS]])
+                 if WATER in sections and kept else {})
+        withdrawals = harvest_views.withdrawals(stocked) if STOCK in sections and stocked else {}
+        events = health_read.open_events(kept) if EVENTS in sections and kept else {}
+    except Exception as error:
+        raise Unavailable(str(error)) from error
+    failed = set()
+
+    def optional(name, loader, *args):
+        wanted = [unit for unit in kept if unit.pk in need[name]]
+        if not wanted or (name in SECTIONS and name not in sections):
+            return {}
+        found, broke = _optional(name, loader, *args, wanted)
+        if broke:
+            failed.add(name)
+        return found
+
+    treatments = optional(TREATMENTS, health_read.recent_treatments)
+    counts = optional(LICE, lambda wanted: health_read.latest_counts([unit.pk for unit in wanted]))
+    tasks = optional(TASKS, lambda wanted: tasks_read.per_unit([unit.pk for unit in wanted], now))
+    chips = optional(CHIPS, lambda wanted: _placements(wanted, user))
     hidden = tuple(key for key, shown in ((FEEDING, FEEDING in sections), (WATER, WATER in sections),
                                           (HEALTH, bool(sections & {TREATMENTS, EVENTS, LICE})),
                                           (TASKS, TASKS in sections)) if not shown)
@@ -294,11 +361,11 @@ def cards(units, user, modes_of, occupancy=STOCKED, now=None):
         lines = tuple(feeding_read.meal_lines(day, {share.batch.pk: share.batch for share in own.shares}, today)
                       if own and day else ())
         found.append(Card(
-            unit=unit, mode=modes_of.get(unit.pk, SIMPLE), today=today, stock=own, day=day, feeding=figures,
+            unit=unit, template=resolved[unit.pk], today=today, stock=own, day=day, feeding=figures,
             lines=lines, drift=_weigh(lines), water=tuple(water.get(unit.pk, ())),
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
-            chips=tuple(chips.get(unit.pk, ())),
+            chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed),
             hidden=hidden, sections=sections, now=now))
     return found
 

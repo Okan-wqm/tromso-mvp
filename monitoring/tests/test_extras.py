@@ -9,7 +9,7 @@ from django.urls import reverse
 from farm.tests.test_cleaner_fish import CleanerFishTestCase
 
 from .. import read
-from . import ALL_RIGHTS, MonitoringCase
+from . import ALL_RIGHTS, MonitoringCase, chosen
 
 
 class CleanerFishTests(CleanerFishTestCase):
@@ -27,7 +27,7 @@ class CleanerFishTests(CleanerFishTestCase):
 
     def cards(self, mode):
         units = read.units_for(read.Params(units=(str(self.cage.pk),)))
-        return read.cards(units, self.reader, {unit.pk: mode for unit in units})
+        return read.cards(units, self.reader, chosen({unit.pk: mode for unit in units}))
 
     def test_the_unit_figures_are_the_production_fishs_and_the_detailed_card_says_the_cleaner_fish_beside_them(self):
         [card] = self.cards('detailed')
@@ -49,7 +49,7 @@ class CleanerFishTests(CleanerFishTestCase):
 class ChipsTests(MonitoringCase):
     def cards(self):
         units = read.units_for(read.Params())
-        return read.cards(units, self.reader, {unit.pk: 'simple' for unit in units})
+        return read.cards(units, self.reader, chosen({unit.pk: 'simple' for unit in units}))
 
     def test_with_no_provider_module_there_are_no_chips_and_nothing_breaks(self):
         with mock.patch.dict(sys.modules, {'farm.placements': None}):

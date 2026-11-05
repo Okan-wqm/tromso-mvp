@@ -246,7 +246,9 @@
         "experiments/tests/test_places.py",
         "experiments/tests/test_start.py",
         "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_designer.py",
         "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_template_pages.py",
         "monitoring/tests/test_token.py"
       ]
     },
@@ -425,7 +427,9 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_placements.py",
-        "monitoring/tests/test_pages.py"
+        "monitoring/tests/test_designer.py",
+        "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_template_pages.py"
       ]
     },
     {
@@ -3404,7 +3408,8 @@
         "reports/tests/test_compute.py",
         "reports/tests/test_lice.py",
         "tasks/tests/test_pages.py",
-        "experiments/tests/test_deviations.py"
+        "experiments/tests/test_deviations.py",
+        "monitoring/tests/test_golden.py"
       ]
     },
     {
@@ -8911,6 +8916,7 @@
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
         "reports/tests/test_unexplained.py",
+        "monitoring/tests/test_golden.py",
         "monitoring/tests/test_read.py"
       ]
     },
@@ -9273,7 +9279,8 @@
       "tests": [
         "core/test_languages.py",
         "core/tests_workspaces.py",
-        "farm/tests/test_health.py"
+        "farm/tests/test_health.py",
+        "monitoring/tests/test_golden.py"
       ]
     },
     {
@@ -10428,7 +10435,8 @@
         "hr/tests/test_scope.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_start.py"
+        "experiments/tests/test_start.py",
+        "monitoring/tests/test_templates_db.py"
       ]
     },
     {
@@ -12098,7 +12106,8 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_start.py"
+        "experiments/tests/test_start.py",
+        "monitoring/tests/test_templates_db.py"
       ]
     },
     {
@@ -13171,7 +13180,8 @@
         "reports/tests/test_compute.py",
         "hr/tests/test_production_permissions.py",
         "experiments/tests/test_overview.py",
-        "experiments/tests/test_pages.py"
+        "experiments/tests/test_pages.py",
+        "monitoring/tests/test_templates_db.py"
       ]
     },
     {
@@ -15525,7 +15535,9 @@
         "farm/tests/test_water_points.py",
         "tasks/tests/__init__.py",
         "experiments/tests/test_design.py",
-        "experiments/tests/test_places.py"
+        "experiments/tests/test_places.py",
+        "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_templates_db.py"
       ]
     },
     {
@@ -16552,6 +16564,8 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py"
       ]
     },
@@ -17243,7 +17257,8 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
-        "reports/tests/test_lice.py"
+        "reports/tests/test_lice.py",
+        "monitoring/tests/test_golden.py"
       ]
     },
     {
@@ -26866,7 +26881,7 @@
       "app": "monitoring",
       "model": "MonitorBoardUnit",
       "table": "monitor_board_units",
-      "description": "The cards of each monitoring board: a unit and, when it differs from the board, how its card is drawn.",
+      "description": "The cards of each monitoring board: a unit and, when it differs from the board, the template its card is drawn with.",
       "columns": [
         {
           "name": "id",
@@ -26922,6 +26937,21 @@
             "detailed"
           ],
           "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the mode before card templates, kept for one release for a rollback (migration 0004)"
+        },
+        {
+          "name": "template_id",
+          "field": "template",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "monitor_card_templates",
+            "model": "monitoring.CardTemplate",
+            "on_delete": "SET_NULL"
+          },
           "on_form": [
             "MonitorBoardUnitForm",
             "BoardUnitForm"
@@ -27046,7 +27076,7 @@
           "module": "django.forms.widgets",
           "fields": {
             "unit": "",
-            "mode": ""
+            "template": ""
           }
         },
         {
@@ -27054,7 +27084,7 @@
           "module": "monitoring.forms",
           "fields": {
             "unit": "",
-            "mode": ""
+            "template": ""
           }
         }
       ],
@@ -27069,14 +27099,17 @@
         "masked": []
       },
       "tests": [
-        "monitoring/tests/test_boards.py"
+        "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_templates_db.py"
       ]
     },
     {
       "app": "monitoring",
       "model": "MonitorBoard",
       "table": "monitor_boards",
-      "description": "The named wall screens of Monitoring: a name, how its cards are drawn by default and how often its screens ask.",
+      "description": "The named wall screens of Monitoring: a name, the template its cards are drawn with by default, how wide its cards are and how often its screens ask.",
       "columns": [
         {
           "name": "id",
@@ -27225,11 +27258,9 @@
             "detailed"
           ],
           "link": null,
-          "on_form": [
-            "MonitorBoardForm › General"
-          ],
-          "how": "form",
-          "why": ""
+          "on_form": [],
+          "how": "computed",
+          "why": "the mode before card templates, kept for one release for a rollback (migration 0004)"
         },
         {
           "name": "refresh_seconds",
@@ -27237,6 +27268,40 @@
           "type": "smallint",
           "null": true,
           "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "default_template_id",
+          "field": "default_template",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "monitor_card_templates",
+            "model": "monitoring.CardTemplate",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [
+            "MonitorBoardForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "card_width",
+          "field": "card_width",
+          "type": "smallint",
+          "null": false,
+          "choices": [
+            "1",
+            "2",
+            "3"
+          ],
           "link": null,
           "on_form": [
             "MonitorBoardForm › General"
@@ -27268,6 +27333,12 @@
         },
         {
           "name": "chk_monitor_boards_refresh",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_card_width",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -27347,7 +27418,8 @@
           "fields": {
             "name": "General",
             "description": "General",
-            "default_mode": "General",
+            "default_template": "General",
+            "card_width": "General",
             "refresh_seconds": "General",
             "version": ""
           }
@@ -27365,7 +27437,732 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "monitoring/tests/test_boards.py"
+        "monitoring/tests/test_boards.py",
+        "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_templates_db.py"
+      ]
+    },
+    {
+      "app": "monitoring",
+      "model": "CardTemplateAssignment",
+      "table": "monitor_card_assignments",
+      "description": "Which template a unit’s card gets: a rule for one unit, system, system type, species or kind of unit, or the one rule for every unit.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "template_id",
+          "field": "template",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "monitor_card_templates",
+            "model": "monitoring.CardTemplate",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "CardTemplateAssignmentForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "unit_id",
+          "field": "unit",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "tanks",
+            "model": "farm.Tank",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "CardTemplateAssignmentForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "system_id",
+          "field": "system",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "systems",
+            "model": "farm.System",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "CardTemplateAssignmentForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "system_type",
+          "field": "system_type",
+          "type": "varchar(20)",
+          "null": true,
+          "choices": [
+            "ras",
+            "flow_through",
+            "pond",
+            "cage",
+            "raceway",
+            "hatchery",
+            "nursery",
+            "biofloc",
+            "aquaponics",
+            "other"
+          ],
+          "link": null,
+          "on_form": [
+            "CardTemplateAssignmentForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "species_id",
+          "field": "species",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "species",
+            "model": "farm.Species",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "CardTemplateAssignmentForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": true,
+          "choices": [
+            "tank",
+            "pond",
+            "cage"
+          ],
+          "link": null,
+          "on_form": [
+            "CardTemplateAssignmentForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_monitor_card_assignments_one_scope",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_monitor_card_assignments_scope",
+          "kind": "unique",
+          "fields": [
+            "unit",
+            "system",
+            "system_type",
+            "species",
+            "kind"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_monitor_card_assignments_system_type",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_assignments_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card template rules tab",
+              "url_names": [
+                "monitoring:cardtemplateassignment_create"
+              ],
+              "routes": [
+                "/card-template-rules/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card template rules tab",
+              "url_names": [
+                "monitoring:cardtemplateassignment_edit"
+              ],
+              "routes": [
+                "/card-template-rules/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card template rules tab",
+              "url_names": [
+                "monitoring:cardtemplateassignment_delete"
+              ],
+              "routes": [
+                "/card-template-rules/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card template rules tab",
+              "url_names": [
+                "monitoring:cardtemplateassignment_list"
+              ],
+              "routes": [
+                "/card-template-rules/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "One scope per rule (a CHECK) and one live rule per scope, the global rule included (a unique index whose empty values count as equal). The global rule is never deleted and stays global. A rule of a deleted unit, system or species is kept and counts again when it is restored.",
+      "forms": [
+        {
+          "form": "CardTemplateAssignmentForm",
+          "module": "monitoring.forms",
+          "fields": {
+            "template": "General",
+            "unit": "General",
+            "system": "General",
+            "system_type": "General",
+            "species": "General",
+            "kind": "General",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Monitoring",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "monitoring/tests/test_frame.py",
+        "monitoring/tests/test_load.py",
+        "monitoring/tests/test_render.py",
+        "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_template_pages.py",
+        "monitoring/tests/test_templates_db.py"
+      ]
+    },
+    {
+      "app": "monitoring",
+      "model": "CardTemplate",
+      "table": "monitor_card_templates",
+      "description": "The monitoring card templates: a name, the widgets of the card as a layout and the template its flip link shows. Three are built in and never change.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CardTemplateForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "description",
+          "field": "description",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CardTemplateForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "is_builtin",
+          "field": "is_builtin",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "schema_version",
+          "field": "schema_version",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "layout",
+          "field": "layout",
+          "type": "jsonb",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CardTemplateForm › Design"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "expanded_id",
+          "field": "expanded",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "monitor_card_templates",
+            "model": "monitoring.CardTemplate",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [
+            "CardTemplateForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_monitor_card_templates_name_live",
+          "kind": "unique",
+          "fields": [
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_monitor_card_templates_name",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_schema",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_object",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_widgets",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_count",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_bytes",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_stamp",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_expanded",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_card_templates_builtin",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card templates tab",
+              "url_names": [
+                "monitoring:cardtemplate_create"
+              ],
+              "routes": [
+                "/card-templates/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card templates tab",
+              "url_names": [
+                "monitoring:cardtemplate_edit"
+              ],
+              "routes": [
+                "/card-templates/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card templates tab",
+              "url_names": [
+                "monitoring:cardtemplate_delete"
+              ],
+              "routes": [
+                "/card-templates/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "card templates tab",
+              "url_names": [
+                "monitoring:cardtemplate_list"
+              ],
+              "routes": [
+                "/card-templates/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back only the template.",
+      "forms": [
+        {
+          "form": "CardTemplateForm",
+          "module": "monitoring.forms",
+          "fields": {
+            "name": "General",
+            "description": "General",
+            "expanded": "General",
+            "layout": "Design",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Monitoring",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "monitoring/tests/test_designer.py",
+        "monitoring/tests/test_frame.py",
+        "monitoring/tests/test_load.py",
+        "monitoring/tests/test_render.py",
+        "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_template_pages.py",
+        "monitoring/tests/test_templates_db.py"
       ]
     },
     {
@@ -32246,6 +33043,7 @@
         "tasks/tests/test_pages.py",
         "tasks/tests/test_read.py",
         "tasks/tests/test_series.py",
+        "monitoring/tests/test_golden.py",
         "monitoring/tests/test_token.py"
       ]
     }

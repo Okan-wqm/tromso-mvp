@@ -1,0 +1,53 @@
+{
+ "about": "The geometry of a card template both validators agree on: monitoring/cards/validate.py (the authority) and frontend/grid/layout.ts. Each case lists the problems of codes bounds, size and overlap in the order the validators report them: each widget's bounds then size, in the widgets' order, then each overlapping pair (first, second) in that order. sizes: [min_w, min_h, max_w, max_h] of each widget type, equal to the catalogue's (a test says so).",
+ "columns": 12,
+ "sizes": {
+  "value": [2, 2, 6, 4],
+  "bar": [3, 2, 12, 3],
+  "water_table": [4, 2, 12, 12],
+  "fish": [4, 3, 12, 8],
+  "feeding": [4, 2, 12, 6],
+  "health": [4, 2, 12, 8],
+  "tasks": [3, 2, 12, 3],
+  "experiment": [3, 1, 12, 2],
+  "deffeyes": [2, 1, 6, 2],
+  "spark": [3, 2, 12, 4]
+ },
+ "cases": [
+  {"name": "one widget fits", "widgets": [{"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 2}], "problems": []},
+  {"name": "touching edges do not overlap", "widgets": [
+    {"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 2},
+    {"id": "b", "type": "tasks", "x": 3, "y": 0, "w": 3, "h": 2},
+    {"id": "c", "type": "tasks", "x": 0, "y": 2, "w": 3, "h": 2}], "problems": []},
+  {"name": "the full width", "widgets": [{"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 12, "h": 2}], "problems": []},
+  {"name": "past the right edge", "widgets": [{"id": "a", "type": "tasks", "x": 10, "y": 0, "w": 3, "h": 2}], "problems": [["bounds", "a"]]},
+  {"name": "left of the first column", "widgets": [{"id": "a", "type": "tasks", "x": -1, "y": 0, "w": 3, "h": 2}], "problems": [["bounds", "a"]]},
+  {"name": "above the first row", "widgets": [{"id": "a", "type": "tasks", "x": 0, "y": -1, "w": 3, "h": 2}], "problems": [["bounds", "a"]]},
+  {"name": "too narrow", "widgets": [{"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 2, "h": 2}], "problems": [["size", "a"]]},
+  {"name": "too tall", "widgets": [{"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 4}], "problems": [["size", "a"]]},
+  {"name": "an overlap of one cell", "widgets": [
+    {"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 2},
+    {"id": "b", "type": "tasks", "x": 2, "y": 1, "w": 3, "h": 2}], "problems": [["overlap", "a", "b"]]},
+  {"name": "one inside the other", "widgets": [
+    {"id": "a", "type": "health", "x": 0, "y": 0, "w": 6, "h": 3},
+    {"id": "b", "type": "tasks", "x": 1, "y": 1, "w": 3, "h": 2}], "problems": [["overlap", "a", "b"]]},
+  {"name": "the same place", "widgets": [
+    {"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 2},
+    {"id": "b", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 2}], "problems": [["overlap", "a", "b"]]},
+  {"name": "a chain names each pair once", "widgets": [
+    {"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 2},
+    {"id": "b", "type": "tasks", "x": 2, "y": 1, "w": 3, "h": 2},
+    {"id": "c", "type": "tasks", "x": 3, "y": 0, "w": 3, "h": 2}], "problems": [["overlap", "a", "b"], ["overlap", "b", "c"]]},
+  {"name": "outside and overlapping", "widgets": [
+    {"id": "a", "type": "tasks", "x": 10, "y": 0, "w": 3, "h": 2},
+    {"id": "b", "type": "tasks", "x": 11, "y": 0, "w": 3, "h": 2}], "problems": [["bounds", "a"], ["bounds", "b"], ["overlap", "a", "b"]]},
+  {"name": "far down is fine", "widgets": [{"id": "a", "type": "tasks", "x": 0, "y": 100, "w": 3, "h": 2}], "problems": []},
+  {"name": "outside and too narrow", "widgets": [{"id": "a", "type": "tasks", "x": 11, "y": 0, "w": 2, "h": 2}], "problems": [["bounds", "a"], ["size", "a"]]},
+  {"name": "a one-row widget", "widgets": [{"id": "a", "type": "experiment", "x": 0, "y": 0, "w": 12, "h": 1}], "problems": []},
+  {"name": "a value at its largest", "widgets": [{"id": "a", "type": "value", "x": 6, "y": 0, "w": 6, "h": 4}], "problems": []},
+  {"name": "a value too wide", "widgets": [{"id": "a", "type": "value", "x": 0, "y": 0, "w": 7, "h": 2}], "problems": [["size", "a"]]},
+  {"name": "a corner touch is not an overlap", "widgets": [
+    {"id": "a", "type": "tasks", "x": 0, "y": 0, "w": 3, "h": 2},
+    {"id": "b", "type": "tasks", "x": 3, "y": 2, "w": 3, "h": 2}], "problems": []}
+ ]
+}

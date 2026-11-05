@@ -1,0 +1,12 @@
+{% load i18n %}{% comment %} The water of a card: the middle point's key values, or every active point's, or every value; each value the
+   water page's own markup (farm/_water_value.html, its status and time in the title) and under it where it came from
+   and how old it is, in words (monitoring/cards/render.py face). {% endcomment %}
+<section class="monitor-section monitor-water">
+  {% if view.opts.points == "all" %}
+  {% for water in card.water %}{% include "monitoring/widgets/_water_point.html" with named=True %}
+  {% empty %}<p class="row-sub">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}</p>
+  {% endfor %}
+  {% else %}
+  {% with water=card.middle_water %}{% if water %}{% include "monitoring/widgets/_water_point.html" with named=False %}{% else %}<p class="row-sub">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}</p>{% endif %}{% endwith %}
+  {% endif %}
+</section>

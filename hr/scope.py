@@ -200,3 +200,8 @@ def production_only(user, day=None):
 
 def not_production_only(user, day=None):
     return not production_only(user, day)
+
+
+def realm_of(mount):
+    """The realm of the panel a page is served in (core.crud.Mount): Production › Team's mount is the production realm."""
+    return mount.key if mount is not None else None

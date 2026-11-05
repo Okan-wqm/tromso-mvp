@@ -60,10 +60,11 @@ class DepartmentRow:
         return self.obj.pk
 
 
-def head_counts(user, day=None):
-    """{(kind, department id): people placed in it on `day`} among the people `user` may reach: one grouped query."""
+def head_counts(user, day=None, realm=None):
+    """{(kind, department id): people placed in it on `day`} among the people `user` may reach (in `realm`, if given): one
+    grouped query."""
     day = day or site_today(None)
-    rows = (Posting.objects.filter(scope.covering(day), employee__in=scope.team(user, day).values('pk'))
+    rows = (Posting.objects.filter(scope.covering(day), employee__in=scope.team(user, day, realm).values('pk'))
             .values('production_department', 'office_department').annotate(people=Count('pk')))
     return {(PRODUCTION if row['production_department'] else OFFICE,
              row['production_department'] or row['office_department']): row['people'] for row in rows}
@@ -191,14 +192,15 @@ class Week:
         return self.start + timedelta(days=7)
 
 
-def week(user, week_start, department=None, page=1, per_page=50, query=''):
+def week(user, week_start, department=None, page=1, per_page=50, query='', realm=None):
     """The roster of the ISO week starting `week_start` (a Monday) for the people `user` may reach, `per_page` of them:
     each person's cell per day (their shift, planned off, a holiday, or nothing planned) and the rules' findings. The
     queries do not depend on the number of people: the employees of the page, their plan from a fortnight either side,
-    their placements and the holidays."""
+    their placements and the holidays. With a realm (hr.scope), a person shows only on the days they were in it.
+    Production › Team and Company › HR read the same week this way."""
     start = monday(week_start)
     days = [start + timedelta(days=n) for n in range(7)]
-    visible = scope.visible_days(user, days[0], days[-1])
+    visible = scope.visible_days(user, days[0], days[-1], realm)
     people = Employee.objects.filter(joined_on__lte=days[-1]).filter(Q(left_on__isnull=True) | Q(left_on__gte=days[0]))
     if visible is not None:
         people = people.filter(pk__in=list(visible))
@@ -296,18 +298,18 @@ class Board:
         return self.count(rules.PRESENT) + self.count(rules.LATE)
 
 
-def board(user, moment=None):
+def board(user, moment=None, realm=None):
     """Who is where now, for the people `user` may reach: each person's planned shift today (or the night shift that began
     yesterday and is still running), their punches, their leave, and the state worked out from them (rules.status) on their
     site's clock. People planned off, on a holiday or with nothing planned are not listed, unless they are there all the
-    same. In a fixed number of queries whatever the number of people."""
+    same. In a fixed number of queries whatever the number of people. With a realm, only the people in it today."""
     moment = moment or timezone.now()
     clocks_now = clocks(moment)
     by_site = {site: clock for clock in clocks_now if clock.sites is not None for site in clock.sites}
     company_clock = next(clock for clock in clocks_now if clock.sites is None)
     low, high = min(c.today for c in clocks_now), max(c.today for c in clocks_now)
     settings = SchedulingSettings.get()
-    people = list(scope.team(user, high).filter(joined_on__lte=high).filter(Q(left_on__isnull=True) | Q(left_on__gte=low))
+    people = list(scope.team(user, high, realm).filter(joined_on__lte=high).filter(Q(left_on__isnull=True) | Q(left_on__gte=low))
                   .select_related('user').order_by('last_name', 'first_name', 'employee_number'))
     ids = [employee.pk for employee in people]
     postings = defaultdict(list)
@@ -385,11 +387,11 @@ class Overview:
         return Decimal(self.standard_minutes) / 60
 
 
-def overview(user, week_start, department=None, page=1, per_page=50, query=''):
+def overview(user, week_start, department=None, page=1, per_page=50, query='', realm=None):
     """The week of the viewer's people as numbers: per person the days working, off and on leave and the planned hours against
     the standard week; per day how many work, are off or are away. Everything comes from `week` (the same cells, the same scope),
     so the two pages cannot disagree, and nothing is stored."""
-    plan = week(user, week_start, department, page, per_page, query)
+    plan = week(user, week_start, department, page, per_page, query, realm)
     standard = SchedulingSettings.get().standard_week_minutes
     footer = [{'working': 0, 'off': 0, 'leave': 0} for _day in plan.days]
     rows = []

@@ -1,0 +1,188 @@
+{
+  "about": "Golden decode vectors shared by the ingest (sensors-ingest/src/decode.rs tests) and Django. A vector gives a payload format, the device's channels and a message; `expect` is what decode returns BEFORE the time rule and calibration: per sample the channel, the raw value and the device time (null when the format has no time path, so the receive time is used). `faults` are dead-letter reasons raised by the message (sorted); the good samples of a partly bad message are still kept. Paths are JSON pointers. Array shape: items are found at items_path (blank = the message is the array); an item's time is read at time_path inside the item, and from the message root when the item has none.",
+  "vectors": [
+    {
+      "name": "plc_object_with_tags_iso_time",
+      "format": {"shape": "object", "time_path": "/ts", "time_unit": "iso8601", "seq_path": "/seq"},
+      "channels": [
+        {"channel_no": 1, "value_path": "/tags/temp_inlet/value"},
+        {"channel_no": 2, "value_path": "/tags/pump1_run/value"},
+        {"channel_no": 3, "value_path": "/tags/o2/value"}
+      ],
+      "payload": {"ts": "2025-11-04T12:00:00.250+01:00", "seq": 41,
+                  "tags": {"temp_inlet": {"value": 9.53, "quality": "good"}, "pump1_run": {"value": true}, "o2": {"value": "11.2"}}},
+      "expect": {"seq": 41, "faults": [], "samples": [
+        {"channel_no": 1, "value": 9.53, "device_ts": "2025-11-04T11:00:00.250Z"},
+        {"channel_no": 2, "value": 1.0, "device_ts": "2025-11-04T11:00:00.250Z"},
+        {"channel_no": 3, "value": 11.2, "device_ts": "2025-11-04T11:00:00.250Z"}
+      ]}
+    },
+    {
+      "name": "oxygen_probe_array_epoch_ms_per_item",
+      "format": {"shape": "array", "time_path": "/t", "time_unit": "epoch_ms", "seq_path": "/seq", "items_path": "/items", "name_key": "n", "value_key": "v"},
+      "channels": [{"channel_no": 10, "item_name": "do"}, {"channel_no": 11, "item_name": "temp"}],
+      "payload": {"seq": 7, "items": [{"n": "do", "v": 10.4, "t": 1762257600123}, {"n": "temp", "v": 9.1, "t": 1762257600123}, {"n": "sat", "v": 101}]},
+      "expect": {"seq": 7, "faults": [], "samples": [
+        {"channel_no": 10, "value": 10.4, "device_ts": "2025-11-04T12:00:00.123Z"},
+        {"channel_no": 11, "value": 9.1, "device_ts": "2025-11-04T12:00:00.123Z"}
+      ]}
+    },
+    {
+      "name": "array_items_take_the_root_time_when_they_have_none",
+      "format": {"shape": "array", "time_path": "/time", "time_unit": "iso8601", "items_path": "/data", "name_key": "tag", "value_key": "val"},
+      "channels": [{"channel_no": 20, "item_name": "flow"}],
+      "payload": {"time": "2025-11-04T12:00:05Z", "data": [{"tag": "flow", "val": 12.5}]},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 20, "value": 12.5, "device_ts": "2025-11-04T12:00:05Z"}]}
+    },
+    {
+      "name": "array_at_the_root_and_two_items_for_one_channel",
+      "format": {"shape": "array", "time_path": "/t", "time_unit": "epoch_s", "name_key": "n", "value_key": "v"},
+      "channels": [{"channel_no": 21, "item_name": "do"}],
+      "payload": [{"n": "do", "v": 8.0, "t": 1762257600}, {"n": "do", "v": 8.1, "t": 1762257601}],
+      "expect": {"seq": null, "faults": [], "samples": [
+        {"channel_no": 21, "value": 8.0, "device_ts": "2025-11-04T12:00:00Z"},
+        {"channel_no": 21, "value": 8.1, "device_ts": "2025-11-04T12:00:01Z"}
+      ]}
+    },
+    {
+      "name": "numeric_item_names_match_as_text",
+      "format": {"shape": "array", "time_unit": "epoch_ms", "items_path": "/r", "name_key": "reg", "value_key": "v"},
+      "channels": [{"channel_no": 22, "item_name": "40001"}],
+      "payload": {"r": [{"reg": 40001, "v": 17}]},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 22, "value": 17.0, "device_ts": null}]}
+    },
+    {
+      "name": "fractional_epoch_seconds",
+      "format": {"shape": "object", "time_path": "/t", "time_unit": "epoch_s"},
+      "channels": [{"channel_no": 30, "value_path": "/v"}],
+      "payload": {"t": 1762257600.5, "v": 3},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 30, "value": 3.0, "device_ts": "2025-11-04T12:00:00.500Z"}]}
+    },
+    {
+      "name": "epoch_ms_as_text_and_value_with_spaces",
+      "format": {"shape": "object", "time_path": "/t", "time_unit": "epoch_ms"},
+      "channels": [{"channel_no": 31, "value_path": "/v"}],
+      "payload": {"t": "1762257600123", "v": " 7.5 "},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 31, "value": 7.5, "device_ts": "2025-11-04T12:00:00.123Z"}]}
+    },
+    {
+      "name": "no_time_path_means_receive_time",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 32, "value_path": "/v"}],
+      "payload": {"v": false},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 32, "value": 0.0, "device_ts": null}]}
+    },
+    {
+      "name": "json_pointer_escapes",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 33, "value_path": "/a~1b/c~0d"}],
+      "payload": {"a/b": {"c~d": 4.25}},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 33, "value": 4.25, "device_ts": null}]}
+    },
+    {
+      "name": "a_sequence_that_is_not_an_integer_is_left_out_not_refused",
+      "format": {"shape": "object", "time_unit": "iso8601", "seq_path": "/seq"},
+      "channels": [{"channel_no": 34, "value_path": "/v"}],
+      "payload": {"seq": "x1", "v": 1},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 34, "value": 1.0, "device_ts": null}]}
+    },
+    {
+      "name": "not_json",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 40, "value_path": "/v"}],
+      "payload_text": "{\"v\": 1",
+      "expect": {"seq": null, "faults": ["not_json"], "samples": []}
+    },
+    {
+      "name": "a_number_beyond_float_range_is_not_json",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 41, "value_path": "/v"}],
+      "payload_text": "{\"v\": 1e400}",
+      "expect": {"seq": null, "faults": ["not_json"], "samples": []}
+    },
+    {
+      "name": "null_value_is_missing_the_other_channel_is_kept",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 42, "value_path": "/a"}, {"channel_no": 43, "value_path": "/b"}],
+      "payload": {"a": null, "b": 2},
+      "expect": {"seq": null, "faults": ["missing_value"], "samples": [{"channel_no": 43, "value": 2.0, "device_ts": null}]}
+    },
+    {
+      "name": "text_value_and_infinity_text_are_bad_values",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 44, "value_path": "/a"}, {"channel_no": 45, "value_path": "/b"}, {"channel_no": 46, "value_path": "/c"}],
+      "payload": {"a": "abc", "b": "inf", "c": {"x": 1}},
+      "expect": {"seq": null, "faults": ["bad_value"], "samples": []}
+    },
+    {
+      "name": "absent_path_is_not_a_fault_unless_nothing_matches",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 47, "value_path": "/a"}, {"channel_no": 48, "value_path": "/b"}],
+      "payload": {"a": 1.5},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 47, "value": 1.5, "device_ts": null}]}
+    },
+    {
+      "name": "no_channel_matches",
+      "format": {"shape": "object", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 49, "value_path": "/a"}],
+      "payload": {"z": 1},
+      "expect": {"seq": null, "faults": ["no_channel_match"], "samples": []}
+    },
+    {
+      "name": "array_with_no_matching_item",
+      "format": {"shape": "array", "time_unit": "iso8601", "items_path": "/items", "name_key": "n", "value_key": "v"},
+      "channels": [{"channel_no": 50, "item_name": "do"}],
+      "payload": {"items": [{"n": "ph", "v": 7}, {"v": 3}]},
+      "expect": {"seq": null, "faults": ["no_channel_match"], "samples": []}
+    },
+    {
+      "name": "array_path_not_an_array",
+      "format": {"shape": "array", "time_unit": "iso8601", "items_path": "/items", "name_key": "n", "value_key": "v"},
+      "channels": [{"channel_no": 51, "item_name": "do"}],
+      "payload": {"items": {"n": "do", "v": 7}},
+      "expect": {"seq": null, "faults": ["no_channel_match"], "samples": []}
+    },
+    {
+      "name": "time_path_configured_but_absent",
+      "format": {"shape": "object", "time_path": "/ts", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 52, "value_path": "/v"}],
+      "payload": {"v": 1},
+      "expect": {"seq": null, "faults": ["missing_time"], "samples": []}
+    },
+    {
+      "name": "unreadable_time",
+      "format": {"shape": "object", "time_path": "/ts", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 53, "value_path": "/v"}],
+      "payload": {"ts": "yesterday", "v": 1},
+      "expect": {"seq": null, "faults": ["bad_time"], "samples": []}
+    },
+    {
+      "name": "iso_time_without_an_offset_is_ambiguous",
+      "format": {"shape": "object", "time_path": "/ts", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 54, "value_path": "/v"}],
+      "payload": {"ts": "2025-11-04T12:00:00", "v": 1},
+      "expect": {"seq": null, "faults": ["bad_time"], "samples": []}
+    },
+    {
+      "name": "one_item_without_time_the_other_kept",
+      "format": {"shape": "array", "time_path": "/t", "time_unit": "epoch_ms", "items_path": "/items", "name_key": "n", "value_key": "v"},
+      "channels": [{"channel_no": 55, "item_name": "do"}, {"channel_no": 56, "item_name": "temp"}],
+      "payload": {"items": [{"n": "do", "v": 9, "t": 1762257600000}, {"n": "temp", "v": 8}]},
+      "expect": {"seq": null, "faults": ["missing_time"], "samples": [{"channel_no": 55, "value": 9.0, "device_ts": "2025-11-04T12:00:00Z"}]}
+    },
+    {
+      "name": "epoch_time_as_boolean_is_unreadable",
+      "format": {"shape": "object", "time_path": "/t", "time_unit": "epoch_s"},
+      "channels": [{"channel_no": 57, "value_path": "/v"}],
+      "payload": {"t": true, "v": 1},
+      "expect": {"seq": null, "faults": ["bad_time"], "samples": []}
+    },
+    {
+      "name": "nanosecond_iso_time_is_cut_to_microseconds",
+      "format": {"shape": "object", "time_path": "/ts", "time_unit": "iso8601"},
+      "channels": [{"channel_no": 58, "value_path": "/v"}],
+      "payload": {"ts": "2025-11-04T12:00:00.123456789Z", "v": 1},
+      "expect": {"seq": null, "faults": [], "samples": [{"channel_no": 58, "value": 1.0, "device_ts": "2025-11-04T12:00:00.123456Z"}]}
+    }
+  ]
+}

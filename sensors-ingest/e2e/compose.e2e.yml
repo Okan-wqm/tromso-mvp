@@ -1,0 +1,43 @@
+# The Sensors services of docker-compose.yml under the project name sensors-e2e, on their own network plus the
+# existing database container (host `db` of balik-ciftligi_default), writing to the database sensors_e2e as the
+# login role sensors_ingest_e2e (a member of sensors_ingest: the same grants; the shared role itself stays NOLOGIN).
+# Nothing is published on the host. Paths are relative to the repository root (the first compose file).
+services:
+  mosquitto:
+    ports: !reset []
+    volumes: !override
+      - ./sensors-ingest/mosquitto:/mosquitto/config:ro
+      - ./sensors-ingest/e2e/.state/broker-auth:/mosquitto/auth
+      - mosquitto-data:/mosquitto/data
+    networks: [e2e]
+  sensors-ingest:
+    # the test build: with the crash failpoint (off unless E2E_FAILPOINT is set)
+    build:
+      context: ./sensors-ingest
+      args:
+        FEATURES: failpoints
+    image: sensors-ingest:e2e-failpoints
+    depends_on: !reset []
+    environment:
+      INGEST_FAILPOINT_ABORT_AFTER_COMMIT: ${E2E_FAILPOINT:-0}
+      INGEST_DB: host=db port=5432 dbname=sensors_e2e user=sensors_ingest_e2e
+      INGEST_BATCH_MS: ${E2E_BATCH_MS:-250}
+      RUST_LOG: info
+    networks: [e2e, balik]
+  node-red:
+    ports: !reset []
+    networks: [e2e]
+
+secrets:
+  sensors_ingest_db:
+    file: ./sensors-ingest/e2e/.state/secrets/sensors_ingest_db
+  mqtt_ingest:
+    file: ./sensors-ingest/e2e/.state/secrets/mqtt_ingest
+  sim_mqtt:
+    file: ./sensors-ingest/e2e/.state/secrets/sim_mqtt
+
+networks:
+  e2e: {}
+  balik:
+    external: true
+    name: balik-ciftligi_default

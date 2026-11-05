@@ -1,5 +1,12 @@
 # Local development database: PostgreSQL 17 with the TimescaleDB extension.
 #   docker compose up -d
+# The Sensors services (broker, ingest, field simulator) run in the profile `sensors`:
+#   docker compose --profile sensors up -d
+# They need, under .sensors/ (not in the repository; see sensors-ingest/README.md):
+#   secrets/sensors_ingest_db   the password of the database role sensors_ingest (manage.py sensors_ingest_role)
+#   secrets/mqtt_ingest         the ingest's broker password (its Connection's secret_file is `mqtt_ingest`)
+#   secrets/sim_mqtt            the simulator's broker password (a Credential made on the Credentials page)
+#   broker-auth/                passwd and acl written by manage.py sensor_broker_sync (the broker reloads them)
 services:
   db:
     image: timescale/timescaledb:2.17.2-pg17
@@ -14,5 +21,60 @@ services:
     ports: ["${DB_PORT:-5433}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
 
+  mosquitto:
+    profiles: [sensors]
+    image: eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+    restart: unless-stopped
+    entrypoint: ["sh", "/mosquitto/config/entrypoint.sh"]
+    # Plain MQTT on the host's loopback only; field devices use the TLS listener of conf.d/tls.conf (publish 8883 then).
+    ports: ["127.0.0.1:${SENSORS_MQTT_PORT:-1883}:1883"]
+    volumes:
+      - ./sensors-ingest/mosquitto:/mosquitto/config:ro
+      - ${SENSORS_BROKER_AUTH_DIR:-./.sensors/broker-auth}:/mosquitto/auth
+      - mosquitto-data:/mosquitto/data
+    stop_grace_period: 30s
+
+  sensors-ingest:
+    profiles: [sensors]
+    build: ./sensors-ingest
+    image: sensors-ingest:local
+    restart: unless-stopped
+    depends_on: [db, mosquitto]
+    environment:
+      INGEST_DB: host=db port=5432 dbname=${DB_NAME:-balik} user=${SENSORS_INGEST_DB_USER:-sensors_ingest}
+      RUST_LOG: ${SENSORS_INGEST_LOG:-info}
+    secrets: [sensors_ingest_db, mqtt_ingest]
+    # /healthz and /decode stay inside the compose network.
+    expose: ["8080"]
+    # SIGTERM: what is queued is committed and acknowledged, then DISCONNECT (the broker keeps the session).
+    stop_grace_period: 60s
+
+  node-red:
+    profiles: [sensors]
+    image: nodered/node-red:4.0.9@sha256:0b295b3a14c512548567ca99db631bc37b23bfc79fd009ee8248a610fafdb4b5
+    restart: unless-stopped
+    depends_on: [mosquitto]
+    entrypoint: ["bash", "/sim/start.sh"]
+    environment:
+      SIM_MQTT_HOST: mosquitto
+      SIM_MQTT_USER: ${SIM_MQTT_USER:-simulator}
+      SIM_MQTT_PASSWORD_FILE: /run/secrets/sim_mqtt
+    secrets: [sim_mqtt]
+    volumes:
+      - ./sensors-ingest/simulator:/sim:ro
+      - node-red-data:/data
+    # the editor (switches) on the host's loopback only
+    ports: ["127.0.0.1:${SENSORS_SIMULATOR_PORT:-1880}:1880"]
+
+secrets:
+  sensors_ingest_db:
+    file: ${SENSORS_SECRETS_DIR:-./.sensors/secrets}/sensors_ingest_db
+  mqtt_ingest:
+    file: ${SENSORS_SECRETS_DIR:-./.sensors/secrets}/mqtt_ingest
+  sim_mqtt:
+    file: ${SENSORS_SECRETS_DIR:-./.sensors/secrets}/sim_mqtt
+
 volumes:
   pgdata: {}
+  mosquitto-data: {}
+  node-red-data: {}

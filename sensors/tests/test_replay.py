@@ -16,7 +16,7 @@ from django.urls import reverse
 from farm.models import System
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
-from farm.water import calculation, chemistry, deffeyes, services as water_services
+from farm.water import calculation, chemistry, deffeyes, read as water_read, services as water_services
 
 from sensors import bindings, read
 from sensors.models import Channel
@@ -71,13 +71,15 @@ class FrameTests(ReplayCase):
                                       timedelta(minutes=5))
         self.assertEqual(len(frames.frames), 10)
         for frame in frames.frames:
+            # The value at the moment as the water parameter takes it (its decimals), as the unit's chart reads it.
             ph_at = read.value_at(self.ph.channel_no, frame.at)
             temperature_at = read.value_at(self.channel.channel_no, frame.at)
-            self.assertEqual(frame.inputs['ph'].value, ph_at[1])
-            self.assertEqual(frame.inputs['temperature_c'].value, temperature_at[1])
+            ph = float(water_read.as_parameter('ph', ph_at[1]))
+            temperature = float(water_read.as_parameter('temperature_c', temperature_at[1]))
+            self.assertEqual(frame.inputs['ph'].value, ph)
+            self.assertEqual(frame.inputs['temperature_c'].value, temperature)
             self.assertEqual(frame.inputs['ph'].age_s, (frame.at - ph_at[0]).total_seconds())
-            analysis = deffeyes.analyse(deffeyes.Water(temperature_c=temperature_at[1], salinity_ppt=0.0, ph=ph_at[1],
-                                                       alkalinity_mg_l=100.0))
+            analysis = deffeyes.analyse(deffeyes.Water(temperature_c=temperature, salinity_ppt=0.0, ph=ph, alkalinity_mg_l=100.0))
             self.assertAlmostEqual(frame.point.dic, analysis.dic, places=12)
             self.assertAlmostEqual(frame.point.alkalinity_meq, 100 / chemistry.MG_CACO3_PER_MEQ, places=12)
             self.assertAlmostEqual(frame.point.co2_mg_l, analysis.co2_mg_l, places=9)
@@ -149,7 +151,8 @@ class FrameTests(ReplayCase):
         first = read.deffeyes_frames(self.t1, START + timedelta(minutes=20), START + timedelta(minutes=40),
                                      timedelta(minutes=10)).frames
         # At 00:30 the sensor is in T-02; T-01 keeps the value it measured there at 00:25, fresh for 15 min.
-        self.assertEqual([frame.inputs['ph'].value for frame in first], [7.020, 7.025])
+        self.assertEqual([frame.inputs['ph'].value for frame in first],
+                         [float(water_read.as_parameter('ph', value)) for value in (7.020, 7.025)])
         second = read.deffeyes_frames(self.t2, START + timedelta(minutes=20), START + timedelta(minutes=40),
                                       timedelta(minutes=10)).frames
         self.assertEqual([frame.inputs.get('ph') is not None for frame in second], [False, True])
@@ -163,7 +166,7 @@ class FrameTests(ReplayCase):
                                       timedelta(hours=1))
         self.assertEqual(frames.tier, read.ROLLUP_1H)
         first = frames.frames[0]                                              # at 01:00: the hour 00:00-01:00 ended
-        self.assertEqual(first.inputs['ph'].value, 7.0 + 55 / 1000)
+        self.assertEqual(first.inputs['ph'].value, float(water_read.as_parameter('ph', 7.0 + 55 / 1000)))
 
 
 class PageTests(ReplayCase):

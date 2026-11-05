@@ -47,7 +47,7 @@ class GoldenV1Tests(SimpleTestCase):
         cls.manifest = json.loads((V1 / 'manifest.json').read_text(encoding='utf-8'))
 
     def test_the_recorder_reproduces_itself_byte_for_byte(self):
-        self.assertEqual(sorted(self.first), BLOCKS)
+        self.assertEqual(sorted(self.first), sorted(BLOCKS))
         for name in BLOCKS:
             with self.subTest(block=name):
                 self.assertEqual(hashlib.sha256(self.first[name]).hexdigest(),
@@ -144,4 +144,4 @@ class AnchorTests(SimpleTestCase):
                 with self.subTest(water=(t, s), value=name):
                     expected = float(values[name])
                     self.assertTrue(math.isclose(value, expected, rel_tol=rel, abs_tol=0.0 if expected else 1e-300),
-                                    f'{value!r} against {values[name]} (rel {abs(value - expected) / abs(expected):.1e})')
+                                    f'{value!r} against {values[name]}')

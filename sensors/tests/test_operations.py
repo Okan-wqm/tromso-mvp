@@ -187,7 +187,9 @@ class OverviewTests(SensorsCase):
         self.assertEqual(self.client.get(reverse('sensors:home')).context['state_tiles'], [])
 
 
-class BrokerAuthDirTests(BrokerSyncTests):
+class BrokerAuthDirTests(SensorsCase):
+    setUp = BrokerSyncTests.setUp
+
     def test_without_paths_the_files_go_to_the_configured_folder(self):
         with self.settings(SENSORS_BROKER_AUTH_DIR=str(self.folder / 'auth')):
             call_command('sensor_broker_sync', stdout=StringIO())

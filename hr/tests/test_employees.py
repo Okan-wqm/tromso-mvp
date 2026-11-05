@@ -64,23 +64,23 @@ class EmployeeRoundTripTests(PeopleTestCase):
         account = get_user_model().objects.create_user('nora', 'nora@example.com', 'x', first_name='Nora',
                                                        last_name='Account')
         from ..units import token
-        self.client.post(reverse('hr:employee_create'), data(token(self.dept_a), user=str(account.pk)))
+        self.client.post(reverse('hr:production_employee_create'), data(token(self.dept_a), user=str(account.pk)))
         person = Employee.objects.get(employee_number='E-100')
         self.assertEqual((person.user, person.first_name, person.last_name, person.full_name),
                          (account, '', '', 'Nora Account'))
         # the account is taken now: not offered again
-        form = self.client.get(reverse('hr:employee_create')).context['form']
+        form = self.client.get(reverse('hr:production_employee_create')).context['form']
         self.assertNotIn(account, form.fields['user'].queryset)
 
     def test_the_form_asks_for_what_the_rules_need(self):
         self.client.force_login(self.hr)
-        errors = self.client.post(reverse('hr:employee_create'), data(last_name='', department='')
+        errors = self.client.post(reverse('hr:production_employee_create'), data(last_name='', department='')
                                   ).context['form'].errors
         self.assertEqual(set(errors), {'last_name', 'department'})
-        errors = self.client.post(reverse('hr:employee_create'), data('production:not-an-id')).context['form'].errors
+        errors = self.client.post(reverse('hr:production_employee_create'), data('production:not-an-id')).context['form'].errors
         self.assertIn('department', errors)
         from ..units import token
-        errors = self.client.post(reverse('hr:employee_create'), data(token(self.dept_a), left_on='2026-01-01')
+        errors = self.client.post(reverse('hr:production_employee_create'), data(token(self.dept_a), left_on='2026-01-01')
                                   ).context['form'].errors
         self.assertIn('left_on', errors)
         self.assertEqual(Employee.objects.count(), 3)
@@ -90,9 +90,9 @@ class EmployeeRoundTripTests(PeopleTestCase):
         from ..units import token
         base = data(token(self.dept_b), employee_number='E-1', last_name='Alfa', first_name='Ann', joined_on='2026-01-01',
                     title='Technician', version='1')
-        errors = self.client.post(reverse('hr:employee_edit', args=[self.in_a.pk]), base).context['form'].errors
+        errors = self.client.post(reverse('hr:production_employee_edit', args=[self.in_a.pk]), base).context['form'].errors
         self.assertIn('from_day', errors)
-        errors = self.client.post(reverse('hr:employee_edit', args=[self.in_a.pk]), {**base, 'from_day': '2025-12-01'}
+        errors = self.client.post(reverse('hr:production_employee_edit', args=[self.in_a.pk]), {**base, 'from_day': '2025-12-01'}
                                   ).context['form'].errors
         self.assertIn('from_day', errors)
         self.assertEqual(Posting.objects.filter(employee=self.in_a).count(), 1)
@@ -100,7 +100,7 @@ class EmployeeRoundTripTests(PeopleTestCase):
     def test_a_second_new_person_in_a_department_is_a_new_row_with_a_new_number(self):
         self.client.force_login(self.hr)
         from ..units import token
-        errors = self.client.post(reverse('hr:employee_create'), data(token(self.dept_a), employee_number='E-1')
+        errors = self.client.post(reverse('hr:production_employee_create'), data(token(self.dept_a), employee_number='E-1')
                                   ).context['form'].errors
         self.assertIn('employee_number', errors)
 

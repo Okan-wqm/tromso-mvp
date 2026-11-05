@@ -78,10 +78,10 @@ class OverviewPageTests(OverviewTestCase):
         self.plan(self.in_a, MONDAY)
         self.plan(self.in_b, MONDAY)
         self.client.force_login(self.lead)
-        url = reverse('hr:overview')
+        url = reverse('hr:production_overview')
         page = self.client.get(url, {'week': MONDAY.isoformat()})
         self.assertEqual([r.employee for r in page.context['overview'].rows], [self.in_a])
-        self.assertEqual((page.context['title'], page.context['eyebrow']), ('Team overview', 'Time & shifts'))
+        self.assertEqual((page.context['title'], page.context['eyebrow']), ('Team overview', 'Time & attendance'))
         for query in ({'department': token(self.dept_b)}, {'q': 'Bravo'}, {'week': 'nonsense', 'page': 'x'}):
             rows = self.client.get(url, query).context['overview'].rows
             self.assertEqual({r.employee.last_name for r in rows} - {'Alfa'}, set(), query)
@@ -92,7 +92,7 @@ class OverviewPageTests(OverviewTestCase):
 
     def test_it_is_a_page_of_the_menu_under_time_and_shifts(self):
         self.client.force_login(self.lead)
-        response = self.client.get(reverse('hr:overview'))
+        response = self.client.get(reverse('hr:production_overview'))
         shown = [entry['label'] for section in response.context['rail_sections'] for group in section['groups']
                  for entry in group['entries']]
         self.assertIn('Team overview', shown)

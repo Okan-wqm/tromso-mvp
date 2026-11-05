@@ -86,21 +86,21 @@ class ReturnTests(PeopleTestCase):
         return LeaveRequest.objects.create(employee=self.in_a, leave_type=self.kind, first_day=MONDAY, last_day=MONDAY)
 
     def test_a_decision_returns_to_a_local_next(self):
-        for name, data in (('hr:leaverequest_reject', {'note': 'No'}), ('hr:leaverequest_cancel', {})):
-            response = self.client.post(reverse(name, args=[self.ask().pk]), {**data, 'next': '/hr/leave/?tab=all'})
-            self.assertRedirects(response, '/hr/leave/?tab=all', fetch_redirect_response=False)
+        for name, data in (('hr:production_leaverequest_reject', {'note': 'No'}), ('hr:production_leaverequest_cancel', {})):
+            response = self.client.post(reverse(name, args=[self.ask().pk]), {**data, 'next': '/production/team/leave/?tab=all'})
+            self.assertRedirects(response, '/production/team/leave/?tab=all', fetch_redirect_response=False)
 
     def test_a_foreign_next_is_ignored(self):
-        for name in ('hr:leaverequest_reject', 'hr:leaverequest_cancel'):
+        for name in ('hr:production_leaverequest_reject', 'hr:production_leaverequest_cancel'):
             response = self.client.post(reverse(name, args=[self.ask().pk]), {'note': 'x',
                                                                              'next': 'https://evil.example/'})
-            self.assertRedirects(response, reverse('hr:leaverequest_list'), fetch_redirect_response=False)
+            self.assertRedirects(response, reverse('hr:production_leaverequest_list'), fetch_redirect_response=False)
 
     def test_a_punch_returns_to_a_local_next_and_ignores_a_foreign_one(self):
         account = user('ann', 'view_attendancerecord', group='Staff role')
         Employee.objects.filter(pk=self.in_a.pk).update(user=account, first_name='', last_name='')
         self.client.force_login(account)
-        response = self.client.post(reverse('hr:punch', args=['in']), {'next': '/hr/?from=punch'})
-        self.assertRedirects(response, '/hr/?from=punch', fetch_redirect_response=False)
-        response = self.client.post(reverse('hr:punch', args=['out']), {'next': '//evil.example/'})
-        self.assertRedirects(response, reverse('hr:today'), fetch_redirect_response=False)
+        response = self.client.post(reverse('hr:production_punch', args=['in']), {'next': '/production/team/?from=punch'})
+        self.assertRedirects(response, '/production/team/?from=punch', fetch_redirect_response=False)
+        response = self.client.post(reverse('hr:production_punch', args=['out']), {'next': '//evil.example/'})
+        self.assertRedirects(response, reverse('hr:production_today'), fetch_redirect_response=False)

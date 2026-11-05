@@ -96,25 +96,28 @@ class SeedTests(TestCase):
             self.assertEqual(response.status_code, 200, (username, route))
             return response
 
-        hatchery = names('demo_lead_hatchery', 'hr:employee_list').context['objects']
+        hatchery = names('demo_lead_hatchery', 'hr:production_employee_list').context['objects']
         self.assertEqual({e.last_name or e.user.last_name for e in hatchery},
                          {'Hatchery', 'Staff', 'Brekke', 'Moe'})                 # their own team, not the nursery or finance
-        nursery = names('demo_lead_nursery', 'hr:employee_list').context['objects']
+        nursery = names('demo_lead_nursery', 'hr:production_employee_list').context['objects']
         self.assertEqual({e.last_name or e.user.last_name for e in nursery}, {'Nursery', 'Nilsen', 'Opsahl'})
-        everyone = names('demo_hr', 'hr:employee_list').context['objects']
+        # Everyone: the office people in Company and the production people in Production, each person in one of them
+        everyone = list(names('demo_hr', 'hr:employee_list').context['objects']) + list(
+            names('demo_hr', 'hr:production_employee_list').context['objects'])
         self.assertEqual(len(everyone), Employee.objects.count())
-        self.assertEqual(len(names('demo_auditor', 'hr:employee_list').context['objects']), Employee.objects.count())
+        self.assertEqual(len(names('demo_auditor', 'hr:employee_list').context['objects'])
+                         + len(names('demo_auditor', 'hr:production_employee_list').context['objects']), Employee.objects.count())
         # the staff member has no Team list, reads Today, the schedule and their own leave
         client.force_login(get_user_model().objects.get(username='demo_staff'))
-        self.assertEqual(client.get(reverse('hr:employee_list')).status_code, 403)
-        for route in ('hr:today', 'hr:shiftassignment_list', 'hr:leaverequest_list'):
+        self.assertEqual(client.get(reverse('hr:production_employee_list')).status_code, 403)
+        for route in ('hr:production_today', 'hr:production_shiftassignment_list', 'hr:production_leaverequest_list'):
             self.assertEqual(client.get(reverse(route)).status_code, 200, route)
-        self.assertEqual({r.employee.user.username for r in client.get(reverse('hr:shiftassignment_list')).context['week'].rows},
+        self.assertEqual({r.employee.user.username for r in client.get(reverse('hr:production_shiftassignment_list')).context['week'].rows},
                          {'demo_staff'})
         # a lead cannot open the other team's person by address, or the HR settings
         other = Employee.objects.get(employee_number='D-06')
         client.force_login(get_user_model().objects.get(username='demo_lead_hatchery'))
-        self.assertEqual(client.get(reverse('hr:employee_detail', args=[other.pk])).status_code, 404)
+        self.assertEqual(client.get(reverse('hr:production_employee_detail', args=[other.pk])).status_code, 404)
         self.assertEqual(client.get(reverse('hr:schedulingsettings_list')).status_code, 403)
         self.assertEqual(client.get(reverse('core:database')).status_code, 403)
 

@@ -154,13 +154,13 @@ class SelfPunchTests(PeopleTestCase):
 
     def test_the_clock_in_button_on_the_page_posts_and_redirects(self):
         self.client.force_login(self.ann)
-        response = self.client.post(reverse('hr:punch', args=['in']))
-        self.assertRedirects(response, reverse('hr:today'), fetch_redirect_response=False)
+        response = self.client.post(reverse('hr:production_punch', args=['in']))
+        self.assertRedirects(response, reverse('hr:production_today'), fetch_redirect_response=False)
         self.assertEqual(AttendanceRecord.objects.get().employee, self.in_a)
-        self.client.post(reverse('hr:punch', args=['in']))                              # again: a message, no second row
+        self.client.post(reverse('hr:production_punch', args=['in']))                              # again: a message, no second row
         self.assertEqual(AttendanceRecord.objects.count(), 1)
-        self.assertEqual(self.client.get(reverse('hr:punch', args=['in'])).status_code, 405)
-        self.client.post(reverse('hr:punch', args=['out']))
+        self.assertEqual(self.client.get(reverse('hr:production_punch', args=['in'])).status_code, 405)
+        self.client.post(reverse('hr:production_punch', args=['out']))
         self.assertIsNotNone(AttendanceRecord.objects.get().clock_out)
 
 
@@ -172,7 +172,7 @@ class EnteredPresenceTests(PeopleTestCase):
 
     def post(self, person, start, end, note='Phone was dead', actor=None):
         self.client.force_login(actor or self.lead)
-        return self.client.post(reverse('hr:attendancerecord_create'), {
+        return self.client.post(reverse('hr:production_attendancerecord_create'), {
             'employee': str(person.pk), 'clock_in': start, 'clock_out': end, 'note': note})
 
     def test_create_read_edit_void_a_stretch_typed_on_the_sites_clock(self):
@@ -183,12 +183,12 @@ class EnteredPresenceTests(PeopleTestCase):
                          {'employee': self.in_a, 'clock_in': at(6), 'clock_out': at(14, 30), 'via': 'entered',
                           'note': 'Phone was dead'})                       # 07:00 in Oslo (winter) is 06:00 UTC
         self.assertEqual(record.created_by, self.lead)
-        listed = self.client.get(reverse('hr:attendancerecord_list'), {'from': '2026-03-01', 'to': '2026-03-03'})
+        listed = self.client.get(reverse('hr:production_attendancerecord_list'), {'from': '2026-03-01', 'to': '2026-03-03'})
         self.assertContains(listed, '07:00')                                # shown on the site's clock, not UTC
-        form = self.client.get(reverse('hr:attendancerecord_edit', args=[record.pk])).context['form']
+        form = self.client.get(reverse('hr:production_attendancerecord_edit', args=[record.pk])).context['form']
         self.assertEqual(form['clock_in'].value().isoformat(), '2026-03-02T07:00:00')
         # Edit: correct the out; logged with before and after, the note never
-        self.client.post(reverse('hr:attendancerecord_edit', args=[record.pk]), {
+        self.client.post(reverse('hr:production_attendancerecord_edit', args=[record.pk]), {
             'clock_in': '2026-03-02T07:00', 'clock_out': '2026-03-02T16:00', 'note': 'Corrected', 'version': '1'})
         record.refresh_from_db()
         self.assertEqual((record.clock_out, record.version), (at(15), 2))
@@ -197,7 +197,7 @@ class EnteredPresenceTests(PeopleTestCase):
         self.assertNotIn('Corrected', str(list(AuditLog.objects.values_list('changes', flat=True))))
         self.assertNotIn('Phone was dead', str(list(AuditLog.objects.values_list('changes', flat=True))))
         # Void = delete
-        self.client.post(reverse('hr:attendancerecord_delete', args=[record.pk]))
+        self.client.post(reverse('hr:production_attendancerecord_delete', args=[record.pk]))
         self.assertTrue(AttendanceRecord.all_objects.get().is_deleted)
 
     def test_a_reason_is_required_and_the_out_must_follow_the_in(self):
@@ -221,10 +221,10 @@ class EnteredPresenceTests(PeopleTestCase):
         response = self.post(self.in_b, '2026-03-02T06:00', '2026-03-02T10:00')
         self.assertIn('employee', response.context['form'].errors)
         other = punch(self.in_b, at(6), at(10))
-        for method, name in (('get', 'hr:attendancerecord_edit'), ('post', 'hr:attendancerecord_edit'),
-                             ('get', 'hr:attendancerecord_delete'), ('post', 'hr:attendancerecord_delete')):
+        for method, name in (('get', 'hr:production_attendancerecord_edit'), ('post', 'hr:production_attendancerecord_edit'),
+                             ('get', 'hr:production_attendancerecord_delete'), ('post', 'hr:production_attendancerecord_delete')):
             self.assertEqual(getattr(self.client, method)(reverse(name, args=[other.pk]), {'version': '1'}).status_code, 404)
-        rows = self.client.get(reverse('hr:attendancerecord_list'), {'from': '2026-03-01', 'to': '2026-03-03'}
+        rows = self.client.get(reverse('hr:production_attendancerecord_list'), {'from': '2026-03-01', 'to': '2026-03-03'}
                                ).context['objects']
         self.assertEqual(list(rows), [])
         self.assertEqual((AttendanceRecord.objects.count(), AuditLog.objects.count()), (before[0] + 1, before[1]))
@@ -241,8 +241,8 @@ class EnteredPresenceTests(PeopleTestCase):
 
     def test_the_page_heading_is_attendance_not_today_though_the_permission_is_shared(self):
         self.client.force_login(self.lead)
-        response = self.client.get(reverse('hr:attendancerecord_list'))
-        self.assertEqual((response.context['title'], response.context['group']), ('Attendance', 'Time & shifts'))
+        response = self.client.get(reverse('hr:production_attendancerecord_list'))
+        self.assertEqual((response.context['title'], response.context['group']), ('Attendance', 'Time & attendance'))
 
 
 class BoardTests(PeopleTestCase):
@@ -355,19 +355,19 @@ class TodayPageTests(PeopleTestCase):
         for person in (self.in_a, self.in_b):
             ShiftAssignment.objects.create(employee=person, day=today, shift=self.early)
         self.client.force_login(self.lead)
-        page = self.client.get(reverse('hr:today'))
+        page = self.client.get(reverse('hr:production_today'))
         self.assertEqual(page.status_code, 200)
         self.assertEqual([r.employee.last_name for r in page.context['board'].rows], ['Alfa'])
-        self.assertContains(page, reverse('hr:today_board'))                       # the page polls its own fragment
-        fragment = self.client.get(reverse('hr:today_board'))
+        self.assertContains(page, reverse('hr:production_today_board'))                       # the page polls its own fragment
+        fragment = self.client.get(reverse('hr:production_today_board'))
         self.assertEqual(fragment.status_code, 200)
         self.assertContains(fragment, 'Alfa')
         self.assertNotContains(fragment, 'Bravo')
-        self.assertContains(page, reverse('hr:attendancerecord_create'))           # Mark present
+        self.assertContains(page, reverse('hr:production_attendancerecord_create'))           # Mark present
 
     def test_the_verb_decides_and_no_hr_page_is_open_without_it(self):
         stranger = user('stranger')
-        for name in ('hr:today', 'hr:today_board'):
+        for name in ('hr:production_today', 'hr:production_today_board'):
             self.client.force_login(stranger)
             self.assertEqual(self.client.get(reverse(name)).status_code, 403, name)
             self.client.logout()
@@ -375,4 +375,4 @@ class TodayPageTests(PeopleTestCase):
 
     def test_a_person_who_never_clocks_has_no_buttons(self):
         self.client.force_login(self.lead)
-        self.assertNotContains(self.client.get(reverse('hr:today')), reverse('hr:punch', args=['in']))
+        self.assertNotContains(self.client.get(reverse('hr:production_today')), reverse('hr:production_punch', args=['in']))

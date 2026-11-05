@@ -84,7 +84,7 @@ class TeamFunctionTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=manager)
         self.assertEqual(self.names(manager, DAY), ['Alfa'])
         self.client.force_login(manager)
-        self.assertEqual(self.client.get(reverse('hr:employee_list')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('hr:production_employee_list')).status_code, 403)
 
 
 class EmployeeUrlMatrixTests(PeopleTestCase):
@@ -111,9 +111,14 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
             'root': (root, 200, 200, 200),
         }
         for label, (actor, listed, mine, other) in expect.items():
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_list'), listed, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_a.pk), mine, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_b.pk), other, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_list'), listed, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_detail', self.in_a.pk), mine, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_detail', self.in_b.pk), other, label)
+        # a production person is no Company HR row, whoever asks; an office one no Production row
+        for actor in (self.hr, auditor, root):
+            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_a.pk), 404)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_detail', self.in_fin.pk), 404)
+            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_fin.pk), 200)
 
     def test_the_write_routes_by_verb_and_row(self):
         edit_lead = user('editor', 'view_employee', 'change_employee', group='Edit role')
@@ -124,9 +129,9 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
             'hr': (self.hr, 200, 200, 200),
         }
         for label, (actor, create, mine, other) in expect.items():
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_create'), create, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_edit', self.in_a.pk), mine, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_edit', self.in_b.pk), other, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_create'), create, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_edit', self.in_a.pk), mine, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_edit', self.in_b.pk), other, label)
 
     def test_there_is_no_delete_route_for_anyone(self):
         for person in (self.in_a, self.in_b):
@@ -147,6 +152,13 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
                  'leaverequest_detail', 'leaverequest_approve', 'leaverequest_reject', 'leaverequest_cancel',
                  'leavetype_list', 'leavetype_create', 'leavetype_edit', 'leavetype_delete', 'attendancerecord_list',
                  'attendancerecord_create', 'attendancerecord_edit', 'attendancerecord_delete', 'today', 'today_board', 'punch', 'orgchart', 'overview'}
+        # Production › Team serves the people pages again (core.crud.Mount): the same routes named with its key
+        mounted = {'employee_list', 'employee_create', 'employee_edit', 'employee_detail', 'shiftassignment_list',
+                   'shiftassignment_create', 'shiftassignment_edit', 'shiftassignment_delete', 'roster_plan', 'leaverequest_list',
+                   'leaverequest_create', 'leaverequest_edit', 'leaverequest_detail', 'leaverequest_approve',
+                   'leaverequest_reject', 'leaverequest_cancel', 'attendancerecord_list', 'attendancerecord_create',
+                   'attendancerecord_edit', 'attendancerecord_delete', 'today', 'today_board', 'punch', 'orgchart', 'overview'}
+        known |= {f'production_{name}' for name in mounted}
         self.assertEqual(set(names) - known, set(), 'give every new HR route a row in the URL matrix')
 
 
@@ -164,7 +176,7 @@ class OutOfScopeWritesTests(PeopleTestCase):
     def test_an_edit_or_a_move_of_someone_in_another_team_is_a_404_and_changes_nothing(self):
         self.client.force_login(self.editor)
         before = self.snapshot()
-        response = self.client.post(reverse('hr:employee_edit', args=[self.in_b.pk]), {
+        response = self.client.post(reverse('hr:production_employee_edit', args=[self.in_b.pk]), {
             'employee_number': 'E-2', 'last_name': 'Taken', 'first_name': 'Over', 'employment_type': 'staff',
             'joined_on': '2026-01-01', 'department': token(self.dept_a), 'title': 'Mine', 'from_day': '2026-03-01',
             'version': '1'})
@@ -175,14 +187,14 @@ class OutOfScopeWritesTests(PeopleTestCase):
         self.client.force_login(self.editor)
         for query in ({'q': 'Bravo'}, {'department': token(self.dept_b)}, {'q': 'E-2'}, {'type': 'staff'},
                       {'status': 'current', 'department': token(self.finance)}):
-            listed = {e.last_name for e in self.client.get(reverse('hr:employee_list'), query).context['objects']}
+            listed = {e.last_name for e in self.client.get(reverse('hr:production_employee_list'), query).context['objects']}
             self.assertNotIn('Bravo', listed, query)
             self.assertNotIn('Charlie', listed, query)
 
     def test_a_lead_cannot_place_their_own_person_into_a_department_that_does_not_exist_or_is_stale(self):
         self.client.force_login(self.editor)
         before = self.snapshot()
-        response = self.client.post(reverse('hr:employee_edit', args=[self.in_a.pk]), {
+        response = self.client.post(reverse('hr:production_employee_edit', args=[self.in_a.pk]), {
             'employee_number': 'E-1', 'last_name': 'Alfa', 'first_name': 'Ann', 'employment_type': 'staff',
             'joined_on': '2026-01-01', 'department': 'production:00000000-0000-0000-0000-000000000000',
             'title': 'X', 'from_day': '2026-03-01', 'version': '1'})
@@ -195,7 +207,7 @@ class OutOfScopeWritesTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_b.pk).update(manager=creator)
         self.client.force_login(creator)
         before = self.snapshot()
-        response = self.client.post(reverse('hr:employee_create'), {
+        response = self.client.post(reverse('hr:production_employee_create'), {
             'employee_number': 'E-50', 'last_name': 'New', 'first_name': 'Nina', 'employment_type': 'staff',
             'joined_on': '2026-02-01', 'department': token(self.dept_b), 'title': '', 'from_day': ''})
         self.assertEqual(response.status_code, 403)

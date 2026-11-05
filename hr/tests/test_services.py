@@ -113,7 +113,7 @@ class LeaveCompanyTests(PeopleTestCase):
         from django.urls import reverse
         from ..units import token
         self.client.force_login(self.hr)
-        self.client.post(reverse('hr:employee_edit', args=[self.in_a.pk]), {
+        self.client.post(reverse('hr:production_employee_edit', args=[self.in_a.pk]), {
             'employee_number': 'E-1', 'last_name': 'Alfa', 'first_name': 'Ann', 'employment_type': 'staff',
             'joined_on': '2026-01-01', 'left_on': '2026-03-15', 'department': token(self.dept_a),
             'title': 'Technician', 'from_day': '2026-01-01', 'version': '1'})

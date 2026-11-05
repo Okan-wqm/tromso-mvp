@@ -155,6 +155,12 @@ class SplitTests(PeopleTestCase):
         self.assertEqual(offered('hr:production_employee_create'), {'production'})
         self.assertEqual(offered('hr:employee_create'), {'office'})
 
+    def test_a_move_offers_every_department_so_a_person_can_change_sides(self):
+        form = self.client.get(reverse('hr:production_employee_edit', args=[self.in_a.pk])).context['form']
+        kinds = {value.split(':')[0] for _group, options in form.fields['department'].choices[1:]
+                 for value, _label in options}
+        self.assertEqual(kinds, {'production', 'office'})
+
     def test_a_person_created_in_production_opens_in_production(self):
         response = self.client.post(reverse('hr:production_employee_create'), {
             'employee_number': 'E-50', 'first_name': 'New', 'last_name': 'Person', 'employment_type': 'staff',

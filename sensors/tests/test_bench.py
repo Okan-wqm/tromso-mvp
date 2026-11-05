@@ -29,7 +29,7 @@ class BenchTests(SensorsCase):
             self.assertEqual(cursor.fetchone()[0], 2 * 1440)
         report = out.getvalue()
         for words in ('raw rows: 2880', 'hour rollup rows:', 'chart of one channel over the span:',
-                      'channels over seven days:', 'latest of 2 channels:'):
+                      'channels over seven days:', 'replay of seven days hourly:', 'latest of 2 channels:'):
             self.assertIn(words, report)
 
     def test_ten_thousand_ingest_writes_leave_the_activity_log_alone(self):

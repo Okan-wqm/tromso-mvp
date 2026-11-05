@@ -15,27 +15,28 @@ from . import SensorsCase
 class BenchTests(SensorsCase):
     def test_it_refuses_an_unconfirmed_database(self):
         with self.assertRaises(CommandError):
-            call_command('bench_sensors', '--channels', '1', '--days', '1', stdout=StringIO())
+            call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '1', stdout=StringIO())
         with self.assertRaises(CommandError):
-            call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', 'balik',
+            call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '1', '--confirm-database', 'balik',
                          stdout=StringIO())
 
     def test_a_small_run_writes_readings_and_reports_the_figures(self):
         out = StringIO()
-        call_command('bench_sensors', '--channels', '2', '--days', '1', '--interval', '60',
+        call_command('bench_sensors', '--channels', '2', '--days', '1', '--interval', '60', '--frames', '30',
                      '--confirm-database', connection.settings_dict['NAME'], stdout=out)
         with connection.cursor() as cursor:
             cursor.execute('SELECT count(*) FROM sensors_reading WHERE channel_no >= 1000000')
             self.assertEqual(cursor.fetchone()[0], 2 * 1440)
         report = out.getvalue()
         for words in ('raw rows: 2880', 'hour rollup rows:', 'chart of one channel over the span:',
-                      'channels over seven days:', 'replay of seven days hourly:', 'replay page of 2000 frames at one minute:',
-                      'diagrams of 2000 frames at one minute:', 'latest of 2 channels:'):
+                      'channels over seven days:', 'replay of seven days hourly:', 'replay page of 30 frames at one minute:',
+                      'diagrams of 30 frames at one minute:', "at the readings' resolution", "at the parameters' decimals",
+                      'latest of 2 channels:'):
             self.assertIn(words, report)
 
     def test_ten_thousand_ingest_writes_leave_the_activity_log_alone(self):
         revision, rows = audit.revision(), AuditLog.objects.count()
-        call_command('bench_sensors', '--channels', '1', '--days', '7', '--interval', '60',
+        call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '7', '--interval', '60',
                      '--confirm-database', connection.settings_dict['NAME'], stdout=StringIO())
         self.assertEqual((audit.revision(), AuditLog.objects.count()), (revision, rows))
 
@@ -43,17 +44,17 @@ class BenchTests(SensorsCase):
         # A multi-row insert that meets a row in a compressed chunk would lose the rest silently (TimescaleDB 2.17.2):
         # the command refuses a range that holds rows, unless told to delete them first.
         name = connection.settings_dict['NAME']
-        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
+        call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
         with self.assertRaises(CommandError):
-            call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
-        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, '--drop',
+            call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
+        call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '1', '--confirm-database', name, '--drop',
                      stdout=StringIO())
 
     def test_measure_only_times_what_is_there_and_writes_nothing(self):
         name = connection.settings_dict['NAME']
-        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
+        call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
         out = StringIO()
-        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, '--measure-only',
+        call_command('bench_sensors', '--frames', '10', '--channels', '1', '--days', '1', '--confirm-database', name, '--measure-only',
                      stdout=out)
         self.assertIn('written: 0 rows', out.getvalue())
         self.assertIn('raw rows: 1440', out.getvalue())

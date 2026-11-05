@@ -185,7 +185,7 @@ class TypeScriptTests(SimpleTestCase):
 
     ROOT = Path(settings.BASE_DIR)
     # Key names the browser reports, not text.
-    KEY_NAMES = {'Escape', 'Enter'}
+    KEY_NAMES = {'Escape', 'Enter', 'Delete', 'Backspace'}
 
     @classmethod
     def shipped(cls, root):

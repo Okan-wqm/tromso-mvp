@@ -1,5 +1,5 @@
 from django.contrib.staticfiles import finders
-from django.core.checks import Warning, register
+from django.core.checks import Error, Warning, register
 
 from . import catalogs
 
@@ -29,4 +29,18 @@ def catalogs_are_built(app_configs, **kwargs):
         Warning(f'The {catalogs.language_name(language)} catalog is not built or is older than its .po file.',
                 hint='Run `manage.py compile_catalogs`.', id='core.W002')
         for language in catalogs.languages() if not catalogs.is_built(language)
+    ]
+
+
+@register()
+def chemcore_matches(app_configs, **kwargs):
+    """The water-chemistry core must be the build chemcore/EXPECTED names: a stale or foreign core would give
+    the fish's safety numbers of another formula, so it stops the server (an Error, not a warning)."""
+    from farm.water import native
+    return [
+        Error(f'The water-chemistry core is not the expected build ({problem}).',
+              hint='Rebuild the image (docker/testrunner.Dockerfile); after a change to chemcore, run '
+                   'chemcore/scripts/gen_expected.sh and commit chemcore/EXPECTED.',
+              id='core.E001')
+        for problem in native.handshake_problems()
     ]

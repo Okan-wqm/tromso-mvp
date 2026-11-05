@@ -270,8 +270,9 @@ class ShownTests(SourcesCase):
         page = self.client.get(reverse('farm:water')).content.decode()
         self.assertRegex(page, r'unit sensor #\d+ · 1[2-9] s ago')
         card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
-        self.assertRegex(card, r'unit sensor #\d+ · 1[2-9] s ago')
-        self.assertRegex(card, r'system sensor #\d+ · 4[0-9] s ago')
+        # A card says the age in bands (monitoring/cards/render.py age_text): 12 s is "10 s ago", 40 s "40 s ago".
+        self.assertRegex(card, r'unit sensor #\d+ · 10 s ago')
+        self.assertRegex(card, r'system sensor #\d+ · 40 s ago')
 
 
 class SeriesCostTests(SourcesCase):

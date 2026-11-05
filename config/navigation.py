@@ -171,12 +171,14 @@ WORKSPACES = [
         # The production people: the HR pages of Company › HR served again for the people placed in a production
         # department (core.crud.Mount, hr.scope's realm): the same records, rules and log, one set. Last, so the other
         # branches' sections above it stay where they are. Attendance is read with the same right as Today, so a Today
-        # reader has it too. Team overview is shown to the people who lead production (a menu courtesy).
+        # reader has it too. Team overview is shown to the people who lead production (a menu courtesy). The number beside
+        # Leave requests is the pending requests the person may decide.
         Section(_('Team'), [
             Group(_('Time & attendance'), [
                 Entry(_('Today & attendance'), 'hr:production_today', 'user-check', 'hr.view_attendancerecord'),
                 Entry(_('Shift schedule'), 'hr:production_shiftassignment_list', 'calendar', 'hr.view_shiftassignment'),
-                Entry(_('Leave requests'), 'hr:production_leaverequest_list', 'calendar-off', 'hr.view_leaverequest'),
+                Entry(_('Leave requests'), 'hr:production_leaverequest_list', 'calendar-off', 'hr.view_leaverequest',
+                      badge='hr.read.pending_leave_badge'),
                 Entry(_('Attendance'), 'hr:production_attendancerecord_list', 'user-check', 'hr.view_attendancerecord'),
                 Entry(_('Team overview'), 'hr:production_overview', 'users', 'hr.view_shiftassignment', show_when=LEADS),
             ]),

@@ -2726,6 +2726,13 @@ msgstr "Onay numarası %(number)s"
 msgid "Approve"
 msgstr "Onayla"
 
+msgid "Approve the request"
+msgstr "Talebi onayla"
+
+#, python-format
+msgid "Approve the request of %(name)s, %(first)s to %(last)s?"
+msgstr "%(name)s adlı kişinin %(first)s – %(last)s talebi onaylansın mı?"
+
 msgid "Approved"
 msgstr "Onaylanan"
 
@@ -7781,6 +7788,12 @@ msgstr "Bir ilçe, ertesi yılın 1 Mart’ını e-postayla belirtiyor (Møre og
 msgid "One person’s plan for one day: the shift they start that day, or none for planned off."
 msgstr "Bir kişinin bir günlük planı: o gün başladığı vardiya, ya da planlı izin için hiçbiri."
 
+#, python-format
+msgid "One planned shift of the person in these days must be covered by someone else:"
+msgid_plural "%(shifts)s planned shifts of the person in these days must be covered by someone else:"
+msgstr[0] "Kişinin bu günlerdeki bir planlı vardiyası başka biri tarafından karşılanmalı:"
+msgstr[1] "Kişinin bu günlerdeki %(shifts)s planlı vardiyası başka biri tarafından karşılanmalı:"
+
 msgid "One probe that measures several water parameters."
 msgstr "Birden çok su parametresini ölçen tek prob."
 
@@ -11243,6 +11256,9 @@ msgstr ""
 
 msgid "The person cannot clock out before they clocked in."
 msgstr "Kişi girişinden önce çıkış yapamaz."
+
+msgid "The person has no planned shifts in these days."
+msgstr "Kişinin bu günlerde planlı vardiyası yok."
 
 msgid "The person is on approved leave on this day."
 msgstr "Kişi bu günde onaylı izinde."

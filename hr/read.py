@@ -11,15 +11,16 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from core.models import in_tree_order
+from core.navigation import Badge
 from farm.clocks import clocks
 from farm.models import ProductionDepartment
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import clock, leave, rules, scope, units
-from .models import (AttendanceRecord, Employee, Holiday, OfficeDepartment, Posting, SchedulingSettings,
+from .models import (AttendanceRecord, Employee, Holiday, LeaveRequest, OfficeDepartment, Posting, SchedulingSettings,
                      ShiftAssignment)
-
+from .models.leave import LeaveStatus
 from .scope import OFFICE, PRODUCTION      # the two kinds of department are the two realms
 
 
@@ -524,3 +525,27 @@ def org_tree(user, realm):
         root.children.append(Node(PRODUCTION_ROOT, _('Production'), direct=production, total=production))
     root.total = sum(child.total for child in root.children)
     return root
+
+
+# ---- deciding leave ------------------------------------------------------------------------------------------------
+def leave_impact(user, leave_request):
+    """[(day, shift)]: the shifts the person is planned on inside the request's days (as far as the viewer reaches them), for
+    the decider to replace. Information only: an approval is never blocked by it (the rules refuse a shift on approved leave
+    when the plan is saved, hr.rules)."""
+    plans = ShiftAssignment.objects.filter(employee=leave_request.employee, shift__isnull=False,
+                                           day__range=(leave_request.first_day, leave_request.last_day))
+    return [(row.day, row.shift) for row in scope.by_day(user, plans, 'employee', 'day').select_related('shift')
+            .order_by('day')]
+
+
+LEAVE_DECIDER = 'hr.change_leaverequest'
+
+
+def pending_leave_badge(user):
+    """The number beside Production › Team › Leave requests: the pending requests of production people the viewer may decide
+    (Edit on leave, in their reach on the request's first day, never their own: hr.services.can_decide). Not polled."""
+    if not user.has_perm(LEAVE_DECIDER):
+        return Badge(0, '')
+    waiting = scope.by_day(user, LeaveRequest.objects.filter(status=LeaveStatus.PENDING), 'employee', 'first_day',
+                           PRODUCTION).exclude(employee__user=user)
+    return Badge(waiting.count(), '')

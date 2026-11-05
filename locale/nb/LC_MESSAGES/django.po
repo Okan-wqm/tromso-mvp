@@ -2725,6 +2725,13 @@ msgstr "Godkjenningsnummer %(number)s"
 msgid "Approve"
 msgstr "Godkjenn"
 
+msgid "Approve the request"
+msgstr "Godkjenn søknaden"
+
+#, python-format
+msgid "Approve the request of %(name)s, %(first)s to %(last)s?"
+msgstr "Godkjenne søknaden fra %(name)s, %(first)s til %(last)s?"
+
 msgid "Approved"
 msgstr "Godkjente"
 
@@ -7771,6 +7778,12 @@ msgstr "Ett fylke oppgir 1. mars året etter, på e-post (Møre og Romsdal, 2027
 msgid "One person’s plan for one day: the shift they start that day, or none for planned off."
 msgstr "Én persons plan for én dag: skiftet de starter den dagen, eller ingen for planlagt fri."
 
+#, python-format
+msgid "One planned shift of the person in these days must be covered by someone else:"
+msgid_plural "%(shifts)s planned shifts of the person in these days must be covered by someone else:"
+msgstr[0] "Ett planlagt skift for personen i disse dagene må dekkes av noen andre:"
+msgstr[1] "%(shifts)s planlagte skift for personen i disse dagene må dekkes av noen andre:"
+
 msgid "One probe that measures several water parameters."
 msgstr "Én sonde som måler flere vannparametere."
 
@@ -11232,6 +11245,9 @@ msgstr ""
 
 msgid "The person cannot clock out before they clocked in."
 msgstr "Personen kan ikke stemple ut før de stemplet inn."
+
+msgid "The person has no planned shifts in these days."
+msgstr "Personen har ingen planlagte skift i disse dagene."
 
 msgid "The person is on approved leave on this day."
 msgstr "Personen har godkjent permisjon denne dagen."

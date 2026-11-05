@@ -20,7 +20,8 @@ SESSION_KEY = 'workspace'
 @dataclass(frozen=True)
 class Badge:
     """A number beside a menu entry (the unread messages), and the address of a fragment that renders the
-    number again (polled by frontend/poll.ts); no address for a panel's total, which is not polled."""
+    number again (polled by frontend/poll.ts); no address for one that is not polled (a panel's total, the pending leave
+    requests: they change on the next page)."""
     count: int
     url: str
 

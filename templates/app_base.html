@@ -51,7 +51,7 @@
         {% for entry in group.entries %}
         <a class="rail-link" href="{{ entry.url }}" title="{{ entry.label }}"{% if entry.current %} aria-current="page"{% endif %}>
           {% include "icons/_icon.html" with name=entry.icon %}<span class="rail-label">{{ entry.label }}</span>
-          {% if entry.badge %}<span class="rail-badge" data-poll="{{ entry.badge.url }}" data-poll-every="30">{{ entry.badge.text }}</span>{% endif %}
+          {% if entry.badge %}<span class="rail-badge"{% if entry.badge.url %} data-poll="{{ entry.badge.url }}" data-poll-every="30"{% endif %}>{{ entry.badge.text }}</span>{% endif %}
         </a>
         {% endfor %}
         {% endfor %}

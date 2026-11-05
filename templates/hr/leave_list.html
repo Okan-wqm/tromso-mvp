@@ -32,7 +32,7 @@
         <td>{% if row.request.decided_by %}{{ row.request.decided_by.get_full_name|default:row.request.decided_by.get_username }}{% elif row.request.decided_at %}{% trans "Granted at once" %}{% else %}–{% endif %}</td>
         <td class="row-actions">
           {% if row.can_decide %}
-          <form method="post" action="{% url 'hr:leaverequest_approve'|mounted:request row.request.pk %}" class="inline-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit" class="icon-button" title="{% trans 'Approve' %}">{% include "icons/_icon.html" with name="user-check" %}<span class="sr-only">{% trans "Approve" %}</span></button></form>
+          <a class="icon-button" href="{% url 'hr:leaverequest_approve'|mounted:request row.request.pk %}" data-modal title="{% trans 'Approve' %}">{% include "icons/_icon.html" with name="user-check" %}<span class="sr-only">{% trans "Approve" %}</span></a>
           <a class="icon-button icon-button-danger" href="{% url 'hr:leaverequest_reject'|mounted:request row.request.pk %}" data-modal title="{% trans 'Reject' %}">{% include "icons/_icon.html" with name="x" %}<span class="sr-only">{% trans "Reject" %}</span></a>
           {% endif %}
           {% if row.can_cancel %}

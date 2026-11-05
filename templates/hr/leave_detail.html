@@ -18,7 +18,7 @@
   </dl>
   <div class="form-actions">
     {% if row.can_decide %}
-    <form method="post" action="{% url 'hr:leaverequest_approve'|mounted:request object.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-inline">{% trans "Approve" %}</button></form>
+    <a class="button button-inline" href="{% url 'hr:leaverequest_approve'|mounted:request object.pk %}" data-modal>{% trans "Approve" %}</a>
     <a class="button button-ghost" href="{% url 'hr:leaverequest_reject'|mounted:request object.pk %}" data-modal>{% trans "Reject" %}</a>
     {% endif %}
     {% if row.can_cancel %}

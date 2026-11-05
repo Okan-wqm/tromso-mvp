@@ -118,11 +118,18 @@ def _run(request, call, done_message):
     return _back(request)
 
 
-@require_POST
 def approve(request, pk):
+    """GET: the dialog that lists the person's planned shifts inside the request (hr.read.leave_impact), to replace them;
+    POST: approves the request. The shifts never block the approval."""
     item = leave_request(request, pk)
-    return _run(request, lambda: services.decide_leave(request.user, item, True, request.POST.get('note', '')),
-                _('The request was approved.'))
+    if request.method == 'POST':
+        return _run(request, lambda: services.decide_leave(request.user, item, True, request.POST.get('note', '')),
+                    _('The request was approved.'))
+    if not services.can_decide(request.user, item):
+        raise PermissionDenied
+    return render_page(request, 'hr/leave_approve.html', {'object': item, 'title': _('Approve the request'),
+                                                          'group': _('Leave requests'),
+                                                          'impact': read.leave_impact(request.user, item)})
 
 
 def reject(request, pk):

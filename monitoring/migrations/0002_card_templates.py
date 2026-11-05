@@ -5,7 +5,7 @@ the global rule (every unit gets Simple), and the trigger that keeps any writer 
 change to a built-in is a migration that disables the trigger around its own update.
 
 A refusal of the trigger is `check_violation`, so the ORM raises it as IntegrityError like a constraint. A change of the
-user columns alone (created_by, updated_by, deleted_by: SET NULL when a person is removed) is let through."""
+bookkeeping columns alone (who made, changed or deleted it, and when) is let through."""
 
 import django.db.models.deletion
 import django.db.models.fields.json
@@ -47,7 +47,11 @@ BUILTINS = {
 }
 GLOBAL_RULE = '5f1c2a6e-0000-4000-8000-00000000a001'
 
-FROZEN = """
+# What a built-in may still change: who made, changed or deleted it (SET NULL when a person is removed) and when it
+# was made or changed (a test run's serialized rollback writes the times back at millisecond precision).
+BOOKKEEPING = "'created_by_id' - 'updated_by_id' - 'deleted_by_id' - 'created_at' - 'updated_at'"
+
+FROZEN = f"""
 CREATE FUNCTION monitor_card_template_builtin() RETURNS trigger AS $$
 BEGIN
     IF TG_OP = 'DELETE' THEN
@@ -61,8 +65,8 @@ BEGIN
             USING ERRCODE = 'check_violation';
     END IF;
     IF OLD.is_builtin
-       AND (to_jsonb(NEW) - 'created_by_id' - 'updated_by_id' - 'deleted_by_id')
-           IS DISTINCT FROM (to_jsonb(OLD) - 'created_by_id' - 'updated_by_id' - 'deleted_by_id') THEN
+       AND (to_jsonb(NEW) - {BOOKKEEPING})
+           IS DISTINCT FROM (to_jsonb(OLD) - {BOOKKEEPING}) THEN
         RAISE EXCEPTION 'card template %: a built-in is never changed; copy it', OLD.name
             USING ERRCODE = 'check_violation';
     END IF;

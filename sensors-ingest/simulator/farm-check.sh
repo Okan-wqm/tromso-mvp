@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# The farm flow end to end: a database with 40 water devices (farm_seed.py stands in for the devices the Sensors pages
-# create for the live run), the device list written from the configuration view (farm-config.sh), the compose
+# The farm flow end to end on its OWN database: 2 systems and 38 tanks (farm_fixture.py), the demo sensors made by
+# Django (manage.py sensors_demo_setup, sensor_broker_sync), the device list written from the configuration view
+# (farm-config.sh), the compose
 # services (broker, ingest, Node-RED) under the project sensors-farm, and farm-check.js on the MQTT side. Proves for
 # each parameter code: values sent in the window = samples the database accounts for (rows + open runs), and nothing
 # dead-lettered. Own database sensors_farm; everything removed at the end (KEEP=1 keeps it).
@@ -29,12 +30,12 @@ trap cleanup EXIT
 
 rm -rf "$ST"; mkdir -p "$ST/secrets" "$ST/broker-auth" "$ST/farm"
 rand() { head -c 18 /dev/urandom | base64 | tr -d '/+='; }
-DBPW=$(rand); INGPW=$(rand); SIMPW=$(rand); OBSPW=$(rand)
+DBPW=$(rand); INGPW=$(rand); SIMPW=$(rand)
 printf '%s\n' "$DBPW" > "$ST/secrets/sensors_ingest_db"; printf '%s\n' "$INGPW" > "$ST/secrets/mqtt_ingest"
 printf '%s\n' "$SIMPW" > "$ST/secrets/sim_mqtt"
+# the passwd lines operations keep themselves (sensor_broker_sync --extra): the ingest, and the A2 field simulator
 HASH="docker run --rm -v $(win "$PWD/sensors-ingest/spikes"):/s python:3.12-slim python -I /s/s0f_mosquitto_hash.py line"
-{ $HASH ingest "$INGPW"; $HASH simulator "$SIMPW"; $HASH observer "$OBSPW"; } > "$ST/broker-auth/passwd"
-printf 'user ingest\ntopic read farm/#\nuser simulator\ntopic write farm/#\ntopic write sim/#\nuser observer\ntopic read farm/#\n' > "$ST/broker-auth/acl"
+{ $HASH ingest "$INGPW"; $HASH simulator "$SIMPW"; } > "$ST/extra_passwd"
 
 "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1
 docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik "$PG_IMAGE" psql -h db -U balik -d postgres -q \
@@ -44,9 +45,12 @@ docker run --rm --network balik-ciftligi_default -v "$REPO:/app" -w /app -e DB_H
 sql "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sensors_ingest_e2e') THEN
   CREATE ROLE sensors_ingest_e2e LOGIN IN ROLE sensors_ingest; END IF; END \$\$;
   ALTER ROLE sensors_ingest_e2e PASSWORD '$DBPW'" >/dev/null
-docker run --rm -v "$REPO:/w" python:3.12-slim python -I /w/sensors-ingest/simulator/farm_seed.py > "$ST/seed.sql"
-docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik -v "$(win "$PWD/$ST"):/s:ro" "$PG_IMAGE" \
-  psql -h db -U balik -d $E2E_DB -q -f /s/seed.sql >/dev/null || { echo "seed failed"; exit 1; }
+# the farm and its demo sensors, as the live run makes them: tanks and systems, then Django's own setup and broker sync
+DJ=(docker run --rm --network balik-ciftligi_default -v "$REPO:/app" -w /app -e DB_HOST=db -e DB_PORT=5432
+  -e DB_NAME=$E2E_DB -e SENSORS_BROKER_AUTH_DIR=/app/$ST/broker-auth balik-testrunner:latest)
+"${DJ[@]}" python manage.py shell -c "exec(open('sensors-ingest/simulator/farm_fixture.py').read())" || exit 1
+"${DJ[@]}" python manage.py sensors_demo_setup --confirm --secret-file /app/$ST/secrets/sim_farm || exit 1
+"${DJ[@]}" python manage.py sensor_broker_sync --extra /app/$ST/extra_passwd || exit 1
 bash sensors-ingest/simulator/farm-config.sh $E2E_DB "$ST/farm/farm-devices.json"
 
 "${COMPOSE[@]}" build -q sensors-ingest || exit 1
@@ -61,7 +65,7 @@ totals() { sql "SELECT c.quantity || ' ' || (coalesce(sum((SELECT sum(n) FROM se
   GROUP BY c.quantity ORDER BY 1"; }
 LOG="$ST/check.log"
 docker run --rm --network sensors-farm_e2e -v "$(win "$PWD/sensors-ingest/simulator"):/sim:ro" -v "$(win "$PWD/$ST/farm"):/farm:ro" \
-  -e BROKER=mqtt://mosquitto:1883 -e MQTT_USER=observer -e MQTT_PASSWORD="$OBSPW" -e NODE_RED=http://node-red:1880 \
+  -e BROKER=mqtt://mosquitto:1883 -e MQTT_USER=ingest -e MQTT_PASSWORD="$INGPW" -e NODE_RED=http://node-red:1880 \
   -e FARM_FILE=/farm/farm-devices.json -e SECONDS="$SECS" --entrypoint node "$NODERED" /sim/farm-check.js > "$LOG" 2>&1 &
 CHK=$!
 until grep -q "MARK before" "$LOG" || ! kill -0 $CHK 2>/dev/null; do sleep 0.5; done
@@ -80,6 +84,10 @@ for q in $(echo "$COUNTS" | grep -o '"[a-z0-9_]*"' | tr -d '"'); do
   D=$(( ${A:-0} - ${B:-0} ))
   printf '%-20s %6s %6s\n' "$q" "$SENT" "$D"
   check "$([ "$SENT" = "$D" ] && echo 1)" "$q: every value sent is stored or suppressed ($D of $SENT)"
+done
+for q in temperature_c oxygen_mg_l oxygen_saturation_pct ph alkalinity_mg_l co2_mg_l tan_mg_l nitrite_n_mg_l nitrate_n_mg_l tgp_pct salinity_ppt turbidity_ntu; do
+  R=$(sql "SELECT count(*) FROM sensors_reading r JOIN sensors_channel c ON c.channel_no = r.channel_no WHERE c.quantity = '$q'")
+  check "$([ "${R:-0}" -gt 0 ] && echo 1)" "$q: $R rows stored"
 done
 check "$([ "$DL0" = "$DL1" ] && [ "$DL1" = 0 ] && echo 1)" "nothing dead-lettered ($DL1)"
 echo "$FAILS failed"

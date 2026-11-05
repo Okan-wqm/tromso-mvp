@@ -1364,6 +1364,9 @@ msgstr ""
 "Pano, adı olan bir duvar ekranıdır: gösterdiği birimler ve her kartın nasıl çizildiği. İzleme'yi "
 "okuyabilen herkes açabilir."
 
+msgid "A built-in template is never deleted; copy it to make one of your own."
+msgstr "Yerleşik bir şablon asla silinmez; kendinize ait bir tane yapmak için kopyalayın."
+
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "Kapasitenin birimi, birimin de kapasitesi olmalı."
 
@@ -1692,6 +1695,11 @@ msgstr ""
 msgid "A round takes at most %(rows)d rows."
 msgstr "Bir tur en çok %(rows)d satır alır."
 
+msgid "A rule is for one unit, system, system type, species or kind, or for every unit."
+msgstr ""
+"Bir kural tek bir birim, sistem, sistem türü, tür veya birim çeşidi içindir ya da her birim "
+"içindir."
+
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "Bir örnek, tartılan balık sayısı ile toplam ağırlıklarıdır."
 
@@ -1804,6 +1812,9 @@ msgstr "Bir sıcaklık sütunu %(low)s ile %(high)s °C arasındadır."
 
 msgid "A template"
 msgstr "Bir şablon"
+
+msgid "A template cannot flip to itself."
+msgstr "Bir şablon kendisine geçiş yapamaz."
 
 msgid "A template has no tanks: it is a design to copy."
 msgstr "Şablonun tankı yoktur: kopyalanacak bir tasarımdır."
@@ -2398,6 +2409,9 @@ msgstr "Analog"
 msgid "Analysis"
 msgstr "Analiz"
 
+msgid "Another card template already has this name."
+msgstr "Bu ad başka bir kart şablonunda zaten var."
+
 msgid "Another document in the library has this DOI."
 msgstr "Kütüphanedeki başka bir belge bu DOI’ye sahip."
 
@@ -2953,6 +2967,9 @@ msgstr ""
 msgid "Browser default"
 msgstr "Tarayıcı varsayılanı"
 
+msgid "Built in"
+msgstr "Yerleşik"
+
 msgid "Buoyancy"
 msgstr "Yüzerlik"
 
@@ -3112,6 +3129,9 @@ msgstr ""
 msgid "Card"
 msgstr "Kart"
 
+msgid "Card width"
+msgstr "Kart genişliği"
+
 msgid "Cardiomyopathy syndrome (CMS)"
 msgstr "Kardiyomiyopati sendromu (CMS)"
 
@@ -3120,6 +3140,9 @@ msgstr "Kartlar"
 
 msgid "Cards are"
 msgstr "Kartlar"
+
+msgid "Cards are drawn with"
+msgstr "Kartların şablonu"
 
 msgid "Cards can be added once the board is created."
 msgstr "Kartlar, pano oluşturulduktan sonra eklenebilir."
@@ -3401,11 +3424,17 @@ msgstr "Sütunlar"
 msgid "Combination %(number)d is of one treatment: a combination is of at least two."
 msgstr "%(number)d numaralı kombinasyon tek bir tedavidir: bir kombinasyon en az iki tedaviden oluşur."
 
+msgid "Comfortable"
+msgstr "Geniş"
+
 msgid "Common name"
 msgstr "Yaygın ad"
 
 msgid "Communication"
 msgstr "İletişim"
+
+msgid "Compact"
+msgstr "Sıkı"
 
 msgid "Compacted clay"
 msgstr "Sıkıştırılmış kil"
@@ -4400,6 +4429,14 @@ msgstr ""
 "Silinen kayıtlar yalnızca silinmiş olarak işaretlenir; bu yüzden tablolarda durur ve burada "
 "sayılır."
 
+msgid "Every unit"
+msgstr "Her birim"
+
+msgid "Every unit no other rule names gets this template: give the global rule another template first."
+msgstr ""
+"Başka bir kuralın adlandırmadığı her birim bu şablonu alır: önce genel kurala başka bir şablon "
+"verin."
+
 msgid ""
 "Every unit that held fish is listed, eggs and larvae included; § 58 asks for the units of start-"
 "feeding fry or older (D-8): leave out those that were not."
@@ -4907,6 +4944,9 @@ msgstr "Kilitli: protokol atanmış. Değiştirmek için kopyalayın."
 msgid "Fixed: the row has started. End it and add another to change it."
 msgstr "Kilitli: satır başladı. Değiştirmek için onu sona erdirip yeni bir satır ekleyin."
 
+msgid "Flip link shows"
+msgstr "Geçiş bağlantısının gösterdiği"
+
 msgid "Floating"
 msgstr "Yüzer"
 
@@ -5192,6 +5232,9 @@ msgstr "Tohumu girin: dağıtımın yinelenebileceği bir tam sayı."
 
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Önce sıcaklık sütunlarını girin: tablo onlara göre oluşur."
+
+msgid "Give the template a name."
+msgstr "Şablona bir ad verin."
 
 msgid "Give the volume to follow the amounts."
 msgstr "Miktarları izlemek için hacmi girin."
@@ -5901,6 +5944,12 @@ msgstr "Enlem ve boylam birlikte girilmelidir."
 
 msgid "Latitude is required for a sea cage."
 msgstr "Deniz kafesi için enlem zorunludur."
+
+msgid "Layout"
+msgstr "Yerleşim"
+
+msgid "Layout version"
+msgstr "Yerleşim sürümü"
 
 msgid "Lead"
 msgstr "Yürütücü"
@@ -7322,6 +7371,9 @@ msgstr "%(days)d günden eski işlemler iptal edilemez."
 
 msgid "Operator"
 msgstr "İşletmeci"
+
+msgid "Operator view"
+msgstr "Operatör görünümü"
 
 msgid "Optional"
 msgstr "İsteğe bağlı"
@@ -9445,6 +9497,9 @@ msgstr ""
 msgid "System (its loop)"
 msgstr "Sistem (döngüsü)"
 
+msgid "System type"
+msgstr "Sistem türü"
+
 msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
 msgstr "Sistemik Flavobacterium psychrophilum enfeksiyonu (gökkuşağı alabalığı)"
 
@@ -9979,6 +10034,9 @@ msgstr ""
 #, python-format
 msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
 msgstr "%(tank)s balıkları 0. günde tartılmamış: yem dönüşümlerinin başlangıç değeri eksik."
+
+msgid "The global rule is never deleted: every unit must get a template. Change its template instead."
+msgstr "Genel kural asla silinmez: her birimin bir şablonu olmalı. Bunun yerine şablonunu değiştirin."
 
 #, python-format
 msgid "The group name %(name)s is too long."
@@ -10768,6 +10826,9 @@ msgstr "Toplam ağırlıkları (kg)"
 msgid "There is already a rule for this handling and species."
 msgstr "Bu elleçleme ve tür için zaten bir kural var."
 
+msgid "There is already a rule for this."
+msgstr "Bunun için zaten bir kural var."
+
 msgid "Thermal delousing"
 msgstr "Termal bitten arındırma"
 
@@ -11219,6 +11280,9 @@ msgstr ""
 
 msgid "Unit cost"
 msgstr "Birim maliyet"
+
+msgid "Unit kind"
+msgstr "Birim çeşidi"
 
 msgid "Unit of its levels"
 msgstr "Düzeylerinin birimi"
@@ -12067,6 +12131,18 @@ msgstr "hesaplanan %(calculated)s"
 
 msgid "card of a monitoring board"
 msgstr "izleme panosu kartı"
+
+msgid "card template"
+msgstr "kart şablonu"
+
+msgid "card template rule"
+msgstr "kart şablonu kuralı"
+
+msgid "card template rules"
+msgstr "kart şablonu kuralları"
+
+msgid "card templates"
+msgstr "kart şablonları"
 
 msgid "cards of a monitoring board"
 msgstr "izleme panosu kartları"

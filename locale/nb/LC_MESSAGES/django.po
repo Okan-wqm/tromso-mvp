@@ -1361,6 +1361,9 @@ msgstr ""
 "Et panel er en navngitt veggskjerm: enhetene den viser og hvordan hvert kort tegnes. Alle som kan"
 " lese Overvåking kan åpne det."
 
+msgid "A built-in template is never deleted; copy it to make one of your own."
+msgstr "En innebygd mal slettes aldri; kopier den for å lage din egen."
+
 msgid "A capacity needs its unit, and a unit its capacity."
 msgstr "En kapasitet trenger sin enhet, og en enhet sin kapasitet."
 
@@ -1690,6 +1693,11 @@ msgstr ""
 msgid "A round takes at most %(rows)d rows."
 msgstr "En runde tar høyst %(rows)d rader."
 
+msgid "A rule is for one unit, system, system type, species or kind, or for every unit."
+msgstr ""
+"En regel gjelder én enhet, ett system, én systemtype, én art eller én type enhet, eller alle "
+"enheter."
+
 msgid "A sample is the number of fish weighed and their weight together."
 msgstr "En prøve er antall fisk veid og samlet vekt."
 
@@ -1804,6 +1812,9 @@ msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
 
 msgid "A template"
 msgstr "En mal"
+
+msgid "A template cannot flip to itself."
+msgstr "En mal kan ikke bytte til seg selv."
 
 msgid "A template has no tanks: it is a design to copy."
 msgstr "En mal har ingen kar: den er et design som skal kopieres."
@@ -2397,6 +2408,9 @@ msgstr "Analog"
 msgid "Analysis"
 msgstr "Analyse"
 
+msgid "Another card template already has this name."
+msgstr "En annen kortmal har allerede dette navnet."
+
 msgid "Another document in the library has this DOI."
 msgstr "Et annet dokument i biblioteket har denne DOI-en."
 
@@ -2951,6 +2965,9 @@ msgstr ""
 msgid "Browser default"
 msgstr "Nettleserens standard"
 
+msgid "Built in"
+msgstr "Innebygd"
+
 msgid "Buoyancy"
 msgstr "Flyteevne"
 
@@ -3110,6 +3127,9 @@ msgstr ""
 msgid "Card"
 msgstr "Kort"
 
+msgid "Card width"
+msgstr "Kortbredde"
+
 msgid "Cardiomyopathy syndrome (CMS)"
 msgstr "Kardiomyopatisyndrom (CMS)"
 
@@ -3118,6 +3138,9 @@ msgstr "Kort"
 
 msgid "Cards are"
 msgstr "Kortene er"
+
+msgid "Cards are drawn with"
+msgstr "Kortene tegnes med"
 
 msgid "Cards can be added once the board is created."
 msgstr "Kort kan legges til når panelet er opprettet."
@@ -3395,11 +3418,17 @@ msgstr "Kolonner"
 msgid "Combination %(number)d is of one treatment: a combination is of at least two."
 msgstr "Kombinasjon %(number)d har én behandling: en kombinasjon har minst to."
 
+msgid "Comfortable"
+msgstr "Romslig"
+
 msgid "Common name"
 msgstr "Vanlig navn"
 
 msgid "Communication"
 msgstr "Kommunikasjon"
+
+msgid "Compact"
+msgstr "Kompakt"
 
 msgid "Compacted clay"
 msgstr "Komprimert leire"
@@ -4397,6 +4426,14 @@ msgstr ""
 "Alle tabeller applikasjonen lagrer, slik de er i databasen. Ingenting her kan endres. Slettede "
 "poster er bare merket som slettet, så de ligger fortsatt i tabellene og telles her."
 
+msgid "Every unit"
+msgstr "Alle enheter"
+
+msgid "Every unit no other rule names gets this template: give the global rule another template first."
+msgstr ""
+"Alle enheter som ingen annen regel nevner får denne malen: gi den globale regelen en annen mal "
+"først."
+
 msgid ""
 "Every unit that held fish is listed, eggs and larvae included; § 58 asks for the units of start-"
 "feeding fry or older (D-8): leave out those that were not."
@@ -4899,6 +4936,9 @@ msgstr "Låst: protokollen er tildelt. Dupliser den for å endre den."
 msgid "Fixed: the row has started. End it and add another to change it."
 msgstr "Låst: raden har startet. Avslutt den og legg til en ny for å endre den."
 
+msgid "Flip link shows"
+msgstr "Byttelenken viser"
+
 msgid "Floating"
 msgstr "Flytende"
 
@@ -5182,6 +5222,9 @@ msgstr "Oppgi frøet: et helt tall fordelingen kan gjentas fra."
 
 msgid "Give the temperature columns first: the grid follows them."
 msgstr "Oppgi temperaturkolonnene først: rutenettet følger dem."
+
+msgid "Give the template a name."
+msgstr "Gi malen et navn."
 
 msgid "Give the volume to follow the amounts."
 msgstr "Oppgi volumet for å følge mengdene."
@@ -5889,6 +5932,12 @@ msgstr "Breddegrad og lengdegrad må oppgis sammen."
 
 msgid "Latitude is required for a sea cage."
 msgstr "Breddegrad er påkrevd for en merd."
+
+msgid "Layout"
+msgstr "Oppsett"
+
+msgid "Layout version"
+msgstr "Oppsettversjon"
 
 msgid "Lead"
 msgstr "Leder"
@@ -7314,6 +7363,9 @@ msgstr "Operasjoner eldre enn %(days)d dager kan ikke annulleres."
 
 msgid "Operator"
 msgstr "Driftsselskap"
+
+msgid "Operator view"
+msgstr "Operatørvisning"
 
 msgid "Optional"
 msgstr "Valgfritt"
@@ -9436,6 +9488,9 @@ msgstr ""
 msgid "System (its loop)"
 msgstr "System (kretsløpet)"
 
+msgid "System type"
+msgstr "Systemtype"
+
 msgid "Systemic Flavobacterium psychrophilum infection (rainbow trout)"
 msgstr "Systemisk infeksjon med Flavobacterium psychrophilum (regnbueørret)"
 
@@ -9969,6 +10024,9 @@ msgstr ""
 #, python-format
 msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
 msgstr "Fisken i %(tank)s er ikke veid på dag 0: grunnlaget for fôrutnyttelsen deres mangler."
+
+msgid "The global rule is never deleted: every unit must get a template. Change its template instead."
+msgstr "Den globale regelen slettes aldri: hver enhet må få en mal. Endre malen i stedet."
 
 #, python-format
 msgid "The group name %(name)s is too long."
@@ -10758,6 +10816,9 @@ msgstr "Samlet vekt (kg)"
 msgid "There is already a rule for this handling and species."
 msgstr "Det finnes allerede en regel for denne håndteringen og arten."
 
+msgid "There is already a rule for this."
+msgstr "Det finnes allerede en regel for dette."
+
 msgid "Thermal delousing"
 msgstr "Termisk avlusing"
 
@@ -11209,6 +11270,9 @@ msgstr ""
 
 msgid "Unit cost"
 msgstr "Enhetskostnad"
+
+msgid "Unit kind"
+msgstr "Type enhet"
 
 msgid "Unit of its levels"
 msgstr "Enhet for nivåene"
@@ -12059,6 +12123,18 @@ msgstr "beregnet %(calculated)s"
 
 msgid "card of a monitoring board"
 msgstr "kort på et overvåkingspanel"
+
+msgid "card template"
+msgstr "kortmal"
+
+msgid "card template rule"
+msgstr "kortmalregel"
+
+msgid "card template rules"
+msgstr "kortmalregler"
+
+msgid "card templates"
+msgstr "kortmaler"
 
 msgid "cards of a monitoring board"
 msgstr "kort på et overvåkingspanel"

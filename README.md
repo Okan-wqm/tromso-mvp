@@ -696,6 +696,24 @@ more than two large widgets, more than 16 widgets). An older layout version is u
 as upgraded, never changed in place; a fixture per version passes. The geometry is shared with the designer's TypeScript
 through `monitoring/tests/layout_vectors.json`, which both suites run.
 
+**Card templates in the database** (`monitoring/models.py`, migrations 0002 to 0004). `monitor_card_templates`: a name (unique
+among the live templates in any case, not blank), a description, whether it is built in, the layout's version (stamped in
+the layout too) and the layout (JSONB), and the template its flip link shows (`expanded`, never itself). The database holds
+the layout's shape (an object whose widgets are a list), at most 40 widgets, at most 32 KB and the version stamp, so a hand
+edit cannot store what no card can read; everything that needs the catalogue is the validator's. Three templates are built in
+(`monitoring/cards/builtin.py`, frozen the same in migration 0002, a test keeps them equal): **Simple** and **Detailed**, the
+cards as they were (each flips to the other), and **Operator view** (the oxygen and the temperature large and first, then
+O₂ %, pH and TAN; offered, not a default). A trigger refuses any insert of a built-in, any change and any delete of one,
+whoever writes; a CHECK allows only those three ids to be built in and never deleted. Copy a built-in to change it.
+`monitor_card_assignments`: which template a unit's card gets, a rule for one unit, system, system type (hatchery and nursery
+reachable here), species or unit kind, or with none the global rule (migration 0002 makes it: every unit gets Simple). One
+scope per rule and one live rule per scope (NULLs equal, so one global) are a CHECK and a partial unique index. A rule of a
+deleted unit, system or species stays and counts again on restore; deleting a template deletes its rules, detaches the
+boards' defaults and the templates that flip to it (each logged); a built-in and the template of the global rule cannot be
+deleted, nor the global rule. A board gets its default template and a card width (compact, automatic, comfortable); a
+board's card row its own template. Migration 0004 copies each board's default mode and each row's mode into the built-in
+templates; back, a built-in maps to its mode again. The mode columns stay for one release, so a rollback loses nothing.
+
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
 an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the

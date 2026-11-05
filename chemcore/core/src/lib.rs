@@ -4,6 +4,11 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
+mod digest {
+    include!(concat!(env!("OUT_DIR"), "/core_hash.rs"));
+}
+use digest::CORE_HASH;
+
 /// The crate's version (Cargo.toml).
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -14,5 +19,5 @@ pub const FORMULA_VERSION: u32 = 1;
 /// A digest of the core's source (every file of `src/`, line endings normalised), 16 hexadecimal digits: the
 /// server compares it with `chemcore/EXPECTED` at start (Django check core.E001), so a stale build never serves.
 pub fn core_hash() -> &'static str {
-    todo!()
+    CORE_HASH
 }

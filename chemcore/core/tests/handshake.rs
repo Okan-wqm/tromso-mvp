@@ -6,7 +6,12 @@ use std::path::Path;
 fn digest_of_sources() -> String {
     let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut names: Vec<String> = fs::read_dir(&source)
-        .map(|entries| entries.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().into_owned()).collect())
+        .map(|entries| {
+            entries
+                .filter_map(|e| e.ok())
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .collect()
+        })
         .unwrap_or_default();
     names.sort();
     let mut hash: u64 = 0xcbf2_9ce4_8422_2325;

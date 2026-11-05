@@ -4218,13 +4218,6 @@ msgstr "Departman"
 msgid "Departments"
 msgstr "Departmanlar"
 
-msgid ""
-"Departments of the company: the production departments appear here by themselves; add the office "
-"departments, such as Finance."
-msgstr ""
-"Şirketin departmanları: üretim departmanları burada kendiliğinden görünür; Finans gibi ofis "
-"departmanlarını siz ekleyin."
-
 msgid "Depth"
 msgstr "Derinlik"
 
@@ -11120,6 +11113,11 @@ msgstr "Not çok uzun."
 
 msgid "The number the company knows the person by."
 msgstr "Şirketin kişiyi tanıdığı numara."
+
+msgid ""
+"The office departments of the company, such as Finance. The production departments are under "
+"Production."
+msgstr "Şirketin ofis departmanları, örneğin Finans. Üretim departmanları Üretim altındadır."
 
 msgid "The official code is three capital letters, e.g. SAL."
 msgstr "Resmî tür kodu üç büyük harftir, örn. SAL."

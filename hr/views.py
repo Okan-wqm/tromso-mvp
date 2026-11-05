@@ -206,11 +206,14 @@ def team_overview(request):
 
 
 def organisation_chart(request):
-    """Organisation chart: sites with their production departments and the office departments, nested, with managers and head
-    counts the viewer may see. It is read with the permission of its menu entry: the office departments' in Company, the
-    people's (hr.view_employee) in Production."""
+    """Organisation chart of the panel: Production's sites with their production departments, or Company's office departments
+    with one Production box (hr.read.org_tree), nested, with managers and head counts the viewer may see. It is read with the
+    permission of its menu entry: the office departments' in Company, the people's (hr.view_employee) in Production; the
+    Production box links to Production's chart only for who may open it."""
     place = navigation.page(mounted_name('hr:orgchart', mount_of(request)))
     if not request.user.has_perm(place.entry.perm):
         raise PermissionDenied
-    return render(request, 'hr/orgchart.html', {'title': place.entry.label, 'eyebrow': place.heading,
-                                                'base_template': 'app_base.html', 'root': read.org_tree(request.user)})
+    return render(request, 'hr/orgchart.html', {
+        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html',
+        'root': read.org_tree(request.user, scope.realm_for(request)),
+        'production_chart': request.user.has_perm(navigation.page('hr:production_orgchart').entry.perm)})

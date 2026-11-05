@@ -8,6 +8,7 @@ from decimal import Decimal
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from core.models import in_tree_order
 from farm.clocks import clocks
@@ -24,9 +25,8 @@ from .scope import OFFICE, PRODUCTION      # the two kinds of department are the
 
 @dataclass
 class DepartmentRow:
-    """One line of the Departments page: a production department (the farm's own row, shown here by itself) or an
-    office department (HR's). `depth` nests an office department under its parent."""
-    kind: str
+    """One line of Company › HR › Departments: an office department (HR's own; the production departments are the farm's,
+    under Production). `depth` nests it under its parent."""
     obj: object
     depth: int = 0
     head_count: int = 0     # the people placed in it today that the viewer may reach
@@ -53,7 +53,7 @@ class DepartmentRow:
 
     @property
     def parent(self):
-        return self.obj.parent if self.kind == OFFICE else None
+        return self.obj.parent
 
     @property
     def pk(self):
@@ -71,16 +71,12 @@ def head_counts(user, day=None, realm=None):
 
 
 def departments(user=None):
-    """Every live department, production first (by site and name, flat) and then the office ones in tree order, each
-    with the head count the viewer may see. A production department created, renamed or deleted on the farm side is
-    here at once: this is the same row."""
-    production = ProductionDepartment.objects.select_related('site', 'manager').order_by('site__name', 'name')
+    """Every live office department in tree order, each with the head count the viewer may see. The production departments
+    are not here: they are the farm's rows, listed under Production (Setup, and Team's organisation chart)."""
     office = OfficeDepartment.objects.select_related('site', 'manager', 'parent').order_by('name')
-    counts = head_counts(user) if user is not None else {}
-    return ([DepartmentRow(PRODUCTION, department, head_count=counts.get((PRODUCTION, department.pk), 0))
-             for department in production]
-            + [DepartmentRow(OFFICE, department, department.depth, counts.get((OFFICE, department.pk), 0))
-               for department in in_tree_order(office)])
+    counts = head_counts(user, realm=OFFICE) if user is not None else {}
+    return [DepartmentRow(department, department.depth, counts.get((OFFICE, department.pk), 0))
+            for department in in_tree_order(office)]
 
 
 def placement_on(employee, day):
@@ -414,11 +410,15 @@ def overview(user, week_start, department=None, page=1, per_page=50, query='', r
     return Overview(plan, rows, footer, standard)
 
 
+PRODUCTION_ROOT = 'production_root'
+
+
 @dataclass
 class Node:
-    """One box of the organisation chart: the company, a site, a department. `direct` are the people placed in it, `total`
-    those in it and below it, as far as the viewer may count them."""
-    kind: str                  # company, site, production, office
+    """One box of the organisation chart: the company, a site, a department, or Company's one Production box (computed
+    here, never a row, so there is nothing to delete). `direct` are the people placed in it, `total` those in it and below
+    it, as far as the viewer may count them."""
+    kind: str                  # company, site, production, office, production_root
     label: str
     obj: object = None
     manager: object = None
@@ -427,35 +427,39 @@ class Node:
     children: list = field(default_factory=list)
 
 
-def org_tree(user):
-    """The company as a tree for a person to read: its sites with their production departments, then the office departments by
-    their parents, each with its manager and the people in it (direct and in all below), counted among the people the viewer
-    may reach. Server-drawn nested lists; no layout algorithm and no script."""
-    counts = head_counts(user)
-    sites = {}
-    for department in ProductionDepartment.objects.select_related('site', 'manager').order_by('name'):
-        sites.setdefault(department.site, []).append(department)
+def org_tree(user, realm):
+    """The company as a tree for a person to read, as each panel shows it, counted among the people the viewer may reach.
+    Production (Production › Team): the sites with their production departments, each with its manager. Office (Company ›
+    HR): the office departments by their parents, then one Production box with the production people the viewer may count,
+    there even with no production department. Server-drawn nested lists; no layout algorithm and no script."""
+    counts = head_counts(user, realm=realm)
     root = Node('company', '')
-    for site in sorted(sites, key=lambda item: (item is None, item.name if item else '')):
-        node = Node('site', site.name if site else '', site)
-        for department in sites[site]:
-            direct = counts.get((PRODUCTION, department.pk), 0)
-            node.children.append(Node(PRODUCTION, department.name, department, department.manager, direct, direct))
-        node.total = sum(child.total for child in node.children)
-        root.children.append(node)
-    offices = list(OfficeDepartment.objects.select_related('site', 'manager').order_by('name'))
-    by_parent = defaultdict(list)
-    for department in offices:
-        by_parent[department.parent_id].append(department)
+    if realm == PRODUCTION:
+        sites = {}
+        for department in ProductionDepartment.objects.select_related('site', 'manager').order_by('name'):
+            sites.setdefault(department.site, []).append(department)
+        for site in sorted(sites, key=lambda item: (item is None, item.name if item else '')):
+            node = Node('site', site.name if site else '', site)
+            for department in sites[site]:
+                direct = counts.get((PRODUCTION, department.pk), 0)
+                node.children.append(Node(PRODUCTION, department.name, department, department.manager, direct, direct))
+            node.total = sum(child.total for child in node.children)
+            root.children.append(node)
+    else:
+        offices = list(OfficeDepartment.objects.select_related('site', 'manager').order_by('name'))
+        by_parent = defaultdict(list)
+        for department in offices:
+            by_parent[department.parent_id].append(department)
 
-    def build(department):
-        direct = counts.get((OFFICE, department.pk), 0)
-        node = Node(OFFICE, department.name, department, department.manager, direct, direct)
-        node.children = [build(child) for child in by_parent.get(department.pk, [])]
-        node.total = direct + sum(child.total for child in node.children)
-        return node
+        def build(department):
+            direct = counts.get((OFFICE, department.pk), 0)
+            node = Node(OFFICE, department.name, department, department.manager, direct, direct)
+            node.children = [build(child) for child in by_parent.get(department.pk, [])]
+            node.total = direct + sum(child.total for child in node.children)
+            return node
 
-    for department in by_parent.get(None, []):
-        root.children.append(build(department))
+        root.children = [build(department) for department in by_parent.get(None, [])]
+        production = sum(head_counts(user, realm=PRODUCTION).values())
+        root.children.append(Node(PRODUCTION_ROOT, _('Production'), direct=production, total=production))
     root.total = sum(child.total for child in root.children)
     return root

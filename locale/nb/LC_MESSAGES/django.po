@@ -4214,13 +4214,6 @@ msgstr "Avdeling"
 msgid "Departments"
 msgstr "Avdelinger"
 
-msgid ""
-"Departments of the company: the production departments appear here by themselves; add the office "
-"departments, such as Finance."
-msgstr ""
-"Selskapets avdelinger: produksjonsavdelingene vises her av seg selv; legg til kontoravdelingene, "
-"som Økonomi."
-
 msgid "Depth"
 msgstr "Dybde"
 
@@ -11113,6 +11106,11 @@ msgstr "Merknaden er for lang."
 
 msgid "The number the company knows the person by."
 msgstr "Nummeret selskapet kjenner personen på."
+
+msgid ""
+"The office departments of the company, such as Finance. The production departments are under "
+"Production."
+msgstr "Selskapets kontoravdelinger, som Økonomi. Produksjonsavdelingene ligger under Produksjon."
 
 msgid "The official code is three capital letters, e.g. SAL."
 msgstr "Artskoden er tre store bokstaver, f.eks. SAL."

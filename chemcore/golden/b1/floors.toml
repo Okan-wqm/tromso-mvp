@@ -25,3 +25,18 @@ abs = 1e-8
 [floors.border_share]
 rel = 5e-8
 abs = 0.0
+
+# Added after the first run over constants, carbonate, analysis and dosing, BEFORE the chart's points were compared
+# (the chart was then compared only on its current point and whether the safe zone is drawn):
+# - the source rounds every chart point to 4 decimals (toFixed(4), deffeyes-data.ts) and bisects the CO2 and Omega
+#   lines' pH to 1e-7: a chart point gets 1e-4 absolute (mmol/L or meq/L);
+# - the safe zone's corners are DICs at a pH the source bisects to 1e-8: dDIC/dpH reaches about 14 mmol/L per pH, so
+#   2e-7 absolute.
+
+[floors.chart_point]
+rel = 0.0
+abs = 1e-4
+
+[floors.chart_bisected]
+rel = 1e-12
+abs = 2e-7

@@ -6,6 +6,9 @@ checks and exclusion; the rules that need the channel's quantity cross a join, s
   (owner rule A1);
 - per target, quantity and role, at most one live binding at a time (one primary, one backup).
 
+The exclusion constraint needs btree_gist, which farm migration 0015 creates (this one depends on farm 0019 after it); it
+is not made here, so going back never drops an extension other tables use.
+
 The trigger first takes a transaction lock on (target, quantity, role), so two saves at the same moment are serialized and
 the second one sees the first: a plain check would let both pass. Its refusals are check violations naming the trigger."""
 
@@ -17,7 +20,6 @@ import sensors.models.binding
 import uuid
 from django.conf import settings
 from django.db import migrations, models
-from django.contrib.postgres.operations import BtreeGistExtension
 
 RULES = """
 CREATE FUNCTION sensors_binding_rules() RETURNS trigger AS $$
@@ -73,7 +75,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        BtreeGistExtension(),
         migrations.CreateModel(
             name='Binding',
             fields=[

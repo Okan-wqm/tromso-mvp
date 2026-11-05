@@ -54,6 +54,12 @@ class SensorSource:
                 role=binding.role, channel_no=channel.channel_no))
         return found
 
+    def bound(self, targets, code, since, until):
+        """The targets with a channel of `code` bound there at some time between since and until (one query)."""
+        found = (_bindings(targets).filter(channel__quantity=code, valid_from__lte=until)
+                 .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=since)).values_list('point_id', 'system_id'))
+        return {(sources.POINT, point) if point else (sources.SYSTEM, system) for point, system in found}
+
     def value_at(self, targets, code, moment):
         """Per target, each channel's newest clean reading at or before `moment` taken while it was bound there."""
         newest = {}

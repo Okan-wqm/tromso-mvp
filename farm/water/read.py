@@ -273,7 +273,8 @@ class Series:
         self.points = {point.pk: point for point in points}
         self.moments = defaultdict(list)    # point id -> [measured at], in time order
         self.values = defaultdict(list)     # point id -> [value], in the same order
-        self.asked = {}                     # (point id, moment) -> [Found] of the sensors
+        self.asked = {}                     # moment -> {point id: [Found]} of the sensors
+        self.bound = set()                  # the sensor targets with a channel of the parameter bound in the range
         chosen = list(self.points)
         if chosen:
             rows = WaterMeasurement.objects.filter(point__in=chosen, measured_at__gte=since,
@@ -283,22 +284,32 @@ class Series:
             for point_id, moment, value in rows.order_by('measured_at').values_list('point_id', 'measured_at', code):
                 self.moments[point_id].append(moment)
                 self.values[point_id].append(value)
+        if live and self.points:
+            wanted = [target for point in self.points.values() for target, _origin in sensor_targets(point, False)]
+            self.bound = sources.bound(wanted, code, since, until or timezone.now())
 
     def _live(self, point_id, moment, window):
-        """The sensors' values of the point at the moment (Found, primary first), at most `window` old."""
-        key = (point_id, moment)
-        if key not in self.asked:
-            point = self.points.get(point_id)
-            targets = sensor_targets(point, system_tier=False) if point is not None else []
-            answer = sources.value_at([target for target, _origin in targets], self.code, moment)
-            found = []
-            for target, origin in targets:
-                for value in sources.ordered(answer.values.get(target, [])):
-                    if value.at <= moment and moment - value.at <= window:
-                        observed = Observation.of_sensor(point, value, origin)
-                        found.append(Found(value.at, observed.get(self.code), value.fresh_for, origin))
-            self.asked[key] = found
-        return self.asked[key]
+        """The sensors' values of the point at the moment (Found, primary first), at most `window` old. One ask of the
+        live sources per moment for every point of the series, so the queries do not grow with the points."""
+        if moment not in self.asked:
+            targets = {pk: [(target, origin) for target, origin in sensor_targets(point, system_tier=False)
+                            if target in self.bound] for pk, point in self.points.items()}
+            if not any(targets.values()):
+                self.asked[moment] = {}
+                return []
+            answer = sources.value_at([target for found in targets.values() for target, _origin in found], self.code,
+                                      moment)
+            by_point = {}
+            for pk, found in targets.items():
+                values = []
+                for target, origin in found:
+                    for value in sources.ordered(answer.values.get(target, [])):
+                        if value.at <= moment:
+                            observed = Observation.of_sensor(self.points[pk], value, origin)
+                            values.append(Found(value.at, observed.get(self.code), value.fresh_for, origin))
+                by_point[pk] = values
+            self.asked[moment] = by_point
+        return [found for found in self.asked[moment].get(point_id, []) if moment - found.at <= window]
 
     def latest(self, point_id, moment, window):
         """The point's value at `moment` (Found): a fresh sensor value (a live series), else the newest value at or before

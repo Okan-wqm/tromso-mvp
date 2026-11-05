@@ -224,6 +224,7 @@
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_bench.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py"

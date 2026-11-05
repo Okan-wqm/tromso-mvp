@@ -21,7 +21,7 @@ A unit's chart reads its middle point's channels, then its system's; a system's,
 its own (and the system's when it is a system's middle point); a piece of equipment's, its own. Bucket boundaries are on
 the tier's grid: a sensor moved in the middle of an hour is counted in the hour rollup at the place its hour began."""
 from bisect import bisect_right
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.db import connection
@@ -31,9 +31,9 @@ from django.utils import timezone
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.site import zone_of
 from farm.models.water_point import PointKind, site_of
-from farm.water import deffeyes, parameters
+from farm.water import calculation, deffeyes, parameters
 from farm.water.evaluate import is_fresh
-from farm.water.read import WINDOW, Series as WaterSeries, assumed_salinity
+from farm.water.read import WINDOW, Series as WaterSeries, as_parameter, assumed_salinity
 
 from . import quantities
 from .models import Binding, Calibration, Channel, ChannelState, DeviceState, Reduction
@@ -327,9 +327,10 @@ def device_status(devices, now=None):
     return found
 
 
-# ---- the Deffeyes replay (owner amendment A6) ------------------------------------------------------------------
-FRAMES_CAP = 2000
-REPLAY_INPUTS = (parameters.TEMPERATURE, parameters.PH, 'alkalinity_mg_l', parameters.SALINITY)
+# ---- the Deffeyes replay (owner amendments A6, A7, A8) ---------------------------------------------------------
+PAGE = 2000                   # frames at most in one page
+# What a frame reads: what a unit's chart is drawn from (farm/water/calculation.py), the required first.
+REPLAY_INPUTS = (*calculation.REQUIRED, *calculation.OPTIONAL)
 MANUAL, ASSUMED = 'manual', 'assumed'
 # How far before the range a carried value may come from: the longest heartbeat's freshness (three days).
 CARRY = timedelta(days=3)
@@ -356,59 +357,84 @@ class Frame:
     at: datetime
     inputs: dict                  # code -> FrameInput
     point: FramePoint | None
-    missing: tuple = ()           # the codes without a usable value at that moment
+    missing: tuple = ()           # the required codes without a usable value at that moment
+    impossible: str = ''          # why the pH and the alkalinity cannot go together (deffeyes.why_impossible)
+    figure: int | None = None     # the index of its diagram in Frames.figures
 
 
 @dataclass
 class Frames:
+    """One page of a replay: frames `cursor` to `next` (None: the last page) of `total`."""
     target: object
     start: datetime
     end: datetime
     step: timedelta
     tier: str
+    total: int
+    cursor: int
+    next: int | None
     frames: list = field(default_factory=list)
+    figures: list = field(default_factory=list)   # deffeyes.figure of each different water of the page
 
 
-def replay_step(start, end, step):
-    """The ladder's narrowest width at least `step` that gives at most FRAMES_CAP frames."""
-    wanted = max(step, (end - start) / FRAMES_CAP)
-    return next((width for width in LADDER if width >= wanted), LADDER[-1])
+def replay_step(step):
+    """The ladder's narrowest width at least `step` (the user's step is kept, never widened to fit a cap: A7)."""
+    return next((width for width in LADDER if width >= step), LADDER[-1])
 
 
-def replay_rows(found, moments, tier):
-    """{(segment index, moment): (ts, value)}: each segment's newest clean value at or before each moment taken while
-    it was bound there. ONE query for every segment and moment: below an hour a step-after lookup of the readings per
-    segment and moment (the primary key's index); above, the hours of the range read once and each moment given the last
-    value of the newest hour ENDED by it (never an hour still running at the moment)."""
-    if not found or not moments:
+def replay_rows(found, first, step, count, tier):
+    """{(segment index, frame index): (ts, value)}: each segment's newest clean value at or before each of `count`
+    moments from `first` every `step`, taken while it was bound there. ONE query for every segment and moment. Below an
+    hour the readings of the page's span, the newest of each step (the one at or before the moment that ends it) and the
+    newest before the first moment within the channel's freshness; above, the hours of the span read once and each moment
+    given the last value of the newest hour ENDED by it (never an hour still running at the moment)."""
+    if not found or count < 1:
         return {}
     numbers = [segment.channel_no for segment in found]
     starts = [segment.start for segment in found]
     ends = [segment.end for segment in found]
+    fresh = [segment.fresh_s for segment in found]
+    last = first + (count - 1) * step
+    rows = {}
     if tier == RAW:
-        sql = (f'SELECT s.ord, m.at, r.ts, r.value FROM unnest(%s::timestamptz[]) AS m(at) '
-               f'CROSS JOIN unnest(%s::int[], %s::timestamptz[], %s::timestamptz[]) WITH ORDINALITY '
-               f'AS s(channel_no, valid_from, valid_to, ord) CROSS JOIN LATERAL ('
-               f'SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= m.at '
-               f'AND ts >= s.valid_from AND ts < s.valid_to AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r')
+        sql = (f'WITH s AS (SELECT * FROM unnest(%s::int[], %s::timestamptz[], %s::timestamptz[], %s::int[]) '
+               f'WITH ORDINALITY AS s(channel_no, valid_from, valid_to, fresh_s, ord)) '
+               f'SELECT s.ord, 0, r.ts, r.value FROM s CROSS JOIN LATERAL ('
+               f'SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= %s '
+               f'AND ts >= greatest(s.valid_from, %s - make_interval(secs => s.fresh_s)) AND ts < s.valid_to '
+               f'AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r '
+               f'UNION ALL (SELECT DISTINCT ON (s.ord, slot) s.ord, '
+               f'ceil(extract(epoch FROM r.ts - %s) / %s::numeric)::int AS slot, r.ts, r.value '
+               f'FROM s JOIN sensors_reading r ON r.channel_no = s.channel_no AND r.ts > %s AND r.ts <= %s '
+               f'AND r.ts >= s.valid_from AND r.ts < s.valid_to AND (r.quality & {BAD_MASK}) = 0 '
+               f'ORDER BY s.ord, slot, r.ts DESC)')
         with connection.cursor() as cursor:
-            cursor.execute(sql, [moments, numbers, starts, ends])
-            return {(int(ordinal) - 1, at): (ts, value) for ordinal, at, ts, value in cursor.fetchall()}
+            cursor.execute(sql, [numbers, starts, ends, fresh, first, first, first, step.total_seconds(), first, last])
+            for ordinal, slot, ts, value in cursor.fetchall():
+                rows.setdefault(int(ordinal) - 1, {})[slot] = (ts, value)
+        found_rows = {}
+        for index, slots in rows.items():
+            carried = None
+            for slot in range(count):
+                carried = slots.get(slot, carried)
+                if carried is not None:
+                    found_rows[(index, slot)] = carried
+        return found_rows
+    reach = timedelta(seconds=max(fresh)) + HOUR
     with connection.cursor() as cursor:
         cursor.execute('SELECT channel_no, bucket, last_ts, vlast FROM sensors_rollup_1h WHERE channel_no = ANY(%s) '
                        'AND bucket >= %s AND bucket < %s ORDER BY channel_no, bucket',
-                       [list(set(numbers)), min(starts), max(moments)])
-        hours = {}
+                       [list(set(numbers)), max(min(starts), first - reach), last])
         for number, bucket, last_ts, value in cursor.fetchall():
-            hours.setdefault(number, []).append((bucket, last_ts, value))
+            rows.setdefault(number, []).append((bucket, last_ts, value))
     found_rows = {}
     for index, segment in enumerate(found):
-        rows = [row for row in hours.get(segment.channel_no, []) if segment.start <= row[0] < segment.end]
-        ended = [row[0] + HOUR for row in rows]
-        for at in moments:
-            position = bisect_right(ended, at) - 1
+        hours = [row for row in rows.get(segment.channel_no, []) if segment.start <= row[0] < segment.end]
+        ended = [row[0] + HOUR for row in hours]
+        for slot in range(count):
+            position = bisect_right(ended, first + slot * step) - 1
             if position >= 0:
-                found_rows[(index, at)] = (rows[position][1], rows[position][2])
+                found_rows[(index, slot)] = (hours[position][1], hours[position][2])
     return found_rows
 
 
@@ -421,38 +447,45 @@ def _water_types(target):
     return {None}
 
 
-def deffeyes_frames(target, start, end, step):
-    """The Frames of a unit's or a system's water from start to end (end not included) every `step` (snapped to the
-    ladder, at most FRAMES_CAP frames): per frame and input, in the A1 order, the first segment's clean value at or
-    before the frame and no older than its channel's freshness, else a fresh manual or lab sample, else (salinity only)
-    the fresh-water assumption, else missing; the point on the diagram from farm/water/deffeyes.py when every input is
-    there. Never a value from after the frame, never one carried past its freshness, never one in between."""
+def deffeyes_frames(target, start, end, step, cursor=0, size=PAGE):
+    """A page of the Frames of a unit's or a system's water from start to end (end not included) every `step` (snapped
+    up to the ladder): frames `cursor` on, at most `size`. Per frame and input, in the A1 order, the first segment's
+    clean value at or before the frame and no older than its channel's freshness, else a fresh manual or lab sample,
+    else (salinity only) the fresh-water assumption, else missing; never a value from after the frame, never one carried
+    past its freshness, never one in between. A frame with every required input has the whole diagram of that water
+    (A8: farm/water/deffeyes.py's figure with the fish's limits, as the unit's chart draws it), in one box for the page
+    (it holds every point of the page); frames whose diagram reads exactly the same values share one figure."""
     if end <= start:
         raise ValueError('The end comes after the start.')
-    step = replay_step(start, end, step)
+    step = replay_step(step)
+    total = -(-(end - start) // step)
+    if not 0 <= cursor < total or size < 1:
+        raise ValueError('The cursor is a frame of the range.')
+    count = min(size, total - cursor)
+    first = start + cursor * step
     tier = RAW if step < HOUR else ROLLUP_1H
-    moments = []
-    moment = start
-    while moment < end:
-        moments.append(moment)
-        moment += step
-    by_code = {code: segments(target, code, start - CARRY, end) for code in REPLAY_INPUTS}
+    page_end = first + count * step
+    by_code = {code: segments(target, code, first - CARRY, page_end) for code in REPLAY_INPUTS}
     flat = [(code, segment) for code in REPLAY_INPUTS for segment in by_code[code]]
-    rows = replay_rows([segment for _code, segment in flat], moments, tier)
+    rows = replay_rows([segment for _code, segment in flat], first, step, count, tier)
     points = [point for point in places(target)[1] if point is not None]
-    manual = {code: WaterSeries(points, code, start - WINDOW, end) for code in REPLAY_INPUTS}
+    manual = {code: WaterSeries(points, code, first - WINDOW, page_end) for code in REPLAY_INPUTS}
     assumed = assumed_salinity(_water_types(target))
-    found = Frames(target, start, end, step, tier)
-    for at in moments:
+    limits = {name: float(offer.value) for name, offer in calculation.chart_limits(calculation.fish_limits(target)).items()}
+    found = Frames(target, start, end, step, tier, total, cursor, cursor + count if cursor + count < total else None)
+    waters = []
+    for slot in range(count):
+        at = first + slot * step
         inputs, missing = {}, []
         for code in REPLAY_INPUTS:
             chosen = None
             for index, (each, segment) in enumerate(flat):
-                if each != code or (index, at) not in rows:
+                if each != code or (index, slot) not in rows:
                     continue
-                ts, value = rows[(index, at)]
+                ts, value = rows[(index, slot)]
                 if at - ts <= timedelta(seconds=segment.fresh_s):
-                    chosen = FrameInput(value, segment.origin, (at - ts).total_seconds(), segment.channel_no)
+                    chosen = FrameInput(float(as_parameter(code, value)), segment.origin, (at - ts).total_seconds(),
+                                        segment.channel_no)
                     break
             if chosen is None:
                 sample = next((each for each in (manual[code].latest(point.pk, at, WINDOW) for point in points)
@@ -461,15 +494,47 @@ def deffeyes_frames(target, start, end, step):
                     chosen = FrameInput(float(sample.value), MANUAL, (at - sample.at).total_seconds())
                 elif code == parameters.SALINITY and assumed is not None:
                     chosen = FrameInput(float(assumed), ASSUMED, 0.0)
-            if chosen is None:
-                missing.append(code)
-            else:
+            if chosen is not None:
                 inputs[code] = chosen
-        point = None
+            elif code in calculation.REQUIRED:
+                missing.append(code)
+        analysis, impossible = None, ''
         if not missing:
-            analysis = deffeyes.analyse(deffeyes.Water(
-                temperature_c=inputs[parameters.TEMPERATURE].value, salinity_ppt=inputs[parameters.SALINITY].value,
-                ph=inputs[parameters.PH].value, alkalinity_mg_l=inputs['alkalinity_mg_l'].value))
-            point = FramePoint(analysis.dic, analysis.alkalinity_meq, inputs[parameters.PH].value, analysis.co2_mg_l)
-        found.frames.append(Frame(at, inputs, point, tuple(missing)))
+            analysis, impossible = frame_analysis({code: item.value for code, item in inputs.items()}, limits)
+        waters.append((at, inputs, tuple(missing), impossible, analysis))
+    analyses = [analysis for *_rest, analysis in waters]
+    found.figures, indexes = page_figures(analyses)
+    for (at, inputs, missing, impossible, analysis), index in zip(waters, indexes):
+        point = None if analysis is None else FramePoint(analysis.dic, analysis.alkalinity_meq, analysis.water.ph,
+                                                         analysis.co2_mg_l)
+        found.frames.append(Frame(at, inputs, point, missing, impossible, index))
     return found
+
+
+def frame_analysis(values, limits):
+    """(analysis, '') of a frame's water (`values` by calculator field, `limits` the fish's by field, floats), as a
+    unit's chart works it out; (None, why) when its pH and alkalinity cannot go together."""
+    impossible = deffeyes.why_impossible(values[parameters.TEMPERATURE], values[parameters.SALINITY],
+                                         values[parameters.PH], values['alkalinity_mg_l'])
+    if impossible:
+        return None, impossible
+    made = calculation.inputs_from({**values, **limits})
+    return deffeyes.analyse(made['water'], made['limits'], made['target'], made['pressure']), ''
+
+
+def page_figures(analyses):
+    """([figure], [index or None]) of a page's analyses (None: no diagram): the whole diagram of each, in one box that
+    holds every point of the page, worked out once for each different water. The diagram never reads the oxygen (only
+    its saturation, which is not drawn), so waters exactly equal but for it share one figure; nothing else is shared."""
+    extent = [(analysis.dic, analysis.alkalinity_meq) for analysis in analyses if analysis is not None]
+    figures, shared, indexes = [], {}, []
+    for analysis in analyses:
+        index = None
+        if analysis is not None:
+            key = (replace(analysis.water, oxygen_mg_l=None), analysis.limits, analysis.target)
+            index = shared.get(key)
+            if index is None:
+                index = shared[key] = len(figures)
+                figures.append(deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)))
+        indexes.append(index)
+    return figures, indexes

@@ -14,7 +14,6 @@ from django.db import transaction
 from django.db.models import F
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -350,11 +349,13 @@ def alarm_event_acknowledge(request, pk):
 
 @permission_required((READ, 'farm.view_watermeasurement'), raise_exception=True)
 def deffeyes_frames(request):
-    """The Deffeyes replay of a unit's or a system's water (A6) as JSON for the player: the static diagram once (its box
-    widened to hold every frame's point, so the player places points with `box` and `plot`), then the frames: each
-    input's value, origin and age, the point, or what was missing. `start`/`end` on the site's clock (else `range`
-    ending now, 7 days by default), `step` in seconds (snapped to the ladder, at most 2000 frames). It joins the sensors
-    and the water samples, so it needs the right to read both."""
+    """A page of the Deffeyes replay of a unit's or a system's water (A6, A7, A8) as JSON for the player: `figures`, the
+    whole diagram of each different water of the page once (deffeyes.figure: the server's SVG draws the same with
+    deffeyes.render), and the frames as columns, frame i at `first` + i × `step_s`: its figure's index (None without a
+    diagram), the point, what was missing or why the water cannot be, and each input's value, origin, age and channel.
+    `start`/`end` on the site's clock (else `range` ending now, 7 days by default), `step` in seconds (snapped up to the
+    ladder), `cursor` the first frame of the page (0 by default; `next` gives the following page's, None after the last).
+    It joins the sensors and the water samples, so it needs the right to read both."""
     target = parse_target(request.GET.get('target'))
     if not isinstance(target, (Tank, System)):
         raise Http404
@@ -367,28 +368,24 @@ def deffeyes_frames(request):
             end = timezone.now().replace(minute=0, second=0, microsecond=0)
             start = end - dict(RANGES).get(request.GET.get('range', ''), timedelta(days=7))
         step = timedelta(seconds=int(request.GET.get('step') or 3600))
-        found = read.deffeyes_frames(target, start, end, step)
+        found = read.deffeyes_frames(target, start, end, step, cursor=int(request.GET.get('cursor') or 0))
     except (ValueError, ValidationError):
-        return JsonResponse({'error': _('Give a start before the end on the site’s clock, and a step in seconds.')},
-                            status=400)
-    complete = [frame for frame in found.frames if frame.point is not None]
-    diagram = box = None
-    if complete:
-        last = complete[-1]
-        analysis = deffeyes.analyse(deffeyes.Water(
-            temperature_c=last.inputs['temperature_c'].value, salinity_ppt=last.inputs['salinity_ppt'].value,
-            ph=last.point.ph, alkalinity_mg_l=last.inputs['alkalinity_mg_l'].value))
-        drawn = deffeyes.draw(analysis, layers=frozenset({'isolines', 'omega'}),
-                              extent=[(frame.point.dic, frame.point.alkalinity_meq) for frame in complete])
-        diagram = render_to_string('farm/_deffeyes_chart.html', {'chart': drawn, 'uid': 'replay'}).strip()
-        box = {'dic': drawn.box.dic, 'alkalinity': drawn.box.alkalinity}
+        return JsonResponse({'error': _('Give a start before the end on the site’s clock, a step in seconds and a '
+                                        'cursor inside the range.')}, status=400)
+    frames = found.frames
     return JsonResponse({
-        'diagram': diagram, 'box': box, 'plot': {'left': deffeyes.LEFT, 'top': deffeyes.TOP, 'size': deffeyes.PLOT},
-        'step_s': found.step.total_seconds(), 'tier': found.tier,
-        'frames': [{'at': frame.at.isoformat(), 'missing': list(frame.missing),
-                    'point': None if frame.point is None else {
-                        'dic': frame.point.dic, 'alkalinity_meq': frame.point.alkalinity_meq, 'ph': frame.point.ph,
-                        'co2_mg_l': frame.point.co2_mg_l},
-                    'inputs': {code: {'value': item.value, 'origin': item.origin, 'age_s': item.age_s,
-                                      'channel': item.channel_no} for code, item in frame.inputs.items()}}
-                   for frame in found.frames]})
+        'plot': {'left': deffeyes.LEFT, 'top': deffeyes.TOP, 'size': deffeyes.PLOT},
+        'step_s': found.step.total_seconds(), 'tier': found.tier, 'total': found.total, 'cursor': found.cursor,
+        'next': found.next, 'first': frames[0].at.isoformat(), 'figures': found.figures,
+        'frames': {
+            'figure': [frame.figure for frame in frames],
+            'missing': [list(frame.missing) for frame in frames],
+            'impossible': [frame.impossible for frame in frames],
+            **{name: [None if frame.point is None else getattr(frame.point, name) for frame in frames]
+               for name in ('dic', 'alkalinity_meq', 'ph', 'co2_mg_l')},
+            'inputs': {code: {
+                'value': [frame.inputs[code].value if code in frame.inputs else None for frame in frames],
+                'origin': [frame.inputs[code].origin if code in frame.inputs else None for frame in frames],
+                'age_s': [frame.inputs[code].age_s if code in frame.inputs else None for frame in frames],
+                'channel': [frame.inputs[code].channel_no if code in frame.inputs else None for frame in frames]}
+                for code in read.REPLAY_INPUTS if any(code in frame.inputs for frame in frames)}}})

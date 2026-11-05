@@ -6,6 +6,7 @@ over seven days in 15-minute buckets of the readings themselves, and of the late
 holds rows (TimescaleDB 2.17.2 loses rows of a multi-row insert that meets a row in a compressed chunk). It writes into
 the database it is pointed at: it refuses to run unless `--confirm-database` names that database. Never run it on a
 farm's database; use a copy or a test database, and drop the rows after (`--drop`)."""
+import json
 import time
 from datetime import timedelta
 
@@ -16,6 +17,9 @@ from django.utils import timezone
 from sensors import read
 
 FIRST = 1_000_000
+# A fish's limits for the diagrams: NH₃-N and CO₂ (mg/L), the alkalinity band (mg/L as CaCO₃).
+LIMITS = {'nh3_n_limit_mg_l': 0.0125, 'co2_limit_mg_l': 15.0,
+          'alkalinity_low_mg_l': 50.0, 'alkalinity_high_mg_l': 150.0}
 
 
 class Command(BaseCommand):
@@ -78,10 +82,34 @@ class Command(BaseCommand):
         week_ms = (time.monotonic() - began) * 1000
         replay = [read.Segment(number, week, end, 'primary', read.SENSOR, interval * 3, False, False)
                   for number in range(FIRST, min(last, FIRST + 3) + 1)]
-        moments = [week + index * read.HOUR for index in range(int((end - week) / read.HOUR))]
+        hourly = int((end - week) / read.HOUR)
         began = time.monotonic()
-        values = read.replay_rows(replay, moments, read.ROLLUP_1H)
+        values = read.replay_rows(replay, week, read.HOUR, hourly, read.ROLLUP_1H)
         replay_ms = (time.monotonic() - began) * 1000
+        # A7: one page of 2000 frames at one minute, the readings of four channels in one query.
+        first = end - read.PAGE * read.MINUTE
+        page = [read.Segment(segment.channel_no, first - read.CARRY, end, 'primary', read.SENSOR, interval * 3, False,
+                             False) for segment in replay]
+        began = time.monotonic()
+        minutes = read.replay_rows(page, first, read.MINUTE, read.PAGE, read.RAW)
+        page_ms = (time.monotonic() - began) * 1000
+        # A8: the whole diagram of every frame of that page, the channels standing for a water whose temperature,
+        # salinity, pH and alkalinity all move (the readings' 0.001 resolution), with a fish's limits.
+        began = time.monotonic()
+        analyses = []
+        for slot in range(read.PAGE):
+            row = [minutes.get((index % len(page), slot)) for index in range(4)]
+            if None in row:
+                analyses.append(None)
+                continue
+            temperature, salinity, ph, alkalinity = (value for _ts, value in row)
+            water = {'temperature_c': temperature, 'salinity_ppt': 25 + 5 * (salinity - 10), 'ph': 7 + (ph - 10) / 5,
+                     'alkalinity_mg_l': 100 + 10 * (alkalinity - 10), 'tan_mg_l': 0.5, 'oxygen_mg_l': 9.0}
+            analyses.append(read.frame_analysis(water, LIMITS)[0])
+        figures, _indexes = read.page_figures(analyses)
+        figures_ms = (time.monotonic() - began) * 1000
+        drawn = sum(analysis is not None for analysis in analyses)
+        size = len(json.dumps(figures))
         began = time.monotonic()
         read.latest(range(FIRST, last + 1))
         latest_ms = (time.monotonic() - began) * 1000
@@ -91,8 +119,13 @@ class Command(BaseCommand):
         self.stdout.write(f'chart of one channel over the span: {span_buckets} buckets of {span_width} in {span_ms:.0f} ms')
         self.stdout.write(f'{min(channels, 10)} channels over seven days: {week_buckets} buckets of 15 min from the '
                           f'readings in {week_ms:.0f} ms')
-        self.stdout.write(f'replay of seven days hourly: {len(moments)} frames x {len(replay)} channels, {len(values)} '
+        self.stdout.write(f'replay of seven days hourly: {hourly} frames x {len(replay)} channels, {len(values)} '
                           f'values in one query in {replay_ms:.0f} ms')
+        self.stdout.write(f'replay page of {read.PAGE} frames at one minute: {len(page)} channels, {len(minutes)} values '
+                          f'in one query in {page_ms:.0f} ms')
+        self.stdout.write(f'diagrams of {read.PAGE} frames at one minute: {drawn} frames with a diagram, {len(figures)} '
+                          f'different, in {figures_ms:.0f} ms ({figures_ms / max(drawn, 1):.2f} ms a frame), '
+                          f'{size / 1e6:.1f} MB as JSON')
         self.stdout.write(f'latest of {channels} channels: {latest_ms:.0f} ms')
 
     @staticmethod

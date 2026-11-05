@@ -228,6 +228,14 @@ def offers(owner, now=None, point=None, water=None):
     site = site_of(owner)
     if site is not None and site.altitude is not None and 0 <= site.altitude <= ALTITUDE_HIGH:
         found['altitude_m'] = Offer('altitude_m', Decimal(round(site.altitude)))
+    found.update(fish_limits(owner))
+    return found
+
+
+def fish_limits(owner):
+    """{field: Offer} of the limits of the fish in a unit or a loop today: the NH₃-N and CO₂ limits, the pH bounds, the
+    alkalinity band."""
+    found = {}
     limits = read.limits_now(owner)
     for name, code in (('nh3_n_limit_mg_l', 'nh3_n_mg_l'), ('co2_limit_mg_l', 'co2_mg_l')):
         value, rows = _strictest(limits.get(code, []), 'critical_high', min)
@@ -334,13 +342,18 @@ def chart_of(unit, point=None, now=None, at=None):
     if 'altitude_m' in found:
         values['altitude_m'] = float(found['altitude_m'].value)
         inputs['altitude_m'] = ChartInput('altitude_m', _('Altitude (m)'), found['altitude_m'].value)
-    limits = {name: found[name] for name in LIMIT_FIELDS if name in found}
+    limits = chart_limits(found)
     values.update({name: float(offer.value) for name, offer in limits.items()})
     made = calculate(**inputs_from(values), layers=deffeyes.ALL_LAYERS, plots=False)
     absent = tuple(label for name, label in (('nh3_n_limit_mg_l', _('NH₃-N limit')), ('co2_limit_mg_l', _('CO₂ limit')))
                    if name not in limits)
     ordered = [inputs[name] for name in (*REQUIRED, *OPTIONAL, 'altitude_m') if name in inputs]
     return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points, sensors_failed=failed)
+
+
+def chart_limits(offered):
+    """{field: Offer} of the limits a unit's chart is drawn with (LIMIT_FIELDS), of those offered."""
+    return {name: offered[name] for name in LIMIT_FIELDS if name in offered}
 
 
 def points_for(owner):

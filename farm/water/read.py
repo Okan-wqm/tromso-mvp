@@ -172,6 +172,12 @@ SENSOR_LABELS = {'unit': gettext_lazy('unit sensor'), 'system': gettext_lazy('sy
                  'equipment': gettext_lazy('equipment sensor')}
 
 
+def as_parameter(code, value):
+    """A live value as the water parameter's Decimal at its decimals, exactly as a typed value: the unit's chart, the
+    water pages and the replay read a sensor's value so."""
+    return Decimal(repr(float(value))).quantize(parameters.get(code).step)
+
+
 @dataclass(frozen=True)
 class Observation:
     """The values one source gave at a point at one moment: a sample (manual or lab: `sample` is the WaterMeasurement), a
@@ -195,8 +201,7 @@ class Observation:
     @classmethod
     def of_sensor(cls, point, value, origin):
         """A sensor's value (sources.SensorValue) as the water parameter's Decimal, at its decimals."""
-        step = parameters.get(value.code).step
-        return cls(point, value.at, origin, {value.code: Decimal(repr(float(value.value))).quantize(step)},
+        return cls(point, value.at, origin, {value.code: as_parameter(value.code, value.value)},
                    channel_no=value.channel_no, role=value.role, fresh_for=value.fresh_for)
 
     @classmethod

@@ -78,6 +78,9 @@ class BudgetTests(Counting, MonitoringCase):
 RECORDED = {'simple': 35, 'detailed': 42, 'mixed': 42}
 RECORDED_SAVEPOINTS = 4       # the chips' savepoint and the one the placement registry opens around its provider
 TEMPLATE_QUERIES = 2
+SENSOR_QUERIES = 2          # the live values (owner rule A1): the bindings of the cards' points and systems, and their channels'
+                            # values, whatever the number of units (sensors/provider.py)
+SENSOR_SAVEPOINTS = 4       # the water sources' savepoint and its release around each of its two asks (farm/water/sources.py)
 
 
 class RecordedCountsTests(Counting, MonitoringCase):
@@ -94,6 +97,7 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # source now has its own (a savepoint and its release: transaction control, no read), so the reads are compared
         # without them. Card templates add their
         # two queries (the live templates, the live rules), whatever the number of units.
-        self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + TEMPLATE_QUERIES] * 3
+        self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + TEMPLATE_QUERIES + SENSOR_QUERIES] * 3
                                  for mode, count in RECORDED.items()})
-        self.assertEqual(savepoints, {'simple': 4, 'detailed': 10, 'mixed': 10})   # chips; + treatments, lice, tasks
+        self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
+                                      {'simple': 4, 'detailed': 10, 'mixed': 10}.items()})   # chips; + treatments, lice, tasks

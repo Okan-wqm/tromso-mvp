@@ -8,6 +8,11 @@ from pathlib import Path
 
 import chemcore
 
+if not hasattr(chemcore, 'core_hash'):
+    # The checkout's chemcore/ directory imports as an empty namespace package when the wheel is missing.
+    raise ImportError('The water-chemistry core (chemcore) is not installed: only its source directory was found '
+                      f'({list(getattr(chemcore, "__path__", []))}). Build the image (docker/testrunner.Dockerfile).')
+
 EXPECTED = Path(__file__).resolve().parent.parent.parent / 'chemcore' / 'EXPECTED'
 FIELDS = ('version', 'formula_version', 'core_hash')
 

@@ -56,6 +56,15 @@ sql "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sensors_
 docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik -v "$(win "$PWD/sensors-ingest/bench"):/b:ro" "$PG_IMAGE" \
   psql -h db -U balik -d $DB -q -f /b/seed.sql >/dev/null || { echo "seed failed"; exit 1; }
 
+if [ "$PHASE" = twoyears ]; then
+  # no broker or ingest: two years written directly, compressed, rolled up, read paths timed (bench/two_years.sql)
+  CH=${2:-20}
+  docker run --rm --network balik-ciftligi_default -e PGPASSWORD=balik -v "$(win "$PWD/sensors-ingest/bench"):/b:ro" "$PG_IMAGE" \
+    psql -h db -U balik -d $DB -v channels="$CH" -f /b/two_years.sql > "$STATE/twoyears.txt" 2>&1
+  out "two years, $CH channels at one row per minute:"
+  grep -vE '^(INSERT|CALL|ANALYZE|SELECT [0-9]|\(1 row\)|-+$|$)' "$STATE/twoyears.txt" | sed 's/^/    /' | tee -a "$STATE/results.txt"
+  exit 0
+fi
 docker build -q -t sensors-ingest:bench sensors-ingest >/dev/null || exit 1
 # BENCH_INFLIGHT (default: the repository value 5000) tries another broker window on a copy of the configuration
 CONF="$REPO/sensors-ingest/mosquitto"

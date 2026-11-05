@@ -1,0 +1,32 @@
+import os
+import subprocess
+import sys
+
+from django.conf import settings
+from django.test import SimpleTestCase
+
+
+def database_setting(key, **env):
+    """The default database's `key` as config/settings.py computes it in a fresh interpreter with `env` set."""
+    code = ('import json, config.settings as s; '
+            f'print(json.dumps(s.DATABASES["default"][{key!r}]))')
+    run = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, check=True,
+                         cwd=settings.BASE_DIR, env={**os.environ, **env})
+    return run.stdout.strip()
+
+
+class PersistentConnectionsTests(SimpleTestCase):
+    """DB_CONN_MAX_AGE keeps a database connection open between requests for that many seconds; without it each
+    request opens its own (Django's default, 0). A kept connection is checked before reuse."""
+
+    def test_default_is_one_connection_per_request(self):
+        env = {k: v for k, v in os.environ.items() if k != 'DB_CONN_MAX_AGE'}
+        self.assertEqual(subprocess.run(
+            [sys.executable, '-c', 'import config.settings as s; print(s.DATABASES["default"]["CONN_MAX_AGE"])'],
+            capture_output=True, text=True, check=True, cwd=settings.BASE_DIR, env=env).stdout.strip(), '0')
+
+    def test_environment_sets_the_age(self):
+        self.assertEqual(database_setting('CONN_MAX_AGE', DB_CONN_MAX_AGE='60'), '60')
+
+    def test_kept_connections_are_health_checked(self):
+        self.assertEqual(database_setting('CONN_HEALTH_CHECKS', DB_CONN_MAX_AGE='60'), 'true')

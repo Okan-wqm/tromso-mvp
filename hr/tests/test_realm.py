@@ -80,9 +80,9 @@ class RealmTests(PeopleTestCase):
 
     def test_a_person_reaches_themselves_in_their_own_realm_only(self):
         account = get_user_model().objects.create_user('ann', 'ann@example.com', 'x')
-        Employee.objects.filter(pk=self.in_a.pk).update(user=account)
-        self.assertEqual(names(scope.team(account, DAY, PRODUCTION)), ['Alfa'])
-        self.assertEqual(names(scope.team(account, DAY, OFFICE)), [])
+        Employee.objects.filter(pk=self.in_a.pk).update(user=account, first_name='', last_name='')
+        self.assertEqual([e.pk for e in scope.team(account, DAY, PRODUCTION)], [self.in_a.pk])
+        self.assertEqual(list(scope.team(account, DAY, OFFICE)), [])
 
     def test_records_by_day_narrowed_to_the_realm_of_their_day(self):
         mover = employee('E-8', 'Hotel')
@@ -128,7 +128,7 @@ class CrewTests(PeopleTestCase):
     def setUp(self):
         super().setUp()
         self.worker = get_user_model().objects.create_user('ann', 'ann@example.com', 'x')
-        Employee.objects.filter(pk=self.in_a.pk).update(user=self.worker)
+        Employee.objects.filter(pk=self.in_a.pk).update(user=self.worker, first_name='', last_name='')
         self.peer = employee('E-4', 'Delta')
         place(self.peer, self.dept_a)
 
@@ -154,7 +154,7 @@ class CrewTests(PeopleTestCase):
     def test_no_crew_without_a_production_placement_or_another_department(self):
         self.assertEqual(scope.colleagues(user('nobody'), date(2026, 3, 2), date(2026, 3, 8)), {})
         office = get_user_model().objects.create_user('cy', 'cy@example.com', 'x')
-        Employee.objects.filter(pk=self.in_fin.pk).update(user=office)
+        Employee.objects.filter(pk=self.in_fin.pk).update(user=office, first_name='', last_name='')
         self.assertEqual(scope.colleagues(office, date(2026, 3, 2), date(2026, 3, 8)), {})
         crew = scope.colleagues(self.worker, date(2026, 3, 2), date(2026, 3, 8))
         self.assertNotIn(self.in_b.pk, crew)
@@ -187,7 +187,7 @@ class MenuCourtesyTests(PeopleTestCase):
 
     def test_production_only_is_a_person_placed_in_production_with_nothing_in_the_office(self):
         worker = get_user_model().objects.create_user('ann', 'ann@example.com', 'x')
-        Employee.objects.filter(pk=self.in_a.pk).update(user=worker)
+        Employee.objects.filter(pk=self.in_a.pk).update(user=worker, first_name='', last_name='')
         self.assertTrue(scope.production_only(worker, DAY))
         self.assertFalse(scope.not_production_only(worker, DAY))
         OfficeDepartment.objects.filter(pk=self.finance.pk).update(manager=worker)
@@ -195,8 +195,8 @@ class MenuCourtesyTests(PeopleTestCase):
 
     def test_office_unplaced_and_everyone_holders_are_not_production_only(self):
         office = get_user_model().objects.create_user('cy', 'cy@example.com', 'x')
-        Employee.objects.filter(pk=self.in_fin.pk).update(user=office)
+        Employee.objects.filter(pk=self.in_fin.pk).update(user=office, first_name='', last_name='')
         self.assertFalse(scope.production_only(office, DAY))
         self.assertFalse(scope.production_only(user('nobody'), DAY))
-        Employee.objects.filter(pk=self.in_b.pk).update(user=self.hr)
+        Employee.objects.filter(pk=self.in_b.pk).update(user=self.hr, first_name='', last_name='')
         self.assertFalse(scope.production_only(self.hr, DAY))

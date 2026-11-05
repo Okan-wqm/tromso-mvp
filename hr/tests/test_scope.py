@@ -8,7 +8,7 @@ from django.urls import reverse
 from core.models import AuditLog
 from farm.models import ProductionDepartment
 
-from .. import scope
+from .. import read, scope
 from ..models import Employee, OfficeDepartment, Posting
 from ..units import token
 from .helpers import user
@@ -84,7 +84,7 @@ class TeamFunctionTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=manager)
         self.assertEqual(self.names(manager, DAY), ['Alfa'])
         self.client.force_login(manager)
-        self.assertEqual(self.client.get(reverse('hr:employee_list')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('hr:production_employee_list')).status_code, 403)
 
 
 class EmployeeUrlMatrixTests(PeopleTestCase):
@@ -111,9 +111,14 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
             'root': (root, 200, 200, 200),
         }
         for label, (actor, listed, mine, other) in expect.items():
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_list'), listed, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_a.pk), mine, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_b.pk), other, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_list'), listed, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_detail', self.in_a.pk), mine, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_detail', self.in_b.pk), other, label)
+        # a production person is no Company HR row, whoever asks; an office one no Production row
+        for actor in (self.hr, auditor, root):
+            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_a.pk), 404)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_detail', self.in_fin.pk), 404)
+            self.assertEqual(self.status(actor, 'get', 'hr:employee_detail', self.in_fin.pk), 200)
 
     def test_the_write_routes_by_verb_and_row(self):
         edit_lead = user('editor', 'view_employee', 'change_employee', group='Edit role')
@@ -124,9 +129,9 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
             'hr': (self.hr, 200, 200, 200),
         }
         for label, (actor, create, mine, other) in expect.items():
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_create'), create, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_edit', self.in_a.pk), mine, label)
-            self.assertEqual(self.status(actor, 'get', 'hr:employee_edit', self.in_b.pk), other, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_create'), create, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_edit', self.in_a.pk), mine, label)
+            self.assertEqual(self.status(actor, 'get', 'hr:production_employee_edit', self.in_b.pk), other, label)
 
     def test_there_is_no_delete_route_for_anyone(self):
         for person in (self.in_a, self.in_b):
@@ -147,6 +152,13 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
                  'leaverequest_detail', 'leaverequest_approve', 'leaverequest_reject', 'leaverequest_cancel',
                  'leavetype_list', 'leavetype_create', 'leavetype_edit', 'leavetype_delete', 'attendancerecord_list',
                  'attendancerecord_create', 'attendancerecord_edit', 'attendancerecord_delete', 'today', 'today_board', 'punch', 'orgchart', 'overview'}
+        # Production › Team serves the people pages again (core.crud.Mount): the same routes named with its key
+        mounted = {'employee_list', 'employee_create', 'employee_edit', 'employee_detail', 'shiftassignment_list',
+                   'shiftassignment_create', 'shiftassignment_edit', 'shiftassignment_delete', 'roster_plan', 'leaverequest_list',
+                   'leaverequest_create', 'leaverequest_edit', 'leaverequest_detail', 'leaverequest_approve',
+                   'leaverequest_reject', 'leaverequest_cancel', 'attendancerecord_list', 'attendancerecord_create',
+                   'attendancerecord_edit', 'attendancerecord_delete', 'today', 'today_board', 'punch', 'orgchart', 'overview'}
+        known |= {f'production_{name}' for name in mounted}
         self.assertEqual(set(names) - known, set(), 'give every new HR route a row in the URL matrix')
 
 
@@ -164,7 +176,7 @@ class OutOfScopeWritesTests(PeopleTestCase):
     def test_an_edit_or_a_move_of_someone_in_another_team_is_a_404_and_changes_nothing(self):
         self.client.force_login(self.editor)
         before = self.snapshot()
-        response = self.client.post(reverse('hr:employee_edit', args=[self.in_b.pk]), {
+        response = self.client.post(reverse('hr:production_employee_edit', args=[self.in_b.pk]), {
             'employee_number': 'E-2', 'last_name': 'Taken', 'first_name': 'Over', 'employment_type': 'staff',
             'joined_on': '2026-01-01', 'department': token(self.dept_a), 'title': 'Mine', 'from_day': '2026-03-01',
             'version': '1'})
@@ -175,14 +187,14 @@ class OutOfScopeWritesTests(PeopleTestCase):
         self.client.force_login(self.editor)
         for query in ({'q': 'Bravo'}, {'department': token(self.dept_b)}, {'q': 'E-2'}, {'type': 'staff'},
                       {'status': 'current', 'department': token(self.finance)}):
-            listed = {e.last_name for e in self.client.get(reverse('hr:employee_list'), query).context['objects']}
+            listed = {e.last_name for e in self.client.get(reverse('hr:production_employee_list'), query).context['objects']}
             self.assertNotIn('Bravo', listed, query)
             self.assertNotIn('Charlie', listed, query)
 
     def test_a_lead_cannot_place_their_own_person_into_a_department_that_does_not_exist_or_is_stale(self):
         self.client.force_login(self.editor)
         before = self.snapshot()
-        response = self.client.post(reverse('hr:employee_edit', args=[self.in_a.pk]), {
+        response = self.client.post(reverse('hr:production_employee_edit', args=[self.in_a.pk]), {
             'employee_number': 'E-1', 'last_name': 'Alfa', 'first_name': 'Ann', 'employment_type': 'staff',
             'joined_on': '2026-01-01', 'department': 'production:00000000-0000-0000-0000-000000000000',
             'title': 'X', 'from_day': '2026-03-01', 'version': '1'})
@@ -195,7 +207,7 @@ class OutOfScopeWritesTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_b.pk).update(manager=creator)
         self.client.force_login(creator)
         before = self.snapshot()
-        response = self.client.post(reverse('hr:employee_create'), {
+        response = self.client.post(reverse('hr:production_employee_create'), {
             'employee_number': 'E-50', 'last_name': 'New', 'first_name': 'Nina', 'employment_type': 'staff',
             'joined_on': '2026-02-01', 'department': token(self.dept_b), 'title': '', 'from_day': ''})
         self.assertEqual(response.status_code, 403)
@@ -231,17 +243,20 @@ class DepartmentHeadCountTests(PeopleTestCase):
 
     def test_a_head_count_is_the_people_in_it_today_that_the_viewer_may_reach(self):
         everyone = self.counts(self.hr)
-        self.assertEqual(everyone, {'Hatchery A': 1, 'Nursery B': 1, 'Administration': 0, 'Finance': 1})
+        self.assertEqual(everyone, {'Administration': 0, 'Finance': 1})                   # the office departments only
         self.hr_dept_viewer = user('viewer', 'view_officedepartment')
         self.assertEqual(set(self.counts(self.hr_dept_viewer).values()), {0})            # no team, no count
         lead = user('lead', 'view_officedepartment', 'view_employee', group='Lead role')
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=lead)
         counts = self.counts(lead)
-        self.assertEqual((counts['Hatchery A'], counts['Nursery B'], counts['Finance']), (1, 0, 0))
+        self.assertEqual(counts, {'Administration': 0, 'Finance': 0})                     # their people are in Production
+        production = {node.label: node.direct for site in read.org_tree(lead, read.PRODUCTION).children
+                      for node in site.children}
+        self.assertEqual(production, {'Hatchery A': 1, 'Nursery B': 0})
 
     def test_head_counts_follow_the_placements_not_a_stored_number(self):
-        before = self.counts(self.hr)['Nursery B']
-        place(employee('E-9', 'India'), self.dept_b, date(2026, 1, 1))
-        self.assertEqual(self.counts(self.hr)['Nursery B'], before + 1)
+        before = self.counts(self.hr)['Finance']
+        place(employee('E-9', 'India'), self.finance, date(2026, 1, 1))
+        self.assertEqual(self.counts(self.hr)['Finance'], before + 1)
         Posting.objects.filter(employee__employee_number='E-9').update(valid_until=date(2026, 1, 31))
-        self.assertEqual(self.counts(self.hr)['Nursery B'], before)
+        self.assertEqual(self.counts(self.hr)['Finance'], before)

@@ -1,13 +1,13 @@
 {% extends "crud/detail.html" %}
-{% load i18n %}
+{% load i18n crud %}
 {% comment %} One leave request as the viewer reads it (hr.resources.LeaveRequestResource.detail_extras): the type and the dates
-   to the team's lead, the reason only to the person and the holders of Everyone. {% endcomment %}
+   to the team's lead (the type only to who may decide it), the reason only to the person and the holders of Everyone. {% endcomment %}
 {% block title %}{{ object.employee.full_name }}{% endblock %}
 {% block heading %}{{ object.employee.full_name }}{% endblock %}
 {% block details %}
 <section class="detail-section">
   <dl class="facts">
-    <div><dt>{% trans "Leave type" %}</dt><dd>{{ object.leave_type.name }}</dd></div>
+    {% if row.show_type %}<div><dt>{% trans "Leave type" %}</dt><dd>{{ object.leave_type.name }}</dd></div>{% endif %}
     <div><dt>{% trans "First day" %}</dt><dd>{{ object.first_day|date:"DATE_FORMAT" }}</dd></div>
     <div><dt>{% trans "Last day" %}</dt><dd>{{ object.last_day|date:"DATE_FORMAT" }}</dd></div>
     <div><dt>{% trans "Charged" %}</dt><dd>{{ row.days|floatformat:"-2" }}</dd></div>
@@ -18,11 +18,11 @@
   </dl>
   <div class="form-actions">
     {% if row.can_decide %}
-    <form method="post" action="{% url 'hr:leaverequest_approve' object.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-inline">{% trans "Approve" %}</button></form>
-    <a class="button button-ghost" href="{% url 'hr:leaverequest_reject' object.pk %}" data-modal>{% trans "Reject" %}</a>
+    <a class="button button-inline" href="{% url 'hr:leaverequest_approve'|mounted:request object.pk %}" data-modal>{% trans "Approve" %}</a>
+    <a class="button button-ghost" href="{% url 'hr:leaverequest_reject'|mounted:request object.pk %}" data-modal>{% trans "Reject" %}</a>
     {% endif %}
     {% if row.can_cancel %}
-    <form method="post" action="{% url 'hr:leaverequest_cancel' object.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Cancel the request" %}</button></form>
+    <form method="post" action="{% url 'hr:leaverequest_cancel'|mounted:request object.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Cancel the request" %}</button></form>
     {% endif %}
   </div>
 </section>

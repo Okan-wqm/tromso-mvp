@@ -188,6 +188,7 @@
         "core/test_database.py",
         "core/test_languages.py",
         "core/tests.py",
+        "core/tests_crud_mount.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
@@ -232,6 +233,8 @@
         "hr/tests/test_departments.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
@@ -10462,7 +10465,13 @@
         "hr/tests/test_departments.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_impact.py",
+        "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm.py",
+        "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
@@ -12100,6 +12109,7 @@
         "core/test_datamap.py",
         "core/test_languages.py",
         "core/tests.py",
+        "core/tests_crud_mount.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -13222,6 +13232,7 @@
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "hr/tests/test_production_permissions.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
         "monitoring/tests/test_templates_db.py"
@@ -19014,9 +19025,11 @@
               "how": "view",
               "label": "hr.views.punch",
               "url_names": [
+                "hr:production_punch",
                 "hr:punch"
               ],
               "routes": [
+                "/production/team/today/clock-<str:direction>/",
                 "/hr/today/clock-<str:direction>/"
               ]
             }
@@ -19040,9 +19053,11 @@
               "how": "view",
               "label": "hr.views.punch",
               "url_names": [
+                "hr:production_punch",
                 "hr:punch"
               ],
               "routes": [
+                "/production/team/today/clock-<str:direction>/",
                 "/hr/today/clock-<str:direction>/"
               ]
             }
@@ -19082,9 +19097,11 @@
               "how": "view",
               "label": "hr.views.today",
               "url_names": [
+                "hr:production_today",
                 "hr:today"
               ],
               "routes": [
+                "/production/team/",
                 "/hr/"
               ]
             }
@@ -19123,7 +19140,10 @@
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
+        "hr/tests/test_crew.py",
         "hr/tests/test_hardening.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_review.py"
       ]
     },
@@ -19483,10 +19503,18 @@
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
+        "hr/tests/test_crew.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_impact.py",
+        "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm.py",
+        "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_services.py"
@@ -20087,30 +20115,36 @@
               "how": "view",
               "label": "hr.views.approve",
               "url_names": [
-                "hr:leaverequest_approve"
+                "hr:leaverequest_approve",
+                "hr:production_leaverequest_approve"
               ],
               "routes": [
-                "/hr/leave/<uuid:pk>/approve/"
+                "/hr/leave/<uuid:pk>/approve/",
+                "/production/team/leave/<uuid:pk>/approve/"
               ]
             },
             {
               "how": "view",
               "label": "hr.views.reject",
               "url_names": [
-                "hr:leaverequest_reject"
+                "hr:leaverequest_reject",
+                "hr:production_leaverequest_reject"
               ],
               "routes": [
-                "/hr/leave/<uuid:pk>/reject/"
+                "/hr/leave/<uuid:pk>/reject/",
+                "/production/team/leave/<uuid:pk>/reject/"
               ]
             },
             {
               "how": "view",
               "label": "hr.views.cancel",
               "url_names": [
-                "hr:leaverequest_cancel"
+                "hr:leaverequest_cancel",
+                "hr:production_leaverequest_cancel"
               ],
               "routes": [
-                "/hr/leave/<uuid:pk>/cancel/"
+                "/hr/leave/<uuid:pk>/cancel/",
+                "/production/team/leave/<uuid:pk>/cancel/"
               ]
             }
           ],
@@ -20173,10 +20207,17 @@
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
+        "hr/tests/test_crew.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_impact.py",
+        "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_overview_chart.py",
-        "hr/tests/test_review.py"
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm_reads.py",
+        "hr/tests/test_review.py",
+        "hr/tests/test_roles.py"
       ]
     },
     {
@@ -20489,10 +20530,17 @@
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
+        "hr/tests/test_crew.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_impact.py",
+        "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_overview_chart.py",
-        "hr/tests/test_review.py"
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm_reads.py",
+        "hr/tests/test_review.py",
+        "hr/tests/test_roles.py"
       ]
     },
     {
@@ -20857,6 +20905,7 @@
         "hr/tests/test_departments.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_scope.py"
       ]
     },
@@ -21125,10 +21174,12 @@
               "how": "view",
               "label": "hr.views.organisation_chart",
               "url_names": [
-                "hr:orgchart"
+                "hr:orgchart",
+                "hr:production_orgchart"
               ],
               "routes": [
-                "/hr/organization/"
+                "/hr/organization/",
+                "/production/team/organization/"
               ]
             }
           ],
@@ -21155,6 +21206,7 @@
         "hr/tests/test_employees.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_services.py"
@@ -21730,9 +21782,11 @@
               "how": "view",
               "label": "hr.views.plan",
               "url_names": [
+                "hr:production_roster_plan",
                 "hr:roster_plan"
               ],
               "routes": [
+                "/production/team/schedule/plan/",
                 "/hr/schedule/plan/"
               ]
             }
@@ -21756,9 +21810,11 @@
               "how": "view",
               "label": "hr.views.plan",
               "url_names": [
+                "hr:production_roster_plan",
                 "hr:roster_plan"
               ],
               "routes": [
+                "/production/team/schedule/plan/",
                 "/hr/schedule/plan/"
               ]
             }
@@ -21782,9 +21838,11 @@
               "how": "view",
               "label": "hr.views.plan",
               "url_names": [
+                "hr:production_roster_plan",
                 "hr:roster_plan"
               ],
               "routes": [
+                "/production/team/schedule/plan/",
                 "/hr/schedule/plan/"
               ]
             }
@@ -21839,9 +21897,14 @@
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
+        "hr/tests/test_crew.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_impact.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py"
       ]
@@ -22216,9 +22279,14 @@
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
+        "hr/tests/test_crew.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_leave_impact.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_production_team.py",
+        "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py"

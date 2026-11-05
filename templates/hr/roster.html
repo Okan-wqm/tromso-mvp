@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n assets %}
+{% load i18n crud assets %}
 {% comment %} The Shift schedule (hr.resources.ShiftAssignmentResource): a week of the viewer's people, a cell per person
    and day. Every figure comes from the server (hr.read.week); a cell opens the plan of that person and day. {% endcomment %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}"><script type="module" src="{% asset 'js/roster.js' %}"></script>{% endblock %}
@@ -13,7 +13,7 @@
 </nav>
 {% if can_add or can_change or can_delete %}
 {# Paint: hidden until frontend/roster.ts runs. Choose a shift, select cells, apply: the server plans all of them or none. #}
-<form method="post" action="{% url 'hr:roster_plan' %}" class="roster-paint" data-roster-paint hidden>
+<form method="post" action="{% url 'hr:roster_plan'|mounted:request %}" class="roster-paint" data-roster-paint hidden>
   {% csrf_token %}
   <input type="hidden" name="next" value="{{ request.get_full_path }}">
   <input type="hidden" name="shift" value="">
@@ -61,11 +61,11 @@
         <td class="roster-cell{% if cell.blocks %} has-block{% elif cell.findings %} has-warning{% endif %}{% if cell.holiday %} is-holiday{% endif %}" data-day="{{ cell.day|date:'Y-m-d' }}"{% if cell.visible %} data-cell="{{ row.employee.pk }}:{{ cell.day|date:'Y-m-d' }}"{% endif %}>
           {% if cell.visible %}
             {% if cell.assignment %}
-              {% if can_change %}<a class="roster-link" href="{% url 'hr:shiftassignment_edit' cell.assignment.pk %}" data-modal>{% endif %}
+              {% if can_change %}<a class="roster-link" href="{% url 'hr:shiftassignment_edit'|mounted:request cell.assignment.pk %}" data-modal>{% endif %}
               {% if cell.shift %}<span class="shift-chip tone-{{ cell.shift.tone }}" title="{{ cell.shift.name }} {{ cell.shift.starts_at|time:'H:i' }}–{{ cell.shift.ends_at|time:'H:i' }}">{{ cell.shift.code }}</span>{% else %}<span class="shift-chip is-off">{% trans "Off" %}</span>{% endif %}
               {% if can_change %}</a>{% endif %}
             {% elif can_add %}
-              <a class="roster-add" href="{% url 'hr:shiftassignment_create' %}?employee={{ row.employee.pk }}&day={{ cell.day|date:'Y-m-d' }}" data-modal title="{% trans 'Plan this day' %}">+<span class="sr-only">{% trans "Plan this day" %}</span></a>
+              <a class="roster-add" href="{% url 'hr:shiftassignment_create'|mounted:request %}?employee={{ row.employee.pk }}&day={{ cell.day|date:'Y-m-d' }}" data-modal title="{% trans 'Plan this day' %}">+<span class="sr-only">{% trans "Plan this day" %}</span></a>
             {% endif %}
             {% if cell.holiday %}<span class="roster-holiday" title="{{ cell.holiday.name }}">{{ cell.holiday.name }}</span>{% endif %}
             {% if cell.findings %}<span class="roster-finding" title="{{ cell.finding_text }}">!</span>{% endif %}
@@ -78,4 +78,5 @@
     </tbody>
   </table>
 </div>
+{% if crew %}{% include "hr/_crew.html" %}{% endif %}
 {% endblock %}

@@ -5,7 +5,7 @@ from django.db.models.functions import Coalesce, TruncDate
 from django.utils.translation import gettext_lazy as _
 
 from core import navigation
-from core.crud import Resource
+from core.crud import Mount, Resource
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
@@ -31,6 +31,7 @@ class AttendanceRecordResource(Resource):
     form_class = AttendanceRecordForm
     name, plural = _('attendance record'), _('attendance records')
     url_prefix = 'hr/time/attendance'
+    mounts = (Mount(scope.PRODUCTION, 'production/team/attendance'),)
     list_template = 'hr/attendance_list.html'
     page_size = 50
     icon = 'user-check'
@@ -38,12 +39,8 @@ class AttendanceRecordResource(Resource):
     DAYS = 14
 
     @classmethod
-    def group(cls):
-        return navigation.page(cls.url_name('list')).heading
-
-    @classmethod
-    def title(cls):
-        return navigation.page(cls.url_name('list')).entry.label
+    def menu_place(cls, mount=None):
+        return navigation.page(cls.url_name('list', mount))
 
     @classmethod
     def queryset(cls):
@@ -51,7 +48,8 @@ class AttendanceRecordResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return scope.by_day(request.user, objects.annotate(clocked_day=TruncDate('clock_in')), 'employee', 'clocked_day')
+        return scope.by_day(request.user, objects.annotate(clocked_day=TruncDate('clock_in')), 'employee', 'clocked_day',
+                            scope.realm_for(request))
 
     @classmethod
     def allowed(cls, request, obj, action):
@@ -60,6 +58,7 @@ class AttendanceRecordResource(Resource):
     @classmethod
     def form(cls, request, *args, **kwargs):
         kwargs.setdefault('user', request.user)
+        kwargs.setdefault('realm', scope.realm_for(request))
         return cls.form_class(*args, **kwargs)
 
     @classmethod

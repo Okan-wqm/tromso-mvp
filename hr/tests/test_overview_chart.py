@@ -78,10 +78,10 @@ class OverviewPageTests(OverviewTestCase):
         self.plan(self.in_a, MONDAY)
         self.plan(self.in_b, MONDAY)
         self.client.force_login(self.lead)
-        url = reverse('hr:overview')
+        url = reverse('hr:production_overview')
         page = self.client.get(url, {'week': MONDAY.isoformat()})
         self.assertEqual([r.employee for r in page.context['overview'].rows], [self.in_a])
-        self.assertEqual((page.context['title'], page.context['eyebrow']), ('Team overview', 'Time & shifts'))
+        self.assertEqual((page.context['title'], page.context['eyebrow']), ('Team overview', 'Time & attendance'))
         for query in ({'department': token(self.dept_b)}, {'q': 'Bravo'}, {'week': 'nonsense', 'page': 'x'}):
             rows = self.client.get(url, query).context['overview'].rows
             self.assertEqual({r.employee.last_name for r in rows} - {'Alfa'}, set(), query)
@@ -92,60 +92,88 @@ class OverviewPageTests(OverviewTestCase):
 
     def test_it_is_a_page_of_the_menu_under_time_and_shifts(self):
         self.client.force_login(self.lead)
-        response = self.client.get(reverse('hr:overview'))
+        response = self.client.get(reverse('hr:production_overview'))
         shown = [entry['label'] for section in response.context['rail_sections'] for group in section['groups']
                  for entry in group['entries']]
         self.assertIn('Team overview', shown)
 
 
 class OrgChartTests(OverviewTestCase):
-    def tree(self, actor):
-        return read.org_tree(actor)
+    """Two charts of one company: Company's office tree with one Production box (computed, never a row: nothing to delete),
+    and Production's sites with their production departments. Head counts are the viewer's to see."""
 
     def names(self, node):
         return [(child.kind, child.label, child.direct, child.total, [(g.label, g.direct, g.total) for g in child.children])
                 for child in node.children]
 
-    def test_sites_production_departments_and_office_departments_with_their_head_counts(self):
-        tree = self.tree(self.hr)
-        self.assertEqual(tree.total, 3)
-        self.assertEqual(self.names(tree), [
-            ('site', 'Bergen', 0, 2, [('Hatchery A', 1, 1), ('Nursery B', 1, 1)]),
-            ('office', 'Administration', 0, 1, [('Finance', 1, 1)]),
-        ])
-        finance = tree.children[1].children[0]
-        self.assertEqual(finance.kind, 'office')
+    def test_the_production_chart_has_the_sites_and_their_production_departments(self):
+        tree = read.org_tree(self.hr, read.PRODUCTION)
+        self.assertEqual(tree.total, 2)
+        self.assertEqual(self.names(tree), [('site', 'Bergen', 0, 2, [('Hatchery A', 1, 1), ('Nursery B', 1, 1)])])
         self.assertEqual(tree.children[0].children[0].manager, self.lead)
+
+    def test_the_company_chart_has_the_office_tree_and_one_production_box(self):
+        tree = read.org_tree(self.hr, read.OFFICE)
+        self.assertEqual(self.names(tree), [('office', 'Administration', 0, 1, [('Finance', 1, 1)]),
+                                            (read.PRODUCTION_ROOT, 'Production', 2, 2, [])])
+        self.assertEqual(tree.total, 3)
+
+    def test_the_production_box_is_there_with_no_production_department_and_counts_only_live_ones(self):
+        for department in ProductionDepartment.objects.all():
+            for posting in department.postings.all():
+                posting.soft_delete(self.hr)
+            department.soft_delete(self.hr)
+        box = read.org_tree(self.hr, read.OFFICE).children[-1]
+        self.assertEqual((box.kind, box.direct, box.total), (read.PRODUCTION_ROOT, 0, 0))
 
     def test_a_production_department_appears_renames_and_goes_with_no_hr_write(self):
         new = ProductionDepartment.objects.create(site=self.site, name='Smolt hall', code='SMO')
-        self.assertIn('Smolt hall', [c.label for c in self.tree(self.hr).children[0].children])
+        tree = lambda: [c.label for c in read.org_tree(self.hr, read.PRODUCTION).children[0].children]
+        self.assertIn('Smolt hall', tree())
         ProductionDepartment.objects.filter(pk=new.pk).update(name='Smolt hall 2')
-        self.assertIn('Smolt hall 2', [c.label for c in self.tree(self.hr).children[0].children])
+        self.assertIn('Smolt hall 2', tree())
         new.soft_delete(self.hr)
-        self.assertNotIn('Smolt hall 2', [c.label for c in self.tree(self.hr).children[0].children])
+        self.assertNotIn('Smolt hall 2', tree())
 
     def test_the_counts_are_the_viewers_to_see_and_a_site_less_department_has_its_own_box(self):
         orphan = ProductionDepartment.objects.create(site=None, name='Orphan hall', code='ORP')
         place(employee('E-9', 'India'), orphan)
-        boss = self.tree(self.lead)
+        boss = read.org_tree(self.lead, read.PRODUCTION)
         self.assertEqual(boss.total, 1)                                          # only the lead's own team
-        labels = [(c.kind, c.label) for c in boss.children]
-        self.assertIn(('site', ''), labels)                                      # the department without a site
-        self.assertEqual(self.tree(self.hr).total, 4)
+        self.assertIn(('site', ''), [(c.kind, c.label) for c in boss.children])  # the department without a site
+        self.assertEqual(read.org_tree(self.hr, read.PRODUCTION).total, 3)
+        self.assertEqual(read.org_tree(self.lead, read.OFFICE).children[-1].total, 1)
 
-    def test_deep_nesting_totals_below_and_the_page(self):
+    def test_deep_nesting_totals_below_and_the_company_page(self):
         from ..models import OfficeDepartment
         sub = OfficeDepartment.objects.create(name='Payables', code='PAB', parent=self.finance, site=self.site)
         place(employee('E-10', 'Juliet'), sub)
-        top = next(c for c in self.tree(self.hr).children if c.label == 'Administration')
+        top = next(c for c in read.org_tree(self.hr, read.OFFICE).children if c.label == 'Administration')
         self.assertEqual((top.direct, top.total), (0, 2))
-        self.assertEqual(top.children[0].total, 2)
         self.client.force_login(self.hr)
         page = self.client.get(reverse('hr:orgchart'))
         self.assertContains(page, 'Payables')
-        self.assertContains(page, 'Administration')
+        self.assertNotContains(page, 'Hatchery A')
         self.assertEqual((page.context['title'], page.context['eyebrow']), ('Organization chart', 'HR dashboard'))
+
+    def test_the_production_box_links_to_the_production_chart_only_for_who_may_open_it(self):
+        target = reverse('hr:production_orgchart')
+        self.client.force_login(self.hr)                                          # holds hr.view_employee
+        self.assertContains(self.client.get(reverse('hr:orgchart')), f'href="{target}"')
+        office_reader = user('office', 'view_officedepartment', group='Office reader role')
+        self.client.force_login(office_reader)
+        page = self.client.get(reverse('hr:orgchart'))
+        self.assertContains(page, 'org-production_root')
+        self.assertNotContains(page, f'href="{target}"')
+
+    def test_the_production_page_and_its_verb(self):
+        self.client.force_login(self.hr)
+        page = self.client.get(reverse('hr:production_orgchart'))
+        self.assertContains(page, 'Hatchery A')
+        self.assertNotContains(page, 'Finance')
+        self.assertEqual((page.context['title'], page.context['eyebrow']), ('Organization chart', 'People'))
+        self.client.force_login(user('office', 'view_officedepartment', group='Office reader role'))
+        self.assertEqual(self.client.get(reverse('hr:production_orgchart')).status_code, 403)
 
     def test_the_verb_decides(self):
         self.client.force_login(user('stranger'))
@@ -154,13 +182,15 @@ class OrgChartTests(OverviewTestCase):
         self.assertEqual(self.client.get(reverse('hr:orgchart')).status_code, 200)
 
     def test_the_queries_do_not_grow_with_the_departments_and_people(self):
-        read.org_tree(self.hr)
-        def count(departments):
-            for n in range(departments):
-                dept = ProductionDepartment.objects.create(site=self.site, name=f'Hall {n}-{departments}',
-                                                           code=f'H{n}X{departments}')
-                place(employee(f'E-{7000 + n + departments}', f'Many{n}'), dept)
-            with CaptureQueriesContext(connection) as queries:
-                read.org_tree(self.hr)
-            return len(queries)
-        self.assertEqual(count(3), count(30))
+        for realm in (read.PRODUCTION, read.OFFICE):
+            read.org_tree(self.hr, realm)
+
+            def count(departments):
+                for n in range(departments):
+                    dept = ProductionDepartment.objects.create(site=self.site, name=f'Hall {n}-{departments}-{realm}',
+                                                               code=f'H{n}X{departments}{realm[0]}')
+                    place(employee(f'E-{7000 + n + departments}{realm[0]}', f'Many{n}'), dept)
+                with CaptureQueriesContext(connection) as queries:
+                    read.org_tree(self.hr, realm)
+                return len(queries)
+            self.assertEqual(count(3), count(30), realm)

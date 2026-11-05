@@ -52,8 +52,10 @@ class Employee(AuditedModel):
         ordering = ['last_name', 'first_name', 'employee_number']
         verbose_name = _('employee')
         verbose_name_plural = _('employees')
-        # Everyone: reads every employee, not only the team (hr.scope.team); the matrix offers it as a column.
-        permissions = [('all_employee', 'Can see every employee')]
+        # Everyone: reads every employee, not only the team (hr.scope.team); All production: every person placed in a
+        # production department, never the office's nor a leave reason. The matrix offers each as a column.
+        permissions = [('all_employee', 'Can see every employee'),
+                       ('all_production_employee', 'Can see every production person')]
         constraints = [
             models.UniqueConstraint(
                 fields=['employee_number'], condition=Q(is_deleted=False), name='uq_employees_number_live',

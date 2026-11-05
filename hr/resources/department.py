@@ -6,14 +6,14 @@ from .. import read
 from ..forms import OfficeDepartmentForm
 from ..models import OfficeDepartment
 
-KINDS = [(read.PRODUCTION, _('Production')), (read.OFFICE, _('Office'))]
 STATUSES = [('active', _('Active')), ('inactive', _('Inactive'))]
 
 
 class OfficeDepartmentResource(Resource):
-    """The Departments page. Its list is one read over two kinds: the farm's production departments (never copied,
-    edited on their own page under Production) and HR's office departments, which this tab creates, edits and
-    deletes. So the list, its search and its filters are written here (the default ones narrow a queryset)."""
+    """The Departments page of Company › HR: the office departments, which this tab creates, edits and deletes, in tree
+    order with the head count the viewer may see (hr.read.departments). The production departments are the farm's own rows,
+    under Production. The list is a read in tree order, so its search and filter are written here (the default ones narrow
+    a queryset)."""
 
     model = OfficeDepartment
     form_class = OfficeDepartmentForm
@@ -37,14 +37,9 @@ class OfficeDepartmentResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        kind, status = request.GET.get('kind', ''), request.GET.get('status', '')
-        if kind in dict(KINDS):
-            objects = [row for row in objects if row.kind == kind]
-        else:
-            kind = ''
+        status = request.GET.get('status', '')
         if status in dict(STATUSES):
             objects = [row for row in objects if row.status == status]
         else:
             status = ''
-        return objects, {'kinds': KINDS, 'chosen_kind': kind, 'statuses': STATUSES, 'chosen_status': status,
-                         'production': read.PRODUCTION}
+        return objects, {'statuses': STATUSES, 'chosen_status': status}

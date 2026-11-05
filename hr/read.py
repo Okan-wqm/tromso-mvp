@@ -8,25 +8,26 @@ from decimal import Decimal
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from core.models import in_tree_order
+from core.navigation import Badge
 from farm.clocks import clocks
 from farm.models import ProductionDepartment
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import clock, leave, rules, scope, units
-from .models import (AttendanceRecord, Employee, Holiday, OfficeDepartment, Posting, SchedulingSettings,
+from .models import (AttendanceRecord, Employee, Holiday, LeaveRequest, OfficeDepartment, Posting, SchedulingSettings,
                      ShiftAssignment)
-
-PRODUCTION, OFFICE = 'production', 'office'
+from .models.leave import LeaveStatus
+from .scope import OFFICE, PRODUCTION      # the two kinds of department are the two realms
 
 
 @dataclass
 class DepartmentRow:
-    """One line of the Departments page: a production department (the farm's own row, shown here by itself) or an
-    office department (HR's). `depth` nests an office department under its parent."""
-    kind: str
+    """One line of Company › HR › Departments: an office department (HR's own; the production departments are the farm's,
+    under Production). `depth` nests it under its parent."""
     obj: object
     depth: int = 0
     head_count: int = 0     # the people placed in it today that the viewer may reach
@@ -53,33 +54,30 @@ class DepartmentRow:
 
     @property
     def parent(self):
-        return self.obj.parent if self.kind == OFFICE else None
+        return self.obj.parent
 
     @property
     def pk(self):
         return self.obj.pk
 
 
-def head_counts(user, day=None):
-    """{(kind, department id): people placed in it on `day`} among the people `user` may reach: one grouped query."""
+def head_counts(user, day=None, realm=None):
+    """{(kind, department id): people placed in it on `day`} among the people `user` may reach (in `realm`, if given): one
+    grouped query."""
     day = day or site_today(None)
-    rows = (Posting.objects.filter(scope.covering(day), employee__in=scope.team(user, day).values('pk'))
+    rows = (Posting.objects.filter(scope.covering(day), employee__in=scope.team(user, day, realm).values('pk'))
             .values('production_department', 'office_department').annotate(people=Count('pk')))
     return {(PRODUCTION if row['production_department'] else OFFICE,
              row['production_department'] or row['office_department']): row['people'] for row in rows}
 
 
 def departments(user=None):
-    """Every live department, production first (by site and name, flat) and then the office ones in tree order, each
-    with the head count the viewer may see. A production department created, renamed or deleted on the farm side is
-    here at once: this is the same row."""
-    production = ProductionDepartment.objects.select_related('site', 'manager').order_by('site__name', 'name')
+    """Every live office department in tree order, each with the head count the viewer may see. The production departments
+    are not here: they are the farm's rows, listed under Production (Setup, and Team's organisation chart)."""
     office = OfficeDepartment.objects.select_related('site', 'manager', 'parent').order_by('name')
-    counts = head_counts(user) if user is not None else {}
-    return ([DepartmentRow(PRODUCTION, department, head_count=counts.get((PRODUCTION, department.pk), 0))
-             for department in production]
-            + [DepartmentRow(OFFICE, department, department.depth, counts.get((OFFICE, department.pk), 0))
-               for department in in_tree_order(office)])
+    counts = head_counts(user, realm=OFFICE) if user is not None else {}
+    return [DepartmentRow(department, department.depth, counts.get((OFFICE, department.pk), 0))
+            for department in in_tree_order(office)]
 
 
 def placement_on(employee, day):
@@ -191,14 +189,15 @@ class Week:
         return self.start + timedelta(days=7)
 
 
-def week(user, week_start, department=None, page=1, per_page=50, query=''):
+def week(user, week_start, department=None, page=1, per_page=50, query='', realm=None):
     """The roster of the ISO week starting `week_start` (a Monday) for the people `user` may reach, `per_page` of them:
     each person's cell per day (their shift, planned off, a holiday, or nothing planned) and the rules' findings. The
     queries do not depend on the number of people: the employees of the page, their plan from a fortnight either side,
-    their placements and the holidays."""
+    their placements and the holidays. With a realm (hr.scope), a person shows only on the days they were in it.
+    Production › Team and Company › HR read the same week this way."""
     start = monday(week_start)
     days = [start + timedelta(days=n) for n in range(7)]
-    visible = scope.visible_days(user, days[0], days[-1])
+    visible = scope.visible_days(user, days[0], days[-1], realm)
     people = Employee.objects.filter(joined_on__lte=days[-1]).filter(Q(left_on__isnull=True) | Q(left_on__gte=days[0]))
     if visible is not None:
         people = people.filter(pk__in=list(visible))
@@ -259,6 +258,67 @@ def week(user, week_start, department=None, page=1, per_page=50, query=''):
     return Week(start, days, rows, len(rows), paginator.count, shown.number, paginator.num_pages)
 
 
+# ---- the crew: what a production worker sees of their colleagues ---------------------------------------------------
+@dataclass
+class CrewCell:
+    """A colleague working on a day: the shift's code, times and tone, and nothing else."""
+    day: date
+    shift_code: str
+    starts_at: object
+    ends_at: object
+    tone: int
+
+
+@dataclass
+class CrewRow:
+    """A colleague's week: their name, the department they share with the viewer, and a cell per day; None where they do not
+    work (planned off, on leave, nothing planned, or not in the viewer's department that day: the same empty cell)."""
+    name: str
+    department: str
+    cells: list
+
+
+@dataclass
+class CrewWeek:
+    days: list
+    rows: list
+
+
+def crew_week(user, week_start):
+    """The week of the viewer's crew (hr.scope.colleagues) for the Crew block of their schedule. Built from plain values, never
+    from a plan, a leave request or a punch, so it cannot carry a note, a finding, a leave type, an absence or a number of
+    hours, whatever a page does with it; and nothing in it opens a record. In a fixed number of queries."""
+    start = monday(week_start)
+    days = [start + timedelta(days=n) for n in range(7)]
+    crew = scope.colleagues(user, days[0], days[-1])
+    if not crew:
+        return CrewWeek(days, [])
+    people = list(Employee.objects.filter(pk__in=list(crew), joined_on__lte=days[-1]).filter(
+        Q(left_on__isnull=True) | Q(left_on__gte=days[0])).select_related('user').order_by(
+        'last_name', 'first_name', 'employee_number'))
+    ids = [person.pk for person in people]
+    plan = {(row.employee_id, row.day): row.shift for row in ShiftAssignment.objects.filter(
+        employee__in=ids, day__range=(days[0], days[-1]), shift__isnull=False).select_related('shift')}
+    away = leave.approved_days(ids, days[0], days[-1])
+    placed = defaultdict(list)
+    for posting in Posting.objects.filter(scope.overlapping(days[0], days[-1]), employee__in=ids,
+                                          production_department__isnull=False).select_related(
+            'production_department').order_by('valid_from'):
+        placed[posting.employee_id].append(posting)
+    rows = []
+    for person in people:
+        cells = []
+        for day in days:
+            shift = plan.get((person.pk, day))
+            works = day in crew[person.pk] and shift is not None and day not in away.get(person.pk, set())
+            cells.append(CrewCell(day, shift.code, shift.starts_at, shift.ends_at, shift.tone) if works else None)
+        first = min(crew[person.pk])       # the department they share with the viewer, on the first day they do
+        shared = next((p for p in placed[person.pk]
+                       if p.valid_from <= first and (p.valid_until is None or p.valid_until >= first)), None)
+        rows.append(CrewRow(person.full_name, shared.production_department.name if shared else '', cells))
+    return CrewWeek(days, rows)
+
+
 # ---- today: who is where ----------------------------------------------------------------------------------------
 @dataclass
 class BoardRow:
@@ -296,18 +356,18 @@ class Board:
         return self.count(rules.PRESENT) + self.count(rules.LATE)
 
 
-def board(user, moment=None):
+def board(user, moment=None, realm=None):
     """Who is where now, for the people `user` may reach: each person's planned shift today (or the night shift that began
     yesterday and is still running), their punches, their leave, and the state worked out from them (rules.status) on their
     site's clock. People planned off, on a holiday or with nothing planned are not listed, unless they are there all the
-    same. In a fixed number of queries whatever the number of people."""
+    same. In a fixed number of queries whatever the number of people. With a realm, only the people in it today."""
     moment = moment or timezone.now()
     clocks_now = clocks(moment)
     by_site = {site: clock for clock in clocks_now if clock.sites is not None for site in clock.sites}
     company_clock = next(clock for clock in clocks_now if clock.sites is None)
     low, high = min(c.today for c in clocks_now), max(c.today for c in clocks_now)
     settings = SchedulingSettings.get()
-    people = list(scope.team(user, high).filter(joined_on__lte=high).filter(Q(left_on__isnull=True) | Q(left_on__gte=low))
+    people = list(scope.team(user, high, realm).filter(joined_on__lte=high).filter(Q(left_on__isnull=True) | Q(left_on__gte=low))
                   .select_related('user').order_by('last_name', 'first_name', 'employee_number'))
     ids = [employee.pk for employee in people]
     postings = defaultdict(list)
@@ -385,11 +445,11 @@ class Overview:
         return Decimal(self.standard_minutes) / 60
 
 
-def overview(user, week_start, department=None, page=1, per_page=50, query=''):
+def overview(user, week_start, department=None, page=1, per_page=50, query='', realm=None):
     """The week of the viewer's people as numbers: per person the days working, off and on leave and the planned hours against
     the standard week; per day how many work, are off or are away. Everything comes from `week` (the same cells, the same scope),
     so the two pages cannot disagree, and nothing is stored."""
-    plan = week(user, week_start, department, page, per_page, query)
+    plan = week(user, week_start, department, page, per_page, query, realm)
     standard = SchedulingSettings.get().standard_week_minutes
     footer = [{'working': 0, 'off': 0, 'leave': 0} for _day in plan.days]
     rows = []
@@ -412,11 +472,15 @@ def overview(user, week_start, department=None, page=1, per_page=50, query=''):
     return Overview(plan, rows, footer, standard)
 
 
+PRODUCTION_ROOT = 'production_root'
+
+
 @dataclass
 class Node:
-    """One box of the organisation chart: the company, a site, a department. `direct` are the people placed in it, `total`
-    those in it and below it, as far as the viewer may count them."""
-    kind: str                  # company, site, production, office
+    """One box of the organisation chart: the company, a site, a department, or Company's one Production box (computed
+    here, never a row, so there is nothing to delete). `direct` are the people placed in it, `total` those in it and below
+    it, as far as the viewer may count them."""
+    kind: str                  # company, site, production, office, production_root
     label: str
     obj: object = None
     manager: object = None
@@ -425,35 +489,63 @@ class Node:
     children: list = field(default_factory=list)
 
 
-def org_tree(user):
-    """The company as a tree for a person to read: its sites with their production departments, then the office departments by
-    their parents, each with its manager and the people in it (direct and in all below), counted among the people the viewer
-    may reach. Server-drawn nested lists; no layout algorithm and no script."""
-    counts = head_counts(user)
-    sites = {}
-    for department in ProductionDepartment.objects.select_related('site', 'manager').order_by('name'):
-        sites.setdefault(department.site, []).append(department)
+def org_tree(user, realm):
+    """The company as a tree for a person to read, as each panel shows it, counted among the people the viewer may reach.
+    Production (Production › Team): the sites with their production departments, each with its manager. Office (Company ›
+    HR): the office departments by their parents, then one Production box with the production people the viewer may count,
+    there even with no production department. Server-drawn nested lists; no layout algorithm and no script."""
+    counts = head_counts(user, realm=realm)
     root = Node('company', '')
-    for site in sorted(sites, key=lambda item: (item is None, item.name if item else '')):
-        node = Node('site', site.name if site else '', site)
-        for department in sites[site]:
-            direct = counts.get((PRODUCTION, department.pk), 0)
-            node.children.append(Node(PRODUCTION, department.name, department, department.manager, direct, direct))
-        node.total = sum(child.total for child in node.children)
-        root.children.append(node)
-    offices = list(OfficeDepartment.objects.select_related('site', 'manager').order_by('name'))
-    by_parent = defaultdict(list)
-    for department in offices:
-        by_parent[department.parent_id].append(department)
+    if realm == PRODUCTION:
+        sites = {}
+        for department in ProductionDepartment.objects.select_related('site', 'manager').order_by('name'):
+            sites.setdefault(department.site, []).append(department)
+        for site in sorted(sites, key=lambda item: (item is None, item.name if item else '')):
+            node = Node('site', site.name if site else '', site)
+            for department in sites[site]:
+                direct = counts.get((PRODUCTION, department.pk), 0)
+                node.children.append(Node(PRODUCTION, department.name, department, department.manager, direct, direct))
+            node.total = sum(child.total for child in node.children)
+            root.children.append(node)
+    else:
+        offices = list(OfficeDepartment.objects.select_related('site', 'manager').order_by('name'))
+        by_parent = defaultdict(list)
+        for department in offices:
+            by_parent[department.parent_id].append(department)
 
-    def build(department):
-        direct = counts.get((OFFICE, department.pk), 0)
-        node = Node(OFFICE, department.name, department, department.manager, direct, direct)
-        node.children = [build(child) for child in by_parent.get(department.pk, [])]
-        node.total = direct + sum(child.total for child in node.children)
-        return node
+        def build(department):
+            direct = counts.get((OFFICE, department.pk), 0)
+            node = Node(OFFICE, department.name, department, department.manager, direct, direct)
+            node.children = [build(child) for child in by_parent.get(department.pk, [])]
+            node.total = direct + sum(child.total for child in node.children)
+            return node
 
-    for department in by_parent.get(None, []):
-        root.children.append(build(department))
+        root.children = [build(department) for department in by_parent.get(None, [])]
+        production = sum(head_counts(user, realm=PRODUCTION).values())
+        root.children.append(Node(PRODUCTION_ROOT, _('Production'), direct=production, total=production))
     root.total = sum(child.total for child in root.children)
     return root
+
+
+# ---- deciding leave ------------------------------------------------------------------------------------------------
+def leave_impact(user, leave_request):
+    """[(day, shift)]: the shifts the person is planned on inside the request's days (as far as the viewer reaches them), for
+    the decider to replace. Information only: an approval is never blocked by it (the rules refuse a shift on approved leave
+    when the plan is saved, hr.rules)."""
+    plans = ShiftAssignment.objects.filter(employee=leave_request.employee, shift__isnull=False,
+                                           day__range=(leave_request.first_day, leave_request.last_day))
+    return [(row.day, row.shift) for row in scope.by_day(user, plans, 'employee', 'day').select_related('shift')
+            .order_by('day')]
+
+
+LEAVE_DECIDER = 'hr.change_leaverequest'
+
+
+def pending_leave_badge(user):
+    """The number beside Production › Team › Leave requests: the pending requests of production people the viewer may decide
+    (Edit on leave, in their reach on the request's first day, never their own: hr.services.can_decide). Not polled."""
+    if not user.has_perm(LEAVE_DECIDER):
+        return Badge(0, '')
+    waiting = scope.by_day(user, LeaveRequest.objects.filter(status=LeaveStatus.PENDING), 'employee', 'first_day',
+                           PRODUCTION).exclude(employee__user=user)
+    return Badge(waiting.count(), '')

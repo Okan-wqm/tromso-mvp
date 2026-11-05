@@ -27,6 +27,10 @@ class ShiftAssignment(AuditedModel):
         ordering = ['day', 'employee']
         verbose_name = _('plan')
         verbose_name_plural = _('plans')
+        # Crew: a production worker sees the name and shift of the people in their own department beside their own week
+        # (hr.read.crew_week); the matrix offers it as a column.
+        permissions = [('crew_shiftassignment',
+                        'Can see the shift plan of the colleagues in their own production department')]
         constraints = [
             models.UniqueConstraint(fields=['employee', 'day'], condition=Q(is_deleted=False),
                                     name='uq_shift_assignments_employee_day',

@@ -47,3 +47,6 @@
 .roster-paint .shift-chip { cursor: pointer; border: 1px solid transparent; }
 .roster-paint .shift-chip[aria-pressed="true"] { border-color: var(--stripe-dark, #2B5F43); box-shadow: 0 0 0 2px var(--stripe-dark, #2B5F43); }
 .roster-cell.is-selected { outline: 2px solid var(--stripe-dark, #2B5F43); outline-offset: -2px; }
+
+/* The Crew block under a worker's own week (templates/hr/_crew.html) */
+.crew { margin-top: 1.75rem; }

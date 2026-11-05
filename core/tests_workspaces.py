@@ -66,7 +66,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                                     'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                     'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
                                                     'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages'])
+                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
+                                                   'Team overview', 'Team list', 'Organization chart'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
@@ -128,7 +129,8 @@ class PanelMemoryTests(WorkspaceTestCase):
                                                   'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                   'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
                                                   'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages'])
+                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
+                                                   'Team overview', 'Team list', 'Organization chart'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -162,7 +164,7 @@ class MainHeadingTests(WorkspaceTestCase):
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
                                                  'Purchasing']),
                           ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']), ('Reports', ['']),
-                          ('Communication', [''])])
+                          ('Communication', ['']), ('Team', ['Time & attendance', 'People'])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)

@@ -36,7 +36,9 @@ class EmployeeForm(TabbedForm):
     """A person. Where they work is a dated placement, not a column: this form shows their current one and, when it
     is changed, `hr.services.move` closes it the day before the date given and opens the next (the resource's
     `after_save`; the choice travels on the instance as `placement`). There is no pay, bank, address or number of
-    identity here, on purpose."""
+    identity here, on purpose. A new person is placed in a department of the panel the form is opened in (`realm`: Production
+    › Team in a production department, Company › HR in an office one), so they are in that panel once saved; a move offers
+    every department (a person changes sides by a dated move, hr.services.move)."""
 
     tabs = TABS
     department = DepartmentField(label=_('Department'), required=False)
@@ -62,7 +64,7 @@ class EmployeeForm(TabbedForm):
             'left_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         }
 
-    def __init__(self, *args, editor=None, **kwargs):
+    def __init__(self, *args, editor=None, realm=None, **kwargs):
         super().__init__(*args, **kwargs)
         adding = self.instance._state.adding
         self.today = site_today(None)
@@ -77,7 +79,7 @@ class EmployeeForm(TabbedForm):
             self.fields['user'].disabled = True
             self.fields['user'].queryset = accounts.filter(pk=self.instance.user_id or 0)
         self.fields['department'].choices = [('', _('Select a department'))] + units.choices(
-            include=[self.current.department] if self.current else [])
+            include=[self.current.department] if self.current else [], kinds=[realm] if realm and adding else None)
         self.fields['department'].required = adding
         self.fields['from_day'].help_text = _('The day the new placement starts; the old one ends the day before. '
                                               'For a new person: their first day.')

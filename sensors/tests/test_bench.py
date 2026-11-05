@@ -28,8 +28,8 @@ class BenchTests(SensorsCase):
             cursor.execute('SELECT count(*) FROM sensors_reading WHERE channel_no >= 1000000')
             self.assertEqual(cursor.fetchone()[0], 2 * 1440)
         report = out.getvalue()
-        for words in ('raw rows: 2880', 'minute rollup rows:', 'rollup / raw:', 'chart of one channel:',
-                      'latest of 2 channels:'):
+        for words in ('raw rows: 2880', 'hour rollup rows:', 'chart of one channel over the span:',
+                      'channels over seven days:', 'latest of 2 channels:'):
             self.assertIn(words, report)
 
     def test_ten_thousand_ingest_writes_leave_the_activity_log_alone(self):
@@ -37,3 +37,13 @@ class BenchTests(SensorsCase):
         call_command('bench_sensors', '--channels', '1', '--days', '7', '--interval', '60',
                      '--confirm-database', connection.settings_dict['NAME'], stdout=StringIO())
         self.assertEqual((audit.revision(), AuditLog.objects.count()), (revision, rows))
+
+    def test_it_never_writes_over_rows_already_there(self):
+        # A multi-row insert that meets a row in a compressed chunk would lose the rest silently (TimescaleDB 2.17.2):
+        # the command refuses a range that holds rows, unless told to delete them first.
+        name = connection.settings_dict['NAME']
+        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
+        with self.assertRaises(CommandError):
+            call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, stdout=StringIO())
+        call_command('bench_sensors', '--channels', '1', '--days', '1', '--confirm-database', name, '--drop',
+                     stdout=StringIO())

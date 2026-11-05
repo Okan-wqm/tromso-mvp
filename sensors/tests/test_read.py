@@ -60,6 +60,12 @@ class LatestTests(ReadCase):
         stale = read.latest([self.temp.channel_no], now + timedelta(seconds=200))[self.temp.channel_no]
         self.assertFalse(stale.fresh)
 
+    def test_a_replayed_backlog_is_not_fresh_because_it_was_received_now(self):
+        now = timezone.now()
+        ChannelState.objects.create(channel_no=self.temp.channel_no, last_value=9.5, last_value_ts=now - timedelta(hours=2),
+                                    last_good_at=now - timedelta(seconds=1), last_seen_at=now)
+        self.assertFalse(read.latest([self.temp.channel_no], now)[self.temp.channel_no].fresh)
+
     def test_a_channel_with_no_value_yet_is_said_so(self):
         state = read.latest([self.temp.channel_no], timezone.now())[self.temp.channel_no]
         self.assertIsNone(state.value)
@@ -111,7 +117,7 @@ class SeriesTests(ReadCase):
         self.rows = rows[:-1]
 
     def test_the_tier_follows_the_bucket_width(self):
-        for hours, tier in ((1, 'raw'), (24, '1m'), (24 * 30, '1h'), (24 * 400, 'day')):
+        for hours, tier in ((1, 'raw'), (24, 'raw'), (24 * 30, '1h'), (24 * 400, 'day')):
             with self.subTest(hours=hours):
                 found = read.series(self.t1, 'temperature_c', self.start, self.start + timedelta(hours=hours))
                 self.assertEqual(found.tier, tier)
@@ -200,7 +206,7 @@ class ChartTests(ReadCase):
         self.assertIn('&lt;T-01&gt;', svg)
         self.assertIn('class="chart-gap"', svg)
         self.assertIn('class="chart-line"', svg)
-        self.assertIn('data-tier="1m"', svg)
+        self.assertIn('data-tier="raw"', svg)
 
     def test_an_empty_chart_says_so(self):
         found = read.series(self.t1, 'temperature_c', self.start - timedelta(days=3), self.start - timedelta(days=2))

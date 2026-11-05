@@ -185,3 +185,29 @@ class OverviewTests(SensorsCase):
     def test_a_person_without_rights_sees_no_state(self):
         self.client.force_login(get_user_model().objects.create_user('nobody', 'n@example.com', 'x'))
         self.assertEqual(self.client.get(reverse('sensors:home')).context['state_tiles'], [])
+
+
+class BrokerAuthDirTests(BrokerSyncTests):
+    def test_without_paths_the_files_go_to_the_configured_folder(self):
+        with self.settings(SENSORS_BROKER_AUTH_DIR=str(self.folder / 'auth')):
+            call_command('sensor_broker_sync', stdout=StringIO())
+        self.assertTrue((self.folder / 'auth' / 'passwd').read_text().startswith('gateway-1:$7$'))
+        self.assertIn('topic write farm/hall/probe-1', (self.folder / 'auth' / 'acl').read_text())
+
+
+class IngestCounterTests(SensorsCase):
+    def test_the_overview_shows_what_the_ingest_dropped_and_what_the_database_refused(self):
+        admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(admin)
+        IngestStatus.objects.create(connection_id=self.connection.pk, heartbeat_at=timezone.now(), connected=True,
+                                    qos0_dropped=3, poison_total=2)
+        tiles = {str(tile['label']): tile for tile in self.client.get(reverse('sensors:home')).context['state_tiles']}
+        self.assertEqual(tiles['QoS 0 messages dropped on a full queue']['count'], 3)
+        self.assertEqual(tiles['Messages the database refused']['count'], 2)
+
+    def test_the_writer_gets_zero_counters_by_default(self):
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO sensors_ingest_status (connection_id, heartbeat_at) VALUES (%s, now())',
+                           [self.connection.pk])
+        status = IngestStatus.objects.get()
+        self.assertEqual((status.qos0_dropped, status.poison_total), (0, 0))

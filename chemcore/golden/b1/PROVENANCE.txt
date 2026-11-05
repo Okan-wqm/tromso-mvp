@@ -1,0 +1,16 @@
+# The source platform's engine behind chemcore/golden/b1/source.json.gz (owner amendment B1).
+# Copied unchanged, read only, from F:/snowball-work/aquaculture_platform into a scratchpad harness (never built
+# or run there); compiled by TypeScript 5.6.3 and run by Node v22.15.1 with farm/tests/deffeyes_reference/b1/.
+file c2578cd7ac79bb19c51da38fe2d8d116aae2603cb93a4b60f555ad808eeda035  libs/aquaculture-engines/src/water-chemistry/water-quality.ts  blob f763acfa3d14a24a4937417c9f05f18db4e33327
+file 5cd7d8c107d08fdd122287297abf8a31b44a7e6223e15d8e99e4134c896c4413  libs/aquaculture-engines/src/water-chemistry/ammonia-calc.ts  blob e2be6d69c215e484e0657dd94e46a2b881f44ea8
+file 240226e0d7e1dc39c1dab8c3581488ce790566b794ce5f8991650a12999b435e  libs/aquaculture-engines/src/water-chemistry/co2-calc.ts  blob 0dc2b809977a1597cc5604d90be6217a57550853
+file fb1676bf31e4c2496017aec8c7485bb7895c1f05379b8d5778e07c32bcec00b5  libs/aquaculture-engines/src/water-chemistry/domains.ts  blob 8fe6846fc1c7bdff7cdd806edbef1fc2b99d9b3a
+file fa84bc161d7b41d577a0395260614266bd8fdce00a6eff31545e13e35a761f8d  libs/aquaculture-engines/src/water-chemistry/types.ts  blob 2ef45b9d3f0edd57dbd258e6ba532a1b451e4fea
+file c5ac85d73e11b38e605fb69c2e935df54444cd8084578e7b182c5f0e052ca317  libs/aquaculture-engines/src/water-chemistry/deffeyes-data.ts  blob e142a88105ea658092f6e492fdb44472725d4626
+file 802e55233f7ccd791060922e5b353e9ecb5353c8a93d25ebef73ef77cdfa73e1  libs/aquaculture-engines/src/water-chemistry/reagents.ts  blob c0a75deca6ec94438c6151c3abc3b285fb2665bb
+file b8933ea4966b86db0a1fb33e62a3b62ad6435079860ed0f111108e89ffc5ff7b  libs/aquaculture-engines/src/water-chemistry/index.ts  blob 24110e289985546ce92557be3e30b5a8ac361bd8
+file 32bd05f903ce75b29a2baeede78ee8f3a96e619639314a635b70f443163fd942  web/shared-ui/src/water-chemistry/compute.ts  blob ea4ff5e47c8c518f99597e846373b0e75cb93d08
+file 4305b05a7216a4789364a58f0221f66ba2352859185acd7493826e71b337a902  web/shared-ui/src/water-chemistry/types.ts  blob 2a1c2ef195e8b3dd151645fc4aea7c5796e7a8e5
+engine commit 352aa2a8a94a178dd6543de6b741c520f5a1d6f3
+inputs sha256 dc0a765033b5f0e76969c5d9f296760dad5fc2d44975166ff369e1af0f3f1339
+source.json sha256 66451525d7459ce2fa026f716f2c2e4f8eb0e85f47057f865952dc49ee389fc5

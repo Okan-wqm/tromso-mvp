@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": false,
+    "outDir": "out",
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "@aquaculture/shared-contracts": ["stubs/shared-contracts.ts"],
+      "@platform/aquaculture-engines": ["src/libs/aquaculture-engines/src/water-chemistry/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "stubs/*.ts", "driver.ts", "register.js"]
+}

@@ -758,9 +758,10 @@ they drew, value for value (`test_golden`).
 when it is not active ("Maintenance"), the withdrawal as a note chip (it lasts weeks; not an alarm), a dashed line when the
 stored template cannot be drawn ("Template error: … this card is shown as Detailed"), and under the basis which template
 draws the card and why ("Template: Simple · the rule for every unit"). **Colours** are checked against the token table by
-: text that says something at least 4.5:1 on white (the warning amber is #7A5410), a border or a
+`monitoring/tests/test_frame.py`: text that says something at least 4.5:1 on white (the warning amber is #7A5410), a border or a
 dot that carries meaning at least 3:1 (the water page's warning dot moved from #C58A16, 2.99:1, to the text's amber), the pale
-sage never carries meaning (a note card's border is the muted green, an empty one's dotted); keeps the shapes, the bands of a bar and the state borders in high-contrast mode.
+sage never carries meaning (a note card's border is the muted green, an empty one's dotted); `@media (forced-colors: active)`
+keeps the shapes, the bands of a bar and the state borders in high-contrast mode.
 
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,

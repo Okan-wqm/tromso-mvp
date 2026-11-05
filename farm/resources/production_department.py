@@ -16,8 +16,12 @@ class ProductionDepartmentResource(Resource):
     icon = 'layout-grid'
 
     @classmethod
+    def form(cls, request, *args, **kwargs):
+        return cls.form_class(*args, editor=request.user, **kwargs)
+
+    @classmethod
     def queryset(cls):
-        return super().queryset().select_related('site')
+        return super().queryset().select_related('site', 'manager')
 
     @classmethod
     def filter_list(cls, request, objects):

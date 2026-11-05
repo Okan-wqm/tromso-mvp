@@ -38,6 +38,27 @@ WORKSPACES = [
                 Entry(_('Database'), 'core:database', 'database', 'core.browse_database'),
             ]),
         ]),
+        # The company's people: who they are, where they work (the production departments appear by themselves,
+        # beside the office ones) and, from here on, their time. A team lead reads and plans only their own team.
+        Section(_('HR'), [
+            Group(_('HR dashboard'), [
+                Entry(_('Today & attendance'), 'hr:today', 'user-check', 'hr.view_attendancerecord'),
+                Entry(_('Team list'), 'hr:employee_list', 'users', 'hr.view_employee'),
+                Entry(_('Departments'), 'hr:officedepartment_list', 'layout-grid', 'hr.view_officedepartment'),
+                Entry(_('Organization chart'), 'hr:orgchart', 'network', 'hr.view_officedepartment'),
+            ]),
+            Group(_('Time & shifts'), [
+                Entry(_('Shift schedule'), 'hr:shiftassignment_list', 'calendar', 'hr.view_shiftassignment'),
+                Entry(_('Team overview'), 'hr:overview', 'users', 'hr.view_shiftassignment'),
+                Entry(_('Attendance'), 'hr:attendancerecord_list', 'user-check', 'hr.view_attendancerecord'),
+                Entry(_('Leave requests'), 'hr:leaverequest_list', 'calendar-off', 'hr.view_leaverequest'),
+                Entry(_('Scheduling settings'), 'hr:schedulingsettings_list', 'settings', 'hr.view_schedulingsettings'),
+                # Reached from Scheduling settings: no line in the menu, still in the role matrix.
+                Entry(_('Shifts'), 'hr:shift_list', 'timer', 'hr.view_shift', hidden=True),
+                Entry(_('Holidays'), 'hr:holiday_list', 'calendar', 'hr.view_holiday', hidden=True),
+                Entry(_('Leave types'), 'hr:leavetype_list', 'calendar-off', 'hr.view_leavetype', hidden=True),
+            ]),
+        ]),
     ]),
     Workspace('production', _('Production'), sections=[
         Section('', [Group('', [Entry(_('Overview'), 'production_home', 'home')])]),
@@ -126,6 +147,8 @@ WORKSPACES = [
         Section(_('Reports'), [
             Group('', [
                 Entry(_('Regulatory reports'), 'reports:report_list', 'file-text', 'reports.view_report'),
+                Entry(_('Questions for the authority'), 'reports:openquestion_list', 'list-checks',
+                      'reports.view_openquestion'),
             ]),
         ]),
         # Messages between the people running production, direct and in channels; their AI assistants join the

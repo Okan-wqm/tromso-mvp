@@ -107,7 +107,7 @@ class PeriodicReasonsTests(LinesTestCase):
 
     def test_planned_slaughter(self):
         self.assertEqual(self.reason(ReportKind.SLAUGHTER_PLANNED, self.facility),
-                         'no harvest is planned to Fjord Slakteri from this week on')
+                         'no planned or recorded harvest to Fjord Slakteri is waiting for its notice')
         batch = self.stock(self.m1, 1000, '4000', day(10, 1))
         HandlingPlanItem.objects.create(kind='harvest', date=date(2026, 11, 5), unit=self.m1, batch=batch,
                                         planned_kg=Decimal(2500), facility=self.facility, created_by=self.user)
@@ -132,7 +132,9 @@ class NoticeReasonsTests(LinesTestCase):
         self.assertEqual(self.reason(ReportKind.ESCAPE, self.sea), 'no reports-from date: nothing is counted')
 
     def test_welfare_and_the_two_notices_of_a_land_site_are_started_by_a_person(self):
-        self.assertEqual(self.reason(ReportKind.WELFARE, self.sea), 'started by a person when an event happens')
+        self.assertEqual(self.reason(ReportKind.WELFARE, self.sea),
+                         'no increased mortality has stayed unexplained for 14 days; otherwise started by a person '
+                         'when an event happens')
         for kind in (ReportKind.SITE_IN_USE, ReportKind.SITE_EMPTIED):
             self.assertEqual(self.reason(kind, self.hatchery), 'only a site of food fish or broodstock on land reports it')
             self.assertEqual(self.reason(kind, self.sea), 'only a site of food fish or broodstock on land reports it')
@@ -213,7 +215,9 @@ class UpcomingTests(DueTestCase):
         block = page.context['upcoming']
         self.assertTrue(block['rows'])
         self.assertEqual(block['rows'][0].overdue, True)
-        self.assertEqual(block['overdue'], sum(1 for row in due.due().rows if row.overdue))
+        owed = due.due()
+        self.assertEqual(block['overdue'], sum(1 for row in owed.rows if row.overdue)
+                         + sum(1 for line in owed.duties if line.status == 'overdue'))     # the duties outside the system too
         self.assertContains(page, 'class="overdue"')
         self.assertContains(page, reverse('reports:report_list'))
 

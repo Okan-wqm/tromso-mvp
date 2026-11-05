@@ -52,7 +52,8 @@ class SiteForm(CodedFormMixin, TabbedForm):
                           'in a different timezone than the company.'),
             'organisation_number': _('The permit holder’s, which owns the fish: the reports to Mattilsynet and '
                                      'Fiskeridirektoratet carry it. Nine digits.'),
-            'production_form': _('Juveniles, food fish or broodstock: it decides the reports the site owes.'),
+            'production_form': _('Juveniles, food fish, broodstock, or research and other production: it decides the reports '
+                                 'the site owes.'),
             'reports_from': _('Its reports are listed as due from this day; leave it empty while they are filed '
                               'elsewhere.'),
             'latitude': _('Required for a sea cage.'),

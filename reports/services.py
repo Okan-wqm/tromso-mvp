@@ -6,11 +6,16 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from core import audit
+from farm.models import Batch
+from farm.models.species import SALMONID_CODES
 from core.models import AuditLog
 
-from . import compute
+from . import compute, due, periods
 from .kinds import EVENTS
-from .models import NARRATIVE, WITHOUT_REFERENCE, Channel, Report, ReportSnapshot
+from .models import (
+    NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, OpenQuestion, OutsideDutyDone, QuestionStatus, Report,
+    ReportSnapshot,
+)
 
 # The format of a notice that was recorded on the health event before notices existed (its time only).
 LEGACY_FORMAT = 0
@@ -33,10 +38,15 @@ def _refuse(message):
     raise ValidationError({NON_FIELD_ERRORS: [message]})
 
 
-def submit(user, report, *, submitted_at, channel, reference, version):
-    """Records that `report` was filed (when, how, the receipt) and freezes its content as it is computed now. Refused
-    for a stale form, a report already filed, one not ready (its problems), a time in the future, or a channel
-    with a receipt but none given."""
+def submit(user, report, *, submitted_at, channel, reference, version, content_sha256, acknowledged=(),
+           authority_id=''):
+    """Records that `report` was filed (when, how, the receipt) and freezes its content as it is computed now: the content
+    the person was shown, named by its hash (`content_sha256`, what the page and the print gave before the filing). Refused
+    for a stale form, a report already filed, one not ready (its problems), a time in the future, a channel with a
+    receipt but none given, when the records now give another content than the one that was shown (a backdated
+    record in between): the person looks again, and what is frozen is always what was previewed, or when the content rests
+    on a question for the authority that is still open (`acknowledged`: the numbers the person confirmed by hand), which is
+    logged with the question's text."""
     with transaction.atomic():
         current = Report.objects.select_for_update().get(pk=report.pk)
         if current.version != version:
@@ -58,11 +68,23 @@ def submit(user, report, *, submitted_at, channel, reference, version):
         if logged:
             with audit.source_language():      # the log is English at rest, whoever records the filing
                 logged = compute.compute(current).problems
+        unconfirmed = OpenQuestion.objects.filter(code__in=result.questions, status=QuestionStatus.OPEN)
+        missing = [question for question in unconfirmed if question.code not in acknowledged]
+        if missing:
+            raise ValidationError({'acknowledged': [_('Open question %(code)s: %(question)s Confirm that you checked '
+                                                      'this by hand before you record the filing.') % {
+                'code': question.code, 'question': question.question} for question in missing]})
         digest = compute.content_hash(result.content)
+        if digest != content_sha256:
+            _refuse(_('The records changed after you looked at the report: review it again before you record the '
+                      'filing.'))
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
                                       content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope))
+        current.deadline_on = compute.deadline(current)
+        current.filed_late = (periods.oslo_today(submitted_at) > current.deadline_on) if current.deadline_on else False
         current.submitted_at, current.submitted_by = submitted_at, user
         current.channel, current.reference = channel, reference.strip()
+        current.authority_id = authority_id.strip()
         current.updated_by, current.version = user, current.version + 1
         current.save()
         with audit.source_language():
@@ -72,11 +94,84 @@ def submit(user, report, *, submitted_at, channel, reference, version):
                 str(Report._meta.get_field('submitted_by').verbose_name): [None, user.get_username()],
                 str(Report._meta.get_field('channel').verbose_name): [None, audit.message(current.get_channel_display())],
                 str(Report._meta.get_field('reference').verbose_name): [None, current.reference or None],
+                str(Report._meta.get_field('authority_id').verbose_name): [None, current.authority_id or None],
                 str(_('Content hash')): [None, digest],
+                str(Report._meta.get_field('deadline_on').verbose_name): [None, current.deadline_on and
+                                                                            current.deadline_on.isoformat()],
+                str(Report._meta.get_field('filed_late').verbose_name): [None, audit.message(
+                    _('Yes') if current.filed_late else _('No'))],
                 **({str(_('Not ready when filed')): [None, ' '.join(logged)]} if logged else {}),
+                **({str(_('Open questions acknowledged')): [None, '; '.join(
+                    f'{question.code}: {question.question}' for question in unconfirmed)]} if unconfirmed else {}),
             }
             audit.record(user, AuditLog.Action.UPDATE, current, changes, entity_type=Report._meta.verbose_name)
     return current
+
+
+def close_due(user, *, kind, place, period, reason):
+    """Closes a report that is owed and will not be filed, with the reason: the due list stops listing it. Refused when
+    nothing is owed there (it was filed, or is not due), or without a reason. Logged; `reopen` undoes it."""
+    if not reason.strip():
+        raise ValidationError({'reason': [_('Say why it is closed.')]})
+    if not any(row.kind == kind and row.place == place and row.period == period for row in due.due().rows):
+        _refuse(_('Nothing is owed there: it was filed, closed already or is not due.'))
+    with transaction.atomic():
+        closure = DueClosure(kind=kind, period_start=period.start, reason=reason.strip(), closed_by=user,
+                             **{'facility' if kind == 'slaughter_planned' else 'site': place})
+        closure.full_clean()
+        closure.save()
+        with audit.source_language():
+            audit.record_create(user, closure, {
+                str(_('Report')): audit.message(closure.get_kind_display()), str(_('Site')): closure.site and str(closure.site),
+                str(_('Slaughter facility')): closure.facility and str(closure.facility),
+                str(_('Period')): closure.period_start.isoformat(), str(_('Why it is closed')): closure.reason})
+    return closure
+
+
+def reopen(user, closure):
+    """Takes a closure away: the report is owed again. Logged."""
+    with transaction.atomic():
+        pk = closure.pk
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.DELETE, closure, entity_type=DueClosure._meta.verbose_name,
+                         label=audit.english(closure))
+        closure.delete()
+    return pk
+
+
+def record_duty_done(user, *, duty, site, year, done_on, reference=''):
+    """Records that an annual duty outside this system was done for a site and a year (not a report; nothing is sent). Refused when
+    the duty does not bind the site, or the day is in the future. Logged."""
+    from . import duties
+    found = duties.BY_CODE.get(duty)
+    if found is None or not found.recordable:
+        _refuse(_('This duty is not recorded here.'))
+    if done_on > periods.oslo_today():
+        raise ValidationError({'done_on': [_('The day cannot be in the future.')]})
+    salmonids = any(batch.species.official_code in SALMONID_CODES for batch in Batch.objects.filter(
+        movements__unit__production_department__site=site).select_related('species').distinct())
+    if not duties.applies(found, site, salmonids)[0]:
+        _refuse(_('This duty does not bind this site.'))
+    with transaction.atomic():
+        record = OutsideDutyDone(duty=duty, site=site, year=year, done_on=done_on, reference=reference.strip(),
+                                 recorded_by=user)
+        record.full_clean()
+        record.save()
+        with audit.source_language():
+            audit.record_create(user, record, {
+                str(_('Duty')): audit.message(record.get_duty_display()), str(_('Site')): str(site),
+                str(_('Year')): str(year), str(_('Done on')): done_on.isoformat(),
+                str(_('Receipt or reference')): record.reference or None})
+    return record
+
+
+def undo_duty_done(user, record):
+    """Takes a record away: the duty is owed again. Logged."""
+    with transaction.atomic():
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.DELETE, record, entity_type=OutsideDutyDone._meta.verbose_name,
+                         label=audit.english(record))
+        record.delete()
 
 
 def start_correction(user, report):

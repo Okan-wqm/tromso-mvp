@@ -206,6 +206,9 @@ class TitleTests(TestCase):
         import_module(settings.ROOT_URLCONF)    # declares every resource
         for tab in Resource.registry:
             place = navigation.place(tab.perm('view'))
+            if 'title' in vars(tab):
+                # a tab whose read permission is shared with an earlier page (HR's Attendance and Today) names its own entry
+                place = navigation.page(tab.url_name('list'))
             self.assertEqual(tab.title(), place.entry.label, tab.__name__)
         titles = {tab.__name__: str(tab.title()) for tab in Resource.registry}
         self.assertEqual(titles['SiteResource'], 'Sites')

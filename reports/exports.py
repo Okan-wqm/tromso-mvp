@@ -6,6 +6,8 @@ authority writes them."""
 import csv
 import io
 
+from django.utils.translation import gettext
+
 from core.dbgrid import formula_safe
 
 from .kinds import ReportKind
@@ -16,6 +18,8 @@ CULL_FIELDS = {'sick': 'antallAvlivetSykdom', 'injured': 'antallAvlivetSkader', 
                'salmon_handling': 'antallAvlivetForeståendeHåndteringAvLaksen',
                'poor_environment': 'antallAvlivetForeståendeUgunstigLevemiljø', 'not_used': 'antallAvlivetSkalIkkeBrukes'}
 ORIGINS = {'farmed': 'OPPDRETTET', 'wild_caught': 'VILLFANGET'}
+BOTH_ORIGINS = 'VILLFANGET_OG_OPPDRETTET'      # "if the fish comes from both farming and fishing": one row per species
+SPECIES_FIGURES = ('opening', 'stocked', 'moved_in', 'died', 'moved_out', 'unaccounted')
 WEEKDAY_FIELDS = {'monday': 'mandagKg', 'tuesday': 'tirsdagKg', 'wednesday': 'onsdagKg', 'thursday': 'torsdagKg',
                   'friday': 'fredagKg', 'saturday': 'lørdagKg', 'sunday': 'søndagKg'}
 
@@ -79,6 +83,62 @@ def _lice(report, content, base):
     return body
 
 
+def _per_species(rows):
+    """The cleaner-fish rows of a unit as the API takes them: one per species (`ArtDto` is per species), the figures of its
+    origins added together and the origin the mixed value when both farmed and wild-caught fish are in it."""
+    species = {}
+    for row in rows:
+        merged = species.get(row['species'])
+        if merged is None:
+            species[row['species']] = {**row, 'culled': dict(row['culled']), 'origins': {row['origin']}}
+            continue
+        for name in SPECIES_FIGURES:
+            merged[name] += row[name]
+        for cause, fish in row['culled'].items():
+            merged['culled'][cause] += fish
+        merged['origins'].add(row['origin'])
+    found = []
+    for row in species.values():
+        origins = {ORIGINS.get(origin) for origin in row['origins']}
+        found.append({**row, 'origin': BOTH_ORIGINS if len(origins) > 1 else origins.pop()})
+    return found
+
+
+# The reporting API's endpoints (docs/regulatory-reports.md, 7.2): a report is a POST; a correction of the kinds that have it is a
+# PUT to the id the first POST returned. The sea-lice endpoint has POST only.
+ENDPOINTS = {ReportKind.SEA_LICE: '/api/lakselus/v1/lakselus', ReportKind.SMOLT: '/api/settefisk/v1/settefisk',
+             ReportKind.CLEANER_FISH: '/api/rensefisk/v1/rensefisk',
+             ReportKind.SLAUGHTER_PLANNED: '/api/slakt/v1/planlagt'}
+PUT_KINDS = (ReportKind.SMOLT, ReportKind.CLEANER_FISH, ReportKind.SLAUGHTER_PLANNED)
+
+
+def api_call(report):
+    """How the reporting API takes this report: {'method', 'path', 'client_reference', 'corrects_client_reference',
+    'note'}; None for a kind it has no endpoint for. A correction of a smolt, cleaner-fish or planned-slaughter report is a PUT to
+    the id the authority returned for the original (`Report.authority_id`; the note says when it was not recorded), under its own
+    client reference; the original's is given so the sender can find what it replaces. A correction of a sea-lice report is a
+    POST again (the endpoint has no PUT: whether a second POST for the week replaces or duplicates is unverified, R02)."""
+    path = ENDPOINTS.get(report.kind)
+    if path is None:
+        return None
+    call = {'method': 'POST', 'path': path, 'client_reference': str(report.pk), 'corrects_client_reference': None,
+            'note': ''}
+    original = report.corrects
+    if original is None:
+        return call
+    call['corrects_client_reference'] = str(original.pk)
+    if report.kind in PUT_KINDS:
+        if original.authority_id:
+            call.update(method='PUT', path=f'{path}/{original.authority_id}')
+        else:
+            call.update(method='PUT', path=f'{path}/{{id}}', note=gettext(
+                'The id the authority returned for the first filing was not recorded: it is needed to correct it.'))
+    else:
+        call['note'] = gettext('The sea-lice endpoint has no PUT: a correction is sent again as a POST (whether it '
+                               'replaces the week or duplicates it is unverified).')
+    return call
+
+
 def api_json(report, content):
     """The report as Mattilsynet's reporting API takes it, or None for a kind the API has no endpoint for."""
     identity = content.get('identity', {})
@@ -93,13 +153,13 @@ def api_json(report, content):
                 'produksjonsenheter': [{
                     'merdId': unit['number'],
                     'arter': [{
-                        'artskode': found['species'], 'opprinnelse': ORIGINS.get(found['origin']),
+                        'artskode': found['species'], 'opprinnelse': found['origin'],
                         'beholdningVedForrigeMånedsslutt': found['opening'],
                         'utsett': {'antallNy': found['stocked'], 'antallFlyttetInn': found['moved_in']},
                         'uttak': {**{CULL_FIELDS[cause]: fish for cause, fish in found['culled'].items()},
                                   'antallSelvdød': found['died'], 'antallFlyttetUt': found['moved_out'],
                                   'antallKanIkkeGjøresRedeFor': found['unaccounted']},
-                    } for found in unit['species']],
+                    } for found in _per_species(unit['species'])],
                 } for unit in sorted(content['units'].values(), key=lambda unit: unit['number'])]}
     if report.kind == ReportKind.SMOLT:
         year, month = report.period.iso

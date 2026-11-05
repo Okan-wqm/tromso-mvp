@@ -1,6 +1,14 @@
 {% load i18n %}
 <section class="upcoming-reports" aria-labelledby="upcoming-title">
   <h2 id="upcoming-title" class="section-title">{% trans "Upcoming reports" %}{% if upcoming.overdue %} <span class="badge badge-closed">{% blocktrans trimmed count count=upcoming.overdue %}{{ count }} overdue{% plural %}{{ count }} overdue{% endblocktrans %}</span>{% endif %}</h2>
+  {% if upcoming.duties %}
+  <ul>
+    {% for line in upcoming.duties %}<li{% if line.status == "overdue" %} class="overdue"{% endif %}>
+      <span>{{ line.duty.title }} · {{ line.site.name }} · {{ line.year }}</span>
+      <span>{{ line.deadline|date:"DATE_FORMAT" }}{% if line.status == "overdue" %} · {% trans "Overdue" %}{% endif %} · <a href="{{ upcoming.duties_url }}">{% trans "Outside this system" %}</a></span>
+    </li>{% endfor %}
+  </ul>
+  {% endif %}
   {% if upcoming.rows %}
   <ul>
     {% for row in upcoming.rows %}<li{% if row.overdue %} class="overdue"{% endif %}>

@@ -1,0 +1,9 @@
+{% load i18n %}<li class="org-node org-{{ node.kind }}">
+  <div class="org-box">
+    <span class="org-name">{% if node.kind == "site" and not node.label %}{% trans "No site" %}{% else %}{{ node.label }}{% endif %}</span>
+    <span class="org-kind">{% if node.kind == "site" %}{% trans "Site" %}{% elif node.kind == "production" %}{% trans "Production" %}{% else %}{% trans "Office" %}{% endif %}</span>
+    {% if node.manager %}<span class="org-manager">{{ node.manager.get_full_name|default:node.manager.get_username }}</span>{% endif %}
+    <span class="org-count">{% if node.kind == "site" %}{% blocktrans trimmed count total=node.total %}{{ total }} person{% plural %}{{ total }} people{% endblocktrans %}{% else %}{% blocktrans trimmed count direct=node.direct %}{{ direct }} person{% plural %}{{ direct }} people{% endblocktrans %}{% if node.children %} · {% blocktrans trimmed with total=node.total %}{{ total }} in all{% endblocktrans %}{% endif %}{% endif %}</span>
+  </div>
+  {% if node.children %}<ul>{% for node in node.children %}{% include "hr/_org_node.html" %}{% endfor %}</ul>{% endif %}
+</li>

@@ -1,0 +1,27 @@
+{% extends "crud/list.html" %}
+{% load i18n assets %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block search_placeholder %}{% trans "Search by name" %}{% endblock %}
+{% block empty_text %}{% trans "Add the public holidays and other days off of the company; a leave request is not charged for them." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Day" %}</th><th scope="col">{% trans "Holiday" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for holiday in objects %}
+      <tr>
+        <td>{{ holiday.day|date:"DATE_FORMAT" }} <span class="muted">{{ holiday.day|date:"l" }}</span></td>
+        <td>{% if can_change %}<a class="row-title row-title-inline" href="{% url 'hr:holiday_edit' holiday.pk %}" data-modal>{{ holiday.name }}</a>{% else %}<span class="row-title row-title-inline">{{ holiday.name }}</span>{% endif %}</td>
+        <td>{% if holiday.site %}{{ holiday.site.name }}{% else %}{% trans "Every site" %}{% endif %}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'hr:holiday_edit' holiday.pk %}" data-modal title="{% blocktrans with name=holiday.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=holiday.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'hr:holiday_delete' holiday.pk %}" data-modal title="{% blocktrans with name=holiday.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=holiday.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

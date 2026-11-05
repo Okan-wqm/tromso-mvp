@@ -1,0 +1,40 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Scheduling settings (hr.resources.SchedulingSettingsResource): the one row of limits, and the lists it leads to
+   (shifts, holidays, leave types). The figures are labelled defaults, not the law. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block content %}
+{% for settings in objects %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Limits" %}</h2>
+  <p class="muted">{% trans "These are defaults the company can change, not the law: confirm them with your agreements. A limit may only be set stricter than the statute." %}</p>
+  <dl class="facts">
+    <div><dt>{% trans "Standard week (minutes)" %}</dt><dd>{{ settings.standard_week_minutes }}</dd></div>
+    <div><dt>{% trans "Minimum rest between shifts (minutes)" %}</dt><dd>{{ settings.min_rest_minutes }}</dd></div>
+    <div><dt>{% trans "Most working days in a row" %}</dt><dd>{{ settings.max_consecutive_days }}</dd></div>
+    <div><dt>{% trans "A short rest, a long week or too many days in a row" %}</dt><dd>{{ settings.get_rest_rule_display }}</dd></div>
+    <div><dt>{% trans "Working weekdays" %}</dt><dd>{{ settings.weekday_labels|join:", " }}</dd></div>
+    <div><dt>{% trans "Punch window (minutes)" %}</dt><dd>{{ settings.punch_window_minutes }}</dd></div>
+    <div><dt>{% trans "Absent after (minutes)" %}</dt><dd>{{ settings.absent_after_minutes }}</dd></div>
+  </dl>
+  {% if can_change %}<p><a class="button button-inline" href="{% url 'hr:schedulingsettings_edit' settings.pk %}" data-modal>{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the limits" %}</a></p>{% endif %}
+</section>
+{% endfor %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Shifts" %}</h2>
+  {% if shifts %}
+  <ul class="plain-list">{% for shift in shifts %}<li><span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span> {{ shift.name }} · {{ shift.starts_at|time:"H:i" }}–{{ shift.ends_at|time:"H:i" }}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">{% trans "No shifts yet." %}</p>{% endif %}
+  {% if perms.hr.view_shift %}<p><a href="{% url 'hr:shift_list' %}">{% trans "Manage shifts" %}</a></p>{% endif %}
+</section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Holidays" %}</h2>
+  {% if holidays %}
+  <ul class="plain-list">{% for holiday in holidays %}<li>{{ holiday.day|date:"DATE_FORMAT" }} · {{ holiday.name }}</li>{% endfor %}</ul>
+  {% else %}<p class="muted">{% trans "No holidays yet." %}</p>{% endif %}
+  {% if perms.hr.view_holiday %}<p><a href="{% url 'hr:holiday_list' %}">{% trans "Manage holidays" %}</a></p>{% endif %}
+</section>
+{% endblock %}

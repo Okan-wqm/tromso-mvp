@@ -14,4 +14,9 @@ urlpatterns += [
     path('reports/<uuid:pk>/correct/', views.correct, name='report_correct'),
     path('reports/<uuid:pk>/export.<str:fmt>', views.export, name='report_export'),
     path('reports/<uuid:pk>/print/', views.print_page, name='report_print'),
+    path('reports/close/', views.close, name='due_close'),
+    path('reports/duties/', views.outside_duties, name='outside_duties'),
+    path('reports/duties/done/', views.duty_done, name='duty_done'),
+    path('reports/duties/done/<uuid:pk>/undo/', views.duty_undo, name='duty_undo'),
+    path('reports/closed/<uuid:pk>/reopen/', views.reopen, name='due_reopen'),
 ]

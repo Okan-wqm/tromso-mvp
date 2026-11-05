@@ -1,0 +1,55 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Production › Reports › Duties outside this system (reports.views.outside_duties): what the authorities require of a farm
+   that this system does not file, from the saved official texts, with what is unverified; and where the two annual ones stand for
+   each site, with the person's record that they were done.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<p class="panel-help">{% trans "These are duties the system does not file and does not build forms for. Each is listed with what the saved official text says; what is not known is marked unverified and rests on a question in the register of questions for the authority. File them in Altinn or as the authority says, and record here that you did." %}</p>
+
+<section class="detail-section">
+  <h2 class="section-title">{% trans "The annual duties of each site" %}</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Duty" %}</th><th scope="col">{% trans "Year" %}</th><th scope="col">{% trans "Deadline" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+      <tbody>
+        {% for line in lines %}
+        <tr>
+          <td>{{ line.site.name }}</td>
+          <td>{{ line.duty.title }}</td>
+          <td>{{ line.year }}</td>
+          <td class="nowrap">{{ line.deadline|date:"DATE_FORMAT" }}</td>
+          <td>{% if line.status == "done" %}<span class="badge badge-active">{% trans "Done" %}</span><span class="row-sub">{{ line.done.done_on|date:"DATE_FORMAT" }}{% if line.done.reference %} · {{ line.done.reference }}{% endif %} · {{ line.done.recorded_by }}</span>{% elif line.status == "overdue" %}<span class="badge badge-closed">{% trans "Overdue" %}</span>{% elif line.status == "due_soon" %}<span class="badge badge-draft">{% trans "Due soon" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Upcoming" %}</span>{% endif %}</td>
+          <td class="row-actions">{% if can_change %}{% if line.done %}<form method="post" action="{% url 'reports:duty_undo' line.done.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Undo" %}</button></form>{% else %}<a href="{% url 'reports:duty_done' %}?duty={{ line.duty.code }}&amp;site={{ line.site.pk }}&amp;year={{ line.year }}" data-modal>{% trans "Record as done" %}</a>{% endif %}{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">{% trans "No site is bound by an annual duty outside this system." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="detail-section">
+  <h2 class="section-title">{% trans "All the duties" %}</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Duty" %}</th><th scope="col">{% trans "Deadline" %}</th><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "Whom it binds, by production form" %}</th><th scope="col">{% trans "Source" %}</th><th scope="col">{% trans "Not verified" %}</th></tr></thead>
+      <tbody>
+        {% for duty in duties %}
+        <tr>
+          <td><span class="row-title">{{ duty.title }}</span></td>
+          <td>{{ duty.deadline }}</td>
+          <td>{{ duty.channel }}</td>
+          <td><ul class="plain">{% for form, who in duty.binds.items %}<li><strong>{{ form }}</strong>: {{ who }}</li>{% endfor %}</ul></td>
+          <td>{{ duty.basis }}{% if duty.source %} · <a href="{{ duty.source }}" rel="noopener noreferrer" target="_blank">{% trans "read it" %}</a>{% endif %}</td>
+          <td>{{ duty.unverified|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

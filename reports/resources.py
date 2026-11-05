@@ -13,11 +13,11 @@ from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site
 
 from . import compute, due, exports, periods, services
 from .forms import (
-    ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
+    OpenQuestionForm, ReportForm, ResistanceSuspicionFormSet, SensitivityTestFormSet, SubmitForm, TreatmentAnswerFormSet,
     UnitAnswerFormSet,
 )
 from .kinds import SCHEDULED, URGENT, ReportKind
-from .models import Report
+from .models import OpenQuestion, QuestionStatus, Report
 
 STATUSES = [('draft', _('Draft')), ('filed', _('Filed'))]
 
@@ -78,6 +78,28 @@ class UnitAnswers(ReportRows):
     @classmethod
     def describe(cls, row):
         return row.unit.code if row.reduced_capacity else f'{row.unit.code} ({audit.english(_("No"))})'
+
+
+class OpenQuestionResource(Resource):
+    """Production › Reports › Questions for the authority: what only Mattilsynet, Fiskeridirektoratet or the county can
+    answer, with who asked, when, and the answer; the report rules that rest on an open one are shown as unverified."""
+
+    model = OpenQuestion
+    form_class = OpenQuestionForm
+    name, plural = _('open question'), _('open questions')
+    url_prefix = 'authority-questions'
+    search_fields = ['code', 'question', 'authority', 'affects', 'answer']
+    list_template = 'reports/open_question_list.html'
+    icon = 'file-text'
+
+    @classmethod
+    def filter_list(cls, request, objects):
+        chosen = request.GET.get('status', '')
+        if chosen in QuestionStatus.values:
+            objects = objects.filter(status=chosen)
+        else:
+            chosen = ''
+        return objects, {'statuses': QuestionStatus.choices, 'chosen_status': chosen}
 
 
 class ReportResource(Resource):
@@ -152,10 +174,13 @@ class ReportResource(Resource):
                      if not chosen_site or line.place.pk == _uuid_or_none(chosen_site)
                      or not isinstance(line.place, Site)]
         start_url = reverse('reports:report_create') if request.user.has_perm(cls.perm('add')) else ''
-        return objects, {'sites': sites, 'chosen_kind': chosen_kind,
+        closed = [closure for closure in owed.closed if not chosen_kind or closure.kind == chosen_kind]
+        return objects, {'sites': sites, 'chosen_kind': chosen_kind, 'closed': closed,
                          'chosen_site': chosen_site, 'statuses': STATUSES, 'chosen_status': chosen_status,
                          'today': periods.oslo_today(), 'due': rows, 'changed': changed, 'lines': lines,
                          'not_set_up': [] if chosen_kind else owed.not_set_up,
+                         'duty_lines': [] if chosen_kind else [line for line in owed.duties
+                                                               if line.status in ('overdue', 'due_soon')],
                          'tabs': _tabs(request, owed.rows, chosen_kind),
                          'kind_start_url': f'{start_url}?kind={chosen_kind}' if start_url and chosen_kind else '',
                          'start_url': start_url}
@@ -183,9 +208,13 @@ class ReportResource(Resource):
             'has_api': report.kind in exports.API_KINDS,
         }
         if extras['can_submit']:
+            extras['preview_hash'] = compute.content_hash(result.content)
+            extras['open_questions'] = list(OpenQuestion.objects.filter(code__in=result.questions,
+                                                                       status=QuestionStatus.OPEN))
             extras['submit_form'] = SubmitForm(initial={
                 'submitted_at': timezone.localtime(timezone.now(), periods.OSLO).replace(
-                    tzinfo=None, second=0, microsecond=0), 'version': report.version})
+                    tzinfo=None, second=0, microsecond=0), 'version': report.version,
+                'content_sha256': extras['preview_hash']})
             extras['submit_url'] = reverse('reports:report_submit', args=[report.pk])
         if extras['can_correct']:
             extras['correct_url'] = reverse('reports:report_correct', args=[report.pk])

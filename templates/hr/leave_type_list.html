@@ -1,0 +1,28 @@
+{% extends "crud/list.html" %}
+{% load i18n assets %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block search_placeholder %}{% trans "Search by name or code" %}{% endblock %}
+{% block empty_text %}{% trans "A leave type is a kind of leave, such as annual or parental leave. Add the types the company uses." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Leave type" %}</th><th scope="col" class="num">{% trans "Days a year" %}</th><th scope="col">{% trans "Needs approval" %}</th><th scope="col">{% trans "Status" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for kind in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'hr:leavetype_edit' kind.pk %}" data-modal>{{ kind.name }}</a>{% else %}<span class="row-title">{{ kind.name }}</span>{% endif %}<span class="row-sub">{{ kind.code }}</span></td>
+        <td class="num">{% if kind.annual_days is not None %}{{ kind.annual_days|floatformat:"-2" }}{% else %}{% trans "No limit" %}{% endif %}</td>
+        <td>{% if kind.needs_approval %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+        <td><span class="badge badge-{{ kind.status }}">{{ kind.get_status_display }}</span></td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'hr:leavetype_edit' kind.pk %}" data-modal title="{% blocktrans with name=kind.name %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=kind.name %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'hr:leavetype_delete' kind.pk %}" data-modal title="{% blocktrans with name=kind.name %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=kind.name %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

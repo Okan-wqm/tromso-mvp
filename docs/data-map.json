@@ -187,6 +187,7 @@
         "core/test_database.py",
         "core/test_languages.py",
         "core/tests.py",
+        "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_batch_details.py",
@@ -215,11 +216,26 @@
         "messaging/tests/test_services.py",
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py",
+        "reports/tests/test_ack.py",
+        "reports/tests/test_api_call.py",
+        "reports/tests/test_duties.py",
+        "reports/tests/test_gaps789.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_questions.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_departments.py",
+        "hr/tests/test_employees.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_review.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_scope.py",
+        "hr/tests/test_services.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
@@ -7744,6 +7760,7 @@
         "reports/tests/test_due.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "monitoring/tests/test_read.py"
       ]
@@ -8895,6 +8912,7 @@
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
+        "reports/tests/test_unexplained.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_read.py"
       ]
@@ -10239,9 +10257,11 @@
             "model": "auth.User",
             "on_delete": "SET_NULL"
           },
-          "on_form": [],
-          "how": "gap",
-          "why": "no field on the Production department form"
+          "on_form": [
+            "ProductionDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
         },
         {
           "name": "notes",
@@ -10358,6 +10378,7 @@
             "code": "Details",
             "type": "Details",
             "site": "Details",
+            "manager": "Details",
             "capacity": "Details",
             "notes": "Details",
             "version": ""
@@ -10394,6 +10415,15 @@
         "inventory/tests/test_pages.py",
         "reports/tests/helpers.py",
         "tasks/tests/__init__.py",
+        "hr/tests/helpers_people.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_departments.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_review.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scope.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_places.py",
         "experiments/tests/test_start.py",
@@ -11463,7 +11493,8 @@
           "choices": [
             "settefisk",
             "matfisk",
-            "stamfisk"
+            "stamfisk",
+            "other"
           ],
           "link": null,
           "on_form": [
@@ -12022,10 +12053,12 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_schema.py",
+        "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_clocks.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
@@ -12043,12 +12076,22 @@
         "inventory/tests/helpers.py",
         "reports/tests/helpers.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_duties.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_research.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_read.py",
+        "hr/tests/helpers_people.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_departments.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scheduling_settings.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
@@ -13111,6 +13154,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_feeds.py",
@@ -18648,6 +18692,3453 @@
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
         "reports/tests/test_lice.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "AttendanceRecord",
+      "table": "attendance_records",
+      "description": "One stretch of a person’s presence: from a clock-in to a clock-out, by the person or entered by hand; its note is masked.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "employee_id",
+          "field": "employee",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "employees",
+            "model": "hr.Employee",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "AttendanceRecordForm › Record"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "clock_in",
+          "field": "clock_in",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AttendanceRecordForm › Record"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "clock_out",
+          "field": "clock_out",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AttendanceRecordForm › Record"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "via",
+          "field": "via",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "self",
+            "entered"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "self for a person's own clock-in and out, entered for a lead's form"
+        },
+        {
+          "name": "note",
+          "field": "note",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AttendanceRecordForm › Record"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "entry_key",
+          "field": "entry_key",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_attendance_records_order",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_attendance_records_via",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_attendance_records_note",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "excl_attendance_employee_span",
+          "kind": "exclusion",
+          "fields": [
+            "employee",
+            "clock_in",
+            "clock_out"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "attendance records tab",
+              "url_names": [
+                "hr:attendancerecord_create"
+              ],
+              "routes": [
+                "/hr/time/attendance/new/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.punch",
+              "url_names": [
+                "hr:punch"
+              ],
+              "routes": [
+                "/hr/today/clock-<str:direction>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "attendance records tab",
+              "url_names": [
+                "hr:attendancerecord_edit"
+              ],
+              "routes": [
+                "/hr/time/attendance/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.punch",
+              "url_names": [
+                "hr:punch"
+              ],
+              "routes": [
+                "/hr/today/clock-<str:direction>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "attendance records tab",
+              "url_names": [
+                "hr:attendancerecord_delete"
+              ],
+              "routes": [
+                "/hr/time/attendance/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "attendance records tab",
+              "url_names": [
+                "hr:attendancerecord_list"
+              ],
+              "routes": [
+                "/hr/time/attendance/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.today",
+              "url_names": [
+                "hr:today"
+              ],
+              "routes": [
+                "/hr/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time.",
+      "forms": [
+        {
+          "form": "AttendanceRecordForm",
+          "module": "hr.forms.attendance",
+          "fields": {
+            "employee": "Record",
+            "clock_in": "Record",
+            "clock_out": "Record",
+            "note": "Record",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": [
+          "note"
+        ]
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_review.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "Employee",
+      "table": "employees",
+      "description": "The people of the company for HR: number, name (or the account that names them), type and the first and last day. No pay, bank or identity number is kept.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "employee_number",
+          "field": "employee_number",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "EmployeeForm › Person"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "EmployeeForm › Person"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "first_name",
+          "field": "first_name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "EmployeeForm › Person"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "last_name",
+          "field": "last_name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "EmployeeForm › Person"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "employment_type",
+          "field": "employment_type",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "staff",
+            "student",
+            "researcher",
+            "technician",
+            "advisor",
+            "contractor",
+            "volunteer"
+          ],
+          "link": null,
+          "on_form": [
+            "EmployeeForm › Person"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "joined_on",
+          "field": "joined_on",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "EmployeeForm › Employment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "left_on",
+          "field": "left_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "EmployeeForm › Employment"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_employees_number_live",
+          "kind": "unique",
+          "fields": [
+            "employee_number"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_employees_user_live",
+          "kind": "unique",
+          "fields": [
+            "user"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_employees_identity",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_employees_period",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_employees_type",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_employees_number",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "employees tab",
+              "url_names": [
+                "hr:employee_create"
+              ],
+              "routes": [
+                "/hr/team/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "employees tab",
+              "url_names": [
+                "hr:employee_edit"
+              ],
+              "routes": [
+                "/hr/team/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "a person leaves with a last day (left_on); the record and its history stay readable"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "employees tab",
+              "url_names": [
+                "hr:employee_list",
+                "hr:employee_detail"
+              ],
+              "routes": [
+                "/hr/team/",
+                "/hr/team/<uuid:pk>/view/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move.",
+      "forms": [
+        {
+          "form": "EmployeeForm",
+          "module": "hr.forms.employee",
+          "fields": {
+            "employee_number": "Person",
+            "user": "Person",
+            "first_name": "Person",
+            "last_name": "Person",
+            "employment_type": "Person",
+            "joined_on": "Employment",
+            "left_on": "Employment",
+            "version": "",
+            "department": "Placement",
+            "title": "Placement",
+            "from_day": "Placement"
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/helpers_people.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_employees.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_review.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scope.py",
+        "hr/tests/test_services.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "Holiday",
+      "table": "holidays",
+      "description": "Days that are not working days, for every site or for one.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "day",
+          "field": "day",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "HolidayForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "HolidayForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "HolidayForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_holidays_day_site_live",
+          "kind": "unique",
+          "fields": [
+            "day",
+            "site"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "holidays tab",
+              "url_names": [
+                "hr:holiday_create"
+              ],
+              "routes": [
+                "/hr/settings/holidays/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "holidays tab",
+              "url_names": [
+                "hr:holiday_edit"
+              ],
+              "routes": [
+                "/hr/settings/holidays/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "holidays tab",
+              "url_names": [
+                "hr:holiday_delete"
+              ],
+              "routes": [
+                "/hr/settings/holidays/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "holidays tab",
+              "url_names": [
+                "hr:holiday_list"
+              ],
+              "routes": [
+                "/hr/settings/holidays/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "HolidayForm",
+          "module": "hr.forms.scheduling",
+          "fields": {
+            "day": "Details",
+            "name": "Details",
+            "site": "Details",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scheduling_settings.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "LeaveRequest",
+      "table": "leave_requests",
+      "description": "A person’s request to be away from a first to a last day, and how it was decided; its reason and note are masked.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "employee_id",
+          "field": "employee",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "employees",
+            "model": "hr.Employee",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "LeaveRequestForm › Request"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "leave_type_id",
+          "field": "leave_type",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "leave_types",
+            "model": "hr.LeaveType",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "LeaveRequestForm › Request"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "first_day",
+          "field": "first_day",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "LeaveRequestForm › Request"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "last_day",
+          "field": "last_day",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "LeaveRequestForm › Request"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "pending",
+            "approved",
+            "rejected",
+            "cancelled"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by approve, reject and cancel (hr.services.decide_leave, cancel_leave)"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "LeaveRequestForm › Request"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "decision_note",
+          "field": "decision_note",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "typed in the reject dialog"
+        },
+        {
+          "name": "decided_by_id",
+          "field": "decided_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who approved or rejected it"
+        },
+        {
+          "name": "decided_at",
+          "field": "decided_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "when it was decided, or when a type that needs no approval was filed"
+        },
+        {
+          "name": "entry_key",
+          "field": "entry_key",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_leave_requests_days",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_leave_requests_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_leave_requests_decided",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_leave_requests_pending_undecided",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "excl_leave_requests_employee_days",
+          "kind": "exclusion",
+          "fields": [
+            "employee",
+            "first_day",
+            "last_day"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "leave requests tab",
+              "url_names": [
+                "hr:leaverequest_create"
+              ],
+              "routes": [
+                "/hr/leave/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "leave requests tab",
+              "url_names": [
+                "hr:leaverequest_edit"
+              ],
+              "routes": [
+                "/hr/leave/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.approve",
+              "url_names": [
+                "hr:leaverequest_approve"
+              ],
+              "routes": [
+                "/hr/leave/<uuid:pk>/approve/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.reject",
+              "url_names": [
+                "hr:leaverequest_reject"
+              ],
+              "routes": [
+                "/hr/leave/<uuid:pk>/reject/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.cancel",
+              "url_names": [
+                "hr:leaverequest_cancel"
+              ],
+              "routes": [
+                "/hr/leave/<uuid:pk>/cancel/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "a wrong request is cancelled, not deleted"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "leave requests tab",
+              "url_names": [
+                "hr:leaverequest_list",
+                "hr:leaverequest_detail"
+              ],
+              "routes": [
+                "/hr/leave/",
+                "/hr/leave/<uuid:pk>/view/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "One approval step: Edit also approves, rejects and cancels; nobody decides their own request.",
+      "forms": [
+        {
+          "form": "LeaveRequestForm",
+          "module": "hr.forms.leave",
+          "fields": {
+            "employee": "Request",
+            "leave_type": "Request",
+            "first_day": "Request",
+            "last_day": "Request",
+            "reason": "Request",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": [
+          "decision_note",
+          "reason"
+        ]
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_review.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "LeaveType",
+      "table": "leave_types",
+      "description": "The kinds of leave the company grants (annual, sick, parental), with the days a year and whether a request needs approval.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "LeaveTypeForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "LeaveTypeForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "annual_days",
+          "field": "annual_days",
+          "type": "numeric(5, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "LeaveTypeForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "needs_approval",
+          "field": "needs_approval",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "LeaveTypeForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "active",
+            "inactive"
+          ],
+          "link": null,
+          "on_form": [
+            "LeaveTypeForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_leave_types_code_live",
+          "kind": "unique",
+          "fields": [
+            "code"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_leave_types_code",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_leave_types_days",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_leave_types_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "leave types tab",
+              "url_names": [
+                "hr:leavetype_create"
+              ],
+              "routes": [
+                "/hr/settings/leave-types/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "leave types tab",
+              "url_names": [
+                "hr:leavetype_edit"
+              ],
+              "routes": [
+                "/hr/settings/leave-types/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "leave types tab",
+              "url_names": [
+                "hr:leavetype_delete"
+              ],
+              "routes": [
+                "/hr/settings/leave-types/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "leave types tab",
+              "url_names": [
+                "hr:leavetype_list"
+              ],
+              "routes": [
+                "/hr/settings/leave-types/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "LeaveTypeForm",
+          "module": "hr.forms.leave",
+          "fields": {
+            "name": "Details",
+            "code": "Details",
+            "annual_days": "Details",
+            "needs_approval": "Details",
+            "status": "Details",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_review.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "OfficeDepartment",
+      "table": "office_departments",
+      "description": "The company’s office departments (finance, administration), nested under one another.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "parent_id",
+          "field": "parent",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "office_departments",
+            "model": "hr.OfficeDepartment",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "OfficeDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [
+            "OfficeDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OfficeDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OfficeDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "active",
+            "inactive"
+          ],
+          "link": null,
+          "on_form": [
+            "OfficeDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "manager_id",
+          "field": "manager",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [
+            "OfficeDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "description",
+          "field": "description",
+          "type": "text",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OfficeDepartmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_office_departments_code_live",
+          "kind": "unique",
+          "fields": [
+            "code"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_office_departments_parent_name_live",
+          "kind": "unique",
+          "fields": [
+            "parent",
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_office_departments_parent_not_self",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_office_departments_code",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_office_departments_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "office departments tab",
+              "url_names": [
+                "hr:officedepartment_create"
+              ],
+              "routes": [
+                "/hr/departments/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "office departments tab",
+              "url_names": [
+                "hr:officedepartment_edit"
+              ],
+              "routes": [
+                "/hr/departments/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "office departments tab",
+              "url_names": [
+                "hr:officedepartment_delete"
+              ],
+              "routes": [
+                "/hr/departments/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "office departments tab",
+              "url_names": [
+                "hr:officedepartment_list"
+              ],
+              "routes": [
+                "/hr/departments/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "OfficeDepartmentForm",
+          "module": "hr.forms.office_department",
+          "fields": {
+            "name": "Details",
+            "code": "Details",
+            "parent": "Details",
+            "site": "Details",
+            "manager": "Details",
+            "status": "Details",
+            "description": "Details",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/helpers_people.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_departments.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_scope.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "Posting",
+      "table": "postings",
+      "description": "Where each person works from a day: one department, production or office, and the title.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "employee_id",
+          "field": "employee",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "employees",
+            "model": "hr.Employee",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by hr.services.move from the Placement tab of the employee form, and closed by a last day"
+        },
+        {
+          "name": "production_department_id",
+          "field": "production_department",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "production_departments",
+            "model": "farm.ProductionDepartment",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by hr.services.move from the Placement tab of the employee form, and closed by a last day"
+        },
+        {
+          "name": "office_department_id",
+          "field": "office_department",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "office_departments",
+            "model": "hr.OfficeDepartment",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by hr.services.move from the Placement tab of the employee form, and closed by a last day"
+        },
+        {
+          "name": "title",
+          "field": "title",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by hr.services.move from the Placement tab of the employee form, and closed by a last day"
+        },
+        {
+          "name": "valid_from",
+          "field": "valid_from",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by hr.services.move from the Placement tab of the employee form, and closed by a last day"
+        },
+        {
+          "name": "valid_until",
+          "field": "valid_until",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by hr.services.move from the Placement tab of the employee form, and closed by a last day"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_postings_one_department",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_postings_period",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "excl_postings_employee_period",
+          "kind": "exclusion",
+          "fields": [
+            "employee",
+            "valid_from",
+            "valid_until"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "with-parent",
+              "label": "with Employee: employees tab",
+              "url_names": [
+                "hr:employee_create"
+              ],
+              "routes": [
+                "/hr/team/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "with-parent",
+              "label": "with Employee: employees tab",
+              "url_names": [
+                "hr:employee_edit"
+              ],
+              "routes": [
+                "/hr/team/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "a person leaves with a last day (left_on); the record and its history stay readable"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "hr.views.organisation_chart",
+              "url_names": [
+                "hr:orgchart"
+              ],
+              "routes": [
+                "/hr/organization/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "One placement covers any day (exclusion constraint); a move closes the open one the day before.",
+      "forms": [],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": []
+      },
+      "tests": [
+        "farm/tests/test_systems.py",
+        "hr/tests/helpers_people.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_employees.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scope.py",
+        "hr/tests/test_services.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "SchedulingSettings",
+      "table": "scheduling_settings",
+      "description": "The one row of scheduling limits and defaults (rest, weekly hours, days in a row, working weekdays, punch window).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "singleton",
+          "field": "singleton",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "standard_week_minutes",
+          "field": "standard_week_minutes",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Limits"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "min_rest_minutes",
+          "field": "min_rest_minutes",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Limits"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "max_consecutive_days",
+          "field": "max_consecutive_days",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Limits"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "rest_rule",
+          "field": "rest_rule",
+          "type": "varchar(5)",
+          "null": false,
+          "choices": [
+            "warn",
+            "block"
+          ],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Limits"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "working_weekdays",
+          "field": "working_weekdays",
+          "type": "smallint[]",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Days and punches"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "punch_window_minutes",
+          "field": "punch_window_minutes",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Days and punches"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "absent_after_minutes",
+          "field": "absent_after_minutes",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SchedulingSettingsForm › Days and punches"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_scheduling_settings_singleton",
+          "kind": "unique",
+          "fields": [
+            "singleton"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_settings_singleton",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_week",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_rest",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_consecutive",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_rule",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_weekdays",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_punch_window",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_scheduling_absent_after",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "the migration makes the one row"
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "scheduling settings tab",
+              "url_names": [
+                "hr:schedulingsettings_edit"
+              ],
+              "routes": [
+                "/hr/settings/scheduling/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "there is always exactly one row"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "scheduling settings tab",
+              "url_names": [
+                "hr:schedulingsettings_list"
+              ],
+              "routes": [
+                "/hr/settings/scheduling/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "SchedulingSettingsForm",
+          "module": "hr.forms.scheduling",
+          "fields": {
+            "standard_week_minutes": "Limits",
+            "min_rest_minutes": "Limits",
+            "max_consecutive_days": "Limits",
+            "rest_rule": "Limits",
+            "working_weekdays": "Days and punches",
+            "punch_window_minutes": "Days and punches",
+            "absent_after_minutes": "Days and punches",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scheduling_settings.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "ShiftAssignment",
+      "table": "shift_assignments",
+      "description": "One person’s plan for one day: the shift they start that day, or none for planned off.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "employee_id",
+          "field": "employee",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "employees",
+            "model": "hr.Employee",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "ShiftAssignmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "day",
+          "field": "day",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftAssignmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "shift_id",
+          "field": "shift",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "shifts",
+            "model": "hr.Shift",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "ShiftAssignmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "note",
+          "field": "note",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftAssignmentForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_shift_assignments_employee_day",
+          "kind": "unique",
+          "fields": [
+            "employee",
+            "day"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "plans tab",
+              "url_names": [
+                "hr:shiftassignment_create"
+              ],
+              "routes": [
+                "/hr/schedule/new/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.plan",
+              "url_names": [
+                "hr:roster_plan"
+              ],
+              "routes": [
+                "/hr/schedule/plan/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "plans tab",
+              "url_names": [
+                "hr:shiftassignment_edit"
+              ],
+              "routes": [
+                "/hr/schedule/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.plan",
+              "url_names": [
+                "hr:roster_plan"
+              ],
+              "routes": [
+                "/hr/schedule/plan/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "plans tab",
+              "url_names": [
+                "hr:shiftassignment_delete"
+              ],
+              "routes": [
+                "/hr/schedule/<uuid:pk>/delete/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "hr.views.plan",
+              "url_names": [
+                "hr:roster_plan"
+              ],
+              "routes": [
+                "/hr/schedule/plan/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "plans tab",
+              "url_names": [
+                "hr:shiftassignment_list"
+              ],
+              "routes": [
+                "/hr/schedule/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A cell is planned on its own dialog or in a batch (hr.services.plan_shifts): all cells or none.",
+      "forms": [
+        {
+          "form": "ShiftAssignmentForm",
+          "module": "hr.forms.roster",
+          "fields": {
+            "employee": "Details",
+            "day": "Details",
+            "shift": "Details",
+            "note": "Details",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": [
+          "note"
+        ]
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_review.py",
+        "hr/tests/test_roster.py"
+      ]
+    },
+    {
+      "app": "hr",
+      "model": "Shift",
+      "table": "shifts",
+      "description": "The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a grace.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(50)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "starts_at",
+          "field": "starts_at",
+          "type": "time",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "ends_at",
+          "field": "ends_at",
+          "type": "time",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "break_minutes",
+          "field": "break_minutes",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "grace_minutes",
+          "field": "grace_minutes",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "tone",
+          "field": "tone",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "active",
+            "inactive"
+          ],
+          "link": null,
+          "on_form": [
+            "ShiftForm › Details"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_shifts_code_live",
+          "kind": "unique",
+          "fields": [
+            "code"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_shifts_code",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_shifts_span",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_shifts_break",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_shifts_grace",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_shifts_tone",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_shifts_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "shifts tab",
+              "url_names": [
+                "hr:shift_create"
+              ],
+              "routes": [
+                "/hr/settings/shifts/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "shifts tab",
+              "url_names": [
+                "hr:shift_edit"
+              ],
+              "routes": [
+                "/hr/settings/shifts/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "shifts tab",
+              "url_names": [
+                "hr:shift_delete"
+              ],
+              "routes": [
+                "/hr/settings/shifts/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "shifts tab",
+              "url_names": [
+                "hr:shift_list"
+              ],
+              "routes": [
+                "/hr/settings/shifts/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "ShiftForm",
+          "module": "hr.forms.scheduling",
+          "fields": {
+            "name": "Details",
+            "code": "Details",
+            "starts_at": "Details",
+            "ends_at": "Details",
+            "break_minutes": "Details",
+            "grace_minutes": "Details",
+            "tone": "Details",
+            "status": "Details",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "People",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "hr/tests/test_attendance.py",
+        "hr/tests/test_boundary.py",
+        "hr/tests/test_hardening.py",
+        "hr/tests/test_leave.py",
+        "hr/tests/test_overview_chart.py",
+        "hr/tests/test_review.py",
+        "hr/tests/test_roster.py",
+        "hr/tests/test_scheduling_settings.py"
       ]
     },
     {
@@ -24608,6 +28099,822 @@
     },
     {
       "app": "reports",
+      "model": "DueClosure",
+      "table": "regulatory_due_closures",
+      "description": "A report that was owed and will not be filed, closed by a person with the reason (a slaughter that never took place, a period filed elsewhere): the due list stops listing it.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "sea_lice",
+            "smolt",
+            "cleaner_fish",
+            "biomass",
+            "land_stock",
+            "site_in_use",
+            "site_emptied",
+            "slaughter_planned",
+            "escape",
+            "disease",
+            "welfare"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "facility_id",
+          "field": "facility",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "slaughter_facilities",
+            "model": "farm.SlaughterFacility",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "period_start",
+          "field": "period_start",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the due row the closing link names"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "CloseForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "closed_by_id",
+          "field": "closed_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who closed it"
+        },
+        {
+          "name": "closed_at",
+          "field": "closed_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set when saved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_due_closures_kind",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_due_closures_place",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_due_closures_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_due_closures_period",
+          "kind": "unique",
+          "fields": [
+            "kind",
+            "site",
+            "facility",
+            "period_start"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.close",
+              "url_names": [
+                "reports:due_close"
+              ],
+              "routes": [
+                "/reports/close/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a closure is reopened, not edited: reopening deletes it"
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.reopen",
+              "url_names": [
+                "reports:due_reopen"
+              ],
+              "routes": [
+                "/reports/closed/<uuid:pk>/reopen/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "regulatory reports tab",
+              "url_names": [
+                "reports:report_list",
+                "reports:report_detail",
+                "reports:report_edit"
+              ],
+              "routes": [
+                "/reports/",
+                "/reports/<uuid:pk>/view/",
+                "/reports/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "A report that was owed and will not be filed, closed with the reason (the due list stops listing it).",
+      "forms": [
+        {
+          "form": "CloseForm",
+          "module": "reports.forms",
+          "fields": {
+            "reason": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": []
+      },
+      "tests": [
+        "reports/tests/test_slaughter_duty.py"
+      ]
+    },
+    {
+      "app": "reports",
+      "model": "OutsideDutyDone",
+      "table": "regulatory_duties_done",
+      "description": "A person's record that an annual duty outside this system was done for a site and a year: the day and the reference the authority gave.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "duty",
+          "field": "duty",
+          "type": "varchar(20)",
+          "null": false,
+          "choices": [
+            "driftsplan",
+            "lice_plan"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the duty the link names"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the site the link names"
+        },
+        {
+          "name": "year",
+          "field": "year",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the year the link names"
+        },
+        {
+          "name": "done_on",
+          "field": "done_on",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DutyDoneForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "reference",
+          "field": "reference",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "DutyDoneForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "recorded_by_id",
+          "field": "recorded_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person who recorded it"
+        },
+        {
+          "name": "recorded_at",
+          "field": "recorded_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "set when saved"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_duties_done_duty",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_duties_done_year",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_duties_done_year",
+          "kind": "unique",
+          "fields": [
+            "duty",
+            "site",
+            "year"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.duty_done",
+              "url_names": [
+                "reports:duty_done"
+              ],
+              "routes": [
+                "/reports/duties/done/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a record is undone, not edited: undoing deletes it"
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.duty_undo",
+              "url_names": [
+                "reports:duty_undo"
+              ],
+              "routes": [
+                "/reports/duties/done/<uuid:pk>/undo/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "reports.views.outside_duties",
+              "url_names": [
+                "reports:outside_duties"
+              ],
+              "routes": [
+                "/reports/duties/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The record of a person that an annual duty outside this system (the driftsplan, the lice coordination plan) was done.",
+      "forms": [
+        {
+          "form": "DutyDoneForm",
+          "module": "reports.forms",
+          "fields": {
+            "done_on": "",
+            "reference": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": []
+      },
+      "tests": [
+        "reports/tests/test_duties.py"
+      ]
+    },
+    {
+      "app": "reports",
+      "model": "OpenQuestion",
+      "table": "regulatory_open_questions",
+      "description": "A question only the authority can answer, on which a rule of a report rests (docs/regulatory-reports.md, section 7): the owner's work list for Mattilsynet, Fiskeridirektoratet or the county.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "question",
+          "field": "question",
+          "type": "varchar(1000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "authority",
+          "field": "authority",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "affects",
+          "field": "affects",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "open",
+            "answered"
+          ],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "asked_by",
+          "field": "asked_by",
+          "type": "varchar(150)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "asked_on",
+          "field": "asked_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "answer",
+          "field": "answer",
+          "type": "varchar(2000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "answered_on",
+          "field": "answered_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpenQuestionForm › Question"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_open_questions_code_live",
+          "kind": "unique",
+          "fields": [
+            "code"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_open_questions_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_open_questions_answer",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_open_questions_days",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_create"
+              ],
+              "routes": [
+                "/authority-questions/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_edit"
+              ],
+              "routes": [
+                "/authority-questions/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_delete"
+              ],
+              "routes": [
+                "/authority-questions/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "open questions tab",
+              "url_names": [
+                "reports:openquestion_list"
+              ],
+              "routes": [
+                "/authority-questions/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "OpenQuestionForm",
+          "module": "reports.forms",
+          "fields": {
+            "code": "Question",
+            "question": "Question",
+            "authority": "Question",
+            "affects": "Question",
+            "status": "Question",
+            "asked_by": "Question",
+            "asked_on": "Question",
+            "answer": "Question",
+            "answered_on": "Question",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Reports",
+        "masked": []
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "reports/tests/test_ack.py",
+        "reports/tests/test_questions.py"
+      ]
+    },
+    {
+      "app": "reports",
       "model": "ResistanceSuspicion",
       "table": "regulatory_report_resistance_suspicions",
       "description": "A suspicion of resistance to a lice treatment reported for the week (lakselusforskriften § 10 e).",
@@ -25301,7 +29608,8 @@
       "tests": [
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
-        "reports/tests/test_pages.py"
+        "reports/tests/test_pages.py",
+        "reports/tests/test_preview.py"
       ]
     },
     {
@@ -26179,6 +30487,19 @@
           "why": ""
         },
         {
+          "name": "authority_id",
+          "field": "authority_id",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SubmitForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(2000)",
@@ -26190,6 +30511,57 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "harvest_condition",
+          "field": "harvest_condition",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "round",
+            "gutted"
+          ],
+          "link": null,
+          "on_form": [
+            "ReportForm › Report"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "no_cleaner_feed",
+          "field": "no_cleaner_feed",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ReportForm › Report"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "deadline_on",
+          "field": "deadline_on",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the deadline when the filing is recorded"
+        },
+        {
+          "name": "filed_late",
+          "field": "filed_late",
+          "type": "boolean",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "whether the filing came after the deadline, set when it is recorded"
         }
       ],
       "constraints": [
@@ -26237,6 +30609,30 @@
         },
         {
           "name": "chk_regulatory_reports_escape",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_harvest_condition",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_no_cleaner_feed",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_authority_id_when_filed",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_regulatory_reports_late_when_filed",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -26446,6 +30842,8 @@
             "health_event": "Report",
             "escape": "Report",
             "occurred_on": "Report",
+            "harvest_condition": "Report",
+            "no_cleaner_feed": "Report",
             "contact_name": "Contact person",
             "contact_email": "Contact person",
             "contact_phone": "Contact person",
@@ -26468,7 +30866,10 @@
             "submitted_at": "",
             "channel": "",
             "reference": "",
-            "version": ""
+            "authority_id": "",
+            "version": "",
+            "content_sha256": "",
+            "acknowledged": ""
           }
         }
       ],
@@ -26486,13 +30887,18 @@
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "reports/tests/helpers.py",
+        "reports/tests/test_ack.py",
+        "reports/tests/test_api_call.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_delivery.py",
         "reports/tests/test_due.py",
+        "reports/tests/test_gaps789.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_preview.py",
+        "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
       ]
@@ -28620,12 +33026,6 @@
     {
       "table": "farm.ProductionDepartment",
       "what": "column description",
-      "why": "no field on the Production department form",
-      "weight": 1
-    },
-    {
-      "table": "farm.ProductionDepartment",
-      "what": "column manager",
       "why": "no field on the Production department form",
       "weight": 1
     },

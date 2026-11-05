@@ -14,6 +14,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 from django.utils import timezone
 
+from farm.water.read import as_parameter
 from sensors import read
 
 FIRST = 1_000_000
@@ -31,6 +32,8 @@ class Command(BaseCommand):
         parser.add_argument('--interval', type=int, default=60, help='Seconds between two stored rows of a channel.')
         parser.add_argument('--confirm-database', default='', help='The name of the database written to.')
         parser.add_argument('--drop', action='store_true', help='Delete the synthetic rows first.')
+        parser.add_argument('--frames', type=int, default=read.PAGE,
+                            help='Frames of the replay page timed at one minute (a page at most).')
         parser.add_argument('--measure-only', action='store_true',
                             help='Write nothing: time the rows already there (refreshed and compressed, as in use).')
 
@@ -39,8 +42,8 @@ class Command(BaseCommand):
         if options['confirm_database'] != name:
             raise CommandError(f'This writes synthetic readings into "{name}": confirm with --confirm-database {name}.')
         channels, days, interval = options['channels'], options['days'], options['interval']
-        if channels < 1 or days < 1 or interval < 1:
-            raise CommandError('Channels, days and the interval are at least 1.')
+        if channels < 1 or days < 1 or interval < 1 or not 1 <= options['frames'] <= read.PAGE:
+            raise CommandError(f'Channels, days and the interval are at least 1; the frames 1 to {read.PAGE}.')
         end = timezone.now().replace(second=0, microsecond=0)
         start = end - timedelta(days=days)
         last = FIRST + channels - 1
@@ -86,30 +89,31 @@ class Command(BaseCommand):
         began = time.monotonic()
         values = read.replay_rows(replay, week, read.HOUR, hourly, read.ROLLUP_1H)
         replay_ms = (time.monotonic() - began) * 1000
-        # A7: one page of 2000 frames at one minute, the readings of four channels in one query.
-        first = end - read.PAGE * read.MINUTE
+        # A7: one page of frames at one minute (2000 by default), the readings of four channels in one query.
+        frames = options['frames']
+        first = end - frames * read.MINUTE
         page = [read.Segment(segment.channel_no, first - read.CARRY, end, 'primary', read.SENSOR, interval * 3, False,
                              False) for segment in replay]
         began = time.monotonic()
-        minutes = read.replay_rows(page, first, read.MINUTE, read.PAGE, read.RAW)
+        minutes = read.replay_rows(page, first, read.MINUTE, frames, read.RAW)
         page_ms = (time.monotonic() - began) * 1000
         # A8: the whole diagram of every frame of that page, the channels standing for a water whose temperature,
-        # salinity, pH and alkalinity all move (the readings' 0.001 resolution), with a fish's limits.
-        began = time.monotonic()
-        analyses = []
-        for slot in range(read.PAGE):
+        # salinity, pH and alkalinity all move, with a fish's limits: at the readings' 0.001 resolution (the worst case:
+        # every frame a different water) and at the parameters' decimals, as the replay reads a sensor's value.
+        waters = []
+        for slot in range(frames):
             row = [minutes.get((index % len(page), slot)) for index in range(4)]
             if None in row:
-                analyses.append(None)
+                waters.append(None)
                 continue
             temperature, salinity, ph, alkalinity = (value for _ts, value in row)
-            water = {'temperature_c': temperature, 'salinity_ppt': 25 + 5 * (salinity - 10), 'ph': 7 + (ph - 10) / 5,
-                     'alkalinity_mg_l': 100 + 10 * (alkalinity - 10), 'tan_mg_l': 0.5, 'oxygen_mg_l': 9.0}
-            analyses.append(read.frame_analysis(water, LIMITS)[0])
-        figures, _indexes = read.page_figures(analyses)
-        figures_ms = (time.monotonic() - began) * 1000
-        drawn = sum(analysis is not None for analysis in analyses)
-        size = len(json.dumps(figures))
+            waters.append({'temperature_c': temperature, 'salinity_ppt': 25 + 5 * (salinity - 10),
+                           'ph': 7 + (ph - 10) / 5, 'alkalinity_mg_l': 100 + 10 * (alkalinity - 10), 'tan_mg_l': 0.5,
+                           'oxygen_mg_l': 9.0})
+        diagrams = [self.diagrams(waters), self.diagrams(
+            [None if water is None else {code: float(as_parameter(code, value)) for code, value in water.items()}
+             for water in waters])]
+        drawn = sum(water is not None for water in waters)
         began = time.monotonic()
         read.latest(range(FIRST, last + 1))
         latest_ms = (time.monotonic() - began) * 1000
@@ -121,11 +125,13 @@ class Command(BaseCommand):
                           f'readings in {week_ms:.0f} ms')
         self.stdout.write(f'replay of seven days hourly: {hourly} frames x {len(replay)} channels, {len(values)} '
                           f'values in one query in {replay_ms:.0f} ms')
-        self.stdout.write(f'replay page of {read.PAGE} frames at one minute: {len(page)} channels, {len(minutes)} values '
+        self.stdout.write(f'replay page of {frames} frames at one minute: {len(page)} channels, {len(minutes)} values '
                           f'in one query in {page_ms:.0f} ms')
-        self.stdout.write(f'diagrams of {read.PAGE} frames at one minute: {drawn} frames with a diagram, {len(figures)} '
-                          f'different, in {figures_ms:.0f} ms ({figures_ms / max(drawn, 1):.2f} ms a frame), '
-                          f'{size / 1e6:.1f} MB as JSON')
+        (raw_ms, raw_count, raw_size), (shown_ms, shown_count, shown_size) = diagrams
+        self.stdout.write(f'diagrams of {frames} frames at one minute: {drawn} frames with a diagram; at the readings\' '
+                          f'resolution {raw_count} different in {raw_ms:.0f} ms ({raw_ms / max(drawn, 1):.2f} ms a frame), '
+                          f'{raw_size / 1e6:.1f} MB as JSON; at the parameters\' decimals {shown_count} different in '
+                          f'{shown_ms:.0f} ms ({shown_ms / max(drawn, 1):.2f} ms a frame), {shown_size / 1e6:.1f} MB as JSON')
         self.stdout.write(f'latest of {channels} channels: {latest_ms:.0f} ms')
 
     @staticmethod
@@ -136,3 +142,11 @@ class Command(BaseCommand):
         began = time.monotonic()
         found = read.chart_rows(segment, width, read.tier_of(width), zone)
         return (time.monotonic() - began) * 1000, len(found), width
+
+    @staticmethod
+    def diagrams(waters):
+        """(ms, different figures, JSON bytes) of a page's diagrams as the replay works them out (None: no diagram)."""
+        began = time.monotonic()
+        figures, _indexes = read.page_figures(
+            [None if water is None else read.frame_analysis(water, LIMITS)[0] for water in waters])
+        return (time.monotonic() - began) * 1000, len(figures), len(json.dumps(figures))

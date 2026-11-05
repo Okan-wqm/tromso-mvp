@@ -644,10 +644,11 @@ without a request, so the shell's context (the menu, the unread count) is never 
 polls keep the session alive once a day (the default session is two weeks and a wall must not sign itself out); the grid prints a
 large notice from `data-poll-state` when the server cannot be reached or the person is signed out.
 
-**Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`): the only thing the app stores. A board is a
-named, shared wall screen: a name (unique among the live boards in any case), a description, how its cards are drawn by
-default (simple or detailed), how often its screens ask (10 to 600 seconds, empty: the system's 15), and its **Units** tab, one
-card per unit with its own mode (empty: the board's), saved as a whole list with the board's version (a list based on an outdated
+**Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`). A board is a
+named, shared wall screen: a name (unique among the live boards in any case), a description, the template its cards are drawn
+with by default (empty: the rules decide; it ranks below the rules, as its default mode did), its card width (compact,
+automatic, comfortable), how often its screens ask (10 to 600 seconds, empty: the system's 15), and its **Units** tab, one
+card per unit with its own template (empty: the board's or the rules'; above every rule), saved as a whole list with the board's version (a list based on an outdated
 board is refused) and one activity-log entry. Tables `monitor_boards` and `monitor_board_units`; every rule the database can
 hold is a constraint (the name, the modes, the refresh range, one card per unit and board). A board holds only live units: the
 form offers live units, and a unit that is deleted keeps its row (a configuration, not history), its card hidden by the live join
@@ -714,6 +715,26 @@ boards' defaults and the templates that flip to it (each logged); a built-in and
 deleted, nor the global rule. A board gets its default template and a card width (compact, automatic, comfortable); a
 board's card row its own template. Migration 0004 copies each board's default mode and each row's mode into the built-in
 templates; back, a built-in maps to its mode again. The mode columns stay for one release, so a rollback loses nothing.
+
+**Which template a card gets** (`monitoring/cards/resolve.py`), first hit wins: the board's row for the unit, a rule for the
+unit, for its system, for its system's type, for the species of its fish (an empty unit has none and falls through), for
+its kind, the board's default (no board: the page's `mode=simple|detailed`, the built-ins), the global rule, and with no rule
+at all Simple from the code. `?flip=` shows a card's flip target and its link goes back. Only live templates and live rules
+of live units, systems and species count; a rule of something deleted counts again when it is restored. A stored layout the
+validator refuses (a hand edit) never blanks a card: it is drawn with the built-in Detailed layout from the code and the error
+is logged once per template per process. The live templates and rules are two queries, whatever the number of units.
+
+**What the read reads** (`monitoring/read.py`): `SOURCES` is the one table of the card's sources, each with the right that reads
+it and whether the card can be drawn without it (it replaced `PERMISSIONS`). `needs` is the union of the sources of every
+widget of the shown cards' templates, plus the roll-up's set (fish, feeding, the middle point's water, open events) for every
+card, so the state never depends on the template: a card with no water widget is still critical. A source no shown widget
+needs runs no query (every active point's water and the feeding week only for the cards that show them). An optional source
+(treatments, lice counts, tasks, placement chips) that fails is read in its own savepoint, its widgets say so, and it is logged
+at most once a minute; a required one that fails answers **503** (the page and the fragment), so a polling screen backs off
+and keeps its last picture with its stale notice. The two template queries are the only reads card templates add: 33
+reads simple, 40 detailed and mixed at 6, 24 and 200 units (the recording's 31 and 38 reads, plus the two; the recording
+also counted 4 savepoint statements, the chips' and the placement registry's own), and each optional source now has a
+savepoint of its own: 4 savepoint statements simple, 10 detailed (`RecordedCountsTests`).
 
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,

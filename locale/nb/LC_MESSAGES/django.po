@@ -2625,6 +2625,9 @@ msgstr ""
 msgid "As the records give it now"
 msgstr "Slik registreringene gir den nå"
 
+msgid "As the rules say"
+msgstr "Som reglene sier"
+
 msgid "As weighed on arrival; to 0.0001 g for eggs and larvae."
 msgstr "Som veid ved ankomst; ned til 0,0001 g for rogn og larver."
 
@@ -5489,9 +5492,6 @@ msgstr "Timer sultet"
 msgid "Hours the rule asks for"
 msgstr "Timer regelen krever"
 
-msgid "How a card is drawn unless its row says otherwise: simple (the key figures) or detailed."
-msgstr "Hvordan et kort tegnes med mindre raden sier noe annet: enkelt (nøkkeltallene) eller detaljert."
-
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
 
@@ -5514,6 +5514,13 @@ msgstr ""
 "den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
 " fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
 "kontrolleres med veterinæren din."
+
+msgid ""
+"How wide the cards are at the least: compact fits more on a wall, comfortable is easier to read "
+"from a distance."
+msgstr ""
+"Hvor brede kortene er minst: kompakt får plass til flere på en vegg, romslig er lettere å lese på"
+" avstand."
 
 msgid "Hydrochloric acid"
 msgstr "Saltsyre"
@@ -9749,6 +9756,9 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Kalkulatorens verdier"
 
+msgid "The cards cannot be read just now. The screen keeps its last picture; try again shortly."
+msgstr "Kortene kan ikke leses akkurat nå. Skjermen beholder det siste bildet; prøv igjen om litt."
+
 msgid ""
 "The cards of each monitoring board: a unit and, when it differs from the board, how its card is "
 "drawn."
@@ -10621,6 +10631,13 @@ msgstr "Teamet har ingen leder."
 
 msgid "The team needs a lead."
 msgstr "Teamet trenger en leder."
+
+msgid ""
+"The template of a card that neither its row nor a rule names (Reference data › Card template "
+"rules). Empty: the global rule decides."
+msgstr ""
+"Malen til et kort som verken raden eller en regel nevner (Referansedata › Kortmalregler). Tomt: "
+"den globale regelen avgjør."
 
 msgid ""
 "The text as it was read from the PDF, without its layout. It is what the search finds and what "
@@ -12145,6 +12162,12 @@ msgstr "endret her"
 msgid "channel"
 msgstr "kanal"
 
+msgid "chosen for this card on the board"
+msgstr "valgt for dette kortet på tavlen"
+
+msgid "chosen on this page"
+msgstr "valgt på denne siden"
+
 msgid "cleaner fish"
 msgstr "rensefisk"
 
@@ -12580,6 +12603,9 @@ msgstr "innsendt rapportinnhold"
 msgid "filed report contents"
 msgstr "innsendte rapportinnhold"
 
+msgid "flipped on this page"
+msgstr "byttet på denne siden"
+
 #, python-format
 msgid "found %(time)s"
 msgstr "funnet %(time)s"
@@ -12812,6 +12838,9 @@ msgstr "ingen rapporteringsdato: periodene telles ikke"
 
 msgid "no reports-from date: nothing is counted"
 msgstr "ingen rapporteringsdato: ingenting telles"
+
+msgid "no rule applies"
+msgstr "ingen regel gjelder"
 
 #, python-format
 msgid "no salmonids in the sea at %(site)s since %(date)s"
@@ -13099,8 +13128,29 @@ msgstr "oppgaver"
 msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"
 
+msgid "the board’s default"
+msgstr "tavlens standard"
+
 msgid "the options must be a set of named values."
 msgstr "valgene må være et sett navngitte verdier."
+
+msgid "the rule for every unit"
+msgstr "regelen for alle enheter"
+
+msgid "the rule for its kind of unit"
+msgstr "regelen for typen enhet"
+
+msgid "the rule for its species"
+msgstr "regelen for arten"
+
+msgid "the rule for its system"
+msgstr "regelen for systemet"
+
+msgid "the rule for its type of system"
+msgstr "regelen for systemtypen"
+
+msgid "the rule for this unit"
+msgstr "regelen for denne enheten"
 
 msgid "the site’s altitude"
 msgstr "lokalitetens høyde over havet"

@@ -2624,6 +2624,9 @@ msgstr "Ölçerin veya kitin okuduğu gibi. Sıcaklıkla birlikte, girilmezse do
 msgid "As the records give it now"
 msgstr "Kayıtların şimdi verdiği gibi"
 
+msgid "As the rules say"
+msgstr "Kuralların dediği gibi"
+
 msgid "As weighed on arrival; to 0.0001 g for eggs and larvae."
 msgstr "Gelişte tartıldığı gibi; yumurta ve larvalar için 0,0001 g’a kadar."
 
@@ -5501,9 +5504,6 @@ msgstr "Aç kalınan saat"
 msgid "Hours the rule asks for"
 msgstr "Kuralın istediği saat"
 
-msgid "How a card is drawn unless its row says otherwise: simple (the key figures) or detailed."
-msgstr "Satırı aksini söylemedikçe bir kartın nasıl çizileceği: basit (ana rakamlar) veya ayrıntılı."
-
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
@@ -5526,6 +5526,11 @@ msgstr ""
 " olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
 "aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
+
+msgid ""
+"How wide the cards are at the least: compact fits more on a wall, comfortable is easier to read "
+"from a distance."
+msgstr "Kartların en az genişliği: sıkı, duvara daha çok kart sığdırır; geniş, uzaktan daha kolay okunur."
 
 msgid "Hydrochloric acid"
 msgstr "Hidroklorik asit"
@@ -9761,6 +9766,9 @@ msgstr ""
 msgid "The calculator's values"
 msgstr "Hesaplayıcının değerleri"
 
+msgid "The cards cannot be read just now. The screen keeps its last picture; try again shortly."
+msgstr "Kartlar şu anda okunamıyor. Ekran son görüntüsünü koruyor; birazdan yeniden deneyin."
+
 msgid ""
 "The cards of each monitoring board: a unit and, when it differs from the board, how its card is "
 "drawn."
@@ -10629,6 +10637,13 @@ msgstr "Ekibin yürütücüsü yok."
 
 msgid "The team needs a lead."
 msgstr "Ekibin bir yürütücüsü olmalı."
+
+msgid ""
+"The template of a card that neither its row nor a rule names (Reference data › Card template "
+"rules). Empty: the global rule decides."
+msgstr ""
+"Ne satırının ne de bir kuralın adlandırdığı bir kartın şablonu (Referans verileri › Kart şablonu "
+"kuralları). Boş: genel kural belirler."
 
 msgid ""
 "The text as it was read from the PDF, without its layout. It is what the search finds and what "
@@ -12153,6 +12168,12 @@ msgstr "burada değiştirildi"
 msgid "channel"
 msgstr "kanal"
 
+msgid "chosen for this card on the board"
+msgstr "panoda bu kart için seçildi"
+
+msgid "chosen on this page"
+msgstr "bu sayfada seçildi"
+
 msgid "cleaner fish"
 msgstr "temizleyici balık"
 
@@ -12588,6 +12609,9 @@ msgstr "sunulan rapor içeriği"
 msgid "filed report contents"
 msgstr "sunulan rapor içerikleri"
 
+msgid "flipped on this page"
+msgstr "bu sayfada değiştirildi"
+
 #, python-format
 msgid "found %(time)s"
 msgstr "saat %(time)s’te bulundu"
@@ -12820,6 +12844,9 @@ msgstr "rapor başlangıç tarihi yok: dönemleri sayılmaz"
 
 msgid "no reports-from date: nothing is counted"
 msgstr "rapor başlangıç tarihi yok: hiçbir şey sayılmaz"
+
+msgid "no rule applies"
+msgstr "hiçbir kural geçerli değil"
 
 #, python-format
 msgid "no salmonids in the sea at %(site)s since %(date)s"
@@ -13107,8 +13134,29 @@ msgstr "görevler"
 msgid "the 7th of the next month"
 msgstr "sonraki ayın 7’si"
 
+msgid "the board’s default"
+msgstr "panonun varsayılanı"
+
 msgid "the options must be a set of named values."
 msgstr "seçenekler adlandırılmış değerler kümesi olmalı."
+
+msgid "the rule for every unit"
+msgstr "her birim için kural"
+
+msgid "the rule for its kind of unit"
+msgstr "birim çeşidi için kural"
+
+msgid "the rule for its species"
+msgstr "türü için kural"
+
+msgid "the rule for its system"
+msgstr "sistemi için kural"
+
+msgid "the rule for its type of system"
+msgstr "sistem türü için kural"
+
+msgid "the rule for this unit"
+msgstr "bu birim için kural"
 
 msgid "the site’s altitude"
 msgstr "sahanın rakımı"

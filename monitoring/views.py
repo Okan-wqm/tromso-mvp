@@ -25,6 +25,7 @@ from farm.water import parameters
 from farm.stock.views import VIEW
 
 from . import read
+from .cards import resolve
 from .models import MonitorBoard
 
 POLL = 'monitoring:cards'
@@ -57,12 +58,19 @@ def _board(params):
     return MonitorBoard.objects.prefetch_related('rows').filter(pk=params.board).first()
 
 
+def _unavailable():
+    """A source the cards' state needs could not be read: 503, so a polling screen backs off and keeps its last
+    picture with its stale notice (frontend/poll.ts), and a page says so rather than draw a guess."""
+    return HttpResponse(_('The cards cannot be read just now. The screen keeps its last picture; try again shortly.'),
+                        status=503, headers={'Cache-Control': 'no-store', 'Retry-After': '30'},
+                        content_type='text/plain; charset=utf-8')
+
+
 def _grid(request, params, board, now=None):
     """The context of the grid: the cards after the filters and the occupancy, how many units are not shown, and the
     strip of the cards that need a look."""
     units = read.units_for(params, board)
-    modes = read.modes(units, board, params)
-    found = read.cards(units, request.user, modes, params.occupancy, now)
+    found = read.cards(units, request.user, resolve.Choice.of(board, params), params.occupancy, now)
     farm = Tank.objects.count()
     return {
         'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'strip': read.attention(found),
@@ -92,7 +100,11 @@ def monitor(request):
     token = read.change_token(request.user, params.canonical(), board=params.board)
     now = timezone.now()
     board = _board(params)
-    context = _context(**_grid(request, params, board, now), token=token, query=params.canonical(), board=board,
+    try:
+        grid = _grid(request, params, board, now)
+    except read.Unavailable:
+        return _unavailable()
+    context = _context(**grid, token=token, query=params.canonical(), board=board,
                        boards=MonitorBoard.objects.order_by('name'),
                        poll_url=_poll_url(params.canonical(), token),
                        poll_seconds=board.seconds if board else settings.MONITOR_POLL_SECONDS,
@@ -120,5 +132,9 @@ def cards(request):
     if request.GET.get('after') == token:
         return HttpResponse(status=204, headers=headers)
     now = timezone.now()
-    html = render_to_string('monitoring/_grid.html', {**_grid(request, params, _board(params), now), 'wall': params.wall})
+    try:
+        grid = _grid(request, params, _board(params), now)
+    except read.Unavailable:
+        return _unavailable()
+    html = render_to_string('monitoring/_grid.html', {**grid, 'wall': params.wall})
     return HttpResponse(html, headers=headers)

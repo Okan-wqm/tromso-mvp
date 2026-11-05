@@ -2,6 +2,7 @@
 (monitoring/read.py: SOURCES, `needs`, one bulk call per needed source, an optional source failing open): the board's
 row, then the unit, its system, the system's type, the species, the kind, then the board's default (or the page's own
 choice), then the global rule; a flip shows the template's flip target; a broken stored layout falls back visibly."""
+import itertools
 import logging
 from types import SimpleNamespace
 from unittest import mock
@@ -19,6 +20,7 @@ from ..cards.resolve import Choice
 from ..models import CardTemplate, CardTemplateAssignment, MonitorBoard, MonitorBoardUnit
 from . import ALL_RIGHTS, MonitoringCase
 
+PEOPLE = itertools.count()
 TASKS_ONLY = {'schema': 1, 'widgets': [{'id': 'w1', 'type': 'tasks', 'x': 0, 'y': 0, 'w': 6, 'h': 2}]}
 FISH_ONLY = {'schema': 1, 'widgets': [{'id': 'w1', 'type': 'fish', 'x': 0, 'y': 0, 'w': 12, 'h': 5}]}
 
@@ -165,7 +167,7 @@ class NeedsTests(MonitoringCase):
         CardTemplateAssignment.objects.filter(unit=None, system=None, system_type=None, species=None,
                                               kind=None).update(template=mine)
         units = read.units_for(read.Params())
-        with CaptureQueriesContext(connection) as log:
+        with mock.patch.object(read.harvest_views, 'withdrawals', return_value={}),                 CaptureQueriesContext(connection) as log:          # (the withdrawal registry reads treatments itself)
             found = read.cards(units, user or self.reader, Choice())
         return found, ' '.join(query['sql'] for query in log)
 
@@ -232,7 +234,7 @@ class NeedsTests(MonitoringCase):
 
 class BudgetWithTemplatesTests(MonitoringCase):
     def count(self, units, choice):
-        user = self.as_person(f'budget-{len(units)}-{CardTemplate.objects.count()}-{choice.address}', *ALL_RIGHTS)
+        user = self.as_person(f'budget-{next(PEOPLE)}', *ALL_RIGHTS)
         read.sections_for(user)
         with CaptureQueriesContext(connection) as log:
             read.cards(units, user, choice)

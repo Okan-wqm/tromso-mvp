@@ -30,6 +30,7 @@ class Counting:
         self.assertEqual(len(found), len(units))
         for query in log:
             self.assertTrue(query['sql'].lstrip().upper().startswith(('SELECT', 'WITH', 'SAVEPOINT', 'RELEASE')), query['sql'][:80])   # a savepoint keeps a failing chip provider inside it: no write
+        self.savepoints = sum(query['sql'].lstrip().upper().startswith(('SAVEPOINT', 'RELEASE')) for query in log)
         return len(log)
 
 
@@ -75,15 +76,24 @@ class BudgetTests(Counting, MonitoringCase):
 # The counts recorded before card templates (step 0 of the card-template plan), for a person who may read everything:
 # the same at 6, 24 and 200 units. Card templates must not change them without the owner (README, Monitoring).
 RECORDED = {'simple': 35, 'detailed': 42, 'mixed': 42}
+RECORDED_SAVEPOINTS = 4       # the chips' savepoint and the one the placement registry opens around its provider
 TEMPLATE_QUERIES = 2
 
 
 class RecordedCountsTests(Counting, MonitoringCase):
     def test_the_counts_recorded_before_card_templates_at_6_24_and_200_units(self):
         units = self.farm_of(200)
-        found = {}
+        found, savepoints = {}, {}
         for mode in ('simple', 'detailed', 'mixed'):
             self.count(units[:6], mode)                               # warm what the first call loads once
-            found[mode] = [self.count(units[:size], mode) for size in (6, 24, 200)]
-        # card templates add their two queries (the live templates, the live rules), whatever the number of units
-        self.assertEqual(found, {mode: [count + TEMPLATE_QUERIES] * 3 for mode, count in RECORDED.items()})
+            found[mode] = []
+            for size in (6, 24, 200):
+                found[mode].append(self.count(units[:size], mode) - self.savepoints)
+                savepoints[mode] = self.savepoints
+        # The recording counted the chips' savepoints (theirs and the registry's around its provider); each optional
+        # source now has its own (a savepoint and its release: transaction control, no read), so the reads are compared
+        # without them. Card templates add their
+        # two queries (the live templates, the live rules), whatever the number of units.
+        self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + TEMPLATE_QUERIES] * 3
+                                 for mode, count in RECORDED.items()})
+        self.assertEqual(savepoints, {'simple': 4, 'detailed': 10, 'mixed': 10})   # chips; + treatments, lice, tasks

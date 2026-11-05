@@ -19,8 +19,8 @@ class BoardUnits(RowList):
 
     @classmethod
     def describe(cls, row):
-        """e.g. "T-01: detailed", in English."""
-        return f'{row.unit.code}: {row.get_mode_display() or "as the board"}'
+        """e.g. "T-01: Detailed", in English (a template's name as stored: a built-in's is its msgid)."""
+        return f'{row.unit.code}: {row.template.name if row.template else "as the board"}'
 
 
 class MonitorBoardResource(Resource):
@@ -41,5 +41,5 @@ class MonitorBoardResource(Resource):
         # A subquery, not a join with a count: an edit locks the row (FOR UPDATE), which a GROUP BY refuses.
         cards = (MonitorBoardUnit.objects.filter(board=OuterRef('pk'), unit__is_deleted=False).order_by().values('board')
                  .annotate(n=Count('pk')).values('n'))
-        return super().queryset().annotate(
+        return super().queryset().select_related('default_template').annotate(
             cards=Coalesce(Subquery(cards, output_field=IntegerField()), Value(0))).order_by('name')

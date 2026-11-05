@@ -232,6 +232,7 @@
         "hr/tests/test_departments.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
@@ -10415,6 +10416,8 @@
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
@@ -13161,6 +13164,7 @@
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "hr/tests/test_production_permissions.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py"
       ]
@@ -19037,6 +19041,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_hardening.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_review.py"
       ]
     },
@@ -19398,6 +19403,8 @@
         "hr/tests/test_employees.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_production_permissions.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
@@ -20086,6 +20093,7 @@
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
         "hr/tests/test_review.py"
       ]
     },
@@ -20401,6 +20409,7 @@
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
         "hr/tests/test_review.py"
       ]
     },
@@ -20765,6 +20774,7 @@
         "hr/tests/test_departments.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_scope.py"
       ]
     },
@@ -21062,6 +21072,7 @@
         "hr/tests/test_employees.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_realm.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_services.py"
@@ -21747,6 +21758,7 @@
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py"
       ]
@@ -22123,6 +22135,7 @@
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_overview_chart.py",
+        "hr/tests/test_production_permissions.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py"

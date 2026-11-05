@@ -21,6 +21,7 @@ from farm.stock.dates import site_today
 from .models import Employee, OfficeDepartment, Posting
 
 ALL = 'hr.all_employee'
+ALL_PRODUCTION = 'hr.all_production_employee'
 PRODUCTION, OFFICE = 'production', 'office'
 
 # A placement in a live production department: what makes a person a production person on its days.
@@ -75,8 +76,13 @@ def office_departments_below(managed):
 
 def managed(user):
     """The placements `user` manages: in a production department they are the Manager of, or in an office department they
-    manage or any below it (a deleted department gives none)."""
-    placed = Q(production_department__manager=user, production_department__is_deleted=False)
+    manage or any below it (a deleted department gives none). A holder of All production manages every placement in a live
+    production department: a department without a manager (a new one, or one whose manager's account is gone) is never
+    left out of their roster. It gives no office person and, being no Everyone, no leave reason."""
+    if user.has_perm(ALL_PRODUCTION):
+        placed = IN_PRODUCTION
+    else:
+        placed = Q(production_department__manager=user, production_department__is_deleted=False)
     below = office_departments_below(list(OfficeDepartment.objects.filter(manager=user)))
     return placed | Q(office_department__in=below) if below else placed
 
@@ -177,10 +183,11 @@ def colleagues(user, first, last):
 
 # ---- menu courtesies: which menu lines a person is shown, never what they may open -------------------------------------
 def leads(user):
-    """Whether the person leads production people: a holder of Everyone or the manager of a live production department
-    (Production › Team overview is shown to them)."""
+    """Whether the person leads production people: a holder of Everyone or All production, or the manager of a live
+    production department (Production › Team overview is shown to them)."""
     from farm.models import ProductionDepartment
-    return user.has_perm(ALL) or ProductionDepartment.objects.filter(manager=user).exists()
+    return (user.has_perm(ALL) or user.has_perm(ALL_PRODUCTION)
+            or ProductionDepartment.objects.filter(manager=user).exists())
 
 
 def production_only(user, day=None):

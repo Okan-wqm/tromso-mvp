@@ -2335,6 +2335,9 @@ msgstr "Tüm sahipler"
 msgid "All parameters"
 msgstr "Tüm parametreler"
 
+msgid "All production"
+msgstr "Tüm üretim"
+
 msgid "All production departments"
 msgstr "Tüm üretim departmanları"
 
@@ -3922,6 +3925,9 @@ msgstr "Oluşturulma zamanı"
 
 msgid "Created by"
 msgstr "Oluşturan"
+
+msgid "Crew"
+msgstr "Ekip"
 
 msgid "Critical"
 msgstr "Kritik"

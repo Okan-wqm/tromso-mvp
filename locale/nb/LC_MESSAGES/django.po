@@ -2334,6 +2334,9 @@ msgstr "Alle eiere"
 msgid "All parameters"
 msgstr "Alle parametere"
 
+msgid "All production"
+msgstr "Hele produksjonen"
+
 msgid "All production departments"
 msgstr "Alle produksjonsavdelinger"
 
@@ -3916,6 +3919,9 @@ msgstr "Opprettet"
 
 msgid "Created by"
 msgstr "Opprettet av"
+
+msgid "Crew"
+msgstr "Skiftlag"
 
 msgid "Critical"
 msgstr "Kritisk"

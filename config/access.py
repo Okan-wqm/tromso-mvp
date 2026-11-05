@@ -71,15 +71,18 @@ AREAS = [
     # Recurring tasks: the rules that plan tasks ahead; Create, Edit and Delete change the plan.
     Area(_('Recurring tasks'), 'tasks.TaskSeries'),
     # HR: the people (Everyone reads every employee, otherwise only the team: HR's row scope, hr/scope.py) and the
-    # office departments (the production departments are the farm's own, edited under Production).
-    Area(_('Employees'), 'hr.Employee', actions=('view', 'add', 'change', 'all')),
+    # office departments (the production departments are the farm's own, edited under Production). All production reads every
+    # person placed in a production department (Production › Team), a department without a manager too, and never an office
+    # person or a leave reason: the head of production's reach.
+    Area(_('Employees'), 'hr.Employee', actions=('view', 'add', 'change', 'all_production', 'all')),
     Area(_('Departments'), 'hr.OfficeDepartment'),
     # The shift patterns and the holidays the roster and the leave charge read, and the scheduling limits (one row: Edit
     # only). The three have no menu line of their own but Scheduling settings: it leads to the other two.
     Area(_('Shifts'), 'hr.Shift'),
     # The roster: Read is the Shift schedule (the viewer's team), Create plans a day, Edit changes a plan, Delete clears a
-    # cell; the rules (rest, hours, leave) run on every save.
-    Area(_('Shift schedule'), 'hr.ShiftAssignment'),
+    # cell; the rules (rest, hours, leave) run on every save. Crew adds, under one's own week, the name and shift code and times
+    # of the people in one's own production department that day: nothing else of theirs (hr.read.crew_week).
+    Area(_('Shift schedule'), 'hr.ShiftAssignment', actions=('view', 'add', 'change', 'delete', 'crew')),
     # Attendance: Read is Today & attendance (the team's board, and clocking oneself in and out) and the Attendance page, Create
     # enters presence by hand (with a reason), Edit corrects a stretch (logged), Delete voids one.
     Area(_('Attendance'), 'hr.AttendanceRecord'),

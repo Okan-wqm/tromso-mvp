@@ -425,5 +425,149 @@
         "mqtt_out"
       ]
     ]
+  },
+  {
+    "id": "farm_broker",
+    "type": "mqtt-broker",
+    "name": "Farm broker (own credential)",
+    "broker": "${SIM_MQTT_HOST}",
+    "port": "1883",
+    "clientid": "demo-simulator-farm",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "30",
+    "cleansession": false,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "tab_farm",
+    "type": "tab",
+    "label": "Farm",
+    "disabled": false,
+    "info": "Water devices of the configuration view (FARM_DEVICES_FILE from farm-config.sh), each on its own jittered timer, 40 messages per second in total."
+  },
+  {
+    "id": "farm_devices",
+    "type": "function",
+    "z": "tab_farm",
+    "name": "farm devices (own timers)",
+    "func": "return null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "const devices = global.get('farm');\nif (!Array.isArray(devices) || devices.length === 0) {\n  node.status({ fill: 'grey', shape: 'ring', text: 'no farm device list (FARM_DEVICES_FILE)' });\n  return;\n}\nconst period = (devices.length / 40) * 1000;\nconst seq = {}, timers = [];\nlet sent = 0;\nfunction gauss() { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }\nfunction hash(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }\n// The water of one tank at time t, from a model, never from a table:\n// - temperature follows the day (warmest mid-afternoon);\n// - feeding at 08, 12 and 16 local time: oxygen falls and recovers (about 45 min), CO2 and turbidity rise with it, pH\n//   follows CO2 (carbonate equilibrium: about -0.25 per tenfold CO2), TAN peaks later and slower, nitrite later still;\n// - nitrate rises slowly through the week and drops at the Monday water exchange; alkalinity is used up by\n//   nitrification over the same week;\n// - saturation is worked out from the oxygen and the temperature.\nfunction water(code, t) {\n  const h = hash(code), u = (h % 1000) / 1000;\n  const local = new Date(t + 3600e3);\n  const hour = local.getUTCHours() + local.getUTCMinutes() / 60 + local.getUTCSeconds() / 3600;\n  const dayStart = t - hour * 3600e3;\n  const feed = (tau) => [8, 12, 16].reduce((a, fh) => {\n    const dt = (t - (dayStart + fh * 3600e3)) / 60e3;\n    return dt >= 0 ? a + Math.exp(-dt / tau) : a;\n  }, 0);\n  const f45 = feed(45), f120 = feed(120), f360 = feed(360);\n  const days = ((local.getUTCDay() + 6) % 7) + hour / 24; // since Monday 00:00\n  const T = 8 + 6 * u + 0.6 * Math.sin((2 * Math.PI * (hour - 9)) / 24) + 0.03 * gauss();\n  const O2 = 9.2 + 1.5 * u - 1.6 * f45 + 0.2 * Math.sin((2 * Math.PI * (hour - 14)) / 24) + 0.04 * gauss();\n  const co2base = 7 + 5 * u;\n  const CO2 = co2base + 3.5 * f45 + 0.15 * gauss();\n  const solubility = 14.62 - 0.3898 * T + 0.006969 * T * T - 0.00005897 * T * T * T;\n  return {\n    temperature_c: [T, 1],\n    oxygen_mg_l: [O2, 2],\n    oxygen_saturation_pct: [(100 * O2) / solubility, 1],\n    ph: [7.05 + 0.4 * u - 0.25 * Math.log10(CO2 / co2base) + 0.008 * gauss(), 2],\n    co2_mg_l: [CO2, 1],\n    alkalinity_mg_l: [140 - 40 * u - 4 * days + 0.8 * gauss(), 0],\n    tan_mg_l: [0.15 + 0.4 * u + 0.5 * f120 + 0.01 * gauss(), 3],\n    nitrite_n_mg_l: [0.02 + 0.08 * u + 0.06 * f360 + 0.002 * gauss(), 3],\n    nitrate_n_mg_l: [12 + 20 * u + 4 * days + 0.3 * gauss(), 1],\n    tgp_pct: [100 + 2 * u + 0.6 * Math.sin((2 * Math.PI * hour) / 6) + 0.08 * gauss(), 1],\n    salinity_ppt: [(h % 5 === 0 ? 31 + 3 * u : 0.3 + u) + 0.02 * gauss(), 1],\n    turbidity_ntu: [0.6 + 1.5 * u + 1.4 * f45 + 0.06 * gauss(), 1],\n  };\n}\nfunction setp(obj, path, val) {\n  const parts = path.split('/').slice(1).map((s) => s.replace(/~1/g, '/').replace(/~0/g, '~'));\n  let o = obj;\n  for (let k = 0; k < parts.length - 1; k++) { o[parts[k]] = o[parts[k]] || {}; o = o[parts[k]]; }\n  o[parts[parts.length - 1]] = val;\n}\nfunction packet(d) {\n  const now = Date.now();\n  seq[d.device_code] = (seq[d.device_code] || 0) + 1;\n  const w = water(d.device_code, now);\n  const values = {};\n  for (const ch of d.channels) {\n    const m = w[ch.quantity];\n    if (!m) continue;\n    let x = Math.round(m[0] * Math.pow(10, m[1])) / Math.pow(10, m[1]);\n    if (ch.range_min !== null && ch.range_min !== undefined) x = Math.min(Math.max(x, ch.range_min), ch.range_max);\n    values[ch.quantity] = x;\n  }\n  const time = d.time_unit === 'iso8601' ? new Date(now).toISOString() : d.time_unit === 'epoch_s' ? now / 1000 : now;\n  let payload;\n  if (d.shape === 'array') {\n    const items = d.channels.filter((ch) => values[ch.quantity] !== undefined)\n      .map((ch) => ({ [d.name_key]: ch.item_name, [d.value_key]: values[ch.quantity] }));\n    if (d.items_path) {\n      payload = {};\n      setp(payload, d.items_path, items);\n      if (d.time_path) setp(payload, d.time_path, time);\n      if (d.seq_path) setp(payload, d.seq_path, seq[d.device_code]);\n    } else {\n      payload = items;\n      if (d.time_path) for (const it of items) setp(it, d.time_path, time);\n    }\n  } else {\n    payload = {};\n    if (d.time_path) setp(payload, d.time_path, time);\n    if (d.seq_path) setp(payload, d.seq_path, seq[d.device_code]);\n    for (const ch of d.channels) if (values[ch.quantity] !== undefined) setp(payload, ch.value_path, values[ch.quantity]);\n  }\n  return { topic: d.topic, payload: JSON.stringify(payload) };\n}\ndevices.forEach((d) => {\n  const tick = () => {\n    if (flow.get('farm_on') !== false) {\n      node.send(packet(d));\n      sent += 1;\n      if (sent % 200 === 0) node.status({ fill: 'green', shape: 'dot', text: devices.length + ' devices, ' + sent + ' sent' });\n    }\n    timers[devices.indexOf(d)] = setTimeout(tick, period * (0.85 + 0.3 * Math.random()));\n  };\n  timers.push(setTimeout(tick, Math.random() * period));\n});\ncontext.set('timers', timers);\nnode.status({ fill: 'green', shape: 'dot', text: devices.length + ' devices, every ' + (period / 1000).toFixed(2) + ' s each' });",
+    "finalize": "for (const t of context.get('timers') || []) clearTimeout(t);",
+    "libs": [],
+    "x": 400,
+    "y": 60,
+    "wires": [
+      [
+        "farm_out"
+      ]
+    ]
+  },
+  {
+    "id": "farm_out",
+    "type": "mqtt out",
+    "z": "tab_farm",
+    "name": "to broker (QoS 1)",
+    "topic": "",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "farm_broker",
+    "x": 680,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "sw_farm_on",
+    "type": "inject",
+    "z": "tab_farm",
+    "name": "farm on",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "farm_on",
+    "payloadType": "str",
+    "x": 160,
+    "y": 140,
+    "wires": [
+      [
+        "farm_switch"
+      ]
+    ]
+  },
+  {
+    "id": "sw_farm_off",
+    "type": "inject",
+    "z": "tab_farm",
+    "name": "farm off",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "farm_off",
+    "payloadType": "str",
+    "x": 160,
+    "y": 200,
+    "wires": [
+      [
+        "farm_switch"
+      ]
+    ]
+  },
+  {
+    "id": "farm_switch",
+    "type": "function",
+    "z": "tab_farm",
+    "name": "farm switch",
+    "func": "flow.set('farm_on', msg.payload === 'farm_on');\nnode.status({ fill: msg.payload === 'farm_on' ? 'green' : 'grey', shape: 'dot', text: msg.payload });\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 170,
+    "wires": [
+      []
+    ]
   }
 ]

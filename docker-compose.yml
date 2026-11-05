@@ -59,9 +59,15 @@ services:
       SIM_MQTT_HOST: mosquitto
       SIM_MQTT_USER: ${SIM_MQTT_USER:-simulator}
       SIM_MQTT_PASSWORD_FILE: /run/secrets/sim_mqtt
-    secrets: [sim_mqtt]
+      # the farm tab publishes with its own credential (manage.py sensors_demo_setup --secret-file .sensors/secrets/sim_farm)
+      SIM_FARM_USER: ${SIM_FARM_USER:-demo-simulator}
+      SIM_FARM_PASSWORD_FILE: /run/secrets/sim_farm
+      # the farm flow's devices, written from the configuration view by sensors-ingest/simulator/farm-config.sh
+      FARM_DEVICES_FILE: /farm/farm-devices.json
+    secrets: [sim_mqtt, sim_farm]
     volumes:
       - ./sensors-ingest/simulator:/sim:ro
+      - ${SENSORS_FARM_DIR:-./.sensors/farm}:/farm:ro
       - node-red-data:/data
     # the editor (switches) on the host's loopback only
     ports: ["127.0.0.1:${SENSORS_SIMULATOR_PORT:-1880}:1880"]
@@ -73,6 +79,8 @@ secrets:
     file: ${SENSORS_SECRETS_DIR:-./.sensors/secrets}/mqtt_ingest
   sim_mqtt:
     file: ${SENSORS_SECRETS_DIR:-./.sensors/secrets}/sim_mqtt
+  sim_farm:
+    file: ${SENSORS_SECRETS_DIR:-./.sensors/secrets}/sim_farm
 
 volumes:
   pgdata: {}

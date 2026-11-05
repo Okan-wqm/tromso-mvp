@@ -41,6 +41,7 @@ DBPW=$(rand); INGPW=$(rand); SIMPW=$(rand)
 printf '%s\n' "$DBPW" > "$STATE/secrets/sensors_ingest_db"
 printf '%s\n' "$INGPW" > "$STATE/secrets/mqtt_ingest"
 printf '%s\n' "$SIMPW" > "$STATE/secrets/sim_mqtt"
+: > "$STATE/secrets/sim_farm"   # no farm in this run: the farm tab idles
 # what manage.py sensor_broker_sync writes (spike S0f: the $7$ lines from hashlib)
 HASH="docker run --rm -v $(win "$PWD/sensors-ingest/spikes"):/s python:3.12-slim python -I /s/s0f_mosquitto_hash.py line"
 { $HASH ingest "$INGPW"; $HASH simulator "$SIMPW"; } > "$STATE/broker-auth/passwd"

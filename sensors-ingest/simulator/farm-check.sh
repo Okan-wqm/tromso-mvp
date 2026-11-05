@@ -49,8 +49,11 @@ sql "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sensors_
 DJ=(docker run --rm --network balik-ciftligi_default -v "$REPO:/app" -w /app -e DB_HOST=db -e DB_PORT=5432
   -e DB_NAME=$E2E_DB -e SENSORS_BROKER_AUTH_DIR=/app/$ST/broker-auth balik-testrunner:latest)
 "${DJ[@]}" python manage.py shell -c "exec(open('sensors-ingest/simulator/farm_fixture.py').read())" || exit 1
-"${DJ[@]}" python manage.py sensors_demo_setup --confirm --secret-file /app/$ST/secrets/sim_farm || exit 1
+"${DJ[@]}" python manage.py sensors_demo_setup --confirm --secret-file /app/$ST/secrets/sim_farm.django || exit 1
 "${DJ[@]}" python manage.py sensor_broker_sync --extra /app/$ST/extra_passwd || exit 1
+# the secret is written mode 600 inside the Django container; the Node-RED container runs as uid 1000 and must read
+# it: a fresh copy made here has the ordinary mode
+cat "$ST/secrets/sim_farm.django" > "$ST/secrets/sim_farm"
 bash sensors-ingest/simulator/farm-config.sh $E2E_DB "$ST/farm/farm-devices.json"
 
 "${COMPOSE[@]}" build -q sensors-ingest || exit 1

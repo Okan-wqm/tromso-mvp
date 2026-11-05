@@ -39,6 +39,8 @@ secrets:
     file: ${E2E_STATE:-./sensors-ingest/e2e/.state}/secrets/mqtt_ingest
   sim_mqtt:
     file: ${E2E_STATE:-./sensors-ingest/e2e/.state}/secrets/sim_mqtt
+  sim_farm:
+    file: ${E2E_STATE:-./sensors-ingest/e2e/.state}/secrets/sim_farm
 
 networks:
   e2e: {}

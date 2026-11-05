@@ -191,3 +191,24 @@ class PageTests(MonitoringCase):
         card = articles(html)[f'card:{self.t2.pk}']
         tasks = next(node for node in widgets_of(card) if 'w-tasks' in node.classes)
         self.assertIn('no data', ' '.join(tasks.text().split()))
+
+
+class AnnouncerTests(MonitoringCase):
+    """frontend/announce.ts reads the state from the article and speaks through two regions outside the grid, in the
+    person's language; the page carries every word it says."""
+
+    def test_the_state_is_on_the_article_and_the_regions_sit_outside_the_grid(self):
+        html = self.client.get(PAGE).content.decode()
+        tree = Tree(html).root
+        card = articles(html)[f'card:{self.t2.pk}']
+        self.assertEqual(card.attrs['data-state'], card.attrs['class'].split('monitor-')[-1].split()[0])
+        regions = {node.attrs['aria-live']: node for node in tree.walk() if node.attrs.get('data-announcer') is not None}
+        self.assertEqual(set(regions), {'assertive', 'polite'})
+        grid = next(node for node in tree.walk() if 'monitor-grid' in node.classes)
+        self.assertFalse([node for node in grid.walk() if node.attrs.get('data-announcer') is not None])
+        holder = next(node for node in tree.walk() if node.attrs.get('id') == 'monitor-announce')
+        for key in ('data-announce-worse', 'data-announce-more', 'data-state-critical', 'data-state-warning',
+                    'data-state-blind', 'data-state-note'):
+            self.assertTrue(holder.attrs.get(key), key)
+        self.assertIn('js/announce.js', html)
+        self.assertNotIn('data-announcer', self.client.get(CARDS).content.decode())      # never inside the fragment

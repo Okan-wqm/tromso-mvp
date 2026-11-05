@@ -150,6 +150,7 @@ pub async fn run(
         client: None,
         listener: None,
         listen_client: None,
+        counter_base: None,
         notices: None,
     };
     loop {
@@ -188,6 +189,8 @@ struct Writer {
     client: Option<Client>,
     listener: Option<tokio::task::JoinHandle<()>>,
     listen_client: Option<Client>,
+    /// The status counters as the previous run left them (read once, at the first open).
+    counter_base: Option<(i64, i64)>,
     notices: Option<mpsc::UnboundedReceiver<i64>>,
 }
 
@@ -260,6 +263,9 @@ impl Writer {
             tracing::error!(row = %r, "configuration row left out");
         }
         self.committed = db::load_states(client, &cfg.channel_nos()).await.map_err(|e| format!("states: {e}"))?;
+        if self.counter_base.is_none() {
+            self.counter_base = Some(db::status_counters(client).await.map_err(|e| format!("status counters: {e}"))?);
+        }
         let cfg = Arc::new(cfg);
         self.cfg = Some(cfg.clone());
         self.start_listener().await;
@@ -339,6 +345,7 @@ impl Writer {
             Err(p) => p.into_inner().clone(),
         };
         let depth = i32::try_from(self.shared.queue_depth.load(Ordering::SeqCst)).unwrap_or(i32::MAX);
+        let base = self.counter_base.unwrap_or((0, 0));
         cfg.connections
             .keys()
             .map(|id| Status {
@@ -346,8 +353,12 @@ impl Writer {
                 connected: connected_override.unwrap_or_else(|| map.get(id).copied().unwrap_or(false)),
                 queue_depth: depth.max(0),
                 version: self.settings.version.clone(),
-                qos0_dropped: 0,
-                poison_total: 0,
+                qos0_dropped: base
+                    .0
+                    .saturating_add(i64::try_from(self.shared.qos0_dropped.load(Ordering::SeqCst)).unwrap_or(i64::MAX)),
+                poison_total: base
+                    .1
+                    .saturating_add(i64::try_from(self.shared.poison.load(Ordering::SeqCst)).unwrap_or(i64::MAX)),
             })
             .collect()
     }

@@ -21,13 +21,13 @@ INSERT INTO sensors_payload_format (id, created_at, updated_at, version, is_dele
 ('00000000-0000-0000-0000-0000000f0003', now(), now(), 1, false, 'Flow meter', 'json', 'object', '/time', 'iso8601', '/sequence', '', '', '');
 
 INSERT INTO sensors_device (id, created_at, updated_at, version, is_deleted, code, name, topic, expected_interval_s,
-  manufacturer, model, note, is_active, connection_id, site_id, payload_format_id) VALUES
+  manufacturer, model, note, is_active, connection_id, site_id, payload_format_id, is_simulated) VALUES
 ('00000000-0000-0000-0000-0000000d0001', now(), now(), 1, false, 'PLC-1', 'Hall PLC', 'sim/plc-1/tags', 1, 'Sim', 'PLC', '', true,
-  '00000000-0000-0000-0000-0000000c0e2e', '00000000-0000-0000-0000-00000000e2e1', '00000000-0000-0000-0000-0000000f0001'),
+  '00000000-0000-0000-0000-0000000c0e2e', '00000000-0000-0000-0000-00000000e2e1', '00000000-0000-0000-0000-0000000f0001', false),
 ('00000000-0000-0000-0000-0000000d0002', now(), now(), 1, false, 'O2-PROBE-1', 'Sump oxygen probe', 'sim/o2-probe-1/data', 1, 'Sim', 'Probe', '', true,
-  '00000000-0000-0000-0000-0000000c0e2e', '00000000-0000-0000-0000-00000000e2e1', '00000000-0000-0000-0000-0000000f0002'),
+  '00000000-0000-0000-0000-0000000c0e2e', '00000000-0000-0000-0000-00000000e2e1', '00000000-0000-0000-0000-0000000f0002', false),
 ('00000000-0000-0000-0000-0000000d0003', now(), now(), 1, false, 'FLOW-1', 'Main flow meter', 'sim/flow-meter-1/state', 1, 'Sim', 'Meter', '', true,
-  '00000000-0000-0000-0000-0000000c0e2e', '00000000-0000-0000-0000-00000000e2e1', '00000000-0000-0000-0000-0000000f0003');
+  '00000000-0000-0000-0000-0000000c0e2e', '00000000-0000-0000-0000-00000000e2e1', '00000000-0000-0000-0000-0000000f0003', false);
 
 -- code, device, quantity, unit, value_path, item_name, reduction, deadband, heartbeat, range
 INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, unit, unit_factor,

@@ -336,7 +336,7 @@ pub fn build(contract: Contract, rows: Vec<ViewRow>) -> Result<Config, ConfigErr
                 format,
                 channels: Vec::new(),
                 maps: Vec::new(),
-                simulated: false,
+                simulated: r.is_simulated,
             });
         }
         let Some(dev) = conn.devices.iter_mut().find(|d| d.device_id == r.device_id) else { continue };

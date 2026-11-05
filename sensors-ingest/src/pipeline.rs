@@ -165,7 +165,8 @@ pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut Dead
                 faults.push(DeadReason::BadValue);
                 continue;
             };
-            let quality = time_q | calib::judge(value, ch.range, ch.maintenance);
+            let simulated = if dev.simulated { crate::quality::SIMULATED } else { 0 };
+            let quality = time_q | simulated | calib::judge(value, ch.range, ch.maintenance);
             let step = reduce::step(&ch.policy, b.state(ch.channel_no), Sample { ts, value, quality, received_at });
             used = true;
             late |= step.late && !step.duplicate;

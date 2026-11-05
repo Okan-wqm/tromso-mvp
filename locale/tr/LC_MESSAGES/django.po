@@ -13515,6 +13515,10 @@ msgid "you entered %(weight)s: %(grams)s g, %(percent)s %%"
 msgstr "girdiğiniz %(weight)s: %(grams)s g, %%%(percent)s"
 
 #, python-brace-format
+msgid "{count} more cards got worse."
+msgstr "{count} kart daha kötüleşti."
+
+#, python-brace-format
 msgid "{label} added at column {x}, row {y}."
 msgstr "{label}, {x}. sütun {y}. satıra eklendi."
 
@@ -13529,6 +13533,10 @@ msgstr "{label}, {x}. sütun {y}. satıra taşındı."
 #, python-brace-format
 msgid "{label} removed."
 msgstr "{label} kaldırıldı."
+
+#, python-brace-format
+msgid "{unit} is now {state}."
+msgstr "{unit} şimdi: {state}."
 
 #, python-format
 msgid "ΔCO₂ %(value)s mg/L"

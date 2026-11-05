@@ -202,10 +202,10 @@ class AnnouncerTests(MonitoringCase):
         tree = Tree(html).root
         card = articles(html)[f'card:{self.t2.pk}']
         self.assertEqual(card.attrs['data-state'], card.attrs['class'].split('monitor-')[-1].split()[0])
-        regions = {node.attrs['aria-live']: node for node in tree.walk() if node.attrs.get('data-announcer') is not None}
+        regions = {node.attrs['aria-live']: node for node in tree.walk() if 'data-announcer' in node.attrs}
         self.assertEqual(set(regions), {'assertive', 'polite'})
         grid = next(node for node in tree.walk() if 'monitor-grid' in node.classes)
-        self.assertFalse([node for node in grid.walk() if node.attrs.get('data-announcer') is not None])
+        self.assertFalse([node for node in grid.walk() if 'data-announcer' in node.attrs])
         holder = next(node for node in tree.walk() if node.attrs.get('id') == 'monitor-announce')
         for key in ('data-announce-worse', 'data-announce-more', 'data-state-critical', 'data-state-warning',
                     'data-state-blind', 'data-state-note'):

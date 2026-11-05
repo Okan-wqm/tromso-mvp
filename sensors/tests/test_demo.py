@@ -104,9 +104,9 @@ class EveryParameterShowsTests(DemoCase):
             ChannelState.objects.create(channel_no=channel.channel_no, last_value=value, last_value_ts=at, last_good_at=at,
                                         last_seen_at=at)
             with connection.cursor() as cursor:
-                for minutes in (30, 20, 10):
+                for seconds in (45, 35, 25):          # after the binding began (a minute before the setup ran)
                     cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)',
-                                   [channel.channel_no, now - timedelta(minutes=minutes), value])
+                                   [channel.channel_no, now - timedelta(seconds=seconds), value])
         page = self.client.get(reverse('farm:water')).content.decode()
         tank_device = Device.objects.get(code=f'{demo.CODE_PREFIX}{self.units[0].code}')
         for channel in tank_device.channels.all():

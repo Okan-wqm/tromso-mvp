@@ -75,10 +75,10 @@ for i in range(n):
     conn = 2 if i < 100 else 1
     note = ('skew ' if i % 50 == 7 else '') + ('outage' if outage(i) else '')
     sql.append("INSERT INTO sensors_device (id, created_at, updated_at, version, is_deleted, code, name, topic, "
-               "expected_interval_s, manufacturer, model, note, is_active, connection_id, site_id, payload_format_id) "
+               "expected_interval_s, manufacturer, model, note, is_active, connection_id, site_id, payload_format_id, is_simulated) "
                "VALUES ('%s', %s, 'MS-%d', 'ms %d', 'ms/dev-%d', 1, '', '', '%s', true, "
                "'00000000-0000-0000-0000-00000000c0%02d', '00000000-0000-0000-0000-0000000005e1', "
-               "'00000000-0000-0000-0000-0000000f00%02d');" % (dev, AUDIT, i, i, i, note, conn, i % 3))
+               "'00000000-0000-0000-0000-0000000f00%02d', false);" % (dev, AUDIT, i, i, i, note, conn, i % 3))
     for code, q, vp, item, red, db, hb in CHANNELS[i % 3]:
         sql.append("INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, "
                    "unit, unit_factor, unit_offset, value_path, item_name, address_protocol, address, reduction, "

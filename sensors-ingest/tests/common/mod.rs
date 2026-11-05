@@ -108,8 +108,8 @@ pub async fn device(a: &Client, fx: &Fx, id: Uuid, code: &str, topic: &str, form
     a.execute(
         &format!(
             "INSERT INTO sensors_device (id, created_at, updated_at, version, is_deleted, code, name, topic, \
-             expected_interval_s, manufacturer, model, note, is_active, connection_id, site_id, payload_format_id) \
-             VALUES ($1, {AUDIT}, $2, $2, $3, 1, '', '', '', true, $4, $5, $6)"
+             expected_interval_s, manufacturer, model, note, is_active, connection_id, site_id, payload_format_id, \
+             is_simulated) VALUES ($1, {AUDIT}, $2, $2, $3, 1, '', '', '', true, $4, $5, $6, false)"
         ),
         &[&id, &code, &topic, &fx.connection, &fx.site, &format],
     )

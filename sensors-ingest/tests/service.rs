@@ -241,6 +241,8 @@ async fn a_message_that_breaks_its_batch_is_isolated_and_dead_lettered_and_the_r
     let dl = a.query_one("SELECT reason, count FROM sensors_dead_letter", &[]).await.unwrap();
     assert_eq!((dl.get::<_, String>(0), dl.get::<_, i32>(1)), ("bad_value".into(), 1));
     assert_eq!(shared.poison.load(Ordering::SeqCst), 1);
+    let p: i64 = a.query_one("SELECT poison_total FROM sensors_ingest_status", &[]).await.unwrap().get(0);
+    assert_eq!(p, 1, "the poison count reaches the status row");
     // the state stayed consistent: the poison value never became the anchor
     let anchor: f64 = a
         .query_one("SELECT anchor_value FROM sensors_channel_state WHERE channel_no = $1", &[&ch])

@@ -56,7 +56,14 @@ fn msg(fx: &Fx, t: DateTime<Utc>, body: serde_json::Value) -> Msg {
 }
 
 fn status(fx: &Fx) -> Vec<Status> {
-    vec![Status { connection_id: fx.connection, connected: true, queue_depth: 3, version: "test".into() }]
+    vec![Status {
+        connection_id: fx.connection,
+        connected: true,
+        queue_depth: 3,
+        version: "test".into(),
+        qos0_dropped: 5,
+        poison_total: 2,
+    }]
 }
 
 #[tokio::test]
@@ -251,6 +258,8 @@ async fn the_heartbeat_writes_status_without_a_commit_time() {
     let r = a.query_one("SELECT heartbeat_at, connected FROM sensors_ingest_status", &[]).await.unwrap();
     assert!(r.get::<_, DateTime<Utc>>(0) > first);
     assert!(!r.get::<_, bool>(1));
+    let c = a.query_one("SELECT qos0_dropped, poison_total FROM sensors_ingest_status", &[]).await.unwrap();
+    assert_eq!((c.get::<_, i64>(0), c.get::<_, i64>(1)), (5, 2), "the counters reach the overview");
 }
 
 #[tokio::test]

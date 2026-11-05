@@ -20,6 +20,10 @@ pub struct Status {
     pub connected: bool,
     pub queue_depth: i32,
     pub version: String,
+    /// QoS 0 messages dropped on a full queue since the ingest started (sensors_ingest_status.qos0_dropped).
+    pub qos0_dropped: i64,
+    /// Messages the database refused, dead-lettered bad_value, since the ingest started.
+    pub poison_total: i64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -145,12 +149,13 @@ const UPSERT_DEAD: &str = "INSERT INTO sensors_dead_letter (connection_id, devic
      last_at = GREATEST(sensors_dead_letter.last_at, EXCLUDED.last_at)";
 
 const UPSERT_STATUS: &str = "INSERT INTO sensors_ingest_status (connection_id, heartbeat_at, version, connected, \
-     queue_depth, last_commit_at) \
-     SELECT c, now(), v, k, q, CASE WHEN $5 THEN now() END \
-     FROM UNNEST($1::uuid[], $2::text[], $3::bool[], $4::int4[]) AS u(c, v, k, q) \
+     queue_depth, last_commit_at, qos0_dropped, poison_total) \
+     SELECT c, now(), v, k, q, CASE WHEN $5 THEN now() END, d, p \
+     FROM UNNEST($1::uuid[], $2::text[], $3::bool[], $4::int4[], $6::int8[], $7::int8[]) AS u(c, v, k, q, d, p) \
      ON CONFLICT (connection_id) DO UPDATE SET heartbeat_at = now(), version = EXCLUDED.version, \
      connected = EXCLUDED.connected, queue_depth = EXCLUDED.queue_depth, \
-     last_commit_at = COALESCE(EXCLUDED.last_commit_at, sensors_ingest_status.last_commit_at)";
+     last_commit_at = COALESCE(EXCLUDED.last_commit_at, sensors_ingest_status.last_commit_at), \
+     qos0_dropped = EXCLUDED.qos0_dropped, poison_total = EXCLUDED.poison_total";
 
 async fn status_rows(
     client: &impl tokio_postgres::GenericClient,
@@ -164,7 +169,9 @@ async fn status_rows(
     let versions: Vec<&str> = status.iter().map(|s| s.version.as_str()).collect();
     let connected: Vec<bool> = status.iter().map(|s| s.connected).collect();
     let depth: Vec<i32> = status.iter().map(|s| s.queue_depth.max(0)).collect();
-    client.execute(UPSERT_STATUS, &[&ids, &versions, &connected, &depth, &committed]).await?;
+    let dropped: Vec<i64> = status.iter().map(|s| s.qos0_dropped).collect();
+    let poison: Vec<i64> = status.iter().map(|s| s.poison_total).collect();
+    client.execute(UPSERT_STATUS, &[&ids, &versions, &connected, &depth, &committed, &dropped, &poison]).await?;
     Ok(())
 }
 
@@ -289,4 +296,16 @@ pub async fn quality_flags(client: &Client) -> Result<Vec<(i16, String, bool)>, 
 pub async fn view_columns(client: &Client) -> Result<Vec<String>, Error> {
     let stmt = client.prepare("SELECT * FROM sensors_ingest_config LIMIT 0").await?;
     Ok(stmt.columns().iter().map(|c| c.name().to_string()).collect())
+}
+
+/// The counters the status rows already hold (the largest over the connections), so a restarted ingest continues
+/// them instead of starting again at zero.
+pub async fn status_counters(client: &Client) -> Result<(i64, i64), Error> {
+    let r = client
+        .query_one(
+            "SELECT coalesce(max(qos0_dropped), 0), coalesce(max(poison_total), 0) FROM sensors_ingest_status",
+            &[],
+        )
+        .await?;
+    Ok((r.try_get(0)?, r.try_get(1)?))
 }

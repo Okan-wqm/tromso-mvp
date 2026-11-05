@@ -42,10 +42,16 @@ tables as the role `sensors_ingest`.
   `cargo fmt --check`, `cargo test` (unit, property, database as role `sensors_ingest`, live MQTT), `cargo clippy -D
   warnings`, `cargo deny check` (licences: permissive only, `rodbus` banned; advisories; sources) and THIRD_PARTY
   freshness.
-- `simulator/check.sh`: the Node-RED simulator's devices and switches.
+- `simulator/check.sh`: the Node-RED simulator's devices and switches; every run has its own containers, network and
+  MQTT client id, so runs at the same time never disturb each other (`simulator/test_isolation.sh`).
+- `simulator/farm-check.sh`: the farm flow on its own database with Django's demo sensors; per parameter code, values
+  sent = samples stored or suppressed, rows stored for all 12 codes, nothing dead-lettered.
+- `bench/run.sh throughput|drain|brokerkill|brokerkill-queued|poison|twoyears`: the S10 numbers in BENCH.md.
+- `bench/multisource.sh [SECONDS] [N]`: N devices (500), each with its own connection, credential and topic, 1 msg/s,
+  three payload formats, two brokers and two Connection rows, 50 devices out and back with a backlog; per device and
+  per channel accounting, latency, CPU, memory, connections (BENCH.md).
 - `e2e/run.sh`: Node-RED -> Mosquitto -> ingest image -> TimescaleDB with every switch, SIGTERM, SIGKILL, a crash right
   after a COMMIT, database sessions killed, broker restart and SIGKILL.
-- `bench/run.sh throughput|brokerkill|poison`: the S10 numbers in BENCH.md.
 - Spikes S0e/S0f (rumqttc manual acks, Mosquitto `$7$` from hashlib): spikes/SPIKES.md.
 
 ## Field simulator (owner amendment A2)
@@ -61,3 +67,21 @@ flows.
 
 Every dependency and its licence: THIRD_PARTY (generated from Cargo.lock, checked by tests/run.sh). The gate:
 deny.toml.
+
+## Farm flow (owner scenario)
+
+The tab "Farm" publishes for the water devices of the configuration view (the demo sensors `manage.py
+sensors_demo_setup` makes for the tanks and systems of a database): `simulator/farm-config.sh DB FILE` writes the device
+list (topics, payload formats, channels) from the view, the Node-RED container reads it at start
+(`FARM_DEVICES_FILE`, compose mounts `.sensors/farm`). It behaves like real transmitters: its own MQTT connection and
+credential (`SIM_FARM_USER`, default `demo-simulator`, secret file `sim_farm` from `sensors_demo_setup
+--secret-file`), QoS 1, a persistent session, every device on its own timer with 15 % jitter, 40 messages per second in
+total, each message carrying all the device's water values (7-8). Values come from a model, not a table: the day's
+temperature curve, oxygen falling after feeding at 08, 12 and 16 and recovering, CO2 and turbidity rising with it, pH
+following CO2, ammonia and nitrite peaks later, nitrate rising through the week and alkalinity used up until the Monday
+water exchange, saturation from oxygen and temperature. Switches: farm on, farm off.
+
+To run it on a database: `manage.py sensors_demo_setup --confirm --secret-file <file>` (Django), copy that secret to
+`.sensors/secrets/sim_farm` readable by uid 1000 (the Node-RED container user; the file Django writes is mode 600 and
+the simulator says "cannot read" in its log otherwise), `manage.py sensor_broker_sync`, then
+`sensors-ingest/simulator/farm-config.sh <database> .sensors/farm/farm-devices.json` and restart `node-red`.

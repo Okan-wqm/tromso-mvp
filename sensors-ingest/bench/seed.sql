@@ -17,16 +17,16 @@ INSERT INTO sensors_payload_format (id, created_at, updated_at, version, is_dele
 VALUES ('00000000-0000-0000-0000-0000000f0b0b', now(), now(), 1, false, 'Bench', 'json', 'object', '/t', 'epoch_ms',
   '/seq', '', '', '');
 INSERT INTO sensors_device (id, created_at, updated_at, version, is_deleted, code, name, topic, expected_interval_s,
-  manufacturer, model, note, is_active, connection_id, site_id, payload_format_id)
+  manufacturer, model, note, is_active, connection_id, site_id, payload_format_id, is_simulated)
 SELECT ('00000000-0000-0000-0001-' || lpad(to_hex(d), 12, '0'))::uuid, now(), now(), 1, false, 'BENCH-' || d, 'bench ' || d,
   'bench/dev-' || d, 1, '', '', '', true, '00000000-0000-0000-0000-0000000c0b0b', '00000000-0000-0000-0000-00000000b0b1',
-  '00000000-0000-0000-0000-0000000f0b0b'
+  '00000000-0000-0000-0000-0000000f0b0b', false
 FROM generate_series(0, 99) d;
 INSERT INTO sensors_device (id, created_at, updated_at, version, is_deleted, code, name, topic, expected_interval_s,
-  manufacturer, model, note, is_active, connection_id, site_id, payload_format_id)
+  manufacturer, model, note, is_active, connection_id, site_id, payload_format_id, is_simulated)
 VALUES ('00000000-0000-0000-0002-000000000000', now(), now(), 1, false, 'KILL-0', 'crash accounting', 'bench/kill-0', 1,
   '', '', '', true, '00000000-0000-0000-0000-0000000c0b0b', '00000000-0000-0000-0000-00000000b0b1',
-  '00000000-0000-0000-0000-0000000f0b0b');
+  '00000000-0000-0000-0000-0000000f0b0b', false);
 INSERT INTO sensors_channel (id, created_at, updated_at, version, is_deleted, code, name, quantity, unit, unit_factor,
   unit_offset, value_path, item_name, address_protocol, address, reduction, deadband, heartbeat_s, range_min, range_max,
   state, note, device_id)

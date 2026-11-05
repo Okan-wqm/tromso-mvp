@@ -165,7 +165,8 @@ pub fn process(cfg: &Config, committed: &HashMap<i32, State>, limiter: &mut Dead
                 faults.push(DeadReason::BadValue);
                 continue;
             };
-            let quality = time_q | calib::judge(value, ch.range, ch.maintenance);
+            let simulated = if dev.simulated { crate::quality::SIMULATED } else { 0 };
+            let quality = time_q | simulated | calib::judge(value, ch.range, ch.maintenance);
             let step = reduce::step(&ch.policy, b.state(ch.channel_no), Sample { ts, value, quality, received_at });
             used = true;
             late |= step.late && !step.duplicate;
@@ -248,6 +249,18 @@ mod tests {
     }
     fn iso(t: DateTime<Utc>) -> String {
         t.to_rfc3339()
+    }
+
+    #[test]
+    fn values_of_a_simulated_device_are_flagged_simulated() {
+        let mut r = cfgt::row(1, 10, "farm/plc", 1);
+        r.is_simulated = true;
+        let c = build(cfgt::contract(), vec![r]).unwrap();
+        let m = msg(serde_json::json!({"ts": iso(now()), "v1": 1.0}), now());
+        let out = process(&c, &HashMap::new(), &mut DeadLimiter::new(10), &[m]);
+        assert_eq!(out.readings[0].row.quality, crate::quality::SIMULATED);
+        // a simulated value is bad: never the latest good value
+        assert_eq!(out.states[&1].last_value, None);
     }
 
     #[test]

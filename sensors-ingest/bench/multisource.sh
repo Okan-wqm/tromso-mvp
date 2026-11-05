@@ -12,7 +12,7 @@ export MSYS_NO_PATHCONV=1
 win() { cygpath -w "$1" 2>/dev/null || echo "$1"; }
 REPO=$(win "$PWD")
 SECS=${1:-1800}; N=${2:-500}
-OUTAGE_AT=$(( SECS * 2 / 3 )); OUTAGE_S=120
+OUTAGE_AT=$(( SECS * 2 / 3 )); OUTAGE_S=${OUTAGE_S:-120}
 ST=sensors-ingest/bench/.state/ms
 DB=sensors_ms
 PG_IMAGE=timescale/timescaledb:2.17.2-pg17
@@ -69,7 +69,7 @@ check "$(healthz | grep -q '"status":"ok"' && echo 1)" "ingest healthy with two 
 
 # resource samples every 30 s: ingest and broker memory and CPU, connected clients
 ( while true; do
-    echo "$(date +%H:%M:%S) $(docker stats --no-stream --format '{{.Name}}={{.MemUsage}}/{{.CPUPerc}}' ms-ingest ms-broker1 ms-broker2 | tr '\n' ' ') clients1=$(connected ms-broker1) clients2=$(connected ms-broker2)"
+    echo "$(date +%H:%M:%S) $(docker stats --no-stream --format '{{.Name}}={{.MemUsage}}@{{.CPUPerc}}' ms-ingest ms-broker1 ms-broker2 | tr -d ' ' | tr '\n' ' ') clients1=$(connected ms-broker1) clients2=$(connected ms-broker2)"
     sleep 30
   done ) > "$ST/samples.txt" 2>/dev/null &
 SAMPLER=$!
@@ -121,7 +121,7 @@ MAX1=$(grep -o 'clients1=[0-9]*' "$ST/samples.txt" | cut -d= -f2 | sort -n | tai
 MAX2=$(grep -o 'clients2=[0-9]*' "$ST/samples.txt" | cut -d= -f2 | sort -n | tail -1)
 check "$([ "${MAX1:-0}" -ge $((N - 100)) ] && [ "${MAX2:-0}" -ge 100 ] && echo 1)" "connections at the brokers: up to $MAX1 and $MAX2 clients (devices, ingest, monitor)"
 PEAK=$(grep -o 'ms-ingest=[0-9.]*MiB' "$ST/samples.txt" | grep -o '[0-9.]*' | sort -n | tail -1)
-CPU=$(grep -o 'ms-ingest=[^ ]*' "$ST/samples.txt" | sed 's#.*/##; s/%//' | sort -n | awk '{a[NR]=$1} END {print "median " a[int((NR+1)/2)] "%, max " a[NR] "%"}')
+CPU=$(grep -o 'ms-ingest=[^ ]*' "$ST/samples.txt" | sed 's#.*@##; s/%//' | sort -n | awk '{a[NR]=$1} END {print "median " a[int((NR+1)/2)] "%, max " a[NR] "% of one core"}')
 note "ingest peak memory ${PEAK} MiB, CPU $CPU; brokers peak $(grep -o 'ms-broker1=[0-9.]*MiB' "$ST/samples.txt" | grep -o '[0-9.]*' | sort -n | tail -1) / $(grep -o 'ms-broker2=[0-9.]*MiB' "$ST/samples.txt" | grep -o '[0-9.]*' | sort -n | tail -1) MiB"
 echo "$FAILS failed" | tee -a "$ST/results.txt"
 [ "$FAILS" = 0 ]

@@ -56,3 +56,26 @@ p99 274 ms.
 TimescaleDB 2.17.2 silently drops the remaining rows of a multi-row `INSERT ... ON CONFLICT DO NOTHING` once one row
 conflicts inside a compressed chunk. Found by tests/db.rs; the ingest writes late and old rows one per statement
 (CONTRACT-REQUESTS.md item 13).
+
+## Many sources (owner requirement: about 500 msg/s in total from many devices)
+
+`bench/multisource.sh 1800 500`, 2026-11-05: **500 devices, each its own MQTT connection, credential and topic**,
+1 msg/s with a jittered start, three payload formats (PLC object with ISO time, probe array with epoch ms, flow meter
+ISO UTC), 10 devices with clocks 10 min ahead, **two brokers and two Connection rows** in the one ingest (400 + 100
+devices), 50 devices (25 per broker) disconnected together for 120 s at minute 20 and back with their backlog.
+30 minutes sustained:
+
+| Measured | Result |
+|---|---|
+| messages | 900 000 sent, 900 000 acknowledged by the brokers |
+| per device | acknowledged = accepted + dead-lettered + ignored on all 500 devices; 0 dead letters, 0 duplicates, 0 late rows |
+| per channel | samples in rows + open run = messages sent on all 1168 channels (2 102 400 samples, 625 759 rows after the deadband) |
+| clock skew | the 10 devices 10 min ahead stored at receive time, flagged clock_suspect; no channel's newest time in the future |
+| 50 devices out 120 s, back with a backlog | every second stored at its device time (0 gaps) |
+| commit latency, device time to committed (state table polled every 100 ms, so +-100 ms) | p50 350 ms, p95 953 ms, p99 1829 ms, max 3890 ms |
+| commits | 4797, p50 90 ms, p99 858 ms, max 2891 ms |
+| ingest | peak 12.1 MiB, CPU median 7.1 %, max 19.1 % of one core; no QoS 0 drop, no poison |
+| brokers | peak 6.2 MiB and 4.3 MiB; up to 401 and 101 connected clients (devices, the ingest, a monitor) |
+
+Several connections are supported by the design and were measured here: one MQTT session per Connection row, one
+writer and one transaction for all of them.

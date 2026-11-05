@@ -1,7 +1,8 @@
 # Third-party software
 
 Nothing from a package registry is shipped to the browser: the browser runs only this project's own TypeScript, compiled
-into `static/js/`. The Python packages the server runs are in `requirements.txt`.
+into `static/js/`. The Python packages the server runs are in `requirements.txt` (pinned with hashes in `docker/requirements.lock`). The
+water-chemistry core's Rust crates (the server only) are listed with their licences in `chemcore/THIRD_PARTY`.
 
 ## Development-only tools (`package.json` devDependencies)
 

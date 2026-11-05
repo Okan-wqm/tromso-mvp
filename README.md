@@ -2946,10 +2946,79 @@ C:\Python312\python.exe -m venv .venv
 .venv\Scripts\python.exe manage.py runserver 8047
 ```
 
+The water chemistry needs the `chemcore` module, which is built only in the container image (see
+[Water-chemistry core](#water-chemistry-core-chemcore)); a plain virtual environment does not start without it.
+
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
 defaults match the local container in `docker-compose.yml`. Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.
+
+## Water-chemistry core (`chemcore/`)
+
+The chemistry of the Water Quality Management Chart, the calculator and the replay is moving, function by function,
+from `farm/water/*.py` into a Rust core, `chemcore/`, that runs **only on the server**, called from Django through
+PyO3. Nothing of it is ever shipped to the browser (owner amendment B2: no calculation, formula or constant is
+reachable there, no WebAssembly); the browser receives finished results. The plan, the owner's amendments and the
+steps are in the scratchpad plan `chemcore/PLAN.md`; the state of each step is below.
+
+- `chemcore/core`: the chemistry, `#![no_std]`, `unsafe` forbidden, its only dependency `libm` (every exp, log,
+  pow comes from it, never from the platform, so a result never moves with the server's C library).
+- `chemcore/py`: the Python module `chemcore` (PyO3, abi3 for CPython 3.12 and later), built into a wheel by
+  maturin. Only `farm/water/native.py` imports it (a test checks the whole checkout). There is no Python
+  fallback: without the module the server does not start, and the checkout's own `chemcore/` directory is refused
+  as a module.
+- The handshake: `chemcore/EXPECTED` names the build the server accepts (version, formula version, a digest of the
+  core's source). The system check `core.E001` (an Error) stops the server when the installed module differs.
+  `chemcore/scripts/gen_expected.sh` writes the file from the built module; it is never edited by hand.
+- Errors are explicit: never a silent fallback, never a NaN shown as a number. Every formula carries its
+  literature source and validity range in the code.
+
+**Building from a clean machine** (Docker is the only requirement; native Windows builds are not supported: the
+development machine has no MSVC linker, and the owner chose container-only development):
+
+```
+docker build -f docker/testrunner.Dockerfile -t balik-testrunner-chemcore .          # tools, wheel, runner
+docker build -f docker/testrunner.Dockerfile --target chemcore-tools -t chemcore-tools .
+docker run --rm -v "$PWD:/repo" -w /repo chemcore-tools sh chemcore/scripts/test.sh     # every gate
+docker run --rm -v "$PWD:/app" -w /app balik-testrunner-chemcore sh chemcore/scripts/gen_expected.sh   # after a core change
+docker run --rm --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 -v "$PWD:/app" balik-testrunner-chemcore python manage.py test
+```
+
+The image's stages: `chemcore-tools` (`rust:1.88.0-slim-bookworm` by digest, rustfmt and clippy, maturin 1.16.0 by
+hash from `docker/chemcore-build.lock`, cargo-deny 0.20.2 by sha256), `chemcore-wheel` (`maturin build --release
+--locked`), `runner` (`python:3.12-slim` by digest, every package by hash from `docker/requirements.lock`, then
+the wheel; the build fails when `import chemcore` does). `chemcore/scripts/test.sh` is the gate list: rustfmt,
+clippy with `unwrap`, `expect`, `panic`, indexing and `todo` denied, `cargo test`, the core depends on `libm` only,
+no wasm crate or target, `cargo deny` (licences MIT, Apache-2.0, Apache-2.0 WITH LLVM-exception, Unicode-3.0; no
+copyleft reference code such as PyCO2SYS copied; rodbus and wasm crates banned; advisories), `chemcore/THIRD_PARTY`
+regenerated and compared, and the runner's lock agreeing with `requirements.txt`.
+
+**Pinned, and how to upgrade.** Rust 1.88.0 (`chemcore/rust-toolchain.toml` and the image digest), `libm` 0.2.16
+and `pyo3` 0.30.1 exactly (`chemcore/Cargo.toml`, `Cargo.lock` committed, `--locked` everywhere), maturin 1.16.0,
+cargo-deny 0.20.2, the two base images by digest. To upgrade one: change the pin (and the digest or hash) in one
+commit, rebuild, run `test.sh` and the Django suite, regenerate `EXPECTED`. A `libm` or toolchain change can move a
+last bit, so it also bumps `FORMULA_VERSION` and re-records the golden reference (never silently). The Python
+locks are regenerated with `pip-compile --generate-hashes` (pip-tools) in the runner's base image from
+`requirements.txt` (and `maturin==<version>` for the build lock).
+
+**Measured before the first line of product code (S0 spike, 2026-11-05).** `libm` and glibc (2.36 and 2.41) differ
+in the last bit in 1 to 11 % of exp/log/pow calls (at most 2 ulp), so the Rust core can never be bit-identical to
+today's Python: every comparison with the Python reference is by a tolerance class, and only native against PyO3
+is bit-for-bit. `libm::pow(x, 2.0)` equals `x * x` on 7 x 10^7 draws. Rust `{:.2}` formats exactly as Python
+`%.2f` (10^6 values, ties included), while the `shown` rule (half-even on the shortest digits) differs from
+`%.2f` on 9.6 % of a tie-heavy sample: one display rule for the card and the player is still to be chosen. The
+wheel is 225 KB, imports in 10 ms, a call costs 0.2 to 0.3 µs. One whole chart takes about 1 ms (Python 18 to
+25 ms); 2000 all-different waters take 2 to 3 s, so the replay shares the heavy layers between frames of the same
+temperature (a synthetic page: 54 different temperatures, 99 to 164 ms, 128 KB compressed).
+
+| Step | State |
+|---|---|
+| S0 spike (measurements, go) | done |
+| S1 plumbing: workspace, image, gates, `native.py`, `core.E001` | done |
+| S2 golden reference, browser guard, lean endpoints | next |
+| S3 three-way cross-validation with the source platform (findings for the owner) | |
+| S4 to S10 the functions move, Python formulas removed in the switching commit | |
 
 ## Languages
 
@@ -3320,6 +3389,7 @@ real mail.
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
 | `farm/models/water_point.py`, `farm/water/points.py`, `farm/forms/water_point.py`, `farm/resources/water_point.py` | Sampling points: the model with its kinds, flow roles and rules, the default points and the share report, the form and the tab |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |
+| `chemcore/`, `farm/water/native.py`, `docker/testrunner.Dockerfile` | The water-chemistry core in Rust (server only): the chemistry crate, the PyO3 module, the gates (`chemcore/scripts/test.sh`), the handshake file `chemcore/EXPECTED`; the one door Django calls it through; the image that builds it |
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |

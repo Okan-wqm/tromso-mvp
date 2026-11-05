@@ -94,9 +94,14 @@ class FrameTests(ReplayCase):
         for frame in frames.frames:
             with self.subTest(at=frame.at):
                 self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
-        # The temperature moves every minute: no two frames read the same water, so each has its own figure.
-        self.assertEqual(len(frames.figures), 10)
-        self.assertEqual(len({frame.figure for frame in frames.frames}), 10)
+        # One figure for each different water (at the parameters' decimals): the frames of one water share it.
+        waters = {}
+        for frame in frames.frames:
+            waters.setdefault(tuple(sorted((code, item.value) for code, item in frame.inputs.items())), set()).add(
+                frame.figure)
+        self.assertEqual(len(frames.figures), len(waters))
+        self.assertGreater(len(waters), 5)
+        self.assertTrue(all(len(figures) == 1 for figures in waters.values()))
         boxes = {tuple(figure['box']) for figure in frames.figures}
         self.assertEqual(len(boxes), 1)                                     # one box a page: the points move, not the axes
 

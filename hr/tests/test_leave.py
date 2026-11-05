@@ -302,7 +302,7 @@ class DecisionTests(LeaveTestCase):
         listed = self.client.get(reverse('hr:production_leaverequest_list')).context['objects']
         self.assertEqual([(row['request'], row['can_decide'], row['can_cancel']) for row in listed], [(request, True, True)])
         self.assertEqual(self.client.get(reverse('hr:production_leaverequest_reject', args=[request.pk])).status_code, 200)
-        self.assertEqual(self.client.get(reverse('hr:production_leaverequest_approve', args=[request.pk])).status_code, 405)
+        self.assertEqual(self.client.get(reverse('hr:production_leaverequest_approve', args=[request.pk])).status_code, 200)   # the dialog
         self.client.post(reverse('hr:production_leaverequest_reject', args=[request.pk]), {'note': 'No'})
         request.refresh_from_db()
         self.assertEqual((request.status, request.decision_note), ('rejected', 'No'))

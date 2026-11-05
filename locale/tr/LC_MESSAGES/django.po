@@ -7438,7 +7438,7 @@ msgstr ""
 "Mesajlar: Görüntüle)."
 
 msgid "Nobody else is placed in your department this week."
-msgstr ""
+msgstr "Bu hafta departmanınızda başka kimse yok."
 
 msgid "Nobody is expected today"
 msgstr "Bugün kimse beklenmiyor"

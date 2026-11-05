@@ -7428,7 +7428,7 @@ msgstr ""
 "Meldinger: Les)."
 
 msgid "Nobody else is placed in your department this week."
-msgstr ""
+msgstr "Ingen andre er plassert i avdelingen din denne uken."
 
 msgid "Nobody is expected today"
 msgstr "Ingen forventes i dag"

@@ -18,6 +18,7 @@ from .. import read
 from ..forms import BoardUnitForm, MonitorBoardForm
 from ..models import MonitorBoard, MonitorBoardUnit
 from . import MonitoringCase
+from ..cards.builtin import DETAILED, SIMPLE
 
 KEEPER = ('view_monitorboard', 'add_monitorboard', 'change_monitorboard', 'delete_monitorboard', 'view_tank',
           'view_stockoperation')
@@ -56,18 +57,20 @@ class ColumnsTests(BoardCase):
                 with self.subTest(form=form.__name__, field=name):
                     self.assertIn(name, columns)
         self.assertEqual(set(MonitorBoardForm.base_fields) - {'version'},
-                         {'name', 'description', 'default_mode', 'refresh_seconds'})
-        self.assertEqual(set(BoardUnitForm.base_fields), {'unit', 'mode'})
+                         {'name', 'description', 'default_template', 'card_width', 'refresh_seconds'})
+        self.assertEqual(set(BoardUnitForm.base_fields), {'unit', 'template'})
 
 
 class RoundTripTests(BoardCase):
     def test_a_board_is_created_read_edited_and_deleted(self):
         response = self.client.post(CREATE, {'name': 'Hall A wall', 'description': 'North screen',
-                                             'default_mode': 'detailed', 'refresh_seconds': '30'})
+                                             'default_template': str(DETAILED), 'card_width': '3',
+                                             'refresh_seconds': '30'})
         self.assertEqual(response.status_code, 302)
         board = MonitorBoard.objects.get()
-        self.assertEqual((board.name, board.description, board.default_mode, board.refresh_seconds, board.created_by,
-                          board.version), ('Hall A wall', 'North screen', 'detailed', 30, self.keeper, 1))
+        self.assertEqual((board.name, board.description, board.default_template_id, board.card_width,
+                          board.refresh_seconds, board.created_by, board.version),
+                         ('Hall A wall', 'North screen', DETAILED, 3, 30, self.keeper, 1))
         self.assertEqual(AuditLog.objects.filter(entity_type='monitoring board', action='create').count(), 1)
         # read: the list, the edit form filled from the row
         listing = self.client.get(LIST)
@@ -75,15 +78,17 @@ class RoundTripTests(BoardCase):
         self.assertContains(listing, 'Hall A wall')
         self.assertContains(listing, f'{reverse("monitoring:monitor")}?board={board.pk}')
         form = self.client.get(self.edit(board)).context['form']
-        self.assertEqual((form['name'].value(), form['default_mode'].value(), form['refresh_seconds'].value()),
-                         ('Hall A wall', 'detailed', 30))
+        self.assertEqual((form['name'].value(), str(form['default_template'].value()), form['card_width'].value(),
+                          form['refresh_seconds'].value()), ('Hall A wall', str(DETAILED), 3, 30))
         # edit: every optional field cleared, the version moves, the change is logged
         response = self.client.post(self.edit(board), self.posted(board, name='Hall B wall', description='',
-                                                                  default_mode='simple', refresh_seconds=''))
+                                                                  default_template='', card_width='1',
+                                                                  refresh_seconds=''))
         self.assertEqual(response.status_code, 302)
         board.refresh_from_db()
-        self.assertEqual((board.name, board.description, board.default_mode, board.refresh_seconds, board.version,
-                          board.updated_by), ('Hall B wall', '', 'simple', None, 2, self.keeper))
+        self.assertEqual((board.name, board.description, board.default_template, board.card_width,
+                          board.refresh_seconds, board.version, board.updated_by),
+                         ('Hall B wall', '', None, 1, None, 2, self.keeper))           # empty: the rules decide
         self.assertEqual(AuditLog.objects.filter(entity_type='monitoring board', action='update').count(), 1)
         self.assertEqual(board.seconds, 15)                         # empty: the system's interval
         # delete: a soft delete with a clean plan, logged
@@ -108,7 +113,7 @@ class RoundTripTests(BoardCase):
                            ({'name': 'x', 'refresh_seconds': '5'}, 'greater than or equal to 10'),
                            ({'name': 'x', 'refresh_seconds': '601'}, 'less than or equal to 600')):
             with self.subTest(data=data):
-                response = self.client.post(CREATE, {'description': '', 'default_mode': 'simple', **data})
+                response = self.client.post(CREATE, {'description': '', 'card_width': '2', **data})
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, text)
         self.assertEqual(MonitorBoard.objects.count(), 1)
@@ -117,37 +122,37 @@ class RoundTripTests(BoardCase):
 class CardsListTests(BoardCase):
     def test_the_list_is_saved_whole_with_one_log_entry_and_its_author(self):
         board = self.board('Wall')
-        response = self.save_units(board, [{'unit': str(self.t1.pk), 'mode': 'detailed'},
-                                           {'unit': str(self.t2.pk), 'mode': ''}])
+        response = self.save_units(board, [{'unit': str(self.t1.pk), 'template': str(DETAILED)},
+                                           {'unit': str(self.t2.pk), 'template': ''}])
         self.assertEqual(response.status_code, 302)
-        rows = {row.unit.code: (row.mode, row.created_by) for row in board.rows.select_related('unit')}
-        self.assertEqual(rows, {'T-01': ('detailed', self.keeper), 'T-02': ('', self.keeper)})
+        rows = {row.unit.code: (row.template_id, row.created_by) for row in board.rows.select_related('unit')}
+        self.assertEqual(rows, {'T-01': (DETAILED, self.keeper), 'T-02': (None, self.keeper)})
         entry = AuditLog.objects.get(entity_id=str(board.pk), action='update')
         self.assertEqual(entry.changes['Units'], [None, 'T-01: Detailed; T-02: as the board'])
         board.refresh_from_db()
         self.assertEqual(board.version, 2)
         # saved whole: a second list replaces the first
-        self.save_units(board, [{'unit': str(self.p1.pk), 'mode': 'simple'}])
+        self.save_units(board, [{'unit': str(self.p1.pk), 'template': str(SIMPLE)}])
         self.assertEqual([row.unit.code for row in board.rows.all()], ['P-01'])
         self.assertEqual(AuditLog.objects.filter(entity_id=str(board.pk), action='update').count(), 2)
 
-    def test_one_card_per_unit_a_stale_list_and_the_modes_are_refused(self):
+    def test_one_card_per_unit_a_stale_list_and_a_template_that_is_not_one_are_refused(self):
         board = self.board('Wall')
-        twice = self.save_units(board, [{'unit': str(self.t1.pk), 'mode': ''}, {'unit': str(self.t1.pk), 'mode': ''}])
+        twice = self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}, {'unit': str(self.t1.pk), 'template': ''}])
         self.assertContains(twice, 'One card per unit.')
         self.assertEqual(board.rows.count(), 0)
-        bad = self.save_units(board, [{'unit': str(self.t1.pk), 'mode': 'huge'}])
+        bad = self.save_units(board, [{'unit': str(self.t1.pk), 'template': 'huge'}])
         self.assertEqual(bad.status_code, 200)
         self.assertEqual(board.rows.count(), 0)
-        stale = rows_data('units', [{'unit': str(self.t1.pk), 'mode': ''}], record=board)
-        self.save_units(board, [{'unit': str(self.t2.pk), 'mode': ''}])
+        stale = rows_data('units', [{'unit': str(self.t1.pk), 'template': ''}], record=board)
+        self.save_units(board, [{'unit': str(self.t2.pk), 'template': ''}])
         self.client.post(self.units_url(board), stale)                    # based on the version before the save
         self.assertEqual([row.unit.code for row in board.rows.all()], ['T-02'])
 
     def test_a_deleted_unit_keeps_its_row_hidden_back_on_restore_and_dropped_by_a_save(self):
         board = self.board('Wall')
         # (the pond is empty: a unit with fish cannot be deleted)
-        self.save_units(board, [{'unit': str(self.t1.pk), 'mode': ''}, {'unit': str(self.p1.pk), 'mode': 'detailed'}])
+        self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}, {'unit': str(self.p1.pk), 'template': str(DETAILED)}])
         shown = lambda: [unit.code for unit in read.units_for(read.Params(), MonitorBoard.objects
                                                               .prefetch_related('rows').get(pk=board.pk))]
         self.assertEqual(shown(), ['T-01', 'P-01'])
@@ -159,12 +164,12 @@ class CardsListTests(BoardCase):
         softdelete.restore(Tank.all_objects.get(pk=self.p1.pk), self.keeper)
         self.assertEqual(shown(), ['T-01', 'P-01'])                      # back on restore
         Tank.objects.get(pk=self.p1.pk).soft_delete(self.keeper)
-        self.save_units(board, [{'unit': str(self.t1.pk), 'mode': ''}])
+        self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}])
         self.assertEqual([row.unit.code for row in board.rows.all()], ['T-01'])        # a save drops it
 
     def test_a_deleted_board_comes_back_with_its_cards(self):
         board = self.board('Wall')
-        self.save_units(board, [{'unit': str(self.t1.pk), 'mode': ''}])
+        self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}])
         self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk]))
         self.assertEqual(MonitorBoardUnit.objects.filter(board=board).count(), 1)      # a soft delete never cascades
         softdelete.restore(MonitorBoard.all_objects.get(pk=board.pk), self.keeper)
@@ -261,8 +266,8 @@ class MigrationTests(TransactionTestCase):
 
 class OnThePageTests(BoardCase):
     def test_a_board_picks_its_units_draws_each_as_its_row_says_and_sets_the_interval(self):
-        board = self.board('Wall', default_mode='simple', refresh_seconds=45)
-        self.save_units(board, [{'unit': str(self.t1.pk), 'mode': 'detailed'}, {'unit': str(self.t2.pk), 'mode': ''}])
+        board = self.board('Wall', default_template_id=SIMPLE, refresh_seconds=45)
+        self.save_units(board, [{'unit': str(self.t1.pk), 'template': str(DETAILED)}, {'unit': str(self.t2.pk), 'template': ''}])
         page = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)})
         html = page.content.decode()
         self.assertEqual(page.context['shown'], 2)
@@ -270,8 +275,8 @@ class OnThePageTests(BoardCase):
         self.assertEqual(html.count('is-detailed'), 1)                    # T-01 by its row, T-02 by the board's default
         self.assertIn(f'<option value="{board.pk}" selected>Wall</option>', html)
         self.assertIn(f'data-storage-key="monitoring:{board.pk}"', html)
-        # the board's default mode applies to every card without a row mode
-        MonitorBoard.objects.filter(pk=board.pk).update(default_mode='detailed')
+        # the board's default template applies to every card without a template of its own
+        MonitorBoard.objects.filter(pk=board.pk).update(default_template_id=DETAILED)
         self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)}).content.decode()
                          .count('is-detailed'), 2)
 
@@ -285,7 +290,7 @@ class OnThePageTests(BoardCase):
         url = reverse('monitoring:cards')
         empty = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)})
         self.assertEqual(empty.context['shown'], 0)
-        self.save_units(board, [{'unit': str(self.t1.pk), 'mode': ''}])
+        self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}])
         self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)}).context['shown'], 1)
         self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk]))
         gone = self.client.get(url, {'board': str(board.pk)}).content.decode()
@@ -297,5 +302,5 @@ class OnThePageTests(BoardCase):
         self.client.post(self.edit(board), self.posted(board, name='Wall 2'))
         self.assertNotEqual(read.change_token(self.reader, f'board={board.pk}', board=str(board.pk)), before)
         before = read.change_token(self.reader, f'board={board.pk}', board=str(board.pk))
-        self.save_units(board, [{'unit': str(self.t1.pk), 'mode': ''}], initial=0)
+        self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}], initial=0)
         self.assertNotEqual(read.change_token(self.reader, f'board={board.pk}', board=str(board.pk)), before)

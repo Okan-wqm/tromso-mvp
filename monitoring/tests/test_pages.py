@@ -161,6 +161,13 @@ class FragmentTests(MonitoringCase):
         now = [model.all_objects.count() if hasattr(model, 'all_objects') else model.objects.count() for model in tables]
         self.assertEqual(now, before)
 
+    def test_a_source_the_state_needs_that_fails_is_a_503_that_keeps_the_last_picture(self):
+        with mock.patch.object(read.stock_read, 'stock_of', side_effect=RuntimeError('down')):
+            for url in (CARDS, PAGE):
+                response = self.client.get(url)
+                self.assertEqual((response.status_code, response['Cache-Control']), (503, 'no-store'), url)
+                self.assertNotIn(b'data-key="card:', response.content)
+
     def test_the_204_path_costs_a_session_the_rights_and_two_revision_queries(self):
         after = self.ask()['X-Poll-Next']
         self.client.get(after)
@@ -223,4 +230,4 @@ class MenuAndRolesTests(MonitoringCase):
         labels = [str(area.label) for area in access.areas()]
         self.assertIn('Production units', labels)
         self.assertEqual([label for label in labels if label.startswith('Monitoring')], ['Monitoring boards'])
-        self.assertEqual(read.PERMISSIONS['stock'], 'farm.view_stockoperation')
+        self.assertEqual({source.name: source.permission for source in read.SOURCES}['stock'], 'farm.view_stockoperation')

@@ -16,7 +16,8 @@ from tasks.models import Task
 
 from . import golden
 from .golden import Normaliser, cards_say, multiset_missing
-from . import MonitoringCase
+from . import TEMPLATE, MonitoringCase
+from ..cards.builtin import DETAILED
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 
@@ -69,10 +70,11 @@ class GoldenFarm(MonitoringCase):
                               [lambda units, day: {unit.pk: [self.block] for unit in units if unit.pk == self.g[11].pk}])
         provider.start()
         self.addCleanup(provider.stop)
-        board = MonitorBoard.objects.create(name='Hall A wall', default_mode='detailed')
+        # a board as migration 0004 leaves one: its modes and the built-ins that draw them
+        board = MonitorBoard.objects.create(name='Hall A wall', default_mode='detailed', default_template_id=DETAILED)
         for unit, mode in ((self.t1, ''), (self.t2, 'simple'), (self.g[1], ''), (self.g[6], 'simple'),
                            (self.g[7], 'detailed'), (self.g[11], '')):
-            MonitorBoardUnit.objects.create(board=board, unit=unit, mode=mode)
+            MonitorBoardUnit.objects.create(board=board, unit=unit, mode=mode, template_id=TEMPLATE.get(mode))
         self.board = board
         units = list(Tank.objects.all())
         self.norm = Normaliser(units, [batch.code for batch in Batch.objects.all()], self.today,

@@ -374,7 +374,7 @@ def replay_step(start, end, step):
     return next((width for width in LADDER if width >= wanted), LADDER[-1])
 
 
-def _replay_rows(found, moments, tier):
+def replay_rows(found, moments, tier):
     """{(segment index, moment): (ts, value)}: each segment's newest clean value at or before each moment taken while
     it was bound there (the raw readings below an hour; the last value of each hour ENDED by the moment above). ONE
     query for every segment and moment."""
@@ -424,7 +424,7 @@ def deffeyes_frames(target, start, end, step):
         moment += step
     by_code = {code: segments(target, code, start - CARRY, end) for code in REPLAY_INPUTS}
     flat = [(code, segment) for code in REPLAY_INPUTS for segment in by_code[code]]
-    rows = _replay_rows([segment for _code, segment in flat], moments, tier)
+    rows = replay_rows([segment for _code, segment in flat], moments, tier)
     points = [point for point in places(target)[1] if point is not None]
     manual = {code: WaterSeries(points, code, start - WINDOW, end) for code in REPLAY_INPUTS}
     assumed = assumed_salinity(_water_types(target))

@@ -27,6 +27,8 @@ class Command(BaseCommand):
         parser.add_argument('--interval', type=int, default=60, help='Seconds between two stored rows of a channel.')
         parser.add_argument('--confirm-database', default='', help='The name of the database written to.')
         parser.add_argument('--drop', action='store_true', help='Delete the synthetic rows first.')
+        parser.add_argument('--measure-only', action='store_true',
+                            help='Write nothing: time the rows already there (refreshed and compressed, as in use).')
 
     def handle(self, *args, **options):
         name = connection.settings_dict['NAME']
@@ -42,24 +44,27 @@ class Command(BaseCommand):
             if options['drop']:
                 cursor.execute('DELETE FROM sensors_reading WHERE channel_no BETWEEN %s AND %s', [FIRST, last])
             cursor.execute('SELECT count(*) FROM sensors_reading WHERE channel_no BETWEEN %s AND %s', [FIRST, last])
-            if cursor.fetchone()[0]:
+            there = cursor.fetchone()[0]
+            if there and not options['measure_only']:
                 # Never write over rows: one multi-row insert meeting a row in a compressed chunk loses the rest of its
                 # rows silently (TimescaleDB 2.17.2), so the range must be empty (--drop deletes the synthetic rows).
                 raise CommandError('The synthetic channels already hold readings: run with --drop to delete them first.')
-            began = time.monotonic()
-            # A slow wave with noise; each row stands for `interval` one-second messages around it. No ON CONFLICT: the
-            # range is empty, and a conflict would stop the command instead of dropping rows unseen.
-            cursor.execute(
-                'INSERT INTO sensors_reading (channel_no, ts, value, n, run_sum, run_min, run_max) '
-                'SELECT c, t, v, n, CASE WHEN n > 1 THEN v * n END, CASE WHEN n > 1 THEN v - 0.05 END, '
-                'CASE WHEN n > 1 THEN v + 0.05 END FROM ('
-                '  SELECT c, t, round((10 + sin(extract(epoch FROM t) / 86400.0 * 6.283) + random() * 0.1)::numeric, 3)'
-                '::float8 AS v, %s AS n'
-                '  FROM generate_series(%s::int, %s::int) c, generate_series(%s::timestamptz, %s::timestamptz - '
-                "interval '1 second', make_interval(secs => %s)) t) s",
-                [interval, FIRST, last, start, end, interval])
-            written = cursor.rowcount
-            seconds = time.monotonic() - began
+            written, seconds = 0, 0.0
+            if not options['measure_only']:
+                began = time.monotonic()
+                # A slow wave with noise; each row stands for `interval` one-second messages around it. No ON CONFLICT:
+                # the range is empty, and a conflict would stop the command instead of dropping rows unseen.
+                cursor.execute(
+                    'INSERT INTO sensors_reading (channel_no, ts, value, n, run_sum, run_min, run_max) '
+                    'SELECT c, t, v, n, CASE WHEN n > 1 THEN v * n END, CASE WHEN n > 1 THEN v - 0.05 END, '
+                    'CASE WHEN n > 1 THEN v + 0.05 END FROM ('
+                    '  SELECT c, t, round((10 + sin(extract(epoch FROM t) / 86400.0 * 6.283) + random() * 0.1)'
+                    '::numeric, 3)::float8 AS v, %s AS n'
+                    '  FROM generate_series(%s::int, %s::int) c, generate_series(%s::timestamptz, %s::timestamptz - '
+                    "interval '1 second', make_interval(secs => %s)) t) s",
+                    [interval, FIRST, last, start, end, interval])
+                written = cursor.rowcount
+                seconds = time.monotonic() - began
             cursor.execute('SELECT count(*) FROM sensors_reading WHERE channel_no BETWEEN %s AND %s', [FIRST, last])
             raw = cursor.fetchone()[0]
             cursor.execute('SELECT count(*) FROM sensors_rollup_1h WHERE channel_no BETWEEN %s AND %s', [FIRST, last])
@@ -71,6 +76,12 @@ class Command(BaseCommand):
         week_buckets = sum(self.chart(number, week, end, interval, zone, width=15 * read.MINUTE)[1]
                            for number in range(FIRST, min(last, FIRST + 9) + 1))
         week_ms = (time.monotonic() - began) * 1000
+        replay = [read.Segment(number, week, end, 'primary', read.SENSOR, interval * 3, False, False)
+                  for number in range(FIRST, min(last, FIRST + 3) + 1)]
+        moments = [week + index * read.HOUR for index in range(int((end - week) / read.HOUR))]
+        began = time.monotonic()
+        values = read.replay_rows(replay, moments, read.ROLLUP_1H)
+        replay_ms = (time.monotonic() - began) * 1000
         began = time.monotonic()
         read.latest(range(FIRST, last + 1))
         latest_ms = (time.monotonic() - began) * 1000
@@ -80,6 +91,8 @@ class Command(BaseCommand):
         self.stdout.write(f'chart of one channel over the span: {span_buckets} buckets of {span_width} in {span_ms:.0f} ms')
         self.stdout.write(f'{min(channels, 10)} channels over seven days: {week_buckets} buckets of 15 min from the '
                           f'readings in {week_ms:.0f} ms')
+        self.stdout.write(f'replay of seven days hourly: {len(moments)} frames x {len(replay)} channels, {len(values)} '
+                          f'values in one query in {replay_ms:.0f} ms')
         self.stdout.write(f'latest of {channels} channels: {latest_ms:.0f} ms')
 
     @staticmethod

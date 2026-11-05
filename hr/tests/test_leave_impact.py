@@ -45,7 +45,7 @@ class LeaveImpactTests(ImpactTestCase):
         self.assertEqual(dialog.status_code, 200)
         self.assertEqual(dialog.context['impact'], [(MONDAY, self.early), (TUESDAY, self.night)])
         self.assertContains(dialog, 'NIGHT')
-        self.assertContains(dialog, 'planned shifts in these days')
+        self.assertContains(dialog, '2 planned shifts of the person in these days')
         response = self.client.post(url, {'note': ''})
         self.assertRedirects(response, reverse('hr:production_leaverequest_list'), fetch_redirect_response=False)
         self.item.refresh_from_db()
@@ -87,3 +87,9 @@ class PendingBadgeTests(ImpactTestCase):
         office_person = employee('E-71', 'Office')
         place(office_person, self.finance)
         self.assertEqual(read.pending_leave_badge(self.hr).count, 0)                   # hr has no Edit on leave
+
+    def test_a_badge_without_an_address_is_not_polled(self):
+        self.client.force_login(self.lead)
+        html = self.client.get(reverse('hr:production_today')).content.decode()
+        self.assertIn('<span class="rail-badge">1</span>', html)
+        self.assertNotIn('data-poll=""', html)

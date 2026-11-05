@@ -30,7 +30,9 @@ from django.utils import timezone
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.site import zone_of
 from farm.models.water_point import PointKind, site_of
-from farm.water import parameters
+from farm.water import deffeyes, parameters
+from farm.water.evaluate import is_fresh
+from farm.water.read import WINDOW, Series as WaterSeries, assumed_salinity
 
 from . import quantities
 from .models import Binding, Calibration, Channel, ChannelState, DeviceState, Reduction
@@ -321,4 +323,139 @@ def device_status(devices, now=None):
         last = state.last_message_at if state else None
         limit = timedelta(seconds=DEVICE_OFFLINE_INTERVALS * intervals.get(device.pk, device.expected_interval_s))
         found[device.pk] = DeviceStatus(last is not None and now - last <= limit, last, state.last_seq if state else None)
+    return found
+
+
+# ---- the Deffeyes replay (owner amendment A6) ------------------------------------------------------------------
+FRAMES_CAP = 2000
+REPLAY_INPUTS = (parameters.TEMPERATURE, parameters.PH, 'alkalinity_mg_l', parameters.SALINITY)
+MANUAL, ASSUMED = 'manual', 'assumed'
+# How far before the range a carried value may come from: the longest heartbeat's freshness (three days).
+CARRY = timedelta(days=3)
+
+
+@dataclass(frozen=True)
+class FrameInput:
+    value: float
+    origin: str                   # 'sensor', 'system_sensor', 'manual', 'assumed'
+    age_s: float                  # seconds between its measurement and the frame
+    channel_no: int | None = None
+
+
+@dataclass(frozen=True)
+class FramePoint:
+    dic: float                    # mmol/L
+    alkalinity_meq: float
+    ph: float
+    co2_mg_l: float
+
+
+@dataclass(frozen=True)
+class Frame:
+    at: datetime
+    inputs: dict                  # code -> FrameInput
+    point: FramePoint | None
+    missing: tuple = ()           # the codes without a usable value at that moment
+
+
+@dataclass
+class Frames:
+    target: object
+    start: datetime
+    end: datetime
+    step: timedelta
+    tier: str
+    frames: list = field(default_factory=list)
+
+
+def replay_step(start, end, step):
+    """The ladder's narrowest width at least `step` that gives at most FRAMES_CAP frames."""
+    wanted = max(step, (end - start) / FRAMES_CAP)
+    return next((width for width in LADDER if width >= wanted), LADDER[-1])
+
+
+def _replay_rows(found, moments, tier):
+    """{(segment index, moment): (ts, value)}: each segment's newest clean value at or before each moment taken while
+    it was bound there (the raw readings below an hour; the last value of each hour ENDED by the moment above). ONE
+    query for every segment and moment."""
+    if not found or not moments:
+        return {}
+    numbers = [segment.channel_no for segment in found]
+    starts = [segment.start for segment in found]
+    ends = [segment.end for segment in found]
+    if tier == RAW:
+        lateral = (f'SELECT ts, value FROM sensors_reading WHERE channel_no = s.channel_no AND ts <= m.at '
+                   f'AND ts >= s.valid_from AND ts < s.valid_to AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1')
+    else:
+        lateral = ("SELECT last_ts AS ts, vlast AS value FROM sensors_rollup_1h WHERE channel_no = s.channel_no "
+                   "AND bucket + INTERVAL '1 hour' <= m.at AND bucket >= s.valid_from AND bucket < s.valid_to "
+                   "ORDER BY bucket DESC LIMIT 1")
+    sql = (f'SELECT s.ord, m.at, r.ts, r.value FROM unnest(%s::timestamptz[]) AS m(at) '
+           f'CROSS JOIN unnest(%s::int[], %s::timestamptz[], %s::timestamptz[]) WITH ORDINALITY '
+           f'AS s(channel_no, valid_from, valid_to, ord) CROSS JOIN LATERAL ({lateral}) r')
+    with connection.cursor() as cursor:
+        cursor.execute(sql, [moments, numbers, starts, ends])
+        return {(int(ordinal) - 1, at): (ts, value) for ordinal, at, ts, value in cursor.fetchall()}
+
+
+def _water_types(target):
+    """The water types a target's water is in: a unit's own, a system's units' (none: nothing is assumed)."""
+    if isinstance(target, Tank):
+        return {target.water_type}
+    if isinstance(target, System):
+        return set(Tank.objects.filter(system=target).values_list('water_type', flat=True)) or {None}
+    return {None}
+
+
+def deffeyes_frames(target, start, end, step):
+    """The Frames of a unit's or a system's water from start to end (end not included) every `step` (snapped to the
+    ladder, at most FRAMES_CAP frames): per frame and input, in the A1 order, the first segment's clean value at or
+    before the frame and no older than its channel's freshness, else a fresh manual or lab sample, else (salinity only)
+    the fresh-water assumption, else missing; the point on the diagram from farm/water/deffeyes.py when every input is
+    there. Never a value from after the frame, never one carried past its freshness, never one in between."""
+    if end <= start:
+        raise ValueError('The end comes after the start.')
+    step = replay_step(start, end, step)
+    tier = RAW if step < HOUR else ROLLUP_1H
+    moments = []
+    moment = start
+    while moment < end:
+        moments.append(moment)
+        moment += step
+    by_code = {code: segments(target, code, start - CARRY, end) for code in REPLAY_INPUTS}
+    flat = [(code, segment) for code in REPLAY_INPUTS for segment in by_code[code]]
+    rows = _replay_rows([segment for _code, segment in flat], moments, tier)
+    points = [point for point in places(target)[1] if point is not None]
+    manual = {code: WaterSeries(points, code, start - WINDOW, end) for code in REPLAY_INPUTS}
+    assumed = assumed_salinity(_water_types(target))
+    found = Frames(target, start, end, step, tier)
+    for at in moments:
+        inputs, missing = {}, []
+        for code in REPLAY_INPUTS:
+            chosen = None
+            for index, (each, segment) in enumerate(flat):
+                if each != code or (index, at) not in rows:
+                    continue
+                ts, value = rows[(index, at)]
+                if at - ts <= timedelta(seconds=segment.fresh_s):
+                    chosen = FrameInput(value, segment.origin, (at - ts).total_seconds(), segment.channel_no)
+                    break
+            if chosen is None:
+                sample = next((each for each in (manual[code].latest(point.pk, at, WINDOW) for point in points)
+                               if each is not None and is_fresh(parameters.get(code), each.at, at)), None)
+                if sample is not None:
+                    chosen = FrameInput(float(sample.value), MANUAL, (at - sample.at).total_seconds())
+                elif code == parameters.SALINITY and assumed is not None:
+                    chosen = FrameInput(float(assumed), ASSUMED, 0.0)
+            if chosen is None:
+                missing.append(code)
+            else:
+                inputs[code] = chosen
+        point = None
+        if not missing:
+            analysis = deffeyes.analyse(deffeyes.Water(
+                temperature_c=inputs[parameters.TEMPERATURE].value, salinity_ppt=inputs[parameters.SALINITY].value,
+                ph=inputs[parameters.PH].value, alkalinity_mg_l=inputs['alkalinity_mg_l'].value))
+            point = FramePoint(analysis.dic, analysis.alkalinity_meq, inputs[parameters.PH].value, analysis.co2_mg_l)
+        found.frames.append(Frame(at, inputs, point, tuple(missing)))
     return found

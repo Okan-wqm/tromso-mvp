@@ -484,15 +484,16 @@ def omega_line(eq, calcium_mg_l, ksp, box):
     return clip_polyline(points, box)
 
 
-def geometry(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
+def geometry(analysis, layers=ALL_LAYERS, dosing=None, simulator=(), extent=()):
     """The chart of an analysis, the layers asked for, in the chart's units; a note says why a layer asked
     for is not drawn. `dosing`: the dosing layer (a dosing.Visual); `simulator`: the water after each step of
-    the simulator, (DIC, alkalinity), the water first."""
+    the simulator, (DIC, alkalinity), the water first; `extent`: more points (DIC, alkalinity) the box must hold, drawn
+    as nothing (a replay's frames, A6)."""
     eq, limits, water = analysis.equilibria, analysis.limits, analysis.water
     show_target = 'target' in layers and analysis.target is not None
     path = dosing is not None and 'dosing' in layers and show_target and bool(dosing.path)
     simulator = list(simulator) if 'simulator' in layers and len(simulator) > 1 else []
-    box = box_of(analysis, [*simulator, *([dosing.waypoint] if path else [])])
+    box = box_of(analysis, [*simulator, *([dosing.waypoint] if path else []), *extent])
     shape = Geometry(box, point=(analysis.dic, analysis.alkalinity_meq))
     if 'isolines' in layers:
         for ph in ISOLINE_PHS:
@@ -621,9 +622,9 @@ class Chart:
     simulator: dict | None = None
 
 
-def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
-    """The chart of an analysis as the template draws it (`dosing` and `simulator` as `geometry` takes them)."""
-    shape = geometry(analysis, layers, dosing, simulator)
+def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=(), extent=()):
+    """The chart of an analysis as the template draws it (`dosing`, `simulator` and `extent` as `geometry` takes them)."""
+    shape = geometry(analysis, layers, dosing, simulator, extent)
     box = shape.box
 
     def x(dic):

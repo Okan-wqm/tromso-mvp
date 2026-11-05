@@ -96,7 +96,8 @@ class FrameTests(ReplayCase):
         bindings.move(self.user, self.ph, point=self.mid2, at=START + timedelta(minutes=30))
         first = read.deffeyes_frames(self.t1, START + timedelta(minutes=20), START + timedelta(minutes=40),
                                      timedelta(minutes=10)).frames
-        self.assertEqual([frame.inputs.get('ph') is not None for frame in first], [True, False])
+        # At 00:30 the sensor is in T-02; T-01 keeps the value it measured there at 00:25, fresh for 15 min.
+        self.assertEqual([frame.inputs['ph'].value for frame in first], [7.020, 7.025])
         second = read.deffeyes_frames(self.t2, START + timedelta(minutes=20), START + timedelta(minutes=40),
                                       timedelta(minutes=10)).frames
         self.assertEqual([frame.inputs.get('ph') is not None for frame in second], [False, True])

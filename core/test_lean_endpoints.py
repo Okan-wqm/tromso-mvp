@@ -21,7 +21,13 @@ CHEMISTRY_MODULES = {'chemistry', 'deffeyes', 'dosing', 'charts', 'calculation',
 SKIPPED = {'node_modules', '.venv', 'chemcore', 'migrations', 'tests', 'static', 'staticfiles'}
 
 # url name -> why it may compute on values from the request (each refuses a user without its permission: below)
-ALLOWED = {}
+ALLOWED = {
+    'farm:water_calculator': 'the calculator: a server form behind the water-reading permission; its answer names an '
+                             "impossible pH and alkalinity's floor, one number per request, as the page always did",
+    'farm:water_calculator_results': "the calculator's live parts: the same form, the same permission",
+    'farm:water_calculator_report': "the calculator's printed report: the same form, the same permission",
+    'farm:water_unit_chart': "a unit's stored measurements; the request names only a stored sampling point",
+}
 
 
 def python_modules():

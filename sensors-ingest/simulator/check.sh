@@ -36,4 +36,4 @@ done
 sleep 3
 docker run --rm --network "$NET" -v "$(win "$PWD"):/sim:ro" -e BROKER=mqtt://simcheck-broker:1883 -e MQTT_USER=observer \
   -e MQTT_PASSWORD=obs-pw -e NODE_RED=http://simcheck-sim:1880 --entrypoint node "$NODERED" /sim/check.js || {
-  docker logs simcheck-sim 2>&1 | tail -30; exit 1; }
+  docker logs simcheck-sim 2>&1 | tail -30; echo "--- broker"; docker logs simcheck-broker 2>&1 | tail -40; exit 1; }

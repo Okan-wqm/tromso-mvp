@@ -13,7 +13,7 @@ use uuid::Uuid;
 pub const SCHEMA_VERSION: i32 = 1;
 
 /// The view's columns, in order: the ingest's copy of the contract, compared with the database by a test.
-pub const VIEW_COLUMNS: [&str; 35] = [
+pub const VIEW_COLUMNS: [&str; 36] = [
     "connection_id",
     "host",
     "port",
@@ -49,6 +49,7 @@ pub const VIEW_COLUMNS: [&str; 35] = [
     "valid_to",
     "a",
     "b",
+    "is_simulated",
 ];
 
 #[derive(Debug, Clone, PartialEq)]
@@ -99,6 +100,7 @@ pub struct ViewRow {
     pub valid_to: Option<DateTime<Utc>>,
     pub a: f64,
     pub b: f64,
+    pub is_simulated: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -124,6 +126,8 @@ pub struct DeviceCfg {
     pub channels: Vec<ChannelCfg>,
     /// The channels' maps, in `channels` order, as `decode` takes them.
     pub maps: Vec<ChannelMap>,
+    /// A simulator or test device: its values are stored flagged SIMULATED (128).
+    pub simulated: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -332,6 +336,7 @@ pub fn build(contract: Contract, rows: Vec<ViewRow>) -> Result<Config, ConfigErr
                 format,
                 channels: Vec::new(),
                 maps: Vec::new(),
+                simulated: false,
             });
         }
         let Some(dev) = conn.devices.iter_mut().find(|d| d.device_id == r.device_id) else { continue };
@@ -431,6 +436,7 @@ pub async fn load(client: &mut tokio_postgres::Client) -> Result<Config, ConfigE
             valid_to: r.try_get("valid_to")?,
             a: r.try_get("a")?,
             b: r.try_get("b")?,
+            is_simulated: r.try_get("is_simulated")?,
         });
     }
     tx.commit().await?;
@@ -483,6 +489,7 @@ pub(crate) mod tests {
             valid_to: None,
             a: 1.0,
             b: 0.0,
+            is_simulated: false,
         }
     }
 
@@ -497,6 +504,18 @@ pub(crate) mod tests {
         assert!(topic_matches("+", "x"));
         assert!(!topic_matches("+", "x/y"));
         assert!(!topic_matches("farm/a+/b", "farm/ax/b"));
+    }
+
+    #[test]
+    fn a_simulated_device_is_marked() {
+        let mut sim = row(1, 10, "demo/sim-t-01", 1);
+        sim.is_simulated = true;
+        let real = row(1, 11, "farm/probe", 2);
+        let cfg = build(contract(), vec![sim, real]).unwrap();
+        let c = &cfg.connections[&Uuid::from_u128(1)];
+        let by = |id| c.devices.iter().find(|d| d.device_id == Uuid::from_u128(id)).unwrap().simulated;
+        assert!(by(10));
+        assert!(!by(11));
     }
 
     #[test]

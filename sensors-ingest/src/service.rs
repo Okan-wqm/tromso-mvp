@@ -346,6 +346,8 @@ impl Writer {
                 connected: connected_override.unwrap_or_else(|| map.get(id).copied().unwrap_or(false)),
                 queue_depth: depth.max(0),
                 version: self.settings.version.clone(),
+                qos0_dropped: 0,
+                poison_total: 0,
             })
             .collect()
     }

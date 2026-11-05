@@ -20,6 +20,10 @@ pub struct Status {
     pub connected: bool,
     pub queue_depth: i32,
     pub version: String,
+    /// QoS 0 messages dropped on a full queue since the ingest started (sensors_ingest_status.qos0_dropped).
+    pub qos0_dropped: i64,
+    /// Messages the database refused, dead-lettered bad_value, since the ingest started.
+    pub poison_total: i64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]

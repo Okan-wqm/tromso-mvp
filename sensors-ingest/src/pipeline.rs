@@ -251,6 +251,18 @@ mod tests {
     }
 
     #[test]
+    fn values_of_a_simulated_device_are_flagged_simulated() {
+        let mut r = cfgt::row(1, 10, "farm/plc", 1);
+        r.is_simulated = true;
+        let c = build(cfgt::contract(), vec![r]).unwrap();
+        let m = msg(serde_json::json!({"ts": iso(now()), "v1": 1.0}), now());
+        let out = process(&c, &HashMap::new(), &mut DeadLimiter::new(10), &[m]);
+        assert_eq!(out.readings[0].row.quality, crate::quality::SIMULATED);
+        // a simulated value is bad: never the latest good value
+        assert_eq!(out.states[&1].last_value, None);
+    }
+
+    #[test]
     fn a_message_becomes_calibrated_judged_rows_state_and_device_counters() {
         let m = msg(serde_json::json!({"ts": iso(now()), "seq": 5, "v1": 10.0, "v2": 3.0}), now());
         let out = process(&cfg(), &HashMap::new(), &mut DeadLimiter::new(10), &[m]);

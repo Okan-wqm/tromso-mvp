@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from core.crud import Resource
+from core.crud import Mount, Resource
 from farm.stock.dates import site_today
 
 from .. import leave, read, scope, services
@@ -34,6 +34,7 @@ class LeaveRequestResource(Resource):
     form_class = LeaveRequestForm
     name, plural = _('leave request'), _('leave requests')
     url_prefix = 'hr/leave'
+    mounts = (Mount(scope.PRODUCTION, 'production/team/leave'),)
     actions = ('add', 'change')
     list_template = 'hr/leave_list.html'
     detail_template = 'hr/leave_detail.html'
@@ -46,11 +47,12 @@ class LeaveRequestResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return scope.by_day(request.user, objects, 'employee', 'first_day')
+        return scope.by_day(request.user, objects, 'employee', 'first_day', scope.realm_for(request))
 
     @classmethod
     def form(cls, request, *args, **kwargs):
         kwargs.setdefault('user', request.user)
+        kwargs.setdefault('realm', scope.realm_for(request))
         return cls.form_class(*args, **kwargs)
 
     @classmethod

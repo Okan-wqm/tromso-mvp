@@ -3,7 +3,7 @@ from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
 from core import audit
-from core.crud import Resource, tab_fields
+from core.crud import Mount, Resource, tab_fields
 from farm.stock.dates import site_today
 
 from .. import read, scope, services, units
@@ -24,6 +24,7 @@ class EmployeeResource(Resource):
     form_class = EmployeeForm
     name, plural = _('employee'), _('employees')
     url_prefix = 'hr/team'
+    mounts = (Mount(scope.PRODUCTION, 'production/team/people'),)
     actions = ('add', 'change')
     search_fields = ['employee_number', 'first_name', 'last_name', 'user__username', 'user__first_name',
                      'user__last_name']
@@ -38,11 +39,11 @@ class EmployeeResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return objects.filter(pk__in=scope.team(request.user).values('pk'))
+        return objects.filter(pk__in=scope.team(request.user, realm=scope.realm_for(request)).values('pk'))
 
     @classmethod
     def form(cls, request, *args, **kwargs):
-        return cls.form_class(*args, editor=request.user, **kwargs)
+        return cls.form_class(*args, editor=request.user, realm=scope.realm_for(request), **kwargs)
 
     @classmethod
     def list_queryset(cls, request):
@@ -74,7 +75,8 @@ class EmployeeResource(Resource):
             objects = objects.filter(pk__in=members.values('employee'))
         return objects.order_by(*Employee._meta.ordering), {
             'types': EmploymentType.choices, 'chosen_type': chosen_type, 'statuses': STATUSES,
-            'chosen_status': chosen_status, 'departments': units.choices(), 'chosen_department': units.token(department),
+            'chosen_status': chosen_status, 'departments': units.choices(kinds=[scope.realm_for(request)]),
+            'chosen_department': units.token(department),
             'today': today,
         }
 

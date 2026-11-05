@@ -12119,6 +12119,9 @@ msgstr "Kryss av i boksen for å fortsette tross disse advarslene."
 msgid "Time"
 msgstr "Tidspunkt"
 
+msgid "Time & attendance"
+msgstr "Tid og oppmøte"
+
 msgid "Time & shifts"
 msgstr "Tid og skift"
 

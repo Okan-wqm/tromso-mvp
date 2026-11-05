@@ -31,11 +31,13 @@ class ShiftAssignmentForm(TabbedForm):
             'note': forms.TextInput(),
         }
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, realm=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
         self.warnings = []
-        employees = scope.team(user) if user is not None else Employee.objects.none()
+        # a new record's person is chosen among the team in the panel's realm (an existing one keeps its person)
+        chosen_in = realm if self.instance._state.adding else None
+        employees = scope.team(user, realm=chosen_in) if user is not None else Employee.objects.none()
         self.fields['employee'].queryset = employees.select_related('user')
         self.fields['employee'].label_from_instance = lambda employee: employee.full_name
         self.fields['shift'].queryset = Shift.objects.filter(status='active')

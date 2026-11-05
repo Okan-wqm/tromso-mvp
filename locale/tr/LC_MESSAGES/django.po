@@ -12127,6 +12127,9 @@ msgstr "Bu uyarılara rağmen devam etmek için kutuyu işaretleyin."
 msgid "Time"
 msgstr "Saat"
 
+msgid "Time & attendance"
+msgstr "Zaman ve devam"
+
 msgid "Time & shifts"
 msgstr "Zaman ve vardiyalar"
 

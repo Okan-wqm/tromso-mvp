@@ -39,6 +39,9 @@ class Entry:
     badge: str = ''         # the dotted path of a function(user) -> Badge, for a number beside the entry
     hidden: bool = False    # no line in the menu (a settings page reached from another page's links); it still
                             # has its place: the role matrix and the page heading read it, and it is current there
+    show_when: str = ''     # the dotted path of a function(user) -> bool: the line is shown only when it says so (Company's
+                            # HR lines are left out for a person whose HR is all in Production). A menu courtesy only: the
+                            # page still answers whoever holds its permission
 
     def url(self):
         return reverse(self.url_name)
@@ -49,6 +52,18 @@ class Entry:
     def matches(self, path):
         url = self.url()
         return path == url if url == '/' else path.startswith(url)
+
+    def shown_to(self, user, answers=None):
+        """Whether the line is shown to the person: their permission, not hidden, and its `show_when` (asked once per
+        function and request: `answers` caches them)."""
+        if not self.allowed_for(user) or self.hidden:
+            return False
+        if not self.show_when:
+            return True
+        answers = {} if answers is None else answers
+        if self.show_when not in answers:
+            answers[self.show_when] = bool(import_string(self.show_when)(user))
+        return answers[self.show_when]
 
     def badge_for(self, user):
         return import_string(self.badge)(user) if self.badge else None
@@ -153,6 +168,7 @@ def rail(request):
     # is not current on its sibling /operations/feeding/protocols/).
     current_url = max((entry.url() for entry in entries() if entry.matches(request.path)), key=len, default=None)
     panels = []
+    answers = {}
     for workspace in workspaces():
         if not workspace.offered_to(user):
             continue
@@ -163,7 +179,7 @@ def rail(request):
                 shown = [
                     {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
                      'current': entry.url() == current_url, 'badge': entry.badge_for(user)}
-                    for entry in group.entries if entry.allowed_for(user) and not entry.hidden
+                    for entry in group.entries if entry.shown_to(user, answers)
                 ]
                 if shown:
                     groups.append({'label': group.label, 'entries': shown})

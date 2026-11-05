@@ -44,12 +44,15 @@ def label(department):
     return f'{department.name} ({department.code})'
 
 
-def choices(include=()):
+def choices(include=(), kinds=None):
     """The grouped options of a chooser: [(group label, [(token, label)])]. Inactive departments are not offered for
-    a new placement, except those in `include` (the one a person is placed in now)."""
+    a new placement, except those in `include` (the one a person is placed in now). `kinds` keeps only those kinds
+    (a panel's own: its realm, hr.scope, is the kind of its departments)."""
     keep = {token(item) for item in include}
     groups = []
     for kind, (model, _field, group) in KINDS.items():
+        if kinds is not None and kind not in kinds:
+            continue
         rows = [department for department in model.objects.order_by('name')
                 if department.status == 'active' or token(department) in keep]
         groups.append((group, [(token(department), label(department)) for department in rows]))

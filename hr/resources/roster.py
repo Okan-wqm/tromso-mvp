@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
 from core import audit
-from core.crud import Resource
+from core.crud import Mount, Resource
 from farm.stock.dates import site_today
 
 from .. import read, rules, scope, services, units
@@ -29,6 +29,7 @@ class ShiftAssignmentResource(Resource):
     form_class = ShiftAssignmentForm
     name, plural = _('plan'), _('plans')
     url_prefix = 'hr/schedule'
+    mounts = (Mount(scope.PRODUCTION, 'production/team/schedule'),)
     list_template = 'hr/roster.html'
     icon = 'calendar'
     private_fields = ('note',)
@@ -39,7 +40,7 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return scope.by_day(request.user, objects, 'employee', 'day')
+        return scope.by_day(request.user, objects, 'employee', 'day', scope.realm_for(request))
 
     @classmethod
     def allowed(cls, request, obj, action):
@@ -48,6 +49,7 @@ class ShiftAssignmentResource(Resource):
     @classmethod
     def form(cls, request, *args, **kwargs):
         kwargs.setdefault('user', request.user)
+        kwargs.setdefault('realm', scope.realm_for(request))
         if not args and kwargs.get('instance') is None and request.method == 'GET':
             kwargs.setdefault('initial', {key: request.GET[key] for key in ('employee', 'day') if key in request.GET})
         return cls.form_class(*args, **kwargs)
@@ -60,7 +62,8 @@ class ShiftAssignmentResource(Resource):
             page = int(request.GET.get('page', '1'))
         except ValueError:
             page = 1
-        return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip())
+        return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip(),
+                         realm=scope.realm_for(request))
 
     @classmethod
     def search(cls, objects, query):
@@ -69,7 +72,7 @@ class ShiftAssignmentResource(Resource):
     @classmethod
     def filter_list(cls, request, objects):
         week = objects
-        return week.rows, {'week': week, 'departments': units.choices(),
+        return week.rows, {'week': week, 'departments': units.choices(kinds=[scope.realm_for(request)]),
                            'chosen_department': request.GET.get('department', ''),
                            'shifts': cls.shifts()}
 

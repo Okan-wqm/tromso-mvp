@@ -31,10 +31,6 @@ def _here(request, url_name, *args):
     return reverse(mounted_name(url_name, mount_of(request)), args=args)
 
 
-def _realm(request):
-    return scope.realm_of(mount_of(request))
-
-
 def _return(request, default):
     """Where a post goes back to: the page that sent it (`next`, an address of this site), else `default`. A foreign or
     malformed `next` is ignored."""
@@ -152,7 +148,8 @@ def _today_context(request):
     own = services.own_employee(request.user)
     open_punch = AttendanceRecord.objects.filter(employee=own, clock_out__isnull=True).first() if own else None
     open_zone = zone_of(read.site_on(own, timezone.localdate())) if open_punch else None
-    return {'board': read.board(request.user, realm=_realm(request)), 'own': own, 'open_punch': open_punch, 'open_zone': open_zone,
+    return {'board': read.board(request.user, realm=scope.realm_for(request)), 'own': own, 'open_punch': open_punch,
+            'open_zone': open_zone,
             'can_enter': request.user.has_perm('hr.add_attendancerecord'), 'states': rules.STATES}
 
 
@@ -203,16 +200,17 @@ def team_overview(request):
     place = navigation.page(mounted_name('hr:overview', mount_of(request)))
     return render(request, 'hr/overview.html', {
         'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': query,
-        'overview': read.overview(request.user, start, department, page, query=query, realm=_realm(request)),
-        'departments': units.choices(),
+        'overview': read.overview(request.user, start, department, page, query=query, realm=scope.realm_for(request)),
+        'departments': units.choices(kinds=[scope.realm_for(request)]),
         'chosen_department': units.token(department)})
 
 
 def organisation_chart(request):
     """Organisation chart: sites with their production departments and the office departments, nested, with managers and head
-    counts the viewer may see."""
-    if not request.user.has_perm('hr.view_officedepartment'):
-        raise PermissionDenied
+    counts the viewer may see. It is read with the permission of its menu entry: the office departments' in Company, the
+    people's (hr.view_employee) in Production."""
     place = navigation.page(mounted_name('hr:orgchart', mount_of(request)))
+    if not request.user.has_perm(place.entry.perm):
+        raise PermissionDenied
     return render(request, 'hr/orgchart.html', {'title': place.entry.label, 'eyebrow': place.heading,
                                                 'base_template': 'app_base.html', 'root': read.org_tree(request.user)})

@@ -56,8 +56,8 @@ class MatrixTests(PeopleTestCase):
         rows = re.findall(r'<tr>\s*<th scope="row">(.*?)</th>(.*?)</tr>', html, re.S)
         cells = {label: re.findall(r'<td>(.*?)</td>', body, re.S) for label, body in rows}
         self.assertTrue(all(len(row) == 7 for row in cells.values()))
-        self.assertIn('all_production_employee', cells['Employees'][5])
-        self.assertIn('crew_shiftassignment', cells['Shift schedule'][4])
+        self.assertIn('Employees: All production', cells['Employees'][5])
+        self.assertIn('Shift schedule: Crew', cells['Shift schedule'][4])
         self.assertEqual(cells['Species'][4].strip(), '')
 
     def test_the_summary_names_the_columns(self):

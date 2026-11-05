@@ -38,12 +38,8 @@ class AttendanceRecordResource(Resource):
     DAYS = 14
 
     @classmethod
-    def group(cls):
-        return navigation.page(cls.url_name('list')).heading
-
-    @classmethod
-    def title(cls):
-        return navigation.page(cls.url_name('list')).entry.label
+    def menu_place(cls, mount=None):
+        return navigation.page(cls.url_name('list', mount))
 
     @classmethod
     def queryset(cls):

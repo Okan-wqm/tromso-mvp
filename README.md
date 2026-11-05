@@ -2673,6 +2673,16 @@ delete pages. Every tab gets the same behaviour from it: a role needs view/add/c
 model for each page (the platform admin has all of them), every change is written to the activity
 log in the same transaction, an outdated `version` is refused, models with soft delete are hidden
 rather than erased, and forms and confirmations open in a dialog (`templates/modal_base.html`) or,
+- `grid/` the card designer's grid library, our own (no grid package): `layout.ts` pure functions over an immutable
+  layout (`catalogueOf` reads the server's widget catalogue, `parse`/`serialize` a stored layout, `check` the geometry the
+  server's validator also checks, `clamp`, `compact`, `move`, `resize`, `add`, `remove`, `readingOrder`, `changes`,
+  `cellFromPoint`, `keyToDelta`), `history.ts` undo and redo (a gesture is one entry, 100 kept, a new entry clears redo),
+  `types.ts`. A gesture places the moved, grown or dropped widget first, pushes what it lands on straight down and then
+  compacts (floats every widget up as far as it goes, in reading order, stable on ties); compaction exists only here, the
+  server never moves a widget. Nothing changes its input and garbage is a typed answer, never a throw. Its tests
+  (`*.test.ts`, `frontend/test/random.ts`) are examples, the geometry vectors shared with the server and seeded
+  properties over 2,000 random layouts and gestures each (mulberry32; a failure prints the seed, `GRID_SEED=<n> npm test`
+  replays it): no overlap, in bounds and sizes, ids kept, compaction idempotent and never downwards, undo exact, round trip.
 opened directly, as a page. The menu is data (`config/navigation.py`: panels, main headings, groups,
 entries) and shows each entry only to people allowed to read it; an entry can carry a number (a `Badge`, the
 unread messages) that the page polls. Production's menu has two main headings, as in the platform: **Setup** (the farm's structure under Facility structure, the

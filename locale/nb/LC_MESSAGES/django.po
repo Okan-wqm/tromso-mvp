@@ -428,6 +428,10 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, uten klokkeslett: regnet fra slutten av dagen"
 
 #, python-format
+msgid "%(days)d d ago"
+msgstr "%(days)d d siden"
+
+#, python-format
 msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "%(days)s dag siden siste målte vekt"
@@ -584,6 +588,10 @@ msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 
 #, python-format
+msgid "%(hours)d h ago"
+msgstr "%(hours)d t siden"
+
+#, python-format
 msgid "%(hours)s and %(degrees)s"
 msgstr "%(hours)s og %(degrees)s"
 
@@ -634,6 +642,10 @@ msgstr "%(kilos)s veid"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "Seksjoner i skjemaet: %(kind)s"
+
+#, python-format
+msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
+msgstr "%(label)s %(value)s, %(status)s; grenser: %(limits)s"
 
 #, python-format
 msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
@@ -748,6 +760,10 @@ msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
 msgstr "%(medicine)s, %(method)s fra %(start)s til %(end)s: tilbakeholdelsestid %(rule)s."
 
 #, python-format
+msgid "%(minutes)d min ago"
+msgstr "%(minutes)d min siden"
+
+#, python-format
 msgid "%(minutes)s min"
 msgstr "%(minutes)s min"
 
@@ -853,6 +869,10 @@ msgstr "%(replicate)s: siste dag kommer på eller etter første dag."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
+
+#, python-format
+msgid "%(seconds)d s ago"
+msgstr "%(seconds)d s siden"
 
 #, python-format
 msgid "%(section)s: not shown to you"
@@ -12195,9 +12215,15 @@ msgstr "samtaler"
 msgid "counted %(quantity)s"
 msgstr "telt %(quantity)s"
 
+msgid "critical above"
+msgstr "kritisk over"
+
 #, python-format
 msgid "critical above %(value)s"
 msgstr "kritisk over %(value)s"
+
+msgid "critical below"
+msgstr "kritisk under"
 
 #, python-format
 msgid "critical below %(value)s"
@@ -12701,6 +12727,9 @@ msgstr "lageroperasjoner"
 msgid "its fish have no such bound"
 msgstr "fisken har ingen slik grense"
 
+msgid "just now"
+msgstr "akkurat nå"
+
 msgid "kg"
 msgstr "kg"
 
@@ -12793,6 +12822,9 @@ msgstr "nei"
 msgid "no cleaner fish held at %(site)s since %(date)s"
 msgstr "ingen rensefisk på %(site)s siden %(date)s"
 
+msgid "no data"
+msgstr "ingen data"
+
 #, python-format
 msgid "no escape without a filed notice since %(date)s"
 msgstr "ingen rømming uten sendt varsel siden %(date)s"
@@ -12807,6 +12839,9 @@ msgstr "ingen fisk på %(site)s siden %(date)s"
 #, python-format
 msgid "no harvest is planned to %(facility)s from this week on"
 msgstr "ingen slakting er planlagt til %(facility)s fra denne uken"
+
+msgid "no limit set for this value"
+msgstr "ingen grense satt for denne verdien"
 
 #, python-format
 msgid "no listed disease without a filed notice since %(date)s"
@@ -12863,6 +12898,9 @@ msgstr "nås ikke ved noen pH"
 
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "nås ikke i diagrammets område (4 til 12,5)"
+
+msgid "old"
+msgstr "gammel"
 
 msgid "only a site of food fish or broodstock on land reports it"
 msgstr "bare en landlokalitet med matfisk eller stamfisk rapporterer det"
@@ -13250,9 +13288,15 @@ msgstr "annullert av %(name)s: %(reason)s"
 msgid "voided: %(reason)s"
 msgstr "annullert: %(reason)s"
 
+msgid "warning above"
+msgstr "varsel over"
+
 #, python-format
 msgid "warning above %(value)s"
 msgstr "advarsel over %(value)s"
+
+msgid "warning below"
+msgstr "varsel under"
 
 #, python-format
 msgid "warning below %(value)s"

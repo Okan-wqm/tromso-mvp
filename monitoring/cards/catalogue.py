@@ -53,6 +53,7 @@ class WidgetSpec:
     options: Schema = None
     enabled: bool = True        # False: catalogued, refused by the validator until what it needs exists
     on_empty: bool = False      # also drawn on the card of a unit with no fish
+    says_hidden: bool = True    # False: left out, not 'not shown to you', for a person who may not read its source
 
     @property
     def renderer(self):
@@ -81,7 +82,8 @@ WIDGETS = {spec.type: spec for spec in (
     _spec('health', _('Health'), (4, 2), (12, 8), (12, 3), ('events', 'treatments', 'lice')),
     _spec('tasks', _('Tasks'), (3, 2), (12, 3), (6, 2), ('tasks',)),
     _spec('experiment', _('Experiments'), (3, 1), (12, 2), (12, 1), ('chips',), on_empty=True),
-    _spec('deffeyes', _('Deffeyes chart'), (2, 1), (6, 2), (4, 1), ('water',), on_empty=True),
+    _spec('deffeyes', _('Deffeyes chart'), (2, 1), (6, 2), (4, 1), ('water',), on_empty=True,
+          says_hidden=False),
     _spec('spark', _('Trend'), (3, 2), (12, 4), (6, 2), ('water',), bind=PARAMETER, enabled=False),
 )}
 _('Points'), _('The middle point'), _('Every active point'), _('Parameters'), _('The key values')

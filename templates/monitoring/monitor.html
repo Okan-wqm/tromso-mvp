@@ -34,7 +34,7 @@
   </div>
 </form>
 
-<div class="monitor-grid" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% include "monitoring/_grid.html" %}</div>
+<div class="monitor-grid" data-card-width="{{ card_width }}" data-poll="{{ poll_url }}" data-poll-every="{{ poll_seconds }}" data-poll-merge="data-key" data-poll-state="live" data-stale-text="{% trans "No connection: this may be out of date" %}" data-gone-text="{% trans "Signed out, or no longer available" %}">{% include "monitoring/_grid.html" %}</div>
 
 {% include "monitoring/_windows.html" %}
 {% endblock %}

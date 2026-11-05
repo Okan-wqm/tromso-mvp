@@ -21,12 +21,11 @@ from django.utils.translation import gettext as _, ngettext, pgettext
 from core import navigation
 from core.crud import render_page
 from farm.models import ProductionDepartment, Site, System, Tank
-from farm.water import parameters
 from farm.stock.views import VIEW
 
 from . import read
 from .cards import resolve
-from .models import MonitorBoard
+from .models import CardWidth, MonitorBoard
 
 POLL = 'monitoring:cards'
 SESSION_DAY = 'monitoring_wall_day'
@@ -74,8 +73,8 @@ def _grid(request, params, board, now=None):
     farm = Tank.objects.count()
     return {
         'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'strip': read.attention(found),
-        'water_labels': [(code, parameters.get(code).short) for code in read.KEY_WATER],
-        'params': params, 'computed_at': timezone.localtime(now), 'shown': len(found), 'on_farm': farm,
+        'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
+        'computed_at': timezone.localtime(now), 'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)
         % {'shown': len(found), 'farm': farm},
     }

@@ -736,6 +736,24 @@ reads simple, 40 detailed and mixed at 6, 24 and 200 units (the recording's 31 a
 also counted 4 savepoint statements, the chips' and the placement registry's own), and each optional source now has a
 savepoint of its own: 4 savepoint statements simple, 10 detailed (`RecordedCountsTests`).
 
+**How a card is drawn** (`monitoring/cards/render.py`, `templates/monitoring/_card.html`, `templates/monitoring/widgets/`). The
+frame (the unit and its link, the state word, shape and reasons, the withdrawal, the flip link named after the template it
+shows, "Empty", what the state is from) is not data and no template can remove it. Below it `div.card-grid`: one
+`div.w.w-<type>` per widget with `--x --y --w --h`, placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
+least `--row` 1.75 rem high, growing with its content) and, below 30 rem of card, one column in the same order; the wall runs no
+layout script. `build(card)` (no query) gives the widgets in reading order (y, then x), so what is read, what Tab visits and
+what is seen agree; a unit with no fish shows only the experiments and the Deffeyes button; a widget whose sources the person
+may not read says "Feeding: not shown to you" (the Deffeyes button is left out); a widget whose optional source failed says
+"no data". A focusable element of a widget is `w-<unit>-<widget id>` (poll.ts restores the focus by id). `face(reading, now)`
+is the one way a single value is said: the figure at the parameter's precision, its status in words, where it came from
+(the sample's source) and its age in bands ("just now", "40 s ago", "12 min ago", "3 h ago", "2 d ago", so a card changes
+once per band, not per poll), "old" past the parameter's freshness, and "no data" rather than a dash; the water table keeps the
+water page's own value markup and adds the origin and age under each value. A bar is the value against the four bounds of
+the limit that judged it, an SVG with `role="img"` named by the same sentence, its bands told apart by dash pattern as well as
+tone (no `<meter>`: browser colours, three cut points); without a limit it says so. A board's card width sets `--card-min`
+(17, 21 or 28 rem, 15 % more on a wall). The old per-section partials are gone: the built-ins Simple and Detailed draw what
+they drew, value for value (`test_golden`).
+
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
 an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the

@@ -1,0 +1,1 @@
+{% load i18n %}<button type="button" class="button button-ghost" id="{{ view.dom_id }}" data-window="{% url 'farm:water_unit_chart' unit.pk %}" data-window-title="{% blocktrans trimmed with unit=unit.code %}Deffeyes chart · {{ unit }}{% endblocktrans %}">{% trans "Deffeyes chart" %}</button>

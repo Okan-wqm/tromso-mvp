@@ -144,7 +144,7 @@ class PageTests(MonitoringCase):
 
     def test_a_bar_draws_its_limits_as_an_image_with_the_same_sentence_or_says_there_is_none(self):
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7, warning_high=12, critical_high=14)
-        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
+        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1', ph='7.2')    # pH has a value but no limit
         layout = {'schema': 1, 'widgets': [
             {'id': 'w1', 'type': 'bar', 'x': 0, 'y': 0, 'w': 6, 'h': 2, 'bind': {'parameter': 'oxygen_mg_l'}},
             {'id': 'w2', 'type': 'bar', 'x': 6, 'y': 0, 'w': 6, 'h': 2, 'bind': {'parameter': 'ph'}}]}

@@ -1,0 +1,9 @@
+{% load i18n cards %}{% comment %} One water value against the limit that judged it: a picture whose name is the same sentence (role=img), bands
+   told apart by their dash pattern as well as their tone; no <meter> (a limit has four bounds, and browser colours). Without
+   a value or a limit it says so. {% endcomment %}{% bound card view as said %}{% with drawn=said|bar %}
+<div class="monitor-bar{% if view.large %} is-large{% endif %}">
+  <p class="monitor-bar-head"><span>{{ said.label }}</span> <strong class="wq{% if said.status %} wq-{{ said.status }}{% endif %}">{{ said.value }}</strong></p>
+  {% if drawn %}<svg class="monitor-bar-svg" viewBox="0 0 100 12" preserveAspectRatio="none" role="img" aria-label="{{ drawn.sentence }}">{% for band in drawn.bands %}<rect class="band band-{{ band.kind }}" x="{{ band.start|stringformat:"s" }}" y="2" width="{{ band.width|stringformat:"s" }}" height="8"></rect>{% endfor %}<rect class="marker" x="{{ drawn.marker|stringformat:"s" }}" y="0" width="1" height="12"></rect></svg>
+  {% elif not said.missing %}<p class="row-sub">{% trans "no limit set for this value" %}</p>{% endif %}
+  <p class="row-sub">{% if said.origin %}{{ said.origin }} · {% endif %}{{ said.age }}</p>
+</div>{% endwith %}

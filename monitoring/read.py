@@ -55,7 +55,7 @@ from farm.water import parameters, read as water_read, views as water_views
 from farm.water.evaluate import Status, is_fresh
 from tasks import read as tasks_read, views as tasks_views
 
-from .cards import builtin, catalogue, resolve
+from .cards import catalogue, render, resolve
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +92,6 @@ class Unavailable(Exception):
 # What a card names as hidden: the health records are one block of the card.
 HEALTH = 'health'
 SIMPLE, DETAILED = 'simple', 'detailed'
-# The water values a simple card shows, from the middle point (the parameters' own short labels).
-KEY_WATER = catalogue.KEY_WATER
 MODES = (SIMPLE, DETAILED)
 STOCKED, EMPTY, ALL = 'stocked', 'empty', 'all'
 OCCUPANCIES = (STOCKED, EMPTY, ALL)
@@ -230,14 +228,15 @@ class Card:
     failed: frozenset = frozenset()     # the optional sources that failed: their widgets say "no data"
     now: object = None
 
-    @property
-    def detailed(self):
-        # (the cards before templates drew a detailed card: until the widgets draw it, the built-in Detailed is one)
-        return self.template.template is not None and self.template.template.pk == builtin.DETAILED
+    @cached_property
+    def widgets(self):
+        """The widgets its template draws, in reading order (monitoring/cards/render.py)."""
+        return render.build(self)
 
     @property
-    def brief(self):
-        return not self.detailed
+    def middle_water(self):
+        """The PointWater of its middle point, or None."""
+        return _middle(self)
 
     @cached_property
     def state(self):

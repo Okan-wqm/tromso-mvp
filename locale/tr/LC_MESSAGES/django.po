@@ -424,6 +424,10 @@ msgid "%(date)s, no time recorded: counted from the end of the day"
 msgstr "%(date)s, saat kaydedilmemiş: günün sonundan sayıldı"
 
 #, python-format
+msgid "%(days)d d ago"
+msgstr "%(days)d gün önce"
+
+#, python-format
 msgid "%(days)s day since the last measured weight"
 msgid_plural "%(days)s days since the last measured weight"
 msgstr[0] "son ölçülen ağırlıktan bu yana %(days)s gün"
@@ -584,6 +588,10 @@ msgid "%(grams)s g (%(percent)s %%, %(kilos)s kg)"
 msgstr "%(grams)s g (%%%(percent)s, %(kilos)s kg)"
 
 #, python-format
+msgid "%(hours)d h ago"
+msgstr "%(hours)d sa önce"
+
+#, python-format
 msgid "%(hours)s and %(degrees)s"
 msgstr "%(hours)s ve %(degrees)s"
 
@@ -635,6 +643,10 @@ msgstr "%(kilos)s tartıldı"
 #, python-format
 msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
+
+#, python-format
+msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
+msgstr "%(label)s %(value)s, %(status)s; sınırlar: %(limits)s"
 
 #, python-format
 msgid "%(label)s + %(margin)s %% safety margin = %(used)s"
@@ -749,6 +761,10 @@ msgid "%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s."
 msgstr "%(medicine)s, %(method)s, %(start)s – %(end)s: bekleme süresi %(rule)s."
 
 #, python-format
+msgid "%(minutes)d min ago"
+msgstr "%(minutes)d dk önce"
+
+#, python-format
 msgid "%(minutes)s min"
 msgstr "%(minutes)s dk"
 
@@ -854,6 +870,10 @@ msgstr "%(replicate)s: son gün ilk günde veya ondan sonra gelir."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s, saat %(time)s"
+
+#, python-format
+msgid "%(seconds)d s ago"
+msgstr "%(seconds)d sn önce"
 
 #, python-format
 msgid "%(section)s: not shown to you"
@@ -12201,9 +12221,15 @@ msgstr "konuşmalar"
 msgid "counted %(quantity)s"
 msgstr "sayılan %(quantity)s"
 
+msgid "critical above"
+msgstr "kritik üst"
+
 #, python-format
 msgid "critical above %(value)s"
 msgstr "%(value)s üstü kritik"
+
+msgid "critical below"
+msgstr "kritik alt"
 
 #, python-format
 msgid "critical below %(value)s"
@@ -12707,6 +12733,9 @@ msgstr "depo işlemleri"
 msgid "its fish have no such bound"
 msgstr "balıklarının böyle bir sınırı yok"
 
+msgid "just now"
+msgstr "az önce"
+
 msgid "kg"
 msgstr "kg"
 
@@ -12799,6 +12828,9 @@ msgstr "hayır"
 msgid "no cleaner fish held at %(site)s since %(date)s"
 msgstr "%(date)s tarihinden beri %(site)s lokasyonunda temizleyici balık yok"
 
+msgid "no data"
+msgstr "veri yok"
+
 #, python-format
 msgid "no escape without a filed notice since %(date)s"
 msgstr "%(date)s tarihinden beri bildirimi yapılmamış kaçış yok"
@@ -12813,6 +12845,9 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
 #, python-format
 msgid "no harvest is planned to %(facility)s from this week on"
 msgstr "bu haftadan itibaren %(facility)s için planlanmış hasat yok"
+
+msgid "no limit set for this value"
+msgstr "bu değer için sınır tanımlı değil"
 
 #, python-format
 msgid "no listed disease without a filed notice since %(date)s"
@@ -12869,6 +12904,9 @@ msgstr "hiçbir pH'de ulaşılmaz"
 
 msgid "not reached in the chart's range (4 to 12.5)"
 msgstr "çizelgenin aralığında ulaşılmaz (4 ile 12,5)"
+
+msgid "old"
+msgstr "eski"
 
 msgid "only a site of food fish or broodstock on land reports it"
 msgstr "yalnızca karadaki besi balığı veya damızlık lokasyonu bunu raporlar"
@@ -13256,9 +13294,15 @@ msgstr "%(name)s tarafından iptal edildi: %(reason)s"
 msgid "voided: %(reason)s"
 msgstr "iptal edildi: %(reason)s"
 
+msgid "warning above"
+msgstr "uyarı üst"
+
 #, python-format
 msgid "warning above %(value)s"
 msgstr "%(value)s üstü uyarı"
+
+msgid "warning below"
+msgstr "uyarı alt"
 
 #, python-format
 msgid "warning below %(value)s"

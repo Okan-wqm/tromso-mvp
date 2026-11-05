@@ -12,20 +12,23 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth.decorators import permission_required
+from django.db import transaction
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext, pgettext
+from django.views.decorators.http import require_POST
 
-from core import navigation
+from core import audit, navigation
 from core.crud import render_page
 from farm.models import ProductionDepartment, Site, System, Tank
 from farm.stock.views import VIEW
 
 from . import read
 from .cards import resolve
-from .models import CardWidth, MonitorBoard
+from .models import CardTemplate, CardWidth, MonitorBoard
 
 POLL = 'monitoring:cards'
 SESSION_DAY = 'monitoring_wall_day'
@@ -137,3 +140,32 @@ def cards(request):
         return _unavailable()
     html = render_to_string('monitoring/_grid.html', {**grid, 'wall': params.wall})
     return HttpResponse(html, headers=headers)
+
+
+# ---- Reference data › Card templates --------------------------------------------------------------------------------
+def _copy_name(source):
+    """'<name> (copy)', or '(copy 2)', '(copy 3)' … while the name is taken by a live template (any case)."""
+    base = source.shown_name
+    names = {name.lower() for name in CardTemplate.objects.values_list('name', flat=True)}
+    candidate, number = _('%(name)s (copy)') % {'name': base}, 2
+    while candidate.lower() in names:
+        candidate = _('%(name)s (copy %(number)d)') % {'name': base, 'number': number}
+        number += 1
+    return candidate
+
+
+@require_POST
+@permission_required('monitoring.add_cardtemplate', raise_exception=True)
+def copy_template(request, pk):
+    """A copy of a template (the way to change a built-in): its description, layout and flip target, a name of its
+    own; logged as a new record, then its form opens."""
+    from .resources import CardTemplateResource
+    source = get_object_or_404(CardTemplate, pk=pk)
+    with transaction.atomic():
+        copy = CardTemplate.objects.create(
+            name=_copy_name(source), description=source.description, layout=source.layout,
+            schema_version=source.schema_version, expanded=source.expanded, created_by=request.user,
+            updated_by=request.user)
+        audit.record_create(request.user, copy, CardTemplateResource.recorded(copy),
+                            entity_type=CardTemplateResource.entity_type())
+    return redirect('monitoring:cardtemplate_edit', pk=copy.pk)

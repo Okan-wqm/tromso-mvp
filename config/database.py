@@ -36,8 +36,14 @@ VIEWER = Viewer(
         'water_sampling_points': _('Where a water sample is taken: a named place on one unit, one system’s loop or one '
                                    'piece of equipment, of a kind that says whether it sees the stream in, the water '
                                    'within or the stream out.'),
-        'monitor_boards': _('The named wall screens of Monitoring: a name, how its cards are drawn by default and how often its screens ask.'),
-        'monitor_board_units': _('The cards of each monitoring board: a unit and, when it differs from the board, how its card is drawn.'),
+        'monitor_boards': _('The named wall screens of Monitoring: a name, the template its cards are drawn with by default, '
+                            'how wide its cards are and how often its screens ask.'),
+        'monitor_board_units': _('The cards of each monitoring board: a unit and, when it differs from the board, the '
+                                 'template its card is drawn with.'),
+        'monitor_card_templates': _('The monitoring card templates: a name, the widgets of the card as a layout and the '
+                                    'template its flip link shows. Three are built in and never change.'),
+        'monitor_card_assignments': _('Which template a unit’s card gets: a rule for one unit, system, system type, species '
+                                      'or kind of unit, or the one rule for every unit.'),
         'treatment_units': _('Which units each treatment was given in.'),
         'health_event_units': _('Which units each health event concerns; none for the whole site.'),
         'document_species': _('Which species each library document is about.'),

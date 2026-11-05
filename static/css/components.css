@@ -548,6 +548,7 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .row-sub { display: block; color: var(--muted); font-size: .8125rem; }
 .row-line { display: block; }
 .row-actions { width: 1%; text-align: right; white-space: nowrap; }
+.row-actions form { display: inline; }                  /* a POST action beside the links (a template's Copy) */
 
 /* Delete confirmation: what else the delete touches (core.softdelete) */
 .notice-error { background: #F7E6E6; color: var(--error); }

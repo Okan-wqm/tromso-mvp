@@ -754,6 +754,19 @@ tone (no `<meter>`: browser colours, three cut points); without a limit it says 
 (17, 21 or 28 rem, 15 % more on a wall). The old per-section partials are gone: the built-ins Simple and Detailed draw what
 they drew, value for value (`test_golden`).
 
+**Setup › Reference data › Card templates** (`/card-templates/`) and **Card template rules** (`/card-template-rules/`), tabs on
+`core.crud` (`monitoring/resources.py`). A template's form has a General tab (name, description, the template its flip link
+shows) and a Design tab (the layout, checked by the validator; each refusal names its widget, nothing is stored); the
+version guards two designers (the second is told). The list shows the built-ins first with a mark, and how many rules,
+boards and board cards use each; a built-in opens read-only (saving it is refused, as by the database) and **Copy** makes an
+editable one ("Simple (copy)", "(copy 2)" …), with the add right. The activity log says the layout as one English line per
+widget ("w1 value 3x2 at 0,0 binds oxygen_mg_l"). Deleting one lists the rules that go with it and the boards and templates
+that lose their pointer; restoring brings back the template only. A rule's form is a template and at most one of unit,
+system, system type, species, kind (none: every unit); the list is in the ladder's order, the global rule last, which
+cannot be deleted or narrowed. Role matrix areas **Card templates** and **Card template rules** (after Handling rules);
+reading Monitoring needs neither, and a reader of cards without them cannot open the designer. A template saved writes an
+activity-log entry, so every wall's change token moves.
+
 **The frame says more** (owner decision 4: a unit in maintenance, cleaning or quarantine rolls up as before): the unit's status
 when it is not active ("Maintenance"), the withdrawal as a note chip (it lasts weeks; not an alarm), a dashed line when the
 stored template cannot be drawn ("Template error: … this card is shown as Detailed"), and under the basis which template

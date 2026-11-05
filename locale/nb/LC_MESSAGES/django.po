@@ -768,6 +768,10 @@ msgid "%(minutes)s min"
 msgstr "%(minutes)s min"
 
 #, python-format
+msgid "%(name)s (copy %(number)d)"
+msgstr "%(name)s (kopi %(number)d)"
+
+#, python-format
 msgid "%(name)s (copy)"
 msgstr "%(name)s (kopi)"
 
@@ -1381,6 +1385,9 @@ msgstr ""
 "Et panel er en navngitt veggskjerm: enhetene den viser og hvordan hvert kort tegnes. Alle som kan"
 " lese Overvåking kan åpne det."
 
+msgid "A built-in template cannot be changed; copy it to make one of your own."
+msgstr "En innebygd mal kan ikke endres; kopier den for å lage din egen."
+
 msgid "A built-in template is never deleted; copy it to make one of your own."
 msgstr "En innebygd mal slettes aldri; kopier den for å lage din egen."
 
@@ -1390,6 +1397,13 @@ msgstr "En kapasitet trenger sin enhet, og en enhet sin kapasitet."
 #, python-format
 msgid "A card holds at most %(max)d widgets."
 msgstr "Et kort har høyst %(max)d elementer."
+
+msgid ""
+"A card template places widgets on a monitoring card; the card’s frame (the unit, its state and "
+"why) is always shown."
+msgstr ""
+"En kortmal plasserer elementer på et overvåkingskort; kortets ramme (enheten, tilstanden og "
+"hvorfor) vises alltid."
 
 msgid "A channel needs an owner: make another member an owner first."
 msgstr "En kanal trenger en eier: gjør først et annet medlem til eier."
@@ -1712,6 +1726,13 @@ msgstr ""
 #, python-format
 msgid "A round takes at most %(rows)d rows."
 msgstr "En runde tar høyst %(rows)d rader."
+
+msgid ""
+"A rule gives a template to a unit, a system, a type of system, a species or a kind of unit; the "
+"most specific rule wins."
+msgstr ""
+"En regel gir en mal til en enhet, et system, en systemtype, en art eller en type enhet; den mest "
+"spesifikke regelen vinner."
 
 msgid "A rule is for one unit, system, system type, species or kind, or for every unit."
 msgstr ""
@@ -2939,6 +2960,9 @@ msgstr "Luftblåser"
 msgid "Board"
 msgstr "Panel"
 
+msgid "Boards"
+msgstr "Paneler"
+
 msgid "Book"
 msgstr "Beholdning"
 
@@ -3150,6 +3174,12 @@ msgstr ""
 msgid "Card"
 msgstr "Kort"
 
+msgid "Card template rules"
+msgstr "Kortmalregler"
+
+msgid "Card templates"
+msgstr "Kortmaler"
+
 msgid "Card width"
 msgstr "Kortbredde"
 
@@ -3309,6 +3339,15 @@ msgstr ""
 
 msgid "Choose at least one."
 msgstr "Velg minst én."
+
+msgid ""
+"Choose one of unit, system, system type, species or kind, or none for every unit. The most "
+"specific rule wins: a unit’s own, then its system’s, its system type’s, its species’, its kind’s;"
+" a board’s card and default come before and after the rules."
+msgstr ""
+"Velg én av enhet, system, systemtype, art eller type, eller ingen for alle enheter. Den mest "
+"spesifikke regelen vinner: enhetens egen, så systemets, systemtypens, artens, typens; et korts "
+"valg på et panel kommer før reglene og panelets standard etter."
 
 msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
 msgstr "Velg ett sted: en hel lokalitet, en produksjonsavdeling, et system, en enhet eller utstyr."
@@ -3593,6 +3632,10 @@ msgstr "Kopier"
 #, python-format
 msgid "Copy %(experiment)s"
 msgstr "Kopier %(experiment)s"
+
+#, python-format
+msgid "Copy %(name)s"
+msgstr "Kopier %(name)s"
 
 msgid "Copy as"
 msgstr "Kopier som"
@@ -5438,6 +5481,9 @@ msgstr ""
 msgid "Hatchery"
 msgstr "Klekkeri"
 
+msgid "Hatchery and nursery systems are reached here."
+msgstr "Klekkeri- og yngelsystemer nås her."
+
 #. Translators: the delivery head of a pump, the height it lifts water to.
 msgid "Head"
 msgstr "Løftehøyde"
@@ -6713,6 +6759,9 @@ msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
+
+msgid "No flip link"
+msgstr "Ingen byttelenke"
 
 msgid "No group yet. Use “Add group” to add a row."
 msgstr "Ingen gruppe ennå. Bruk «Legg til gruppe» for å legge til en rad."
@@ -8467,6 +8516,9 @@ msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
 msgid "Rule"
 msgstr "Regel"
 
+msgid "Rules"
+msgstr "Regler"
+
 msgid "Running"
 msgstr "Pågår"
 
@@ -8778,6 +8830,9 @@ msgstr "Søk etter lokalitet, slakteri eller kvittering"
 msgid "Search by species or source"
 msgstr "Søk etter art eller kilde"
 
+msgid "Search by template, unit, system or species"
+msgstr "Søk etter mal, enhet, system eller art"
+
 msgid "Search by unit, batch, facility or vessel"
 msgstr "Søk på enhet, fiskegruppe, slakteri eller fartøy"
 
@@ -9022,6 +9077,9 @@ msgid ""
 msgstr ""
 "Vises i panelvelgeren på Overvåking-siden. Alle som kan lese Overvåking kan velge et panel: et "
 "panel er oppsett, ikke en registrering."
+
+msgid "Shown in the template choices of boards and rules."
+msgstr "Vises i malvalgene til paneler og regler."
 
 msgid "Shrimp"
 msgstr "Reke"
@@ -9784,11 +9842,11 @@ msgid "The cards cannot be read just now. The screen keeps its last picture; try
 msgstr "Kortene kan ikke leses akkurat nå. Skjermen beholder det siste bildet; prøv igjen om litt."
 
 msgid ""
-"The cards of each monitoring board: a unit and, when it differs from the board, how its card is "
-"drawn."
+"The cards of each monitoring board: a unit and, when it differs from the board, the template its "
+"card is drawn with."
 msgstr ""
-"Kortene på hvert overvåkingspanel: en enhet og, når det avviker fra panelet, hvordan kortet "
-"tegnes."
+"Kortene på hvert overvåkingspanel: en enhet og, når den avviker fra panelet, malen kortet tegnes "
+"med."
 
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Diagrammet kan ikke tegnes: dette punktet har ingen ferske verdier for"
@@ -10062,6 +10120,9 @@ msgstr "Fisken i %(tank)s er ikke veid på dag 0: grunnlaget for fôrutnyttelsen
 msgid "The global rule is never deleted: every unit must get a template. Change its template instead."
 msgstr "Den globale regelen slettes aldri: hver enhet må få en mal. Endre malen i stedet."
 
+msgid "The global rule stays for every unit: change its template only."
+msgstr "Den globale regelen gjelder fortsatt alle enheter: endre bare malen."
+
 #, python-format
 msgid "The group name %(name)s is too long."
 msgstr "Gruppenavnet %(name)s er for langt."
@@ -10215,6 +10276,13 @@ msgid "The middle point"
 msgstr "Midtpunktet"
 
 msgid ""
+"The monitoring card templates: a name, the widgets of the card as a layout and the template its "
+"flip link shows. Three are built in and never change."
+msgstr ""
+"Malene for overvåkingskort: et navn, kortets elementer som et oppsett og malen byttelenken viser."
+" Tre er innebygd og endres aldri."
+
+msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
 "licence’s."
 msgstr "Mest fisk per m³ vann enheten kan holde: artens velferdsgrense eller konsesjonens."
@@ -10226,11 +10294,11 @@ msgid "The name of the copy is too long."
 msgstr "Navnet på kopien er for langt."
 
 msgid ""
-"The named wall screens of Monitoring: a name, how its cards are drawn by default and how often "
-"its screens ask."
+"The named wall screens of Monitoring: a name, the template its cards are drawn with by default, "
+"how wide its cards are and how often its screens ask."
 msgstr ""
-"De navngitte veggskjermene i Overvåking: et navn, hvordan kortene tegnes som standard og hvor "
-"ofte skjermene spør."
+"Overvåkingens navngitte veggskjermer: et navn, malen kortene tegnes med som standard, hvor brede "
+"kortene er og hvor ofte skjermene spør."
 
 #, python-format
 msgid "The new tank comes in after the day the placement began (%(day)s)."
@@ -10655,6 +10723,9 @@ msgstr "Teamet har ingen leder."
 
 msgid "The team needs a lead."
 msgstr "Teamet trenger en leder."
+
+msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
+msgstr "Malen et korts byttelenke viser (Enkel bytter til Detaljert). Tomt: ingen byttelenke."
 
 msgid ""
 "The template of a card that neither its row nor a rule names (Reference data › Card template "
@@ -11776,6 +11847,13 @@ msgstr ""
 "Hvor en vannprøve tas: et navngitt sted på én enhet, ett systems kretsløp eller ett utstyr, av en"
 " type som sier om det ser strømmen inn, vannet inni eller strømmen ut."
 
+msgid ""
+"Where each widget sits on the card’s 12 columns. The frame of a card (the unit, its state and "
+"why, the withdrawal) is always shown and is not part of the layout."
+msgstr ""
+"Hvor hvert element står på kortets 12 kolonner. Kortets ramme (enheten, tilstanden og hvorfor, "
+"tilbakeholdelsen) vises alltid og er ikke en del av oppsettet."
+
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Hvor i dokumentet, f.eks. 4 eller 12–13."
 
@@ -11843,6 +11921,13 @@ msgstr "Hvilke arter hvert dokument i biblioteket handler om."
 
 msgid "Which species each slaughter facility takes."
 msgstr "Hvilke arter hvert slakteri tar imot."
+
+msgid ""
+"Which template a unit’s card gets: a rule for one unit, system, system type, species or kind of "
+"unit, or the one rule for every unit."
+msgstr ""
+"Hvilken mal en enhets kort får: en regel for én enhet, ett system, én systemtype, én art eller én"
+" type enhet, eller den ene regelen for alle enheter."
 
 msgid "Which units each health event concerns; none for the whole site."
 msgstr "Hvilke enheter hver helsehendelse gjelder; ingen for hele lokaliteten."
@@ -12187,7 +12272,7 @@ msgid "channel"
 msgstr "kanal"
 
 msgid "chosen for this card on the board"
-msgstr "valgt for dette kortet på tavlen"
+msgstr "valgt for dette kortet på panelet"
 
 msgid "chosen on this page"
 msgstr "valgt på denne siden"
@@ -13171,7 +13256,7 @@ msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"
 
 msgid "the board’s default"
-msgstr "tavlens standard"
+msgstr "panelets standard"
 
 msgid "the options must be a set of named values."
 msgstr "valgene må være et sett navngitte verdier."

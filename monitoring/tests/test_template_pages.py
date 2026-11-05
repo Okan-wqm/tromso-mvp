@@ -152,7 +152,7 @@ class RulePagesTests(PagesCase):
         self.assertEqual((rule.template, rule.system, rule.system_type, rule.kind, rule.created_by),
                          (mine, None, None, None, self.designer))
         listing = self.client.get(RULES)
-        self.assertEqual([each.pk for each in listing.context['objects']][-1], rule.pk)       # the global rule ranks last
+        self.assertEqual([each.pk for each in listing.context['objects']], [rule.pk, builtin.GLOBAL_RULE])   # global last
         edit = reverse('monitoring:cardtemplateassignment_edit', args=[rule.pk])
         form = self.client.get(edit).context['form']
         data = {name: ('' if form[name].value() is None else form[name].value()) for name in form.fields}

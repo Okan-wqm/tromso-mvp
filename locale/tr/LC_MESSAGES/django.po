@@ -769,6 +769,10 @@ msgid "%(minutes)s min"
 msgstr "%(minutes)s dk"
 
 #, python-format
+msgid "%(name)s (copy %(number)d)"
+msgstr "%(name)s (kopya %(number)d)"
+
+#, python-format
 msgid "%(name)s (copy)"
 msgstr "%(name)s (kopya)"
 
@@ -1384,6 +1388,9 @@ msgstr ""
 "Pano, adı olan bir duvar ekranıdır: gösterdiği birimler ve her kartın nasıl çizildiği. İzleme'yi "
 "okuyabilen herkes açabilir."
 
+msgid "A built-in template cannot be changed; copy it to make one of your own."
+msgstr "Yerleşik bir şablon değiştirilemez; kendinize ait bir tane yapmak için kopyalayın."
+
 msgid "A built-in template is never deleted; copy it to make one of your own."
 msgstr "Yerleşik bir şablon asla silinmez; kendinize ait bir tane yapmak için kopyalayın."
 
@@ -1393,6 +1400,13 @@ msgstr "Kapasitenin birimi, birimin de kapasitesi olmalı."
 #, python-format
 msgid "A card holds at most %(max)d widgets."
 msgstr "Bir kartta en fazla %(max)d bileşen olabilir."
+
+msgid ""
+"A card template places widgets on a monitoring card; the card’s frame (the unit, its state and "
+"why) is always shown."
+msgstr ""
+"Bir kart şablonu, izleme kartına bileşenler yerleştirir; kartın çerçevesi (birim, durumu ve "
+"nedeni) her zaman gösterilir."
 
 msgid "A channel needs an owner: make another member an owner first."
 msgstr "Bir kanalın sahibi olmalı: önce başka bir üyeyi sahip yapın."
@@ -1714,6 +1728,13 @@ msgstr ""
 #, python-format
 msgid "A round takes at most %(rows)d rows."
 msgstr "Bir tur en çok %(rows)d satır alır."
+
+msgid ""
+"A rule gives a template to a unit, a system, a type of system, a species or a kind of unit; the "
+"most specific rule wins."
+msgstr ""
+"Bir kural; bir birime, sisteme, sistem türüne, türe veya birim çeşidine şablon verir; en özgül "
+"kural kazanır."
 
 msgid "A rule is for one unit, system, system type, species or kind, or for every unit."
 msgstr ""
@@ -2938,6 +2959,9 @@ msgstr "Hava üfleyici (blower)"
 msgid "Board"
 msgstr "Pano"
 
+msgid "Boards"
+msgstr "Panolar"
+
 msgid "Book"
 msgstr "Kayıtta"
 
@@ -3152,6 +3176,12 @@ msgstr ""
 msgid "Card"
 msgstr "Kart"
 
+msgid "Card template rules"
+msgstr "Kart şablonu kuralları"
+
+msgid "Card templates"
+msgstr "Kart şablonları"
+
 msgid "Card width"
 msgstr "Kart genişliği"
 
@@ -3311,6 +3341,15 @@ msgstr ""
 
 msgid "Choose at least one."
 msgstr "En az birini seçin."
+
+msgid ""
+"Choose one of unit, system, system type, species or kind, or none for every unit. The most "
+"specific rule wins: a unit’s own, then its system’s, its system type’s, its species’, its kind’s;"
+" a board’s card and default come before and after the rules."
+msgstr ""
+"Birim, sistem, sistem türü, tür veya birim çeşidinden birini seçin ya da her birim için hiçbirini"
+" seçmeyin. En özgül kural kazanır: önce birimin kendi kuralı, sonra sisteminin, sistem türünün, "
+"türünün, birim çeşidinin; bir panonun kartı kurallardan önce, varsayılanı sonra gelir."
 
 msgid "Choose one place: a whole site, a production department, a system, a unit or equipment."
 msgstr "Tek bir yer seçin: bütün bir saha, bir üretim departmanı, bir sistem, bir birim veya ekipman."
@@ -3599,6 +3638,10 @@ msgstr "Kopyala"
 #, python-format
 msgid "Copy %(experiment)s"
 msgstr "%(experiment)s deneyini kopyala"
+
+#, python-format
+msgid "Copy %(name)s"
+msgstr "%(name)s kopyala"
 
 msgid "Copy as"
 msgstr "Şu olarak kopyala"
@@ -5450,6 +5493,9 @@ msgstr ""
 msgid "Hatchery"
 msgstr "Kuluçkahane"
 
+msgid "Hatchery and nursery systems are reached here."
+msgstr "Kuluçkahane ve yavru yetiştirme sistemlerine buradan ulaşılır."
+
 #. Translators: the delivery head of a pump, the height it lifts water to.
 msgid "Head"
 msgstr "Basma yüksekliği"
@@ -6721,6 +6767,9 @@ msgstr "%(date)s tarihinde %(unit)s içinde tartılacak %(batch)s balığı yok.
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
+
+msgid "No flip link"
+msgstr "Geçiş bağlantısı yok"
 
 msgid "No group yet. Use “Add group” to add a row."
 msgstr "Henüz grup yok. Satır eklemek için “Grup ekle”yi kullanın."
@@ -8472,6 +8521,9 @@ msgstr "Satır %(first)s–%(last)s / %(total)s eşleşiyor"
 msgid "Rule"
 msgstr "Kural"
 
+msgid "Rules"
+msgstr "Kurallar"
+
 msgid "Running"
 msgstr "Sürüyor"
 
@@ -8783,6 +8835,9 @@ msgstr "Saha, kesimhane veya makbuza göre ara"
 msgid "Search by species or source"
 msgstr "Balık türüne veya kaynağa göre ara"
 
+msgid "Search by template, unit, system or species"
+msgstr "Şablon, birim, sistem veya türe göre ara"
+
 msgid "Search by unit, batch, facility or vessel"
 msgstr "Birim, parti, kesimhane veya tekneye göre ara"
 
@@ -9027,6 +9082,9 @@ msgid ""
 msgstr ""
 "İzleme sayfasının pano seçicisinde gösterilir. İzleme'yi okuyabilen herkes bir pano seçebilir: "
 "pano bir kayıt değil, bir yapılandırmadır."
+
+msgid "Shown in the template choices of boards and rules."
+msgstr "Panoların ve kuralların şablon seçeneklerinde gösterilir."
 
 msgid "Shrimp"
 msgstr "Karides"
@@ -9794,9 +9852,9 @@ msgid "The cards cannot be read just now. The screen keeps its last picture; try
 msgstr "Kartlar şu anda okunamıyor. Ekran son görüntüsünü koruyor; birazdan yeniden deneyin."
 
 msgid ""
-"The cards of each monitoring board: a unit and, when it differs from the board, how its card is "
-"drawn."
-msgstr "Her izleme panosunun kartları: bir birim ve panodan farklıysa kartının nasıl çizildiği."
+"The cards of each monitoring board: a unit and, when it differs from the board, the template its "
+"card is drawn with."
+msgstr "Her izleme panosunun kartları: bir birim ve panodan farklıysa kartının çizildiği şablon."
 
 msgid "The chart cannot be drawn: this point has no recent value of"
 msgstr "Grafik çizilemiyor: bu noktanın güncel bir değeri yok:"
@@ -10070,6 +10128,9 @@ msgstr "%(tank)s balıkları 0. günde tartılmamış: yem dönüşümlerinin ba
 msgid "The global rule is never deleted: every unit must get a template. Change its template instead."
 msgstr "Genel kural asla silinmez: her birimin bir şablonu olmalı. Bunun yerine şablonunu değiştirin."
 
+msgid "The global rule stays for every unit: change its template only."
+msgstr "Genel kural her birim için kalır: yalnızca şablonunu değiştirin."
+
 #, python-format
 msgid "The group name %(name)s is too long."
 msgstr "%(name)s grup adı çok uzun."
@@ -10221,6 +10282,13 @@ msgid "The middle point"
 msgstr "Orta nokta"
 
 msgid ""
+"The monitoring card templates: a name, the widgets of the card as a layout and the template its "
+"flip link shows. Three are built in and never change."
+msgstr ""
+"İzleme kartı şablonları: bir ad, bir yerleşim olarak kartın bileşenleri ve geçiş bağlantısının "
+"gösterdiği şablon. Üçü yerleşiktir ve hiç değişmez."
+
+msgid ""
 "The most fish per m³ of water the unit may hold: the welfare limit of the species or the "
 "licence’s."
 msgstr "Birimin m³ su başına tutabileceği en fazla balık: türün refah sınırı veya ruhsattaki sınır."
@@ -10232,11 +10300,11 @@ msgid "The name of the copy is too long."
 msgstr "Kopyanın adı çok uzun."
 
 msgid ""
-"The named wall screens of Monitoring: a name, how its cards are drawn by default and how often "
-"its screens ask."
+"The named wall screens of Monitoring: a name, the template its cards are drawn with by default, "
+"how wide its cards are and how often its screens ask."
 msgstr ""
-"İzleme'nin adlı duvar ekranları: bir ad, kartlarının varsayılan çizimi ve ekranlarının ne "
-"sıklıkla sorduğu."
+"İzlemenin adlandırılmış duvar ekranları: bir ad, kartlarının varsayılan olarak çizildiği şablon, "
+"kartlarının genişliği ve ekranlarının ne sıklıkla sorduğu."
 
 #, python-format
 msgid "The new tank comes in after the day the placement began (%(day)s)."
@@ -10661,6 +10729,11 @@ msgstr "Ekibin yürütücüsü yok."
 
 msgid "The team needs a lead."
 msgstr "Ekibin bir yürütücüsü olmalı."
+
+msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
+msgstr ""
+"Bir kartın geçiş bağlantısının gösterdiği şablon (Basit, Ayrıntılı'ya geçer). Boş: geçiş "
+"bağlantısı yok."
 
 msgid ""
 "The template of a card that neither its row nor a rule names (Reference data › Card template "
@@ -11786,6 +11859,13 @@ msgstr ""
 " adlandırılmış bir yer; akımın girişini, içindeki suyu veya çıkan akımı görüp görmediğini "
 "söyleyen bir türde."
 
+msgid ""
+"Where each widget sits on the card’s 12 columns. The frame of a card (the unit, its state and "
+"why, the withdrawal) is always shown and is not part of the layout."
+msgstr ""
+"Her bileşenin kartın 12 sütunundaki yeri. Kartın çerçevesi (birim, durumu ve nedeni, bekleme "
+"süresi) her zaman gösterilir ve yerleşimin parçası değildir."
+
 msgid "Where in the document, e.g. 4 or 12–13."
 msgstr "Belgenin neresinde, örn. 4 ya da 12–13."
 
@@ -11851,6 +11931,13 @@ msgstr "Her kütüphane belgesinin hangi balık türleriyle ilgili olduğu."
 
 msgid "Which species each slaughter facility takes."
 msgstr "Her kesimhanenin hangi türleri aldığı."
+
+msgid ""
+"Which template a unit’s card gets: a rule for one unit, system, system type, species or kind of "
+"unit, or the one rule for every unit."
+msgstr ""
+"Bir birimin kartının aldığı şablon: tek bir birim, sistem, sistem türü, tür veya birim çeşidi "
+"için bir kural ya da her birim için tek kural."
 
 msgid "Which units each health event concerns; none for the whole site."
 msgstr "Her sağlık olayının ilgilendirdiği birimler; tüm saha için hiçbiri."

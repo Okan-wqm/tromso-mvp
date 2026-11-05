@@ -1,0 +1,27 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% comment %} Setup › Reference data › Card template rules (monitoring.resources.CardTemplateAssignmentResource): which unit's card
+   gets which template, in the ladder's order (a unit's own rule first, the global rule last). {% endcomment %}
+{% block search_placeholder %}{% trans "Search by template, unit, system or species" %}{% endblock %}
+{% block empty_text %}{% trans "A rule gives a template to a unit, a system, a type of system, a species or a kind of unit; the most specific rule wins." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "For" %}</th><th scope="col">{% trans "Template" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+    </thead>
+    <tbody>
+      {% for rule in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'monitoring:cardtemplateassignment_edit' rule.pk %}" data-modal>{{ rule.scope_label }}</a>{% else %}<span class="row-title">{{ rule.scope_label }}</span>{% endif %}</td>
+        <td>{{ rule.template.shown_name }}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'monitoring:cardtemplateassignment_edit' rule.pk %}" data-modal title="{% blocktrans with name=rule.scope_label %}Edit {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% blocktrans with name=rule.scope_label %}Edit {{ name }}{% endblocktrans %}</span></a>{% endif %}
+          {% if can_delete and not rule.is_global %}<a class="icon-button icon-button-danger" href="{% url 'monitoring:cardtemplateassignment_delete' rule.pk %}" data-modal title="{% blocktrans with name=rule.scope_label %}Delete {{ name }}{% endblocktrans %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% blocktrans with name=rule.scope_label %}Delete {{ name }}{% endblocktrans %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

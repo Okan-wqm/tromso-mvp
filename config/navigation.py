@@ -55,13 +55,18 @@ WORKSPACES = [
             ]),
             # The reference lists the production side picks from: species, feeds, the water limits per species,
             # the medicines with their withdrawal and the fast before fish are handled (harvest, transport,
-            # grading, treatment); chemicals as their tab arrives.
+            # grading, treatment), the monitoring cards' templates and their rules; chemicals as their tab arrives.
             Group(_('Reference data'), [
                 Entry(_('Species'), 'farm:species_list', 'fish', 'farm.view_species'),
                 Entry(_('Feeds'), 'farm:feed_list', 'wheat', 'farm.view_feed'),
                 Entry(_('Water limits'), 'farm:waterlimit_list', 'gauge', 'farm.view_waterlimit'),
                 Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine'),
                 Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule'),
+                # What a monitoring card holds and which unit's card gets which (monitoring/cards/).
+                Entry(_('Card templates'), 'monitoring:cardtemplate_list', 'layout-dashboard',
+                      'monitoring.view_cardtemplate'),
+                Entry(_('Card template rules'), 'monitoring:cardtemplateassignment_list', 'list-checks',
+                      'monitoring.view_cardtemplateassignment'),
             ]),
             # Harvest and logistics: the outside facilities harvested fish go to; wellboats join it when they get
             # records of their own.

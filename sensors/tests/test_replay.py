@@ -1,8 +1,9 @@
-"""The Deffeyes replay (owner amendment A6): `sensors.read.deffeyes_frames(target, start, end, step)`, the unit's (or
-system's) water at each step of a range, every input in the A1 order at that moment (a fresh sensor value at or before
-it, carried no longer than the channel's freshness; else a fresh sample; else missing, never invented), the point on the
-diagram worked out by farm/water/deffeyes.py, one query of the readings per tier; and its JSON endpoint with the static
-diagram once (its box holding every frame) and at most 2000 frames on the step ladder."""
+"""The Deffeyes replay (owner amendments A6, A7, A8): `sensors.read.deffeyes_frames(target, start, end, step, cursor)`,
+the unit's (or system's) water at each step of a range, a page of at most PAGE frames at a time: every input in the A1
+order at that moment (a fresh sensor value at or before it, carried no longer than the channel's freshness; else a fresh
+sample; else missing, never invented), and the whole diagram of that moment's water worked out by farm/water/deffeyes.py
+(every frame its own geometry, frames whose diagram reads exactly the same inputs sharing one), one query of the readings
+per tier and page; and its JSON endpoint: the page's figures once each, the frames as columns, the cursor of the next page."""
 import json
 from datetime import datetime, timedelta, timezone as tz
 from decimal import Decimal
@@ -15,7 +16,7 @@ from django.urls import reverse
 from farm.models import System
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
-from farm.water import chemistry, deffeyes, services as water_services
+from farm.water import calculation, chemistry, deffeyes, services as water_services
 
 from sensors import bindings, read
 from sensors.models import Channel
@@ -30,6 +31,10 @@ def insert(channel_no, rows):
         for at, value in rows:                                        # one row per statement
             cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)',
                            [channel_no, at, value])
+
+
+def readings_queries(queries):
+    return [query for query in queries if 'sensors_reading' in query['sql'] or 'sensors_rollup' in query['sql']]
 
 
 class ReplayCase(SensorsCase):
@@ -52,6 +57,12 @@ class ReplayCase(SensorsCase):
         insert(self.ph.channel_no, [(START + timedelta(minutes=m), 7.0 + m / 1000) for m in range(0, minutes, 5)])
         insert(self.channel.channel_no, [(START + timedelta(minutes=m), 10.0 + m / 100) for m in range(minutes)])
 
+    def figure_at(self, frames, frame):
+        """The figure of the unit's own chart at the frame's moment (calculation.chart_of with `at`), in the page's box."""
+        analysis = calculation.chart_of(frames.target, at=frame.at).calculation.analysis
+        extent = [(each.point.dic, each.point.alkalinity_meq) for each in frames.frames if each.point is not None]
+        return deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent))
+
 
 class FrameTests(ReplayCase):
     def test_each_frame_holds_the_value_at_its_moment_and_the_diagrams_point(self):
@@ -72,6 +83,36 @@ class FrameTests(ReplayCase):
             self.assertAlmostEqual(frame.point.co2_mg_l, analysis.co2_mg_l, places=9)
             self.assertEqual(frame.missing, ())
 
+    def test_every_frame_carries_the_whole_diagram_of_its_moment(self):
+        # A8: the isolines, the regions, the borders, the Ω lines, the names and the notes are worked out from the water
+        # of that moment, by farm/water/deffeyes.py: the unit's own chart at that moment, in the page's box.
+        self.steady()
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=5), START + timedelta(minutes=55),
+                                      timedelta(minutes=5))
+        for frame in frames.frames:
+            with self.subTest(at=frame.at):
+                self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
+        # The temperature moves every minute: no two frames read the same water, so each has its own figure.
+        self.assertEqual(len(frames.figures), 10)
+        self.assertEqual(len({frame.figure for frame in frames.frames}), 10)
+        boxes = {tuple(figure['box']) for figure in frames.figures}
+        self.assertEqual(len(boxes), 1)                                     # one box a page: the points move, not the axes
+
+    def test_frames_reading_exactly_the_same_water_share_one_figure(self):
+        insert(self.ph.channel_no, [(START + timedelta(minutes=m), 7.2) for m in range(0, 60, 5)])
+        insert(self.channel.channel_no, [(START + timedelta(minutes=m), 11.0) for m in range(60)])
+        oxygen = make_channel(self.device, 'oxygen_mg_l')
+        bindings.move(self.user, oxygen, point=self.mid1, at=START - timedelta(days=1))
+        insert(oxygen.channel_no, [(START + timedelta(minutes=m), 9.0 + m / 10) for m in range(60)])
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=5), START + timedelta(minutes=55),
+                                      timedelta(minutes=5))
+        # The oxygen moves, but the diagram never reads it: one figure, and it is each frame's own.
+        self.assertEqual(len({frame.inputs['oxygen_mg_l'].value for frame in frames.frames}), 10)
+        self.assertEqual(len(frames.figures), 1)
+        for frame in frames.frames:
+            self.assertEqual(frame.figure, 0)
+            self.assertEqual(frames.figures[0], self.figure_at(frames, frame))
+
     def test_mixed_origins_are_named(self):
         self.steady()
         frame = read.deffeyes_frames(self.t1, START + timedelta(minutes=30), START + timedelta(minutes=31),
@@ -88,8 +129,19 @@ class FrameTests(ReplayCase):
         self.assertTrue(late)
         for frame in late:
             self.assertIsNone(frame.point)
+            self.assertIsNone(frame.figure)
             self.assertIn('temperature_c', frame.missing)                   # fresh 180 s only
         self.assertIsNotNone(frames[0].point)
+
+    def test_a_water_that_cannot_be_has_no_diagram_and_says_why(self):
+        insert(self.ph.channel_no, [(START, 12.4)])                         # pH 12.4 with 100 mg/L alkalinity
+        insert(self.channel.channel_no, [(START, 10.0)])
+        frame = read.deffeyes_frames(self.t1, START, START + timedelta(minutes=1), timedelta(minutes=1)).frames[0]
+        self.assertEqual(frame.missing, ())
+        self.assertIsNone(frame.point)
+        self.assertIsNone(frame.figure)
+        self.assertEqual(frame.impossible, deffeyes.why_impossible(10.0, 0.0, 12.4, 100.0))
+        self.assertTrue(frame.impossible)
 
     def test_a_moved_sensor_counts_for_the_tank_it_was_in(self):
         self.steady()
@@ -102,13 +154,6 @@ class FrameTests(ReplayCase):
                                       timedelta(minutes=10)).frames
         self.assertEqual([frame.inputs.get('ph') is not None for frame in second], [False, True])
 
-    def test_one_query_of_the_readings_per_tier(self):
-        self.steady()
-        with CaptureQueriesContext(connection) as queries:
-            read.deffeyes_frames(self.t1, START, START + timedelta(hours=1), timedelta(minutes=1))
-        readings = [query for query in queries if 'sensors_reading' in query['sql'] or 'sensors_rollup' in query['sql']]
-        self.assertEqual(len(readings), 1)
-
     def test_the_hour_tier_takes_the_last_value_of_each_hour_ended_before_the_frame(self):
         insert(self.ph.channel_no, [(START + timedelta(minutes=m), 7.0 + m / 1000) for m in range(0, 180, 5)])
         Channel.objects.filter(pk=self.ph.pk).update(heartbeat_s=3600)       # fresh for three hours
@@ -120,29 +165,96 @@ class FrameTests(ReplayCase):
         first = frames.frames[0]                                              # at 01:00: the hour 00:00-01:00 ended
         self.assertEqual(first.inputs['ph'].value, 7.0 + 55 / 1000)
 
-    def test_the_step_is_snapped_to_the_ladder_and_the_frames_capped(self):
-        found = read.deffeyes_frames(self.t1, START, START + timedelta(days=30), timedelta(seconds=7))
-        self.assertLessEqual(len(found.frames), read.FRAMES_CAP)
-        self.assertIn(found.step, read.LADDER)
+
+class PageTests(ReplayCase):
+    def test_a_long_range_comes_in_pages_of_at_most_PAGE_frames(self):
+        # A7: the user's step is kept (on the ladder), never widened to fit a cap: 5 000 minutes at one minute are 5 000
+        # frames, in pages of 2 000, 2 000 and 1 000, each page's first frame at its cursor.
+        end = START + timedelta(minutes=5000)
+        cursor, sizes = 0, []
+        while cursor is not None:
+            page = read.deffeyes_frames(self.t1, START, end, timedelta(minutes=1), cursor=cursor)
+            self.assertEqual((page.total, page.cursor, page.step), (5000, cursor, timedelta(minutes=1)))
+            self.assertEqual(page.frames[0].at, START + cursor * timedelta(minutes=1))
+            sizes.append(len(page.frames))
+            cursor = page.next
+        self.assertEqual(read.PAGE, 2000)
+        self.assertEqual(sizes, [2000, 2000, 1000])
+
+    def test_the_step_is_snapped_to_the_ladder(self):
+        found = read.deffeyes_frames(self.t1, START, START + timedelta(hours=1), timedelta(seconds=7))
+        self.assertEqual(found.step, timedelta(seconds=15))
+        self.assertEqual(found.total, 240)
+
+    def test_a_cursor_outside_the_range_is_refused(self):
+        for cursor in (-1, 60):
+            with self.subTest(cursor=cursor), self.assertRaises(ValueError):
+                read.deffeyes_frames(self.t1, START, START + timedelta(hours=1), timedelta(minutes=1), cursor=cursor)
+
+    def test_pages_give_the_frames_one_range_gives(self):
+        # A page's first frames take the values from before the page (still fresh) exactly as one long page does.
+        self.steady()
+        start, end, step = START + timedelta(minutes=3), START + timedelta(minutes=58), timedelta(minutes=1)
+        whole = read.deffeyes_frames(self.t1, start, end, step)
+        paged, cursor = [], 0
+        while cursor is not None:
+            page = read.deffeyes_frames(self.t1, start, end, step, cursor=cursor, size=7)
+            paged.extend(page.frames)
+            cursor = page.next
+        strip = lambda frame: (frame.at, frame.inputs, frame.point, frame.missing, frame.impossible)  # noqa: E731
+        self.assertEqual([strip(frame) for frame in paged], [strip(frame) for frame in whole.frames])
+
+    def test_one_query_of_the_readings_per_tier_and_page(self):
+        self.steady()
+        for step, size in ((timedelta(minutes=1), 20), (timedelta(hours=1), 2000)):
+            with self.subTest(step=step), CaptureQueriesContext(connection) as queries:
+                read.deffeyes_frames(self.t1, START, START + timedelta(hours=3), step, cursor=1, size=size)
+            self.assertEqual(len(readings_queries(queries)), 1)
 
 
 class EndpointTests(ReplayCase):
-    def test_the_json_has_the_diagram_once_and_every_frame_inside_its_box(self):
-        self.steady()
+    def reader(self):
         user = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
         user.groups.add(role('Reader', 'view_reading', 'view_watermeasurement'))
         self.client.force_login(user)
-        response = self.client.get(reverse('sensors:deffeyes_frames'), {
-            'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300'})
+
+    def get(self, **params):
+        return self.client.get(reverse('sensors:deffeyes_frames'), {
+            'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300',
+            **params})
+
+    def test_a_page_has_each_figure_once_and_the_frames_as_columns(self):
+        self.steady()
+        self.reader()
+        response = self.get()
         self.assertEqual(response.status_code, 200)
         found = json.loads(response.content)
-        self.assertTrue(found['diagram'].startswith('<'))
-        self.assertEqual(len(found['frames']), 10)
-        box = found['box']
-        for frame in found['frames']:
-            self.assertLessEqual(frame['point']['dic'], box['dic'])
-            self.assertLessEqual(frame['point']['alkalinity_meq'], box['alkalinity'])
-            self.assertEqual(set(frame['inputs']), {'ph', 'temperature_c', 'alkalinity_mg_l', 'salinity_ppt'})
+        frames = read.deffeyes_frames(self.t1, START + timedelta(minutes=5), START + timedelta(minutes=55),
+                                      timedelta(minutes=5))
+        self.assertEqual((found['total'], found['cursor'], found['next'], found['step_s']), (10, 0, None, 300.0))
+        self.assertEqual(found['first'], frames.frames[0].at.isoformat())
+        self.assertEqual(found['figures'], frames.figures)
+        columns = found['frames']
+        self.assertEqual(columns['figure'], [frame.figure for frame in frames.frames])
+        self.assertEqual(columns['dic'], [frame.point.dic for frame in frames.frames])
+        self.assertEqual(columns['inputs']['ph']['value'], [frame.inputs['ph'].value for frame in frames.frames])
+        self.assertEqual(columns['inputs']['ph']['origin'], ['sensor'] * 10)
+        self.assertEqual(set(columns['inputs']), {'ph', 'temperature_c', 'alkalinity_mg_l', 'salinity_ppt'})
+        # The server's SVG of a frame is drawn from the figure the player gets.
+        figure = found['figures'][columns['figure'][3]]
+        self.assertEqual(deffeyes.render(figure), deffeyes.render(frames.figures[frames.frames[3].figure]))
+        self.assertNotIn('diagram', found)
+
+    def test_the_next_page_is_asked_by_its_cursor(self):
+        self.steady()
+        self.reader()
+        first = json.loads(self.get(step='60', start='2026-10-10T00:00', end='2026-10-11T12:00').content)
+        self.assertEqual((first['total'], first['next']), (2160, 2000))
+        second = json.loads(self.get(step='60', start='2026-10-10T00:00', end='2026-10-11T12:00',
+                                     cursor=str(first['next'])).content)
+        self.assertEqual((second['cursor'], second['next'], len(second['frames']['figure'])), (2000, None, 160))
+        self.assertEqual(self.get(cursor='2160').status_code, 400)
+        self.assertEqual(self.get(cursor='x').status_code, 400)
 
     def test_it_needs_both_rights(self):
         user = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')

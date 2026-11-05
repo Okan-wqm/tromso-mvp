@@ -1480,10 +1480,10 @@ msgstr "Bir kanalın sahibi olmalı: önce başka bir üyeyi sahip yapın."
 
 msgid ""
 "A channel that stores a value when it moves counts the values it did not store at the row that "
-"closes their run: at most one heartbeat late."
+"closes their run: less than two heartbeats late."
 msgstr ""
 "Değer değiştiğinde saklayan bir kanal, saklamadığı değerleri o seriyi kapatan satırda sayar: en "
-"fazla bir nabız gecikmeyle."
+"fazla iki nabızdan kısa bir gecikmeyle."
 
 msgid "A channel with this name already exists."
 msgstr "Bu adda bir kanal zaten var."
@@ -1989,6 +1989,11 @@ msgstr "Yalnızca silo: beslediği yemleme makinesi, aynı sahada."
 
 msgid "A simulated value, not the real water."
 msgstr "Simüle edilmiş bir değer, gerçek su değil."
+
+msgid "A simulator or test device: its values are stored marked simulated and used nowhere."
+msgstr ""
+"Bir simülatör veya test cihazı: değerleri simüle edilmiş olarak işaretlenip saklanır ve hiçbir "
+"yerde kullanılmaz."
 
 msgid ""
 "A site averages the averages of its units counted that week, every unit weighing the same, and "
@@ -7217,6 +7222,9 @@ msgstr "Mesaj silindi"
 msgid "Messages"
 msgstr "Mesajlar"
 
+msgid "Messages the database refused"
+msgstr "Veritabanının reddettiği mesajlar"
+
 msgid "Messages the ingest service could not store, kept as evidence and counted."
 msgstr "Veri alım servisinin saklayamadığı, kanıt olarak tutulan ve sayılan mesajlar."
 
@@ -7515,8 +7523,8 @@ msgstr "Yeni görev"
 msgid "Newer"
 msgstr "Daha yeni"
 
-msgid "Newest stored time"
-msgstr "Saklanan en yeni zaman"
+msgid "Newest time processed"
+msgstr "İşlenen en yeni zaman"
 
 msgid "Next"
 msgstr "Sonraki"
@@ -9233,6 +9241,9 @@ msgstr ""
 "Yalnızca hasat edilip fabrikaya gönderilen balıklar için. Saat veya günle birlikte verilirse "
 "ikisine de ulaşılmalıdır."
 
+msgid "QoS 0 messages dropped on a full queue"
+msgstr "Kuyruk dolu olduğu için atılan QoS 0 mesajları"
+
 msgid "Quality"
 msgstr "Kalite"
 
@@ -10436,6 +10447,9 @@ msgstr "Silo hacmi"
 
 msgid "Simple"
 msgstr "Basit"
+
+msgid "Simulated"
+msgstr "Simüle"
 
 msgid "Simulator"
 msgstr "Simülatör"
@@ -11761,11 +11775,11 @@ msgid "The name of the copy is too long."
 msgstr "Kopyanın adı çok uzun."
 
 msgid ""
-"The name of the file under /run/secrets that holds the ingest service’s password at the broker. "
-"The password itself is never typed or stored here."
+"The name of the file under /run/secrets that holds the ingest service’s password at the broker "
+"(the compose secret mqtt_ingest). The password itself is never typed or stored here."
 msgstr ""
-"/run/secrets altında, veri alım servisinin broker’daki parolasını tutan dosyanın adı. Parolanın "
-"kendisi burada asla yazılmaz veya saklanmaz."
+"/run/secrets altında, veri alım servisinin broker’daki parolasını tutan dosyanın adı (compose "
+"gizli anahtarı mqtt_ingest). Parolanın kendisi burada asla yazılmaz veya saklanmaz."
 
 msgid "The name the device or gateway signs in to the broker with. Letters, digits and . _ @ - only."
 msgstr "Cihazın veya ağ geçidinin broker’a giriş yaptığı ad. Yalnızca harf, rakam ve . _ @ -"
@@ -14772,9 +14786,6 @@ msgstr "günde biyokütlenin kg’ı başına mg"
 
 msgid "mg/mL"
 msgstr "mg/mL"
-
-msgid "minute summaries"
-msgstr "dakikalık özetler"
 
 msgid "monitoring board"
 msgstr "izleme panosu"

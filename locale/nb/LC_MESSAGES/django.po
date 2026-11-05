@@ -1477,10 +1477,10 @@ msgstr "En kanal trenger en eier: gjør først et annet medlem til eier."
 
 msgid ""
 "A channel that stores a value when it moves counts the values it did not store at the row that "
-"closes their run: at most one heartbeat late."
+"closes their run: less than two heartbeats late."
 msgstr ""
 "En kanal som lagrer en verdi når den endrer seg, teller verdiene den ikke lagret, på raden som "
-"avslutter serien deres: høyst ett hjerteslag for sent."
+"avslutter serien: mindre enn to hjerteslag forsinket."
 
 msgid "A channel with this name already exists."
 msgstr "Det finnes allerede en kanal med dette navnet."
@@ -1991,6 +1991,9 @@ msgstr "Bare for silo: fôrautomaten den fyller, på samme lokalitet."
 
 msgid "A simulated value, not the real water."
 msgstr "En simulert verdi, ikke det virkelige vannet."
+
+msgid "A simulator or test device: its values are stored marked simulated and used nowhere."
+msgstr "Et simulator- eller testapparat: verdiene lagres merket som simulerte og brukes ingen steder."
 
 msgid ""
 "A site averages the averages of its units counted that week, every unit weighing the same, and "
@@ -7205,6 +7208,9 @@ msgstr "Melding slettet"
 msgid "Messages"
 msgstr "Meldinger"
 
+msgid "Messages the database refused"
+msgstr "Meldinger databasen avviste"
+
 msgid "Messages the ingest service could not store, kept as evidence and counted."
 msgstr "Meldinger innhentingstjenesten ikke kunne lagre, beholdt som dokumentasjon og telt."
 
@@ -7501,8 +7507,8 @@ msgstr "Ny oppgave"
 msgid "Newer"
 msgstr "Nyere"
 
-msgid "Newest stored time"
-msgstr "Nyeste lagrede tidspunkt"
+msgid "Newest time processed"
+msgstr "Nyeste behandlede tidspunkt"
 
 msgid "Next"
 msgstr "Neste"
@@ -9225,6 +9231,9 @@ msgstr ""
 "Bare for fisk som høstes og sendes til slakteriet. Oppgis den sammen med timer eller dager, må "
 "begge nås."
 
+msgid "QoS 0 messages dropped on a full queue"
+msgstr "QoS 0-meldinger forkastet fordi køen var full"
+
 msgid "Quality"
 msgstr "Kvalitet"
 
@@ -10427,6 +10436,9 @@ msgstr "Silovolum"
 
 msgid "Simple"
 msgstr "Enkel"
+
+msgid "Simulated"
+msgstr "Simulert"
 
 msgid "Simulator"
 msgstr "Simulator"
@@ -11749,11 +11761,11 @@ msgid "The name of the copy is too long."
 msgstr "Navnet på kopien er for langt."
 
 msgid ""
-"The name of the file under /run/secrets that holds the ingest service’s password at the broker. "
-"The password itself is never typed or stored here."
+"The name of the file under /run/secrets that holds the ingest service’s password at the broker "
+"(the compose secret mqtt_ingest). The password itself is never typed or stored here."
 msgstr ""
-"Navnet på filen under /run/secrets som inneholder innhentingstjenestens passord på brokeren. "
-"Selve passordet skrives aldri inn eller lagres her."
+"Navnet på filen under /run/secrets som inneholder innhentingstjenestens passord på brokeren "
+"(compose-hemmeligheten mqtt_ingest). Selve passordet skrives aldri inn eller lagres her."
 
 msgid "The name the device or gateway signs in to the broker with. Letters, digits and . _ @ - only."
 msgstr "Navnet apparatet eller gatewayen logger inn på brokeren med. Bare bokstaver, sifre og . _ @ -."
@@ -14754,9 +14766,6 @@ msgstr "mg/kg biomasse per dag"
 
 msgid "mg/mL"
 msgstr "mg/mL"
-
-msgid "minute summaries"
-msgstr "minuttsammendrag"
 
 msgid "monitoring board"
 msgstr "overvåkingspanel"

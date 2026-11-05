@@ -430,6 +430,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 /* An entry where someone went on past a handling warning (core.models.AuditSeverity): red edge and badge. */
 .audit-entry.is-critical { border-left-color: var(--error); background: #FDF5F5; }
 .badge-critical { background: #F7E6E6; color: var(--error); font-weight: 700; }
+.badge-note { background: var(--mist); color: var(--olive-deep); border: 1px solid var(--muted); }
 .audit-record { font-weight: 500; }
 .audit-meta { color: var(--muted); font-size: .875rem; }
 .audit-meta strong { color: var(--speck); font-weight: 600; }
@@ -572,7 +573,7 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .wq-status { display: inline-flex; align-items: center; gap: .375rem; font-size: .875rem; }
 .wq-dot { width: .625rem; height: .625rem; border-radius: 50%; background: var(--sage); }
 .wq-critical .wq-dot { background: var(--error); }
-.wq-warning .wq-dot { background: #C58A16; }
+.wq-warning .wq-dot { background: #7A5410; }      /* the warning text's amber: 3:1 at least as a shape */
 .wq-ok .wq-dot { background: var(--olive); }
 .wq-stale .wq-dot, .wq-not_measured .wq-dot { background: transparent; border: 1.5px solid var(--sage); }
 td.wq-critical, .wq-value.wq-critical { color: var(--error); font-weight: 700; }

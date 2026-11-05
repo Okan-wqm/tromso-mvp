@@ -9633,6 +9633,10 @@ msgstr "Sıcaklıklar"
 msgid "Template"
 msgstr "Şablon"
 
+#, python-format
+msgid "Template error: “%(name)s” cannot be drawn; this card is shown as Detailed."
+msgstr "Şablon hatası: “%(name)s” çizilemiyor; bu kart Ayrıntılı olarak gösteriliyor."
+
 msgid "Templates"
 msgstr "Şablonlar"
 

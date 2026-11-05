@@ -1,5 +1,6 @@
-{% load i18n %}{% comment %} One card: the FRAME (never data: the unit, its state word, shape and reasons, the withdrawal, the flip link, what the
-   state is from; a template cannot move, shrink or remove it), then the template's widgets placed on a 12-column CSS grid
+{% load i18n %}{% comment %} One card: the FRAME (never data: the unit, its state word, shape and reasons, the withdrawal (a note chip: it lasts weeks), the unit's
+   status when it is not in use, the flip link, a template that cannot be drawn, what the state is from and which
+   template draws the card and why; a template cannot move, shrink or remove it), then the template's widgets placed on a 12-column CSS grid
    in reading order (monitoring/cards/render.py build). Below a narrow container the grid is one column in the same order
    (static/css/monitor.css); the wall runs no layout script. {% endcomment %}{% with card=row.card unit=row.card.unit state=row.card.state stock=row.card.stock chosen=row.card.template %}
 <article class="monitor-card monitor-{{ state.key }}" data-key="card:{{ unit.pk }}" data-template="{{ chosen.template.pk|default:'' }}" id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
@@ -7,20 +8,23 @@
     <div>
       <h3 id="card-title-{{ unit.pk }}"><a href="{% url 'farm:production_units' %}?unit={{ unit.pk }}">{{ unit.code }}</a></h3>
       <p class="row-sub">{{ unit.name }}{% if unit.production_department %} · {{ unit.production_department.name }}{% endif %}</p>
+      {% if unit.status != "active" %}<p class="row-sub monitor-status">{{ unit.get_status_display }}</p>{% endif %}
     </div>
     <div class="monitor-card-state">
       {% include "monitoring/_state_word.html" %}
-      {% if card.withdrawal %}<span class="badge badge-critical" title="{% for block in card.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}{% with until=card.withdrawal.0.until %}{% if until %} · {{ until|date:"DATE_FORMAT" }}{% endif %}{% endwith %}</span>{% endif %}
+      {% if card.withdrawal %}<span class="badge badge-note" title="{% for block in card.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}{% with until=card.withdrawal.0.until %}{% if until %} · {{ until|date:"DATE_FORMAT" }}{% endif %}{% endwith %}</span>{% endif %}
       {% if chosen.flip_to %}<a class="monitor-flip" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
     </div>
   </header>
   {% if state.reasons %}<ul class="monitor-reasons" role="list">{% for reason in state.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>{% endif %}
+  {% if chosen.error %}<p class="monitor-template-error">{% blocktrans trimmed with name=chosen.name %}Template error: “{{ name }}” cannot be drawn; this card is shown as Detailed.{% endblocktrans %}</p>{% endif %}
   {% if state.key == "empty" %}<p class="empty-unit">{% trans "Empty" %}</p>{% endif %}
   <div class="card-grid">{% for view in card.widgets %}
     <div class="w w-{{ view.type }}" style="{{ view.style }}">{% if view.hidden %}{% if view.hidden == "feeding" %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") %}{% elif view.hidden == "water" %}{% include "monitoring/_card_hidden.html" with section=_("Water") %}{% elif view.hidden == "health" %}{% include "monitoring/_card_hidden.html" with section=_("Health") %}{% else %}{% include "monitoring/_card_hidden.html" with section=_("Tasks") %}{% endif %}{% elif view.failed %}<p class="monitor-hidden row-sub">{% trans "no data" %}</p>{% else %}{% include view.renderer %}{% endif %}</div>{% endfor %}
   </div>
   <footer class="monitor-card-foot">
     <p class="row-sub">{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    <p class="row-sub monitor-why">{% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}</p>
   </footer>
 </article>
 {% endwith %}

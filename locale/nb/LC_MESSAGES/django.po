@@ -9626,6 +9626,10 @@ msgstr "Temperaturer"
 msgid "Template"
 msgstr "Mal"
 
+#, python-format
+msgid "Template error: “%(name)s” cannot be drawn; this card is shown as Detailed."
+msgstr "Malfeil: «%(name)s» kan ikke tegnes; dette kortet vises som Detaljert."
+
 msgid "Templates"
 msgstr "Maler"
 

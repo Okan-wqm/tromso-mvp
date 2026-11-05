@@ -138,9 +138,9 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 .monitor-critical { border-left-color: var(--error); }
 .monitor-warning { border-left-color: var(--stripe); }
 .monitor-blind { border-left-color: var(--muted); border-left-style: dashed; }
-.monitor-note { border-left-color: var(--sage); }
+.monitor-note { border-left-color: var(--muted); }                       /* the pale sage never carries meaning */
 .monitor-ok { border-left-color: var(--olive); }
-.monitor-empty { border-left-color: var(--sage); opacity: .85; }
+.monitor-empty { border-left-color: var(--muted); border-left-style: dotted; opacity: .85; }
 .monitor-critical .monitor-state { color: var(--error); }
 .monitor-warning .monitor-state { color: var(--stripe-dark); }
 @container (max-width: 18rem) { .monitor-card .metrics { grid-template-columns: repeat(2, 1fr); } }
@@ -173,3 +173,16 @@ html[data-wall] .monitor-grid { grid-template-columns: repeat(auto-fill, minmax(
 html[data-wall] .monitor-card { font-size: clamp(1rem, 1.1vw, 1.75rem); }
 html[data-wall] .monitor-card-head h3 { font-size: 1.5em; }
 html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700; }
+
+.monitor-status { font-weight: 700; }
+.monitor-template-error { margin: .375rem 0 0; padding: .25rem .5rem; border: 1px dashed var(--error); border-radius: 4px; color: var(--error); font-weight: 700; }
+
+/* ---- forced colours (Windows high contrast): the state's shape, border and the bars keep their meaning ---------- */
+@media (forced-colors: active) {
+  .monitor-card { border-left-color: CanvasText; }
+  .monitor-critical, .monitor-warning { border-left-width: 10px; }
+  .monitor-shape { forced-color-adjust: none; background: CanvasText; }
+  .monitor-shape-blind, .monitor-shape-empty { background: none; border-color: CanvasText; }
+  .monitor-bar-svg .band { forced-color-adjust: none; fill: Canvas; stroke: CanvasText; }
+  .monitor-bar-svg .marker { forced-color-adjust: none; fill: CanvasText; }
+}

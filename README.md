@@ -754,6 +754,14 @@ tone (no `<meter>`: browser colours, three cut points); without a limit it says 
 (17, 21 or 28 rem, 15 % more on a wall). The old per-section partials are gone: the built-ins Simple and Detailed draw what
 they drew, value for value (`test_golden`).
 
+**The frame says more** (owner decision 4: a unit in maintenance, cleaning or quarantine rolls up as before): the unit's status
+when it is not active ("Maintenance"), the withdrawal as a note chip (it lasts weeks; not an alarm), a dashed line when the
+stored template cannot be drawn ("Template error: … this card is shown as Detailed"), and under the basis which template
+draws the card and why ("Template: Simple · the rule for every unit"). **Colours** are checked against the token table by
+: text that says something at least 4.5:1 on white (the warning amber is #7A5410), a border or a
+dot that carries meaning at least 3:1 (the water page's warning dot moved from #C58A16, 2.99:1, to the text's amber), the pale
+sage never carries meaning (a note card's border is the muted green, an empty one's dotted); keeps the shapes, the bands of a bar and the state borders in high-contrast mode.
+
 **Characterised before card templates** (2026-11-04): `monitoring/tests/test_golden.py` renders a fixed farm of twenty units in
 every state (critical, warning, no recent data, note, OK, empty; over capacity, a withdrawal, tasks, a lice count, a treatment,
 an event, the saturation instead of mg/L) on eight screens (simple, detailed, all units, flipped, a board's mixed modes, the

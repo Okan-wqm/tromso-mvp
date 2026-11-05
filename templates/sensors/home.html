@@ -6,6 +6,7 @@
 {% block eyebrow %}{% trans "Sensors" %}{% endblock %}
 {% block heading %}{% trans "Overview" %}{% endblock %}
 {% block content %}
+{% include "_overview_tiles.html" with tiles=state_tiles %}
 {% include "_overview_tiles.html" with tiles=setup_tiles %}
-{% if not setup_tiles %}<p class="panel-help">{% trans "Nothing of the sensors is open to you yet: ask for a right on the Roles page." %}</p>{% endif %}
+{% if not setup_tiles and not state_tiles %}<p class="panel-help">{% trans "Nothing of the sensors is open to you yet: ask for a right on the Roles page." %}</p>{% endif %}
 {% endblock %}

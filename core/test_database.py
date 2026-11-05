@@ -129,8 +129,9 @@ class RegistryTests(DatabaseViewerTestCase):
                 self.assertIn(config.label, listed, config.label)
 
     def test_tables_come_from_the_models_of_the_listed_apps(self):
-        expected = {model._meta.db_table for label in ('farm', 'inventory', 'knowledge', 'messaging', 'reports', 'tasks', 'monitoring',
-                                                       'sensors', 'core', 'auth')
+        expected = {model._meta.db_table
+                    for label in ('farm', 'inventory', 'knowledge', 'messaging', 'reports', 'tasks', 'experiments',
+                                  'monitoring', 'hr', 'sensors', 'core', 'auth')
                     for model in apps.get_app_config(label).get_models(include_auto_created=True)} - set(database.viewer().excluded)
         self.assertEqual(set(names()), expected)
         self.assertTrue({'sites', 'site_contacts', 'production_departments', 'audit_log', 'auth_user',
@@ -655,3 +656,11 @@ class HypertableCountTests(DatabaseViewerTestCase):
     def test_an_ordinary_table_is_counted_exactly(self):
         self.make_site()
         self.assertEqual(database.find('sites').counts(), {'rows': 1, 'deleted': 0, 'estimated': False})
+
+
+class ConstraintTriggerTests(DatabaseViewerTestCase):
+    def test_a_constraint_trigger_is_shown_among_the_constraints(self):
+        constraints = {constraint.name: constraint for constraint in database.find('sensors_binding').structure().constraints}
+        trigger = constraints['trg_sensors_binding_rules']
+        self.assertEqual(str(trigger.kind), 'Constraint trigger')
+        self.assertIn('TRIGGER', trigger.definition)

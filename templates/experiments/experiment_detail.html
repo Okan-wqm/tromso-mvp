@@ -1,0 +1,36 @@
+{% extends "crud/detail.html" %}
+{% load i18n %}
+{% comment %} An experiment's read page for everyone who may read the tab (experiments.resources.ExperimentResource): its details, then
+   one of three parts chosen in the address (`?tab=`): the Overview (where it is in its days, what is wrong with a draft, a replicate a
+   row with its figures), the Data (per tank its days and links to the farm's lists) and the Team. {% endcomment %}
+{% block details %}
+<section class="detail-section">
+  <p>{% include "experiments/_status.html" with experiment=object %}{% if phase %} <span class="status-line">{% if phase.0 == "during" %}{% blocktrans trimmed with day=phase.1 total=phase.2 %}Day {{ day }} of {{ total }}{% endblocktrans %}{% elif phase.0 == "before" %}{% blocktrans trimmed count days=phase.3 %}Day 0 is in {{ days }} day{% plural %}Day 0 is in {{ days }} days{% endblocktrans %}{% else %}{% blocktrans trimmed count days=phase.3 %}The final weighing was {{ days }} day ago{% plural %}The final weighing was {{ days }} days ago{% endblocktrans %}{% endif %}</span>{% endif %}</p>
+  <dl class="facts">
+    <div><dt>{% trans "Experiment number" %}</dt><dd>{{ object.code }}</dd></div>
+    <div><dt>{% trans "Site" %}</dt><dd>{{ object.site.name }}</dd></div>
+    <div><dt>{% trans "Species" context "singular" %}</dt><dd>{{ object.species.common_name }}</dd></div>
+    <div><dt>{% trans "Starts on" %}</dt><dd>{% if object.starts_on %}{{ object.starts_on|date:"DATE_FORMAT" }}{% else %}–{% endif %}</dd></div>
+    <div><dt>{% trans "Duration (days)" %}</dt><dd>{{ object.duration_days }}</dd></div>
+    <div><dt>{% trans "Primary endpoint" %}</dt><dd>{{ object.get_primary_endpoint_display|default:"–" }}</dd></div>
+    {% if object.copied_from_id %}<div><dt>{% trans "Copied from" %}</dt><dd>{{ object.copied_from }}</dd></div>{% endif %}
+  </dl>
+  {% if object.hypothesis %}<h2 class="section-title">{% trans "Hypothesis" %}</h2><p>{{ object.hypothesis|linebreaksbr }}</p>{% endif %}
+  {% if object.notes %}<h2 class="section-title">{% trans "Notes" %}</h2><p>{{ object.notes|linebreaksbr }}</p>{% endif %}
+</section>
+{% if can_start %}<p><a class="button button-inline" href="{{ start_url }}" data-modal>{% trans "Start the experiment" %}</a></p>{% endif %}
+{% include "experiments/_copy_buttons.html" %}
+<nav class="view-tabs" aria-label="{% trans "Experiment" %}">
+  {% for key, label, href in tabs %}<a class="view-tab" href="{{ href }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
+{% if tab == "overview" %}{% include "experiments/_overview.html" %}
+{% elif tab == "data" %}{% include "experiments/_data.html" %}
+{% else %}
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Team" %}</h2>
+  <ul class="plain-list">
+    {% for member in team %}<li>{{ member }}</li>{% empty %}<li class="muted">{% trans "No one in the team yet." %}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

@@ -4,12 +4,15 @@ point (`(POINT, pk)`) or a system (`(SYSTEM, pk)`, a measurement of the system's
 for a point, and in which order, is decided in one place only: farm/water/read.py (`latest` and `Series`), owner rule
 A1. This module only gathers the providers' answers.
 
-A provider is an object with two methods:
+A provider is an object with three methods:
 
     latest(targets, now) -> {target: {code: [SensorValue]}}
         every usable channel's newest good value (stale ones too: the reader decides), primary channels first;
     value_at(targets, code, moment) -> {target: [SensorValue]}
         each channel's newest good value at or before `moment`, from the channels bound to the target at that time.
+    bound(targets, code, since, until) -> {target}
+        the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
+        never asks per moment for a place nothing was bound to).
 
 A provider that raises is left out of the answer and the answer says so (`failed`): the pages then say that the live
 values could not be read, and show what the samples give. Each provider runs in its own savepoint, so a database error
@@ -98,3 +101,20 @@ def value_at(targets, code, moment):
 def ordered(values):
     """Primary channels first, then backups; among one role the newest first."""
     return sorted(values, key=lambda value: (ROLE_ORDER.get(value.role, 2), -value.at.timestamp()))
+
+
+def bound(targets, code, since, until):
+    """The targets that have a channel of `code` bound there at some time between since and until, in one ask; a failing
+    provider counts every target as bound (so the values are asked for, and the failure said)."""
+    targets = list(dict.fromkeys(targets))
+    if not targets or not _providers:
+        return set()
+    found = set()
+    for provider in list(_providers):
+        try:
+            with transaction.atomic():
+                found |= set(provider.bound(targets, code, since, until))
+        except Exception:                                        # fail open, and say so through value_at
+            logger.exception('A water source (%r) failed; its places are asked one by one.', provider)
+            return set(targets)
+    return found

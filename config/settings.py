@@ -52,6 +52,11 @@ INSTALLED_APPS = [
     # Regulatory reports, computed from the farm's records and filed by people (Production › Reports).
     'reports',
     'tasks',
+    # The people of the company, where they work and their time: Company › HR.
+    'hr',
+    # Research: experiments (trials of one species on one site: the design, the allocation, the tanks and
+    # the days), reading the farm and read by nothing.
+    'experiments',
     # The monitoring cards: one live card per unit for the control room's wall, composed from the other apps' reads.
     'monitoring',
     # Sensors: MQTT connections, devices, channels and their readings (a TimescaleDB hypertable written by the ingest
@@ -235,3 +240,7 @@ MONITOR_POLL_SECONDS = 15
 # are overdue): tasks/services.py, owner decision 3.
 TASK_HORIZON_DAYS = 14
 TASK_BACKFILL_DAYS = 7
+
+# Where manage.py sensor_broker_sync writes the MQTT broker's passwd and acl files; the broker container mounts it at
+# /mosquitto/auth and reloads them when they change (sensors-ingest/mosquitto).
+SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR / '.sensors' / 'broker-auth'))

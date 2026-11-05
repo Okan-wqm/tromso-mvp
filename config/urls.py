@@ -35,6 +35,8 @@ urlpatterns = [
     path('', include('inventory.urls')),
     path('', include('reports.urls')),
     path('', include('tasks.urls')),
+    path('', include('hr.urls')),
+    path('', include('experiments.urls')),
     path('', include('monitoring.urls')),
     path('', include('sensors.urls')),
     path('', include('core.urls')),

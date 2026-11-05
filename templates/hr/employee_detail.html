@@ -1,0 +1,32 @@
+{% extends "crud/detail.html" %}
+{% load i18n %}
+{% comment %} One person as a team lead reads them (hr.resources.EmployeeResource.detail_extras): who they are, their
+   employment and where they have worked. Nothing about pay, contact details or identity numbers: HR does not hold any.{% endcomment %}
+{% block title %}{{ object.full_name }}{% endblock %}
+{% block heading %}{{ object.full_name }}{% endblock %}
+{% block details %}
+<section class="detail-section">
+  <dl class="facts">
+    <div><dt>{% trans "Employee number" %}</dt><dd>{{ object.employee_number }}</dd></div>
+    <div><dt>{% trans "Employment type" %}</dt><dd>{{ object.get_employment_type_display }}</dd></div>
+    <div><dt>{% trans "Account" %}</dt><dd>{% if object.user %}{{ object.user.get_username }}{% else %}–{% endif %}</dd></div>
+    <div><dt>{% trans "Joined on" %}</dt><dd>{{ object.joined_on|date:"DATE_FORMAT" }}</dd></div>
+    <div><dt>{% trans "Left on" %}</dt><dd>{% if object.left_on %}{{ object.left_on|date:"DATE_FORMAT" }}{% else %}–{% endif %}</dd></div>
+  </dl>
+</section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Placements" %}</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Department" %}</th><th scope="col">{% trans "Title" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th></tr></thead>
+      <tbody>
+        {% for placement in placements %}
+        <tr><td>{{ placement.department }}</td><td>{{ placement.title|default:"–" }}</td><td>{{ placement.valid_from|date:"DATE_FORMAT" }}</td><td>{% if placement.valid_until %}{{ placement.valid_until|date:"DATE_FORMAT" }}{% else %}{% trans "Open" %}{% endif %}</td></tr>
+        {% empty %}
+        <tr><td colspan="4"><span class="text-warning">{% trans "Not placed in any department." %}</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

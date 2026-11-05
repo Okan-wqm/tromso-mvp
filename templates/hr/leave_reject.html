@@ -1,0 +1,20 @@
+{% extends base_template %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<form method="post" action="{% url 'hr:leaverequest_reject' object.pk %}" class="form">
+  {% csrf_token %}
+  <p>{% blocktrans trimmed with name=object.employee.full_name first=object.first_day|date:"DATE_FORMAT" last=object.last_day|date:"DATE_FORMAT" %}Reject the request of {{ name }}, {{ first }} to {{ last }}?{% endblocktrans %}</p>
+  <div class="field">
+    <label for="note">{% trans "Note" %}</label>
+    <textarea id="note" name="note" rows="3" maxlength="500"></textarea>
+    <p class="help">{% trans "Seen by the person; it is not written to the log." %}</p>
+  </div>
+  <div class="form-actions">
+    <a class="button button-ghost" href="{% url 'hr:leaverequest_list' %}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button">{% trans "Reject" %}</button>
+  </div>
+</form>
+{% endblock %}

@@ -183,3 +183,16 @@ class DataMapTests(SimpleTestCase):
         # An app added to INSTALLED_APPS is picked up with no list to extend here.
         counted = {model._meta.app_label for model in datamap.project_models()}
         self.assertEqual(counted, {config.label for config in datamap.project_apps() if config.get_models()})
+
+
+class LeftOutOfTheViewerTests(SimpleTestCase):
+    """A table config/database.py leaves out of the database viewer on purpose (the sensor readings: billions of rows the
+    grid's pager would count) is no problem of the map, and the map says it is left out, not that it is missing."""
+
+    def test_a_table_left_out_on_purpose_is_said_so(self):
+        import_module(settings.ROOT_URLCONF)
+        built = datamap.build()[0]
+        self.assertFalse([problem for problem in built.problems if 'sensors_reading' in problem])
+        reading = built.tables['sensors.Reading']
+        self.assertEqual(reading['viewer'], {'section': None, 'masked': [], 'left_out': True})
+        self.assertIn('left out on purpose (config/database.py)', ' '.join(datamap.table_block(reading)))

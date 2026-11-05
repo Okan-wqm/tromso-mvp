@@ -82,7 +82,8 @@ class ChannelState(models.Model):
     run_sum = models.FloatField(_('Sum of the open run'), null=True)
     run_min = models.FloatField(_('Lowest of the open run'), null=True)
     run_max = models.FloatField(_('Highest of the open run'), null=True)
-    high_ts = models.DateTimeField(_('Newest stored time'), null=True)
+    # The newest time processed, stored or not: a sample at an older or equal time is late or a duplicate.
+    high_ts = models.DateTimeField(_('Newest time processed'), null=True)
 
     class Meta:
         db_table = 'sensors_channel_state'
@@ -125,6 +126,8 @@ class IngestStatus(models.Model):
     connected = models.BooleanField(_('Connected'), db_default=False)
     queue_depth = models.IntegerField(_('Messages waiting'), db_default=0)
     last_commit_at = models.DateTimeField(_('Last commit at'), null=True)
+    qos0_dropped = models.BigIntegerField(_('QoS 0 messages dropped on a full queue'), db_default=0)
+    poison_total = models.BigIntegerField(_('Messages the database refused'), db_default=0)
 
     class Meta:
         db_table = 'sensors_ingest_status'

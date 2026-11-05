@@ -8,6 +8,7 @@
   <div class="drawer-head">
     <div>
       <h2 class="drawer-title" id="drawer-title">{{ unit.code }}</h2>
+      {% if drawer_placements %}<p class="drawer-sub">{% include "farm/_placements.html" with chips=drawer_placements %}</p>{% endif %}
       <p class="drawer-sub">{{ unit.name }} · {{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</p>
       <p class="drawer-sub"><span class="badge badge-{{ unit.status }}">{{ unit.get_status_display }}</span>{% if unit.status_changed_at %} {% blocktrans trimmed with date=unit.status_changed_at|date:"DATE_FORMAT" %}since {{ date }}{% endblocktrans %}{% endif %}</p>
       {% if stock %}

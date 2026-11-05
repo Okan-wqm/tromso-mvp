@@ -1,8 +1,8 @@
 """The TimescaleDB objects of the sensors, checked in the catalogue and by behaviour (spikes S0b to S0d, kept as tests):
 the readings hypertable with its chunk interval, compression and retention; a managed model with a composite primary
 key read and written through the ORM; a late row and a redelivered row into a compressed chunk; the licence of the
-pinned image's build; the two continuous aggregates (1 minute over the readings, 1 hour over the minutes) with their
-policies, exact against a direct computation over the unreduced stream, bad rows left out; and a refresh after raw
+pinned image's build; the hour continuous aggregate over the readings (the plan's gate removed the minute tier) with
+its policies, exact against a direct computation over the unreduced stream, bad rows left out; and a refresh after raw
 chunks are dropped keeps the rollups."""
 import json
 import random
@@ -21,11 +21,13 @@ START = datetime(2026, 10, 1, tzinfo=tz.utc)
 
 
 def insert(rows_):
-    """(channel_no, ts, value, n, quality, run_sum, run_min, run_max) rows, as the ingest writes them."""
+    """(channel_no, ts, value, n, quality, run_sum, run_min, run_max) rows, as the ingest writes them: ONE ROW PER
+    STATEMENT (a multi-row statement loses rows once one conflicts in a compressed chunk, CompressedChunkInsertTests)."""
     with connection.cursor() as cursor:
-        cursor.executemany(
-            'INSERT INTO sensors_reading (channel_no, ts, value, n, quality, run_sum, run_min, run_max) '
-            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (channel_no, ts) DO NOTHING', rows_)
+        for row in rows_:
+            cursor.execute(
+                'INSERT INTO sensors_reading (channel_no, ts, value, n, quality, run_sum, run_min, run_max) '
+                'VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING', row)
 
 
 def stream(channel_no, start, count, step=timedelta(seconds=1), seed=1):
@@ -149,20 +151,20 @@ class HypertableTests(TestCase):
 
 
 class RollupCatalogueTests(TestCase):
-    def test_two_real_time_aggregates_the_hour_built_on_the_minute(self):
+    """The plan's gate 2.4 triggered (a minute rollup measured at 100 % of the raw rows, its two-year refresh 58 min): one
+    real-time aggregate, the hour, built straight from the readings; no minute tier."""
+
+    def test_one_real_time_aggregate_the_hour_from_the_readings(self):
         found = dict(rows("SELECT view_name, materialized_only FROM timescaledb_information.continuous_aggregates "
                           "WHERE view_name LIKE 'sensors_rollup_%%'"))
-        self.assertEqual(found, {'sensors_rollup_1m': False, 'sensors_rollup_1h': False})
-        source = one("SELECT hypertable_name FROM timescaledb_information.continuous_aggregates "
-                     "WHERE view_name = 'sensors_rollup_1h'")
-        minute = one("SELECT materialization_hypertable_name FROM timescaledb_information.continuous_aggregates "
-                     "WHERE view_name = 'sensors_rollup_1m'")
-        self.assertEqual(source, minute)
+        self.assertEqual(found, {'sensors_rollup_1h': False})
+        self.assertEqual(one("SELECT hypertable_name FROM timescaledb_information.continuous_aggregates "
+                             "WHERE view_name = 'sensors_rollup_1h'"), 'sensors_reading')
 
     def test_the_definition_takes_clean_rows_only_with_the_bad_mask_of_the_quality_module(self):
         definition = one("SELECT view_definition FROM timescaledb_information.continuous_aggregates "
-                         "WHERE view_name = 'sensors_rollup_1m'")
-        self.assertIn(f'& {quality.BAD_MASK}) = 0', definition.replace('(quality ', '(quality '))
+                         "WHERE view_name = 'sensors_rollup_1h'")
+        self.assertIn(f'& {quality.BAD_MASK}) = 0', definition)
 
     def jobs(self, view):
         return {name: json.loads(config) for name, config in rows(
@@ -171,24 +173,20 @@ class RollupCatalogueTests(TestCase):
             "WHERE c.view_name = %s", [view])}
 
     def test_the_policies(self):
-        minute, hour = self.jobs('sensors_rollup_1m'), self.jobs('sensors_rollup_1h')
+        hour = self.jobs('sensors_rollup_1h')
         # The refresh window starts a while back, not at NULL: TimescaleDB refuses a compression policy on an aggregate
         # whose refresh window reaches the compressed region. Older late rows are the daily job's (below).
-        refresh_minute, refresh_hour = minute['policy_refresh_continuous_aggregate'], hour['policy_refresh_continuous_aggregate']
-        self.assertEqual((refresh_minute['start_offset'], refresh_minute['end_offset']), ('35 days', '00:01:00'))
-        self.assertEqual((refresh_hour['start_offset'], refresh_hour['end_offset']), ('75 days', '01:00:00'))
-        self.assertEqual(minute['policy_compression']['compress_after'], '60 days')
+        refresh = hour['policy_refresh_continuous_aggregate']
+        self.assertEqual((refresh['start_offset'], refresh['end_offset']), ('75 days', '01:00:00'))
         self.assertEqual(hour['policy_compression']['compress_after'], '90 days')
-        self.assertEqual(minute['policy_retention']['drop_after'], f'{Contract.objects.get().retention_days} days')
         self.assertNotIn('policy_retention', hour)
-        schedules = dict(rows("SELECT c.view_name, j.schedule_interval FROM timescaledb_information.jobs j "
-                              "JOIN timescaledb_information.continuous_aggregates c "
-                              "ON c.materialization_hypertable_name = j.hypertable_name "
-                              "WHERE j.proc_name = 'policy_refresh_continuous_aggregate' "
-                              "AND c.view_name LIKE 'sensors_rollup_%%'"))
-        self.assertEqual(schedules, {'sensors_rollup_1m': timedelta(minutes=1), 'sensors_rollup_1h': timedelta(hours=1)})
+        self.assertEqual(one("SELECT j.schedule_interval FROM timescaledb_information.jobs j "
+                             "JOIN timescaledb_information.continuous_aggregates c "
+                             "ON c.materialization_hypertable_name = j.hypertable_name "
+                             "WHERE j.proc_name = 'policy_refresh_continuous_aggregate' "
+                             "AND c.view_name = 'sensors_rollup_1h'"), timedelta(hours=1))
 
-    def test_a_daily_job_refreshes_what_lies_before_the_policies_windows(self):
+    def test_a_daily_job_refreshes_what_lies_before_the_policys_window(self):
         self.assertEqual(rows("SELECT proc_name, schedule_interval FROM timescaledb_information.jobs "
                               "WHERE proc_name = 'sensors_refresh_late'"), [('sensors_refresh_late', timedelta(days=1))])
 
@@ -197,44 +195,60 @@ class RollupValueTests(TestCase):
     """Real-time aggregation (materialized_only = false): what is not refreshed yet is worked out from the readings on
     read, so these tests see the rows they insert without a refresh (which cannot run in a transaction)."""
 
-    def test_minute_and_hour_equal_a_direct_computation_over_the_unreduced_stream(self):
+    def test_the_hour_equals_a_direct_computation_over_the_unreduced_stream(self):
         messages = stream(11, START, 3 * 3600)                   # three hours of one message a second
         stored = reduce(11, messages)
         insert(stored)
-        for view, width in (('sensors_rollup_1m', timedelta(minutes=1)), ('sensors_rollup_1h', timedelta(hours=1))):
-            with self.subTest(view=view):
-                found, wanted = rollup(view, 11), expected(stored, width)
-                self.assertEqual(found.keys(), wanted.keys())
-                for bucket, (n, total, lo, hi, last) in wanted.items():
-                    self.assertEqual(found[bucket][0], n)
-                    self.assertAlmostEqual(found[bucket][1], total, places=6)
-                    self.assertEqual(found[bucket][2:], (lo, hi, last))
+        found, wanted = rollup('sensors_rollup_1h', 11), expected(stored, timedelta(hours=1))
+        self.assertEqual(found.keys(), wanted.keys())
+        for bucket, (n, total, lo, hi, last) in wanted.items():
+            self.assertEqual(found[bucket][0], n)
+            self.assertAlmostEqual(found[bucket][1], total, places=6)
+            self.assertEqual(found[bucket][2:], (lo, hi, last))
         # and the messages themselves: every message counted once, the mean exact
-        hours = expected(stored, timedelta(hours=1))
-        self.assertEqual(sum(n for n, *_rest in hours.values()), len(messages))
-        self.assertAlmostEqual(sum(total for _n, total, *_rest in hours.values()), sum(v for _t, v in messages), places=6)
+        self.assertEqual(sum(n for n, *_rest in wanted.values()), len(messages))
+        self.assertAlmostEqual(sum(total for _n, total, *_rest in wanted.values()), sum(v for _t, v in messages), places=6)
 
     def test_bad_rows_are_left_out(self):
         stored = reduce(12, stream(12, START, 1800, seed=5), bad_every=4)
         insert(stored)
-        wanted = expected(stored, timedelta(minutes=1))
-        self.assertEqual(rollup('sensors_rollup_1m', 12).keys(), wanted.keys())
-        self.assertEqual(sum(found[0] for found in rollup('sensors_rollup_1m', 12).values()),
+        wanted = expected(stored, timedelta(hours=1))
+        self.assertEqual(sum(found[0] for found in rollup('sensors_rollup_1h', 12).values()),
                          sum(n for n, *_rest in wanted.values()))
 
     def test_a_shuffled_late_stream_gives_the_same_rollups(self):
-        stored = reduce(13, stream(13, START, 1200, seed=9))
+        stored = reduce(13, stream(13, START, 3600, seed=9))
         shuffled = stored[:]
         random.Random(3).shuffle(shuffled)
         insert(shuffled)
-        self.assertEqual(rollup('sensors_rollup_1m', 13).keys(), expected(stored, timedelta(minutes=1)).keys())
-        for bucket, values in expected(stored, timedelta(minutes=1)).items():
-            self.assertEqual(rollup('sensors_rollup_1m', 13)[bucket][0], values[0])
+        for bucket, values in expected(stored, timedelta(hours=1)).items():
+            self.assertEqual(rollup('sensors_rollup_1h', 13)[bucket][0], values[0])
+
+
+class CompressedChunkInsertTests(TestCase):
+    """TimescaleDB 2.17.2: in ONE multi-row INSERT ... ON CONFLICT DO NOTHING, once a row conflicts inside a compressed
+    chunk every later row of the statement is dropped without an error (found by the ingest, CONTRACT-REQUESTS 13). This
+    test pins the behaviour, so an upgrade that fixes it shows here; every Django writer of sensors_reading (the tests'
+    helpers, bench_sensors) writes one row per statement or refuses a range that already holds rows."""
+
+    def test_a_conflict_in_a_compressed_chunk_drops_the_rest_of_the_statement(self):
+        old = datetime(2026, 9, 1, 12, tzinfo=tz.utc)
+        insert([(31, old, 1.0, 1, 0, None, None, None)])
+        chunk = one("SELECT chunk_schema || '.' || chunk_name FROM timescaledb_information.chunks "
+                    "WHERE hypertable_name = 'sensors_reading' AND range_start <= %s AND range_end > %s", [old, old])
+        one('SELECT compress_chunk(%s::regclass)', [chunk])
+        recent = timezone.now().replace(microsecond=0)
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (31, %s, 9.0), (31, %s, 2.0) '
+                           'ON CONFLICT DO NOTHING', [old, recent])
+        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]), 0)
+        insert([(31, recent, 2.0, 1, 0, None, None, None)])                   # one per statement: stored
+        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]), 1)
 
 
 class RollupRefreshTests(TransactionTestCase):
     """What only a committed refresh shows: a late row in a refreshed region is taken in by the job that covers it (the
-    minute policy for the last 35 days, the daily job before that), and dropping raw chunks keeps the rollups."""
+    hour policy for the last 75 days, the daily job before that), and dropping raw chunks keeps the rollup."""
     serialized_rollback = True
 
     def refresh(self, view):
@@ -250,37 +264,33 @@ class RollupRefreshTests(TransactionTestCase):
         with connection.cursor() as cursor:
             cursor.execute('CALL run_job(%s)', [job])
 
-    def minute(self, channel_no):
-        return rows('SELECT n, sum_v, vmin, vmax, vlast FROM sensors_rollup_1m WHERE channel_no = %s', [channel_no])
+    def hour(self, channel_no):
+        return rows('SELECT n, sum_v, vmin, vmax, vlast FROM sensors_rollup_1h WHERE channel_no = %s', [channel_no])
 
-    def test_a_recent_late_row_is_taken_in_by_the_minute_policy(self):
-        recent = (timezone.now() - timedelta(days=2)).replace(second=0, microsecond=0)
-        insert([(22, recent, 1.0, 1, 0, None, None, None), (22, recent + timedelta(seconds=30), 3.0, 1, 0, None, None, None)])
-        self.refresh('sensors_rollup_1m')
-        insert([(22, recent + timedelta(seconds=10), 5.0, 1, quality.LATE, None, None, None)])
-        self.assertEqual(self.minute(22), [(2, 4.0, 1.0, 3.0, 3.0)])      # below the watermark: as materialized
-        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1m')
-        self.assertEqual(self.minute(22), [(3, 9.0, 1.0, 5.0, 3.0)])
-
-    def test_an_old_late_row_is_taken_in_by_the_daily_job_and_dropped_raw_keeps_its_rollups(self):
-        early = datetime(2025, 1, 6, 10, tzinfo=tz.utc)
-        insert([(21, early, 1.0, 1, 0, None, None, None), (21, early + timedelta(seconds=30), 3.0, 1, 0, None, None, None)])
-        self.refresh('sensors_rollup_1m')
+    def test_a_recent_late_row_is_taken_in_by_the_hour_policy(self):
+        recent = (timezone.now() - timedelta(days=2)).replace(minute=0, second=0, microsecond=0)
+        insert([(22, recent, 1.0, 1, 0, None, None, None), (22, recent + timedelta(minutes=30), 3.0, 1, 0, None, None, None)])
         self.refresh('sensors_rollup_1h')
-        insert([(21, early + timedelta(seconds=10), 5.0, 1, quality.LATE, None, None, None)])
-        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1m')     # outside its 35 days: no change
-        self.assertEqual(self.minute(21), [(2, 4.0, 1.0, 3.0, 3.0)])
+        insert([(22, recent + timedelta(minutes=10), 5.0, 1, quality.LATE, None, None, None)])
+        self.assertEqual(self.hour(22), [(2, 4.0, 1.0, 3.0, 3.0)])        # below the watermark: as materialized
+        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1h')
+        self.assertEqual(self.hour(22), [(3, 9.0, 1.0, 5.0, 3.0)])
+
+    def test_an_old_late_row_is_taken_in_by_the_daily_job_and_dropped_raw_keeps_its_rollup(self):
+        early = datetime(2025, 1, 6, 10, tzinfo=tz.utc)
+        insert([(21, early, 1.0, 1, 0, None, None, None), (21, early + timedelta(minutes=30), 3.0, 1, 0, None, None, None)])
+        self.refresh('sensors_rollup_1h')
+        insert([(21, early + timedelta(minutes=10), 5.0, 1, quality.LATE, None, None, None)])
+        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1h')     # outside its 75 days: no change
+        self.assertEqual(self.hour(21), [(2, 4.0, 1.0, 3.0, 3.0)])
         self.run_job('sensors_refresh_late')
-        self.assertEqual(self.minute(21), [(3, 9.0, 1.0, 5.0, 3.0)])
-        self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])
+        self.assertEqual(self.hour(21), [(3, 9.0, 1.0, 5.0, 3.0)])
         one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
         self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 21'), 0)
-        # Dropping raw chunks invalidates their region (TimescaleDB 2.17): a refresh over it would empty the rollups. No
-        # job reaches it: the policies look 35 and 75 days back, the late job no further than the late limit and a day.
-        self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1m')
+        # Dropping raw chunks invalidates their region (TimescaleDB 2.17): a refresh over it would empty the rollup. No
+        # job reaches it: the policy looks 75 days back, the late job no further than the late limit and a day.
         self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1h')
         with connection.cursor() as cursor:                      # the drop as if it happened two years on
             cursor.execute('UPDATE sensors_contract SET late_limit_days = 1, retention_days = 3')
         self.run_job('sensors_refresh_late')
-        self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1m WHERE channel_no = 21'), [(3, 9.0)])
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])

@@ -99,7 +99,6 @@ class Table:
     section: str
     description: str
     masked: frozenset  # column names
-    hypertable: bool = False   # a TimescaleDB hypertable (from the catalogue, sections())
 
     @property
     def app(self):
@@ -112,6 +111,12 @@ class Table:
     @property
     def soft_deletable(self):
         return any(f.column == 'is_deleted' for f in self.model._meta.concrete_fields)
+
+    @property
+    def hypertable(self):
+        """Whether the table is a TimescaleDB hypertable: asked of the catalogue when counting (the list of tables itself
+        is read from the models and asks the database nothing)."""
+        return self.name in hypertables()
 
     def counts(self):
         """{'rows': n, 'deleted': n, 'estimated': bool}, the soft-deleted rows counted among the rows; 'deleted' is None
@@ -179,7 +184,7 @@ CONSTRAINTS_SQL = """
 SELECT conname, contype, pg_get_constraintdef(oid)
 FROM pg_constraint
 WHERE conrelid = to_regclass(%s) AND contype <> 'n'
-ORDER BY array_position(ARRAY['p', 'u', 'f', 'c', 'x'], contype::text), conname
+ORDER BY array_position(ARRAY['p', 'u', 'f', 'c', 'x', 't'], contype::text), conname
 """
 INDEXES_SQL = """
 SELECT c.relname, i.indisunique, pg_get_indexdef(i.indexrelid)
@@ -188,7 +193,8 @@ JOIN pg_class c ON c.oid = i.indexrelid
 WHERE i.indrelid = to_regclass(%s)
 ORDER BY i.indisprimary DESC, c.relname
 """
-CONSTRAINT_KINDS = {'p': _('Primary key'), 'u': _('Unique'), 'f': _('Foreign key'), 'c': _('Check'), 'x': _('Exclusion')}
+CONSTRAINT_KINDS = {'p': _('Primary key'), 'u': _('Unique'), 'f': _('Foreign key'), 'c': _('Check'), 'x': _('Exclusion'),
+                    't': _('Constraint trigger')}
 SHORT_TYPES = {
     'character varying': 'varchar', 'character': 'char', 'double precision': 'float8',
     'timestamp with time zone': 'timestamptz', 'timestamp without time zone': 'timestamp',
@@ -216,7 +222,6 @@ def describe(model, override=''):
 def sections():
     """[(section label, [Table, ...])] in the configured order, the tables of a section by name."""
     config = viewer()
-    timescale = hypertables()
     result = []
     for section in config.sections:
         models = [model for label in section.apps
@@ -224,7 +229,7 @@ def sections():
                   if model._meta.managed and not model._meta.proxy and model._meta.db_table not in config.excluded]
         tables = [Table(model._meta.db_table, model, section.label,
                         describe(model, config.descriptions.get(model._meta.db_table, '')),
-                        frozenset(config.masked.get(model._meta.db_table, ())), model._meta.db_table in timescale)
+                        frozenset(config.masked.get(model._meta.db_table, ())))
                   for model in models]
         result.append((section.label, sorted(tables, key=lambda table: table.name)))
     return result

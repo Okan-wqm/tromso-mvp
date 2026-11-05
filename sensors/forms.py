@@ -17,7 +17,8 @@ from farm.models import Equipment, SamplingPoint, Site, System
 from farm.models.site import zone_of
 
 from . import quantities
-from .models import Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape, TimeUnit
+from .models import (AlarmRule, Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape,
+                     TimeUnit)
 
 DECIMAL = {'inputmode': 'decimal'}
 # A whole-second device time cannot tell apart two messages of one second, and the readings' key is (channel, time):
@@ -41,7 +42,8 @@ class ConnectionForm(TabbedForm):
             'is_active': gettext_lazy('An inactive connection is not listened to: its devices send to no one.'),
             'username': gettext_lazy('The ingest service’s own user name at the broker.'),
             'secret_file': gettext_lazy('The name of the file under /run/secrets that holds the ingest service’s password '
-                                        'at the broker. The password itself is never typed or stored here.'),
+                                        'at the broker (the compose secret mqtt_ingest). The password itself is never '
+                                        'typed or stored here.'),
             'client_id': gettext_lazy('The MQTT client id the ingest service connects with; unique among connections.'),
             'keepalive_s': gettext_lazy('From 5 to 600 seconds.'),
         }
@@ -74,7 +76,7 @@ class PayloadFormatForm(TabbedForm):
 
 DEVICE_TABS = [
     ('general', gettext_lazy('General'), ['connection', 'code', 'name', 'site', 'equipment', 'manufacturer', 'model',
-                                          'note', 'is_active']),
+                                          'note', 'is_active', 'is_simulated']),
     ('payload', gettext_lazy('Payload'), ['payload_format', 'topic', 'expected_interval_s']),
     ('credential', gettext_lazy('Credential'), ['credential']),
 ]
@@ -98,6 +100,8 @@ class DeviceForm(CodedFormMixin, TabbedForm):
             'equipment': gettext_lazy('The piece of equipment this device is, if it is one on the Equipment tab.'),
             'credential': gettext_lazy('The broker credential the device publishes with; one gateway may serve many '
                                        'devices.'),
+            'is_simulated': gettext_lazy('A simulator or test device: its values are stored marked simulated and used '
+                                         'nowhere.'),
         }
         widgets = {'note': forms.Textarea(attrs={'rows': 3})}
 
@@ -461,3 +465,30 @@ class BindingForm(TabbedForm):
         if value is not None and value > timezone.now():
             raise ValidationError(_('A binding cannot end in the future.'))
         return value
+
+
+ALARM_TABS = [('general', gettext_lazy('Alarm rule'), ['channel', 'quantity', 'kind', 'threshold', 'for_s', 'hysteresis',
+                                                        'severity', 'is_active'])]
+
+
+class AlarmRuleForm(TabbedForm):
+    """An alarm rule: on one channel or on every channel of a quantity. Shown on the Sensors pages, never sent."""
+
+    tabs = ALARM_TABS
+
+    class Meta:
+        model = AlarmRule
+        fields = tab_fields(ALARM_TABS)
+        localized_fields = ['threshold', 'hysteresis']
+        widgets = {'threshold': forms.TextInput(attrs=DECIMAL), 'hysteresis': forms.TextInput(attrs=DECIMAL)}
+        help_texts = {
+            'quantity': gettext_lazy('Instead of one channel: every active channel of this quantity.'),
+            'threshold': gettext_lazy('In the quantity’s unit; for a rate, the change over the time below.'),
+            'for_s': gettext_lazy('Above or below: every value of this time must be past the threshold. No fresh value: '
+                                  'this long past the channel’s freshness. A rate: the change over this time.'),
+            'hysteresis': gettext_lazy('An open alarm closes only once the value is back past the threshold by this much.'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['channel'].queryset = Channel.objects.select_related('device').order_by('device__code', 'code')

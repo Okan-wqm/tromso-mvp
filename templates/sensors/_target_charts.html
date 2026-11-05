@@ -1,0 +1,10 @@
+{% load i18n %}{% comment %} A place's charts in a monitoring window (sensors.views.target_charts): every quantity bound there over a
+   preset time; the presets reload the window in place (data-window-load). {% endcomment %}
+<div class="sensor-target-charts">
+  <nav class="view-tabs" aria-label="{% trans "Time" %}">{% for link in links %}<a class="view-tab" href="{{ link.url }}" data-window-load{% if link.current %} aria-current="page"{% endif %}>{{ link.key }}</a>{% endfor %}</nav>
+  {% for item in charts %}
+  <figure class="sensor-chart-figure">{{ item.svg }}{% if item.notes %}<figcaption class="row-sub">{{ item.notes|join:" " }}</figcaption>{% endif %}</figure>
+  {% empty %}
+  <p class="panel-help">{% blocktrans trimmed with place=target %}No sensor channel is bound to {{ place }} in this time, so there is no chart. Manual samples are on the Water chemistry page.{% endblocktrans %}</p>
+  {% endfor %}
+</div>

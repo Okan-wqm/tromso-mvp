@@ -1,0 +1,36 @@
+{% extends "crud/list.html" %}
+{% load i18n assets hr %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/hr.css' %}">{% endblock %}
+{% block search_placeholder %}{% trans "Search by name or number" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="from-filter">{% trans "From" %}</label>
+  <input id="from-filter" type="date" name="from" value="{{ first|date:'Y-m-d' }}" data-autosubmit>
+  <label class="sr-only" for="to-filter">{% trans "To" %}</label>
+  <input id="to-filter" type="date" name="to" value="{{ last|date:'Y-m-d' }}" data-autosubmit>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
+{% block empty_text %}{% trans "The clock-ins of your team in these days appear here." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Employee" %}</th><th scope="col">{% trans "Clock in" %}</th><th scope="col">{% trans "Clock out" %}</th><th scope="col">{% trans "How" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for record in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'hr:attendancerecord_edit' record.pk %}" data-modal>{{ record.employee.full_name }}</a>{% else %}<span class="row-title">{{ record.employee.full_name }}</span>{% endif %}</td>
+        <td>{{ record.clock_in|on_clock:record.zone_name|date:"DATETIME_FORMAT" }}</td>
+        <td>{% if record.clock_out %}{{ record.clock_out|on_clock:record.zone_name|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-active">{% trans "In" %}</span>{% endif %}</td>
+        <td>{{ record.get_via_display }}</td>
+        <td class="row-actions">
+          {% if can_change %}<a class="icon-button" href="{% url 'hr:attendancerecord_edit' record.pk %}" data-modal title="{% trans 'Correct' %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Correct" %}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'hr:attendancerecord_delete' record.pk %}" data-modal title="{% trans 'Void' %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Void" %}</span></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

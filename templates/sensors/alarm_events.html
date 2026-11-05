@@ -1,0 +1,33 @@
+{% extends "app_base.html" %}
+{% load i18n %}
+{% comment %} Sensors › Operations › Alarm events (sensors.views.alarm_events): the times a rule held, the open ones first, written
+   by manage.py check_sensors. Shown, never sent. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<p class="notice notice-warning" role="status">{% trans "Nobody is notified: an alarm is shown here and on the Sensors overview until a way to send it exists. It is not an alarm until someone sees it." %}</p>
+{% if events %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Rule" %}</th><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "Severity" %}</th><th scope="col">{% trans "Opened" %}</th><th scope="col">{% trans "Closed" %}</th><th scope="col" class="num">{% trans "Furthest value" %}</th><th scope="col">{% trans "Acknowledged" %}</th></tr></thead>
+    <tbody>
+      {% for event in events %}
+      <tr>
+        <td>{{ event.rule }}</td>
+        <td>#{{ event.channel_no }}</td>
+        <td>{{ event.rule.get_severity_display }}</td>
+        <td>{{ event.opened_at|date:"DATETIME_FORMAT" }}</td>
+        <td>{% if event.closed_at %}{{ event.closed_at|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-maintenance">{% trans "Open" %}</span>{% endif %}</td>
+        <td class="num">{{ event.peak|floatformat:"-3"|default:"—" }}</td>
+        <td>{% if event.acknowledged_at %}{{ event.acknowledged_by }} · {{ event.acknowledged_at|date:"DATETIME_FORMAT" }}{% elif can_acknowledge %}<form method="post" action="{% url 'sensors:alarm_event_acknowledge' event.pk %}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Acknowledge" %}</button></form>{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% else %}
+<p class="panel-help">{% trans "No alarm events." %}</p>
+{% endif %}
+{% endblock %}

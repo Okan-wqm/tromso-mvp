@@ -1,7 +1,6 @@
 """The forms of Operations › Feeding › Protocols and Assignments: a protocol's general fields (a tab of core.crud), its
 feeding table (a grid of bands by temperature columns, saved whole by farm/feeding/protocols.py) and the assignment
 dialogs (several units at once on create, one row on edit)."""
-import uuid
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
@@ -14,6 +13,7 @@ from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
 
+from ..feeding import assignments
 from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
 from ..models.feeding_protocol import MAX_SFR, TEMPERATURE, ProtocolStatus
 from ..stock.dates import earliest, local_today
@@ -256,7 +256,7 @@ def within_window(day, stored=None, unit=None):
     return day
 
 
-ASSIGNMENT_TABS = [('assignment', _('Assignment'), ['protocol', 'unit', 'batch', 'valid_from', 'valid_until', 'notes'])]
+ASSIGNMENT_TABS = [('assignment', _('Assignment'), list(assignments.FIELDS))]
 NEW_ASSIGNMENT_TABS = [('assignment', _('Assignment'),
                         ['protocol', 'units', 'batch', 'valid_from', 'valid_until', 'notes'])]
 HELP = {
@@ -313,24 +313,17 @@ class NewAssignmentForm(TabbedForm):
         if not units and batch is None:
             self.add_error('units', _('Choose units, a batch, or a batch and units.'))
             return cleaned
-        group = uuid.uuid4()
-        for unit in units or [None]:
-            row = ProtocolAssignment(protocol=cleaned['protocol'], unit=unit, batch=batch, group_id=group,
-                                     valid_from=cleaned['valid_from'], valid_until=cleaned.get('valid_until'),
-                                     notes=cleaned.get('notes', ''))
-            try:
-                row.full_clean(exclude=['group_id'])
-            except ValidationError as error:
-                # What concerns a field the form shows is said once by the form's own check of the record; what
-                # concerns the row as a whole (another protocol on those days) is said per unit.
-                messages = error.message_dict.get(NON_FIELD_ERRORS, [])
-                for message in messages:
-                    if unit is not None:
-                        self.add_error('units', f'{unit.code}: {message}')
-                    else:
-                        self.add_error('batch', message)
+        self.rows, errors = assignments.rows(cleaned['protocol'], units, batch, cleaned['valid_from'],
+                                             cleaned.get('valid_until'), cleaned.get('notes', ''))
+        for error in errors:
+            # What concerns a field the form shows is said once by the form's own check of the record; what
+            # concerns the row as a whole (another protocol on those days) is said per unit.
+            if error.field != NON_FIELD_ERRORS:
                 continue
-            self.rows.append(row)
+            if error.unit is not None:
+                self.add_error('units', f'{error.unit.code}: {error.message}')
+            else:
+                self.add_error('batch', error.message)
         if batch is not None:
             visited = set(StockMovement.objects.filter(batch=batch, operation__is_deleted=False)
                           .values_list('unit_id', flat=True))

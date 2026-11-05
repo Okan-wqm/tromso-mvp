@@ -1,0 +1,26 @@
+{% extends "app_base.html" %}
+{% load i18n assets %}
+{% comment %} Sensors › Operations › Charts (sensors.views.charts): one place's quantity over a time, drawn by the server
+   (sensors/chart.py); the CSV is the buckets drawn. {% endcomment %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/sensors.css' %}">{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<form method="get" class="toolbar sensor-chart-form">
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    {% for field in form %}{% include "registration/_field.html" %}{% endfor %}
+  </div>
+  <button type="submit" class="button button-inline">{% trans "Draw" %}</button>
+</form>
+{% if chart %}
+<figure class="sensor-chart-figure">
+  {{ svg }}
+  {% if chart.empty %}<figcaption class="panel-help">{% trans "No sensor values in this time: no channel of this quantity was bound here, or none sent a usable value." %}</figcaption>{% endif %}
+</figure>
+{% if notes %}<ul class="panel-help" role="list">{% for note in notes %}<li>{{ note }}</li>{% endfor %}</ul>{% endif %}
+{% if chart.gaps %}<p class="panel-help">{% blocktrans trimmed count count=chart.gaps|length %}{{ count }} time without a value is shaded, never filled.{% plural %}{{ count }} times without a value are shaded, never filled.{% endblocktrans %}</p>{% endif %}
+<p><a class="button button-ghost" href="{% url 'sensors:chart_csv' %}?{{ csv_query }}">{% include "icons/_icon.html" with name="download" %}{% trans "Download the drawn values (CSV)" %}</a></p>
+{% endif %}
+{% endblock %}

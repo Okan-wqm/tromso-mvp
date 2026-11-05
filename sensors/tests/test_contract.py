@@ -22,7 +22,7 @@ VIEW_COLUMNS = [
     'device_id', 'device_code', 'topic', 'expected_interval_s',
     'encoding', 'shape', 'time_path', 'time_unit', 'seq_path', 'items_path', 'name_key', 'value_key',
     'channel_no', 'channel_code', 'quantity', 'value_path', 'item_name', 'reduction', 'deadband', 'heartbeat_s',
-    'range_min', 'range_max', 'channel_state', 'valid_from', 'valid_to', 'a', 'b',
+    'range_min', 'range_max', 'channel_state', 'valid_from', 'valid_to', 'a', 'b', 'is_simulated',
 ]
 RUNTIME_TABLES = ('sensors_channel_state', 'sensors_device_state', 'sensors_ingest_status', 'sensors_dead_letter')
 CONFIG_TABLES = ('sensors_connection', 'sensors_payload_format', 'sensors_device', 'sensors_channel',
@@ -91,6 +91,11 @@ class ViewTests(SensorsCase):
         self.connection.save()
         self.device.soft_delete(self.user)
         self.assertEqual(view(), [])
+
+    def test_a_simulated_device_is_said_so_to_the_ingest(self):
+        self.assertEqual({row['is_simulated'] for row in view()}, {False})
+        Device.objects.filter(pk=self.device.pk).update(is_simulated=True)
+        self.assertEqual({row['is_simulated'] for row in view()}, {True})
 
     def test_no_credential_reaches_the_view(self):
         self.assertFalse({'password_hash', 'credential_id', 'credential'} & set(VIEW_COLUMNS))

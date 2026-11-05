@@ -150,14 +150,15 @@ class DevicePageTests(PagesCase):
             {'connection': self.connection.pk, 'code': 'o2-12', 'name': 'Oxygen probe 12', 'site': self.site.pk,
              'equipment': pump.pk, 'manufacturer': 'Oxyguard', 'model': 'Pacific', 'note': 'Tank T-12',
              'is_active': 'on', 'payload_format': self.format.pk, 'topic': 'farm/o2/+', 'expected_interval_s': '5',
-             'credential': credential.pk},
+             'credential': credential.pk, 'is_simulated': 'on'},
             {'connection': self.connection, 'code': 'O2-12', 'name': 'Oxygen probe 12', 'site': self.site,
              'equipment': pump, 'manufacturer': 'Oxyguard', 'model': 'Pacific', 'note': 'Tank T-12', 'is_active': True,
-             'payload_format': self.format, 'topic': 'farm/o2/+', 'expected_interval_s': 5, 'credential': credential},
+             'payload_format': self.format, 'topic': 'farm/o2/+', 'expected_interval_s': 5, 'credential': credential,
+             'is_simulated': True},
             {'equipment': '', 'manufacturer': '', 'model': '', 'note': '', 'is_active': '', 'topic': 'farm/o2/12',
-             'expected_interval_s': '10', 'credential': ''},
+             'expected_interval_s': '10', 'credential': '', 'is_simulated': ''},
             {'equipment': None, 'manufacturer': '', 'model': '', 'note': '', 'is_active': False, 'topic': 'farm/o2/12',
-             'expected_interval_s': 10, 'credential': None})
+             'expected_interval_s': 10, 'credential': None, 'is_simulated': False})
         self.stale_refused('device', device, 'name', 'Mine', 'Theirs')
         self.assertContains(self.client.get(url('device', 'edit', self.device.pk)), self.channel.code)   # its channels
 

@@ -44,9 +44,16 @@ class FakeProvider:
             raise RuntimeError('the sensors database is not reachable')
         return {target: self.now_values[target] for target in targets if target in self.now_values}
 
+    def bound(self, targets, code, since, until):
+        self.asked.append(('bound', code))
+        if self.broken:
+            raise RuntimeError('the sensors database is not reachable')
+        return {target for target in targets if code in self.history.get(target, {})}
+
     def value_at(self, targets, code, moment):
         if self.broken:
             raise RuntimeError('the sensors database is not reachable')
+        self.asked.append(('value_at', code))
         found = {}
         for target in targets:
             values = [value for value in self.history.get(target, {}).get(code, []) if value.at <= moment]
@@ -254,14 +261,26 @@ class ShownTests(SourcesCase):
         self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.SYSTEM_SENSOR,
                                    'alkalinity_mg_l': read.Origin.MANUAL, 'salinity_ppt': read.Origin.MANUAL})
         html = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])).content.decode()
-        self.assertRegex(html, r'unit sensor · 1[2-9] s ago')
-        self.assertRegex(html, r'system sensor · 4[0-9] s ago')
+        self.assertRegex(html, r'unit sensor #\d+ · 1[2-9] s ago')
+        self.assertRegex(html, r'system sensor #\d+ · 4[0-9] s ago')
         self.assertRegex(html, r'manual · 1.day ago')
 
     def test_the_water_page_and_the_card_name_the_origin(self):
         self.stock()                                              # an empty unit's card shows no water
         page = self.client.get(reverse('farm:water')).content.decode()
-        self.assertRegex(page, r'unit sensor · 1[2-9] s ago')
+        self.assertRegex(page, r'unit sensor #\d+ · 1[2-9] s ago')
         card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
-        self.assertRegex(card, r'unit sensor · 1[2-9] s ago')
-        self.assertRegex(card, r'system sensor · 4[0-9] s ago')
+        self.assertRegex(card, r'unit sensor #\d+ · 1[2-9] s ago')
+        self.assertRegex(card, r'system sensor #\d+ · 4[0-9] s ago')
+
+
+class SeriesCostTests(SourcesCase):
+    def test_a_series_asks_once_which_places_are_bound_and_never_per_moment_for_the_others(self):
+        series = read.Series([self.mid1, self.mid2], 'temperature_c', self.now - timedelta(days=7), self.now, live=True)
+        for hours in range(1, 30):
+            series.latest(self.mid1.pk, self.now - timedelta(hours=hours), timedelta(days=7))
+        self.assertEqual([ask for ask in self.provider.asked if ask[0] != 'latest'], [('bound', 'temperature_c')])
+        self.on(self.mid2, self.value('temperature_c', 9.0))
+        series = read.Series([self.mid1, self.mid2], 'temperature_c', self.now - timedelta(days=7), self.now, live=True)
+        self.assertIsNotNone(series.latest(self.mid2.pk, self.now, timedelta(days=7)))
+        self.assertIn(('value_at', 'temperature_c'), self.provider.asked)

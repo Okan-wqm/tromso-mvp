@@ -1,0 +1,20 @@
+{% load i18n %}{% comment %} A stored design as it is (design.table): the groups with their level of each factor and their replicates. {% endcomment %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr><th scope="col">{% trans "Group" %}</th><th scope="col">{% trans "Role" %}</th>{% for factor in table.factors %}<th scope="col">{{ factor.name }}{% if factor.unit %} ({{ factor.unit }}){% endif %}</th>{% endfor %}<th scope="col" class="num">{% trans "Replicates" %}</th></tr>
+    </thead>
+    <tbody>
+      {% for row in table.rows %}
+      <tr>
+        <td>{{ row.group.name }}{% if row.group.is_control %} <span class="badge badge-experimental">{% trans "Control" %}</span>{% endif %}</td>
+        <td>{{ row.group.get_role_display }}</td>
+        {% for level in row.levels %}<td>{% if level %}{{ level }}{% if level.value is not None %} ({{ level.value|floatformat:"-4" }}){% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+        <td class="num">{{ row.replicates|length }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="{{ table.factors|length|add:3 }}" class="muted">{% trans "No group." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

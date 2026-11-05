@@ -3,15 +3,14 @@ its own inner tab, saved as a whole (ProtocolTableView, farm/feeding/protocols.p
 into a draft. The assignment dialog writes a row per unit chosen (AssignmentCreateView)."""
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.db.models import Count, Prefetch, Q, Sum
 from django.urls import path, reverse
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
-from core import audit
 from core.crud import DRAFT, CreateView, Resource, ResourceView, UpdateView, done, filter_by
 
-from ..feeding import protocols
+from ..feeding import assignments, protocols
 from ..feeding.ration import Policy, band_range
 from ..feeding.read import tables
 from ..forms.feeding_protocol import (
@@ -147,11 +146,7 @@ class AssignmentCreateView(CreateView):
         if not form.is_valid():
             return self.page(form)
         try:
-            with transaction.atomic():
-                for row in form.rows:
-                    row.created_by = row.updated_by = request.user
-                    row.save()
-                    audit.record_create(request.user, row, r.recorded(row), entity_type=r.entity_type())
+            assignments.save(request.user, form.rows)
         except IntegrityError:
             form.add_error(None, _('Another protocol was assigned to these fish meanwhile: look at the list and try '
                                    'again.'))

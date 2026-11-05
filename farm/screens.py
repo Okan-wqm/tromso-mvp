@@ -37,7 +37,7 @@ SCREENS = {
         'is_active', 'water_capacity_m3', 'max_biomass_kg', 'established_date', 'facilities', 'settings', 'notes',
         'metadata')}),
     'ProductionDepartment': Screen(columns={name: gap('no field on the Production department form')
-                                            for name in ('status', 'description', 'manager')}),
+                                            for name in ('status', 'description')}),
     'Tank': Screen(extra_fields={'freeboard': 'shown, never typed: calculated from the dimensions'}),
     'SamplingPoint': Screen(extra_fields={'owner_type': 'says which of unit, system or equipment owns the point'}),
     'HandlingRule': Screen(extra_fields={

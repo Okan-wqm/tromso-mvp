@@ -1,0 +1,2 @@
+{% load i18n %}{% comment %} An experiment's status (and that it is a template) as a badge; `experiment` is the record.{% endcomment %}
+<span class="badge badge-{% if experiment.status == 'running' %}active{% elif experiment.status == 'closed' %}inactive{% else %}draft{% endif %}">{{ experiment.get_status_display }}</span>{% if experiment.is_template %} <span class="badge badge-experimental">{% trans "Template" %}</span>{% endif %}

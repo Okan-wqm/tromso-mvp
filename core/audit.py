@@ -5,6 +5,8 @@ The log is language-neutral at rest: labels, record types and enumerated values 
 English msgids whatever language the person who made the change was using, and shown translated
 (AuditLog.shown_changes). Build every snapshot inside `source_language()` (core.crud does); a person's
 own text (names, descriptions) is stored as written and never translated."""
+import hashlib
+import hmac
 from datetime import timedelta
 
 from django.conf import settings
@@ -16,6 +18,29 @@ from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
 
 from .models import AuditLog
+
+
+# Record types whose entries only some people may read in the activity log: {entity type: permission}. An app that
+# keeps personal records (hr) registers them when it is ready; the log lists the others to everyone who may open it.
+_restricted = {}
+
+
+def restrict(entity_type, perm):
+    """The log's entries about `entity_type` (its English name, `entity_type_of`) are shown only to people who
+    hold `perm`: the activity log's list, its filters and its counts leave them out for everyone else."""
+    _restricted[entity_type] = perm
+
+
+def hidden_types(user):
+    """The record types whose log entries `user` may not read."""
+    return [entity_type for entity_type, perm in _restricted.items() if not user.has_perm(perm)]
+
+
+def readable(user, entries=None):
+    """The log entries `user` may read: every one but those of a restricted record type they lack the permission for."""
+    entries = AuditLog.objects.all() if entries is None else entries
+    hidden = hidden_types(user)
+    return entries.exclude(entity_type__in=hidden) if hidden else entries
 
 
 def source_language():
@@ -57,14 +82,22 @@ def _display(instance, field):
     return str(value)
 
 
-def snapshot(instance, field_names, labels=None):
+def snapshot(instance, field_names, labels=None, private=()):
     """{field label: display value} for the given fields, None for empty values. Labels come from
-    `labels` (e.g. a form's Meta.labels) and default to the model field's verbose name."""
+    `labels` (e.g. a form's Meta.labels) and default to the model field's verbose name. A `private` field
+    (a person's own words, Resource.private_fields) shows as the enumerated value "Private text" when it
+    is filled and never as its text: the log says that it was set or cleared, not what it says."""
     labels = labels or {}
     result = {}
     for name in field_names:
         field = instance._meta.get_field(name)
-        result[str(labels.get(name, capfirst(field.verbose_name)))] = _display(instance, field)
+        value = _display(instance, field)
+        if name in private and value is not None:
+            # The words are never stored. A short keyed digest is, so that replacing one text by another is a change the log
+            # shows ("Private text" to "Private text") without saying anything about what they say.
+            value = {**message(_('Private text')), 'rev': hmac.new(
+                settings.SECRET_KEY.encode(), str(value).encode(), hashlib.sha256).hexdigest()[:8]}
+        result[str(labels.get(name, capfirst(field.verbose_name)))] = value
     return result
 
 
@@ -80,6 +113,15 @@ def entity_type_of(model):
     """How the activity log names a kind of record (its English name, shown translated); the one
     definition for writing and searching it."""
     return english(model._meta.verbose_name)
+
+
+LABEL_LENGTH = AuditLog._meta.get_field('entity_label').max_length
+
+
+def bounded(label):
+    """A label that fits the log's column: longer ones are cut, with an ellipsis (a record's own label is written to be short
+    and findable, a stock operation's shortens the units it lists first; this is what stops any other from failing the write)."""
+    return label if len(label) <= LABEL_LENGTH else label[:LABEL_LENGTH - 1] + '…'
 
 
 LATE_COMMIT = timedelta(minutes=5)
@@ -110,7 +152,7 @@ def record(user, action, instance, changes=None, entity_type=None, label=None, s
         entity_id=str(instance.pk),
         # The record's name as English at rest like everything else: a name built from choices (a water limit's
         # parameter, a plan's kind) would otherwise be stored in the language of the person making the change.
-        entity_label=label or english(instance),
+        entity_label=bounded(label or english(instance)),
         changes=changes or {},
         severity=severity,
     )

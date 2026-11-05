@@ -273,7 +273,8 @@ class Series:
         self.points = {point.pk: point for point in points}
         self.moments = defaultdict(list)    # point id -> [measured at], in time order
         self.values = defaultdict(list)     # point id -> [value], in the same order
-        self.asked = {}                     # (point id, moment) -> [Found] of the sensors
+        self.asked = {}                     # moment -> {point id: [Found]} of the sensors
+        self.bound = set()                  # the sensor targets with a channel of the parameter bound in the range
         chosen = list(self.points)
         if chosen:
             rows = WaterMeasurement.objects.filter(point__in=chosen, measured_at__gte=since,
@@ -283,22 +284,32 @@ class Series:
             for point_id, moment, value in rows.order_by('measured_at').values_list('point_id', 'measured_at', code):
                 self.moments[point_id].append(moment)
                 self.values[point_id].append(value)
+        if live and self.points:
+            wanted = [target for point in self.points.values() for target, _origin in sensor_targets(point, False)]
+            self.bound = sources.bound(wanted, code, since, until or timezone.now())
 
     def _live(self, point_id, moment, window):
-        """The sensors' values of the point at the moment (Found, primary first), at most `window` old."""
-        key = (point_id, moment)
-        if key not in self.asked:
-            point = self.points.get(point_id)
-            targets = sensor_targets(point, system_tier=False) if point is not None else []
-            answer = sources.value_at([target for target, _origin in targets], self.code, moment)
-            found = []
-            for target, origin in targets:
-                for value in sources.ordered(answer.values.get(target, [])):
-                    if value.at <= moment and moment - value.at <= window:
-                        observed = Observation.of_sensor(point, value, origin)
-                        found.append(Found(value.at, observed.get(self.code), value.fresh_for, origin))
-            self.asked[key] = found
-        return self.asked[key]
+        """The sensors' values of the point at the moment (Found, primary first), at most `window` old. One ask of the
+        live sources per moment for every point of the series, so the queries do not grow with the points."""
+        if moment not in self.asked:
+            targets = {pk: [(target, origin) for target, origin in sensor_targets(point, system_tier=False)
+                            if target in self.bound] for pk, point in self.points.items()}
+            if not any(targets.values()):
+                self.asked[moment] = {}
+                return []
+            answer = sources.value_at([target for found in targets.values() for target, _origin in found], self.code,
+                                      moment)
+            by_point = {}
+            for pk, found in targets.items():
+                values = []
+                for target, origin in found:
+                    for value in sources.ordered(answer.values.get(target, [])):
+                        if value.at <= moment:
+                            observed = Observation.of_sensor(self.points[pk], value, origin)
+                            values.append(Found(value.at, observed.get(self.code), value.fresh_for, origin))
+                by_point[pk] = values
+            self.asked[moment] = by_point
+        return [found for found in self.asked[moment].get(point_id, []) if moment - found.at <= window]
 
     def latest(self, point_id, moment, window):
         """The point's value at `moment` (Found): a fresh sensor value (a live series), else the newest value at or before
@@ -539,13 +550,15 @@ def _local_day(sample):
 
 
 # ---- the latest values ------------------------------------------------------------------------------------
-def _newest_ids(points, since):
-    """{point id: {slot: sample id}}: per point, the newest live sample of each slot within the window."""
+def _newest_ids(points, since, until=None):
+    """{point id: {slot: sample id}}: per point, the newest live sample of each slot within the window (up to `until`)."""
     found = {}
     if not points:
         return found
-    rows = (WaterMeasurement.objects.filter(point__in=[point.pk for point in points], measured_at__gte=since)
-            .values('point_id')
+    rows = WaterMeasurement.objects.filter(point__in=[point.pk for point in points], measured_at__gte=since)
+    if until is not None:
+        rows = rows.filter(measured_at__lte=until)
+    rows = (rows.values('point_id')
             .annotate(**{f'newest_{slot}': First(ArrayAgg('id', filter=condition,
                                                            order_by=('-measured_at', '-created_at')),
                                                   output_field=UUIDField())
@@ -622,30 +635,42 @@ def _resolve(point, manual, live, context, now):
     return chosen
 
 
-def latest(points, now=None):
+def latest(points, now=None, at=None):
     """{point id: PointWater} of every sampling point given: per parameter, its value in the owner's order (`_resolve`),
-    judged for the fish in it today; values no longer fresh are stale. One query for the samples, one ask of the live
-    sources for every point."""
-    now = now or timezone.now()
-    since = now - WINDOW
+    judged for the fish in it that day; values no longer fresh are stale. One query for the samples, one ask of the live
+    sources for every point. With `at` (a past moment, owner amendment A4), the water as it was then: the samples taken
+    up to that moment, each sensor's value at it (sources.value_at: the channels bound there then), fresh and judged
+    relative to it; nothing from after it."""
+    moment = at or now or timezone.now()
+    since = moment - WINDOW
     points = list(points)
-    newest = _newest_ids(points, since)
+    newest = _newest_ids(points, since, until=at)
     ids = {sample_id for slots in newest.values() for sample_id in slots.values()}
     samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(ids)
     context = Context(points, since)
     targets = {point.pk: sensor_targets(point, system_tier=True) for point in points}
-    answer = sources.latest([target for found in targets.values() for target, _origin in found], now)
+    wanted = [target for found in targets.values() for target, _origin in found]
+    answer = sources.latest(wanted, moment) if at is None else _values_at(wanted, at)
     water = {}
     for point in points:
         point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed)
-        today = local_time(now, point).date()
+        day = local_time(moment, point).date()
         resolved = _resolve(point, _manual(point, newest, samples, context), _live(point, targets[point.pk], answer),
-                            context, now)
+                            context, moment)
         for code, reading in resolved.items():
-            point_water.readings[code] = context.judge(reading, today, now)
+            point_water.readings[code] = context.judge(reading, day, moment)
     return water
 
 
+def _values_at(targets, moment):
+    """The live sources' values of every measured parameter at a past moment, as one answer (sources.Answer)."""
+    merged, failed = {}, False
+    for code in parameters.COLUMNS:
+        answer = sources.value_at(targets, code, moment)
+        failed = failed or answer.failed
+        for target, values in answer.values.items():
+            merged.setdefault(target, {})[code] = values
+    return sources.Answer(merged, failed)
 
 
 def owner_water(owners, now=None):

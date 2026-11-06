@@ -2,7 +2,7 @@
 same for the stock): a recorded amount as it was typed, to the gram, a ratio to two decimals, a day as
 today, yesterday or its date, and a dash for a value there is none of."""
 from datetime import timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django import template
 from django.utils import formats
@@ -15,10 +15,13 @@ register = template.Library()
 
 
 def amount(kilos):
-    """A recorded amount as it was typed, to the gram, without trailing zeros: 12.5, 0.035, 1,250 (the
-    source rounded to 0.1 kg, so a 40 g ration read 0.0, FDR-40)."""
-    exponent = Decimal(kilos).normalize().as_tuple().exponent
-    return number(kilos, min(max(-exponent, 0), 3))
+    """A recorded amount as it was typed, without trailing zeros: under a kilogram to the gram (0.035: the source
+    rounded to 0.1 kg, so a 40 g ration read 0.0, FDR-40), from a kilogram up to at most two decimals (12.5, 251.8,
+    1,250): three decimals after the separator read as a group of thousands beside grouped figures, so 251.804 kg read
+    as 251 tonnes next to 1,420 kg. The one rule for an amount in every language (inventory's quantities too)."""
+    places = Decimal(1).scaleb(-3 if abs(Decimal(kilos)) < 1 else -2)
+    shown = Decimal(kilos).quantize(places, rounding=ROUND_HALF_UP)
+    return number(shown, max(-shown.normalize().as_tuple().exponent, 0))
 
 
 @register.filter

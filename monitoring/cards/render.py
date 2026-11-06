@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from django.utils.translation import gettext
 
+from core import text
 from farm.templatetags.water import water_value
 from farm.water import read as water_read
 from farm.water.evaluate import Status, judge
@@ -179,5 +180,5 @@ def bar(face):
                                                       gettext('warning above'), gettext('critical above')))
                       if bounds[name] is not None)
     sentence = gettext('%(label)s %(value)s, %(status)s; limits: %(limits)s') % {
-        'label': face.label, 'value': face.value, 'status': face.status_label.lower(), 'limits': shown}
+        'label': face.label, 'value': face.value, 'status': text.lower(face.status_label), 'limits': shown}
     return Bar(tuple(bands), at(reading.value), sentence)

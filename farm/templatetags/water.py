@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
 
+from core import text
+
 from ..models.site import zone_of
 from ..models.water_point import site_of
 from ..water import parameters, read as water_read
@@ -45,7 +47,7 @@ def limit_text(row):
         parts.append(_('critical above %(value)s') % {'value': show(row.critical_high)})
     who = row.species.common_name
     if row.water_type != ANY_WATER:
-        who = f'{who} ({row.get_water_type_display().lower()})'
+        who = f'{who} ({text.lower(row.get_water_type_display())})'
     return f'{who}: {", ".join(parts)}'
 
 

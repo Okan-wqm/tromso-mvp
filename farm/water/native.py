@@ -54,3 +54,43 @@ def handshake_problems():
     installed = {'version': version(), 'formula_version': str(formula_version()), 'core_hash': core_hash()}
     return [f'{field}: installed {installed[field]}, expected {wanted[field]}'
             for field in FIELDS if installed[field] != wanted[field]]
+
+
+# ---- the chemistry (chemcore/core/src/chemistry.rs), under the names farm/water/chemistry.py gives them ----------
+NonFiniteError = chemcore.NonFiniteError
+Equilibria = chemcore.Equilibria
+KELVIN = chemcore.KELVIN
+MG_CACO3_PER_MEQ = chemcore.MG_CACO3_PER_MEQ
+MG_CO2_PER_MMOL = chemcore.MG_CO2_PER_MMOL
+MG_CALCIUM_PER_MOL = chemcore.MG_CALCIUM_PER_MOL
+H2S_PER_S = chemcore.H2S_PER_S
+SOLVER_PH = chemcore.SOLVER_PH
+AIR_CO2 = chemcore.AIR_CO2
+equilibria = chemcore.equilibria
+solve = chemcore.solve
+ks = chemcore.ks
+kf = chemcore.kf
+ionic_strength = chemcore.ionic_strength
+total_sulfate = chemcore.total_sulfate
+total_fluoride = chemcore.total_fluoride
+total_boron = chemcore.total_boron
+free_to_sws = chemcore.free_to_sws
+free_to_total = chemcore.free_to_total
+activity_coefficient_h = chemcore.activity_coefficient_h
+sws_to_nbs = chemcore.sws_to_nbs
+ph_free = chemcore.ph_free
+k1_sws = chemcore.k1_sws
+k2_sws = chemcore.k2_sws
+kw_total = chemcore.kw_total
+kb_total = chemcore.kb_total
+k_nh4_sws = chemcore.k_nh4_sws
+pk_nh4 = chemcore.pk_nh4
+k_h2s_total = chemcore.k_h2s_total
+ksp_calcite = chemcore.ksp_calcite
+ksp_aragonite = chemcore.ksp_aragonite
+nh3_fraction = chemcore.nh3_fraction
+pressure_atm = chemcore.pressure_atm
+vapour_pressure_atm = chemcore.vapour_pressure_atm
+oxygen_solubility = chemcore.oxygen_solubility
+k0_co2 = chemcore.k0_co2
+co2_from_air = chemcore.co2_from_air

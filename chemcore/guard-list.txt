@@ -21,6 +21,7 @@ name OMEGA_SALINITY
 name PH_RANGE
 name SOLVER_PH
 name activity_coefficient_h
+name air_co2
 name alkalinity_floor
 name at_target
 name below_air
@@ -39,7 +40,9 @@ name free_to_sws
 name free_to_total
 name h2s_assessed
 name h2s_note
+name h2s_per_s
 name h2s_plot
+name h2s_share
 name ionic_strength
 name isoline_colour
 name isoline_segment
@@ -52,15 +55,24 @@ name kb_total
 name ksp_aragonite
 name ksp_calcite
 name kw_total
+name mg_caco3_per_meq
+name mg_calcium_per_mol
+name mg_co2_per_mmol
 name molar_mass
 name nh3_fraction
 name nh3_note
 name nh3_plot
+name nh3_share
 name nice_step
 name omega_line
 name oxygen_solubility
 name ph_free
 name ph_label
+name ph_where_carbonate
+name ph_where_co2
+name ph_where_co2_at_dic
+name ph_where_h2s
+name ph_where_nh3
 name pk_nh4
 name pressure_atm
 name region_names
@@ -68,6 +80,7 @@ name safe_zone
 name safe_zone_gaps
 name saturation_index
 name saturation_plot
+name solver_ph
 name sws_to_nbs
 name total_boron
 name total_fluoride
@@ -124,6 +137,7 @@ number 34.6435
 number 35.453
 number 40.078
 number 44.0095
+number 44.0096
 number 47.986
 number 50.04345
 number 58.0931
@@ -133,6 +147,7 @@ number 88.135
 number 90.18333
 number 90.5069
 number 96.062
+number 100.0869
 number 114.723
 number 118.67
 number 123.7184
@@ -151,6 +166,7 @@ number 324.57
 number 530.123
 number 771.54
 number 772.483
+number 1000.0
 number 1590.2
 number 1776.0
 number 2140.7
@@ -170,6 +186,7 @@ number 13856.0
 number 35474.0
 number 40078.0
 number 157570.1
+number 216961.0
 number 1820000.0
 number 66423080.0
 number 12438000000.0

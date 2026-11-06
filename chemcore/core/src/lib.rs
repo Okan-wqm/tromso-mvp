@@ -4,6 +4,9 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
+pub mod chemistry;
+pub mod num;
+
 mod digest {
     include!(concat!(env!("OUT_DIR"), "/core_hash.rs"));
 }

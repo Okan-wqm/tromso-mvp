@@ -154,4 +154,4 @@ Tests run in Docker against a test database; these need a real browser and serve
 6. **Both merge orders** with the water sampling points (the Data tab's Water link, `farm/water/read.py`) and the withdrawal-scope branch (`farm/handling/check.py`, `farm/health/withdrawal.py`, farm migrations 0020 and 0021): then `check_stock` and `check_experiments`.
 7. **A release and a replacement on the running trial** on a real tank: the diet row ends, the new tank's ration follows from its first day, and the Overview names the gap when there is no weighing at the move.
 8. **The activity log** of a started experiment (the `Places`, `Reason it left`, `Status` and `Warnings acknowledged` rows) read in all three languages.
-9. **The database viewer's Research section** shows the eight tables with their constraints and descriptions; the admin restores an experiment (not its parts).
+9. **The database viewer's Research section** shows the eight tables with their constraints and descriptions; the admin restores an experiment with the parts its delete took along.

@@ -10449,7 +10449,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
-        "core/tests_query.py",
+        "core/tests_query_pages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
@@ -12118,7 +12118,7 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
-        "core/tests_query.py",
+        "core/tests_query_pages.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -16622,7 +16622,6 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
-        "core/tests_query.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_escape_delivery.py",
@@ -28244,7 +28243,7 @@
           "why": ""
         }
       },
-      "note": "The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back only the template.",
+      "note": "The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back the template with its rules (the boards and templates stay detached).",
       "forms": [
         {
           "form": "CardTemplateForm",

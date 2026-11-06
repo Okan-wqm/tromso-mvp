@@ -16448,6 +16448,10 @@ msgid "“%(option)s” is not an option of this widget."
 msgstr "«%(option)s» er ikke et valg for dette elementet."
 
 #, python-format
+msgid "“%(record)s” is not deleted."
+msgstr "«%(record)s» er ikke slettet."
+
+#, python-format
 msgid "“%(task)s” is cancelled."
 msgstr "«%(task)s» er avlyst."
 

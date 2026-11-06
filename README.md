@@ -1279,9 +1279,8 @@ structure) with read, create, edit and delete.
 
 **Deleting**: a unit, a system or a piece of equipment keeps its sampling points, and they their samples, out of
 sight while it is deleted (the links are `DO_NOTHING`; the confirmation counts both) and back when it is restored,
-as its stock lines are: points are not deleted with their owner because restoring a record brings back only that
-record, so points deleted with it would never return. A species takes its water limits with it, each listed and
-logged. The admin shows voided samples but does not restore them.
+as its stock lines are: points are history of their owner, not a part deleted with it. A species takes its water
+limits with it, each listed and logged. The admin shows voided samples but does not restore them.
 
 **The MVP alerts nobody.** A critical value is shown on the page, on the unit in Production units (its
 columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
@@ -2166,7 +2165,8 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   from its first day to its last. The test suite runs it after its scenarios.
 - **Delete** goes through the delete plan: a draft is deleted with its factors, levels, groups, replicates and placements
   (one activity-log row each, its tanks free again), a started experiment is refused with the reason. A restored draft
-  comes back without its design (only the record itself returns). A copy of a deleted experiment keeps pointing at it.
+  comes back with its design (what its delete took along, core.softdelete.restore). A copy of a deleted experiment
+  keeps pointing at it.
   A protocol a level names, a tank or a department a placement names, and a site or species an experiment names cannot
   be deleted while it does.
 
@@ -2174,7 +2174,7 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
 experiment, Edit changes it, saves its design, its places and its team, and starts it, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
 student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
-deleted ones too, and restores an experiment (not its parts).
+deleted ones too, and restores an experiment with the parts its delete took along.
 
 ## Regulatory reports (Production › Reports, `/reports/`)
 
@@ -3299,6 +3299,17 @@ stays in the lists, showing its place as deleted). Records that point at it thro
 only a plan go with it all the same: their model says which (`AuditedModel.deleted_with`, a recurring task's
 planned tasks nobody touched).
 
+**Restoring** (the admin's action, `core.softdelete.restore`): a delete stamps every record it deletes with one
+moment, so a restore brings back the record and what that delete took along (a site's production departments,
+systems and equipment, a draft experiment's design, a recurring task's planned tasks: F-029, F-067), parents first,
+each checked like a new one, all of it or nothing, one activity-log row each. A record deleted on its own before
+stays deleted, and a link the delete cleared (`SET_NULL`) stays cleared: what it pointed at is not kept (F-036). The
+record is locked, so two restores take turns, and a code taken by a record committed meanwhile is refused with its
+reason, not a server error (F-003). The records a delete takes along were read for the plan, not locked, so it
+writes only their deletion's columns, counting the version up in the database (`AuditedModel.mark_deleted`,
+`detach`): an edit saved meanwhile is kept and its editor's outdated version refused (F-065, F-079, F-190). Deletes
+made before this stamped each record with its own moment: restoring one of those brings back the record alone.
+
 ### Shared form parts
 
 What one tab needed and the next ones will too lives in `core/`:
@@ -3367,8 +3378,8 @@ What one tab needed and the next ones will too lives in `core/`:
 
 A deleted record stays in the database. In `/admin/` (platform admin) every farm record type lists its
 records including deleted ones, and the "Restore" action brings them back: refused when a record it
-points at is deleted too (bring that back first) or its code was taken meanwhile, and logged. Only
-the record itself returns, not what was deleted with it. The admin edits nothing, and users and roles
+points at is deleted too (bring that back first) or its code was taken meanwhile, and logged. What its
+delete took along comes back with it (see the delete plan: restoring). The admin edits nothing, and users and roles
 are not in it: they are changed on their own screens, where every change is logged.
 
 ### Adding a tab

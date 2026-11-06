@@ -4,12 +4,12 @@ Records are soft-deleted, so the database's own `on_delete` never runs. Instead 
 consequences per tab, this reads each link's `on_delete` and applies it to live records:
 
 - CASCADE   the records that point at it are deleted with it, and so on down;
-- SET_NULL  they stay, but lose the link (e.g. a deleted site's production departments);
+- SET_NULL  they stay, but lose the link (e.g. a deleted production department's systems); a restore does not
+  link them again, what they pointed at is not kept;
 - PROTECT / RESTRICT  they block the delete until they are dealt with;
 - DO_NOTHING  they stay as they are, still pointing at it: history that outlives the record without
   holding it back (a deleted unit's feeding records and its sampling points, as its stock lines), shown again
-  with it when it is restored (restoring brings back only the record itself, so what must come back with it is
-  kept, not deleted with it). The database's own foreign key still refuses a hard delete. What they keep in
+  with it when it is restored. The database's own foreign key still refuses a hard delete. What they keep in
   turn is kept too (a unit's points keep their water samples). The
   confirmation counts them, each record once whatever links it, and says what becomes of them
   (the model's `kept_note`). Records that point at it this way but are only a plan, not history (a
@@ -23,17 +23,19 @@ confirmation lists them; nothing about them changes, so nothing is logged for th
 A model adds conditions that are not links by overriding `delete_blockers()` (fish still in a
 tank). One plan serves both the confirmation (what will be affected) and the delete itself, and
 every record it touches gets its own activity-log row, written in English like every audit row
-(core.audit).
+(core.audit). Every record the delete takes along is stamped with the delete's moment, so a restore brings
+back the record and what that delete took along (`restore`), never what was deleted on its own before.
 """
 from dataclasses import dataclass, field
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import IntegrityError, models, transaction
+from django.utils import timezone
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _, ngettext
 
 from . import audit
-from .models import AuditedModel, AuditLog
+from .models import AuditedModel, AuditLog, violated_constraint
 
 
 @dataclass
@@ -172,7 +174,9 @@ def protected(model, count):
 
 
 def execute(plan, user):
-    """Carries the plan out, inside the caller's transaction, one log row per affected record."""
+    """Carries the plan out, inside the caller's transaction, one log row per affected record. Every record it deletes
+    is stamped with one moment, the delete's (AuditedModel.mark_deleted): a restore brings back what it took along."""
+    moment = timezone.now()
     with audit.source_language():
         for record, link in plan.detach:
             label = capfirst(record._meta.get_field(link).verbose_name)
@@ -180,24 +184,71 @@ def execute(plan, user):
             record.detach(link, user)
             audit.record(user, AuditLog.Action.UPDATE, record, {str(label): [before, None]})
         for record in reversed(plan.cascade):
-            record.soft_delete(user)
+            record.mark_deleted(user, moment)
             audit.record_delete(user, record)
-        plan.obj.soft_delete(user)
+        plan.obj.mark_deleted(user, moment)
         audit.record_delete(user, plan.obj)
 
 
+def taken_with(record):
+    """`record`, deleted, and what its delete took along: the records pointing at it that were deleted in the same
+    moment (execute), and theirs in turn; parents before their children, each locked for this transaction. A record
+    deleted on its own before is not among them, nor what was only detached (its link is not known any more)."""
+    found, seen, frontier = [], set(), [record]
+    while frontier:
+        found.extend(frontier)
+        seen.update((type(item), item.pk) for item in frontier)
+        following = []
+        for parent in frontier:
+            for relation in parent._meta.related_objects:
+                model = relation.related_model
+                if not relation.one_to_many or not issubclass(model, AuditedModel):
+                    continue
+                children = (model.all_objects.select_for_update(of=('self',)).order_by('pk')
+                            .filter(**{relation.field.name: parent}, is_deleted=True, deleted_at=parent.deleted_at))
+                following.extend(child for child in children if (model, child.pk) not in seen)
+                seen.update((model, child.pk) for child in children)
+        frontier = following
+    return found
+
+
 def restore(record, user):
-    """Brings a deleted record back, checked like a new one: refused when a record it points at is
-    deleted too (bring that back first) or when its code was taken meanwhile. Only the record itself
-    returns, not what was deleted with it. The change is logged."""
-    for link in record._meta.concrete_fields:
-        target = getattr(record, link.name) if link.is_relation else None
-        if isinstance(target, AuditedModel) and target.is_deleted:
-            raise ValidationError(_('%(field)s “%(record)s” is deleted.'),
-                                  params={'field': capfirst(link.verbose_name), 'record': target})
-    record.is_deleted, record.deleted_at, record.deleted_by = False, None, None
-    record.updated_by = user
-    record.version += 1
-    record.full_clean()   # re-checks the constraints among live records, e.g. a code taken meanwhile
-    record.save()
-    audit.record(user, AuditLog.Action.RESTORE, record)
+    """Brings a deleted record back with what its delete took along (taken_with), each checked like a new one:
+    refused when a record one of them points at is deleted and does not come back with them (bring that back first),
+    when a code was taken meanwhile, or when another restore was first. The record is locked, so two restores take
+    turns; it all comes back or nothing does. Each change is logged. A link the delete cleared (SET_NULL) stays
+    cleared: what it pointed at is not kept."""
+    model = type(record)
+    with transaction.atomic():
+        record = model.all_objects.select_for_update(of=('self',)).filter(pk=record.pk).first() or record
+        if not record.is_deleted:
+            raise ValidationError(_('“%(record)s” is not deleted.'), params={'record': record})
+        records = taken_with(record)
+        coming = {(type(item), item.pk) for item in records}
+        for item in records:
+            for link in item._meta.concrete_fields:
+                target = getattr(item, link.name) if link.is_relation else None
+                if isinstance(target, AuditedModel) and target.is_deleted and (type(target), target.pk) not in coming:
+                    raise ValidationError(_('%(field)s “%(record)s” is deleted.'),
+                                          params={'field': capfirst(link.verbose_name), 'record': target})
+        for item in records:
+            item.is_deleted, item.deleted_at, item.deleted_by = False, None, None
+            item.updated_by = user
+            item.version += 1
+            # Re-checks the constraints among live records, e.g. a code taken meanwhile; the records coming back
+            # together cannot clash with one another, they were live together.
+            item.validate_unique()
+            item.validate_constraints()
+        for item in records:
+            try:
+                with transaction.atomic():
+                    item.save()
+            except IntegrityError as error:    # taken by a record committed after the check
+                constraint = violated_constraint(type(item), error)
+                if constraint is None:
+                    raise
+                raise ValidationError(constraint.violation_error_message) from None
+        for item in records:
+            item.clean_fields()
+            item.clean()       # the model's own rules, with everything that comes back live again
+            audit.record(user, AuditLog.Action.RESTORE, item)

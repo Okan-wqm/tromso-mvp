@@ -16460,6 +16460,10 @@ msgid "“%(option)s” is not an option of this widget."
 msgstr "“%(option)s” bu bileşenin bir seçeneği değil."
 
 #, python-format
+msgid "“%(record)s” is not deleted."
+msgstr "“%(record)s” silinmiş değil."
+
+#, python-format
 msgid "“%(task)s” is cancelled."
 msgstr "“%(task)s” iptal edildi."
 

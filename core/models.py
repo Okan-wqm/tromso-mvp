@@ -50,6 +50,7 @@ class AuditedModel(models.Model):
         abstract = True
 
     def soft_delete(self, user):
+        """Deletes the record its caller has locked (and maybe changed: a void's reason), writing it whole."""
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.deleted_by = user
@@ -57,12 +58,24 @@ class AuditedModel(models.Model):
         self.version += 1
         self.save()
 
+    def mark_deleted(self, user, at):
+        """Deletes a record a delete takes along (core.softdelete), stamped with the delete's moment `at`, which is
+        how a restore finds what that delete took with it. Only the deletion's columns are written, the version
+        counted up in the database: the record was read for the plan, not locked, and an edit saved meanwhile is
+        neither overwritten nor taken for current (its editor's stale version is refused)."""
+        self._write(user, is_deleted=True, deleted_at=at, deleted_by=user)
+
     def detach(self, link, user):
-        """Clears the link to a deleted record; the change counts as an edit by `user`."""
-        setattr(self, link, None)
-        self.updated_by = user
-        self.version += 1
-        self.save(update_fields=[link, 'updated_by', 'version', 'updated_at'])
+        """Clears the link to a deleted record; the change counts as an edit by `user` (written like
+        mark_deleted, only the link's columns)."""
+        self._write(user, **{link: None})
+
+    def _write(self, user, **values):
+        values.update(updated_by=user, updated_at=timezone.now())
+        type(self).all_objects.filter(pk=self.pk).update(version=models.F('version') + 1, **values)
+        for name, value in values.items():
+            setattr(self, name, value)
+        self.version = type(self).all_objects.values_list('version', flat=True).get(pk=self.pk)
 
     def delete_blockers(self):
         """Reasons this record cannot be deleted now (e.g. fish still in a tank); none by default."""
@@ -74,6 +87,13 @@ class AuditedModel(models.Model):
         with it all the same because they are only a plan, not history (a recurring task's planned tasks
         nobody has touched). None by default: what points at a record through DO_NOTHING is kept."""
         return cls.objects.none()
+
+
+def violated_constraint(model, error):
+    """The constraint of `model` a database refusal (`error`, an IntegrityError) names; None when it names none of its
+    constraints (a fault, not a clash). A form shows its message on the field (core.crud), a restore as its reason."""
+    name = getattr(getattr(error.__cause__, 'diag', None), 'constraint_name', None)
+    return next((item for item in model._meta.constraints if item.name == name), None)
 
 
 # A code as lists and reports show it: capital letters, digits, hyphens and underscores. A model that checks

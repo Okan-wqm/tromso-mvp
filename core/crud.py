@@ -42,7 +42,7 @@ from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
 from . import audit, navigation, softdelete
-from .models import AuditedModel, AuditLog
+from .models import AuditedModel, AuditLog, violated_constraint
 from .softdelete import plan_delete
 from .widgets import NONE
 
@@ -283,9 +283,7 @@ def tab_fields(tabs):
 def constraint_error(form, error):
     """Puts a database constraint's refusal (`error`, an IntegrityError) on the form, on the constraint's last field
     the form shows, with its message. False when the error names no constraint of the form's model."""
-    name = getattr(getattr(error.__cause__, 'diag', None), 'constraint_name', None)
-    model = form._meta.model
-    constraint = next((item for item in model._meta.constraints if item.name == name), None)
+    constraint = violated_constraint(form._meta.model, error)
     if constraint is None:
         return False
     names = []

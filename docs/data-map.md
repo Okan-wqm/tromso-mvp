@@ -991,7 +991,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_query.py` and 39 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_query_pages.py` and 39 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1450,7 +1450,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_query.py` and 24 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2552,7 +2552,7 @@ The monitoring card templates: a name, the widgets of the card as a layout and t
 - **edit**: card templates tab (`/card-templates/<uuid:pk>/`)
 - **delete**: card templates tab (`/card-templates/<uuid:pk>/delete/`)
 - **read**: card templates tab (`/card-templates/`)
-- **how it works**: The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back only the template.
+- **how it works**: The layout is edited on the Design tab (the designer fills the JSON the validator checks); the layout version is stamped from the layout. The three built-ins come from migration 0002 and a trigger keeps them as they are: Copy makes an editable one. Deleting a template deletes its rules and detaches the boards and templates that point at it; restoring brings back the template with its rules (the boards and templates stay detached).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_templates
 - **forms**: `CardTemplateForm`
 - **constraints**: uq_monitor_card_templates_name_live (unique: name); chk_monitor_card_templates_name (check); chk_monitor_card_templates_schema (check); chk_monitor_card_templates_object (check); chk_monitor_card_templates_widgets (check); chk_monitor_card_templates_count (check); chk_monitor_card_templates_bytes (check); chk_monitor_card_templates_stamp (check); chk_monitor_card_templates_expanded (check); chk_monitor_card_templates_builtin (check)

@@ -75,6 +75,8 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # A page whose menu line is left out for the person is refused at its address too.
+    'core.middleware.MenuAccessMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

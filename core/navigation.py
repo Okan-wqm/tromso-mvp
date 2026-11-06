@@ -41,8 +41,8 @@ class Entry:
     hidden: bool = False    # no line in the menu (a settings page reached from another page's links); it still
                             # has its place: the role matrix and the page heading read it, and it is current there
     show_when: str = ''     # the dotted path of a function(user) -> bool: the line is shown only when it says so (Company's
-                            # HR lines are left out for a person whose HR is all in Production). A menu courtesy only: the
-                            # page still answers whoever holds its permission
+                            # HR lines are left out for a person whose HR is all in Production). The address agrees with the
+                            # menu: a line left out is refused at its address too (core.middleware.MenuAccessMiddleware)
 
     def url(self):
         return reverse(self.url_name)
@@ -127,6 +127,20 @@ def workspaces():
 def entries():
     """Every entry of every workspace."""
     return [entry for workspace in workspaces() for entry in workspace.entries()]
+
+
+def entry_for(path):
+    """The menu line a page belongs to: the one whose address is the longest start of the page's (the rail's current
+    line), or None."""
+    return max((entry for entry in entries() if entry.matches(path)), key=lambda entry: len(entry.url()), default=None)
+
+
+def refused(user, path):
+    """Whether the page is refused to the person because its menu line is left out for them (`show_when`), though they
+    hold its permission: the menu and the address bar agree. A line never in the menu (`hidden`) is not a refusal."""
+    entry = entry_for(path)
+    return (entry is not None and not entry.hidden and bool(entry.show_when) and entry.allowed_for(user)
+            and not entry.shown_to(user))
 
 
 def place(perm):

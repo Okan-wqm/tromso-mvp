@@ -2947,10 +2947,12 @@ production people in Production, with the same permission.
 - **Pages.** Team › Time & attendance: Today & attendance (`/production/team/`, own clock in and out), Shift schedule
   (`/production/team/schedule/`), Leave requests (`/production/team/leave/`, the number beside it is the pending requests the person
   may decide), Attendance (`/production/team/attendance/`: the same right as Today, so a Today reader has it) and Team overview (shown
-  in the menu to the people who lead production); Team › People: Team list (`/production/team/people/`) and Organization chart
+  in the menu, and opened, for the people who lead production); Team › People: Team list (`/production/team/people/`) and Organization chart
   (`/production/team/organization/`), both with Read on Employees. Company › HR keeps its pages for the office; its lines that
-  Production repeats are not shown to a person whose HR is all in Production (`Entry.show_when`, a menu courtesy, never a permission:
-  the pages still answer whoever holds their permission). Roles & permissions stay in Company › Administration: roles are company-wide.
+  Production repeats are not shown to a person whose HR is all in Production (`Entry.show_when`). **The menu and the address bar
+  agree**: a line the menu leaves out for a person is refused at its address too, with the 403 page
+  (`core.middleware.MenuAccessMiddleware`, `core.navigation.refused`), so nobody opens by its address a page their menu hides
+  (`hr/tests/test_menu_access.py` walks every line for every starting role, a lead, an office person and the admin). Roles & permissions stay in Company › Administration: roles are company-wide.
 - **How.** `core.crud.Mount` serves a tab a second time under another address and panel: one Resource, one registry entry, the same
   views; the request carries the mount, the tab's `scoped` narrows to it, and every link (`{% url ...|mounted:request %}`), redirect and
   heading stays in it. A record of the other realm is a 404 on every address. A decision, a cancel, a plan or a punch returns to the

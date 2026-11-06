@@ -23,4 +23,11 @@ SCREENS = {
         forms=(UserForm,),
         columns={'user': system('the person the profile belongs to')},
     ),
+    'Rev': Screen(
+        create=no('written by the database: a trigger of each tracked table moves its revision at commit (core.rev)'),
+        edit=no('written by the database; `manage.py core_rev_rebuild` moves every revision after a restore'),
+        delete=no('derived data, safe to rebuild: a revision is never deleted'),
+        read=no('read by the code that proves a stored figure still valid; the database viewer shows the table'),
+        columns={'*': system('moved by the revision triggers (core.operations.TrackRev)')},
+    ),
 }

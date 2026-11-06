@@ -260,6 +260,113 @@
     },
     {
       "app": "core",
+      "model": "Rev",
+      "table": "core_rev",
+      "description": "The revision of one (scope, key): moved by the database whenever a tracked row changes (core.rev), read by a stored figure to prove it is still valid.",
+      "columns": [
+        {
+          "name": "scope",
+          "field": "scope",
+          "type": "varchar(40)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "key",
+          "field": "key",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "rev",
+          "field": "rev",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "dirty_epoch",
+          "field": "dirty_epoch",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        },
+        {
+          "name": "dirty_from",
+          "field": "dirty_from",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "moved by the revision triggers (core.operations.TrackRev)"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_core_rev_rev",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the database: a trigger of each tracked table moves its revision at commit (core.rev)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the database; `manage.py core_rev_rebuild` moves every revision after a restore"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "derived data, safe to rebuild: a revision is never deleted"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the code that proves a stored figure still valid; the database viewer shows the table"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": []
+    },
+    {
+      "app": "core",
       "model": "Profile",
       "table": "profiles",
       "description": "What the platform keeps about a person beyond Django's account.",
@@ -10443,6 +10550,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
@@ -12110,6 +12218,7 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_rev.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -13218,6 +13327,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_rev.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
@@ -13774,6 +13884,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_harvest.py",
@@ -14290,6 +14401,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_escape_delivery.py",

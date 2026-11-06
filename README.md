@@ -3110,6 +3110,32 @@ its tables fail the test until its `screens.py` declares them. **Adding a featur
 on the map: a tab declares nothing but its fields on its form; a dialog that writes through a service names its
 views in `screens.py`.
 
+## Performance: derived figures, revisions, background jobs
+
+The rule (performance plan): a derived figure is worked out on read by the function that owns it, from bounded input.
+It is stored only when the database itself proves the stored copy valid; no figure is cached for a time (no TTL), no
+counter sits on a business table, and no write path has to remember to clear anything.
+
+### Revisions (`core_rev`, core/rev.py)
+
+The proof is a revision per (scope, key): `('batch', <batch id>)` moves whenever a stock line of the batch is
+written, changed or deleted, an operation with lines of it is re-dated, voided or restored, or the batch gets another
+species. The database moves it: each tracked table has two triggers, made by the migration operation
+`core.operations.TrackRev` (farm migration 0027 for the stock tables). One notes the changed keys and the earliest day
+changed while the transaction runs; the other, deferred, applies them at COMMIT, each key once and in sorted order, so a
+5,000-line operation writes one row per batch, the counter row is locked for microseconds, and two writers in opposite
+order never deadlock (tested with two connections). Raw SQL, `bulk_create`, the admin and a restore are covered, since
+no Python code bumps anything; the activity log's revision is never used as a proof.
+
+A stored figure keeps the revision it was built from (read BEFORE the data). It is valid iff the revision is still
+the same, or it is not older than the row's last build epoch and nothing changed on or before the day it covers. A
+builder ends with a compare-and-set (`core_rev_mark_built`), refused when a write landed while it read. A key without a
+row is unknown, never valid. Keys are text (a batch's id is a UUID; a table-level scope's key is `0`).
+
+- `manage.py core_rev_rebuild`, after a restore or a load run with the triggers off: every revision moves past every
+  stored figure's stamp and a floor is set for keys seen later, so every stored figure is built again. Safe at any time.
+- `core.rev.missing()` names a tracked table's trigger that is missing or disabled.
+
 ## Local setup
 
 ```

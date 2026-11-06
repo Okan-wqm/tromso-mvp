@@ -519,8 +519,8 @@ fish recaptured: a count adjustment of the reason escape with its record, from w
 escape from several units is recorded for each). A harvest shows the handling check (the medicine withdrawal and the fast) and a transfer, a grading and a
 delivery the fast alone (a medicine withdrawal is a meat withdrawal: it means nothing for live fish), and each asks for an
 acknowledgement when it warns. A unit holding two batches asks which one.
-Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
-(`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored on the operation).
+Dates default to the farm's today (the site's time zone), never in the future, at most the platform owner's correction window (31 days until they set another; Platform settings) back
+(`core.platform.correction_window_days`). A form sent twice records once (the form's key, stored on the operation).
 
 **The ledger.** A batch holds its identity and origin, no count. An operation (`StockOperation`) is what
 a person did, with its date; its lines (`StockMovement`) say how many fish of which batch came into (+)
@@ -837,7 +837,7 @@ force per unit, per batch and per batch in a unit on any day (three exclusion co
 checks them by the constraint itself and says which unit clashes). For a batch in a unit on a day the most specific
 row wins: batch in unit, then unit, then whole batch (owner decision Q8); a unit's row for another species is read
 past with its reason. Only active protocols are assigned, a batch only with its species; a first day may be at most
-`STOCK_BACKDATE_DAYS` back. Before its first day a row may change or be deleted; from then on only its last day
+the correction window back (Platform settings). Before its first day a row may change or be deleted; from then on only its last day
 (yesterday at the earliest) and notes change, and it is ended, not deleted: the days it fed keep their protocol.
 The list groups the rows of one dialog, filters by site, unit, batch, protocol and in force / starting later /
 ended, and counts the fish each row feeds today after the more specific rows.
@@ -944,7 +944,7 @@ target says how the feed is split ("Split by the book biomass at the start of 2 
 B-2026-001 71 %, B-2026-004 29 %"). The rules, in one write path (`farm/feeding/services.py`), each with
 the server's reason on its field:
 
-- the date as for the stock: the farm's today at the latest, at most `STOCK_BACKDATE_DAYS` (31) back;
+- the date as for the stock: the farm's today at the latest, at most the correction window (Platform settings) back;
 - the unit must hold fish of the target at the start or the end of that day (from the stock ledger; the
   reason is on the target when the unit holds the other kind); and the other way round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
   fish) is refused while a recorded feeding would be left without fish, naming it;
@@ -1052,7 +1052,7 @@ database check (the ranges are argued in the bug document), its precision and ho
 parameter, empty when not measured, at least one value (a database check). The point is one sampling point
 (`point`, a required foreign key; the table has no unit or system column: the unit, loop or equipment is the
 point's owner, so the two cannot disagree). The time is on the clock of the point's site, never in the
-future and at most 31 days back (`STOCK_BACKDATE_DAYS`, `farm/stock/dates.py`), the rule of every daily
+future and at most the correction window back (Platform settings, `farm/stock/dates.py`), the rule of every daily
 record; the source is a meter or kit, or a laboratory; the person is the one signed in. A form sent twice
 records once (its key, stored with the time). Samples are never edited: **Void** (with a reason, logged as
 "Voided" like a stock operation) and a new entry correct one; a voided sample stays in the history, struck
@@ -1445,7 +1445,7 @@ Q-S7). One person records a count; there is no approval step.
 **One write path** (`inventory/services.py`, `_commit`): it locks the items, then the locations, each in
 primary-key order (a feeding takes no lock), refuses a form sent twice (its token), checks the date on the
 clock of every site it touches (`farm.stock.dates.check_site_date`: the farm's today at the latest, at most
-`STOCK_BACKDATE_DAYS` back), live locations, arrivals into active locations only, a live supplier that
+the correction window back), live locations, arrivals into active locations only, a live supplier that
 supplies the item's category (feed), lot number and expiry where the category needs them, then writes the
 operation and its lines and folds every item it touches from its first line: a backdated operation is placed
 where it belongs and accepted only if every later day stays right ("The write-off of 3 Nov from WH-1 would be
@@ -2978,6 +2978,25 @@ production people in Production, with the same permission.
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
+## Platform settings (Company › Administration, `/administration/platform-settings/`)
+
+The rules the platform owner (the customer the platform is given to) sets for the whole company, one row
+(`core.models.PlatformSettings`, database checks keep it one row and bound each value), read by the rest of the code through
+`core/platform.py` only (once per request: `PlatformSettingsMiddleware`). Read and Edit are an access area of their own;
+"platform owner" is the role that holds Edit. Every change is in the activity log with its old and new value.
+
+- **Correction window (days)**, 1 to 3650, 31 until the owner sets another (owner decisions Q3 and Q-F4, F-243): how far
+  back a daily record (a stock operation, a feeding, a water sample, a movement of the store, a plan, a treatment, a protocol
+  assignment, an experiment's day 0) may be dated, and how old a record may be voided. Older records stay as they are;
+  inside the window every record is logged as before. `core.platform.correction_window_days()` is its one reader; the
+  messages name the days it says. The regulatory reports re-read a filed report for changes only inside it.
+  (Not this window: the fast's 31-day look-back for the last feeding, longer than the longest handling rule, and the
+  31 days one page of feeding records covers.)
+- **A second person approves a withdrawal warning acknowledgement** (F-164): `core.platform.second_approval_required(
+  'withdrawal')` says whether a harvest during a medicine withdrawal waits for a second person who may approve it; an
+  unknown kind is an error, never a quiet no. The waiting itself is the withdrawal acknowledgement's (farm/handling).
+- **Escalate an unacknowledged alarm after (minutes)**, 1 to 1440, 15 by default: see Alarms.
+
 ## Roles and users
 
 There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
@@ -2999,7 +3018,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Platform settings (read, edit: the platform owner's right) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -3469,6 +3488,7 @@ real mail.
 | `/knowledge/entries/new/?document=<id>` | A new entry whose source is that document |
 | `/knowledge/entries/<id>/review/` | Marks an entry reviewed, or takes it back to draft (POST) |
 | `/activity/` | Activity log |
+| `/administration/platform-settings/` | Administration › Platform settings (the platform owner's rules) |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
 | `/database/` | Administration › Database: every table (platform admin) |

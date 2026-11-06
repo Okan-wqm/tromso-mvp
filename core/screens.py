@@ -5,6 +5,11 @@ from .resources import UserResource
 from .views import activity_log, set_language
 
 SCREENS = {
+    'PlatformSettings': Screen(
+        create=no('the migration makes the one row'),
+        delete=no('there is always exactly one row'),
+        note="The platform owner's rules, read by core.platform only.",
+    ),
     'AuditLog': Screen(
         create=no('written by the code: every create, change, delete, restore and void of every record logs itself '
                   '(core.audit)'),

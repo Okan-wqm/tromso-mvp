@@ -6,8 +6,9 @@ from django.utils.translation import gettext_lazy as _
 
 from . import access, audit
 from .crud import Resource, tab_fields
-from .forms import PasswordResetForm, RoleForm, User, UserForm
+from .forms import PasswordResetForm, PlatformSettingsForm, RoleForm, User, UserForm
 from .language import account_language
+from .models import PlatformSettings
 
 
 class RoleResource(Resource):
@@ -67,3 +68,22 @@ class UserResource(Resource):
             invitation = PasswordResetForm({'email': user.email})
             invitation.is_valid()
             invitation.save(request=request, use_https=request.is_secure())
+
+
+class PlatformSettingsResource(Resource):
+    """The platform owner's settings, one row: changed, never added or deleted (Platform settings: Edit is the platform
+    owner's right). Every change is logged with its old and new value."""
+
+    model = PlatformSettings
+    form_class = PlatformSettingsForm
+    name, plural = _('platform settings'), _('platform settings')
+    url_prefix = 'administration/platform-settings'
+    namespace = 'core'
+    actions = ('change',)
+    list_template = 'core/platform_settings.html'
+    icon = 'settings'
+
+    @classmethod
+    def list_queryset(cls, request):
+        PlatformSettings.get()            # the row exists even if a restore left none
+        return super().list_queryset(request)

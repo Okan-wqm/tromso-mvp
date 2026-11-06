@@ -7,7 +7,6 @@ count, round kilos and date stay on its line and the operation. Nothing here hol
 ledger holds; a plan holds intentions, and its actuals are read from the operation that fulfils it."""
 from decimal import Decimal
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
@@ -17,6 +16,7 @@ from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
 from core.models import ActiveManager, AuditedModel
 from core.softdelete import protected
+from core.platform import correction_window_days
 
 from .species import Species
 from .stock import Batch, MovementKind, OperationKind, StockOperation
@@ -351,7 +351,7 @@ class HandlingPlanItem(AuditedModel):
                 'batch': self.batch.code, 'unit': self.unit.code}
         if self.unit_id and self.date and changed('date') and self.date < earliest(self.unit):
             errors['date'] = gettext('A plan can be dated at most %(days)d days back.') % {
-                'days': settings.STOCK_BACKDATE_DAYS}
+                'days': correction_window_days()}
         chosen = self.facility_id and self.batch_id and changed('facility_id', 'batch_id')
         if chosen and not offered_facilities(self.batch.species).filter(pk=self.facility_id).exists():
             errors['facility'] = gettext('Choose an active slaughter facility that takes %(species)s.') % {

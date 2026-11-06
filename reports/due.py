@@ -13,9 +13,10 @@ Nothing here computes a figure of a report: that is reports/compute; this decide
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from django.conf import settings
 
 from django.db.models import Exists, OuterRef, Prefetch, Q
+
+from core.platform import correction_window_days
 
 from farm.health import diseases, notices
 from django.utils.translation import gettext as _, gettext_lazy
@@ -399,9 +400,9 @@ def _unexplained(today, existing, rows):
 def no_longer_match(today=None):
     """The filed reports, not replaced by a correction, whose records have changed since they were filed. Only the rows a
     report reads are compared (compute.scope), never its figures; a report of a period that closed before the
-    STOCK_BACKDATE_DAYS window cannot change and is not read again, a notice (it has no period) always is."""
+    correction window (core.platform) cannot change and is not read again, a notice (it has no period) always is."""
     today = today or periods.oslo_today()
-    recent = today - timedelta(days=settings.STOCK_BACKDATE_DAYS)
+    recent = today - timedelta(days=correction_window_days())
     filed = (Report.objects.filter(submitted_at__isnull=False).exclude(snapshot__format_version=0)
              .filter(Q(period_start__isnull=True) | Q(period_start__gte=recent - timedelta(days=366)))   # a year at most
              .annotate(has_filed_correction=Exists(Report.objects.filter(corrects=OuterRef('pk'),

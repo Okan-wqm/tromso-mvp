@@ -75,6 +75,8 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # The platform owner's settings are read once per request (core.platform).
+    'core.middleware.PlatformSettingsMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -214,10 +216,6 @@ DATABASE_VIEWER = 'config.database.VIEWER'
 
 # Tests hash passwords quickly (config/test_runner.py).
 TEST_RUNNER = 'config.test_runner.FastPasswordRunner'
-
-# How many days back a stock operation, a feeding or a water sample may be dated, and voided
-# (farm/stock/dates.py; owner decisions Q3 and Q-F4).
-STOCK_BACKDATE_DAYS = 31
 
 # A feeding above this % of the unit's book biomass a day asks for an acknowledgement, stored on the record
 # (farm/feeding/services.py; owner decision Q-F5): a kilo typed for a gram is caught, fry may be fed more.

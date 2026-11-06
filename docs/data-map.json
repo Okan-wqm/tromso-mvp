@@ -189,6 +189,7 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_platform.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
@@ -256,6 +257,275 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py"
+      ]
+    },
+    {
+      "app": "core",
+      "model": "PlatformSettings",
+      "table": "platform_settings",
+      "description": "The rules the platform owner (the customer the platform is given to) sets for their whole company, one row (a database check keeps it one), changed on Company › Administration › Platform settings by who holds Platform settings: Edit, every change in the activity log.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "singleton",
+          "field": "singleton",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "correction_window_days",
+          "field": "correction_window_days",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Records"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "second_approval_withdrawal",
+          "field": "second_approval_withdrawal",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Records"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "alarm_escalation_minutes",
+          "field": "alarm_escalation_minutes",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Alarms"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_platform_settings_singleton",
+          "kind": "unique",
+          "fields": [
+            "singleton"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_singleton",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_window",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_escalation",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "the migration makes the one row"
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "platform settings tab",
+              "url_names": [
+                "core:platformsettings_edit"
+              ],
+              "routes": [
+                "/administration/platform-settings/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "there is always exactly one row"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "platform settings tab",
+              "url_names": [
+                "core:platformsettings_list"
+              ],
+              "routes": [
+                "/administration/platform-settings/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The platform owner's rules, read by core.platform only.",
+      "forms": [
+        {
+          "form": "PlatformSettingsForm",
+          "module": "core.forms",
+          "fields": {
+            "correction_window_days": "Records",
+            "second_approval_withdrawal": "Records",
+            "alarm_escalation_minutes": "Alarms",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_platform.py",
+        "farm/tests/helpers.py"
       ]
     },
     {

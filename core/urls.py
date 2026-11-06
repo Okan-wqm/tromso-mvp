@@ -1,7 +1,7 @@
 from django.urls import path
 
 from . import dbview, views
-from .resources import RoleResource, UserResource
+from .resources import PlatformSettingsResource, RoleResource, UserResource
 
 app_name = 'core'
 
@@ -13,4 +13,5 @@ urlpatterns = [
     path('database/<slug:name>/export.csv', dbview.export, name='database_export'),
     *RoleResource.urls(),
     *UserResource.urls(),
+    *PlatformSettingsResource.urls(),
 ]

@@ -5,7 +5,7 @@ code that changes a unit's status for stock reasons. In one transaction it:
 1. locks the batches, then the units, each in primary-key order (the same order everywhere, so two
    writers never deadlock, and two writers of the same unit or batch take turns);
 2. refuses a form sent twice (its token), and checks what needs no folding: the date (not in the
-   future, at most STOCK_BACKDATE_DAYS back, in the farm's own time zone; not before the batch was
+   future, at most the correction window back, in the farm's own time zone; not before the batch was
    stocked), live units and batches, units that may take fish (owner decision Q5), species that may
    be stocked;
 3. writes the operation and its lines;
@@ -48,7 +48,6 @@ EscapeRecord); each is voidable."""
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -56,6 +55,7 @@ from django.utils.translation import gettext as _
 from core import audit
 from core.codes import next_code
 from core.models import AuditLog
+from core.platform import correction_window_days
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.handling import check
@@ -509,7 +509,7 @@ def voided(user, entry, reason, sites, label, check=None):
     for site in sites:
         if entry.date < site_earliest(site):
             raise ValidationError({NON_FIELD_ERRORS: _(
-                'Operations older than %(days)d days cannot be voided.') % {'days': settings.STOCK_BACKDATE_DAYS}})
+                'Operations older than %(days)d days cannot be voided.') % {'days': correction_window_days()}})
     entry.void_reason = reason
     entry.soft_delete(user)
     if check is not None:

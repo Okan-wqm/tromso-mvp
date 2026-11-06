@@ -9,8 +9,9 @@ import hashlib
 from dataclasses import dataclass, field
 from datetime import timedelta
 
-from django.conf import settings
 from django.utils.translation import gettext as _
+
+from core.platform import correction_window_days
 
 from farm.feeding.read import measured_on, tables as protocol_tables
 from farm.models import Batch, ProtocolAssignment
@@ -116,7 +117,7 @@ def table(design):
 # ---- the checks ----------------------------------------------------------------------------------
 def check_experiment(design):
     """What an experiment says of itself: its hypothesis, endpoint, day 0 and lead (the allocation comes with the
-    places). The records' 31-day window is a rule of registering: only a draft is held to it, a started experiment is
+    places). The records' correction window is a rule of registering: only a draft is held to it, a started experiment is
     not "too old" for the days that passed since."""
     experiment = design.experiment
     if not experiment.hypothesis:
@@ -128,7 +129,7 @@ def check_experiment(design):
     elif experiment.status == Status.DRAFT and experiment.starts_on < site_earliest(experiment.site):
         yield Finding(ERROR, 'day_0_too_old', _('Day 0 is further back than records can be dated: an experiment is '
                                                 'registered at most %(days)d days after it begins.') % {
-            'days': settings.STOCK_BACKDATE_DAYS})
+            'days': correction_window_days()})
     if not design.lead:
         yield Finding(ERROR, 'no_lead', _('The team has no lead.'))
 

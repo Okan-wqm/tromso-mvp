@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from . import access
 from .crud import TabbedForm, tab_fields
 from .language import account_language, save_account_language
+from .models import PlatformSettings
 
 User = get_user_model()
 
@@ -146,3 +147,29 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
     def get_users(self, email):
         users = User._default_manager.filter(email__iexact=email, is_active=True)
         return (user for user in users if auth_forms._unicode_ci_compare(email, user.email))
+
+
+PLATFORM_TABS = [
+    ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal']),
+    ('alarms', _('Alarms'), ['alarm_escalation_minutes']),
+]
+
+
+class PlatformSettingsForm(TabbedForm):
+    """The platform owner's settings (core.models.PlatformSettings); the bounds are the database's."""
+
+    tabs = PLATFORM_TABS
+
+    class Meta:
+        model = PlatformSettings
+        fields = tab_fields(PLATFORM_TABS)
+        help_texts = {
+            'correction_window_days': _('How many days back a daily record (a stock operation, a feeding, a water sample, '
+                                        'a movement of the store, a plan, a treatment) may be dated, and how old a record '
+                                        'may be voided. Older records stay as they are. 1 to 3650; 31 until you set '
+                                        'another.'),
+            'second_approval_withdrawal': _('When ticked, a harvest during a medicine withdrawal goes on only after a second '
+                                            'person who may approve it has approved the acknowledgement.'),
+            'alarm_escalation_minutes': _('An alarm nobody has acknowledged this long after its people were notified is '
+                                          'sent to the next people in the alarm recipients. 1 to 1440.'),
+        }

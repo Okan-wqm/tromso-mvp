@@ -119,5 +119,8 @@ AREAS = [
     Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view', 'change')),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),
+    # The platform owner's settings (one row: Read, Edit). "Platform owner" is the role that holds Edit here: the correction
+    # window, whether a second person approves a withdrawal acknowledgement, and the alarms' escalation time.
+    Area(_('Platform settings'), 'core.PlatformSettings', actions=('view', 'change')),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

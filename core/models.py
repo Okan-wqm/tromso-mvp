@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -235,3 +236,60 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+# The bounds of the platform owner's settings: the database holds them (PlatformSettings' checks) and the form says them.
+WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, which keeps every date's arithmetic sane
+ESCALATION_MINUTES = (1, 1440)    # a minute to a day
+
+
+class PlatformSettings(AuditedModel):
+    """The rules the platform owner (the customer the platform is given to) sets for their whole company, one row (a
+    database check keeps it one), changed on Company › Administration › Platform settings by who holds Platform settings:
+    Edit, every change in the activity log. Nothing reads these columns but core.platform.
+
+    - The correction window: how many days back a daily record (a stock operation, a feeding, a water sample, a movement
+      of the store, a plan, a treatment) may be dated, and how old a record may be voided (owner decisions Q3 and Q-F4,
+      31 days until the owner sets another). A record older than that stays as it is.
+    - Whether a second person must approve the acknowledgement of a medicine-withdrawal warning before what it was given
+      for counts (F-164); other critical acknowledgements may join it.
+    - How long an alarm waits for an acknowledgement before the next people are notified (the alarms app)."""
+
+    singleton = models.BooleanField(default=True, editable=False)
+    correction_window_days = models.PositiveSmallIntegerField(
+        _('Correction window (days)'), default=31,
+        validators=[MinValueValidator(WINDOW_DAYS[0]), MaxValueValidator(WINDOW_DAYS[1])])
+    second_approval_withdrawal = models.BooleanField(
+        _('A second person approves a withdrawal warning acknowledgement'), default=False)
+    alarm_escalation_minutes = models.PositiveSmallIntegerField(
+        _('Escalate an unacknowledged alarm after (minutes)'), default=15,
+        validators=[MinValueValidator(ESCALATION_MINUTES[0]), MaxValueValidator(ESCALATION_MINUTES[1])])
+
+    class Meta:
+        db_table = 'platform_settings'
+        verbose_name = _('platform settings')
+        verbose_name_plural = _('platform settings')
+        constraints = [
+            models.UniqueConstraint(fields=['singleton'], name='uq_platform_settings_singleton'),
+            models.CheckConstraint(condition=models.Q(singleton=True), name='chk_platform_settings_singleton'),
+            models.CheckConstraint(
+                condition=models.Q(correction_window_days__gte=WINDOW_DAYS[0], correction_window_days__lte=WINDOW_DAYS[1]),
+                name='chk_platform_settings_window'),
+            models.CheckConstraint(
+                condition=models.Q(alarm_escalation_minutes__gte=ESCALATION_MINUTES[0],
+                                   alarm_escalation_minutes__lte=ESCALATION_MINUTES[1]),
+                name='chk_platform_settings_escalation'),
+        ]
+
+    def __str__(self):
+        return str(_('Platform settings'))
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from . import platform
+        platform.forget()                 # the request that saved it reads the new row from now on
+
+    @classmethod
+    def get(cls):
+        """The one row (made by the migration; made again here if a restore left none)."""
+        return cls.objects.first() or cls.objects.create()

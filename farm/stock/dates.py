@@ -1,15 +1,17 @@
 """The farm's dates, one rule for every daily record (a stock operation, a feeding, a water sample, a
 movement of the store): today is the farm's own day, on the clock of the site (farm.models.site.zone_of),
-never the UTC date of a browser; a record may be dated at most STOCK_BACKDATE_DAYS back and never in the
-future, and the same window says how old a record may be voided (owner decisions Q3 and Q-F4). A record
+never the UTC date of a browser; a record may be dated at most the correction window back (the platform owner's
+setting, core.platform; 31 days until they set another) and never in the future, and the same window says how old a
+record may be voided (owner decisions Q3 and Q-F4). A record
 of a unit is on its site's clock; a movement of the store (inventory) on the clocks of the sites of its
 storage locations."""
 from datetime import datetime, time, timedelta
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import formats, timezone
 from django.utils.translation import gettext as _
+
+from core.platform import correction_window_days
 
 from farm.models.site import zone_of
 
@@ -21,7 +23,7 @@ def site_today(site):
 
 def site_earliest(site):
     """The first day a record on the site may be dated (and the oldest one that may be voided)."""
-    return site_today(site) - timedelta(days=settings.STOCK_BACKDATE_DAYS)
+    return site_today(site) - timedelta(days=correction_window_days())
 
 
 def _site(unit):
@@ -70,4 +72,4 @@ def check_site_date(day, sites):
             raise ValidationError({'date': _('The date cannot be in the future.')})
         if day < site_earliest(site):
             raise ValidationError({'date': _('Operations can be dated at most %(days)d days back.')
-                                   % {'days': settings.STOCK_BACKDATE_DAYS}})
+                                   % {'days': correction_window_days()}})

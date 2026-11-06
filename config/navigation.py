@@ -40,6 +40,8 @@ WORKSPACES = [
                 Entry(_('Roles'), 'core:group_list', 'shield', 'auth.view_group'),
                 Entry(_('Users'), 'core:user_list', 'users', 'auth.view_user'),
                 Entry(_('Database'), 'core:database', 'database', 'core.browse_database'),
+                # The platform owner's rules for the whole company: the correction window, second approvals, alarm escalation.
+                Entry(_('Platform settings'), 'core:platformsettings_list', 'settings', 'core.view_platformsettings'),
             ]),
         ]),
         # The company's office people: who they are, where they work and their time (the production people are under

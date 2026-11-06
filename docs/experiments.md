@@ -22,7 +22,7 @@ All days are **dates on the site's clock** (the site's time zone, else the compa
 
 | Day | What it is |
 |---|---|
-| day 0 | `starts_on`: the baseline. Each tank holds fish of the species and is weighed on this day: the window of its feed conversion starts at that measured point. A draft's day 0 is at most 31 days back (the farm's registration window, `settings.STOCK_BACKDATE_DAYS`); a started experiment is not held to it. |
+| day 0 | `starts_on`: the baseline. Each tank holds fish of the species and is weighed on this day: the window of its feed conversion starts at that measured point. A draft's day 0 is at most the correction window back (the farm's registration window, Platform settings; 31 days by default); a started experiment is not held to it. |
 | last day | `starts_on + duration_days`: the final weighing. The experiment has `duration_days + 1` days, day 0 to day N. |
 | a placement | `from_on` to `until_on` (both included): the days a tank is booked to a replicate. The default is day 0 to the last day; a row may have days of its own inside them. |
 | "now" | today on the site's clock. A placement whose first day has not come is not read; one whose last day has not come is read to today. |

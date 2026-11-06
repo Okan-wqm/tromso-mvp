@@ -115,6 +115,11 @@ class BumpTests(TestCase):
         rev.rebuild(stamped=[8])                              # a stored figure stamped 8 (a restore can go back)
         self.assertEqual(row('t', 1), (9, 9, None))
         self.assertEqual(row('t', 2), (9, 9, None))
+        # A key seen for the first time after the rebuild starts above the floor: a figure stamped before the restore
+        # can never meet its revision again.
+        self.note('t', 3)
+        rev.settle()
+        self.assertEqual(row('t', 3), (10, 0, None))
 
 
 class StockTrackingTests(Farm, TestCase):

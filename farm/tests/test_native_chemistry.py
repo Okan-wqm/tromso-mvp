@@ -41,7 +41,7 @@ class Ceilings:
             return
         difference = abs(ours - expected)
         allowed = gate.get('abs', 0.0) + gate.get('rel', 0.0) * max(abs(ours), abs(expected))
-        measure = difference if kind in ('solved_ph',) else difference / max(abs(expected), 1e-300)
+        measure = difference if kind in ('solved_ph', 'closed_form_ph') else difference / max(abs(expected), 1e-300)
         self.seen[kind] = max(self.seen.get(kind, 0.0), measure)
         self.test.assertLessEqual(difference, allowed, f'{name} at {where}: {ours!r} against golden {expected!r}')
 
@@ -61,7 +61,8 @@ class ConstantsParityTests(SimpleTestCase):
             t, s = record['temp_c'], record['salinity']
             eq = native.equilibria(t, s)
             for name, expected in record['equilibria'].items():
-                ceilings.check('closed_form', f'equilibria.{name}', getattr(eq, name), expected, (t, s))
+                ceilings.check('closed_form_ph' if name == 'ph_offset' else 'closed_form', f'equilibria.{name}',
+                               getattr(eq, name), expected, (t, s))
             for name in ('free_to_sws', 'free_to_total', 'sws_to_nbs', 'ionic_strength', 'total_boron', 'total_sulfate',
                          'total_fluoride', 'k1_sws', 'k2_sws', 'kw_total', 'kb_total', 'k_nh4_sws', 'pk_nh4',
                          'k_h2s_total', 'ksp_calcite', 'ksp_aragonite', 'k0_co2'):
@@ -81,7 +82,7 @@ class ConstantsParityTests(SimpleTestCase):
             for pressure, expected in record['co2_from_air'].items():
                 ceilings.check('closed_form', 'co2_from_air', native.co2_from_air(t, s, float(pressure)), expected,
                                (t, s, pressure))
-            ceilings.check('closed_form', 'ph_free', native.ph_free(7.0, t, s), record['ph_free_7'], (t, s))
+            ceilings.check('closed_form_ph', 'ph_free', native.ph_free(7.0, t, s), record['ph_free_7'], (t, s))
             ceilings.check('closed_form', 'nh3_fraction', native.nh3_fraction(7.5, t, s), record['nh3_fraction_7_5'],
                            (t, s))
         ceilings.report('constants')
@@ -103,7 +104,8 @@ class CarbonateParityTests(SimpleTestCase):
                 'alkalinity_floor': intercept * native.MG_CACO3_PER_MEQ}
             expected = {**record, 'isoline_slope': record['isoline'][0], 'isoline_intercept': record['isoline'][1]}
             for name, ours in values.items():
-                ceilings.check('closed_form_meq' if name in MEQ else 'closed_form', name, ours, expected[name], where)
+                kind = 'closed_form_meq' if name in MEQ else 'closed_form_ph' if name == 'ph_of_hydrogen' else 'closed_form'
+                ceilings.check(kind, name, ours, expected[name], where)
             for index, share in enumerate(eq.fractions(ph)):
                 ceilings.check('closed_form', f'alpha{index}', share, record['fractions'][index], where)
             ceilings.check('solved_ph', 'ph_at', eq.ph_at(dic, alk), record['ph_at']['value'], where)
@@ -115,7 +117,7 @@ class CarbonateParityTests(SimpleTestCase):
                       'ph_where_nh3': eq.ph_where_nh3(0.5, 0.0103),
                       'ph_where_h2s': eq.ph_where_h2s(3.0 * native.H2S_PER_S, 2.0)}
             for name, ours in closed.items():
-                ceilings.check('closed_form', name, ours, record[name].get('value'), where)
+                ceilings.check('closed_form_ph', name, ours, record[name].get('value'), where)
         ceilings.report('carbonate')
 
 
@@ -127,6 +129,8 @@ class RefusalTests(SimpleTestCase):
         for edge in block('edges'):
             if edge['kind'] not in ('equilibria', 'pressure'):
                 continue
+            edge = {key: float(value) if key in ('temp_c', 'salinity', 'altitude_m') else value
+                    for key, value in edge.items()}          # 'nan' and 'inf' are recorded as strings
             calls = ({'result': lambda: native.equilibria(edge['temp_c'], edge['salinity']),
                       'oxygen': lambda: native.oxygen_solubility(edge['temp_c'], edge['salinity'], 1.0),
                       'co2_from_air': lambda: native.co2_from_air(edge['temp_c'], edge['salinity'], 1.0)}
@@ -135,7 +139,10 @@ class RefusalTests(SimpleTestCase):
                 recorded = edge[name]
                 with self.subTest(edge=edge.get('temp_c', edge.get('altitude_m')), salinity=edge.get('salinity'),
                                   value=name):
-                    if 'raises' in recorded:
+                    if not all(math.isfinite(edge[key]) for key in ('temp_c', 'salinity', 'altitude_m') if key in edge):
+                        with self.assertRaises(native.NonFiniteError):       # a non-finite input, whatever Python did
+                            call()
+                    elif 'raises' in recorded:
                         with self.assertRaises(PYTHON_ERRORS[recorded['raises']]):
                             call()
                     elif not finite_tree(recorded['value']):

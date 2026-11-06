@@ -18,6 +18,11 @@ rel = 1e-12
 rel = 1e-12
 abs = 1e-12
 
+[classes.closed_form_ph]
+# a pH from closed forms (the NBS offset, which is near 0 in nearly fresh water, a pH free, a border in closed form):
+# a pH is a logarithm, so it is compared absolutely
+abs = 1e-12
+
 [classes.solved_ph]
 # a pH found by bisection to 1e-10 on [0, 14]: a flipped last decision moves it by one final bracket (5e-11)
 abs = 2e-10

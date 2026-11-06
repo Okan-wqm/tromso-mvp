@@ -4,7 +4,10 @@ use std::path::Path;
 
 /// FNV-1a 64 over the normalised sources, as the build computes it (the specification of `core_hash`).
 fn digest_of_sources() -> String {
-    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    // The manifest directory as cargo gives it to the running test (not as compiled in: a build reused from another
+    // mount point would read nothing and hash nothing).
+    let manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_owned());
+    let source = Path::new(&manifest).join("src");
     let mut names: Vec<String> = fs::read_dir(&source)
         .map(|entries| {
             entries
@@ -14,6 +17,11 @@ fn digest_of_sources() -> String {
         })
         .unwrap_or_default();
     names.sort();
+    assert!(
+        names.iter().any(|name| name == "lib.rs"),
+        "the sources were not found in {}",
+        source.display()
+    );
     let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
     let mut feed = |bytes: &[u8]| {
         for &byte in bytes {

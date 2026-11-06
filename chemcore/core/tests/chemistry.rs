@@ -24,10 +24,17 @@ fn the_arithmetic_fails_where_python_raised() {
 #[test]
 fn the_solver_keeps_its_ends_its_none_and_its_bracket() {
     let mut calls = 0;
-    let root = solve::<()>(&mut |x| { calls += 1; Ok(x - 3.0) }, 0.0, 14.0);
+    let root = solve::<()>(
+        &mut |x| {
+            calls += 1;
+            Ok(x - 3.0)
+        },
+        0.0,
+        14.0,
+    );
     let root = root.ok().flatten().unwrap_or(f64::NAN);
     assert!((root - 3.0).abs() < 1e-10);
-    assert_eq!(calls, 2 + 38);                        // the ends, then 38 halvings of [0, 14] to under 1e-10
+    assert_eq!(calls, 2 + 38); // the ends, then 38 halvings of [0, 14] to under 1e-10
     assert_eq!(solve::<()>(&mut |x| Ok(x), 0.0, 14.0), Ok(Some(0.0)));
     assert_eq!(solve::<()>(&mut |x| Ok(x - 14.0), 0.0, 14.0), Ok(Some(14.0)));
     assert_eq!(solve::<()>(&mut |x| Ok(x + 1.0), 0.0, 14.0), Ok(None));
@@ -48,13 +55,13 @@ fn a_water_is_refused_where_python_raised() {
 #[test]
 fn the_constants_meet_their_papers() {
     let ln = |x: Result<f64, ChemError>| x.map(libm::log).unwrap_or(f64::NAN);
-    assert!((ln(c::kb_total(25.0, 35.0)) - -19.7964).abs() < 5e-5);    // Dickson 1990, DOE 1994
-    assert!((ln(c::kw_total(25.0, 35.0)) - -30.434).abs() < 5e-4);     // Millero 1995, DOE 1994
-    assert!((ln(c::ks(25.0, 35.0)) - -2.30).abs() < 5e-3);             // Dickson 1990, DOE 1994
-    assert!((c::oxygen_solubility(25.0, 0.0, 1.0).unwrap_or(f64::NAN) - 8.26).abs() < 5e-3);   // APHA 4500-O
-    assert!((c::ksp_calcite(25.0, 35.0).unwrap_or(f64::NAN) * 1e7 - 4.27).abs() < 5e-3);        // Mucci 1983
+    assert!((ln(c::kb_total(25.0, 35.0)) - -19.7964).abs() < 5e-5); // Dickson 1990, DOE 1994
+    assert!((ln(c::kw_total(25.0, 35.0)) - -30.434).abs() < 5e-4); // Millero 1995, DOE 1994
+    assert!((ln(c::ks(25.0, 35.0)) - -2.30).abs() < 5e-3); // Dickson 1990, DOE 1994
+    assert!((c::oxygen_solubility(25.0, 0.0, 1.0).unwrap_or(f64::NAN) - 8.26).abs() < 5e-3); // APHA 4500-O
+    assert!((c::ksp_calcite(25.0, 35.0).unwrap_or(f64::NAN) * 1e7 - 4.27).abs() < 5e-3); // Mucci 1983
     let eq = c::equilibria(25.0, 0.0);
-    assert!(eq.is_ok_and(|eq| (-libm::log10(eq.k1) - 6.352).abs() < 3e-3));                     // Harned & Davis
+    assert!(eq.is_ok_and(|eq| (-libm::log10(eq.k1) - 6.352).abs() < 3e-3)); // Harned & Davis
 }
 
 #[test]

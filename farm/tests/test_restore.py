@@ -1,4 +1,6 @@
 """A deleted record can be brought back from the admin, checked like a new one."""
+from unittest import mock
+
 from django.apps import apps
 from django.contrib import admin
 from django.contrib.auth import get_user_model
@@ -46,13 +48,45 @@ class RestoreTests(RestoreTestCase):
             softdelete.restore(System.all_objects.get(code='RAS-1', is_deleted=True), self.admin_user)
         self.assertEqual(AuditLog.objects.filter(action='restore').count(), 0)
 
-    def test_only_the_record_itself_comes_back_not_what_was_deleted_with_it(self):
+    def test_what_the_same_delete_took_with_it_comes_back_with_it(self):
+        # F-029, F-067: a restore reverses the delete it undoes; a record deleted on its own before stays deleted.
         child = System.objects.create(site=self.site, name='Loop', code='LP', parent=self.system)
+        earlier = System.objects.create(site=self.site, name='Old loop', code='OL', parent=self.system)
         self.client.force_login(self.admin_user)
+        self.client.post(reverse('farm:system_delete', args=[earlier.pk]))
         self.client.post(reverse('farm:system_delete', args=[self.system.pk]))
+        self.assertEqual(System.objects.count(), 0)
         softdelete.restore(System.all_objects.get(pk=self.system.pk), self.admin_user)
-        self.assertEqual(list(System.objects.all()), [System.objects.get(pk=self.system.pk)])
-        self.assertTrue(System.all_objects.get(pk=child.pk).is_deleted)
+        self.assertEqual(set(System.objects.all()), {System.objects.get(pk=self.system.pk), System.objects.get(pk=child.pk)})
+        self.assertTrue(System.all_objects.get(pk=earlier.pk).is_deleted)
+        self.assertEqual(sorted(AuditLog.objects.filter(action='restore').values_list('entity_label', flat=True)),
+                         ['Loop (LP)', 'RAS (RAS-1)'])
+
+    def test_a_site_comes_back_with_its_production_departments(self):
+        department = ProductionDepartment.objects.create(site=self.site, name='Hall', code='HA')
+        self.client.force_login(self.admin_user)
+        self.client.post(reverse('farm:site_delete', args=[self.site.pk]))
+        softdelete.restore(Site.all_objects.get(), self.admin_user)
+        self.assertEqual(ProductionDepartment.objects.get(), department)
+        self.assertEqual(System.objects.get(), self.system)
+
+    def test_a_record_restored_meanwhile_is_not_restored_twice(self):
+        # F-003: two restores of one record take turns on its row; the second finds it live.
+        self.system.soft_delete(self.admin_user)
+        stale = System.all_objects.get()
+        softdelete.restore(System.all_objects.get(), self.admin_user)
+        with self.assertRaisesMessage(ValidationError, 'is not deleted'):
+            softdelete.restore(stale, self.admin_user)
+        self.assertEqual(AuditLog.objects.filter(action='restore').count(), 1)
+
+    def test_a_clash_only_the_database_catches_is_refused_as_a_reason_not_a_failure(self):
+        # F-003: the code taken by a record committed between the check and the write.
+        self.system.soft_delete(self.admin_user)
+        System.objects.create(site=self.site, name='New RAS', code='RAS-1')
+        with mock.patch.object(System, 'validate_constraints'), mock.patch.object(System, 'validate_unique'):
+            with self.assertRaises(ValidationError):
+                softdelete.restore(System.all_objects.get(code='RAS-1', is_deleted=True), self.admin_user)
+        self.assertEqual(System.objects.count(), 1)
 
 
 class AdminTests(RestoreTestCase):

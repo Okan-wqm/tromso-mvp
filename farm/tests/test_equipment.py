@@ -557,11 +557,15 @@ class EquipmentDeletePlanTests(EquipmentTestCase):
         self.assertEqual(pump.live_links()[0].system, self.ras)
         self.assertNotContains(self.client.get(reverse('farm:equipment_list')), 'not linked to any system')
 
-    def test_deleting_a_site_deletes_its_equipment_with_its_departments(self):
+    def test_deleting_a_site_deletes_its_equipment_with_its_departments_and_restoring_it_brings_them_back(self):
         pump = self.make()
         self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
         pump.refresh_from_db()
         self.assertTrue(pump.is_deleted)
+        softdelete.restore(Site.all_objects.get(pk=self.bergen.pk), self.user)
+        pump.refresh_from_db()
+        self.assertFalse(pump.is_deleted)
+        self.assertEqual(pump.live_links()[0].system, self.ras)
 
     def test_a_restored_equipment_is_checked_like_a_new_one(self):
         pump = self.make()

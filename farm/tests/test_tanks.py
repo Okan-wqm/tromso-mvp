@@ -632,10 +632,25 @@ class StockGuardTests(TankTestCase):
         self.stock(stocked)
         Tank.objects.filter(pk=stocked.pk).update(status='maintenance')
         stocked = Tank.objects.get(pk=stocked.pk)
-        self.assertEqual(stocked.next_statuses(), ['maintenance'])
+        self.assertEqual(stocked.next_statuses(), ['maintenance', 'active'])
         stocked.status = Status.INACTIVE
         with self.assertRaisesMessage(ValidationError, 'cannot be made inactive'):
             stocked.full_clean()
+
+    def test_a_unit_in_maintenance_with_fish_goes_back_to_active(self):
+        # F-166: maintenance with fish in the unit had no way out but moving every fish away.
+        unit = self.make(status='preparing')
+        self.stock(unit)
+        self.post(unit_data(self.hall, code='T1', status='maintenance', status_reason='Pump service', version='2'), unit)
+        unit.refresh_from_db()
+        self.assertEqual(unit.status, 'maintenance')
+        self.post(unit_data(self.hall, code='T1', status='active', status_reason='Pump fixed', version='3'), unit)
+        unit.refresh_from_db()
+        self.assertEqual((unit.status, unit.status_reason), ('active', 'Pump fixed'))
+        empty = self.make(code='T2', status='maintenance')
+        empty.status = Status.ACTIVE
+        with self.assertRaisesMessage(ValidationError, 'A unit becomes active when fish are stocked in it'):
+            empty.full_clean()
 
     def test_a_unit_with_fish_cannot_be_deleted_nor_its_department(self):
         unit = self.make()

@@ -9,6 +9,7 @@ A failure raises ValidationError (a dict of field to message: 'unit', 'date', 'f
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Sum
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
@@ -61,13 +62,18 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
                                meals=meals, feeder=feeder, notes=notes, entry_key=token, created_by=user,
                                updated_by=user)
         record.full_clean()
-        rate = 100 * amount_kg / book.biomass_kg
+        # Q-F5 asks about more than the limit a day: the day's feedings of the target in the unit, this one included (the
+        # unit is locked, so two feedings of one day take turns; audit F-081).
+        day_kg = amount_kg + (FeedingRecord.objects.filter(unit=unit, date=day, target=target)
+                              .aggregate(total=Sum('amount_kg'))['total'] or 0)
+        rate = 100 * day_kg / book.biomass_kg
         if rate > settings.FEEDING_ACK_PERCENT:
             if not ack:
                 raise ValidationError({'high_rate_ack': _(
-                    '%(kilos)s kg is %(rate)s %% of the %(biomass)s kg %(unit)s holds on %(date)s in the book; more '
-                    'than %(limit)s %% a day is unusual. Tick the box below to record it anyway.') % {
-                    'kilos': amount(amount_kg), 'rate': number(rate, 1),
+                    '%(kilos)s kg fed on %(date)s, this feeding included, is %(rate)s %% of the %(biomass)s kg %(unit)s '
+                    'holds in the book; more than %(limit)s %% a day is unusual. Tick the box below to record it '
+                    'anyway.') % {
+                    'kilos': amount(day_kg), 'rate': number(rate, 1),
                     'biomass': number(book.biomass_kg, 1), 'unit': unit.code, 'date': shown_date(day),
                     'limit': settings.FEEDING_ACK_PERCENT}})
             record.high_rate_ack = True

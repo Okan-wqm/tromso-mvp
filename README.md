@@ -950,7 +950,8 @@ the server's reason on its field:
   reason is on the target when the unit holds the other kind); and the other way round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
   fish) is refused while a recorded feeding would be left without fish, naming it;
 - a new record takes an active feed; a record keeps its feed whatever the feed's status becomes;
-- above `FEEDING_ACK_PERCENT` (10 %) of the book biomass of the target's fish in a day, the person is asked to confirm,
+- above `FEEDING_ACK_PERCENT` (10 %) of the book biomass of the target's fish in a day (the day's feedings of the target in
+  the unit, this one included: two feedings of 6 % are 12 %, audit F-081), the person is asked to confirm,
   and the confirmation is stored on the record (a kilo typed for a gram is caught; fry may be fed more);
 - a form sent twice records once; the unit is locked as a stock operation locks it, so a feeding and a
   harvest of one unit take turns.

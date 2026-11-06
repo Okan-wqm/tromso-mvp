@@ -19,7 +19,7 @@ AT = datetime(2026, 11, 1, 8, 0, tzinfo=utc.utc)
 def rows(sql, params=None):
     with connection.cursor() as cursor:
         cursor.execute(sql, params)
-        return cursor.fetchall()
+        return cursor.fetchall() if cursor.description else None
 
 
 class AcknowledgementMigrationTests(TransactionTestCase):

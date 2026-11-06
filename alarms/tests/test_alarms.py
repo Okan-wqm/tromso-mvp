@@ -6,7 +6,7 @@ from datetime import timedelta
 from unittest import mock
 
 from django.core.exceptions import ValidationError
-from django.db import DatabaseError, IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.test import override_settings
 from django.utils import timezone
 
@@ -16,7 +16,7 @@ from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
 from .. import engine, read, routing, services
-from ..models import (Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification,
+from ..models import (APPEND_ONLY, Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification,
                       RecipientRule)
 from ..transports import MAX_ATTEMPTS
 from . import AlarmsCase
@@ -33,12 +33,16 @@ class TableTests(AlarmsCase):
         self.loop()
         alarm = Alarm.objects.get()
         services.acknowledge(alarm, self.operator, device='phone-1', app='Suderra 1.0', at=self.now)
-        for model in (Alarm, Notification, Acknowledgement):
-            with self.subTest(model=model.__name__):
+        for table in ('alarms', 'alarm_notifications', 'alarm_acknowledgements'):   # the database itself, past PROTECT
+            with self.subTest(table=table), connection.cursor() as cursor:
                 with self.assertRaisesMessage(DatabaseError, 'append-only'), transaction.atomic():
-                    model.objects.update(id=model.objects.first().id)
+                    cursor.execute(f'UPDATE {table} SET id = id')
                 with self.assertRaisesMessage(DatabaseError, 'append-only'), transaction.atomic():
-                    model.objects.all().delete()
+                    cursor.execute(f'DELETE FROM {table}')
+        with connection.cursor() as cursor:                                  # and the same trigger on all six
+            cursor.execute("SELECT tgrelid::regclass::text FROM pg_trigger WHERE tgname LIKE 'trg_%%_append_only' "
+                           "AND tgrelid::regclass::text = ANY(%s)", [list(APPEND_ONLY)])
+            self.assertEqual(sorted(row[0] for row in cursor.fetchall()), sorted(APPEND_ONLY))
 
     def test_a_rule_names_a_role_or_a_person_never_both_and_its_department_is_on_its_site(self):
         with self.assertRaises(IntegrityError), transaction.atomic():

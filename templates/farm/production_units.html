@@ -109,7 +109,7 @@
               {% if stock %}
               <span class="capacity">
                 <span class="capacity-line"><span>{{ stock.density|density }}</span>{% if stock.over_capacity %}<span class="over-badge">{% trans "Over" %}</span>{% endif %}<strong>{{ stock.capacity|percent }}</strong></span>
-                <span class="capacity-bar" aria-hidden="true"><span style="width: {{ stock.capacity|bar_width }}%"></span></span>
+                {% include "farm/_capacity_bar.html" %}
               </span>
               {% else %}—{% endif %}
             </td>

@@ -193,7 +193,7 @@ class PageTests(MonitoringCase):
         self.sample(self.t1, hours=1, temperature_c='13', oxygen_mg_l='5')            # critical
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')       # fine
         cards = articles(self.page(OPERATOR))
-        cells = [[node.attrs['style'] for node in widgets_of(cards[f'card:{unit.pk}'])] for unit in (self.t1, self.t2)]
+        cells = [[node.attrs['class'] for node in widgets_of(cards[f'card:{unit.pk}'])] for unit in (self.t1, self.t2)]
         self.assertEqual(cells[0], cells[1])
         self.assertNotEqual(cards[f'card:{self.t1.pk}'].attrs['class'], cards[f'card:{self.t2.pk}'].attrs['class'])
 

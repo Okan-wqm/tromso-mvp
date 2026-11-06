@@ -29,6 +29,7 @@ export interface Spec {
 
 export interface Catalogue {
   readonly columns: number;
+  readonly rows: number;           // the rows the server draws (catalogue.ROWS); Infinity from a catalogue without it
   readonly schema: number;
   readonly specs: Readonly<Record<string, Spec>>;
 }

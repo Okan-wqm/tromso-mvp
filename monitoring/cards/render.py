@@ -1,7 +1,9 @@
 """How a card's widgets are drawn: `build(card)` turns the card's template into the widgets to render, pure (no query:
 every figure is already on the card), in reading order (y, then x), so the order a screen reader reads, the order Tab
 moves in and the order the eye follows agree. The server places them with plain CSS grid (templates/monitoring/_card.html,
-static/css/monitor.css); the wall runs no layout script.
+static/css/monitor.css); the wall runs no layout script. A widget's cell is said by classes (`WidgetView.place`), never a
+style attribute, which the Content-Security-Policy blocks: static/css/card-grid.css (`grid_css`) turns each into the
+grid's --x, --y, --w, --h.
 
 `face(reading, now)` is THE one way a single water value is said on a card (the value and bar widgets): the figure at
 the parameter's precision, its status, where it came from and how old it is, in words, and "no data" rather than a dash.
@@ -38,8 +40,9 @@ class WidgetView:
     dom_id: str          # w-<unit>-<widget id>: what a focusable element in it is called (poll.ts restores focus by id)
 
     @property
-    def style(self):
-        return f'--x:{self.x};--y:{self.y};--w:{self.w};--h:{self.h}'
+    def place(self):
+        """The classes of its cell and size: 'gx-0 gy-3 gw-6 gh-2' (static/css/card-grid.css)."""
+        return f'gx-{self.x} gy-{self.y} gw-{self.w} gh-{self.h}'
 
     @property
     def large(self):
@@ -176,3 +179,17 @@ def bar(face):
     sentence = gettext('%(label)s %(value)s, %(status)s; limits: %(limits)s') % {
         'label': face.label, 'value': face.value, 'status': face.status_label.lower(), 'limits': shown}
     return Bar(tuple(bands), at(reading.value), sentence)
+
+
+def grid_css():
+    """static/css/card-grid.css: a class for every column, row, width and height a valid layout can use (catalogue),
+    each setting the custom property monitor.css places a widget by. Written by `manage.py card_grid_css`."""
+    tallest = max(spec.max_h for spec in catalogue.WIDGETS.values())
+    lines = ['/* Made by `manage.py card_grid_css` from monitoring/cards/catalogue.py: do not edit. A widget\'s cell on its',
+             '   card is said by classes (monitoring.cards.render.WidgetView.place), since the Content-Security-Policy',
+             '   allows no style attribute; monitor.css places .card-grid > .w by --x, --y, --w and --h. */']
+    lines += [f'.gx-{x}{{--x:{x}}}' for x in range(catalogue.COLUMNS)]
+    lines += [f'.gw-{w}{{--w:{w}}}' for w in range(1, catalogue.COLUMNS + 1)]
+    lines += [f'.gh-{h}{{--h:{h}}}' for h in range(1, tallest + 1)]
+    lines += [f'.gy-{y}{{--y:{y}}}' for y in range(catalogue.ROWS)]
+    return '\n'.join(lines) + '\n'

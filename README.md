@@ -693,7 +693,8 @@ value and value-against-limits (one parameter), water (the middle point's key va
 (the key figures or every figure), feeding (the week too or not), health, tasks, experiments, the Deffeyes chart button,
 and a trend that is catalogued but refused until a bulk series read exists. `validate.py` is the one validator (pure, no
 query; the model, the form, the preview and the tests call it): errors block (the shape, an unknown version, more than 40
-widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or outside its sizes, each overlapping
+widgets or 32 KB, keys, ids, kinds, whole numbers, a widget outside the 12 columns or below the grid's last row (`catalogue.ROWS`, the
+tallest widgets stacked 40 high: a designer's layout, compacted upwards, always fits) or outside its sizes, each overlapping
 pair named once, a binding the widget cannot have, an option its schema refuses), warnings never do (no oxygen anywhere,
 more than two large widgets, more than 16 widgets). An older layout version is upgraded one pure step at a time and checked
 as upgraded, never changed in place; a fixture per version passes. The geometry is shared with the designer's TypeScript
@@ -741,7 +742,9 @@ savepoint of its own: 4 savepoint statements simple, 10 detailed (`RecordedCount
 **How a card is drawn** (`monitoring/cards/render.py`, `templates/monitoring/_card.html`, `templates/monitoring/widgets/`). The
 frame (the unit and its link, the state word, shape and reasons, the withdrawal, the flip link named after the template it
 shows, "Empty", what the state is from) is not data and no template can remove it. Below it `div.card-grid`: one
-`div.w.w-<type>` per widget with `--x --y --w --h`, placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
+`div.w.w-<type>` per widget with the classes of its cell (`gx-<x> gy-<y> gw-<w> gh-<h>`, never a style attribute, which the
+Content-Security-Policy blocks; `static/css/card-grid.css`, made from the catalogue by `manage.py card_grid_css`, whose `--check`
+and a test fail when it is stale, turns them into `--x --y --w --h`), placed by plain CSS grid on 12 columns (`static/css/monitor.css`; a row at
 least `--row` 1.75 rem high, growing with its content) and, below 30 rem of card, one column in the same order; the wall runs no
 layout script. `build(card)` (no query) gives the widgets in reading order (y, then x), so what is read, what Tab visits and
 what is seen agree; a unit with no fish shows only the experiments and the Deffeyes button; a widget whose sources the person
@@ -3036,6 +3039,17 @@ only one who manages roles and users; everyone else gets exactly what their role
   the tiles a person's roles allow, and the person's own password). A new page without a check fails it. A page that
   writes asks for its right before it reads the request (the shift plan answered such a person 400 for a malformed
   request before; now 403).
+- **A Content-Security-Policy on every response** (`config/settings.py` SECURE_CSP, Django's own middleware): a page loads
+  only from its own address; scripts are the project's files plus what carries the response's nonce (the import map,
+  `core/templatetags/assets.py`); no inline script, no inline style (a monitoring widget's cell is a class,
+  `static/css/card-grid.css`; a capacity bar's fill an SVG rectangle's width, `templates/farm/_capacity_bar.html`), no
+  event-handler attribute, no plug-in, no frame around a page, no form sent elsewhere. So even text that slipped past the
+  escaping could not run. `core/tests_csp.py` opens every page that takes no record as the platform admin, as a page and
+  as a dialog, and fails on anything the policy would block; it also reads every template for the parts that appear only
+  with data. A script that changes a style through the DOM (`element.style`) is allowed by the policy.
+- **The font is the project's own** (`static/fonts`, Bricolage Grotesque under the SIL Open Font License 1.1, named in
+  `THIRD_PARTY.md`): no page asks Google or any other site for anything, so no reader's address leaves the farm with a
+  page, and the farm's own network shows the font too.
 
 ## Database viewer
 

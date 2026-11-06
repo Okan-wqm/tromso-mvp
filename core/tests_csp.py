@@ -134,9 +134,9 @@ class TemplateTests(SimpleTestCase):
         self.assertEqual(found, [])
 
     def test_no_template_loads_anything_from_another_site(self):
-        found = [name for name, path in _sources('*.html')
-                 if re.search(r'(src|href)="(https?:)?//(?!www\.w3\.org)', path.read_text(encoding='utf-8'))
-                 and not name.startswith('templates/registration/password_reset_email')]
+        found = [name for name, path in _sources('*.html')       # a link to follow (a DOI) loads nothing
+                 if re.search(r'<(script|link|img|iframe|source|object|embed)\b[^>]*\b(src|href|data)="(https?:)?//',
+                              path.read_text(encoding='utf-8'))]
         self.assertEqual(found, [])
 
 

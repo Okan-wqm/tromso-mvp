@@ -1,6 +1,6 @@
 {% load i18n stock %}{% comment %} A unit's density and capacity: the numbers, the bar and the maximum, with the Over mark (`stock`: farm.stock.read.UnitStock, `unit`: its Tank). Shared by the drawer of Production units and the monitoring cards. {% endcomment %}
 <div class="drawer-capacity{% if stock.over_capacity %} is-over{% endif %}">
   <p class="capacity-line"><span>{% trans "Density · capacity" %}</span><span>{{ stock.density|density }} · <strong>{{ stock.capacity|percent }}</strong></span></p>
-  <span class="capacity-bar capacity-bar-large" aria-hidden="true"><span style="width: {{ stock.capacity|bar_width }}%"></span></span>
+  {% include "farm/_capacity_bar.html" with large=True %}
   <p class="capacity-note">{% blocktrans trimmed with volume=stock.volume_m3|floatformat:"-1g" %}{{ volume }} m³{% endblocktrans %} · {% blocktrans trimmed with density=unit.max_density_kg_m3|floatformat:"-2g" biomass=unit.max_biomass_kg|kilos %}Max {{ density }} kg/m³, {{ biomass }}{% endblocktrans %}{% if stock.over_capacity %} · <strong class="over-text">{% trans "Over capacity" %}</strong>{% endif %}</p>
 </div>

@@ -19,7 +19,9 @@ SHA256 = r'^[0-9a-f]{64}$'
 
 
 class HarvestCondition(models.TextChoices):
-    """The condition of the harvested fish the biomass report's slaughter weights are given in (`slaktetilstand`)."""
+    """The condition of the harvested fish the biomass report's slaughter weights are given in (`slaktetilstand`): the
+    condition of the kilos the farm holds, never a choice. Today only round kilos are weighed (at harvest); gutted kilos
+    come with the slaughter result (OUR-18)."""
     ROUND = 'round', _('Round weight (as weighed at harvest)')
     GUTTED = 'gutted', _('Gutted weight')
 
@@ -108,10 +110,9 @@ class Report(AuditedModel):
     # cleaner-fish or planned-slaughter report is a PUT to that id (the sea-lice endpoint has POST only).
     authority_id = models.CharField(_('Id returned by the authority’s API'), max_length=100, blank=True)
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
-    # The two facts no record holds that a monthly report needs said: in what condition the harvest weights of the biomass
-    # report are given, and that no feed was given to the cleaner fish (so that 0 kg is a statement, not a silence).
-    harvest_condition = models.CharField(_('Condition of the harvested fish'), max_length=10, blank=True,
-                                         choices=HarvestCondition.choices)
+    # The fact no record holds that a monthly report needs said: that no feed was given to the cleaner fish (so that 0 kg
+    # is a statement, not a silence). The condition of the biomass report's harvest kilos is not asked: they are the round
+    # kilos the farm holds (compute.biomass.HARVEST_CONDITION, audit F-086).
     no_cleaner_feed = models.BooleanField(_('No feed was given to the cleaner fish'), default=False)
     # Set when the filing is recorded: the deadline then, and whether the filing came after it (the day in Oslo). Empty for a
     # notice (filed at once) and for a filing recorded before this was kept.
@@ -138,9 +139,6 @@ class Report(AuditedModel):
             _check('escape', Q(kind=ReportKind.ESCAPE, escape__isnull=False)
                    | (~Q(kind=ReportKind.ESCAPE) & Q(escape__isnull=True)),
                    _('An escape notice is about an escape, and no other report is.')),
-            _check('harvest_condition', Q(harvest_condition='')
-                   | Q(kind=ReportKind.BIOMASS, harvest_condition__in=HarvestCondition.values),
-                   _('Only the biomass report has a condition of the harvested fish.')),
             _check('no_cleaner_feed', Q(no_cleaner_feed=False) | Q(kind=ReportKind.CLEANER_FISH),
                    _('Only the cleaner-fish report says that no feed was given.')),
             _check('authority_id_when_filed', Q(authority_id='') | Q(submitted_at__isnull=False),

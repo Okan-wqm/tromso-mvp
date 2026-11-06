@@ -822,8 +822,11 @@ What was built follows 5.1 to 5.12. Where it does not, or where a choice the des
   (`Report.deadline_on`) and whether the day of the filing in Oslo came after it (`filed_late`; empty for a filing recorded before this
   was kept, `False` for a notice, which is filed at once), shown on the report ("Filed 2 days after its deadline") and the
   list, and in the log entry; the database holds that only a filed report has them. The biomass report's `slaktetilstand`
-  is no longer a constant: the person says round or gutted weight (`Report.harvest_condition`, only on the biomass report,
-  checked by the database) and a month with a harvest is not ready until they have. A cleaner-fish month with no feed
+  is the condition of the kilos the farm holds: round, the kilos weighed at harvest (`compute.biomass.HARVEST_CONDITION`).
+  It was once asked of the person (`Report.harvest_condition`), and "gutted" put round kilos under a gutted label in a
+  filing (audit F-086): the question and its column are gone (reports migration 0013); a report filed with it keeps
+  what it filed in its frozen content, and its page shows the difference. Gutted kilos come with the slaughter result
+  (OUR-18). A cleaner-fish month with no feed
   recorded is a **problem**, not a silent 0 kg, unless the person says none was given (`Report.no_cleaner_feed`, only on the
   cleaner-fish report), and feed recorded beside "none given" is a problem too. The cleaner-fish **API** rows are one per
   species (`ArtDto` is per species): the figures of the farmed and the wild-caught fish of a species are added and the

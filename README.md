@@ -2244,8 +2244,9 @@ page, and the filing is refused until the person confirms it was checked by hand
 question in the register lifts it.
 
 **Filed late.** Recording a filing stores the deadline and whether it came after it (the day in Oslo); the report and the list say
-"Filed 2 days after its deadline" and a notice, filed at once, is never late. **Said, not assumed:** the biomass report asks in what
-condition the harvested fish are weighed (round or gutted weight) and is not ready with a harvest until it is said; a cleaner-fish
+"Filed 2 days after its deadline" and a notice, filed at once, is never late. **Said, not assumed:** the biomass report's harvest weights are the round kilos weighed at
+harvest, the only kilos the farm holds, and say so (`slaktetilstand` round): it never asks, so round kilos cannot be filed as gutted
+(audit F-086; gutted kilos come with the slaughter result, OUR-18); a cleaner-fish
 month with no feed recorded is a problem unless the person says none was given. The cleaner-fish file for the API has one row per
 species, with the mixed origin when both farmed and wild-caught fish are in it.
 

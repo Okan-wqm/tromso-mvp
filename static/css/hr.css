@@ -27,6 +27,7 @@
 .roster-finding { display: inline-block; margin-left: .25rem; padding: 0 .375rem; border-radius: 999px; font-size: .75rem;
   font-weight: 700; background: #F7E6E6; color: var(--error); cursor: help; }
 .shift-chip.is-off { background: #ECECEA; color: var(--muted); font-weight: 500; }
+.shift-chip.is-leave { background: var(--mist); color: var(--olive); border: 1px dashed var(--sage); font-weight: 500; }   /* hr.read.Cell.state */
 /* Team overview: a figure over the standard week is marked. */
 .overview .is-over { color: var(--error); font-weight: 600; }
 /* Organisation chart: nested lists, drawn by the server; a printed page keeps the tree and drops the menu. */

@@ -145,6 +145,16 @@ class Cell:
         return self.assignment is not None and self.assignment.shift_id is None
 
     @property
+    def state(self):
+        """The one state of the day, which the schedule and the team overview both read: 'leave' on approved leave (a
+        planned shift or day off under it is for someone else to cover), else 'shift', 'off' (planned off) or 'none'."""
+        if self.on_leave:
+            return 'leave'
+        if self.shift is not None:
+            return 'shift'
+        return 'off' if self.is_off else 'none'
+
+    @property
     def blocks(self):
         return any(item.blocks for item in self.findings)
 
@@ -458,13 +468,13 @@ def overview(user, week_start, department=None, page=1, per_page=50, query='', r
         for index, cell in enumerate(row.cells):
             if not cell.visible:
                 continue
-            if cell.on_leave:
+            if cell.state == 'leave':
                 away += 1
                 footer[index]['leave'] += 1
-            elif cell.shift is not None:
+            elif cell.state == 'shift':
                 working += 1
                 footer[index]['working'] += 1
-            elif cell.is_off:
+            elif cell.state == 'off':
                 off += 1
                 footer[index]['off'] += 1
         rows.append(OverviewRow(row.employee, row.department, working, off, away, row.planned_minutes,

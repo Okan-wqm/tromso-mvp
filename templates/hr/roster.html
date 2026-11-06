@@ -60,10 +60,10 @@
         {% for cell in row.cells %}
         <td class="roster-cell{% if cell.blocks %} has-block{% elif cell.findings %} has-warning{% endif %}{% if cell.holiday %} is-holiday{% endif %}" data-day="{{ cell.day|date:'Y-m-d' }}"{% if cell.visible %} data-cell="{{ row.employee.pk }}:{{ cell.day|date:'Y-m-d' }}"{% endif %}>
           {% if cell.visible %}
-            {% if cell.assignment %}
-              {% if can_change %}<a class="roster-link" href="{% url 'hr:shiftassignment_edit'|mounted:request cell.assignment.pk %}" data-modal>{% endif %}
-              {% if cell.shift %}<span class="shift-chip tone-{{ cell.shift.tone }}" title="{{ cell.shift.name }} {{ cell.shift.starts_at|time:"TIME_FORMAT" }}–{{ cell.shift.ends_at|time:"TIME_FORMAT" }}">{{ cell.shift.code }}</span>{% else %}<span class="shift-chip is-off">{% trans "Off" %}</span>{% endif %}
-              {% if can_change %}</a>{% endif %}
+            {% if cell.assignment or cell.state == "leave" %}
+              {% if cell.assignment and can_change %}<a class="roster-link" href="{% url 'hr:shiftassignment_edit'|mounted:request cell.assignment.pk %}" data-modal>{% endif %}
+              {% if cell.state == "leave" %}<span class="shift-chip is-leave"{% if cell.shift %} title="{% blocktrans trimmed with shift=cell.shift.code %}{{ shift }} planned: to be covered{% endblocktrans %}"{% endif %}>{% trans "On leave" %}</span>{% elif cell.state == "shift" %}<span class="shift-chip tone-{{ cell.shift.tone }}" title="{{ cell.shift.name }} {{ cell.shift.starts_at|time:"TIME_FORMAT" }}–{{ cell.shift.ends_at|time:"TIME_FORMAT" }}">{{ cell.shift.code }}</span>{% else %}<span class="shift-chip is-off">{% trans "Off" %}</span>{% endif %}
+              {% if cell.assignment and can_change %}</a>{% endif %}
             {% elif can_add %}
               <a class="roster-add" href="{% url 'hr:shiftassignment_create'|mounted:request %}?employee={{ row.employee.pk }}&day={{ cell.day|date:'Y-m-d' }}" data-modal title="{% trans 'Plan this day' %}">+<span class="sr-only">{% trans "Plan this day" %}</span></a>
             {% endif %}

@@ -2822,7 +2822,9 @@ owner's data. A site with holidays is not deleted.
 ### Time & shifts › Shift schedule (`/hr/schedule/`)
 
 A week of the viewer's people as a table: a row per person (their department under the name), a cell per day, the planned
-hours at the end. A cell shows the shift (its code in its tone), "Off" for planned off, the holiday of the person's site, and
+hours at the end. A cell shows the day's one state (`hr.read.Cell.state`, which the Team overview counts by too): "On leave"
+on a day of approved leave (over a planned shift or a planned day off, which someone else is to cover), else the shift (its
+code in its tone), "Off" for planned off; then the holiday of the person's site, and
 a "!" with the finding when a rule is broken; it opens the plan of that person and day in a dialog (a plus on an empty cell
 when the viewer may create). The week is the ISO week (Monday first, no setting); `?week=` takes any date of it, `?department=`
 and the search narrow the people and never widen them, and the list says "n of m" with its own paging. Everything on the page is

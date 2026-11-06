@@ -163,17 +163,18 @@ class SavePlacesTests(PlacesTestCase):
         self.assertEqual(self.refused(self.place, places=[services.Place(foreign, [self.tanks[0]])]),
                          ['A replicate was removed meanwhile: reload the page.'])
 
-    def test_a_tank_booked_to_another_experiment_is_refused_naming_it_for_a_draft_and_a_running_one(self):
+    def test_a_tank_booked_to_another_experiment_is_refused_with_its_days_never_the_experiment(self):
         other = self.experiment('Other', starts_on=self.today)
         mine = self.replicate(self.group(other, 'X'), 1)
         services.save_places(self.user, other, [services.Place(mine, [self.tanks[0]], self.today + timedelta(days=50),
                                                                self.end)], other.version, 'one tank')
-        self.assertEqual(self.refused(self.place), [f'T-01 is booked to {other.code} on some of these days.'])
+        held = f'T-01 is booked by another experiment from {(self.today + timedelta(days=50)).isoformat()} to {self.end.isoformat()}.'
+        self.assertEqual(self.refused(self.place), [held])
         self.assertEqual(self.stored(), [])
         Experiment.objects.filter(pk=other.pk).update(
             status='running', hypothesis='h', primary_endpoint='bfcr', allocation_method='manual',
             allocation_note='by hand')
-        self.assertEqual(self.refused(self.place), [f'T-01 is booked to {other.code} on some of these days.'])
+        self.assertEqual(self.refused(self.place), [held])
         self.place(tanks=[self.tanks[1], self.tanks[2], self.tanks[3], self.tanks[4]])        # other tanks: free
         self.assertEqual(len(self.stored()), 4)
 
@@ -183,7 +184,8 @@ class SavePlacesTests(PlacesTestCase):
         services.save_places(self.user, other, [services.Place(mine, [self.tanks[0]])], other.version, 'one tank')
         with mock.patch.object(services, '_check_booked'):
             self.assertEqual(self.refused(self.place),
-                             ['A tank was booked to another experiment meanwhile: look at the places and try again.'])
+                             ['A tank or a system was booked by another experiment meanwhile: look at the places and '
+                              'try again.'])
         self.assertEqual(self.stored(), [])
 
     def test_a_system_is_the_tanks_of_it_and_of_the_systems_nested_in_it_and_is_never_stored(self):
@@ -197,6 +199,70 @@ class SavePlacesTests(PlacesTestCase):
         self.place(places=[services.Place(self.slots[0], services.tanks_of(ras))])
         self.assertEqual([row[1] for row in self.stored()], ['T-01', 'T-02', 'T-03'])
         self.assertFalse(any('system' in field.name for field in ReplicateUnit._meta.get_fields()))
+
+    def test_a_whole_system_is_booked_with_each_nested_system_and_its_tanks_are_tagged(self):
+        from ..models import ReplicateSystem
+        ras = System.objects.create(site=self.bergen, name='RAS 1', code='R1')
+        loop = System.objects.create(site=self.bergen, name='Loop', code='R1-A', parent=ras)
+        type(self.t1).objects.filter(pk__in=[self.tanks[0].pk, self.tanks[1].pk]).update(system=ras)
+        type(self.t1).objects.filter(pk=self.tanks[2].pk).update(system=loop)
+        self.place(places=[services.Place(self.slots[0], services.tanks_of(ras), systems=services.whole(ras)),
+                           services.Place(self.slots[1], [self.tanks[3]])])
+        bookings = {row.system.code: row for row in ReplicateSystem.objects.select_related('system')}
+        self.assertEqual(sorted((code, row.replicate, row.from_on, row.until_on) for code, row in bookings.items()),
+                         [('R1', self.slots[0], self.today, self.end), ('R1-A', self.slots[0], self.today, self.end)])
+        tags = {row.unit.code: row.booking.system.code if row.booking else None
+                for row in ReplicateUnit.objects.select_related('unit', 'booking__system')}
+        self.assertEqual(tags, {'T-01': 'R1', 'T-02': 'R1', 'T-03': 'R1-A', 'T-04': None})
+        entry = AuditLog.objects.filter(entity_id=str(self.trial.pk)).latest('created_at')
+        self.assertIn('Control R1: T-01, T-02, T-03', entry.changes['Places'][1])
+        self.assertIn('(whole: R1, R1-A)', entry.changes['Places'][1])
+        self.place(places=[services.Place(self.slots[1], [self.tanks[3]])])           # the system taken out again
+        self.assertFalse(ReplicateSystem.objects.exists())
+
+    def test_a_system_booked_by_another_experiment_is_refused_with_its_days(self):
+        ras = System.objects.create(site=self.bergen, name='RAS 1', code='R1')
+        type(self.t1).objects.filter(pk=self.tanks[5].pk).update(system=ras)
+        other = self.experiment('Other', starts_on=self.today)
+        services.save_places(self.user, other, [services.Place(self.replicate(self.group(other, 'X'), 1), [],
+                                                               systems=[ras])], other.version, 'the loop')
+        refused = self.refused(self.place, places=[services.Place(self.slots[0], [self.tanks[0]], systems=[ras])])
+        self.assertEqual(refused, [f'R1 is booked by another experiment from {self.today.isoformat()} to '
+                                   f'{self.end.isoformat()}.'])
+        self.assertNotIn(other.code, ' '.join(refused))
+
+    def test_the_booking_check_reads_bookings_the_person_may_not_read_and_answers_days_only(self):
+        other = self.experiment('Other', starts_on=self.today)
+        services.save_places(self.user, other, [services.Place(self.replicate(self.group(other, 'X'), 1),
+                                                               [self.tanks[0]])], other.version, 'one tank')
+        stranger = get_user_model().objects.create_user('stranger', 'stranger@example.com', 'x')
+        from core import sealing
+        with sealing.as_viewer(stranger):
+            self.assertEqual(read.booked([self.tanks[0].pk], self.today, self.end), {
+                self.tanks[0].pk: (self.today, self.end)})
+
+    def test_the_form_offers_a_tank_booked_elsewhere_disabled_with_its_days_never_the_experiment(self):
+        from ..forms import places_forms
+        other = self.experiment('Other', starts_on=self.today)
+        services.save_places(self.user, other, [services.Place(self.replicate(self.group(other, 'X'), 1),
+                                                               [self.tanks[0]])], other.version, 'one tank')
+        form, rows = places_forms(self.trial)
+        rendered = str(form['pool']) + str(rows.forms[0]['tanks'])
+        self.assertIn(f'booked {self.today.isoformat()} to {self.end.isoformat()}', rendered)
+        self.assertNotIn(other.code, rendered)
+
+    def test_a_moved_span_moves_the_bookings_with_their_tanks(self):
+        from ..models import ReplicateSystem
+        ras = System.objects.create(site=self.bergen, name='RAS 1', code='R1')
+        type(self.t1).objects.filter(pk=self.tanks[0].pk).update(system=ras)
+        self.place(places=[services.Place(self.slots[0], [self.tanks[0]], systems=[ras])])
+        old = services.span(self.trial)
+        Experiment.objects.filter(pk=self.trial.pk).update(starts_on=self.today + timedelta(days=7))
+        self.trial.refresh_from_db()
+        services.move_span(self.user, self.trial, old)
+        booking = ReplicateSystem.objects.get()
+        self.assertEqual((booking.from_on, booking.until_on), (self.today + timedelta(days=7), self.end + timedelta(days=7)))
+        self.assertEqual(ReplicateUnit.objects.get().booking, booking)
 
     def test_a_template_a_started_experiment_a_stale_version_and_no_day_0_are_refused(self):
         stale = self.trial.version
@@ -286,7 +352,8 @@ class RandomiseTests(PlacesTestCase):
         other = self.experiment('Other', starts_on=self.today)
         services.save_places(self.user, other, [services.Place(self.replicate(self.group(other, 'X'), 1),
                                                                [self.tanks[3]])], other.version, 'one tank')
-        self.assertEqual(self.refused(self.randomise), [f'T-04 is booked to {other.code} on some of these days.'])
+        self.assertEqual(self.refused(self.randomise), [
+            f'T-04 is booked by another experiment from {self.today.isoformat()} to {self.end.isoformat()}.'])
         empty = self.experiment('Empty', starts_on=self.today)
         self.assertEqual(self.refused(self.randomise, pool=[], trial=empty),
                          ['The design has no replicate to place tanks in.'])
@@ -353,11 +420,11 @@ class MoveSpanTests(PageTestCase):
         services.save_places(self.user, other, [late], other.version, 'one tank')      # after this one ends: free now
         response = self.post(starts_on=self.today.isoformat())         # T-01 would meet Other's days
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form'].errors['starts_on'],
-                         [f'T-01 would be booked to {other.code} on those days.'])
+        held = [f'T-01 is booked by another experiment from {(self.today + timedelta(days=50)).isoformat()} to '
+                f'{(self.today + timedelta(days=56)).isoformat()}.']
+        self.assertEqual(response.context['form'].errors['starts_on'], held)
         response = self.post(duration_days='80')
-        self.assertEqual(response.context['form'].errors['duration_days'],
-                         [f'T-01 would be booked to {other.code} on those days.'])
+        self.assertEqual(response.context['form'].errors['duration_days'], held)
         self.assertEqual(Experiment.objects.get(pk=self.trial.pk).starts_on, self.day(7))
 
 
@@ -457,7 +524,8 @@ class PlacesPageTests(PageTestCase):
         services.save_places(self.user, other, [services.Place(self.replicate(self.group(other, 'X'), 1),
                                                                [self.tanks[0]])], other.version, 'one tank')
         response = self.client.post(self.url, self.grid(self.rows(self.tanks[:4])))
-        self.assertContains(response, f'T-01 is booked to {other.code} on some of these days.', status_code=422)
+        self.assertContains(response, 'T-01 is booked by another experiment from', status_code=422)
+        self.assertNotContains(response, other.code, status_code=422)
 
     def test_no_day_0_a_template_and_a_started_experiment_have_their_own_page(self):
         Experiment.objects.filter(pk=self.trial.pk).update(starts_on=None)
@@ -527,5 +595,5 @@ class ConcurrencyTests(TransactionTestCase):
             thread.join()
         self.assertEqual(sorted(result == 'ok' for result in results), [False, True])
         loser = next(result for result in results if result != 'ok')
-        self.assertRegex(loser, r'^T-01 is booked to E-2026-00[12] on some of these days\.$')
+        self.assertRegex(loser, r'^T-01 is booked by another experiment from \S+ to \S+\.$')
         self.assertEqual(ReplicateUnit.objects.count(), 1)

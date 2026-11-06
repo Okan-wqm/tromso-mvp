@@ -13,6 +13,7 @@ from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase
 from django.urls import reverse
+from django.utils import translation
 
 from core import access, database, navigation
 from core.models import AuditLog, Profile
@@ -444,6 +445,7 @@ class VoidTests(FeedingTestCase):
                          {'__all__': ['Operations older than 31 days cannot be voided.']})
 
     @correction_window(60)
+    @translation.override("en")              # the test before it voided in Turkish: the language must not leak in
     def test_the_window_is_the_platform_owners_setting(self):
         self.assertEqual(self.refused(self.record, days_ago=61),
                          {'date': ['Operations can be dated at most 60 days back.']})

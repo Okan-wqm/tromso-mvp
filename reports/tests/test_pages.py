@@ -20,7 +20,7 @@ from core.softdelete import plan_delete
 from farm.models import Supplier
 from farm.models.site import zone_of
 from farm.stock import services as stock_services
-from farm.tests.helpers import correction_window, role, rows_data
+from farm.tests.helpers import role, rows_data
 
 from .. import compute, services
 from ..models import Report, ReportSnapshot, ResistanceSuspicion, UnitAnswer
@@ -43,7 +43,6 @@ def report_data(**overrides):
     return data
 
 
-@correction_window(3650)
 class ReportPagesTestCase(ReportTestCase):
     def start(self, **overrides):
         response = self.client.post(reverse('reports:report_create'),

@@ -213,8 +213,10 @@ class Report(AuditedModel):
 
     @property
     def deadline(self):
-        """The authority's deadline (a date in Oslo); None for a notice, which is filed at once."""
-        return self.info.deadline(self.period) if self.period and self.info.deadline else None
+        """The authority's deadline (a date in Oslo); None for a notice, which is filed at once: the one function every
+        reader asks (reports.compute.deadline, audit F-101)."""
+        from .compute import deadline
+        return deadline(self)
 
     @property
     def is_submitted(self):

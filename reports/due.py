@@ -176,7 +176,7 @@ def _existing():
     return index
 
 
-def _row(kind, place, period, today, existing, event=None, agreed=None):
+def _row(kind, place, period, today, existing, event=None):
     """The row of a report owed, or None when it was filed already."""
     key = (kind, place.pk if isinstance(place, Site) else None,
            place.pk if kind == ReportKind.SLAUGHTER_PLANNED else None, period.start if period else None,
@@ -184,12 +184,7 @@ def _row(kind, place, period, today, existing, event=None, agreed=None):
     report = existing.get(key)
     if report is not None and report.submitted_at is not None or key in existing.closed:
         return None
-    rule = KINDS[kind].deadline
-    deadline = rule(period) if rule and period else None
-    if kind == ReportKind.SLAUGHTER_PLANNED:
-        deadline = compute.slaughter.deadline(place, period, deadline)
-        if agreed is not None:
-            deadline = max(deadline, agreed)      # a slaughter agreed late is reported as soon as it is agreed
+    deadline = compute.deadline_of(kind, place, period)          # the one deadline (F-101)
     return DueRow(kind, place, period, deadline, deadline is not None and today > deadline, report, event)
 
 
@@ -321,7 +316,7 @@ def _slaughter(today, existing, rows):
     """A planned slaughter per facility and week, from the first week the site reports (its reports-from date): the duty
     arises from the harvest, planned or done (restkontrollforskriften § 9a), so a harvest that was never planned owes it
     too, and a week stays owed after it has passed until the notice is filed or a person closes it with a reason."""
-    weeks, agreed = {}, {}
+    weeks = {}
     plans = (HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', facility__isnull=False)
              .filter(Q(operation__isnull=True) | Q(operation__is_deleted=False))
              .select_related('facility', 'unit__production_department__site'))
@@ -331,8 +326,6 @@ def _slaughter(today, existing, rows):
             continue
         key = (item.facility_id, periods.Period.of(periods.WEEK, item.date))
         weeks[key] = item.facility
-        day = periods.oslo_today(item.created_at)
-        agreed[key] = min(agreed.get(key, day), day)
     lines = Prefetch('operation__movements', StockMovement.objects.select_related(
         'unit__production_department__site').order_by('id'))
     for record in HarvestRecord.objects.select_related('facility', 'operation').prefetch_related(lines):
@@ -341,9 +334,8 @@ def _slaughter(today, existing, rows):
         if site is None or site.reports_from is None or record.operation.date < site.reports_from:
             continue
         weeks.setdefault((record.facility_id, periods.Period.of(periods.WEEK, record.operation.date)), record.facility)
-    for (facility_id, period), facility in weeks.items():
-        row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing,
-                   agreed=agreed.get((facility_id, period)))
+    for (_facility_id, period), facility in weeks.items():
+        row = _row(ReportKind.SLAUGHTER_PLANNED, facility, period, today, existing)
         if row is not None:
             rows.append(row)
 

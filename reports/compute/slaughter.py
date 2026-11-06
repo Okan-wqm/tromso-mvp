@@ -17,6 +17,8 @@ from farm.handling.fasting import fast_of
 from farm.models import HandlingPlanItem, Site, SlaughterFacility, StockMovement, StockOperation, Tank
 from farm.models.stock import OperationKind
 
+from .. import periods
+from ..kinds import KINDS, ReportKind
 from .common import Result, identity, note, species_code, whole
 
 WEEKDAYS = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
@@ -129,9 +131,16 @@ def _filer(facility):
     return found.group(1) if found else None
 
 
-def deadline(facility, period, rule_deadline):
-    """The earlier of the rule's deadline (Thursday of the week before) and the first day the fish fast for a
-    harvest of the week (restkontrollforskriften § 9a: "senest når fisken er satt til sulting")."""
-    fasts = [fast_of(item) for item in items_of(facility, period)]      # an unplanned harvest has no fast to read
-    days = [fast.first_day for fast in fasts if fast is not None]
-    return min([rule_deadline, *days])
+def deadline(facility, period):
+    """THE deadline of the facility's planned-slaughter report for the week (audit F-101: the due list, the report list,
+    the report's page and the filing all read it, reports/compute `deadline_of`): the earlier of the rule's deadline
+    (Thursday of the week before) and the first day the fish fast for a harvest of the week (restkontrollforskriften § 9a:
+    "senest når fisken er satt til sulting"), the fast each plan asked for whether its harvest is done yet or not; and
+    a slaughter agreed after that (the week's plans were first made later) is due the day it was agreed. An unplanned
+    harvest has no fast to read and no day it was agreed: it is late from the rule's deadline."""
+    items = items_of(facility, period)
+    fasts = [fast_of(item, done_too=True) for item in items]
+    found = min([KINDS[ReportKind.SLAUGHTER_PLANNED].deadline(period),
+                 *(fast.first_day for fast in fasts if fast is not None)])
+    agreed = min((periods.oslo_today(item.created_at) for item in items), default=None)
+    return found if agreed is None else max(found, agreed)

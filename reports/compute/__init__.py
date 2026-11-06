@@ -2,7 +2,7 @@
 the exports, the filing and the "still matches?" check all call, so they cannot disagree."""
 from django.utils.translation import gettext as _
 
-from ..kinds import ReportKind
+from ..kinds import KINDS, ReportKind
 from . import biomass, cleaner, lice, notices, slaughter, smolt
 from .common import FORMAT_VERSION, Result, content_hash, fingerprint, flatten  # noqa: F401
 
@@ -55,9 +55,21 @@ def compute(report):
     return result
 
 
+def deadline_of(kind, place, period):
+    """THE deadline of a report of `kind` for `place` (a site, or a slaughter facility) and `period` (a date in Oslo;
+    None for a notice, filed at once): the rule's, and for a planned slaughter slaughter.deadline. The due list asks here,
+    and every report through `deadline` (audit F-101: four readers once worked it out three ways)."""
+    rule = KINDS[kind].deadline
+    if rule is None or period is None:
+        return None
+    if kind == ReportKind.SLAUGHTER_PLANNED:
+        return slaughter.deadline(place, period)
+    return rule(period)
+
+
 def deadline(report):
-    """The report's deadline: the rule's, and for a planned slaughter the day its fish start fasting when earlier."""
-    rule = report.deadline
-    if rule is not None and report.kind == ReportKind.SLAUGHTER_PLANNED:
-        return slaughter.deadline(report.facility, report.period, rule)
-    return rule
+    """The report's deadline (Report.deadline, the list, the page, the filing): the one recorded when it was filed, which
+    later records do not move, else deadline_of."""
+    if report.submitted_at is not None and report.deadline_on is not None:
+        return report.deadline_on
+    return deadline_of(report.kind, report.facility if report.facility_id else report.site, report.period)

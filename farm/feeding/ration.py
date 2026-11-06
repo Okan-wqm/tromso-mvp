@@ -83,7 +83,8 @@ def sfr_at(cells, temperature_c):
                 return Sfr(high.sfr_pct, temperature_c, high, high)
             share = (temperature_c - low.temperature_c) / (high.temperature_c - low.temperature_c)
             return Sfr(low.sfr_pct + (high.sfr_pct - low.sfr_pct) * share, temperature_c, low, high)
-    return Sfr(cells[0].sfr_pct, temperature_c, cells[0], cells[0])      # a table of one column
+    # Only a table of one column (stored before a table needed two, F-080) gets here: its temperature exactly.
+    return Sfr(cells[0].sfr_pct, temperature_c, cells[0], cells[0])
 
 
 # Why a share has no ration (Basis.missing); Basis.why() says it in the person's language.

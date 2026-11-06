@@ -818,7 +818,8 @@ one, always shown with its source. The bands meet without gaps (checked when the
 (an exclusion constraint, `btree_gist`, created by migration 0015); every cell is filled (the grid is saved whole).
 The dialog has a General tab (name, unique among live protocols in any case; species; status; expected FCR;
 notes), the **Feeding table** tab, a grid of the bands by the temperature columns: the columns are typed as
-"4 8 12 16", and changing them renders the grid again with what was entered (`data-refresh`, nothing saved); the
+"4 8 12 16", **at least two** (one column gave an SFR at exactly its own temperature and none on every other day, audit
+F-080; a table stored with one keeps that), and changing them renders the grid again with what was entered (`data-refresh`, nothing saved); the
 whole table is saved at once, replacing the stored bands and cells, guarded by the protocol's version and logged on
 the protocol as one change ("Feeding table", before and after). A band whose feed is not listed as suitable for the
 species at its weights is noticed, not refused. Status: a new protocol is a draft; it is set active once it has a

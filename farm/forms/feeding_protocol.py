@@ -83,8 +83,10 @@ def parse_temperatures(text):
             raise ValidationError(_('A temperature column is between %(low)s and %(high)s °C.') % {
                 'low': TEMPERATURE.low, 'high': TEMPERATURE.high})
         values.append(value.quantize(Decimal('0.1')))
-    if not values:
-        raise ValidationError(_('Give at least one temperature column.'))
+    if len(values) < 2:
+        # One column gave an SFR at exactly its temperature and none on every other day (no extrapolation, Q1; F-080).
+        raise ValidationError(_('Give at least two temperature columns: the SFR is read between them, never outside '
+                                'them.'))
     if len(set(values)) != len(values):
         raise ValidationError(_('Each temperature is a column once.'))
     if len(values) > MAX_COLUMNS:

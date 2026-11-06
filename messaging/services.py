@@ -183,10 +183,16 @@ def _keep_an_owner(conversation, target, leaving):
 
 
 def _remove(user, conversation, target):
+    """Takes `target` out of the channel. A channel its last member leaves is deleted (F-110): with nobody in it
+    nobody could reach its history or take it over, and its name stayed taken. Its messages stay with it, and the
+    admin can restore it."""
     _keep_an_owner(conversation, target, leaving=True)
     before = _roster(conversation)
     target.soft_delete(user)
     _log_roster(user, conversation, before)
+    if not conversation.participants.exists():
+        conversation.soft_delete(user)
+        audit.record_delete(user, conversation, entity_type=CHANNEL)
 
 
 @transaction.atomic

@@ -2357,7 +2357,8 @@ Times are on the company's clock (`settings.TIME_ZONE`), as in the activity log.
   page and fragment, also for the platform admin, who is not a member of other people's conversations).
 - A channel's owners add people, remove members and make members owners or owners members; anyone leaves.
   A channel with members keeps an owner: the last one cannot leave, be removed or step down while others
-  remain. Channel names are unique among live channels, whatever their case.
+  remain. A channel its last member leaves is deleted (logged; its messages stay with it and the admin can restore it),
+  so its name is free again (F-110). Channel names are unique among live channels, whatever their case.
 - Messages are never edited: a correction is a new message, as a void and a new entry is for the records.
   The author deletes a message: the row stays with who deleted it and when, and everyone sees "Message
   deleted", never the text again (in the conversation, the list, the polls).

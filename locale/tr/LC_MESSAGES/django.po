@@ -646,12 +646,13 @@ msgstr "%(kilos)s kg"
 
 #, python-format
 msgid ""
-"%(kilos)s kg is %(rate)s %% of the %(biomass)s kg %(unit)s holds on %(date)s in the book; more "
-"than %(limit)s %% a day is unusual. Tick the box below to record it anyway."
+"%(kilos)s kg fed on %(date)s, this feeding included, is %(rate)s %% of the %(biomass)s kg "
+"%(unit)s holds in the book; more than %(limit)s %% a day is unusual. Tick the box below to record"
+" it anyway."
 msgstr ""
-"%(kilos)s kg, %(unit)s biriminin %(date)s tarihinde kayıtlardaki %(biomass)s kg biyokütlesinin "
-"%%%(rate)s kadarı; günde %%%(limit)s üzeri olağan dışıdır. Yine de kaydetmek için aşağıdaki "
-"kutuyu işaretleyin."
+"%(date)s tarihinde bu yemleme dahil verilen %(kilos)s kg, %(unit)s biriminin kayıttaki "
+"%(biomass)s kg biyokütlesinin %%%(rate)s kadarı; günde %%%(limit)s üzeri olağan dışıdır. Yine de "
+"kaydetmek için aşağıdaki kutuyu işaretleyin."
 
 #, python-format
 msgid ""
@@ -776,6 +777,15 @@ msgid ""
 msgstr ""
 "%(medicine)s için bit raporunda etken madde yok (Referans verileri › İlaçlar): %(date)s tarihli "
 "tedavi bildirilemez."
+
+#, python-format
+msgid ""
+"%(medicine)s is a sea-lice medicine, given here for “%(reason)s”: the weekly sea-lice report to "
+"Mattilsynet lists only the treatments for sea lice, so this one will not be in it."
+msgstr ""
+"%(medicine)s bir deniz biti ilacıdır ve burada “%(reason)s” için verilmiştir: Mattilsynet’e "
+"haftalık deniz biti raporu yalnızca deniz biti için yapılan tedavileri listeler, bu nedenle bu "
+"tedavi raporda yer almayacak."
 
 #, python-format
 msgid "%(medicine)s is given as %(administration)s."
@@ -2048,6 +2058,13 @@ msgstr "Deniz biti ilacı etken maddesini bit raporundaki adıyla belirtir; diğ
 
 msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
 msgstr "Yalnız deniz biti ilacı: etken maddesi, Mattilsynet’in haftalık bit raporundaki adıyla."
+
+msgid ""
+"A second person must approve going on past a medicine withdrawal (the platform owner’s setting), "
+"and that approval cannot be given here yet."
+msgstr ""
+"İlaç arınma süresine rağmen devam etmeyi ikinci bir kişinin onaylaması gerekiyor (platform "
+"sahibinin ayarı) ve bu onay henüz burada verilemiyor."
 
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "Çıkış payı, 0 ile 100 % arasında, yalnızca bir çıkış için belirtilebilir."
@@ -4223,9 +4240,6 @@ msgstr "Verildiği hâliyle bileşim"
 msgid "Concrete"
 msgstr "Beton"
 
-msgid "Condition of the harvested fish"
-msgstr "Hasat edilen balığın durumu"
-
 msgid "Conductivity"
 msgstr "İletkenlik"
 
@@ -6191,8 +6205,8 @@ msgstr "2026’dan itibaren bir yıl girin."
 msgid "Give at least one bound."
 msgstr "En az bir sınır girin."
 
-msgid "Give at least one temperature column."
-msgstr "En az bir sıcaklık sütunu girin."
+msgid "Give at least two temperature columns: the SFR is read between them, never outside them."
+msgstr "En az iki sıcaklık sütunu girin: SFR bunların arasında okunur, asla dışında değil."
 
 msgid "Give both ends of the range, the first below the second, or neither."
 msgstr "Aralığın iki ucunu da girin, ilki ikincisinden küçük olsun, ya da hiçbirini girmeyin."
@@ -6439,6 +6453,35 @@ msgstr "Hasat ve elleçleme"
 
 msgid "Harvest and logistics"
 msgstr "Hasat ve lojistik"
+
+msgid "Harvest inside a withdrawal"
+msgstr "Arınma süresi içinde hasat"
+
+#, python-format
+msgid ""
+"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
+"withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food."
+msgstr ""
+"%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) bu "
+"arınma süresinin içinde kalıyor; balıklar %(until)s tarihine kadar tutulmalı: ilaçlı balık gıdaya"
+" gitmiş olabilir."
+
+#, python-format
+msgid ""
+"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
+"withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food."
+msgstr ""
+"%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) bu "
+"arınma süresinin içinde kalıyor; balıklar yaklaşık %(until)s tarihine kadar tutulmalı: ilaçlı "
+"balık gıdaya gitmiş olabilir."
+
+#, python-format
+msgid ""
+"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
+"withdrawal, whose end is unknown: medicated fish may have gone to food."
+msgstr ""
+"%(unit)s biriminden %(date)s tarihli hasat (%(batch)s, %(facility)s tesisine %(fish)s balık) sonu"
+" bilinmeyen bu arınma süresinin içinde kalıyor: ilaçlı balık gıdaya gitmiş olabilir."
 
 msgid "Harvest plan"
 msgstr "Hasat planı"
@@ -6900,6 +6943,9 @@ msgstr "Sunuldu: bunun yerine bir düzeltme başlatın."
 
 msgid "It was reviewed; after this change it is a draft again, until it is reviewed anew."
 msgstr "İncelenmişti; bu değişiklikten sonra yeniden incelenene kadar tekrar taslak."
+
+msgid "It was taken away already."
+msgstr "Zaten kaldırılmış."
 
 msgid "Item"
 msgstr "Kalem"
@@ -8883,9 +8929,6 @@ msgstr "Yalnızca bir sistem birincil olabilir."
 msgid "Only suspected"
 msgstr "Yalnızca şüpheli"
 
-msgid "Only the biomass report has a condition of the harvested fish."
-msgstr "Yalnızca biyokütle raporunda hasat edilen balığın durumu vardır."
-
 msgid "Only the cleaner-fish report says that no feed was given."
 msgstr "Yalnızca temizleyici balık raporu yem verilmediğini söyler."
 
@@ -9447,6 +9490,16 @@ msgstr "Planlandığı gün"
 #, python-format
 msgid "Planned for %(date)s"
 msgstr "%(date)s için planlandı"
+
+#, python-format
+msgid ""
+"Planned for %(date)s to %(facility)s: recorded on another week or at another facility, this "
+"harvest is still reported in the planned-slaughter notice of the plan’s week and facility; "
+"correct that notice if it was filed."
+msgstr ""
+"%(date)s için %(facility)s tesisine planlandı: başka bir haftada ya da başka bir tesiste "
+"kaydedilse de bu hasat, planın haftasının ve tesisinin planlanan kesim bildiriminde raporlanmaya "
+"devam eder; bildirim gönderildiyse onu düzeltin."
 
 msgid "Planned off"
 msgstr "Planlı izin"
@@ -10435,13 +10488,6 @@ msgstr "Değişikliğin hangi günden itibaren geçerli olduğunu belirtin."
 
 msgid "Say from which day the person is placed."
 msgstr "Kişinin hangi günden itibaren yerleştirildiğini belirtin."
-
-msgid ""
-"Say in what condition the harvested fish are weighed in this report: round or gutted weight (the "
-"Report tab; slaktetilstand)."
-msgstr ""
-"Bu raporda hasat edilen balığın hangi durumda tartıldığını belirtin: tüm veya işkembesiz ağırlık "
-"(Rapor sekmesi; slaktetilstand)."
 
 msgid "Say what caused it, or what is thought to have."
 msgstr "Nedenini veya neden olduğu düşünülen şeyi yazın."
@@ -12189,6 +12235,14 @@ msgid "The half mesh, from one knot to the next; a stretched mesh is twice as lo
 msgstr "Yarım göz: bir düğümden ötekine; gerilmiş tam göz bunun iki katıdır."
 
 #, python-format
+msgid ""
+"The harvest of %(unit)s on %(date)s is the plan of %(planned)s at %(facility)s: it is reported "
+"with that plan, not here."
+msgstr ""
+"%(unit)s biriminin %(date)s tarihli hasadı, %(facility)s tesisindeki %(planned)s tarihli plana "
+"aittir: burada değil, o planla raporlanır."
+
+#, python-format
 msgid "The harvest of %(unit)s on %(date)s was not planned: its weighed kilos are reported, late."
 msgstr "%(unit)s biriminin %(date)s tarihli hasadı planlanmamıştı: tartılan kilosu geç olarak bildirilir."
 
@@ -12598,6 +12652,14 @@ msgid ""
 msgstr ""
 "%(unit)s biriminin %(date)s tarihli planlı hasadında planlanmış kilo yok (Operasyonlar › Hasat › "
 "Hasat planı)."
+
+#, python-format
+msgid ""
+"The planned harvest of %(unit)s on %(planned)s was recorded on %(date)s at %(facility)s: it is "
+"reported here as planned; correct the notice if it was filed."
+msgstr ""
+"%(unit)s biriminin %(planned)s tarihli planlı hasadı %(date)s tarihinde %(facility)s tesisinde "
+"kaydedildi: burada planlandığı gibi raporlanır; bildirim gönderildiyse düzeltin."
 
 #, python-format
 msgid "The points of %(owner)s."
@@ -13040,6 +13102,16 @@ msgid ""
 msgstr ""
 "%(date)s tarihli tedavi, salmonid barındıran hiçbir birime yapılmadı: rapor kaç kafesin tedavi "
 "edildiğini söyleyemez."
+
+#, python-format
+msgid ""
+"The treatment with %(medicine)s in %(units)s from %(start)s to %(end)s was recorded for "
+"“%(reason)s”, not for sea lice, so it is not in this report: if it was given against sea lice, "
+"void it and record it again with the reason “%(sea_lice)s”."
+msgstr ""
+"%(units)s içinde %(start)s – %(end)s arasında %(medicine)s ile yapılan tedavi deniz biti için "
+"değil “%(reason)s” için kaydedildi, bu yüzden bu raporda yok: deniz bitine karşı verildiyse iptal"
+" edip “%(sea_lice)s” nedeniyle yeniden kaydedin."
 
 msgid "The unit factor is a number other than 0."
 msgstr "Birim çarpanı, 0 dışında bir sayıdır."
@@ -14827,6 +14899,9 @@ msgstr "alarm kuralı"
 
 msgid "alarm rules"
 msgstr "alarm kuralları"
+
+msgid "an unknown facility"
+msgstr "bilinmeyen bir tesis"
 
 #, python-format
 msgid "and %(count)s more: all reports"

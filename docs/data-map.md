@@ -34,7 +34,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 68 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 72 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -597,7 +597,7 @@ A feeding table for one species: weight bands with their feed, meals and expecte
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeding_protocols
 - **forms**: `ProtocolForm`
 - **constraints**: uq_feeding_protocols_name_live (unique: name); chk_feeding_protocols_status (check); chk_feeding_protocols_expected_fcr (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_protocols.py`, `reports/tests/test_compute.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_one_column_table.py`, `farm/tests/test_protocols.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -703,7 +703,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 <a id="farmhandlingacknowledgement"></a>
 ### farm.HandlingAcknowledgement (`handling_acknowledgements`)
 
-One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, or too short a fast.
+One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a treatment): a medicine withdrawal in force, too short a fast, or, for a treatment entered after the fact, a harvest already recorded inside the withdrawal it puts on the fish (`harvest`).
 
 - **create**: farm:stock_harvest (`/operations/units/<uuid:pk>/harvest/`); farm:stock_transfer (`/operations/units/<uuid:pk>/transfer/`); farm:stock_grading (`/operations/units/<uuid:pk>/grading/`); farm:treatment_record (`/operations/health/treatments/new/`)
 - **edit**: none, by design: never edited: what the person was shown stays as it was
@@ -712,7 +712,7 @@ One warning a person went on past when recording a handling (a harvest, a transf
 - **how it works**: One row for each warning the person went on past, written with the operation or the treatment it was given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › handling_acknowledgements
 - **constraints**: chk_handling_acknowledgements_warning (check); chk_handling_acknowledgements_shape (check); chk_handling_acknowledgements_fasted (check); chk_handling_acknowledgements_fasted_degree_days (check); chk_handling_acknowledgements_one_record (check); uq_handling_acknowledgements_one_fast (unique: operation)
-- **tests that mention it**: `farm/tests/test_harvest.py`, `farm/tests/test_health.py`, `farm/tests/test_migration_purging.py`
+- **tests that mention it**: `farm/tests/test_harvest.py`, `farm/tests/test_harvest_inside_withdrawal.py`, `farm/tests/test_health.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -720,6 +720,7 @@ One warning a person went on past when recording a handling (a harvest, a transf
 | operation_id | uuid | yes | stock_operations (PROTECT) | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | treatment_id | uuid | yes | treatments (PROTECT) | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | warning | varchar(12) |  |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
+| harvest_id | uuid | yes | stock_operations (PROTECT) | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | withdrawal_until | date | yes |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | withdrawal_approximate | boolean |  |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
 | withdrawal_reason | varchar(500) |  |  | computed: what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it |
@@ -742,7 +743,7 @@ A harvest or a transport planned for the fish of one batch in one unit on a day:
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › handling_plan_items
 - **forms**: `HandlingPlanItemForm`
 - **constraints**: chk_handling_plan_items_kind (check); chk_handling_plan_items_destination (check); chk_handling_plan_items_count (check); chk_handling_plan_items_kg (check); chk_handling_plan_items_other_unit (check); uq_handling_plan_items_operation (unique: operation)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_harvest.py` and 8 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_harvest.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -781,7 +782,7 @@ How long the fish must have been without feed before they are handled: one row p
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › handling_rules
 - **forms**: `HandlingRuleForm`
 - **constraints**: uq_handling_rules_live (unique: kind, species); chk_handling_rules_kind (check); chk_handling_rules_hours (check); chk_handling_rules_degree_days (check); chk_handling_rules_fast (check); chk_handling_rules_degree_days_harvest (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 3 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1297,7 +1298,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `VoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_escape_delivery.py` and 9 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_escape_delivery.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1373,7 +1374,7 @@ A company the farm buys from: what it supplies (goods, live fish, services), how
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › suppliers
 - **forms**: `SupplierForm`
 - **constraints**: uq_suppliers_code_live (unique: code); uq_suppliers_name_live (unique: name); uq_suppliers_organisation_number_live (unique: organisation_number); chk_suppliers_code (check); chk_suppliers_organisation_number (check); chk_suppliers_supplies (check); chk_suppliers_supplies_not_empty (check); chk_suppliers_status (check); chk_suppliers_rating (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_feeds.py` and 9 more
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_feeds.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1531,7 +1532,7 @@ One course given to the fish of one or more units of a site: a bath, a medicated
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › treatments
 - **forms**: `TreatmentForm`, `LastDayForm`
 - **constraints**: chk_treatments_method (check); chk_treatments_reason (check); chk_treatments_medicine (check); chk_treatments_dates (check); chk_treatments_dose (check); chk_treatments_amount (check); chk_treatments_dose_unit (check); chk_treatments_amount_unit (check); chk_treatments_bath_minutes (check); chk_treatments_dose_positive (check); chk_treatments_amount_positive (check); chk_treatments_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_health.py` and 2 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest_inside_withdrawal.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2591,7 +2592,7 @@ A report that was owed and will not be filed, closed by a person with the reason
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Reports › regulatory_due_closures
 - **forms**: `CloseForm`
 - **constraints**: chk_due_closures_kind (check); chk_due_closures_place (check); chk_due_closures_reason (check); uq_due_closures_period (unique: kind, site, facility, period_start)
-- **tests that mention it**: `reports/tests/test_slaughter_duty.py`
+- **tests that mention it**: `reports/tests/test_slaughter_duty.py`, `reports/tests/test_take_away_once.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2617,7 +2618,7 @@ A person's record that an annual duty outside this system was done for a site an
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Reports › regulatory_duties_done
 - **forms**: `DutyDoneForm`
 - **constraints**: chk_duties_done_duty (check); chk_duties_done_year (check); uq_duties_done_year (unique: duty, site, year)
-- **tests that mention it**: `reports/tests/test_duties.py`
+- **tests that mention it**: `reports/tests/test_duties.py`, `reports/tests/test_take_away_once.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2798,8 +2799,8 @@ A report to an authority for a site (a slaughter facility for the planned slaugh
 - **how it works**: Recording the filing freezes the report (ReportSnapshot); a correction of a filed report is a new report.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Reports › regulatory_reports
 - **forms**: `ReportForm`, `SubmitForm`
-- **constraints**: chk_regulatory_reports_kind (check); chk_regulatory_reports_scope (check); chk_regulatory_reports_when (check); chk_regulatory_reports_week (check); chk_regulatory_reports_month (check); chk_regulatory_reports_year (check); chk_regulatory_reports_site_notice (check); chk_regulatory_reports_escape (check); chk_regulatory_reports_harvest_condition (check); chk_regulatory_reports_no_cleaner_feed (check); chk_regulatory_reports_authority_id_when_filed (check); chk_regulatory_reports_late_when_filed (check); chk_regulatory_reports_health_event (check); chk_regulatory_reports_narrative (check); chk_regulatory_reports_channel (check); chk_regulatory_reports_submission (check); chk_regulatory_reports_kept (check); chk_regulatory_reports_not_itself (check); uq_regulatory_reports_period (unique: kind, site, facility, period_start); uq_regulatory_reports_site_notice (unique: kind, site, occurred_on); uq_regulatory_reports_event_notice (unique: kind, health_event); uq_regulatory_reports_escape_notice (unique: kind, escape); uq_regulatory_reports_correction (unique: corrects)
-- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `reports/tests/helpers.py` and 14 more
+- **constraints**: chk_regulatory_reports_kind (check); chk_regulatory_reports_scope (check); chk_regulatory_reports_when (check); chk_regulatory_reports_week (check); chk_regulatory_reports_month (check); chk_regulatory_reports_year (check); chk_regulatory_reports_site_notice (check); chk_regulatory_reports_escape (check); chk_regulatory_reports_no_cleaner_feed (check); chk_regulatory_reports_authority_id_when_filed (check); chk_regulatory_reports_late_when_filed (check); chk_regulatory_reports_health_event (check); chk_regulatory_reports_narrative (check); chk_regulatory_reports_channel (check); chk_regulatory_reports_submission (check); chk_regulatory_reports_kept (check); chk_regulatory_reports_not_itself (check); uq_regulatory_reports_period (unique: kind, site, facility, period_start); uq_regulatory_reports_site_notice (unique: kind, site, occurred_on); uq_regulatory_reports_event_notice (unique: kind, health_event); uq_regulatory_reports_escape_notice (unique: kind, escape); uq_regulatory_reports_correction (unique: corrects)
+- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `reports/tests/helpers.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2837,7 +2838,6 @@ A report to an authority for a site (a slaughter facility for the planned slaugh
 | reference | varchar(200) |  |  | SubmitForm |
 | authority_id | varchar(100) |  |  | SubmitForm |
 | notes | varchar(2000) |  |  | ReportForm › Notes |
-| harvest_condition | varchar(10) |  |  | ReportForm › Report |
 | no_cleaner_feed | boolean |  |  | ReportForm › Report |
 | deadline_on | date | yes |  | system: the deadline when the filing is recorded |
 | filed_late | boolean | yes |  | system: whether the filing came after the deadline, set when it is recorded |

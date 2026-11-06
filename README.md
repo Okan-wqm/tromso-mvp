@@ -2633,7 +2633,9 @@ or retired is skipped. Sensor values enter as the parameter's Decimal at its dec
 limits. Derived values follow their base value's source (a sensor TAN gives NH₃ only with fresh sensor pH and
 temperature, at the oldest input's time; a manual TAN only with its own sample's). Every latest value on the water page,
 the monitoring cards and the Deffeyes window says where it comes from and how old it is ("unit sensor #12 · 12 s ago",
-"system sensor #3 · 40 s ago", "manual · 2 days"); when the sensors cannot be read, the pages say the values come from
+"system sensor #3 · 40 s ago", "manual · 2 days"), on a line of its own under the value, printed by one part
+(`templates/farm/_water_source.html`) that keeps the origin and the age apart, so the line breaks between the two and
+never runs into the figure; a card's water cells are wide enough for either on one line; when the sensors cannot be read, the pages say the values come from
 the samples only. The ration's temperature takes a fresh sensor value at its moment too.
 
 A unit's or a system's Deffeyes can be drawn as it was at a past moment (`?at=` on the window's address, the site's
@@ -3346,6 +3348,25 @@ What one tab needed and the next ones will too lives in `core/`:
 - `check.require_acknowledged(assessment, seen, field)` (`farm/handling/check.py`): a save with warnings
   is refused until the person has ticked the box for exactly the warnings as they are now; the stock forms'
   box is `handling_ack`, another form (an experiment's start) names its own.
+
+### Shared page parts
+
+The layout rules every page relies on are in the style sheets, once, and checked by tests (`core/tests_templates.py`
+reads the templates and the style sheets; `frontend/test/layout.browser.test.ts` lays the parts out in a real browser at
+390, 1024 and 1440 px):
+
+- **No page scrolls sideways.** A word longer than the line (a content hash) breaks (`.content`); a grid track is never a
+  bare `1fr` (that is at least as wide as its widest content) but `minmax(0, …fr)`; a filter's fields, view tabs and a
+  notice's list wrap; a screen-reader label (`.sr-only`) is pinned to its containing block's left edge, so one in a wide
+  table never widens the page.
+- **Every table is in a `.table-wrap`**, the frame that scrolls a wide table inside itself and shows a shade at the edge
+  the table goes on past (none at an edge it ends at), so a table's last columns and its row actions are never out of
+  view unseen. `.table-wrap-bare` is the frame without its border, in a card. A cell of words (a title over its lines)
+  keeps at least 10 rem, so a table wider than its frame does not squeeze it to a word a line; on a phone the first
+  column's lines wrap so the next column shows beside it. A row's actions (`td.row-actions`) stand apart.
+- **A form's buttons** (`.form-actions`): the others first, then at most one filled button, the primary (or a danger
+  button), last, on one row, each as wide as its words. A tab saved on its own (a row list such as a medicine's
+  withdrawal, the history) shows only its own buttons: the record form's buttons show with its own fields.
 
 ### Restoring
 

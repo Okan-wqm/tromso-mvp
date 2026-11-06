@@ -105,12 +105,11 @@ def short_age(moment, now=None):
 
 
 @register.filter
-def source_line(reading, now=None):
-    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1):
-    "unit sensor #12 · 12 s ago", "system sensor #3 · 40 s ago", "manual · 2 days ago"; `now`: the moment the age is
-    counted to (a past moment's Deffeyes), else now."""
+def source(reading, now=None):
+    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1), for
+    farm/_water_source.html: {'origin': 'unit sensor #12', 'age': '12 s ago'}, 'system sensor #3' and '40 s ago',
+    'manual' and '2 days ago'; `now`: the moment the age is counted to (a past moment's Deffeyes), else now."""
     if not reading:
-        return ''
-    origin = water_read.origin_text(reading)
-    # Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor); %(age)s how old.
-    return _('%(origin)s · %(age)s ago') % {'origin': origin, 'age': short_age(reading.at, now or None)}
+        return None
+    # Translators: how old a value is, e.g. "12 s ago", "2 days ago".
+    return {'origin': water_read.origin_text(reading), 'age': _('%(age)s ago') % {'age': short_age(reading.at, now or None)}}

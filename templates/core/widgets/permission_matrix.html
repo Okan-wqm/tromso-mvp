@@ -1,5 +1,5 @@
 {% load i18n %}{# The role's permissions (core.forms.PermissionMatrix): a row per access area, a column per action. #}
-<div class="matrix-wrap"><table class="matrix"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %}>
+<div class="table-wrap"><table class="matrix"{% if widget.attrs.id %} id="{{ widget.attrs.id }}"{% endif %}>
   <thead>
     <tr><th scope="col">{% trans "Area" context "access area" %}</th>{% for column in widget.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr>
   </thead>

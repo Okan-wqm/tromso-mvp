@@ -11,8 +11,11 @@
   --active-bg: rgba(184, 69, 95, .1);
 }
 
+/* Read aloud, never seen. Pinned to its containing block's left edge: at its own place an absolute label in a wide
+   table (a row button's name) would lie far right, and the page would scroll sideways to reach it. */
 .sr-only {
   position: absolute;
+  left: 0;
   width: 1px; height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
@@ -346,8 +349,10 @@
 .menu-language > span { color: var(--muted); font-size: .875rem; }
 
 /* Content */
+/* A word longer than the line (a content hash, a key) breaks rather than widening the page. */
 .content {
   width: 100%;
+  overflow-wrap: break-word;
   max-width: 1520px;
   padding: clamp(20px, 2.4vw, 36px) clamp(14px, 2.4vw, 40px);
 }

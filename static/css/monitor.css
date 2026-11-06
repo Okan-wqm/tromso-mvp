@@ -143,7 +143,10 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
 .monitor-empty { border-left-color: var(--muted); border-left-style: dotted; opacity: .85; }
 .monitor-critical .monitor-state { color: var(--error); }
 .monitor-warning .monitor-state { color: var(--stripe-dark); }
-@container (max-width: 18rem) { .monitor-card .metrics { grid-template-columns: repeat(2, 1fr); } }
+@container (max-width: 18rem) { .monitor-card .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* A water value carries its origin and age under it ("Meter or test kit · 2 d ago", "unit sensor #12 · just now"): its
+   cell is wide enough for either on one line, so the line breaks between the two, not word by word. */
+.monitor-card .monitor-point .metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
 
 /* ---- a card's template: its widgets on a 12-column grid, placed by the server (monitoring/cards/render.py) -------
    --x, --y, --w, --h on each widget are its cell and size; a row is at least --row high (rem, so 200 % zoom grows it)
@@ -156,7 +159,6 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
   .card-grid { grid-template-columns: minmax(0, 1fr); }
   .card-grid > .w { grid-column: 1; grid-row: auto / span var(--h); }
 }
-.wq-said { font-size: .8125em; }
 .monitor-value.is-large dd:first-of-type { font-size: 2em; font-weight: 700; line-height: 1.1; }
 .monitor-bar-head { display: flex; justify-content: space-between; gap: .5rem; margin: 0; }
 .monitor-bar.is-large .monitor-bar-head strong { font-size: 1.75em; }

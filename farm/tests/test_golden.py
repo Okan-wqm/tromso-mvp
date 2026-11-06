@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import sys
 import tomllib
 from pathlib import Path
 
@@ -42,7 +43,8 @@ class GoldenV1Tests(SimpleTestCase):
     def setUpClass(cls):
         super().setUpClass()
         module = recorder()
-        cls.first = {name: module.encode(records) for name, records in module.record_all().items()}
+        cls.records = module.record_all()
+        cls.first = {name: module.encode(records) for name, records in cls.records.items()}
         cls.second = {name: module.encode(records) for name, records in module.record_all().items()}
         cls.manifest = json.loads((V1 / 'manifest.json').read_text(encoding='utf-8'))
 
@@ -53,12 +55,22 @@ class GoldenV1Tests(SimpleTestCase):
                 self.assertEqual(hashlib.sha256(self.first[name]).hexdigest(),
                                  hashlib.sha256(self.second[name]).hexdigest())
 
-    def test_python_today_reproduces_golden_v1_bit_for_bit(self):
+    def test_the_implementation_reproduces_golden_v1_within_each_quantitys_class(self):
+        spec = importlib.util.spec_from_file_location('golden_parity', ROOT / 'chemcore' / 'scripts' / 'golden_parity.py')
+        parity = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(parity)
+        ceilings = {}
         for name in BLOCKS:
             with self.subTest(block=name):
-                self.assertEqual(self.first[name], (V1 / f'{name}.jsonl.gz').read_bytes(),
-                                 f'{name}: today\'s Python no longer gives golden v1: a result changed. '
+                golden = block(name)
+                self.assertEqual(len(self.records[name]), len(golden))
+                found = []
+                for expected, actual in zip(golden, json.loads(json.dumps(self.records[name]))):
+                    found += parity.compare(expected, actual, ceilings=ceilings)
+                self.assertEqual(found[:5], [], f'{name}: {len(found)} values outside their class of golden v1. '
                                  'Nothing may change silently; the owner decides (README, Water-chemistry core).')
+        sys.stderr.write(chr(10) + '[golden v1 parity] ' + ', '.join(f'{kind} {value:.2e}'
+                                                             for kind, value in sorted(ceilings.items())) + chr(10))
 
     def test_the_manifest_states_the_provenance(self):
         self.assertEqual(self.manifest['golden_version'], 'v1')

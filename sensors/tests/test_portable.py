@@ -289,3 +289,91 @@ class SiteTests(PortableCase):
         self.assertFalse(self.client.get(url).context['form'].fields['site'].disabled)
         bindings.move_device(self.user, self.device, self.start, self.t1)
         self.assertTrue(self.client.get(url).context['form'].fields['site'].disabled)
+
+
+JOURNEY = datetime(2026, 10, 10, tzinfo=tz.utc)
+HOUR = timedelta(hours=1)
+
+
+class JourneyTests(PortableCase):
+    """A probe in T-01, moved to T-02 at 01:30 and to the system R1 at 03:20, sending a pH every minute until 05:00: each
+    place has exactly the readings taken while it was there, at every tier of its charts and in its replay frames, the
+    moves inside an hour included (the hour that holds a move is not given whole to the place where it began)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.to_t2, cls.to_r1 = JOURNEY + timedelta(minutes=90), JOURNEY + timedelta(minutes=200)
+        bindings.move_device(cls.user, cls.device, JOURNEY - timedelta(days=1), cls.t1)
+        bindings.move_device(cls.user, cls.device, cls.to_t2, cls.t2)
+        bindings.move_device(cls.user, cls.device, cls.to_r1, cls.ras)
+        cls.rows = [(JOURNEY + timedelta(minutes=minute), 7 + minute / 1000) for minute in range(300)]
+        cls.stays = {'T-01': (JOURNEY - timedelta(days=1), cls.to_t2), 'T-02': (cls.to_t2, cls.to_r1),
+                     'R1': (cls.to_r1, JOURNEY + timedelta(days=1))}
+
+    def setUp(self):
+        insert(self.ph.channel_no, self.rows)
+
+    def taken(self, stay):
+        start, end = self.stays[stay]
+        return [(at, value) for at, value in self.rows if start <= at < end]
+
+    def places(self):
+        return [(self.mid1, read.SENSOR, 'T-01'), (self.mid2, read.SENSOR, 'T-02'), (self.ras, read.SYSTEM_SENSOR, 'R1')]
+
+    def test_each_places_chart_has_exactly_its_own_readings(self):
+        end = JOURNEY + timedelta(hours=5)
+        for place, origin, stay in self.places():
+            with self.subTest(place=str(place)):
+                chart = read.series(place, 'ph', JOURNEY, end, max_points=300)
+                self.assertEqual(chart.tier, read.RAW)
+                self.assertEqual([(bucket.first_ts, bucket.avg, bucket.origin) for bucket in chart.buckets],
+                                 [(at, value, origin) for at, value in self.taken(stay)])
+
+    def test_the_hour_that_holds_a_move_is_shared_by_the_two_places(self):
+        end = JOURNEY + timedelta(hours=5)
+        for place, _origin, stay in self.places():
+            with self.subTest(place=str(place)):
+                chart = read.series(place, 'ph', JOURNEY, end, max_points=5)
+                self.assertEqual((chart.tier, chart.width), (read.ROLLUP_1H, HOUR))
+                hours = {}
+                for at, value in self.taken(stay):
+                    hours.setdefault(at.replace(minute=0), []).append((at, value))
+                self.assertEqual([(bucket.start, bucket.n, bucket.first_ts, bucket.last_ts) for bucket in chart.buckets],
+                                 [(hour, len(found), found[0][0], found[-1][0]) for hour, found in sorted(hours.items())])
+                for bucket in chart.buckets:
+                    values = [value for _at, value in hours[bucket.start]]
+                    self.assertAlmostEqual(bucket.avg, sum(values) / len(values), places=9)
+                    self.assertEqual((bucket.vmin, bucket.vmax), (min(values), max(values)))
+
+    def test_a_units_chart_has_its_own_readings_then_its_systems(self):
+        chart = read.series(self.t1, 'ph', JOURNEY, JOURNEY + timedelta(hours=5), max_points=300)
+        self.assertEqual([(bucket.first_ts, bucket.origin) for bucket in chart.buckets],
+                         [(at, read.SENSOR) for at, _value in self.taken('T-01')]
+                         + [(at, read.SYSTEM_SENSOR) for at, _value in self.taken('R1')])
+
+    def expected(self, stays, at, hourly):
+        """The A1 input a frame at `at` reads: the first place in order with a fresh reading taken while it was there (the
+        newest at or before the frame; on the hour tier the last of the newest hour ended by the frame)."""
+        for stay, origin in stays:
+            found = [(ts, value) for ts, value in self.taken(stay) if ts <= at]
+            if hourly:
+                ended = [ts.replace(minute=0) for ts, _value in found if ts.replace(minute=0) + HOUR <= at]
+                found = [(ts, value) for ts, value in found if ended and ts.replace(minute=0) == max(ended)]
+            if found and at - found[-1][0] <= timedelta(seconds=self.ph.fresh_s):
+                return float(water_read.as_parameter('ph', found[-1][1])), origin
+        return None
+
+    def test_the_replay_frames_read_the_same_at_both_tiers(self):
+        self.ph.refresh_from_db()
+        orders = {self.t1: [('T-01', read.SENSOR), ('R1', read.SYSTEM_SENSOR)],
+                  self.t2: [('T-02', read.SENSOR), ('R1', read.SYSTEM_SENSOR)],
+                  self.ras: [('R1', read.SYSTEM_SENSOR)]}
+        for step, hourly in ((timedelta(minutes=5), False), (HOUR, True)):
+            for target, stays in orders.items():
+                with self.subTest(target=str(target), step=step):
+                    frames = read.deffeyes_frames(target, JOURNEY + step, JOURNEY + timedelta(hours=5, minutes=1),
+                                                  step).frames
+                    got = [(frame.at, (frame.inputs['ph'].value, frame.inputs['ph'].origin)
+                            if 'ph' in frame.inputs else None) for frame in frames]
+                    self.assertEqual(got, [(frame.at, self.expected(stays, frame.at, hourly)) for frame in frames])

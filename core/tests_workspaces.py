@@ -54,7 +54,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Activity log', 'Roles', 'Users', 'Database', 'Today & attendance', 'Team list', 'Departments',
+                                                 'Alarms', 'Alarm recipients', 'Activity log', 'Roles', 'Users', 'Database',
+                                                 'Platform settings', 'Opening balances', 'Today & attendance', 'Team list', 'Departments',
                                                  'Organization chart', 'Shift schedule', 'Team overview', 'Attendance', 'Leave requests', 'Scheduling settings'])
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
@@ -175,7 +176,7 @@ class MainHeadingTests(WorkspaceTestCase):
     def test_company_has_one_main_heading_hr(self):
         self.sign_in(self.admin)
         response = self.page(reverse('home'))
-        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Administration']),
+        self.assertEqual(self.headings(response), [('', ['', 'Facility', 'Knowledge', 'Alarms', 'Administration']),
                                                     ('HR', ['HR dashboard', 'Time & shifts'])])
         self.assertContains(response, '<p class="rail-section">HR</p>', html=True, count=1)
         self.assertContains(response, 'rail-section', count=1)
@@ -257,6 +258,10 @@ class MenuPlacementTests(TestCase):
             'sensors.AlarmRule': 'Sensors · Operations',
             'sensors.AlarmEvent': 'Sensors · Operations',
             'sensors.Credential': 'Sensors · Administration',
+            'alarms.Alarm': 'Company · Alarms',
+            'alarms.RecipientRule': 'Company · Alarms',
+            'core.PlatformSettings': 'Company · Administration',
+            'farm.OpeningBalance': 'Company · Administration',
             'core.AuditLog': 'Company · Administration',
         })
 

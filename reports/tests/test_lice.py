@@ -422,6 +422,17 @@ class AnswersAndExportTests(LiceTestCase):
                                                       'årsak': 'BIOESSAY', 'annenÅrsak': None}])
         self.assertEqual(body['følsomhetsundersøkelser'][0]['utførtDato'], '2026-10-20T00:00:00Z')
 
+    def test_the_report_page_shows_the_weeks_figures_as_the_print_page_does(self):
+        """A kind without a table of its own on the report's page shows the fields the print page lists (exports.rows),
+        never another kind's: the lice figures, not a notice's Happened on."""
+        with temperature(WARM):
+            page = self.client.get(reverse('reports:report_detail', args=[self.report_.pk]))
+            printed = self.client.get(reverse('reports:report_print', args=[self.report_.pk]))
+        self.assertEqual(page.context['figure_rows'], printed.context['rows'])
+        self.assertContains(page, '<td>lusetelling</td><td>voksneHunnlus</td><td>0.2</td>', html=True)
+        for notice in ('Happened on', 'What happened', 'Fish dead'):
+            self.assertNotContains(page, notice)
+
     def test_the_row_lists_are_stored_read_edited_and_removed_through_the_pages(self):
         treatment = self.treat([self.m1, self.m2], day(10, 26), day(10, 26))
         url = reverse('reports:report_treatments', args=[self.report_.pk])

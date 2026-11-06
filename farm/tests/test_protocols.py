@@ -550,7 +550,7 @@ class ProtocolPageTests(ProtocolTestCase):
         self.create()
         protocol = FeedingProtocol.objects.get()
         url = reverse('farm:feedingprotocol_table', args=[protocol.pk])
-        band = {'feed': str(self.feed.pk), 'meals_per_day': '4', 'expected_fcr': '', 'sfr_120': '1'}
+        band = {'feed': str(self.feed.pk), 'meals_per_day': '4', 'expected_fcr': '', 'sfr_120': '1', 'sfr_140': '1'}
         cases = [
             ([{**band, 'min_weight_g': '0', 'max_weight_g': '50'}, {**band, 'min_weight_g': '60', 'max_weight_g': ''}],
              'The bands must meet: one starts at 60 g, the band before it ends at 50 g.'),
@@ -559,7 +559,7 @@ class ProtocolPageTests(ProtocolTestCase):
             ([], 'A feeding table has at least one band.'),
         ]
         for rows, message in cases:
-            response = self.client.post(url, table_data(protocol.version, '12', rows))
+            response = self.client.post(url, table_data(protocol.version, '12 14', rows))
             self.assertEqual(response.status_code, 422)
             self.assertEqual(response.context['bands'].non_form_errors(), [message])
         whole = {**band, 'min_weight_g': '0', 'max_weight_g': ''}
@@ -567,11 +567,11 @@ class ProtocolPageTests(ProtocolTestCase):
         self.assertEqual(response.context['table_form'].errors['temperatures'],
                          ['A temperature column is between -3 and 40 °C.'])
         stopped = Feed.objects.create(name='Old', code='OLD', feed_type='grower', status='discontinued')
-        response = self.client.post(url, table_data(protocol.version, '12', [{**whole, 'feed': str(stopped.pk)}]))
+        response = self.client.post(url, table_data(protocol.version, '12 14', [{**whole, 'feed': str(stopped.pk)}]))
         self.assertEqual(response.context['bands'].forms[0].errors['feed'], ['Choose an active feed.'])
-        response = self.client.post(url, table_data(protocol.version, '12', [{**whole, 'sfr_120': '16'}]))
+        response = self.client.post(url, table_data(protocol.version, '12 14', [{**whole, 'sfr_120': '16'}]))
         self.assertIn('sfr_120', response.context['bands'].forms[0].errors)
-        stale = self.client.post(url, table_data(protocol.version - 1, '12', [whole]))
+        stale = self.client.post(url, table_data(protocol.version - 1, '12 14', [whole]))
         self.assertIn('Someone else changed this feeding protocol', stale.context['table_form'].non_field_errors()[0])
         self.assertFalse(protocol.bands.exists())
 
@@ -598,10 +598,10 @@ class ProtocolPageTests(ProtocolTestCase):
         self.assertTrue(edit.context['form'].fields['species'].disabled)
         self.assertContains(edit, 'The protocol is assigned, so its table is fixed')
         refused = self.client.post(reverse('farm:feedingprotocol_table', args=[protocol.pk]),
-                                   table_data(protocol.version, '12', [{'min_weight_g': '0', 'max_weight_g': '',
+                                   table_data(protocol.version, '12 14', [{'min_weight_g': '0', 'max_weight_g': '',
                                                                         'feed': str(self.feed.pk),
                                                                         'meals_per_day': '4', 'expected_fcr': '',
-                                                                        'sfr_120': '1'}]))
+                                                                        'sfr_120': '1', 'sfr_140': '1'}]))
         self.assertIn('its table is fixed', refused.context['table_form'].non_field_errors()[0])
         self.assertEqual(protocol.bands.count(), 2)
         retired = self.client.post(reverse('farm:feedingprotocol_edit', args=[protocol.pk]),

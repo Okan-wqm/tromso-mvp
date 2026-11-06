@@ -35,7 +35,7 @@ from ..stock import read as stock_read, services as stock_services
 from ..stock.dates import local_today
 from ..stock.fold import Line, Op
 from ..water import services as water_services
-from .helpers import make_facility, point_of, role
+from .helpers import correction_window, make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_stock import make_unit
 
@@ -673,6 +673,10 @@ class AssignmentPageTests(ProtocolTestCase):
         response = self.post(units=[str(self.t2.pk)], valid_from=self.day(40).isoformat())
         self.assertEqual(response.context['form'].errors['valid_from'],
                          ['An assignment can start at most 31 days back.'])
+        with correction_window(60):
+            response = self.post(units=[str(self.t2.pk)], valid_from=self.day(61).isoformat())
+            self.assertEqual(response.context['form'].errors['valid_from'],
+                             ['An assignment can start at most 60 days back.'])
         self.assertEqual(ProtocolAssignment.objects.count(), 1)
 
     def test_one_row_in_force_per_target_in_the_database(self):

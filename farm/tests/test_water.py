@@ -27,7 +27,7 @@ from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, Wa
 from ..stock.services import AlreadyRecorded
 from ..water import chemistry, parameters, read, services
 from ..water.evaluate import Limits, Status, judge, worst
-from .helpers import make_species, point_of, role, stock_fish
+from .helpers import correction_window, make_species, point_of, role, stock_fish
 from .test_stock import make_unit
 
 WATER_KEEPER = ('view_watermeasurement', 'add_watermeasurement', 'delete_watermeasurement', 'view_tank',
@@ -345,6 +345,19 @@ class VoidTests(WaterTestCase):
         with mock.patch('django.utils.timezone.now', return_value=self.now + timedelta(days=3)):
             self.assertEqual(self.refused(services.void, self.user, old, 'Too late'),
                              {'__all__': ['Samples older than 31 days cannot be voided.']})
+
+    @correction_window(60)
+    def test_the_window_is_the_platform_owners_setting(self):
+        old = self.sample(hours=24 * 30, ph='7')
+        with mock.patch('django.utils.timezone.now', return_value=self.now + timedelta(days=35)):
+            self.assertEqual(self.refused(services.void, self.user, old, 'Too late'),
+                             {'__all__': ['Samples older than 60 days cannot be voided.']})
+        record = lambda moment: services.record(self.user, point=self.mid1, measured_at=moment, source='manual',
+                                                values={'ph': D(7)})
+        self.assertEqual(self.refused(record, self.now - timedelta(days=62)),
+                         {'measured_at': ['Samples can be dated at most 60 days back.']})
+        with mock.patch('django.utils.timezone.now', return_value=self.now + timedelta(days=25)):
+            services.void(self.user, old, 'Inside the window')
 
 
 class LatestTests(WaterTestCase):

@@ -14,7 +14,7 @@ from core.models import AuditLog
 from farm.feeding import services as feeding_services
 from farm.models import Feed, Tank
 from farm.models.supplier import SupplyCategory
-from farm.tests.helpers import make_species, stock_fish
+from farm.tests.helpers import correction_window, make_species, stock_fish
 
 from .. import integrity, read, services
 from ..models import InventoryItem, InventoryLine, InventoryLot, InventoryOperation, StorageLocation
@@ -175,6 +175,8 @@ class RuleTests(StoreTestCase):
             quantity=D(5))['destination'][0])
         self.assertIn('future', self.refused(self.receive, '10', days_ago=-1, location=self.silo)['date'][0])
         self.assertIn('31 days back', self.refused(self.receive, '10', days_ago=32, location=self.silo)['date'][0])
+        with correction_window(60):
+            self.assertIn('60 days back', self.refused(self.receive, '10', days_ago=61, location=self.silo)['date'][0])
         self.silo.soft_delete(self.user)
         self.assertIn('is deleted', self.refused(self.receive, '10', location=self.silo)['location'][0])
 

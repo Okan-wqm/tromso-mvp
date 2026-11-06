@@ -1,3 +1,4 @@
+from contextlib import ContextDecorator
 """Shared test helpers for the farm tabs."""
 from django.contrib.auth.models import Group, Permission
 
@@ -42,6 +43,25 @@ def role(name, *codenames):
     group = Group.objects.create(name=name)
     group.permissions.set(Permission.objects.filter(codename__in=codenames))
     return group
+
+
+class correction_window(ContextDecorator):
+    """The platform owner's correction window (core.platform) set to `days` for a block or a test method, and put
+    back after it."""
+
+    def __init__(self, days):
+        self.days = days
+
+    def __enter__(self):
+        from core.models import PlatformSettings
+        self.before = PlatformSettings.get().correction_window_days
+        PlatformSettings.objects.update(correction_window_days=self.days)
+        return self
+
+    def __exit__(self, *exc):
+        from core.models import PlatformSettings
+        PlatformSettings.objects.update(correction_window_days=self.before)
+        return False
 
 
 SITE_MANAGER = ('view_site', 'add_site', 'change_site', 'delete_site', 'view_auditlog')

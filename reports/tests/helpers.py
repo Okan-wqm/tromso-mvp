@@ -4,11 +4,11 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 from farm.models import ProductionDepartment, Site
 from farm.stock import services
-from farm.tests.helpers import make_facility, make_species, role
+from farm.tests.helpers import correction_window, make_facility, make_species, role
 from farm.tests.test_stock import make_unit
 
 from .. import compute, integrity
@@ -29,10 +29,10 @@ def previewed(report):
     return compute.content_hash(compute.compute(report).content)
 
 
-# The records are dated in October 2026: far enough back for the backdating window of the stock to need widening.
-@override_settings(STOCK_BACKDATE_DAYS=3650)
+# The records are dated in October 2026: far enough back for the platform owner's correction window to need widening.
 class ReportTestCase(TestCase):
     def setUp(self):
+        correction_window(3650).__enter__()             # the test's transaction puts the row back
         self.user = get_user_model().objects.create_user('kari', 'kari@example.com', 'x', first_name='Kari',
                                                          last_name='Nord')
         self.user.groups.add(role('Reporter', *REPORTER))

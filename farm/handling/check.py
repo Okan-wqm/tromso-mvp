@@ -337,6 +337,23 @@ def require_acknowledged(assessment, seen, field='handling_ack'):
         else:
             message = _('The warnings changed since the form was shown: read them again, and tick the box to go on.')
         raise ValidationError({field: message})
+    kinds = sorted({getattr(warning, 'warning', '') for warning in assessment.warnings} & set(WITHDRAWAL_WARNINGS))
+    if kinds and second_person_must_approve(kinds):
+        raise ValidationError({field: _('A second person must approve going on past a medicine withdrawal (the '
+                                        'platform owner’s setting), and that approval cannot be given here yet.')})
+
+
+# The warnings about fish that may go, or have gone, to food medicated.
+WITHDRAWAL_WARNINGS = (AcknowledgedWarning.WITHDRAWAL, AcknowledgedWarning.HARVESTED)
+
+
+def second_person_must_approve(kinds):
+    """THE hook of the platform owner's setting "a second person approves a withdrawal acknowledgement" (owner answer
+    2026-11-06, audit F-164): `kinds` are the withdrawal warnings (WITHDRAWAL_WARNINGS) a person is about to go on past.
+    It is the one place that setting is consulted (require_acknowledged, every dialog's save); the setting itself and
+    the second person's approval flow are built in the owner-settings work. Until then the setting does not exist and is
+    off: one person's acknowledgement goes on, stored and logged as critical."""
+    return False
 
 
 def acknowledge(record, assessment):
@@ -350,6 +367,10 @@ def acknowledge(record, assessment):
             rows.append(HandlingAcknowledgement(
                 **link, warning=warning.warning, withdrawal_until=block.until,
                 withdrawal_approximate=block.approximate, withdrawal_reason=block.reason[:500]))
+        elif warning.warning == AcknowledgedWarning.HARVESTED:      # a treatment's: the harvest inside its withdrawal
+            rows.append(HandlingAcknowledgement(
+                **link, warning=warning.warning, harvest_id=warning.operation_id, withdrawal_until=warning.until,
+                withdrawal_approximate=warning.approximate, withdrawal_reason=warning.reason[:500]))
         else:
             rows.append(HandlingAcknowledgement(
                 **link, warning=warning.warning, last_fed_at=warning.last_fed_at,

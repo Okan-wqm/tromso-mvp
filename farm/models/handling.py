@@ -111,27 +111,35 @@ class HandlingRule(AuditedModel):
 class AcknowledgedWarning(models.TextChoices):
     WITHDRAWAL = 'withdrawal', _('Medicine withdrawal')
     FASTING = 'fasting', _('Fasting')
+    # A treatment entered after the fact (backdated, or its course made longer) whose withdrawal reaches back over a
+    # harvest already recorded: the fish may have gone to food medicated (audit F-195).
+    HARVESTED = 'harvested', _('Harvest inside a withdrawal')
 
 
 def _shape():
     """A withdrawal row keeps what the person saw of the withdrawal, a fasting row what they saw of the fast;
     the other's columns stay empty. A fasting row has its last feeding, the hours fasted and the rule, and at least
     one of the two things the rule asked for not reached: the hours (`fasted_hours < required_hours`) or, for a
-    harvest's purging, the degree-days; the degree-days are both given or both empty."""
+    harvest's purging, the degree-days; the degree-days are both given or both empty. A harvested row is a treatment's:
+    the withdrawal it puts on the fish (as a withdrawal row keeps it) and the harvest already recorded inside it; no
+    other row names a harvest."""
     fasting = ('last_fed_at', 'fasted_hours', 'required_hours', 'rule', 'fasted_degree_days', 'required_degree_days')
+    no_fasting = {f'{name}__isnull': True for name in fasting}
     no_withdrawal = Q(withdrawal_until__isnull=True, withdrawal_approximate=False, withdrawal_reason='')
     unmet = (Q(required_hours__isnull=False, fasted_hours__lt=models.F('required_hours'))
              | Q(required_degree_days__isnull=False, fasted_degree_days__lt=models.F('required_degree_days')))
     both_or_neither = (Q(required_degree_days__isnull=True, fasted_degree_days__isnull=True)
                        | Q(required_degree_days__isnull=False, fasted_degree_days__isnull=False))
-    return (Q(warning=AcknowledgedWarning.WITHDRAWAL, **{f'{name}__isnull': True for name in fasting})
+    return (Q(warning=AcknowledgedWarning.WITHDRAWAL, harvest__isnull=True, **no_fasting)
+            | Q(warning=AcknowledgedWarning.HARVESTED, harvest__isnull=False, treatment__isnull=False, **no_fasting)
             | (Q(warning=AcknowledgedWarning.FASTING, last_fed_at__isnull=False, fasted_hours__isnull=False,
-                 rule__isnull=False) & unmet & both_or_neither & no_withdrawal))
+                 rule__isnull=False, harvest__isnull=True) & unmet & both_or_neither & no_withdrawal))
 
 
 class HandlingAcknowledgement(models.Model):
     """One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a
-    treatment): a medicine withdrawal in force, or too short a fast. It keeps what they were shown, the
+    treatment): a medicine withdrawal in force, too short a fast, or, for a treatment entered after the fact, a harvest
+    already recorded inside the withdrawal it puts on the fish (`harvest`). It keeps what they were shown, the
     withdrawal's end and reason, or the hours (and for a harvest's purging the degree-days) fasted against what the
     rule asked for, so the record says
     what was known at the time. It belongs to the stock operation or to the treatment it was given for, exactly
@@ -144,6 +152,10 @@ class HandlingAcknowledgement(models.Model):
     treatment = models.ForeignKey('Treatment', null=True, blank=True, on_delete=models.PROTECT,
                                   related_name='acknowledgements', verbose_name=_('Treatment'))
     warning = models.CharField(_('Warning'), max_length=12, choices=AcknowledgedWarning.choices)
+    # A harvested row's harvest: recorded before the treatment whose withdrawal it lies inside.
+    harvest = models.ForeignKey(StockOperation, null=True, blank=True, on_delete=models.PROTECT,
+                                related_name='withdrawal_findings', limit_choices_to={'kind': OperationKind.HARVEST},
+                                verbose_name=_('Harvest'))
     withdrawal_until = models.DateField(_('Withdrawal until'), null=True, blank=True)   # None: unknown
     withdrawal_approximate = models.BooleanField(_('Withdrawal end estimated'), default=False)
     withdrawal_reason = models.CharField(_('Withdrawal'), max_length=500, blank=True)

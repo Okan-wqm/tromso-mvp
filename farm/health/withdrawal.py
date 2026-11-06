@@ -45,9 +45,11 @@ from django.utils.translation import gettext as _, ngettext
 
 from farm.feeding import read as feeding_read
 from farm.handling.withdrawal import WithdrawalBlock
-from farm.models import Batch, FeedingRecord, MedicineWithdrawal, Treatment
+from farm.models import Batch, FeedingRecord, MedicineWithdrawal, StockMovement, Treatment
 from farm.models.feed import FeedType
+from farm.models.handling import AcknowledgedWarning
 from farm.models.health import TreatmentMethod
+from farm.models.stock import MovementKind
 from farm.stock.dates import local_today, shown_date
 from farm.stock.read import Presence
 from farm.water.degree_days import (DAY, LOOKBACK_DAYS, PENDING, ZERO, BatchWater, degree_days_text,
@@ -181,11 +183,12 @@ class Reader:
             self.rows[row.medicine_id].append(row)
 
     # ---- which fish a treatment reached ---------------------------------------------------------
-    def treated(self, treatment):
+    def treated(self, treatment, unit_ids=None):
         """The batches of this reader that had fish in one of the treatment's units on one of its days (up
-        to today: what happens later is not recorded yet)."""
+        to today: what happens later is not recorded yet). `unit_ids`: the units of a treatment not saved yet."""
         last = min(treatment.end_date, self.today)
-        unit_ids = [unit.pk for unit in treatment.units.all()]
+        if unit_ids is None:
+            unit_ids = [unit.pk for unit in treatment.units.all()]
         return {batch_id for batch_id in self.batch_ids
                 if any(self.presence.present_between(unit_id, batch_id, treatment.start_date, last)
                        for unit_id in unit_ids)}
@@ -301,6 +304,122 @@ def of_units(units, day=None):
                            for withdrawal in held.get(batch_id, [])]
             if withdrawals:
                 found[unit.pk] = withdrawals
+    return found
+
+
+# ---- harvests already recorded inside a withdrawal (audit F-195) -----------------------------------------
+@dataclass(frozen=True)
+class HarvestInside:
+    """A harvest recorded on a day a withdrawal holds its batch: fish that may have gone to food medicated. It arises
+    when the withdrawal is entered or grows after the harvest (a backdated treatment, a longer course, a corrected
+    temperature, a medicine's withdrawal changed); a harvest made while the withdrawal was known is warned of then
+    (farm/handling/check.py). As a warning of a treatment's dialog it is acknowledged like the handling warnings
+    (`warning`, `key`, `message`, and what the acknowledgement keeps: `operation_id`, `until`, `approximate`,
+    `reason`)."""
+    line: object                          # the harvest's StockMovement: its operation, unit, batch, fish
+    withdrawal: Withdrawal
+
+    warning = AcknowledgedWarning.HARVESTED
+
+    @property
+    def operation_id(self):
+        return self.line.operation_id
+
+    @property
+    def until(self):
+        return self.withdrawal.until
+
+    @property
+    def approximate(self):
+        return self.withdrawal.estimated
+
+    @property
+    def reason(self):
+        return describe(self.withdrawal)
+
+    @property
+    def fish(self):
+        return -self.line.count_delta
+
+    @property
+    def facility(self):
+        record = getattr(self.line.operation, 'harvest_record', None)
+        return record.facility if record is not None else None
+
+    def key(self):
+        """What the person saw, as text: a change in it asks them again."""
+        return f'harvested:{self.line.operation_id}:{self.line.batch_id}:{self.until}:{self.approximate}'
+
+    def message(self):
+        """The warning in the person's language (the activity log builds it in English)."""
+        params = {'date': shown_date(self.line.operation.date), 'unit': self.line.unit.code,
+                  'batch': self.line.batch.code, 'fish': formats.number_format(self.fish, force_grouping=True),
+                  'facility': self.facility.name if self.facility is not None else _('an unknown facility'),
+                  'until': shown_date(self.until) if self.until else ''}
+        if self.until is None:
+            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                     'withdrawal, whose end is unknown: medicated fish may have gone to food.')
+        elif self.approximate:
+            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                     'withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food.')
+        else:
+            text = _('Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this '
+                     'withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food.')
+        return text % params
+
+    def same_harvest(self):
+        """Which harvest of which batch it is, whatever the withdrawal's end."""
+        return self.line.operation_id, self.line.batch_id
+
+
+def _harvest_lines(batch_ids=None, since=None):
+    """The live harvest lines (of `batch_ids`, from `since`), with what a finding names."""
+    lines = StockMovement.objects.filter(kind=MovementKind.HARVEST, operation__is_deleted=False).select_related(
+        'operation__harvest_record__facility', 'unit__production_department__site', 'batch')
+    if batch_ids is not None:
+        lines = lines.filter(batch_id__in=batch_ids)
+    if since is not None:
+        lines = lines.filter(operation__date__gte=since)
+    return list(lines.order_by('operation__date', 'unit__code', 'pk'))
+
+
+def _inside(withdrawals, lines):
+    """THE rule: a harvest lies inside a withdrawal of its batch that holds on the harvest's day (Withdrawal.holds_on:
+    from the treatment's first day, or the medicated feeding's, to the day before the batch may be harvested)."""
+    by_batch = defaultdict(list)
+    for line in lines:
+        by_batch[line.batch_id].append(line)
+    found = [HarvestInside(line, held) for held in withdrawals for line in by_batch.get(held.batch_id, ())
+             if held.holds_on(line.operation.date)]
+    return sorted(found, key=lambda each: (each.line.operation.date, each.line.unit.code, each.line.pk,
+                                           each.withdrawal.start))
+
+
+def course_harvests(treatment, unit_ids, today):
+    """The harvests already recorded inside the withdrawal `treatment` puts on the fish it reached in `unit_ids` (its
+    units; the treatment saved or not yet), worked out on the farm's `today`: [HarvestInside]. None without a medicine."""
+    if treatment.medicine_id is None or treatment.start_date is None or treatment.end_date is None \
+            or treatment.end_date < treatment.start_date:
+        return []
+    presence = Presence.of_units(unit_ids)
+    reached = {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())}
+    lines = _harvest_lines(reached, since=treatment.start_date)
+    if not lines:
+        return []
+    reader = Reader({line.batch_id for line in lines}, today)
+    return _inside([reader.of_treatment(treatment, batch_id) for batch_id in reader.treated(treatment, unit_ids)],
+                   lines)
+
+
+def harvests_inside():
+    """Every live harvest that lies inside a withdrawal of its batch, however it came to (check_withdrawal): one reader
+    per farm-local today of the harvested units (sites in different time zones)."""
+    by_today = defaultdict(list)
+    for line in _harvest_lines():
+        by_today[local_today(line.unit)].append(line)
+    found = []
+    for today, lines in sorted(by_today.items()):
+        found += _inside(Reader({line.batch_id for line in lines}, today).withdrawals(), lines)
     return found
 
 

@@ -21,9 +21,10 @@ withdrawal is no reason to warn before one): every unit is checked on the first 
 which is the feeding itself. Too short a fast is a warning; the person goes on by acknowledging the warnings they
 were shown, which are stored on the treatment (HandlingAcknowledgement) and make its log entry critical (owner
 decision: warn, never block)."""
+import copy
 import hashlib
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
@@ -33,11 +34,12 @@ from core import audit
 from core.models import AuditLog
 from farm.feeding import read as feeding_read
 from farm.handling import check
-from farm.health import read as health_read
-from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
+from farm.health import read as health_read, withdrawal
+from farm.models import Batch, HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
 from farm.stock.dates import check_date, earliest, local_today, shown_date, sites_of
+from farm.stock.read import Presence
 from farm.stock.services import AlreadyRecorded, locked, voided
 
 # The fields the activity log shows for a new treatment and a new lice count.
@@ -129,13 +131,16 @@ def _check_event(event, units, day):
 # ---- treatments ---------------------------------------------------------------------------------------
 @dataclass
 class TreatmentHandling:
-    """The handling check of a treatment over its units (farm.handling.check.assess for each), as one: the
-    warnings, the notes (named by unit when there are several) and one fingerprint for the form's box."""
+    """What a treatment's dialog asks before it is saved, as one: the handling check over its units
+    (farm.handling.check.assess for each: the fast) and the harvests already recorded inside the withdrawal it puts on
+    the fish (`harvested`, farm.health.withdrawal.HarvestInside); the warnings, the notes (named by unit when there are
+    several) and one fingerprint for the form's box."""
     assessments: list = field(default_factory=list)
+    harvested: list = field(default_factory=list)
 
     @property
     def warnings(self):
-        return [warning for assessment in self.assessments for warning in assessment.warnings]
+        return [warning for assessment in self.assessments for warning in assessment.warnings] + self.harvested
 
     @property
     def notes(self):
@@ -146,20 +151,54 @@ class TreatmentHandling:
     @property
     def fingerprint(self):
         keys = [f'{assessment.unit.pk}:{assessment.fingerprint}' for assessment in self.assessments
-                if assessment.warnings]
+                if assessment.warnings] + [found.key() for found in self.harvested]
         return hashlib.sha256('|'.join(keys).encode()).hexdigest()[:20] if keys else ''
 
     def messages(self):
         return [warning.message() for warning in self.warnings]
 
 
-def handling(units, day, method):
-    """The fast before a treatment of `units` starting on `day` (TreatmentHandling); nothing to check for
-    medicated feed or before a day is chosen."""
-    if method == TreatmentMethod.IN_FEED or day is None:
+def handling(units, day, method, medicine=None, end_date=None):
+    """What a treatment of `units` from `day` to `end_date` with `medicine` asks (TreatmentHandling): the fast before
+    it (nothing for medicated feed, which is the feeding itself) and the harvests already recorded inside its
+    withdrawal; nothing before a day is chosen."""
+    units = sorted(units, key=lambda unit: unit.code)
+    if day is None or not units:
         return TreatmentHandling()
-    return TreatmentHandling([check.assess(HandlingKind.TREATMENT, unit, day)
-                              for unit in sorted(units, key=lambda unit: unit.code)])
+    assessments = [] if method == TreatmentMethod.IN_FEED else [
+        check.assess(HandlingKind.TREATMENT, unit, day) for unit in units]
+    harvested = []
+    if medicine is not None and end_date is not None:
+        course = Treatment(method=method, medicine=medicine, start_date=day, end_date=end_date)   # not saved
+        harvested = withdrawal.course_harvests(course, [unit.pk for unit in units],
+                                               min(local_today(unit) for unit in units))
+    return TreatmentHandling(assessments, harvested)
+
+
+def last_day_handling(treatment, end_date):
+    """What changing a treatment's last day to `end_date` asks (TreatmentHandling): the harvests the longer
+    withdrawal brings inside it. A harvest inside it already was asked about when it came inside; a shorter course
+    asks nothing."""
+    if treatment.medicine_id is None or end_date is None:
+        return TreatmentHandling()
+    units = list(treatment.units.all())
+    unit_ids, today = [unit.pk for unit in units], min(local_today(unit) for unit in units)
+    before = {found.same_harvest() for found in withdrawal.course_harvests(treatment, unit_ids, today)}
+    changed = copy.copy(treatment)
+    changed.end_date = end_date
+    return TreatmentHandling(harvested=[found for found in withdrawal.course_harvests(changed, unit_ids, today)
+                                        if found.same_harvest() not in before])
+
+
+def _lock_fish(unit_ids, first):
+    """Locks the batches with fish in the units from `first` on, then the units, in the order a stock operation locks
+    them (farm.stock.services: batches, then units), so a treatment and a harvest of the same fish take turns and the
+    treatment's check sees every harvest committed before it."""
+    presence = Presence.of_units(unit_ids)
+    batch_ids = {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
+                 if presence.present_between(unit_id, batch_id, first, date.max)}
+    locked(Batch, batch_ids)
+    return list(locked(Tank, set(unit_ids)).values())
 
 
 def record_treatment(user, *, units, method, reason, start_date, end_date, medicine=None, dose_value=None,
@@ -172,7 +211,7 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
     if len({unit.pk for unit in units}) != len(units):
         raise ValidationError({'units': _('Each unit can be listed once.')})
     with transaction.atomic():
-        locked_units = list(locked(Tank, {unit.pk for unit in units}).values())
+        locked_units = _lock_fish([unit.pk for unit in units], start_date)
         _already(Treatment, token)
         for unit in locked_units:
             if unit.is_deleted:
@@ -192,7 +231,7 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
         for unit in sorted(locked_units, key=lambda item: item.code):
             if not _has_fish(unit, start_date, 'treatment'):
                 raise ValidationError({'units': _no_fish(unit, start_date)})
-        checked = handling(locked_units, start_date, method)
+        checked = handling(locked_units, start_date, method, medicine, end_date)
         check.require_acknowledged(checked, handling_ack)
         treatment = Treatment(
             method=method, medicine=medicine, reason=reason, start_date=start_date, end_date=end_date,
@@ -205,21 +244,40 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
         for assessment in checked.assessments:
             if assessment.warnings:
                 check.acknowledge(treatment, assessment)
+        _acknowledge_harvests(treatment, checked)
         with audit.source_language():
             values = audit.snapshot(treatment, TREATMENT_FIELDS)
-            critical = bool(checked.warnings)
-            if critical:
-                values[str(gettext_lazy('Handling warnings acknowledged'))] = ' '.join(checked.messages())
+            critical = _acknowledged(values, checked)
             audit.record_create(user, treatment, values, label=treatment_label(treatment, locked_units),
                                 severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
         return treatment
 
 
-def change_last_day(user, treatment, end_date):
+def _acknowledge_harvests(treatment, checked):
+    """Stores the harvests inside the treatment's withdrawal the person went on past, one row each (check.acknowledge)."""
+    if checked.harvested:
+        check.acknowledge(treatment, TreatmentHandling(harvested=checked.harvested))
+
+
+def _acknowledged(values, checked):
+    """Adds the warnings gone past to the log entry's values, in English; whether there were any (the entry is then
+    critical)."""
+    if not checked.warnings:
+        return False
+    values[str(gettext_lazy('Handling warnings acknowledged'))] = ' '.join(checked.messages())
+    return True
+
+
+def change_last_day(user, treatment, end_date, handling_ack=None):
     """The course ended on another day than planned, or goes on longer: the withdrawal counts from the new
     last day. Logged with the old and new day; refused for a voided treatment, and outside the backdating
-    window (neither the old nor the new last day may be older than it)."""
+    window (neither the old nor the new last day may be older than it). A longer withdrawal that reaches over a
+    harvest already recorded asks for the acknowledgement (`handling_ack`, last_day_handling's fingerprint), stored
+    with the treatment and logged as critical. The units and their batches are locked first, as a harvest locks them."""
     with transaction.atomic():
+        found = Treatment.all_objects.filter(pk=treatment.pk).values_list('start_date', flat=True).first()
+        _lock_fish(list(Treatment.units.through.objects.filter(treatment_id=treatment.pk)
+                        .values_list('tank_id', flat=True)), found or end_date)
         treatment = Treatment.all_objects.select_for_update(of=('self',)).get(pk=treatment.pk)
         units = list(treatment.units.select_related('production_department__site'))
         if treatment.is_deleted:
@@ -231,14 +289,19 @@ def change_last_day(user, treatment, end_date):
                 'date': shown_date(first)}})
         if end_date == treatment.end_date:
             return treatment
+        checked = last_day_handling(treatment, end_date)
+        check.require_acknowledged(checked, handling_ack)
         with audit.source_language():
             before = audit.snapshot(treatment, ['end_date'])
             treatment.end_date = end_date
             treatment.updated_by = user
             treatment.version += 1
             treatment.save(update_fields=['end_date', 'updated_by', 'version', 'updated_at'])
-            audit.record_update(user, treatment, before, audit.snapshot(treatment, ['end_date']),
-                                label=treatment_label(treatment, units))
+            _acknowledge_harvests(treatment, checked)
+            after = audit.snapshot(treatment, ['end_date'])
+            critical = _acknowledged(after, checked)
+            audit.record_update(user, treatment, before, after, label=treatment_label(treatment, units),
+                                severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
         return treatment
 
 

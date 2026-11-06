@@ -2,25 +2,62 @@ from django.core.management.base import BaseCommand
 from django.utils import translation
 
 from farm.health import withdrawal
-from farm.models import Batch, Tank
+from farm.models import Batch, HandlingAcknowledgement, Tank
+from farm.models.handling import AcknowledgedWarning
 from farm.stock import read
 
 
 class Command(BaseCommand):
     help = ('Works out the medicine withdrawal of the fish in every unit from scratch (the treatments, the stock '
-            'ledger and the water samples) and lists every batch a withdrawal holds today, with its end and why.')
+            'ledger and the water samples) and lists every batch a withdrawal holds today, with its end and why; then '
+            'every harvest already recorded inside a withdrawal (medicated fish that may have gone to food), however it '
+            'came to, and whether someone acknowledged it.')
 
     def handle(self, *args, **options):
         with translation.override('en'):
-            units = list(Tank.objects.select_related('production_department__site').order_by('code'))
-            stocked = [unit for unit in units if unit.pk in read.stock_of(units)]
-            held = withdrawal.of_units(stocked)
-            batches = Batch.all_objects.in_bulk({item.batch_id for items in held.values() for item in items})
-            for unit in stocked:
-                for item in held.get(unit.pk, []):
-                    end = (item.until.isoformat() if item.until else 'unknown') + (' (estimated)' if item.estimated
-                                                                                    else '')
-                    self.stdout.write(f'{unit.code} · {batches[item.batch_id].code}: until {end}. '
-                                      f'{withdrawal.describe(item)}')
-            self.stdout.write(self.style.SUCCESS(f'{len(held)} of {len(stocked)} units with fish are under a '
-                                                 f'medicine withdrawal.'))
+            self.held_now()
+            self.harvested_inside()
+
+    def held_now(self):
+        units = list(Tank.objects.select_related('production_department__site').order_by('code'))
+        stock = read.stock_of(units)                     # one fold for every unit
+        stocked = [unit for unit in units if unit.pk in stock]
+        held = withdrawal.of_units(stocked)
+        batches = Batch.all_objects.in_bulk({item.batch_id for items in held.values() for item in items})
+        for unit in stocked:
+            for item in held.get(unit.pk, []):
+                end = (item.until.isoformat() if item.until else 'unknown') + (' (estimated)' if item.estimated
+                                                                                else '')
+                self.stdout.write(f'{unit.code} · {batches[item.batch_id].code}: until {end}. '
+                                  f'{withdrawal.describe(item)}')
+        self.stdout.write(self.style.SUCCESS(f'{len(held)} of {len(stocked)} units with fish are under a '
+                                             f'medicine withdrawal.'))
+
+    def harvested_inside(self):
+        found = withdrawal.harvests_inside()
+        operations = {each.operation_id for each in found}
+        at_harvest = set(HandlingAcknowledgement.objects.filter(
+            operation_id__in=operations, warning=AcknowledgedWarning.WITHDRAWAL).values_list('operation_id', flat=True))
+        with_treatment = set(HandlingAcknowledgement.objects.filter(
+            harvest_id__in=operations, warning=AcknowledgedWarning.HARVESTED).values_list('harvest_id', 'treatment_id'))
+        for each in found:
+            line = each.line
+            end = (each.until.isoformat() if each.until else 'unknown') + (' (estimated)' if each.approximate else '')
+            facility = each.facility.name if each.facility is not None else 'an unknown facility'
+            treatment = each.withdrawal.treatment
+            if each.operation_id in at_harvest:
+                acknowledged = 'Acknowledged when the harvest was recorded.'
+            elif treatment is not None and (each.operation_id, treatment.pk) in with_treatment:
+                acknowledged = 'Acknowledged with the treatment.'
+            else:
+                acknowledged = 'Not acknowledged.'
+            self.stdout.write(self.style.ERROR(
+                f'Harvest of {line.operation.date.isoformat()} from {line.unit.code} · {line.batch.code} '
+                f'({each.fish} fish to {facility}) lies inside a withdrawal until {end}: '
+                f'{withdrawal.describe(each.withdrawal)} {acknowledged}'))
+        if found:
+            count = len({each.same_harvest() for each in found})
+            self.stdout.write(self.style.ERROR(f'{count} harvest{" lies" if count == 1 else "s lie"} inside a medicine '
+                                               'withdrawal.'))
+        else:
+            self.stdout.write(self.style.SUCCESS('No harvest lies inside a medicine withdrawal.'))

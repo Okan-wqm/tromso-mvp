@@ -72,6 +72,10 @@ msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: ikke veid siden den kom inn, så ingen fôrfaktor ennå"
 
 #, python-format
+msgid "%(channel)s measures %(quantity)s as %(other)s does: one of the two is the backup there."
+msgstr "%(channel)s måler %(quantity)s som %(other)s: én av de to er reserve der."
+
+#, python-format
 msgid "%(code)s has no tank."
 msgstr "%(code)s har ikke noe kar."
 
@@ -479,6 +483,20 @@ msgstr "%(density)s kg/m³"
 #, python-format
 msgid "%(department)s (no site)"
 msgstr "%(department)s (uten lokalitet)"
+
+#, python-format
+msgid "%(device)s is at %(site)s: a channel goes to another site with its whole device (Move device)."
+msgstr ""
+"%(device)s er på %(site)s: en kanal flyttes til en annen lokalitet bare med hele apparatet (Flytt"
+" apparat)."
+
+#, python-format
+msgid "%(device)s moved to %(place)s."
+msgstr "%(device)s er flyttet til %(place)s."
+
+#, python-format
+msgid "%(device)s taken out of the water."
+msgstr "%(device)s er tatt opp av vannet."
 
 #, python-format
 msgid "%(direct)s person"
@@ -1152,6 +1170,10 @@ msgstr "%(unit)s har høstinger eller telleendringer i måneden, som denne rappo
 #, python-format
 msgid "%(unit)s has no average weight to report (the authority wants one above 0)."
 msgstr "%(unit)s har ingen gjennomsnittsvekt å rapportere (myndigheten vil ha en over 0)."
+
+#, python-format
+msgid "%(unit)s has no middle sampling point."
+msgstr "%(unit)s har ikke noe midtre prøvepunkt."
 
 #, python-format
 msgid ""
@@ -2222,6 +2244,13 @@ msgstr "En enhet kan ikke gå fra %(old)s til %(new)s."
 
 msgid "A unit cost needs its currency, and a currency a unit cost."
 msgstr "En enhetskostnad trenger sin valuta, og en valuta en enhetskostnad."
+
+msgid ""
+"A unit takes the water values at its middle point; a system takes them as its own water. A "
+"process value goes to a system or a piece of equipment."
+msgstr ""
+"En enhet tar vannverdiene i sitt midtre punkt; et system tar dem som sitt eget vann. En "
+"prosessverdi går til et system eller et utstyr."
 
 msgid "A unit with fish in it cannot be made inactive: move or harvest them first."
 msgstr "En enhet med fisk i kan ikke gjøres inaktiv: flytt eller høst fisken først."
@@ -4838,6 +4867,9 @@ msgstr "Apparat frakoblet"
 msgid "Devices"
 msgstr "Apparater"
 
+msgid "Devices not placed"
+msgstr "Apparater som ikke er plassert"
+
 msgid "Devices online"
 msgstr "Apparater på nett"
 
@@ -6089,6 +6121,9 @@ msgstr "Fra vannflaten til bunnen av nota."
 
 msgid "From the water to the last step:"
 msgstr "Fra vannet til siste trinn:"
+
+msgid "From then"
+msgstr "Fra da av"
 
 msgid "Frozen at"
 msgstr "Frosset"
@@ -7680,6 +7715,12 @@ msgstr "Mest totalt sulfid ved denne pH-en (som S)"
 msgid "Most working days in a row"
 msgstr "Flest arbeidsdager på rad"
 
+msgid "Move device"
+msgstr "Flytt apparat"
+
+msgid "Move to"
+msgstr "Flytt til"
+
 msgid "Moved in"
 msgstr "Flyttet inn"
 
@@ -7840,6 +7881,9 @@ msgstr "Notmateriale"
 
 msgid "Never"
 msgstr "Aldri"
+
+msgid "Never placed yet."
+msgstr "Aldri plassert ennå."
 
 msgid "Never shown"
 msgstr "Vises aldri"
@@ -8515,6 +8559,9 @@ msgstr "Ikke plassert"
 msgid "Not placed in any department."
 msgstr "Ikke plassert i noen avdeling."
 
+msgid "Not placed: out of the water, its readings belong to no place."
+msgstr "Ikke plassert: ute av vannet, målingene hører ikke til noe sted."
+
 msgid "Not planned"
 msgstr "Ikke planlagt"
 
@@ -8634,6 +8681,9 @@ msgstr "Varsle Mattilsynet"
 msgid "Notify at once"
 msgstr "Varsle straks"
 
+msgid "Now"
+msgstr "Nå"
+
 msgid "Nullable"
 msgstr "Kan være tom"
 
@@ -8725,8 +8775,11 @@ msgstr ""
 msgid "On leave"
 msgstr "På permisjon"
 
-msgid "On the clock of the channel’s site. Its binding until now ends then."
-msgstr "Etter klokken på kanalens lokalitet. Tilknytningen den har nå, slutter da."
+msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
+msgstr "Etter klokken på stedets lokalitet. Hver kanals tilknytning til nå slutter da."
+
+msgid "On the clock of the place’s site. Its binding until now ends then."
+msgstr "Etter klokken på stedets lokalitet. Tilknytningen til nå slutter da."
 
 msgid "On the clock of the place’s site; a task not done by then is overdue."
 msgstr "Etter klokken på stedets lokalitet; en oppgave som ikke er utført innen da, er forfalt."
@@ -9140,6 +9193,9 @@ msgstr "Ut"
 msgid "Out of service"
 msgstr "Ute av tjeneste"
 
+msgid "Out of the water (not placed)"
+msgstr "Ute av vannet (ikke plassert)"
+
 msgid "Outcome"
 msgstr "Utfall"
 
@@ -9389,12 +9445,24 @@ msgstr "Sted"
 msgid "Place deleted"
 msgstr "Sted slettet"
 
+msgid "Placed"
+msgstr "Plassert"
+
+msgid "Placed at"
+msgstr "Plassert ved"
+
 msgid "Placed by hand"
 msgstr "Plassert manuelt"
 
 #, python-format
 msgid "Placed by hand: %(reason)s"
 msgstr "Plassert manuelt: %(reason)s"
+
+msgid "Placed now"
+msgstr "Plassert nå"
+
+msgid "Placed or not"
+msgstr "Plassert eller ikke"
 
 msgid "Placement"
 msgstr "Plassering"
@@ -10922,6 +10990,9 @@ msgstr "Vis tidligere meldinger"
 msgid "Show empty"
 msgstr "Vis tomme"
 
+msgid "Show every binding"
+msgstr "Vis alle tilknytninger"
+
 msgid "Show on the chart"
 msgstr "Vis i diagrammet"
 
@@ -11969,6 +12040,12 @@ msgstr "Designet har ingen replikater å plassere kar i."
 msgid "The design has one group: there is nothing to compare it with."
 msgstr "Designet har én gruppe: det er ingenting å sammenligne den med."
 
+msgid "The device has no channel to place."
+msgstr "Apparatet har ingen kanal å plassere."
+
+msgid "The device is not placed anywhere now."
+msgstr "Apparatet er ikke plassert noe sted nå."
+
 msgid "The device marked the value bad."
 msgstr "Apparatet merket verdien som dårlig."
 
@@ -12759,6 +12836,10 @@ msgstr "Hemmeligheten ble byttet."
 #, python-format
 msgid "The seed is a whole number from 0 to %(top)d."
 msgstr "Frøet er et helt tall fra 0 til %(top)d."
+
+#, python-format
+msgid "The sensors at %(place)s: those there now first, then those there before."
+msgstr "Sensorene ved %(place)s: først de som er der nå, så de som var der før."
 
 msgid ""
 "The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a"
@@ -14394,6 +14475,9 @@ msgstr ""
 "Hvor en vannprøve tas: et navngitt sted på én enhet, ett systems kretsløp eller ett utstyr, av en"
 " type som sier om det ser strømmen inn, vannet inni eller strømmen ut."
 
+msgid "Where each channel goes"
+msgstr "Hvor hver kanal havner"
+
 msgid "Where each person works from a day: one department, production or office, and the title."
 msgstr "Hvor hver person arbeider fra en dag: én avdeling, produksjon eller kontor, og tittelen."
 
@@ -14416,6 +14500,9 @@ msgstr ""
 
 msgid "Where it stands"
 msgstr "Status"
+
+msgid "Where the device is placed now: a move to another site changes it (Move device)."
+msgstr "Der apparatet er plassert nå: en flytting til en annen lokalitet endrer den (Flytt apparat)."
 
 msgid ""
 "Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
@@ -16020,6 +16107,9 @@ msgstr "resistensmistanke"
 
 msgid "resistance suspicions"
 msgstr "resistensmistanker"
+
+msgid "retired or deleted: leaves its place"
+msgstr "tatt ut av bruk eller slettet: forlater stedet"
 
 msgid "role"
 msgstr "rolle"

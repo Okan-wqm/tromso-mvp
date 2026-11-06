@@ -34,7 +34,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 68 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 69 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -387,7 +387,7 @@ A piece of equipment of a production department: a pump, a drum filter, a feeder
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › equipment
 - **forms**: `EquipmentForm`
 - **constraints**: uq_equipment_code_live (unique: code); uq_equipment_serial_number_live (unique: serial_number); chk_equipment_not_its_own_parent (check); chk_equipment_warranty_after_purchase (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_equipment.py` and 8 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_equipment.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -451,7 +451,7 @@ A kind of equipment and the technical specifications it has: a centrifugal pump 
 - **read**: **GAP**: no page lists the equipment catalogue: a type only shows as the choice on the Equipment form
 - **how it works**: The Equipment form offers the active types and shows the chosen type's specification fields.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › equipment_types
-- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_equipment.py`, `farm/tests/test_feeding.py` and 6 more
+- **tests that mention it**: `core/test_languages.py`, `farm/tests/test_equipment.py`, `farm/tests/test_feeding.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -991,7 +991,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 37 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 38 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1114,7 +1114,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 53 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 54 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1414,7 +1414,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 20 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_calculator.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2907,15 +2907,15 @@ When a channel needs a look: no fresh value, its device offline, above or below 
 
 Where a channel's values belong over a time range: a sampling point or a system for a water value (a system's own water as a whole, owner rule A1), a piece of equipment or a system for a process value.
 
-- **create**: channel bindings tab (`/sensors/bindings/new/`)
-- **edit**: channel bindings tab (`/sensors/bindings/<uuid:pk>/`)
+- **create**: channel bindings tab (`/sensors/bindings/new/`); sensors.views.device_move (`/sensors/devices/move/`)
+- **edit**: channel bindings tab (`/sensors/bindings/<uuid:pk>/`); sensors.views.device_move (`/sensors/devices/move/`)
 - **delete**: channel bindings tab (`/sensors/bindings/<uuid:pk>/delete/`)
 - **read**: channel bindings tab (`/sensors/bindings/`)
-- **how it works**: Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same moment; an edit changes only the end and the note.
+- **how it works**: Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same moment, or for every channel of a device by the Move device dialog (move_device, which also takes a device out of the water); an edit changes only the end and the note.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_binding
-- **forms**: `BindForm`, `BindingForm`
+- **forms**: `BindForm`, `BindingForm`, `DeviceMoveForm`
 - **constraints**: chk_sensors_binding_one_target (check); chk_sensors_binding_period (check); chk_sensors_binding_role (check); ex_sensors_binding_channel_period (exclusion: channel, valid_from, valid_to)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_demo.py` and 1 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_demo.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2928,14 +2928,14 @@ Where a channel's values belong over a time range: a sampling point or a system 
 | is_deleted | boolean |  |  | system: author, time, version or delete mark |
 | deleted_at | timestamp with time zone | yes |  | system: author, time, version or delete mark |
 | deleted_by_id | integer | yes | auth_user (SET_NULL) | system: author, time, version or delete mark |
-| channel_id | uuid |  | sensors_channel (CASCADE) | BindForm › Binding |
-| point_id | uuid | yes | water_sampling_points (DO_NOTHING) | BindForm.target |
-| system_id | uuid | yes | systems (DO_NOTHING) | BindForm.target |
-| equipment_id | uuid | yes | equipment (DO_NOTHING) | BindForm.target |
-| role | varchar(10) |  |  | BindForm › Binding |
-| valid_from | timestamp with time zone |  |  | BindForm › Binding |
+| channel_id | uuid |  | sensors_channel (CASCADE) | BindForm › Binding, DeviceMoveForm.device |
+| point_id | uuid | yes | water_sampling_points (DO_NOTHING) | BindForm.target, DeviceMoveForm.target |
+| system_id | uuid | yes | systems (DO_NOTHING) | BindForm.target, DeviceMoveForm.target |
+| equipment_id | uuid | yes | equipment (DO_NOTHING) | BindForm.target, DeviceMoveForm.target |
+| role | varchar(10) |  |  | BindForm › Binding, DeviceMoveForm |
+| valid_from | timestamp with time zone |  |  | BindForm › Binding, DeviceMoveForm |
 | valid_to | timestamp with time zone | yes |  | BindingForm › Binding |
-| note | varchar(300) |  |  | BindForm › Binding, BindingForm › Binding |
+| note | varchar(300) |  |  | BindForm › Binding, BindingForm › Binding, DeviceMoveForm |
 
 <a id="sensorscalibration"></a>
 ### sensors.Calibration (`sensors_calibration`)
@@ -2975,7 +2975,7 @@ One value a device sends: what it measures (a quantity of sensors/quantities.py)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_channel
 - **forms**: `ChannelForm`
 - **constraints**: uq_sensors_channel_code_live (unique: device, code); chk_sensors_channel_code (check); chk_sensors_channel_name (check); chk_sensors_channel_quantity (check); chk_sensors_channel_unit_factor (check); chk_sensors_channel_unit_offset (check); chk_sensors_channel_source (check); chk_sensors_channel_value_path (check); chk_sensors_channel_protocol (check); chk_sensors_channel_address (check); chk_sensors_channel_reduction (check); chk_sensors_channel_deadband (check); chk_sensors_channel_heartbeat (check); chk_sensors_channel_range (check); chk_sensors_channel_state (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_bindings.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_bindings.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3021,7 +3021,7 @@ What the ingest service remembers of each sensor channel: its last value, the la
 - **read**: none, by design: read by the latest values (sensors/read.py)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_channel_state
 - **constraints**: chk_sensors_channel_state_run_n (check)
-- **tests that mention it**: `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_contract.py` and 4 more
+- **tests that mention it**: `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_contract.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3164,13 +3164,14 @@ Messages the ingest service could not store, kept as evidence and counted.
 A field device that publishes on one topic of a connection: a probe, a PLC, a gateway for one instrument.
 
 - **create**: devices tab (`/sensors/devices/new/`)
-- **edit**: devices tab (`/sensors/devices/<uuid:pk>/`)
+- **edit**: devices tab (`/sensors/devices/<uuid:pk>/`); sensors.views.device_move (`/sensors/devices/move/`)
 - **delete**: devices tab (`/sensors/devices/<uuid:pk>/delete/`)
 - **read**: devices tab (`/sensors/devices/`)
+- **how it works**: Its site is where it is placed: a move to a place of another site changes it (Move device), the form only while it is out of the water.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_device
 - **forms**: `DeviceForm`
 - **constraints**: uq_sensors_device_code_live (unique: connection, code); uq_sensors_device_topic_live (unique: connection, topic); chk_sensors_device_code (check); chk_sensors_device_name (check); chk_sensors_device_interval (check); chk_sensors_device_topic_given (check); chk_sensors_device_topic_hash (check); chk_sensors_device_topic_system (check); chk_sensors_device_topic_plus (check); chk_sensors_device_topic_level (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_contract.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_contract.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

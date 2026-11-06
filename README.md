@@ -2604,14 +2604,15 @@ What works:
 - **Setup**: Connections (the MQTT brokers; the ingest's own sign-in is a secret *file* name, never a secret), Payload
   formats (how a kind of device writes its messages: one object with a value per channel, or a list of named items;
   where the device time and the sequence number are, as JSON pointers; no time: the receive time, flagged), Devices (one
-  topic each, on a site, optionally the instrument of a piece of equipment; offline after three intervals without a
+  topic each, at a site (the site of where it is placed), optionally the instrument of a piece of equipment; offline after three intervals without a
   message), Channels (what a value measures, from the quantity catalogue `sensors/quantities.py`; where it is in the
   message; the unit conversion; how it is stored: every value, or a value that moves past the deadband and at least once
   per heartbeat; fresh for three heartbeats; a range outside which a value is stored but flagged and used nowhere;
   maintenance and retired states; calibrations as a list on the site's clock, applied by the ingest at the device time,
   never rewriting stored values), Bindings (where a channel's values belong over time: a sampling point or a system for a
   water value, a piece of equipment or a system for a process value; one primary and one backup per place and quantity;
-  a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in).
+  a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in; a
+  whole device moves at once, between sites too, or is taken out of the water: see Portable sensors).
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
   the drawn buckets), Live values (every channel listened to, its last value, its age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
@@ -2621,7 +2622,7 @@ What works:
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).
 - **Overview**: the ingest alive or down (a heartbeat within 90 s), devices online, channels without a fresh value, dead
-  letters of the last day, open alarms; each tile for the right that may read it.
+  letters of the last day, open alarms, devices not placed; each tile for the right that may read it.
 
 ### The water's latest value (owner rule A1)
 
@@ -2669,6 +2670,49 @@ controls are the UI's, not built here):
   says why.
 - The endpoint sends the page's figures once each and the frames as columns (figure index, point, missing, reason, and
   per input its values, origins, ages and channels); it needs the rights to read readings and water samples.
+
+### Portable sensors (a probe moved between tanks, systems and sites)
+
+A device (a probe with several channels: temperature, O₂, pH ...) is often carried: used in one tank today, in another
+tank, pond, cage or system tomorrow, maybe at another site, or taken out of the water for storage or calibration. Its
+readings always belong to where it was at the moment they were taken (owner rule A1): history follows the place, never
+the device.
+
+- **Move device** (Sensors › Setup › Devices, a device's row or its Placement tab; a monitoring card can link to it with
+  `sensors:device_move?device=<id>&target=unit:<id>`, or `point:`, `system:`, `equipment:`, `out`): every live channel
+  of the device that is not retired moves from one moment, in one transaction (`sensors/bindings.py` `move_device`,
+  through the same steps as a single channel's move: its open binding closed at the moment, the next opened). Each
+  channel goes where its kind goes at the place chosen (`landing`): a water value to a unit's middle point, to the
+  sampling point chosen or to the system (its water as a whole); a process value to the system or the piece of
+  equipment (or the system or piece of equipment a chosen point is on). The dialog shows each channel's place now and
+  from then before anything moves; one that cannot go there (a process value to a unit, a water value to a piece of
+  equipment, a place that already has a primary of that quantity, two channels of one quantity, a moment before a
+  channel's binding started or in the future) is shown with its reason and nothing moves. A retired or deleted channel's
+  open binding just ends. One entry on the device's log lists every channel's old and new place (and the site when it
+  changes); each channel's own log says its move too. The role (primary or backup) is chosen once for the device.
+- **Out of the water**: the same dialog with "Out of the water" ends every open binding (`unbind_device`). The device
+  keeps sending: its readings are stored as they come and belong to no place, so no chart, latest value, value at a
+  moment or replay frame of any place has them. The device list and the device's Placement tab say "Not placed", the
+  list filters `?placed=no`, and the overview counts the devices not placed.
+- **The site is where the device is.** A device is at one site at a time: while placed, the site of the places its
+  channels are bound to; out of the water, the site it was taken out at. A move to another site moves the device's site
+  in the same transaction (logged); a channel moved alone to a place of another site is refused ("move the whole
+  device"); the device form shows a placed device's site as following it, not editable. The database holds it
+  (migration 0007, `sensors_place_site` and two constraint triggers: an open binding to a place of another site than
+  its device's, and a placed device's site changed, are refused; closed bindings are history and never checked).
+  Every moment of a binding is typed and shown on the clock of the place's site (`bindings.clock`: the Move and Move
+  device dialogs, their links, a binding's end); a chart's clock was already the place's.
+- **Only the readings taken there.** A place's chart, its latest value and its replay have exactly the readings taken
+  while a channel was bound there: a value measured before the probe came (its last value from the previous place) is
+  never the new place's latest; on the hour tiers the whole hours of a binding come from the hour rollup and the parts
+  of an hour it only partly holds (a move at 01:30, a device taken out, a window's edge) from the raw readings
+  (`read.hours_of`), so the hour that holds a move is shared by the two places.
+- **Where it is and was**: the device's Placement tab lists where it was from and until (`placement_history`); the
+  bindings list with `?place=unit:<id>` (or `system:`, `point:`, `equipment:`) lists the sensors at a place, those there
+  now first, then those there before.
+- Not handled: a production department, system or unit moved to another site while a device is placed there leaves the
+  device's stored site behind until its next move (the readings and every clock follow the place, so nothing is
+  attributed wrongly); alarm events of one site (`alarms.open_events(site)`) follow the device's current site.
 
 ### Storage
 

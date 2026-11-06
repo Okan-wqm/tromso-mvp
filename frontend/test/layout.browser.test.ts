@@ -59,6 +59,14 @@ const MARKUP = `
   <div><dt>pH</dt><dd><span class="wq wq-ok">13.4</span></dd><dd class="row-sub wq-said"><span class="wq-source"><span class="wq-origin">unit sensor #12</span> · <span class="wq-age">just now</span></span></dd></div>
   <div><dt>O₂ (mg/L)</dt><dd><span class="wq wq-ok">13.4</span></dd><dd class="row-sub wq-said"><span class="wq-source"><span class="wq-origin">system sensor #3</span> · <span class="wq-age">40 s ago</span></span></dd></div></dl></div></section></article>
 
+<div class="monitor-grid" lang="nb"><article class="monitor-card monitor-warning" id="nb-card"><div class="monitor-card-head"><h3>HA-K03</h3></div>
+  <dl class="metrics"><div><dt>Tap</dt><dd>170</dd><dd class="row-sub">170 døde · 0 utsortert</dd></div><div><dt>Fiskegrupper</dt><dd>1</dd>
+  <dd class="row-sub">B-2026-001</dd></div><div><dt>Sist veid</dt><dd>Tilbakeholdelsestid</dd></div></dl>
+  <section class="monitor-section monitor-water"><div class="monitor-point"><dl class="metrics">
+  <div><dt>O₂ (%)</dt><dd><span class="wq wq-ok">98,6</span></dd><dd class="row-sub wq-said"><span class="wq-source"><span class="wq-origin">enhetssensor #19</span> · <span class="wq-age">akkurat nå</span></span></dd></div>
+  <div><dt>CO₂ (mg/L)</dt><dd><span class="wq wq-ok">11,5</span></dd><dd class="row-sub wq-said"><span class="wq-source"><span class="wq-origin">systemsensor #221</span> · <span class="wq-age">akkurat nå</span></span></dd></div>
+  <div><dt>Alkalitet (mg/L)</dt><dd><span class="wq wq-ok">90</span></dd><dd class="row-sub wq-said"><span class="wq-source"><span class="wq-origin">systemsensor #224</span> · <span class="wq-age">akkurat nå</span></span></dd></div>
+  </dl></div></section></article><article class="monitor-card"><h3>HA-K04</h3></article><article class="monitor-card"><h3>HA-K05</h3></article></div>
 <form method="post" class="form" id="approve"><p>Approve the request?</p>
   <div class="form-actions"><a class="button button-ghost" href="#">Cancel</a><button type="submit" class="button">Approve</button></div></form>
 <div class="tabs" role="tablist"><button type="button" role="tab" class="tab" data-tab="details">Details</button><button type="button" role="tab" class="tab" data-tab="withdrawal">Withdrawal</button></div>
@@ -155,6 +163,21 @@ test('the page layout', { skip: BROWSERS.length ? false : 'no Chrome or Edge on 
 
     await tab.setViewportSize({ width: 1440, height: 900 });
     await tab.waitForTimeout(50);
+
+    await t.test('nothing of a monitoring card spills out of it, in Norwegian at 390 and 1440 px', async () => {
+      for (const width of [390, 1440]) {
+        await tab.setViewportSize({ width, height: 900 });
+        await tab.waitForTimeout(50);
+        const spill = await tab.locator('#nb-card').evaluate((card) => {
+          const edge = card.getBoundingClientRect().right;
+          return [...card.querySelectorAll('*')].filter((element) => element.getBoundingClientRect().right > edge + 1)
+            .map((element) => `${element.tagName}.${element.className} "${(element.textContent ?? '').trim().slice(0, 30)}"`);
+        });
+        assert.deepEqual(spill, [], `at ${width} px`);
+      }
+      await tab.setViewportSize({ width: 1440, height: 900 });
+      await tab.waitForTimeout(50);
+    });
 
     await t.test('a text cell is not squeezed to a word a line (the unit drawer\'s batches)', async () => {
       const cell = await box(tab, '#batch-cell');

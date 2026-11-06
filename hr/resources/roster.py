@@ -1,22 +1,13 @@
-from datetime import date
-
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
-from core import audit
+from core import audit, query
 from core.crud import Mount, Resource
 from farm.stock.dates import site_today
 
 from .. import read, rules, scope, services, units
 from ..forms.roster import ShiftAssignmentForm
 from ..models import ShiftAssignment
-
-
-def parse_day(value):
-    try:
-        return date.fromisoformat(value)
-    except (TypeError, ValueError):
-        return None
 
 
 class ShiftAssignmentResource(Resource):
@@ -56,12 +47,9 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def list_queryset(cls, request):
-        start = parse_day(request.GET.get('week')) or site_today(None)
+        start = query.day(request.GET.get('week')) or site_today(None)
         department = units.find(request.GET.get('department', ''))
-        try:
-            page = int(request.GET.get('page', '1'))
-        except ValueError:
-            page = 1
+        page = query.number(request.GET.get('page', ''), least=1) or 1
         return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip(),
                          realm=scope.realm_for(request))
 

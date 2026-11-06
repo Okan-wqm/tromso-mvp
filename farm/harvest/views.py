@@ -6,7 +6,6 @@ A read page, as Feeding records is: filters in the address, 50 rows a page, void
 Recording a harvest stays the stock's dialog (a unit's drawer, or a plan's "Record harvest"); voiding one is
 the stock's void. Who may do what: reading needs view on the harvest records (config/access.py, area
 Harvested); the void link needs the stock's void permission."""
-from datetime import date
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import permission_required
@@ -14,7 +13,7 @@ from django.core.paginator import Paginator
 from django.urls import reverse
 from django.utils.translation import gettext as _, ngettext
 
-from core import navigation
+from core import navigation, query
 from core.crud import render_page
 
 from ..handling import check, fasting
@@ -46,13 +45,6 @@ def _context(**extra):
     return {'title': place.entry.label, 'eyebrow': f'{place.section.label} · {place.group.label}', **extra}
 
 
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
-
-
 def _filtered(params):
     """The harvest lines the filters choose, newest first, voided ones only when asked for; and the filters'
     choices. A value that names nothing there is dropped (a stale link shows everything)."""
@@ -81,7 +73,7 @@ def _filtered(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'operation__date__gte'), ('to', 'operation__date__lte')):
-        day = _day(params[key])
+        day = query.day(params[key])
         params[key] = day.isoformat() if day else ''
         if day:
             lines = lines.filter(**{lookup: day})

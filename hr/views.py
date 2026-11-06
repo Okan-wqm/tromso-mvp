@@ -15,7 +15,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.http import require_POST
 
-from core import navigation
+from core import navigation, query
 from core.crud import done, mount_of, mounted_name, render_page
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
@@ -196,18 +196,14 @@ def team_overview(request):
     """Team overview: the viewer's people and their week in numbers (`?week=`, `?department=`, `?q=`, `?page=`)."""
     if not request.user.has_perm('hr.view_shiftassignment'):
         raise PermissionDenied
-    from .resources.roster import parse_day
-    start = parse_day(request.GET.get('week')) or site_today(None)
+    start = query.day(request.GET.get('week')) or site_today(None)
     department = units.find(request.GET.get('department', ''))
-    try:
-        page = int(request.GET.get('page', '1'))
-    except ValueError:
-        page = 1
-    query = request.GET.get('q', '').strip()
+    page = query.number(request.GET.get('page', ''), least=1) or 1
+    searched = request.GET.get('q', '').strip()
     place = navigation.page(mounted_name('hr:overview', mount_of(request)))
     return render(request, 'hr/overview.html', {
-        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': query,
-        'overview': read.overview(request.user, start, department, page, query=query, realm=scope.realm_for(request)),
+        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': searched,
+        'overview': read.overview(request.user, start, department, page, query=searched, realm=scope.realm_for(request)),
         'departments': units.choices(kinds=[scope.realm_for(request)]),
         'chosen_department': units.token(department)})
 

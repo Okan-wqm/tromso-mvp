@@ -7,7 +7,6 @@ server's reasons on their fields (422) and goes back where it was opened (`next`
 Who may do what (config/access.py): reading a page needs view on its records, recording add, voiding delete;
 a treatment's last day is changed with change. The buttons a person cannot use are not shown, and the views
 refuse them too. The withdrawal line is shown to everyone who sees the units: it is food safety."""
-from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -19,7 +18,7 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 
-from core import navigation
+from core import navigation, query
 from core.crud import done, render_page
 
 from ..forms.health import LastDayForm, LiceCountForm, TreatmentForm
@@ -58,13 +57,6 @@ def dialog_url(name, back, unit=None, args=()):
     """A dialog's address that comes back to `back` (and chooses `unit`)."""
     query = {'next': back, **({'unit': str(unit.pk)} if unit is not None else {})}
     return f'{reverse(name, args=args)}?{urlencode(query)}'
-
-
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
 
 
 def _units_with_fish(site=None, production=False):
@@ -129,7 +121,7 @@ def _filtered_treatments(params, today):
     else:
         params['method'] = ''
     for key, lookup in (('from', 'end_date__gte'), ('to', 'start_date__lte')):
-        day = _day(params[key])
+        day = query.day(params[key])
         params[key] = day.isoformat() if day else ''
         if day:
             treatments = treatments.filter(**{lookup: day})
@@ -270,7 +262,7 @@ def _filtered_counts(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-        day = _day(params[key])
+        day = query.day(params[key])
         params[key] = day.isoformat() if day else ''
         if day:
             counts = counts.filter(**{lookup: day})

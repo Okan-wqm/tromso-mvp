@@ -49,6 +49,7 @@ VIEW, RECORD, VOID = 'farm.view_watermeasurement', 'farm.add_watermeasurement', 
 HISTORY = 'history'
 PAGE_SIZE = 50
 HISTORY_DAYS = 30      # the history's default span, back from today
+HISTORY_MAX_DAYS = 366  # the longest span a history page judges: a longer one starts later, and the page says so
 OWNER_MODELS = {UNIT: Tank, SYSTEM: System, EQUIPMENT: Equipment}
 OWNER_RELATED = {UNIT: ('production_department__site',), SYSTEM: ('site',), EQUIPMENT: ('production_department__site',)}
 
@@ -212,24 +213,37 @@ def _latest(site):
 
 
 def _day(request, name, default):
-    return parse_date(request.GET.get(name, '')) or default
+    """The day the address names (YYYY-MM-DD), else `default`: a day that is no day (2026-13-45) is the default, never
+    a server error."""
+    try:
+        return parse_date(request.GET.get(name, '')) or default
+    except ValueError:
+        return default
 
 
 def _history(request, site, place):
+    """The history's context: the samples of the span (at most HISTORY_MAX_DAYS, the first day moved and said), paged
+    in the database and only the page's judged; with "alerts only" every sample of the span is judged first, as the
+    alert is worked out on read."""
     zone = zone_of(site if place.owner is None else site_of(place.owner))
     today = timezone.localdate(timezone=zone)
     start, end = _day(request, 'from', today - timedelta(days=HISTORY_DAYS)), _day(request, 'to', today)
+    clipped = (end - start).days > HISTORY_MAX_DAYS
+    if clipped:
+        start = end - timedelta(days=HISTORY_MAX_DAYS)
     samples = read.samples_of(
         points=[place.point] if place.point is not None else None,
         owner=None if place.point is not None else place.owner,
         site=site if place.owner is None else None,
         since=timezone.make_aware(datetime.combine(start, time.min), zone),
         before=timezone.make_aware(datetime.combine(end + timedelta(days=1), time.min), zone))
-    rows = read.history(list(samples))
     alerts_only = request.GET.get('alerts') == '1'
     if alerts_only:
-        rows = [row for row in rows if not row.sample.is_deleted and row.status in ALERTS]
-    page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
+        rows = [row for row in read.history(list(samples)) if not row.sample.is_deleted and row.status in ALERTS]
+        page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
+    else:
+        page = Paginator(samples, PAGE_SIZE).get_page(request.GET.get('page'))
+        page.object_list = read.history(list(page.object_list))
     columns = _columns([row.readings for row in page.object_list])
     earliest = {}
     for row in page.object_list:
@@ -237,13 +251,15 @@ def _history(request, site, place):
         row.cells = [row.readings.get(parameter.code) for parameter in columns]
         row.history_url = history_url(sample.point)
         if request.user.has_perm(VOID) and not sample.is_deleted:
-            first = earliest.setdefault(sample.point_id, services.earliest(sample.point))
-            if local_time(sample.measured_at, sample.point).date() >= first:
+            if sample.point_id not in earliest:
+                earliest[sample.point_id] = services.earliest(sample.point)
+            if local_time(sample.measured_at, sample.point).date() >= earliest[sample.point_id]:
                 row.void_url = _dialog_url('farm:water_void', request, args=[sample.pk])
     kept = request.GET.copy()
     kept.pop('page', None)
     return {'history': page.object_list, 'page': page, 'pager_query': kept.urlencode(), 'columns': columns,
-            'start': start, 'end': end, 'alerts_only': alerts_only, 'zone': zone,
+            'start': start, 'end': end, 'clipped': clipped, 'span': HISTORY_MAX_DAYS, 'alerts_only': alerts_only,
+            'zone': zone,
             'owner_groups': _owner_groups(site, place.owner),
             'point_choices': _owner_points(place.owner)}
 

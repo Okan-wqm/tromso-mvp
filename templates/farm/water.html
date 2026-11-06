@@ -58,6 +58,7 @@
 <p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Each value says which sampling point it was taken at; the water of a unit is that of its middle point. Nobody is alerted: critical values are shown here, not sent.{% endblocktrans %}</p>
 
 {% if showing_history %}
+{% if clipped %}<p class="notice notice-warning">{% blocktrans trimmed count days=span %}A page shows at most {{ days }} day: the first day was moved.{% plural %}A page shows at most {{ days }} days: the first day was moved.{% endblocktrans %}</p>{% endif %}
 {% if point %}<h2 class="water-point">{% blocktrans trimmed with point=point %}History of {{ point }}{% endblocktrans %}</h2>{% elif owner %}<h2 class="water-point">{% blocktrans trimmed with owner=owner.code %}History of {{ owner }}{% endblocktrans %}</h2>{% endif %}
 {% if history %}
 <div class="table-wrap">

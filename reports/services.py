@@ -10,7 +10,7 @@ from farm.models import Batch
 from farm.models.species import SALMONID_CODES
 from core.models import AuditLog
 
-from . import compute, due, periods
+from . import compute, due, labels, periods
 from .kinds import EVENTS
 from .models import (
     NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, OpenQuestion, OutsideDutyDone, QuestionStatus, Report,
@@ -201,8 +201,9 @@ def start_correction(user, report):
 
 def differences(report):
     """What the records give now against what was filed: [(path, filed, now)] of the figures, of the identity (a
-    unit's number, a species' code, the site's numbers renamed since) and of the sources read, and whether the
-    format changed. Read on the report's page; nothing is stored."""
+    unit's number, a species' code, the site's numbers renamed since) and of the sources read, whether the format
+    changed, and `labels`, each path as the page names it (reports/labels.py). Read on the report's page; nothing is
+    stored."""
     snapshot = report.snapshot
     if snapshot.format_version == LEGACY_FORMAT:
         return {'figures': [], 'identity': [], 'sources': [], 'format_changed': False, 'legacy': True}
@@ -220,4 +221,5 @@ def differences(report):
         else:
             figures.append(item)
     return {'figures': figures, 'identity': identity, 'sources': sources,
-            'format_changed': snapshot.format_version != compute.FORMAT_VERSION}
+            'format_changed': snapshot.format_version != compute.FORMAT_VERSION,
+            'labels': {path: labels.describe(path, snapshot.content, now) for path, _filed, _now in figures + identity}}

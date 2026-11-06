@@ -1,5 +1,5 @@
 {% extends "crud/detail.html" %}
-{% load i18n %}
+{% load i18n reports %}
 {% comment %} A report's read page (reports.resources.ReportResource.detail_extras): what it is for and by when, what
    keeps it from being ready, the figures (as filed once it is, else as the records give them now), how the records
    differ from what was filed, the exports, and recording the filing or starting a correction.{% endcomment %}
@@ -30,8 +30,8 @@
 <div class="notice notice-warning" role="alert">
   {% if differences.figures %}{% trans "The records no longer give what was filed: a correction is needed." %}{% else %}{% trans "What the report is filed under has changed since it was filed." %}{% endif %}
   <ul>
-    {% for path, before, after in differences.figures %}<li>{{ path }}: {{ before|default_if_none:"–" }} → {{ after|default_if_none:"–" }}</li>{% endfor %}
-    {% for path, before, after in differences.identity %}<li>{% trans "Identity" %} {{ path }}: {{ before|default_if_none:"–" }} → {{ after|default_if_none:"–" }}</li>{% endfor %}
+    {% for path, before, after in differences.figures %}<li>{{ differences.labels|named:path }}: {{ before|default_if_none:"–" }} → {{ after|default_if_none:"–" }}</li>{% endfor %}
+    {% for path, before, after in differences.identity %}<li>{% trans "Identity" %} · {{ differences.labels|named:path }}: {{ before|default_if_none:"–" }} → {{ after|default_if_none:"–" }}</li>{% endfor %}
     {% if differences.format_changed %}<li>{% trans "The report is computed in a newer way than when it was filed." %}</li>{% endif %}
   </ul>
 </div>

@@ -2186,7 +2186,8 @@ every report, where it comes from, the design and the owner's decisions D-1 to D
 files the report where the authority takes it, then records here **when, how and with which receipt**. What was filed is
 frozen: its content, with a hash that is also in the activity log, and the hash of the records it was made from. If the
 records change afterwards (a void, a backdated record, a unit moved to another site) its page says "the records no longer give
-what was filed: a correction is needed", figure by figure; a correction is a new report of the same key that replaces it.
+what was filed: a correction is needed", figure by figure, each named as the page names it, the unit by its number ("Unit K-02 ·
+Fish at the month’s end: 500 → 1000", `reports/labels.py`), never a key of the content; a correction is a new report of the same key that replaces it.
 
 **The reports** (`reports/kinds.py`: authority, basis, period, deadline, where it is filed):
 

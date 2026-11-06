@@ -57,6 +57,7 @@ Translations: TR/NB filled for every new message (0 missing, checked with babel)
 
 ## Checks run
 
-Targeted modules while working; final: full Docker suite (balik-testrunner, test_fixhr, no --parallel),
+Targeted modules while working; final: full Docker suite (balik-testrunner, test_fixhr, no --parallel): 2786 tests OK
+(3 skipped), at 65dd20b;
 `makemigrations --check` (no changes), `data_map --check` (up to date), `compile_catalogs`, `tsc --noEmit` (ok),
 `npm test` (40/40).

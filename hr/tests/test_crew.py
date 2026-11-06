@@ -4,6 +4,7 @@ no punch, no employee number, no planned hours, no link. A day off, a day on lea
 same empty cell."""
 from datetime import date, datetime, time, timezone as utc
 
+from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -108,6 +109,21 @@ class CrewPageTests(CrewTestCase):
         response = self.page(plain)
         self.assertIsNone(response.context['crew'])
         self.assertNotContains(response, 'Crew this week')
+
+    def test_who_is_no_worker_has_no_crew_block_and_an_unplaced_worker_is_told_why_it_is_empty(self):
+        """A crew is a worker's: someone with no employee record (the platform admin) gets no block; a worker with no
+        production placement this week is told so, never that nobody else is placed in their department."""
+        admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        response = self.page(admin)
+        self.assertIsNone(response.context['crew'])
+        self.assertNotContains(response, 'Crew this week')
+        unplaced = user('cyd', *WORKER, group='Unplaced worker role')
+        employee('E-7', '', '', user=unplaced)                  # an account's row: the name is the account's
+        response = self.page(unplaced)
+        self.assertFalse(response.context['crew'].placed)
+        self.assertContains(response, 'You are not placed in a production department this week, so you have no crew.')
+        self.assertNotContains(response, 'Nobody else is placed in your department this week.')
+        self.assertTrue(read.crew_week(self.worker, MONDAY).placed)
 
     def test_the_company_page_has_no_crew_block(self):
         self.assertIsNone(self.page(name='hr:shiftassignment_list').context['crew'])

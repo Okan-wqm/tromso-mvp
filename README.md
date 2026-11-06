@@ -3006,7 +3006,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   users are not areas, so no role can grant them.
 - **Roles** (`/roles/`, Django `Group`): a table with each role's users and what it allows; the
   dialog has the name and a permission matrix (areas by group, columns Read / Create / Edit /
-  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit, Delete, Crew, All production and Everyone include Read: the form adds it and the browser ticks it. Saving
+  Delete, and Crew, All production and Everyone where an area offers them: see Row scope). Create, Edit and Delete include Read: the form adds it and the browser ticks it. Crew, All production and Everyone include nothing: they widen whose rows the role's other rights reach, so a role saved in the matrix keeps exactly what it had (the Production manager preset has All production without the Team list, `hr/roles.py`). Saving
   sets exactly the ticked boxes (the model's standard view/add/change/delete permissions). The
   activity log shows permission changes as "Sites: read, create; Activity log: read". Deleting a
   role removes it from its people.
@@ -3273,7 +3273,7 @@ whatever the address or the query, and nothing is written or logged. Nothing els
 record, so a rule is never written a second time.
 
 The matrix has one more column for the same purpose, **Everyone** (`all`): offered by the one area whose rows
-are scoped (HR's Employees), it implies Read like Create, Edit and Delete, and the scope function reads it as
+are scoped (HR's Employees), it includes no other right (it widens rows; Read is ticked on its own), and the scope function reads it as
 "no limit". A tab's `private_fields` name form fields that hold a person's own words (a leave reason, a
 punch's note): the activity log says "Private text" for a filled one and never stores the words, so it shows
 that the field was set, replaced or cleared, not what it says (a short keyed digest of the text is kept so that

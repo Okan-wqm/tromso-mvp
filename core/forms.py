@@ -16,7 +16,7 @@ User = get_user_model()
 class PermissionMatrix(forms.CheckboxSelectMultiple):
     """A role's permissions as the access matrix (core.access): a row per area under its group, a
     column per action, a box only where the area offers the action. Create, Edit and Delete point at
-    their row's Read box (data-requires, see frontend/components.ts)."""
+    their row's Read box (data-requires, see frontend/components.ts), as access.implied adds it on save."""
 
     template_name = 'core/widgets/permission_matrix.html'
 
@@ -29,7 +29,7 @@ class PermissionMatrix(forms.CheckboxSelectMultiple):
             cells = {action: options.get(area.perm(action)) for action in area.actions}
             read = cells.get(access.READ)
             for action, cell in cells.items():
-                if cell and read and action != access.READ:
+                if cell and read and action in access.INCLUDES_READ:
                     cell['attrs']['data-requires'] = read['attrs']['id']
             sections.setdefault(area.group, []).append(
                 {'label': area.label, 'cells': [(label, cells.get(action)) for action, label in access.ACTIONS]})

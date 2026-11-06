@@ -15,9 +15,9 @@
       {% for row in board.rows %}
       <tr>
         <th scope="row"><span class="row-title">{{ row.employee.full_name }}</span><span class="row-sub">{% if row.department %}{{ row.department.name }}{% else %}{% trans "Not placed" %}{% endif %}</span></th>
-        <td>{% if row.shift %}<span class="shift-chip tone-{{ row.shift.tone }}">{{ row.shift.code }}</span> {{ row.shift.starts_at|time:"H:i" }}–{{ row.shift.ends_at|time:"H:i" }}{% elif row.unscheduled %}<span class="muted">{% trans "Not planned" %}</span>{% else %}–{% endif %}</td>
-        <td>{% if row.standing.first_in %}{{ row.standing.first_in|on_clock:row.zone|date:"H:i" }}{% else %}–{% endif %}</td>
-        <td>{% if row.standing.last_out %}{{ row.standing.last_out|on_clock:row.zone|date:"H:i" }}{% else %}–{% endif %}</td>
+        <td>{% if row.shift %}<span class="shift-chip tone-{{ row.shift.tone }}">{{ row.shift.code }}</span> {{ row.shift.starts_at|time:"TIME_FORMAT" }}–{{ row.shift.ends_at|time:"TIME_FORMAT" }}{% elif row.unscheduled %}<span class="muted">{% trans "Not planned" %}</span>{% else %}–{% endif %}</td>
+        <td>{% if row.standing.first_in %}{{ row.standing.first_in|on_clock:row.zone|date:"TIME_FORMAT" }}{% else %}–{% endif %}</td>
+        <td>{% if row.standing.last_out %}{{ row.standing.last_out|on_clock:row.zone|date:"TIME_FORMAT" }}{% else %}–{% endif %}</td>
         <td><span class="badge badge-state-{{ row.state }}">{% if row.state == "upcoming" %}{% trans "Upcoming" %}{% elif row.state == "present" %}{% trans "Present" %}{% elif row.state == "late" %}{% blocktrans trimmed with minutes=row.standing.late_minutes %}Late {{ minutes }} min{% endblocktrans %}{% elif row.state == "not_in" %}{% trans "Not in yet" %}{% elif row.state == "absent" %}{% trans "Absent" %}{% elif row.state == "on_leave" %}{% trans "On leave" %}{% else %}{% trans "Done" %}{% endif %}</span></td>
       </tr>
       {% endfor %}

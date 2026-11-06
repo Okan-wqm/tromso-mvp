@@ -46,7 +46,7 @@
     <thead>
       <tr>
         <th scope="col">{% trans "Employee" %}</th>
-        {% for day in week.days %}<th scope="col" class="roster-day">{{ day|date:"D" }}<span class="row-sub">{{ day|date:"j M" }}</span></th>{% endfor %}
+        {% for day in week.days %}<th scope="col" class="roster-day">{{ day|date:"D" }}<span class="row-sub">{{ day|date:"MONTH_DAY_FORMAT" }}</span></th>{% endfor %}
         <th scope="col" class="num">{% trans "Planned (h)" %}</th>
       </tr>
     </thead>
@@ -62,7 +62,7 @@
           {% if cell.visible %}
             {% if cell.assignment %}
               {% if can_change %}<a class="roster-link" href="{% url 'hr:shiftassignment_edit'|mounted:request cell.assignment.pk %}" data-modal>{% endif %}
-              {% if cell.shift %}<span class="shift-chip tone-{{ cell.shift.tone }}" title="{{ cell.shift.name }} {{ cell.shift.starts_at|time:'H:i' }}–{{ cell.shift.ends_at|time:'H:i' }}">{{ cell.shift.code }}</span>{% else %}<span class="shift-chip is-off">{% trans "Off" %}</span>{% endif %}
+              {% if cell.shift %}<span class="shift-chip tone-{{ cell.shift.tone }}" title="{{ cell.shift.name }} {{ cell.shift.starts_at|time:"TIME_FORMAT" }}–{{ cell.shift.ends_at|time:"TIME_FORMAT" }}">{{ cell.shift.code }}</span>{% else %}<span class="shift-chip is-off">{% trans "Off" %}</span>{% endif %}
               {% if can_change %}</a>{% endif %}
             {% elif can_add %}
               <a class="roster-add" href="{% url 'hr:shiftassignment_create'|mounted:request %}?employee={{ row.employee.pk }}&day={{ cell.day|date:'Y-m-d' }}" data-modal title="{% trans 'Plan this day' %}">+<span class="sr-only">{% trans "Plan this day" %}</span></a>

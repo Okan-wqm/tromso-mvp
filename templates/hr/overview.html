@@ -52,7 +52,7 @@
 <h2 class="section-title">{% trans "Each day" %}</h2>
 <div class="table-wrap">
   <table class="data-table">
-    <thead><tr><th scope="col">{% trans "Day" %}</th>{% for day in week.days %}<th scope="col" class="num">{{ day|date:"D j" }}</th>{% endfor %}</tr></thead>
+    <thead><tr><th scope="col">{% trans "Day" %}</th>{% for day in week.days %}<th scope="col" class="num">{{ day|date:"D" }} {{ day|date:"MONTH_DAY_FORMAT" }}</th>{% endfor %}</tr></thead>
     <tbody>
       <tr><th scope="row">{% trans "Working" %}</th>{% for item in overview.footer %}<td class="num">{{ item.working }}</td>{% endfor %}</tr>
       <tr><th scope="row">{% trans "Off" %}</th>{% for item in overview.footer %}<td class="num">{{ item.off }}</td>{% endfor %}</tr>

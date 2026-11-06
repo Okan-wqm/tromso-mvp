@@ -4,7 +4,7 @@ channel ("Bound to", from the old target to the new). A moment in the future, or
 refused: history is never rewritten. The database holds the rest (sensors migration 0004)."""
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.translation import gettext as _
 
 from core import audit
@@ -30,7 +30,7 @@ def _check_moment(at, current):
         raise ValidationError({'valid_from': _('A binding cannot start in the future.')})
     if current is not None and at <= current.valid_from:
         raise ValidationError({'valid_from': _('The channel is bound since %(moment)s: a move starts after that.')
-                               % {'moment': timezone.localtime(current.valid_from).strftime('%Y-%m-%d %H:%M')}})
+                               % {'moment': formats.date_format(timezone.localtime(current.valid_from), 'DATETIME_FORMAT')}})
 
 
 def _close(user, binding, at):

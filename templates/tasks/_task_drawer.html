@@ -16,7 +16,7 @@
     <dl class="facts">
       <div><dt>{% trans "Location" %}</dt><dd>{{ place|place_label }}{% if place.is_deleted %} <span class="badge badge-voided">{% trans "Place deleted" %}</span>{% endif %}<span class="row-sub">{{ place|place_kind }} · {{ place|place_context }}</span></dd></div>
       {% if task.batch %}<div><dt>{% trans "Batch" %}</dt><dd>{{ task.batch.code }}{% if task.batch.is_deleted %} <span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</dd></div>{% endif %}
-      <div><dt>{% trans "Due" %}</dt><dd>{{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"H:i" }}{% endif %}</dd></div>
+      <div><dt>{% trans "Due" %}</dt><dd>{{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"TIME_FORMAT" }}{% endif %}</dd></div>
       <div><dt>{% trans "Assignees" %}</dt><dd>{% with names=task.assignees.all|people %}{% if names %}{{ names }}{% else %}<span class="over-text">{% trans "Nobody" %}</span>{% endif %}{% endwith %}</dd></div>
       {% if task.series %}<div><dt>{% trans "Recurring task" %}</dt><dd>{{ task.series.title }}{% if task.series.is_deleted %} <span class="badge badge-voided">{% trans "Deleted" %}</span>{% endif %}<span class="row-sub">{% blocktrans trimmed with date=task.occurrence_date|date:"DATE_FORMAT" %}planned for {{ date }}{% endblocktrans %}</span></dd></div>{% endif %}
       {% if task.started_at %}<div><dt>{% trans "Started" %}</dt><dd>{{ task.started_by|person }} · {{ task.started_at|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}

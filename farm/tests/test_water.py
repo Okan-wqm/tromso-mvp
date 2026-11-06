@@ -967,7 +967,21 @@ class ProductionUnitsTests(WaterTestCase):
         self.sample(temperature_c='18')
         tiles = self.client.get(reverse('production_home')).context['water_tiles']
         self.assertEqual([(str(tile['label']), tile['count'], tile['url']) for tile in tiles],
-                         [('Units with a critical water value', 1, reverse('farm:water'))])
+                         [('Sampling points with a critical water value', 1, reverse('farm:water'))])
+
+    def test_the_overview_counts_what_the_water_page_counts_critical(self):
+        """One count: the overview's figure is the water page's (every point it lists, a side outlet too), not a second
+        reading of the middle points only."""
+        self.stock()
+        self.limit('co2_mg_l', critical_high=15)
+        side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
+        self.sample(co2_mg_l='8')                                      # the middle point is fine
+        self.sample(point=side, co2_mg_l='15.6')                       # the side outlet is critical
+        page = self.client.get(reverse('farm:water'))
+        self.assertEqual(page.context['critical_count'], 1)
+        tiles = self.client.get(reverse('production_home')).context['water_tiles']
+        self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
+                         [('Sampling points with a critical water value', 1)])
 
     def test_the_drawer_speaks_each_language(self):
         self.stock()

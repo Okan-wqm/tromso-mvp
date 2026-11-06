@@ -530,3 +530,37 @@ class AnswersAndExportTests(LiceTestCase):
         self.assertContains(response, 'rapporteringsuke,,44')
         self.assertContains(response, 'lusetelling,voksneHunnlus,0.2')
         self.assertContains(response, 'medikamentelleBehandlinger,[0].virkestoff.type,AZAMETHIPHOS')
+
+
+class LiceMedicineForAnotherReasonTests(LiceTestCase):
+    """A sea-lice medicine recorded for another reason (hydrogen peroxide is also given against AGD) is not in the weekly
+    lice report, which lists the treatments for sea lice: the report says so and reads it for its fingerprint (F-083,
+    F-239); the treatment's dialog warned when it was recorded (farm/tests/test_lice_reason.py)."""
+
+    def setUp(self):
+        super().setUp()
+        self.count(self.m1, 10, 27)
+        self.count(self.m2, 10, 28)
+
+    def agd_bath(self):
+        values = {'units': [self.m1], 'method': 'bath', 'reason': 'parasites', 'start_date': day(10, 26),
+                  'end_date': day(10, 26), 'medicine': self.medicine, 'amount_value': Decimal('12.5'),
+                  'amount_unit': 'KILO'}
+        checked = health.handling(values['units'], values['start_date'], 'bath', self.medicine, values['end_date'],
+                                  reason='parasites')
+        return health.record_treatment(self.user, handling_ack=checked.fingerprint, **values)
+
+    def test_it_is_not_in_the_report_and_the_report_says_so(self):
+        self.agd_bath()
+        result = self.result()
+        self.assertEqual(result.content['treatments'], [])
+        self.assertIn('The treatment with Salmosan in M-01 from 2026-10-26 to 2026-10-26 was recorded for “Other '
+                      'parasites (e.g. AGD)”, not for sea lice, so it is not in this report: if it was given against '
+                      'sea lice, void it and record it again with the reason “Sea lice”.', result.warnings)
+        self.assertEqual(result.problems, [])
+
+    def test_it_is_in_the_reports_fingerprint(self):
+        treatment = self.agd_bath()
+        before = compute.fingerprint(compute.scope(self.draft))
+        health.void_treatment(self.user, treatment, 'Recorded for the wrong reason')
+        self.assertNotEqual(before, compute.fingerprint(compute.scope(self.draft)))

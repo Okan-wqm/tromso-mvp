@@ -346,10 +346,14 @@ class SiteEditTests(SiteTestCase):
 
         from core.crud import TabbedForm
 
-        def deleted(form):
-            Site.objects.filter(pk=site.pk).update(is_deleted=True)
-            return True
-        with mock.patch.object(TabbedForm, 'is_valid', deleted), mock.patch.object(BaseFormSet, 'is_valid', deleted):
+        def deleted_after(check):
+            def checked(form):
+                valid = check(form)
+                Site.objects.filter(pk=site.pk).update(is_deleted=True)
+                return valid
+            return checked
+        with (mock.patch.object(TabbedForm, 'is_valid', deleted_after(TabbedForm.is_valid)),
+              mock.patch.object(BaseFormSet, 'is_valid', deleted_after(BaseFormSet.is_valid))):
             return self.client.post(url, data)
 
     def test_a_site_deleted_while_it_was_saved_is_not_found(self):

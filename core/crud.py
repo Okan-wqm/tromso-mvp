@@ -290,7 +290,6 @@ def constraint_error(form, error):
     if isinstance(constraint, (models.UniqueConstraint, ExclusionConstraint)):
         names = [item for item in constrained_fields(constraint) if item in form.fields]
     form.add_error(names[-1] if names else None, constraint.violation_error_message)
-    form.instance._state.adding = True
     return True
 
 
@@ -597,6 +596,11 @@ class ResourceView:
             raise PermissionDenied
         return obj
 
+    def locked_object(self, pk):
+        """The record, locked for the caller's transaction (not the rows it is joined to); 404 when it was deleted or
+        left the person's reach since the page was opened (F-009: not a server error)."""
+        return get_object_or_404(self.resource.visible(self.request).select_for_update(of=('self',)), pk=pk)
+
 
 # NONE (core.widgets, imported above): a list filter's value for "records without one" (production departments
 # without a site), the value a DependentSelect's source takes for the same.
@@ -696,6 +700,7 @@ class CreateView(FormView):
                     # is a fault.
                     if not constraint_error(form, error):
                         raise
+                    form.instance._state.adding = True     # the page is the new-record form again
                     return self.page(form)
             else:
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
@@ -723,7 +728,7 @@ class UpdateView(FormView):
         if not form.is_valid():
             return self.page(form, obj)
         with transaction.atomic():
-            current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
+            current = self.locked_object(pk)
             versioned = 'version' in form.fields
             if versioned and form.cleaned_data.get('version') != current.version:
                 # Translators: %(name)s is the kind of record in lower case (e.g. site).
@@ -737,7 +742,16 @@ class UpdateView(FormView):
                 obj.version = current.version + 1
             if hasattr(obj, 'updated_by'):
                 obj.updated_by = request.user
-            obj.save()
+            try:
+                with transaction.atomic():
+                    obj.save()
+            except IntegrityError as error:
+                # Two people giving two records the same code at once both pass the form's checks; the database's
+                # constraint refuses the second, told on the form as on a new record (F-034). Any other refusal is a
+                # fault.
+                if not constraint_error(form, error):
+                    raise
+                return self.page(form, current)
             form.save_m2m()
             audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
             r.after_save(request, obj, created=False)
@@ -769,7 +783,7 @@ class DeleteView(ResourceView):
     def post(self, request, pk):
         r = self.resource
         with transaction.atomic():
-            obj = get_object_or_404(r.visible(request).select_for_update(of=('self',)), pk=pk)
+            obj = self.locked_object(pk)
             if not r.allowed(request, obj, 'delete'):
                 raise PermissionDenied
             if isinstance(obj, AuditedModel):
@@ -814,7 +828,7 @@ class RowListView(ResourceView):
             # As an edit of the record: locked, refused when it changed since the list was opened (its version
             # travels with the list), its version moved on. Asked again under the lock whether the record has
             # the list: a report filed meanwhile has no answers to change any more.
-            current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)
+            current = self.locked_object(pk)
             versioned = isinstance(current, AuditedModel)
             if versioned and request.POST.get('version') != str(current.version):
                 # Translators: %(name)s is the kind of record in lower case (e.g. site).

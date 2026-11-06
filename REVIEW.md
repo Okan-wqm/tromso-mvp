@@ -119,3 +119,13 @@ the right reason (the `Test:` commits), then fixed in its own commit.
   limit"), limits for pH and CO₂ were added to the golden farm so its cards stay judged, and the recording now holds the
   texts the templates added since it was first made.
 - The designer's `data-label-preview-failed` landed in the Package A commit with the state words (same template).
+
+## Verification (main b24de24 has not moved, so there was nothing to merge)
+- Full Docker suite (fresh `test_fixmon`, no --parallel): 2772 tests, 1 failure, 3 skipped: the frontend contract test
+  caught the grid's new `data-live-text` (the `data-live-*` names are poll.ts's live forms). Renamed to
+  `data-updated-text`; `core.test_frontend_contract` and the announcer tests rerun green.
+- `makemigrations --check`: no changes; `data_map --check` after regenerating: clean; `compile_catalogs`: tr and nb
+  built, no untranslated message; `npx tsc --noEmit`: clean; `npm test`: 46 pass, 0 skipped (Chrome present).
+- `--keepdb` runs are not trustworthy here after migration tests (TransactionTestCase) on a kept database: built-in card
+  templates went missing and monitoring tests failed; a fresh database passes. Use a fresh test database for this
+  branch.

@@ -311,7 +311,7 @@ class AnnouncerTests(MonitoringCase):
                     'data-state-blind', 'data-state-unjudged', 'data-state-note', 'data-stale-word'):
             self.assertTrue(holder.attrs.get(key), key)
         # the grid's notices are said aloud too (F-045, F-222): its words for each poll state
-        for key in ('data-stale-text', 'data-gone-text', 'data-live-text'):
+        for key in ('data-stale-text', 'data-gone-text', 'data-updated-text'):
             self.assertTrue(grid.attrs.get(key), key)
         self.assertIn('js/announce.js', html)
         self.assertNotIn('data-announcer', self.client.get(CARDS).content.decode())      # never inside the fragment

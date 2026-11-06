@@ -25,7 +25,7 @@ function cards(states: string[]): string {
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>wall</title></head><body>
 <div class="monitor-grid" data-poll="/cards" data-poll-every="1" data-poll-merge="data-key" data-poll-state="live"
- data-stale-text="Not updated." data-gone-text="Gone." data-live-text="Updated again.">${cards(ROUNDS[0])}</div>
+ data-stale-text="Not updated." data-gone-text="Gone." data-updated-text="Updated again.">${cards(ROUNDS[0])}</div>
 <div id="monitor-announce" data-announce-worse="{unit} is now {state}." data-announce-more="{count} more."
  data-state-critical="Critical" data-state-warning="Warning" data-state-blind="Blind" data-state-note="Note">
  <p data-announcer aria-live="assertive"></p><p data-announcer aria-live="polite"></p></div>

@@ -175,7 +175,7 @@ function start(): void {
   new MutationObserver(() => {
     const now = grid.dataset.pollState ?? '';
     const text = pollNotice(pollState, now, { stale: grid.dataset.staleText ?? '', gone: grid.dataset.goneText ?? '',
-                                             live: grid.dataset.liveText ?? '' });
+                                             live: grid.dataset.updatedText ?? '' });
     pollState = now;
     if (text) {
       speak('assertive', text);

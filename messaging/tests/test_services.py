@@ -242,6 +242,17 @@ class ChannelTests(MessagingTestCase):
         services.leave(self.egon, channel.pk)                           # the last one may go
         self.assertFalse(channel.participants.exists())
 
+    def test_a_channel_its_last_member_leaves_is_deleted_and_frees_its_name(self):
+        # F-110: left without members it stayed live, its name taken for good and its history out of everyone's reach.
+        channel = self.channel()
+        services.post_as(self.ali, channel.pk, 'Before I go')
+        services.leave(self.ali, channel.pk)
+        stored = Conversation.all_objects.get(pk=channel.pk)
+        self.assertTrue(stored.is_deleted)
+        self.assertEqual(stored.messages.count(), 1)                    # the history stays, for a restore
+        self.assertTrue(AuditLog.objects.filter(entity_id=str(channel.pk), action='delete').exists())
+        self.assertNotEqual(self.channel().pk, channel.pk)              # the name is free again
+
     def test_a_member_added_again_gets_their_row_back_and_unread_starts_from_now(self):
         channel = self.channel(self.egon)
         services.post_as(self.ali, channel.pk, 'Before Kari')

@@ -64,6 +64,8 @@ def plain(value):
         return value if math.isfinite(value) else repr(value)
     if hasattr(value, 'value') and value.__class__.__module__.endswith('evaluate'):
         return value.value
+    if hasattr(value, 'fields') and hasattr(value, 'values') and callable(value.values):   # the core's Equilibria
+        return {name: plain(item) for name, item in zip(value.fields, value.values())}
     if dataclasses.is_dataclass(value):
         return {field.name: plain(getattr(value, field.name)) for field in dataclasses.fields(value)}
     if isinstance(value, dict):
@@ -416,7 +418,7 @@ def record_all():
     setup()
     from farm.water import charts, chemistry as c, deffeyes as d, dosing
     rng = random.Random(SEED)
-    c.equilibria.cache_clear()
+    getattr(c.equilibria, 'cache_clear', lambda: None)()        # the Python formulas cached; the core does not
     with PathRecorder(c) as recorder:
         blocks = {'constants': list(constants_block(c, rng)),
                   'carbonate': list(carbonate_block(c, d, recorder, rng))}

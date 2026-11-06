@@ -59,7 +59,7 @@ def from_rust(folder):
     for path in sorted(folder.rglob('*.rs')):
         text = path.read_text(encoding='utf-8')
         for name in RUST_ITEM.findall(text):
-            keep, name = distinctive_name(name.lower())
+            keep, name = distinctive_name(name)
             if keep:
                 names.add(name)
         for literal in RUST_NUMBER.findall(text):

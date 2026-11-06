@@ -1834,7 +1834,9 @@ on 2026-11-03) has them:
   the limit is over it ("færre enn"). The area is the site's (Facility › Sites, Location: Sea-lice limit area);
   a site without one is judged by the stricter of the two, and the page says so;
 - Vedlegg 1 points 2 and 3: at least 20 fish a cage in weeks 14–21 (south) or 19–26 (north), 10 otherwise; a
-  smaller sample is pointed out; how many of the units with fish were counted is shown.
+  smaller sample is pointed out; how many of the units with fish were counted is shown. The weekly table is always the
+  site's whole weeks: the filters of the list below choose which sites and weeks it shows (a unit: its site; a date
+  range: the weeks it touches), never which counts make an average (audit F-082).
 
 Over the limit is a warning on the page; nobody is alerted yet, and the weekly report to Mattilsynet is not
 built (§ 10).

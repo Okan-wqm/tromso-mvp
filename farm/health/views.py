@@ -277,12 +277,31 @@ def _filtered_counts(params):
     return counts, choices
 
 
+def _site_weeks(params):
+    """The weekly table: each site's average over every cage counted that week (Vedlegg 1 point 6) and its badge. The
+    filters choose which sites and weeks are shown (a unit filter: its site; a date range: the weeks it touches), never
+    which counts make an average: one cage's average is not the site's (audit F-082)."""
+    counts = LiceCount.objects.all()
+    if params['unit']:
+        unit = Tank.all_objects.select_related('production_department').get(pk=params['unit'])
+        site_id = unit.production_department.site_id
+        counts = counts.filter(unit__production_department__site=site_id) if site_id else counts.filter(unit=unit)
+    elif params['site']:
+        counts = counts.filter(unit__production_department__site=params['site'])
+    first, last = _day(params['from']), _day(params['to'])
+    if first:
+        counts = counts.filter(date__gte=first - timedelta(days=first.weekday()))          # its week's Monday
+    if last:
+        counts = counts.filter(date__lte=last + timedelta(days=6 - last.weekday()))      # its week's Sunday
+    return read.lice_weeks(counts)
+
+
 @permission_required(COUNTS['view'], raise_exception=True)
 def lice_counts(request):
     """Operations › Sea-lice counts: the site's weekly averages against the statutory limit, then every count."""
     params = {key: request.GET.get(key, '').strip() for key in COUNT_FILTERS}
     counts, choices = _filtered_counts(params)
-    weeks = read.lice_weeks(counts)[:LICE_WEEKS]
+    weeks = _site_weeks(params)[:LICE_WEEKS]
     stocked = read.stocked_by_site(_units_with_fish(production=True))
     for week in weeks:
         week.stocked = stocked.get(week.site.pk if week.site else None, 0)

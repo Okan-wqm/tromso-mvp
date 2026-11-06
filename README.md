@@ -2306,11 +2306,12 @@ the records now, and say which.
 - *Sea lice*: the week's counts per cage and the site's average per stage (the mean of the cages' averages, as the regulation
   says), the cages that held salmonids and were due a count (7 days, 14 below 4 °C; none for broodstock below 4 °C, nor when every
   fish is planned for slaughter within 14 days of the day the count fell due, whether the harvest is still planned or already
-  recorded; a cage with no production fish left on that day needs none), the sea temperature (the mean of the week's samples at the site's depth points of
+  recorded (a plan whose harvest was voided is open again); a cage with no production fish left on that day needs none), the sea temperature (the mean of the week's samples at the site's depth points of
   3 m, from Water chemistry), the week's lice treatments with substance, strength and amount from their records (the amount is
   the product's: Mattilsynet's § 10 c asks for the active substance's, so the report says to confirm which it wants). A
   treatment of the week with a sea-lice medicine recorded for another reason is not in it, and the report warns of each one
-  (void it and record it again if it was given against sea lice) and reads it for its fingerprint.
+  (void it and record it again if it was given against sea lice) and reads it for its fingerprint. The fingerprint also
+  reads what decides whether a cage was due a count: its earlier counts and the harvest plans (audit F-206).
 - *Smolt*: per tank and species that held fish, its number, species, the fish and average weight at the month's end (a tank
   emptied in the month reports the fish just before, less those moved to another tank of the site, which are in that tank's
   count), and the fish dead, culled and moved out of the site, deliveries included. A tank that held two species one after the

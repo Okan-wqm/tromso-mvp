@@ -143,6 +143,9 @@ def scope(site, period, units=None):
     units = units if units is not None else stock.site_units(site)
     return stock.scope_rows(units, period.end) + [
         ('lice_counts', LiceCount.all_objects.filter(unit__in=units, date__gte=period.start, date__lte=period.end)),
+        # What decides whether a cage was due a count: its earlier counts and the harvest plans of § 6 (F-206).
+        ('earlier_lice_counts', LiceCount.all_objects.filter(unit__in=units, date__lt=period.start)),
+        ('harvest_plans', HandlingPlanItem.all_objects.filter(kind=PlanKind.HARVEST, unit__in=units)),
         # The treatments for sea lice, and those with a sea-lice medicine the report leaves out and says so (F-239).
         ('treatments', Treatment.all_objects.filter(
             Q(reason=TreatmentReason.SEA_LICE) | Q(medicine__kind=MedicineKind.LICE),
@@ -241,15 +244,16 @@ def _all_to_be_slaughtered(units, held, due, fish_on, period):
     """Whether every cage with salmonids has a harvest planned that covers its production fish (cleaner fish are not
     harvested) within 14 days of the day its count fell due (of the week's end for a cage that was not due), the fish
     being those it held that day. A plan counts when it is not cancelled, whether still open or already recorded as a
-    harvest (a voided harvest is no longer one): the exception does not lapse when the fish are slaughtered."""
+    harvest: the exception does not lapse when the fish are slaughtered, and a plan whose harvest was voided is open
+    again (HandlingPlanItem.done)."""
     closing = {unit_id: unit_stock.count for unit_id, unit_stock in read.stock_on(units, period.end).items()}
     fish = {unit_id: fish_on[due[unit_id]].get(unit_id, 0) if unit_id in due else closing.get(unit_id, 0)
             for unit_id in held}
     planned = {}
-    for item in HandlingPlanItem.objects.filter(Q(operation__isnull=True) | Q(operation__is_deleted=False),
-                                                kind=PlanKind.HARVEST, unit__in=held, cancelled_reason=''):
+    items = HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, unit__in=held, cancelled_reason='')
+    for item in items.select_related('operation'):
         reference = due.get(item.unit_id, period.end)
-        if item.operation_id is not None and item.date <= reference:
+        if item.done and item.date <= reference:
             continue                    # taken out before: its fish are not among those counted that day
         if item.date <= reference + timedelta(days=SLAUGHTER_DAYS):
             planned[item.unit_id] = planned.get(item.unit_id, 0) + (item.planned_count or 0)

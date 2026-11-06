@@ -1735,7 +1735,9 @@ their medicine as a site's contacts are: they stay with it when it is deleted an
 species keeps its rows out of sight while it is deleted, and cannot be erased from the database while a row names it.
 `farm/health/withdrawal.py`'s `row_for` is the one place that says which row applies to a species; the withdrawal, the
 Medicines pages and the treatment dialog's choice all ask it. Nothing is seeded: the values are the product's SPC,
-entered by the farm and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer
+entered by the farm and checked by its vet. A change of the rows of a medicine already given (a live treatment) is logged as
+**critical**: the withdrawal is worked out live, so it moves the end of every course given with it, of fish held now or
+harvested (audit F-196); `check_withdrawal` lists any harvest it brings inside a withdrawal. A medicine a treatment used cannot be deleted, nor its manufacturer
 (`PROTECT`): set it inactive. Migration `0021` copies each medicine's old two columns into a row for every species, and
 goes back when every medicine has one (it says why when it cannot).
 

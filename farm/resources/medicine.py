@@ -1,6 +1,7 @@
 from django.utils.translation import gettext as _now, gettext_lazy as _, ngettext_lazy
 
 from core.crud import Resource, RowList, filter_by
+from core.models import AuditLog
 
 from ..forms.health import MedicineForm, MedicineWithdrawalFormSet
 from ..health.withdrawal import Rule
@@ -14,6 +15,13 @@ class MedicineWithdrawalList(RowList):
     key, tab, label = 'withdrawals', 'withdrawal', _('Withdrawal')
     formset = MedicineWithdrawalFormSet
     saved = ngettext_lazy('%(count)d withdrawal row saved.', '%(count)d withdrawal rows saved.', 'count')
+
+    @classmethod
+    def severity(cls, medicine):
+        """Critical once the medicine was given (a live treatment): its withdrawal is worked out live from these rows
+        (HLT-02), so a change moves the end of every course already given, of fish held now or harvested (F-196)."""
+        given = medicine.treatments.exists()
+        return AuditLog.Severity.CRITICAL if given else AuditLog.Severity.NORMAL
 
     @classmethod
     def describe(cls, row):

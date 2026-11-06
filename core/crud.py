@@ -354,6 +354,12 @@ class RowList:
         return {name: row[name] for name in fields}
 
     @classmethod
+    def severity(cls, obj):
+        """The severity of the log entry of a change of the list: normal; a list whose change protects or endangers fish
+        or food says critical (a medicine's withdrawal already given, audit F-196)."""
+        return AuditLog.Severity.NORMAL
+
+    @classmethod
     def save(cls, user, obj, rows, entity_type):
         """Replaces the stored rows with `rows` (cleaned data) and logs the change on `obj`."""
         model, link = cls.formset.model, cls.formset.fk.name
@@ -368,7 +374,7 @@ class RowList:
             after = cls.summary(obj)
             if before != after:
                 audit.record(user, AuditLog.Action.UPDATE, obj, {str(cls.label): [before, after]},
-                             entity_type=entity_type)
+                             entity_type=entity_type, severity=cls.severity(obj))
 
 
 class Resource:

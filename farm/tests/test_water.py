@@ -706,7 +706,7 @@ class PageTests(WaterTestCase):
         self.assertEqual([str(parameter.short) for parameter in response.context['columns']],
                          ['Temp. (°C)', 'O₂ (mg/L)', 'O₂ (%)'])
         html = response.content.decode()
-        for text in ('6.50', '9.5', 'wq-warning', '2 sampling points', '1 warning', 'Nobody is alerted'):
+        for text in ('6.50', '9.5', 'wq-warning', '2 sampling points', '1 warning', 'raises an alarm'):
             self.assertIn(text, html)
         self.assertContains(response, '<h1>Water chemistry</h1>', html=True)
 

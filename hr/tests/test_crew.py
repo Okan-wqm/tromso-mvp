@@ -126,7 +126,11 @@ class CrewPageTests(CrewTestCase):
         self.assertTrue(read.crew_week(self.worker, MONDAY).placed)
 
     def test_the_company_page_has_no_crew_block(self):
-        self.assertIsNone(self.page(name='hr:shiftassignment_list').context['crew'])
+        office = user('ola', *WORKER, group='Office crew role')            # an office person reads the company page
+        Employee.objects.filter(pk=self.in_fin.pk).update(user=office, first_name='', last_name='')
+        self.assertIsNone(self.page(office, name='hr:shiftassignment_list').context['crew'])
+        # A production-only worker's company Shift schedule is refused, as its menu leaves it out.
+        self.assertEqual(self.page(name='hr:shiftassignment_list').status_code, 403)
 
     def test_a_colleagues_records_stay_out_of_reach_by_address(self):
         self.client.force_login(self.worker)

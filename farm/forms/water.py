@@ -23,7 +23,7 @@ from core.crud import Fieldset, TabbedForm, tab_fields
 
 from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterLimit,
                       WaterMeasurement)
-from ..models.site import zone_of
+from ..models.site import ALTITUDE_HIGH, ALTITUDE_LOW, zone_of
 from ..models.water import BOUNDS
 from ..models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, owner_type_of, site_of
 from ..templatetags.water import limit_text
@@ -424,7 +424,7 @@ class CalculatorForm(forms.Form):
                              _('The water the amounts are for: a tank or a loop. Empty: the doses per m³ only.'))
     calcium_mg_l = number_field(_('Calcium (mg/L Ca²⁺)'), 0, 2000, 1,
                                 _('For the calcite and aragonite saturation, in water of 5 to 44 ‰.'))
-    altitude_m = number_field(_('Altitude (m)'), 0, 5000, 0,
+    altitude_m = number_field(_('Altitude (m)'), ALTITUDE_LOW, ALTITUDE_HIGH, 0,
                               _('For the oxygen saturation and the CO₂ the air leaves in the water: the pressure of '
                                 'the standard atmosphere there. Empty is sea level.'))
     target_ph = number_field(_('Target pH (NBS scale)'), 4, 12, 2)

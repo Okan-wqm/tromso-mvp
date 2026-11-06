@@ -17,7 +17,7 @@ What works today:
 - A database viewer (`/database/`): every table as a spreadsheet-style grid, for the platform admin
   (see Database viewer).
 - Three panels, switched from the top left: **Company** (overview, Facility › Sites and Storage locations,
-  Knowledge, Administration, and HR) and **Production** (overview, production departments, systems, equipment, tanks,
+  Knowledge, Alarms, Administration, and HR) and **Production** (overview, production departments, systems, equipment, tanks,
   ponds & cages, species, feeds, water limits, medicines, slaughter facilities, handling rules, suppliers, and
   under Operations the production units with their fish, the water chemistry, the store (Storage), the tasks and
   the recurring tasks, Feeding: the meal board, the records, the feeding protocols and their assignments,
@@ -1291,9 +1291,10 @@ as its stock lines are: points are not deleted with their owner because restorin
 record, so points deleted with it would never return. A species takes its water limits with it, each listed and
 logged. The admin shows voided samples but does not restore them.
 
-**The MVP alerts nobody.** A critical value is shown on the page, on the unit in Production units (its
-columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
-email, SMS or push, no acknowledgement and no escalation. Someone has to look.
+**Alarms.** A warning or a critical value is shown on the page, on the unit in Production units (its columns, dot, count
+line and drawer) and as a tile of the production overview, and it raises an alarm (Company › Alarms, see Alarms): its
+recipients are notified by push, it escalates when nobody acknowledges it, and everything is kept. Nothing is sent yet:
+the push transport comes with the mobile app, and the pages say so.
 
 Differences from the source (details in the bug document, WQ-01 to WQ-49):
 
@@ -1692,7 +1693,8 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
 
 **The activity log** has a severity: normal, or critical for an operation someone went on with past a handling
 warning (`AuditLog.severity`, a database check, a partial index); critical entries have a red edge and a
-Critical badge, and the log filters by severity. Nobody is alerted yet: the later alarms read these entries.
+Critical badge, and the log filters by severity. (An opening balance, the one record dated beyond the correction window,
+is critical too.)
 
 **Who may do what** (Production · Operations · Harvest, and Setup · Reference data): Harvested (read; a harvest
 is recorded and voided as a stock operation, Production units' Create and Delete), Harvest plan and Production
@@ -2631,8 +2633,8 @@ What works:
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
   the drawn buckets), Live values (every channel listened to, its last value, its age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
-  person, logged), Alarm rules and Alarm events (**shown, not sent**: nobody is notified until a delivery path exists, and
-  the pages say so).
+  person, logged), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
+  who acknowledged it; the Acknowledge button here writes that record).
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).
@@ -2994,6 +2996,40 @@ production people in Production, with the same permission.
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
+## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm recipients `/alarms/recipients/`)
+
+The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push notifications through the coming mobile app
+(not e-mail: it gets too little attention), and every alarm, every notification and every acknowledgement (who, when,
+from which device, how late) is logged. The server side is built; the push transport plugs in with the app.
+
+- **What raises an alarm** is judged where it is judged today (`alarms/sources.py`): the sensor alarm rules (each event of
+  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits (`farm/water/read.py`
+  `latest` over every active sampling point: a value critical or warning holds an alarm of that severity per point and
+  parameter; a changed severity clears it and opens one at the new severity; a fresh value back inside the limits clears it;
+  a value that only goes stale never clears it).
+- **Who is notified**: the alarm recipient rules (a tab: a site or every site, a production department or every one, the
+  least severity, a level 0 to 9, a role or one person, only while on shift by the HR roster (`hr.read.on_shift`, the
+  board's own rule), the channel). Level 0 is notified when the alarm opens; a rule added later still reaches an alarm that
+  is open.
+- **Escalation**: an open alarm nobody has acknowledged goes on to the next level with a rule that reaches it once its
+  level was notified the platform owner's escalation time ago (Platform settings, 15 minutes by default), or at once when
+  nobody could be notified at its level. An alarm nobody can be notified of says so. A cleared or acknowledged alarm is
+  never escalated.
+- **The outbox**: one notification per alarm, person, channel and level (push only; channels are pluggable). A transport
+  per channel is named in `settings.ALARM_TRANSPORTS` (`alarms/transports.py`, an interface with a test double); none is
+  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A failing transport is tried
+  again up to five times.
+- **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the
+  notification answered; once per person; the delay is computed from the alarm's opening. Who holds Alarms: Edit may
+  acknowledge, and so may anyone the alarm was sent to. The sensors' Alarm events page acknowledges through the same
+  service: the event's own acknowledgement columns were carried over by a migration and removed.
+- **Append-only**: alarms, clearances, notifications, delivery attempts, escalations and acknowledgements are never changed
+  or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
+  a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
+- **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
+  queues, escalates and hands what is queued to the connected transports, under one advisory lock so two loops never
+  queue or send twice. Deployment runs it instead of `check_sensors` (the sensors' check alone).
+
 ## Platform settings (Company › Administration, `/administration/platform-settings/`)
 
 The rules the platform owner (the customer the platform is given to) sets for the whole company, one row
@@ -3034,7 +3070,8 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm recipients (read, create, edit, delete),
+  Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
   right) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
@@ -3506,6 +3543,8 @@ real mail.
 | `/knowledge/entries/<id>/review/` | Marks an entry reviewed, or takes it back to draft (POST) |
 | `/activity/` | Activity log |
 | `/administration/platform-settings/` | Administration › Platform settings (the platform owner's rules) |
+| `/alarms/` | Alarms › Alarms (`?state=all` lists the cleared ones too); `<id>/` an alarm's history, `<id>/acknowledge/` (POST) |
+| `/alarms/recipients/` | Alarms › Alarm recipients (who is notified of which alarms) |
 | `/administration/opening-balances/` | Administration › Opening balances; `new/` registers one (the platform owner's right) |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
@@ -3533,6 +3572,8 @@ real mail.
 | `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
+| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the loop (`engine.py`, `manage.py run_alarms`), the transports (`transports.py`), the pages (`views.py`) |
+| `core/platform.py` | The platform owner's settings as the code reads them: the correction window, second approval, escalation time |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
 | `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`), the assignments' rows and write path that the dialog and an experiment's start share (`assignments.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |

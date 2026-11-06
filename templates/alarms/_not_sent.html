@@ -1,0 +1,3 @@
+{% load i18n %}{% comment %} Said wherever alarms are shown while no transport is connected for push (alarms/transports.py):
+   the notifications wait in the outbox. `connected` is {channel: whether a transport is connected}. {% endcomment %}
+{% if not connected.push %}<p class="notice notice-warning" role="status">{% trans "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every notification waits in the outbox below, with its recipient and level, and is sent once it is." %}</p>{% endif %}

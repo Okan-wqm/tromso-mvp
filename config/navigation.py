@@ -35,6 +35,13 @@ WORKSPACES = [
                 Entry(_('Knowledge entries'), 'knowledge:knowledgeentry_list', 'lightbulb',
                       'knowledge.view_knowledgeentry'),
             ]),
+            # The alarms of the water limits and the sensor rules, with who was notified, the escalations and the
+            # acknowledgements (all kept), and the rules of who is notified. Nothing is sent until the push transport (the
+            # mobile app) is connected; the pages say so.
+            Group(_('Alarms'), [
+                Entry(_('Alarms'), 'alarms:alarm_list', 'bell', 'alarms.view_alarm'),
+                Entry(_('Alarm recipients'), 'alarms:recipientrule_list', 'send', 'alarms.view_recipientrule'),
+            ]),
             Group(_('Administration'), [
                 Entry(_('Activity log'), 'core:activity_log', 'history', 'core.view_auditlog'),
                 Entry(_('Roles'), 'core:group_list', 'shield', 'auth.view_group'),
@@ -219,7 +226,7 @@ WORKSPACES = [
                 Entry(_('Live values'), 'sensors:live', 'radio', 'sensors.view_reading'),
                 # What the ingest could not store, kept as evidence and counted.
                 Entry(_('Dead letters'), 'sensors:dead_letters', 'inbox', 'sensors.view_deadletter'),
-                # Alarms are shown, not sent: nobody is notified yet.
+                # The sensors' alarm rules and their events; who is notified of them is Company › Alarms.
                 Entry(_('Alarm rules'), 'sensors:alarmrule_list', 'bell', 'sensors.view_alarmrule'),
                 Entry(_('Alarm events'), 'sensors:alarm_events', 'alert', 'sensors.view_alarmevent'),
             ]),

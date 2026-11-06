@@ -1,0 +1,36 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} One alarm (alarms.views.alarm_detail): what it is and where, and everything that happened to it in time order:
+   opened, each notification queued (recipient, channel, level, state) and each delivery attempt, the escalations, the
+   acknowledgements (who, when, from which device and app, how late) and when it cleared. Nothing here is ever edited. {% endcomment %}
+{% block title %}{{ alarm.summary }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }} · {{ title }}{% endblock %}
+{% block heading %}{{ alarm.summary }}{% endblock %}
+{% block content %}
+{% include "alarms/_not_sent.html" %}
+<section class="detail-section">
+  <dl class="facts">
+    <div><dt>{% trans "Severity" %}</dt><dd>{{ alarm.get_severity_display }}</dd></div>
+    <div><dt>{% trans "Source" %}</dt><dd>{{ alarm.get_source_display }}</dd></div>
+    <div><dt>{% trans "Where" %}</dt><dd>{{ alarm.production_department|default:alarm.site|default:"—" }}</dd></div>
+    <div><dt>{% trans "State" %}</dt><dd>{% if is_open %}{% trans "Open" %}{% else %}{% trans "Cleared" %}{% endif %} · {% blocktrans trimmed with level=level %}level {{ level }}{% endblocktrans %}</dd></div>
+  </dl>
+  {% if nobody %}<p class="notice notice-warning">{% trans "Nobody to notify: no alarm recipient rule reaches this alarm. Add one under Alarm recipients." %}</p>{% endif %}
+  {% if can_acknowledge %}<form method="post" action="{% url 'alarms:alarm_acknowledge' alarm.pk %}">{% csrf_token %}<button type="submit" class="button button-inline">{% trans "Acknowledge" %}</button></form>{% endif %}
+</section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "History" %}</h2>
+  <ol class="plain-list">
+    {% for event in events %}
+    <li><time datetime="{{ event.at|date:'c' }}">{{ event.at|date:"DATETIME_FORMAT" }}</time> ·
+      {% if event.kind == "opened" %}{% trans "Opened" %}
+      {% elif event.kind == "notified" %}{% with notification=event.row %}{% blocktrans trimmed with person=notification.recipient.get_full_name|default:notification.recipient.get_username channel=notification.get_channel_display level=notification.level %}Queued for {{ person }} ({{ channel }}, level {{ level }}){% endblocktrans %} · {% if event.state == "sent" %}{% trans "Sent" %}{% elif event.state == "failed" %}{% trans "Failed" %}{% else %}{% trans "Queued" %}{% endif %}{% endwith %}
+      {% elif event.kind == "delivered" %}{% with attempt=event.row %}{% blocktrans trimmed with person=attempt.notification.recipient.get_username outcome=attempt.get_outcome_display %}Delivery to {{ person }}: {{ outcome }}{% endblocktrans %}{% if attempt.detail %} · {{ attempt.detail }}{% endif %}{% endwith %}
+      {% elif event.kind == "escalated" %}{% blocktrans trimmed with level=event.row.level %}Escalated to level {{ level }}: nobody acknowledged it in time{% endblocktrans %}
+      {% elif event.kind == "acknowledged" %}{% with ack=event.row %}{% blocktrans trimmed with person=ack.user.get_full_name|default:ack.user.get_username|default:"—" app=ack.app delay=ack.delay %}Acknowledged by {{ person }} from {{ app }}, {{ delay }} after it opened{% endblocktrans %}{% if ack.device %} · {{ ack.device }}{% endif %}{% endwith %}
+      {% else %}{% trans "Cleared" %}{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

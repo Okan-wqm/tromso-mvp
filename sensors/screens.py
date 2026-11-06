@@ -4,7 +4,7 @@ tables are written by the ingest service (sensors-ingest/, sensors/CONTRACT.md) 
 reads them."""
 from core.datamap import Screen, computed, no, system
 
-from .views import alarm_event_acknowledge, alarm_events, dead_letter_resolve, dead_letters, home
+from .views import alarm_events, dead_letter_resolve, dead_letters, home
 
 INGEST = 'written by the ingest service (sensors/CONTRACT.md), never by a page'
 MIGRATION = 'one row written by migration sensors 0001; the contract is changed by a migration, never by a page'
@@ -45,11 +45,11 @@ SCREENS = {
                  'resolved_at': system('set when a person marks it resolved'),
                  'resolved_by': system('the person who marked it resolved')}),
     'AlarmEvent': Screen(
-        create=no('written by manage.py check_sensors when a rule holds'), edit=(alarm_event_acknowledge,),
-        delete=no('history of the alarms; deleted with its rule only'), read=(alarm_events, home),
-        columns={'*': computed('written by manage.py check_sensors from the channels’ state'),
-                 'acknowledged_by': system('the person who acknowledged it'),
-                 'acknowledged_at': system('when it was acknowledged')}),
+        create=no("written by the sensors' check (check_sensors, run_alarms) when a rule holds"),
+        edit=no("never edited by a person: Acknowledge writes the alarms' acknowledgement (alarms.Acknowledgement)"),
+        delete=no('history of the alarms: its alarm (alarms.Alarm) keeps it, so it is never deleted'),
+        read=(alarm_events, home),
+        columns={'*': computed('written by manage.py check_sensors from the channels’ state')}),
     'Reading': Screen(
         create=no(INGEST), edit=no('a reading is never changed: stored values are calibrated at the device time'),
         delete=no('dropped with its chunk after the raw retention (730 days), never one by one'),

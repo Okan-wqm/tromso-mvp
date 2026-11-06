@@ -472,7 +472,7 @@ ALARM_TABS = [('general', gettext_lazy('Alarm rule'), ['channel', 'quantity', 'k
 
 
 class AlarmRuleForm(TabbedForm):
-    """An alarm rule: on one channel or on every channel of a quantity. Shown on the Sensors pages, never sent."""
+    """An alarm rule: on one channel or on every channel of a quantity. Its events are alarms (Company › Alarms)."""
 
     tabs = ALARM_TABS
 

@@ -1,6 +1,1345 @@
 {
   "tables": [
     {
+      "app": "alarms",
+      "model": "Acknowledgement",
+      "table": "alarm_acknowledgements",
+      "description": "A person said they saw an alarm: when, from which device (the id the app sends; empty from the console) and app ('console' from the web pages; the app's name and version later), and the notification they answered, if any.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment and the app or device that said it"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment and the app or device that said it"
+        },
+        {
+          "name": "acknowledged_at",
+          "field": "acknowledged_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment and the app or device that said it"
+        },
+        {
+          "name": "device",
+          "field": "device",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment and the app or device that said it"
+        },
+        {
+          "name": "app",
+          "field": "app",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment and the app or device that said it"
+        },
+        {
+          "name": "notification_id",
+          "field": "notification",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "alarm_notifications",
+            "model": "alarms.Notification",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment and the app or device that said it"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_alarm_acknowledgements_once",
+          "kind": "unique",
+          "fields": [
+            "alarm",
+            "user"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_acknowledgements_app",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_acknowledge",
+              "url_names": [
+                "alarms:alarm_acknowledge"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/acknowledge/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:alarm_event_acknowledge",
+              "url_names": [
+                "sensors:alarm_event_acknowledge"
+              ],
+              "routes": [
+                "/sensors/alarm-events/<int:pk>/acknowledge/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_list",
+              "url_names": [
+                "alarms:alarm_list"
+              ],
+              "routes": [
+                "/alarms/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "The mobile app will acknowledge through the same service (alarms.services.acknowledge).",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "farm/tests/test_migration_purging.py",
+        "sensors/tests/test_alarms.py",
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_migration.py",
+        "alarms/tests/test_pages.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmClearance",
+      "table": "alarm_clearances",
+      "description": "When an alarm stopped holding: the sensor rule's event closed, or a fresh water value is back inside the limits (a value that only goes stale never clears it).",
+      "columns": [
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "cleared_at",
+          "field": "cleared_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_list",
+              "url_names": [
+                "alarms:alarm_list"
+              ],
+              "routes": [
+                "/alarms/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_alarms.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "DeliveryAttempt",
+      "table": "alarm_delivery_attempts",
+      "description": "A transport took a notification (sent) or failed to (failed, with what it said).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "notification_id",
+          "field": "notification",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarm_notifications",
+            "model": "alarms.Notification",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "attempted_at",
+          "field": "attempted_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "outcome",
+          "field": "outcome",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "sent",
+            "failed"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "detail",
+          "field": "detail",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_delivery_attempts_outcome",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_alarm_delivery_attempts_sent_once",
+          "kind": "unique",
+          "fields": [
+            "notification"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by run_alarms when a transport took or refused a notification"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_alarms.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "Escalation",
+      "table": "alarm_escalations",
+      "description": "The alarm went on to `level` because nobody had acknowledged it in the platform owner's escalation time after the level before was notified (or at once, when nobody could be notified there).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "level",
+          "field": "level",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "escalated_at",
+          "field": "escalated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_alarm_escalations_level",
+          "kind": "unique",
+          "fields": [
+            "alarm",
+            "level"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_escalations_level",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_list",
+              "url_names": [
+                "alarms:alarm_list"
+              ],
+              "routes": [
+                "/alarms/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_alarms.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "Notification",
+      "table": "alarm_notifications",
+      "description": "The outbox: one alarm for one person through one channel at one level, queued by the alarm loop.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "recipient_id",
+          "field": "recipient",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "channel",
+          "field": "channel",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "push"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "level",
+          "field": "level",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "rule_id",
+          "field": "rule",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "alarm_recipient_rules",
+            "model": "alarms.RecipientRule",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "queued_at",
+          "field": "queued_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_alarm_notifications_once",
+          "kind": "unique",
+          "fields": [
+            "alarm",
+            "recipient",
+            "channel",
+            "level"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_notifications_channel",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_notifications_level",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_alarms.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "RecipientRule",
+      "table": "alarm_recipient_rules",
+      "description": "Who is notified of which alarms: on a site (or every site) and a production department (or every one), of at least a severity, at a level (0 is notified when the alarm opens; level 1 when nobody acknowledged level 0 in the platform owner's escalation time, and so on), one role or one person, through a channel, and only while on shift when ticked (the HR roster: a person without an employee record is never on shift).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "RecipientRuleForm › Which alarms"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "production_department_id",
+          "field": "production_department",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "production_departments",
+            "model": "farm.ProductionDepartment",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [
+            "RecipientRuleForm › Which alarms"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "min_severity",
+          "field": "min_severity",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "warning",
+            "critical"
+          ],
+          "link": null,
+          "on_form": [
+            "RecipientRuleForm › Which alarms"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "level",
+          "field": "level",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "RecipientRuleForm › Which alarms"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "role_id",
+          "field": "role",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_group",
+            "model": "auth.Group",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "RecipientRuleForm › Who"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "RecipientRuleForm › Who"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "on_shift_only",
+          "field": "on_shift_only",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "RecipientRuleForm › Who"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "channel",
+          "field": "channel",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "push"
+          ],
+          "link": null,
+          "on_form": [
+            "RecipientRuleForm › Who"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "is_active",
+          "field": "is_active",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "RecipientRuleForm › Who"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_recipient_rules_who",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_recipient_rules_level",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_recipient_rules_severity",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_recipient_rules_channel",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm recipient rules tab",
+              "url_names": [
+                "alarms:recipientrule_create"
+              ],
+              "routes": [
+                "/alarms/recipients/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm recipient rules tab",
+              "url_names": [
+                "alarms:recipientrule_edit"
+              ],
+              "routes": [
+                "/alarms/recipients/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm recipient rules tab",
+              "url_names": [
+                "alarms:recipientrule_delete"
+              ],
+              "routes": [
+                "/alarms/recipients/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "alarm recipient rules tab",
+              "url_names": [
+                "alarms:recipientrule_list"
+              ],
+              "routes": [
+                "/alarms/recipients/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "RecipientRuleForm",
+          "module": "alarms.forms",
+          "fields": {
+            "site": "Which alarms",
+            "production_department": "Which alarms",
+            "min_severity": "Which alarms",
+            "level": "Which alarms",
+            "role": "Who",
+            "user": "Who",
+            "on_shift_only": "Who",
+            "channel": "Who",
+            "is_active": "Who",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "alarms/tests/__init__.py",
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_pages.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "Alarm",
+      "table": "alarms",
+      "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "source",
+          "field": "source",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "sensor_rule",
+            "water_limit"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "sensor_event_id",
+          "field": "sensor_event",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sensors_alarm_event",
+            "model": "sensors.AlarmEvent",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "point_id",
+          "field": "point",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "water_sampling_points",
+            "model": "farm.SamplingPoint",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "parameter",
+          "field": "parameter",
+          "type": "varchar(30)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "severity",
+          "field": "severity",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "warning",
+            "critical"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "site_id",
+          "field": "site",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sites",
+            "model": "farm.Site",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "production_department_id",
+          "field": "production_department",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "production_departments",
+            "model": "farm.ProductionDepartment",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "opened_at",
+          "field": "opened_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        {
+          "name": "summary",
+          "field": "summary",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarms_source",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarms_severity",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarms_shape",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by manage.py run_alarms (alarms/engine.py)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_list",
+              "url_names": [
+                "alarms:alarm_list"
+              ],
+              "routes": [
+                "/alarms/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "sensors/tests/test_alarms.py",
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_pages.py"
+      ]
+    },
+    {
       "app": "core",
       "model": "AuditLog",
       "table": "audit_log",
@@ -257,7 +1596,9 @@
         "sensors/tests/test_bench.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_operations.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_pages.py"
       ]
     },
     {
@@ -526,7 +1867,9 @@
       },
       "tests": [
         "core/tests_platform.py",
-        "farm/tests/helpers.py"
+        "core/tests_workspaces.py",
+        "farm/tests/helpers.py",
+        "alarms/tests/test_alarms.py"
       ]
     },
     {
@@ -10531,6 +11874,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_workspaces.py",
         "farm/tests/test_opening_balance.py"
       ]
     },
@@ -10948,7 +12292,8 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
-        "sensors/tests/test_bindings.py"
+        "sensors/tests/test_bindings.py",
+        "alarms/tests/__init__.py"
       ]
     },
     {
@@ -12626,7 +13971,9 @@
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_bindings.py",
-        "sensors/tests/test_read.py"
+        "sensors/tests/test_read.py",
+        "alarms/tests/__init__.py",
+        "alarms/tests/test_migration.py"
       ]
     },
     {
@@ -16071,7 +17418,8 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_read.py",
-        "sensors/tests/test_replay.py"
+        "sensors/tests/test_replay.py",
+        "alarms/tests/__init__.py"
       ]
     },
     {
@@ -18204,7 +19552,8 @@
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_water.py",
-        "monitoring/tests/__init__.py"
+        "monitoring/tests/__init__.py",
+        "alarms/tests/__init__.py"
       ]
     },
     {
@@ -31561,7 +32910,7 @@
       "app": "sensors",
       "model": "AlarmEvent",
       "table": "sensors_alarm_event",
-      "description": "A time a rule held for a channel: when it opened and closed, the furthest value it reached, and who acknowledged it.",
+      "description": "A time a rule held for a channel: when it opened and closed and the furthest value it reached.",
       "columns": [
         {
           "name": "id",
@@ -31632,32 +32981,6 @@
           "on_form": [],
           "how": "computed",
           "why": "written by manage.py check_sensors from the channels’ state"
-        },
-        {
-          "name": "acknowledged_by_id",
-          "field": "acknowledged_by",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_user",
-            "model": "auth.User",
-            "on_delete": "SET_NULL"
-          },
-          "on_form": [],
-          "how": "system",
-          "why": "the person who acknowledged it"
-        },
-        {
-          "name": "acknowledged_at",
-          "field": "acknowledged_at",
-          "type": "timestamp with time zone",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "when it was acknowledged"
         }
       ],
       "constraints": [
@@ -31681,28 +33004,17 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py check_sensors when a rule holds"
+          "why": "written by the sensors' check (check_sensors, run_alarms) when a rule holds"
         },
         "edit": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "sensors.views.alarm_event_acknowledge",
-              "url_names": [
-                "sensors:alarm_event_acknowledge"
-              ],
-              "routes": [
-                "/sensors/alarm-events/<int:pk>/acknowledge/"
-              ]
-            }
-          ],
-          "why": ""
+          "status": "none",
+          "paths": [],
+          "why": "never edited by a person: Acknowledge writes the alarms' acknowledgement (alarms.Acknowledgement)"
         },
         "delete": {
           "status": "none",
           "paths": [],
-          "why": "history of the alarms; deleted with its rule only"
+          "why": "history of the alarms: its alarm (alarms.Alarm) keeps it, so it is never deleted"
         },
         "read": {
           "status": "paths",
@@ -31746,7 +33058,9 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "sensors/tests/test_alarms.py"
+        "sensors/tests/test_alarms.py",
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_pages.py"
       ]
     },
     {
@@ -32139,7 +33453,10 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "sensors/tests/test_alarms.py"
+        "sensors/tests/test_alarms.py",
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_migration.py",
+        "alarms/tests/test_pages.py"
       ]
     },
     {

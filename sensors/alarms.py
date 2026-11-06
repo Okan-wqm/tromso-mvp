@@ -1,6 +1,6 @@
-"""Checking the alarm rules (manage.py check_sensors): from the channels' state and their clean readings only, never a
-page. Shown, not sent (owner question 1): an event is a row the Sensors overview and the Alarm events page show; nobody is
-notified until a delivery path exists.
+"""Checking the alarm rules (manage.py check_sensors, and every pass of manage.py run_alarms): from the channels' state and
+their clean readings only, never a page. An event is a row the Sensors overview and the Alarm events page show; the alarms
+app makes each one an alarm and notifies its recipients (Company › Alarms; nothing is sent until a transport is connected).
 
 Per active rule and each channel it covers (its channel, or every active channel of its quantity on an active device):
 - no data: no fresh value for `for_s` seconds past the channel's freshness;

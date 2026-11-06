@@ -62,6 +62,9 @@ INSTALLED_APPS = [
     # Sensors: MQTT connections, devices, channels and their readings (a TimescaleDB hypertable written by the ingest
     # service, sensors-ingest/), in a panel of their own; their water values reach the water read (farm/water/sources.py).
     'sensors',
+    # The alarms: what the water limits and the sensor rules raise, who is notified (the outbox, push first), escalation and
+    # acknowledgements, all append-only; nothing is sent until a transport is connected (ALARM_TRANSPORTS).
+    'alarms',
 ]
 
 MIDDLEWARE = [
@@ -247,3 +250,7 @@ TASK_BACKFILL_DAYS = 7
 # Where manage.py sensor_broker_sync writes the MQTT broker's passwd and acl files; the broker container mounts it at
 # /mosquitto/auth and reloads them when they change (sensors-ingest/mosquitto).
 SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR / '.sensors' / 'broker-auth'))
+
+# The alarms' transports, {channel: dotted path of an alarms.transports.Transport}. None is connected: the mobile app that
+# receives the push comes later, so every notification waits in the outbox and the pages say that nothing is sent.
+ALARM_TRANSPORTS = {}

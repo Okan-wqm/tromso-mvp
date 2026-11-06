@@ -54,7 +54,7 @@ class PeopleInTheBoxesTests(OverviewTestCase):
         self.assertNotContains(page, 'Accountant')
 
     def test_the_managers_title_is_their_placement_and_hidden_from_a_reader_of_departments_only(self):
-        place(employee('E-30', 'Boss', 'Ola', user=self.lead), self.dept_a, title='Hatchery manager')
+        place(employee('E-30', '', '', user=self.lead), self.dept_a, title='Hatchery manager')
         self.assertEqual(box(read.org_tree(self.hr, read.PRODUCTION), 'Hatchery A').manager_title, 'Hatchery manager')
         self.assertEqual(box(read.org_tree(self.hr, read.PRODUCTION), 'Nursery B').manager_title, '')
         reader = user('office', 'view_officedepartment', 'all_employee', group='Office reader role')

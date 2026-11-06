@@ -226,10 +226,8 @@ class BiomassTests(ReportTestCase):
                                 measured_weight_kg=Decimal(490), facility=self.facility, everything=True)
         Batch.all_objects.update(year_class=2026)
         report = self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea)
-        self.assertIn('Say in what condition the harvested fish are weighed in this report: round or gutted weight (the '
-                      'Report tab; slaktetilstand).', compute.compute(report).problems)
-        Report.objects.filter(pk=report.pk).update(harvest_condition='round')
-        report.refresh_from_db()
+        # The farm holds the round kilos weighed at harvest and nothing else: the condition is theirs, never asked
+        # (F-086: a person's "gutted" put round kilos under a gutted label in a filing).
         result = compute.compute(report)
         self.assertEqual(result.problems, [])
         row, = result.content['units'].values()

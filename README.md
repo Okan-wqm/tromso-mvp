@@ -629,10 +629,23 @@ section (`monitoring.read.sections_for`, the one place that spells a permission)
 
 **The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
 critical); warning (a warning reading, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
-temperature or oxygen is missing or older than its 24 hours, or with no middle point: the water's own status ranks OK above
-stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is printed; not worked out when the water
-is hidden); note (a withdrawal in force, weigh soon, a ration that cannot be worked out with its reason, an open health event);
-ok; empty. Word, shape and reasons, never colour alone.
+temperature or oxygen is missing or older than its 24 hours, or with no middle point, or whose live sensors could not be read:
+the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is
+printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
+its fish, "pH (NBS scale): no limit for these fish": what it means for the fish is not known, so it is never OK; the oxygen in
+mg/L and in % is one quantity, a row on either judges it); note (a withdrawal in force, weigh soon, a ration that cannot be
+worked out with its reason, an open health event); ok; empty. Word, shape and reasons, never colour alone; the words are
+`read.STATES`, the one list the card, the strip, the announcer and the designer read.
+
+**Danger is never shown as OK** (audit F-090, F-244, F-088, F-025, F-134). A value keeps what its limit said when it grows old
+(`Reading.judged` beside `status`, farm/water/read.py): an old critical nitrite keeps the card critical ("Nitrite: Critical, no
+recent data, 8 days old") and marks the article `data-stale`, so the announcer says it ("T-01 is now Critical, no recent data");
+a card that falls to no recent data from any state is said too, and the grid's own notices (not updated, signed out, updated
+again) are said in the assertive region. Reference data › Water limits lists **Fish with no limit**: per species and water type
+kept today, the parameters no row judges (`water.read.missing_limits`). The value-against-limits bar draws each stretch as
+`evaluate.judge` says of it, so limits with upper bounds only are ok below them. A source that fails is logged with its name and
+trace (at most once a minute per source): a required one gives the 503 (the screen keeps its last picture and says it is not
+updated), an optional one says "Could not be read: Tasks" on the frame, where no template can hide it.
 
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
 fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
@@ -644,7 +657,8 @@ without a request, so the shell's context (the menu, the unread count) is never 
 
 **The wall.** `?wall=1` puts `data-wall` on `<html>` (no rail, no top bar, no width limit, larger figures), and the page and its
 polls keep the session alive once a day (the default session is two weeks and a wall must not sign itself out); the grid prints a
-large notice from `data-poll-state` when the server cannot be reached or the person is signed out.
+large notice from `data-poll-state` when the server cannot be reached or cannot read the cards, or the person is signed out,
+and the announcer says it aloud (and says when the grid is updated again).
 
 **Boards** (Setup › Facility structure › Monitoring boards, `/monitoring-boards/`). A board is a
 named, shared wall screen: a name (unique among the live boards in any case), a description, the template its cards are drawn
@@ -1096,7 +1110,9 @@ published values):
   sample; the salinity is the sample's, else its point's latest within 30 days before it, else its owner's middle
   point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
-  barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none). From
+  barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
+  -500 .. 5000 m, held by the form, the model and the database `chk_sites_altitude_range`, F-089, and the calculator's
+  field takes the same range). From
   mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
   kept and flagged.
 
@@ -3041,7 +3057,8 @@ is not in the access matrix, so no role can be given it.
   sorted and filtered as the number it holds. A link the database does not check (`db_constraint=False`, like `audit_log.user_id`) says so.
 
 Tables are not listed one by one: they come from the models of the apps in `config/database.py`
-(`farm`, `inventory`, `knowledge`, `messaging`, `reports`, `tasks`, `core`, `auth`), so a tab that is ported later appears with no new code, in the section its
+(`farm`, `knowledge`, `inventory`, `messaging`, `reports`, `tasks`, `hr`, `experiments`, `monitoring`, `sensors`, `core`, `auth`; the
+sensor readings, billions of rows, stay out), so a tab that is ported later appears with no new code, in the section its
 app belongs to. The tables of other apps (sessions, the Django admin's log) are not shown at all.
 Everything the query string names is checked against the table's real columns and the rows come
 through the ORM.
@@ -3406,6 +3423,7 @@ real mail.
 | `/feeds/` | Reference data › Feeds; `<id>/suitability/` saves the species and fish weights a feed suits |
 | `/suppliers/` | Purchasing › Suppliers; `<id>/contacts/` saves a supplier's contact persons |
 | `/operations/units/` | Operations › Production units; `?unit=<id>` opens a unit's drawer |
+| `/monitoring-boards/` | Setup › Facility structure › Monitoring boards: the named wall screens, each with its Units tab |
 | `/card-templates/`, `/card-templates/<id>/copy/` (POST), `/card-templates/preview/` (POST JSON) | Setup › Reference data › Card templates: the designer, Copy, the designer's preview |
 | `/card-template-rules/` | Setup › Reference data › Card template rules |
 | `/operations/monitoring/` | Operations › Monitoring: a live card per unit, drawn with its card template (`?mode=simple|detailed` picks a built-in for a page without a board); `?wall=1`, `?site=`, `?department=`, `?system=`, `?kind=`, `?occupancy=stocked\|empty\|all`, `?mode=detailed`, `?flip=<id,id>`, `?units=<id,id>`, `?q=` |
@@ -3422,7 +3440,7 @@ real mail.
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/sampling-points/` | Setup › Facility structure › Sampling points: the points of the units, loops and equipment; `?unit=<id>`, `?system=<id>` or `?equipment=<id>` one owner's, filters by site, owner and kind |
-| `/operations/water/` | Operations › Water chemistry: the latest water per point; `?view=history` the samples, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner's history (every point of it), `?point=<id>` one point's |
+| `/operations/water/` | Operations › Water chemistry: the latest water per point; `?view=history` the samples, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner's history (every point of it), `?point=<id>` one point's; `from`/`to` choose the days (a day that is no day is the default 30 days; a span longer than 366 days starts later and says so; the samples are paged in the database and only the shown page is judged, F-019, F-176) |
 | `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
 | `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
 | `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |
@@ -3510,6 +3528,11 @@ real mail.
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |
+| `hr/` | Human resources (Company › HR, its own app): people, departments, placements, shifts, leave and attendance (`models/`), the rules and the scope (`rules.py`, `scope.py`, `roles.py`), the write path (`services.py`), the reads (`read.py`), what the database cannot hold (`checks.py`, `manage.py check_hr`), the tabs (`resources/`, `forms/`), `templates/hr/`, tests (README, Human resources) |
+| `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the card templates' catalogue, validator, resolution and drawing (`cards/`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, tests (README, Monitoring) |
+| `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
+| `sensors-ingest/` | The ingest service (Rust): reads the broker's sensor messages and writes the readings (`CONTRACT-REQUESTS.md`, `BENCH.md`) |
+| `core/checks.py`, `core/ranges.py`, `core/text.py` | The system checks run at start (the built catalogs and assets); periods as PostgreSQL compares them, for exclusion constraints; lower case in the person's language |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/datamap.py`, `<app>/screens.py`, `core/test_datamap.py`, `docs/data-map.md`, `docs/data-map.json` | The data map: every table's screens, read from the code and the declarations; `manage.py data_map [--check]` |

@@ -699,6 +699,14 @@ msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s som mister koblingen «%(link)s»"
 
 #, python-format
+msgid "%(label)s: %(status)s, no recent data, %(age)s old"
+msgstr "%(label)s: %(status)s, ingen ferske data, %(age)s gammel"
+
+#, python-format
+msgid "%(label)s: no limit for these fish"
+msgstr "%(label)s: ingen grense for denne fisken"
+
+#, python-format
 msgid "%(label)s: no recent data"
 msgstr "%(label)s: ingen ferske data"
 
@@ -3471,6 +3479,9 @@ msgstr "Mellom %(low)s og %(high)s for denne parameteren."
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "Mellom %(low)s og %(high)s: kontroller verdien."
 
+msgid "Between -500 and 5000 m: the shore of the Dead Sea to the highest farms."
+msgstr "Mellom -500 og 5000 m: fra bredden av Dødehavet til de høyeste anleggene."
+
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "Mellom 10 og 600. Tomt bruker systemets 15 sekunder."
 
@@ -5868,6 +5879,9 @@ msgstr ""
 msgid "Fish weighed"
 msgstr "Fisk veid"
 
+msgid "Fish with no limit"
+msgstr "Fisk uten grense"
+
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; bekreft skjemaet med Fiskeridirektoratet"
 
@@ -7952,9 +7966,6 @@ msgstr "Ingen kanaler ennå: legg dem til på Kanaler-siden."
 msgid "No checklist."
 msgstr "Ingen sjekkliste."
 
-msgid "No connection: this may be out of date"
-msgstr "Ingen forbindelse: dette kan være utdatert"
-
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad."
 
@@ -8563,6 +8574,12 @@ msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s til omtren
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
 msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s, slutten ukjent."
+
+msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
+msgstr "Ikke oppdatert: serveren kan ikke nås eller kan ikke svare. Dette kan være utdatert."
+
+msgid "Not updated: the server cannot be reached or cannot read the cards. This may be out of date."
+msgstr "Ikke oppdatert: serveren kan ikke nås eller kan ikke lese kortene. Dette kan være utdatert."
 
 msgid "Not verified"
 msgstr "Ikke bekreftet"
@@ -12603,6 +12620,9 @@ msgstr ""
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reseptens nummer, for et reseptpliktig legemiddel."
 
+msgid "The preview could not be drawn just now. The layout is kept; the next change asks again."
+msgstr "Forhåndsvisningen kunne ikke tegnes nå. Oppsettet beholdes; neste endring spør igjen."
+
 msgid "The preview shows only what you may read yourself."
 msgstr "Forhåndsvisningen viser bare det du selv har lov til å lese."
 
@@ -13266,6 +13286,13 @@ msgstr ""
 msgid "These days are all weekends or holidays: nothing would be charged."
 msgstr "Disse dagene er alle helger eller helligdager: ingenting ville blitt belastet."
 
+msgid ""
+"These fish are kept today, and no limit judges these values for them: their monitoring cards say "
+"“No limit” whatever the value is. Add the limits your vet or guideline gives."
+msgstr ""
+"Denne fisken holdes i dag, og ingen grense vurderer disse verdiene for den: overvåkingskortene "
+"sier «Ingen grense» uansett verdi. Legg inn grensene veterinæren eller veilederen din gir."
+
 #, python-format
 msgid ""
 "These fish of %(batch)s weigh as much as the book holds for %(unit)s on %(date)s, or more: weigh "
@@ -13896,6 +13923,9 @@ msgstr "Kommende"
 
 msgid "Upcoming reports"
 msgstr "Kommende rapporter"
+
+msgid "Updated again."
+msgstr "Oppdatert igjen."
 
 msgid "Updated at"
 msgstr "Oppdatert"
@@ -15039,6 +15069,9 @@ msgstr "ulagrede meldinger"
 msgid "deleted"
 msgstr "slettet"
 
+msgid "deleted species"
+msgstr "slettet art"
+
 msgid "delivery record"
 msgstr "leveringsregistrering"
 
@@ -15774,6 +15807,9 @@ msgstr "ingen produksjonsfisk på %(site)s siden %(date)s"
 
 msgid "no production form"
 msgstr "ingen produksjonsform"
+
+msgid "no recent data"
+msgstr "ingen ferske data"
 
 msgid "no reports-from date"
 msgstr "ingen rapporter-fra-dato"

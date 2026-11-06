@@ -702,6 +702,14 @@ msgid "%(label)s that lose their %(link)s"
 msgstr "%(label)s: “%(link)s” bağlantısı kalkar"
 
 #, python-format
+msgid "%(label)s: %(status)s, no recent data, %(age)s old"
+msgstr "%(label)s: %(status)s, güncel veri yok, %(age)s önce"
+
+#, python-format
+msgid "%(label)s: no limit for these fish"
+msgstr "%(label)s: bu balıklar için sınır yok"
+
+#, python-format
 msgid "%(label)s: no recent data"
 msgstr "%(label)s: güncel veri yok"
 
@@ -3468,6 +3476,9 @@ msgstr "Bu parametre için %(low)s ile %(high)s arasında."
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "%(low)s ile %(high)s arasında: değeri kontrol edin."
 
+msgid "Between -500 and 5000 m: the shore of the Dead Sea to the highest farms."
+msgstr "-500 ile 5000 m arasında: Lut Gölü kıyısından en yüksek çiftliklere kadar."
+
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "10 ile 600 arasında. Boş bırakılırsa sistemin 15 saniyesi kullanılır."
 
@@ -5874,6 +5885,9 @@ msgstr ""
 msgid "Fish weighed"
 msgstr "Tartılan balık"
 
+msgid "Fish with no limit"
+msgstr "Sınırı olmayan balıklar"
+
 msgid "Fiskeridirektoratet; confirm the form with Fiskeridirektoratet"
 msgstr "Fiskeridirektoratet; formu Fiskeridirektoratet ile teyit edin"
 
@@ -7964,9 +7978,6 @@ msgstr "Henüz kanal yok: Kanallar sayfasından ekleyin."
 msgid "No checklist."
 msgstr "Kontrol listesi yok."
 
-msgid "No connection: this may be out of date"
-msgstr "Bağlantı yok: bu bilgi eski olabilir"
-
 msgid "No contacts yet. Use “Add contact” to add a row."
 msgstr "Henüz kişi yok. Satır eklemek için “Kişi ekle” düğmesini kullanın."
 
@@ -8571,6 +8582,12 @@ msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi yaklaşık
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s, its end unknown."
 msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi, bitişi bilinmiyor."
+
+msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
+msgstr "Güncellenmedi: sunucuya ulaşılamıyor ya da yanıt veremiyor. Bu bilgi eski olabilir."
+
+msgid "Not updated: the server cannot be reached or cannot read the cards. This may be out of date."
+msgstr "Güncellenmedi: sunucuya ulaşılamıyor ya da kartlar okunamıyor. Bu bilgi eski olabilir."
 
 msgid "Not verified"
 msgstr "Doğrulanmadı"
@@ -12612,6 +12629,9 @@ msgstr "Havuzda %(slots)d tekrar için %(items)d öğe var: tekrar sayısı kada
 msgid "The prescription’s number, for a prescription-only medicine."
 msgstr "Reçeteyle verilen bir ilaç için reçetenin numarası."
 
+msgid "The preview could not be drawn just now. The layout is kept; the next change asks again."
+msgstr "Önizleme şu anda çizilemedi. Yerleşim korunuyor; bir sonraki değişiklikte yeniden istenir."
+
 msgid "The preview shows only what you may read yourself."
 msgstr "Önizleme yalnızca sizin okuyabildiklerinizi gösterir."
 
@@ -13282,6 +13302,14 @@ msgstr ""
 msgid "These days are all weekends or holidays: nothing would be charged."
 msgstr "Bu günlerin hepsi hafta sonu ya da tatil: hiçbir şey sayılmaz."
 
+msgid ""
+"These fish are kept today, and no limit judges these values for them: their monitoring cards say "
+"“No limit” whatever the value is. Add the limits your vet or guideline gives."
+msgstr ""
+"Bu balıklar bugün tutuluyor ve bu değerleri onlar için hiçbir sınır değerlendirmiyor: izleme "
+"kartları, değer ne olursa olsun “Sınır yok” der. Veterinerinizin ya da kılavuzunuzun verdiği "
+"sınırları ekleyin."
+
 #, python-format
 msgid ""
 "These fish of %(batch)s weigh as much as the book holds for %(unit)s on %(date)s, or more: weigh "
@@ -13910,6 +13938,9 @@ msgstr "Yaklaşan"
 
 msgid "Upcoming reports"
 msgstr "Yaklaşan raporlar"
+
+msgid "Updated again."
+msgstr "Yeniden güncellendi."
 
 msgid "Updated at"
 msgstr "Güncellenme zamanı"
@@ -15049,6 +15080,9 @@ msgstr "kaydedilemeyen mesajlar"
 msgid "deleted"
 msgstr "silindi"
 
+msgid "deleted species"
+msgstr "silinmiş tür"
+
 msgid "delivery record"
 msgstr "teslimat kaydı"
 
@@ -15786,6 +15820,9 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda üretim balığı yok"
 
 msgid "no production form"
 msgstr "üretim biçimi yok"
+
+msgid "no recent data"
+msgstr "güncel veri yok"
 
 msgid "no reports-from date"
 msgstr "rapor başlangıç tarihi yok"

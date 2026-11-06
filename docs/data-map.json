@@ -10451,6 +10451,7 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_systems.py",
@@ -11973,6 +11974,12 @@
           "conditional": false
         },
         {
+          "name": "chk_sites_altitude_range",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_sites_coordinates_paired",
           "kind": "check",
           "fields": [],
@@ -12120,6 +12127,7 @@
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
@@ -35697,6 +35705,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_text.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_extraction.py",
         "experiments/tests/test_overview.py",

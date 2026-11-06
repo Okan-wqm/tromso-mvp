@@ -2908,7 +2908,11 @@ printed page of it), one per panel (`hr.read.org_tree(user, realm)`): Company's 
 department; a link to Production's chart for who may open it). **Where the Production box hangs:** when the company has exactly one top
 office department (one without a parent, e.g. Management), the Production box is its last child and its people count in that department's
 "in all"; with several top departments, or none, it stands beside them as a top box of its own. And Production's sites with their production departments; each box with its manager
-and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
+and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). For a
+viewer who may read people (`hr.view_employee`) a department's box also carries its people (`hr.read.chart_people`: placed in it today,
+among those the viewer may reach, so the cards are the count, sorted by last name, each with their placement title) and the manager's
+title (their placement title today, in that department first); a reader of departments only sees the counts and the manager's name, no
+person and no title. A
 production department created, renamed or deleted under Production is in the chart at once, from the same rows.
 
 **Rules the review of the branch added.** A record of a person belongs to the manager of the department the person was placed in

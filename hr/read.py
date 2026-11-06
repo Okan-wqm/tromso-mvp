@@ -351,19 +351,40 @@ class BoardRow:
         return self.shift is None and self.span is None
 
 
+@dataclass(frozen=True)
+class Tile:
+    key: str            # upcoming, here, not_in, absent, on_leave, done
+    count: int
+
+
+# The tiles of the people planned today, each such person in exactly one, so they add up to Planned today; Here now is the
+# present and the late (the late are said in it).
+TILES = (('upcoming', (rules.UPCOMING,)), ('here', (rules.PRESENT, rules.LATE)), ('not_in', (rules.NOT_IN,)),
+         ('absent', (rules.ABSENT,)), ('on_leave', (rules.ON_LEAVE,)), ('done', (rules.DONE,)))
+
+
 @dataclass
 class Board:
     rows: list
-    counts: dict
+    counts: dict           # {state: people planned today in it}
     planned: int
     moment: object
+    unplanned: int = 0     # people here (or done) today without a plan: listed, counted apart
 
     def count(self, state):
         return self.counts.get(state, 0)
 
     @property
+    def tiles(self):
+        return [Tile(key, sum(self.count(state) for state in states)) for key, states in TILES]
+
+    @property
     def here(self):
         return self.count(rules.PRESENT) + self.count(rules.LATE)
+
+    @property
+    def late(self):
+        return self.count(rules.LATE)
 
 
 def board(user, moment=None, realm=None):
@@ -393,7 +414,7 @@ def board(user, moment=None, realm=None):
     away = leave.approved_days(ids, low, high)
     rows = []
     counts = defaultdict(int)
-    planned = 0
+    planned = unplanned = 0
     for employee in people:
         placed = postings.get(employee.pk, [])
         head = next((p for p in placed if p.valid_from <= high and (p.valid_until is None or p.valid_until >= low)), None)
@@ -413,12 +434,15 @@ def board(user, moment=None, realm=None):
         shift, span, day = chosen if chosen is not None else (None, None, today)
         standing = rules.status(span, mine, on_leave, moment, shift.grace_minutes if shift else 0,
                                 settings.absent_after_minutes, settings.punch_window_minutes)
-        if standing is None:
-            continue
+        if standing is None or (span is None and standing.state == rules.ON_LEAVE):
+            continue                       # nothing planned and not there: on leave or not, nobody is expected
         rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone))
-        counts[standing.state] += 1
-        planned += 1 if span is not None else 0
-    return Board(rows, dict(counts), planned, moment)
+        if span is None:
+            unplanned += 1
+        else:
+            counts[standing.state] += 1
+            planned += 1
+    return Board(rows, dict(counts), planned, moment, unplanned)
 
 
 # ---- the team overview and the organisation chart -------------------------------------------------------------------

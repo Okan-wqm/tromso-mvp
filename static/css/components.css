@@ -1077,6 +1077,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .tile:hover { border-color: var(--stripe); }
 .tile-count { font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .tile-label { color: var(--muted); font-size: .9375rem; }
+.tile-sub { color: var(--muted); font-size: .8125rem; }
 
 .overview-block { margin: 0 0 1.5rem; }
 .overview-block h2 { margin: 0 0 .5rem; font-size: 1.125rem; }

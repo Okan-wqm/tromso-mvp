@@ -3016,6 +3016,16 @@ only one who manages roles and users; everyone else gets exactly what their role
   expired). People are deactivated, not deleted, and nobody can deactivate their own account.
   Platform admin status is not edited here (only with `createsuperuser`).
 
+## Security in the pages
+
+- **Text is escaped everywhere.** No template prints a value with `|safe` or `autoescape off` (the one exception is
+  the password reset e-mail, which is plain text). A form's help text is text too: several forms write a name into it
+  (a task whose place was deleted, equipment whose systems were deleted), so `templates/registration/_field.html`
+  escapes it, and Django's own layouts (`{{ form }}`, `as_p`, `as_table`, `as_ul`, `as_field_group`) draw their fields
+  with the same template (`templates/django/forms/`). Markup reaches a page only from the few places that build it with
+  every piece of text escaped (a reference, a found passage, a sensor chart, the import map);
+  `core/tests_escaping.py` names them and fails when a new one appears.
+
 ## Database viewer
 
 Administration › Database (`/database/`) shows what the application really stores, table by table,

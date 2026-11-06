@@ -74,7 +74,7 @@ class AttendanceRecordForm(TabbedForm):
         ended = self.kept_or_made('clock_out', naive_out, zone) if naive_out is not None else None
         if not scope.can_reach(self.user, employee, started.astimezone(zone).date()):
             raise ValidationError(_('You do not see this person on this day.'))
-        if services.self_plan(self.user, employee):
+        if services.own_record(self.user, employee):
             raise ValidationError(_('You do not enter or correct your own attendance.'))
         if ended is not None and ended <= started:
             self.add_error('clock_out', _('The person cannot clock out before they clocked in.'))

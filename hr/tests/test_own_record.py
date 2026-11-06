@@ -106,5 +106,7 @@ class OwnRecordAndTargetTests(PeopleTestCase):
     def test_the_edit_link_is_not_offered_for_ones_own_row(self):
         self.client.force_login(self.editor)
         page = self.client.get(reverse('hr:production_employee_list')).content.decode()
-        self.assertIn(reverse('hr:production_employee_edit', args=[self.in_a.pk]), page)
-        self.assertNotIn(reverse('hr:production_employee_edit', args=[self.own.pk]), page)
+        edit = 'href="{}"'.format
+        self.assertIn(edit(reverse('hr:production_employee_edit', args=[self.in_a.pk])), page)
+        self.assertNotIn(edit(reverse('hr:production_employee_edit', args=[self.own.pk])), page)
+        self.assertIn(edit(reverse('hr:production_employee_detail', args=[self.own.pk])), page)

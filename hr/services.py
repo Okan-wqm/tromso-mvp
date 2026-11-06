@@ -23,8 +23,9 @@ POSTING_FIELDS = ['production_department', 'office_department', 'title', 'valid_
 
 
 def _allowed(user, employee, perms=('hr.change_employee', 'hr.add_employee')):
-    """The verb (Edit, or Create for the placement a new person starts with) and the person in the user's team."""
-    if not any(user.has_perm(perm) for perm in perms) or not scope.can_reach(user, employee):
+    """The verb (Edit, or Create for the placement a new person starts with), the person in the user's team, and not the
+    user's own record unless they hold Everyone (`own_record`)."""
+    if not any(user.has_perm(perm) for perm in perms) or not scope.can_reach(user, employee)             or own_record(user, employee):
         raise PermissionDenied
 
 
@@ -51,8 +52,11 @@ def move(user, employee, department, title, from_day):
     """Places `employee` in `department` with `title` from `from_day`. The open placement ends the day before; a
     first placement just starts. The same department and title is no change; a change dated the first day of the
     current placement corrects it in place (logged). Refuses a day before the current placement began, one before the
-    person joined, and one after they left."""
+    person joined, and one after they left. The department must be one the user manages (`scope.can_manage`): a lead does
+    not hand a person to another manager or into the office."""
     _allowed(user, employee)
+    if not scope.can_manage(user, department):
+        raise PermissionDenied
     with transaction.atomic():
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
         field = units.field_of(department)
@@ -201,7 +205,7 @@ def plan_shifts(user, cells, shift):
         warnings, blocking, writes = [], [], []
         list(Employee.objects.select_for_update().filter(pk__in=list(by_person)).order_by('pk').values_list('pk', flat=True))
         for employee, changes in by_person.values():
-            if self_plan(user, employee):
+            if own_record(user, employee):
                 raise PermissionDenied
             existing = {row.day: row for row in ShiftAssignment.objects.select_for_update().filter(
                 employee=employee, day__in=list(changes))}
@@ -267,9 +271,9 @@ def _leave_values(request):
         return audit.snapshot(request, LEAVE_FIELDS, private=PRIVATE_LEAVE)
 
 
-def self_plan(user, employee):
-    """Whether `user` would be recording or planning their own row without holding Everyone: a lead does not write their own
-    attendance or plan (a leave request has the same rule, by the service and by a trigger)."""
+def own_record(user, employee):
+    """Whether `user` would be writing their own record without holding Everyone: a lead does not write their own
+    attendance, plan, placement, title or last day (a leave request has the same rule, by the service and by a trigger)."""
     return employee.user_id is not None and employee.user_id == user.pk and not user.has_perm(scope.ALL)
 
 
@@ -412,7 +416,7 @@ def enter_presence(user, employee, clock_in_at, clock_out_at, note):
     """A lead records presence for a person of their team: times already on the site's clock as instants, and a reason
     (required: the CHECK on the table says so too). Needs Create on Attendance and the person in the user's team."""
     if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(user, employee, timezone.localtime(
-            clock_in_at, zone_of(read.site_on(employee, clock_in_at.date()))).date()) or self_plan(user, employee):
+            clock_in_at, zone_of(read.site_on(employee, clock_in_at.date()))).date()) or own_record(user, employee):
         raise PermissionDenied
     note = (note or '').strip()
     if not note:

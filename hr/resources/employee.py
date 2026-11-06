@@ -42,6 +42,11 @@ class EmployeeResource(Resource):
         return objects.filter(pk__in=scope.team(request.user, realm=scope.realm_for(request)).values('pk'))
 
     @classmethod
+    def allowed(cls, request, employee, action):
+        """One's own record is edited by a holder of Everyone only (hr.services.own_record)."""
+        return not services.own_record(request.user, employee)
+
+    @classmethod
     def form(cls, request, *args, **kwargs):
         return cls.form_class(*args, editor=request.user, realm=scope.realm_for(request), **kwargs)
 
@@ -77,7 +82,8 @@ class EmployeeResource(Resource):
             'types': EmploymentType.choices, 'chosen_type': chosen_type, 'statuses': STATUSES,
             'chosen_status': chosen_status, 'departments': units.choices(kinds=[scope.realm_for(request)]),
             'chosen_department': units.token(department),
-            'today': today,
+            'today': today, 'own': next((employee.pk for employee in Employee.objects.filter(user=request.user)
+                                         if services.own_record(request.user, employee)), None),
         }
 
     @classmethod

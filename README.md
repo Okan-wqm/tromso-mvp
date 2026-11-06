@@ -2784,6 +2784,11 @@ any below it, and, for a holder of Everyone (`hr.all_employee`, a column on the 
 employee. `EmployeeResource.scoped` is that function, so the list, a person's read page, the edit and the placement given
 are all of the team, whatever the address or the query. A lead with a role that gives Read on Employees reads their
 team's read pages; the form needs Edit, and only a holder of Everyone can create someone (a new person has no team yet).
+A move is a placement in a department, so the department moved to must be one the lead manages too
+(`hr.scope.can_manage`, from the same `managed_departments` as the team): a lead does not hand a person to another
+manager or into the office, and a holder of All production moves people between production departments only. A lead does
+not write their own record either (placement, title, last day: `hr.services.own_record`, the rule of one's own attendance
+and plan); the list offers them their own read page, not the form. A holder of Everyone does both.
 A person who moved belongs to the old manager up to the move and to the new one from it (`scope.visible_days`, for the
 reads that run over several days). A manager without a role, or a role without a department, reaches nothing beyond
 themselves. The Departments page counts, per department, the people placed there today that the viewer may reach.

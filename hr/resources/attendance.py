@@ -53,7 +53,7 @@ class AttendanceRecordResource(Resource):
 
     @classmethod
     def allowed(cls, request, obj, action):
-        return not services.self_plan(request.user, obj.employee)
+        return not services.own_record(request.user, obj.employee)
 
     @classmethod
     def form(cls, request, *args, **kwargs):

@@ -193,3 +193,8 @@ class PlannedAndDoneTests(DueTestCase):
     def test_the_rule_is_one_function(self):
         operation = self.harvest(date(2026, 10, 27), self.facility)
         self.assertEqual(slaughter.plans_of([operation.pk]), {operation.pk: self.item})
+
+    def test_a_plan_whose_harvest_was_voided_is_planned_again_and_still_owed(self):
+        operation = self.harvest(date(2026, 10, 27), self.other)
+        stock.void(self.user, operation, 'Recorded on the wrong plan')
+        self.assertEqual(self.rows(), [('Fjord Slakteri', '2026-W43')])

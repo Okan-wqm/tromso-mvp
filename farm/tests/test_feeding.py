@@ -290,14 +290,23 @@ class RecordTests(FeedingTestCase):
         response = self.client.post(self.url(), self.data(amount_kg='60'), headers={'X-Modal': '1'})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].errors['high_rate_ack'], [
-            f'60 kg is 12.0 % of the 500.0 kg T-01 holds on {stock_services.shown_date(self.day(1))} in the book; '
-            'more than 10 % a day is unusual. Tick the box below to record it anyway.'])
+            f'60 kg fed on {stock_services.shown_date(self.day(1))}, this feeding included, is 12.0 % of the 500.0 kg T-01 '
+            'holds in the book; more than 10 % a day is unusual. Tick the box below to record it anyway.'])
         self.assertContains(response, 'name="high_rate_ack"', status_code=422)
         self.assertFalse(FeedingRecord.objects.exists())
         self.client.post(self.url(), self.data(amount_kg='60', high_rate_ack='on'), headers={'X-Modal': '1'})
         self.assertTrue(FeedingRecord.objects.get().high_rate_ack)
         # A tick that was not needed is not stored as an acknowledgement.
-        self.assertFalse(self.record(kilos='5', ack=True).high_rate_ack)
+        self.assertFalse(self.record(kilos='5', days_ago=2, ack=True).high_rate_ack)
+
+    def test_the_usual_rate_is_of_the_days_total_not_of_one_feeding(self):
+        """Q-F5 asks about more than 10 % a day: two feedings of 6 % each are 12 % that day (audit F-081)."""
+        self.record(kilos='30')
+        errors = self.refused(self.record, kilos='30')
+        self.assertIn('60 kg fed on', errors['high_rate_ack'][0])
+        self.assertIn('is 12.0 % of the 500.0 kg T-01 holds', errors['high_rate_ack'][0])
+        self.assertTrue(self.record(kilos='30', ack=True).high_rate_ack)
+        self.assertFalse(self.record(kilos='30', days_ago=2).high_rate_ack)          # another day
 
     def test_the_same_form_sent_twice_records_once(self):
         data = self.data()

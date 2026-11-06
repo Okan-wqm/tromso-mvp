@@ -62,6 +62,19 @@ class SetupTests(DemoCase):
         self.assertIn('secret', out.lower())
         self.assertTrue(Credential.objects.get(username=demo.USERNAME).password_hash)
 
+    def test_the_secret_file_holds_the_secret_and_one_line_feed_on_every_platform(self):
+        # Readers take the first line; a carriage return written by Windows' text mode would become part of the
+        # password and the simulator could not sign in.
+        import re
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'sim_farm'
+            out = self.setup_demo('--secret-file', str(path))
+            secret = re.search(r'secret: (\S+) \(shown once\)', out).group(1)
+            self.assertEqual(path.read_bytes(), secret.encode() + b'
+')
+
     def test_it_is_idempotent(self):
         self.setup_demo()
         counts = (Device.objects.count(), Channel.objects.count(), Binding.objects.count(), Connection.objects.count())

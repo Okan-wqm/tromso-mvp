@@ -241,5 +241,6 @@ html[data-wall] .monitor-card .metrics dd { font-size: 1.25em; font-weight: 700;
 .designer-order ol { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 0; padding-left: 1.25rem; }
 .designer-problems ul { margin: .25rem 0; padding-left: 1.25rem; }
 .designer-preview { --card-min: 26rem; max-width: calc(var(--card-min) * 1.05); }
+.designer-preview-failed { margin: 0; padding: .375rem .75rem; border: 1px dashed var(--error); border-radius: 4px; color: var(--error); font-weight: 700; }
 .designer-json textarea { width: 100%; font-family: var(--font-mono); }
 @media (forced-colors: active) { .designer-item[aria-pressed="true"] { border-color: Highlight; } }

@@ -32,6 +32,8 @@ class Command(BaseCommand):
             self.stdout.write(f'Simulator credential {demo.USERNAME}, secret: {report.secret} (shown once).')
             if options['secret_file']:
                 path = Path(options['secret_file'])
-                path.write_text(report.secret + '\n', encoding='utf-8')
+                # One line feed on every platform: Windows' text mode would write CRLF, and a reader taking the
+                # first line would keep the carriage return as part of the password.
+                path.write_text(report.secret + '\n', encoding='utf-8', newline='\n')
                 os.chmod(path, 0o600)
         self.stdout.write('Write the broker files next: manage.py sensor_broker_sync.')

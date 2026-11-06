@@ -12,7 +12,7 @@ cp /sim/settings.js /data/settings.js
 SECRET_FILE=${SIM_MQTT_PASSWORD_FILE:-/run/secrets/sim_mqtt} FARM_FILE=${SIM_FARM_PASSWORD_FILE:-/run/secrets/sim_farm} node -e '
 const fs = require("fs");
 const first = (f) => {
-  try { return fs.readFileSync(f, "utf8").split("\n")[0]; } catch (e) {
+  try { return fs.readFileSync(f, "utf8").split(/\r?\n/)[0]; } catch (e) {
     if (e.code !== "ENOENT") console.error("simulator: cannot read " + f + " (" + e.code + "); the container runs as uid " + process.getuid() + " and must be able to read it");
     return null;
   }

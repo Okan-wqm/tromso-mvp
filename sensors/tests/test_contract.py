@@ -234,8 +234,15 @@ class RoleTests(TestCase):
     def privilege(self, table, kind):
         return one('SELECT has_table_privilege(%s, %s, %s)', [ROLE, table, kind])
 
-    def test_the_role_cannot_sign_in_until_its_password_is_set(self):
-        self.assertEqual(one('SELECT rolcanlogin FROM pg_roles WHERE rolname = %s', [ROLE]), False)
+    def test_the_migration_makes_the_role_unable_to_sign_in(self):
+        # A role belongs to the whole PostgreSQL cluster, not to one database: where an ingest already runs
+        # (`manage.py sensors_ingest_role` gave it a password), the live role can sign in, and that is right. So the
+        # migration's own statement is tried on a fresh role name inside this test's transaction.
+        from importlib import import_module
+        statement = import_module('sensors.migrations.0001_config').GRANTS[0].replace(ROLE, 'sensors_ingest_probe')
+        with connection.cursor() as cursor:
+            cursor.execute(statement)
+        self.assertEqual(one('SELECT rolcanlogin FROM pg_roles WHERE rolname = %s', ['sensors_ingest_probe']), False)
 
     def test_it_reads_the_contract_and_writes_only_the_runtime_tables(self):
         for table in ('sensors_ingest_config', 'sensors_contract', 'sensors_quality_flag'):

@@ -72,8 +72,7 @@ class SetupTests(DemoCase):
             path = Path(folder) / 'sim_farm'
             out = self.setup_demo('--secret-file', str(path))
             secret = re.search(r'secret: (\S+) \(shown once\)', out).group(1)
-            self.assertEqual(path.read_bytes(), secret.encode() + b'
-')
+            self.assertEqual(path.read_bytes(), secret.encode() + b'\n')
 
     def test_it_is_idempotent(self):
         self.setup_demo()

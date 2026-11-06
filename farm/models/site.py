@@ -12,6 +12,11 @@ from ..health import lice
 from .contact import ONE_PRIMARY, Contact
 
 
+def company_zone():
+    """The company's time zone (settings.TIME_ZONE): a new site's, and the clock of a place without a site."""
+    return settings.TIME_ZONE
+
+
 class Site(CodedMixin, AuditedModel):
     """A physical facility (locality). Source table: farm.sites."""
 
@@ -94,8 +99,9 @@ class Site(CodedMixin, AuditedModel):
     # Which statutory sea-lice limits apply (Operations › Sea-lice counts); empty for a site that has none to
     # meet or has not been set, which is judged by the stricter area.
     lice_area = models.CharField(_('Sea-lice limit area'), max_length=10, blank=True, choices=LiceArea.choices)
-    # Empty means "inherit from the company"; the chain is site -> company -> UTC.
-    timezone = models.CharField(_('Timezone'), max_length=50, blank=True, choices=TIMEZONES)
+    # Every site has its zone, stored and shown (an empty one ran on the company's zone unseen, UTC on a server set so);
+    # a site made without one is given the company's (settings.TIME_ZONE), the database refuses an empty one.
+    timezone = models.CharField(_('Timezone'), max_length=50, choices=TIMEZONES, default=company_zone)
 
     area_m2 = models.DecimalField(_('Total area (m²)'), max_digits=12, decimal_places=2, null=True, blank=True)
     water_capacity_m3 = models.DecimalField(
@@ -173,6 +179,7 @@ class Site(CodedMixin, AuditedModel):
                 name='chk_sites_sea_cage_location',
                 violation_error_message=_('A sea cage site needs latitude and longitude.'),
             ),
+            models.CheckConstraint(condition=~Q(timezone=''), name='chk_sites_timezone_given'),
             models.CheckConstraint(condition=Q(lice_area='') | Q(lice_area__in=lice.AREAS),
                                    name='chk_sites_lice_area'),
         ]
@@ -183,9 +190,9 @@ class Site(CodedMixin, AuditedModel):
 
 
 def zone_of(site):
-    """The time zone a farm's day and clock are read in: the site's, else the company's (settings.TIME_ZONE).
-    Never a browser's (the source's dialogs were a day behind east of UTC)."""
-    return ZoneInfo(site.timezone if site is not None and site.timezone else settings.TIME_ZONE)
+    """The time zone a farm's day and clock are read in: the site's (every site has one), and for a place without a
+    site the company's (settings.TIME_ZONE). Never a browser's (the source's dialogs were a day behind east of UTC)."""
+    return ZoneInfo(site.timezone if site is not None else company_zone())
 
 
 class SiteContact(Contact):

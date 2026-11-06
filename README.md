@@ -60,6 +60,12 @@ delete is a soft delete. Differences from the source:
 - Editing is guarded by the `version` column: a save based on an old version is refused.
 - Deleting a site leaves its production departments without a site (see Production departments); the other dependants
   join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
+- **Every site has its time zone** (Basic info), the clock its feeding days, shifts, punches and plans are read on
+  (`farm.models.site.zone_of`). An empty zone once meant "the company's", which is `settings.TIME_ZONE` (UTC on a server
+  set so), and ran a Norwegian site's day an hour or two off unseen. Now the form asks for one, offering the company's
+  first; a site made without one (a seed, a test) is given the company's, stored; the database refuses an empty one
+  (`chk_sites_timezone_given`). Migration `farm/0027_site_timezone_required` gave every site without a zone the company's
+  as it was when it ran: check each site's zone after it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).
 - The Reports tab has what the regulatory reports need of the site (see Production › Reports): its **organisation

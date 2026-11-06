@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
 
 from ..models import Site, SiteContact
+from ..models.site import company_zone
 from .contact import contact_formset
 
 # The source form's inner tabs (Basic info / Location info / Contact info) and their fields.
@@ -48,8 +49,8 @@ class SiteForm(CodedFormMixin, TabbedForm):
         help_texts = {
             'lokalitetsnummer': _('Akvakulturregisteret locality number (5 digits). '
                                   'Norwegian regulatory reports cannot be filed without it.'),
-            'timezone': _('Feeding jobs run on the site’s local day. Leave it inherited unless the site is '
-                          'in a different timezone than the company.'),
+            'timezone': _('The site’s day and clock: feeding days, shifts, punches and plans are read in it. The '
+                          'company’s is offered first.'),
             'organisation_number': _('The permit holder’s, which owns the fish: the reports to Mattilsynet and '
                                      'Fiskeridirektoratet carry it. Nine digits.'),
             'production_form': _('Juveniles, food fish, broodstock, or research and other production: it decides the reports '
@@ -82,7 +83,11 @@ class SiteForm(CodedFormMixin, TabbedForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['timezone'].choices = [('', _('Inherit from company'))] + Site.TIMEZONES
+        zone = self.fields['timezone']
+        listed = Site.TIMEZONES if company_zone() in dict(Site.TIMEZONES) else [(company_zone(), company_zone())] + Site.TIMEZONES
+        zone.choices = sorted(listed, key=lambda choice: choice[0] != company_zone())             # the company's first
+        if not self.instance.pk:
+            zone.initial = company_zone()
         self.fields['lice_area'].choices = [('', _('Not set'))] + list(Site.LiceArea.choices)
         self.fields['production_form'].choices = [('', _('Not set'))] + list(Site.ProductionForm.choices)
 

@@ -94,15 +94,19 @@ def managed(user):
     return placed | Q(office_department__in=below) if below else placed
 
 
-def can_manage(user, department):
-    """Whether `user` may place people in `department` (a production or an office department): a holder of Everyone in
-    any, anyone else in one of `managed_departments`, the departments whose people they reach."""
+def placeable(user):
+    """A test of a department (production or office): whether `user` may place people in it. A holder of Everyone in any,
+    anyone else in one of `managed_departments`, the departments whose people they reach. Read once, asked per department
+    (the person form's chooser)."""
     if user.has_perm(ALL):
-        return True
+        return lambda department: True
     production, below = managed_departments(user)
-    if isinstance(department, OfficeDepartment):
-        return department.pk in below
-    return production.filter(pk=department.pk).exists()
+    production = set(production.values_list('pk', flat=True))
+    return lambda department: department.pk in (below if isinstance(department, OfficeDepartment) else production)
+
+
+def can_manage(user, department):
+    return placeable(user)(department)
 
 
 def by_day(user, objects, employee='employee', day='day', realm=None):

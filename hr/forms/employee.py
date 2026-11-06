@@ -79,7 +79,8 @@ class EmployeeForm(TabbedForm):
             self.fields['user'].disabled = True
             self.fields['user'].queryset = accounts.filter(pk=self.instance.user_id or 0)
         self.fields['department'].choices = [('', _('Select a department'))] + units.choices(
-            include=[self.current.department] if self.current else [], kinds=[realm] if realm and adding else None)
+            include=[self.current.department] if self.current else [], kinds=[realm] if realm and adding else None,
+            allowed=None if editor is None else scope.placeable(editor))
         self.fields['department'].required = adding
         self.fields['from_day'].help_text = _('The day the new placement starts; the old one ends the day before. '
                                               'For a new person: their first day.')

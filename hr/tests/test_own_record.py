@@ -58,7 +58,8 @@ class OwnRecordAndTargetTests(PeopleTestCase):
         for department in (self.dept_b, self.finance):
             with self.subTest(department=str(department)):
                 response = self.post_edit(self.in_a, department=token(department), from_day='2026-03-02')
-                self.assertEqual(response.status_code, 403)
+                self.assertEqual(response.status_code, 200)              # not offered: the chooser refuses it
+                self.assertIn('department', response.context['form'].errors)
                 self.assertEqual(self.snapshot(), before)
 
     def test_a_lead_still_changes_a_title_inside_their_own_department(self):

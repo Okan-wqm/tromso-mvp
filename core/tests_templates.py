@@ -1,10 +1,12 @@
 """Template rules every page relies on."""
 import re
+from datetime import datetime
 from html.parser import HTMLParser
 from pathlib import Path
 
 from django.conf import settings
 from django.test import SimpleTestCase
+from django.utils import formats, translation
 
 # Django's {# #} comment is one line only: a {# that does not close on its own line is printed on the
 # page as text (it once showed in the unit drawer). Longer comments use {% comment %} … {% endcomment %}.
@@ -111,3 +113,37 @@ class StyleSheetTests(SimpleTestCase):
                     if re.search(r'\d*\.?\d+fr\b', without_minmax(value)):
                         found.append(f'{path.name}:{number} {value.strip()}')
         self.assertEqual(found, [])
+
+
+# A date or a time on the page is said in the language's own formats (config/formats/<language>/formats.py, else Django's):
+# the date, the date and time, the time, a day and month, a weekday's name. A spelled format ("m/d/Y", "H:i") or a short one
+# (English's SHORT_DATE_FORMAT is 10/26/2026, its TIME_FORMAT 9:04 p.m.) is a second style; inside a tag, an attribute a
+# machine reads (datetime=, a date input's value, an address) is ISO.
+SAID = {'DATE_FORMAT', 'DATETIME_FORMAT', 'TIME_FORMAT', 'MONTH_DAY_FORMAT', 'D', 'l'}
+MACHINE = {'c', 'Y-m-d', 'U'}
+DATE_FILTER = re.compile(r'\|(?:date|time):(["\'])(.*?)\1')
+
+
+class DateFormatTests(SimpleTestCase):
+    def test_a_page_says_dates_and_times_in_the_languages_formats(self):
+        found = []
+        for directory in [*settings.TEMPLATES[0]['DIRS'], *Path(settings.BASE_DIR).glob('*/templates')]:
+            for path in sorted(Path(directory).rglob('*.html')):
+                text = path.read_text(encoding='utf-8')
+                for match in DATE_FILTER.finditer(text):
+                    shape = match.group(2)
+                    in_tag = text.rfind('<', 0, match.start()) > text.rfind('>', 0, match.start())
+                    if shape in SAID or (shape in MACHINE and in_tag):
+                        continue
+                    line = text.count('\n', 0, match.start()) + 1
+                    found.append(f'{path.relative_to(settings.BASE_DIR).as_posix()}:{line} {match.group(0)}')
+        self.assertEqual(found, [])
+
+    def test_each_language_says_a_time_on_the_24_hour_clock_and_a_date_with_its_month_named(self):
+        moment = datetime(2026, 10, 26, 21, 4)
+        for language, shown in (('en', ('26 Oct 2026', '21:04', '26 Oct 2026, 21:04')),
+                                ('nb', ('26. oktober 2026', '21:04', '26. oktober 2026 21:04')),
+                                ('tr', ('26 Ekim 2026', '21:04', '26 Ekim 2026 21:04'))):
+            with self.subTest(language=language), translation.override(language):
+                self.assertEqual((formats.date_format(moment, 'DATE_FORMAT'), formats.time_format(moment, 'TIME_FORMAT'),
+                                  formats.date_format(moment, 'DATETIME_FORMAT')), shown)

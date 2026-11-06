@@ -18,7 +18,7 @@ from farm.models.site import zone_of
 
 from . import bindings, credentials
 from .forms import (AlarmRuleForm, BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm,
-                    CredentialForm, DeviceForm, PayloadFormatForm)
+                    CredentialForm, DeviceForm, PayloadFormatForm, place_of)
 from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat
 
 
@@ -181,8 +181,9 @@ class BindView(CreateView):
         initial = {name: request.GET[name] for name in ('channel', 'target', 'role') if request.GET.get(name)}
         chosen = initial.get('channel', '')
         channel = Channel.objects.select_related('device__site').filter(pk=chosen).first() if _uuid(chosen) else None
-        # Now, on the clock of the channel's site (the company's while no channel is chosen).
-        zone = zone_of(channel.device.site if channel is not None else None)
+        # Now, on the clock of the place's site, else the channel's device's (the company's while no channel is chosen).
+        zone = bindings.clock(channel.device, place_of(initial.get('target', ''))) if channel is not None \
+            else zone_of(None)
         initial['valid_from'] = timezone.localtime(timezone=zone).strftime('%Y-%m-%dT%H:%M')
         return self.page(BindForm(initial=initial))
 

@@ -84,7 +84,8 @@ DEVICE_TABS = [
 
 class DeviceForm(CodedFormMixin, TabbedForm):
     """A device: where it publishes, how, and how often. Its connection is chosen once (its channels' numbers and
-    readings stay with it)."""
+    readings stay with it). Its site is where it is: while it is placed, the site of its place, which a move
+    changes (sensors/bindings.py `move_device`), never this form."""
 
     tabs = DEVICE_TABS
     fixed_after_creation = ('connection',)
@@ -112,6 +113,10 @@ class DeviceForm(CodedFormMixin, TabbedForm):
         self.fields['credential'].queryset = Credential.objects.order_by('username')
         self.fields['payload_format'].queryset = PayloadFormat.objects.order_by('name')
         self.fields['connection'].queryset = Connection.objects.order_by('name')
+        if self.instance.pk and bindings.placements([self.instance])[self.instance.pk]:
+            self.fields['site'].disabled = True
+            self.fields['site'].help_text = _('Where the device is placed now: a move to another site changes it (Move '
+                                              'device).')
 
     def clean(self):
         cleaned = super().clean()
@@ -367,6 +372,17 @@ BIND_TABS = [('general', gettext_lazy('Binding'), ['channel', 'target', 'role', 
 TARGET_KINDS = {'point': SamplingPoint, 'system': System, 'equipment': Equipment}
 
 
+def place_of(value):
+    """The sampling point, system or piece of equipment a "kind:pk" names (a Move dialog's `target`); None for anything
+    else."""
+    kind, _sep, pk = (value or '').partition(':')
+    model = TARGET_KINDS.get(kind)
+    try:
+        return model.objects.filter(pk=pk).first() if model is not None and pk else None
+    except (ValueError, ValidationError):
+        return None
+
+
 def target_choices():
     """The places a channel can be bound to, grouped: live active sampling points (the owner's code and the point's
     name), systems and pieces of equipment. A value is "kind:pk"."""
@@ -381,7 +397,7 @@ def target_choices():
 class BindForm(TabbedForm):
     """The Move dialog: bind a channel from a moment to a sampling point, a system or a piece of equipment (one choice,
     `target`, that fills the column of its kind). The channel's open binding ends at that moment (sensors/bindings.py).
-    The moment is typed on the clock of the channel's site."""
+    The moment is typed on the clock of the place's site (sensors/bindings.py `clock`)."""
 
     tabs = BIND_TABS
     target = forms.ChoiceField(label=gettext_lazy('Bound to'))
@@ -401,14 +417,12 @@ class BindForm(TabbedForm):
         self.fields['target'].choices = [('', '---------'), *target_choices()]
         self.fields['target'].help_text = _('A water value goes to a sampling point or a system; a process value '
                                             '(flow, level, power…) to a piece of equipment or a system.')
-        self.fields['valid_from'].help_text = _('On the clock of the channel’s site. Its binding until now ends then.')
+        self.fields['valid_from'].help_text = _('On the clock of the place’s site. Its binding until now ends then.')
 
     def clean(self):
         cleaned = super().clean()
         channel, chosen = cleaned.get('channel'), cleaned.get('target', '')
-        kind, _sep, pk = chosen.partition(':')
-        model = TARGET_KINDS.get(kind)
-        target = model.objects.filter(pk=pk).first() if model is not None and pk else None
+        target = place_of(chosen)
         if chosen and target is None:
             self.add_error('target', _('Choose a place from the list.'))
         if channel is None or target is None:
@@ -416,7 +430,7 @@ class BindForm(TabbedForm):
         if cleaned.get('valid_from') is not None:
             wall = timezone.make_naive(cleaned['valid_from'], timezone.get_current_timezone())
             try:
-                cleaned['valid_from'] = on_site_clock(wall, zone_of(channel.device.site))
+                cleaned['valid_from'] = on_site_clock(wall, bindings.clock(channel.device, target))
             except ValidationError as error:
                 self.add_error('valid_from', error)
                 return cleaned
@@ -424,7 +438,7 @@ class BindForm(TabbedForm):
         for field, message in bindings.refusals(channel, target, cleaned.get('role'),
                                                 cleaned.get('valid_from') or timezone.now()):
             self.add_error(field, message)
-        cleaned['target_kind'], cleaned['target_object'] = kind, target
+        cleaned['target_kind'], cleaned['target_object'] = bindings.kind_of(target), target
         return cleaned
 
     def _check_conditional_constraints(self, cleaned):
@@ -449,7 +463,7 @@ class BindingForm(TabbedForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        zone = zone_of(self.instance.channel.device.site) if self.instance.channel_id else None
+        zone = bindings.clock(self.instance.channel.device, self.instance.target) if self.instance.channel_id else None
         self.fields['valid_to'] = SiteClockDateTimeField(label=self.fields['valid_to'].label, required=False, zone=zone,
                                                          help_text=self.fields['valid_to'].help_text)
 

@@ -1,6 +1,6 @@
 """Binding a channel to where its values belong, the only way a binding's history grows. History is never rewritten: a
 moment in the future, or before a channel's open binding started, is refused. The database holds the rest (sensors
-migration 0004).
+migrations 0004 and 0007).
 
 - `move` closes one channel's open binding at a moment and opens the next one there, `unbind` closes it: one
   transaction, one activity-log entry on the channel ("Bound to", from the old target to the new).
@@ -8,12 +8,15 @@ migration 0004).
   site) from one moment: every live channel that is not retired goes to the place its kind goes to at the target
   (`landing`), a retired or deleted channel's open binding just ends; all or nothing, refused with each channel's reason
   (`plan_device` says the same beforehand). One entry on the device's log lists every channel's old and new place, and
-  each channel's own log says it too.
+  each channel's own log says it too. The device's site follows it: a device is at one site at a time, the site of the
+  places it is bound to (the database refuses a channel bound alone at another site, and a placed device's site changed
+  by hand).
   `unbind_device` takes the device out of the water (storage, calibration): its readings are still stored, and belong
   to no place until it is placed again.
+- `clock`: the clock a moment of a binding is typed and shown on: the place's site, else the device's.
 
 The rules a move checks are in one place, `refusals`: the kind of place a channel's quantity goes to (owner rule A1),
-one primary and one backup per place and quantity."""
+one primary and one backup per place and quantity, a channel moved alone stays at its device's site."""
 from dataclasses import dataclass
 from itertools import groupby
 
@@ -26,11 +29,14 @@ from django.utils.translation import gettext as _, gettext_lazy
 from core import audit
 from core.models import AuditLog
 from farm.models import Equipment, SamplingPoint, System, Tank
+from farm.models.site import zone_of
+from farm.models.water_point import site_of
 from farm.water.read import middle_points
 
 from .models import Binding, Channel, ChannelStatus, Device
 
 LABEL = 'Bound to'
+SITE_LABEL = 'Site'
 KINDS = {SamplingPoint: 'point', System: 'system', Equipment: 'equipment'}
 WATER_PLACES = gettext_lazy('A water value is bound to a sampling point or a system.')
 PROCESS_PLACES = gettext_lazy('A process value is bound to a piece of equipment or a system.')
@@ -47,6 +53,14 @@ def kind_of(place):
     return KINDS[type(place)]
 
 
+def clock(device, place=None):
+    """The clock a moment of the device's binding is typed and shown on: the site of the place (a unit, a sampling point,
+    a system or a piece of equipment), else the device's own (a department without a site, or no place). A placed
+    device's site is its place's, so the two agree while it is placed."""
+    site = site_of(place) if place is not None else None
+    return zone_of(site or device.site)
+
+
 def _open(channel, lock=True):
     found = Binding.objects.filter(channel=channel, valid_to__isnull=True)
     return (found.select_for_update() if lock else found).first()
@@ -57,7 +71,8 @@ def _moment_refusal(at, current):
         return _('A binding cannot start in the future.')
     if current is not None and at <= current.valid_from:
         return _('The channel is bound since %(moment)s: a move starts after that.') % {
-            'moment': timezone.localtime(current.valid_from).strftime('%Y-%m-%d %H:%M')}
+            'moment': timezone.localtime(current.valid_from, clock(current.channel.device, current.target))
+            .strftime('%Y-%m-%d %H:%M')}
     return ''
 
 
@@ -67,15 +82,20 @@ def _check_moment(at, current):
         raise ValidationError({'valid_from': refusal})
 
 
-def refusals(channel, place, role, at, moving=()):
+def refusals(channel, place, role, at, moving=(), alone=True):
     """[(field, message)]: why `channel` cannot be bound to `place` (a sampling point, a system or a piece of equipment)
-    as `role` from `at`. `moving`: the channels moved with it, whose bindings end then."""
+    as `role` from `at`. `moving`: the channels moved with it, whose bindings end then; `alone`: the channel moves without
+    its device, so it stays at its device's site."""
     kind = kind_of(place)
     if channel.is_water and kind == 'equipment':
         return [('target', WATER_PLACES)]
     if not channel.is_water and kind == 'point':
         return [('target', PROCESS_PLACES)]
     found = []
+    site = site_of(place)
+    if alone and site is not None and site.pk != channel.device.site_id:
+        found.append(('target', _('%(device)s is at %(site)s: a channel goes to another site with its whole device '
+                                  '(Move device).') % {'device': channel.device, 'site': channel.device.site}))
     clash = (Binding.objects.filter(**{kind: place}, role=role, channel__quantity=channel.quantity)
              .exclude(channel__in=[channel.pk, *[each.pk for each in moving]])
              .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=at)).select_related('channel__device').first())
@@ -187,7 +207,7 @@ def _plan(device, channels, target, at, role, lock):
         step.place, step.reason = landing(step.channel, target)
         if step.place is None:
             continue
-        refused = refusals(step.channel, step.place, role, at, moving=moving)
+        refused = refusals(step.channel, step.place, role, at, moving=moving, alone=False)
         key = (kind_of(step.place), step.place.pk, step.channel.quantity)
         if not refused and key in taken:
             refused = [('role', _('%(channel)s measures %(quantity)s as %(other)s does: one of the two is the backup '
@@ -228,6 +248,12 @@ def move_device(user, device, at, target, role=Binding.Role.PRIMARY, note=''):
             if step.current is not None:
                 _close(user, step.current, at)
         changes = {}
+        site = site_of(target) if target is not None else None
+        if site is not None and site.pk != device.site_id:
+            # Every open binding is closed now: the database lets the site move, then takes the new ones there.
+            changes[SITE_LABEL] = [str(device.site), str(site)]
+            Device.objects.filter(pk=device.pk).update(site=site, version=device.version + 1, updated_by=user,
+                                                       updated_at=timezone.now())
         for step in steps:
             if step.place is not None:
                 step.binding = _start(user, step.channel, at, role, note, step.place)

@@ -7,7 +7,7 @@ def site_data(**overrides):
         'name': 'Main Production Site', 'code': 'mps-001', 'type': 'land_based', 'status': 'active',
         'lokalitetsnummer': '', 'organisation_number': '', 'production_form': '', 'reports_from': '',
         'description': '', 'area_m2': '',
-        'timezone': '', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
+        'timezone': 'Europe/Oslo', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
         'postal_code': '', 'latitude': '', 'longitude': '', 'altitude': '', 'site_manager': '',
         'contact_email': '', 'contact_phone': '',
     }

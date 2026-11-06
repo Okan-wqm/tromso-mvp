@@ -2832,7 +2832,8 @@ only (`hr.scope.visible_days`).
 
 **One roster table** (`hr.ShiftAssignment`, `shift_assignments`, shown as "plan" in the log): a person and the day a shift
 starts (a night shift ends on the next day), the shift or none (planned off, which is not the same as no plan), a note (private:
-masked in the log and the viewer). One row per person and day among live rows; a cleared cell is a soft delete. Leave and
+masked in the log and the viewer). One row per person and day among live rows; a cleared cell is a soft delete, and clearing a selection clears its
+filled cells (an empty one has nothing to clear, F-024). Leave and
 holidays are joined when the week is read, there is no publish step, and every change is logged with its before and after.
 
 **Real instants, not wall-clock sums** (`hr/clock.py`): a shift on a day becomes two UTC instants through the site's time zone, so

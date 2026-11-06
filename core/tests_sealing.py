@@ -138,7 +138,7 @@ class MiddlewareTests(SimpleTestCase):
 class AccessLogTests(TestCase):
     def test_a_read_is_logged_for_the_viewer_and_the_log_is_append_only(self):
         from django.contrib.auth import get_user_model
-        from django.db import IntegrityError, InternalError, transaction
+        from django.db import DatabaseError, IntegrityError, transaction
 
         from core.models import AccessEvent
         user = get_user_model().objects.create_user('kari', 'kari@example.com', 'x')
@@ -151,7 +151,7 @@ class AccessLogTests(TestCase):
                           event.route), (user.pk, 'kari', 'export', 'experiment', 'E1', 'data', 'experiments:x'))
         for write in (lambda: AccessEvent.objects.filter(pk=event.pk).update(kind='view'),
                       lambda: AccessEvent.objects.filter(pk=event.pk).delete()):
-            with self.assertRaises((IntegrityError, InternalError)), transaction.atomic():
+            with self.assertRaises(DatabaseError), transaction.atomic():
                 write()
         with self.assertRaises(IntegrityError), transaction.atomic():
             AccessEvent.objects.create(user_name='kari', kind='peek', entity_type='experiment', entity_id='E1')

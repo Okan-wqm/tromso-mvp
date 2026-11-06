@@ -5,19 +5,23 @@ to the unit's middle point, the point chosen or the system; a process value to t
 and refuses the whole move, saying why for each channel, when one cannot go there. `bindings.unbind_device` takes it out:
 its readings are stored and belong nowhere until it is placed again."""
 from datetime import datetime, timedelta, timezone as tz
+from zoneinfo import ZoneInfo
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import connection
+from django.urls import reverse
 from django.utils import timezone
 
 from core.models import AuditLog
-from farm.models import Equipment, EquipmentType, System
+from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System
+from farm.models.site import zone_of
 from farm.tests.helpers import point_of
 from farm.tests.test_stock import make_unit
 from farm.water import read as water_read, sources
 
 from sensors import bindings, read
-from sensors.models import Binding, Channel, ChannelState
+from sensors.models import Binding, Channel, ChannelState, Device
 
 from . import SensorsCase, make_channel, make_device, rows as rows_of
 
@@ -221,3 +225,67 @@ class ReadTests(PortableCase):
         ChannelState.objects.create(channel_no=self.ph.channel_no, last_value=7.4, last_value_ts=now,
                                     last_good_at=now, last_seen_at=now)
         self.assertIsNone(water_read.latest([self.mid1])[self.mid1.pk].get('ph'))
+
+
+class SiteTests(PortableCase):
+    """A device is at one site at a time: the site of the places its channels are bound to. Its site follows a move, a
+    channel cannot go to another site without its device, and a placed device's site is not changed by hand."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.oslo = Site.objects.create(name='Oslo', code='OS', timezone='Europe/Oslo')
+        cls.oslo_hall = ProductionDepartment.objects.create(site=cls.oslo, name='Hall O', code='HO')
+        cls.r9 = System.objects.create(name='RAS 9', code='R9', site=cls.oslo, production_department=cls.oslo_hall)
+        cls.t9 = make_unit('T-09', cls.oslo_hall, system=cls.r9)
+        cls.mid9 = point_of(cls.t9)
+
+    def test_moving_a_device_to_another_site_takes_its_site_with_it(self):
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.t9)
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.site, self.oslo)
+        self.assertEqual(self.open_places(), {'TEMPERATURE-C': self.mid9, 'PH': self.mid9, 'OXYGEN-MG-L': self.mid9})
+        changes = next(entry.changes for entry in self.device_entries() if 'Site' in entry.changes)
+        self.assertEqual(changes['Site'], [str(self.site), str(self.oslo)])
+        self.assertEqual(changes['Bound to (PH)'], ['T-01 › Middle (Primary)', 'T-09 › Middle (Primary)'])
+        bindings.unbind_device(self.user, self.device, self.start + timedelta(days=2))
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.site, self.oslo)                        # kept where it was taken out
+
+    def test_a_channel_alone_cannot_go_to_another_site(self):
+        with self.assertRaises(ValidationError) as caught:
+            bindings.move(self.user, self.ph, self.start, point=self.mid9)
+        self.assertIn('Move device', ' '.join(caught.exception.messages))
+        self.refused('trg_sensors_binding_site',
+                     lambda: Binding.objects.create(channel=self.ph, point=self.mid9, valid_from=self.start))
+        self.refused('trg_sensors_binding_site',
+                     lambda: Binding.objects.create(channel=self.ph, system=self.r9, valid_from=self.start))
+        Binding.objects.create(channel=self.ph, point=self.mid9, valid_from=self.start,      # history: allowed
+                               valid_to=self.start + timedelta(days=1))
+
+    def test_a_placed_devices_site_is_not_changed_by_hand(self):
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        self.refused('trg_sensors_device_site', lambda: Device.objects.filter(pk=self.device.pk).update(site=self.oslo))
+        bindings.unbind_device(self.user, self.device, self.start + timedelta(days=1))
+        Device.objects.filter(pk=self.device.pk).update(site=self.oslo)    # out of the water: taken anywhere
+
+    def test_a_deleted_channels_open_binding_still_holds_the_device_at_its_site(self):
+        bindings.move(self.user, self.ph, self.start, point=self.mid1)
+        self.ph.soft_delete(self.user)
+        self.refused('trg_sensors_device_site', lambda: Device.objects.filter(pk=self.device.pk).update(site=self.oslo))
+        bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.t9)
+        self.assertFalse(Binding.all_objects.filter(channel=self.ph, valid_to__isnull=True).exists())
+
+    def test_a_moment_is_on_the_clock_of_the_places_site(self):
+        self.assertEqual(bindings.clock(self.device, self.t9), ZoneInfo('Europe/Oslo'))
+        self.assertEqual(bindings.clock(self.device, self.mid9), ZoneInfo('Europe/Oslo'))
+        self.assertEqual(bindings.clock(self.device), zone_of(self.site))
+
+    def test_a_placed_devices_form_says_its_site_follows_it(self):
+        user = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'x')
+        self.client.force_login(user)
+        url = reverse('sensors:device_edit', args=[self.device.pk])
+        self.assertFalse(self.client.get(url).context['form'].fields['site'].disabled)
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        self.assertTrue(self.client.get(url).context['form'].fields['site'].disabled)

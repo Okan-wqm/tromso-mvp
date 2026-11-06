@@ -357,6 +357,7 @@ class Reading:
     note: str = ''
     status: str = Status.NOT_MEASURED
     limits: list = field(default_factory=list)
+    why_no_limit: str = ''      # with status No limit: no fish in the unit that day, or no limit for their species
 
     @property
     def at(self):
@@ -394,8 +395,21 @@ class PointWater:
 
     @property
     def status(self):
-        """The worst status of its fresh values; stale when nothing is fresh (evaluate)."""
-        return worst(reading.status for reading in self.readings.values() if reading.code in LIMITED)
+        """The worst status of its fresh judged values; Stale when a value with a limit grew old and none fresh is judged
+        (never "No limit" over it: a critical value that aged must not read as one without a limit); else the worst of
+        the rest (No limit, Not measured)."""
+        statuses = [reading.status for reading in self.readings.values() if reading.code in LIMITED]
+        judged = [status for status in statuses if status in (Status.CRITICAL, Status.WARNING, Status.OK)]
+        if judged:
+            return worst(judged)
+        return Status.STALE if Status.STALE in statuses else worst(statuses)
+
+    @property
+    def why_no_limit(self):
+        """Why the point's values have no limit, when that is its status."""
+        if self.status != Status.NO_LIMIT:
+            return ''
+        return next((reading.why_no_limit for reading in self.readings.values() if reading.why_no_limit), '')
 
     @property
     def alerts(self):
@@ -464,6 +478,14 @@ class Context:
     # -- the water a sample was taken in --
     def water_types(self, point):
         return {unit.water_type for unit in self.served[point.pk]}
+
+    @staticmethod
+    def _why_no_limit(exposures):
+        """Why a value has no limit: no fish where it was taken that day, or no limit row for the fish there. The species
+        is not named: a page that may read the water need not be one that may read the stock."""
+        if not exposures:
+            return _('No fish in the unit: nothing to judge the water against.')
+        return _('No water limit is set for the fish in the unit.')
 
     def exposures(self, point, day):
         """[(species id, water type)] a value at this point on `day` is judged for."""
@@ -552,8 +574,10 @@ class Context:
         if reading.code not in LIMITED or reading.value is None:
             reading.status = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
             return reading
-        reading.status, reading.limits = self.limits.assess(reading.code, reading.value,
-                                                            self.exposures(reading.sample.point, day))
+        exposures = self.exposures(reading.sample.point, day)
+        reading.status, reading.limits = self.limits.assess(reading.code, reading.value, exposures)
+        if reading.status == Status.NO_LIMIT:
+            reading.why_no_limit = self._why_no_limit(exposures)
         if now is not None and not reading.fresh(now):
             reading.status = Status.STALE
         return reading

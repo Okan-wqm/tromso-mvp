@@ -1088,7 +1088,12 @@ are in the bug document, not in the database).
 - A value is judged for the species in its unit on the day it was measured (any time of that day, from
   the stock ledger), against the row for the unit's water type, else the row for any water; with
   several species the worst wins. A loop's sample is judged for every unit of the loop. **A unit without
-  fish shows its values with "no limit"** (owner decision 1).
+  fish shows its values with "no limit"** (owner decision 1). A value without a limit says why, under a point's status on
+  the water page: "No fish in the unit", or "No water limit is set for the fish in the unit" (`Reading.why_no_limit`; the
+  species is not named, the water's readers need not read the stock).
+- A point's status is the worst of its fresh judged values; when a value with a limit grew old and nothing fresh is judged,
+  the point is **Stale**, never "No limit" (a critical CO₂ of three days ago read as "No limit" once it aged, because the
+  sample's other values have no limit row).
 - **A past sample is judged against the limits as they are now** (owner decision 2): a changed limit
   re-judges the history at once; the limits of the time are not kept. The page says so.
 - The latest value of each parameter is per parameter, not per sample: a later sample without DO never

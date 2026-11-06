@@ -80,6 +80,17 @@ class FaceTests(SimpleTestCase):
         self.assertTrue(render.face(reading('oxygen_mg_l', '8.1', hours=30), NOW).stale)
         self.assertFalse(render.face(reading('oxygen_mg_l', '8.1', hours=23), NOW).stale)
 
+    def test_an_old_critical_value_still_says_critical_and_old_and_an_old_fine_one_only_old(self):
+        """F-244 on the value widgets: the value's own words keep what its limit said; an old fine value is never ok."""
+        old = reading('oxygen_mg_l', '4', hours=30, status=Status.STALE)
+        old.judged = Status.CRITICAL
+        face = render.face(old, NOW)
+        self.assertEqual((face.status, face.status_label, face.stale), ('critical', 'Critical', True))
+        fine = reading('oxygen_mg_l', '9', hours=30, status=Status.STALE)
+        fine.judged = Status.OK
+        face = render.face(fine, NOW)
+        self.assertEqual((face.status, face.status_label, face.stale), ('stale', 'Stale', True))
+
     def test_a_sensor_value_says_which_sensor_as_every_latest_value_does(self):
         # Owner rule A1: a live value says the sensor and its channel, as the water page and the Deffeyes window do.
         face = render.face(live('oxygen_mg_l', '8.4', seconds=40, channel_no=12), NOW)

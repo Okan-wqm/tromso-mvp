@@ -768,6 +768,47 @@ class PageTests(WaterTestCase):
         self.assertContains(page, 'After the storm')
         self.assertContains(page, 'wq-row-critical')
 
+    def test_an_old_critical_value_is_shown_as_old_and_as_what_its_limit_said(self):
+        """F-244 on the water pages: a value that grew old is muted as stale, but a critical one keeps its colour and
+        says both, so it is never read as fine."""
+        self.stock()
+        self.limit('nitrite_n_mg_l', critical_high='0.2')
+        self.sample(hours=200, nitrite_n_mg_l='0.5')
+        html = self.client.get(self.url).content.decode()
+        self.assertIn('wq-stale wq-was-critical', html)
+        self.assertIn('title="Stale · Critical', html)
+
+    def test_a_date_that_is_no_date_is_the_default_never_a_server_error(self):
+        """F-176: ?from=2026-13-45 is shown as the default span, not a 500."""
+        self.sample(ph='7.2')
+        today = timezone.localdate()
+        for query in ({'from': '2026-13-45'}, {'to': '2026-02-30'}, {'from': 'x', 'to': '99999-01-01'}):
+            with self.subTest(query=query):
+                response = self.client.get(self.url, {'view': 'history', **query})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual((response.context['start'], response.context['end']),
+                                 (today - timedelta(days=30), today))
+
+    def test_the_history_spans_at_most_a_year_and_judges_only_the_page_it_shows(self):
+        """F-019: a span from the year 1 is cut to a year and says so; the samples are paged in the database and only the
+        page's are judged, and the first day a sample may be voided is asked once per point."""
+        for hours in range(1, 6):
+            self.sample(hours=hours, ph='7.2')
+        today = timezone.localdate()
+        response = self.client.get(self.url, {'view': 'history', 'from': '0001-01-01'})
+        self.assertEqual(response.context['start'], today - timedelta(days=366))
+        self.assertContains(response, 'A page shows at most 366 days: the first day was moved.')
+        with mock.patch('farm.water.views.PAGE_SIZE', 2), \
+                mock.patch.object(read, 'history', wraps=read.history) as judged, \
+                mock.patch.object(services, 'earliest', wraps=services.earliest) as earliest:
+            response = self.client.get(self.url, {'view': 'history'})
+        self.assertEqual(len(response.context['history']), 2)
+        self.assertEqual(response.context['page'].paginator.count, 5)
+        self.assertEqual([len(call.args[0]) for call in judged.call_args_list], [2])
+        self.assertEqual(earliest.call_count, 1)
+        alerts = self.client.get(self.url, {'view': 'history', 'alerts': '1'})
+        self.assertEqual(alerts.status_code, 200)
+
     def test_a_voided_sample_stays_in_the_history_struck_through(self):
         wrong = self.sample(ph='4')
         services.void(self.user, wrong, 'Typed 4 for 7.4')

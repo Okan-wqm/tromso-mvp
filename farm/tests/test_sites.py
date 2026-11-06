@@ -280,6 +280,20 @@ class SiteCreateTests(SiteTestCase):
         response = self.client.post(reverse('farm:site_create'), site_data(latitude='91', longitude='5'))
         self.assertIn('latitude', response.context['form'].errors)
 
+    def test_the_altitude_is_a_place_where_fish_are_kept(self):
+        """F-089: the altitude sets the pressure the oxygen's saturation is worked out with; a slip (a minus sign, two
+        zeros too many) would inflate a sensor's mg/L or stop the pages, so it is held to the Dead Sea shore .. 5000 m."""
+        for typed in ('-501', '5001', '50000', '-5000'):
+            with self.subTest(altitude=typed):
+                response = self.client.post(reverse('farm:site_create'), site_data(altitude=typed))
+                self.assertEqual(response.context['form'].errors['altitude'],
+                                 ['Between -500 and 5000 m: the shore of the Dead Sea to the highest farms.'])
+        self.assertFalse(Site.objects.exists())
+        for number, typed in enumerate(('-500', '5000', '0')):
+            self.client.post(reverse('farm:site_create'), site_data(altitude=typed, code=f'S{number}X',
+                                                                     name=f'Site {number}'))
+        self.assertEqual(sorted(Site.objects.values_list('altitude', flat=True)), [-500, 0, 5000])
+
     def test_errors_mark_their_tab(self):
         response = self.client.post(reverse('farm:site_create'), site_data(type='sea_cage'))
         tabs = {tab['key']: tab['has_errors'] for tab in response.context['form'].tab_list()}
@@ -389,3 +403,23 @@ class SiteDeleteTests(SiteTestCase):
         self.assertTrue(site.is_deleted)
         self.assertEqual(site.deleted_by, self.user)
         self.assertIsNotNone(site.deleted_at)
+
+
+class SiteAltitudeTests(SiteTestCase):
+    """F-089: the database holds the altitude's range as the form does, and a calculator takes any site altitude."""
+
+    def test_the_database_refuses_an_altitude_off_the_range(self):
+        for altitude in (-501, 5001, 50000):
+            with self.subTest(altitude=altitude), self.assertRaisesMessage(IntegrityError, 'chk_sites_altitude_range'), \
+                    transaction.atomic():
+                self.make_site(altitude=altitude)
+        self.assertEqual(self.make_site(altitude=-500).altitude, -500)
+
+    def test_a_site_below_sea_level_gives_the_calculator_its_altitude(self):
+        from ..water import calculation
+        from .test_stock import make_unit
+        from ..models import ProductionDepartment
+        site = self.make_site(altitude=-120)
+        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
+        offers = calculation.offers(make_unit('T-01', hall))
+        self.assertEqual(offers['altitude_m'].value, -120)

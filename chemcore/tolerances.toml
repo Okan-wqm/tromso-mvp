@@ -12,6 +12,12 @@ version = 0
 # verbatim arithmetic, the error is libm ulps inside pow(10, -pk) and log10, relative
 rel = 1e-12
 
+[classes.closed_form_meq]
+# meq/L and mmol/L values that are a difference of near-equal terms and can be near 0 (the isoline's intercept
+# [OH-] - [H+] + [B(OH)4-], the alkalinity floor, a DIC or CO2 near 0): the relative gate plus 1e-12 absolute
+rel = 1e-12
+abs = 1e-12
+
 [classes.solved_ph]
 # a pH found by bisection to 1e-10 on [0, 14]: a flipped last decision moves it by one final bracket (5e-11)
 abs = 2e-10

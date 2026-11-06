@@ -2625,7 +2625,9 @@ What works:
   water value, a piece of equipment or a system for a process value; one primary and one backup per place and quantity;
   a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in).
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
-  the drawn buckets), Live values (every channel listened to, its last value, its age, fresh or stale, where it is bound),
+  the drawn buckets), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
+  own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
+  age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
   person, logged), Alarm rules and Alarm events (**shown, not sent**: nobody is notified until a delivery path exists, and
   the pages say so).

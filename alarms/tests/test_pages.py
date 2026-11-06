@@ -111,3 +111,16 @@ class SensorsPageTests(AlarmsCase):
         self.assertContains(self.client.get(reverse('sensors:alarm_events')), 'tech')
         self.client.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]))       # twice: once
         self.assertEqual(Acknowledgement.objects.count(), 1)
+
+
+class RoleDeleteTests(AlarmsCase):
+    """A role an alarm recipient rule names is not deleted from under it: the rule would reach nobody without a word."""
+
+    def test_deleting_a_role_a_rule_names_is_refused_and_said(self):
+        self.rule()
+        admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(admin)
+        response = self.client.post(reverse('core:group_delete', args=[self.operators.pk]), follow=True)
+        self.assertContains(response, 'cannot be deleted')
+        self.assertTrue(type(self.operators).objects.filter(pk=self.operators.pk).exists())
+        self.assertEqual(RecipientRule.objects.count(), 1)

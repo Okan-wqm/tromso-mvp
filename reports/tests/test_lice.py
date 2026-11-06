@@ -599,5 +599,7 @@ class CoverageRowsTests(LiceTestCase):
         health.void_lice_count(self.user, earlier, 'Wrong cage')
         voided = scope()
         self.assertNotEqual(before, voided)
-        HandlingPlanItem.objects.filter(pk=item.pk).update(cancelled_reason='Weather')
+        item.cancelled_reason = 'Weather'               # as the plan's form cancels it: a new version
+        item.version += 1
+        item.save()
         self.assertNotEqual(voided, scope())

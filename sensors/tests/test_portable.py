@@ -16,7 +16,7 @@ from django.utils import timezone
 from core.models import AuditLog
 from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System
 from farm.models.site import zone_of
-from farm.tests.helpers import point_of
+from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
 from farm.water import read as water_read, sources
 
@@ -377,3 +377,121 @@ class JourneyTests(PortableCase):
                     got = [(frame.at, (frame.inputs['ph'].value, frame.inputs['ph'].origin)
                             if 'ph' in frame.inputs else None) for frame in frames]
                     self.assertEqual(got, [(frame.at, self.expected(stays, frame.at, hourly)) for frame in frames])
+
+
+MOVER = ('view_device', 'view_binding', 'add_binding', 'change_binding', 'view_channel', 'view_samplingpoint',
+         'view_system', 'view_equipment')
+
+
+class PageTests(PortableCase):
+    """The Move device dialog (from the device's page, the list, or a monitoring card's link `?device=&target=`), where a
+    device is and was, which sensors a place has now and had before, and the overview's devices not placed."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.oslo = Site.objects.create(name='Oslo', code='OS', timezone='Europe/Oslo')
+        cls.t9 = make_unit('T-09', ProductionDepartment.objects.create(site=cls.oslo, name='Hall O', code='HO'))
+        cls.mid9 = point_of(cls.t9)
+
+    def setUp(self):
+        self.mover = get_user_model().objects.create_user('mover', 'mover@example.com', 'x')
+        self.mover.groups.add(role('Mover', *MOVER))
+        self.client.force_login(self.mover)
+        self.url = reverse('sensors:device_move')
+
+    def wall(self, moment, zone=None):
+        return timezone.localtime(moment, zone or zone_of(self.site)).strftime('%Y-%m-%dT%H:%M')
+
+    def test_a_cards_link_opens_the_dialog_with_each_channels_landing(self):
+        response = self.client.get(self.url, {'device': self.device.pk, 'target': f'unit:{self.t1.pk}'})
+        form = response.context['form']
+        self.assertEqual((str(form['device'].value()), form['target'].value()), (str(self.device.pk), f'unit:{self.t1.pk}'))
+        self.assertEqual([(step.channel.code, step.place, step.reason) for step in response.context['plan']],
+                         [('OXYGEN-MG-L', self.mid1, ''), ('PH', self.mid1, ''), ('TEMPERATURE-C', self.mid1, '')])
+        self.assertContains(response, 'T-01 › Middle')
+
+    def test_the_dialog_moves_the_device_from_the_moment_on_the_places_clock(self):
+        moment = timezone.now().replace(second=0, microsecond=0) - timedelta(days=1)
+        response = self.client.post(self.url, {'device': self.device.pk, 'target': f'unit:{self.t9.pk}',
+                                               'role': 'primary', 'valid_from': self.wall(moment, ZoneInfo('Europe/Oslo')),
+                                               'note': 'to Oslo'})
+        self.assertIn(response.status_code, (204, 302), response.context and response.context['form'].errors)
+        self.assertEqual(self.open_places(), {'TEMPERATURE-C': self.mid9, 'PH': self.mid9, 'OXYGEN-MG-L': self.mid9})
+        self.assertEqual(set(Binding.objects.values_list('valid_from', 'note', 'created_by')),
+                         {(moment, 'to Oslo', self.mover.pk)})
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.site, self.oslo)
+
+    def test_a_refused_move_says_each_channels_reason_and_moves_nothing(self):
+        make_channel(self.device, 'flow_m3_h')
+        response = self.client.post(self.url, {'device': self.device.pk, 'target': f'unit:{self.t1.pk}',
+                                               'role': 'primary', 'valid_from': self.wall(self.start)})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'FLOW-M3-H')
+        self.assertContains(response, 'A process value is bound to a piece of equipment or a system')
+        self.assertFalse(Binding.objects.exists())
+
+    def test_a_draft_shows_the_landing_and_moves_nothing(self):
+        response = self.client.post(self.url, {'device': self.device.pk, 'target': f'system:{self.ras.pk}',
+                                               'role': 'primary', 'valid_from': self.wall(self.start), '_draft': 'target'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual({step.place for step in response.context['plan']}, {self.ras})
+        self.assertFalse(Binding.objects.exists())
+
+    def test_the_dialog_takes_the_device_out_of_the_water(self):
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        response = self.client.post(self.url, {'device': self.device.pk, 'target': 'out', 'role': 'primary',
+                                               'valid_from': self.wall(self.start + timedelta(days=1))})
+        self.assertIn(response.status_code, (204, 302))
+        self.assertEqual(self.open_places(), {})
+
+    def test_the_device_list_says_where_each_device_is_and_offers_the_move(self):
+        other = make_device(self.connection, self.format, self.site, code='PROBE-2')
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        response = self.client.get(reverse('sensors:device_list'))
+        self.assertContains(response, 'T-01 › Middle')
+        self.assertContains(response, 'Not placed')
+        self.assertContains(response, f'{self.url}?device={other.pk}')
+        unplaced = self.client.get(reverse('sensors:device_list'), {'placed': 'no'})
+        self.assertEqual([device.code for device in unplaced.context['objects']], ['PROBE-2'])
+
+    def test_the_device_page_has_where_it_was_and_the_move(self):
+        admin = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'x')
+        self.client.force_login(admin)
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.ras)
+        response = self.client.get(reverse('sensors:device_edit', args=[self.device.pk]))
+        self.assertEqual([[str(place) for place in stay.places] for stay in response.context['placement_history']],
+                         [['RAS 1 (R1)'], ['T-01 › Middle']])
+        self.assertContains(response, f'{self.url}?device={self.device.pk}')
+
+    def test_a_place_lists_the_sensors_there_now_and_before(self):
+        other = make_device(self.connection, self.format, self.site, code='PROBE-2')
+        bindings.move_device(self.user, other, self.start, self.t2)
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.ras)
+        listing = self.client.get(reverse('sensors:binding_list'), {'place': f'unit:{self.t1.pk}'})
+        found = list(listing.context['objects'])
+        self.assertEqual({(binding.channel.device.code, binding.point, binding.valid_to is None) for binding in found},
+                         {('PROBE-1', self.mid1, False)})
+        self.assertEqual(len(found), 3)
+        system = self.client.get(reverse('sensors:binding_list'), {'place': f'system:{self.ras.pk}'})
+        self.assertEqual({(binding.channel.device.code, binding.valid_to is None) for binding in system.context['objects']},
+                         {('PROBE-1', True)})
+        self.assertContains(system, 'RAS 1 (R1)')
+
+    def test_the_overview_counts_the_devices_not_placed(self):
+        make_device(self.connection, self.format, self.site, code='PROBE-2')
+        bindings.move_device(self.user, self.device, self.start, self.t1)
+        page = self.client.get(reverse('sensors:home'))
+        tiles = {str(tile['label']): tile for tile in page.context['state_tiles']}
+        self.assertEqual(tiles['Devices not placed']['count'], 1)
+        self.assertEqual(tiles['Devices not placed']['url'], f'{reverse("sensors:device_list")}?placed=no')
+
+    def test_without_the_right_to_bind_no_move(self):
+        reader = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
+        reader.groups.add(role('Reader', 'view_device', 'view_binding'))
+        self.client.force_login(reader)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+        self.assertNotContains(self.client.get(reverse('sensors:device_list')), self.url)

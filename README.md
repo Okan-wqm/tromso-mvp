@@ -3316,6 +3316,10 @@ What one tab needed and the next ones will too lives in `core/`:
   the second sending opens it (`core.crud.ENTRY_KEY`, a task, a recurring task).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
+- `core/query.py`: what a page reads from its address (`?from=`, `?to=`, `?week=`, `?page=`, `?before=`, `?year=`), one
+  rule for every page (F-006, F-176, F-120): a date written YYYY-MM-DD between 1900 and 2999, a number in ASCII digits
+  within its bounds, a year of that calendar; anything else is taken as not given and the page shows its default, as
+  for a stale link, never a server error (`core/tests_query_pages.py` asks every page).
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
   "Tanks, ponds & cages" lists units.
 - `Resource.search`: what the list's search box does; by default the text in one of `search_fields`, a
@@ -3326,10 +3330,6 @@ What one tab needed and the next ones will too lives in `core/`:
 - Files: a form with a file field gets the uploaded files and posts as multipart, in the dialog too (a
   document's PDF). A file is never served from a public address: a view that checks the permission sends it.
 - `Resource.page_size`: the list is paged on the server, after the search and the filters, and the
-- `core/query.py`: what a page reads from its address (`?from=`, `?to=`, `?week=`, `?page=`, `?before=`, `?year=`), one
-  rule for every page (F-006, F-176, F-120): a date written YYYY-MM-DD between 1900 and 2999, a number in ASCII digits
-  within its bounds, a year of that calendar; anything else is taken as not given and the page shows its default, as
-  for a stale link, never a server error (`core/tests_query_pages.py` asks every page).
   page links keep both (`templates/crud/_pager.html`). Lists that nest records (systems, equipment)
   stay on one page.
 - `CodedMixin.name_field`: a record shown as "Name (CODE)" whose name is in another field (a

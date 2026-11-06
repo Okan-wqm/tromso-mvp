@@ -126,8 +126,12 @@ def reopen(request, pk):
     """Takes a closure away: the report is owed again."""
     closure = get_object_or_404(DueClosure, pk=pk)
     kind = closure.kind
-    services.reopen(request.user, closure)
-    messages.success(request, _('Reopened: it is owed again.'))
+    try:
+        services.reopen(request.user, closure)
+    except ValidationError as error:            # pressed twice: the first took it away
+        messages.error(request, ' '.join(error.messages))
+    else:
+        messages.success(request, _('Reopened: it is owed again.'))
     return done(request, reverse('reports:report_list') + f'?kind={kind}')
 
 
@@ -179,8 +183,12 @@ def duty_done(request):
 @require_POST
 def duty_undo(request, pk):
     """Takes a record that a duty was done away."""
-    services.undo_duty_done(request.user, get_object_or_404(OutsideDutyDone, pk=pk))
-    messages.success(request, _('The record is removed: the duty is owed again.'))
+    try:
+        services.undo_duty_done(request.user, get_object_or_404(OutsideDutyDone, pk=pk))
+    except ValidationError as error:            # pressed twice: the first took it away
+        messages.error(request, ' '.join(error.messages))
+    else:
+        messages.success(request, _('The record is removed: the duty is owed again.'))
     return done(request, reverse('reports:outside_duties'))
 
 

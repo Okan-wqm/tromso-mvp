@@ -35,12 +35,19 @@ def kind_of(path):
     return 'closed_form_meq'
 
 
-def compare(expected, actual, path=(), found=None, ceilings=None):
-    """The differences beyond each class's gate, as (path, expected, actual); `ceilings` collects the largest
-    difference seen per class (absolute for absolute classes, relative otherwise)."""
+INPUTS = ('temp_c', 'salinity', 'altitude_m')
+
+
+def compare(expected, actual, path=(), found=None, ceilings=None, refused=False):
+    """The differences beyond each class's gate, as (path, expected, actual); `ceilings` collects, per class, the
+    largest share of its gate a difference used (1 = at the gate). `refused`: the record's input is not finite, so
+    the core refuses every value of it (NonFiniteError), whatever Python returned."""
     found = [] if found is None else found
+    if not path and isinstance(expected, dict):
+        refused = any(isinstance(expected.get(key), str) and expected[key] in NON_FINITE for key in INPUTS)
     if isinstance(expected, dict) and isinstance(actual, dict):
-        if set(expected) == {'value'} and actual.get('raises') == 'NonFiniteError' and not finite(expected['value']):
+        if set(expected) == {'value'} and actual.get('raises') == 'NonFiniteError' and (
+                refused or not finite(expected['value'])):
             return found
         for key in sorted(set(expected) | set(actual)):
             if key in SKIPPED or str(key).endswith('_path'):
@@ -48,22 +55,22 @@ def compare(expected, actual, path=(), found=None, ceilings=None):
             if key not in expected or key not in actual:
                 found.append((path + (key,), expected.get(key, '<missing>'), actual.get(key, '<missing>')))
                 continue
-            compare(expected[key], actual[key], path + (key,), found, ceilings)
+            compare(expected[key], actual[key], path + (key,), found, ceilings, refused)
     elif isinstance(expected, list) and isinstance(actual, list):
         if len(expected) != len(actual):
             found.append((path + ('len',), len(expected), len(actual)))
         else:
             for index, (one, two) in enumerate(zip(expected, actual)):
-                compare(one, two, path + (index,), found, ceilings)
+                compare(one, two, path + (index,), found, ceilings, refused)
     elif isinstance(expected, float) and isinstance(actual, (float, int)) and not isinstance(actual, bool) \
             or isinstance(expected, int) and isinstance(actual, float) and not isinstance(expected, bool):
         kind = kind_of(path)
         gate = CLASSES[kind]
         difference = abs(expected - actual)
+        allowed = gate.get('abs', 0.0) + gate.get('rel', 0.0) * max(abs(expected), abs(actual))
         if ceilings is not None:
-            measure = difference if 'rel' not in gate else difference / max(abs(expected), 1e-300)
-            ceilings[kind] = max(ceilings.get(kind, 0.0), measure)
-        if difference > gate.get('abs', 0.0) + gate.get('rel', 0.0) * max(abs(expected), abs(actual)):
+            ceilings[kind] = max(ceilings.get(kind, 0.0), difference / allowed if allowed else float(difference > 0))
+        if difference > allowed:
             found.append((path, expected, actual))
     elif expected != actual:
         found.append((path, expected, actual))

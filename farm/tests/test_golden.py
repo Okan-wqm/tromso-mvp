@@ -69,7 +69,7 @@ class GoldenV1Tests(SimpleTestCase):
                     found += parity.compare(expected, actual, ceilings=ceilings)
                 self.assertEqual(found[:5], [], f'{name}: {len(found)} values outside their class of golden v1. '
                                  'Nothing may change silently; the owner decides (README, Water-chemistry core).')
-        sys.stderr.write(chr(10) + '[golden v1 parity] ' + ', '.join(f'{kind} {value:.2e}'
+        sys.stderr.write(chr(10) + '[golden v1 parity, share of each gate used] ' + ', '.join(f'{kind} {value:.2e}'
                                                              for kind, value in sorted(ceilings.items())) + chr(10))
 
     def test_the_manifest_states_the_provenance(self):

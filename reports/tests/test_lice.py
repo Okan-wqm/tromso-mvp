@@ -564,3 +564,40 @@ class LiceMedicineForAnotherReasonTests(LiceTestCase):
         before = compute.fingerprint(compute.scope(self.draft))
         health.void_treatment(self.user, treatment, 'Recorded for the wrong reason')
         self.assertNotEqual(before, compute.fingerprint(compute.scope(self.draft)))
+
+
+class CoverageRowsTests(LiceTestCase):
+    """The rows that decide whether a cage was due a count (its earlier counts, the harvest plans of § 6) are the
+    report's too: a plan whose harvest was voided is planned again, as the plan says, and a change in those rows shows
+    in the fingerprint (audit F-206, F-227)."""
+
+    def plans(self):
+        items = []
+        for unit, fish in ((self.m1, 5000), (self.m2, 3000)):
+            batch = Batch.objects.get(movements__unit=unit)
+            items.append(HandlingPlanItem.objects.create(kind='harvest', date=day(10, 31), unit=unit, batch=batch,
+                                                         planned_count=fish, facility=self.facility,
+                                                         created_by=self.user))
+        return items
+
+    def test_a_plan_whose_harvest_was_voided_still_keeps_the_exception(self):
+        self.count(self.m1, 10, 22)
+        self.count(self.m2, 10, 22)
+        first, _second = self.plans()
+        batch = Batch.objects.get(movements__unit=self.m1)
+        operation = stock_services.record_harvest(self.user, unit=self.m1, batch=batch, day=day(10, 31), count=5000,
+                                                  measured_weight_kg=Decimal(800), facility=self.facility,
+                                                  plan_item=first)
+        stock_services.void(self.user, operation, 'Wrong cage')            # the plan is open again
+        self.assertEqual(self.result().problems, [])
+
+    def test_an_earlier_count_and_a_plan_are_in_the_fingerprint(self):
+        earlier = self.count(self.m1, 10, 22)
+        [item, _other] = self.plans()
+        scope = lambda: compute.fingerprint(compute.scope(self.draft))
+        before = scope()
+        health.void_lice_count(self.user, earlier, 'Wrong cage')
+        voided = scope()
+        self.assertNotEqual(before, voided)
+        HandlingPlanItem.objects.filter(pk=item.pk).update(cancelled_reason='Weather')
+        self.assertNotEqual(voided, scope())

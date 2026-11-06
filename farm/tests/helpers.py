@@ -86,3 +86,24 @@ def point_of(owner, kind='middle'):
     for point_kind, name in wanted:
         SamplingPoint.all_objects.get_or_create(**{owner_type: owner}, kind=point_kind, name=name)
     return SamplingPoint.objects.get(**{owner_type: owner}, kind=kind)
+
+
+LIVE_ON_A_SITE = 'chk_production_departments_live_on_a_site'
+
+
+def leave_without_site(department):
+    """Makes `department` one of the rows a deleted site left without a site before the database held that a live
+    production department is on a site: the check is put back NOT VALID, as on a database that had such rows (farm
+    migration 0027), so the row stays as it is until it is changed."""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT 1 FROM pg_constraint WHERE conname = %s', [LIVE_ON_A_SITE])
+        held = cursor.fetchone() is not None
+        cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')    # a table with pending deferred checks cannot be altered
+        cursor.execute(f'ALTER TABLE production_departments DROP CONSTRAINT IF EXISTS {LIVE_ON_A_SITE}')
+        cursor.execute('UPDATE production_departments SET site_id = NULL WHERE id = %s', [department.pk])
+        if held:
+            cursor.execute(f'ALTER TABLE production_departments ADD CONSTRAINT {LIVE_ON_A_SITE} '
+                           'CHECK (site_id IS NOT NULL OR is_deleted) NOT VALID')
+    department.refresh_from_db()
+    return department

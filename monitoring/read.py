@@ -27,8 +27,9 @@ The sources, each read once for every card and only for a person who may read it
 SOURCES is the one table of them: each with the right that reads it and whether the card can be drawn without it. The
 roll-up's set (the fish, the feeding, the middle point's water, the open events) is read for every card whatever its
 template, so the state never depends on the template; a source no widget of any shown card needs runs no query. An
-optional source that fails (its own savepoint) leaves the cards, its widgets say "no data", and it is logged at most once
-a minute; a required one that fails raises Unavailable (the fragment answers 503 and the screen keeps its last picture).
+optional source that fails (its own savepoint) leaves the cards, its widgets say "no data" and the frame names it ("Could
+not be read: Tasks"); a required one that fails raises Unavailable (the fragment answers 503 and the screen keeps its last
+picture, saying it is not updated). Either is logged with its name and its trace, at most once a minute per source.
 A section the person may not read is not read at all (no query), and the card says so; the state then says what it
 is from. Nothing here writes, and a poll writes nothing."""
 import hashlib
@@ -42,7 +43,7 @@ from uuid import UUID
 from django.db import transaction
 from django.utils import timezone, translation
 from django.utils.timesince import timesince
-from django.utils.translation import gettext as _, ngettext
+from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import audit
 from farm.feeding import read as feeding_read, views as feeding_views
@@ -52,7 +53,7 @@ from farm.models import Tank
 from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
 from farm.water import parameters, read as water_read, views as water_views
-from farm.water.evaluate import Status
+from farm.water.evaluate import ALERTS, Status
 from tasks import read as tasks_read, views as tasks_views
 
 from .cards import catalogue, render, resolve
@@ -68,21 +69,28 @@ class Source:
     name: str
     permission: str        # the right that reads it, from the module that owns the records ('' : the provider decides)
     required: bool         # the roll-up needs it: a card is not drawn without it
+    label: str = ''        # how a card's frame names it when it could not be read
 
 
 SOURCES = (
-    Source(STOCK, stock_views.VIEW, True), Source(FEEDING, feeding_views.VIEW, True),
-    Source(WATER, water_views.VIEW, True), Source(TREATMENTS, health_views.TREATMENTS['view'], False),
-    Source(EVENTS, health_views.EVENTS['view'], True), Source(LICE, health_views.COUNTS['view'], False),
-    Source(TASKS, tasks_views.VIEW, False), Source(CHIPS, '', False),
+    Source(STOCK, stock_views.VIEW, True, gettext_lazy('Fish')),
+    Source(FEEDING, feeding_views.VIEW, True, gettext_lazy('Feeding')),
+    Source(WATER, water_views.VIEW, True, gettext_lazy('Water')),
+    Source(TREATMENTS, health_views.TREATMENTS['view'], False, gettext_lazy('Treatments')),
+    Source(EVENTS, health_views.EVENTS['view'], True, gettext_lazy('Health events')),
+    Source(LICE, health_views.COUNTS['view'], False, gettext_lazy('Sea-lice counts')),
+    Source(TASKS, tasks_views.VIEW, False, gettext_lazy('Tasks')),
+    Source(CHIPS, '', False, gettext_lazy('Experiments')),
 )
+LABELS = {source.name: source.label for source in SOURCES}
 # The sections of a card a right reads.
 SECTIONS = tuple(source.name for source in SOURCES if source.permission)
 # Read for every card whatever its template: what the state is worked out from.
 ROLL_UP = (STOCK, FEEDING, WATER, EVENTS)
 # Beyond the sources: the cards that need every active point's water, and the feeding week.
 POINTS, WEEK = 'points', 'week'
-# When each optional source last failed and was logged ({name: time}): at most once a minute each.
+# When each source last failed and was logged ({name: time}): at most once a minute each, so a wall that asks every
+# 15 seconds does not fill the log.
 FAILED_AT = {}
 FAIL_LOG_SECONDS = 60
 
@@ -96,9 +104,15 @@ MODES = (SIMPLE, DETAILED)
 STOCKED, EMPTY, ALL = 'stocked', 'empty', 'all'
 OCCUPANCIES = (STOCKED, EMPTY, ALL)
 KINDS = tuple(Tank.Kind.values)
-CRITICAL, WARNING, BLIND, NOTE, OK, EMPTY_STATE = 'critical', 'warning', 'blind', 'note', 'ok', 'empty'
-# The roll-up in the order a wall reads it, worst first.
-RANK = {key: rank for rank, key in enumerate((CRITICAL, WARNING, BLIND, NOTE, OK, EMPTY_STATE))}
+CRITICAL, WARNING, BLIND, UNJUDGED, NOTE, OK, EMPTY_STATE = (
+    'critical', 'warning', 'blind', 'unjudged', 'note', 'ok', 'empty')
+# The roll-up in the order a wall reads it, worst first, with the one word each state is said with (the card, the
+# strip, the announcer's words and the designer's "show as" all read it here).
+STATES = ((CRITICAL, gettext_lazy('Critical')), (WARNING, gettext_lazy('Warning')),
+          (BLIND, gettext_lazy('No recent data')), (UNJUDGED, gettext_lazy('No limit')), (NOTE, gettext_lazy('Note')),
+          (OK, gettext_lazy('OK')), (EMPTY_STATE, gettext_lazy('Empty')))
+RANK = {key: rank for rank, (key, _word) in enumerate(STATES)}
+WORDS = dict(STATES)
 # A change token is for this long the same whatever happens to the clock-driven figures.
 TOKEN_BUCKET = 60
 
@@ -203,7 +217,11 @@ class State:
     key: str
     reasons: tuple = ()
     basis: tuple = ()
-    stale: tuple = ()      # the key readings that are missing or old, for a blind card
+    stale: tuple = ()      # the reasons that are missing or old data: a blind card's, an old critical or warning value
+
+    @property
+    def word(self):
+        return WORDS[self.key]
 
 
 @dataclass(frozen=True)
@@ -248,6 +266,11 @@ class Card:
         return {section: section in self.sections for section in SECTIONS}
 
     @property
+    def failed_text(self):
+        """The sources that could not be read, as the frame names them, in the order of SOURCES."""
+        return ', '.join(str(source.label) for source in SOURCES if source.name in self.failed)
+
+    @property
     def days_stocked(self):
         return self.stock.days(self.today) if self.stock else None
 
@@ -262,19 +285,36 @@ def _weigh(lines):
     return 'now' if 'now' in found else 'soon' if 'soon' in found else ''
 
 
+def _log_failure(name, message):
+    """Logs the error being handled, with its trace, naming the source: at most once a minute per source."""
+    now = timezone.now()
+    last = FAILED_AT.get(name)
+    if last is None or (now - last).total_seconds() >= FAIL_LOG_SECONDS:
+        FAILED_AT[name] = now
+        logger.exception(message, name)
+
+
+def _required(name, loader, *args):
+    """A source the roll-up needs: its answer, or Unavailable when it raises, logged with its name and cause (the screens
+    keep their last picture and say they are not updated; the log says why). No savepoint: nothing is read after it."""
+    try:
+        return loader(*args)
+    except Exception as error:
+        _log_failure(name, 'The %s source the monitoring cards\' state needs failed; the screens keep their last '
+                           'picture (503).')
+        raise Unavailable(name) from error
+
+
 def _optional(name, loader, *args):
     """An optional source read in its own savepoint: its answer, or {} and the name among the failed when it raises
-    (logged at most once a minute per source). A chip, a task count or a treatment list is never a reason a card cannot
-    be shown."""
+    (logged, and said on the card's frame). A chip, a task count or a treatment list is never a reason a card cannot be
+    shown."""
     try:
         with transaction.atomic():
             return loader(*args), False
-    except Exception:                                           # fail open
-        now = timezone.now()
-        last = FAILED_AT.get(name)
-        if last is None or (now - last).total_seconds() >= FAIL_LOG_SECONDS:
-            FAILED_AT[name] = now
-            logger.exception('The %s source of the monitoring cards failed; its widgets say "no data".', name)
+    except Exception:                                           # fail open, and say so
+        _log_failure(name, 'The %s source of the monitoring cards failed; its widgets say "no data" and the frame '
+                           'names it.')
         return {}, True
 
 
@@ -319,21 +359,20 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
     now = now or timezone.now()
     sections = sections_for(user)
     units = list(units)
-    try:
-        stock = stock_read.stock_of(units) if STOCK in sections else {}
-        kept = [unit for unit in units if occupancy == ALL or (unit.pk in stock) == (occupancy == STOCKED)]
-        stocked = [unit for unit in kept if unit.pk in stock]
-        resolved = resolve.templates_for(kept, {unit.pk: _species(stock[unit.pk]) for unit in stocked}, choice)
-        need = needs(resolved)
-        feeding = (feeding_read.figures({unit.pk: stock[unit.pk] for unit in stocked},
-                                        details=[unit for unit in stocked if unit.pk in need[WEEK]], ration=True)
-                   if FEEDING in sections and stocked else {})
-        water = (water_read.points_water(kept, now, middle_only=[unit.pk for unit in kept if unit.pk not in need[POINTS]])
-                 if WATER in sections and kept else {})
-        withdrawals = harvest_views.withdrawals(stocked) if STOCK in sections and stocked else {}
-        events = health_read.open_events(kept) if EVENTS in sections and kept else {}
-    except Exception as error:
-        raise Unavailable(str(error)) from error
+    stock = _required(STOCK, stock_read.stock_of, units) if STOCK in sections else {}
+    kept = [unit for unit in units if occupancy == ALL or (unit.pk in stock) == (occupancy == STOCKED)]
+    stocked = [unit for unit in kept if unit.pk in stock]
+    resolved = _required('templates', resolve.templates_for, kept,
+                         {unit.pk: _species(stock[unit.pk]) for unit in stocked}, choice)
+    need = needs(resolved)
+    feeding = (_required(FEEDING, lambda: feeding_read.figures(
+        {unit.pk: stock[unit.pk] for unit in stocked}, details=[unit for unit in stocked if unit.pk in need[WEEK]],
+        ration=True)) if FEEDING in sections and stocked else {})
+    water = (_required(WATER, lambda: water_read.points_water(
+        kept, now, middle_only=[unit.pk for unit in kept if unit.pk not in need[POINTS]]))
+        if WATER in sections and kept else {})
+    withdrawals = _required('withdrawal', harvest_views.withdrawals, stocked) if STOCK in sections and stocked else {}
+    events = _required(EVENTS, health_read.open_events, kept) if EVENTS in sections and kept else {}
     failed = set()
 
     def optional(name, loader, *args):
@@ -397,36 +436,55 @@ def _age(reading, now):
     return timesince(reading.at, now, depth=1)
 
 
+def _alerts(middle, now):
+    """([critical reasons], [warning reasons], [the reasons that are old values]) of the middle point's values the limits
+    judge critical or a warning, fresh or old: an old one keeps its judgement and says its age (the value is the last
+    word there is about the water; it is never dropped for being old)."""
+    critical, warning, old = [], [], []
+    for reading in (middle.readings.values() if middle is not None else ()):
+        if reading.value is None or reading.judged not in ALERTS:
+            continue
+        status = Status(reading.judged).label
+        if reading.fresh(now):
+            text = '{}: {}'.format(reading.parameter.label, status)
+        else:
+            text = _('%(label)s: %(status)s, no recent data, %(age)s old') % {
+                'label': reading.parameter.label, 'status': status, 'age': _age(reading, now)}
+            old.append(text)
+        (critical if reading.judged == Status.CRITICAL else warning).append(text)
+    return critical, warning, old
+
+
 def state_of(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
-    1. critical: a water reading judged critical;
-    2. warning: a reading judged a warning, the unit over its capacity, an estimate that says weigh now;
+    1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old);
+    2. warning: a value judged a warning (fresh or old, the same), the unit over its capacity, an estimate that says
+       weigh now;
     3. blind: a stocked unit whose temperature or oxygen is missing or older than its freshness (a fresh pH hides a
-       three-day-old oxygen in the water's own status: that status ranks OK above stale), or with no middle point;
-       never OK, never red; not worked out when the water is hidden (the card says so);
-    4. note: a withdrawal in force (a chip, not an alarm: it lasts weeks), weigh soon, a ration that cannot be worked
+       three-day-old oxygen in the water's own status: that status ranks OK above stale), with no middle point, or whose
+       live sensors could not be read; never OK, never red; not worked out when the water is hidden (the card says so);
+    4. unjudged ("No limit"): a value of the stocked unit that no limit row judges for its fish (the owner has set
+       none): what it means for the fish is not known, so it is never OK;
+    5. note: a withdrawal in force (a chip, not an alarm: it lasts weeks), weigh soon, a ration that cannot be worked
        out (with its reason), an open health event;
-    5. ok, or empty when there are no fish.
+    6. ok, or empty when there are no fish.
     Word, shape and reasons, never colour alone: each reason is the owning read's text."""
     basis = tuple(name for name, shown in (
         (STOCK, STOCK in card.sections), (FEEDING, FEEDING in card.sections), (WATER, WATER in card.sections),
         (HEALTH, EVENTS in card.sections)) if shown)
     if card.stock is None:
         return State(EMPTY_STATE, (), basis)
-    critical, warning, note = [], [], []
+    note = []
     middle = _middle(card)                  # the unit's own water: a detailed card's other points do not change its state
-    for point in ([middle] if middle is not None else []):
-        for reading in point.alerts:
-            text = '{}: {}'.format(reading.parameter.label, Status(reading.status).label)
-            (critical if reading.status == Status.CRITICAL else warning).append(text)
+    critical, warning, old = _alerts(middle, card.now)
     if critical:
-        return State(CRITICAL, tuple(critical), basis)
+        return State(CRITICAL, tuple(critical), basis, tuple(text for text in old if text in critical))
     if card.stock.over_capacity:
         warning.append(_('Over capacity'))
     if card.drift == 'now':
         warning.append(_('Weigh now: the estimate is not reliable'))
     if warning:
-        return State(WARNING, tuple(warning), basis)
+        return State(WARNING, tuple(warning), basis, tuple(text for text in old if text in warning))
     if WATER in card.sections:
         stale = []
         for label, reading in _key_readings(card):
@@ -435,8 +493,14 @@ def state_of(card):
             elif not reading.fresh(card.now):
                 stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label,
                                                                                'age': _age(reading, card.now)})
+        if middle is not None and middle.sensors_failed:
+            stale.append(_('Live sensor values could not be read: samples only.'))
         if stale:
             return State(BLIND, tuple(stale), basis, tuple(stale))
+        unjudged = [_('%(label)s: no limit for these fish') % {'label': reading.parameter.label}
+                    for reading in (middle.unjudged if middle is not None else ())]
+        if unjudged:
+            return State(UNJUDGED, tuple(unjudged), basis)
     if card.withdrawal:
         note.append(_('Medicine withdrawal in force'))
     if card.drift == 'soon':
@@ -451,8 +515,9 @@ def state_of(card):
 
 
 def attention(cards_):
-    """The cards a wall's strip names, worst first: critical, warning and blind ones, each in the farm's order."""
-    worse = [card for card in cards_ if RANK[card.state.key] <= RANK[BLIND]]
+    """The cards a wall's strip names, worst first: critical, warning, blind and no-limit ones, each in the farm's
+    order."""
+    worse = [card for card in cards_ if RANK[card.state.key] <= RANK[UNJUDGED]]
     return sorted(worse, key=lambda card: RANK[card.state.key])
 
 

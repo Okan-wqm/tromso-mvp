@@ -12,7 +12,7 @@ from django.utils.translation import gettext
 
 from farm.templatetags.water import water_value
 from farm.water import read as water_read
-from farm.water.evaluate import Status
+from farm.water.evaluate import Status, judge
 
 from . import catalogue
 
@@ -161,14 +161,19 @@ def bar(face):
     def at(value):
         return round(float((value - low) / span * 100), 2)
 
-    order = [('critical', bounds['critical_low']), ('warning', bounds['warning_low']), ('ok', bounds['warning_high']),
-             ('warning', bounds['critical_high']), ('critical', None)]
-    bands, start = [], 0.0
-    for kind, edge in order:
-        end = 100.0 if edge is None else at(edge)
-        if end > start:
-            bands.append(Band(kind, start, round(end - start, 2)))
-            start = end
+    # Each stretch between two bounds is what the one rule (evaluate.judge) says of a value inside it, so an open bound
+    # draws no band of its own: limits with upper bounds only are ok below them, never critical.
+    edges = [low, *sorted(set(known)), high]
+    bands = []
+    for start, end in zip(edges, edges[1:]):
+        if end <= start:
+            continue
+        kind = str(judge((start + end) / 2, limit))
+        if bands and bands[-1].kind == kind:
+            last = bands.pop()
+            bands.append(Band(kind, last.start, round(at(end) - last.start, 2)))
+        else:
+            bands.append(Band(kind, at(start), round(at(end) - at(start), 2)))
     shown = ', '.join(f'{label} {water_value(bounds[name], reading.code)}'
                       for name, label in zip(BOUNDS, (gettext('critical below'), gettext('warning below'),
                                                       gettext('warning above'), gettext('critical above')))

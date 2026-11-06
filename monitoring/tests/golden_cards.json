@@ -71,16 +71,21 @@
     "Detailed",
     "G-00",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-00 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -173,7 +178,11 @@
     "Detailed",
     "G-01",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-01 · Hall A"
    ],
    "titles": [
@@ -274,7 +283,11 @@
     "Detailed",
     "G-02",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-02 · Hall A"
    ],
    "titles": [
@@ -377,7 +390,11 @@
     "Detailed",
     "G-03",
     "Laks",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-03 · Hall A"
    ],
    "titles": [
@@ -461,6 +478,7 @@
     "G-04",
     "Laks",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit G-04 · Hall A"
    ],
@@ -559,17 +577,22 @@
     "Detailed",
     "G-05",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Over capacity",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-05 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -660,16 +683,21 @@
     "Detailed",
     "G-06",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-06 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -760,16 +788,21 @@
     "Detailed",
     "G-07",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-07 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -860,16 +893,21 @@
     "Detailed",
     "G-08",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-08 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -960,7 +998,11 @@
     "Detailed",
     "G-09",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-09 · Hall A"
    ],
    "titles": [
@@ -1062,17 +1104,22 @@
     "Detailed",
     "G-10",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-10 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -1166,7 +1213,12 @@
     "Detailed",
     "G-11",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
     "Weigh soon",
     "Withdrawal · <day+5>"
@@ -1175,10 +1227,10 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -1272,7 +1324,11 @@
     "Detailed",
     "G-12",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-12 · Hall A",
     "Weigh soon"
    ],
@@ -1376,17 +1432,22 @@
     "Detailed",
     "G-13",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-13 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -1479,17 +1540,22 @@
     "Detailed",
     "G-14",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-14 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -1582,17 +1648,22 @@
     "Detailed",
     "G-15",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-15 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -1685,17 +1756,22 @@
     "Detailed",
     "G-16",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-16 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -1712,6 +1788,112 @@
     "chart": [
      "/operations/water/units/G-16/chart/",
      "Deffeyes chart · G-16"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "Avg. weight",
+     "77.0 g"
+    ],
+    [
+     "Biomass",
+     "169 kg"
+    ],
+    [
+     "Fed today",
+     "0 kg"
+    ],
+    [
+     "Fish",
+     "2,200"
+    ],
+    [
+     "Next meal",
+     "0.508 kg"
+    ],
+    [
+     "O₂ (%)",
+     "85.4*"
+    ],
+    [
+     "O₂ (mg/L)",
+     "9.00"
+    ],
+    [
+     "Ration",
+     "2.033 kg"
+    ],
+    [
+     "Remaining",
+     "2.033 kg"
+    ],
+    [
+     "TAN (mg/L N)",
+     "—"
+    ],
+    [
+     "Temp. (°C)",
+     "13.0"
+    ],
+    [
+     "bFCR",
+     "—"
+    ],
+    [
+     "eFCR",
+     "—"
+    ],
+    [
+     "pH",
+     "—"
+    ]
+   ],
+   "texts": [
+    "0 meals",
+    "1.7 kg/m³ ·",
+    "100 m³ · Max 50 kg/m³, 5,000 kg",
+    "3 %",
+    "Deffeyes chart",
+    "Density · capacity",
+    "Detailed",
+    "G-17",
+    "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
+    "Unit G-17 · Hall A",
+    "Weigh soon"
+   ],
+   "titles": [
+    "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
+    "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
+    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "Not weighed since the fish came in.",
+    "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-17",
+     "/operations/monitoring/cards/?flip=G-17"
+    ],
+    "chart": [
+     "/operations/water/units/G-17/chart/",
+     "Deffeyes chart · G-17"
     ]
    }
   },
@@ -1771,6 +1953,7 @@
     "Laks",
     "State from: Fish, Feeding, Water, Health",
     "T-01",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit T-01 · Hall A",
     "Weigh soon"
@@ -1869,8 +2052,13 @@
     "Density · capacity",
     "Detailed",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · just now",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
+    "Template: Simple · the rule for every unit",
     "Unit T-02 · Hall A",
     "Weigh soon"
    ],
@@ -1879,8 +2067,8 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -2012,21 +2200,26 @@
     "G-00",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-00 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -2154,11 +2347,15 @@
     "G-01",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-01 · Hall A"
    ],
@@ -2295,11 +2492,15 @@
     "G-02",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-02 · Hall A"
    ],
@@ -2438,11 +2639,15 @@
     "G-03",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-03 · Hall A"
    ],
@@ -2570,6 +2775,7 @@
     "No treatment in this unit in the last <age>.",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Treatments, last <age>",
     "Unit G-04 · Hall A"
@@ -2708,22 +2914,27 @@
     "G-05",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Over capacity",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-05 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -2853,21 +3064,26 @@
     "G-06",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-06 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -2999,21 +3215,26 @@
     "Inlet",
     "Laks · Stocked · <age>",
     "Latest sea-lice count <day-2>, 20 fish examined",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-07 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -3144,20 +3365,25 @@
     "G-08",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-08 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -3283,11 +3509,15 @@
     "G-09",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-09 · Hall A"
    ],
@@ -3430,12 +3660,17 @@
     "G-10",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Open health events",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-10 · Hall A",
     "Weigh soon"
@@ -3443,10 +3678,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -3579,11 +3814,16 @@
     "G-11",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-11 · Hall A",
     "Weigh soon",
@@ -3593,10 +3833,10 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -3729,11 +3969,16 @@
     "G-12",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-12 · Hall A",
     "Weigh soon"
@@ -3741,10 +3986,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago"
    ],
@@ -3878,11 +4123,16 @@
     "G-13",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-13 · Hall A",
     "Weigh soon"
@@ -3890,10 +4140,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -4025,11 +4275,16 @@
     "G-14",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-14 · Hall A",
     "Weigh soon"
@@ -4037,10 +4292,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -4172,11 +4427,16 @@
     "G-15",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-15 · Hall A",
     "Weigh soon"
@@ -4184,10 +4444,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -4319,11 +4579,16 @@
     "G-16",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-16 · Hall A",
     "Weigh soon"
@@ -4331,10 +4596,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -4351,6 +4616,158 @@
     "chart": [
      "/operations/water/units/G-16/chart/",
      "Deffeyes chart · G-16"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "Avg. weight",
+     "77.0 g"
+    ],
+    [
+     "Batches",
+     "1"
+    ],
+    [
+     "Biomass",
+     "169 kg"
+    ],
+    [
+     "Due today",
+     "0"
+    ],
+    [
+     "Fed today",
+     "0 kg"
+    ],
+    [
+     "Feed in use",
+     "—"
+    ],
+    [
+     "Feed rate",
+     "0.00 %"
+    ],
+    [
+     "Fish",
+     "2,200"
+    ],
+    [
+     "Last fed",
+     "—"
+    ],
+    [
+     "Last weighed",
+     "as stocked"
+    ],
+    [
+     "Losses",
+     "0"
+    ],
+    [
+     "NO₂-N (mg/L)",
+     "0.050"
+    ],
+    [
+     "Next meal",
+     "0.508 kg"
+    ],
+    [
+     "Open",
+     "0"
+    ],
+    [
+     "Overdue",
+     "0"
+    ],
+    [
+     "O₂ (%)",
+     "85.4*"
+    ],
+    [
+     "O₂ (mg/L)",
+     "9.00"
+    ],
+    [
+     "Ration",
+     "2.033 kg"
+    ],
+    [
+     "Remaining",
+     "2.033 kg"
+    ],
+    [
+     "Survival",
+     "100.0 %"
+    ],
+    [
+     "Temp. (°C)",
+     "13.0"
+    ],
+    [
+     "bFCR",
+     "—"
+    ],
+    [
+     "eFCR",
+     "—"
+    ]
+   ],
+   "texts": [
+    "0 dead · 0 culled",
+    "0 meals",
+    "1.7 kg/m³ ·",
+    "100 m³ · Max 50 kg/m³, 5,000 kg",
+    "3 %",
+    "<batch-19>",
+    "Bottom drain",
+    "Deffeyes chart",
+    "Density · capacity",
+    "G-17",
+    "Inlet",
+    "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Middle",
+    "No treatment in this unit in the last <age>.",
+    "Side outlet",
+    "Simple",
+    "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
+    "Treatments, last <age>",
+    "Unit G-17 · Hall A",
+    "Weigh soon"
+   ],
+   "titles": [
+    "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
+    "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
+    "No limit · <day+0>, <time> · <age> ago",
+    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "Not weighed since the fish came in.",
+    "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Simple",
+     "/operations/monitoring/?flip=G-17&mode=detailed",
+     "/operations/monitoring/cards/?flip=G-17&mode=detailed"
+    ],
+    "chart": [
+     "/operations/water/units/G-17/chart/",
+     "Deffeyes chart · G-17"
     ]
    }
   },
@@ -4453,6 +4870,7 @@
     "Simple",
     "State from: Fish, Feeding, Water, Health",
     "T-01",
+    "Template: Detailed · chosen on this page",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Treatments, last <age>",
     "Unit T-01 · Hall A",
@@ -4591,12 +5009,17 @@
     "Density · capacity",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · just now",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit T-02 · Hall A",
     "Weigh soon"
@@ -4606,8 +5029,8 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -4700,16 +5123,21 @@
     "Detailed",
     "G-00",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-00 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -4802,7 +5230,11 @@
     "Detailed",
     "G-01",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-01 · Hall A"
    ],
    "titles": [
@@ -4903,7 +5335,11 @@
     "Detailed",
     "G-02",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-02 · Hall A"
    ],
    "titles": [
@@ -5006,7 +5442,11 @@
     "Detailed",
     "G-03",
     "Laks",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-03 · Hall A"
    ],
    "titles": [
@@ -5090,6 +5530,7 @@
     "G-04",
     "Laks",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit G-04 · Hall A"
    ],
@@ -5188,17 +5629,22 @@
     "Detailed",
     "G-05",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Over capacity",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-05 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -5289,16 +5735,21 @@
     "Detailed",
     "G-06",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-06 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -5389,16 +5840,21 @@
     "Detailed",
     "G-07",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-07 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -5489,16 +5945,21 @@
     "Detailed",
     "G-08",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-08 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -5589,7 +6050,11 @@
     "Detailed",
     "G-09",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-09 · Hall A"
    ],
    "titles": [
@@ -5691,17 +6156,22 @@
     "Detailed",
     "G-10",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-10 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -5795,7 +6265,12 @@
     "Detailed",
     "G-11",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
     "Weigh soon",
     "Withdrawal · <day+5>"
@@ -5804,10 +6279,10 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -5901,7 +6376,11 @@
     "Detailed",
     "G-12",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-12 · Hall A",
     "Weigh soon"
    ],
@@ -6005,17 +6484,22 @@
     "Detailed",
     "G-13",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-13 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -6108,17 +6592,22 @@
     "Detailed",
     "G-14",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-14 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -6211,17 +6700,22 @@
     "Detailed",
     "G-15",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-15 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -6314,17 +6808,22 @@
     "Detailed",
     "G-16",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-16 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -6341,6 +6840,112 @@
     "chart": [
      "/operations/water/units/G-16/chart/",
      "Deffeyes chart · G-16"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "Avg. weight",
+     "77.0 g"
+    ],
+    [
+     "Biomass",
+     "169 kg"
+    ],
+    [
+     "Fed today",
+     "0 kg"
+    ],
+    [
+     "Fish",
+     "2,200"
+    ],
+    [
+     "Next meal",
+     "0.508 kg"
+    ],
+    [
+     "O₂ (%)",
+     "85.4*"
+    ],
+    [
+     "O₂ (mg/L)",
+     "9.00"
+    ],
+    [
+     "Ration",
+     "2.033 kg"
+    ],
+    [
+     "Remaining",
+     "2.033 kg"
+    ],
+    [
+     "TAN (mg/L N)",
+     "—"
+    ],
+    [
+     "Temp. (°C)",
+     "13.0"
+    ],
+    [
+     "bFCR",
+     "—"
+    ],
+    [
+     "eFCR",
+     "—"
+    ],
+    [
+     "pH",
+     "—"
+    ]
+   ],
+   "texts": [
+    "0 meals",
+    "1.7 kg/m³ ·",
+    "100 m³ · Max 50 kg/m³, 5,000 kg",
+    "3 %",
+    "Deffeyes chart",
+    "Density · capacity",
+    "Detailed",
+    "G-17",
+    "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
+    "Unit G-17 · Hall A",
+    "Weigh soon"
+   ],
+   "titles": [
+    "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
+    "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
+    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "Not weighed since the fish came in.",
+    "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-17&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-17&occupancy=all"
+    ],
+    "chart": [
+     "/operations/water/units/G-17/chart/",
+     "Deffeyes chart · G-17"
     ]
    }
   },
@@ -6400,6 +7005,7 @@
     "Laks",
     "State from: Fish, Feeding, Water, Health",
     "T-01",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit T-01 · Hall A",
     "Weigh soon"
@@ -6498,8 +7104,13 @@
     "Density · capacity",
     "Detailed",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 10 s ago",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
+    "Template: Simple · the rule for every unit",
     "Unit T-02 · Hall A",
     "Weigh soon"
    ],
@@ -6508,8 +7119,8 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -6537,8 +7148,10 @@
     "Deffeyes chart",
     "Detailed",
     "Empty",
+    "Maintenance",
     "P-01",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit P-01 · Sea"
    ],
    "titles": [],
@@ -6631,16 +7244,21 @@
     "Detailed",
     "G-00",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-00 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -6733,7 +7351,11 @@
     "Detailed",
     "G-01",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-01 · Hall A"
    ],
    "titles": [
@@ -6834,7 +7456,11 @@
     "Detailed",
     "G-02",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-02 · Hall A"
    ],
    "titles": [
@@ -6937,7 +7563,11 @@
     "Detailed",
     "G-03",
     "Laks",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-03 · Hall A"
    ],
    "titles": [
@@ -7021,6 +7651,7 @@
     "G-04",
     "Laks",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit G-04 · Hall A"
    ],
@@ -7119,17 +7750,22 @@
     "Detailed",
     "G-05",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Over capacity",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-05 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -7220,16 +7856,21 @@
     "Detailed",
     "G-06",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-06 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -7361,21 +8002,26 @@
     "Inlet",
     "Laks · Stocked · <age>",
     "Latest sea-lice count <day-2>, 20 fish examined",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · flipped on this page",
     "Treatments, last <age>",
     "Unit G-07 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -7466,16 +8112,21 @@
     "Detailed",
     "G-08",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-08 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -7566,7 +8217,11 @@
     "Detailed",
     "G-09",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-09 · Hall A"
    ],
    "titles": [
@@ -7668,17 +8323,22 @@
     "Detailed",
     "G-10",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-10 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -7772,7 +8432,12 @@
     "Detailed",
     "G-11",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
     "Weigh soon",
     "Withdrawal · <day+5>"
@@ -7781,10 +8446,10 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -7878,7 +8543,11 @@
     "Detailed",
     "G-12",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-12 · Hall A",
     "Weigh soon"
    ],
@@ -7982,17 +8651,22 @@
     "Detailed",
     "G-13",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-13 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -8085,17 +8759,22 @@
     "Detailed",
     "G-14",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-14 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -8188,17 +8867,22 @@
     "Detailed",
     "G-15",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-15 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -8291,17 +8975,22 @@
     "Detailed",
     "G-16",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
     "Unit G-16 · Hall A",
     "Weigh soon"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -8318,6 +9007,112 @@
     "chart": [
      "/operations/water/units/G-16/chart/",
      "Deffeyes chart · G-16"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "Avg. weight",
+     "77.0 g"
+    ],
+    [
+     "Biomass",
+     "169 kg"
+    ],
+    [
+     "Fed today",
+     "0 kg"
+    ],
+    [
+     "Fish",
+     "2,200"
+    ],
+    [
+     "Next meal",
+     "0.508 kg"
+    ],
+    [
+     "O₂ (%)",
+     "85.4*"
+    ],
+    [
+     "O₂ (mg/L)",
+     "9.00"
+    ],
+    [
+     "Ration",
+     "2.033 kg"
+    ],
+    [
+     "Remaining",
+     "2.033 kg"
+    ],
+    [
+     "TAN (mg/L N)",
+     "—"
+    ],
+    [
+     "Temp. (°C)",
+     "13.0"
+    ],
+    [
+     "bFCR",
+     "—"
+    ],
+    [
+     "eFCR",
+     "—"
+    ],
+    [
+     "pH",
+     "—"
+    ]
+   ],
+   "texts": [
+    "0 meals",
+    "1.7 kg/m³ ·",
+    "100 m³ · Max 50 kg/m³, 5,000 kg",
+    "3 %",
+    "Deffeyes chart",
+    "Density · capacity",
+    "Detailed",
+    "G-17",
+    "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · the rule for every unit",
+    "Unit G-17 · Hall A",
+    "Weigh soon"
+   ],
+   "titles": [
+    "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
+    "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
+    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "Not weighed since the fish came in.",
+    "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-07,G-17,T-02",
+     "/operations/monitoring/cards/?flip=G-07,G-17,T-02"
+    ],
+    "chart": [
+     "/operations/water/units/G-17/chart/",
+     "Deffeyes chart · G-17"
     ]
    }
   },
@@ -8377,6 +9172,7 @@
     "Laks",
     "State from: Fish, Feeding, Water, Health",
     "T-01",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit T-01 · Hall A",
     "Weigh soon"
@@ -8514,12 +9310,17 @@
     "Density · capacity",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 10 s ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
+    "Template: Detailed · flipped on this page",
     "Treatments, last <age>",
     "Unit T-02 · Hall A",
     "Weigh soon"
@@ -8529,8 +9330,8 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -8660,11 +9461,15 @@
     "G-01",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · the board’s default",
     "Treatments, last <age>",
     "Unit G-01 · Hall A"
    ],
@@ -8764,16 +9569,21 @@
     "Detailed",
     "G-06",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Simple · chosen for this card on the board",
     "Unit G-06 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -8905,21 +9715,26 @@
     "Inlet",
     "Laks · Stocked · <age>",
     "Latest sea-lice count <day-2>, 20 fish examined",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen for this card on the board",
     "Treatments, last <age>",
     "Unit G-07 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -9052,11 +9867,16 @@
     "G-11",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · the board’s default",
     "Treatments, last <age>",
     "Unit G-11 · Hall A",
     "Weigh soon",
@@ -9066,10 +9886,10 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -9188,6 +10008,7 @@
     "Simple",
     "State from: Fish, Feeding, Water, Health",
     "T-01",
+    "Template: Detailed · the board’s default",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Treatments, last <age>",
     "Unit T-01 · Hall A",
@@ -9287,8 +10108,13 @@
     "Density · capacity",
     "Detailed",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 10 s ago",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
+    "Template: Simple · chosen for this card on the board",
     "Unit T-02 · Hall A",
     "Weigh soon"
    ],
@@ -9297,8 +10123,8 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -9430,21 +10256,26 @@
     "G-00",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-00 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -9572,11 +10403,15 @@
     "G-01",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-01 · Hall A"
    ],
@@ -9713,11 +10548,15 @@
     "G-02",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-02 · Hall A"
    ],
@@ -9856,11 +10695,15 @@
     "G-03",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-03 · Hall A"
    ],
@@ -9988,6 +10831,7 @@
     "No treatment in this unit in the last <age>.",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Treatments, last <age>",
     "Unit G-04 · Hall A"
@@ -10126,22 +10970,27 @@
     "G-05",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Over capacity",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-05 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -10271,21 +11120,26 @@
     "G-06",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-06 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -10417,21 +11271,26 @@
     "Inlet",
     "Laks · Stocked · <age>",
     "Latest sea-lice count <day-2>, 20 fish examined",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-07 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -10562,20 +11421,25 @@
     "G-08",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-08 · Hall A"
    ],
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -10701,11 +11565,15 @@
     "G-09",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-09 · Hall A"
    ],
@@ -10848,12 +11716,17 @@
     "G-10",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Open health events",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-10 · Hall A",
     "Weigh soon"
@@ -10861,10 +11734,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -10997,11 +11870,16 @@
     "G-11",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-11 · Hall A",
     "Weigh soon",
@@ -11011,10 +11889,10 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -11147,11 +12025,16 @@
     "G-12",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-12 · Hall A",
     "Weigh soon"
@@ -11159,10 +12042,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "Warning · <day+0>, <time> · <age> ago"
    ],
@@ -11296,11 +12179,16 @@
     "G-13",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-13 · Hall A",
     "Weigh soon"
@@ -11308,10 +12196,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -11443,11 +12331,16 @@
     "G-14",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-14 · Hall A",
     "Weigh soon"
@@ -11455,10 +12348,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -11590,11 +12483,16 @@
     "G-15",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-15 · Hall A",
     "Weigh soon"
@@ -11602,10 +12500,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -11737,11 +12635,16 @@
     "G-16",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit G-16 · Hall A",
     "Weigh soon"
@@ -11749,10 +12652,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -11769,6 +12672,158 @@
     "chart": [
      "/operations/water/units/G-16/chart/",
      "Deffeyes chart · G-16"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "Avg. weight",
+     "77.0 g"
+    ],
+    [
+     "Batches",
+     "1"
+    ],
+    [
+     "Biomass",
+     "169 kg"
+    ],
+    [
+     "Due today",
+     "0"
+    ],
+    [
+     "Fed today",
+     "0 kg"
+    ],
+    [
+     "Feed in use",
+     "—"
+    ],
+    [
+     "Feed rate",
+     "0.00 %"
+    ],
+    [
+     "Fish",
+     "2,200"
+    ],
+    [
+     "Last fed",
+     "—"
+    ],
+    [
+     "Last weighed",
+     "as stocked"
+    ],
+    [
+     "Losses",
+     "0"
+    ],
+    [
+     "NO₂-N (mg/L)",
+     "0.050"
+    ],
+    [
+     "Next meal",
+     "0.508 kg"
+    ],
+    [
+     "Open",
+     "0"
+    ],
+    [
+     "Overdue",
+     "0"
+    ],
+    [
+     "O₂ (%)",
+     "85.4*"
+    ],
+    [
+     "O₂ (mg/L)",
+     "9.00"
+    ],
+    [
+     "Ration",
+     "2.033 kg"
+    ],
+    [
+     "Remaining",
+     "2.033 kg"
+    ],
+    [
+     "Survival",
+     "100.0 %"
+    ],
+    [
+     "Temp. (°C)",
+     "13.0"
+    ],
+    [
+     "bFCR",
+     "—"
+    ],
+    [
+     "eFCR",
+     "—"
+    ]
+   ],
+   "texts": [
+    "0 dead · 0 culled",
+    "0 meals",
+    "1.7 kg/m³ ·",
+    "100 m³ · Max 50 kg/m³, 5,000 kg",
+    "3 %",
+    "<batch-19>",
+    "Bottom drain",
+    "Deffeyes chart",
+    "Density · capacity",
+    "G-17",
+    "Inlet",
+    "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Middle",
+    "No treatment in this unit in the last <age>.",
+    "Side outlet",
+    "Simple",
+    "State from: Fish, Feeding, Water, Health",
+    "Template: Detailed · chosen on this page",
+    "Treatments, last <age>",
+    "Unit G-17 · Hall A",
+    "Weigh soon"
+   ],
+   "titles": [
+    "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
+    "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
+    "No limit · <day+0>, <time> · <age> ago",
+    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "Not weighed since the fish came in.",
+    "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Simple",
+     "/operations/monitoring/?flip=G-17&mode=detailed",
+     "/operations/monitoring/cards/?flip=G-17&mode=detailed"
+    ],
+    "chart": [
+     "/operations/water/units/G-17/chart/",
+     "Deffeyes chart · G-17"
     ]
    }
   },
@@ -11871,6 +12926,7 @@
     "Simple",
     "State from: Fish, Feeding, Water, Health",
     "T-01",
+    "Template: Detailed · chosen on this page",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Treatments, last <age>",
     "Unit T-01 · Hall A",
@@ -12009,12 +13065,17 @@
     "Density · capacity",
     "Inlet",
     "Laks · Stocked · <age>",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 10 s ago",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
     "Simple",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
+    "Template: Detailed · chosen on this page",
     "Treatments, last <age>",
     "Unit T-02 · Hall A",
     "Weigh soon"
@@ -12024,8 +13085,8 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -12094,6 +13155,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-00 · Hall A",
     "Water: not shown to you"
    ],
@@ -12157,6 +13219,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-01 · Hall A",
     "Water: not shown to you"
    ],
@@ -12220,6 +13283,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-02 · Hall A",
     "Water: not shown to you"
    ],
@@ -12283,6 +13347,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-03 · Hall A",
     "Water: not shown to you"
    ],
@@ -12346,6 +13411,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-04 · Hall A",
     "Water: not shown to you"
    ],
@@ -12412,6 +13478,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-05 · Hall A",
     "Water: not shown to you"
    ],
@@ -12475,6 +13542,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-06 · Hall A",
     "Water: not shown to you"
    ],
@@ -12538,6 +13606,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-07 · Hall A",
     "Water: not shown to you"
    ],
@@ -12601,6 +13670,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-08 · Hall A",
     "Water: not shown to you"
    ],
@@ -12664,6 +13734,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-09 · Hall A",
     "Water: not shown to you"
    ],
@@ -12727,6 +13798,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-10 · Hall A",
     "Water: not shown to you"
    ],
@@ -12792,6 +13864,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-11 · Hall A",
     "Water: not shown to you",
     "Withdrawal · <day+5>"
@@ -12858,6 +13931,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-12 · Hall A",
     "Water: not shown to you"
    ],
@@ -12921,6 +13995,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-13 · Hall A",
     "Water: not shown to you"
    ],
@@ -12984,6 +14059,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-14 · Hall A",
     "Water: not shown to you"
    ],
@@ -13047,6 +14123,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-15 · Hall A",
     "Water: not shown to you"
    ],
@@ -13110,6 +14187,7 @@
     "Simple",
     "State from: Fish",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit G-16 · Hall A",
     "Water: not shown to you"
    ],
@@ -13123,6 +14201,70 @@
      "Simple",
      "/operations/monitoring/?flip=G-16&mode=detailed&occupancy=all",
      "/operations/monitoring/cards/?flip=G-16&mode=detailed&occupancy=all"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "OK",
+   "reasons": [],
+   "pairs": [
+    [
+     "Avg. weight",
+     "77.0 g"
+    ],
+    [
+     "Batches",
+     "1"
+    ],
+    [
+     "Biomass",
+     "169 kg"
+    ],
+    [
+     "Fish",
+     "2,200"
+    ],
+    [
+     "Last weighed",
+     "as stocked"
+    ],
+    [
+     "Losses",
+     "0"
+    ],
+    [
+     "Survival",
+     "100.0 %"
+    ]
+   ],
+   "texts": [
+    "0 dead · 0 culled",
+    "1.7 kg/m³ ·",
+    "100 m³ · Max 50 kg/m³, 5,000 kg",
+    "3 %",
+    "<batch-19>",
+    "Density · capacity",
+    "Feeding: not shown to you",
+    "G-17",
+    "Health: not shown to you",
+    "Laks · Stocked · <age>",
+    "Simple",
+    "State from: Fish",
+    "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
+    "Unit G-17 · Hall A",
+    "Water: not shown to you"
+   ],
+   "titles": [],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Simple",
+     "/operations/monitoring/?flip=G-17&mode=detailed&occupancy=all",
+     "/operations/monitoring/cards/?flip=G-17&mode=detailed&occupancy=all"
     ]
    }
   },
@@ -13173,6 +14315,7 @@
     "State from: Fish",
     "T-01",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit T-01 · Hall A",
     "Water: not shown to you"
    ],
@@ -13236,6 +14379,7 @@
     "State from: Fish",
     "T-02",
     "Tasks: not shown to you",
+    "Template: Detailed · chosen on this page",
     "Unit T-02 · Hall A",
     "Water: not shown to you"
    ],
@@ -13258,9 +14402,11 @@
    "pairs": [],
    "texts": [
     "Empty",
+    "Maintenance",
     "P-01",
     "Simple",
     "State from: Fish",
+    "Template: Detailed · chosen on this page",
     "Unit P-01 · Sea"
    ],
    "titles": [],
@@ -13325,12 +14471,17 @@
     "Feeding: not shown to you",
     "G-00",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-00 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -13399,7 +14550,11 @@
     "Feeding: not shown to you",
     "G-01",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-01 · Hall A"
    ],
    "titles": [
@@ -13472,7 +14627,11 @@
     "Feeding: not shown to you",
     "G-02",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-02 · Hall A"
    ],
    "titles": [
@@ -13546,7 +14705,11 @@
     "Feeding: not shown to you",
     "G-03",
     "Laks",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
+    "Meter or test kit · 1 d ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-03 · Hall A"
    ],
    "titles": [
@@ -13601,6 +14764,7 @@
     "G-04",
     "Laks",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit G-04 · Hall A"
    ],
@@ -13670,13 +14834,18 @@
     "Feeding: not shown to you",
     "G-05",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "Over capacity",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-05 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -13743,12 +14912,17 @@
     "Feeding: not shown to you",
     "G-06",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-06 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -13815,12 +14989,17 @@
     "Feeding: not shown to you",
     "G-07",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-07 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -13887,12 +15066,17 @@
     "Feeding: not shown to you",
     "G-08",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-08 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -13959,7 +15143,11 @@
     "Feeding: not shown to you",
     "G-09",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-09 · Hall A"
    ],
    "titles": [
@@ -14030,12 +15218,17 @@
     "Feeding: not shown to you",
     "G-10",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-10 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -14104,14 +15297,19 @@
     "Feeding: not shown to you",
     "G-11",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-11 · Hall A",
     "Withdrawal · <day+5>"
    ],
    "titles": [
     "<batch-13> · <day+5>",
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -14180,7 +15378,11 @@
     "Feeding: not shown to you",
     "G-12",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-12 · Hall A"
    ],
    "titles": [
@@ -14251,12 +15453,17 @@
     "Feeding: not shown to you",
     "G-13",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-13 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -14323,12 +15530,17 @@
     "Feeding: not shown to you",
     "G-14",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-14 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -14395,12 +15607,17 @@
     "Feeding: not shown to you",
     "G-15",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-15 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -14467,12 +15684,17 @@
     "Feeding: not shown to you",
     "G-16",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
     "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
     "Unit G-16 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],
@@ -14489,6 +15711,83 @@
     "chart": [
      "/operations/water/units/G-16/chart/",
      "Deffeyes chart · G-16"
+    ]
+   }
+  },
+  "G-17": {
+   "state": "No limit",
+   "reasons": [
+    "Nitrite (mg/L NO₂ as N): no limit for these fish"
+   ],
+   "pairs": [
+    [
+     "Avg. weight",
+     "77.0 g"
+    ],
+    [
+     "Biomass",
+     "169 kg"
+    ],
+    [
+     "Fish",
+     "2,200"
+    ],
+    [
+     "O₂ (%)",
+     "85.4*"
+    ],
+    [
+     "O₂ (mg/L)",
+     "9.00"
+    ],
+    [
+     "TAN (mg/L N)",
+     "—"
+    ],
+    [
+     "Temp. (°C)",
+     "13.0"
+    ],
+    [
+     "pH",
+     "—"
+    ]
+   ],
+   "texts": [
+    "1.7 kg/m³ ·",
+    "100 m³ · Max 50 kg/m³, 5,000 kg",
+    "3 %",
+    "Deffeyes chart",
+    "Density · capacity",
+    "Detailed",
+    "Feeding: not shown to you",
+    "G-17",
+    "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "State from: Fish, Water",
+    "Template: Simple · the rule for every unit",
+    "Unit G-17 · Hall A"
+   ],
+   "titles": [
+    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago"
+   ],
+   "links": {
+    "unit": [
+     "G-17",
+     "/operations/units/?unit=G-17"
+    ],
+    "flip": [
+     "Detailed",
+     "/operations/monitoring/?flip=G-17",
+     "/operations/monitoring/cards/?flip=G-17"
+    ],
+    "chart": [
+     "/operations/water/units/G-17/chart/",
+     "Deffeyes chart · G-17"
     ]
    }
   },
@@ -14523,6 +15822,7 @@
     "Laks",
     "State from: Fish, Water",
     "T-01",
+    "Template: Simple · the rule for every unit",
     "This unit has no active middle sampling point, so no water is shown for it.",
     "Unit T-01 · Hall A"
    ],
@@ -14589,13 +15889,18 @@
     "Detailed",
     "Feeding: not shown to you",
     "Laks",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 1 h ago",
+    "Meter or test kit · 10 s ago",
     "State from: Fish, Water",
     "T-02",
+    "Template: Simple · the rule for every unit",
     "Unit T-02 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
     "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago"
    ],

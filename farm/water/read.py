@@ -59,9 +59,10 @@ from django.db.models import Func, Q, UUIDField
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from farm.models import Batch, EquipmentSystem, SamplingPoint, System, Tank, WaterLimit, WaterMeasurement
+from farm.models import Batch, EquipmentSystem, SamplingPoint, Species, System, Tank, WaterLimit, WaterMeasurement
 from farm.models.water import LIVE_POINT
 from farm.models.water_point import PointKind, local_time, owner_type_of, site_of
+from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
@@ -349,7 +350,9 @@ class Series:
 class Reading:
     """One parameter's value from one Observation (a sample, a sensor's value, or the sensor values a derived value is
     worked out from): entered or measured, or worked out (`derived`); None when it could not be worked out, `note`
-    saying why. `status` and the limit rows that judged it come from evaluate."""
+    saying why. `status` and the limit rows that judged it come from evaluate: `status` is what a page shows (stale once
+    the value is old), `judged` what the limits say of the value whatever its age, so an old critical value is never
+    forgotten (a card stays critical and says the value is old)."""
     parameter: parameters.Parameter
     value: Decimal
     sample: Observation
@@ -357,6 +360,7 @@ class Reading:
     note: str = ''
     status: str = Status.NOT_MEASURED
     limits: list = field(default_factory=list)
+    judged: str = Status.NOT_MEASURED
 
     @property
     def at(self):
@@ -400,6 +404,25 @@ class PointWater:
     @property
     def alerts(self):
         return [reading for reading in self.readings.values() if reading.status in (Status.CRITICAL, Status.WARNING)]
+
+    @property
+    def unjudged(self):
+        """The values no limit row judges for the fish they concern, fresh or old ("no limit": the owner has set none
+        for these fish), in reading order; one quantity in two units (parameters.SAME_QUANTITY) is judged when either
+        has a row, and named once (the first of the two) when neither has. Where there are no fish nothing is judged, so
+        the caller asks only where there are fish."""
+        found = []
+        for reading in self.readings.values():
+            other = parameters.SAME_QUANTITY.get(reading.code)
+            if reading.code in LIMITED and reading.value is not None and reading.judged == Status.NO_LIMIT \
+                    and not self._judged(other) and not any(each.code == other for each in found):
+                found.append(reading)
+        return found
+
+    def _judged(self, code):
+        other = self.readings.get(code) if code else None
+        return other is not None and other.value is not None and other.judged not in (Status.NO_LIMIT,
+                                                                                     Status.NOT_MEASURED)
 
     def get(self, code):
         return self.readings.get(code)
@@ -547,13 +570,14 @@ class Context:
 
     # -- judging --
     def judge(self, reading, day, now=None):
-        """Sets the reading's status and limit rows, for the fish of `day`; stale when `now` is given and the
-        value is no longer fresh (Reading.fresh)."""
+        """Sets the reading's judgement and limit rows, for the fish of `day`, and its status: the judgement, or stale
+        when `now` is given and the value is no longer fresh (Reading.fresh); the judgement stays."""
         if reading.code not in LIMITED or reading.value is None:
-            reading.status = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
+            reading.status = reading.judged = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
             return reading
-        reading.status, reading.limits = self.limits.assess(reading.code, reading.value,
+        reading.judged, reading.limits = self.limits.assess(reading.code, reading.value,
                                                             self.exposures(reading.sample.point, day))
+        reading.status = reading.judged
         if now is not None and not reading.fresh(now):
             reading.status = Status.STALE
         return reading
@@ -796,3 +820,47 @@ def limits_now(place):
         if rows:
             found[parameter.code] = rows
     return found
+
+
+@dataclass(frozen=True)
+class Missing:
+    """A species kept in a water type today, and the parameters no limit row judges for it there."""
+    species: object
+    water_type: str
+    parameters: list
+
+    @property
+    def water_type_label(self):
+        return Tank.WaterType(self.water_type).label
+
+
+def missing_limits():
+    """[Missing] of the fish kept today: per species and the water type of each live unit it is in (SpeciesBook, on the
+    unit's own day), the limitable parameters that no row judges there (`Limits.applying`: the water type's row, else
+    the row for any water), the oxygen once (a row on mg/L or on % judges it, parameters.SAME_QUANTITY: the parameter
+    named is the mg/L). In the order of the species' name and the water type. Where this is empty every value of every
+    stocked unit is judged; a card says the rest ("no limit", monitoring/read.py)."""
+    units = list(Tank.objects.select_related('production_department__site'))
+    book = SpeciesBook({unit.pk for unit in units})
+    exposures = set()
+    for unit in units:
+        exposures |= {(species_id, unit.water_type) for species_id in book.on(unit.pk, local_today(unit))}
+    if not exposures:
+        return []
+    # A deleted species whose fish are still kept is named too: its rows judge nothing (Context), so nothing does.
+    species = Species.all_objects.in_bulk({species_id for species_id, _water_type in exposures})
+    limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
+    found = []
+    for species_id, water_type in exposures:
+        missing = []
+        for parameter in parameters.LIMITED:
+            other = parameters.SAME_QUANTITY.get(parameter.code)
+            if limits.applying(species_id, parameter.code, water_type) is not None or \
+                    (other and limits.applying(species_id, other, water_type) is not None):
+                continue
+            if other and parameter.code == parameters.OXYGEN_PCT:
+                continue                                            # the oxygen is named once, as mg/L
+            missing.append(parameter)
+        if missing:
+            found.append(Missing(species[species_id], water_type, missing))
+    return sorted(found, key=lambda entry: (entry.species.common_name, entry.water_type))

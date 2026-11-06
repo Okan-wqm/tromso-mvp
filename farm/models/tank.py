@@ -171,14 +171,16 @@ VOLUME_FIELDS = ('shape', 'diameter', 'length', 'width', 'stated_volume_m3', 'de
 
 # The status machine, as the source has it (tank-status.policy.ts): from each status, the ones a unit
 # can move to. Harvesting, cleaning and quarantine follow from an earlier status, so a new unit starts
-# in one of the others.
+# in one of the others. One move is added (F-166): maintenance -> active, the way back for a unit serviced with its
+# fish in it, which otherwise could leave maintenance only once every fish was moved out (active needs fish, preparing
+# and inactive need none, so the fish in the unit decide which of the three it can take).
 TRANSITIONS = {
     Status.INACTIVE: (Status.PREPARING,),
     Status.PREPARING: (Status.ACTIVE, Status.INACTIVE),
     Status.ACTIVE: (Status.HARVESTING, Status.MAINTENANCE, Status.QUARANTINE, Status.FALLOW),
     Status.HARVESTING: (Status.CLEANING,),
     Status.CLEANING: (Status.PREPARING, Status.MAINTENANCE, Status.FALLOW),
-    Status.MAINTENANCE: (Status.PREPARING, Status.INACTIVE),
+    Status.MAINTENANCE: (Status.ACTIVE, Status.PREPARING, Status.INACTIVE),
     Status.FALLOW: (Status.PREPARING,),
     Status.QUARANTINE: (Status.ACTIVE, Status.CLEANING),
 }

@@ -218,7 +218,8 @@ The volume, the water volume and the max biomass are **generated columns**: the 
 from the measures on every write (`Tank.water_surface()`: π·d²/4, L·W, an ellipse π·L·W/4, a D-ended
 tank (L − W)·W + π·W²/4, a pond's area), so a stored volume always matches its unit, whatever wrote the
 row. The max biomass is the water volume (else the volume) times the max density. The status follows the
-source's status machine, in one place (`TRANSITIONS`); a new unit holds no fish, so it starts as
+source's status machine, in one place (`TRANSITIONS`), with one move added: maintenance → active, the way back for
+a unit serviced with its fish in it (F-166); a new unit holds no fish, so it starts as
 preparing, fallow, maintenance or inactive; the form offers the current status and where it can go.
 Every rule that needs the fish in a unit asks `Tank.has_stock()`, which reads the stock ledger: active
 and harvesting need fish, preparing, fallow, cleaning and inactive need none (maintenance and

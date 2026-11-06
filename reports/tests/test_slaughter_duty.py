@@ -11,9 +11,10 @@ from django.urls import reverse
 from core.models import AuditLog
 from farm.models import HandlingPlanItem
 from farm.stock import services as stock
-from farm.tests.helpers import role
+from farm.tests.helpers import make_facility, role
 
 from .. import compute, due, services
+from ..compute import slaughter
 from ..kinds import ReportKind
 from ..models import DueClosure, Report
 from ..periods import WEEK, Period
@@ -141,3 +142,54 @@ class ClosureTests(DueTestCase):
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.assertEqual(self.client.post(self.url, {'reason': 'x'}).status_code, 403)
         self.assertNotContains(self.client.get(reverse('reports:report_list')), 'Close without filing')
+
+
+class PlannedAndDoneTests(DueTestCase):
+    """One planned-vs-done rule (audit F-085, F-227, F-238): a harvest recorded from a plan is that plan's in the
+    planned-slaughter report, whatever its own day and facility; it is counted once, as planned, and never again as
+    "not planned" in the week or at the facility it was really done; both reports say where it went."""
+
+    def setUp(self):
+        super().setUp()
+        self.batch = self.stock(self.m1, 1000, '4000', day(10, 1))
+        self.other = make_facility('Kyst Slakteri', 'M456')
+        self.item = HandlingPlanItem.objects.create(kind='harvest', date=date(2026, 10, 20), unit=self.m1,
+                                                    batch=self.batch, planned_kg=Decimal(2500),
+                                                    facility=self.facility, created_by=self.user)
+        HandlingPlanItem.objects.filter(pk=self.item.pk).update(created_at=datetime(2026, 10, 1, 9, tzinfo=utc.utc))
+
+    def harvest(self, on, facility):
+        return stock.record_harvest(self.user, unit=self.m1, batch=self.batch, day=on, count=100,
+                                    measured_weight_kg=Decimal(400), facility=facility, plan_item=self.item)
+
+    def rows(self):
+        return sorted((row.place.name, row.period.key) for row in due.due(TODAY).rows
+                      if row.kind == ReportKind.SLAUGHTER_PLANNED)
+
+    def test_a_harvest_done_a_week_later_is_the_plans_and_counted_once(self):
+        operation = self.harvest(date(2026, 10, 27), self.facility)                 # week 44, planned for week 43
+        self.assertEqual(self.rows(), [('Fjord Slakteri', '2026-W43')])
+        planned = compute.compute(self.report(Report.Kind.SLAUGHTER_PLANNED, Period(WEEK, date(2026, 10, 19))))
+        self.assertEqual(planned.content['items'], [str(self.item.pk)])
+        self.assertIn('The planned harvest of M-01 on 2026-10-20 was recorded on 2026-10-27 at Fjord Slakteri: it is '
+                      'reported here as planned; correct the notice if it was filed.', planned.warnings)
+        done = compute.compute(self.report(Report.Kind.SLAUGHTER_PLANNED, Period(WEEK, date(2026, 10, 26))))
+        self.assertEqual(done.content['items'], [])
+        self.assertNotIn(str(operation.pk), done.content['items'])
+        self.assertIn('The harvest of M-01 on 2026-10-27 is the plan of 2026-10-20 at Fjord Slakteri: it is reported '
+                      'with that plan, not here.', done.warnings)
+        self.assertFalse([text for text in done.warnings if 'was not planned' in text])
+
+    def test_a_harvest_sent_to_another_facility_is_the_plans_and_counted_once(self):
+        self.harvest(date(2026, 10, 20), self.other)
+        self.assertEqual(self.rows(), [('Fjord Slakteri', '2026-W43')])
+        week = Period(WEEK, date(2026, 10, 19))
+        planned = compute.compute(self.report(Report.Kind.SLAUGHTER_PLANNED, week))
+        self.assertIn('The planned harvest of M-01 on 2026-10-20 was recorded on 2026-10-20 at Kyst Slakteri: it is '
+                      'reported here as planned; correct the notice if it was filed.', planned.warnings)
+        elsewhere = compute.compute(self.report(Report.Kind.SLAUGHTER_PLANNED, week, facility=self.other))
+        self.assertEqual(elsewhere.content['items'], [])
+
+    def test_the_rule_is_one_function(self):
+        operation = self.harvest(date(2026, 10, 27), self.facility)
+        self.assertEqual(slaughter.plans_of([operation.pk]), {operation.pk: self.item})

@@ -14,10 +14,10 @@ from decimal import Decimal
 from django.db.models import Max, Q
 from django.utils.translation import gettext as _
 
-from farm.health import read as health_read
+from farm.health import lice as health_lice, read as health_read
 from farm.models import Batch, HandlingPlanItem, LiceCount, Medicine, Site, Species, Treatment
 from farm.models.harvest import PlanKind
-from farm.models.health import MEDICINAL, TreatmentMethod, TreatmentReason
+from farm.models.health import MEDICINAL, MedicineKind, TreatmentMethod, TreatmentReason
 from farm.models.site import zone_of
 from farm.models.species import SALMONID_CODES
 from farm.models.water_point import PointKind
@@ -47,6 +47,28 @@ def week_treatments(site, period):
                                      start_date__lte=period.end, end_date__gte=period.start)
             .select_related('medicine').prefetch_related('units__production_department').distinct()
             .order_by('start_date', 'created_at'))
+
+
+def left_out(site, period):
+    """The treatments of the site in the week with a sea-lice medicine given for another reason, which the report leaves
+    out (farm.health.lice.left_out_of_lice_report): it says so, so that a reason chosen wrongly is caught before filing
+    (audit F-083, F-239)."""
+    found = (Treatment.objects.filter(medicine__kind=MedicineKind.LICE, units__production_department__site=site,
+                                      start_date__lte=period.end, end_date__gte=period.start)
+             .exclude(reason=TreatmentReason.SEA_LICE).select_related('medicine')
+             .prefetch_related('units__production_department').distinct().order_by('start_date', 'created_at'))
+    return [treatment for treatment in found if health_lice.left_out_of_lice_report(treatment.medicine, treatment.reason)]
+
+
+def _left_out_warnings(site, period, warnings):
+    for treatment in left_out(site, period):
+        units = sorted(unit.code for unit in treatment.units.all() if unit.production_department.site_id == site.pk)
+        warnings.append(_('The treatment with %(medicine)s in %(units)s from %(start)s to %(end)s was recorded for '
+                          '“%(reason)s”, not for sea lice, so it is not in this report: if it was given against sea '
+                          'lice, void it and record it again with the reason “%(sea_lice)s”.') % {
+            'medicine': treatment.medicine, 'units': ', '.join(units), 'start': treatment.start_date.isoformat(),
+            'end': treatment.end_date.isoformat(), 'reason': treatment.get_reason_display(),
+            'sea_lice': TreatmentReason.SEA_LICE.label})
 
 
 def depth_samples(site, period):
@@ -88,6 +110,7 @@ def compute(site, period, report):
     counts = _counts(site, units, period, problems, warnings)
     _coverage(site, units, held, counts, temperature, period, problems, warnings)
     treatments = _treatments(site, units, report, counts, problems, warnings, period, salmonids)
+    _left_out_warnings(site, period, warnings)
     content = {
         'kind': 'sea_lice', 'period': period.key, 'identity': identity(site, problems),
         'temperature_c': text(temperature, 1), 'samples': samples, 'counts': counts['content'],
@@ -120,10 +143,10 @@ def scope(site, period, units=None):
     units = units if units is not None else stock.site_units(site)
     return stock.scope_rows(units, period.end) + [
         ('lice_counts', LiceCount.all_objects.filter(unit__in=units, date__gte=period.start, date__lte=period.end)),
-        ('treatments', Treatment.all_objects.filter(reason=TreatmentReason.SEA_LICE,
-                                                    units__production_department__site=site,
-                                                    start_date__lte=period.end, end_date__gte=period.start)
-         .distinct()),
+        # The treatments for sea lice, and those with a sea-lice medicine the report leaves out and says so (F-239).
+        ('treatments', Treatment.all_objects.filter(
+            Q(reason=TreatmentReason.SEA_LICE) | Q(medicine__kind=MedicineKind.LICE),
+            units__production_department__site=site, start_date__lte=period.end, end_date__gte=period.start).distinct()),
         ('medicines', Medicine.all_objects.filter(treatments__in=week_treatments(site, period)).distinct()),
         ('water_samples', depth_samples(site, period)),
     ]

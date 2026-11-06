@@ -292,7 +292,9 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
             method = data.get('method') or self['method'].value()
             medicine = data.get('medicine') if 'medicine' in data else self.current('medicine')
             end_date = data.get('end_date') or self.current('end_date')
-            self._handling = services.handling(list(units), day, method, medicine, end_date)
+            reason = data.get('reason') or self['reason'].value()
+            self._handling = services.handling(list(units), day, method, medicine, end_date,
+                                               reason if reason in Treatment.Reason.values else None)
             self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
         return self._handling
 

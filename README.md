@@ -1750,7 +1750,11 @@ answers. **The fast before it** is the shared handling check's (kind treatment; 
 Handling rules, 24 h to start with): the dialog shows when the fish of each unit were last fed against the rule, and too short a
 fast is a warning; going on stores a handling acknowledgement on the treatment (`HandlingAcknowledgement`, which
 belongs to a stock operation or a treatment, exactly one, a database check) and makes its log entry critical. A
-medicated feed is not checked: it is the feeding itself. Every unit must hold fish on the first day; the other
+medicated feed is not checked: it is the feeding itself. **A sea-lice medicine given for another reason** (hydrogen
+peroxide is also an AGD treatment) is never refused, but the weekly sea-lice report lists only the treatments for sea
+lice: the dialog says it will not be in it and goes on past the box, and the log entry keeps the warning ("Warnings
+acknowledged"; not critical, it is a report's warning). The rule is one function, `farm.health.lice.left_out_of_lice_report`
+(audit F-083, F-239). Every unit must hold fish on the first day; the other
 way round, a stock operation that would leave a treatment (or a lice count) without fish on its day is refused,
 naming it, and `check_stock` reports one. **No
 batch is stored**: the batches treated are the ones the stock ledger has in its units from its first to its last
@@ -2301,7 +2305,9 @@ the records now, and say which.
   fish is planned for slaughter within 14 days of the day the count fell due, whether the harvest is still planned or already
   recorded; a cage with no production fish left on that day needs none), the sea temperature (the mean of the week's samples at the site's depth points of
   3 m, from Water chemistry), the week's lice treatments with substance, strength and amount from their records (the amount is
-  the product's: Mattilsynet's § 10 c asks for the active substance's, so the report says to confirm which it wants).
+  the product's: Mattilsynet's § 10 c asks for the active substance's, so the report says to confirm which it wants). A
+  treatment of the week with a sea-lice medicine recorded for another reason is not in it, and the report warns of each one
+  (void it and record it again if it was given against sea lice) and reads it for its fingerprint.
 - *Smolt*: per tank and species that held fish, its number, species, the fish and average weight at the month's end (a tank
   emptied in the month reports the fish just before, less those moved to another tank of the site, which are in that tank's
   count), and the fish dead, culled and moved out of the site, deliveries included. A tank that held two species one after the

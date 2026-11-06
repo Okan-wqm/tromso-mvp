@@ -34,7 +34,7 @@ from core import audit
 from core.models import AuditLog
 from farm.feeding import read as feeding_read
 from farm.handling import check
-from farm.health import read as health_read, withdrawal
+from farm.health import lice, read as health_read, withdrawal
 from farm.models import Batch, HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
@@ -133,14 +133,21 @@ def _check_event(event, units, day):
 class TreatmentHandling:
     """What a treatment's dialog asks before it is saved, as one: the handling check over its units
     (farm.handling.check.assess for each: the fast) and the harvests already recorded inside the withdrawal it puts on
-    the fish (`harvested`, farm.health.withdrawal.HarvestInside); the warnings, the notes (named by unit when there are
-    several) and one fingerprint for the form's box."""
+    the fish (`harvested`, farm.health.withdrawal.HarvestInside), and what the treatment leaves out of a report
+    (`reported`, LeftOutOfLiceReport); the warnings, the notes (named by unit when there are several) and one fingerprint
+    for the form's box. The handling warnings (the fast, the harvests) protect fish and food: going on past them is stored
+    and logged as critical; a report's warning is logged with the entry."""
     assessments: list = field(default_factory=list)
     harvested: list = field(default_factory=list)
+    reported: list = field(default_factory=list)
+
+    @property
+    def handling_warnings(self):
+        return [warning for assessment in self.assessments for warning in assessment.warnings] + self.harvested
 
     @property
     def warnings(self):
-        return [warning for assessment in self.assessments for warning in assessment.warnings] + self.harvested
+        return self.handling_warnings + self.reported
 
     @property
     def notes(self):
@@ -151,20 +158,42 @@ class TreatmentHandling:
     @property
     def fingerprint(self):
         keys = [f'{assessment.unit.pk}:{assessment.fingerprint}' for assessment in self.assessments
-                if assessment.warnings] + [found.key() for found in self.harvested]
+                if assessment.warnings] + [found.key() for found in self.harvested + self.reported]
         return hashlib.sha256('|'.join(keys).encode()).hexdigest()[:20] if keys else ''
 
     def messages(self):
         return [warning.message() for warning in self.warnings]
 
 
-def handling(units, day, method, medicine=None, end_date=None):
-    """What a treatment of `units` from `day` to `end_date` with `medicine` asks (TreatmentHandling): the fast before
-    it (nothing for medicated feed, which is the feeding itself) and the harvests already recorded inside its
-    withdrawal; nothing before a day is chosen."""
+@dataclass(frozen=True)
+class LeftOutOfLiceReport:
+    """A sea-lice medicine given for another reason (farm.health.lice.left_out_of_lice_report): the weekly sea-lice report
+    will not list the treatment. A warning of the treatment's dialog, never a refusal (hydrogen peroxide is also an AGD
+    treatment)."""
+    medicine: Medicine
+    reason: str
+
+    warning = ''                             # not a handling warning: nothing is stored but the log entry
+
+    def key(self):
+        return f'lice_report:{self.medicine.pk}:{self.reason}'
+
+    def message(self):
+        return _('%(medicine)s is a sea-lice medicine, given here for “%(reason)s”: the weekly sea-lice report to '
+                 'Mattilsynet lists only the treatments for sea lice, so this one will not be in it.') % {
+            'medicine': self.medicine, 'reason': TreatmentReason(self.reason).label}
+
+
+def handling(units, day, method, medicine=None, end_date=None, reason=None):
+    """What a treatment of `units` from `day` to `end_date` with `medicine` for `reason` asks (TreatmentHandling): the
+    fast before it (nothing for medicated feed, which is the feeding itself), the harvests already recorded inside its
+    withdrawal, and whether the weekly sea-lice report leaves it out; nothing before a day is chosen."""
     units = sorted(units, key=lambda unit: unit.code)
+    reported = []
+    if reason and lice.left_out_of_lice_report(medicine, reason):
+        reported.append(LeftOutOfLiceReport(medicine, reason))
     if day is None or not units:
-        return TreatmentHandling()
+        return TreatmentHandling(reported=reported)
     assessments = [] if method == TreatmentMethod.IN_FEED else [
         check.assess(HandlingKind.TREATMENT, unit, day) for unit in units]
     harvested = []
@@ -172,7 +201,7 @@ def handling(units, day, method, medicine=None, end_date=None):
         course = Treatment(method=method, medicine=medicine, start_date=day, end_date=end_date)   # not saved
         harvested = withdrawal.course_harvests(course, [unit.pk for unit in units],
                                                min(local_today(unit) for unit in units))
-    return TreatmentHandling(assessments, harvested)
+    return TreatmentHandling(assessments, harvested, reported)
 
 
 def last_day_handling(treatment, end_date):
@@ -231,7 +260,7 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
         for unit in sorted(locked_units, key=lambda item: item.code):
             if not _has_fish(unit, start_date, 'treatment'):
                 raise ValidationError({'units': _no_fish(unit, start_date)})
-        checked = handling(locked_units, start_date, method, medicine, end_date)
+        checked = handling(locked_units, start_date, method, medicine, end_date, reason)
         check.require_acknowledged(checked, handling_ack)
         treatment = Treatment(
             method=method, medicine=medicine, reason=reason, start_date=start_date, end_date=end_date,
@@ -260,12 +289,14 @@ def _acknowledge_harvests(treatment, checked):
 
 
 def _acknowledged(values, checked):
-    """Adds the warnings gone past to the log entry's values, in English; whether there were any (the entry is then
-    critical)."""
-    if not checked.warnings:
-        return False
-    values[str(gettext_lazy('Handling warnings acknowledged'))] = ' '.join(checked.messages())
-    return True
+    """Adds the warnings gone past to the log entry's values, in English; whether there were handling warnings among
+    them (the entry is then critical)."""
+    handling_warnings = [warning.message() for warning in checked.handling_warnings]
+    if handling_warnings:
+        values[str(gettext_lazy('Handling warnings acknowledged'))] = ' '.join(handling_warnings)
+    if checked.reported:
+        values[str(gettext_lazy('Warnings acknowledged'))] = ' '.join(warning.message() for warning in checked.reported)
+    return bool(handling_warnings)
 
 
 def change_last_day(user, treatment, end_date, handling_ack=None):

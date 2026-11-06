@@ -11985,6 +11985,12 @@
           "conditional": false
         },
         {
+          "name": "chk_sites_timezone_given",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_sites_lice_area",
           "kind": "check",
           "fields": [],
@@ -12121,6 +12127,7 @@
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_migration_site_zone.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -19509,6 +19516,7 @@
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_menu_access.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",

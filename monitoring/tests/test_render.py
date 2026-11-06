@@ -92,6 +92,39 @@ class FaceTests(SimpleTestCase):
         self.assertFalse(render.face(live('oxygen_mg_l', '8.4', seconds=170, channel_no=12, fresh_for=180), NOW).stale)
 
 
+class BarTests(SimpleTestCase):
+    """The bands of a bar are what evaluate.judge says of the values in them (F-088): an open bound is no band."""
+
+    def bands(self, value, **bounds):
+        limit = SimpleNamespace(**{name: None if bounds.get(name) is None else D(str(bounds[name]))
+                                   for name in render.BOUNDS})
+        found = reading('co2_mg_l', value)
+        found.limits = [limit]
+        drawn = render.bar(render.face(found, NOW))
+        return [band.kind for band in drawn.bands], drawn
+
+    def test_upper_bounds_only_leave_the_low_end_ok(self):
+        kinds, drawn = self.bands(3, warning_high=5, critical_high=10)
+        self.assertEqual(kinds, ['ok', 'warning', 'critical'])
+        self.assertLess(drawn.marker, drawn.bands[0].width)                # the value sits in the ok band
+
+    def test_lower_bounds_only_leave_the_high_end_ok(self):
+        kinds, _drawn = self.bands(9, critical_low=6, warning_low=7)
+        self.assertEqual(kinds, ['critical', 'warning', 'ok'])
+
+    def test_one_bound_and_four_bounds(self):
+        self.assertEqual(self.bands(12, critical_high=10)[0], ['ok', 'critical'])
+        self.assertEqual(self.bands(8, critical_low=6, warning_low=7, warning_high=12, critical_high=14)[0],
+                         ['critical', 'warning', 'ok', 'warning', 'critical'])
+        self.assertEqual(self.bands(8, critical_low=6, critical_high=14)[0], ['critical', 'ok', 'critical'])
+
+    def test_the_bands_cover_the_bar_once(self):
+        for bounds in ({'warning_high': 5}, {'critical_low': 6, 'warning_high': 12}, {'warning_low': 2}):
+            with self.subTest(bounds=bounds):
+                drawn = self.bands(4, **bounds)[1]
+                self.assertAlmostEqual(sum(band.width for band in drawn.bands), 100, places=1)
+
+
 class BuildTests(MonitoringCase):
     def cards(self, layout=None, user=None, mode=None, **fields):
         if layout is not None:
@@ -224,6 +257,30 @@ class PageTests(MonitoringCase):
         tasks = next(node for node in widgets_of(card) if 'w-tasks' in node.classes)
         self.assertIn('no data', ' '.join(tasks.text().split()))
 
+    def test_a_failed_source_is_said_on_the_frame_whatever_the_template_shows(self):
+        """F-134: a source that could not be read is said where no template can hide it, not as a quiet "no data"."""
+        from unittest import mock
+        read.FAILED_AT.clear()
+        layout = {'schema': 1, 'widgets': [{'id': 'f', 'type': 'fish', 'x': 0, 'y': 0, 'w': 12, 'h': 5}]}
+        with mock.patch.object(read.tasks_read, 'per_unit', side_effect=RuntimeError('down')), \
+                mock.patch.object(read.health_read, 'latest_counts', side_effect=RuntimeError('down')), \
+                self.assertLogs('monitoring.read'):
+            html = self.page(builtin.DETAILED_LAYOUT)
+        frame = next(node for node in articles(html)[f'card:{self.t2.pk}'].walk() if 'monitor-failed' in node.classes)
+        self.assertEqual(' '.join(frame.text().split()), 'Could not be read: Sea-lice counts, Tasks')
+        self.assertNotIn('monitor-failed', self.page(layout))                 # nothing failed: nothing said
+
+    def test_a_card_with_an_old_critical_value_is_marked_old_for_the_announcer(self):
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.limit('temperature_c', critical_high=18)
+        self.limit('nitrite_n_mg_l', critical_high='0.2')
+        self.sample(self.t2, hours=1, temperature_c='9', oxygen_mg_l='9')
+        self.assertNotIn('data-stale', articles(self.page())[f'card:{self.t2.pk}'].attrs)
+        self.sample(self.t2, hours=200, nitrite_n_mg_l='0.5')
+        card = articles(self.page())[f'card:{self.t2.pk}']
+        self.assertEqual(card.attrs['data-state'], 'critical')
+        self.assertIn('data-stale', card.attrs)
+
 
 class AnnouncerTests(MonitoringCase):
     """frontend/announce.ts reads the state from the article and speaks through two regions outside the grid, in the
@@ -240,7 +297,10 @@ class AnnouncerTests(MonitoringCase):
         self.assertFalse([node for node in grid.walk() if 'data-announcer' in node.attrs])
         holder = next(node for node in tree.walk() if node.attrs.get('id') == 'monitor-announce')
         for key in ('data-announce-worse', 'data-announce-more', 'data-state-critical', 'data-state-warning',
-                    'data-state-blind', 'data-state-note'):
+                    'data-state-blind', 'data-state-unjudged', 'data-state-note', 'data-stale-word'):
             self.assertTrue(holder.attrs.get(key), key)
+        # the grid's notices are said aloud too (F-045, F-222): its words for each poll state
+        for key in ('data-stale-text', 'data-gone-text', 'data-live-text'):
+            self.assertTrue(grid.attrs.get(key), key)
         self.assertIn('js/announce.js', html)
         self.assertNotIn('data-announcer', self.client.get(CARDS).content.decode())      # never inside the fragment

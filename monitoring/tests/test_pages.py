@@ -170,6 +170,24 @@ class FragmentTests(MonitoringCase):
                 self.assertEqual((response.status_code, response['Cache-Control']), (503, 'no-store'), url)
                 self.assertNotIn(b'data-key="card:', response.content)
 
+    def test_a_source_the_state_needs_that_fails_is_logged_with_its_name_and_cause_once_a_minute(self):
+        """F-025: the 503 is never silent: the source and the error with its trace are logged, at most once a minute per
+        source, so a wall that polls every 15 s does not flood the log."""
+        read.FAILED_AT.clear()
+        for name, target in (('stock', 'stock_read.stock_of'), ('water', 'water_read.points_water'),
+                             ('events', 'health_read.open_events')):
+            owner, attribute = target.split('.')
+            with self.subTest(source=name), \
+                    mock.patch.object(getattr(read, owner), attribute, side_effect=RuntimeError(f'{name} is down')):
+                with self.assertLogs('monitoring.read', 'ERROR') as logged:
+                    self.assertEqual(self.client.get(CARDS).status_code, 503)
+                self.assertEqual(len(logged.records), 1)
+                record = logged.records[0]
+                self.assertIn(f'The {name} source', record.getMessage())
+                self.assertIn(f'RuntimeError: {name} is down', logged.output[0])     # the trace and the cause
+                with self.assertNoLogs('monitoring.read', 'ERROR'):
+                    self.assertEqual(self.client.get(CARDS).status_code, 503)        # within the minute: once
+
     def test_the_204_path_costs_a_session_the_rights_and_two_revision_queries(self):
         after = self.ask()['X-Poll-Next']
         self.client.get(after)

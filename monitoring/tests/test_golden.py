@@ -24,15 +24,17 @@ PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 
 class GoldenFarm(MonitoringCase):
     """T-01 (no water: no recent data), T-02 (the worked example's ration) and P-01 (an empty pond in maintenance), and
-    seventeen more units G-00 to G-16, each in a state of its own (below)."""
+    eighteen more units G-00 to G-17, each in a state of its own (below). Every value but G-17's nitrite has a limit."""
 
     def setUp(self):
         super().setUp()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.limit('ph', warning_low='6.5', warning_high='8.5')
+        self.limit('co2_mg_l', warning_high=15, critical_high=20)
         self.limit('temperature_c', warning_high=15, critical_high=18)
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1', ph='7.2')
         self.g = []
-        for number in range(17):
+        for number in range(18):
             unit = make_unit(f'G-{number:02d}', self.hall)
             count = 120000 if number == 5 else 500 + 100 * number           # G-05 is over its capacity
             stock_fish(self.user, unit, count, str(60 + number), 5 + number, species=self.salmon, ack=number == 5)
@@ -46,6 +48,7 @@ class GoldenFarm(MonitoringCase):
                  4: None,                                                           # never sampled
                  9: dict(temperature_c='13.1', oxygen_saturation_pct='95'),         # the saturation, not mg/L
                  12: dict(temperature_c='16', oxygen_mg_l='8.4', co2_mg_l='12'),    # a warm warning
+                 17: dict(temperature_c='13', oxygen_mg_l='9', nitrite_n_mg_l='0.05'),   # no limit for the nitrite
                  }
         for number, unit in enumerate(self.g):
             values = water.get(number, fresh)
@@ -123,4 +126,4 @@ class GoldenTests(GoldenFarm):
 
     def test_the_farm_has_every_state_a_card_can_be_in(self):
         states = {card['state'] for card in self.scenarios()['all-simple'].values()}
-        self.assertEqual(states, {'Critical', 'Warning', 'No recent data', 'Note', 'OK', 'Empty'})
+        self.assertEqual(states, {'Critical', 'Warning', 'No recent data', 'No limit', 'Note', 'OK', 'Empty'})

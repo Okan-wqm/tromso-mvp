@@ -381,6 +381,31 @@ class LatestTests(WaterTestCase):
         water = self.latest(now=self.now + timedelta(days=3))
         self.assertEqual(water.status, Status.STALE)
 
+    def test_a_stale_value_keeps_what_its_limit_said_beside_its_age(self):
+        """A stale critical value is never forgotten (F-244): its status says it is old, its judgement stays."""
+        self.stock()
+        self.limit('nitrite_n_mg_l', warning_high='0.1', critical_high='0.2')
+        self.sample(hours=200, nitrite_n_mg_l='0.5')                  # fresh for 168 h
+        self.sample(hours=1, ph='7.2')
+        water = self.latest()
+        reading = water.get('nitrite_n_mg_l')
+        self.assertEqual((reading.status, reading.judged), (Status.STALE, Status.CRITICAL))
+        self.assertEqual(water.get('ph').judged, Status.NO_LIMIT)
+
+    def test_the_values_the_fish_have_no_limit_for_and_the_oxygen_is_one_quantity_in_two_units(self):
+        """F-090: a value of a stocked unit that no limit row judges is said, never taken for fine; the oxygen in mg/L
+        and in % is one reading, so a limit on either judges it."""
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=1, oxygen_mg_l='9', temperature_c='9', ph='7.2')
+        self.sample(hours=200, tan_mg_l='0.5')                           # stale and unlimited: still unjudged
+        water = self.latest()
+        self.assertEqual(water.get('oxygen_saturation_pct').judged, Status.NO_LIMIT)    # worked out, no row
+        self.assertEqual({reading.code for reading in water.unjudged}, {'temperature_c', 'ph', 'tan_mg_l'})
+        self.limit('oxygen_saturation_pct', critical_low=60)
+        self.limit('ph', warning_low='6.5')
+        self.assertEqual({reading.code for reading in self.latest().unjudged}, {'temperature_c', 'tan_mg_l'})
+
     def test_the_limits_follow_the_species_and_the_water_type_and_change_with_them(self):
         self.stock()
         any_water = self.limit('ph', warning_low='6.8')
@@ -626,6 +651,32 @@ class LimitTests(WaterTestCase):
         self.assertEqual(names(), [('SAL', 'co2_mg_l'), ('SAL', 'ph'), ('RBT', 'ph')])
         self.assertEqual(names(species=trout.pk), [('RBT', 'ph')])
         self.assertEqual(names(parameter='co2_mg_l'), [('SAL', 'co2_mg_l')])
+
+    def test_the_list_names_the_parameters_the_fish_kept_today_have_no_limit_for(self):
+        """F-090: the owner sees what is not judged: per species and water type the fish are kept in today, each
+        parameter that no row judges (the oxygen once: a row on mg/L or on % judges it). A species with no fish in a
+        unit needs nothing."""
+        trout = make_species('RBT', 'Rainbow trout', 'Oncorhynchus mykiss', local_name='', saltwater=False)
+        make_species('COD', 'Atlantic cod', 'Gadus morhua', local_name='')        # no fish anywhere
+        self.stock(self.t1)
+        self.stock(self.t2, trout)
+        for parameter in parameters.LIMITED:
+            if parameter.code not in ('ph', 'oxygen_saturation_pct', 'oxygen_mg_l'):
+                self.limit(parameter.code, critical_high=parameter.high)
+        self.limit('oxygen_saturation_pct', critical_low=60)
+        self.limit('ph', water_type='saltwater', warning_low='6.5')         # the units are in fresh water
+        found = read.missing_limits()
+        self.assertEqual([(entry.species, entry.water_type, [parameter.code for parameter in entry.parameters])
+                          for entry in found],
+                         [(self.salmon, 'freshwater', ['ph']),
+                          (trout, 'freshwater', [parameter.code for parameter in parameters.LIMITED
+                                                 if parameter.code != 'oxygen_saturation_pct'])])
+        page = self.client.get(reverse('farm:waterlimit_list'))
+        self.assertContains(page, 'Fish with no limit')
+        self.assertContains(page, 'Rainbow trout')
+        self.assertNotContains(page, 'Atlantic cod')
+        self.limit('ph', warning_low='6.5')
+        self.assertEqual([entry.species for entry in read.missing_limits()], [trout])
 
     def test_a_species_takes_its_limits_with_it(self):
         limit = self.limit('ph', critical_low=6)

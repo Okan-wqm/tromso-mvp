@@ -2905,7 +2905,9 @@ filters and the "n of m" paging of the schedule, needs Read on the Shift schedul
 **Organization chart** is the company as nested lists, drawn by the server (no script, no layout algorithm; the browser's print makes a
 printed page of it), one per panel (`hr.read.org_tree(user, realm)`): Company's office departments under their parents and one
 **Production** box with the production people the viewer may count (computed, never a row, so nothing to delete; there with no production
-department; a link to Production's chart for who may open it), and Production's sites with their production departments; each box with its manager
+department; a link to Production's chart for who may open it). **Where the Production box hangs:** when the company has exactly one top
+office department (one without a parent, e.g. Management), the Production box is its last child and its people count in that department's
+"in all"; with several top departments, or none, it stands beside them as a top box of its own. And Production's sites with their production departments; each box with its manager
 and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
 production department created, renamed or deleted under Production is in the chart at once, from the same rows.
 

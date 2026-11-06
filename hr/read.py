@@ -493,7 +493,8 @@ def org_tree(user, realm):
     """The company as a tree for a person to read, as each panel shows it, counted among the people the viewer may reach.
     Production (Production › Team): the sites with their production departments, each with its manager. Office (Company ›
     HR): the office departments by their parents, then one Production box with the production people the viewer may count,
-    there even with no production department. Server-drawn nested lists; no layout algorithm and no script."""
+    there even with no production department: under the top department when the company has exactly one, beside the top
+    departments otherwise. Server-drawn nested lists; no layout algorithm and no script."""
     counts = head_counts(user, realm=realm)
     root = Node('company', '')
     if realm == PRODUCTION:
@@ -522,7 +523,13 @@ def org_tree(user, realm):
 
         root.children = [build(department) for department in by_parent.get(None, [])]
         production = sum(head_counts(user, realm=PRODUCTION).values())
-        root.children.append(Node(PRODUCTION_ROOT, _('Production'), direct=production, total=production))
+        box = Node(PRODUCTION_ROOT, _('Production'), direct=production, total=production)
+        if len(root.children) == 1:          # one top of the company (e.g. Management): Production hangs under it
+            top = root.children[0]
+            top.children.append(box)
+            top.total += production
+        else:                                # several tops, or none: Production stands beside them
+            root.children.append(box)
     root.total = sum(child.total for child in root.children)
     return root
 

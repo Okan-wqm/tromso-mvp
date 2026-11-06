@@ -551,6 +551,14 @@ msgid "%(first)s–%(last)s of %(total)s"
 msgstr "%(first)s–%(last)s av %(total)s"
 
 #, python-format
+msgid ""
+"%(fish)d fish of %(batch)s in unit %(unit)s were taken over on %(date)s (an opening balance, from"
+" %(document)s): they are counted as stock the farm already had, not as fish stocked."
+msgstr ""
+"%(fish)d fisk av %(batch)s i enhet %(unit)s ble overtatt %(date)s (en åpningsbalanse, fra "
+"%(document)s): de telles som beholdning anlegget allerede hadde, ikke som utsatt fisk."
+
+#, python-format
 msgid "%(fish)d fish of %(species)s escaped from %(unit)s."
 msgstr "%(fish)d fisk av %(species)s rømte fra %(unit)s."
 
@@ -858,6 +866,12 @@ msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d deci
 msgstr "%(parameter)s: grenser fra %(low)s til %(high)s, høyst %(decimals)d desimaler."
 
 #, python-format
+msgid "%(people)s notification"
+msgid_plural "%(people)s notifications"
+msgstr[0] "%(people)s varsel"
+msgstr[1] "%(people)s varsler"
+
+#, python-format
 msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (kan ikke velges lenger)"
 
@@ -898,6 +912,10 @@ msgstr "%(record)s er den primære"
 #, python-format
 msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s ble ikke gjenopprettet: %(reasons)s"
+
+#, python-format
+msgid "%(records)s still use it."
+msgstr "%(records)s bruker den fortsatt."
 
 #, python-format
 msgid "%(replicate)s has no tank."
@@ -1348,6 +1366,13 @@ msgstr "0 rader"
 
 msgid "0 rows match"
 msgstr "0 rader samsvarer"
+
+msgid ""
+"0: notified when the alarm opens. 1: when nobody acknowledged level 0 in the escalation time of "
+"the Platform settings; and so on, up to 9."
+msgstr ""
+"0: varsles når alarmen åpnes. 1: når ingen har kvittert nivå 0 innen eskaleringstiden i "
+"Plattforminnstillinger; og så videre, opptil 9."
 
 msgid ""
 "1 October each year, for the two next calendar years (the saved page: \"Fristen for å sende inn "
@@ -1976,6 +2001,20 @@ msgstr "En oppskrift bruker to kjemikalier: velg minst to (fanen Kjemikalier)."
 
 #, python-format
 msgid ""
+"A record can be dated at most %(days)s day back, and voided while it is no older. Older records "
+"stay as they are."
+msgid_plural ""
+"A record can be dated at most %(days)s days back, and voided while it is no older. Older records "
+"stay as they are."
+msgstr[0] ""
+"En registrering kan dateres høyst %(days)s dag tilbake, og annulleres så lenge den ikke er eldre."
+" Eldre registreringer blir stående som de er."
+msgstr[1] ""
+"En registrering kan dateres høyst %(days)s dager tilbake, og annulleres så lenge den ikke er "
+"eldre. Eldre registreringer blir stående som de er."
+
+#, python-format
+msgid ""
 "A recurring task plans its tasks up to two weeks ahead; they are on the <a "
 "href=\"%(url)s\">Tasks</a> page. Changing or pausing it plans the tasks from today on that nobody"
 " has touched again; the others stay as they are."
@@ -2048,6 +2087,9 @@ msgstr "Et lakselusmiddel oppgir virkestoffet slik luserapporten har det; andre 
 
 msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
 msgstr "Bare lakselusmiddel: virkestoffet slik Mattilsynets ukentlige luserapport kaller det."
+
+msgid "A second person approves a withdrawal warning acknowledgement"
+msgstr "En annen person godkjenner kvitteringen av en tilbakeholdelsesadvarsel"
 
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "En andel av utstrømmen, fra 0 til 100 %, kan bare oppgis for et utløp."
@@ -2351,6 +2393,10 @@ msgstr "Kvittert tidspunkt"
 msgid "Acknowledged by"
 msgstr "Kvittert av"
 
+#, python-format
+msgid "Acknowledged by %(person)s from %(app)s, %(delay)s after it opened"
+msgstr "Kvittert av %(person)s fra %(app)s, %(delay)s etter at den åpnet"
+
 msgid "Across the ring: its circumference divided by π, so a 160 m ring is 50.9 m across."
 msgstr "Tvers over ringen: omkretsen delt på π, så en ring på 160 m er 50,9 m i diameter."
 
@@ -2578,11 +2624,20 @@ msgstr ""
 "Lokalitetsnummer fra Akvakulturregisteret (5 siffer). Uten det kan ikke rapporter til norske "
 "myndigheter sendes inn."
 
+msgid "Alarm"
+msgstr "Alarm"
+
+msgid "Alarm acknowledged."
+msgstr "Alarmen er kvittert."
+
 msgid "Alarm event acknowledged."
 msgstr "Alarmhendelsen er kvittert."
 
 msgid "Alarm events"
 msgstr "Alarmhendelser"
+
+msgid "Alarm recipients"
+msgstr "Alarmmottakere"
 
 msgid "Alarm rule"
 msgstr "Alarmregel"
@@ -2590,8 +2645,8 @@ msgstr "Alarmregel"
 msgid "Alarm rules"
 msgstr "Alarmregler"
 
-msgid "Alarms are shown on the Sensors pages, not sent: nobody is notified yet."
-msgstr "Alarmer vises på Sensorer-sidene, de sendes ikke: ingen varsles ennå."
+msgid "Alarms"
+msgstr "Alarmer"
 
 msgid "Alive"
 msgstr "I live"
@@ -2834,6 +2889,13 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "En aktiv protokoll har en tabell."
+
+msgid ""
+"An alarm nobody has acknowledged this long after its people were notified is sent to the next "
+"people in the alarm recipients. 1 to 1440."
+msgstr ""
+"En alarm ingen har kvittert så lenge etter at personene ble varslet, sendes til de neste i "
+"alarmmottakerne. 1 til 1440."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
@@ -3099,6 +3161,9 @@ msgstr "Alt vann"
 msgid "Anyone"
 msgstr "Alle"
 
+msgid "App"
+msgstr "App"
+
 msgid "Applies to"
 msgstr "Gjelder for"
 
@@ -3237,6 +3302,9 @@ msgstr "Assistent"
 msgid "Assumed water temperature for withdrawal (°C)"
 msgstr "Antatt vanntemperatur for tilbakeholdelsestid (°C)"
 
+msgid "At least"
+msgstr "Minst"
+
 #, python-format
 msgid "At least %(min)s."
 msgstr "Minst %(min)s."
@@ -3292,6 +3360,9 @@ msgstr "Fastsittende lus"
 
 msgid "Attached per fish"
 msgstr "Fastsittende per fisk"
+
+msgid "Attempted at"
+msgstr "Forsøkt"
 
 msgid "Attendance"
 msgstr "Oppmøte"
@@ -3915,6 +3986,9 @@ msgstr "Velg en person"
 msgid "Choose a place from the list."
 msgstr "Velg et sted fra listen."
 
+msgid "Choose a role or a person."
+msgstr "Velg en rolle eller en person."
+
 msgid "Choose a sampling point."
 msgstr "Velg et prøvepunkt."
 
@@ -4096,6 +4170,12 @@ msgstr "Fjern filtrene"
 
 msgid "Clear selection"
 msgstr "Fjern utvalg"
+
+msgid "Cleared"
+msgstr "Opphørt"
+
+msgid "Cleared at"
+msgstr "Opphørte"
 
 msgid "Client id"
 msgstr "Klient-ID"
@@ -4380,6 +4460,9 @@ msgstr "Korrigering"
 
 msgid "Correction started: check it against the records and file it again."
 msgstr "Korrigering startet: kontroller den mot registreringene og send den inn på nytt."
+
+msgid "Correction window (days)"
+msgstr "Korreksjonsvindu (dager)"
 
 msgid "Corrects"
 msgstr "Korrigerer"
@@ -4709,6 +4792,9 @@ msgstr "Døgngrader regelen krever"
 msgid "Degree-days unknown: no temperature."
 msgstr "Døgngrader ukjent: ingen temperatur."
 
+msgid "Delay"
+msgstr "Forsinkelse"
+
 msgid "Delete"
 msgstr "Slett"
 
@@ -4772,6 +4858,10 @@ msgstr[1] "Varemottak fra %(supplier)s registrert: %(count)d linjer."
 #, python-format
 msgid "Delivery recorded: %(count)s fish of %(batch)s from %(unit)s to %(destination)s."
 msgstr "Levering registrert: %(count)s fisk av %(batch)s fra %(unit)s til %(destination)s."
+
+#, python-format
+msgid "Delivery to %(person)s: %(outcome)s"
+msgstr "Levering til %(person)s: %(outcome)s"
 
 msgid "Deltamethrin"
 msgstr "Deltametrin"
@@ -5076,6 +5166,13 @@ msgstr "Hvert punkt er gjennomsnittet for sitt tidsrom; båndet er dets laveste 
 msgid "Each temperature is a column once."
 msgstr "Hver temperatur kan bare være én kolonne."
 
+msgid ""
+"Each time a rule holds it is an alarm of Company › Alarms: its recipient rules say who is "
+"notified."
+msgstr ""
+"Hver gang en regel slår til, er det en alarm under Selskap › Alarmer: mottakerreglene sier hvem "
+"som varsles."
+
 msgid "Each treatment can be listed once."
 msgstr "Hver behandling kan stå én gang."
 
@@ -5086,12 +5183,14 @@ msgid ""
 "Each value is judged on read against the water limits as they are now, for the fish in the unit "
 "that day; a sample of a loop for every unit of the loop. A unit without fish shows its values "
 "with no limit. Each value says which sampling point it was taken at; the water of a unit is that "
-"of its middle point. Nobody is alerted: critical values are shown here, not sent."
+"of its middle point. A warning or a critical value raises an alarm (Company › Alarms); nothing is"
+" sent until the push transport is connected."
 msgstr ""
 "Hver verdi vurderes ved lesing mot vanngrensene slik de er nå, for fisken i enheten den dagen; en"
-" prøve fra et kretsløp for hver enhet i kretsløpet. En enhet uten fisk viser verdiene uten "
-"grense. Hver verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets. "
-"Ingen blir varslet: kritiske verdier vises her, de sendes ikke."
+" prøve fra en krets for hver enhet i kretsen. En enhet uten fisk viser verdiene uten grense. Hver"
+" verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets. En advarsel "
+"eller en kritisk verdi utløser en alarm (Selskap › Alarmer); ingenting sendes før push-"
+"transporten er koblet til."
 
 msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
 msgstr ""
@@ -5141,6 +5240,9 @@ msgstr "Rediger grensene"
 
 msgid "Edit the report"
 msgstr "Rediger rapporten"
+
+msgid "Edit the settings"
+msgstr "Rediger innstillingene"
 
 msgid "Edit the unit"
 msgstr "Rediger enheten"
@@ -5196,6 +5298,12 @@ msgstr "Tom · %(status)s"
 
 msgid "Empty — ready to stock"
 msgstr "Tom – klar for utsett"
+
+msgid "Empty: every department of the site. A department must be on the site."
+msgstr "Tom: alle avdelinger på lokaliteten. En avdeling må ligge på lokaliteten."
+
+msgid "Empty: the alarms of every site."
+msgstr "Tom: alarmene på alle lokaliteter."
 
 msgid "Empty: the rule for every species. A species’ own rule wins over it."
 msgstr "Tom: regelen for alle arter. En arts egen regel går foran."
@@ -5257,6 +5365,16 @@ msgstr "Utstyr kan ikke være en del av seg selv."
 msgid "Equipment that fits none of the other types."
 msgstr "Utstyr som ikke passer i noen av de andre typene."
 
+msgid "Escalate an unacknowledged alarm after (minutes)"
+msgstr "Eskaler en ukvittert alarm etter (minutter)"
+
+msgid "Escalated at"
+msgstr "Eskalert"
+
+#, python-format
+msgid "Escalated to level %(level)s: nobody acknowledged it in time"
+msgstr "Eskalert til nivå %(level)s: ingen kvitterte i tide"
+
 msgid "Escape"
 msgstr "Rømming"
 
@@ -5296,6 +5414,9 @@ msgstr "Hver"
 msgid "Every active point"
 msgstr "Hvert aktive punkt"
 
+msgid "Every alarm"
+msgstr "Alle alarmer"
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -5311,6 +5432,9 @@ msgid "Every day"
 msgid_plural "Every %(count)d days"
 msgstr[0] "Hver dag"
 msgstr[1] "Hver %(count)d. dag"
+
+msgid "Every department"
+msgstr "Alle avdelinger"
 
 msgid "Every factor has a name."
 msgstr "Hver faktor har et navn."
@@ -5401,6 +5525,9 @@ msgstr[1] "Hver %(count)d. uke på %(days)s"
 
 msgid "Everyone"
 msgstr "Alle"
+
+msgid "Everyone active with this role; or choose one person below instead."
+msgstr "Alle aktive med denne rollen; eller velg én person nedenfor i stedet."
 
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Alle i samtalen ser at en melding ble slettet, ikke hva den sa."
@@ -5513,6 +5640,9 @@ msgstr "Faktoren %(name)s ble fjernet i mellomtiden: last siden på nytt."
 
 msgid "Factors"
 msgstr "Faktorer"
+
+msgid "Failed"
+msgstr "Mislyktes"
 
 msgid "Fallow"
 msgstr "Brakklagt"
@@ -5799,6 +5929,17 @@ msgstr "Fornavn"
 msgid "Fish"
 msgstr "Fisk"
 
+msgid ""
+"Fish already on the farm when it started using the platform. Their stocking date is the real one,"
+" older than the correction window allows any other record; their count and weight are those of "
+"the takeover day. Only the platform owner registers them, and each is in the activity log as "
+"critical."
+msgstr ""
+"Fisk som allerede var på anlegget da det tok plattformen i bruk. Utsettingsdatoen er den "
+"virkelige, eldre enn korreksjonsvinduet tillater for noen annen registrering; antallet og vekten "
+"er overtakelsesdagens. Bare plattformeieren registrerer dem, og hver står i aktivitetsloggen som "
+"kritisk."
+
 msgid "Fish are held in the tanks, ponds and cages of Setup."
 msgstr "Fisken holdes i karene, dammene og merdene i Oppsett."
 
@@ -5852,11 +5993,22 @@ msgstr "Fisk nå"
 msgid "Fish of the own hatchery are farmed, fish caught in the wild wild-caught."
 msgstr "Fisk fra eget klekkeri er oppdrett, fisk fanget i naturen er villfanget."
 
+msgid "Fish on the takeover day"
+msgstr "Fisk på overtakelsesdagen"
+
 msgid "Fish recaptured"
 msgstr "Gjenfanget fisk"
 
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Fisk beholdningen fortsatt har utover tellingen, registreres da som uforklart svinn."
+
+msgid ""
+"Fish the farm already had when it started using the platform: their real stocking date and year "
+"class, and their count and average weight on the takeover day. The batch number is given on "
+"saving."
+msgstr ""
+"Fisk anlegget allerede hadde da det tok plattformen i bruk: virkelig utsettingsdato og årsklasse,"
+" og antall og snittvekt på overtakelsesdagen. Gruppenummeret gis ved lagring."
 
 msgid ""
 "Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown here "
@@ -6269,6 +6421,9 @@ msgstr ""
 "Oppgi tilbakeholdelsestiden i døgngrader, dager eller begge, slik preparatomtalen oppgir den (0 "
 "når den ikke har noen)."
 
+msgid "Give the year class of fish taken over."
+msgstr "Oppgi årsklassen til fisk som overtas."
+
 msgid "Given"
 msgstr "Gitt"
 
@@ -6606,6 +6761,16 @@ msgstr ""
 "den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
 " fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
 "kontrolleres med veterinæren din."
+
+msgid ""
+"How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
+"the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
+"stay as they are. 1 to 3650; 31 until you set another."
+msgstr ""
+"Hvor mange dager tilbake en daglig registrering (en beholdningsoperasjon, en fôring, en "
+"vannprøve, en lagerbevegelse, en plan, en behandling) kan dateres, og hvor gammel en registrering"
+" kan være når den annulleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til "
+"dere setter noe annet."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette uten en melding."
@@ -7916,6 +8081,12 @@ msgstr "Ingen konto"
 msgid "No alarm events."
 msgstr "Ingen alarmhendelser."
 
+msgid "No alarm is open."
+msgstr "Ingen alarm er åpen."
+
+msgid "No alarm yet."
+msgstr "Ingen alarmer ennå."
+
 msgid "No band yet. Use “Add band” to add a row."
 msgstr "Ingen vektklasser ennå. Bruk «Legg til vektklasse» for å legge til en rad."
 
@@ -8149,6 +8320,9 @@ msgstr "Ingen i teamet ennå. Bruk «Legg til person» for å legge til en rad."
 
 msgid "No open tasks"
 msgstr "Ingen åpne oppgaver"
+
+msgid "No opening balance is registered."
+msgstr "Ingen åpningsbalanse er registrert."
 
 msgid "No operation matches these filters."
 msgstr "Ingen operasjon passer med disse filtrene."
@@ -8388,11 +8562,17 @@ msgid "Nobody is expected today"
 msgstr "Ingen forventes i dag"
 
 msgid ""
-"Nobody is notified: an alarm is shown here and on the Sensors overview until a way to send it "
-"exists. It is not an alarm until someone sees it."
+"Nobody is notified of an alarm until a rule says who: a role or a person, on a site or every "
+"site, from a severity, at a level."
 msgstr ""
-"Ingen varsles: en alarm vises her og i sensoroversikten til det finnes en måte å sende den på. "
-"Det er ikke en alarm før noen ser den."
+"Ingen varsles om en alarm før en regel sier hvem: en rolle eller en person, på én lokalitet eller"
+" alle, fra en alvorlighetsgrad, på et nivå."
+
+msgid "Nobody to notify"
+msgstr "Ingen å varsle"
+
+msgid "Nobody to notify: no alarm recipient rule reaches this alarm. Add one under Alarm recipients."
+msgstr "Ingen å varsle: ingen mottakerregel når denne alarmen. Legg til en under Alarmmottakere."
 
 msgid "Nobody to show"
 msgstr "Ingen å vise"
@@ -8600,6 +8780,13 @@ msgstr "Ingen beholdning: ta imot et varemottak først."
 msgid "Nothing is owed there: it was filed, closed already or is not due."
 msgstr "Ingenting skal sendes der: det er sendt inn, allerede lukket eller ikke aktuelt."
 
+msgid ""
+"Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
+"notification waits in the outbox below, with its recipient and level, and is sent once it is."
+msgstr ""
+"Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert "
+"varsel venter i utboksen nedenfor, med mottaker og nivå, og sendes når den er det."
+
 msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
 msgstr "Du har ikke tilgang til noe av sensorene ennå: be om en rettighet på Roller-siden."
 
@@ -8623,6 +8810,15 @@ msgstr "Ingenting ennå"
 
 msgid "Notifiable diagnosis"
 msgstr "Meldepliktig diagnose"
+
+msgid "Notification"
+msgstr "Varsel"
+
+msgid "Notification answered"
+msgstr "Besvart varsel"
+
+msgid "Notified"
+msgstr "Varslet"
 
 #, python-format
 msgid "Notified %(moment)s"
@@ -8884,6 +9080,9 @@ msgstr "Bare rensefiskrapporten sier at det ikke ble gitt fôr."
 msgid "Only the last band can be without an upper weight."
 msgstr "Bare den siste vektklassen kan være uten øvre vekt."
 
+msgid "Only the people on shift by the roster when the alarm reaches this level."
+msgstr "Bare de som er på vakt etter vaktplanen når alarmen når dette nivået."
+
 msgid "Only the production departments of the chosen site."
 msgstr "Bare produksjonsavdelingene på den valgte lokaliteten."
 
@@ -8899,6 +9098,9 @@ msgstr ""
 
 msgid "Only warnings and criticals"
 msgstr "Bare advarsler og kritiske"
+
+msgid "Only while on shift"
+msgstr "Bare på vakt"
 
 msgid "Only you and the people who see every employee can read this."
 msgstr "Bare du og de som ser alle ansatte kan lese dette."
@@ -8957,6 +9159,16 @@ msgstr "Åpnet"
 
 msgid "Opened at"
 msgstr "Åpnet tidspunkt"
+
+msgid "Opening balance"
+msgstr "Åpningsbalanse"
+
+#, python-format
+msgid "Opening balance %(batch)s registered: %(count)s fish in %(units)s."
+msgstr "Åpningsbalanse %(batch)s registrert: %(count)s fisk i %(units)s."
+
+msgid "Opening balances"
+msgstr "Åpningsbalanser"
 
 msgid "Operating plan (driftsplan)"
 msgstr "Driftsplan"
@@ -9455,6 +9667,9 @@ msgstr "Planlagt i dag"
 msgid "Platform admin"
 msgstr "Plattformadministrator"
 
+msgid "Platform settings"
+msgstr "Plattforminnstillinger"
+
 msgid "Plumbing"
 msgstr "Rør og ventiler"
 
@@ -9717,6 +9932,12 @@ msgstr ""
 "Bare for fisk som høstes og sendes til slakteriet. Oppgis den sammen med timer eller dager, må "
 "begge nås."
 
+msgid "Push"
+msgstr "Push"
+
+msgid "Push: the mobile app. Nothing is sent until the push transport is connected."
+msgstr "Push: mobilappen. Ingenting sendes før push-transporten er koblet til."
+
 msgid "QoS 0 messages dropped on a full queue"
 msgstr "QoS 0-meldinger forkastet fordi køen var full"
 
@@ -9746,6 +9967,16 @@ msgstr "Spørsmål"
 
 msgid "Questions for the authority"
 msgstr "Spørsmål til myndighetene"
+
+msgid "Queued"
+msgstr "I kø"
+
+msgid "Queued at"
+msgstr "Lagt i kø"
+
+#, python-format
+msgid "Queued for %(person)s (%(channel)s, level %(level)s)"
+msgstr "Lagt i kø for %(person)s (%(channel)s, nivå %(level)s)"
 
 msgid "Quote"
 msgstr "Sitat"
@@ -9842,6 +10073,12 @@ msgstr "Siste fôringer"
 
 msgid "Recent operations"
 msgstr "Siste operasjoner"
+
+msgid "Recipient"
+msgstr "Mottaker"
+
+msgid "Recipient rule"
+msgstr "Mottakerregel"
 
 msgid "Recirculating aquaculture system"
 msgstr "Resirkulerende akvakultursystem (RAS)"
@@ -9984,6 +10221,15 @@ msgstr "Kjølemedium"
 
 msgid "Region"
 msgstr "Region"
+
+msgid "Register an opening balance"
+msgstr "Registrer en åpningsbalanse"
+
+msgid "Register the opening balance"
+msgstr "Registrer åpningsbalansen"
+
+msgid "Registered by"
+msgstr "Registrert av"
 
 msgid "Regulation"
 msgstr "Regelverk"
@@ -10459,6 +10705,9 @@ msgstr ""
 "Si om behandlingen %(date)s ble gitt før tellingen (fanen Behandlinger): tellingen ble tatt dagen"
 " den sluttet."
 
+msgid "Say which document the counts come from."
+msgstr "Si hvilket dokument tallene kommer fra."
+
 msgid "Say which substance when it is another one, and only then."
 msgstr "Si hvilket virkestoff når det er et annet, og bare da."
 
@@ -10809,6 +11058,12 @@ msgstr "Følsom"
 msgid "Sensitivity tests"
 msgstr "Følsomhetsundersøkelser"
 
+msgid "Sensor alarm event"
+msgstr "Sensoralarmhendelse"
+
+msgid "Sensor alarm rule"
+msgstr "Sensoralarmregel"
+
 msgid "Sensor credentials"
 msgstr "Sensorlegitimasjoner"
 
@@ -10823,6 +11078,9 @@ msgstr "Sensorer"
 
 msgid "Sensors overview"
 msgstr "Sensoroversikt"
+
+msgid "Sent"
+msgstr "Sendt"
 
 msgid "Sent at"
 msgstr "Sendt"
@@ -11121,6 +11379,9 @@ msgstr "Sorter etter %(name)s"
 msgid "Source"
 msgstr "Kilde"
 
+msgid "Source document"
+msgstr "Kildedokument"
+
 msgid "Source of the value"
 msgstr "Kilde for verdien"
 
@@ -11324,6 +11585,12 @@ msgctxt "occupancy"
 msgid "Stocked"
 msgstr "Med fisk"
 
+msgid "Stocked on"
+msgstr "Satt ut"
+
+msgid "Stocked on (the real date)"
+msgstr "Satt ut (den virkelige datoen)"
+
 msgid "Stocked units"
 msgstr "Enheter med fisk"
 
@@ -11514,6 +11781,13 @@ msgstr "Tabellseksjoner"
 
 msgid "Taken out"
 msgstr "Tatt ut"
+
+#, python-format
+msgid "Taken over: stocked on %(date)s"
+msgstr "Overtatt: satt ut %(date)s"
+
+msgid "Takeover day"
+msgstr "Overtakelsesdag"
 
 msgid "Tank"
 msgstr "Kar"
@@ -11900,6 +12174,12 @@ msgstr ""
 "Dagen det skjedde (for en lokalitet tatt i bruk eller tømt: dagen den første fisken kom eller den"
 " siste fisken dro)."
 
+msgid "The day the counts and the average weight are of: inside the correction window, like every record."
+msgstr "Dagen antallet og snittvekten gjelder: innenfor korreksjonsvinduet, som alle registreringer."
+
+msgid "The day the fish were stocked, however long ago: their days stocked count from it."
+msgstr "Dagen fisken ble satt ut, uansett hvor lenge siden: dagene i anlegget telles fra den."
+
 msgid ""
 "The day the new placement starts; the old one ends the day before. For a new person: their first "
 "day."
@@ -12154,6 +12434,9 @@ msgstr ""
 #, python-format
 msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
 msgstr "Fisken i %(tank)s er ikke veid på dag 0: grunnlaget for fôrutnyttelsen deres mangler."
+
+msgid "The fish were stocked on or before the takeover day."
+msgstr "Fisken ble satt ut på eller før overtakelsesdagen."
 
 msgid "The gain is a number other than 0."
 msgstr "Forsterkningen er et tall forskjellig fra 0."
@@ -12739,6 +13022,13 @@ msgstr "Rollen til gruppe %(name)s er ikke en av de fire."
 msgid "The row ends on %(day)s already: it is only ever shortened."
 msgstr "Raden slutter allerede %(day)s: den kan bare forkortes."
 
+msgid ""
+"The rules every daily record follows. Every change is in the activity log with its old and new "
+"value."
+msgstr ""
+"Reglene hver daglig registrering følger. Hver endring står i aktivitetsloggen med gammel og ny "
+"verdi."
+
 msgid "The safe zone lies in this band."
 msgstr "Den trygge sonen ligger i dette båndet."
 
@@ -13233,6 +13523,9 @@ msgstr ""
 msgid "The year it was published."
 msgstr "Året det ble publisert."
 
+msgid "Their average on the takeover day; to 0.0001 g for eggs and larvae."
+msgstr "Snittet på overtakelsesdagen; til 0,0001 g for rogn og larver."
+
 msgid "Their weight (kg)"
 msgstr "Samlet vekt (kg)"
 
@@ -13378,6 +13671,9 @@ msgstr "Denne lenken fungerer ikke lenger"
 msgid "This notice has already been started: open it from the list."
 msgstr "Dette varselet er allerede startet: åpne det fra listen."
 
+msgid "This notification is not yours."
+msgstr "Dette varselet er ikke ditt."
+
 msgid "This operation is already voided."
 msgstr "Denne operasjonen er allerede annullert."
 
@@ -13426,6 +13722,9 @@ msgstr "Denne planen er slettet."
 
 msgid "This production department is not on any site; choose one that is."
 msgstr "Denne produksjonsavdelingen er ikke på noen lokalitet; velg en som er det."
+
+msgid "This production department is not on the site."
+msgstr "Denne produksjonsavdelingen ligger ikke på lokaliteten."
 
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Dette fjerner den permanent. Aktivitetsloggen beholder en oppføring om at den ble slettet."
@@ -14085,6 +14384,9 @@ msgstr "Advarsel over"
 msgid "Warning below"
 msgstr "Advarsel under"
 
+msgid "Warning reaches warnings and criticals; Critical reaches criticals only."
+msgstr "Advarsel når advarsler og kritiske; Kritisk når bare kritiske."
+
 msgid "Warnings acknowledged"
 msgstr "Anerkjente advarsler"
 
@@ -14118,6 +14420,9 @@ msgid ""
 msgstr ""
 "Vann prøvetas ved prøvepunktene til karene, dammene og merdene i Oppsett, til kretsløpene til "
 "systemene og til utstyret."
+
+msgid "Water limit"
+msgstr "Vanngrense"
 
 msgid "Water limits"
 msgstr "Vanngrenser"
@@ -14252,6 +14557,9 @@ msgstr "Brønnbåt eller kjøretøy"
 msgid "Wet"
 msgstr "Våt"
 
+msgid "What"
+msgstr "Hva"
+
 msgid "What caused it, or what is thought to have."
 msgstr "Hva som forårsaket det, eller hva som antas å ha gjort det."
 
@@ -14377,6 +14685,13 @@ msgstr "Når kanalen sluttet å være her; tom så lenge den fortsatt er det."
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Når dette er en del av annet utstyr, f.eks. pumpen i en filterenhet."
 
+msgid ""
+"When ticked, a harvest during a medicine withdrawal goes on only after a second person who may "
+"approve it has approved the acknowledgement."
+msgstr ""
+"Når avkrysset, går en slakting i tilbakeholdelsestiden videre først når en annen person som kan "
+"godkjenne det, har godkjent kvitteringen."
+
 msgid "Where"
 msgstr "Hvor"
 
@@ -14417,6 +14732,9 @@ msgstr ""
 msgid "Where it stands"
 msgstr "Status"
 
+msgid "Where the counts come from: the old system’s export, a count sheet, a delivery note."
+msgstr "Hvor tallene kommer fra: eksporten fra det gamle systemet, et telleskjema, en følgeseddel."
+
 msgid ""
 "Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
 "facilities)."
@@ -14453,6 +14771,9 @@ msgstr "Hvor «%(query)s» står i teksten"
 
 msgid "Whether it applies to the permit and county of the farm is unknown (Q9). Not built."
 msgstr "Om den gjelder for anleggets tillatelse og fylke er ukjent (Q9). Ikke bygget."
+
+msgid "Which alarms"
+msgstr "Hvilke alarmer"
 
 msgid "Which feeding protocol feeds which fish, from which day."
 msgstr "Hvilken fôringsprotokoll som fôrer hvilken fisk, fra hvilken dag."
@@ -14764,6 +15085,9 @@ msgstr "Du planlegger ikke dine egne dager."
 msgid "You do not see this person on this day."
 msgstr "Du ser ikke denne personen denne dagen."
 
+msgid "You have already acknowledged this alarm."
+msgstr "Du har allerede kvittert denne alarmen."
+
 #, python-format
 msgid "You left %(channel)s."
 msgstr "Du har forlatt %(channel)s."
@@ -14806,17 +15130,59 @@ msgstr "en lokalitet med rensefiskstamfisk"
 msgid "after the count"
 msgstr "etter tellingen"
 
+msgid "alarm"
+msgstr "alarm"
+
+msgid "alarm acknowledgement"
+msgstr "alarmkvittering"
+
+msgid "alarm acknowledgements"
+msgstr "alarmkvitteringer"
+
+msgid "alarm clearance"
+msgstr "alarmopphør"
+
+msgid "alarm clearances"
+msgstr "alarmopphør"
+
+msgid "alarm delivery attempt"
+msgstr "alarmleveringsforsøk"
+
+msgid "alarm delivery attempts"
+msgstr "alarmleveringsforsøk"
+
+msgid "alarm escalation"
+msgstr "alarmeskalering"
+
+msgid "alarm escalations"
+msgstr "alarmeskaleringer"
+
 msgid "alarm event"
 msgstr "alarmhendelse"
 
 msgid "alarm events"
 msgstr "alarmhendelser"
 
+msgid "alarm notification"
+msgstr "alarmvarsel"
+
+msgid "alarm notifications"
+msgstr "alarmvarsler"
+
+msgid "alarm recipient rule"
+msgstr "alarmmottakerregel"
+
+msgid "alarm recipient rules"
+msgstr "alarmmottakerregler"
+
 msgid "alarm rule"
 msgstr "alarmregel"
 
 msgid "alarm rules"
 msgstr "alarmregler"
+
+msgid "alarms"
+msgstr "alarmer"
 
 #, python-format
 msgid "and %(count)s more: all reports"
@@ -15397,6 +15763,9 @@ msgstr "hver sjølokalitet som produserer stamfisk: også en lokalitet som ikke 
 msgid "every sea site that produces food fish: also a site not to be in use in the period"
 msgstr "hver sjølokalitet som produserer matfisk: også en lokalitet som ikke skal brukes i perioden"
 
+msgid "every site"
+msgstr "alle lokaliteter"
+
 msgid "every site where fish escape"
 msgstr "hver lokalitet der fisk rømmer"
 
@@ -15638,6 +16007,13 @@ msgstr "permisjonstype"
 msgid "leave types"
 msgstr "permisjonstyper"
 
+msgid "level"
+msgstr "nivå"
+
+#, python-format
+msgid "level %(level)s"
+msgstr "nivå %(level)s"
+
 #, python-format
 msgid "loop %(system)s, %(age)s ago"
 msgstr "kretsløp %(system)s, %(age)s siden"
@@ -15858,6 +16234,12 @@ msgstr "åpent spørsmål"
 msgid "open questions"
 msgstr "åpne spørsmål"
 
+msgid "opening balance"
+msgstr "åpningsbalanse"
+
+msgid "opening balances"
+msgstr "åpningsbalanser"
+
 msgid "owed once the month or week now running has closed"
 msgstr "forfaller når måneden eller uken som pågår er over"
 
@@ -15941,6 +16323,9 @@ msgstr "planlagte høstinger og transporter"
 
 msgid "plans"
 msgstr "planer"
+
+msgid "platform settings"
+msgstr "plattforminnstillinger"
 
 msgid "primary"
 msgstr "hovedkontakt"

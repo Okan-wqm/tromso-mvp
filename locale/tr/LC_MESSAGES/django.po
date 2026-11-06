@@ -553,6 +553,15 @@ msgid "%(first)s–%(last)s of %(total)s"
 msgstr "%(first)s–%(last)s / %(total)s"
 
 #, python-format
+msgid ""
+"%(fish)d fish of %(batch)s in unit %(unit)s were taken over on %(date)s (an opening balance, from"
+" %(document)s): they are counted as stock the farm already had, not as fish stocked."
+msgstr ""
+"%(batch)s partisinden %(unit)s biriminde %(fish)d balık %(date)s tarihinde devralındı (açılış "
+"bakiyesi, kaynak: %(document)s): stoklanan balık olarak değil, çiftliğin zaten sahip olduğu stok "
+"olarak sayılır."
+
+#, python-format
 msgid "%(fish)d fish of %(species)s escaped from %(unit)s."
 msgstr "%(unit)s biriminden %(fish)d adet %(species)s kaçtı."
 
@@ -861,6 +870,12 @@ msgid "%(parameter)s: bounds from %(low)s to %(high)s, at most %(decimals)d deci
 msgstr "%(parameter)s: sınırlar %(low)s ile %(high)s arasında, en çok %(decimals)d ondalık."
 
 #, python-format
+msgid "%(people)s notification"
+msgid_plural "%(people)s notifications"
+msgstr[0] "%(people)s bildirim"
+msgstr[1] "%(people)s bildirim"
+
+#, python-format
 msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (artık seçilemez)"
 
@@ -901,6 +916,10 @@ msgstr "%(record)s birincil olan"
 #, python-format
 msgid "%(record)s was not restored: %(reasons)s"
 msgstr "%(record)s geri yüklenemedi: %(reasons)s"
+
+#, python-format
+msgid "%(records)s still use it."
+msgstr "%(records)s hâlâ onu kullanıyor."
 
 #, python-format
 msgid "%(replicate)s has no tank."
@@ -1354,6 +1373,13 @@ msgstr "0 satır"
 
 msgid "0 rows match"
 msgstr "0 satır eşleşiyor"
+
+msgid ""
+"0: notified when the alarm opens. 1: when nobody acknowledged level 0 in the escalation time of "
+"the Platform settings; and so on, up to 9."
+msgstr ""
+"0: alarm açıldığında bildirilir. 1: Platform ayarlarındaki yükseltme süresi içinde kimse 0. "
+"seviyeyi onaylamadığında; ve böyle devam eder, en fazla 9."
 
 msgid ""
 "1 October each year, for the two next calendar years (the saved page: \"Fristen for å sende inn "
@@ -1976,6 +2002,20 @@ msgstr "Bir reçete iki kimyasal ister: en az ikisini seçin (Kimyasallar sekmes
 
 #, python-format
 msgid ""
+"A record can be dated at most %(days)s day back, and voided while it is no older. Older records "
+"stay as they are."
+msgid_plural ""
+"A record can be dated at most %(days)s days back, and voided while it is no older. Older records "
+"stay as they are."
+msgstr[0] ""
+"Bir kayıt en fazla %(days)s gün geriye tarihlenebilir ve bundan eski olmadıkça iptal edilebilir. "
+"Daha eski kayıtlar olduğu gibi kalır."
+msgstr[1] ""
+"Bir kayıt en fazla %(days)s gün geriye tarihlenebilir ve bundan eski olmadıkça iptal edilebilir. "
+"Daha eski kayıtlar olduğu gibi kalır."
+
+#, python-format
+msgid ""
 "A recurring task plans its tasks up to two weeks ahead; they are on the <a "
 "href=\"%(url)s\">Tasks</a> page. Changing or pausing it plans the tasks from today on that nobody"
 " has touched again; the others stay as they are."
@@ -2048,6 +2088,9 @@ msgstr "Deniz biti ilacı etken maddesini bit raporundaki adıyla belirtir; diğ
 
 msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
 msgstr "Yalnız deniz biti ilacı: etken maddesi, Mattilsynet’in haftalık bit raporundaki adıyla."
+
+msgid "A second person approves a withdrawal warning acknowledgement"
+msgstr "Bir ilaç arınma süresi uyarısının onayını ikinci bir kişi onaylar"
 
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "Çıkış payı, 0 ile 100 % arasında, yalnızca bir çıkış için belirtilebilir."
@@ -2352,6 +2395,10 @@ msgstr "Onaylanma zamanı"
 msgid "Acknowledged by"
 msgstr "Onaylayan"
 
+#, python-format
+msgid "Acknowledged by %(person)s from %(app)s, %(delay)s after it opened"
+msgstr "%(person)s tarafından %(app)s üzerinden, açılışından %(delay)s sonra onaylandı"
+
 msgid "Across the ring: its circumference divided by π, so a 160 m ring is 50.9 m across."
 msgstr "Halkanın çapı: çevresinin π’ye bölümü; 160 m’lik bir halkanın çapı 50,9 m’dir."
 
@@ -2579,11 +2626,20 @@ msgstr ""
 "Akvakulturregisteret lokalite numarası (5 hane). Bu numara olmadan Norveç mevzuat raporları "
 "sunulamaz."
 
+msgid "Alarm"
+msgstr "Alarm"
+
+msgid "Alarm acknowledged."
+msgstr "Alarm onaylandı."
+
 msgid "Alarm event acknowledged."
 msgstr "Alarm olayı onaylandı."
 
 msgid "Alarm events"
 msgstr "Alarm olayları"
+
+msgid "Alarm recipients"
+msgstr "Alarm alıcıları"
 
 msgid "Alarm rule"
 msgstr "Alarm kuralı"
@@ -2591,8 +2647,8 @@ msgstr "Alarm kuralı"
 msgid "Alarm rules"
 msgstr "Alarm kuralları"
 
-msgid "Alarms are shown on the Sensors pages, not sent: nobody is notified yet."
-msgstr "Alarmlar Sensörler sayfalarında gösterilir, gönderilmez: henüz kimseye bildirim yapılmaz."
+msgid "Alarms"
+msgstr "Alarmlar"
 
 msgid "Alive"
 msgstr "Canlı"
@@ -2835,6 +2891,13 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "Aktif bir protokolün tablosu olmalı."
+
+msgid ""
+"An alarm nobody has acknowledged this long after its people were notified is sent to the next "
+"people in the alarm recipients. 1 to 1440."
+msgstr ""
+"Kişilerine bildirildikten bu kadar süre sonra kimsenin onaylamadığı bir alarm, alarm "
+"alıcılarındaki sonraki kişilere gönderilir. 1 ile 1440 arası."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "Miktar birimiyle, birim de miktarıyla girilir."
@@ -3100,6 +3163,9 @@ msgstr "Her su"
 msgid "Anyone"
 msgstr "Herkes"
 
+msgid "App"
+msgstr "Uygulama"
+
 msgid "Applies to"
 msgstr "Kapsam"
 
@@ -3236,6 +3302,9 @@ msgstr "Asistan"
 msgid "Assumed water temperature for withdrawal (°C)"
 msgstr "Bekleme süresi için varsayılan su sıcaklığı (°C)"
 
+msgid "At least"
+msgstr "En az"
+
 #, python-format
 msgid "At least %(min)s."
 msgstr "En az %(min)s."
@@ -3289,6 +3358,9 @@ msgstr "Tutunmuş bitler"
 
 msgid "Attached per fish"
 msgstr "Balık başına tutunmuş"
+
+msgid "Attempted at"
+msgstr "Deneme zamanı"
 
 msgid "Attendance"
 msgstr "Yoklama"
@@ -3917,6 +3989,9 @@ msgstr "Bir kişi seçin"
 msgid "Choose a place from the list."
 msgstr "Listeden bir yer seçin."
 
+msgid "Choose a role or a person."
+msgstr "Bir rol ya da bir kişi seçin."
+
 msgid "Choose a sampling point."
 msgstr "Bir numune noktası seçin."
 
@@ -4102,6 +4177,12 @@ msgstr "Filtreleri temizle"
 
 msgid "Clear selection"
 msgstr "Seçimi temizle"
+
+msgid "Cleared"
+msgstr "Kapandı"
+
+msgid "Cleared at"
+msgstr "Kapanma zamanı"
 
 msgid "Client id"
 msgstr "İstemci kimliği"
@@ -4386,6 +4467,9 @@ msgstr "Düzeltme"
 
 msgid "Correction started: check it against the records and file it again."
 msgstr "Düzeltme başlatıldı: kayıtlarla karşılaştırın ve yeniden sunun."
+
+msgid "Correction window (days)"
+msgstr "Düzeltme penceresi (gün)"
 
 msgid "Corrects"
 msgstr "Düzeltir"
@@ -4713,6 +4797,9 @@ msgstr "Kuralın istediği gün-derece"
 msgid "Degree-days unknown: no temperature."
 msgstr "Gün-derece bilinmiyor: sıcaklık yok."
 
+msgid "Delay"
+msgstr "Gecikme"
+
 msgid "Delete"
 msgstr "Sil"
 
@@ -4776,6 +4863,10 @@ msgstr[1] "%(supplier)s teslimatı kaydedildi: %(count)d satır."
 #, python-format
 msgid "Delivery recorded: %(count)s fish of %(batch)s from %(unit)s to %(destination)s."
 msgstr "Teslimat kaydedildi: %(unit)s biriminden %(destination)s’a %(batch)s partisinden %(count)s balık."
+
+#, python-format
+msgid "Delivery to %(person)s: %(outcome)s"
+msgstr "%(person)s kişisine iletim: %(outcome)s"
 
 msgid "Deltamethrin"
 msgstr "Deltametrin"
@@ -5076,6 +5167,13 @@ msgstr "Her nokta kendi zaman aralığının ortalamasıdır; bant, o aralığı
 msgid "Each temperature is a column once."
 msgstr "Her sıcaklık yalnızca bir sütun olabilir."
 
+msgid ""
+"Each time a rule holds it is an alarm of Company › Alarms: its recipient rules say who is "
+"notified."
+msgstr ""
+"Bir kural her geçerli olduğunda Şirket › Alarmlar altında bir alarmdır: kimin bildirileceğini "
+"alıcı kuralları söyler."
+
 msgid "Each treatment can be listed once."
 msgstr "Her tedavi yalnızca bir kez listelenebilir."
 
@@ -5086,12 +5184,14 @@ msgid ""
 "Each value is judged on read against the water limits as they are now, for the fish in the unit "
 "that day; a sample of a loop for every unit of the loop. A unit without fish shows its values "
 "with no limit. Each value says which sampling point it was taken at; the water of a unit is that "
-"of its middle point. Nobody is alerted: critical values are shown here, not sent."
+"of its middle point. A warning or a critical value raises an alarm (Company › Alarms); nothing is"
+" sent until the push transport is connected."
 msgstr ""
-"Her değer okunurken su sınırlarının bugünkü haline göre, o gün birimdeki balıklar için "
-"değerlendirilir; bir döngü numunesi döngünün her birimi için. Balıksız bir birim değerlerini "
-"sınırsız gösterir. Her değer hangi numune noktasında alındığını söyler; bir birimin suyu orta "
-"noktasının suyudur. Kimseye uyarı gitmez: kritik değerler burada gösterilir, gönderilmez."
+"Her değer, okunduğunda su limitlerinin şimdiki hâline göre, o gün birimdeki balıklar için "
+"değerlendirilir; bir döngünün numunesi döngünün her birimi için. Balığı olmayan bir birim "
+"değerlerini limitsiz gösterir. Her değer hangi numune noktasında alındığını söyler; bir birimin "
+"suyu orta noktasının suyudur. Uyarı ya da kritik bir değer bir alarm başlatır (Şirket › "
+"Alarmlar); anlık bildirim aktarımı bağlanana kadar hiçbir şey gönderilmez."
 
 msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
 msgstr "Her bileşenin kısa bir adı olmalı: küçük bir harf, ardından en fazla 15 harf, rakam, - veya _."
@@ -5141,6 +5241,9 @@ msgstr "Sınırları düzenle"
 
 msgid "Edit the report"
 msgstr "Raporu düzenle"
+
+msgid "Edit the settings"
+msgstr "Ayarları düzenle"
 
 msgid "Edit the unit"
 msgstr "Birimi düzenle"
@@ -5196,6 +5299,12 @@ msgstr "Boş · %(status)s"
 
 msgid "Empty — ready to stock"
 msgstr "Boş — stoklamaya hazır"
+
+msgid "Empty: every department of the site. A department must be on the site."
+msgstr "Boş: sahanın her departmanı. Departman sahada olmalıdır."
+
+msgid "Empty: the alarms of every site."
+msgstr "Boş: her sahanın alarmları."
 
 msgid "Empty: the rule for every species. A species’ own rule wins over it."
 msgstr "Boş: her balık türü için kural. Bir türün kendi kuralı ondan önce gelir."
@@ -5259,6 +5368,16 @@ msgstr "Ekipman kendisinin parçası olamaz."
 msgid "Equipment that fits none of the other types."
 msgstr "Diğer türlerin hiçbirine uymayan ekipman."
 
+msgid "Escalate an unacknowledged alarm after (minutes)"
+msgstr "Onaylanmamış bir alarmı şu süreden sonra yükselt (dakika)"
+
+msgid "Escalated at"
+msgstr "Yükseltme zamanı"
+
+#, python-format
+msgid "Escalated to level %(level)s: nobody acknowledged it in time"
+msgstr "%(level)s. seviyeye yükseltildi: kimse zamanında onaylamadı"
+
 msgid "Escape"
 msgstr "Kaçış"
 
@@ -5298,6 +5417,9 @@ msgstr "Her"
 msgid "Every active point"
 msgstr "Her etkin nokta"
 
+msgid "Every alarm"
+msgstr "Her alarm"
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -5313,6 +5435,9 @@ msgid "Every day"
 msgid_plural "Every %(count)d days"
 msgstr[0] "Her gün"
 msgstr[1] "%(count)d günde bir"
+
+msgid "Every department"
+msgstr "Her departman"
 
 msgid "Every factor has a name."
 msgstr "Her faktörün bir adı vardır."
@@ -5404,6 +5529,9 @@ msgstr[1] "%(count)d haftada bir: %(days)s"
 
 msgid "Everyone"
 msgstr "Herkes"
+
+msgid "Everyone active with this role; or choose one person below instead."
+msgstr "Bu role sahip herkes (aktif olan); ya da bunun yerine aşağıdan bir kişi seçin."
 
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Konuşmadaki herkes bir mesajın silindiğini görür, içeriğini görmez."
@@ -5517,6 +5645,9 @@ msgstr "%(name)s faktörü bu arada kaldırıldı: sayfayı yeniden yükleyin."
 
 msgid "Factors"
 msgstr "Faktörler"
+
+msgid "Failed"
+msgstr "Başarısız"
 
 msgid "Fallow"
 msgstr "Dinlendirmede"
@@ -5805,6 +5936,17 @@ msgstr "Ad"
 msgid "Fish"
 msgstr "Balık"
 
+msgid ""
+"Fish already on the farm when it started using the platform. Their stocking date is the real one,"
+" older than the correction window allows any other record; their count and weight are those of "
+"the takeover day. Only the platform owner registers them, and each is in the activity log as "
+"critical."
+msgstr ""
+"Çiftlik platformu kullanmaya başladığında zaten çiftlikte olan balıklar. Stoklama tarihleri "
+"gerçek tarihtir, düzeltme penceresinin başka hiçbir kayda izin verdiğinden daha eskidir; sayıları"
+" ve ağırlıkları devir gününe aittir. Onları yalnızca platform sahibi kaydeder ve her biri "
+"etkinlik günlüğünde kritik olarak yer alır."
+
 msgid "Fish are held in the tanks, ponds and cages of Setup."
 msgstr "Balıklar Kurulum’daki tanklarda, havuzlarda ve kafeslerde tutulur."
 
@@ -5858,11 +6000,23 @@ msgstr "Şimdiki balık"
 msgid "Fish of the own hatchery are farmed, fish caught in the wild wild-caught."
 msgstr "Kendi kuluçkahanenin balıkları yetiştirilmiştir, doğadan yakalananlar doğadan yakalanmıştır."
 
+msgid "Fish on the takeover day"
+msgstr "Devir günündeki balık"
+
 msgid "Fish recaptured"
 msgstr "Yeniden yakalanan balık"
 
 msgid "Fish the book still holds beyond the count are then recorded as an unaccounted loss."
 msgstr "Kayıtta sayımın üstünde kalan balıklar o zaman açıklanamayan kayıp olarak kaydedilir."
+
+msgid ""
+"Fish the farm already had when it started using the platform: their real stocking date and year "
+"class, and their count and average weight on the takeover day. The batch number is given on "
+"saving."
+msgstr ""
+"Çiftliğin platformu kullanmaya başladığında zaten sahip olduğu balıklar: gerçek stoklama "
+"tarihleri ve yıl sınıfları, devir günündeki sayıları ve ortalama ağırlıkları. Parti numarası "
+"kaydederken verilir."
 
 msgid ""
 "Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown here "
@@ -6275,6 +6429,9 @@ msgstr "Miktarları izlemek için hacmi girin."
 msgid "Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none)."
 msgstr "Bekleme süresini KÜB’de yazdığı gibi gün-derece, gün ya da ikisiyle girin (yoksa 0)."
 
+msgid "Give the year class of fish taken over."
+msgstr "Devralınan balıkların yıl sınıfını verin."
+
 msgid "Given"
 msgstr "Verilen"
 
@@ -6616,6 +6773,15 @@ msgstr ""
 " olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
 "aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
+
+msgid ""
+"How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
+"the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
+"stay as they are. 1 to 3650; 31 until you set another."
+msgstr ""
+"Günlük bir kaydın (bir stok işlemi, bir yemleme, bir su numunesi, bir depo hareketi, bir plan, "
+"bir tedavi) kaç gün geriye tarihlenebileceği ve bir kaydın ne kadar eskiyken iptal edilebileceği."
+" Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene kadar 31."
 
 msgid "How often the device sends a message. Offline after three times this without one."
 msgstr ""
@@ -7928,6 +8094,12 @@ msgstr "Hesap yok"
 msgid "No alarm events."
 msgstr "Alarm olayı yok."
 
+msgid "No alarm is open."
+msgstr "Açık alarm yok."
+
+msgid "No alarm yet."
+msgstr "Henüz alarm yok."
+
 msgid "No band yet. Use “Add band” to add a row."
 msgstr "Henüz ağırlık aralığı yok. Satır eklemek için “Ağırlık aralığı ekle”yi kullanın."
 
@@ -8159,6 +8331,9 @@ msgstr "Ekipte henüz kimse yok. Satır eklemek için “Kişi ekle”yi kullan�
 
 msgid "No open tasks"
 msgstr "Açık görev yok"
+
+msgid "No opening balance is registered."
+msgstr "Kayıtlı açılış bakiyesi yok."
 
 msgid "No operation matches these filters."
 msgstr "Bu filtrelere uyan işlem yok."
@@ -8396,11 +8571,19 @@ msgid "Nobody is expected today"
 msgstr "Bugün kimse beklenmiyor"
 
 msgid ""
-"Nobody is notified: an alarm is shown here and on the Sensors overview until a way to send it "
-"exists. It is not an alarm until someone sees it."
+"Nobody is notified of an alarm until a rule says who: a role or a person, on a site or every "
+"site, from a severity, at a level."
 msgstr ""
-"Kimseye bildirim yapılmaz: bir alarm, onu göndermenin bir yolu olana kadar burada ve Sensörlere "
-"genel bakış sayfasında gösterilir. Biri görene kadar alarm sayılmaz."
+"Bir kural kimi söyleyene kadar bir alarmdan kimse haberdar edilmez: bir rol ya da bir kişi, bir "
+"sahada ya da her sahada, bir önem derecesinden itibaren, bir seviyede."
+
+msgid "Nobody to notify"
+msgstr "Bildirilecek kimse yok"
+
+msgid "Nobody to notify: no alarm recipient rule reaches this alarm. Add one under Alarm recipients."
+msgstr ""
+"Bildirilecek kimse yok: hiçbir alarm alıcı kuralı bu alarma ulaşmıyor. Alarm alıcıları altında "
+"bir tane ekleyin."
 
 msgid "Nobody to show"
 msgstr "Gösterilecek kimse yok"
@@ -8608,6 +8791,14 @@ msgstr "Stokta hiçbir şey yok: önce bir teslimat alın."
 msgid "Nothing is owed there: it was filed, closed already or is not due."
 msgstr "Orada bir şey gerekmiyor: bildirildi, zaten kapatıldı veya zamanı gelmedi."
 
+msgid ""
+"Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
+"notification waits in the outbox below, with its recipient and level, and is sent once it is."
+msgstr ""
+"Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra "
+"gelecek). Her bildirim, alıcısı ve seviyesiyle aşağıdaki giden kutusunda bekler ve aktarım "
+"bağlandığında gönderilir."
+
 msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
 msgstr "Sensörlerle ilgili henüz hiçbir şeye erişiminiz yok: Roller sayfasından bir yetki isteyin."
 
@@ -8631,6 +8822,15 @@ msgstr "Henüz yok"
 
 msgid "Notifiable diagnosis"
 msgstr "Bildirimi zorunlu tanı"
+
+msgid "Notification"
+msgstr "Bildirim"
+
+msgid "Notification answered"
+msgstr "Yanıtlanan bildirim"
+
+msgid "Notified"
+msgstr "Bildirildi"
 
 #, python-format
 msgid "Notified %(moment)s"
@@ -8892,6 +9092,9 @@ msgstr "Yalnızca temizleyici balık raporu yem verilmediğini söyler."
 msgid "Only the last band can be without an upper weight."
 msgstr "Yalnızca son ağırlık aralığının üst ağırlığı boş olabilir."
 
+msgid "Only the people on shift by the roster when the alarm reaches this level."
+msgstr "Alarm bu seviyeye ulaştığında yalnızca vardiya planına göre vardiyada olan kişiler."
+
 msgid "Only the production departments of the chosen site."
 msgstr "Yalnızca seçilen sahanın üretim departmanları."
 
@@ -8907,6 +9110,9 @@ msgstr ""
 
 msgid "Only warnings and criticals"
 msgstr "Yalnızca uyarılar ve kritikler"
+
+msgid "Only while on shift"
+msgstr "Yalnızca vardiyadayken"
 
 msgid "Only you and the people who see every employee can read this."
 msgstr "Bunu yalnızca siz ve tüm çalışanları görenler okuyabilir."
@@ -8965,6 +9171,16 @@ msgstr "Açıldı"
 
 msgid "Opened at"
 msgstr "Açılma zamanı"
+
+msgid "Opening balance"
+msgstr "Açılış bakiyesi"
+
+#, python-format
+msgid "Opening balance %(batch)s registered: %(count)s fish in %(units)s."
+msgstr "Açılış bakiyesi %(batch)s kaydedildi: %(units)s içinde %(count)s balık."
+
+msgid "Opening balances"
+msgstr "Açılış bakiyeleri"
 
 msgid "Operating plan (driftsplan)"
 msgstr "İşletme planı (driftsplan)"
@@ -9463,6 +9679,9 @@ msgstr "Bugün planlanan"
 msgid "Platform admin"
 msgstr "Platform yöneticisi"
 
+msgid "Platform settings"
+msgstr "Platform ayarları"
+
 msgid "Plumbing"
 msgstr "Tesisat"
 
@@ -9723,6 +9942,12 @@ msgstr ""
 "Yalnızca hasat edilip fabrikaya gönderilen balıklar için. Saat veya günle birlikte verilirse "
 "ikisine de ulaşılmalıdır."
 
+msgid "Push"
+msgstr "Anlık bildirim"
+
+msgid "Push: the mobile app. Nothing is sent until the push transport is connected."
+msgstr "Anlık bildirim: mobil uygulama. Anlık bildirim aktarımı bağlanana kadar hiçbir şey gönderilmez."
+
 msgid "QoS 0 messages dropped on a full queue"
 msgstr "Kuyruk dolu olduğu için atılan QoS 0 mesajları"
 
@@ -9752,6 +9977,16 @@ msgstr "Soru"
 
 msgid "Questions for the authority"
 msgstr "Kuruma sorular"
+
+msgid "Queued"
+msgstr "Kuyrukta"
+
+msgid "Queued at"
+msgstr "Kuyruğa alınma zamanı"
+
+#, python-format
+msgid "Queued for %(person)s (%(channel)s, level %(level)s)"
+msgstr "%(person)s için kuyruğa alındı (%(channel)s, seviye %(level)s)"
 
 msgid "Quote"
 msgstr "Alıntı"
@@ -9848,6 +10083,12 @@ msgstr "Son yemlemeler"
 
 msgid "Recent operations"
 msgstr "Son işlemler"
+
+msgid "Recipient"
+msgstr "Alıcı"
+
+msgid "Recipient rule"
+msgstr "Alıcı kuralı"
 
 msgid "Recirculating aquaculture system"
 msgstr "Devridaimli yetiştiricilik sistemi (RAS)"
@@ -9990,6 +10231,15 @@ msgstr "Soğutucu akışkan"
 
 msgid "Region"
 msgstr "Bölge"
+
+msgid "Register an opening balance"
+msgstr "Açılış bakiyesi kaydet"
+
+msgid "Register the opening balance"
+msgstr "Açılış bakiyesini kaydet"
+
+msgid "Registered by"
+msgstr "Kaydeden"
 
 msgid "Regulation"
 msgstr "Mevzuat"
@@ -10466,6 +10716,9 @@ msgstr ""
 "%(date)s tarihli tedavinin sayımdan önce yapılıp yapılmadığını belirtin (Tedaviler sekmesi): "
 "sayım bittiği gün yapıldı."
 
+msgid "Say which document the counts come from."
+msgstr "Sayıların hangi belgeden geldiğini söyleyin."
+
 msgid "Say which substance when it is another one, and only then."
 msgstr "Başka bir etken maddeyse hangisi olduğunu yazın, yalnızca o zaman."
 
@@ -10816,6 +11069,12 @@ msgstr "Duyarlı"
 msgid "Sensitivity tests"
 msgstr "Duyarlılık testleri"
 
+msgid "Sensor alarm event"
+msgstr "Sensör alarm olayı"
+
+msgid "Sensor alarm rule"
+msgstr "Sensör alarm kuralı"
+
 msgid "Sensor credentials"
 msgstr "Sensör kimlik bilgileri"
 
@@ -10830,6 +11089,9 @@ msgstr "Sensörler"
 
 msgid "Sensors overview"
 msgstr "Sensörlere genel bakış"
+
+msgid "Sent"
+msgstr "Gönderildi"
 
 msgid "Sent at"
 msgstr "Gönderilme zamanı"
@@ -11128,6 +11390,9 @@ msgstr "Sırala: %(name)s"
 msgid "Source"
 msgstr "Kaynak"
 
+msgid "Source document"
+msgstr "Kaynak belge"
+
 msgid "Source of the value"
 msgstr "Değerin kaynağı"
 
@@ -11333,6 +11598,12 @@ msgctxt "occupancy"
 msgid "Stocked"
 msgstr "Dolu"
 
+msgid "Stocked on"
+msgstr "Stoklama tarihi"
+
+msgid "Stocked on (the real date)"
+msgstr "Stoklama tarihi (gerçek tarih)"
+
 msgid "Stocked units"
 msgstr "Dolu birimler"
 
@@ -11523,6 +11794,13 @@ msgstr "Tablo bölümleri"
 
 msgid "Taken out"
 msgstr "Çıkarıldı"
+
+#, python-format
+msgid "Taken over: stocked on %(date)s"
+msgstr "Devralındı: %(date)s tarihinde stoklandı"
+
+msgid "Takeover day"
+msgstr "Devir günü"
 
 msgid "Tank"
 msgstr "Tank"
@@ -11911,6 +12189,12 @@ msgstr ""
 "Olayın olduğu gün (kullanıma alınan veya boşaltılan saha için: ilk balığının geldiği veya son "
 "balığının ayrıldığı gün)."
 
+msgid "The day the counts and the average weight are of: inside the correction window, like every record."
+msgstr "Sayıların ve ortalama ağırlığın ait olduğu gün: her kayıt gibi düzeltme penceresi içinde."
+
+msgid "The day the fish were stocked, however long ago: their days stocked count from it."
+msgstr "Balıkların stoklandığı gün, ne kadar önce olursa olsun: stokta kalınan günler buradan sayılır."
+
 msgid ""
 "The day the new placement starts; the old one ends the day before. For a new person: their first "
 "day."
@@ -12165,6 +12449,9 @@ msgstr ""
 #, python-format
 msgid "The fish of %(tank)s are not weighed on day 0: the baseline of their feed conversion is missing."
 msgstr "%(tank)s balıkları 0. günde tartılmamış: yem dönüşümlerinin başlangıç değeri eksik."
+
+msgid "The fish were stocked on or before the takeover day."
+msgstr "Balıklar devir gününde ya da öncesinde stoklanmıştır."
 
 msgid "The gain is a number other than 0."
 msgstr "Kazanç, 0 dışında bir sayıdır."
@@ -12748,6 +13035,11 @@ msgstr "%(name)s grubunun rolü dört roldan biri değil."
 msgid "The row ends on %(day)s already: it is only ever shortened."
 msgstr "Satır zaten %(day)s tarihinde bitiyor: yalnızca kısaltılabilir."
 
+msgid ""
+"The rules every daily record follows. Every change is in the activity log with its old and new "
+"value."
+msgstr "Her günlük kaydın uyduğu kurallar. Her değişiklik eski ve yeni değeriyle etkinlik günlüğündedir."
+
 msgid "The safe zone lies in this band."
 msgstr "Güvenli bölge bu aralıktadır."
 
@@ -13249,6 +13541,9 @@ msgstr ""
 msgid "The year it was published."
 msgstr "Yayımlandığı yıl."
 
+msgid "Their average on the takeover day; to 0.0001 g for eggs and larvae."
+msgstr "Devir günündeki ortalamaları; yumurta ve larvalar için 0,0001 g hassasiyetle."
+
 msgid "Their weight (kg)"
 msgstr "Toplam ağırlıkları (kg)"
 
@@ -13394,6 +13689,9 @@ msgstr "Bu bağlantı artık çalışmıyor"
 msgid "This notice has already been started: open it from the list."
 msgstr "Bu bildirim zaten başlatılmış: listeden açın."
 
+msgid "This notification is not yours."
+msgstr "Bu bildirim sizin değil."
+
 msgid "This operation is already voided."
 msgstr "Bu işlem zaten iptal edildi."
 
@@ -13442,6 +13740,9 @@ msgstr "Bu plan silindi."
 
 msgid "This production department is not on any site; choose one that is."
 msgstr "Bu üretim departmanı hiçbir sahada değil; bir sahada olanı seçin."
+
+msgid "This production department is not on the site."
+msgstr "Bu üretim departmanı bu sahada değil."
 
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Bu işlem kaydı kalıcı olarak kaldırır. Etkinlik günlüğü, silindiğine dair bir kayıt tutar."
@@ -14099,6 +14400,9 @@ msgstr "Uyarı üst sınırı"
 msgid "Warning below"
 msgstr "Uyarı alt sınırı"
 
+msgid "Warning reaches warnings and criticals; Critical reaches criticals only."
+msgstr "Uyarı, uyarılara ve kritiklere ulaşır; Kritik yalnızca kritiklere ulaşır."
+
 msgid "Warnings acknowledged"
 msgstr "Kabul edilen uyarılar"
 
@@ -14132,6 +14436,9 @@ msgid ""
 msgstr ""
 "Su, Kurulum'daki tankların, havuzların ve kafeslerin, sistemlerinin döngülerinin ve ekipmanının "
 "numune noktalarında örneklenir."
+
+msgid "Water limit"
+msgstr "Su limiti"
 
 msgid "Water limits"
 msgstr "Su sınırları"
@@ -14266,6 +14573,9 @@ msgstr "Kuyulu tekne veya araç"
 msgid "Wet"
 msgstr "Yaş"
 
+msgid "What"
+msgstr "Ne"
+
 msgid "What caused it, or what is thought to have."
 msgstr "Nedeni veya neden olduğu düşünülen şey."
 
@@ -14392,6 +14702,13 @@ msgstr "Kanalın burada olmayı bıraktığı zaman; hâlâ buradaysa boş."
 msgid "When this is a part of other equipment, e.g. the pump of a filter unit."
 msgstr "Bu, başka bir ekipmanın parçasıysa; örn. bir filtre ünitesinin pompası."
 
+msgid ""
+"When ticked, a harvest during a medicine withdrawal goes on only after a second person who may "
+"approve it has approved the acknowledgement."
+msgstr ""
+"İşaretlendiğinde, ilaç arınma süresi içindeki bir hasat, onaylama yetkisi olan ikinci bir kişi "
+"onayı onayladıktan sonra devam eder."
+
 msgid "Where"
 msgstr "Nerede"
 
@@ -14431,6 +14748,9 @@ msgstr "DOI’si yoksa ya da DOI yetmiyorsa okunabileceği yer. Yazılmazsa http
 msgid "Where it stands"
 msgstr "Durumu"
 
+msgid "Where the counts come from: the old system’s export, a count sheet, a delivery note."
+msgstr "Sayıların nereden geldiği: eski sistemin dışa aktarımı, bir sayım föyü, bir teslimat notu."
+
 msgid ""
 "Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
 "facilities)."
@@ -14467,6 +14787,9 @@ msgstr "“%(query)s” metnin neresinde geçiyor"
 
 msgid "Whether it applies to the permit and county of the farm is unknown (Q9). Not built."
 msgstr "Çiftliğin iznine ve ilçesine uygulanıp uygulanmadığı bilinmiyor (Q9). Yapılmadı."
+
+msgid "Which alarms"
+msgstr "Hangi alarmlar"
 
 msgid "Which feeding protocol feeds which fish, from which day."
 msgstr "Hangi yemleme protokolünün hangi balıkları hangi günden itibaren yemlediği."
@@ -14776,6 +15099,9 @@ msgstr "Kendi günlerinizi planlamazsınız."
 msgid "You do not see this person on this day."
 msgstr "Bu kişiyi bu günde görmüyorsunuz."
 
+msgid "You have already acknowledged this alarm."
+msgstr "Bu alarmı zaten onayladınız."
+
 #, python-format
 msgid "You left %(channel)s."
 msgstr "%(channel)s kanalından ayrıldınız."
@@ -14816,17 +15142,59 @@ msgstr "temizleyici balık damızlığı olan bir lokasyon"
 msgid "after the count"
 msgstr "sayımdan sonra"
 
+msgid "alarm"
+msgstr "alarm"
+
+msgid "alarm acknowledgement"
+msgstr "alarm onayı"
+
+msgid "alarm acknowledgements"
+msgstr "alarm onayları"
+
+msgid "alarm clearance"
+msgstr "alarm kapanışı"
+
+msgid "alarm clearances"
+msgstr "alarm kapanışları"
+
+msgid "alarm delivery attempt"
+msgstr "alarm iletim denemesi"
+
+msgid "alarm delivery attempts"
+msgstr "alarm iletim denemeleri"
+
+msgid "alarm escalation"
+msgstr "alarm yükseltmesi"
+
+msgid "alarm escalations"
+msgstr "alarm yükseltmeleri"
+
 msgid "alarm event"
 msgstr "alarm olayı"
 
 msgid "alarm events"
 msgstr "alarm olayları"
 
+msgid "alarm notification"
+msgstr "alarm bildirimi"
+
+msgid "alarm notifications"
+msgstr "alarm bildirimleri"
+
+msgid "alarm recipient rule"
+msgstr "alarm alıcı kuralı"
+
+msgid "alarm recipient rules"
+msgstr "alarm alıcı kuralları"
+
 msgid "alarm rule"
 msgstr "alarm kuralı"
 
 msgid "alarm rules"
 msgstr "alarm kuralları"
+
+msgid "alarms"
+msgstr "alarmlar"
 
 #, python-format
 msgid "and %(count)s more: all reports"
@@ -15407,6 +15775,9 @@ msgstr "damızlık üreten her deniz lokasyonu: dönemde kullanılmayacak lokasy
 msgid "every sea site that produces food fish: also a site not to be in use in the period"
 msgstr "besi balığı üreten her deniz lokasyonu: dönemde kullanılmayacak lokasyon da"
 
+msgid "every site"
+msgstr "her saha"
+
 msgid "every site where fish escape"
 msgstr "balığın kaçtığı her lokasyon"
 
@@ -15650,6 +16021,13 @@ msgstr "izin türü"
 msgid "leave types"
 msgstr "izin türleri"
 
+msgid "level"
+msgstr "seviye"
+
+#, python-format
+msgid "level %(level)s"
+msgstr "seviye %(level)s"
+
 #, python-format
 msgid "loop %(system)s, %(age)s ago"
 msgstr "döngü %(system)s, %(age)s önce"
@@ -15870,6 +16248,12 @@ msgstr "açık soru"
 msgid "open questions"
 msgstr "açık sorular"
 
+msgid "opening balance"
+msgstr "açılış bakiyesi"
+
+msgid "opening balances"
+msgstr "açılış bakiyeleri"
+
 msgid "owed once the month or week now running has closed"
 msgstr "şu an süren ay veya hafta kapandığında gelir"
 
@@ -15953,6 +16337,9 @@ msgstr "planlanmış hasatlar ve taşımalar"
 
 msgid "plans"
 msgstr "planlar"
+
+msgid "platform settings"
+msgstr "platform ayarları"
 
 msgid "primary"
 msgstr "birincil"

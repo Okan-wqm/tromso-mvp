@@ -25,7 +25,7 @@ from .operations import TrackRev
 def row(scope, key):
     """(rev, dirty_epoch, dirty_from) of a key, or None."""
     with connection.cursor() as cursor:
-        cursor.execute('SELECT rev, dirty_epoch, dirty_from FROM core_rev WHERE scope = %s AND key = %s', [scope, key])
+        cursor.execute('SELECT rev, dirty_epoch, dirty_from FROM core_rev WHERE scope = %s AND key = %s', [scope, str(key)])
         return cursor.fetchone()
 
 
@@ -50,7 +50,7 @@ class Farm:
 class BumpTests(TestCase):
     def note(self, scope, key, day=None):
         with connection.cursor() as cursor:
-            cursor.execute('SELECT core_rev_note(%s, %s, %s)', [scope, key, day])
+            cursor.execute('SELECT core_rev_note(%s, %s, %s)', [scope, str(key), day])
 
     def test_noted_keys_are_applied_once_with_the_earliest_day(self):
         self.note('t', 1, date(2026, 3, 5))
@@ -77,7 +77,7 @@ class BumpTests(TestCase):
                 cursor.execute("UPDATE core_rev SET rev = -1 WHERE scope = 't'")
         with self.assertRaises(IntegrityError), transaction.atomic():
             with connection.cursor() as cursor:
-                cursor.execute("INSERT INTO core_rev (scope, key, rev, dirty_epoch) VALUES ('t', 1, 5, 0)")
+                cursor.execute("INSERT INTO core_rev (scope, key, rev, dirty_epoch) VALUES ('t', '1', 5, 0)")
 
     def test_rev_reads_a_missing_key_as_none_and_stamp_reads_many_in_one_query(self):
         self.note('t', 1)
@@ -111,7 +111,7 @@ class BumpTests(TestCase):
         self.note('t', 2)
         rev.settle()
         with connection.cursor() as cursor:
-            cursor.execute("UPDATE core_rev SET rev = 7 WHERE key = 2")
+            cursor.execute("UPDATE core_rev SET rev = 7 WHERE key = '2'")
         rev.rebuild(stamped=[8])                              # a stored figure stamped 8 (a restore can go back)
         self.assertEqual(row('t', 1), (9, 9, None))
         self.assertEqual(row('t', 2), (9, 9, None))
@@ -298,3 +298,20 @@ class ConcurrencyTests(Farm, TransactionTestCase):
                     thread.join()
         self.assertEqual(failures, [])
         self.assertEqual((rev.rev('batch', self.b1.pk), rev.rev('batch', self.b2.pk)), (1 + 2 * rounds, 1 + 2 * rounds))
+
+
+class RebuildCommandTests(TestCase):
+    def test_the_command_moves_every_revision_and_names_missing_triggers(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT core_rev_note('t', '1', NULL)")
+        rev.settle()
+        with connection.cursor() as cursor:
+            cursor.execute('ALTER TABLE batches DISABLE TRIGGER core_rev_batches_batch_note')
+        out, err = StringIO(), StringIO()
+        call_command('core_rev_rebuild', stdout=out, stderr=err)
+        self.assertEqual(row('t', 1), (2, 2, None))
+        self.assertIn('Every revision is now 2', out.getvalue())
+        self.assertIn('core_rev_batches_batch_note', err.getvalue())

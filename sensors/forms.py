@@ -113,7 +113,7 @@ class DeviceForm(CodedFormMixin, TabbedForm):
         self.fields['credential'].queryset = Credential.objects.order_by('username')
         self.fields['payload_format'].queryset = PayloadFormat.objects.order_by('name')
         self.fields['connection'].queryset = Connection.objects.order_by('name')
-        if self.instance.pk and bindings.placements([self.instance])[self.instance.pk]:
+        if self.instance.pk and bindings.holds_site(self.instance):
             self.fields['site'].disabled = True
             self.fields['site'].help_text = _('Where the device is placed now: a move to another site changes it (Move '
                                               'device).')

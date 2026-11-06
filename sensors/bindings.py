@@ -297,6 +297,13 @@ def placed(now=None):
     return Exists(Binding.objects.visible().at(now or timezone.now()).filter(channel__device=OuterRef('pk')))
 
 
+def holds_site(device):
+    """Whether the device's site is held by where it is: an open live binding of any of its channels, a deleted one's
+    too (the rule migration 0007 holds; the pages leave a deleted channel's binding out of sight). Its site changes then
+    only by a move."""
+    return Binding.objects.filter(channel__device=device, valid_to__isnull=True).exists()
+
+
 def placements(devices, now=None):
     """{device id: [place]}: where each device's channels are bound now (empty: not placed)."""
     devices = list(devices)

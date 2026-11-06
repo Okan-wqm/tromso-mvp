@@ -66,7 +66,7 @@ from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
-from .evaluate import Limits, Status, is_fresh, worst
+from .evaluate import ALERTS, Limits, Status, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # How far back the latest values, and a salinity for a sample without one, are looked for.
@@ -381,6 +381,12 @@ class Reading:
 
     def age(self, now=None):
         return (now or timezone.now()) - self.at
+
+    @property
+    def old_alert(self):
+        """What the limits said of a value that is no longer fresh when it was critical or a warning, else '': the pages
+        show such a value as old and as what it was, never as only "stale" (F-244)."""
+        return self.judged if self.status == Status.STALE and self.judged in ALERTS else ''
 
     def fresh(self, now):
         """Whether it still says something about the water now (evaluate.is_fresh, the one rule)."""

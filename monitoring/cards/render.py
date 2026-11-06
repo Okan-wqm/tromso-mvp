@@ -111,9 +111,9 @@ def face(reading, now, parameter=None):
     origin = str(sample.get_source_display()) if sample is not None else water_read.origin_text(reading)
     age = age_text((now - reading.at).total_seconds())
     missing = reading.value is None
-    status = '' if missing else str(reading.status)
+    status = '' if missing else str(reading.old_alert or reading.status)
     return Face(label, gettext('no data') if missing else water_value(reading.value, reading.code), status,
-                str(Status(reading.status).label) if status else '', origin, age,
+                str(Status(status).label) if status else '', origin, age,
                 not reading.fresh(now), missing, reading)
 
 

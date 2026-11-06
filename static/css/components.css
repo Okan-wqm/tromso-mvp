@@ -581,6 +581,9 @@ td.wq-critical, .wq-value.wq-critical { color: var(--error); font-weight: 700; }
 td.wq-warning, .wq-value.wq-warning { color: #7A5410; font-weight: 600; }
 td.wq-stale, .wq-value.wq-stale, td.wq-no_limit, .wq-value.wq-no_limit { color: var(--muted); }
 td.wq-stale, .wq-value.wq-stale { font-style: italic; }
+/* An old value that was critical or a warning keeps its colour (and its italics): old, never read as fine (F-244). */
+td.wq-was-critical, .wq-value.wq-was-critical { color: var(--error); font-weight: 700; }
+td.wq-was-warning, .wq-value.wq-was-warning { color: #7A5410; font-weight: 600; }
 .wq-derived { font-style: italic; }
 .wq-note { margin-left: .125rem; color: var(--muted); }
 .wq-missing { color: var(--muted); }

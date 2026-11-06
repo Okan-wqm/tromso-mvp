@@ -16,7 +16,7 @@ from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
 from farm.models import Equipment, SamplingPoint, Site, System
 from farm.models.site import zone_of
 
-from . import quantities
+from . import bindings, quantities
 from .models import (AlarmRule, Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape,
                      TimeUnit)
 
@@ -413,10 +413,6 @@ class BindForm(TabbedForm):
             self.add_error('target', _('Choose a place from the list.'))
         if channel is None or target is None:
             return cleaned
-        if channel.is_water and kind == 'equipment':
-            self.add_error('target', _('A water value is bound to a sampling point or a system.'))
-        if not channel.is_water and kind == 'point':
-            self.add_error('target', _('A process value is bound to a piece of equipment or a system.'))
         if cleaned.get('valid_from') is not None:
             wall = timezone.make_naive(cleaned['valid_from'], timezone.get_current_timezone())
             try:
@@ -424,13 +420,10 @@ class BindForm(TabbedForm):
             except ValidationError as error:
                 self.add_error('valid_from', error)
                 return cleaned
-            role = cleaned.get('role')
-            clash = Binding.objects.filter(**{kind: target}, role=role, channel__quantity=channel.quantity) \
-                .exclude(channel=channel).at(cleaned['valid_from']).select_related('channel').first()
-            if clash is not None:
-                self.add_error('role', _('%(target)s already has a %(role)s %(quantity)s channel then: %(channel)s.') % {
-                    'target': target, 'role': clash.get_role_display().lower(), 'quantity': channel.quantity_info.label,
-                    'channel': clash.channel})
+        # The rules of a move (sensors/bindings.py), said on the form before it is sent; the move checks them again.
+        for field, message in bindings.refusals(channel, target, cleaned.get('role'),
+                                                cleaned.get('valid_from') or timezone.now()):
+            self.add_error(field, message)
         cleaned['target_kind'], cleaned['target_object'] = kind, target
         return cleaned
 

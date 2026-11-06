@@ -1842,7 +1842,20 @@ treatment, Record sea-lice count and Record health event with the unit chosen.
 Treatments (read, create, edit = change the last day, delete = void), Health events (read, create, edit, delete =
 void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
 The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
-works out every unit's withdrawal from scratch and lists the fish held, with the end and why.
+works out every unit's withdrawal from scratch and lists the fish held, with the end and why, and then **every harvest
+already recorded inside a withdrawal** (medicated fish that may have gone to food), however it came to (a treatment entered
+after the harvest, a longer course, a corrected temperature, a medicine's withdrawal changed), each with whether someone
+acknowledged it (when the harvest was recorded, or with the treatment) or not.
+
+**A treatment entered after the fact** (audit F-195, F-188): a treatment is recorded up to 31 days back, and its course
+made longer, after harvests that its withdrawal now covers. The treatment's dialog and the last-day dialog name every
+harvest already recorded inside the withdrawal they would create (the harvest's day, unit, batch, fish and facility,
+and the withdrawal's end) and go on only past the acknowledgement box, as a handling warning does: one `harvested`
+acknowledgement per harvest is stored on the treatment, naming the harvest, and the log entry is critical. A longer course
+asks only about the harvests the change brings inside; a shorter one asks nothing. Both lock the units and the batches in
+them as a harvest locks them (batches, then units), so a treatment and a harvest of the same fish take turns. Whether a
+second person must approve going on past a withdrawal is a setting of the platform owner's (owner answer, 2026-11-06); it
+is asked in one place, `farm.handling.check.second_person_must_approve`, which answers no until that setting exists.
 
 Differences from the source (details in the bug document, HLT-01 to HLT-23):
 

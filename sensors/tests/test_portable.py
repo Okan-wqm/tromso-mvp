@@ -451,7 +451,7 @@ class PageTests(PortableCase):
         bindings.move_device(self.user, self.device, self.start, self.t1)
         response = self.client.get(reverse('sensors:device_list'))
         self.assertContains(response, 'T-01 › Middle')
-        self.assertContains(response, 'Not placed')
+        self.assertContains(response, '<span class="badge badge-closed">Not placed</span>', count=1)
         self.assertContains(response, f'{self.url}?device={other.pk}')
         unplaced = self.client.get(reverse('sensors:device_list'), {'placed': 'no'})
         self.assertEqual([device.code for device in unplaced.context['objects']], ['PROBE-2'])
@@ -468,6 +468,7 @@ class PageTests(PortableCase):
 
     def test_a_place_lists_the_sensors_there_now_and_before(self):
         other = make_device(self.connection, self.format, self.site, code='PROBE-2')
+        make_channel(other, 'ph')
         bindings.move_device(self.user, other, self.start, self.t2)
         bindings.move_device(self.user, self.device, self.start, self.t1)
         bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.ras)

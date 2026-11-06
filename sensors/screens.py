@@ -4,7 +4,8 @@ tables are written by the ingest service (sensors-ingest/, sensors/CONTRACT.md) 
 reads them."""
 from core.datamap import Screen, computed, no, system
 
-from .views import alarm_event_acknowledge, alarm_events, dead_letter_resolve, dead_letters, home
+from .forms import DeviceMoveForm
+from .views import alarm_event_acknowledge, alarm_events, dead_letter_resolve, dead_letters, device_move, home
 
 INGEST = 'written by the ingest service (sensors/CONTRACT.md), never by a page'
 MIGRATION = 'one row written by migration sensors 0001; the contract is changed by a migration, never by a page'
@@ -14,9 +15,16 @@ SCREENS = {
         note='The secret is made on the server and shown once, on create and on Replace the secret; only its hash is '
              'stored (masked in the database viewer, never in the activity log).'),
     'Binding': Screen(
+        create=(device_move,), edit=(device_move,), forms=(DeviceMoveForm,),
         note='Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same '
-             'moment; an edit changes only the end and the note.',
-        fills={'BindForm.target': ['point', 'system', 'equipment']}),
+             'moment, or for every channel of a device by the Move device dialog (move_device, which also takes a '
+             'device out of the water); an edit changes only the end and the note.',
+        fills={'BindForm.target': ['point', 'system', 'equipment'],
+               'DeviceMoveForm.target': ['point', 'system', 'equipment'], 'DeviceMoveForm.device': ['channel']}),
+    'Device': Screen(
+        edit=(device_move,),
+        note='Its site is where it is placed: a move to a place of another site changes it (Move device), the form '
+             'only while it is out of the water.'),
     'Contract': Screen(
         create=no(MIGRATION), edit=no(MIGRATION), delete=no(MIGRATION), read=no('read by the ingest service; shown in '
                                                                               'the database viewer'),

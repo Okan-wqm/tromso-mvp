@@ -22,7 +22,7 @@ from itertools import groupby
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
@@ -290,6 +290,11 @@ def _distinct(bindings):
         if binding.target not in places:
             places.append(binding.target)
     return places
+
+
+def placed(now=None):
+    """The condition, over devices, "its channels are bound somewhere now" (a device not placed is out of the water)."""
+    return Exists(Binding.objects.visible().at(now or timezone.now()).filter(channel__device=OuterRef('pk')))
 
 
 def placements(devices, now=None):

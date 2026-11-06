@@ -7,13 +7,14 @@ import uuid
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.db.models import Count, IntegerField, OuterRef, Subquery, Value
+from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as gettext_now, gettext_lazy as _, ngettext_lazy
 
 from core.crud import CreateView, Resource, RowList, done, render_page
+from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
 
 from . import bindings, credentials
@@ -76,8 +77,19 @@ class DeviceResource(Resource):
                 .annotate(channel_count=_count(Channel, 'device')))
 
     @classmethod
+    def filter_list(cls, request, objects):
+        """The devices placed somewhere now (`?placed=yes`) or out of the water (`?placed=no`)."""
+        placed = request.GET.get('placed', '')
+        if placed == 'yes':
+            return objects.filter(bindings.placed()), {'placed': placed}
+        if placed == 'no':
+            return objects.exclude(bindings.placed()), {'placed': placed}
+        return objects, {'placed': ''}
+
+    @classmethod
     def edit_extras(cls, request, obj):
-        return {**super().edit_extras(request, obj), 'channels': obj.channels.order_by('code')}
+        return {**super().edit_extras(request, obj), 'channels': obj.channels.order_by('code'),
+                'placed_at': bindings.placements([obj])[obj.pk], 'placement_history': bindings.placement_history(obj)}
 
 
 class ChannelCalibrations(RowList):
@@ -173,6 +185,13 @@ class CredentialResource(Resource):
 
 
 
+def database_refusal(error):
+    """What the database said when it refused a binding the form had checked: someone else bound the same place or
+    channel since (its constraints and triggers, sensors migrations 0004 and 0007)."""
+    cause = getattr(error, '__cause__', None)
+    return str(getattr(getattr(cause, 'diag', None), 'message_primary', '') or error)
+
+
 class BindView(CreateView):
     """The Move dialog: binds a channel from a moment (sensors/bindings.py `move`, which ends its open binding then). A
     link may name the channel and the place (`?channel=…&target=point:…`, from a monitoring card or a Deffeyes window)."""
@@ -200,13 +219,23 @@ class BindView(CreateView):
                 form.add_error(field if field in form.fields else None, messages_)
             return self.page(form)
         except IntegrityError as error:
-            # Someone else bound the same place or channel since the form checked it: the database said no.
-            cause = getattr(error, '__cause__', None)
-            form.add_error(None, str(getattr(getattr(cause, 'diag', None), 'message_primary', '') or error))
+            form.add_error(None, database_refusal(error))
             return self.page(form)
         messages.success(request, gettext_now('%(channel)s bound to %(target)s.') % {'channel': data['channel'],
                                                                           'target': data['target_object']})
         return done(request, reverse(self.resource.url_name('list')))
+
+
+def _at_place(place):
+    """The bindings at a place: a unit's or a piece of equipment's sampling points (and the piece itself), a system and
+    its loop's points, a sampling point."""
+    if isinstance(place, Tank):
+        return Q(point__unit=place)
+    if isinstance(place, System):
+        return Q(system=place) | Q(point__system=place)
+    if isinstance(place, Equipment):
+        return Q(equipment=place) | Q(point__equipment=place)
+    return Q(point=place)
 
 
 class BindingResource(Resource):
@@ -228,11 +257,16 @@ class BindingResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        """The bindings of one channel (its history), when the address names it."""
+        """The bindings of one channel (its history), or of one place (`?place=unit:…`: the sensors there now, then
+        those there before), when the address names it."""
         channel = request.GET.get('channel', '')
         if _uuid(channel):
-            return objects.filter(channel_id=channel), {'channel': channel}
-        return objects, {'channel': ''}
+            return objects.filter(channel_id=channel), {'channel': channel, 'place': None}
+        place = place_of(request.GET.get('place', ''))
+        if place is not None:
+            found = objects.filter(_at_place(place)).order_by(F('valid_to').desc(nulls_first=True), '-valid_from')
+            return found, {'channel': '', 'place': place}
+        return objects, {'channel': '', 'place': None}
 
 
 class AlarmRuleResource(Resource):

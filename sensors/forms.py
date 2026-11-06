@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext_lazy
 
 from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
-from farm.models import Equipment, SamplingPoint, Site, System
+from farm.models import Equipment, SamplingPoint, Site, System, Tank
 from farm.models.site import zone_of
 
 from . import bindings, quantities
@@ -369,25 +369,28 @@ class CredentialForm(TabbedForm):
 
 
 BIND_TABS = [('general', gettext_lazy('Binding'), ['channel', 'target', 'role', 'valid_from', 'note'])]
-TARGET_KINDS = {'point': SamplingPoint, 'system': System, 'equipment': Equipment}
+# The places a dialog or a chart names as "kind:pk": a unit (tank, pond, cage), a sampling point, a system, a piece of
+# equipment. A channel is bound to the last three; a unit stands for its middle point (sensors/bindings.py `landing`).
+PLACE_KINDS = {'unit': Tank, 'point': SamplingPoint, 'system': System, 'equipment': Equipment}
+DATETIME_LOCAL = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
 
 
 def place_of(value):
-    """The sampling point, system or piece of equipment a "kind:pk" names (a Move dialog's `target`); None for anything
-    else."""
+    """The unit, sampling point, system or piece of equipment a "kind:pk" names; None for anything else."""
     kind, _sep, pk = (value or '').partition(':')
-    model = TARGET_KINDS.get(kind)
+    model = PLACE_KINDS.get(kind)
     try:
         return model.objects.filter(pk=pk).first() if model is not None and pk else None
     except (ValueError, ValidationError):
         return None
 
 
-def target_choices():
-    """The places a channel can be bound to, grouped: live active sampling points (the owner's code and the point's
-    name), systems and pieces of equipment. A value is "kind:pk"."""
-    points = SamplingPoint.objects.filter(is_active=True).with_owners().order_by('name')
+def place_choices(units=True):
+    """The places, grouped: units (when asked), live active sampling points (the owner's code and the point's name),
+    systems and pieces of equipment. A value is "kind:pk"."""
+    points = SamplingPoint.objects.filter(is_active=True).with_owners()
     return [
+        *([(_('Units'), [(f'unit:{unit.pk}', str(unit)) for unit in Tank.objects.order_by('code')])] if units else []),
         (_('Sampling points'), sorted(((f'point:{point.pk}', str(point)) for point in points), key=lambda item: item[1])),
         (_('Systems'), [(f'system:{system.pk}', str(system)) for system in System.objects.order_by('code')]),
         (_('Equipment'), [(f'equipment:{item.pk}', str(item)) for item in Equipment.objects.order_by('code')]),
@@ -414,7 +417,7 @@ class BindForm(TabbedForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['channel'].queryset = Channel.objects.select_related('device__site').order_by('device__code', 'code')
-        self.fields['target'].choices = [('', '---------'), *target_choices()]
+        self.fields['target'].choices = [('', '---------'), *place_choices(units=False)]
         self.fields['target'].help_text = _('A water value goes to a sampling point or a system; a process value '
                                             '(flow, level, power…) to a piece of equipment or a system.')
         self.fields['valid_from'].help_text = _('On the clock of the place’s site. Its binding until now ends then.')
@@ -472,6 +475,64 @@ class BindingForm(TabbedForm):
         if value is not None and value > timezone.now():
             raise ValidationError(_('A binding cannot end in the future.'))
         return value
+
+
+OUT = 'out'
+
+
+class DeviceMoveForm(forms.Form):
+    """The Move device dialog: a whole device (a portable probe) to a unit, a sampling point, a system or a piece of
+    equipment, or out of the water, from a moment typed on the clock of the place's site (sensors/bindings.py
+    `move_device`, `clock`). Choosing the device, the place or the role renders the dialog again with where each channel
+    will land (`refresh_on`, saving nothing)."""
+
+    refresh_on = ('device', 'target', 'role')
+    device = forms.ModelChoiceField(label=gettext_lazy('Device'), queryset=Device.objects.none())
+    target = forms.ChoiceField(label=gettext_lazy('Move to'))
+    role = forms.ChoiceField(label=gettext_lazy('Role'), choices=Binding.Role.choices, initial=Binding.Role.PRIMARY)
+    valid_from = forms.DateTimeField(label=gettext_lazy('From'), widget=DATETIME_LOCAL)
+    note = forms.CharField(label=gettext_lazy('Note'), max_length=300, required=False,
+                           help_text=gettext_lazy('e.g. moved to the new tank after the grading'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['device'].queryset = Device.objects.select_related('site').order_by('code')
+        self.fields['target'].choices = [('', '---------'), (OUT, _('Out of the water (not placed)')),
+                                         *place_choices()]
+        self.fields['target'].help_text = _('A unit takes the water values at its middle point; a system takes them '
+                                            'as its own water. A process value goes to a system or a piece of '
+                                            'equipment.')
+        self.fields['valid_from'].help_text = _('On the clock of the place’s site. Every channel’s binding until now '
+                                                'ends then.')
+        for name in self.refresh_on:
+            self.fields[name].widget.attrs['data-refresh'] = DRAFT
+
+    def chosen(self):
+        """(device, place, out) as far as the data names them: for the landing shown before the move."""
+        data = self.data if self.is_bound else self.initial
+        device_id, value = str(data.get('device') or ''), data.get('target') or ''
+        device = None
+        try:
+            device = Device.objects.select_related('site').filter(pk=device_id).first() if device_id else None
+        except (ValueError, ValidationError):
+            pass
+        return device, (None if value == OUT else place_of(value)), value == OUT
+
+    def clean(self):
+        cleaned = super().clean()
+        device, chosen = cleaned.get('device'), cleaned.get('target', '')
+        place = None if chosen == OUT else place_of(chosen)
+        if chosen and chosen != OUT and place is None:
+            self.add_error('target', _('Choose a place from the list.'))
+            return cleaned
+        cleaned['place'] = place
+        if device is not None and cleaned.get('valid_from') is not None:
+            wall = timezone.make_naive(cleaned['valid_from'], timezone.get_current_timezone())
+            try:
+                cleaned['valid_from'] = on_site_clock(wall, bindings.clock(device, place))
+            except ValidationError as error:
+                self.add_error('valid_from', error)
+        return cleaned
 
 
 ALARM_TABS = [('general', gettext_lazy('Alarm rule'), ['channel', 'quantity', 'kind', 'threshold', 'for_s', 'hysteresis',

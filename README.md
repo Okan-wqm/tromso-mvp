@@ -3387,6 +3387,9 @@ reads the templates and the style sheets; `frontend/test/layout.browser.test.ts`
 - **A form's buttons** (`.form-actions`): the others first, then at most one filled button, the primary (or a danger
   button), last, on one row, each as wide as its words. A tab saved on its own (a row list such as a medicine's
   withdrawal, the history) shows only its own buttons: the record form's buttons show with its own fields.
+- **Error pages** (`templates/403.html`, `404.html`, `500.html`): a refused or a missing page says what happened and offers
+  the way back to the overview, in the console's shell for a person signed in (the menu stays) and on the sign-in page's for
+  a visitor; a broken page is a page of its own that needs neither the person nor the database.
 - **One rule for an amount** (`farm/templatetags/feeding.py` `amount`, behind the feeding's kilograms and the store's
   quantities): under a kilogram to the gram (0.035 kg), from a kilogram at most two decimals (251.8 kg, 1,420 kg),
   digits grouped as the language writes them; three decimals after the separator would read as a thousands group.

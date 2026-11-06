@@ -1,0 +1,11 @@
+{% extends user.is_authenticated|yesno:"app_base.html,auth_base.html" %}
+{% load i18n %}
+{% comment %} A page the person may not open: in the console's shell for a person signed in (the menu stays), on the sign-in page's for a
+   visitor (core/tests_errors.py). {% endcomment %}
+{% block title %}{% trans "You may not open this page" %}{% endblock %}
+{% block eyebrow %}{% trans "Error" %} 403{% endblock %}
+{% block heading %}{% trans "You may not open this page" %}{% endblock %}
+{% block content %}
+{% if not user.is_authenticated %}<h1>{% trans "You may not open this page" %}</h1>{% endif %}
+{% trans "Your role does not give you this page. Ask an administrator if you need it." as why %}{% include "_error_body.html" with why=why %}
+{% endblock %}

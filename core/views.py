@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.translation import gettext
 from django.views import i18n
 
+from .dates import read_day
 from . import audit
 from .language import is_supported, save_account_language
 from .models import AuditLog
@@ -25,9 +26,9 @@ def set_language(request):
 
 
 def _day(value, end=False):
-    try:
-        day = datetime.strptime(value, '%Y-%m-%d').date()
-    except (TypeError, ValueError):
+    """The start (or the end) of the day typed in a filter, in the language's format or ISO (core.dates.read_day)."""
+    day = read_day(value)
+    if day is None:
         return None
     return timezone.make_aware(datetime.combine(day, time.max if end else time.min))
 

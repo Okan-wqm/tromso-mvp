@@ -20,6 +20,7 @@ from django.utils.text import format_lazy
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.crud import Fieldset, TabbedForm, tab_fields
+from core.widgets import MomentInput
 
 from ..models import (Equipment, ProductionDepartment, SamplingPoint, Site, Species, System, Tank, WaterLimit,
                       WaterMeasurement)
@@ -40,7 +41,7 @@ class SiteClockField(forms.DateTimeField):
     """A date and time on the clock of the point's site: read as typed, without a zone. The form puts it in
     the site's zone (farm.models.site.zone_of); the browser's zone is never used (WQ-10)."""
 
-    widget = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+    widget = MomentInput()
 
     def prepare_value(self, value):
         return value

@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n tasks assets %}
+{% load i18n tasks assets dates %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
 {% comment %} Operations › Tasks (tasks.resources.TaskResource): three views, each a query of its own paged on the
    server (Today: overdue, then due today, then done today; Open; Completed), the filters and the open drawer
@@ -56,8 +56,8 @@
       <option value="">{% trans "Any category" %}</option>
       {% for value, label in categories %}<option value="{{ value }}"{% if params.category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "Due from" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "to" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "Due from" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "to" %} {% day_input "to" params.to %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
 

@@ -12,6 +12,7 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from ..feeding import assignments
 from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
@@ -280,8 +281,8 @@ class NewAssignmentForm(TabbedForm):
         model = ProtocolAssignment
         fields = ['protocol', 'batch', 'valid_from', 'valid_until', 'notes']
         field_classes = {'protocol': ProtocolChoice, 'batch': BatchChoice}
-        widgets = {'valid_from': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-                   'valid_until': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        widgets = {'valid_from': DayInput(),
+                   'valid_until': DayInput(),
                    'notes': forms.Textarea(attrs={'rows': 2})}
         help_texts = {**HELP, 'batch': _('A batch alone: the protocol follows it into every unit it is moved to.')}
 

@@ -1,4 +1,4 @@
-{% load i18n inventory feeding %}
+{% load i18n inventory feeding dates %}
 {% comment %} The Movements tab: the store's operations, newest first, each with its lines, supplier, who recorded it
    and Void while allowed; or, with the kind "Feeding (from the records)", the feed given per site, feed and day,
    which the book draws, each linked to its feeding records.{% endcomment %}
@@ -30,8 +30,8 @@
       <option value="">{% trans "All suppliers" %}</option>
       {% for supplier in choices.supplier %}<option value="{{ supplier.pk }}"{% if params.supplier == supplier.pk|stringformat:"s" %} selected{% endif %}>{{ supplier }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
     <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>

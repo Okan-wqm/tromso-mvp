@@ -7,13 +7,13 @@ page of computed rows.
 - Production plans: every batch in stock in each unit it is in, with its target weight, its estimated weight
   now and the day it reaches the target (farm/harvest/forecast.py, from the feeding protocols' projection).
   "Plan harvest" starts a planned harvest of the share at the target weight, on that day."""
-from datetime import date
 from urllib.parse import urlencode
 
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import Resource
+from core.dates import read_day
 
 from ..feeding import read as feeding_read
 from ..forms.harvest import FROM_ADDRESS, HandlingPlanItemForm, ProductionPlanForm, planned_kg
@@ -26,13 +26,6 @@ from ..stock import read as stock_read
 from ..stock.dates import local_today
 
 RECORD = 'farm.add_stockoperation'
-
-
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
 
 
 class FromAddress:
@@ -78,8 +71,8 @@ class HandlingPlanItemResource(FromAddress, Resource):
             else:
                 chosen[key] = ''
         for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-            day = _day(chosen[key])
-            chosen[key] = day.isoformat() if day else ''
+            day = read_day(chosen[key])
+            chosen[key] = day or ''          # a date: the input shows it as the language writes it
             if day:
                 objects = objects.filter(**{lookup: day})
         rows = [plan_row(request, item) for item in objects]

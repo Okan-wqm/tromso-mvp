@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock water %}
+{% load i18n stock water dates %}
 {% comment %} Operations › Water chemistry (farm.water.views.water_page): the latest water of every point (a unit's
    middle point, a loop, and the other points that were sampled) with its status, or the history of the samples
    (?view=history, or one owner's with ?unit= / ?system= / ?equipment=, one point's with ?point=), each value judged
@@ -32,8 +32,8 @@
       {% for option in point_choices %}<option value="{{ option.pk }}"{% if point == option %} selected{% endif %}>{{ option.name }} · {{ option.get_kind_display }}</option>{% endfor %}
     </select>
     {% endif %}
-    <label class="water-date">{% trans "From" %} <input type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
-    <label class="water-date">{% trans "To" %} <input type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+    <label class="water-date">{% trans "From" %} {% day_input "from" start %}</label>
+    <label class="water-date">{% trans "To" %} {% day_input "to" end %}</label>
     <label class="check"><input type="checkbox" name="alerts" value="1"{% if alerts_only %} checked{% endif %}> {% trans "Only warnings and criticals" %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>

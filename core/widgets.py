@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from django import forms
+from django.utils import formats
 
 # The value of a choice that means "without one": a production department without a site, in a list's
 # filter (core.crud.filter_by) and as the value a DependentSelect's source can take, so the choices that
@@ -62,3 +65,30 @@ class Output(forms.Widget):
 
     def value_omitted_from_data(self, data, files, name):
         return True
+
+
+# ---- a date and a moment, in the person's language ------------------------------------------------------------------
+# A browser's own date box says a date in the browser's language, not the page's (11/06/2026 09:19 AM beside 6 Nov 2026),
+# so a date is a text box in the language's own input format (config/formats/<language>/formats.py, ISO read too), the
+# example of the format as its placeholder. Every form takes these (core/tests_date_inputs.py).
+EXAMPLE = datetime(2026, 10, 26, 7, 30)
+
+
+class DayInput(forms.DateInput):
+    input_type = 'text'
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget']['attrs'].setdefault('placeholder', formats.localize_input(EXAMPLE.date()))
+        context['widget']['attrs'].setdefault('autocomplete', 'off')
+        return context
+
+
+class MomentInput(forms.DateTimeInput):
+    input_type = 'text'
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget']['attrs'].setdefault('placeholder', formats.localize_input(EXAMPLE))
+        context['widget']['attrs'].setdefault('autocomplete', 'off')
+        return context

@@ -9,7 +9,7 @@ from django.utils import formats, timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.crud import CodedFormMixin, Fieldset, TabbedForm
-from core.widgets import DependentSelect, Output
+from core.widgets import DayInput, DependentSelect, Output
 
 from ..models import ProductionDepartment, System, Tank
 from ..models.tank import (
@@ -21,7 +21,7 @@ DIMENSIONS = 'dimensions'   # the inner tab with the kind's own fields
 CAPACITY = 'capacity'
 CALCULATED = ['volume_m3', 'water_volume_m3', 'freeboard', 'max_biomass_kg']
 DECIMAL = {'inputmode': 'decimal'}
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 NUMBERS = [field.name for field in Tank._meta.concrete_fields if isinstance(field, models.DecimalField)]
 
 # How a kind's fields are grouped on the Dimensions tab; each kind shows only the ones it is described by.

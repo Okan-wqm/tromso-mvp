@@ -10,7 +10,6 @@ the server's reasons on their fields (422), back to the page they came from (`ne
 area Storage (config/access.py): Read the page, Create records an operation, Delete voids one; the
 buttons a person cannot use are not shown, and the views refuse them too."""
 from collections import defaultdict
-from datetime import date
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -26,6 +25,7 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import navigation
 from core.crud import DRAFT, done, render_page
+from core.dates import read_day
 from farm.forms.stock import VoidForm
 from farm.models import Feed, FeedingRecord, Site, Supplier
 from farm.stock.dates import shown_date, site_earliest, site_today
@@ -64,13 +64,6 @@ def _back(request):
 
 def _with_next(url, request, **params):
     return f'{url}?{urlencode({**params, "next": request.get_full_path()})}'
-
-
-def _day(value):
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
 
 
 # ---- the page ------------------------------------------------------------------------------------
@@ -149,8 +142,8 @@ def _movements(request, context):
     if params['kind'] not in (*OperationKind.values, FEEDING):
         params['kind'] = ''
     for key in ('from', 'to'):
-        day = _day(params[key])
-        params[key] = day.isoformat() if day else ''
+        day = read_day(params[key])
+        params[key] = day or ''          # a date: the input shows it as the language writes it
     if params['voided'] != '1':
         params['voided'] = ''
     kept = {key: value for key, value in params.items() if value}
@@ -372,13 +365,13 @@ def count(request):
             else:
                 messages.success(request, _recorded(operation))
                 return done(request, back)
-        location, day = _location(request.POST.get('location')), _day(request.POST.get('date', ''))
+        location, day = _location(request.POST.get('location')), read_day(request.POST.get('date', ''))
         return _refused(request, 'inventory/count.html', {
             **context, 'form': form, 'lines': lines, 'rows': rows, 'location': location,
             'pairs': _pairs(lines, read.book_at(location, day) if location and day else [])})
     data = request.POST if request.method == 'POST' else {}
     location = _location(data.get('location', request.GET.get('location', '')))
-    day = _day(data.get('date', '')) or (site_today(location.site) if location else None)
+    day = read_day(data.get('date', '')) or (site_today(location.site) if location else None)
     form = CountForm(initial={'location': location.pk if location else None, 'date': day,
                               'notes': data.get('notes', '')}, site=location.site if location else None)
     book = read.book_at(location, day) if location and day else []

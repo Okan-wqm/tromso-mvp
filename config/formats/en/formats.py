@@ -5,3 +5,7 @@ DATE_FORMAT = 'j M Y'
 DATETIME_FORMAT = 'j M Y, H:i'
 TIME_FORMAT = 'H:i'
 MONTH_DAY_FORMAT = 'j M'
+# A date typed into a page (core.widgets.DayInput, MomentInput, core.dates.read_day): the first format is how an input shows
+# it; ISO is read too (Django adds it).
+DATE_INPUT_FORMATS = ['%d %b %Y', '%d.%m.%Y']
+DATETIME_INPUT_FORMATS = ['%d %b %Y %H:%M', '%d.%m.%Y %H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%dT%H:%M']

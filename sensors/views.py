@@ -25,6 +25,7 @@ from core.crud import done, render_page
 from core.models import AuditLog
 from farm.models import Equipment, SamplingPoint, System, Tank
 from farm.water import deffeyes
+from core.widgets import MomentInput
 
 from . import chart, credentials, quantities, read, trail
 from .forms import on_site_clock
@@ -33,7 +34,7 @@ from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Cr
 from .resources import (ChannelResource, ConnectionResource, CredentialResource, DeviceResource, PayloadFormatResource,
                         secret_page)
 
-DATETIME = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+DATETIME = MomentInput()
 # How the activity log says a secret changed: never its value or its hash.
 SECRET_LABEL, REPLACED = 'Secret', '(replaced)'
 

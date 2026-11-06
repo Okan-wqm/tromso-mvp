@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 
 from core import navigation
 from core.crud import done, mount_of, mounted_name, render_page
+from core.dates import read_day
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
@@ -196,8 +197,7 @@ def team_overview(request):
     """Team overview: the viewer's people and their week in numbers (`?week=`, `?department=`, `?q=`, `?page=`)."""
     if not request.user.has_perm('hr.view_shiftassignment'):
         raise PermissionDenied
-    from .resources.roster import parse_day
-    start = parse_day(request.GET.get('week')) or site_today(None)
+    start = read_day(request.GET.get('week')) or site_today(None)
     department = units.find(request.GET.get('department', ''))
     try:
         page = int(request.GET.get('page', '1'))

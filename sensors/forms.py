@@ -15,6 +15,7 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext_lazy
 from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
 from farm.models import Equipment, SamplingPoint, Site, System
 from farm.models.site import zone_of
+from core.widgets import MomentInput
 
 from . import quantities
 from .models import (AlarmRule, Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape,
@@ -274,7 +275,7 @@ class SiteClockDateTimeField(forms.DateTimeField):
     """A moment typed on the clock of the channel's site (farm.models.site.zone_of), never the browser's. A time a
     change of clocks skips or repeats is refused, so a calibration never starts an hour off."""
 
-    widget = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
+    widget = MomentInput()
 
     def __init__(self, *args, zone=None, **kwargs):
         self.zone = zone
@@ -386,7 +387,7 @@ class BindForm(TabbedForm):
     tabs = BIND_TABS
     target = forms.ChoiceField(label=gettext_lazy('Bound to'))
     valid_from = forms.DateTimeField(label=gettext_lazy('From'),
-                                     widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'))
+                                     widget=MomentInput())
 
     class Meta:
         model = Binding

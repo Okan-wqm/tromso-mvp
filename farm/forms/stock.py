@@ -12,6 +12,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT
+from core.widgets import DayInput
 
 from ..handling import check
 from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Species, Supplier, Tank
@@ -24,7 +25,7 @@ from ..models.supplier import SupplyCategory
 from ..stock import services
 from ..templatetags.stock import number
 
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 DECIMAL = {'inputmode': 'decimal'}
 NOTES = forms.Textarea(attrs={'rows': 3})
 

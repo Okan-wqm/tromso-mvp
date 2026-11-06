@@ -28,12 +28,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
+from core.dates import read_day
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -212,7 +212,7 @@ def _latest(site):
 
 
 def _day(request, name, default):
-    return parse_date(request.GET.get(name, '')) or default
+    return read_day(request.GET.get(name, '')) or default
 
 
 def _history(request, site, place):

@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from ..models import Site, SiteContact
 from ..models.site import company_zone
@@ -68,7 +69,7 @@ class SiteForm(CodedFormMixin, TabbedForm):
             'lokalitetsnummer': forms.NumberInput(attrs={'placeholder': _('e.g. 12345'), 'min': 10000, 'max': 99999}),
             'organisation_number': forms.TextInput(
                 attrs={'placeholder': _('9-digit Norwegian organisation number'), 'inputmode': 'numeric'}),
-            'reports_from': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'reports_from': DayInput(),
             'description': forms.Textarea(attrs={'rows': 3, 'placeholder': _('Brief description of the site')}),
             'area_m2': forms.TextInput(attrs={'placeholder': _('e.g. 50000'), 'inputmode': 'decimal'}),
             'country': forms.TextInput(attrs={'placeholder': _('e.g. Norway')}),

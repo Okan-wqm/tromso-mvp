@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock feeding %}
+{% load i18n stock feeding dates %}
 {% comment %} Operations › Feeding › Records (farm.feeding.views.feeding_records), two views. Feeding records: every
    feeding, newest first, filtered by site, unit, the batch it fed, feed and dates in the address; the batches a
    record fed are worked out from the stock ledger (the record names only the unit); voided records, struck through
@@ -35,8 +35,8 @@
       <option value="">{% trans "All feeds" %}</option>
       {% for feed in choices.feed %}<option value="{{ feed.pk }}"{% if params.feed == feed.pk|stringformat:"s" %} selected{% endif %}>{{ feed }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
     <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>

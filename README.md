@@ -58,8 +58,10 @@ delete is a soft delete. Differences from the source:
   as database constraints; the source enforced most of this only in service code.
 - Column lengths win where the source's form allowed longer values (name 150, code 20, email 150).
 - Editing is guarded by the `version` column: a save based on an old version is refused.
-- Deleting a site leaves its production departments without a site (see Production departments); the other dependants
-  join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
+- A site with live units is not deleted (the confirmation says how many hold it): their fish and feed are counted
+  for a site only through it (F-212). Without units, its production departments, systems and equipment are deleted
+  with it and come back with it when it is restored (see the delete plan); the other dependants join the delete plan
+  as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).
 - The Reports tab has what the regulatory reports need of the site (see Production › Reports): its **organisation
@@ -74,12 +76,16 @@ The farm's production departments: a hatchery hall, a nursery, a grow-out unit o
 company's organisational departments (management, HR and the like), which come with the HR module.
 Table `production_departments` (renamed from `departments` by migration 0004, data kept): a table (production
 department, type, site, capacity) with search by name or code, a
-site filter that includes "without a site", a flat form in the dialog and delete. Differences from
+site filter that includes "without a site" (rows from before F-212), a flat form in the dialog and delete. Differences from
 the source:
 
-- A production department belongs to a site chosen once, at creation. Deleting a site leaves its production departments
-  without a site, as in the source; the confirmation lists them and each gets its own activity-log
-  row (see the delete plan below).
+- A production department belongs to a site chosen once, at creation, and a live one always has a site: a database
+  check (`chk_production_departments_live_on_a_site`) refuses one without. The source left a deleted site's
+  departments without a site, where their units' fish were in no site's reports and their feed drew on no store
+  (F-212); now a site is deleted only once its units are gone, and its departments go with it. A department left
+  without a site before is kept as it was (the check was added `NOT VALID`, migration 0027): its form asks for a site
+  the next time it is saved (whatever its units' records: on no site they are in no report), its units take no fish
+  until then, and `manage.py check_stock` names it; once it names none, the check can be validated.
 - The source's `administration` type is not carried over: an administrative department is an organisational one.
 - Code is unique among live production departments and a name is unique within a site, as database
   constraints; capacity cannot be negative.
@@ -170,8 +176,8 @@ Differences from the source:
 - Feed calibrations: a real foreign key; only a feeder has them, and a feeder that has them keeps a
   feeder type; new rows start empty instead of 0 / 0 / 0.
 - Deleting a production department deletes its equipment, as in the source; deleting equipment deletes
-  its parts. Deleting a site leaves its production departments without a site (as before), so their
-  equipment stays with them, without systems: the source deleted that equipment with the site.
+  its parts. Deleting a site deletes its production departments, so their equipment goes with them, as the source
+  deleted it with the site.
 - The catalogue: English and metric throughout, bounds on every quantity, no fuel type on the heat
   exchanger (EQ-17 to EQ-19).
 - Not ported: sub-equipment (a second way of nesting next to the parent, unusable in the source,
@@ -239,8 +245,9 @@ Differences from the source:
   form across the site. A unit with stock records stays on its site, and so does a production department whose
   units have some, since moved, their past figures would be reported for another locality. A deleted unit can
   be restored from the admin.
-- Deleting a site leaves its production departments, with their units, without a site (as for
-  equipment); the source deactivated their tanks.
+- A site with live units is not deleted (F-212); the source deactivated their tanks. A unit is in a production
+  department on a site: one left without a site before (see Production departments) is not offered for a new unit,
+  and the unit is moved to a department on a site the next time it is saved.
 - Water sources "spring" and "sea or estuary" and the net material "polyester (PET)" are added; an
   earthen pond is bare soil or compacted clay, a membrane or concrete makes it a lined pond.
 - Not ported: the sensor link (`temperatureSensorId`), the equipment type (kind and shape replace the
@@ -531,7 +538,7 @@ out take whatever the book holds, moved fish arrive with exactly the grams that 
 the whole lot. Only measured weights enter the book. Nothing is stored that can drift.
 
 **One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
-date, the units' status (a unit takes fish while active, preparing or fallow), the species (one per unit,
+date, the units' status (a unit takes fish while active, preparing or fallow, and only on a site: F-212), the species (one per unit,
 several batches of it; on a sea site cleaner fish may join the production species, see Cleaner fish below), then
 writes and folds every batch involved from its first line, so a backdated
 operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
@@ -574,8 +581,8 @@ Temp. and O₂ columns are to those who may read the water (`feeding.views.unit_
 right alone sees the stock. A unit with fish cannot be deleted, nor resized,
 nor set to a status that needs it empty; a species with batches and a supplier fish were bought from
 cannot be deleted (`PROTECT`). `manage.py check_stock` checks the whole ledger from scratch (counts,
-operations made of their lines, stocking dates, unit statuses, species, feedings without fish) and the
-tests run it.
+operations made of their lines, stocking dates, unit statuses, species, feedings without fish, fish in a unit or
+a production department without a site) and the tests run it.
 
 Differences from the source (details in the bug document, STK-01 to STK-73):
 
@@ -1430,8 +1437,9 @@ first expired first out (lots not expired that day by expiry, a lot without one 
 arrived, its number, the location's code; then expired lots, which the overview reports). What the book
 cannot cover is **feeding beyond the book**, per site and day: shown on the overview and the item's page,
 never refused, and never filled by a later delivery (owner decision Q-S1): it is fixed by recording the
-missing delivery, dated on or before the day (within the backdating window). Units without a site feed
-from no store.
+missing delivery, dated on or before the day (within the backdating window). Every unit that takes fish is on a
+site (F-212), so every feeding draws on a store; a unit left without a site before takes no fish and
+`check_stock` names it.
 
 **The fold** (`inventory/fold.py`, pure; `inventory/read.py` loads it), per item over every location of every
 site, day by day: arrivals, departures, the feeding's draw, counts. The lines are facts and the feeding is an
@@ -3293,7 +3301,8 @@ planned tasks nobody touched).
 What one tab needed and the next ones will too lives in `core/`:
 
 - `TabbedForm` (`core/crud.py`): inner tabs, fields grouped under a heading (`Fieldset`), a word per
-  tab (`tab_help`), fields chosen once (`fixed_after_creation`) and fields that change the form itself
+  tab (`tab_help`), fields chosen once (`fixed_after_creation`; one the record has no value in yet, such as the site of
+  a department a deleted site left without one, is still to be chosen) and fields that change the form itself
   (`refresh_on`: the form is posted with a `_draft` marker and rendered again from the values entered so
   far, nothing validated or saved; the values travel in the request body, never in the address; the
   marker names the field that changed and the form comes back on that field's tab). A form can drop

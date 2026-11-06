@@ -9,7 +9,7 @@ from django.urls import reverse
 from core.models import AuditLog
 from core.softdelete import plan_delete
 
-from ..models import ProductionDepartment, Site
+from ..models import ProductionDepartment, Site, System
 from .helpers import role
 
 DEPARTMENT_SITE_LINK = ProductionDepartment._meta.get_field('site').remote_field
@@ -30,52 +30,52 @@ class DeletePlanTestCase(TestCase):
 
 
 class SetNullTests(DeletePlanTestCase):
-    """ProductionDepartment.site is SET_NULL, as in the source: the departments stay, without a site."""
+    """System.production_department is SET_NULL: a deleted department's systems stay, serving the whole site."""
 
-    def test_plan_lists_the_departments_that_lose_their_site(self):
-        plan = plan_delete(self.site)
+    def setUp(self):
+        super().setUp()
+        self.user.groups.add(role('Departments', 'delete_productiondepartment'))
+        self.ras = System.objects.create(site=self.site, production_department=self.hall_a, name='RAS 1', code='R1')
+        self.loop = System.objects.create(site=self.site, production_department=self.hall_a, name='Loop', code='LP')
+        self.url = reverse('farm:productiondepartment_delete', args=[self.hall_a.pk])
+
+    def test_plan_lists_the_systems_that_lose_their_department(self):
+        plan = plan_delete(self.hall_a)
         self.assertTrue(plan.can_delete)
         self.assertEqual(plan.cascade, [])
         (group,) = plan.detached_groups()
         self.assertEqual((group['label'], group['link'], set(group['records'])),
-                         ('Production departments', 'site', {self.hall_a, self.hall_b}))
+                         ('Systems', 'production department', {self.ras, self.loop}))
 
     def test_the_confirmation_shows_what_will_happen(self):
         response = self.client.get(self.url)
-        self.assertContains(response, 'Production departments that lose their site')
-        self.assertContains(response, 'Hall A (HA)')
+        self.assertContains(response, 'Systems that lose their production department')
+        self.assertContains(response, 'RAS 1 (R1)')
         self.assertNotContains(response, 'deleted with it')
         self.assertNotContains(response, 'disabled')
 
-    def test_delete_detaches_every_department_and_logs_each_record(self):
+    def test_delete_detaches_every_system_and_logs_each_record(self):
         self.client.post(self.url)
-        self.assertFalse(Site.objects.exists())
-        for hall in (self.hall_a, self.hall_b):
-            hall.refresh_from_db()
-            self.assertIsNone(hall.site)
-            self.assertEqual((hall.version, hall.updated_by, hall.is_deleted), (2, self.user, False))
+        self.assertFalse(ProductionDepartment.objects.filter(pk=self.hall_a.pk).exists())
+        for system in (self.ras, self.loop):
+            system.refresh_from_db()
+            self.assertIsNone(system.production_department)
+            self.assertEqual((system.version, system.updated_by, system.is_deleted), (2, self.user, False))
         self.assertEqual(sorted(self.log()), [
-            ('delete', 'site', 'Bergen (BG)'),
-            ('update', 'production department', 'Hall A (HA)'),
-            ('update', 'production department', 'Hall B (HB)'),
+            ('delete', 'production department', 'Hall A (HA)'),
+            ('update', 'system', 'Loop (LP)'),
+            ('update', 'system', 'RAS 1 (R1)'),
         ])
-        entry = AuditLog.objects.get(entity_label='Hall A (HA)')
-        self.assertEqual(entry.changes, {'Site': ['Bergen (BG)', None]})
+        entry = AuditLog.objects.get(entity_label='RAS 1 (R1)')
+        self.assertEqual(entry.changes, {'Production department': ['Hall A (HA)', None]})
 
-    def test_a_site_without_departments_deletes_plainly(self):
-        ProductionDepartment.objects.all().delete()
-        self.client.post(self.url)
-        self.assertEqual(self.log(), [('delete', 'site', 'Bergen (BG)')])
+    def test_a_record_nothing_points_at_deletes_plainly(self):
+        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall_b.pk]))
+        self.assertEqual(self.log(), [('delete', 'production department', 'Hall B (HB)')])
 
 
 class CascadeTests(DeletePlanTestCase):
-    """A CASCADE link takes the records that point at it down with it."""
-
-    def setUp(self):
-        super().setUp()
-        patcher = mock.patch.object(DEPARTMENT_SITE_LINK, 'on_delete', models.CASCADE)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+    """A CASCADE link takes the records that point at it down with it: a site's production departments (F-212)."""
 
     def test_plan_and_confirmation_list_the_records_deleted_with_it(self):
         plan = plan_delete(self.site)

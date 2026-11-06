@@ -538,14 +538,19 @@ class Tank(CodedMixin, AuditedModel):
             errors['status'] = blocker
 
     # ---- links and measures -----------------------------------------------------------------------
+    def _check_department(self, errors):
+        """A unit is in a production department on a site: its fish and feed are counted for a site only through it
+        (F-212). A department a deleted site left without one (a row from before that was refused) is put on a site
+        first."""
+        if self.production_department_id and self.production_department.site_id is None:
+            errors['production_department'] = _('This production department is not on any site; choose one that is.')
+
     def _check_system(self, errors):
-        if not self.system_id or not self.production_department_id:
+        if not self.system_id or not self.production_department_id or 'production_department' in errors:
             return
         system, department = self.system, self.production_department
         if system.is_deleted:
             errors['system'] = _('This system is deleted.')
-        elif department.site_id is None:
-            errors['system'] = _('The production department is not on any site, so its units cannot be in a system.')
         elif system.site_id != department.site_id:
             errors['system'] = _('The system is on another site than the production department.')
         elif system.production_department_id and system.production_department_id != department.pk:
@@ -575,6 +580,7 @@ class Tank(CodedMixin, AuditedModel):
         errors = {}
         stored = self.stored()
         self._check_status(stored, errors)
+        self._check_department(errors)
         self._check_system(errors)
         self._check_measures(errors)
         if stored and self.has_stock() and any(getattr(self, name) != stored[name] for name in VOLUME_FIELDS):

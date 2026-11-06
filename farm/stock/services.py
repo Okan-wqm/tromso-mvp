@@ -254,8 +254,11 @@ def _check_static(kind, day, entries, batches, units, new_batch):
                                                   'dated before.') % {'batch': batch.code,
                                                                       'date': shown_date(batch.input_date)}})
     for entry in entries:
-        if entry.count_delta > 0 and units[entry.unit.pk].status not in ARRIVAL_STATUSES:
-            unit = units[entry.unit.pk]
+        unit = units[entry.unit.pk]
+        if entry.count_delta > 0 and unit.production_department.site_id is None:
+            raise ValidationError({'unit': _('%(unit)s is not on any site, so it cannot take fish: put its production '
+                                             'department on a site first.') % {'unit': unit.code}})
+        if entry.count_delta > 0 and unit.status not in ARRIVAL_STATUSES:
             raise ValidationError({'unit': _('%(unit)s has the status %(status)s, so it cannot take fish: it can '
                                              'when it is active, preparing or fallow.')
                                    % {'unit': unit.code, 'status': str(unit.get_status_display()).lower()}})

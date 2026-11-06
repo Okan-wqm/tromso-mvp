@@ -1204,6 +1204,14 @@ msgid "%(unit)s is deleted."
 msgstr "%(unit)s er slettet."
 
 #, python-format
+msgid ""
+"%(unit)s is not on any site, so it cannot take fish: put its production department on a site "
+"first."
+msgstr ""
+"%(unit)s er ikke på noen lokalitet, så den kan ikke ta imot fisk: legg produksjonsavdelingen på "
+"en lokalitet først."
+
+#, python-format
 msgid "%(unit)s is on no site."
 msgstr "%(unit)s er ikke på noen lokalitet."
 
@@ -12617,9 +12625,6 @@ msgstr "Produktnavnet slik det står på pakningen, f.eks. Salmosan vet."
 
 msgid "The production department belongs to another site."
 msgstr "Produksjonsavdelingen hører til en annen lokalitet."
-
-msgid "The production department is not on any site, so its units cannot be in a system."
-msgstr "Produksjonsavdelingen er ikke på noen lokalitet, så enhetene kan ikke være i et system."
 
 msgid "The production figures will appear here."
 msgstr "Produksjonstallene vises her."

@@ -9,6 +9,10 @@ from core.models import AuditedModel, CodedMixin
 
 from .site import Site
 
+# The database check that a live production department is on a site; added NOT VALID (migration 0027), so a row a
+# deleted site left without one before stays until it is changed.
+LIVE_ON_A_SITE = 'chk_production_departments_live_on_a_site'
+
 
 class ProductionDepartment(CodedMixin, AuditedModel):
     """A production unit within a site: a hatchery hall, a nursery, a grow-out unit. Source table:
@@ -41,9 +45,11 @@ class ProductionDepartment(CodedMixin, AuditedModel):
         ACTIVE = 'active', _('Active')
         INACTIVE = 'inactive', _('Inactive')
 
-    # A deleted site leaves its production departments without a site ("orphaned"), as in the source.
+    # A live production department is on a site (the database holds it): a site is deleted only once its units are
+    # gone, and its departments go with it (F-212). The source left them without a site ("orphaned"); a row left so
+    # before (a deleted site's, null in the column) is put on a site the next time it is saved, and check_stock names it.
     site = models.ForeignKey(
-        Site, null=True, blank=True, on_delete=models.SET_NULL, related_name='production_departments',
+        Site, null=True, on_delete=models.CASCADE, related_name='production_departments',
         verbose_name=_('Site'),
     )
     name = models.CharField(_('Name'), max_length=100)
@@ -77,13 +83,18 @@ class ProductionDepartment(CodedMixin, AuditedModel):
             models.CheckConstraint(
                 condition=Q(capacity__isnull=True) | Q(capacity__gte=0), name='chk_production_departments_capacity',
             ),
+            models.CheckConstraint(
+                condition=Q(site__isnull=False) | Q(is_deleted=True), name=LIVE_ON_A_SITE,
+            ),
         ]
         indexes = [models.Index(fields=['type']), models.Index(fields=['status'])]
 
     def clean(self):
         """Moved to another site, a department takes its units along: refused when one of them has stock records
         (their past figures would be reported for the other locality, OUR-06, as a unit's own move is) or when one
-        of its units' regulatory numbers is taken on the new site (OUR-07)."""
+        of its units' regulatory numbers is taken on the new site (OUR-07). A department a deleted site left without a
+        site (a row from before F-212) is put on a site again whatever its units' records: on no site they are in no
+        locality's reports at all, and the change is logged."""
         super().clean()
         if self._state.adding:
             return
@@ -91,7 +102,7 @@ class ProductionDepartment(CodedMixin, AuditedModel):
         if stored == self.site_id:
             return
         units = self.tanks.all()
-        if any(unit.has_history() for unit in units):
+        if stored is not None and any(unit.has_history() for unit in units):
             raise ValidationError({'site': _('Its units have stock records on their site: the department stays on '
                                              'it.')})
         numbers = [unit.regulatory_unit_id for unit in units if unit.regulatory_unit_id]

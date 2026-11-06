@@ -10192,7 +10192,7 @@
           "link": {
             "table": "sites",
             "model": "farm.Site",
-            "on_delete": "SET_NULL"
+            "on_delete": "CASCADE"
           },
           "on_form": [
             "ProductionDepartmentForm › Details"
@@ -10344,6 +10344,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_production_departments_live_on_a_site",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -10443,6 +10449,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_query.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
@@ -10451,6 +10458,7 @@
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_systems.py",
@@ -12110,6 +12118,7 @@
         "core/test_languages.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_query.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -12124,6 +12133,7 @@
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
@@ -15583,6 +15593,7 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
@@ -16611,6 +16622,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/tests_query.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_escape_delivery.py",
@@ -16619,6 +16631,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_site_structure.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",

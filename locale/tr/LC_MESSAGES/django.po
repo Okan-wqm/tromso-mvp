@@ -1210,6 +1210,14 @@ msgid "%(unit)s is deleted."
 msgstr "%(unit)s silinmiş."
 
 #, python-format
+msgid ""
+"%(unit)s is not on any site, so it cannot take fish: put its production department on a site "
+"first."
+msgstr ""
+"%(unit)s hiçbir sahada değil, bu yüzden balık alamaz: önce üretim departmanını bir sahaya "
+"bağlayın."
+
+#, python-format
 msgid "%(unit)s is on no site."
 msgstr "%(unit)s hiçbir sahada değil."
 
@@ -12626,9 +12634,6 @@ msgstr "Ambalajdaki ürün adı, örn. Salmosan vet."
 
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
-
-msgid "The production department is not on any site, so its units cannot be in a system."
-msgstr "Üretim departmanı hiçbir sahada değil, bu yüzden birimleri bir sistemde olamaz."
 
 msgid "The production figures will appear here."
 msgstr "Üretim rakamları burada görünecek."

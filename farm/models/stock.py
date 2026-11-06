@@ -150,6 +150,15 @@ class AdjustmentReason(models.TextChoices):
 # The statuses a unit may be stocked in. A preparing or fallow unit becomes active when fish arrive;
 # an active one takes a second batch of its species (owner decisions Q1 and Q5).
 ARRIVAL_STATUSES = (Tank.Status.ACTIVE, Tank.Status.PREPARING, Tank.Status.FALLOW)
+# The units that take fish: of such a status and on a site, since a site's fish are counted only through its units
+# (F-212). The form's list, the page's buttons and the one write path all ask this.
+TAKES_FISH = Q(status__in=ARRIVAL_STATUSES, production_department__site__isnull=False)
+
+
+def takes_fish(unit):
+    return unit.status in ARRIVAL_STATUSES and unit.production_department.site_id is not None
+
+
 # Operations that bring fish into a unit: the ones the capacity acknowledgement can belong to.
 ARRIVING_OPERATIONS = (OperationKind.INPUT, OperationKind.TRANSFER, OperationKind.GRADING,
                        OperationKind.ADJUSTMENT)

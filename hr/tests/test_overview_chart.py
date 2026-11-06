@@ -6,6 +6,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from farm.models import ProductionDepartment, Site
+from farm.tests.helpers import leave_without_site
 
 from .. import read
 from ..models import LeaveType, LeaveRequest, SchedulingSettings, Shift, ShiftAssignment
@@ -136,7 +137,7 @@ class OrgChartTests(OverviewTestCase):
         self.assertNotIn('Smolt hall 2', tree())
 
     def test_the_counts_are_the_viewers_to_see_and_a_site_less_department_has_its_own_box(self):
-        orphan = ProductionDepartment.objects.create(site=None, name='Orphan hall', code='ORP')
+        orphan = leave_without_site(ProductionDepartment.objects.create(site=self.site, name='Orphan hall', code='ORP'))
         place(employee('E-9', 'India'), orphan)
         boss = read.org_tree(self.lead, read.PRODUCTION)
         self.assertEqual(boss.total, 1)                                          # only the lead's own team

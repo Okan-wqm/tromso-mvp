@@ -216,17 +216,17 @@ class SystemDeleteTests(SystemTestCase):
         self.assertFalse(System.objects.exists())
         self.assertEqual(self.log(), [('delete', 'system', 'Child (CH)'), ('delete', 'system', 'Top (TOP)')])
 
-    def test_deleting_a_site_deletes_its_systems_and_leaves_its_production_departments_without_a_site(self):
+    def test_deleting_a_site_deletes_its_systems_and_its_production_departments(self):
         page = self.client.get(reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertContains(page, 'Systems deleted with it')
-        self.assertContains(page, 'Production departments that lose their site')
+        self.assertContains(page, 'Production departments deleted with it')
         self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertFalse(System.objects.exists())
         self.hall.refresh_from_db()
-        self.assertIsNone(self.hall.site)
+        self.assertEqual((self.hall.site, self.hall.is_deleted), (self.bergen, True))
         self.assertEqual(self.log(), [
-            ('delete', 'site', 'Bergen (BG)'), ('delete', 'system', 'Child (CH)'),
-            ('delete', 'system', 'Top (TOP)'), ('update', 'production department', 'Hall A (HA)'),
+            ('delete', 'production department', 'Hall A (HA)'), ('delete', 'site', 'Bergen (BG)'),
+            ('delete', 'system', 'Child (CH)'), ('delete', 'system', 'Top (TOP)'),
         ])
 
     def test_deleting_a_department_leaves_its_systems_in_place_without_a_production_department(self):

@@ -85,7 +85,7 @@ class ShareTests(SchemaCase):
         later = timezone.now() + timedelta(days=1)
         self.refuses(self.share, group=role)                                     # a person and a role
         self.refuses(self.share, user=None)                                      # nobody
-        self.refuses(self.share, part='everything')
+        self.refuses(self.share, part='all')
         self.refuses(self.share, valid_from=later, valid_until=later)            # ends as it begins
         self.refuses(self.share, valid_until=timezone.now() + timedelta(days=731))
         self.refuses(self.share, reason='')

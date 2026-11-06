@@ -311,10 +311,14 @@ class TriggersInTheCatalogueTests(TriggerTestCase):
         with connection.cursor() as cursor:
             cursor.execute("SELECT c.relname, t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
                            "WHERE NOT t.tgisinternal AND c.relname ~ '^experiment' ORDER BY 1")
-            found = dict(cursor.fetchall())
-        self.assertEqual(found, {
-            'experiments': 'trg_experiments_frozen', 'experiment_factors': 'trg_experiment_factors_frozen',
-            'experiment_groups': 'trg_experiment_groups_frozen', 'experiment_levels': 'trg_experiment_levels_frozen',
-            'experiment_group_levels': 'trg_experiment_group_levels_frozen',
-            'experiment_replicates': 'trg_experiment_replicates_frozen',
-            'experiment_replicate_units': 'trg_experiment_replicate_units_frozen'})
+            found = sorted(cursor.fetchall())
+        self.assertEqual(found, sorted([
+            ('experiments', 'trg_experiments_frozen'), ('experiment_factors', 'trg_experiment_factors_frozen'),
+            ('experiment_groups', 'trg_experiment_groups_frozen'), ('experiment_levels', 'trg_experiment_levels_frozen'),
+            ('experiment_group_levels', 'trg_experiment_group_levels_frozen'),
+            ('experiment_replicates', 'trg_experiment_replicates_frozen'),
+            ('experiment_replicate_units', 'trg_experiment_replicate_units_frozen'),
+            # Whole-system bookings (migration 0003): a placement's tag, a booking's days, its frozen rule.
+            ('experiment_replicate_units', 'trg_experiment_replicate_units_booking'),
+            ('experiment_replicate_systems', 'trg_experiment_replicate_systems_frozen'),
+            ('experiment_replicate_systems', 'trg_experiment_replicate_systems_holds')]))

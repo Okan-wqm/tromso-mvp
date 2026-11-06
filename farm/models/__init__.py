@@ -16,7 +16,7 @@ from .health import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Treatm
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
-from .stock import Batch, DeliveryRecord, EscapeRecord, StockMovement, StockOperation
+from .stock import Batch, DeliveryRecord, EscapeRecord, OpeningBalance, StockMovement, StockOperation
 from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
@@ -26,7 +26,7 @@ from .water_point import SamplingPoint
 __all__ = [
     'Batch', 'DeliveryRecord', 'EscapeRecord', 'Equipment', 'EquipmentSystem', 'EquipmentType', 'Feed', 'FeedSuitability', 'FeederCalibration',
     'FeedingProtocol', 'FeedingRecord', 'HandlingAcknowledgement', 'HandlingPlanItem', 'HandlingRule', 'HarvestRecord',
-    'HealthEvent', 'LiceCount', 'Medicine', 'MedicineWithdrawal', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
+    'HealthEvent', 'LiceCount', 'Medicine', 'MedicineWithdrawal', 'OpeningBalance', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
     'ProtocolBand', 'ProtocolRate', 'SamplingPoint', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
     'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterLimit',
     'WaterMeasurement',

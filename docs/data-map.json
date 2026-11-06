@@ -202,6 +202,7 @@
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_opening_balance.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -3329,7 +3330,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3346,7 +3348,8 @@
             "on_delete": "PROTECT"
           },
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3369,7 +3372,8 @@
           ],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3386,7 +3390,8 @@
           ],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3403,7 +3408,8 @@
             "on_delete": "PROTECT"
           },
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3416,7 +3422,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3433,7 +3440,8 @@
           "link": null,
           "on_form": [
             "BatchDetailsForm",
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3447,7 +3455,8 @@
           "link": null,
           "on_form": [
             "BatchDetailsForm",
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3460,7 +3469,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3473,7 +3483,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3486,7 +3497,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3499,7 +3511,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BatchInputForm"
+            "BatchInputForm",
+            "OpeningBalanceForm"
           ],
           "how": "form",
           "why": ""
@@ -3575,6 +3588,16 @@
               ],
               "routes": [
                 "/operations/units/new-batch/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm.stock.opening.opening_balance_create",
+              "url_names": [
+                "farm:opening_balance_create"
+              ],
+              "routes": [
+                "/administration/opening-balances/new/"
               ]
             }
           ],
@@ -3670,6 +3693,30 @@
             "avg_weight_g": "",
             "over_capacity_ack": ""
           }
+        },
+        {
+          "form": "OpeningBalanceForm",
+          "module": "farm.forms.stock",
+          "fields": {
+            "species": "",
+            "input_stage": "",
+            "origin": "",
+            "provenance": "",
+            "supplier": "",
+            "supplier_batch_ref": "",
+            "strain": "",
+            "year_class": "",
+            "name": "",
+            "input_date": "",
+            "expected_harvest_date": "",
+            "notes": "",
+            "token": "",
+            "count": "",
+            "avg_weight_g": "",
+            "over_capacity_ack": "",
+            "day": "",
+            "document": ""
+          }
         }
       ],
       "delete_kind": "soft delete through the delete plan",
@@ -3688,6 +3735,7 @@
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_opening_balance.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
@@ -10338,6 +10386,156 @@
     },
     {
       "app": "farm",
+      "model": "OpeningBalance",
+      "table": "opening_balances",
+      "description": "What makes a stocking the opening balance of fish the farm already had when it started using the platform (F-197): the source document the counts come from.",
+      "columns": [
+        {
+          "name": "operation_id",
+          "field": "operation",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "stock_operations",
+            "model": "farm.StockOperation",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "document",
+          "field": "document",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "OpeningBalanceForm"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_opening_balances_document",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "farm:opening_balance_create",
+              "url_names": [
+                "farm:opening_balance_create"
+              ],
+              "routes": [
+                "/administration/opening-balances/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a ledger is never edited: a mistake is voided and recorded again"
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "with-parent",
+              "label": "with StockOperation: farm.stock.views.void_operation",
+              "url_names": [
+                "farm:stock_void"
+              ],
+              "routes": [
+                "/operations/units/void/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "farm.stock.opening.opening_balances",
+              "url_names": [
+                "farm:opening_balances"
+              ],
+              "routes": [
+                "/administration/opening-balances/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm.stock.views.production_units",
+              "url_names": [
+                "farm:production_units"
+              ],
+              "routes": [
+                "/operations/units/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "OpeningBalanceForm",
+          "module": "farm.forms.stock",
+          "fields": {
+            "species": "",
+            "input_stage": "",
+            "origin": "",
+            "provenance": "",
+            "supplier": "",
+            "supplier_batch_ref": "",
+            "strain": "",
+            "year_class": "",
+            "name": "",
+            "input_date": "",
+            "expected_harvest_date": "",
+            "notes": "",
+            "token": "",
+            "count": "",
+            "avg_weight_g": "",
+            "over_capacity_ack": "",
+            "day": "",
+            "document": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "farm/tests/test_opening_balance.py"
+      ]
+    },
+    {
+      "app": "farm",
       "model": "ProductionDepartment",
       "table": "production_departments",
       "description": "A production unit within a site: a hatchery hall, a nursery, a grow-out unit.",
@@ -14566,6 +14764,7 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_purging.py",
+        "farm/tests/test_opening_balance.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
@@ -20482,6 +20681,7 @@
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
@@ -20805,6 +21005,7 @@
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
@@ -21840,6 +22041,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py"
@@ -22171,6 +22373,7 @@
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
+        "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
@@ -22553,6 +22756,7 @@
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
+        "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
@@ -31345,6 +31549,7 @@
         "reports/tests/test_gaps789.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_notices.py",
+        "reports/tests/test_opening_balance.py",
         "reports/tests/test_pages.py",
         "reports/tests/test_preview.py",
         "reports/tests/test_slaughter_duty.py",

@@ -122,5 +122,8 @@ AREAS = [
     # The platform owner's settings (one row: Read, Edit). "Platform owner" is the role that holds Edit here: the correction
     # window, whether a second person approves a withdrawal acknowledgement, and the alarms' escalation time.
     Area(_('Platform settings'), 'core.PlatformSettings', actions=('view', 'change')),
+    # Opening balances: Read is their list. Registering one is the platform owner's right (Platform settings: Edit), never
+    # a right of its own: it is the one record dated beyond the correction window.
+    Area(_('Opening balances'), 'farm.OpeningBalance', actions=('view',)),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

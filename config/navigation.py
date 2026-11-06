@@ -42,6 +42,8 @@ WORKSPACES = [
                 Entry(_('Database'), 'core:database', 'database', 'core.browse_database'),
                 # The platform owner's rules for the whole company: the correction window, second approvals, alarm escalation.
                 Entry(_('Platform settings'), 'core:platformsettings_list', 'settings', 'core.view_platformsettings'),
+                # The fish already on the farm when it started using the platform, registered by the platform owner.
+                Entry(_('Opening balances'), 'farm:opening_balances', 'download', 'farm.view_openingbalance'),
             ]),
         ]),
         # The company's office people: who they are, where they work and their time (the production people are under

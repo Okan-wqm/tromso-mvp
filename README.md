@@ -522,6 +522,22 @@ acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most the platform owner's correction window (31 days until they set another; Platform settings) back
 (`core.platform.correction_window_days`). A form sent twice records once (the form's key, stored on the operation).
 
+**The opening balance** (F-197; Company › Administration › Opening balances, `/administration/opening-balances/`): the fish
+a farm already has on the day it starts using the platform. The platform owner (Platform settings: Edit; nobody else, checked
+in the view and in the service) registers each batch with the stocking dialog's form and unit rows plus the takeover day,
+the real stocking date, the year class (required) and the source document the counts come from (the old system's export,
+a count sheet). It is a stocking (`OperationKind.INPUT`) with an `OpeningBalance` record, as an escape is a count adjustment
+with its record, and is named "Opening balance" wherever it is listed: the operation is dated the takeover day, inside the
+correction window, with the count and average weight of that day; the batch's stocking date is the real one, any day up to
+the takeover day, beyond the window by design. Every read of the ledger takes the fish as stock already there: their stay
+starts on the real stocking date (days stocked, the drawer's "since"), their average counts as measured on the takeover day
+(the biomass report's basis, the feeding projection's start), nothing exists before the takeover day, and the reports never
+count them as fish stocked (the monthly biomass report leaves them out of "stocked", the cleaner-fish report adds them to the
+month's opening figure, a site-in-use notice does not count them as fish arriving), each saying in a warning that the stock
+was taken over that day. Its log entry is critical, with the document and the real stocking date. It is voided like any
+stocking (inside the window), which voids its batch. `check_stock` accepts an opening balance dated after its batch's
+stocking date and still finds any other stocking off its batch's date.
+
 **The ledger.** A batch holds its identity and origin, no count. An operation (`StockOperation`) is what
 a person did, with its date; its lines (`StockMovement`) say how many fish of which batch came into (+)
 or left (−) which unit, or were weighed there (0). Every figure on the page is computed from the live
@@ -3018,7 +3034,8 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Platform settings (read, edit: the platform owner's right) and Activity log (read).
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
+  right) and Activity log (read).
   A new tab appears in the matrix by
   adding its line there. The matrix groups the areas where the menu puts their pages (e.g.
   `Production · Setup · Facility structure`); the grouping is not written a second time. Roles and
@@ -3489,6 +3506,7 @@ real mail.
 | `/knowledge/entries/<id>/review/` | Marks an entry reviewed, or takes it back to draft (POST) |
 | `/activity/` | Activity log |
 | `/administration/platform-settings/` | Administration › Platform settings (the platform owner's rules) |
+| `/administration/opening-balances/` | Administration › Opening balances; `new/` registers one (the platform owner's right) |
 | `/roles/` | Administration › Roles (platform admin) |
 | `/users/` | Administration › Users (platform admin) |
 | `/database/` | Administration › Database: every table (platform admin) |

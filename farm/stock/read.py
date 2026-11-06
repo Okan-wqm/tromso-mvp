@@ -35,15 +35,16 @@ def ledger(batch_ids):
     so the lines of an operation all come with its batch."""
     rows = list(StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False).values_list(
         'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
-        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type'))
+        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type',
+        'operation__opening_balance', 'batch__input_date'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])
     ops = {}
     lines = []
-    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured, reason, cleaner \
-            in rows:
-        op = ops.setdefault(op_id, Op(op_id, op_kind, op_date, first[op_id]))
+    for line_id, op_id, op_kind, op_date, unit_id, batch_id, kind, delta, weight, pair, measured, reason, cleaner, \
+            opening, stocked_on in rows:
+        op = ops.setdefault(op_id, Op(op_id, op_kind, op_date, first[op_id], stocked_on if opening else None))
         lines.append(Line(line_id, op, unit_id, batch_id, kind, delta, weight, pair, measured, reason, bool(cleaner)))
     return lines
 
@@ -392,6 +393,7 @@ class Movement:
     grams: Decimal = None
     measured_weight_kg: Decimal = None
     other_unit_id: object = None
+    opening: bool = False       # a line of an opening balance: fish the farm already had, never fish stocked
 
     @property
     def kilos(self):
@@ -421,5 +423,6 @@ def movements(units, first, last):
         if line.pair is not None:
             other = next((end.unit_id for end in ends[(line.op.id, line.pair)] if end.id != line.id), None)
         found.append(Movement(line.id, line.op.id, line.op.kind, line.op.date, line.unit_id, line.batch_id, line.kind,
-                              line.count_delta, line.reason, grams.get(line.id), line.measured_weight_kg, other))
+                              line.count_delta, line.reason, grams.get(line.id), line.measured_weight_kg, other,
+                              line.op.stocked_on is not None))
     return found

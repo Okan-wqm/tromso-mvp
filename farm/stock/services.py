@@ -40,7 +40,9 @@ a plan links it, in the same transaction. A mortality or a cull may name the hea
 were culled under (a live event of the unit's site that covers the unit and is not dated after the
 operation).
 
-Operations: a stocking (a new batch into one or several units), a mortality, a cull, a weighing, a
+Operations: a stocking (a new batch into one or several units), an opening balance (a stocking of fish the farm already
+had when it started using the platform: the platform owner's, its batch's stocking date the real one beyond the correction
+window, OpeningBalance), a mortality, a cull, a weighing, a
 transfer (out of one unit into one or several: a split is a transfer into several), a grading (a
 transfer whose fish are weighed per size class, the fish that stay weighed too), a harvest, a delivery of live
 fish out of the company (with who received them, DeliveryRecord) and an escape (a count adjustment with its cause,
@@ -48,7 +50,7 @@ EscapeRecord); each is voidable."""
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils.translation import gettext as _
 
@@ -61,8 +63,8 @@ from farm.feeding.fold import walk
 from farm.handling import check
 from farm.health import read as health_read
 from farm.models import (
-    Batch, DeliveryRecord, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, Species, StockMovement,
-    StockOperation, Tank,
+    Batch, DeliveryRecord, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, OpeningBalance, Species,
+    StockMovement, StockOperation, Tank,
 )
 from farm.models.handling import KIND_OF_OPERATION
 from farm.models.harvest import FULFILLED_BY
@@ -116,6 +118,7 @@ class Entry:
 @dataclass
 class NewBatch:
     fields: dict = field(default_factory=dict)
+    input_date: object = None          # the stocking date when it is not the operation's (an opening balance)
 
 
 # ---- the one write path --------------------------------------------------------------------------
@@ -133,13 +136,13 @@ def _already(token):
 
 
 def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_batch=None, handling_ack=None,
-            harvest=None, plan_item=None, health_event=None, escape=None, delivery=None):
+            harvest=None, plan_item=None, health_event=None, escape=None, delivery=None, opening=None):
     """Writes an operation and its lines (see the module's docstring); returns the operation. A harvest is
     checked for a medicine withdrawal, and a harvest, transfer or grading for the fast, first (`handling_ack` is the
     fingerprint of the warnings the person went on past); a harvest writes its record (`harvest`: its
     facility, transport and vessel); `plan_item` is the planned harvest or transport it fulfils; a mortality
     or cull may name its `health_event`; an escape (a count adjustment) writes its `escape` record and a delivery
-    its `delivery` record, the way a harvest writes its own."""
+    its `delivery` record, the way a harvest writes its own; an opening balance (a stocking) its `opening` record."""
     with transaction.atomic():
         batches = locked(Batch, {entry.batch.pk for entry in entries if entry.batch is not None})
         units = locked(Tank, {entry.unit.pk for entry in entries})
@@ -150,8 +153,9 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
         assessment = _handling(kind, day, entries, batches, units, handling_ack)
         before = read.unit_counts(list(units))
         if new_batch is not None:
-            batch = Batch(**new_batch.fields, code=next_code(Batch, f'B-{day.year}-'), input_date=day, created_by=user,
-                          updated_by=user)
+            stocked = new_batch.input_date or day
+            batch = Batch(**new_batch.fields, code=next_code(Batch, f'B-{stocked.year}-'), input_date=stocked,
+                          created_by=user, updated_by=user)
             batch.full_clean(exclude=['code'])
             batch.save()
             batches[batch.pk] = batch
@@ -188,6 +192,12 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
                 record = model(operation=operation, **given)
                 record.full_clean()
                 record.save()
+        if opening is not None:
+            if kind != OperationKind.INPUT:
+                raise ValueError('An opening balance is a stocking.')
+            record = OpeningBalance(operation=operation, **opening)
+            record.full_clean()
+            record.save()
         if assessment is not None and assessment.warnings:
             check.acknowledge(operation, assessment)
         _log(user, AuditLog.Action.CREATE, operation, assessment)
@@ -457,7 +467,7 @@ def label(operation, lines=None):
     lines = lines if lines is not None else list(operation.movements.select_related('unit', 'batch'))
     codes = list(dict.fromkeys(line.unit.code for line in lines))
     batches = ', '.join(dict.fromkeys(line.batch.code for line in lines))
-    kind = _('Escape') if operation.escape is not None else operation.get_kind_display()
+    kind = _('Escape') if operation.escape is not None else operation.kind_label()
     head, tail = f'{audit.english(kind)} · ', f' · {batches} · {operation.date.isoformat()}'
     units = ', '.join(codes)
     room = audit.LABEL_LENGTH - len(head) - len(tail)
@@ -473,7 +483,8 @@ def label(operation, lines=None):
 
 def _log(user, action, operation, assessment=None):
     """The operation's activity-log entry: what, when, its lines, where a harvest went, and the handling
-    warnings the person went on past, which make the entry critical."""
+    warnings the person went on past, which make the entry critical; an opening balance (a carve-out from the correction
+    window) is critical too, with its source document and the real stocking date."""
     lines = list(operation.movements.select_related('unit', 'batch'))
     with audit.source_language():
         names = ['kind', 'date', 'notes', *(['over_capacity_ack'] if operation.over_capacity_ack else []),
@@ -483,13 +494,16 @@ def _log(user, action, operation, assessment=None):
         changes[str(_('Stock lines'))] = [None, '; '.join(_describe(line) for line in lines)]
         for model, names in ((HarvestRecord, ['facility', 'transport', 'vessel']),
                              (EscapeRecord, ['found_time', 'suspected', 'cause', 'health_status', 'recaptured']),
-                             (DeliveryRecord, ['destination', 'destination_site_number'])):
+                             (DeliveryRecord, ['destination', 'destination_site_number']),
+                             (OpeningBalance, ['document'])):
             record = model.all_objects.filter(operation=operation).first()
             if record is not None:
                 changes.update({label_: [None, value] for label_, value in audit.snapshot(record, names).items()
                                 if value is not None})
-        critical = assessment is not None and bool(assessment.warnings)
-        if critical:
+        if operation.opening is not None:
+            changes[str(_('Stocked on'))] = [None, lines[0].batch.input_date.isoformat()]
+        critical = (assessment is not None and bool(assessment.warnings)) or operation.opening is not None
+        if assessment is not None and assessment.warnings:
             changes[str(_('Handling warnings acknowledged'))] = [None, ' '.join(assessment.messages())]
         audit.record(user, action, operation, changes, label=label(operation, lines),
                      severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
@@ -525,11 +539,12 @@ def _quantize(grams):
 
 def record_input(user, *, species, input_stage, origin, day, lines, supplier=None, supplier_batch_ref='',
                  strain='', name='', expected_harvest_date=None, notes='', provenance='', year_class=None, ack=False,
-                 token=None):
+                 token=None, stocked_on=None, opening=None):
     """A new batch stocked into one or several units: `lines` = [(unit, fish, average weight in g)].
     The batch has no count of its own: its input lines are the count (STK-05). Its provenance is the origin's when
     the origin says it (the own hatchery, the farm's catch), else as given: required for a cleaner fish, whose
-    report asks it. Its year class is as given, never defaulted (D-14)."""
+    report asks it. Its year class is as given, never defaulted (D-14). `stocked_on` and `opening` are an opening
+    balance's (record_opening_balance), never a stocking's."""
     units = [unit for unit, _count, _weight in lines]
     if len(set(units)) != len(units):
         raise ValidationError({'unit': _('Each unit can be listed once.')})
@@ -538,8 +553,35 @@ def record_input(user, *, species, input_stage, origin, day, lines, supplier=Non
     batch = NewBatch({'species': species, 'input_stage': input_stage, 'origin': origin,
                       'provenance': provenance or PROVENANCE_OF_ORIGIN.get(origin, ''), 'year_class': year_class,
                       'supplier': supplier, 'supplier_batch_ref': supplier_batch_ref, 'strain': strain,
-                      'name': name, 'expected_harvest_date': expected_harvest_date, 'notes': notes})
-    return _commit(user, OperationKind.INPUT, day, entries, ack=ack, token=token, new_batch=batch)
+                      'name': name, 'expected_harvest_date': expected_harvest_date, 'notes': notes},
+                     input_date=stocked_on)
+    return _commit(user, OperationKind.INPUT, day, entries, ack=ack, token=token, new_batch=batch, opening=opening)
+
+
+# The platform owner's right: the opening balance is theirs (it is the one record dated beyond the correction window).
+OPENING_PERM = 'core.change_platformsettings'
+
+
+def record_opening_balance(user, *, species, input_stage, origin, stocked_on, day, lines, year_class, document,
+                           **fields):
+    """Fish the farm already had when it started using the platform (F-197), registered by the platform owner: a new batch
+    into one or several units (`lines` = [(unit, fish, average weight in g)] as on the takeover day), the operation dated
+    `day`, the takeover day, inside the correction window like every record; the batch's stocking date `stocked_on` is the
+    real one, any day up to the takeover day, beyond the window by design. The year class and the source document are
+    required. Everything else is a stocking's (`record_input`), and voiding it voids its batch."""
+    if not user.has_perm(OPENING_PERM):
+        raise PermissionDenied
+    errors = {}
+    if year_class is None:
+        errors['year_class'] = _('Give the year class of fish taken over.')
+    if not document.strip():
+        errors['document'] = _('Say which document the counts come from.')
+    if stocked_on > day:
+        errors['stocked_on'] = _('The fish were stocked on or before the takeover day.')
+    if errors:
+        raise ValidationError(errors)
+    return record_input(user, species=species, input_stage=input_stage, origin=origin, day=day, lines=lines,
+                        year_class=year_class, stocked_on=stocked_on, opening={'document': document.strip()}, **fields)
 
 
 def correct_batch(user, *, batch, year_class=None, provenance=''):

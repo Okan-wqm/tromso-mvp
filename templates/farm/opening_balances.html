@@ -1,0 +1,35 @@
+{% extends base_template %}
+{% load i18n stock %}
+{% comment %} Company › Administration › Opening balances (farm.stock.opening): the fish the farm already had when it started
+   using the platform, registered by the platform owner with their real stocking date and the document the counts come
+   from. A voided one stays listed, marked. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<p class="panel-help">{% trans "Fish already on the farm when it started using the platform. Their stocking date is the real one, older than the correction window allows any other record; their count and weight are those of the takeover day. Only the platform owner registers them, and each is in the activity log as critical." %}</p>
+{% if can_register %}<p><a class="button button-inline" href="{% url 'farm:opening_balance_create' %}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Register an opening balance" %}</a></p>{% endif %}
+{% if rows %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Batch" %}</th><th scope="col">{% trans "Units" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col">{% trans "Takeover day" %}</th><th scope="col">{% trans "Stocked on" %}</th><th scope="col">{% trans "Year class" %}</th><th scope="col">{% trans "Source document" %}</th><th scope="col">{% trans "Registered by" %}</th></tr></thead>
+    <tbody>
+      {% for row in rows %}{% with operation=row.operation lines=row.operation.movements.all %}
+      <tr{% if operation.is_deleted %} class="is-voided"{% endif %}>
+        <td>{{ lines.0.batch.code }}{% if operation.is_deleted %} <span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
+        <td>{% for line in lines %}{{ line.unit.code }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+        <td class="num">{% for line in lines %}{{ line.count_delta|fish }}{% if not forloop.last %} + {% endif %}{% endfor %}</td>
+        <td>{{ operation.date|date:"DATE_FORMAT" }}</td>
+        <td>{{ lines.0.batch.input_date|date:"DATE_FORMAT" }}</td>
+        <td>{{ lines.0.batch.year_class|default:"—" }}</td>
+        <td>{{ row.document }}</td>
+        <td>{{ operation.created_by|default:"—" }} · {{ operation.created_at|date:"DATETIME_FORMAT" }}</td>
+      </tr>
+      {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="panel-help">{% trans "No opening balance is registered." %}</p>
+{% endif %}
+{% endblock %}

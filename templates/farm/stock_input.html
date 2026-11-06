@@ -1,7 +1,8 @@
 {% extends base_template %}
 {% load i18n %}
 {% comment %} A new batch (farm.stock.views.stock_input): who the fish are, how many arrive at what weight, and the
-   units they go into, whose fish must add up to the fish arriving.{% endcomment %}
+   units they go into, whose fish must add up to the fish arriving. An opening balance (farm.stock.opening) is the same
+   form with its own `intro` and `submit_label`.{% endcomment %}
 {% block title %}{{ heading }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}
@@ -10,7 +11,7 @@
   {% csrf_token %}
   {{ form.token }}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-  <p class="panel-help">{% trans "The batch number is given on saving." %}</p>
+  <p class="panel-help">{% if intro %}{{ intro }}{% else %}{% trans "The batch number is given on saving." %}{% endif %}</p>
   <div class="form-grid">
     {% for field in form.visible_fields %}{% if field.name != form.ack_field %}{% include "registration/_field.html" %}{% endif %}{% endfor %}
   </div>
@@ -33,7 +34,7 @@
 
   <div class="form-actions">
     <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
-    <button type="submit" class="button button-inline">{% trans "Stock the batch" %}</button>
+    <button type="submit" class="button button-inline">{% if submit_label %}{{ submit_label }}{% else %}{% trans "Stock the batch" %}{% endif %}</button>
   </div>
 </form>
 {% endblock %}

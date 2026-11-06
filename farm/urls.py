@@ -5,7 +5,7 @@ from core.crud import Resource
 from .feeding import views as feeding
 from .health import views as health
 from .harvest import views as harvest
-from .stock import views as stock
+from .stock import opening, views as stock
 from .water import views as water
 
 app_name = 'farm'
@@ -24,6 +24,9 @@ urlpatterns += [
       for kind in stock.OPERATIONS),
     path('operations/units/void/<uuid:pk>/', stock.void_operation, name='stock_void'),
     path('operations/units/batch/<uuid:pk>/', stock.batch_details, name='stock_batch'),
+    # Company › Administration › Opening balances: the fish the farm had when it started (the platform owner's).
+    path('administration/opening-balances/', opening.opening_balances, name='opening_balances'),
+    path('administration/opening-balances/new/', opening.opening_balance_create, name='opening_balance_create'),
     path('operations/units/<uuid:pk>/feeding/', feeding.record_feeding, name='feeding_record'),
     path('operations/feeding/', feeding.feeding_records, name='feeding_records'),
     path('operations/feeding/board/', feeding.meal_board, name='meal_board'),

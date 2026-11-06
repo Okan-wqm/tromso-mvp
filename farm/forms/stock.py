@@ -381,6 +381,48 @@ class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
             token=data['token'])
 
 
+class OpeningBalanceForm(BatchInputForm):
+    """An opening balance (services.record_opening_balance): a batch the farm already had when it started using the
+    platform, as on the takeover day (its fish, their average weight, the units they are in), with the real stocking date
+    (beyond the correction window by design), the year class and the document the counts come from."""
+
+    day = forms.DateField(label=_('Takeover day'), widget=DATE,
+                          help_text=_('The day the counts and the average weight are of: inside the correction window, '
+                                      'like every record.'))
+    document = forms.CharField(label=_('Source document'), max_length=300,
+                               help_text=_('Where the counts come from: the old system’s export, a count sheet, a '
+                                           'delivery note.'))
+
+    service_fields = {'date': 'day', 'stocked_on': 'input_date', 'unit': NON_FIELD_ERRORS, 'batch': NON_FIELD_ERRORS,
+                      'count': NON_FIELD_ERRORS}
+    field_order = ['species', 'input_stage', 'input_date', 'year_class', 'day', 'count', 'avg_weight_g', 'document',
+                   'origin', 'provenance', 'supplier', 'supplier_batch_ref', 'strain', 'name', 'expected_harvest_date',
+                   'notes', 'over_capacity_ack']
+
+    def __init__(self, *args, unit=None, **kwargs):
+        super().__init__(*args, unit=unit, **kwargs)
+        self.fields['input_date'].label = _('Stocked on (the real date)')
+        self.fields['input_date'].help_text = _('The day the fish were stocked, however long ago: their days stocked count '
+                                                'from it.')
+        self.fields['input_date'].initial = None
+        self.fields['day'].initial = services.local_today(unit)
+        self.fields['year_class'].required = True
+        self.fields['count'].label = _('Fish on the takeover day')
+        self.fields['avg_weight_g'].help_text = _('Their average on the takeover day; to 0.0001 g for eggs and larvae.')
+        self.order_fields(self.field_order)
+
+    def save(self, user, lines):
+        data = self.cleaned_data
+        return services.record_opening_balance(
+            user, species=data['species'], input_stage=data['input_stage'], origin=data['origin'],
+            stocked_on=data['input_date'], day=data['day'], year_class=data['year_class'], document=data['document'],
+            lines=[(unit, count, data['avg_weight_g']) for unit, count in lines],
+            supplier=data['supplier'], supplier_batch_ref=data['supplier_batch_ref'].strip(),
+            strain=data['strain'].strip(), name=data['name'].strip(),
+            expected_harvest_date=data['expected_harvest_date'], notes=data['notes'],
+            provenance=data['provenance'], ack=data['over_capacity_ack'], token=data['token'])
+
+
 class BatchDetailsForm(ServiceErrors, forms.ModelForm):
     """The year class and whether the fish are farmed or wild-caught of a batch stocked without them
     (farm/stock/services.py `correct_batch`)."""

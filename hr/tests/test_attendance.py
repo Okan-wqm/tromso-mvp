@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time, timedelta, timezone as utc
 from decimal import Decimal
 from types import SimpleNamespace
@@ -280,6 +281,34 @@ class BoardTests(PeopleTestCase):
         self.assertEqual(states, {'Alfa': 'present', 'Bergh': 'upcoming', 'Cyr': 'upcoming'})
         states, _ = self.states(at(6, 20))
         self.assertEqual(states['Cyr'], 'not_in')
+
+    def test_the_tiles_share_out_the_people_planned_and_count_who_is_there_unplanned_apart(self):
+        """Every person planned today is in exactly one tile, so the tiles add up to Planned today; Late is a part of
+        Here now; someone here without a plan is counted apart (Production › Team, Today & attendance)."""
+        dee, eve, fia, gus = (employee(f'E-9{n}', name) for n, name in enumerate(('Dahl', 'Eide', 'Fosse', 'Gran')))
+        for person in (dee, eve, fia, gus):
+            place(person, self.dept_a)
+        for person in (self.in_a, self.ben, self.cy, dee, eve):
+            self.plan(person, self.early)
+        self.plan(fia, self.night)                                     # starts tonight: upcoming
+        punch(self.in_a, at(6, 3))                                     # here
+        punch(self.ben, at(6, 40))                                     # here, late
+        punch(eve, at(6), at(9))                                       # done
+        kind = LeaveType.objects.create(name='Annual', code='AN')
+        LeaveRequest.objects.create(employee=dee, leave_type=kind, first_day=DAY, last_day=DAY, status='approved',
+                                    decided_at=at(1))
+        punch(gus, at(7))                                              # here, not planned
+        board = read.board(self.lead, at(10))
+        tiles = [(tile.key, tile.count) for tile in board.tiles]
+        self.assertEqual(tiles, [('upcoming', 1), ('here', 2), ('not_in', 0), ('absent', 1), ('on_leave', 1), ('done', 1)])
+        self.assertEqual((board.planned, sum(count for _, count in tiles), board.late, board.unplanned), (6, 6, 1, 1))
+        self.client.force_login(self.lead)
+        with mock.patch('django.utils.timezone.now', return_value=at(10)):
+            page = self.client.get(reverse('hr:production_today_board')).content.decode()
+        shown = re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)
+        self.assertEqual(shown, [('6', 'Planned today'), ('1', 'Upcoming'), ('2', 'Here now'), ('0', 'Not in yet'),
+                                 ('1', 'Absent'), ('1', 'On leave'), ('1', 'Done'), ('1', 'Here, not planned')])
+        self.assertIn('1 late', page)
 
     def test_people_planned_off_or_with_no_plan_are_not_listed_unless_they_are_there(self):
         self.plan(self.in_a, None)                                     # planned off

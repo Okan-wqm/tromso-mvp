@@ -207,6 +207,7 @@ class ReportResource(Resource):
             'print_url': reverse('reports:report_print', args=[report.pk]),
             'has_api': report.kind in exports.API_KINDS,
         }
+        extras['figure_rows'] = exports.rows(report, extras['content'])      # as the print page lists them
         if extras['can_submit']:
             extras['preview_hash'] = compute.content_hash(result.content)
             extras['open_questions'] = list(OpenQuestion.objects.filter(code__in=result.questions,

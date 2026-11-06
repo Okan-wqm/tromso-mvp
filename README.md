@@ -2189,6 +2189,10 @@ records change afterwards (a void, a backdated record, a unit moved to another s
 what was filed: a correction is needed", figure by figure, each named as the page names it, the unit by its number ("Unit K-02 ·
 Fish at the month’s end: 500 → 1000", `reports/labels.py`), never a key of the content; a correction is a new report of the same key that replaces it.
 
+A report's page shows its figures in the kind's own table (smolt, biomass, the slaughter plan, land stock, a site taken
+into use or emptied), an event notice's narrative for a notice, and any other kind (sea lice, cleaner fish) field by field
+as the print page lists them (`templates/reports/_rows.html`, `reports.exports.rows`), never another kind's fields.
+
 **The reports** (`reports/kinds.py`: authority, basis, period, deadline, where it is filed):
 
 | Report | For | Deadline |

@@ -557,9 +557,9 @@ def drawer(request, unit):
 
 
 def overview_tiles(user):
-    """The production overview's water figure: the units with a critical water value now."""
+    """The production overview's water figure: the sampling points with a critical water value now, the water page's own
+    count (`_latest`, every point it lists, an outlet too), so the two cannot disagree."""
     if not user.has_perm(VIEW):
         return []
-    units = list(Tank.objects.select_related('production_department__site'))
-    return [{'label': _('Units with a critical water value'), 'count': critical_count(unit_water(user, units)),
+    return [{'label': _('Sampling points with a critical water value'), 'count': _latest(None)['critical_count'],
              'url': page_url()}]

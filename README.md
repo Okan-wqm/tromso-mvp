@@ -492,8 +492,8 @@ button works; a row is one link. Two empty states: no units at all (with a link 
 For people who may read the water (see Water chemistry), the table also has **Temp. (°C)** and **O₂ (mg/L)**
 after survival, each the latest value of the unit's middle sampling point coloured by its status, stale ones grey
 (time and age on hover), a status dot by the unit's code (its worst fresh status), and the count line says how many units
-shown are critical ("14 units · 3.2 t · 2 critical"); the production overview has a tile "Units with a
-critical water value".
+shown are critical ("14 units · 3.2 t · 2 critical"); the production overview has a tile "Sampling points with a
+critical water value", the Water chemistry page's own count (every point it lists, an outlet too), so the two never disagree.
 
 **The drawer** (`?unit=`), beside the table: the unit's code, name, place, status and since when; for a
 stocked unit its batches, "Stocked · N days", fish, average, biomass, bFCR and eFCR, survival, the density

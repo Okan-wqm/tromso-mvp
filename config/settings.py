@@ -72,6 +72,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Who is looking: every read of a confidential cell is narrowed for the signed-in person (core.sealing).
+    'core.sealing.SealingMiddleware',
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',

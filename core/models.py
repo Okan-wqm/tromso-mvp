@@ -5,9 +5,16 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
+from .sealing import SealedMixin
 
-class ActiveManager(models.Manager):
-    """Hides soft-deleted records."""
+
+class SealedManager(SealedMixin, models.Manager):
+    """Every record, as far as the viewer of the moment may see it (core.sealing: a model with no filtering seal is
+    not narrowed)."""
+
+
+class ActiveManager(SealedMixin, models.Manager):
+    """Hides soft-deleted records, and the records the viewer of the moment may not see (core.sealing)."""
 
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
@@ -15,7 +22,8 @@ class ActiveManager(models.Manager):
 
 class AuditedModel(models.Model):
     """Base of every farm record: author and time of creation and last change, an optimistic-lock
-    version, and soft delete. `objects` shows live records only; `all_objects` shows everything.
+    version, and soft delete. `objects` shows live records only; `all_objects` shows everything; both leave out what
+    the viewer of the moment may not see (core.sealing).
 
     How deleting one of these affects the records that point at it is not written per model: it
     follows each link's `on_delete` (see core.softdelete)."""
@@ -40,7 +48,7 @@ class AuditedModel(models.Model):
     )
 
     objects = ActiveManager()
-    all_objects = models.Manager()
+    all_objects = SealedManager()
 
     # What a delete's confirmation says of the records of this model that keep pointing at the deleted one
     # (their link is DO_NOTHING, core.softdelete): where they are while it is deleted.
@@ -235,3 +243,43 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+class AccessKind(models.TextChoices):
+    """Why a confidential record was read (core.sealing.log_access)."""
+    VIEW = 'view', _('Viewed')
+    EXPORT = 'export', _('Exported')
+    DENIED = 'denied', _('Refused')
+    OVERSEE = 'oversee', _('Oversaw')
+    SUPPORT = 'support', _('Support read')
+
+
+class AccessEvent(models.Model):
+    """Who read which confidential record, when and how: the one read log (the activity log is for changes). Rows are
+    append-only, as the activity log's: a database trigger (migration 0008) refuses UPDATE and DELETE. The person is
+    kept by id and by the name they had (a guest's pseudonym), with no database link, so the row outlives an account."""
+
+    Kind = AccessKind
+
+    id = models.BigAutoField(primary_key=True)
+    at = models.DateTimeField(_('When'), default=timezone.now)
+    user_id = models.IntegerField(_('Person id'), null=True, blank=True)
+    user_name = models.CharField(_('Person'), max_length=150)
+    kind = models.CharField(_('Kind'), max_length=8, choices=AccessKind.choices)
+    entity_type = models.CharField(_('Record type'), max_length=64)
+    entity_id = models.CharField(_('Record'), max_length=64)
+    part = models.CharField(_('Part'), max_length=8, blank=True)
+    route = models.CharField(_('Page'), max_length=120, blank=True)
+
+    class Meta:
+        db_table = 'core_access_events'
+        ordering = ['-at', '-id']
+        verbose_name = _('read of a confidential record')
+        verbose_name_plural = _('reads of confidential records')
+        indexes = [models.Index(fields=['entity_type', 'entity_id', 'at'], name='idx_access_events_entity'),
+                   models.Index(fields=['user_name', 'at'], name='idx_access_events_user')]
+        constraints = [models.CheckConstraint(condition=models.Q(kind__in=AccessKind.values),
+                                              name='chk_access_events_kind')]
+
+    def __str__(self):
+        return f'{self.user_name} {self.get_kind_display().lower()} {self.entity_type} {self.entity_id}'

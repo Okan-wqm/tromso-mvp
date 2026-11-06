@@ -26,7 +26,7 @@ class PageTests(AlarmsCase):
         self.desk.groups.add(role('Alarm desk', *DESK))
         self.rule()
         self.sample(5.5)
-        self.run()
+        self.loop()
         self.alarm = Alarm.objects.get()
 
     def test_they_sit_in_company_and_in_the_matrix(self):
@@ -49,7 +49,7 @@ class PageTests(AlarmsCase):
 
     def test_an_alarms_page_shows_its_history(self):
         self.client.force_login(self.desk)
-        self.run(minutes=1)
+        self.loop(minutes=1)
         page = self.client.get(reverse('alarms:alarm_detail', args=[self.alarm.pk]))
         for text in ('Opened', 'Ola', 'Queued', 'Push'):
             self.assertContains(page, text)
@@ -74,7 +74,7 @@ class PageTests(AlarmsCase):
     def test_the_open_filter(self):
         self.client.force_login(self.desk)
         self.sample(7.0, hours=0.5)
-        self.run(minutes=1)
+        self.loop(minutes=1)
         self.assertNotContains(self.client.get(reverse('alarms:alarm_list'), {'state': 'open'}),
                                reverse('alarms:alarm_detail', args=[self.alarm.pk]))
         self.assertContains(self.client.get(reverse('alarms:alarm_list'), {'state': 'all'}),

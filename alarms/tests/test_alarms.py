@@ -30,7 +30,7 @@ class TableTests(AlarmsCase):
     def test_every_alarm_row_is_append_only(self):
         self.rule()
         self.sample(5.5)
-        self.run()
+        self.loop()
         alarm = Alarm.objects.get()
         services.acknowledge(alarm, self.operator, device='phone-1', app='Suderra 1.0', at=self.now)
         for model in (Alarm, Notification, Acknowledgement):
@@ -58,8 +58,8 @@ class TableTests(AlarmsCase):
 class WaterTests(AlarmsCase):
     def test_a_value_past_the_critical_limit_holds_one_alarm_where_it_is(self):
         self.sample(5.5)
-        self.run()
-        self.run(minutes=1)
+        self.loop()
+        self.loop(minutes=1)
         alarm = Alarm.objects.get()
         self.assertEqual((alarm.source, alarm.point, alarm.parameter, alarm.severity, alarm.site, alarm.production_department),
                          ('water_limit', self.mid1, 'ph', 'critical', self.bergen, self.hall))
@@ -71,36 +71,36 @@ class WaterTests(AlarmsCase):
 
     def test_a_fresh_value_back_inside_the_limits_clears_it(self):
         self.sample(5.5, hours=2)
-        self.run()
+        self.loop()
         self.sample(7.2)
-        self.run(minutes=1)
+        self.loop(minutes=1)
         alarm = Alarm.objects.get()
         self.assertFalse(read.is_open(alarm))
         self.assertEqual(AlarmClearance.objects.get().alarm, alarm)
         self.assertTrue(AuditLog.objects.filter(entity_type='alarm', action='update').exists())
-        self.run(minutes=2)
+        self.loop(minutes=2)
         self.assertEqual(Alarm.objects.count(), 1)
 
     def test_a_value_that_goes_stale_never_clears_it(self):
         self.sample(5.5)
-        self.run()
-        self.run(minutes=60 * 80)                  # pH is fresh for 72 hours: the value is stale now
+        self.loop()
+        self.loop(minutes=60 * 80)                  # pH is fresh for 72 hours: the value is stale now
         self.assertTrue(read.is_open(Alarm.objects.get()))
 
     def test_a_warning_that_turns_critical_is_cleared_and_a_critical_alarm_opens(self):
         self.sample(6.2, hours=2)
-        self.run()
+        self.loop()
         warning = Alarm.objects.get()
         self.assertEqual(warning.severity, 'warning')
         self.sample(5.5)
-        self.run(minutes=1)
+        self.loop(minutes=1)
         self.assertFalse(read.is_open(warning))
         critical = Alarm.objects.exclude(pk=warning.pk).get()
         self.assertEqual((critical.severity, read.is_open(critical)), ('critical', True))
 
     def test_values_inside_the_limits_and_parameters_without_one_hold_nothing(self):
         self.sample(7.0)
-        self.run()
+        self.loop()
         self.assertFalse(Alarm.objects.exists())
 
 
@@ -115,25 +115,25 @@ class SensorTests(AlarmsCase):
         event = AlarmEvent.objects.create(rule=self.sensor_rule, channel_no=self.flow.channel_no,
                                           opened_at=self.now, peak=4)
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)):
-            self.run()
+            self.loop()
             alarm = Alarm.objects.get()
             self.assertEqual((alarm.source, alarm.sensor_event, alarm.severity, alarm.site, alarm.opened_at),
                              ('sensor_rule', event, 'warning', self.bergen, self.now))
             AlarmEvent.objects.filter(pk=event.pk).update(closed_at=self.now + timedelta(minutes=3))
-            self.run(minutes=4)
+            self.loop(minutes=4)
         self.assertEqual(AlarmClearance.objects.get().cleared_at, self.now + timedelta(minutes=3))
         self.assertEqual(Alarm.objects.count(), 1)
 
     def test_the_loop_checks_the_sensor_rules_itself(self):
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)) as evaluate:
-            self.run()
+            self.loop()
         evaluate.assert_called_once_with(self.now)
 
 
 class RoutingTests(AlarmsCase):
     def open_alarm(self, ph=5.5):
         self.sample(ph)
-        self.run()
+        self.loop()
         return Alarm.objects.get()
 
     def test_a_rule_reaches_the_active_members_of_its_role_on_its_site(self):
@@ -177,30 +177,30 @@ class OutboxTests(AlarmsCase):
         self.rule()
         self.rule(user=self.operator)                                         # the same person twice: one notification
         self.sample(5.5)
-        self.run()
+        self.loop()
         notification = Notification.objects.get()
         self.assertEqual((notification.recipient, notification.channel, notification.level), (self.operator, 'push', 0))
         self.assertEqual(read.status(notification), 'queued')
         self.assertTrue(AuditLog.objects.filter(entity_type='alarm notification', action='create').exists())
-        self.run(minutes=1)
+        self.loop(minutes=1)
         self.assertEqual(Notification.objects.count(), 1)
 
     def test_a_rule_added_later_still_reaches_an_open_alarm_never_a_cleared_one(self):
         self.sample(5.5, hours=2)
-        self.run()
+        self.loop()
         self.rule()
-        self.run(minutes=1)
+        self.loop(minutes=1)
         self.assertEqual(Notification.objects.count(), 1)
         self.sample(7.0)
-        self.run(minutes=2)
+        self.loop(minutes=2)
         self.rule(user=self.manager, level=0)
-        self.run(minutes=3)
+        self.loop(minutes=3)
         self.assertEqual(Notification.objects.count(), 1)
 
     def test_nothing_is_sent_without_a_transport(self):
         self.rule()
         self.sample(5.5)
-        self.run()
+        self.loop()
         self.assertFalse(DeliveryAttempt.objects.exists())
         self.assertFalse(read.transport_connected('push'))
 
@@ -209,8 +209,8 @@ class OutboxTests(AlarmsCase):
         RecordingTransport.sent.clear()
         self.rule()
         self.sample(5.5)
-        self.run()
-        self.run(minutes=1)
+        self.loop()
+        self.loop(minutes=1)
         attempt = DeliveryAttempt.objects.get()
         self.assertEqual((attempt.outcome, attempt.notification.recipient), ('sent', self.operator))
         self.assertEqual(read.status(attempt.notification), 'sent')
@@ -222,7 +222,7 @@ class OutboxTests(AlarmsCase):
         self.rule()
         self.sample(5.5)
         for minute in range(MAX_ATTEMPTS + 3):
-            self.run(minutes=minute)
+            self.loop(minutes=minute)
         self.assertEqual(DeliveryAttempt.objects.filter(outcome='failed').count(), MAX_ATTEMPTS)
         self.assertEqual(read.status(Notification.objects.get()), 'failed')
         self.assertEqual(DeliveryAttempt.objects.first().detail, FailingTransport.reason)
@@ -235,38 +235,38 @@ class EscalationTests(AlarmsCase):
         self.rule()
         self.rule(level=1, user=self.manager)
         self.sample(5.5)
-        self.run()
+        self.loop()
         self.alarm = Alarm.objects.get()
 
     def test_an_unacknowledged_alarm_goes_to_the_next_level_after_the_owners_minutes(self):
-        self.run(minutes=9)
+        self.loop(minutes=9)
         self.assertFalse(Escalation.objects.exists())
-        self.run(minutes=10)
+        self.loop(minutes=10)
         escalation = Escalation.objects.get()
         self.assertEqual((escalation.level, escalation.escalated_at), (1, self.now + timedelta(minutes=10)))
         self.assertEqual(Notification.objects.get(level=1).recipient, self.manager)
         self.assertEqual(read.level(self.alarm), 1)
         self.assertTrue(AuditLog.objects.filter(entity_type='alarm escalation').exists())
-        self.run(minutes=30)                                            # no level 2: it stays at 1
+        self.loop(minutes=30)                                            # no level 2: it stays at 1
         self.assertEqual(Escalation.objects.count(), 1)
 
     def test_an_acknowledgement_stops_it(self):
         services.acknowledge(self.alarm, self.operator, at=self.now + timedelta(minutes=5))
-        self.run(minutes=20)
+        self.loop(minutes=20)
         self.assertFalse(Escalation.objects.exists())
 
     def test_a_cleared_alarm_is_not_escalated(self):
         self.sample(7.0, hours=0.5)
-        self.run(minutes=1)
-        self.run(minutes=20)
+        self.loop(minutes=1)
+        self.loop(minutes=20)
         self.assertFalse(Escalation.objects.exists())
 
     def test_a_level_with_nobody_to_notify_goes_on_at_once(self):
         RecipientRule.objects.filter(level=0).update(is_active=False)
         self.sample(7.0, hours=0.5)
-        self.run(minutes=1)                                             # the first alarm cleared
+        self.loop(minutes=1)                                             # the first alarm cleared
         self.sample(5.5, hours=0.25)
-        self.run(minutes=2)
+        self.loop(minutes=2)
         second = Alarm.objects.exclude(pk=self.alarm.pk).get()
         self.assertEqual(read.level(second), 1)
         self.assertEqual(Notification.objects.get(alarm=second).recipient, self.manager)
@@ -274,9 +274,9 @@ class EscalationTests(AlarmsCase):
     def test_an_alarm_nobody_can_be_notified_of_is_said(self):
         RecipientRule.objects.update(is_active=False)
         self.sample(7.0, hours=0.5)
-        self.run(minutes=1)
+        self.loop(minutes=1)
         self.sample(5.5, hours=0.25)
-        self.run(minutes=2)
+        self.loop(minutes=2)
         second = Alarm.objects.exclude(pk=self.alarm.pk).get()
         self.assertTrue(read.nobody_notified(second))
         self.assertFalse(read.nobody_notified(self.alarm))
@@ -287,7 +287,7 @@ class AcknowledgementTests(AlarmsCase):
         super().setUp()
         self.rule()
         self.sample(5.5)
-        self.run()
+        self.loop()
         self.alarm = Alarm.objects.get()
 
     def test_who_when_from_which_device_and_app_and_how_late(self):

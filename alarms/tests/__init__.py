@@ -50,5 +50,5 @@ class AlarmsCase(TestCase):
             values['role'] = self.operators
         return RecipientRule.objects.create(**values)
 
-    def run(self, minutes=0):
+    def loop(self, minutes=0):
         return engine.run_once(self.now + timedelta(minutes=minutes))

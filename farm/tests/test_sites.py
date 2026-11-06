@@ -338,6 +338,44 @@ class SiteEditTests(SiteTestCase):
         site.soft_delete(self.user)
         self.assertEqual(self.client.get(reverse('farm:site_edit', args=[site.pk])).status_code, 404)
 
+    def deleted_while_saving(self, site, url, data):
+        """Posts `data` to `url` with `site` deleted between the form's check and the save's lock (F-009)."""
+        from unittest import mock
+
+        from django.forms import BaseFormSet
+
+        from core.crud import TabbedForm
+
+        def deleted(form):
+            Site.objects.filter(pk=site.pk).update(is_deleted=True)
+            return True
+        with mock.patch.object(TabbedForm, 'is_valid', deleted), mock.patch.object(BaseFormSet, 'is_valid', deleted):
+            return self.client.post(url, data)
+
+    def test_a_site_deleted_while_it_was_saved_is_not_found(self):
+        site = self.make_site()
+        response = self.deleted_while_saving(site, reverse('farm:site_edit', args=[site.pk]),
+                                             site_data(name='Renamed', code='SA', version='1'))
+        self.assertEqual(response.status_code, 404)
+        site = self.make_site(name='Site B', code='SB')
+        response = self.deleted_while_saving(site, reverse('farm:site_contacts', args=[site.pk]),
+                                             contacts_data([{'name': 'Kari', 'is_primary': True}], record=site))
+        self.assertEqual(response.status_code, 404)
+
+    def test_a_clash_only_the_database_catches_is_told_on_the_edit_form(self):
+        # F-034: two people giving two sites the same code at once both pass the form's checks.
+        from unittest import mock
+
+        from core.crud import TabbedForm
+        self.make_site(name='Other', code='MPS-001')
+        site = self.make_site()
+        with mock.patch.object(TabbedForm, '_check_conditional_constraints'):
+            response = self.client.post(reverse('farm:site_edit', args=[site.pk]), site_data(version='1'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].errors['code'], ['Another site already uses this code.'])
+        site.refresh_from_db()
+        self.assertEqual(site.code, 'SA')
+
 
 class SiteContactTests(SiteTestCase):
     def setUp(self):

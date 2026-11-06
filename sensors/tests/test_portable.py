@@ -4,20 +4,22 @@ transaction, with one entry on the device's log, each channel to the place its k
 to the unit's middle point, the point chosen or the system; a process value to the system or the piece of equipment),
 and refuses the whole move, saying why for each channel, when one cannot go there. `bindings.unbind_device` takes it out:
 its readings are stored and belong nowhere until it is placed again."""
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as tz
 
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.utils import timezone
 
 from core.models import AuditLog
 from farm.models import Equipment, EquipmentType, System
 from farm.tests.helpers import point_of
 from farm.tests.test_stock import make_unit
+from farm.water import read as water_read, sources
 
-from sensors import bindings
-from sensors.models import Binding, Channel
+from sensors import bindings, read
+from sensors.models import Binding, Channel, ChannelState
 
-from . import SensorsCase, make_channel, make_device
+from . import SensorsCase, make_channel, make_device, rows as rows_of
 
 
 class PortableCase(SensorsCase):
@@ -165,3 +167,57 @@ class UnbindDeviceTests(PortableCase):
         self.assertEqual([(stay.start, stay.end, [str(place) for place in stay.places]) for stay in history], [
             (self.start + timedelta(days=1), self.start + timedelta(days=2), ['RAS 1 (R1)']),
             (self.start, self.start + timedelta(days=1), ['T-01 › Middle'])])
+
+
+def insert(channel_no, rows):
+    """(ts, value) readings, one row per statement."""
+    with connection.cursor() as cursor:
+        for at, value in rows:
+            cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)',
+                           [channel_no, at, value])
+
+
+class ReadTests(PortableCase):
+    def test_readings_taken_while_the_device_is_out_are_stored_and_belong_nowhere(self):
+        start = datetime(2026, 10, 10, tzinfo=tz.utc)
+        bindings.move_device(self.user, self.device, start, self.t1)
+        bindings.unbind_device(self.user, self.device, start + timedelta(hours=1))
+        bindings.move_device(self.user, self.device, start + timedelta(hours=2), self.t1)
+        rows = [(start + timedelta(minutes=minute), 7 + minute / 1000) for minute in range(0, 180, 10)]
+        insert(self.ph.channel_no, rows)
+        out = [at for at, _value in rows if start + timedelta(hours=1) <= at < start + timedelta(hours=2)]
+        self.assertEqual(len(out), 6)
+        stored = {at for (at,) in rows_of('SELECT ts FROM sensors_reading WHERE channel_no = %s', [self.ph.channel_no])}
+        self.assertTrue(set(out) <= stored)                                   # kept as evidence
+        chart = read.series(self.mid1, 'ph', start, start + timedelta(hours=3), max_points=180)
+        self.assertEqual([bucket.first_ts for bucket in chart.buckets], [at for at, _value in rows if at not in out])
+        self.assertEqual(read.bound_quantities(self.t2, start, start + timedelta(hours=3)), [])
+        answer = sources.value_at([(sources.POINT, self.mid1.pk)], 'ph', start + timedelta(minutes=90))
+        self.assertEqual([value.at for value in answer.values[(sources.POINT, self.mid1.pk)]],
+                         [start + timedelta(minutes=50)])                    # the last one taken there, never 01:20
+        frames = read.deffeyes_frames(self.t1, start + timedelta(minutes=70), start + timedelta(minutes=110),
+                                      timedelta(minutes=5)).frames
+        self.assertEqual([frame.inputs.get('ph') for frame in frames], [None] * 8)
+
+    def test_a_value_measured_before_the_device_came_is_not_the_new_places_latest(self):
+        now = timezone.now()
+        bindings.move_device(self.user, self.device, now - timedelta(hours=1), self.t1)
+        measured = now - timedelta(seconds=60)                               # fresh: pH is fresh for 15 minutes
+        ChannelState.objects.create(channel_no=self.ph.channel_no, last_value=7.4, last_value_ts=measured,
+                                    last_good_at=measured, last_seen_at=measured)
+        self.assertEqual(str(water_read.latest([self.mid1])[self.mid1.pk].get('ph').value), '7.40')
+        bindings.move_device(self.user, self.device, now - timedelta(seconds=30), self.t2)
+        self.assertIsNone(water_read.latest([self.mid2])[self.mid2.pk].get('ph'))
+        self.assertIsNone(water_read.latest([self.mid1])[self.mid1.pk].get('ph'))
+        later = now - timedelta(seconds=5)                                   # the probe's first value in T-02
+        ChannelState.objects.filter(channel_no=self.ph.channel_no).update(last_value=7.1, last_value_ts=later,
+                                                                          last_good_at=later)
+        self.assertEqual(str(water_read.latest([self.mid2])[self.mid2.pk].get('ph').value), '7.10')
+
+    def test_a_device_taken_out_gives_no_place_a_latest_value(self):
+        now = timezone.now()
+        bindings.move_device(self.user, self.device, now - timedelta(hours=1), self.t1)
+        bindings.unbind_device(self.user, self.device, now - timedelta(minutes=5))
+        ChannelState.objects.create(channel_no=self.ph.channel_no, last_value=7.4, last_value_ts=now,
+                                    last_good_at=now, last_seen_at=now)
+        self.assertIsNone(water_read.latest([self.mid1])[self.mid1.pk].get('ph'))

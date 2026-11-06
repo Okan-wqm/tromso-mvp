@@ -174,6 +174,15 @@ def evaluate(employee, changes):
     return rules.findings(planned, away, holidays, settings, weeks, only=set(changes))
 
 
+# The rights that write a cell of the schedule: setting a new one, changing one, clearing one.
+PLAN_PERMISSIONS = ('hr.add_shiftassignment', 'hr.change_shiftassignment', 'hr.delete_shiftassignment')
+
+
+def can_plan(user):
+    """Whether `user` may write any cell of the schedule; which cells is decided per cell (`_cell_permission`)."""
+    return any(user.has_perm(permission) for permission in PLAN_PERMISSIONS)
+
+
 def _cell_permission(existing, shift):
     if shift is CLEAR:
         return 'hr.delete_shiftassignment'

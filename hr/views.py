@@ -57,7 +57,10 @@ def parse_cells(values):
 def plan(request):
     """Sets one shift, planned off or nothing on every cell sent (`cells`, repeated; `shift`: a shift's id, `off` or
     `clear`), all or none. A person the user does not reach (a forged id) is a 404 and writes nothing; a blocking finding
-    refuses the batch with its first conflicts; warnings are told after the save."""
+    refuses the batch with its first conflicts; warnings are told after the save. Someone with no right to plan is
+    refused before the request is read."""
+    if not services.can_plan(request.user):
+        raise PermissionDenied
     cells = parse_cells(request.POST.getlist('cells'))
     if not cells:
         return HttpResponseBadRequest()

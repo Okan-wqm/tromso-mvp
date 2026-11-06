@@ -394,4 +394,4 @@ class RosterUrlTests(RosterTestCase):
         self.assertEqual(ShiftAssignment.objects.count(), 0)
         # no verb: refused
         self.client.force_login(user('reader2', 'view_shiftassignment', group='Reader2'))
-        self.assertEqual(self.client.post(reverse('hr:production_roster_plan'), post).status_code, 404)    # nobody's team
+        self.assertEqual(self.client.post(reverse('hr:production_roster_plan'), post).status_code, 403)    # no right to plan: refused before the request is read

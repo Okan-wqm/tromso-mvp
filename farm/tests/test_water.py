@@ -377,7 +377,7 @@ class LatestTests(WaterTestCase):
         self.sample(hours=30, ph='7')                     # fresh for 72 h, no limit
         water = self.latest()
         self.assertEqual(water.get('temperature_c').status, Status.STALE)
-        self.assertEqual(water.status, Status.NO_LIMIT)
+        self.assertEqual(water.status, Status.STALE)      # a value with a limit aged: never "No limit" over it
         water = self.latest(now=self.now + timedelta(days=3))
         self.assertEqual(water.status, Status.STALE)
 
@@ -982,6 +982,25 @@ class ProductionUnitsTests(WaterTestCase):
         tiles = self.client.get(reverse('production_home')).context['water_tiles']
         self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
                          [('Sampling points with a critical water value', 1)])
+
+    def test_a_point_whose_judged_values_aged_is_stale_and_a_value_without_a_limit_says_why(self):
+        """A critical value that grew old makes its point Stale, not "No limit" (its other values, with no limit row, are
+        not a judgement); a value without a limit says why: no limit for the fish's species, or no fish that day."""
+        self.stock()
+        self.limit('co2_mg_l', critical_high=15)
+        side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
+        self.sample(point=side, hours=80, co2_mg_l='15.6', alkalinity_mg_l='90')   # older than CO₂'s 72 fresh hours
+        page = self.client.get(reverse('farm:water'))
+        row = next(row for row in page.context['rows'] if row['point'] == side)
+        self.assertEqual(row['water'].status, Status.STALE)
+        alkalinity = row['water'].get('alkalinity_mg_l')
+        self.assertEqual(alkalinity.status, Status.NO_LIMIT)
+        self.assertEqual(alkalinity.why_no_limit, 'No water limit is set for the fish in the unit.')
+        self.assertContains(page, 'No water limit is set for the fish in the unit.')
+        self.sample(point=point_of(self.t2), alkalinity_mg_l='90')                # T-02 holds no fish
+        empty = read.unit_water([self.t2])[self.t2.pk]
+        self.assertEqual(empty.status, Status.NO_LIMIT)
+        self.assertEqual(empty.why_no_limit, 'No fish in the unit: nothing to judge the water against.')
 
     def test_the_drawer_speaks_each_language(self):
         self.stock()

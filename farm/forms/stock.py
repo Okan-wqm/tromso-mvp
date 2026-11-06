@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
+from django.utils import formats
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT
@@ -574,6 +575,26 @@ class HarvestForm(PlannedForm, HandlingChecked, OperationForm):
         if self.plan is not None:
             self.initial.update({'count': self.plan.planned_count, 'facility': self.plan.facility_id,
                                  'transport': self.plan.transport_id, 'vessel': self.plan.vessel})
+
+    @property
+    def handling(self):
+        """The handling check, and a note when the harvest is recorded from a plan in another ISO week or at another
+        facility than planned: it stays the plan's in the planned-slaughter report (reports.compute.slaughter.plans_of,
+        audit F-227). Said, never refused."""
+        found = HandlingChecked.handling.fget(self)
+        if self.plan is not None and not getattr(self, '_plan_noted', False):
+            self._plan_noted = True
+            data = getattr(self, 'cleaned_data', {})
+            day = data.get('date') or self.initial.get('date') or self.fields['date'].initial
+            facility = data.get('facility')
+            facility_id = facility.pk if facility is not None else self.initial.get('facility')
+            if day is not None and (day.isocalendar()[:2] != self.plan.date.isocalendar()[:2]
+                                    or facility_id != self.plan.facility_id):
+                found.notes.append(_('Planned for %(date)s to %(facility)s: recorded on another week or at another '
+                                     'facility, this harvest is still reported in the planned-slaughter notice of the '
+                                     'plan’s week and facility; correct that notice if it was filed.') % {
+                    'date': formats.date_format(self.plan.date, 'DATE_FORMAT'), 'facility': self.plan.facility})
+        return found
 
     def save(self, user, rows=None):
         data = self.cleaned_data

@@ -317,8 +317,8 @@ def _slaughter(today, existing, rows):
     arises from the harvest, planned or done (restkontrollforskriften § 9a), so a harvest that was never planned owes it
     too, and a week stays owed after it has passed until the notice is filed or a person closes it with a reason."""
     weeks = {}
+    # Open or done: a plan whose harvest was voided is planned again and still owed.
     plans = (HandlingPlanItem.objects.filter(kind=PlanKind.HARVEST, cancelled_reason='', facility__isnull=False)
-             .filter(Q(operation__isnull=True) | Q(operation__is_deleted=False))
              .select_related('facility', 'unit__production_department__site'))
     for item in plans:
         site = item.unit.production_department.site
@@ -328,7 +328,11 @@ def _slaughter(today, existing, rows):
         weeks[key] = item.facility
     lines = Prefetch('operation__movements', StockMovement.objects.select_related(
         'unit__production_department__site').order_by('id'))
-    for record in HarvestRecord.objects.select_related('facility', 'operation').prefetch_related(lines):
+    records = list(HarvestRecord.objects.select_related('facility', 'operation').prefetch_related(lines))
+    from_plans = compute.slaughter.plans_of(record.operation_id for record in records)   # owed with their plan
+    for record in records:
+        if record.operation_id in from_plans:
+            continue
         first = next(iter(record.operation.movements.all()), None)
         site = first.unit.production_department.site if first is not None else None
         if site is None or site.reports_from is None or record.operation.date < site.reports_from:

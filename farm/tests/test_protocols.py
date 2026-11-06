@@ -376,7 +376,7 @@ class BoardTests(WorkedExampleTestCase):
         self.assertEqual((share.end_g, share.ration_kg, share.next_meal_kg), (D('97.5'), D('14.274'), D('3.5685')))
         self.assertEqual((share.end.protocol, share.end.scope, line['why']), (self.protocol, 'unit', ''))
         self.assertEqual(row['temperature'].value_c, D('13.2'))
-        for text in ('97.5 g', '85.0 g weighed', '14.274 kg', '4 × 3.569 kg', '1.22 %', 'via unit T-02', '13.2 °C',
+        for text in ('97.5 g', '85.0 g weighed', '14.27 kg', '4 × 3.57 kg', '1.22 %', 'via unit T-02', '13.2 °C',
                      'Record meal', '50–100 g · GR-4 · 4 mm · FCR 1.00'):
             self.assertContains(response, text)
         self.assertContains(response, '1.10 % at 12.0 °C, 1.30 % at 14.0 °C')
@@ -497,7 +497,7 @@ class WeighingDialogTests(WorkedExampleTestCase):
         stock_services.record_weighing(self.user, unit=self.t2, batch=self.fish, day=self.today, avg_weight_g=D(94))
         response = self.client.get(reverse('farm:production_units'), {'unit': self.t2.pk})
         self.assertContains(response, 'Today’s ration')
-        self.assertContains(response, '1.22 % at 13.2 °C: 13.762 kg a day, 4 × 3.440 kg')
+        self.assertContains(response, '1.22 % at 13.2 °C: 13.76 kg a day, 4 × 3.44 kg')
         self.assertContains(response, f'{self.fish.code} weighed at 94.0 g, estimated 97.5 g')
 
 

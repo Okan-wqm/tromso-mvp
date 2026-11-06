@@ -3046,8 +3046,9 @@ unit's chart), each refusing a user without its permission.
 | S0 spike (measurements, go) | done |
 | S1 plumbing: workspace, image, gates, `native.py`, `core.E001` | done |
 | S2 golden reference, anchors, browser guard, lean endpoints | done |
-| S3 three-way cross-validation with the source platform: seven findings for the owner | done, waiting for the owner |
-| S4 to S10 the functions move, Python formulas removed in the switching commit | after the owner's decisions |
+| S3 three-way cross-validation with the source platform: seven findings | done; all decided for ours (owner, B5) |
+| S4 to S10 the functions move, Python formulas removed in the switching commit | in progress |
+| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
 
 ## Languages
 

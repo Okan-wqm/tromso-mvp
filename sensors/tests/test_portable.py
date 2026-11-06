@@ -290,6 +290,17 @@ class SiteTests(PortableCase):
         bindings.move_device(self.user, self.device, self.start, self.t1)
         self.assertTrue(self.client.get(url).context['form'].fields['site'].disabled)
 
+    def test_the_form_locks_the_site_by_the_databases_rule_a_deleted_channels_binding_included(self):
+        # The page shows the device not placed (a deleted channel's binding is out of sight), but the database still
+        # holds it at its site: the form must not offer a change the database refuses.
+        user = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'x')
+        self.client.force_login(user)
+        bindings.move(self.user, self.ph, self.start, point=self.mid1)
+        self.ph.soft_delete(self.user)
+        self.assertEqual(bindings.placements([self.device])[self.device.pk], [])
+        url = reverse('sensors:device_edit', args=[self.device.pk])
+        self.assertTrue(self.client.get(url).context['form'].fields['site'].disabled)
+
 
 JOURNEY = datetime(2026, 10, 10, tzinfo=tz.utc)
 HOUR = timedelta(hours=1)

@@ -356,6 +356,58 @@ class Board:
         return self.count(rules.PRESENT) + self.count(rules.LATE)
 
 
+def _clock_of(placed, low, high, by_site, company_clock):
+    """(the placement that governs the person between `low` and `high`, today and the zone on its site's clock)."""
+    head = next((p for p in placed if p.valid_from <= high and (p.valid_until is None or p.valid_until >= low)), None)
+    site = site_of_posting(head) if head is not None else None
+    clock_here = by_site.get(getattr(site, 'pk', None), company_clock)
+    return head, clock_here.today, clock_here.zone
+
+
+def current_shift(plan, employee_id, today, zone, moment):
+    """The shift a person's plan has running or ahead at `moment`: (shift, its span, its day) of the night that began
+    yesterday while it is still running, else of the shift that starts today; None when neither is planned. `plan` is
+    {(employee id, day): ShiftAssignment}. The board and `on_shift` read this one rule."""
+    options = {}
+    for day in (today - timedelta(days=1), today):
+        cell = plan.get((employee_id, day))
+        if cell is not None and cell.shift is not None:
+            options[day] = (cell.shift, clock.span(day, cell.shift, zone), day)
+    yesterday = options.get(today - timedelta(days=1))
+    return yesterday if yesterday is not None and yesterday[1][1] > moment else options.get(today)
+
+
+def on_shift(moment=None):
+    """The ids of the accounts whose planned shift runs at `moment` on their site's clock (current_shift), not on approved
+    leave that day: who an alarm for the people on shift reaches (alarms/routing.py). People without an account are never
+    in it. In a fixed number of queries whatever the number of people."""
+    moment = moment or timezone.now()
+    clocks_now = clocks(moment)
+    by_site = {site: clock for clock in clocks_now if clock.sites is not None for site in clock.sites}
+    company_clock = next(clock for clock in clocks_now if clock.sites is None)
+    low, high = min(c.today for c in clocks_now), max(c.today for c in clocks_now)
+    people = list(Employee.objects.filter(user__isnull=False, user__is_active=True, joined_on__lte=high)
+                  .filter(Q(left_on__isnull=True) | Q(left_on__gte=low)))
+    ids = [employee.pk for employee in people]
+    postings = defaultdict(list)
+    for posting in Posting.objects.filter(scope.overlapping(low, high), employee__in=ids).select_related(
+            'production_department__site', 'office_department__site').order_by('valid_from'):
+        postings[posting.employee_id].append(posting)
+    plan = {(row.employee_id, row.day): row for row in ShiftAssignment.objects.filter(
+        employee__in=ids, day__range=(low - timedelta(days=1), high)).select_related('shift')}
+    away = leave.approved_days(ids, low, high)
+    found = set()
+    for employee in people:
+        _head, today, zone = _clock_of(postings.get(employee.pk, []), low, high, by_site, company_clock)
+        chosen = current_shift(plan, employee.pk, today, zone, moment)
+        if chosen is None:
+            continue
+        _shift, (start, end), _day = chosen
+        if start <= moment < end and today not in away.get(employee.pk, set()):      # the board's leave rule
+            found.add(employee.user_id)
+    return found
+
+
 def board(user, moment=None, realm=None):
     """Who is where now, for the people `user` may reach: each person's planned shift today (or the night shift that began
     yesterday and is still running), their punches, their leave, and the state worked out from them (rules.status) on their
@@ -385,19 +437,8 @@ def board(user, moment=None, realm=None):
     counts = defaultdict(int)
     planned = 0
     for employee in people:
-        placed = postings.get(employee.pk, [])
-        head = next((p for p in placed if p.valid_from <= high and (p.valid_until is None or p.valid_until >= low)), None)
-        site = site_of_posting(head) if head is not None else None
-        clock_here = by_site.get(getattr(site, 'pk', None), company_clock)
-        today, zone = clock_here.today, clock_here.zone
-        options = {}
-        for day in (today - timedelta(days=1), today):
-            cell = plan.get((employee.pk, day))
-            if cell is not None and cell.shift is not None:
-                options[day] = (cell.shift, clock.span(day, cell.shift, zone), day)
-        yesterday = options.get(today - timedelta(days=1))
-        # the night that began yesterday and is still running comes first; else the shift that starts today
-        chosen = yesterday if yesterday is not None and yesterday[1][1] > moment else options.get(today)
+        head, today, zone = _clock_of(postings.get(employee.pk, []), low, high, by_site, company_clock)
+        chosen = current_shift(plan, employee.pk, today, zone, moment)
         mine = [(record.clock_in, record.clock_out) for record in punches.get(employee.pk, [])]
         on_leave = today in away.get(employee.pk, set())
         shift, span, day = chosen if chosen is not None else (None, None, today)

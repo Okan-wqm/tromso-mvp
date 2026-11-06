@@ -5265,6 +5265,9 @@ msgstr "Utstyr kan ikke være en del av seg selv."
 msgid "Equipment that fits none of the other types."
 msgstr "Utstyr som ikke passer i noen av de andre typene."
 
+msgid "Error"
+msgstr "Feil"
+
 msgid "Escape"
 msgstr "Rømming"
 
@@ -6285,6 +6288,9 @@ msgstr "Gitt sammen med andre, kombinasjon"
 
 msgid "Go on despite these warnings"
 msgstr "Fortsett tross disse advarslene"
+
+msgid "Go to the overview"
+msgstr "Gå til oversikten"
 
 msgid "Going on is stored with what is shown here and logged as critical."
 msgstr "Å fortsette lagres med det som vises her og logges som kritisk."
@@ -8047,6 +8053,9 @@ msgstr "Ingen fisk ved slutten av dagen"
 msgid "No fish found in these units on these days"
 msgstr "Ingen fisk i disse enhetene på disse dagene"
 
+msgid "No fish in the unit: nothing to judge the water against."
+msgstr "Ingen fisk i enheten: ingenting å vurdere vannet mot."
+
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s now."
 msgstr "Ingen fisk fra %(batch)s er i %(unit)s nå."
@@ -8358,6 +8367,9 @@ msgstr "Ingen verdi ennå"
 
 msgid "No volume: the doses per m³ only."
 msgstr "Uten volum: bare dosene per m³."
+
+msgid "No water limit is set for the fish in the unit."
+msgstr "Ingen vanngrense er satt for fisken i enheten."
 
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
@@ -11128,6 +11140,9 @@ msgstr "Noen andre endret denne rapporten mens du så på den: se på nytt før 
 msgid "Someone planned one of these days at the same time. Look at the week again."
 msgstr "Noen planla en av disse dagene samtidig. Se på uken igjen."
 
+msgid "Something went wrong"
+msgstr "Noe gikk galt"
+
 #, python-format
 msgid "Sort by %(name)s"
 msgstr "Sorter etter %(name)s"
@@ -11706,6 +11721,9 @@ msgstr "Adressen for bestillinger og spørsmål; kontaktpersonene har sine egne 
 #, python-brace-format
 msgid "The address is a JSON object, e.g. {\"unit_id\": 1, \"function\": 3, \"register\": 40001}."
 msgstr "Adressen er et JSON-objekt, f.eks. {\"unit_id\": 1, \"function\": 3, \"register\": 40001}."
+
+msgid "The address is wrong, or what it showed was deleted."
+msgstr "Adressen er feil, eller det den viste er slettet."
 
 msgid "The address lacks a key its protocol needs."
 msgstr "Adressen mangler en nøkkel protokollen trenger."
@@ -12503,6 +12521,9 @@ msgstr ""
 
 msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
 msgstr "pH-grensene går oppover: kritisk under, advarsel under, advarsel over, kritisk over."
+
+msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
+msgstr "Siden kunne ikke vises. Prøv igjen, og si fra til en administrator hvis det skjer igjen."
 
 msgid "The pages in the journal or book, e.g. 45–67."
 msgstr "Sidene i tidsskriftet eller boka, f.eks. 45–67."
@@ -13407,6 +13428,9 @@ msgstr "Denne eieren har allerede et punkt med dette navnet."
 
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Denne eieren har allerede et aktivt midtpunkt: det står for vannet dens."
+
+msgid "This page does not exist"
+msgstr "Denne siden finnes ikke"
 
 msgid "This person already has a leave request for some of these days."
 msgstr "Denne personen har allerede en permisjonssøknad for noen av disse dagene."
@@ -14796,6 +14820,9 @@ msgstr "Du ser ikke denne personen denne dagen."
 msgid "You left %(channel)s."
 msgstr "Du har forlatt %(channel)s."
 
+msgid "You may not open this page"
+msgstr "Du kan ikke åpne denne siden"
+
 msgid "You stop seeing its messages. Your messages stay, with your name; an owner can add you again."
 msgstr ""
 "Du ser ikke lenger meldingene. Meldingene dine blir stående med navnet ditt; en eier kan legge "
@@ -14809,6 +14836,9 @@ msgstr "Deres egen vurdering, fra 1 (dårlig) til 5 (utmerket)."
 
 msgid "Your own short code: capital letters, digits, hyphens and underscores."
 msgstr "Deres egen korte kode: store bokstaver, sifre, bindestrek og understrek."
+
+msgid "Your role does not give you this page. Ask an administrator if you need it."
+msgstr "Rollen din gir deg ikke denne siden. Spør en administrator hvis du trenger den."
 
 msgid "a correction"
 msgstr "en korrigering"

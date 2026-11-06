@@ -5267,6 +5267,9 @@ msgstr "Ekipman kendisinin parçası olamaz."
 msgid "Equipment that fits none of the other types."
 msgstr "Diğer türlerin hiçbirine uymayan ekipman."
 
+msgid "Error"
+msgstr "Hata"
+
 msgid "Escape"
 msgstr "Kaçış"
 
@@ -6291,6 +6294,9 @@ msgstr "Başkalarıyla birlikte yapıldı, kombinasyon"
 
 msgid "Go on despite these warnings"
 msgstr "Bu uyarılara rağmen devam et"
+
+msgid "Go to the overview"
+msgstr "Genel bakışa git"
 
 msgid "Going on is stored with what is shown here and logged as critical."
 msgstr "Devam etmek, burada gösterilenle birlikte saklanır ve kritik olarak günlüğe yazılır."
@@ -8057,6 +8063,9 @@ msgstr "Gün sonunda balık yok"
 msgid "No fish found in these units on these days"
 msgstr "Bu günlerde bu birimlerde balık bulunamadı"
 
+msgid "No fish in the unit: nothing to judge the water against."
+msgstr "Ünitede balık yok: suyu karşılaştıracak bir sınır yok."
+
 #, python-format
 msgid "No fish of %(batch)s are in %(unit)s now."
 msgstr "Şu anda %(unit)s içinde %(batch)s balığı yok."
@@ -8366,6 +8375,9 @@ msgstr "Henüz değer yok"
 
 msgid "No volume: the doses per m³ only."
 msgstr "Hacim yok: yalnızca m³ başına dozlar."
+
+msgid "No water limit is set for the fish in the unit."
+msgstr "Ünitedeki balıklar için su sınırı tanımlanmamış."
 
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
@@ -11135,6 +11147,9 @@ msgstr "Siz bakarken bu raporu başka biri değiştirdi: sunumu kaydetmeden önc
 msgid "Someone planned one of these days at the same time. Look at the week again."
 msgstr "Biri bu günlerden birini aynı anda planladı. Haftaya yeniden bakın."
 
+msgid "Something went wrong"
+msgstr "Bir şeyler ters gitti"
+
 #, python-format
 msgid "Sort by %(name)s"
 msgstr "Sırala: %(name)s"
@@ -11716,6 +11731,9 @@ msgstr "Siparişler ve sorular için adres; kişilerin kendi adresleri aşağıd
 #, python-brace-format
 msgid "The address is a JSON object, e.g. {\"unit_id\": 1, \"function\": 3, \"register\": 40001}."
 msgstr "Adres bir JSON nesnesidir, örn. {\"unit_id\": 1, \"function\": 3, \"register\": 40001}."
+
+msgid "The address is wrong, or what it showed was deleted."
+msgstr "Adres yanlış ya da gösterdiği kayıt silinmiş."
 
 msgid "The address lacks a key its protocol needs."
 msgstr "Adreste, protokolünün gerektirdiği bir anahtar eksik."
@@ -12512,6 +12530,9 @@ msgstr ""
 
 msgid "The pH bounds go up: critical below, warning below, warning above, critical above."
 msgstr "pH sınırları yukarı doğru gider: kritik alt, uyarı alt, uyarı üst, kritik üst."
+
+msgid "The page could not be shown. Try again, and tell an administrator if it happens again."
+msgstr "Sayfa gösterilemedi. Yeniden deneyin; tekrar olursa bir yöneticiye bildirin."
 
 msgid "The pages in the journal or book, e.g. 45–67."
 msgstr "Dergideki ya da kitaptaki sayfalar, örn. 45–67."
@@ -13423,6 +13444,9 @@ msgstr "Bu sahibin bu adda bir noktası zaten var."
 
 msgid "This owner already has an active middle point: it stands for its water."
 msgstr "Bu sahibin zaten aktif bir orta noktası var: suyunu o temsil eder."
+
+msgid "This page does not exist"
+msgstr "Bu sayfa yok"
 
 msgid "This person already has a leave request for some of these days."
 msgstr "Bu kişinin bu günlerin bir kısmı için zaten bir izin talebi var."
@@ -14808,6 +14832,9 @@ msgstr "Bu kişiyi bu günde görmüyorsunuz."
 msgid "You left %(channel)s."
 msgstr "%(channel)s kanalından ayrıldınız."
 
+msgid "You may not open this page"
+msgstr "Bu sayfayı açamazsınız"
+
 msgid "You stop seeing its messages. Your messages stay, with your name; an owner can add you again."
 msgstr "Artık mesajlarını görmezsiniz. Mesajlarınız adınızla kalır; bir sahip sizi yeniden ekleyebilir."
 
@@ -14819,6 +14846,9 @@ msgstr "Kendi puanınız, 1 (zayıf) ile 5 (mükemmel) arası."
 
 msgid "Your own short code: capital letters, digits, hyphens and underscores."
 msgstr "Kendi kısa kodunuz: büyük harf, rakam, kısa çizgi ve alt çizgi."
+
+msgid "Your role does not give you this page. Ask an administrator if you need it."
+msgstr "Rolünüz bu sayfayı kapsamıyor. Gerekirse bir yöneticiye sorun."
 
 msgid "a correction"
 msgstr "bir düzeltme"

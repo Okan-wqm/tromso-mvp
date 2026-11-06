@@ -110,3 +110,15 @@ class OwnRecordAndTargetTests(PeopleTestCase):
         self.assertIn(edit(reverse('hr:production_employee_edit', args=[self.in_a.pk])), page)
         self.assertNotIn(edit(reverse('hr:production_employee_edit', args=[self.own.pk])), page)
         self.assertIn(edit(reverse('hr:production_employee_detail', args=[self.own.pk])), page)
+
+    def test_the_form_offers_a_lead_only_the_departments_they_manage(self):
+        self.client.force_login(self.editor)
+        form = self.client.get(reverse('hr:production_employee_edit', args=[self.in_a.pk])).context['form']
+        offered = {value for _group, options in form.fields['department'].choices if isinstance(options, list)
+                   for value, _label in options}
+        self.assertEqual(offered, {token(self.dept_a)})
+        self.client.force_login(self.hr)
+        form = self.client.get(reverse('hr:employee_edit', args=[self.in_fin.pk])).context['form']
+        offered = {value for _group, options in form.fields['department'].choices if isinstance(options, list)
+                   for value, _label in options}
+        self.assertEqual(offered, {token(self.dept_a), token(self.dept_b), token(self.admin_dept), token(self.finance)})

@@ -23,6 +23,8 @@
       </tbody>
     </table>
   </div>
+  {% elif not crew.placed %}
+  <p class="muted">{% trans "You are not placed in a production department this week, so you have no crew." %}</p>
   {% else %}
   <p class="muted">{% trans "Nobody else is placed in your department this week." %}</p>
   {% endif %}

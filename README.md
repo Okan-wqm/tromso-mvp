@@ -2956,7 +2956,9 @@ production people in Production, with the same permission.
 - **Crew** (`hr.crew_shiftassignment`, a matrix column on the Shift schedule): under their own week a production worker sees the name
   and the shift code and times of the people in their own production department on each day (`hr.read.crew_week`), built from plain
   values: no note, finding, leave or its type, punch, employee number, hours or link. A day off, a day on leave and a day with nothing
-  planned are the same empty cell.
+  planned are the same empty cell. A crew is a worker's: someone with no employee record (the platform admin) gets no block, and a
+  worker with no production placement that week is told so (`CrewWeek.placed`, from `hr.scope.production_days`), never that
+  nobody else is placed in their department.
 - **Approving leave** opens a dialog with the person's planned shifts inside the request (`hr.read.leave_impact`) to cover; it never
   blocks the approval. Nobody decides their own leave (service and trigger), so a sole production manager's own request goes to a head
   of production or HR.

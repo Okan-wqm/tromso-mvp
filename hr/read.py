@@ -292,6 +292,7 @@ class CrewRow:
 class CrewWeek:
     days: list
     rows: list
+    placed: bool = True     # the viewer is placed in a production department on a day of the week (else no crew to show)
 
 
 def crew_week(user, week_start):
@@ -300,6 +301,8 @@ def crew_week(user, week_start):
     hours, whatever a page does with it; and nothing in it opens a record. In a fixed number of queries."""
     start = monday(week_start)
     days = [start + timedelta(days=n) for n in range(7)]
+    if not scope.production_days(user, days[0], days[-1]):
+        return CrewWeek(days, [], placed=False)
     crew = scope.colleagues(user, days[0], days[-1])
     if not crew:
         return CrewWeek(days, [])

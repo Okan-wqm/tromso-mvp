@@ -125,6 +125,13 @@ class OverviewPageTests(OverviewTestCase):
         self.assertIn('Team overview', shown)
 
 
+def walk(node):
+    """Every box below `node`, depth first."""
+    for child in node.children:
+        yield child
+        yield from walk(child)
+
+
 class OrgChartTests(OverviewTestCase):
     """Two charts of one company: Company's office tree with one Production box (computed, never a row: nothing to delete),
     and Production's sites with their production departments. Head counts are the viewer's to see."""
@@ -132,6 +139,12 @@ class OrgChartTests(OverviewTestCase):
     def names(self, node):
         return [(child.kind, child.label, child.direct, child.total, [(g.label, g.direct, g.total) for g in child.children])
                 for child in node.children]
+
+    def production_box(self, tree):
+        """The one Production box, wherever the rule hangs it."""
+        found = [node for node in walk(tree) if node.kind == read.PRODUCTION_ROOT]
+        self.assertEqual(len(found), 1)
+        return found[0]
 
     def test_the_production_chart_has_the_sites_and_their_production_departments(self):
         tree = read.org_tree(self.hr, read.PRODUCTION)
@@ -141,16 +154,34 @@ class OrgChartTests(OverviewTestCase):
 
     def test_the_company_chart_has_the_office_tree_and_one_production_box(self):
         tree = read.org_tree(self.hr, read.OFFICE)
-        self.assertEqual(self.names(tree), [('office', 'Administration', 0, 1, [('Finance', 1, 1)]),
-                                            (read.PRODUCTION_ROOT, 'Production', 2, 2, [])])
+        self.assertEqual(self.names(tree), [('office', 'Administration', 0, 3, [('Finance', 1, 1), ('Production', 2, 2)])])
         self.assertEqual(tree.total, 3)
+
+    def test_with_one_top_department_the_production_box_hangs_under_it_and_counts_in_its_total(self):
+        administration = read.org_tree(self.hr, read.OFFICE).children[0]
+        self.assertEqual([child.kind for child in administration.children], [read.OFFICE, read.PRODUCTION_ROOT])
+        self.assertEqual((administration.direct, administration.total), (0, 3))
+
+    def test_with_several_top_departments_or_none_the_production_box_stands_beside_them(self):
+        from ..models import OfficeDepartment
+        OfficeDepartment.objects.create(site=self.site, name='Board', code='BRD')
+        tree = read.org_tree(self.hr, read.OFFICE)
+        self.assertEqual([(c.kind, c.label, c.total) for c in tree.children],
+                         [('office', 'Administration', 1), ('office', 'Board', 0), (read.PRODUCTION_ROOT, 'Production', 2)])
+        self.assertEqual(tree.total, 3)
+        for posting in self.in_fin.postings.all():
+            posting.soft_delete(self.hr)
+        for department in (self.finance, self.admin_dept, OfficeDepartment.objects.get(code='BRD')):
+            department.soft_delete(self.hr)
+        self.assertEqual([(c.kind, c.total) for c in read.org_tree(self.hr, read.OFFICE).children],
+                         [(read.PRODUCTION_ROOT, 2)])
 
     def test_the_production_box_is_there_with_no_production_department_and_counts_only_live_ones(self):
         for department in ProductionDepartment.objects.all():
             for posting in department.postings.all():
                 posting.soft_delete(self.hr)
             department.soft_delete(self.hr)
-        box = read.org_tree(self.hr, read.OFFICE).children[-1]
+        box = self.production_box(read.org_tree(self.hr, read.OFFICE))
         self.assertEqual((box.kind, box.direct, box.total), (read.PRODUCTION_ROOT, 0, 0))
 
     def test_a_production_department_appears_renames_and_goes_with_no_hr_write(self):
@@ -169,14 +200,14 @@ class OrgChartTests(OverviewTestCase):
         self.assertEqual(boss.total, 1)                                          # only the lead's own team
         self.assertIn(('site', ''), [(c.kind, c.label) for c in boss.children])  # the department without a site
         self.assertEqual(read.org_tree(self.hr, read.PRODUCTION).total, 3)
-        self.assertEqual(read.org_tree(self.lead, read.OFFICE).children[-1].total, 1)
+        self.assertEqual(self.production_box(read.org_tree(self.lead, read.OFFICE)).total, 1)
 
     def test_deep_nesting_totals_below_and_the_company_page(self):
         from ..models import OfficeDepartment
         sub = OfficeDepartment.objects.create(name='Payables', code='PAB', parent=self.finance, site=self.site)
         place(employee('E-10', 'Juliet'), sub)
         top = next(c for c in read.org_tree(self.hr, read.OFFICE).children if c.label == 'Administration')
-        self.assertEqual((top.direct, top.total), (0, 2))
+        self.assertEqual((top.direct, top.total), (0, 4))                     # Finance, Payables and the Production box (2)
         self.client.force_login(self.hr)
         page = self.client.get(reverse('hr:orgchart'))
         self.assertContains(page, 'Payables')

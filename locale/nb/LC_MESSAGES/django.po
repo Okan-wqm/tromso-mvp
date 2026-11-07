@@ -2292,6 +2292,9 @@ msgstr "En ukentlig oppgave gjentas på minst én ukedag; de andre på ingen."
 msgid "A whole number: the same pool and seed always give the same placements."
 msgstr "Et helt tall: det samme utvalget og frøet gir alltid de samme plasseringene."
 
+msgid "A wide chart scrolls sideways inside its frame."
+msgstr "Et bredt kart rulles sidelengs inne i sin egen ramme."
+
 msgid "A year class is a year, e.g. 2026."
 msgstr "En årsklasse er et år, for eksempel 2026."
 
@@ -10924,6 +10927,12 @@ msgstr "Vis"
 #, python-format
 msgid "Show %(name)s"
 msgstr "Vis %(name)s"
+
+#, python-format
+msgid "Show %(people)s person"
+msgid_plural "Show %(people)s people"
+msgstr[0] "Vis %(people)s person"
+msgstr[1] "Vis %(people)s personer"
 
 msgid "Show all"
 msgstr "Vis alle"

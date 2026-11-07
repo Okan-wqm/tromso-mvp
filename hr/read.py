@@ -510,6 +510,14 @@ def overview(user, week_start, department=None, page=1, per_page=50, query='', r
 
 
 PRODUCTION_ROOT = 'production_root'
+PEOPLE_READER = 'hr.view_employee'     # who may read people at all; names and titles on the chart are for them only
+
+
+@dataclass
+class Person:
+    """A card under a department's box: a person placed in it today whom the viewer may reach."""
+    name: str
+    title: str
 
 
 @dataclass
@@ -524,14 +532,57 @@ class Node:
     direct: int = 0
     total: int = 0
     children: list = field(default_factory=list)
+    people: list = field(default_factory=list)     # [Person], a department's only; empty for who may not read people
+    manager_title: str = ''                         # the manager's placement title today, for who may read people
+
+
+def name_order(person):
+    """Last name, first name, number: the account's names for a person with an account (Employee.full_name)."""
+    names = person.user if person.user_id else person
+    return (names.last_name.casefold(), names.first_name.casefold(), person.employee_number)
+
+
+def chart_people(user, realm, day):
+    """({(kind, department id): [Person]}, {(user id, kind, department id) or (user id, None, None): title}): the people
+    placed in each department on `day` among those `user` may reach in `realm` (the scope of head_counts, so the cards are
+    the count), sorted by name, and every placement title of a department manager that day. Two queries,
+    and none for a viewer who may not read people."""
+    if not user.has_perm(PEOPLE_READER):
+        return {}, {}
+    people = defaultdict(list)
+    placed = (Posting.objects.filter(scope.covering(day), employee__in=scope.team(user, day, realm).values('pk'))
+              .select_related('employee__user'))
+    for posting in sorted(placed, key=lambda posting: name_order(posting.employee)):
+        kind = PRODUCTION if posting.production_department_id else OFFICE
+        department = posting.production_department_id or posting.office_department_id
+        people[(kind, department)].append(Person(posting.employee.full_name, posting.title))
+    titles = {}
+    managers = Q(employee__user__in=ProductionDepartment.objects.values('manager')) | Q(
+        employee__user__in=OfficeDepartment.objects.values('manager'))
+    for row in (Posting.objects.filter(managers, scope.covering(day)).exclude(title='')
+                .values('employee__user', 'production_department', 'office_department', 'title').order_by('pk')):
+        kind = PRODUCTION if row['production_department'] else OFFICE
+        titles[(row['employee__user'], kind, row['production_department'] or row['office_department'])] = row['title']
+        titles.setdefault((row['employee__user'], None, None), row['title'])
+    return people, titles
+
+
+def manager_title(titles, kind, department):
+    """The manager's title: their placement in this department, else any placement of theirs today; '' without one."""
+    if department.manager_id is None:
+        return ''
+    return titles.get((department.manager_id, kind, department.pk)) or titles.get((department.manager_id, None, None), '')
 
 
 def org_tree(user, realm):
     """The company as a tree for a person to read, as each panel shows it, counted among the people the viewer may reach.
-    Production (Production › Team): the sites with their production departments, each with its manager. Office (Company ›
+    Production (Production › Team): the sites with their production departments, each with its manager (and title) and,
+    for a viewer who may read people, the people placed in it whom they may reach (chart_people). Office (Company ›
     HR): the office departments by their parents, then one Production box with the production people the viewer may count,
-    there even with no production department. Server-drawn nested lists; no layout algorithm and no script."""
+    there even with no production department: under the top department when the company has exactly one, beside the top
+    departments otherwise. Server-drawn nested lists; no layout algorithm and no script."""
     counts = head_counts(user, realm=realm)
+    people, titles = chart_people(user, realm, site_today(None))
     root = Node('company', '')
     if realm == PRODUCTION:
         sites = {}
@@ -541,7 +592,9 @@ def org_tree(user, realm):
             node = Node('site', site.name if site else '', site)
             for department in sites[site]:
                 direct = counts.get((PRODUCTION, department.pk), 0)
-                node.children.append(Node(PRODUCTION, department.name, department, department.manager, direct, direct))
+                node.children.append(Node(PRODUCTION, department.name, department, department.manager, direct, direct,
+                                          people=people.get((PRODUCTION, department.pk), []),
+                                          manager_title=manager_title(titles, PRODUCTION, department)))
             node.total = sum(child.total for child in node.children)
             root.children.append(node)
     else:
@@ -552,14 +605,22 @@ def org_tree(user, realm):
 
         def build(department):
             direct = counts.get((OFFICE, department.pk), 0)
-            node = Node(OFFICE, department.name, department, department.manager, direct, direct)
+            node = Node(OFFICE, department.name, department, department.manager, direct, direct,
+                        people=people.get((OFFICE, department.pk), []),
+                        manager_title=manager_title(titles, OFFICE, department))
             node.children = [build(child) for child in by_parent.get(department.pk, [])]
             node.total = direct + sum(child.total for child in node.children)
             return node
 
         root.children = [build(department) for department in by_parent.get(None, [])]
         production = sum(head_counts(user, realm=PRODUCTION).values())
-        root.children.append(Node(PRODUCTION_ROOT, _('Production'), direct=production, total=production))
+        box = Node(PRODUCTION_ROOT, _('Production'), direct=production, total=production)
+        if len(root.children) == 1:          # one top of the company (e.g. Management): Production hangs under it
+            top = root.children[0]
+            top.children.append(box)
+            top.total += production
+        else:                                # several tops, or none: Production stands beside them
+            root.children.append(box)
     root.total = sum(child.total for child in root.children)
     return root
 

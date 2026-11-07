@@ -206,6 +206,14 @@ class PageTests(MonitoringCase):
         self.assertIn('no data', ' '.join(tan.text().split()))
         self.assertNotIn('—', tan.text())
 
+    def test_a_worked_out_oxygen_says_on_the_card_what_it_was_worked_out_from(self):
+        """Owner rule (2026-11-07): the % worked out from a sample's mg/L names its temperature, salinity and pressure."""
+        self.sample(self.t2, hours=1, temperature_c='9.5', oxygen_mg_l='8', salinity_ppt='0')
+        layout = {'schema': 1, 'widgets': [{'id': 'w1', 'type': 'value', 'x': 0, 'y': 0, 'w': 6, 'h': 2,
+                                            'bind': {'parameter': 'oxygen_saturation_pct'}}]}
+        text = ' '.join(articles(self.page(layout))[f'card:{self.t2.pk}'].text().split())
+        self.assertIn('Worked out from 9.5 °C, 0.0 ‰ and', text)
+
     def test_a_card_says_when_the_live_sensor_values_could_not_be_read(self):
         # Owner rule A1: when the sensors cannot be read, the water shown comes from the samples only, and the card says so.
         self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')

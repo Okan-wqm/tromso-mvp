@@ -847,6 +847,44 @@ class PageTests(WaterTestCase):
         self.assertEqual((sample.point, sample.temperature_c, sample.oxygen_mg_l, sample.notes),
                          (self.mid1, D('8.5'), D('10.20'), 'Morning'))
 
+    def test_an_oxygen_entry_takes_its_temperature_and_salinity_prefilled_from_the_latest_values(self):
+        """Owner rule (2026-11-07): the record form offers the point's latest temperature and salinity (A9's order) with
+        their origin and age; kept or changed, they are stored on the sample with the oxygen, so the other unit is
+        worked out from what is on the row; with no oxygen an untouched offer is not stored as a measurement."""
+        self.sample(hours=2, temperature_c='9.5')
+        url = f'{reverse("farm:water_record")}?unit={self.t1.pk}'
+        form = self.client.get(url, headers={'X-Modal': '1'}).context['form']
+        self.assertEqual((form['temperature_c'].value(), form['salinity_ppt'].value()), (D('9.5'), D('0')))
+        self.assertIn('Latest: manual · 2', str(form.fields['temperature_c'].help_text))
+        offered = {'temperature_offered': '9.5', 'salinity_offered': '0'}
+        self.post(url, self.record_data(oxygen_mg_l='8', temperature_c='9.5', salinity_ppt='0', **offered))
+        kept = WaterMeasurement.objects.latest('created_at')
+        self.assertEqual((kept.oxygen_mg_l, kept.temperature_c, kept.salinity_ppt), (D('8.00'), D('9.5'), D('0.0')))
+        self.post(url, self.record_data(oxygen_mg_l='7', temperature_c='11', salinity_ppt='0', **offered))
+        changed = WaterMeasurement.objects.latest('created_at')
+        self.assertEqual((changed.oxygen_mg_l, changed.temperature_c), (D('7.00'), D('11.0')))
+        self.post(url, self.record_data(ph='7.1', temperature_c='9.5', salinity_ppt='0', **offered))
+        ph_only = WaterMeasurement.objects.latest('created_at')
+        self.assertEqual((ph_only.ph, ph_only.temperature_c, ph_only.salinity_ppt), (D('7.10'), None, None))
+
+    def test_an_oxygen_entry_needs_a_temperature_and_a_salinity_where_there_is_none(self):
+        Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater')
+        url = f'{reverse("farm:water_record")}?unit={self.t1.pk}'
+        form = self.client.get(url, headers={'X-Modal': '1'}).context['form']
+        self.assertEqual((form['temperature_c'].value(), form['salinity_ppt'].value()), (None, None))
+        response = self.post(url, self.record_data(oxygen_saturation_pct='95'))
+        self.assertEqual(response.context['form'].errors['temperature_c'],
+                         ['Needed with the oxygen: the other unit is worked out with it.'])
+        self.assertEqual(response.context['form'].errors['salinity_ppt'],
+                         ['Needed with the oxygen: the other unit is worked out with it.'])
+        self.assertFalse(WaterMeasurement.objects.exists())
+
+    def test_the_worked_out_oxygen_says_what_it_was_worked_out_from(self):
+        self.stock()
+        self.sample(hours=1, oxygen_mg_l='8', temperature_c='9.5', salinity_ppt='0')
+        page = self.client.get(self.url).content.decode()
+        self.assertIn('Worked out from 9.5 °C, 0.0 ‰ and 1.000 atm', page)
+
     def test_the_time_is_read_on_the_sites_clock(self):
         Site.objects.filter(pk=self.bergen.pk).update(timezone='Europe/Oslo')
         oslo = timezone.localtime(self.ago(hours=1), ZoneInfo('Europe/Oslo'))

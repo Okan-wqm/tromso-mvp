@@ -38,3 +38,14 @@ class ErrorPageTests(TestCase):
         html = render_to_string('500.html')
         self.assertIn('Something went wrong', html)
         self.assertIn('href="/"', html)
+
+    def test_in_a_dialog_a_missing_or_refused_page_is_the_dialog_sized_error(self):
+        """A stale row opened in the dialog (X-Modal) gets the error in the dialog's frame, not the whole console."""
+        self.client.force_login(self.person)
+        for address, status, words in (('/no-such-page/', 404, 'This page does not exist'),
+                                       (reverse('farm:site_list'), 403, 'You may not open this page')):
+            response = self.client.get(address, headers={'X-Modal': '1'})
+            self.assertEqual(response.status_code, status)
+            self.assertNotContains(response, 'class="rail"', status_code=status)
+            self.assertContains(response, 'class="modal-head"', status_code=status)
+            self.assertContains(response, words, status_code=status)

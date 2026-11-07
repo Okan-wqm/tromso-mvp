@@ -25,9 +25,9 @@ The functions, by what they answer:
   DO (the source read the newest row, WQ-04). One grouped query finds, per point, the newest live sample
   of each parameter within WINDOW; a second fetches those samples. Oxygen in mg/L and in % are one
   reading: the newest sample with either gives both, one entered and the other worked out.
-- A unit's water is its middle point's, and only that: a unit's DO, pH or nitrogen are never taken from its
-  loop (the source's rule too: it passes on only what is the same all round a loop). Its temperature is the one
-  value read from the loop when the unit has none of its own, by `water_sources`.
+- A unit's water is its middle point's: its own values first; only when it has no fresh value of a parameter of its
+  own does its system's fresh value stand in (owner rule A9: the system's sensor or a sample of its loop). Its
+  temperature for the rations and the withdrawal is read the same way, by `water_sources`.
 - Un-ionised ammonia needs the pH and the temperature of the TAN sample itself; the salinity is the
   sample's, else the point's latest within WINDOW before it, else its owner's middle point's, else 0 where
   every unit it concerns is in fresh water; otherwise it is not worked out and the reason is shown. The
@@ -40,9 +40,11 @@ The functions, by what they answer:
 Live values (farm/water/sources.py: the sensors) join the samples here and nowhere else. A value of any source is an
 `Observation`: where (a point), when, from what (`Origin`: manual, lab, a sensor on the point, the system's sensor) and,
 for a live value, how long it stays fresh. `latest` picks per point and per parameter, each on its own, in the owner's
-order (A1): a fresh value of a sensor on the point (primary, then backup); for a middle point, a fresh value of a sensor
-on the system (the unit's system, or the system whose loop it is); a fresh manual or lab value; else the newest of all,
-which is then stale. A sensor value enters as the parameter's Decimal at its decimals, exactly as a typed value, and is
+order (A9, which replaced A1): the newest of the point's OWN fresh values, a sensor's on the point (the primary before a
+backup) or a manual or lab sample's, whatever its origin; for a unit's middle point with nothing fresh of its own, the
+newest fresh value of its system (the system's sensor, a sample of its loop); else the newest of all, which is then stale
+and enters no calculation. A sensor value enters as the parameter's Decimal at its decimals, exactly as a typed value,
+and is
 judged by the same limits. Derived values follow their base value's source: a sensor TAN gives NH3 only with fresh sensor
 pH and temperature, a sensor oxygen gives the other unit only with a fresh sensor temperature, at the oldest input's time;
 a manual TAN only with its own sample's pH and temperature. `Series` answers "the value at a moment" from the samples and
@@ -327,8 +329,8 @@ class Series:
         return [found for found in self.asked[moment].get(point_id, []) if moment - found.at <= window]
 
     def latest(self, point_id, moment, window):
-        """The point's value at `moment` (Found): a fresh sensor value (a live series), else the newest value at or before
-        `moment` and at most `window` older than it, sample or sensor, a fresh sample before a stale sensor (A1); None when
+        """The point's value at `moment` (Found): the newest fresh value at or before `moment`, a sensor's (the primary first)
+        or a sample's, whatever its origin (owner rule A9); else the newest at most `window` older than it, stale; None when
         there is none."""
         moments = self.moments.get(point_id, [])
         index = bisect_right(moments, moment) - 1
@@ -337,11 +339,12 @@ class Series:
             sample = Found(moments[index], self.values[point_id][index])
         live = self._live(point_id, moment, window) if self.live else []
         parameter = parameters.get(self.code)
-        fresh = next((found for found in live if is_fresh(parameter, found.at, moment, found.fresh_for)), None)
-        if fresh is not None:
-            return fresh
-        if sample is not None and is_fresh(parameter, sample.at, moment):
-            return sample
+        fresh = [found for found in (next((found for found in live
+                                            if is_fresh(parameter, found.at, moment, found.fresh_for)), None),
+                                       sample if sample is not None and is_fresh(parameter, sample.at, moment) else None)
+                 if found is not None]
+        if fresh:                                   # owner rule A9: the newest fresh value, whatever its origin
+            return max(fresh, key=lambda found: found.at)
         return max([found for found in (sample, *live) if found is not None], key=lambda found: found.at, default=None)
 
 
@@ -653,37 +656,61 @@ def _live(point, targets, answer):
     return found
 
 
-def _resolve(point, manual, live, context, now):
-    """{code: Reading} of one point in the owner's order (A1), each parameter on its own: a fresh live value, else a
-    fresh one worked out from fresh live values (the other oxygen unit), else a fresh manual or lab value, else the
-    newest of all, stale. A derived value follows the source of its base: NH3 and NH4 a live TAN's (worked out from live
-    values only) or the sample's."""
-    fresh_live = {code: next((each for each in observations if is_fresh(parameters.get(code), each.at, now,
-                                                                          each.fresh_for)), None)
-                  for code, observations in live.items()}
+def _fresh_live(live, now):
+    """{code: the first fresh Observation} of live values in the order they count (primary channels first)."""
+    return {code: next((each for each in observations if is_fresh(parameters.get(code), each.at, now, each.fresh_for)),
+                       None) for code, observations in live.items()}
+
+
+def _tier(code, fresh_live, manual, context, now):
+    """The newest fresh value of `code` among one tier's sources (owner rule A9): a fresh live value, a fresh one worked
+    out from fresh live values (the other oxygen unit), a fresh manual or lab value; None when there is none."""
+    parameter = parameters.get(code)
+    found = []
+    if fresh_live.get(code) is not None:
+        found.append(Reading(parameter, fresh_live[code].get(code), fresh_live[code]))
+    other = parameters.SAME_QUANTITY.get(code)
+    if other and fresh_live.get(other) is not None and fresh_live.get(parameters.TEMPERATURE) is not None:
+        worked = context.readings(Observation.combined([fresh_live[other], fresh_live[parameters.TEMPERATURE],
+                                                        *([fresh_live[parameters.SALINITY]]
+                                                          if fresh_live.get(parameters.SALINITY) else [])]))
+        if worked.get(code) is not None and worked[code].value is not None:
+            found.append(worked[code])
+    sample = manual.get(code)
+    if sample is not None and sample.fresh(now):
+        found.append(sample)
+    return max(found, key=lambda reading: reading.at, default=None)
+
+
+def _resolve(point, manual, live, context, now, stand_in=None):
+    """{code: Reading} of one point, each parameter on its own, by owner rule A9: the newest of the point's OWN fresh values
+    (its sensors, the primary first, and its samples; whatever the origin); only when it has none, the newest fresh value
+    of its system (the system's sensors, and `stand_in`: the latest samples of the system's loop, for a unit's middle
+    point); else the newest of its own values, stale, else the system's, stale (shown with its age, never used as fresh).
+    A derived value follows the source of its base: NH3 and NH4 a live TAN's (worked out from fresh live values only) or
+    the sample's."""
+    stand_in = stand_in or {}
+    own_system = point.system_id is not None                         # a loop point: the system's sensors are its own
+    own = {code: [each for each in observations if own_system or each.origin != Origin.SYSTEM_SENSOR]
+           for code, observations in live.items()}
+    system = {code: [each for each in observations if not own_system and each.origin == Origin.SYSTEM_SENSOR]
+              for code, observations in live.items()}
+    fresh_own, fresh_system = _fresh_live(own, now), _fresh_live(system, now)
+    fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in live}
     chosen = {}
     for code in parameters.COLUMNS:
         parameter = parameters.get(code)
-        if fresh_live.get(code) is not None:
-            chosen[code] = Reading(parameter, fresh_live[code].get(code), fresh_live[code])
-            continue
-        other = {OXYGEN_MG_L: OXYGEN_PCT, OXYGEN_PCT: OXYGEN_MG_L}.get(code)
-        if other and fresh_live.get(other) is not None and fresh_live.get(parameters.TEMPERATURE) is not None:
-            worked = context.readings(Observation.combined([fresh_live[other], fresh_live[parameters.TEMPERATURE],
-                                                            *([fresh_live[parameters.SALINITY]]
-                                                              if fresh_live.get(parameters.SALINITY) else [])]))
-            if worked.get(code) is not None and worked[code].value is not None:
-                chosen[code] = worked[code]
-                continue
-        sample = manual.get(code)
-        if sample is not None and sample.fresh(now):
-            chosen[code] = sample
-            continue
-        candidates = [Reading(parameter, each.get(code), each) for each in live.get(code, [])]
-        if sample is not None:
-            candidates.append(sample)
-        if candidates:
-            chosen[code] = max(candidates, key=lambda reading: reading.at)
+        found = _tier(code, fresh_own, manual, context, now) or _tier(code, fresh_system, stand_in, context, now)
+        if found is None:
+            for observations, samples in ((own, manual), (system, stand_in)):
+                candidates = [Reading(parameter, each.get(code), each) for each in observations.get(code, [])]
+                if samples.get(code) is not None:
+                    candidates.append(samples[code])
+                if candidates:
+                    found = max(candidates, key=lambda reading: reading.at)
+                    break
+        if found is not None:
+            chosen[code] = found
     tan = chosen.get(TAN)
     if tan is not None and tan.sample.live:
         inputs = [tan.sample, *(fresh_live[code] for code in (parameters.PH, parameters.TEMPERATURE, parameters.SALINITY)
@@ -694,8 +721,20 @@ def _resolve(point, manual, live, context, now):
         else:
             chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, context._same_source_missing(tan.sample))
     elif tan is not None:
-        chosen.update({code: manual[code] for code in (NH3_N.code, NH4_N.code) if code in manual})
+        source = manual if manual.get(TAN) is tan else stand_in
+        chosen.update({code: source[code] for code in (NH3_N.code, NH4_N.code) if code in source})
     return chosen
+
+
+def _loops_of(points):
+    """{point id: the loop point of its unit's system} for the unit middle points given whose unit is in a system: the
+    samples that stand in for a unit with nothing fresh of its own (owner rule A9). No query when there are none."""
+    systems = {point.pk: point.unit.system_id for point in points
+               if point.unit_id and point.kind == PointKind.MIDDLE and point.unit.system_id}
+    if not systems:
+        return {}
+    loops = middle_points([System(pk=system_id) for system_id in set(systems.values())])
+    return {point_id: loops[system_id] for point_id, system_id in systems.items() if system_id in loops}
 
 
 def latest(points, now=None, at=None):
@@ -707,10 +746,13 @@ def latest(points, now=None, at=None):
     moment = at or now or timezone.now()
     since = moment - WINDOW
     points = list(points)
-    newest = _newest_ids(points, since, until=at)
+    loops = _loops_of(points)              # {unit middle point id: its system's loop point}: what stands in (A9)
+    extra = [loop for loop in {loop.pk: loop for loop in loops.values()}.values()
+             if loop.pk not in {point.pk for point in points}]
+    newest = _newest_ids([*points, *extra], since, until=at)
     ids = {sample_id for slots in newest.values() for sample_id in slots.values()}
     samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(ids)
-    context = Context(points, since)
+    context = Context([*points, *extra], since)
     targets = {point.pk: sensor_targets(point, system_tier=True) for point in points}
     wanted = [target for found in targets.values() for target, _origin in found]
     answer = sources.latest(wanted, moment) if at is None else _values_at(wanted, at)
@@ -718,8 +760,9 @@ def latest(points, now=None, at=None):
     for point in points:
         point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed)
         day = local_time(moment, point).date()
+        loop = loops.get(point.pk)
         resolved = _resolve(point, _manual(point, newest, samples, context), _live(point, targets[point.pk], answer),
-                            context, moment)
+                            context, moment, _manual(loop, newest, samples, context) if loop is not None else None)
         temperature = resolved.get(parameters.TEMPERATURE)          # what an oxygen value is worked out with
         temperature = temperature if temperature is not None and temperature.fresh(moment) else None
         for code, reading in resolved.items():

@@ -687,7 +687,8 @@ changes).
 Production units, which keeps the page title and eyebrow); the fragment has the same gate; the chart needs the water right.
 
 Decisions of the owner (2026-11-04): a wall page extends its session once a day; Production units stops printing bFCR and last fed
-to roles without feeding rights; the chart's temperature is the unit's own point's, never the loop's, and the chart refuses and
+to roles without feeding rights; the chart's temperature is the unit's own point's (superseded by A9 on 2026-11-07: the loop's fresh value stands in
+when the unit has none of its own); the chart refused and
 says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind.
 
 Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
@@ -1275,7 +1276,7 @@ and calculation, from the latest readings of one of the unit's sampling points (
 (temperature, pH, alkalinity, salinity), or says that the unit has no middle point and lists its points, or that
 the pH and the alkalinity cannot go together (`deffeyes.why_impossible`, the calculator's own check). The one
 assumption is a fresh-water unit's salinity of 0 (`read.assumed_salinity`, also the ammonia's rule), shown as
-"assumed". The temperature is the point's own, never the loop's. TAN, oxygen and the site's altitude are drawn
+"assumed". The temperature is the point's own, else (A9) its loop's fresh one when it has none. TAN, oxygen and the site's altitude are drawn
 when there; no total sulfide or calcium is measured, so there is no H₂S or Ω layer, and a limit the fish do not
 have is said, not drawn. Each reading shows its age, status and point; the chart's SVG ids carry the point
 (`uid`), so several windows on one page never clash. The endpoint needs only the right to read water samples.
@@ -2644,12 +2645,15 @@ What works:
 - **Overview**: the ingest alive or down (a heartbeat within 90 s), devices online, channels without a fresh value, dead
   letters of the last day, open alarms; each tile for the right that may read it.
 
-### The water's latest value (owner rule A1)
+### The water's latest value (owner rule A9, 2026-11-07; it replaced A1)
 
 Per unit and parameter, each on its own, in one place (`farm/water/read.py` `latest`, the sensors reach it through the
-registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): a fresh
-value of a sensor on the unit's own point (primary, then backup); else, for the middle point, a fresh value of a sensor
-on the unit's system; else a fresh manual or lab sample; else the newest of all, shown stale. A channel in maintenance
+registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): among the
+unit's OWN fresh values (the sensors on its point, the primary before a backup, and its own manual or lab samples) the
+newest by measurement time wins, whatever its origin; only when it has no fresh value of its own does the system stand in,
+for the middle point: the newest fresh value of a sensor on the unit's system or of a sample of the system's loop; else
+the newest of its own values, shown stale, else the system's. A stale value never enters a calculation: a value is
+worked out (the other oxygen unit, NH₃, the oxygen judged through the mg/L row) only from fresh values. A channel in maintenance
 or retired is skipped. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
 limits. Derived values follow their base value's source (a sensor TAN gives NH₃ only with fresh sensor pH and
 temperature, at the oldest input's time; a manual TAN only with its own sample's). Every latest value on the water page,

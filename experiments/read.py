@@ -27,6 +27,7 @@ from django.utils import timezone
 from django.utils.formats import number_format
 from django.utils.translation import gettext as _
 
+from core import sealing
 from farm import placements as farm_placements
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import LOST
@@ -36,7 +37,7 @@ from farm.models.stock import MovementKind
 from farm.stock import read as stock_read
 from farm.stock.dates import local_today, site_today
 
-from .models import ExperimentGroup, FactorKind, GroupLevel, Replicate, ReplicateUnit, Status
+from .models import ExperimentGroup, FactorKind, GroupLevel, Replicate, ReplicateSystem, ReplicateUnit, Status
 
 
 @dataclass(frozen=True)
@@ -61,17 +62,36 @@ def cells(experiment):
                  placement.until_on, placement.pk) for placement in placements]
 
 
-def booked(unit_ids, first, last, exclude=None):
-    """{unit id: the Experiment that holds it} for the tanks held on some day from `first` to `last` (both included)
-    by an experiment other than `exclude`; one experiment a tank (the exclusion constraint allows no more)."""
+def booked(unit_ids, first, last, exclude=None, model=None, key='unit_id'):
+    """{unit id: (first day, last day)} of the booking that holds each tank on some day from `first` to `last` (both
+    included) for an experiment other than `exclude`; one booking a tank (the exclusion constraint allows no more).
+    Read as the system: a booking by an experiment the person may not read still holds the tank, and is said with its
+    days only, never with the experiment (the same answer whoever holds it). `model`, `key`: the system bookings."""
+    model = model or ReplicateUnit
     found = {}
-    rows = (ReplicateUnit.objects.filter(unit_id__in=list(unit_ids), from_on__lte=last, until_on__gte=first)
-            .select_related('replicate__group__experiment'))
-    if exclude is not None:
-        rows = rows.exclude(replicate__group__experiment=exclude)
-    for placement in rows.order_by('from_on'):
-        found.setdefault(placement.unit_id, placement.replicate.group.experiment)
+    with sealing.system('the booking check'):
+        rows = model.objects.filter(**{f'{key}__in': list(ids_of(unit_ids))}, from_on__lte=last, until_on__gte=first)
+        if exclude is not None:
+            rows = rows.exclude(replicate__group__experiment=exclude)
+        for row_key, from_on, until_on in rows.order_by('from_on').values_list(key, 'from_on', 'until_on'):
+            found.setdefault(row_key, (from_on, until_on))
     return found
+
+
+def booked_systems(system_ids, first, last, exclude=None):
+    """{system id: (first day, last day)}: `booked` for whole systems."""
+    return booked(system_ids, first, last, exclude, model=ReplicateSystem, key='system_id')
+
+
+def ids_of(items):
+    return [getattr(item, 'pk', item) for item in items]
+
+
+def booked_text(code, days):
+    """The one sentence a booking by another experiment is said with: the tank or system and the days, never which
+    experiment (it may be one the person may not read)."""
+    return _('%(code)s is booked by another experiment from %(first)s to %(last)s.') % {
+        'code': code, 'first': days[0].isoformat(), 'last': days[1].isoformat()}
 
 
 def error_df(experiment):

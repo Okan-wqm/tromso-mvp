@@ -20,7 +20,9 @@ from farm.stock.services import STOCKABLE_SPECIES
 
 from . import read, services
 from .design import load
-from .models import DETAIL_FIELDS, Experiment, FactorKind, GroupRole, Level, Member, Replicate, Status
+from .models import (
+    DETAIL_FIELDS, Experiment, FactorKind, GroupRole, Level, Member, Replicate, ReplicateSystem, Status,
+)
 
 DETAILS_TABS = [('details', _('Details'), DETAIL_FIELDS)]
 # What a started experiment fixes (the database refuses a change too: migration 0002).
@@ -81,9 +83,8 @@ class ExperimentForm(TabbedForm):
             return cleaned
         new = services.span_of(cleaned.get('starts_on'), cleaned.get('duration_days'))
         field = 'starts_on' if cleaned.get('starts_on') != self.initial.get('starts_on') else 'duration_days'
-        for tank, other in services.clashes_when_moved(self.instance, self.old_span, new).items():
-            self.add_error(field, _('%(tank)s would be booked to %(experiment)s on those days.') % {
-                'tank': tank.code, 'experiment': other.code})
+        for tank, days in services.clashes_when_moved(self.instance, self.old_span, new).items():
+            self.add_error(field, read.booked_text(tank.code, days))
         return cleaned
 
     def _save_m2m(self):
@@ -364,9 +365,14 @@ def design_rows(factors, groups):
 SEED_TOP = 10 ** 9
 
 
+def booked_label(days):
+    """What an option booked by another experiment says beside its name: the days, never the experiment."""
+    return _('booked %(first)s to %(last)s') % {'first': days[0].isoformat(), 'last': days[1].isoformat()}
+
+
 class BookableSelect(forms.SelectMultiple):
     """A multiple choice whose options can be taken: a tank booked to another experiment for the days is shown with
-    that experiment's number and cannot be chosen (`booked` is {value: the experiment's number})."""
+    the days that booking holds and cannot be chosen (`booked` is {value: what is said}; never which experiment)."""
 
     booked = {}
 
@@ -390,13 +396,13 @@ class SystemChoice(forms.ModelChoiceField):
 
 
 class PlaceRowForm(forms.Form):
-    """The tanks of one replicate: chosen one by one, or all of a system's (and its nested systems') by "add the tanks of
-    a system", and optionally days of their own (empty: the whole experiment). What is stored is the tanks."""
+    """The tanks of one replicate: chosen one by one, or a whole system (it and its nested systems, a booking each, with
+    every tank of them), and optionally days of their own (empty: the whole experiment)."""
 
     replicate = forms.UUIDField(widget=forms.HiddenInput)
     tanks = TankChoice(label=_('Tanks'), queryset=Tank.objects.none(), required=False, widget=BookableSelect(
         attrs={'size': 5}))
-    system = SystemChoice(label=_('Add the tanks of a system'), queryset=System.objects.none(), required=False,
+    system = SystemChoice(label=_('Book a whole system'), queryset=System.objects.none(), required=False,
                           empty_label=_('No system'))
     first = forms.DateField(label=_('From'), required=False, widget=DATE)
     last = forms.DateField(label=_('Until'), required=False, widget=DATE)
@@ -446,11 +452,13 @@ def place_rows(experiment, places):
     rows = []
     for row in places.cleaned_rows():
         tanks = {tank.pk: tank for tank in row['tanks']}
+        systems = []
         if row['system'] is not None:
             tanks.update({tank.pk: tank for tank in services.tanks_of(row['system'])})
+            systems = services.whole(row['system'])
         replicate = replicates.get(row['replicate'])
         if replicate is not None:
-            rows.append(services.Place(replicate, list(tanks.values()), row['first'], row['last']))
+            rows.append(services.Place(replicate, list(tanks.values()), row['first'], row['last'], systems))
     return rows
 
 
@@ -464,7 +472,8 @@ def places_forms(experiment, data=None):
     system_set = System.objects.filter(site=experiment.site).order_by('code')
     tanks, systems = list(tank_set), list(system_set)
     held = read.booked([tank.pk for tank in tanks], *window, exclude=experiment) if window else {}
-    booked = {str(pk): other.code for pk, other in held.items()}
+    booked = {str(pk): booked_label(days) for pk, days in held.items()}
+    held_systems = read.booked_systems([system.pk for system in systems], *window, exclude=experiment) if window else {}
     labels = {str(replicate.pk): f'{group.name} R{replicate.number}' for group, replicate in loaded.slots()}
     pool_booked = {f'tank:{pk}': code for pk, code in booked.items()}
     members = {}
@@ -475,6 +484,8 @@ def places_forms(experiment, data=None):
         inside = members.get(system.pk, []) + [tank for nested in system.descendants()
                                                for tank in members.get(nested.pk, [])]
         taken = next((booked[str(tank.pk)] for tank in inside if str(tank.pk) in booked), None)
+        if system.pk in held_systems:
+            taken = booked_label(held_systems[system.pk])
         if taken:
             pool_booked[f'system:{system.pk}'] = taken
     options = [(_('Tanks'), [(f'tank:{tank.pk}', f'{tank.code} · {tank.name}') for tank in tanks]),
@@ -488,12 +499,16 @@ def places_forms(experiment, data=None):
     if data is not None:
         return configure(PlacesForm(data)), PlaceFormSet(data, prefix='places', **kwargs)
     initial = []
+    whole_systems = {}
+    for booking in ReplicateSystem.objects.filter(replicate__group__experiment=experiment).order_by('from_on'):
+        whole_systems.setdefault(booking.replicate_id, booking)
     for group, replicate in loaded.slots():
         rows = loaded.placements.get(replicate.pk, [])
         windows = {(row.from_on, row.until_on) for row in rows}
         first, last = windows.pop() if len(windows) == 1 and windows != {window} else (None, None)
-        initial.append({'replicate': replicate.pk, 'tanks': [row.unit_id for row in rows], 'first': first,
-                        'last': last})
+        booking = whole_systems.get(replicate.pk)
+        initial.append({'replicate': replicate.pk, 'tanks': [row.unit_id for row in rows if row.booking_id is None],
+                        'system': booking.system_id if booking else None, 'first': first, 'last': last})
     seed = experiment.allocation_seed if experiment.allocation_seed is not None else secrets.randbelow(SEED_TOP)
     return (configure(PlacesForm(initial={'version': experiment.version, 'seed': seed,
                                           'note': experiment.allocation_note})),

@@ -1,6 +1,7 @@
-"""Migration farm/0030_site_timezone_required on a database with sites that have no time zone (they ran on the company's,
-settings.TIME_ZONE, unseen): each is given the company's zone, stored, a site with one keeps it, and the database then
-refuses an empty one. Going back leaves the zones as they are."""
+"""Migration farm/0030_site_timezone_required on a database with sites that have no time zone (they ran on the server's UTC
+unseen): each is given the company's zone (settings.COMPANY_TIME_ZONE, as production has it: Europe/Oslo unless the
+environment names another; never UTC unless the company's is), a site with one keeps it, and the database then refuses an
+empty one. Going back leaves the zones as they are."""
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase, override_settings
@@ -22,7 +23,6 @@ class SiteZoneMigrationTests(TransactionTestCase):
         self.old = self.migrate(BEFORE)
         self.addCleanup(lambda: self.migrate(MigrationExecutor(connection).loader.graph.leaf_nodes()))
 
-    @override_settings(TIME_ZONE='Europe/Oslo')
     def test_a_site_without_a_time_zone_is_given_the_companys_and_an_empty_one_is_refused_after(self):
         Site = self.old.get_model('farm', 'Site')
         blank = Site.objects.create(name='Bergen', code='BG', timezone='')
@@ -33,3 +33,10 @@ class SiteZoneMigrationTests(TransactionTestCase):
             Site.objects.filter(pk=blank.pk).update(timezone='')
         Site = self.migrate(BEFORE).get_model('farm', 'Site')
         self.assertEqual(Site.objects.get(pk=tokyo.pk).timezone, 'Asia/Tokyo')
+
+    @override_settings(COMPANY_TIME_ZONE='Europe/Istanbul')
+    def test_the_fill_is_the_company_zone_the_environment_names(self):
+        Site = self.old.get_model('farm', 'Site')
+        Site.objects.create(name='Izmir', code='IZ', timezone='')
+        Site = self.migrate(AFTER).get_model('farm', 'Site')
+        self.assertEqual(Site.objects.get(code='IZ').timezone, 'Europe/Istanbul')

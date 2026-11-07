@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db import IntegrityError, transaction
@@ -289,11 +290,14 @@ class SiteCreateTests(SiteTestCase):
 
 class SiteTimeZoneTests(SiteTestCase):
     """A site's day and clock are read in its time zone (farm.models.zone_of): every site has one, stored and shown, so
-    none runs on UTC unseen. A site made without one is given the company's (settings.TIME_ZONE)."""
+    none runs on UTC unseen. A site made without one is given the company's (settings.COMPANY_TIME_ZONE, from the
+    environment, Europe/Oslo by default), never the server's UTC."""
 
-    @override_settings(TIME_ZONE='Europe/Oslo')
-    def test_a_site_made_without_a_time_zone_is_given_the_companys(self):
+    def test_a_site_made_without_a_time_zone_is_given_the_companys_never_the_servers_utc(self):
+        self.assertEqual(settings.TIME_ZONE, 'UTC')                        # the server's clock is not the company's
         self.assertEqual(self.make_site().timezone, 'Europe/Oslo')
+        with override_settings(COMPANY_TIME_ZONE='Europe/Istanbul'):
+            self.assertEqual(self.make_site(name='Site B', code='SB').timezone, 'Europe/Istanbul')
 
     def test_the_database_refuses_a_site_without_a_time_zone(self):
         site = self.make_site(timezone='Europe/Oslo')
@@ -304,7 +308,7 @@ class SiteTimeZoneTests(SiteTestCase):
         response = self.client.post(reverse('farm:site_create'), site_data(timezone=''))
         self.assertEqual(response.context['form'].errors['timezone'], ['This field is required.'])
         self.assertFalse(Site.objects.exists())
-        with override_settings(TIME_ZONE='Europe/Istanbul'):
+        with override_settings(COMPANY_TIME_ZONE='Europe/Istanbul'):
             form = self.client.get(reverse('farm:site_create')).context['form']
         self.assertNotIn('', [value for value, _ in form.fields['timezone'].choices])
         self.assertEqual(form['timezone'].value(), 'Europe/Istanbul')

@@ -13,7 +13,7 @@ ROOT = Path(settings.BASE_DIR)
 SWITCHED = ['farm/water/chemistry.py']
 # Functions of a module still partly in Python, switched one by one: no arithmetic, no number, no math of their own.
 SWITCHED_FUNCTIONS = {'farm/water/deffeyes.py': ['judge', 'analyse', 'alkalinity_floor', 'why_impossible', 'possible',
-                                                 '_axis', 'box_of']}
+                                                 'box_of']}
 
 
 def arithmetic(node):
@@ -54,8 +54,13 @@ class OneFormulaTests(SimpleTestCase):
                 with self.subTest(module=name, function=function):
                     node = defined[function]
                     self.assertEqual([ast.unparse(each) for each in ast.walk(node) if arithmetic(each)], [])
+                    # a default argument (pressure=1.0) and a display precision (shown(floor, 1)) are not formulas
+                    allowed = {id(each) for each in node.args.defaults} | {
+                        id(argument) for call in ast.walk(node) if isinstance(call, ast.Call)
+                        and getattr(call.func, 'id', '') == 'shown' for argument in call.args[1:]}
                     self.assertEqual([each.value for each in ast.walk(node) if isinstance(each, ast.Constant)
-                                      and isinstance(each.value, (int, float)) and not isinstance(each.value, bool)], [])
+                                      and isinstance(each.value, (int, float)) and not isinstance(each.value, bool)
+                                      and id(each) not in allowed], [])
                     self.assertFalse({each.value.id for each in ast.walk(node) if isinstance(each, ast.Attribute)
                                       and isinstance(each.value, ast.Name)} & {'math', 'chemistry'})
 

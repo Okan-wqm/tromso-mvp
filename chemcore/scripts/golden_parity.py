@@ -37,6 +37,8 @@ def kind_of(path):
 
 INPUTS = ('temp_c', 'salinity', 'altitude_m')
 TIE = 1e-12
+# Exceptions the core names where Python raised an accidental one: (recorded, now). Each is a deliberate, tested change.
+RENAMED_RAISES = {('StopIteration', 'ChartTooLargeError')}     # the box beyond 12 steps of 5e7 (S5)
 
 
 def compare(expected, actual, path=(), found=None, ceilings=None, refused=False):
@@ -79,7 +81,7 @@ def compare(expected, actual, path=(), found=None, ceilings=None, refused=False)
             ceilings[kind] = max(ceilings.get(kind, 0.0), difference / allowed if allowed else float(difference > 0))
         if difference > allowed:
             found.append((path, expected, actual))
-    elif expected != actual:
+    elif expected != actual and (expected, actual) not in RENAMED_RAISES:
         found.append((path, expected, actual))
     return found
 

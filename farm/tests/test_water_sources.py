@@ -22,7 +22,7 @@ from ..models import SamplingPoint
 from ..water import calculation, read, sources
 from ..water.evaluate import Status, is_fresh
 from ..water.parameters import get
-from .helpers import point_of
+from .helpers import make_species, point_of
 from .test_water import WaterTestCase
 
 D = Decimal
@@ -285,3 +285,54 @@ class SeriesCostTests(SourcesCase):
         series = read.Series([self.mid1, self.mid2], 'temperature_c', self.now - timedelta(days=7), self.now, live=True)
         self.assertIsNotNone(series.latest(self.mid2.pk, self.now, timedelta(days=7)))
         self.assertIn(('value_at', 'temperature_c'), self.provider.asked)
+
+
+class NoLimitTests(SourcesCase):
+    """What no limit judges, per species and per observation (cross review 2026-11-07): a unit with salmon and lumpfish
+    is not judged while the lumpfish have no row, whatever the salmon's row says; the oxygen in mg/L and in % is one
+    quantity only within one observation."""
+
+    def test_a_species_without_a_limit_is_not_hidden_by_one_with_a_limit(self):
+        lumpfish = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='')
+        self.stock()
+        self.stock(species=lumpfish)
+        self.limit('temperature_c', warning_high=18)
+        self.sample(hours=1, temperature_c='16')
+        reading = self.latest().get('temperature_c')
+        self.assertEqual((reading.judged, reading.uncovered), (Status.OK, (lumpfish.pk,)))
+        self.assertEqual([each.code for each in self.latest().unjudged], ['temperature_c'])
+        self.limit('temperature_c', species=lumpfish, warning_high=17)
+        self.assertEqual(self.latest().unjudged, [])
+
+    def test_oxygen_in_two_observations_is_judged_each_by_its_own_unit(self):
+        """The reviewer's case: a row on mg/L only; a manual 8.5 mg/L two hours ago without a temperature (no % worked
+        out), and a live probe saying 35 % now (no live temperature, so no mg/L worked out): the % is not judged."""
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=2, oxygen_mg_l='8.5')
+        self.on(self.mid1, self.value('oxygen_saturation_pct', 35))
+        water = self.latest()
+        self.assertEqual((water.get('oxygen_mg_l').judged, water.get('oxygen_saturation_pct').judged),
+                         (Status.OK, Status.NO_LIMIT))
+        self.assertEqual([each.code for each in water.unjudged], ['oxygen_saturation_pct'])
+
+    def test_oxygen_in_one_observation_is_judged_by_either_unit(self):
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=2, oxygen_mg_l='8.5', temperature_c='9')     # the % is worked out from this sample
+        self.assertNotIn('oxygen_saturation_pct', [each.code for each in self.latest().unjudged])
+
+    def test_a_probes_saturation_is_judged_against_the_mg_l_limit_through_the_solubility(self):
+        """The owner's rule (2026-11-07): dissolved oxygen is one quantity for judging. A % with no row of its own is
+        worked out to mg/L with the point's fresh temperature (water chemistry's solubility, at the site's pressure)
+        and judged by the mg/L row: 35 % at 9 °C is about 4 mg/L, critical below 6, whatever a manual 8.5 mg/L says."""
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.sample(hours=2, oxygen_mg_l='8.5')
+        self.sample(hours=1, temperature_c='9')
+        self.on(self.mid1, self.value('oxygen_saturation_pct', 35))
+        water = self.latest()
+        percent = water.get('oxygen_saturation_pct')
+        self.assertEqual((percent.judged, percent.status, percent.uncovered), (Status.CRITICAL, Status.CRITICAL, ()))
+        self.assertEqual(water.get('oxygen_mg_l').judged, Status.OK)               # both values are kept and shown
+        self.assertEqual(water.unjudged, [])

@@ -313,5 +313,7 @@ class AnnouncerTests(MonitoringCase):
         # the grid's notices are said aloud too (F-045, F-222): its words for each poll state
         for key in ('data-stale-text', 'data-gone-text', 'data-updated-text'):
             self.assertTrue(grid.attrs.get(key), key)
+        # the announcer's order of the states is the server's one list, never restated in the script
+        self.assertEqual(holder.attrs['data-states'], ' '.join(key for key, _word in read.STATES))
         self.assertIn('js/announce.js', html)
         self.assertNotIn('data-announcer', self.client.get(CARDS).content.decode())      # never inside the fragment

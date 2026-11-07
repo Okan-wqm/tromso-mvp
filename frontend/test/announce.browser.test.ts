@@ -27,7 +27,9 @@ function page(): string {
 <div class="monitor-grid" data-poll="/cards" data-poll-every="1" data-poll-merge="data-key" data-poll-state="live"
  data-stale-text="Not updated." data-gone-text="Gone." data-updated-text="Updated again.">${cards(ROUNDS[0])}</div>
 <div id="monitor-announce" data-announce-worse="{unit} is now {state}." data-announce-more="{count} more."
- data-state-critical="Critical" data-state-warning="Warning" data-state-blind="Blind" data-state-note="Note">
+ data-states="critical warning blind unjudged note ok empty" data-stale-word="no recent data"
+ data-state-critical="Critical" data-state-warning="Warning" data-state-blind="Blind" data-state-unjudged="No limit"
+ data-state-note="Note">
  <p data-announcer aria-live="assertive"></p><p data-announcer aria-live="polite"></p></div>
 <script type="module" src="/js/poll.js"></script><script type="module" src="/js/announce.js"></script></body></html>`;
 }

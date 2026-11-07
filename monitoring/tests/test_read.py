@@ -53,6 +53,7 @@ def reading(code, value, hours=1, status=Status.OK, point=None, judged=None):
     sample = Observation(point, NOW - timedelta(hours=hours), Origin.MANUAL, {code: D(str(value))})
     found = Reading(parameters.get(code), D(str(value)), sample, status=status)
     found.judged = judged or (Status.OK if status == Status.STALE else status)
+    found.uncovered = (1,) if found.judged == Status.NO_LIMIT else ()      # the species no row judges it for
     return found
 
 
@@ -199,12 +200,14 @@ class LadderTests(SimpleTestCase):
         self.assertEqual(card(water=(self.fine(ph),), withdrawal=(1,)).state.key, 'unjudged')    # above a note
         self.assertEqual(card(water=(self.fine(ph),), drift='now').state.key, 'warning')         # below a warning
 
-    def test_the_oxygen_is_judged_when_one_of_its_two_units_has_a_limit(self):
-        percent = reading('oxygen_saturation_pct', 95, status=Status.NO_LIMIT)
-        self.assertEqual(self.key(water=(self.fine(percent),)), 'ok')
-        both = water(reading('temperature_c', 9), reading('oxygen_mg_l', 9, status=Status.NO_LIMIT), percent)
-        self.assertEqual(card(water=(both,)).state.reasons,
-                         ('Dissolved oxygen (mg/L O₂): no limit for these fish',))
+    def test_an_oxygen_value_no_row_judges_in_either_unit_is_never_ok(self):
+        """The owner's rule: the oxygen is one quantity; farm/water/read.py judges a % through the mg/L row (and the
+        reverse) and leaves `uncovered` only the fish no row of either unit judges. What it leaves is "No limit"."""
+        judged = reading('oxygen_saturation_pct', 35, status=Status.CRITICAL)                  # through the mg/L row
+        self.assertEqual(self.key(water=(self.fine(judged),)), 'critical')
+        unjudged = reading('oxygen_saturation_pct', 35, status=Status.NO_LIMIT)               # no temperature to convert
+        self.assertEqual(card(water=(self.fine(unjudged),)).state.reasons,
+                         ('Oxygen saturation (% of air saturation): no limit for these fish',))
 
     def test_no_limit_ranks_below_no_recent_data_and_the_strip_names_it(self):
         self.assertLess(read.RANK['blind'], read.RANK['unjudged'])
@@ -272,6 +275,18 @@ class CardsTests(MonitoringCase):
         state = {card.unit.code: card.state for card in self.cards()}['T-02']
         self.assertEqual(state.key, 'critical')
         self.assertIn('no recent data', state.reasons[0])
+
+    def test_a_unit_with_salmon_and_lumpfish_is_not_ok_while_the_lumpfish_have_no_limit(self):
+        """Cross review: the salmon's rows judge the water fine, the lumpfish beside them have none: never green."""
+        from farm.tests.helpers import make_species, stock_fish
+        lumpfish = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='')
+        stock_fish(self.user, self.t2, 200, '50', 10, species=lumpfish)
+        self.limit('oxygen_mg_l', critical_low=6)
+        self.limit('temperature_c', critical_high=18)
+        self.sample(self.t2, hours=1, temperature_c='9', oxygen_mg_l='9')
+        state = {card.unit.code: card.state for card in self.cards()}['T-02']
+        self.assertEqual(state.key, 'unjudged')
+        self.assertIn('Temperature (°C): no limit for these fish', state.reasons)
 
     def test_the_card_is_what_the_pages_say_for_the_same_unit(self):
         """No second computation: the card's figures are those the other pages print, on one fixture."""

@@ -2,9 +2,10 @@
 board's mixed mode, flipped, for a person who may read everything and for two who may not, compared with the recording in
 golden_cards.json (monitoring/tests/golden.py says what is compared and how). Recorded before card templates; the
 built-in templates must keep it green, value for value."""
-from datetime import timedelta
+from datetime import date, timedelta
 from unittest import mock
 
+from django.test import SimpleTestCase
 from django.urls import reverse
 
 from farm.handling.withdrawal import WithdrawalBlock
@@ -127,3 +128,13 @@ class GoldenTests(GoldenFarm):
     def test_the_farm_has_every_state_a_card_can_be_in(self):
         states = {card['state'] for card in self.scenarios()['all-simple'].values()}
         self.assertEqual(states, {'Critical', 'Warning', 'No recent data', 'No limit', 'Note', 'OK', 'Empty'})
+
+
+class NormaliserTests(SimpleTestCase):
+    def test_an_age_in_seconds_or_minutes_is_one_mark_so_a_slow_run_says_the_same(self):
+        """Cross review: the recording held "just now" and "10 s ago", which a slow host turns into "40 s ago"."""
+        norm = Normaliser([], [], date(2026, 11, 7))
+        said = {norm(f'Meter or test kit · {age}') for age in ('just now', '10 s ago', '50 s ago', '3 min ago',
+                                                                 '59 min ago')}
+        self.assertEqual(said, {'Meter or test kit · <recent>'})
+        self.assertEqual(norm('Meter or test kit · 1 h ago'), 'Meter or test kit · 1 h ago')   # the sample's hour stays

@@ -4,15 +4,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { Limiter, pollNotice, rises, sentences } from './announce.js';
+import { Limiter, order, pollNotice, rises, sentences } from './announce.js';
+
+// The order the page gives (monitoring/read.py STATES, worst first, in #monitor-announce's data-states).
+const ORDER = order('critical warning blind unjudged note ok empty');
 
 test('a rise is a card whose state got worse; better, the same, new and gone cards are not', () => {
   const before = new Map([['a', 'ok'], ['b', 'warning'], ['c', 'critical'], ['d', 'note'], ['gone', 'ok']]);
   const after = new Map([['a', 'critical'], ['b', 'ok'], ['c', 'critical'], ['d', 'blind'], ['new', 'critical']]);
-  assert.deepEqual(rises(before, after), [{ key: 'a', from: 'ok', to: 'critical', stale: false },
+  assert.deepEqual(rises(before, after, ORDER), [{ key: 'a', from: 'ok', to: 'critical', stale: false },
                                          { key: 'd', from: 'note', to: 'blind', stale: true }]);
-  assert.deepEqual(rises(new Map([['a', 'empty']]), new Map([['a', 'ok']])), []);       // fish stocked is not worse
-  assert.deepEqual(rises(new Map([['a', 'ok']]), new Map([['a', 'weird']])), []);       // an unknown word says nothing
+  assert.deepEqual(rises(new Map([['a', 'empty']]), new Map([['a', 'ok']]), ORDER), []);       // fish stocked is not worse
+  assert.deepEqual(rises(new Map([['a', 'ok']]), new Map([['a', 'weird']]), ORDER), []);       // an unknown word says nothing
 });
 
 test('the sentences: the first rise in full, the rest as a count, critical apart', () => {
@@ -42,7 +45,7 @@ test('a card that loses sight of its water is said: old, blind or with no limit,
                           ['e', 'unjudged'], ['f', 'blind']]);
   const after = new Map([['a', 'critical:stale'], ['b', 'blind'], ['c', 'unjudged'], ['d', 'critical:stale'],
                          ['e', 'ok'], ['f', 'critical:stale']]);
-  assert.deepEqual(rises(before, after), [
+  assert.deepEqual(rises(before, after, ORDER), [
     { key: 'a', from: 'critical', to: 'critical', stale: true },
     { key: 'b', from: 'critical', to: 'blind', stale: true },
     { key: 'c', from: 'note', to: 'unjudged', stale: false },
@@ -66,4 +69,15 @@ test('the grid says aloud when it can no longer be updated, when it is gone and 
   assert.equal(pollNotice('stale', 'live', texts), 'Up to date again');
   assert.equal(pollNotice('live', 'live', texts), '');                  // nothing changed
   assert.equal(pollNotice(undefined, 'live', texts), '');               // the first load says nothing
+});
+
+test('the order of the states is the one the page gives (the server list), worst last, without empty', () => {
+  assert.deepEqual(ORDER, ['ok', 'note', 'unjudged', 'blind', 'warning', 'critical']);
+  assert.deepEqual(order(''), []);
+});
+
+test('an old critical card that falls to no recent data is said (cross review)', () => {
+  assert.deepEqual(rises(new Map([['a', 'critical:stale']]), new Map([['a', 'blind']]), ORDER),
+                   [{ key: 'a', from: 'critical', to: 'blind', stale: true }]);
+  assert.deepEqual(rises(new Map([['a', 'blind']]), new Map([['a', 'blind']]), ORDER), []);
 });

@@ -25,7 +25,7 @@ from core.softdelete import plan_delete, restore
 
 from ..models import ProductionDepartment, SamplingPoint, Site, System, Tank, WaterLimit, WaterMeasurement
 from ..stock.services import AlreadyRecorded
-from ..water import chemistry, parameters, read, services
+from ..water import chemistry, parameters, read, services, views as water_views
 from ..water.evaluate import Limits, Status, judge, worst
 from .helpers import make_species, point_of, role, stock_fish
 from .test_stock import make_unit
@@ -400,7 +400,7 @@ class LatestTests(WaterTestCase):
         self.sample(hours=1, oxygen_mg_l='9', temperature_c='9', ph='7.2')
         self.sample(hours=200, tan_mg_l='0.5')                           # stale and unlimited: still unjudged
         water = self.latest()
-        self.assertEqual(water.get('oxygen_saturation_pct').judged, Status.NO_LIMIT)    # worked out, no row
+        self.assertEqual(water.get('oxygen_saturation_pct').judged, Status.OK)    # worked out, judged by the mg/L row
         self.assertEqual({reading.code for reading in water.unjudged}, {'temperature_c', 'ph', 'tan_mg_l'})
         self.limit('oxygen_saturation_pct', critical_low=60)
         self.limit('ph', warning_low='6.5')
@@ -788,6 +788,20 @@ class PageTests(WaterTestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual((response.context['start'], response.context['end']),
                                  (today - timedelta(days=30), today))
+
+    def test_the_first_and_the_last_day_a_calendar_has_are_no_server_error(self):
+        """Cross review: 9999-12-31 is a day, and the day after it is none; 0001-01-01 lies before any clock's zone. A
+        day after today is today, a day more than a century back is a century back: one rule for both ends."""
+        today = timezone.localdate()
+        for query in ({'to': '9999-12-31'}, {'from': '9999-12-31', 'to': '9999-12-31'},
+                      {'from': '0001-01-01', 'to': '0001-01-02'}, {'from': '0001-01-01'}):
+            with self.subTest(query=query):
+                response = self.client.get(self.url, {'view': 'history', **query})
+                self.assertEqual(response.status_code, 200)
+                start, end = response.context['start'], response.context['end']
+                self.assertLessEqual(end, today)
+                self.assertGreaterEqual(start, today - timedelta(days=water_views.OLDEST_DAYS))
+                self.assertLessEqual(start, end)
 
     def test_the_history_spans_at_most_a_year_and_judges_only_the_page_it_shows(self):
         """F-019: a span from the year 1 is cut to a year and says so; the samples are paged in the database and only the

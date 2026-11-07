@@ -52,6 +52,12 @@ class AttendanceRecordResource(Resource):
                             scope.realm_for(request))
 
     @classmethod
+    def after_save(cls, request, record, created):
+        """The employment rule again under the person's lock (the form checked it before any lock)."""
+        services.lock_employed(record.employee, services.punch_day(record.employee, record.clock_in),
+                               services.punch_day(record.employee, record.clock_out) if record.clock_out else None)
+
+    @classmethod
     def allowed(cls, request, obj, action):
         return not services.own_record(request.user, obj.employee)
 

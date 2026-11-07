@@ -865,6 +865,10 @@ msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (artık seçilemez)"
 
 #, python-format
+msgid "%(person)s has %(records)s: correct them first."
+msgstr "%(person)s için %(records)s var: önce bunları düzeltin."
+
+#, python-format
 msgid "%(person)s joined on %(day)s."
 msgstr "%(person)s %(day)s tarihinde işe başladı."
 
@@ -14900,6 +14904,9 @@ msgstr "en az %(seconds)s sn’de bir"
 msgid "at once"
 msgstr "derhal"
 
+msgid "attendance outside these days"
+msgstr "bu günlerin dışında devam kaydı"
+
 msgid "attendance record"
 msgstr "yoklama kaydı"
 
@@ -15676,6 +15683,9 @@ msgstr "bilgi kaydı"
 msgid "lab"
 msgstr "laboratuvar"
 
+msgid "leave outside these days"
+msgstr "bu günlerin dışında izin"
+
 msgid "leave request"
 msgstr "izin talebi"
 
@@ -15988,6 +15998,10 @@ msgstr "planlanmış hasat veya taşıma"
 
 msgid "planned harvests and transports"
 msgstr "planlanmış hasatlar ve taşımalar"
+
+#, python-format
+msgid "planned shifts before %(day)s"
+msgstr "%(day)s tarihinden önce planlanmış vardiyalar"
 
 msgid "plans"
 msgstr "planlar"

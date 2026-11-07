@@ -2877,7 +2877,15 @@ note), each in one transaction with its audit row, and every refusal leaves rows
 **Within the employment.** No shift is planned, no presence entered or punched and no leave asked for a day before the person
 joined or after their last day (`hr.services.check_employed`, the one rule for the plan, the punch, the entered presence, the
 attendance form and the leave form; clearing a planned day is always allowed). A lead was already held to it by the
-placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule.
+placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule. Every path
+reads it with the person's row locked (`lock_employed`: the forms check it first for the sentence, the save checks it
+again under the lock in the tab's `after_save`, which rolls the save back onto the form; `enter_presence`, the punch and
+approving a pending leave lock first), so a last day committed meanwhile is never passed. It holds the other way too: a
+first or last day that would leave plans, held leave or punches outside is refused on the person form and by
+`leave_company`, naming what to correct first (`employment_conflicts`; later plans and later pending leave go with the
+last day as before). The database backs it (`hr/0011_employment_bounds`: constraint triggers deferred to the commit on
+plans, leave, punches and the person's dates; a punch is checked on the UTC day with a day of slack, its exact day is
+the site's).
 
 **Privacy.** A lead sees the person and the days; the **type** (sick, annual) only the person, who may decide the request (Edit) and the
 holders of Everyone see: in the list, on the read page and in the search (the scope marks each request `type_shown` and a search for a

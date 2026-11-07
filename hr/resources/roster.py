@@ -102,5 +102,6 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def after_save(cls, request, assignment, created):
+        services.lock_employed(assignment.employee, assignment.day)       # the employment rule under the person's lock
         for finding in getattr(assignment, 'warnings', []):
             messages.warning(request, rules.text(finding))

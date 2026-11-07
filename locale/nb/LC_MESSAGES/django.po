@@ -862,6 +862,10 @@ msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (kan ikke velges lenger)"
 
 #, python-format
+msgid "%(person)s has %(records)s: correct them first."
+msgstr "%(person)s har %(records)s: rett dem først."
+
+#, python-format
 msgid "%(person)s joined on %(day)s."
 msgstr "%(person)s begynte %(day)s."
 
@@ -14890,6 +14894,9 @@ msgstr "minst hvert %(seconds)s s"
 msgid "at once"
 msgstr "straks"
 
+msgid "attendance outside these days"
+msgstr "oppmøte utenfor disse dagene"
+
 msgid "attendance record"
 msgstr "oppmøteregistrering"
 
@@ -15664,6 +15671,9 @@ msgstr "kunnskapsoppføring"
 msgid "lab"
 msgstr "laboratorium"
 
+msgid "leave outside these days"
+msgstr "permisjon utenfor disse dagene"
+
 msgid "leave request"
 msgstr "permisjonssøknad"
 
@@ -15976,6 +15986,10 @@ msgstr "planlagt høsting eller transport"
 
 msgid "planned harvests and transports"
 msgstr "planlagte høstinger og transporter"
+
+#, python-format
+msgid "planned shifts before %(day)s"
+msgstr "planlagte vakter før %(day)s"
 
 msgid "plans"
 msgstr "planer"

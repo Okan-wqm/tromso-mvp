@@ -469,7 +469,7 @@ class RosterMeetsLeaveTests(LeaveTestCase):
 class LeavingTheCompanyTests(LeaveTestCase):
     def test_a_last_day_cancels_later_pending_requests_and_removes_later_plans(self):
         later = request_for(self.in_a, date(2026, 6, 1), date(2026, 6, 2), self.annual)
-        straddling = request_for(self.in_a, date(2026, 3, 30), date(2026, 4, 3), self.annual, status='approved')
+        straddling = request_for(self.in_a, date(2026, 3, 30), date(2026, 4, 1), self.annual, status='approved')
         early_shift = Shift.objects.create(name='E', code='E1', starts_at=datetime(2026, 1, 1, 6).time(),
                                            ends_at=datetime(2026, 1, 1, 14).time())
         ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 20), shift=early_shift)
@@ -479,3 +479,10 @@ class LeavingTheCompanyTests(LeaveTestCase):
         straddling.refresh_from_db()
         self.assertEqual((later.status, straddling.status), ('cancelled', 'approved'))
         self.assertEqual(list(ShiftAssignment.objects.values_list('day', flat=True)), [date(2026, 3, 20)])
+
+    def test_a_last_day_inside_approved_leave_is_refused_until_the_leave_is_put_right(self):
+        request_for(self.in_a, date(2026, 3, 30), date(2026, 4, 3), self.annual, status='approved')
+        with self.assertRaises(ValidationError):
+            services.leave_company(self.hr, self.in_a, date(2026, 4, 1))
+        self.in_a.refresh_from_db()
+        self.assertIsNone(self.in_a.left_on)

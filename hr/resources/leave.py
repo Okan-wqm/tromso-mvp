@@ -47,6 +47,11 @@ class LeaveRequestResource(Resource):
         return super().queryset().select_related('employee__user', 'leave_type', 'decided_by')
 
     @classmethod
+    def after_save(cls, request, item, created):
+        """The employment rule again under the person's lock (the form checked it before any lock)."""
+        services.lock_employed(item.employee, item.first_day, item.last_day)
+
+    @classmethod
     def scoped(cls, request, objects):
         """The team's requests, each marked with whether the viewer may read its type (`type_shown`): the search reads the
         mark, so a search for a type finds only the requests whose type the viewer sees."""

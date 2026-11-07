@@ -100,6 +100,9 @@ class EmployeeResource(Resource):
             department, title, day = placement
             services.move(request.user, employee, department, title, day)
         services.align_placements(request.user, employee)
+        conflict = services.employment_conflicts(employee, employee.joined_on, employee.left_on)    # the row is locked
+        if conflict is not None:
+            raise conflict
 
     @classmethod
     def detail_extras(cls, request, employee):

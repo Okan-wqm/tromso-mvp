@@ -26,7 +26,8 @@ POSTING_FIELDS = ['production_department', 'office_department', 'title', 'valid_
 def _allowed(user, employee, perms=('hr.change_employee', 'hr.add_employee')):
     """The verb (Edit, or Create for the placement a new person starts with), the person in the user's team, and not the
     user's own record unless they hold Everyone (`own_record`)."""
-    if not any(user.has_perm(perm) for perm in perms) or not scope.can_reach(user, employee)             or own_record(user, employee):
+    if not any(user.has_perm(perm) for perm in perms) or not scope.can_reach(user, employee) \
+            or own_record(user, employee):
         raise PermissionDenied
 
 
@@ -40,6 +41,42 @@ def check_employed(employee, first, last=None):
     if employee.left_on is not None and last > employee.left_on:
         raise ValidationError(_('%(person)s left on %(day)s.') % {'person': employee.full_name,
                                                                    'day': date_format(employee.left_on)})
+
+
+def lock_employed(employee, first, last=None):
+    """`check_employed` on the person's row locked first: a last day being set at the same moment waits, or this does, so
+    a record is never written past a last day committed meanwhile. Returns the locked row."""
+    employee = Employee.objects.select_for_update().get(pk=employee.pk)
+    check_employed(employee, first, last)
+    return employee
+
+
+def punch_day(employee, moment):
+    """The day of a punch on its site's clock (the day the employment rule reads)."""
+    return timezone.localtime(moment, zone_of(read.site_on(employee, moment.date()))).date()
+
+
+def employment_conflicts(employee, joined_on, left_on):
+    """The records of `employee` that would lie outside the employment from `joined_on` to `left_on` (None: still here),
+    as sentences: live plans before the first day (those after a last day are removed with it, `align_placements`),
+    pending or approved leave before it, approved leave or pending leave begun before a last day that runs past it
+    (pending leave that starts after it is cancelled with it), and punches outside it on their site's clock."""
+    found = []
+    plans = ShiftAssignment.objects.filter(employee=employee, day__lt=joined_on)
+    if plans.exists():
+        found.append(_('planned shifts before %(day)s') % {'day': date_format(joined_on)})
+    held = LeaveRequest.objects.filter(employee=employee, status__in=[LeaveStatus.PENDING, LeaveStatus.APPROVED])
+    late = held.filter(last_day__gt=left_on).exclude(status=LeaveStatus.PENDING, first_day__gt=left_on)         if left_on is not None else held.none()
+    if held.filter(first_day__lt=joined_on).exists() or late.exists():
+        found.append(_('leave outside these days'))
+    punches = AttendanceRecord.objects.filter(employee=employee)
+    if any(punch_day(employee, record.clock_in) < joined_on
+           or (left_on is not None and punch_day(employee, record.clock_in) > left_on) for record in punches):
+        found.append(_('attendance outside these days'))
+    if found:
+        return ValidationError(_('%(person)s has %(records)s: correct them first.')
+                               % {'person': employee.full_name, 'records': ', '.join(found)})
+    return None
 
 
 def _values(posting):
@@ -113,6 +150,9 @@ def leave_company(user, employee, on):
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
         if on < employee.joined_on:
             raise ValidationError(_('A person cannot leave before they joined.'))
+        conflict = employment_conflicts(employee, employee.joined_on, on)
+        if conflict is not None:
+            raise conflict
         with audit.source_language():
             before = audit.snapshot(employee, ['left_on'])
         employee.left_on = on
@@ -377,6 +417,8 @@ def decide_leave(user, leave_request, approve, note=''):
         current = _lock(leave_request)
         if not can_decide(user, current):
             raise PermissionDenied
+        if approve:
+            lock_employed(current.employee, current.first_day, current.last_day)
         before = _leave_values(current)
         current.status = LeaveStatus.APPROVED if approve else LeaveStatus.REJECTED
         current.decided_by, current.decided_at = user, timezone.now()
@@ -463,8 +505,7 @@ def clock_in(user):
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
         if AttendanceRecord.objects.filter(employee=employee, clock_out__isnull=True).exists():
             raise ValidationError(_('You are already clocked in.'))
-        now = timezone.now()
-        check_employed(employee, timezone.localtime(now, zone_of(read.site_on(employee, now.date()))).date())
+        check_employed(employee, punch_day(employee, timezone.now()))
         record = AttendanceRecord(employee=employee, clock_in=timezone.now(), via=AttendanceRecord.Via.SELF,
                                   created_by=user, updated_by=user)
         _save_punch(user, record, True)
@@ -501,11 +542,9 @@ def enter_presence(user, employee, clock_in_at, clock_out_at, note):
         raise ValidationError(_('Say why the time was entered by hand.'))
     if clock_out_at is not None and clock_out_at <= clock_in_at:
         raise ValidationError(_('The person cannot clock out before they clocked in.'))
-    zone = zone_of(read.site_on(employee, clock_in_at.date()))
-    check_employed(employee, timezone.localtime(clock_in_at, zone).date(),
-                   timezone.localtime(clock_out_at, zone).date() if clock_out_at is not None else None)
     with transaction.atomic():
-        employee = Employee.objects.select_for_update().get(pk=employee.pk)
+        employee = lock_employed(employee, punch_day(employee, clock_in_at),
+                                 punch_day(employee, clock_out_at) if clock_out_at is not None else None)
         record = AttendanceRecord(employee=employee, clock_in=clock_in_at, clock_out=clock_out_at,
                                   via=AttendanceRecord.Via.ENTERED, note=note, created_by=user, updated_by=user)
         _save_punch(user, record, True)

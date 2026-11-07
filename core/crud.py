@@ -495,7 +495,8 @@ class Resource:
 
     @classmethod
     def after_save(cls, request, obj, created):
-        """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
+        """Runs inside the save transaction, after the audit row; e.g. invite a new user. A ValidationError raised here
+        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold)."""
 
     @classmethod
     def search(cls, objects, query):
@@ -684,6 +685,10 @@ class CreateView(FormView):
                     form.save_m2m()
                     audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
                     r.after_save(request, obj, created=True)
+            except ValidationError as error:
+                # A rule `after_save` checks under its lock (e.g. HR's employment bound): nothing was written.
+                form.add_error(None, error)
+                return self.page(form)
             except IntegrityError as error:
                 # The same form sent twice at once: the other request's insert held the key's unique index until it
                 # committed, so its record is there now.
@@ -720,6 +725,14 @@ class UpdateView(FormView):
         form = r.form(request, request.POST, request.FILES, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
+        try:
+            return self.save(request, r, form, pk)
+        except ValidationError as error:
+            # A rule `after_save` checks under its lock (e.g. HR's employment bound): nothing was written.
+            form.add_error(None, error)
+            return self.page(form, obj)
+
+    def save(self, request, r, form, pk):
         with transaction.atomic():
             current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
             versioned = 'version' in form.fields

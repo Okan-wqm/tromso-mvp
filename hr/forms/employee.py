@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import TabbedForm, tab_fields
 from farm.stock.dates import site_today
 
-from .. import read, scope, units
+from .. import read, scope, services, units
 from ..models import Employee
 
 PLACEMENT_FIELDS = ('department', 'title', 'from_day')
@@ -103,6 +103,10 @@ class EmployeeForm(TabbedForm):
         joined, left = cleaned.get('joined_on'), cleaned.get('left_on')
         if joined and left and left < joined:
             self.add_error('left_on', _('A person cannot leave before they joined.'))
+        elif joined and not adding:
+            conflict = services.employment_conflicts(self.instance, joined, left)
+            if conflict is not None:
+                self.add_error('joined_on' if joined != self.instance.joined_on else 'left_on', conflict)
         self.instance.placement = None
         if all(self.fields[name].disabled for name in PLACEMENT_FIELDS):
             return cleaned

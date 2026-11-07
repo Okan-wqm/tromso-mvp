@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from unittest import mock
 
 from django.conf import settings
 from django.test import SimpleTestCase
@@ -30,3 +31,44 @@ class PersistentConnectionsTests(SimpleTestCase):
 
     def test_kept_connections_are_health_checked(self):
         self.assertEqual(database_setting('CONN_HEALTH_CHECKS', DB_CONN_MAX_AGE='60'), 'true')
+
+
+class ParallelRunnerTests(SimpleTestCase):
+    """`manage.py test --parallel` copies the test database for each worker, which PostgreSQL does only while nobody is
+    connected to it, and TimescaleDB's job scheduler stays connected to every database with the extension: on a server
+    that runs the scheduler (the development server) the copy fails half-way, so the runner says what to run instead
+    before it creates anything."""
+
+    def runner(self, parallel):
+        from config.test_runner import FastPasswordRunner
+        runner = FastPasswordRunner(parallel=parallel, verbosity=0)
+        runner.parallel = parallel
+        return runner
+
+    def test_parallel_on_a_server_with_the_scheduler_is_refused_before_any_database_is_made(self):
+        from django.core.exceptions import ImproperlyConfigured
+        from django.test.runner import DiscoverRunner
+        with mock.patch('config.test_runner.runs_the_scheduler', return_value=True), \
+                mock.patch.object(DiscoverRunner, 'setup_databases') as made:
+            with self.assertRaisesMessage(ImproperlyConfigured, 'scripts/test.sh'):
+                self.runner(4).setup_databases()
+        made.assert_not_called()
+
+    def test_parallel_on_a_server_without_the_scheduler_and_one_process_anywhere_go_ahead(self):
+        from django.test.runner import DiscoverRunner
+        for parallel, scheduler in ((4, False), (1, True)):
+            with self.subTest(parallel=parallel, scheduler=scheduler), \
+                    mock.patch('config.test_runner.runs_the_scheduler', return_value=scheduler), \
+                    mock.patch.object(DiscoverRunner, 'setup_databases', return_value='made') as made:
+                self.assertEqual(self.runner(parallel).setup_databases(), 'made')
+                made.assert_called_once()
+
+    def test_the_scheduler_is_read_from_the_servers_setting(self):
+        from config.test_runner import runs_the_scheduler
+        for value, runs in (('16', True), ('0', False), (None, False)):
+            cursor = mock.MagicMock()
+            cursor.__enter__.return_value.fetchone.return_value = (value,)
+            connection = mock.Mock(vendor='postgresql', _nodb_cursor=mock.Mock(return_value=cursor))
+            with self.subTest(value=value):
+                self.assertIs(runs_the_scheduler(connection), runs)
+        self.assertIs(runs_the_scheduler(mock.Mock(vendor='sqlite')), False)

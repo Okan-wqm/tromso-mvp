@@ -50,6 +50,7 @@ HISTORY = 'history'
 PAGE_SIZE = 50
 HISTORY_DAYS = 30      # the history's default span, back from today
 HISTORY_MAX_DAYS = 366  # the longest span a history page judges: a longer one starts later, and the page says so
+OLDEST_DAYS = 36525     # how far back a history day can be: a century (a farm's records are younger)
 OWNER_MODELS = {UNIT: Tank, SYSTEM: System, EQUIPMENT: Equipment}
 OWNER_RELATED = {UNIT: ('production_department__site',), SYSTEM: ('site',), EQUIPMENT: ('production_department__site',)}
 
@@ -212,13 +213,15 @@ def _latest(site):
             'sensors_failed': any(point_water.sensors_failed for point_water in water.values()), 'now': timezone.now()}
 
 
-def _day(request, name, default):
-    """The day the address names (YYYY-MM-DD), else `default`: a day that is no day (2026-13-45) is the default, never
-    a server error."""
+def _day(request, name, default, today):
+    """The day the address names (YYYY-MM-DD), else `default`: a day that is no day (2026-13-45) is the default, and a
+    day is held to the last OLDEST_DAYS up to today (9999-12-31 is today, 0001-01-01 a century back), so no date sum
+    or time zone runs off the calendar; never a server error."""
     try:
-        return parse_date(request.GET.get(name, '')) or default
+        day = parse_date(request.GET.get(name, '')) or default
     except ValueError:
-        return default
+        day = default
+    return min(max(day, today - timedelta(days=OLDEST_DAYS)), today)
 
 
 def _history(request, site, place):
@@ -227,7 +230,8 @@ def _history(request, site, place):
     alert is worked out on read."""
     zone = zone_of(site if place.owner is None else site_of(place.owner))
     today = timezone.localdate(timezone=zone)
-    start, end = _day(request, 'from', today - timedelta(days=HISTORY_DAYS)), _day(request, 'to', today)
+    start = _day(request, 'from', today - timedelta(days=HISTORY_DAYS), today)
+    end = _day(request, 'to', today, today)
     clipped = (end - start).days > HISTORY_MAX_DAYS
     if clipped:
         start = end - timedelta(days=HISTORY_MAX_DAYS)

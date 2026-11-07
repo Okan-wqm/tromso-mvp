@@ -292,6 +292,22 @@ def constraint_error(form, error):
     return True
 
 
+def refusal_text(error):
+    """What the database said when it refused a write (an IntegrityError): its own message."""
+    return str(getattr(getattr(error.__cause__, 'diag', None), 'message_primary', '') or error)
+
+
+def trigger_refusal(form, error):
+    """Puts a constraint trigger's refusal (a check violation whose constraint is a trigger, `trg_...`: a rule across
+    tables, e.g. a unit not moved to another site while a sensor is placed in it) on the form, with the database's
+    message. False for any other error."""
+    diag = getattr(error.__cause__, 'diag', None)
+    if getattr(diag, 'sqlstate', '') != '23514' or not (getattr(diag, 'constraint_name', '') or '').startswith('trg_'):
+        return False
+    form.add_error(None, refusal_text(error))
+    return True
+
+
 def constrained_fields(constraint):
     """The fields a unique or exclusion constraint covers: its `fields`, or the fields its expressions read
     (Lower('scientific_name') covers scientific_name; an assignment's daterange its first and last day)."""
@@ -731,6 +747,11 @@ class UpdateView(FormView):
             # A rule `after_save` checks under its lock (e.g. HR's employment bound): nothing was written.
             form.add_error(None, error)
             return self.page(form, obj)
+        except IntegrityError as error:
+            # A rule the database holds across tables refused the change: said on the form, nothing saved.
+            if not trigger_refusal(form, error):
+                raise
+            return self.page(form, self.get_object(pk))
 
     def save(self, request, r, form, pk):
         with transaction.atomic():

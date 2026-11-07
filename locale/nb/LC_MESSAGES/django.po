@@ -3479,8 +3479,8 @@ msgstr "Mellom %(low)s og %(high)s for denne parameteren."
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "Mellom %(low)s og %(high)s: kontroller verdien."
 
-msgid "Between -500 and 5000 m: the shore of the Dead Sea to the highest farms."
-msgstr "Mellom -500 og 5000 m: fra bredden av Dødehavet til de høyeste anleggene."
+msgid "Between 0 and 5000 m: sea level to the highest farms."
+msgstr "Mellom 0 og 5000 m: fra havnivå til de høyeste anleggene."
 
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "Mellom 10 og 600. Tomt bruker systemets 15 sekunder."

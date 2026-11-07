@@ -1111,8 +1111,8 @@ published values):
   point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
-  -500 .. 5000 m, held by the form, the model and the database `chk_sites_altitude_range`, F-089, and the calculator's
-  field takes the same range). From
+  0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
+  database `chk_sites_altitude_range`, F-089, and the calculator's field takes the same range). From
   mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
   kept and flagged.
 

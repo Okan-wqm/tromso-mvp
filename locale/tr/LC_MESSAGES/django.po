@@ -3476,8 +3476,8 @@ msgstr "Bu parametre için %(low)s ile %(high)s arasında."
 msgid "Between %(low)s and %(high)s: check the value."
 msgstr "%(low)s ile %(high)s arasında: değeri kontrol edin."
 
-msgid "Between -500 and 5000 m: the shore of the Dead Sea to the highest farms."
-msgstr "-500 ile 5000 m arasında: Lut Gölü kıyısından en yüksek çiftliklere kadar."
+msgid "Between 0 and 5000 m: sea level to the highest farms."
+msgstr "0 ile 5000 m arasında: deniz seviyesinden en yüksek çiftliklere kadar."
 
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "10 ile 600 arasında. Boş bırakılırsa sistemin 15 saniyesi kullanılır."

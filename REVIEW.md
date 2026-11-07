@@ -72,13 +72,15 @@ the right reason (the `Test:` commits), then fixed in its own commit.
 
 ### F-089 Site.altitude unbounded (high)
 - Root cause: no range on the model or the database; the calculator had its own 0..5000.
-- Fix: `farm.models.site.ALTITUDE_LOW/HIGH` = -500 .. 5000 m (Dead Sea shore to the highest farms) as validators and
+- Fix: `farm.models.site.ALTITUDE_LOW/HIGH` = 0 .. 5000 m (owner decision 2026-11-06: no site lies below sea level; a
+  minus sign is a slip, and 10 m change the pressure by about 0.1 %) as validators and
   `chk_sites_altitude_range`; the calculator's field takes the same range and its offer no longer re-checks it (one
   rule, the database's). Migration 0027 moves an out-of-range altitude into the site's notes with the day and empties it
   (the pattern of 0023), so the oxygen is worked out at sea-level pressure and says so.
 - Tests: `SiteCreateTests.test_the_altitude_is_a_place_where_fish_are_kept`, `SiteAltitudeTests` (database, calculator
-  below sea level), `AltitudeMigrationTests`.
-- Owner decision to confirm: the low bound -500 m. `chemistry.pressure_atm` itself was not touched (wip/chemcore).
+  at sea level, the calculator field's range), `AltitudeMigrationTests`.
+- The low bound is the owner's (0 m, 2026-11-06); migration 0027 moves negative altitudes into the notes too.
+  `chemistry.pressure_atm` itself was not touched (wip/chemcore).
 
 ## Other findings in the area
 

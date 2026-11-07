@@ -11,13 +11,14 @@ from core.models import AuditedModel, CodedMixin
 from ..health import lice
 from .contact import ONE_PRIMARY, Contact
 
-
-# The altitude a site may have (m above sea level): the shore of the Dead Sea (about -430 m) to the highest farms (Lake
-# Titicaca's trout cages, about 3,800 m), with room. It sets the barometric pressure the oxygen's saturation is worked out
-# with (farm/water/read.py, the calculator): a slip outside it would inflate a sensor's mg/L or stop the pages (F-089).
-# The form, the model and the database hold it (chk_sites_altitude_range), and the calculator's field takes the same range.
-ALTITUDE_LOW, ALTITUDE_HIGH = -500, 5000
-ALTITUDE_MESSAGE = _('Between -500 and 5000 m: the shore of the Dead Sea to the highest farms.')
+# The altitude a site may have (m above sea level): sea level to the highest farms (Lake Titicaca's trout cages, about
+# 3,800 m), with room. Owner decision 2026-11-06: no site of ours lies below sea level; a minus sign is far more likely a
+# slip, and the few places below it (polders, the Dead Sea) change the pressure by about 0.1 % per 10 m. It sets the
+# barometric pressure the oxygen's saturation is worked out with (farm/water/read.py, the calculator): a slip outside it
+# would inflate a sensor's mg/L or stop the pages (F-089). The form, the model and the database hold it
+# (chk_sites_altitude_range), and the calculator's field takes the same range.
+ALTITUDE_LOW, ALTITUDE_HIGH = 0, 5000
+ALTITUDE_MESSAGE = _('Between 0 and 5000 m: sea level to the highest farms.')
 
 
 class Site(CodedMixin, AuditedModel):

@@ -16,7 +16,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.core.management import call_command
-from django.db import connection
+from django.db import connection, transaction
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
@@ -63,7 +63,8 @@ class OneRunTests(HarvestInsideTestCase):
 
         def move(**ack):
             return stock_services.record_transfer(self.user, source=self.t2, batch=b2, day=self.day(8),
-                                                  legs=[(self.t1, 100), (t3, 100)], reason='other', ack=True, **ack)
+                                                  legs=[(self.t1, 100), (t3, 100)], reason='other', notes='Split',
+                                                  ack=True, **ack)
 
         with self.assertRaises(WithdrawalChanged) as caught:
             move()
@@ -77,7 +78,7 @@ class OneRunTests(HarvestInsideTestCase):
         treatment = self.treat(self.medicine(days=7), 2, 2)
         with self.assertRaises(WithdrawalChanged) as caught:
             services.void_treatment(self.user, treatment, 'Wrong unit')
-        with mock.patch.object(stock_services, 'voided', wraps=stock_services.voided) as runs:
+        with mock.patch.object(services, 'voided', wraps=services.voided) as runs:
             services.void_treatment(self.user, treatment, 'Wrong unit',
                                     withdrawal_ack=caught.exception.change.fingerprint)
         self.assertEqual(runs.call_count, 1)
@@ -168,6 +169,7 @@ class DataLayerTests(HarvestInsideTestCase):
     def test_every_kind_of_write_outside_the_guard_is_refused(self):
         treatment = self.treat(self.medicine(days=7), 9, 9)
         sample = self.temperature(self.t1, 1, '8')
+        feed = self.medicated()
         writes = [
             lambda: Treatment.objects.filter(pk=treatment.pk).update(end_date=self.day(8)),
             lambda: Treatment.objects.get(pk=treatment.pk).save(),
@@ -179,12 +181,13 @@ class DataLayerTests(HarvestInsideTestCase):
             lambda: FeedingRecord.objects.filter(unit=self.t1).delete(),
             lambda: StockOperation.objects.filter(kind='input').update(date=self.day(9)),
             lambda: StockMovement.objects.filter(unit=self.t1).update(count_delta=1),
-            lambda: Feed.objects.filter(pk=self.medicated().pk).update(feed_type='grower'),
+            lambda: Feed.objects.filter(pk=feed.pk).update(feed_type='grower'),
             lambda: Species.objects.filter(pk=self.salmon.pk).update(withdrawal_temperature_c=Decimal(40)),
             lambda: SamplingPoint.objects.filter(pk=point_of(self.t1).pk).update(is_active=False),
         ]
         for index, write in enumerate(writes):
-            with self.subTest(write=index), self.assertRaises(gate.UnguardedWithdrawalWrite):
+            # A refused write spoils its transaction, as it should: each is tried in a savepoint of its own.
+            with self.subTest(write=index), self.assertRaises(gate.UnguardedWithdrawalWrite), transaction.atomic():
                 write()
 
     def test_other_fields_and_new_rows_of_the_reference_data_are_free(self):

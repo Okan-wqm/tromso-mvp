@@ -5,10 +5,8 @@ The log is language-neutral at rest: labels, record types and enumerated values 
 English msgids whatever language the person who made the change was using, and shown translated
 (AuditLog.shown_changes). Build every snapshot inside `source_language()` (core.crud does); a person's
 own text (names, descriptions) is stored as written and never translated."""
-import contextvars
 import hashlib
 import hmac
-from contextlib import contextmanager
 from datetime import timedelta
 
 from django.conf import settings
@@ -48,21 +46,6 @@ def readable(user, entries=None):
 def source_language():
     """Text built inside this block comes out as the msgids themselves, ready to be stored."""
     return translation.override(settings.LANGUAGE_CODE)
-
-
-_mark = contextvars.ContextVar('audit_mark', default=None)
-
-
-@contextmanager
-def marked(severity, values):
-    """Every entry written inside the block gets `severity` and the `values` ({label: value}, in English) besides its own:
-    a write that a person went on with past a warning found only once the write was tried (farm.health.withdrawal
-    .guarded) marks its own entries critical with what was acknowledged."""
-    token = _mark.set((severity, values))
-    try:
-        yield
-    finally:
-        _mark.reset(token)
 
 
 def english(text):
@@ -160,12 +143,7 @@ def revision():
 
 def record(user, action, instance, changes=None, entity_type=None, label=None, severity=AuditLog.Severity.NORMAL):
     """One entry. `severity` critical marks someone going on past a warning that protects fish or food
-    (farm/handling): the activity log shows it apart and the later alarms read it. Inside `marked()` the entry takes
-    the mark's severity and values too."""
-    mark = _mark.get()
-    if mark is not None:
-        severity = mark[0]
-        changes = {**(changes or {}), **{label_: [None, value] for label_, value in mark[1].items()}}
+    (farm/handling): the activity log shows it apart and the later alarms read it."""
     return AuditLog.objects.create(
         user=user if user and user.is_authenticated else None,
         user_name=user.get_username() if user and user.is_authenticated else 'system',

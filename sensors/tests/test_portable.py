@@ -4,12 +4,15 @@ transaction, with one entry on the device's log, each channel to the place its k
 to the unit's middle point, the point chosen or the system; a process value to the system or the piece of equipment),
 and refuses the whole move, saying why for each channel, when one cannot go there. `bindings.unbind_device` takes it out:
 its readings are stored and belong nowhere until it is placed again."""
+import threading
+import time
 from datetime import datetime, timedelta, timezone as tz
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import connection
+from django.db import connection, transaction
+from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -23,7 +26,7 @@ from farm.water import read as water_read, sources
 from sensors import bindings, read
 from sensors.models import Binding, Channel, ChannelState, Device
 
-from . import SensorsCase, make_channel, make_device, rows as rows_of
+from . import SensorsCase, make_channel, make_connection, make_device, make_format, rows as rows_of
 
 
 class PortableCase(SensorsCase):
@@ -534,3 +537,75 @@ class PageTests(PortableCase):
         self.client.force_login(reader)
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.assertNotContains(self.client.get(reverse('sensors:device_list')), self.url)
+
+
+class LockTests(TransactionTestCase):
+    """A channel's move and a device's move lock the same rows in the same order (the device, then its channels, each
+    alone: `of=('self',)`), so two moves at once wait for each other and never deadlock, and a move never locks the site
+    a device is at."""
+    serialized_rollback = True
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user('locker', 'locker@example.com', 'x')
+        self.site = Site.objects.create(name='Bergen', code='BG')
+        hall = ProductionDepartment.objects.create(site=self.site, name='Hall A', code='HA')
+        self.mid1, self.mid2 = point_of(make_unit('T-01', hall)), point_of(make_unit('T-02', hall))
+        self.device = make_device(make_connection(), make_format(), self.site)
+        self.ph = make_channel(self.device, 'ph')
+        self.start = timezone.now().replace(microsecond=0) - timedelta(days=2)
+        bindings.move(self.user, self.ph, self.start, point=self.mid1)
+
+    def in_thread(self, work, errors):
+        def run():
+            try:
+                work()
+            except Exception as error:                         # noqa: BLE001: every failure is the test's
+                errors.append(error)
+            finally:
+                connection.close()
+        thread = threading.Thread(target=run)
+        thread.start()
+        return thread
+
+    def test_a_channels_move_waits_for_a_device_move_and_neither_deadlocks(self):
+        errors, holding = [], threading.Event()
+
+        def device_move():
+            with transaction.atomic():
+                Device.objects.select_for_update(of=('self',)).get(pk=self.device.pk)   # move_device's first lock
+                holding.set()
+                time.sleep(1.5)                                 # the channel's move starts meanwhile
+                bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.mid2.unit)
+
+        def channel_move():
+            holding.wait(10)
+            bindings.move(self.user, self.ph, self.start + timedelta(days=1, hours=1), point=self.mid1)
+
+        threads = [self.in_thread(device_move, errors), self.in_thread(channel_move, errors)]
+        for thread in threads:
+            thread.join(30)
+        self.assertEqual(errors, [])
+        self.assertEqual(Binding.objects.get(channel=self.ph, valid_to__isnull=True).point, self.mid1)
+        self.assertEqual(Binding.objects.filter(channel=self.ph).count(), 3)
+
+    def test_a_move_does_not_lock_the_site(self):
+        errors, holding, done = [], threading.Event(), threading.Event()
+
+        def site_editor():
+            with transaction.atomic():
+                Site.objects.select_for_update().get(pk=self.site.pk)
+                holding.set()
+                done.wait(10)
+
+        thread = self.in_thread(site_editor, errors)
+        holding.wait(10)
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL lock_timeout = '2s'")
+                bindings.move(self.user, self.ph, self.start + timedelta(days=1), point=self.mid2)
+        finally:
+            done.set()
+            thread.join(30)
+        self.assertEqual(errors, [])
+        self.assertEqual(Binding.objects.get(channel=self.ph, valid_to__isnull=True).point, self.mid2)

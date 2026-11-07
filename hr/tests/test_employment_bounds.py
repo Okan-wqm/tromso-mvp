@@ -81,3 +81,32 @@ class EmploymentBoundsTests(PeopleTestCase):
             self.assertEqual(response.status_code, 200, actor)
             self.assertTrue(response.context['form'].errors, actor)
         self.assertEqual(self.counts(), before)
+
+    # Only the employment rule refuses these: the person still works here (in every team, in the panel's realm today), and
+    # the day is before they joined.
+    def reachable_today(self):
+        Employee.objects.filter(pk=self.in_a.pk).update(left_on=None)
+        self.in_a.refresh_from_db()
+
+    def test_the_attendance_form_refuses_a_day_before_the_person_joined(self):
+        self.reachable_today()
+        self.client.force_login(self.everyone)
+        before = self.counts()
+        response = self.client.post(reverse('hr:production_attendancerecord_create'), {
+            'employee': str(self.in_a.pk), 'clock_in': '2025-12-30T06:00', 'clock_out': '2025-12-30T14:00',
+            'note': 'Forgot'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('joined on', ' '.join(response.context['form'].non_field_errors()))
+        self.assertEqual(self.counts(), before)
+
+    def test_the_leave_form_refuses_days_before_the_person_joined(self):
+        self.reachable_today()
+        before = self.counts()
+        for actor in (self.ann, self.everyone):
+            self.client.force_login(actor)
+            response = self.client.post(reverse('hr:production_leaverequest_create'), {
+                'employee': str(self.in_a.pk), 'leave_type': str(self.annual.pk), 'first_day': '2025-12-29',
+                'last_day': '2026-01-02', 'reason': ''})
+            self.assertEqual(response.status_code, 200, actor)
+            self.assertIn('joined on', ' '.join(response.context['form'].non_field_errors()), actor)
+        self.assertEqual(self.counts(), before)

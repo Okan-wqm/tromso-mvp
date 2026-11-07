@@ -973,7 +973,7 @@ class PageTests(WaterTestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['rows'][1].errors['temperature_c'],
                          ['Needed with the oxygen: the other unit is worked out with it.'])
-        self.assertFalse(WaterMeasurement.objects.exists())
+        self.assertEqual(WaterMeasurement.objects.count(), 1)               # one bad row refuses the round
         data.update(cells(self.mid2, temperature_c='10'))
         self.assertEqual(self.client.post(url, data).status_code, 302)
         stored = sorted(WaterMeasurement.objects.values_list('point__unit__code', 'temperature_c', 'oxygen_mg_l',

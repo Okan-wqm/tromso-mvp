@@ -94,7 +94,7 @@ LIVE_ON_A_SITE = 'chk_production_departments_live_on_a_site'
 def leave_without_site(department):
     """Makes `department` one of the rows a deleted site left without a site before the database held that a live
     production department is on a site: the check is put back NOT VALID, as on a database that had such rows (farm
-    migration 0028), so the row stays as it is until it is changed."""
+    migration 0029), so the row stays as it is until it is changed."""
     from django.db import connection
     with connection.cursor() as cursor:
         cursor.execute('SELECT 1 FROM pg_constraint WHERE conname = %s', [LIVE_ON_A_SITE])

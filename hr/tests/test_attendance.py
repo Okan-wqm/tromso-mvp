@@ -66,8 +66,11 @@ class StatusRuleTests(SimpleTestCase):
         earlier = self.standing(at(7), [(at(3, 0), at(5, 0))])                 # 3 hours before: not this shift's
         self.assertEqual(earlier.state, 'absent')
 
-    def test_leave_beats_everything_and_an_unplanned_presence_is_still_a_presence(self):
-        self.assertEqual(self.standing(at(7), [(at(6), None)], on_leave=True).state, 'on_leave')
+    def test_a_clock_in_beats_leave_and_an_unplanned_presence_is_still_a_presence(self):
+        # Who is on site is a fact: a person on leave who came in is present (the headcount in an emergency).
+        self.assertEqual(self.standing(at(7), [(at(6), None)], on_leave=True).state, 'present')
+        self.assertEqual(self.standing(at(7), [(at(6), None)], on_leave=True, span=None).state, 'present')
+        self.assertEqual(self.standing(at(7), [], on_leave=True).state, 'on_leave')
         self.assertEqual(self.standing(at(8), [(at(7), None)], span=None).state, 'present')
         self.assertEqual(self.standing(at(8), [(at(7), at(8))], span=None).state, 'done')
         self.assertIsNone(self.standing(at(8), [], span=None))                  # nothing planned, nobody there: unlisted
@@ -309,6 +312,20 @@ class BoardTests(PeopleTestCase):
         self.assertEqual(shown, [('6', 'Planned today'), ('1', 'Upcoming'), ('2', 'Here now'), ('0', 'Not in yet'),
                                  ('1', 'Absent'), ('1', 'On leave'), ('1', 'Done'), ('1', 'Here, not planned')])
         self.assertIn('1 late', page)
+
+    def test_whoever_clocked_in_is_on_the_board_whatever_their_plan_or_leave(self):
+        """The board is the headcount on site (an emergency): a clock-in makes a person present on it, on approved leave
+        or not, planned or not; leave alone, with nothing planned, lists nobody."""
+        kind = LeaveType.objects.create(name='Annual', code='AN')
+        for person in (self.in_a, self.ben, self.cy):
+            LeaveRequest.objects.create(employee=person, leave_type=kind, first_day=DAY, last_day=DAY, status='approved',
+                                        decided_at=at(1))
+        self.plan(self.ben, self.early)
+        punch(self.in_a, at(7))                                        # on leave, nothing planned, came in
+        punch(self.ben, at(6))                                         # on leave over a plan, came in
+        states, board = self.states(at(8))
+        self.assertEqual(states, {'Alfa': 'present', 'Bergh': 'present'})   # Cyr, on leave and away, is not listed
+        self.assertEqual((board.here, board.unplanned, board.planned), (1, 1, 1))
 
     def test_people_planned_off_or_with_no_plan_are_not_listed_unless_they_are_there(self):
         self.plan(self.in_a, None)                                     # planned off

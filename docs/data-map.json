@@ -260,6 +260,262 @@
     },
     {
       "app": "core",
+      "model": "Job",
+      "table": "core_job",
+      "description": "A background job (core.jobs): a task of Django's task API queued in the database and run by the worker (`manage.py run_worker`).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(200)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "key",
+          "field": "key",
+          "type": "varchar(120)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "payload",
+          "field": "payload",
+          "type": "jsonb",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "queued",
+            "running",
+            "done",
+            "failed",
+            "dead"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "attempts",
+          "field": "attempts",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "max_attempts",
+          "field": "max_attempts",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "run_after",
+          "field": "run_after",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "lease_until",
+          "field": "lease_until",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "worker",
+          "field": "worker",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "last_error",
+          "field": "last_error",
+          "type": "text",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "result",
+          "field": "result",
+          "type": "jsonb",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "started_at",
+          "field": "started_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        },
+        {
+          "name": "finished_at",
+          "field": "finished_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by core.jobs and the worker"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_core_job_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_core_job_attempts",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_core_job_lease",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_core_job_waiting",
+          "kind": "unique",
+          "fields": [
+            "kind",
+            "key"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_core_job_running",
+          "kind": "unique",
+          "fields": [
+            "kind",
+            "key"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "queued by the code that asks for background work, in its own transaction (core.jobs)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "moved by the worker (manage.py run_worker): claimed, done, tried again, dead"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "kept as the record of what ran; a pruning job is a later step"
+        },
+        "read": {
+          "status": "gap",
+          "paths": [],
+          "why": "the Background jobs page (Administration, view only for the administrator) comes with the menu and role-matrix wiring; until then /healthz shows the dead and waiting counts"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_jobs.py",
+        "tasks/tests/test_pages.py"
+      ]
+    },
+    {
+      "app": "core",
       "model": "Rev",
       "table": "core_rev",
       "description": "The revision of one (scope, key): moved by the database whenever a tracked row changes (core.rev), read by a stored figure to prove it is still valid.",
@@ -364,6 +620,75 @@
         "left_out": false
       },
       "tests": []
+    },
+    {
+      "app": "core",
+      "model": "WorkerBeat",
+      "table": "core_worker_beat",
+      "description": "The last sign of life of each worker process (core.jobs); /healthz reads it.",
+      "columns": [
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "beat_at",
+          "field": "beat_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the worker"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the worker at every round (core.jobs.beat)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the worker at every round (core.jobs.beat)"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "one row per worker name, kept"
+        },
+        "read": {
+          "status": "gap",
+          "paths": [],
+          "why": "shown on /healthz as the age of the last beat; the Background jobs page will show it"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_jobs.py"
+      ]
     },
     {
       "app": "core",
@@ -37907,6 +38232,18 @@
       "what": "create",
       "why": "not built yet: nothing creates an assistant, the AI module will (README, Messages)",
       "weight": 4
+    },
+    {
+      "table": "core.Job",
+      "what": "read",
+      "why": "the Background jobs page (Administration, view only for the administrator) comes with the menu and role-matrix wiring; until then /healthz shows the dead and waiting counts",
+      "weight": 3
+    },
+    {
+      "table": "core.WorkerBeat",
+      "what": "read",
+      "why": "shown on /healthz as the age of the last beat; the Background jobs page will show it",
+      "weight": 3
     },
     {
       "table": "farm.EquipmentType",

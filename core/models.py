@@ -255,3 +255,71 @@ class Rev(models.Model):
 
     def __str__(self):
         return f'{self.scope}:{self.key}:{self.rev}'
+
+
+class JobStatus(models.TextChoices):
+    QUEUED = 'queued', _('Waiting')
+    RUNNING = 'running', _('Running')
+    DONE = 'done', _('Done')
+    FAILED = 'failed', _('Failed')
+    DEAD = 'dead', _('Gave up')
+
+
+class Job(models.Model):
+    """A background job (core.jobs): a task of Django's task API queued in the database and run by the worker
+    (`manage.py run_worker`). Written in the transaction that asked for it, so it exists only if that work was
+    committed. Written by the system; the jobs page lists them."""
+
+    Status = JobStatus
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(max_length=200)          # the task's import path
+    # The same work: a hash of the kind's arguments. One job of a key waits and one runs at a time.
+    key = models.CharField(max_length=120)
+    payload = models.JSONField(default=dict)         # {'args': [...], 'kwargs': {...}}: ids, never objects
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.QUEUED)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    max_attempts = models.PositiveSmallIntegerField(default=5)
+    run_after = models.DateTimeField()
+    lease_until = models.DateTimeField(null=True, blank=True)
+    worker = models.CharField(max_length=100, blank=True)
+    last_error = models.TextField(blank=True)
+    result = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'core_job'
+        ordering = ['-created_at']
+        verbose_name = _('background job')
+        verbose_name_plural = _('background jobs')
+        constraints = [
+            models.CheckConstraint(condition=models.Q(status__in=JobStatus.values), name='chk_core_job_status'),
+            models.CheckConstraint(condition=models.Q(attempts__lte=models.F('max_attempts')),
+                                   name='chk_core_job_attempts'),
+            models.CheckConstraint(condition=~models.Q(status=JobStatus.RUNNING) | models.Q(lease_until__isnull=False),
+                                   name='chk_core_job_lease'),
+            models.UniqueConstraint(fields=['kind', 'key'], condition=models.Q(status=JobStatus.QUEUED),
+                                    name='uq_core_job_waiting'),
+            models.UniqueConstraint(fields=['kind', 'key'], condition=models.Q(status=JobStatus.RUNNING),
+                                    name='uq_core_job_running'),
+        ]
+        indexes = [models.Index(fields=['run_after'], condition=models.Q(status=JobStatus.QUEUED),
+                                name='core_job_due_idx')]
+
+    def __str__(self):
+        return f'{self.kind} {self.status}'
+
+
+class WorkerBeat(models.Model):
+    """The last sign of life of each worker process (core.jobs); /healthz reads it. Written by the system."""
+
+    name = models.CharField(max_length=100, primary_key=True)
+    beat_at = models.DateTimeField()
+
+    class Meta:
+        db_table = 'core_worker_beat'
+
+    def __str__(self):
+        return self.name

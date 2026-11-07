@@ -5514,6 +5514,9 @@ msgstr "Faktoren %(name)s ble fjernet i mellomtiden: last siden på nytt."
 msgid "Factors"
 msgstr "Faktorer"
 
+msgid "Failed"
+msgstr "Mislyktes"
+
 msgid "Fallow"
 msgstr "Brakklagt"
 
@@ -6134,6 +6137,9 @@ msgstr "Gass og annet"
 
 msgid "Gasping at the surface"
 msgstr "Gisper i overflaten"
+
+msgid "Gave up"
+msgstr "Ga opp"
 
 msgid "General"
 msgstr "Generelt"
@@ -14061,6 +14067,9 @@ msgstr "Volum (m³)"
 msgid "Volunteer"
 msgstr "Frivillig"
 
+msgid "Waiting"
+msgstr "Venter"
+
 msgid "Wall"
 msgstr "Veggskjerm"
 
@@ -14864,6 +14873,12 @@ msgstr "snitt %(weight)s"
 
 msgid "bFCR"
 msgstr "bFCR"
+
+msgid "background job"
+msgstr "bakgrunnsjobb"
+
+msgid "background jobs"
+msgstr "bakgrunnsjobber"
 
 msgid "backup"
 msgstr "reserve"

@@ -21,6 +21,28 @@ services:
     ports: ["${DB_PORT:-5433}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
 
+  # The background worker (core.jobs: PDF text, checkpoints, the storage tiers): the platform's image, one process,
+  # in the profile `worker`:  docker compose --profile worker up -d
+  # It reads the same database settings as the web process (an .env file beside this one, or the defaults).
+  worker:
+    profiles: [worker]
+    build: .
+    image: balik-app:local
+    restart: unless-stopped
+    depends_on: [db]
+    command: ["python", "manage.py", "run_worker", "--name", "worker"]
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-balik}
+      DB_USER: ${DB_USER:-balik}
+      DB_PASSWORD: ${DB_PASSWORD:-balik}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-local-development-only}
+    volumes:
+      - ${MEDIA_DIR:-./media}:/app/media
+    # SIGTERM: the job that runs is finished, then the worker stops.
+    stop_grace_period: 120s
+
   mosquitto:
     profiles: [sensors]
     image: eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb

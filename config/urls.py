@@ -18,12 +18,14 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+from core import health
 from core.forms import PasswordResetForm
 
 from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('healthz', health.healthz, name='healthz'),
     path('production/', views.production_home, name='production_home'),
     # Reset links go to invited people too, who have no password yet (core.forms.PasswordResetForm).
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(form_class=PasswordResetForm),

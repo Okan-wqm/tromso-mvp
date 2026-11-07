@@ -219,6 +219,12 @@ TEST_RUNNER = 'config.test_runner.FastPasswordRunner'
 # (farm/stock/dates.py; owner decisions Q3 and Q-F4).
 STOCK_BACKDATE_DAYS = 31
 
+# Background jobs (core.jobs): Django's task API on a queue in the database, run by `manage.py run_worker` (the
+# `worker` service in Docker, a second process beside runserver in development). /healthz is 503 when no worker beat
+# within WORKER_STALE_SECONDS.
+TASKS = {'default': {'BACKEND': 'core.jobs.DatabaseBackend'}}
+WORKER_STALE_SECONDS = int(os.environ.get('WORKER_STALE_SECONDS', '120'))
+
 # A feeding above this % of the unit's book biomass a day asks for an acknowledgement, stored on the record
 # (farm/feeding/services.py; owner decision Q-F5): a kilo typed for a gram is caught, fry may be fed more.
 FEEDING_ACK_PERCENT = 10

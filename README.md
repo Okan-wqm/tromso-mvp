@@ -3136,6 +3136,29 @@ row is unknown, never valid. Keys are text (a batch's id is a UUID; a table-leve
   stored figure's stamp and a floor is set for keys seen later, so every stored figure is built again. Safe at any time.
 - `core.rev.missing()` names a tracked table's trigger that is missing or disabled.
 
+### Background jobs (core/jobs.py, `manage.py run_worker`, `/healthz`)
+
+Work that should not hold a request (a PDF's text, checkpoint builds, the storage tiers) is a task of Django's task
+API (`@task` from `django.tasks`, listed in core/tasks.py) queued in the database table `core_job` by our backend
+`core.jobs.DatabaseBackend` (`TASKS` in config/settings.py). Django 6.1 has no database backend of its own, and the
+third-party one has no retries, no lease and no unique job, so the backend is ours (about 200 lines). Its rules:
+
+- A job is written in the transaction that asks for it: it exists if and only if that work was committed.
+- A job's key is a hash of its task and arguments. The database keeps one waiting and one running job per key (two
+  partial unique indexes): the same work asked twice waits once; asked again while it runs, it waits behind it.
+- The worker claims the oldest due job (`FOR UPDATE SKIP LOCKED`) with a 5-minute lease it extends while the job
+  runs. A worker that dies leaves a lease that runs out; the next round puts the job back (or gives up when its tries
+  are spent).
+- A failure is tried again after 30 s, 1 min, 2 min ... (at most an hour) up to 5 tries, then the job is `dead` and
+  stays visible; a job whose code is gone fails at once.
+- Periodic tasks (`core.tasks.PERIODIC`, task and period) are queued by the worker itself, once per period: no cron and
+  no Windows Task Scheduler.
+
+Run the worker beside the web process: `python manage.py run_worker` in development (any platform; Ctrl+C finishes the
+running job), the `worker` service in Docker (`docker compose --profile worker up -d`, built from the repository's
+Dockerfile). `/healthz` (no sign-in, counts only) answers 200 when the database answers and a worker beat within
+`WORKER_STALE_SECONDS` (default 120), else 503, with the beat's age, the dead jobs and the oldest due job's wait.
+
 ## Local setup
 
 ```

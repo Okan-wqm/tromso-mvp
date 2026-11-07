@@ -5518,6 +5518,9 @@ msgstr "%(name)s faktörü bu arada kaldırıldı: sayfayı yeniden yükleyin."
 msgid "Factors"
 msgstr "Faktörler"
 
+msgid "Failed"
+msgstr "Başarısız"
+
 msgid "Fallow"
 msgstr "Dinlendirmede"
 
@@ -6142,6 +6145,9 @@ msgstr "Gaz ve diğer"
 
 msgid "Gasping at the surface"
 msgstr "Yüzeyde soluma"
+
+msgid "Gave up"
+msgstr "Vazgeçildi"
 
 msgid "General"
 msgstr "Genel"
@@ -14075,6 +14081,9 @@ msgstr "Hacim (m³)"
 msgid "Volunteer"
 msgstr "Gönüllü"
 
+msgid "Waiting"
+msgstr "Bekliyor"
+
 msgid "Wall"
 msgstr "Duvar ekranı"
 
@@ -14874,6 +14883,12 @@ msgstr "ortalama %(weight)s"
 
 msgid "bFCR"
 msgstr "bFCR"
+
+msgid "background job"
+msgstr "arka plan işi"
+
+msgid "background jobs"
+msgstr "arka plan işleri"
 
 msgid "backup"
 msgstr "yedek"

@@ -1,0 +1,9 @@
+.git
+.venv
+node_modules
+.sensors
+.build
+media
+**/__pycache__
+*.pyc
+.env

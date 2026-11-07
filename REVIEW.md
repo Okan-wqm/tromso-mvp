@@ -117,5 +117,6 @@ Translations: TR/NB, 0 missing (babel check); data map regenerated after the mer
 
 ## Checks run
 
-See the final report: full Docker suite on a fresh test DB, `makemigrations --check`, `data_map --check`,
-`compile_catalogs`, `tsc --noEmit`, `npm test`.
+At 190817f (main 912c55d merged): full Docker suite on a fresh test DB (balik-testrunner, test_fixhr, no --parallel)
+2888 tests OK, 3 skipped; `makemigrations --check` no changes; `data_map --check` up to date; catalogs TR/NB 0 missing;
+`tsc --noEmit` OK; `npm test` 40/40 (node_modules of F:/dev/balik-ciftligi).

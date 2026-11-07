@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('auth', '0012_alter_user_first_name_max_length'),
-        ('farm', '0026_production_form_other'),
+        ('farm', '0019_water_points'),          # the farm only as far as the tables it reads (sites, departments, points)
         ('sensors', '0006_ingest_requests'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

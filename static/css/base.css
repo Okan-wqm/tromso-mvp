@@ -30,6 +30,7 @@
   --stripe: #B8455F;
   --stripe-dark: #9A3650;
   --sage: #C3CBB2;
+  --control: #77816B;   /* the edge of a form control: 3.6:1 on mist, 4.1:1 on white (WCAG 1.4.11; sage is 1.5) */
   --muted: #5B6552;
   --white: #FFFFFF;
   --error: #A3272F;
@@ -66,7 +67,7 @@ body {
 .field textarea {
   width: 100%;
   padding: .75rem .875rem;
-  border: 1.5px solid var(--sage);
+  border: 1.5px solid var(--control);
   border-radius: 6px;
   background: var(--white);
   color: var(--speck);

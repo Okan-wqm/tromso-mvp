@@ -25,7 +25,7 @@
 .task-note { margin: .25rem 0 0; }
 .task-note-form { display: grid; gap: .375rem; margin-top: .75rem; }
 .task-note-form textarea {
-  width: 100%; padding: .5rem .625rem; border: 1.5px solid var(--sage); border-radius: 6px; font: inherit;
+  width: 100%; padding: .5rem .625rem; border: 1.5px solid var(--control); border-radius: 6px; font: inherit;
 }
 .task-note-form .button { justify-self: start; }
 .drawer-actions form { display: contents; }

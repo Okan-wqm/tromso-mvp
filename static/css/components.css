@@ -61,7 +61,7 @@
 .search input {
   width: 100%;
   padding: .6875rem .875rem .6875rem 2.5rem;
-  border: 1.5px solid var(--sage);
+  border: 1.5px solid var(--control);
   border-radius: 6px;
   background: var(--white);
   color: var(--speck);
@@ -491,7 +491,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .toolbar-filter select {
   min-width: 12rem;
   padding: .6875rem 2rem .6875rem .875rem;
-  border: 1.5px solid var(--sage);
+  border: 1.5px solid var(--control);
   border-radius: 6px;
   background: var(--white);
   color: var(--speck);
@@ -576,7 +576,7 @@ a.row-title:hover { color: var(--stripe-dark); text-decoration: underline; }
 .wq-critical .wq-dot { background: var(--error); }
 .wq-warning .wq-dot { background: #7A5410; }      /* the warning text's amber: 3:1 at least as a shape */
 .wq-ok .wq-dot { background: var(--olive); }
-.wq-stale .wq-dot, .wq-not_measured .wq-dot { background: transparent; border: 1.5px solid var(--sage); }
+.wq-stale .wq-dot, .wq-not_measured .wq-dot { background: transparent; border: 1.5px solid var(--control); }
 td.wq-critical, .wq-value.wq-critical { color: var(--error); font-weight: 700; }
 td.wq-warning, .wq-value.wq-warning { color: #7A5410; font-weight: 600; }
 td.wq-stale, .wq-value.wq-stale, td.wq-no_limit, .wq-value.wq-no_limit { color: var(--muted); }
@@ -594,7 +594,7 @@ a.view-tab:not([aria-current]) { border-bottom-color: transparent; color: var(--
 a.view-tab:not([aria-current]):hover { color: var(--speck); }
 .water-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
 .water-date { display: inline-flex; align-items: center; gap: .375rem; color: var(--muted); font-size: .875rem; }
-.water-date input { min-height: 42px; padding: 0 .5rem; border: 1.5px solid var(--sage); border-radius: 6px; font: inherit; }
+.water-date input { min-height: 42px; padding: 0 .5rem; border: 1.5px solid var(--control); border-radius: 6px; font: inherit; }
 .water-point { margin: 0 0 .75rem; font-size: 1.125rem; }
 .round-scope { margin: 0 0 1.5rem; }
 .round-table td { padding: .375rem .5rem; }
@@ -1092,14 +1092,14 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .filter-group { display: flex; flex-wrap: wrap; gap: .375rem; }
 .filter-button {
   display: inline-flex; align-items: center; min-height: 42px; padding: 0 .875rem;
-  border: 1.5px solid var(--sage); border-radius: 6px; background: var(--white);
+  border: 1.5px solid var(--control); border-radius: 6px; background: var(--white);
   color: var(--speck); font-weight: 500; text-decoration: none;
 }
 .filter-button:hover { border-color: var(--muted); }
 .filter-button[aria-pressed="true"] { border-color: var(--olive); background: var(--olive); color: var(--white); }
 .filter-status select {
   min-height: 42px; min-width: 12rem; padding: 0 2rem 0 .875rem;
-  border: 1.5px solid var(--sage); border-radius: 6px; background: var(--white); color: var(--speck); font: inherit;
+  border: 1.5px solid var(--control); border-radius: 6px; background: var(--white); color: var(--speck); font: inherit;
 }
 .units-count { margin: 0 0 1rem; color: var(--muted); font-size: .96875rem; }
 
@@ -1189,7 +1189,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .feeding-filters select { min-width: 10rem; }
 .date-filter { display: inline-flex; align-items: center; gap: .375rem; color: var(--muted); font-size: .9375rem; }
 .date-filter input {
-  min-height: 42px; padding: 0 .625rem; border: 1.5px solid var(--sage); border-radius: 6px;
+  min-height: 42px; padding: 0 .625rem; border: 1.5px solid var(--control); border-radius: 6px;
   background: var(--white); color: var(--speck); font: inherit;
 }
 .feeding-table td { vertical-align: top; }
@@ -1197,7 +1197,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .data-table tbody tr.is-voided td:nth-child(-n+7) { text-decoration: line-through; }
 .unit-choice { display: grid; gap: .5rem; margin: 0 0 1rem; padding: 0; list-style: none; }
 .unit-choice a {
-  display: block; padding: .625rem .875rem; border: 1.5px solid var(--sage); border-radius: 6px;
+  display: block; padding: .625rem .875rem; border: 1.5px solid var(--control); border-radius: 6px;
   color: var(--speck); text-decoration: none;
 }
 .unit-choice a:hover, .unit-choice a:focus-visible { border-color: var(--olive); background: var(--mist); }
@@ -1219,7 +1219,7 @@ a.grid-name:hover { color: var(--stripe-dark); text-decoration: underline; }
 .drawer-subhead { margin: .75rem 0 .375rem; font-size: .9375rem; }
 .estimate-line { font-weight: 500; }
 .grid-table input, .grid-table select {
-  width: 100%; min-width: 4.5rem; min-height: 38px; padding: 0 .5rem; border: 1.5px solid var(--sage);
+  width: 100%; min-width: 4.5rem; min-height: 38px; padding: 0 .5rem; border: 1.5px solid var(--control);
   border-radius: 6px; background: var(--white); color: var(--speck); font: inherit;
 }
 .grid-table select { min-width: 9rem; }

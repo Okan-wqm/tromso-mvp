@@ -1,7 +1,7 @@
-{% extends user.is_authenticated|yesno:"app_base.html,auth_base.html" %}
+{% extends page_base %}
 {% load i18n %}
-{% comment %} An address that leads nowhere: in the console's shell for a person signed in (the menu stays), on the sign-in page's for a
-   visitor (core/tests_errors.py). {% endcomment %}
+{% comment %} An address that leads nowhere: in the dialog's frame when the dialog asked (core.navigation.page_base), the console's for a person signed in (the
+   menu stays), the sign-in page's for a visitor (core/tests_errors.py). {% endcomment %}
 {% block title %}{% trans "This page does not exist" %}{% endblock %}
 {% block eyebrow %}{% trans "Error" %} 404{% endblock %}
 {% block heading %}{% trans "This page does not exist" %}{% endblock %}

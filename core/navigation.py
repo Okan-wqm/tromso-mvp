@@ -209,3 +209,13 @@ def rail(request):
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
     return {'workspaces': panels, 'workspace': current, 'rail_sections': current['sections'] if current else []}
+
+
+def page_base(request):
+    """The frame a page that is not a tab's own (an error page) draws in: the dialog's when the dialog asked for it
+    (X-Modal), the console's for a person signed in, the sign-in page's for a visitor (context processor)."""
+    from .crud import is_modal
+    if is_modal(request):
+        return {'page_base': 'modal_base.html'}
+    user = getattr(request, 'user', None)
+    return {'page_base': 'app_base.html' if user is not None and user.is_authenticated else 'auth_base.html'}

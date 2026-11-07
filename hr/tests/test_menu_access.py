@@ -77,7 +77,7 @@ class MenuAgreesWithAccessTests(PeopleTestCase):
             refused = navigation.refused(self.worker, address)
             if refused:
                 self.assertEqual(status, 403, address)
-            if ':production_' in name:
+            if ':production_' in name and 'overview' not in name:     # Team overview is for leads, on both mounts
                 self.assertFalse(refused, address)
             checked.append((name, refused))
         self.assertIn(('hr:leaverequest_detail', True), checked)

@@ -154,7 +154,7 @@ class AuditLogTests(TestCase):
         self.assertEqual(labels(q='bh'), ['Bergen (BH)'])
         self.assertEqual(labels(user='kari'), ['Tromsø (TS)'])
         self.assertEqual(labels(action='create'), ['Bergen (BH)'])
-        self.assertEqual(labels(**{'from': '2999-01-01'}), [])
+        self.assertEqual(labels(**{'from': '01.01.2099'}), [])          # the window of dates ends with 2100
 
 
 def perms(*names):

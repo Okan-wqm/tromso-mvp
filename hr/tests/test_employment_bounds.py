@@ -22,10 +22,10 @@ def at(day, hour):
     return datetime.combine(day, time(hour), tzinfo=utc.utc)
 
 
-class EmploymentBoundsTests(PeopleTestCase):
+class EmploymentCase(PeopleTestCase):
     def setUp(self):
         super().setUp()
-        self.everyone = user('everyone', 'view_employee', 'view_shiftassignment', 'add_shiftassignment',
+        self.everyone = user('everyone', 'view_employee', 'change_employee', 'view_shiftassignment', 'add_shiftassignment',
                              'change_shiftassignment', 'view_attendancerecord', 'add_attendancerecord',
                              'view_leaverequest', 'add_leaverequest', 'change_leaverequest', 'all_employee',
                              group='Everyone role')
@@ -38,6 +38,9 @@ class EmploymentBoundsTests(PeopleTestCase):
     def counts(self):
         return (ShiftAssignment.all_objects.count(), AttendanceRecord.objects.count(), LeaveRequest.objects.count(),
                 AuditLog.objects.count())
+
+
+class EmploymentBoundsTests(EmploymentCase):
 
     def test_no_shift_is_planned_outside_the_employment(self):
         before = self.counts()
@@ -110,3 +113,63 @@ class EmploymentBoundsTests(PeopleTestCase):
             self.assertEqual(response.status_code, 200, actor)
             self.assertIn('joined on', ' '.join(response.context['form'].non_field_errors()), actor)
         self.assertEqual(self.counts(), before)
+
+
+class EmploymentChangesTests(EmploymentCase):
+    """The rule holds when the records come first: approving a leave the last day now cuts, or moving a first or last day
+    past records already written, is refused with the reason; the database refuses it too, whatever writes."""
+
+    def setUp(self):
+        super().setUp()
+        Employee.objects.filter(pk=self.in_a.pk).update(left_on=None)
+        self.in_a.refresh_from_db()
+
+    def test_approving_a_pending_leave_past_a_last_day_set_since_is_refused(self):
+        pending = LeaveRequest.objects.create(employee=self.in_a, leave_type=self.annual, first_day=date(2026, 3, 30),
+                                              last_day=date(2026, 4, 3))
+        Employee.objects.filter(pk=self.in_a.pk).update(left_on=LEFT)          # written under the request
+        with self.assertRaises(ValidationError):
+            services.decide_leave(self.everyone, pending, approve=True)
+        pending.refresh_from_db()
+        self.assertEqual(pending.status, 'pending')
+
+    def test_a_last_day_before_approved_leave_or_a_punch_is_refused(self):
+        LeaveRequest.objects.create(employee=self.in_a, leave_type=self.annual, first_day=date(2026, 4, 6),
+                                    last_day=date(2026, 4, 8), status='approved', decided_at=at(date(2026, 3, 1), 9))
+        before = self.counts()
+        with self.assertRaises(ValidationError):
+            services.leave_company(self.everyone, self.in_a, LEFT)
+        self.in_a.refresh_from_db()
+        self.assertIsNone(self.in_a.left_on)
+        self.assertEqual(self.counts(), before)
+
+    def test_the_person_form_refuses_a_first_day_after_records_already_written(self):
+        AttendanceRecord.objects.create(employee=self.in_a, clock_in=at(date(2026, 1, 5), 6),
+                                        clock_out=at(date(2026, 1, 5), 14), via='self')
+        self.client.force_login(user('hradmin2', 'view_employee', 'change_employee', 'all_employee', group='HR2'))
+        response = self.client.post(reverse('hr:production_employee_edit', args=[self.in_a.pk]), {
+            'employee_number': self.in_a.employee_number, 'employment_type': self.in_a.employment_type,
+            'user': str(self.ann.pk), 'joined_on': '2026-02-01', 'version': str(self.in_a.version)})
+        self.assertEqual(response.status_code, 200)              # the form again, not saved
+        self.assertIn('joined_on', response.context['form'].errors)
+        self.in_a.refresh_from_db()
+        self.assertEqual(self.in_a.joined_on, JOINED)
+
+    def test_the_database_refuses_a_record_outside_the_employment_whatever_writes(self):
+        from django.db import IntegrityError, connection, transaction
+        Employee.objects.filter(pk=self.in_a.pk).update(left_on=LEFT)
+        for write in (
+                lambda: ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 4, 2), shift=self.early),
+                lambda: LeaveRequest.objects.create(employee=self.in_a, leave_type=self.annual,
+                                                    first_day=date(2025, 12, 30), last_day=date(2026, 1, 2)),
+                lambda: AttendanceRecord.objects.create(employee=self.in_a, clock_in=at(date(2026, 4, 9), 6),
+                                                        via='self')):
+            with self.subTest(write=write), self.assertRaises(IntegrityError), transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+                write()
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+            ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 2), shift=self.early)
+            Employee.objects.filter(pk=self.in_a.pk).update(left_on=date(2026, 2, 27))

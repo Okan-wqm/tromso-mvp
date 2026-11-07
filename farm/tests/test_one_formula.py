@@ -11,6 +11,22 @@ from ..water import chemistry, native
 
 ROOT = Path(settings.BASE_DIR)
 SWITCHED = ['farm/water/chemistry.py']
+# Functions of a module still partly in Python, switched one by one: no arithmetic, no number, no math of their own.
+SWITCHED_FUNCTIONS = {'farm/water/deffeyes.py': ['judge', 'analyse', 'alkalinity_floor', 'why_impossible', 'possible',
+                                                 '_axis', 'box_of']}
+
+
+def arithmetic(node):
+    """Arithmetic or a numeric comparison (`is None`, `not`, `in` and formatting a translated text are not formulas)."""
+    if isinstance(node, ast.BinOp):
+        # text formatting, _('... %(floor)s ...') % {...}, is words, not a formula
+        return not (isinstance(node.op, ast.Mod) and isinstance(node.left, ast.Call)
+                    and getattr(node.left.func, 'id', '') in ('_', 'gettext', 'ngettext'))
+    if isinstance(node, ast.UnaryOp):
+        return not isinstance(node.op, ast.Not)
+    if isinstance(node, ast.Compare):
+        return not all(isinstance(op, (ast.Is, ast.IsNot, ast.In, ast.NotIn)) for op in node.ops)
+    return False
 
 
 class OneFormulaTests(SimpleTestCase):
@@ -29,6 +45,19 @@ class OneFormulaTests(SimpleTestCase):
                 self.assertEqual(numbers, [])
                 operations = [type(node).__name__ for node in ast.walk(tree) if isinstance(node, (ast.BinOp, ast.UnaryOp))]
                 self.assertEqual(operations, [])
+
+    def test_a_switched_function_holds_no_formula(self):
+        for name, functions in SWITCHED_FUNCTIONS.items():
+            tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
+            defined = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
+            for function in functions:
+                with self.subTest(module=name, function=function):
+                    node = defined[function]
+                    self.assertEqual([ast.unparse(each) for each in ast.walk(node) if arithmetic(each)], [])
+                    self.assertEqual([each.value for each in ast.walk(node) if isinstance(each, ast.Constant)
+                                      and isinstance(each.value, (int, float)) and not isinstance(each.value, bool)], [])
+                    self.assertFalse({each.value.id for each in ast.walk(node) if isinstance(each, ast.Attribute)
+                                      and isinstance(each.value, ast.Name)} & {'math', 'chemistry'})
 
     def test_the_chemistry_names_are_the_cores(self):
         for name in ('equilibria', 'solve', 'oxygen_solubility', 'co2_from_air', 'pressure_atm', 'nh3_fraction',

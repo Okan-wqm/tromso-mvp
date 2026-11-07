@@ -36,6 +36,7 @@ def kind_of(path):
 
 
 INPUTS = ('temp_c', 'salinity', 'altitude_m')
+TIE = 1e-12
 
 
 def compare(expected, actual, path=(), found=None, ceilings=None, refused=False):
@@ -45,6 +46,12 @@ def compare(expected, actual, path=(), found=None, ceilings=None, refused=False)
     found = [] if found is None else found
     if not path and isinstance(expected, dict):
         refused = any(isinstance(expected.get(key), str) and expected[key] in NON_FINITE for key in INPUTS)
+        if expected.get('kind') == 'floor' and abs(expected['alkalinity_mg_l'] - expected['floor']) <= TIE * (
+                1 + abs(expected['floor'])):
+            # A tie: an alkalinity on the floor or one ulp beside it, where two libms may decide `possible` apart
+            # (farm/tests/test_native_analysis.py lists them); the rest of the record is compared.
+            expected = {key: value for key, value in expected.items() if key != 'possible'}
+            actual = {key: value for key, value in actual.items() if key != 'possible'}
     if isinstance(expected, dict) and isinstance(actual, dict):
         if set(expected) == {'value'} and actual.get('raises') == 'NonFiniteError' and (
                 refused or not finite(expected['value'])):

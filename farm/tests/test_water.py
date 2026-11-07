@@ -983,16 +983,23 @@ class ProductionUnitsTests(WaterTestCase):
         self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
                          [('Sampling points with a critical water value', 1)])
 
-    def test_a_point_whose_judged_values_aged_is_stale_and_a_value_without_a_limit_says_why(self):
-        """A critical value that grew old makes its point Stale, not "No limit" (its other values, with no limit row, are
-        not a judgement); a value without a limit says why: no limit for the fish's species, or no fish that day."""
+    def test_an_old_critical_value_keeps_its_point_critical_with_no_recent_data_and_no_limit_says_why(self):
+        """A point's status is the worst of its values. A critical value that grew old still counts: the point is
+        "Critical, no recent data", never hidden by a fresh OK of another parameter, never "No limit" (HA-K02's side outlet,
+        CO₂ 15.6 three days old). A value without a limit says why: no limit for the fish, or no fish that day."""
         self.stock()
         self.limit('co2_mg_l', critical_high=15)
+        self.limit('ph', critical_low=6)
         side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
         self.sample(point=side, hours=80, co2_mg_l='15.6', alkalinity_mg_l='90')   # older than CO₂'s 72 fresh hours
+        self.sample(point=side, hours=1, ph='7.2')                                  # a fresh OK of another parameter
         page = self.client.get(reverse('farm:water'))
         row = next(row for row in page.context['rows'] if row['point'] == side)
-        self.assertEqual(row['water'].status, Status.STALE)
+        co2 = row['water'].get('co2_mg_l')
+        self.assertEqual((co2.status, co2.judged), (Status.STALE, Status.CRITICAL))
+        self.assertEqual((row['water'].status, row['water'].old_alert), (Status.CRITICAL, True))
+        self.assertContains(page, 'Critical, no recent data')
+        self.assertEqual(page.context['critical_count'], 1)
         alkalinity = row['water'].get('alkalinity_mg_l')
         self.assertEqual(alkalinity.status, Status.NO_LIMIT)
         self.assertEqual(alkalinity.why_no_limit, 'No water limit is set for the fish in the unit.')

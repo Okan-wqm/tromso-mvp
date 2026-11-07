@@ -214,13 +214,16 @@ def _hour(moment):
 def hours_of(segment):
     """((first, last), [(from, to)]): the whole hours inside the segment, which the hour rollup gives exactly, and the
     parts of the hours it only partly holds (where a binding began or ended inside an hour: a move, a window's edge),
-    read from the raw readings, so an hour that holds a move is shared by the two places, never given whole to one."""
+    read from the raw readings, so an hour that holds a move is shared by the two places, never given whole to one.
+    Each part lies inside one hour (the replay keys it by that hour, which ends after every reading in it)."""
     first = _hour(segment.start)
     if first < segment.start:
         first += HOUR
     last = _hour(segment.end)
     if last <= first:
-        return (first, first), [(segment.start, segment.end)]
+        # No whole hour: the stay is inside one hour, or crosses one boundary (01:30-02:20): one part per hour.
+        cut = min(first, segment.end)
+        return (first, first), [(start, end) for start, end in ((segment.start, cut), (cut, segment.end)) if start < end]
     return (first, last), [(start, end) for start, end in ((segment.start, first), (last, segment.end)) if start < end]
 
 

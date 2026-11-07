@@ -20,7 +20,7 @@ from django.utils.translation import gettext as _, gettext_lazy
 from django.views.decorators.http import require_POST
 
 from core import audit, navigation
-from core.crud import DRAFT, done, render_page
+from core.crud import DRAFT, done, refusal_text, render_page
 from core.models import AuditLog
 from farm.models import System, Tank
 from farm.models.site import zone_of
@@ -31,7 +31,7 @@ from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
 from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason,
                      Device, IngestStatus)
 from .resources import (BindingResource, ChannelResource, ConnectionResource, CredentialResource, DeviceResource,
-                        PayloadFormatResource, database_refusal, secret_page)
+                        PayloadFormatResource, secret_page)
 
 DATETIME = forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M')
 # How the activity log says a secret changed: never its value or its hash.
@@ -229,7 +229,7 @@ def device_move(request):
         except ValidationError as error:
             form.add_error(None, error.messages)
         except IntegrityError as error:
-            form.add_error(None, database_refusal(error))
+            form.add_error(None, refusal_text(error))
         else:
             if data['place'] is None:
                 messages.success(request, _('%(device)s taken out of the water.') % {'device': data['device']})

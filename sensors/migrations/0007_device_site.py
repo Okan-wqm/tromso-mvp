@@ -1,11 +1,15 @@
 # Written by hand: functions and triggers only, no change to Django's state.
-"""A device is at one site at a time (portable sensors): the site of the places its channels are bound to now. Two
-constraint triggers hold it, with `sensors_place_site`, the site of a binding's place (a sampling point's owner's: a
+"""A device is at one site at a time (portable sensors): the site of the places its channels are bound to now.
+Constraint triggers hold it, with `sensors_place_site`, the site of a binding's place (a sampling point's owner's: a
 unit's or a piece of equipment's production department's, a system's own; NULL for a department without a site):
 
 - an open live binding (no end, not deleted) is to a place of its channel's device's site, or of no site;
 - a device's site changes only while none of its channels (deleted ones too: their bindings come back with them) has an
-  open live binding to a place of another site.
+  open live binding to a place of another site;
+- a unit or a piece of equipment (its production department), a system or a production department (its site) changes
+  site only while no device is placed there (`trg_sensors_placed_site`: move the device or take it out first), so a
+  placed device's site never lags its place. An update of an open binding that leaves its place as it was (a note) is
+  never checked.
 
 `sensors/bindings.py` `move_device` ends the open bindings, moves the device's site, then opens the new ones, in one
 transaction. A closed binding is history and is never checked. Rows already breaking the rule stop the migration, named:
@@ -40,6 +44,11 @@ BEGIN
     IF NEW.is_deleted OR NEW.valid_to IS NOT NULL THEN
         RETURN NULL;
     END IF;
+    IF TG_OP = 'UPDATE' AND NOT OLD.is_deleted AND OLD.valid_to IS NULL AND OLD.channel_id = NEW.channel_id
+       AND OLD.point_id IS NOT DISTINCT FROM NEW.point_id AND OLD.system_id IS NOT DISTINCT FROM NEW.system_id
+       AND OLD.equipment_id IS NOT DISTINCT FROM NEW.equipment_id THEN
+        RETURN NULL;                    -- the same open binding at the same place: a note, its version
+    END IF;
     SELECT d.site_id, d.code INTO device_site, device_code
         FROM sensors_channel c JOIN sensors_device d ON d.id = c.device_id WHERE c.id = NEW.channel_id;
     place_site := sensors_place_site(NEW.point_id, NEW.system_id, NEW.equipment_id);
@@ -73,6 +82,36 @@ CREATE CONSTRAINT TRIGGER trg_sensors_device_site
     AFTER UPDATE OF site_id ON sensors_device
     FOR EACH ROW EXECUTE FUNCTION sensors_device_site();
 
+CREATE FUNCTION sensors_placed_site() RETURNS trigger AS $$
+DECLARE
+    misplaced varchar;
+BEGIN
+    SELECT d.code INTO misplaced
+    FROM sensors_binding b JOIN sensors_channel c ON c.id = b.channel_id JOIN sensors_device d ON d.id = c.device_id
+    WHERE NOT b.is_deleted AND b.valid_to IS NULL
+      AND coalesce(sensors_place_site(b.point_id, b.system_id, b.equipment_id), d.site_id) <> d.site_id
+    LIMIT 1;
+    IF misplaced IS NOT NULL THEN
+        RAISE EXCEPTION 'Sensor device % is placed here: move the device (Move device) or take it out of the water first',
+            misplaced USING ERRCODE = 'check_violation', CONSTRAINT = 'trg_sensors_placed_site';
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE CONSTRAINT TRIGGER trg_sensors_placed_site AFTER UPDATE OF production_department_id ON tanks
+    FOR EACH ROW WHEN (OLD.production_department_id IS DISTINCT FROM NEW.production_department_id)
+    EXECUTE FUNCTION sensors_placed_site();
+CREATE CONSTRAINT TRIGGER trg_sensors_placed_site AFTER UPDATE OF production_department_id ON equipment
+    FOR EACH ROW WHEN (OLD.production_department_id IS DISTINCT FROM NEW.production_department_id)
+    EXECUTE FUNCTION sensors_placed_site();
+CREATE CONSTRAINT TRIGGER trg_sensors_placed_site AFTER UPDATE OF site_id ON systems
+    FOR EACH ROW WHEN (OLD.site_id IS DISTINCT FROM NEW.site_id)
+    EXECUTE FUNCTION sensors_placed_site();
+CREATE CONSTRAINT TRIGGER trg_sensors_placed_site AFTER UPDATE OF site_id ON production_departments
+    FOR EACH ROW WHEN (OLD.site_id IS DISTINCT FROM NEW.site_id)
+    EXECUTE FUNCTION sensors_placed_site();
+
 DO $$
 DECLARE
     misplaced text;
@@ -89,6 +128,11 @@ END;
 $$;
 """
 DROP = """
+DROP TRIGGER IF EXISTS trg_sensors_placed_site ON production_departments;
+DROP TRIGGER IF EXISTS trg_sensors_placed_site ON systems;
+DROP TRIGGER IF EXISTS trg_sensors_placed_site ON equipment;
+DROP TRIGGER IF EXISTS trg_sensors_placed_site ON tanks;
+DROP FUNCTION IF EXISTS sensors_placed_site();
 DROP TRIGGER IF EXISTS trg_sensors_device_site ON sensors_device;
 DROP FUNCTION IF EXISTS sensors_device_site();
 DROP TRIGGER IF EXISTS trg_sensors_binding_site ON sensors_binding;

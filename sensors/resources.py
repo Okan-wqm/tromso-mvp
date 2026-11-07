@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as gettext_now, gettext_lazy as _, ngettext_lazy
 
-from core.crud import CreateView, Resource, RowList, done, render_page
+from core.crud import CreateView, Resource, RowList, done, refusal_text, render_page
 from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
 
@@ -185,13 +185,6 @@ class CredentialResource(Resource):
 
 
 
-def database_refusal(error):
-    """What the database said when it refused a binding the form had checked: someone else bound the same place or
-    channel since (its constraints and triggers, sensors migrations 0004 and 0007)."""
-    cause = getattr(error, '__cause__', None)
-    return str(getattr(getattr(cause, 'diag', None), 'message_primary', '') or error)
-
-
 class BindView(CreateView):
     """The Move dialog: binds a channel from a moment (sensors/bindings.py `move`, which ends its open binding then). A
     link may name the channel and the place (`?channel=…&target=point:…`, from a monitoring card or a Deffeyes window)."""
@@ -219,7 +212,7 @@ class BindView(CreateView):
                 form.add_error(field if field in form.fields else None, messages_)
             return self.page(form)
         except IntegrityError as error:
-            form.add_error(None, database_refusal(error))
+            form.add_error(None, refusal_text(error))
             return self.page(form)
         messages.success(request, gettext_now('%(channel)s bound to %(target)s.') % {'channel': data['channel'],
                                                                           'target': data['target_object']})

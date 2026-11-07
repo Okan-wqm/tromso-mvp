@@ -60,7 +60,7 @@ The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first
 - **read**: none, by design: read only by the form path, to find the record a key created
 - **how it works**: The same form sent twice creates one record: the second sending finds the first one's record here.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › entry_keys
-- **tests that mention it**: `core/tests_entry_key.py`, `tasks/tests/test_pages.py`
+- **tests that mention it**: `core/tests_entry_key.py`, `farm/tests/test_water_points.py`, `tasks/tests/test_pages.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

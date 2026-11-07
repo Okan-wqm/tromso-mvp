@@ -348,6 +348,7 @@
       },
       "tests": [
         "core/tests_entry_key.py",
+        "farm/tests/test_water_points.py",
         "tasks/tests/test_pages.py"
       ]
     },

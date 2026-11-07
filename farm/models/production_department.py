@@ -9,7 +9,7 @@ from core.models import AuditedModel, CodedMixin
 
 from .site import Site
 
-# The database check that a live production department is on a site; added NOT VALID (migration 0027), so a row a
+# The database check that a live production department is on a site; added NOT VALID (migration 0028), so a row a
 # deleted site left without one before stays until it is changed.
 LIVE_ON_A_SITE = 'chk_production_departments_live_on_a_site'
 

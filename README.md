@@ -83,7 +83,7 @@ the source:
   check (`chk_production_departments_live_on_a_site`) refuses one without. The source left a deleted site's
   departments without a site, where their units' fish were in no site's reports and their feed drew on no store
   (F-212); now a site is deleted only once its units are gone, and its departments go with it. A department left
-  without a site before is kept as it was (the check was added `NOT VALID`, migration 0027): its form asks for a site
+  without a site before is kept as it was (the check was added `NOT VALID`, migration 0028): its form asks for a site
   the next time it is saved (whatever its units' records: on no site they are in no report), its units take no fish
   until then, and `manage.py check_stock` names it; once it names none, the check can be validated.
 - The source's `administration` type is not carried over: an administrative department is an organisational one.

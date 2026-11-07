@@ -114,6 +114,7 @@ class LeaveRequestResource(Resource):
                 'can_decide': can_edit and not own and item.status == LeaveStatus.PENDING,
                 'can_cancel': services.can_cancel(request.user, item, listed=True,
                                                   today=site_today(sites[(item.employee_id, item.first_day)])),
+                'can_shorten': item.first_day < item.last_day and services.can_correct(request.user, item, listed=True),
             })
         return rows
 

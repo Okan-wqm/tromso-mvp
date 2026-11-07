@@ -79,6 +79,8 @@ class AttendanceRecordForm(TabbedForm):
         if ended is not None and ended <= started:
             self.add_error('clock_out', _('The person cannot clock out before they clocked in.'))
             return cleaned
+        services.check_employed(employee, started.astimezone(zone).date(),
+                                ended.astimezone(zone).date() if ended is not None else None)
         entered = adding or self.instance.via == AttendanceRecord.Via.ENTERED
         if entered and not (cleaned.get('note') or '').strip():
             self.add_error('note', _('Say why the time was entered by hand.'))

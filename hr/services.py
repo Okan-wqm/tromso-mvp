@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.translation import gettext as _
 
 from core import audit
@@ -27,6 +28,18 @@ def _allowed(user, employee, perms=('hr.change_employee', 'hr.add_employee')):
     user's own record unless they hold Everyone (`own_record`)."""
     if not any(user.has_perm(perm) for perm in perms) or not scope.can_reach(user, employee)             or own_record(user, employee):
         raise PermissionDenied
+
+
+def check_employed(employee, first, last=None):
+    """Refuses a record of `employee` on a day between `first` and `last` (one day by default) outside their employment:
+    before they joined or after their last day. The one rule for plans, presence, punches and leave, whoever writes."""
+    last = last or first
+    if first < employee.joined_on:
+        raise ValidationError(_('%(person)s joined on %(day)s.') % {'person': employee.full_name,
+                                                                     'day': date_format(employee.joined_on)})
+    if employee.left_on is not None and last > employee.left_on:
+        raise ValidationError(_('%(person)s left on %(day)s.') % {'person': employee.full_name,
+                                                                   'day': date_format(employee.left_on)})
 
 
 def _values(posting):
@@ -213,6 +226,8 @@ def plan_shifts(user, cells, shift):
                 if not scope.can_reach(user, employee, day) or not user.has_perm(
                         _cell_permission(existing.get(day), shift)):
                     raise PermissionDenied
+                if shift is not CLEAR:
+                    check_employed(employee, day)
             if shift is CLEAR and not existing:
                 continue
             found = evaluate(employee, changes)
@@ -262,7 +277,7 @@ def _warnings_entry(codes):
 
 
 # ---- leave --------------------------------------------------------------------------------------------------------
-LEAVE_FIELDS = ['status', 'decision_note', 'decided_by']
+LEAVE_FIELDS = ['status', 'last_day', 'decision_note', 'decided_by']     # last_day: a started leave shortened
 PRIVATE_LEAVE = ['decision_note']
 
 
@@ -281,11 +296,22 @@ def _own(user, leave_request):
     return leave_request.employee.user_id is not None and leave_request.employee.user_id == user.pk
 
 
+def _decider(user, leave_request, listed=False):
+    """Edit on Leave requests, the person in the user's team (not asked again for a request `listed` from it), and not the
+    user's own request (one rule; a database trigger holds the last part whatever writes)."""
+    return (user.has_perm('hr.change_leaverequest') and not _own(user, leave_request)
+            and (listed or scope.can_reach(user, leave_request.employee, leave_request.first_day)))
+
+
 def can_decide(user, leave_request):
-    """Whether `user` may approve or reject the request: Edit on Leave requests, the person in their team, and not their own
-    request (one rule; a database trigger holds the last part whatever writes). One approval step."""
-    return (leave_request.status == LeaveStatus.PENDING and user.has_perm('hr.change_leaverequest')
-            and not _own(user, leave_request) and scope.can_reach(user, leave_request.employee, leave_request.first_day))
+    """Whether `user` may approve or reject the request: a pending one, by a decider. One approval step."""
+    return leave_request.status == LeaveStatus.PENDING and _decider(user, leave_request)
+
+
+def can_correct(user, leave_request, listed=False):
+    """Whether `user` may shorten or cancel an approved request that has begun: a decider only, never the person (the
+    days are history now; a lead or HR puts them right when the person came back early or never went)."""
+    return leave_request.status == LeaveStatus.APPROVED and _decider(user, leave_request, listed)
 
 
 def can_cancel(user, leave_request, today=None, listed=False):
@@ -295,7 +321,7 @@ def can_cancel(user, leave_request, today=None, listed=False):
     if leave_request.status == LeaveStatus.APPROVED:
         today = today or site_today(read.site_on(leave_request.employee, leave_request.first_day))
         if leave_request.first_day <= today:
-            return False
+            return can_correct(user, leave_request, listed)
     elif leave_request.status != LeaveStatus.PENDING:
         return False
     if _own(user, leave_request):
@@ -346,6 +372,25 @@ def cancel_leave(user, leave_request):
         return current
 
 
+def shorten_leave(user, leave_request, last_day):
+    """Ends an approved request earlier: `last_day` from its first day to the day before its last (the person came back
+    early). A decider only (`can_correct`); logged; the days after it are free again."""
+    with transaction.atomic():
+        current = _lock(leave_request)
+        if not can_correct(user, current):
+            raise PermissionDenied
+        if not current.first_day <= last_day < current.last_day:
+            raise ValidationError(_('The new last day must lie between %(first)s and the day before %(last)s.')
+                                  % {'first': date_format(current.first_day), 'last': date_format(current.last_day)})
+        before = _leave_values(current)
+        current.last_day = last_day
+        current.updated_by, current.version = user, current.version + 1
+        current.save()
+        audit.record_update(user, current, before, _leave_values(current),
+                            entity_type=audit.entity_type_of(LeaveRequest))
+        return current
+
+
 # ---- attendance ---------------------------------------------------------------------------------------------------
 PUNCH_FIELDS = ['employee', 'clock_in', 'clock_out', 'via', 'note']
 PRIVATE_PUNCH = ['note']
@@ -387,6 +432,8 @@ def clock_in(user):
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
         if AttendanceRecord.objects.filter(employee=employee, clock_out__isnull=True).exists():
             raise ValidationError(_('You are already clocked in.'))
+        now = timezone.now()
+        check_employed(employee, timezone.localtime(now, zone_of(read.site_on(employee, now.date()))).date())
         record = AttendanceRecord(employee=employee, clock_in=timezone.now(), via=AttendanceRecord.Via.SELF,
                                   created_by=user, updated_by=user)
         _save_punch(user, record, True)
@@ -423,6 +470,9 @@ def enter_presence(user, employee, clock_in_at, clock_out_at, note):
         raise ValidationError(_('Say why the time was entered by hand.'))
     if clock_out_at is not None and clock_out_at <= clock_in_at:
         raise ValidationError(_('The person cannot clock out before they clocked in.'))
+    zone = zone_of(read.site_on(employee, clock_in_at.date()))
+    check_employed(employee, timezone.localtime(clock_in_at, zone).date(),
+                   timezone.localtime(clock_out_at, zone).date() if clock_out_at is not None else None)
     with transaction.atomic():
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
         record = AttendanceRecord(employee=employee, clock_in=clock_in_at, clock_out=clock_out_at,

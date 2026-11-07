@@ -2865,9 +2865,17 @@ interface for the places that may only learn that someone is away, never why.
 and **Edit also approves, rejects and cancels** (the matrix has no extra column, as for a knowledge entry's review). The decider
 is someone with Edit whose team holds the person and who is not the person; a lead's own request therefore reaches whoever has
 them in their team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
-pending request is cancelled by the person or a decider at any time, an approved one only while its first day has not started on
-the site's clock; the decisions are `hr.services.decide_leave` and `cancel_leave` (POST routes, a dialog for the rejection
+pending request is cancelled by the person or a decider at any time, an approved one by the person only while its first day
+has not started on the site's clock. Once it has begun, a decider (never the person, never on their own leave:
+`hr.services.can_correct`) still puts it right: **ends it earlier** (`shorten_leave`, a new last day from its first day to the
+day before its last: the person came back early; the request's page has the field) or cancels it (it was never taken). The
+decisions are `hr.services.decide_leave`, `cancel_leave` and `shorten_leave` (POST routes, a dialog for the rejection
 note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
+
+**Within the employment.** No shift is planned, no presence entered or punched and no leave asked for a day before the person
+joined or after their last day (`hr.services.check_employed`, the one rule for the plan, the punch, the entered presence, the
+attendance form and the leave form; clearing a planned day is always allowed). A lead was already held to it by the
+placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule.
 
 **Privacy.** A lead sees the person and the days; the **type** (sick, annual) only the person, who may decide the request (Edit) and the
 holders of Everyone see: in the list, on the read page and in the search (the scope marks each request `type_shown` and a search for a

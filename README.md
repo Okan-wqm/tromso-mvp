@@ -3243,7 +3243,7 @@ Turkish (`tr`) are translations kept in `locale/<language>/LC_MESSAGES/django.po
 language of the cookie set by the switch, otherwise of the browser, otherwise English; a signed-in
 person's choice is also saved on their account (`Profile`) and the admin can set it on the user form,
 so an invitation email arrives in the new person's language. Numbers and dates follow the language
-(`60,3913`, `2. november 2026`). The activity log is stored in English and shown translated.
+(`60,3913`); a date is shown and typed the European way in every language (`02.11.2026`, `02.11.2026 13:05`, owner rule). The activity log is stored in English and shown translated.
 
 GNU gettext is not needed: `manage.py update_catalogs` and `manage.py compile_catalogs` (Babel) do
 what `makemessages` and `compilemessages` do; they skip the system checks, so they run without the

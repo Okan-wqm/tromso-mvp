@@ -1,11 +1,11 @@
 """The water's other sources (farm/water/sources.py): live values from a provider (the sensors app registers one; these
 tests a fake), resolved per parameter, each on its own, in ONE place (farm/water/read.py `latest`), in the owner's order
-(owner amendment A1):
+(A9, 2026-11-07, which replaced A1):
 
-1. a fresh value bound to the point itself, the primary channel before the backup;
-2. else, for the middle point of a unit or of a system, a fresh value bound to the system (the unit's `system`);
-3. else the latest manual or lab value, when it is fresh;
-4. else the newest of what there is, shown stale.
+1. the newest of the point's OWN fresh values, its sensor channels' and its samples', whatever the origin (between two
+   channels measured at the same time, the primary before the backup);
+2. else, for the middle point of a unit, the newest fresh value of its system (the system's sensor, a sample of its loop);
+3. else the newest of what there is, shown stale and used in no calculation.
 
 Every value says where it comes from and how old it is, on the water page, the monitoring card and the Deffeyes window.
 Derived values (NH3, the other oxygen unit) need all their inputs from one kind of source: a sensor TAN with sensor pH and
@@ -98,12 +98,15 @@ class OrderTests(SourcesCase):
         self.assertEqual(reading.sample.channel_no, 1)
         self.assertEqual(reading.at, self.now - timedelta(seconds=10))
 
-    def test_the_backup_when_the_primary_is_stale_and_the_primary_when_both_are_fresh(self):
+    def test_the_newest_fresh_channel_wins_and_the_primary_only_at_the_same_time(self):
+        """A9 (2026-11-07): always the newest; primary before backup only as the tie-breaker at one measurement time."""
         self.on(self.mid1, self.value('ph', 7.0, seconds=600, channel_no=1),
                 self.value('ph', 7.2, seconds=5, role=BACKUP, channel_no=2))
-        self.assertEqual(self.latest().get('ph').sample.channel_no, 2)
+        self.assertEqual(self.latest().get('ph').sample.channel_no, 2)       # the primary is stale
         self.on(self.mid1, self.value('ph', 7.3, seconds=20, channel_no=3))
-        self.assertEqual(self.latest().get('ph').sample.channel_no, 3)
+        self.assertEqual(self.latest().get('ph').sample.channel_no, 2)       # both fresh: the backup is newer
+        self.on(self.mid1, self.value('ph', 7.4, seconds=5, channel_no=4))
+        self.assertEqual(self.latest().get('ph').sample.channel_no, 4)       # the same time: the primary
 
     def test_the_system_sensor_when_the_unit_has_no_fresh_sensor_of_its_own(self):
         self.on(self.ras, self.value('temperature_c', 9.54))

@@ -948,6 +948,39 @@ class PageTests(WaterTestCase):
         self.assertEqual(self.client.post(url, data).status_code, 302)      # sent twice: recorded once
         self.assertEqual(WaterMeasurement.objects.count(), 2)
 
+    def test_a_round_with_oxygen_offers_and_stores_temperature_and_salinity_as_the_sample_form_does(self):
+        """Owner rule (2026-11-07), one rule for both forms: an oxygen column brings the temperature and the salinity,
+        each row offered its point's latest fresh values; kept or changed they are stored with the oxygen, needed where
+        there is none, and an untouched offer alone is no measurement (the row is empty and skipped)."""
+        self.sample(hours=2, temperature_c='9.5')
+        url = f'{reverse("farm:water_round")}?site={self.bergen.pk}&columns=oxygen_mg_l'
+        page = self.client.get(url)
+        self.assertEqual([parameter.code for parameter in page.context['columns']],
+                         ['temperature_c', 'oxygen_mg_l', 'salinity_ppt'])
+        first = page.context['rows'][0]
+        self.assertEqual((first.point, first['temperature_c'].value(), first['salinity_ppt'].value()),
+                         (self.mid1, D('9.5'), D('0')))
+        self.assertIn('Latest: manual · 2', str(first.fields['temperature_c'].help_text))
+        self.assertContains(page, f'name="point-{self.mid1.pk}-temperature_offered"')
+        local = timezone.localtime(self.ago(hours=1)).strftime('%Y-%m-%dT%H:%M')
+        cells = lambda point, **values: {f'point-{point.pk}-{name}': value for name, value in values.items()}
+        data = {'token': str(uuid.uuid4()), 'measured_at': local, 'source': 'manual',
+                **cells(self.mid1, temperature_c='9.5', temperature_offered='9.5', oxygen_mg_l='8', salinity_ppt='0',
+                        salinity_offered='0'),
+                **cells(self.mid2, temperature_c='', oxygen_mg_l='7', salinity_ppt='0', salinity_offered='0'),
+                **cells(self.loop, temperature_c='', oxygen_mg_l='', salinity_ppt='0', salinity_offered='0')}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.context['rows'][1].errors['temperature_c'],
+                         ['Needed with the oxygen: the other unit is worked out with it.'])
+        self.assertFalse(WaterMeasurement.objects.exists())
+        data.update(cells(self.mid2, temperature_c='10'))
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        stored = sorted(WaterMeasurement.objects.values_list('point__unit__code', 'temperature_c', 'oxygen_mg_l',
+                                                             'salinity_ppt').filter(oxygen_mg_l__isnull=False))
+        self.assertEqual(stored, [('T-01', D('9.5'), D('8.00'), D('0.0')), ('T-02', D('10.0'), D('7.00'), D('0.0'))])
+        self.assertEqual(WaterMeasurement.objects.count(), 3)            # the loop's untouched offer is no sample
+
     def test_a_round_by_department_or_system_and_without_inactive_units(self):
         Tank.objects.filter(pk=self.t2.pk).update(status=Tank.Status.INACTIVE)
         other = ProductionDepartment.objects.create(site=self.bergen, name='Hall B', code='HB')

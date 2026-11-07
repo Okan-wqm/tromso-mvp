@@ -9445,6 +9445,9 @@ msgstr "Piscirickettsiose"
 msgid "Place"
 msgstr "Sted"
 
+msgid "Place (binding)"
+msgstr "Sted (tilknytning)"
+
 msgid "Place deleted"
 msgstr "Sted slettet"
 

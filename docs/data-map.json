@@ -10484,6 +10484,7 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_portable.py"
       ]
@@ -12162,6 +12163,7 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py"
@@ -15604,6 +15606,7 @@
         "experiments/tests/test_places.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_templates_db.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
@@ -16640,7 +16643,8 @@
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -31134,6 +31138,21 @@
           "why": "written by manage.py check_sensors from the channels’ state"
         },
         {
+          "name": "binding_id",
+          "field": "binding",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sensors_binding",
+            "model": "sensors.Binding",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the binding its channel held when it opened: its place; written by manage.py check_sensors"
+        },
+        {
           "name": "opened_at",
           "field": "opened_at",
           "type": "timestamp with time zone",
@@ -32088,6 +32107,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",

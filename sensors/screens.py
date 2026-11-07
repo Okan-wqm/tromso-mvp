@@ -56,6 +56,8 @@ SCREENS = {
         create=no('written by manage.py check_sensors when a rule holds'), edit=(alarm_event_acknowledge,),
         delete=no('history of the alarms; deleted with its rule only'), read=(alarm_events, home),
         columns={'*': computed('written by manage.py check_sensors from the channels’ state'),
+                 'binding': computed('the binding its channel held when it opened: its place; written by manage.py '
+                                     'check_sensors'),
                  'acknowledged_by': system('the person who acknowledged it'),
                  'acknowledged_at': system('when it was acknowledged')}),
     'Reading': Screen(

@@ -2697,22 +2697,35 @@ the device.
 - **The site is where the device is.** A device is at one site at a time: while placed, the site of the places its
   channels are bound to; out of the water, the site it was taken out at. A move to another site moves the device's site
   in the same transaction (logged); a channel moved alone to a place of another site is refused ("move the whole
-  device"); the device form shows a placed device's site as following it, not editable. The database holds it
-  (migration 0007, `sensors_place_site` and two constraint triggers: an open binding to a place of another site than
-  its device's, and a placed device's site changed, are refused; closed bindings are history and never checked).
+  device"); the device form shows a placed device's site as following it, not editable (`bindings.holds_site`: placed
+  at a place of a site; a department without a site holds none). The database holds it from both sides (migration
+  0007, `sensors_place_site` and constraint triggers): an open binding to a place of another site than its device's,
+  and a placed device's site changed, are refused; a unit or a piece of equipment moved to a production department of
+  another site, a system or a production department given another site, are refused while a device is placed there
+  ("move the device or take it out of the water first", said on the unit's or equipment's form), so a placed device's
+  site never lags its place. Closed bindings are history and never checked; an edit of an open binding that leaves its
+  place as it was (its note) is never refused.
   Every moment of a binding is typed and shown on the clock of the place's site (`bindings.clock`: the Move and Move
   device dialogs, their links, a binding's end); a chart's clock was already the place's.
 - **Only the readings taken there.** A place's chart, its latest value and its replay have exactly the readings taken
   while a channel was bound there: a value measured before the probe came (its last value from the previous place) is
   never the new place's latest; on the hour tiers the whole hours of a binding come from the hour rollup and the parts
   of an hour it only partly holds (a move at 01:30, a device taken out, a window's edge) from the raw readings
-  (`read.hours_of`), so the hour that holds a move is shared by the two places.
+  (`read.hours_of`, each part inside one hour: a stay from 01:30 to 02:20 is two parts), so the hour that holds a move
+  is shared by the two places and no replay frame ever reads a value measured after it.
+- **Alarms belong to the place.** An alarm event is tied to the binding it opened under (`AlarmEvent.binding`). The
+  check (`manage.py check_sensors`) looks only at channels bound now, with what they measured while bound there
+  (`Binding.took`, the same rule as the latest values): a device out of the water raises nothing, the no-data clock
+  starts when it was placed, a time above or a rate reads only the readings taken there. Moving the device or taking it
+  out closes its open events at that moment; an event whose binding no longer holds is closed by the next check. A
+  site's open events (`alarms.open_events(site)`) are those of its places; the Alarm events page names the place.
+- **Locks**: every move locks the device first and then its channels, each row alone, so a channel's move and a
+  device's move at once wait for each other and never deadlock, and the site row is never locked.
 - **Where it is and was**: the device's Placement tab lists where it was from and until (`placement_history`); the
   bindings list with `?place=unit:<id>` (or `system:`, `point:`, `equipment:`) lists the sensors at a place, those there
   now first, then those there before.
-- Not handled: a production department, system or unit moved to another site while a device is placed there leaves the
-  device's stored site behind until its next move (the readings and every clock follow the place, so nothing is
-  attributed wrongly); alarm events of one site (`alarms.open_events(site)`) follow the device's current site.
+- Readings taken while the probe is carried count for the place it left until the moment typed for the move: take it
+  out of the water when it is lifted (Out of the water) and move it when it goes in.
 
 ### Storage
 

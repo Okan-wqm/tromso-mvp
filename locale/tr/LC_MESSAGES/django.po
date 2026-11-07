@@ -9455,6 +9455,9 @@ msgstr "Piscirickettsiozis"
 msgid "Place"
 msgstr "Yer"
 
+msgid "Place (binding)"
+msgstr "Yer (atama)"
+
 msgid "Place deleted"
 msgstr "Yer silindi"
 

@@ -7,7 +7,7 @@ from unittest import mock
 
 from django.urls import reverse
 
-from farm.health import services as health
+from farm.health import services as health, withdrawal
 from farm.models import Batch, HandlingPlanItem, Medicine, SamplingPoint, Site, Treatment
 from farm.models.site import zone_of
 from farm.stock import services as stock_services
@@ -561,7 +561,11 @@ class LiceMedicineForAnotherReasonTests(LiceTestCase):
     def test_it_is_in_the_reports_fingerprint(self):
         treatment = self.agd_bath()
         before = compute.fingerprint(compute.scope(self.draft))
-        health.void_treatment(self.user, treatment, 'Recorded for the wrong reason')
+        try:
+            health.void_treatment(self.user, treatment, 'Recorded for the wrong reason')
+        except withdrawal.WithdrawalChanged as asked:            # its fish are held today: gone on past the guard
+            with withdrawal.acknowledging(asked.change.fingerprint):
+                health.void_treatment(self.user, treatment, 'Recorded for the wrong reason')
         self.assertNotEqual(before, compute.fingerprint(compute.scope(self.draft)))
 
 

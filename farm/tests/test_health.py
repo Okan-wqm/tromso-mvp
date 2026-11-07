@@ -91,6 +91,15 @@ class HealthTestCase(StockTestCase):
         return WaterMeasurement.objects.create(point=point_of(point), measured_at=moment, source='manual',
                                                temperature_c=Decimal(value), created_by=self.user)
 
+    def going_on(self, call, *args, **kwargs):
+        """A write the withdrawal guard asks about (fish held today freed, a harvest brought inside), gone on with: as the
+        person ticks the box (farm/tests/test_withdrawal_guard.py tests the question itself)."""
+        try:
+            return call(*args, **kwargs)
+        except withdrawal.WithdrawalChanged as asked:
+            with withdrawal.acknowledging(asked.change.fingerprint):
+                return call(*args, **kwargs)
+
     def held(self, unit=None, day=None):
         """The withdrawals that hold the fish of the unit (default T-01) on `day` (default today)."""
         return withdrawal.of_units([unit or self.t1], day).get((unit or self.t1).pk, [])
@@ -272,7 +281,7 @@ class WithdrawalTests(HealthTestCase):
         self.treat(both, 6, 6)
         [held] = self.held()
         self.assertEqual((held.until, held.estimated), (self.day(-5), False))
-        services.void_treatment(self.user, held.treatment, 'Recorded with the wrong medicine')
+        self.going_on(services.void_treatment, self.user, held.treatment, 'Recorded with the wrong medicine')
         later = self.medicine(name='Later by degree-days', degree_days=50, days=1)
         self.treat(later, 6, 6)
         [held] = self.held()
@@ -409,7 +418,7 @@ class WithdrawalTests(HealthTestCase):
     def test_voiding_the_treatment_lifts_its_withdrawal(self):
         treatment = self.treat(self.medicine(days=30), 2, 2)
         self.assertTrue(self.held())
-        services.void_treatment(self.user, treatment, 'Recorded on the wrong site')
+        self.going_on(services.void_treatment, self.user, treatment, 'Recorded on the wrong site')
         self.assertEqual(self.held(), [])
         self.assertEqual(registry.blocks(self.t1, self.today), [])
 
@@ -801,18 +810,18 @@ class TreatmentServiceTests(HealthTestCase):
         self.assertEqual(row.changes, {'Last day': [str(self.day(2)), str(self.day(-2))]})
         self.assertIn('end_date', self.refused(services.change_last_day, self.user, treatment, self.day(3)))
         self.assertIn('end_date', self.refused(services.change_last_day, self.user, treatment, self.day(-40)))
-        services.void_treatment(self.user, treatment, 'Wrong unit')
+        self.going_on(services.void_treatment, self.user, treatment, 'Wrong unit')
         self.assertTrue(self.refused(services.change_last_day, self.user, treatment, self.day(1)))
 
     def test_a_void_needs_its_reason_and_is_logged(self):
         treatment = self.treat(self.medicine(days=7), 2, 2)
         self.assertIn('reason', self.refused(services.void_treatment, self.user, treatment, '  '))
-        services.void_treatment(self.user, treatment, 'Recorded twice')
+        self.going_on(services.void_treatment, self.user, treatment, 'Recorded twice')   # its fish were held: asked
         treatment = Treatment.all_objects.get(pk=treatment.pk)
         self.assertEqual((treatment.is_deleted, treatment.void_reason, treatment.deleted_by),
                          (True, 'Recorded twice', self.user))
         row = AuditLog.objects.get(entity_type='treatment', action='void')
-        self.assertEqual(row.changes, {'Reason for voiding': [None, 'Recorded twice']})
+        self.assertEqual((row.changes['Reason for voiding'], row.severity), ([None, 'Recorded twice'], 'critical'))
         self.assertTrue(self.refused(services.void_treatment, self.user, treatment, 'Again'))
 
     def test_the_database_holds_the_rules_too(self):
@@ -1383,7 +1392,10 @@ class TreatmentPageTests(HealthTestCase):
         treatment.refresh_from_db()
         self.assertEqual(treatment.end_date, self.day(-1))
         # Voided through its dialog: struck through when asked for, and its withdrawal gone.
-        self.client.post(reverse('farm:treatment_void', args=[treatment.pk]), {'reason': 'Wrong cage'})
+        asked = self.client.post(reverse('farm:treatment_void', args=[treatment.pk]), {'reason': 'Wrong cage'})
+        self.assertEqual(asked.status_code, 422)                    # its fish are held today: the guard asks
+        self.client.post(reverse('farm:treatment_void', args=[treatment.pk]), {
+            'reason': 'Wrong cage', 'withdrawal_ack': asked.context['form'].withdrawal_change.fingerprint})
         self.assertTrue(Treatment.all_objects.get(pk=treatment.pk).is_deleted)
         self.assertEqual(self.client.get(back).context['rows'], [])
         self.assertEqual(len(self.client.get(back, {'voided': '1'}).context['rows']), 1)

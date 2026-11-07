@@ -3325,9 +3325,10 @@ What one tab needed and the next ones will too lives in `core/`:
   in any case, `Lower(...)`), is checked on the form by the constraint itself, with its message on
   the field; a clash only the database catches (two people saving at once) comes back the same way, on a new record
   and on an edit (F-034). An edit or a row list locks its record to save it, and one deleted meanwhile is not found
-  (404, F-009). A model with an `entry_key` field gets a hidden key on its new-record form, stored with the
-  record: the same form sent twice (a double click, a retried request, two at once) creates one record and
-  the second sending opens it (`core.crud.ENTRY_KEY`, a task, a recurring task).
+  (404, F-009). Every new-record form carries a hidden key, stored with the record it created in one table for every
+  kind of record (`entry_keys`, `core.models.EntryKey`, F-232): the same form sent twice (a double click, a retried
+  request, two at once) creates one record and the second sending opens it. A write path of its own (a stock
+  operation, a feeding, a treatment) keeps the key on its record, as before.
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
 - `core/query.py`: what a page reads from its address (`?from=`, `?to=`, `?week=`, `?page=`, `?before=`, `?year=`), one

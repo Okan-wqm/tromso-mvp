@@ -9,6 +9,7 @@ from django.urls import NoReverseMatch, reverse
 from core.crud import ENTRY_KEY, Resource
 from core.models import AuditLog
 from farm.models import HealthEvent, Site
+from farm.stock.dates import site_today
 
 
 class EveryNewRecordFormTests(TestCase):
@@ -34,11 +35,11 @@ class EveryNewRecordFormTests(TestCase):
         site = Site.objects.create(name='Bergen', code='BG')
         url = reverse('farm:healthevent_create')
         key = self.client.get(url).context['form'][ENTRY_KEY].value()
-        data = {'site': str(site.pk), 'units': [], 'date': '', 'kind': 'observation', 'signs': [], 'diagnosis': '',
+        data = {'site': str(site.pk), 'units': [], 'date': site_today(site).isoformat(), 'kind': 'observation', 'signs': [], 'diagnosis': '',
                 'confirmation': '', 'examined_by': '', 'vet': '', 'lab': '', 'lab_reference': '', 'findings': 'Pale gills',
                 'recommendations': '', 'closed_on': '', 'outcome': '', ENTRY_KEY: str(key)}
         first, second = self.client.post(url, data), self.client.post(url, data)
+        self.assertEqual(first.status_code, 302, first.context and first.context['form'].errors)
         event = HealthEvent.objects.get()
-        self.assertEqual(first.status_code, 302)
         self.assertEqual(first['Location'], second['Location'])
         self.assertEqual(AuditLog.objects.filter(entity_id=str(event.pk), action='create').count(), 1)

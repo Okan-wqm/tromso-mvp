@@ -255,3 +255,30 @@ class Profile(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+
+class EntryKey(models.Model):
+    """The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first sending created, for every
+    kind of record (F-232): the same form sent twice, by a double click, a retried request or two sendings at once,
+    creates one record, and the second sending opens it. The key is the primary key, so of two sendings at once the
+    second one's insert waits for the first one's transaction and is then refused. Written in the transaction that
+    creates the record; not a secret, and nothing else reads it."""
+
+    key = models.UUIDField(primary_key=True)
+    entity_type = models.CharField(max_length=100)    # the record's model, as app_label.model_name
+    entity_id = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'entry_keys'
+
+    @classmethod
+    def note(cls, key, record):
+        cls.objects.create(key=key, entity_type=record._meta.label_lower, entity_id=str(record.pk))
+
+    @classmethod
+    def record_of(cls, key, model):
+        """The record of `model` the form with `key` created; None when none did."""
+        entity_id = (cls.objects.filter(key=key, entity_type=model._meta.label_lower)
+                     .values_list('entity_id', flat=True).first())
+        return None if entity_id is None else model._base_manager.filter(pk=entity_id).first()

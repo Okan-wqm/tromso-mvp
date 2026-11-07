@@ -16,8 +16,9 @@ needs the same way:
 - files: a form with a file field gets the uploaded files (a library document's PDF);
 - a read page: a tab with a `detail_template` gets a page that shows one record to everyone who may
   read the tab (the edit form needs the change permission), e.g. a document with its citation;
-- a form sent twice creates once: a model with an `entry_key` field gets the key of the form it was
-  created with (TabbedForm), and the same form sent again opens the record the first one created;
+- a form sent twice creates once: every new-record form carries a key (TabbedForm), stored with the record it
+  created in one table for every kind of record (core.models.EntryKey), and the same form sent again opens the
+  record the first one created;
 - a second place: a tab's `mounts` serve the same Resource, views and records again under another address and
   panel (HR's people pages under Production › Team); the request carries the mount it came by (`mount_of`), the
   tab's `scoped` narrows the rows to it, and every link and redirect stays in it.
@@ -42,7 +43,7 @@ from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
 from . import audit, navigation, softdelete
-from .models import AuditedModel, AuditLog, violated_constraint
+from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
 from .widgets import NONE
 
@@ -111,8 +112,8 @@ def done(request, url, stay=False):
 
 # The marker of a posted form to render again with what was entered, nothing saved (TabbedForm.refresh_on).
 DRAFT = '_draft'
-# A model's field for the key of the form that created the record (not a secret): the same form sent twice
-# (a double click, a retried request) creates one record. The form carries it hidden (TabbedForm).
+# The hidden field of a new-record form that keys it (not a secret): the same form sent twice (a double click, a
+# retried request) creates one record (core.models.EntryKey). The form carries it hidden (TabbedForm).
 ENTRY_KEY = 'entry_key'
 
 
@@ -142,8 +143,8 @@ class TabbedForm(forms.ModelForm):
     A form can drop fields for one record (`del self.fields[name]` in `__init__`, e.g. the measures a
     pond does not have); the tabs then show the fields it kept, and a heading left without fields goes.
 
-    A new record of a model with an `entry_key` field gets a hidden key (ENTRY_KEY), stored with it;
-    `sent_before()` finds the record a form with the same key already created (CreateView)."""
+    A new record's form gets a hidden key (ENTRY_KEY); `note_sent()` stores it with the record it created
+    (core.models.EntryKey) and `sent_before()` finds the record a form with the same key already created (CreateView)."""
 
     tabs = []
     fixed_after_creation = ()
@@ -166,7 +167,7 @@ class TabbedForm(forms.ModelForm):
             del self.fields['version']
         elif not self.instance._state.adding and not self.is_bound:
             self.initial['version'] = self.instance.version
-        if self.instance._state.adding and any(f.name == ENTRY_KEY for f in self._meta.model._meta.fields):
+        if self.instance._state.adding:
             self.fields[ENTRY_KEY] = forms.UUIDField(widget=forms.HiddenInput, initial=uuid.uuid4, required=False)
 
     def get_initial_for_field(self, field, field_name):
@@ -187,17 +188,18 @@ class TabbedForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         self._check_conditional_constraints(cleaned)
-        if cleaned.get(ENTRY_KEY):
-            setattr(self.instance, ENTRY_KEY, cleaned[ENTRY_KEY])
         return cleaned
 
     def sent_before(self):
         """The record a form with this form's key already created (the same form sent twice); None for a
         first sending or a form without a key."""
         key = self.cleaned_data.get(ENTRY_KEY) if ENTRY_KEY in self.fields else None
-        if key is None:
-            return None
-        return self._meta.model._base_manager.filter(**{ENTRY_KEY: key}).first()
+        return None if key is None else EntryKey.record_of(key, self._meta.model)
+
+    def note_sent(self, record):
+        """Stores the form's key with the record it created (in the creating transaction)."""
+        if self.cleaned_data.get(ENTRY_KEY):
+            EntryKey.note(self.cleaned_data[ENTRY_KEY], record)
 
     def _check_conditional_constraints(self, cleaned):
         """Conditional unique and exclusion constraints, e.g. "code unique among live records", "scientific
@@ -687,6 +689,7 @@ class CreateView(FormView):
                         if hasattr(obj, field):
                             setattr(obj, field, request.user)
                     obj.save()
+                    form.note_sent(obj)
                     form.save_m2m()
                     audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
                     r.after_save(request, obj, created=True)

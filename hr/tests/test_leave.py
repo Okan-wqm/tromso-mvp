@@ -166,14 +166,14 @@ class LeaveRequestModelTests(LeaveTestCase):
 
     def test_every_column_is_covered(self):
         self.assertEqual(fields_of(LeaveRequest), {'employee', 'leave_type', 'first_day', 'last_day', 'status', 'reason',
-                                                   'decision_note', 'decided_by', 'decided_at', 'entry_key'})
+                                                   'decision_note', 'decided_by', 'decided_at'})
 
 
 class FilingTests(LeaveTestCase):
     def test_a_person_files_for_themselves_pending_and_the_reason_is_theirs(self):
         response = self.file(self.ann_user, self.in_a, MONDAY, TUESDAY, reason='Family matter')
         request = LeaveRequest.objects.get()
-        self.assertEqual({name: getattr(request, name) for name in fields_of(LeaveRequest) if name != 'entry_key'},
+        self.assertEqual({name: getattr(request, name) for name in fields_of(LeaveRequest)},
                          {'employee': self.in_a, 'leave_type': self.annual, 'first_day': MONDAY, 'last_day': TUESDAY,
                           'status': 'pending', 'reason': 'Family matter', 'decision_note': '', 'decided_by': None,
                           'decided_at': None})

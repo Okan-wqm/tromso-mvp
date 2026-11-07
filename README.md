@@ -64,7 +64,7 @@ delete is a soft delete. Differences from the source:
   (`farm.models.site.zone_of`). An empty zone once meant "the company's", which is `settings.TIME_ZONE` (UTC on a server
   set so), and ran a Norwegian site's day an hour or two off unseen. Now the form asks for one, offering the company's
   first; a site made without one (a seed, a test) is given the company's, stored; the database refuses an empty one
-  (`chk_sites_timezone_given`). Migration `farm/0027_site_timezone_required` gave every site without a zone the company's
+  (`chk_sites_timezone_given`). Migration `farm/0030_site_timezone_required` gave every site without a zone the company's
   as it was when it ran: check each site's zone after it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).

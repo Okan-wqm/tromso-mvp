@@ -2197,8 +2197,10 @@ what was filed: a correction is needed", figure by figure, each named as the pag
 Fish at the month’s end: 500 → 1000", `reports/labels.py`), never a key of the content; a correction is a new report of the same key that replaces it.
 
 A report's page shows its figures in the kind's own table (smolt, biomass, the slaughter plan, land stock, a site taken
-into use or emptied), an event notice's narrative for a notice, and any other kind (sea lice, cleaner fish) field by field
-as the print page lists them (`templates/reports/_rows.html`, `reports.exports.rows`), never another kind's fields.
+into use or emptied), an event notice's narrative for a notice (`reports.kinds.EVENTS`), and any other kind (sea lice,
+cleaner fish) as the print page does: every figure named by **one label registry** (`reports/labels.py`, the words the pages
+use, translated, numbers as the language writes them; a test reads the computation's code so every key it writes has its
+label), never a content or API key and never another kind's fields. The CSV export keeps the authority's field names.
 
 **The reports** (`reports/kinds.py`: authority, basis, period, deadline, where it is filed):
 
@@ -2285,7 +2287,7 @@ governor's report, the cleaner-fish broodstock report) with their deadline, chan
 and what is not verified. Nothing is sent and no form is built for them.
 
 **What you are about to record.** Before a filing is recorded, the report's page says "What you are about to record as filed", with
-the content hash and a link to the print page (the exact values to type, field by field in the authority's names); every export
+the content hash and a link to the print page (the exact values to type, each figure named); every export
 carries the same hash. The recording posts that hash, and if the records changed meanwhile (a backdated record) it is refused
 with "review it again": what is frozen is exactly what was previewed.
 

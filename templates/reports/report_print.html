@@ -1,7 +1,7 @@
 {% extends base_template %}
 {% load i18n %}
-{% comment %} A report on one page, to print or to type from, field by field in the authority's own names
-   (reports.exports.rows).{% endcomment %}
+{% comment %} A report on one page, to print or to type from, its figures named by the one label registry
+   (reports/labels.py), as the report's page names them; the CSV export keeps the authority's field names.{% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
@@ -10,7 +10,7 @@
   <p class="panel-help">{% if filed %}{% trans "As filed." %}{% else %}{% trans "Not filed: as the records give it now." %}{% endif %} {{ object.info.channel }}</p>
   <p class="panel-help">{% trans "Content hash" %}: <code>{{ content_hash }}</code></p>
   {% if api_call %}<p class="panel-help">{% trans "Through the reporting API" %}: <code>{{ api_call.method }} {{ api_call.path }}</code> · {% trans "client reference" %} <code>{{ api_call.client_reference }}</code>{% if api_call.corrects_client_reference %} · {% trans "replaces the filing with client reference" %} <code>{{ api_call.corrects_client_reference }}</code>{% endif %}{% if api_call.note %} · {{ api_call.note }}{% endif %}</p>{% endif %}
-  {% include "reports/_rows.html" %}
+  {% include "reports/_outline.html" %}
   <div class="form-actions"><a class="button button-ghost" href="{{ detail_url }}">{% trans "Back to the report" %}</a><button type="button" class="button button-inline" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button></div>
 </div>
 {% endblock %}

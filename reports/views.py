@@ -17,7 +17,7 @@ from core import navigation
 from core.crud import done, render_page
 from farm.models import Site
 
-from . import compute, due, duties, exports, periods, services
+from . import compute, due, duties, exports, labels, periods, services
 from .forms import CloseForm, DutyDoneForm, SubmitForm
 from .kinds import ReportKind
 from .models import DueClosure, OpenQuestion, OutsideDutyDone
@@ -228,7 +228,7 @@ def export(request, pk, fmt):
 
 @permission_required('reports.view_report', raise_exception=True)
 def print_page(request, pk):
-    """The report on one page to print or to type from, in the authority's order."""
+    """The report on one page to print or to type from, its figures named as the report's page names them."""
     report = _report(pk)
     content, filed = _content(report)
     place = navigation.place(ReportResource.perm('view'))
@@ -236,7 +236,7 @@ def print_page(request, pk):
         'object': report, 'content': content, 'filed': filed, 'title': str(report),
         'content_hash': compute.content_hash(content), 'api_call': exports.api_call(report),
         'eyebrow': f'{place.heading} · {place.entry.label}',
-        'rows': exports.rows(report, content), 'list_url': reverse('reports:report_list'),
+        'figure_outline': labels.outline(content), 'list_url': reverse('reports:report_list'),
         'detail_url': reverse('reports:report_detail', args=[report.pk]),
     })
 

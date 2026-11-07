@@ -1,6 +1,7 @@
 {% load i18n %}{% comment %} A report's figures by kind, from its content (reports/compute): the identity, then the kind's
-   own table; an event notice's narrative; any other kind field by field as the print page lists it (`figure_rows`,
-   reports.exports.rows), never another kind's fields. `content` is the frozen content once the report is filed.{% endcomment %}
+   own table; an event notice's narrative (the kinds of reports.kinds.EVENTS: `event_kinds`); any other kind its figures
+   named by the one label registry (`figure_outline`, reports/labels.py), never a content or API key, never another
+   kind's fields. `content` is the frozen content once the report is filed.{% endcomment %}
 {% with identity=content.identity %}
 {% if identity %}
 <dl class="facts">
@@ -49,7 +50,7 @@
   <div><dt>{% trans "Day" %}</dt><dd>{{ content.occurred_on }}</dd></div>
   {% if content.species %}<div><dt>{% trans "Species" context "plural" %}</dt><dd>{{ content.species|join:", " }}</dd></div>{% endif %}
 </dl>
-{% elif content.kind == "escape" or content.kind == "disease" or content.kind == "welfare" %}
+{% elif content.kind in event_kinds %}
 <dl class="facts">
   <div><dt>{% trans "Happened on" %}</dt><dd>{{ content.occurred_on|default:"–" }}</dd></div>
   <div><dt>{% trans "Found at" %}</dt><dd>{{ content.found_at|default:"–" }}</dd></div>
@@ -62,5 +63,5 @@
   <div><dt>{% trans "Measures taken" %}</dt><dd>{{ content.measures|default:"–" }}</dd></div>
 </dl>
 {% else %}
-{% include "reports/_rows.html" with rows=figure_rows %}
+{% include "reports/_outline.html" %}
 {% endif %}

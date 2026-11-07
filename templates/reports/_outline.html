@@ -1,0 +1,4 @@
+{% comment %} A report's figures named by the one label registry (reports/labels.py `outline`), as the person's language says them:
+   the print page, and the report's page for a kind without a table of its own. Never a content or API key. {% endcomment %}<div class="table-wrap"><table class="data-table report-figures">
+  <tbody>{% for label, value in figure_outline %}<tr><th scope="row">{{ label }}</th><td>{{ value }}</td></tr>{% endfor %}</tbody>
+</table></div>

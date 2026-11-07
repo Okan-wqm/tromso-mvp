@@ -996,11 +996,12 @@ class ProductionUnitsTests(WaterTestCase):
         alkalinity = row['water'].get('alkalinity_mg_l')
         self.assertEqual(alkalinity.status, Status.NO_LIMIT)
         self.assertEqual(alkalinity.why_no_limit, 'No water limit is set for the fish in the unit.')
-        self.assertContains(page, 'No water limit is set for the fish in the unit.')
         self.sample(point=point_of(self.t2), alkalinity_mg_l='90')                # T-02 holds no fish
         empty = read.unit_water([self.t2])[self.t2.pk]
         self.assertEqual(empty.status, Status.NO_LIMIT)
         self.assertEqual(empty.why_no_limit, 'No fish in the unit: nothing to judge the water against.')
+        # The water page says it under the point's status.
+        self.assertContains(self.client.get(reverse('farm:water')), 'No fish in the unit: nothing to judge the water against.')
 
     def test_the_drawer_speaks_each_language(self):
         self.stock()

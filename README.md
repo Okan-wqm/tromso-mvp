@@ -3474,10 +3474,11 @@ reads the templates and the style sheets; `frontend/test/layout.browser.test.ts`
 - **Error pages** (`templates/403.html`, `404.html`, `500.html`): a refused or a missing page says what happened and offers
   the way back to the overview, in the console's shell for a person signed in (the menu stays) and on the sign-in page's for
   a visitor; a broken page is a page of its own that needs neither the person nor the database.
-- **One rule for an amount** (`farm/templatetags/feeding.py` `amount`, behind the feeding's kilograms and the store's
-  quantities): under a kilogram to the gram (0.035 kg), from a kilogram at most two decimals (251.8 kg, 1,420 kg),
-  digits grouped as the language writes them; three decimals after the separator would read as a thousands group.
-  Amounts are still recorded to the gram.
+- **One rule for a mass** (`farm/templatetags/feeding.py` `amount`, behind the feeding's kilograms and the store's kg
+  items): under a kilogram to the gram (0.035 kg), from a kilogram at most two decimals (251.8 kg, 1,420 kg), digits grouped
+  as the language writes them; three decimals after the separator would read as a thousands group. Masses are still
+  recorded to the gram. **Things counted** (an item in units: doses, bottles) are shown as recorded, to their three
+  decimals (`exact`): never rounded.
 
 ### Restoring
 

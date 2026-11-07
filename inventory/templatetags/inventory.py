@@ -4,19 +4,26 @@ currency, days of cover, a dash for a value there is none of."""
 from django import template
 from django.utils.translation import gettext as _
 
-from farm.templatetags.feeding import amount
+from farm.templatetags.feeding import amount, exact
 from farm.templatetags.stock import DASH, number
+
+from ..models import Unit
 
 register = template.Library()
 
 
 @register.filter
 def quantity(value, unit='kg'):
-    """1,250.5 kg, 0.035 kg, 12 units: as recorded, to the gram, with the item's unit."""
+    """251.8 kg, 0.035 kg (a mass: the amount rule), 4.125 units (things counted: as recorded), with the item's unit."""
     if value in (None, ''):
         return DASH
     # Translators: a quantity and its unit, e.g. 1,250.5 kg.
-    return _('%(value)s %(unit)s') % {'value': amount(value), 'unit': unit}
+    return _('%(value)s %(unit)s') % {'value': shown_quantity(value, unit), 'unit': unit}
+
+
+def shown_quantity(value, unit):
+    """A mass (kg) by the amount rule, anything counted as recorded."""
+    return amount(value) if str(unit) in (Unit.KG.value, str(Unit.KG.label)) else exact(value)
 
 
 @register.filter

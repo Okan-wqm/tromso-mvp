@@ -38,7 +38,8 @@ from ..models.site import zone_of
 from ..stock import integrity, services as stock_services
 from ..stock.dates import local_today
 from ..feeding import services as feeding_services
-from .helpers import make_facility, make_species, point_of, role, rows_data
+from .. import withdrawal_gate as gate
+from .helpers import going_on, make_facility, make_species, point_of, role, rows_data
 from .test_stock import StockTestCase, make_unit
 
 Status = Tank.Status
@@ -74,8 +75,9 @@ class HealthTestCase(StockTestCase):
 
     def withdraw(self, medicine, species, degree_days=None, days=None, margin=0, note=''):
         """A medicine's withdrawal row for a species (None: for every species)."""
-        return MedicineWithdrawal.objects.create(medicine=medicine, species=species, degree_days=degree_days,
-                                                 days=days, safety_margin_pct=margin, note=note)
+        with gate.opened('test fixture: a withdrawal row straight in the database'):
+            return MedicineWithdrawal.objects.create(medicine=medicine, species=species, degree_days=degree_days,
+                                                     days=days, safety_margin_pct=margin, note=note)
 
     def treat(self, medicine, start_ago, end_ago, units=None, reason='sea_lice', **fields):
         """A course from `start_ago` to `end_ago` days back (negative: ahead), through the service."""
@@ -88,17 +90,14 @@ class HealthTestCase(StockTestCase):
         """A water sample of `value` °C at noon, `days_ago` days back, on the point's site clock."""
         site = point.site if isinstance(point, System) else point.production_department.site
         moment = datetime.combine(self.day(days_ago), time(12), tzinfo=zone_of(site))
-        return WaterMeasurement.objects.create(point=point_of(point), measured_at=moment, source='manual',
-                                               temperature_c=Decimal(value), created_by=self.user)
+        with gate.opened('test fixture: a water sample straight in the database'):
+            return WaterMeasurement.objects.create(point=point_of(point), measured_at=moment, source='manual',
+                                                   temperature_c=Decimal(value), created_by=self.user)
 
     def going_on(self, call, *args, **kwargs):
         """A write the withdrawal guard asks about (fish held today freed, a harvest brought inside), gone on with: as the
         person ticks the box (farm/tests/test_withdrawal_guard.py tests the question itself)."""
-        try:
-            return call(*args, **kwargs)
-        except withdrawal.WithdrawalChanged as asked:
-            with withdrawal.acknowledging(asked.change.fingerprint):
-                return call(*args, **kwargs)
+        return going_on(call, *args, **kwargs)
 
     def held(self, unit=None, day=None):
         """The withdrawals that hold the fish of the unit (default T-01) on `day` (default today)."""

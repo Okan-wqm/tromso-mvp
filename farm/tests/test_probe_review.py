@@ -11,6 +11,7 @@ from ..handling import check
 from ..health import withdrawal
 from ..models import Feed
 from ..stock import services as stock_services
+from .helpers import going_on
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 
 
@@ -34,12 +35,8 @@ class ProbeTests(HarvestInsideTestCase):
         stock_services.record_harvest(self.user, unit=self.t1, batch=self.batch, day=self.day(3), count=500,
                                       measured_weight_kg=Decimal('600'), facility=self.facility, handling_ack=seen)
         feed = Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
-        try:
-            feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(5), feed=feed, amount_kg=Decimal('2'))
-        except withdrawal.WithdrawalChanged as asked:          # the guard asks: go on past it, as the person would
-            with withdrawal.acknowledging(asked.change.fingerprint):
-                feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(5), feed=feed,
-                                                amount_kg=Decimal('2'))
+        going_on(feeding_services.record_feeding, self.user, unit=self.t1, day=self.day(5), feed=feed,
+                 amount_kg=Decimal('2'))                  # the guard asks: gone on past it, as the person would
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
         lines = [line for line in out.getvalue().splitlines() if 'medicated feed' in line.lower()

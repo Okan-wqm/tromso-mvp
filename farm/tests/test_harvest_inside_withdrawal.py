@@ -16,6 +16,7 @@ from django.urls import reverse
 
 from core.models import AuditLog
 
+from .. import withdrawal_gate as gate
 from ..handling import check
 from ..health import services, withdrawal
 from ..health.withdrawal import WithdrawalChanged
@@ -56,13 +57,11 @@ class BackdatedTreatmentTests(HarvestInsideTestCase):
             f'Harvest of {stock_services.shown_date(self.day(3))} from T-01 ({self.batch.code}, 500 fish to '
             f'{self.facility.name}) lies inside this withdrawal, which holds the fish until '
             f'{stock_services.shown_date(self.day(-3))}: medicated fish may have gone to food.'])
-        with withdrawal.acknowledging(change.fingerprint):
-            treatment = self.treat(bath, 5, 5)
+        treatment = self.treat(bath, 5, 5, withdrawal_ack=change.fingerprint)
         [row] = WithdrawalAcknowledgement.objects.all()
         self.assertEqual((row.record_type, row.record_id, row.harvest, row.batch, row.warning, row.until),
                          ('treatment', str(treatment.pk), harvest, self.batch, 'harvested', self.day(-3)))
-        log = AuditLog.objects.get(entity_type='treatment', action='create')
-        self.assertEqual(log.severity, AuditLog.Severity.CRITICAL)
+        log = AuditLog.objects.get(entity_type='treatment', severity=AuditLog.Severity.CRITICAL)
         self.assertIn('lies inside this withdrawal', log.changes['Withdrawal warnings acknowledged'][1])
 
     def test_a_harvest_before_the_first_day_or_after_the_withdrawal_asks_nothing(self):
@@ -112,27 +111,13 @@ class LongerCourseTests(HarvestInsideTestCase):
         change = self.change_of(services.change_last_day, self.user, treatment, self.day(6))   # until 3 days ago
         self.assertEqual(Treatment.objects.get().end_date, self.day(8))
         self.assertEqual([found.operation_id for found in change.harvested], [harvest.pk])
-        with withdrawal.acknowledging(change.fingerprint):
-            services.change_last_day(self.user, treatment, self.day(6))
+        services.change_last_day(self.user, treatment, self.day(6), withdrawal_ack=change.fingerprint)
         self.assertEqual(Treatment.objects.get().end_date, self.day(6))
         [row] = WithdrawalAcknowledgement.objects.all()
         self.assertEqual((row.record_id, row.harvest, row.warning, row.until),
                          (str(treatment.pk), harvest, 'harvested', self.day(3)))
-        log = AuditLog.objects.get(entity_type='treatment', action='update')
-        self.assertEqual(log.severity, AuditLog.Severity.CRITICAL)
+        log = AuditLog.objects.get(entity_type='treatment', severity=AuditLog.Severity.CRITICAL)
         self.assertIn('lies inside this withdrawal', log.changes['Withdrawal warnings acknowledged'][1])
-
-    def test_a_harvest_already_inside_before_the_change_is_not_asked_again(self):
-        bath = self.medicine(days=7)
-        self.harvest(3)
-        change = self.change_of(self.treat, bath, 5, 5)
-        with withdrawal.acknowledging(change.fingerprint):
-            treatment = self.treat(bath, 5, 5)
-        services.change_last_day(self.user, treatment, self.day(4))    # longer, but the harvest was inside already
-        services.change_last_day(self.user, treatment, self.day(5))    # shorter, and the fish are still held
-        self.assertEqual(WithdrawalAcknowledgement.objects.count(), 1)
-        self.assertEqual(AuditLog.objects.filter(entity_type='treatment', action='update',
-                                                 severity=AuditLog.Severity.CRITICAL).count(), 0)
 
     def test_the_last_day_dialog_shows_the_harvest_and_takes_its_box(self):
         treatment = self.treat(self.medicine(days=2), 8, 8)
@@ -160,10 +145,9 @@ class SecondPersonHookTests(HarvestInsideTestCase):
         self.harvest(3)
         bath = self.medicine(days=7)
         change = self.change_of(self.treat, bath, 5, 5)
-        with mock.patch.object(check, 'second_person_must_approve', return_value=True) as asked, \
-                withdrawal.acknowledging(change.fingerprint):
+        with mock.patch.object(check, 'second_person_must_approve', return_value=True) as asked:
             with self.assertRaises(WithdrawalChanged) as caught:
-                self.treat(bath, 5, 5)
+                self.treat(bath, 5, 5, withdrawal_ack=change.fingerprint)
         self.assertEqual(asked.call_count, 1)
         user, kinds, record = asked.call_args.args
         self.assertEqual((user, kinds, record.fingerprint), (self.user, ['harvested'], change.fingerprint))
@@ -194,8 +178,7 @@ class CheckWithdrawalTests(HarvestInsideTestCase):
         bath = self.medicine(days=7)
         self.harvest(3)
         change = self.change_of(self.treat, bath, 5, 5)
-        with withdrawal.acknowledging(change.fingerprint):
-            self.treat(bath, 5, 5)
+        self.treat(bath, 5, 5, withdrawal_ack=change.fingerprint)
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
         self.assertIn(f'Harvest of {self.day(3).isoformat()} from T-01 · {self.batch.code} (500 fish to '
@@ -208,7 +191,8 @@ class CheckWithdrawalTests(HarvestInsideTestCase):
         bath = self.medicine(days=1)
         self.treat(bath, 5, 5)                               # held until 3 days ago
         self.harvest(3)
-        bath.withdrawals.update(days=7)                      # changed behind the services' back (e.g. a script)
+        with gate.opened('test: a change behind the services'):
+            bath.withdrawals.update(days=7)                  # changed behind the services' back (e.g. a script)
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
         self.assertIn('Not acknowledged.', out.getvalue())

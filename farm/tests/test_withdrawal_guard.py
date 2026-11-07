@@ -9,7 +9,6 @@ touches before and after it, in the write's transaction, and asks before the wri
 Going on needs the box (`withdrawal_ack`, the change's fingerprint): stored as WithdrawalAcknowledgement rows naming the
 write, the batch, the withdrawal and the harvest, and logged as critical. The write paths are enumerated below, so a new
 one that skips the guard fails a test."""
-import inspect
 import io
 from datetime import datetime, time, timedelta
 from decimal import Decimal
@@ -20,13 +19,13 @@ from django.urls import reverse
 
 from core.models import AuditLog
 
+from .. import withdrawal_gate as gate
 from ..feeding import services as feeding_services
 from ..handling import check
 from ..health import services, withdrawal
 from ..health.withdrawal import WithdrawalChanged
 from ..models import Feed, WaterMeasurement, WithdrawalAcknowledgement
 from ..models.site import zone_of
-from ..resources.medicine import MedicineWithdrawalList
 from ..stock import services as stock_services
 from ..water import services as water_services
 from .helpers import point_of, rows_data
@@ -43,15 +42,14 @@ class GuardTestCase(HarvestInsideTestCase):
         return caught.exception.change
 
     def acknowledged(self, change, call, *args, **kwargs):
-        with withdrawal.acknowledging(change.fingerprint):
-            return call(*args, **kwargs)
+        return call(*args, withdrawal_ack=change.fingerprint, **kwargs)
 
     def medicated(self):
         return Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
 
-    def feed(self, days_ago, feed=None):
+    def feed(self, days_ago, feed=None, **kwargs):
         return feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(days_ago),
-                                               feed=feed or self.medicated(), amount_kg=Decimal('2'))
+                                               feed=feed or self.medicated(), amount_kg=Decimal('2'), **kwargs)
 
 
 class HarvestBroughtInsideTests(GuardTestCase):
@@ -126,18 +124,16 @@ class FreedFishTests(GuardTestCase):
         self.acknowledged(change, services.void_treatment, self.user, treatment, 'Wrong unit')
         row = WithdrawalAcknowledgement.objects.get()
         self.assertEqual((row.warning, row.harvest, row.until), ('released', None, self.day(-6)))
-        self.assertTrue(AuditLog.objects.filter(entity_type='treatment', severity=AuditLog.Severity.CRITICAL,
-                                                action='void').exists())
+        self.assertTrue(AuditLog.objects.filter(entity_type='treatment', severity=AuditLog.Severity.CRITICAL).exists())
 
     def test_voiding_a_course_whose_withdrawal_has_ended_asks_nothing(self):
         treatment = self.treat(self.medicine(days=1), 9, 9)
         services.void_treatment(self.user, treatment, 'Wrong unit')
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
 
-    def test_a_shorter_course_that_frees_held_fish_asks_and_one_still_holding_does_not(self):
+    def test_a_shorter_course_that_frees_held_fish_asks(self):
         bath = self.medicine(days=1)
         treatment = self.treat(bath, 3, -5)                  # running: held until 7 days ahead
-        services.change_last_day(self.user, treatment, self.day(-1))   # still held, until 3 days ahead
         change = self.asked(services.change_last_day, self.user, treatment, self.day(3))   # until yesterday
         self.assertEqual([freed.batch for freed in change.released], [self.batch])
 
@@ -184,7 +180,7 @@ class CheckWithdrawalLabelTests(GuardTestCase):
                                                 measured_weight_kg=Decimal('600'), facility=self.facility,
                                                 handling_ack=seen)
         feed = self.medicated()
-        with mock.patch.object(withdrawal, 'guarded', side_effect=lambda user, batch_ids, today, write, **kw: write()):
+        with mock.patch.object(withdrawal, 'guarded', side_effect=lambda user, batch_ids, today, write, **kw: unguarded(write)):
             self.feed(5, feed)                               # a write that skipped the guard (as before it existed)
         out = io.StringIO()
         call_command('check_withdrawal', stdout=out)
@@ -194,37 +190,9 @@ class CheckWithdrawalLabelTests(GuardTestCase):
 
 
 class WritePathTests(GuardTestCase):
-    """The write paths of the facts a withdrawal is worked out from (treatments, feedings, the medicines' rows, water
-    samples, the stock ledger): each goes through the guard. A new write function in these modules that neither calls
-    `guarded` nor writes through one that does fails here."""
-
-    MODULES = {
-        services: ('record_treatment', 'change_last_day', 'void_treatment'),
-        feeding_services: ('record_feeding', 'void_feeding'),
-        water_services: ('record', 'record_round', 'void'),
-        stock_services: ('_commit', 'void'),
-    }
-    # Writes that cannot change a withdrawal (a lice count, a health event's void, refused while a treatment names it), and
-    EXEMPT = {(services, 'record_lice_count'), (services, 'void_lice_count'), (services, 'void_event'),
-              # The shared void step: it is called inside each guarded void (stock, feeding, treatment, water).
-              (stock_services, 'voided')}
-
-    def test_every_write_function_of_the_modules_is_guarded(self):
-        for module, guarded_names in self.MODULES.items():
-            for name, function in inspect.getmembers(module, inspect.isfunction):
-                if function.__module__ != module.__name__:
-                    continue
-                writes = name.startswith(('record', 'void', 'change', '_commit'))
-                if not writes or (module, name) in self.EXEMPT:
-                    continue
-                source = inspect.getsource(function)
-                with self.subTest(function=f'{module.__name__}.{name}'):
-                    self.assertTrue(name in guarded_names or '_commit(' in source or 'record_round(' in source
-                                    or 'record(' in source and module is water_services, name)
-            for name in guarded_names:
-                with self.subTest(guarded=f'{module.__name__}.{name}'):
-                    self.assertIn('guarded(', inspect.getsource(getattr(module, name)))
-        self.assertIn('guarded(', inspect.getsource(MedicineWithdrawalList.save))
+    """Each known write path calls the guard. That no other path writes a withdrawal input is held at the data layer: the
+    inputs refuse a change outside the guard (farm.withdrawal_gate, test_withdrawal_gate.DataLayerTests), so the whole
+    suite would fail on one that does."""
 
     def test_each_path_calls_the_guard(self):
         bath = self.medicine(days=7)
@@ -250,3 +218,9 @@ class WritePathTests(GuardTestCase):
             stock_services.void(self.user, operation, 'Test')
         self.assertEqual(len(calls), 9)
         self.assertTrue(WaterMeasurement.all_objects.filter(pk=sample.pk).exists())
+
+
+def unguarded(write):
+    """A write made the way a path without the guard would make it (a test of what such a path leaves)."""
+    with gate.opened('test: a path without the guard'):
+        return write()

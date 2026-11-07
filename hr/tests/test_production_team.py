@@ -193,7 +193,7 @@ class ManagerTests(PeopleTestCase):
         self.assertEqual(list(form.fields['employee'].queryset), [])
 
 
-class MenuCourtesyTests(PeopleTestCase):
+class MenuLineTests(PeopleTestCase):
     def setUp(self):
         super().setUp()
         self.worker = user('ann', *WORKER, group='Worker role')

@@ -174,7 +174,7 @@ class CrewTests(PeopleTestCase):
         self.assertEqual(AuditLog.objects.count(), logs)
 
 
-class MenuCourtesyTests(PeopleTestCase):
+class MenuLineTests(PeopleTestCase):
     """`leads` and `production_only` choose menu lines, and a line the menu leaves out is refused at its address too
     (test_menu_access)."""
 

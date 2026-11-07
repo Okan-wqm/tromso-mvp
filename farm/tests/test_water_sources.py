@@ -324,3 +324,40 @@ class NoLimitTests(SourcesCase):
         self.assertEqual((percent.judged, percent.status, percent.uncovered), (Status.CRITICAL, Status.CRITICAL, ()))
         self.assertEqual(water.get('oxygen_mg_l').judged, Status.OK)               # both values are kept and shown
         self.assertNotIn('oxygen_saturation_pct', [each.code for each in water.unjudged])
+
+
+class NewestOwnValueTests(SourcesCase):
+    """Owner decision A9 (2026-11-07, replaces A1's order): among a unit's OWN fresh values (its point's sensor channels
+    and its own samples) the newest by measurement time wins, whatever the origin; only when it has no fresh value of its
+    own does the system's newest fresh value stand in (the system's sensor or a sample of its loop); a stale value is
+    shown stale and never stands in for a fresh one. One resolver: the latest values and a value at a moment alike."""
+
+    def test_a_manual_value_newer_than_a_fresh_sensor_wins(self):
+        self.on(self.mid1, self.value('ph', 7.4, seconds=600, fresh_for=3600))
+        self.sample(hours=0, ph='7.10')
+        reading = self.latest().get('ph')
+        self.assertEqual((reading.value, reading.sample.origin), (D('7.10'), read.Origin.MANUAL))
+
+    def test_a_fresher_sensor_beats_an_older_manual_value(self):
+        self.sample(hours=1, ph='7.10')
+        self.on(self.mid1, self.value('ph', 7.4, seconds=60, fresh_for=3600))
+        self.assertEqual(self.latest().get('ph').sample.origin, read.Origin.SENSOR)
+
+    def test_the_system_stands_in_only_when_the_unit_has_nothing_fresh(self):
+        self.on(self.ras, self.value('temperature_c', 9.5, seconds=30))
+        self.sample(hours=1, temperature_c='8.0')                         # the unit's own, fresh, older than the system's
+        reading = self.latest().get('temperature_c')
+        self.assertEqual((reading.value, reading.sample.origin), (D('8.0'), read.Origin.MANUAL))
+
+    def test_a_loop_sample_stands_in_for_a_unit_with_nothing_fresh_and_a_stale_value_never_does(self):
+        self.sample(hours=30, temperature_c='7.0')                        # the unit's own, stale after 24 h
+        self.sample(point=self.loop, hours=2, temperature_c='10.0')       # the loop's, fresh
+        reading = self.latest().get('temperature_c')
+        self.assertEqual((reading.value, reading.sample.point), (D('10.0'), self.loop))
+        self.assertTrue(reading.fresh(self.now))
+
+    def test_a_value_at_a_moment_follows_the_same_rule(self):
+        from ..feeding.temperature import temperature_for
+        self.on(self.mid1, self.value('temperature_c', 9.7, seconds=600, fresh_for=3600))
+        self.sample(hours=0, temperature_c='8.0')                          # newer than the sensor's
+        self.assertEqual(temperature_for([self.t1], self.now)[self.t1.pk].value_c, D('8.0'))

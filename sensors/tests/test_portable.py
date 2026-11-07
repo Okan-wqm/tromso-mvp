@@ -311,10 +311,12 @@ class JourneyTests(PortableCase):
     place has exactly the readings taken while it was there, at every tier of its charts and in its replay frames, the
     moves inside an hour included (the hour that holds a move is not given whole to the place where it began)."""
 
+    TO_T2, TO_R1 = 90, 200                     # minutes after 00:00
+
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.to_t2, cls.to_r1 = JOURNEY + timedelta(minutes=90), JOURNEY + timedelta(minutes=200)
+        cls.to_t2, cls.to_r1 = JOURNEY + timedelta(minutes=cls.TO_T2), JOURNEY + timedelta(minutes=cls.TO_R1)
         bindings.move_device(cls.user, cls.device, JOURNEY - timedelta(days=1), cls.t1)
         bindings.move_device(cls.user, cls.device, cls.to_t2, cls.t2)
         bindings.move_device(cls.user, cls.device, cls.to_r1, cls.ras)
@@ -388,6 +390,31 @@ class JourneyTests(PortableCase):
                     got = [(frame.at, (frame.inputs['ph'].value, frame.inputs['ph'].origin)
                             if 'ph' in frame.inputs else None) for frame in frames]
                     self.assertEqual(got, [(frame.at, self.expected(stays, frame.at, hourly)) for frame in frames])
+
+    def test_no_frame_ever_reads_a_value_measured_after_it(self):
+        for step in (timedelta(minutes=5), HOUR):
+            for target in (self.t1, self.t2, self.mid2, self.ras):
+                frames = read.deffeyes_frames(target, JOURNEY + step, JOURNEY + timedelta(hours=5, minutes=1), step).frames
+                for frame in frames:
+                    for code, item in frame.inputs.items():
+                        with self.subTest(target=str(target), step=step, at=frame.at, code=code):
+                            self.assertGreaterEqual(item.age_s, 0)
+
+    def test_every_part_of_an_hour_lies_inside_that_hour(self):
+        for target in (self.mid1, self.mid2, self.ras):
+            for segment in read.segments(target, 'ph', JOURNEY - timedelta(days=2), JOURNEY + timedelta(days=2)):
+                (first, last), parts = read.hours_of(segment)
+                for start, end in parts:
+                    with self.subTest(target=str(target), part=(start, end)):
+                        self.assertEqual(start.replace(minute=0, second=0, microsecond=0),
+                                         (end - timedelta(microseconds=1)).replace(minute=0, second=0, microsecond=0))
+
+
+class ShortStayTests(JourneyTests):
+    """The same probe kept in T-02 only from 01:30 to 02:20: a stay that crosses an hour without a whole hour in it. Its
+    two parts are two hours, so the 02:00 frame never reads 02:19 (taken after it) as the hour 01:00-02:00's last value."""
+
+    TO_T2, TO_R1 = 90, 140
 
 
 MOVER = ('view_device', 'view_binding', 'add_binding', 'change_binding', 'view_channel', 'view_samplingpoint',

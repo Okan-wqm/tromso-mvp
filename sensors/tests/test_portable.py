@@ -17,10 +17,11 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import AuditLog
-from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System
+from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System, Tank
 from farm.models.site import zone_of
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
+from farm.tests.test_tanks import unit_data
 from farm.water import read as water_read, sources
 
 from sensors import bindings, read
@@ -609,3 +610,67 @@ class LockTests(TransactionTestCase):
             thread.join(30)
         self.assertEqual(errors, [])
         self.assertEqual(Binding.objects.get(channel=self.ph, valid_to__isnull=True).point, self.mid2)
+
+
+class StructureTests(PortableCase):
+    """The other side of "a device is at its place's site": a unit, a piece of equipment, a system or a production
+    department is not moved to another site while a device is placed there (move it or take it out first), so a placed
+    device's site never lags; and an open binding whose place does not change (its note edited) is never refused."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.oslo = Site.objects.create(name='Oslo', code='OS', timezone='Europe/Oslo')
+        cls.oslo_hall = ProductionDepartment.objects.create(site=cls.oslo, name='Hall O', code='HO')
+        cls.other_hall = ProductionDepartment.objects.create(site=cls.site, name='Hall B', code='HB')
+        cls.t5 = make_unit('T-05', cls.hall)
+        cls.mid5 = point_of(cls.t5)
+        cls.pump = Equipment.objects.create(name='Pump', code='P1', production_department=cls.hall,
+                                            equipment_type=EquipmentType.objects.order_by('code').first())
+        cls.flow = make_channel(make_device(cls.connection, cls.format, cls.site, code='FLOW-1'), 'flow_m3_h')
+
+    def test_a_unit_with_a_probe_in_it_stays_at_its_site(self):
+        bindings.move_device(self.user, self.device, self.start, self.t5)
+        self.refused('trg_sensors_placed_site',
+                     lambda: Tank.objects.filter(pk=self.t5.pk).update(production_department=self.oslo_hall))
+        Tank.objects.filter(pk=self.t5.pk).update(production_department=self.other_hall)     # the same site: allowed
+        bindings.unbind_device(self.user, self.device, self.start + timedelta(days=1))
+        Tank.objects.filter(pk=self.t5.pk).update(production_department=self.oslo_hall)      # out of the water: allowed
+
+    def test_a_piece_of_equipment_with_a_device_on_it_stays_at_its_site(self):
+        bindings.move(self.user, self.flow, self.start, equipment=self.pump)
+        self.refused('trg_sensors_placed_site',
+                     lambda: Equipment.objects.filter(pk=self.pump.pk).update(production_department=self.oslo_hall))
+
+    def test_a_system_or_a_department_with_a_probe_stays_at_its_site(self):
+        bindings.move_device(self.user, self.device, self.start, self.ras)
+        self.refused('trg_sensors_placed_site', lambda: System.objects.filter(pk=self.ras.pk).update(site=self.oslo))
+        bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.t5)
+        self.refused('trg_sensors_placed_site',
+                     lambda: ProductionDepartment.objects.filter(pk=self.hall.pk).update(site=self.oslo))
+
+    def test_the_unit_form_says_to_move_the_probe_first(self):
+        bindings.move_device(self.user, self.device, self.start, self.t5)
+        admin = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'x')
+        self.client.force_login(admin)
+        response = self.client.post(reverse('farm:tank_edit', args=[self.t5.pk]), unit_data(
+            self.oslo_hall, name='Unit T-05', code='T-05', version=str(self.t5.version)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'move the device (Move device) or take it out of the water first')
+        self.t5.refresh_from_db()
+        self.assertEqual(self.t5.production_department, self.hall)
+
+    def test_a_note_edit_of_an_open_binding_is_never_refused(self):
+        # Rows from before the guard (or a database restored from elsewhere) can hold a device whose stored site lags
+        # its place; editing an open binding without moving it must still work.
+        bindings.move_device(self.user, self.device, self.start, self.t5)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')                       # the deferred checks done first
+            cursor.execute('ALTER TABLE tanks DISABLE TRIGGER USER')                # no guard: the old data
+            cursor.execute('UPDATE tanks SET production_department_id = %s WHERE id = %s', [self.oslo_hall.pk, self.t5.pk])
+            cursor.execute('ALTER TABLE tanks ENABLE TRIGGER USER')
+        binding = Binding.objects.get(channel=self.ph, valid_to__isnull=True)
+        binding.note = 'just a note'
+        binding.save()
+        mid9 = point_of(make_unit('T-09', self.oslo_hall))                    # moving it there is still checked
+        self.refused('trg_sensors_binding_site', lambda: Binding.objects.filter(pk=binding.pk).update(point=mid9))

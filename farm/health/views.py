@@ -277,6 +277,15 @@ def _filtered_counts(params):
     return counts, choices
 
 
+def _iso_day_or_none(value):
+    """A date filter's ISO value, or None: _site_weeks' own parser, so that it does not lean on a helper of the list
+    filters that may move to a shared module."""
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _site_weeks(params):
     """The weekly table: each site's average over every cage counted that week (Vedlegg 1 point 6) and its badge. The
     filters choose which sites and weeks are shown (a unit filter: its site; a date range: the weeks it touches), never
@@ -288,7 +297,7 @@ def _site_weeks(params):
         counts = counts.filter(unit__production_department__site=site_id) if site_id else counts.filter(unit=unit)
     elif params['site']:
         counts = counts.filter(unit__production_department__site=params['site'])
-    first, last = _day(params['from']), _day(params['to'])
+    first, last = _iso_day_or_none(params['from']), _iso_day_or_none(params['to'])
     if first:
         counts = counts.filter(date__gte=first - timedelta(days=first.weekday()))          # its week's Monday
     if last:

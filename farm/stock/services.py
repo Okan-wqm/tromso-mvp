@@ -59,7 +59,7 @@ from core.models import AuditLog
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.handling import check
-from farm.health import read as health_read
+from farm.health import read as health_read, withdrawal
 from farm.models import (
     Batch, DeliveryRecord, EscapeRecord, HandlingPlanItem, HarvestRecord, HealthEvent, Species, StockMovement,
     StockOperation, Tank,
@@ -147,57 +147,64 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
         _check_static(kind, day, entries, batches, units, new_batch)
         if health_event is not None:
             _check_event(health_event, day, units.values())
-        assessment = _handling(kind, day, entries, batches, units, handling_ack)
-        before = read.unit_counts(list(units))
-        if new_batch is not None:
-            batch = Batch(**new_batch.fields, code=next_code(Batch, f'B-{day.year}-'), input_date=day, created_by=user,
-                          updated_by=user)
-            batch.full_clean(exclude=['code'])
-            batch.save()
-            batches[batch.pk] = batch
-            for entry in entries:
-                entry.batch = batch
-            with audit.source_language():
-                audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
-        operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, entry_key=token,
-                                                  health_event=health_event, created_by=user, updated_by=user)
-        StockMovement.objects.bulk_create([
-            StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
-                          kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,
-                          measured_weight_kg=entry.measured_weight_kg, pair=entry.pair, reason=entry.reason,
-                          size_class=entry.size_class, sample_count=entry.sample_count,
-                          sample_weight_kg=entry.sample_weight_kg)
-            for entry in entries])
-        over = _check_timeline(operation, batches, units)
-        if over:
-            if not ack:
-                raise ValidationError({'over_capacity_ack': over})
-            operation.over_capacity_ack = True
-            operation.save(update_fields=['over_capacity_ack'])
-        if (harvest is not None) != (kind == OperationKind.HARVEST):
-            raise ValueError('A harvest, and only a harvest, writes a harvest record.')
-        if harvest is not None:
-            record = HarvestRecord(operation=operation, **harvest)
-            record.full_clean()
-            record.save()
-        for given, model, wanted in ((escape, EscapeRecord, OperationKind.ADJUSTMENT),
-                                     (delivery, DeliveryRecord, OperationKind.DELIVERY)):
-            if (given is not None) != (kind == wanted):
-                raise ValueError(f'An operation of kind {kind} and its {model.__name__} go together.')
-            if given is not None:
-                record = model(operation=operation, **given)
+        assessment = _handling(user, kind, day, entries, batches, units, handling_ack)
+
+        def write(batches):
+            before = read.unit_counts(list(units))
+            if new_batch is not None:
+                batch = Batch(**new_batch.fields, code=next_code(Batch, f'B-{day.year}-'), input_date=day, created_by=user,
+                              updated_by=user)
+                batch.full_clean(exclude=['code'])
+                batch.save()
+                batches[batch.pk] = batch
+                for entry in entries:
+                    entry.batch = batch
+                with audit.source_language():
+                    audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
+            operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, entry_key=token,
+                                                      health_event=health_event, created_by=user, updated_by=user)
+            StockMovement.objects.bulk_create([
+                StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
+                              kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,
+                              measured_weight_kg=entry.measured_weight_kg, pair=entry.pair, reason=entry.reason,
+                              size_class=entry.size_class, sample_count=entry.sample_count,
+                              sample_weight_kg=entry.sample_weight_kg)
+                for entry in entries])
+            over = _check_timeline(operation, batches, units)
+            if over:
+                if not ack:
+                    raise ValidationError({'over_capacity_ack': over})
+                operation.over_capacity_ack = True
+                operation.save(update_fields=['over_capacity_ack'])
+            if (harvest is not None) != (kind == OperationKind.HARVEST):
+                raise ValueError('A harvest, and only a harvest, writes a harvest record.')
+            if harvest is not None:
+                record = HarvestRecord(operation=operation, **harvest)
                 record.full_clean()
                 record.save()
-        if assessment is not None and assessment.warnings:
-            check.acknowledge(operation, assessment)
-        _log(user, AuditLog.Action.CREATE, operation, assessment)
-        if plan_item is not None:
-            _fulfil(user, plan_item, operation, entries)
-        _follow_status(user, units, before)
-        return operation
+            for given, model, wanted in ((escape, EscapeRecord, OperationKind.ADJUSTMENT),
+                                         (delivery, DeliveryRecord, OperationKind.DELIVERY)):
+                if (given is not None) != (kind == wanted):
+                    raise ValueError(f'An operation of kind {kind} and its {model.__name__} go together.')
+                if given is not None:
+                    record = model(operation=operation, **given)
+                    record.full_clean()
+                    record.save()
+            if assessment is not None and assessment.warnings:
+                check.acknowledge(operation, assessment)
+            _log(user, AuditLog.Action.CREATE, operation, assessment)
+            if plan_item is not None:
+                _fulfil(user, plan_item, operation, entries)
+            _follow_status(user, units, before)
+            return operation
+
+        # A stock operation moves fish into or out of a course's units and days, or voids them: through the withdrawal
+        # guard (a harvest it records itself is asked about by its own handling check).
+        return withdrawal.guarded(user, set(batches), min(local_today(unit) for unit in units.values()),
+                                  lambda: write(dict(batches)), exclude_operation=lambda operation: operation.pk)
 
 
-def _handling(kind, day, entries, batches, units, seen):
+def _handling(user, kind, day, entries, batches, units, seen):
     """The handling check of a harvest, transfer or grading (farm/handling/check.py), on the source unit and
     batch, after the locks: with warnings, the person must have seen exactly these (`seen`, their
     fingerprint) and gone on; otherwise they are asked (again). None for other operations."""
@@ -206,7 +213,7 @@ def _handling(kind, day, entries, batches, units, seen):
         return None
     source = next(entry for entry in entries if entry.count_delta < 0)
     assessment = check.assess(handling, units[source.unit.pk], day, batches[source.batch.pk], with_earliest=False)
-    check.require_acknowledged(assessment, seen)
+    check.require_acknowledged(assessment, seen, user=user)
     return assessment
 
 
@@ -748,13 +755,18 @@ def void(user, operation, reason):
         lines = list(operation.movements.select_related('unit', 'batch'))
         batches = locked(Batch, {line.batch_id for line in lines})
         units = locked(Tank, {line.unit_id for line in lines})
-        before = read.unit_counts(list(units))
-        voided(user, operation, reason, sites_of(units.values()), label(operation, lines),
-               check=lambda: _validate(set(batches), set(units), operation.date))
-        _follow_status(user, units, before)
-        if operation.kind == OperationKind.INPUT:
-            for batch in batches.values():
-                batch.soft_delete(user)
-                with audit.source_language():
-                    audit.record_delete(user, batch)
-        return operation
+        def write():
+            current = StockOperation.all_objects.get(pk=operation.pk)        # as stored: a write tried is made again
+            before = read.unit_counts(list(units))
+            voided(user, current, reason, sites_of(units.values()), label(current, lines),
+                   check=lambda: _validate(set(batches), set(units), current.date))
+            _follow_status(user, units, before)
+            if current.kind == OperationKind.INPUT:
+                for batch in Batch.all_objects.filter(pk__in=batches):
+                    batch.soft_delete(user)
+                    with audit.source_language():
+                        audit.record_delete(user, batch)
+            return current
+
+        # The fish leave or come back to the units and days of a course: through the withdrawal guard.
+        return withdrawal.guarded(user, set(batches), min(local_today(unit) for unit in units.values()), write)

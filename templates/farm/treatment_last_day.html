@@ -1,13 +1,6 @@
 {% extends "farm/health_form.html" %}
 {% load i18n health %}
-{% comment %} Change the last day of a treatment (farm.health.views.change_last_day): the withdrawal counts from the new one; a longer
-   one that reaches over a harvest already recorded shows it, with the box to go on.{% endcomment %}
+{# Change the last day of a treatment (farm.health.views.change_last_day): the withdrawal counts from the new one. #}
 {% block intro %}
 <p class="op-context"><strong>{{ treatment.medicine|default:treatment.get_method_display }}</strong> · {% blocktrans trimmed with start=treatment.start_date|date:"DATE_FORMAT" end=treatment.end_date|date:"DATE_FORMAT" %}from {{ start }} to {{ end }}{% endblocktrans %}{% if treatment.medicine %} · {% blocktrans trimmed with rule=treatment.medicine|withdrawal_rule %}withdrawal {{ rule }}{% endblocktrans %}{% endif %}</p>
-{% endblock %}
-{% block fields %}
-<div class="form-grid">
-  {% with field=form.end_date %}{% include "registration/_field.html" %}{% endwith %}
-</div>
-{% if form.handling.warnings or form.handling_ack.errors %}{% include "farm/_handling_panel.html" %}{% endif %}
 {% endblock %}

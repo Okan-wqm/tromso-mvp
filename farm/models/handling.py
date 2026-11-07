@@ -3,6 +3,7 @@ people give when they go on past a handling warning (a medicine withdrawal befor
 The check itself is farm/handling/; nothing here blocks anything (owner decision: warn, never block)."""
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -10,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from core.models import AuditedModel
 
 from .species import Species
-from .stock import OperationKind, StockOperation
+from .stock import Batch, OperationKind, StockOperation
 
 MAX_FASTING_HOURS = 720     # 30 days: a rule above it is a typing slip, not a fast
 MAX_FASTING_DEGREE_DAYS = 1000   # a purge of more degree-days is a typing slip, too
@@ -111,18 +112,15 @@ class HandlingRule(AuditedModel):
 class AcknowledgedWarning(models.TextChoices):
     WITHDRAWAL = 'withdrawal', _('Medicine withdrawal')
     FASTING = 'fasting', _('Fasting')
-    # A treatment entered after the fact (backdated, or its course made longer) whose withdrawal reaches back over a
-    # harvest already recorded: the fish may have gone to food medicated (audit F-195).
-    HARVESTED = 'harvested', _('Harvest inside a withdrawal')
 
 
 def _shape():
     """A withdrawal row keeps what the person saw of the withdrawal, a fasting row what they saw of the fast;
     the other's columns stay empty. A fasting row has its last feeding, the hours fasted and the rule, and at least
     one of the two things the rule asked for not reached: the hours (`fasted_hours < required_hours`) or, for a
-    harvest's purging, the degree-days; the degree-days are both given or both empty. A harvested row is a treatment's:
-    the withdrawal it puts on the fish (as a withdrawal row keeps it) and the harvest already recorded inside it; no
-    other row names a harvest."""
+    harvest's purging, the degree-days; the degree-days are both given or both empty. A withdrawal row may name the batch
+    and the withdrawal it was about (`batch`, `withdrawal_source`), kept since the cross-review so that check_withdrawal
+    labels an acknowledgement per harvest and withdrawal; a fasting row names neither."""
     fasting = ('last_fed_at', 'fasted_hours', 'required_hours', 'rule', 'fasted_degree_days', 'required_degree_days')
     no_fasting = {f'{name}__isnull': True for name in fasting}
     no_withdrawal = Q(withdrawal_until__isnull=True, withdrawal_approximate=False, withdrawal_reason='')
@@ -130,16 +128,14 @@ def _shape():
              | Q(required_degree_days__isnull=False, fasted_degree_days__lt=models.F('required_degree_days')))
     both_or_neither = (Q(required_degree_days__isnull=True, fasted_degree_days__isnull=True)
                        | Q(required_degree_days__isnull=False, fasted_degree_days__isnull=False))
-    return (Q(warning=AcknowledgedWarning.WITHDRAWAL, harvest__isnull=True, **no_fasting)
-            | Q(warning=AcknowledgedWarning.HARVESTED, harvest__isnull=False, treatment__isnull=False, **no_fasting)
+    return (Q(warning=AcknowledgedWarning.WITHDRAWAL, **no_fasting)
             | (Q(warning=AcknowledgedWarning.FASTING, last_fed_at__isnull=False, fasted_hours__isnull=False,
-                 rule__isnull=False, harvest__isnull=True) & unmet & both_or_neither & no_withdrawal))
+                 rule__isnull=False, batch__isnull=True, withdrawal_source='') & unmet & both_or_neither & no_withdrawal))
 
 
 class HandlingAcknowledgement(models.Model):
     """One warning a person went on past when recording a handling (a harvest, a transfer, a grading, a
-    treatment): a medicine withdrawal in force, too short a fast, or, for a treatment entered after the fact, a harvest
-    already recorded inside the withdrawal it puts on the fish (`harvest`). It keeps what they were shown, the
+    treatment): a medicine withdrawal in force, or too short a fast. It keeps what they were shown, the
     withdrawal's end and reason, or the hours (and for a harvest's purging the degree-days) fasted against what the
     rule asked for, so the record says
     what was known at the time. It belongs to the stock operation or to the treatment it was given for, exactly
@@ -152,10 +148,11 @@ class HandlingAcknowledgement(models.Model):
     treatment = models.ForeignKey('Treatment', null=True, blank=True, on_delete=models.PROTECT,
                                   related_name='acknowledgements', verbose_name=_('Treatment'))
     warning = models.CharField(_('Warning'), max_length=12, choices=AcknowledgedWarning.choices)
-    # A harvested row's harvest: recorded before the treatment whose withdrawal it lies inside.
-    harvest = models.ForeignKey(StockOperation, null=True, blank=True, on_delete=models.PROTECT,
-                                related_name='withdrawal_findings', limit_choices_to={'kind': OperationKind.HARVEST},
-                                verbose_name=_('Harvest'))
+    # A withdrawal row's batch and withdrawal (its cause, WITHDRAWAL_SOURCE: "treatment:<id>" or "feeding:<id>"); empty on
+    # rows written before they were kept, and on a fasting row.
+    batch = models.ForeignKey(Batch, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+                              verbose_name=_('Batch'))
+    withdrawal_source = models.CharField(_('Withdrawal of'), max_length=80, blank=True)
     withdrawal_until = models.DateField(_('Withdrawal until'), null=True, blank=True)   # None: unknown
     withdrawal_approximate = models.BooleanField(_('Withdrawal end estimated'), default=False)
     withdrawal_reason = models.CharField(_('Withdrawal'), max_length=500, blank=True)
@@ -200,3 +197,54 @@ class HandlingAcknowledgement(models.Model):
         if self.treatment_id:
             return HandlingKind.TREATMENT
         return KIND_OF_OPERATION.get(self.operation.kind)
+
+
+class WithdrawalWarning(models.TextChoices):
+    """What a change of a withdrawal does that a person must go on past (farm.health.withdrawal.guarded)."""
+    HARVESTED = 'harvested', _('Harvest inside a withdrawal')
+    RELEASED = 'released', _('Fish freed from a withdrawal')
+
+
+class WithdrawalAcknowledgement(models.Model):
+    """One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard,
+    farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated
+    feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now
+    lies inside a withdrawal (`harvested`, naming the harvest), or fish held today are freed by it (`released`). It
+    names the write (`record_type`, `record_id`, `record_label`, as the activity log names records), the batch, the
+    withdrawal (`source`: "treatment:<id>" or "feeding:<id>") and what was shown, and who went on and when. Append-only:
+    the database refuses an edit or a delete (migration farm 0027); the write's log entry is critical."""
+
+    id = models.BigAutoField(primary_key=True)
+    created_at = models.DateTimeField(_('Acknowledged at'), auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+',
+                                   verbose_name=_('Acknowledged by'))
+    record_type = models.CharField(_('Record'), max_length=60)
+    record_id = models.CharField(_('Record id'), max_length=64)
+    record_label = models.CharField(_('Record name'), max_length=255)
+    warning = models.CharField(_('Warning'), max_length=12, choices=WithdrawalWarning.choices)
+    batch = models.ForeignKey(Batch, on_delete=models.PROTECT, related_name='+', verbose_name=_('Batch'))
+    harvest = models.ForeignKey(StockOperation, null=True, blank=True, on_delete=models.PROTECT,
+                                related_name='withdrawal_findings', verbose_name=_('Harvest'))
+    source = models.CharField(_('Withdrawal of'), max_length=80)
+    until = models.DateField(_('Withdrawal until'), null=True, blank=True)       # None: unknown
+    approximate = models.BooleanField(_('Withdrawal end estimated'), default=False)
+    reason = models.CharField(_('Withdrawal'), max_length=500, blank=True)
+
+    class Meta:
+        db_table = 'withdrawal_acknowledgements'
+        ordering = ['id']
+        verbose_name = _('withdrawal acknowledgement')
+        verbose_name_plural = _('withdrawal acknowledgements')
+        constraints = [
+            models.CheckConstraint(condition=Q(warning__in=WithdrawalWarning.values),
+                                   name='chk_withdrawal_acknowledgements_warning'),
+            # A harvested row names the harvest inside the withdrawal; a released row names none.
+            models.CheckConstraint(
+                condition=Q(warning=WithdrawalWarning.HARVESTED, harvest__isnull=False)
+                | Q(warning=WithdrawalWarning.RELEASED, harvest__isnull=True),
+                name='chk_withdrawal_acknowledgements_harvest'),
+        ]
+        indexes = [models.Index(fields=['harvest', 'batch'])]
+
+    def __str__(self):
+        return f'{self.get_warning_display()} · {self.record_label}'

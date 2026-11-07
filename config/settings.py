@@ -78,6 +78,8 @@ MIDDLEWARE = [
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    # The withdrawal guard's box (farm.health.withdrawal.guarded) for the request's writes.
+    'farm.middleware.WithdrawalAcknowledgementMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 

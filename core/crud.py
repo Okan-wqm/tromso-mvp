@@ -828,7 +828,18 @@ class RowListView(ResourceView):
                 return done(request, self.url('edit', pk), stay=True)
             if not rows.applies_to(current):
                 raise Http404
-            rows.save(request.user, current, kept, r.entity_type())
+            try:
+                with transaction.atomic():
+                    rows.save(request.user, current, kept, r.entity_type())
+            except ValidationError as error:
+                # A list whose save asks something first (a medicine's withdrawal rows and the withdrawal guard): the
+                # page again with the reason and what was found (`withdrawal_change`), nothing saved.
+                formset._non_form_errors = formset.error_class(error.messages)
+                page = UpdateView.as_page(r, request)
+                response = page.page(r.form(request, instance=obj), obj, **{rows.key: formset, 'open_tab': rows.tab,
+                                                                          'withdrawal_change': getattr(error, 'change', None)})
+                response.status_code = 422
+                return response
             if versioned:
                 current.version += 1
                 current.updated_by = request.user

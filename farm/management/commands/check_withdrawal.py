@@ -2,7 +2,8 @@ from django.core.management.base import BaseCommand
 from django.utils import translation
 
 from farm.health import withdrawal
-from farm.models import Batch, HandlingAcknowledgement, Tank
+from farm.handling.withdrawal import source_key
+from farm.models import Batch, HandlingAcknowledgement, Tank, WithdrawalAcknowledgement
 from farm.models.handling import AcknowledgedWarning
 from farm.stock import read
 
@@ -36,19 +37,21 @@ class Command(BaseCommand):
     def harvested_inside(self):
         found = withdrawal.harvests_inside()
         operations = {each.operation_id for each in found}
+        # An acknowledgement counts for the harvest, the batch and the withdrawal it names, never for another one.
         at_harvest = set(HandlingAcknowledgement.objects.filter(
-            operation_id__in=operations, warning=AcknowledgedWarning.WITHDRAWAL).values_list('operation_id', flat=True))
-        with_treatment = set(HandlingAcknowledgement.objects.filter(
-            harvest_id__in=operations, warning=AcknowledgedWarning.HARVESTED).values_list('harvest_id', 'treatment_id'))
+            operation_id__in=operations, warning=AcknowledgedWarning.WITHDRAWAL, batch__isnull=False)
+            .values_list('operation_id', 'batch_id', 'withdrawal_source'))
+        afterwards = {(row.harvest_id, row.batch_id, row.source): row.record_type
+                      for row in WithdrawalAcknowledgement.objects.filter(harvest_id__in=operations)}
         for each in found:
             line = each.line
             end = (each.until.isoformat() if each.until else 'unknown') + (' (estimated)' if each.approximate else '')
             facility = each.facility.name if each.facility is not None else 'an unknown facility'
-            treatment = each.withdrawal.treatment
-            if each.operation_id in at_harvest:
+            pair = (each.operation_id, line.batch_id, source_key(each.withdrawal.source))
+            if pair in at_harvest:
                 acknowledged = 'Acknowledged when the harvest was recorded.'
-            elif treatment is not None and (each.operation_id, treatment.pk) in with_treatment:
-                acknowledged = 'Acknowledged with the treatment.'
+            elif pair in afterwards:
+                acknowledged = f'Acknowledged when the {afterwards[pair]} was recorded.'
             else:
                 acknowledged = 'Not acknowledged.'
             self.stdout.write(self.style.ERROR(

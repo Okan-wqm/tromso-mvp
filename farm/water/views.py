@@ -487,7 +487,9 @@ def record_round(request):
 
 
 def _round_errors(error, header, entered):
-    """The service's reasons on the round: a cell's on its row and parameter, the time on the header."""
+    """The service's reasons on the round: a cell's on its row and parameter, the time on the header. The withdrawal
+    guard's question goes on the header, with its box."""
+    header.withdrawal_change = getattr(error, 'change', None) or header.withdrawal_change
     for key, messages_ in error.message_dict.items():
         index, _sep, code = key.partition('-')
         if code and index.isdigit():

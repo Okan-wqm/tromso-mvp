@@ -41,8 +41,12 @@ class ServiceErrors:
     it (or on the field the form calls it), otherwise above the form."""
 
     service_fields = {}
+    # The withdrawal guard's refusal (farm.health.withdrawal.WithdrawalChanged): what the write does to the withdrawals,
+    # shown with its box by farm/_withdrawal_change.html; None until it asks.
+    withdrawal_change = None
 
     def add_service_error(self, error):
+        self.withdrawal_change = getattr(error, 'change', None) or self.withdrawal_change
         if not hasattr(error, 'error_dict'):
             self.add_error(None, error.messages)
             return

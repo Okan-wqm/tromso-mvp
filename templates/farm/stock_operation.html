@@ -17,6 +17,7 @@
   {% csrf_token %}
   {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
   {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% include "farm/_withdrawal_change.html" with withdrawal_change=form.withdrawal_change %}
   {% for hidden in form.hidden_fields %}{% if hidden.errors %}<div class="form-error" role="alert">{{ hidden.errors }}</div>{% endif %}{% endfor %}
   {% with share=form.only_batch %}{% if share %}
   <p class="op-batch">{% blocktrans trimmed with batch=share.batch.code fish=share.count|fish weight=share.avg_weight_g|grams %}Batch {{ batch }}: {{ fish }} fish at {{ weight }}{% endblocktrans %}</p>

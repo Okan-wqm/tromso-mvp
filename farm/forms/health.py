@@ -291,9 +291,8 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
             day = data.get('start_date') or self.current('start_date')
             method = data.get('method') or self['method'].value()
             medicine = data.get('medicine') if 'medicine' in data else self.current('medicine')
-            end_date = data.get('end_date') or self.current('end_date')
             reason = data.get('reason') or self['reason'].value()
-            self._handling = services.handling(list(units), day, method, medicine, end_date,
+            self._handling = services.handling(list(units), day, method, medicine,
                                                reason if reason in Treatment.Reason.values else None)
             self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
         return self._handling
@@ -317,8 +316,8 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
 
 
 class LastDayForm(ServiceErrors, forms.Form):
-    """A treatment's last day, changed. A longer course whose withdrawal reaches over a harvest already recorded shows
-    it in the handling panel with the box to go on (farm.health.services.last_day_handling)."""
+    """A treatment's last day, changed. What the change does to the withdrawal (a harvest brought inside it, fish freed)
+    the withdrawal guard asks, with its box (ServiceErrors shows it)."""
 
     end_date = forms.DateField(label=_('Last day'), widget=DATE,
                                help_text=_('The withdrawal counts from the new last day; the change is logged.'))
@@ -327,27 +326,9 @@ class LastDayForm(ServiceErrors, forms.Form):
         super().__init__(*args, **kwargs)
         self.treatment = treatment
         self.fields['end_date'].initial = treatment.end_date
-        self.fields['handling_ack'] = handling_ack_field(HandlingKind.TREATMENT)
-        self._handling = None
-
-    @property
-    def handling(self):
-        """What the new last day asks, as entered (else nothing: the last day as it is asks nothing)."""
-        if self._handling is None:
-            end_date = getattr(self, 'cleaned_data', {}).get('end_date')
-            if end_date is None and self.is_bound:
-                try:
-                    end_date = self.fields['end_date'].clean(self['end_date'].value())
-                except ValidationError:
-                    end_date = None
-            self._handling = (services.last_day_handling(self.treatment, end_date)
-                              if end_date not in (None, self.treatment.end_date) else services.TreatmentHandling())
-            self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
-        return self._handling
 
     def save(self, user):
-        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'],
-                                        handling_ack=self.cleaned_data['handling_ack'])
+        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'])
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------

@@ -139,11 +139,15 @@ class DateFormatTests(SimpleTestCase):
                     found.append(f'{path.relative_to(settings.BASE_DIR).as_posix()}:{line} {match.group(0)}')
         self.assertEqual(found, [])
 
-    def test_each_language_says_a_time_on_the_24_hour_clock_and_a_date_with_its_month_named(self):
-        moment = datetime(2026, 10, 26, 21, 4)
-        for language, shown in (('en', ('26 Oct 2026', '21:04', '26 Oct 2026, 21:04')),
-                                ('nb', ('26. oktober 2026', '21:04', '26. oktober 2026 21:04')),
-                                ('tr', ('26 Ekim 2026', '21:04', '26 Ekim 2026 21:04'))):
+    def test_every_language_shows_a_date_the_european_way_and_a_time_on_the_24_hour_clock(self):
+        """Owner rule: a date shown on a page is dd.mm.yyyy, a date and time dd.mm.yyyy HH:MM, a day and month dd.mm., in
+        English, Norwegian and Turkish alike (config/formats/<language>/formats.py, one place)."""
+        moment = datetime(2026, 10, 6, 9, 4)
+        for language in ('en', 'nb', 'tr'):
             with self.subTest(language=language), translation.override(language):
                 self.assertEqual((formats.date_format(moment, 'DATE_FORMAT'), formats.time_format(moment, 'TIME_FORMAT'),
-                                  formats.date_format(moment, 'DATETIME_FORMAT')), shown)
+                                  formats.date_format(moment, 'DATETIME_FORMAT'),
+                                  formats.date_format(moment, 'MONTH_DAY_FORMAT'),
+                                  formats.date_format(moment, 'SHORT_DATE_FORMAT'),
+                                  formats.date_format(moment, 'SHORT_DATETIME_FORMAT')),
+                                 ('06.10.2026', '09:04', '06.10.2026 09:04', '06.10.', '06.10.2026', '06.10.2026 09:04'))

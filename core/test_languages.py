@@ -335,8 +335,8 @@ class FormsAndMessagesTests(TestCase):
         with mock.patch('django.utils.timezone.now', return_value=entry_time):
             AuditLog.objects.create(user=self.user, user_name='ali', action='create', entity_type='site',
                                     entity_id='1', entity_label='Bergen (BG)')
-        for language, shown in [('en', '2 Nov 2026, 13:05'), ('tr', '02 Kasım 2026 13:05'),
-                                ('nb', '2. november 2026 13:05')]:
+        for language, shown in [('en', '02.11.2026 13:05'), ('tr', '02.11.2026 13:05'),       # the European way in every
+                                ('nb', '02.11.2026 13:05')]:                                # language (owner rule)
             self.in_language(language)
             self.assertContains(self.client.get(reverse('core:activity_log')), shown, msg_prefix=language)
 

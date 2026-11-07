@@ -35,20 +35,20 @@ What the chart shows, as the source draws it (the corrections are in the bug doc
   the water after each amount, joined from the water, an arrowhead at each step. The axes grow to hold the
   waypoint and every step."""
 import math
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from decimal import Decimal
 
 from django.utils import formats
 from django.utils.translation import gettext_lazy as _
 
-from . import chemistry
+from . import chemistry, native
 from .evaluate import Status
 
-PH_RANGE = (4.0, 12.5)                                       # the chart's pH domain (the source's)
+PH_RANGE = native.PH_RANGE                                   # the chart's pH domain (the source's), 4 to 12.5
 ISOLINE_PHS = [round(4.25 + 0.25 * step, 2) for step in range(34)]
 LABELLED_PHS = {round(5.0 + 0.5 * step, 1) for step in range(15)}
-AXIS = 6                      # the axes' ends at least: 6 mmol/L DIC and 6 meq/L alkalinity
-ALERT_PH = 0.2                # a pH border nearer than this is a warning
+AXIS = native.AXIS            # the axes' ends at least: 6 mmol/L DIC and 6 meq/L alkalinity
+ALERT_PH = native.ALERT_PH    # a pH border nearer than this (0.2) is a warning
 OMEGA_SALINITY = (5, 44)      # the salinities Mucci (1983) measured
 SAMPLES = 96                  # points along a curve
 
@@ -102,40 +102,27 @@ class Target:
 @dataclass(frozen=True)
 class Border:
     """A limit as a pH: toxic above `ph` (NH₃) or below it (CO₂, H₂S); `ph` None when the limit cannot be
-    reached. `margin` is how far the water's pH is from it on the safe side (negative: past it)."""
+    reached. `margin` is how far the water's pH is from it on the safe side (negative: past it). Where it lies
+    against the chart's pH range (4 to 12.5), as the core judged it: `on_chart` (shown as a number), `everywhere`
+    (passed at every pH of the range), `off_chart` (not reached in the range)."""
     ph: float | None
     toxic_above: bool
     margin: float | None
     status: str
+    on_chart: bool = False
+    everywhere: bool = False
+    off_chart: bool = False
 
-    @property
-    def on_chart(self):
-        """The border is a pH of the chart's range (4 to 12.5): it is shown as a number."""
-        return self.ph is not None and PH_RANGE[0] <= self.ph <= PH_RANGE[1]
 
-    @property
-    def everywhere(self):
-        """The limit is passed at every pH of the chart's range (the border lies beyond it on the toxic side)."""
-        if self.ph is None:
-            return False
-        return self.ph < PH_RANGE[0] if self.toxic_above else self.ph > PH_RANGE[1]
-
-    @property
-    def off_chart(self):
-        """The limit is not reached at any pH of the chart's range (the border lies beyond it on the safe side)."""
-        return self.ph is not None and not self.on_chart and not self.everywhere
+def _border(found):
+    return Border(found['ph'], found['toxic_above'], found['margin'], Status(found['status']), found['on_chart'],
+                  found['everywhere'], found['off_chart'])
 
 
 def judge(ph, border, toxic_above, missing=None):
-    """The border and the status: critical past it, a warning within ALERT_PH of it, ok short of it or when
-    it cannot be reached. `missing`: the status when there is nothing to judge (no value or no limit)."""
-    if missing is not None:
-        return Border(None, toxic_above, None, missing)
-    if border is None:
-        return Border(None, toxic_above, None, Status.OK)
-    margin = border - ph if toxic_above else ph - border
-    status = Status.CRITICAL if margin <= 0 else Status.WARNING if margin <= ALERT_PH else Status.OK
-    return Border(border, toxic_above, margin, status)
+    """The border and the status (the core's rule: critical past it, a warning within ALERT_PH of it, ok short of it or
+    when it cannot be reached). `missing`: the status when there is nothing to judge (no value or no limit)."""
+    return _border(native.judge(ph, border, toxic_above, None if missing is None else Status(missing).value))
 
 
 @dataclass(frozen=True)
@@ -163,72 +150,33 @@ class Analysis:
     oxygen_saturation_pct: float | None
     pressure_atm: float
 
-    @property
-    def nh3_share_pct(self):
-        """NH₃ as a share of TAN at the water's pH, in %."""
-        return 100 * self.equilibria.nh3_share(self.water.ph)
-
-    @property
-    def h2s_share_pct(self):
-        """H₂S as a share of the total sulfide at the water's pH, in %."""
-        return 100 * self.equilibria.h2s_share(self.water.ph)
+    nh3_share_pct: float                     # NH₃ as a share of TAN at the water's pH, %
+    h2s_share_pct: float                     # H₂S as a share of the total sulfide at the water's pH, %
 
 
 def analyse(water, limits=Limits(), target=None, pressure=1.0):
-    """The values of a water against the limits: DIC and CO₂ from the alkalinity and the pH, NH₃-N from the
-    TAN, H₂S from the total sulfide, each limit as a pH border, the oxygen saturation at `pressure` (atm)."""
-    eq = chemistry.equilibria(water.temperature_c, water.salinity_ppt)
-    ph = water.ph
-    alkalinity = water.alkalinity_mg_l / chemistry.MG_CACO3_PER_MEQ
-    dic = eq.dic(alkalinity, ph)
-    co2_limit = None if limits.co2_mg_l is None else limits.co2_mg_l / chemistry.MG_CO2_PER_MMOL
-    co2 = judge(ph, None if co2_limit is None else eq.ph_where_co2(alkalinity, co2_limit), False,
-                Status.NO_LIMIT if co2_limit is None else None)
-
-    target_alkalinity = target_dic = target_co2 = None
-    if target is not None:
-        target_alkalinity = target.alkalinity_mg_l / chemistry.MG_CACO3_PER_MEQ
-        target_dic = eq.dic(target_alkalinity, target.ph)
-        target_co2 = eq.co2(target_dic, target.ph) * chemistry.MG_CO2_PER_MMOL
-
-    tan, nh3_limit = water.tan_mg_l, limits.nh3_n_mg_l
-    nh3_share = eq.nh3_share(ph)
-    nh3 = judge(ph, None if tan is None or nh3_limit is None else eq.ph_where_nh3(tan, nh3_limit), True,
-                Status.NOT_MEASURED if tan is None else Status.NO_LIMIT if nh3_limit is None else None)
-
-    sulfide, h2s_limit = water.total_sulfide_ug_l, limits.h2s_ug_l
-    h2s_share = eq.h2s_share(ph)
-    total_h2s = None if sulfide is None else sulfide * chemistry.H2S_PER_S
-    h2s = judge(ph, None if total_h2s is None or h2s_limit is None else eq.ph_where_h2s(total_h2s, h2s_limit),
-                False, Status.NOT_MEASURED if sulfide is None else Status.NO_LIMIT if h2s_limit is None else None)
-
-    solubility = chemistry.oxygen_solubility(water.temperature_c, water.salinity_ppt, pressure)
-    return Analysis(
-        water=water, limits=limits, target=target, equilibria=eq,
-        alkalinity_meq=alkalinity, dic=dic, co2_mg_l=eq.co2(dic, ph) * chemistry.MG_CO2_PER_MMOL, co2=co2,
-        target_alkalinity_meq=target_alkalinity, target_dic=target_dic, target_co2_mg_l=target_co2,
-        nh3_n_mg_l=None if tan is None else tan * nh3_share, nh3=nh3,
-        safe_tan_mg_l=None if nh3_limit is None else nh3_limit / nh3_share,
-        nh3_share_at_border_pct=None if nh3.ph is None else 100 * nh3_limit / tan,
-        h2s_ug_l=None if total_h2s is None else total_h2s * h2s_share, h2s=h2s,
-        safe_total_sulfide_ug_l=None if h2s_limit is None else h2s_limit / h2s_share / chemistry.H2S_PER_S,
-        oxygen_solubility_mg_l=solubility,
-        oxygen_saturation_pct=None if water.oxygen_mg_l is None else 100 * water.oxygen_mg_l / solubility,
-        pressure_atm=pressure)
+    """The values of a water against the limits (the core's analysis, chemcore/core/src/analysis.rs): DIC and CO₂ from
+    the alkalinity and the pH, NH₃-N from the TAN, H₂S from the total sulfide, each limit as a pH border, the oxygen
+    saturation at `pressure` (atm)."""
+    found = native.analyse(
+        **asdict(water), **asdict(limits), target_ph=None if target is None else target.ph,
+        target_alkalinity_mg_l=None if target is None else target.alkalinity_mg_l, pressure=pressure)
+    for key in ('co2', 'nh3', 'h2s'):
+        found[key] = _border(found[key])
+    return Analysis(water=water, limits=limits, target=target, **found)
 
 
 def alkalinity_floor(temperature_c, salinity_ppt, ph):
-    """The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so
-    at a high pH the alkalinity has a floor, below which the DIC would be negative."""
-    return (chemistry.equilibria(float(temperature_c), float(salinity_ppt)).isoline(float(ph))[1]
-            * chemistry.MG_CACO3_PER_MEQ)
+    """The alkalinity (mg/L as CaCO₃) a water of this pH has at least: hydroxide and borate are alkalinity too, so at a
+    high pH the alkalinity has a floor, below which the DIC would be negative."""
+    return native.alkalinity_floor(temperature_c, salinity_ppt, ph)
 
 
 def why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l):
     """Why a water of this pH and alkalinity cannot be (its alkalinity at or below the floor of `alkalinity_floor`),
     in the active language; '' when it can. The calculator's form and a unit's chart ask here."""
-    floor = alkalinity_floor(temperature_c, salinity_ppt, ph)
-    if float(alkalinity_mg_l) > floor:
+    floor = native.why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l)
+    if floor is None:
         return ''
     return str(_('At this pH the alkalinity is above %(floor)s mg/L as CaCO₃: the hydroxide and borate alone are '
                  'that much.') % {'floor': shown(floor, 1)})
@@ -256,27 +204,12 @@ class Box:
         return -slack <= x <= self.dic + slack and -slack <= y <= self.alkalinity + slack
 
 
-def _axis(needed):
-    """The end of an axis and its step: AXIS when the values fit in it with 10 % to spare, else the next
-    multiple of a 1-2-5 step that keeps at most 12 ticks."""
-    needed *= 1.1
-    if needed <= AXIS:
-        return float(AXIS), 1.0
-    steps = (base * 10 ** power for power in range(8) for base in (1, 2, 5))
-    step = next(step for step in steps if needed / step <= 12)
-    return math.ceil(needed / step) * step, float(step)
-
-
 def box_of(analysis, extra=()):
-    """The box that holds the water, the target, the alkalinity band and the `extra` points (DIC,
-    alkalinity) with 10 % to spare."""
-    dics = [analysis.dic, analysis.target_dic or 0, *(point[0] for point in extra)]
-    alkalinities = [analysis.alkalinity_meq, analysis.target_alkalinity_meq or 0, *(point[1] for point in extra)]
-    if analysis.limits.alkalinity_high_mg_l is not None:
-        alkalinities.append(analysis.limits.alkalinity_high_mg_l / chemistry.MG_CACO3_PER_MEQ)
-    dic, dic_step = _axis(max(dics))
-    alkalinity, alkalinity_step = _axis(max(alkalinities))
-    return Box(dic, alkalinity, dic_step, alkalinity_step)
+    """The box that holds the water, the target, the alkalinity band and the `extra` points (DIC, alkalinity) with
+    10 % to spare (the core's 1-2-5 steps; native.ChartTooLargeError beyond 12 steps of 5e7)."""
+    target = None if analysis.target_dic is None else (analysis.target_dic, analysis.target_alkalinity_meq)
+    return Box(*native.box_of(analysis.dic, analysis.alkalinity_meq, target, analysis.limits.alkalinity_high_mg_l,
+                              [tuple(point) for point in extra]))
 
 
 def _clip(polygon, inside):

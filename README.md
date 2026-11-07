@@ -3055,8 +3055,9 @@ only one who manages roles and users; everyone else gets exactly what their role
   `core/tests_escaping.py` names them and fails when a new one appears.
 - **Every page asks for a right.** `core/tests_routes.py` walks every route of the project: someone not signed in is
   sent to sign in everywhere but the sign-in and password-reset pages and the language switch, and a signed-in person
-  with no role is refused (403, or 404 for a record) everywhere but a short named list (the overviews, which show only
-  the tiles a person's roles allow, and the person's own password). A new page without a check fails it. A page that
+  with no role is refused (403, a record page too: it asks for the right before it looks the record up) everywhere but a
+  short named list (the overviews, which show only
+  the tiles a person's roles allow, and the person's own password; the clock-in/out route, whose argument is a word, not a record). A new page without a check fails it. A page that
   writes asks for its right before it reads the request (the shift plan answered such a person 400 for a malformed
   request before; now 403).
 - **A Content-Security-Policy on every response** (`config/settings.py` SECURE_CSP, Django's own middleware): a page loads

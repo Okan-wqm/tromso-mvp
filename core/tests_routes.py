@@ -1,7 +1,8 @@
 """Every route of the project, swept: a page that forgot its permission check fails here the day it is added.
 
-A signed-in person with no role must be refused (403) by every page, or told the record is not there (404) by a page
-that takes a record, unless the page is in one of the two short lists below, each with its reason: the pages open to
+A signed-in person with no role must be refused (403) by every page, a page that takes a record too: it asks for the
+right before it looks the record up, so a page that forgot the right fails here even when it 404s for a missing record.
+The few routes whose argument is no record but a word are named in NOT_A_PAGE with why. Unless the page is in one of the two short lists below, each with its reason: the pages open to
 everyone (signing in, resetting a password) and the pages open to every signed-in person (their own account, the
 overviews that show only the tiles a person's roles allow). Someone not signed in is sent to sign in everywhere else.
 The admin has its own gate (staff only)."""
@@ -31,6 +32,14 @@ SIGNED_IN = {
     'sensors:home': 'the Sensors overview: a tile for each part the roles allow (sensors/views.py home, state_tiles)',
     'password_change': "the person's own password",
     'password_change_done': "the person's own password",
+}
+
+# Routes whose argument is one of a few words, not a record: the sample word is no page at all (404), and the real pages
+# ask for the right themselves.
+NOT_A_PAGE = {
+    'hr:punch': "clock-<direction> is 'in' or 'out' only; both ask for Read on Attendance in hr.services.clock_in and "
+                'clock_out (hr.tests.test_attendance)',
+    'hr:production_punch': 'the same view under Production › Team',
 }
 
 # An argument no record has: a page that looks a record up answers 404 for it, one that asks for a permission first
@@ -94,6 +103,7 @@ class RouteSweepTests(TestCase):
         names = {route.name for route in routes()}
         self.assertEqual(set(PUBLIC) - names, set())
         self.assertEqual(set(SIGNED_IN) - names, set())
+        self.assertEqual(set(NOT_A_PAGE) - names, set())
 
     def test_every_route_has_a_name(self):
         self.assertEqual([str(route) for route in routes() if not route.name], [])
@@ -116,7 +126,7 @@ class RouteSweepTests(TestCase):
             if route.name in PUBLIC or route.name in SIGNED_IN:
                 continue
             status = reach(self.client, route).status_code
-            refused = status == 403 or (status == 404 and route.takes_record)
+            refused = status == 403 or (status == 404 and route.name in NOT_A_PAGE)
             if not refused:
                 open_.append(f'{route} -> {status}')
         self.assertEqual(open_, [], 'a page without a permission check: give it one, or name it in SIGNED_IN with why')

@@ -592,15 +592,19 @@ class DeleteTests(PointTestCase):
 
 # ---- reading "the unit's water" ---------------------------------------------------------------------------
 class ReadTests(PointTestCase):
-    def test_the_water_of_a_unit_is_its_middle_points_and_nothing_else(self):
+    def test_the_water_of_a_unit_is_its_middle_points_and_the_loop_stands_in_for_what_it_has_none_of(self):
+        """Owner rule A9 (2026-11-07): the unit's own fresh values first; its loop's fresh sample stands in for a
+        parameter the unit has no fresh value of; another point of the unit (an inlet) never does."""
         self.sample(point=self.named(self.t1, 'inlet')['Inlet'], hours=1, temperature_c='15', ph='6.1')
         self.sample(point=self.named(self.t1, 'side_outlet')['Side outlet'], hours=1, temperature_c='11')
         self.sample(point=self.t1, hours=3, temperature_c='9.5')
         self.sample(point=self.loop, hours=1, temperature_c='12', ph='7.3', oxygen_mg_l='9')
         water = read.unit_water([self.t1, self.t2, self.pond])
         self.assertEqual((water[self.t1.pk].point, water[self.t1.pk].get('temperature_c').value,
-                          water[self.t1.pk].get('ph')), (self.mid1, D('9.5'), None))
-        self.assertEqual((water[self.t2.pk].point, water[self.t2.pk].readings), (self.mid2, {}))   # not the loop's
+                          water[self.t1.pk].get('ph').value, water[self.t1.pk].get('ph').point),
+                         (self.mid1, D('9.5'), D('7.30'), self.loop))           # its own temperature, the loop's pH
+        self.assertEqual((water[self.t2.pk].point, water[self.t2.pk].get('temperature_c').value),
+                         (self.mid2, D('12.0')))                                   # nothing of its own: the loop's
         self.assertEqual((water[self.pond.pk].point, water[self.pond.pk].readings, water[self.pond.pk].status),
                          (None, {}, Status.NOT_MEASURED))
         self.assertEqual(water[self.t1.pk].get('temperature_c').point, self.mid1)
@@ -660,7 +664,7 @@ class ReadTests(PointTestCase):
         self.assertEqual((offers['temperature_c'].value, offers['ph'].value, offers['co2_limit_mg_l'].value),
                          (D('9.5'), D('7.20'), D(15)))
         self.assertEqual(offers['temperature_c'].reading.point, self.mid1)
-        self.assertNotIn('alkalinity_mg_l', offers)                    # nothing of the unit's is the loop's
+        self.assertEqual(offers['alkalinity_mg_l'].reading.point, self.loop)   # A9: the loop stands in for what the unit lacks
         self.assertEqual(offers['altitude_m'].value, D(0))
         loop = calculation.offers(self.ras)
         self.assertEqual((loop['alkalinity_mg_l'].value, loop['salinity_ppt'].value, 'ph' in loop),

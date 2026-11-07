@@ -912,13 +912,15 @@ class UnitChartTests(UnitWaterCase):
         self.assertFalse(deffeyes.possible(10, 0.2, 11, 3))
         self.assertTrue(deffeyes.possible(10, 0.2, 7.2, 90))
 
-    def test_the_temperature_is_the_points_own_never_the_loops(self):
+    def test_the_loops_temperature_stands_in_when_the_unit_has_none_of_its_own(self):
+        """Owner rule A9 (2026-11-07) replaces the decision of 2026-11-04 (the chart refused a loop's temperature)."""
         loop_only = self.make('T-05')
         Tank.objects.filter(pk=loop_only.pk).update(system=self.loop)
         self.sample(point_of(self.loop), temperature_c=13)
         self.sample(self.middle(loop_only), ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')
-        refused = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
-        self.assertEqual([str(label) for label in refused.missing], [str(parameters.get('temperature_c').label)])
+        chart = calculation.chart_of(Tank.objects.get(pk=loop_only.pk))
+        temperature = next(each for each in chart.inputs if each.field == 'temperature_c')
+        self.assertEqual((temperature.value, temperature.reading.point), (13, point_of(self.loop)))
 
     def test_offers_of_a_point_are_that_points_and_the_default_is_unchanged(self):
         middle = self.middle()

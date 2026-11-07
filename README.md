@@ -2963,7 +2963,8 @@ forbids a second open one). A stretch has no stored day, site or state.
 person's own site clock (or the night that began yesterday and is still running), their stretches from the punch window before the start
 (a setting) and their approved leave give one state: *upcoming* (before the start plus the grace), *not in yet* (until the later of the
 grace and the absent-after minutes), *absent*, *present* or *late* (clocked in, past the grace) while in, *done* once out, *on leave*. A
-record is a fact and the plan an intent: a person who is there but not planned is listed as present, "not planned". People planned off,
+record is a fact and the plan an intent: a person who is there but not planned is listed as present, "not planned", and **a clock-in
+beats leave**: whoever clocked in is on the board whatever their plan or leave (the headcount on site, in an emergency). People planned off,
 with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
 leave; nothing planned and on leave is not listed either. Today shows the figures (`hr.read.Board.tiles`): Planned today, then one
 tile per state the planned people are in, each person in exactly one, so they add up to it (upcoming, here now with the late among

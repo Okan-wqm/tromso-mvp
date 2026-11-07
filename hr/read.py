@@ -438,7 +438,8 @@ def board(user, moment=None, realm=None):
         standing = rules.status(span, mine, on_leave, moment, shift.grace_minutes if shift else 0,
                                 settings.absent_after_minutes, settings.punch_window_minutes)
         if standing is None or (span is None and standing.state == rules.ON_LEAVE):
-            continue                       # nothing planned and not there: on leave or not, nobody is expected
+            continue                       # nothing planned and not there: on leave or not, nobody is expected (a person
+                                           # who clocked in is present, rules.status: the headcount lists them)
         rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone))
         if span is None:
             unplanned += 1

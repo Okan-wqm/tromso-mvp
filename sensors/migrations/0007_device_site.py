@@ -1,4 +1,4 @@
-# Written by hand: functions and triggers only, no change to Django's state.
+# Written by hand: the functions and triggers, and an alarm event's place (its binding), backfilled.
 """A device is at one site at a time (portable sensors): the site of the places its channels are bound to now.
 Constraint triggers hold it, with `sensors_place_site`, the site of a binding's place (a sampling point's owner's: a
 unit's or a piece of equipment's production department's, a system's own; NULL for a department without a site):
@@ -13,8 +13,12 @@ unit's or a piece of equipment's production department's, a system's own; NULL f
 
 `sensors/bindings.py` `move_device` ends the open bindings, moves the device's site, then opens the new ones, in one
 transaction. A closed binding is history and is never checked. Rows already breaking the rule stop the migration, named:
-a device bound at two sites is a decision for a person, never made here."""
-from django.db import migrations
+a device bound at two sites is a decision for a person, never made here.
+
+An alarm event belongs to the place it opened at: `AlarmEvent.binding`, filled for the events already there with the
+binding their channel held when they opened (sensors/alarms.py)."""
+import django.db.models.deletion
+from django.db import migrations, models
 
 FUNCTIONS = """
 CREATE FUNCTION sensors_place_site(p_point uuid, p_system uuid, p_equipment uuid) RETURNS uuid AS $$
@@ -127,6 +131,12 @@ BEGIN
 END;
 $$;
 """
+EVENT_PLACES = """
+UPDATE sensors_alarm_event e SET binding_id = b.id
+FROM sensors_binding b JOIN sensors_channel c ON c.id = b.channel_id
+WHERE c.channel_no = e.channel_no AND NOT b.is_deleted AND b.valid_from <= e.opened_at
+  AND (b.valid_to IS NULL OR b.valid_to > e.opened_at);
+"""
 DROP = """
 DROP TRIGGER IF EXISTS trg_sensors_placed_site ON production_departments;
 DROP TRIGGER IF EXISTS trg_sensors_placed_site ON systems;
@@ -149,4 +159,11 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(FUNCTIONS, reverse_sql=DROP),
+        migrations.AddField(
+            model_name='alarmevent',
+            name='binding',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='alarm_events', to='sensors.binding', verbose_name='Place (binding)'),
+        ),
+        migrations.RunSQL(EVENT_PLACES, reverse_sql=migrations.RunSQL.noop),
     ]

@@ -350,7 +350,9 @@ def state_tiles(user, now):
 @permission_required('sensors.view_alarmevent', raise_exception=True)
 def alarm_events(request):
     """Sensors › Operations › Alarm events: the times a rule held, the open ones first. Shown, never sent."""
-    events = AlarmEvent.objects.select_related('rule__channel__device', 'acknowledged_by').order_by(
+    events = AlarmEvent.objects.select_related('rule__channel__device', 'acknowledged_by', 'binding__point__unit',
+                                               'binding__point__system', 'binding__point__equipment', 'binding__system',
+                                               'binding__equipment').order_by(
         F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
     return render_page(request, 'sensors/alarm_events.html', _context(

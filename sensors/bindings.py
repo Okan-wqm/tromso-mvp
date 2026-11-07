@@ -33,6 +33,7 @@ from farm.models.site import zone_of
 from farm.models.water_point import site_of
 from farm.water.read import middle_points
 
+from . import alarms
 from .models import Binding, Channel, ChannelStatus, Device
 
 LABEL = 'Bound to'
@@ -107,10 +108,12 @@ def refusals(channel, place, role, at, moving=(), alone=True):
 
 
 def _close(user, binding, at):
+    """Ends the binding at `at`; its open alarm events close then (an alarm belongs to the place, sensors/alarms.py)."""
     binding.valid_to = at
     binding.version += 1
     binding.updated_by = user
     binding.save(update_fields=['valid_to', 'version', 'updated_by', 'updated_at'])
+    alarms.close_at_place(binding, at)
 
 
 def _start(user, channel, at, role, note, place):

@@ -49,10 +49,8 @@ class SensorSource:
             state = states.get(binding.channel.channel_no)
             if state is None or state.last_value is None or state.last_value_ts is None:
                 continue
-            if state.last_value_ts < binding.valid_from:
-                # Measured before the channel came here (a moved probe's last value from its previous place, or from
-                # while it was out of the water): never this place's.
-                continue
+            if not binding.took(state.last_value_ts):
+                continue                        # measured before the channel came here: never this place's
             channel = binding.channel
             found.setdefault(_target(binding), {}).setdefault(channel.quantity, []).append(sources.SensorValue(
                 code=channel.quantity, value=state.last_value, at=state.last_value_ts, fresh_for=channel.fresh_s,

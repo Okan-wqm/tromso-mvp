@@ -174,13 +174,14 @@ class TabTranslationTests(SimpleTestCase):
         super().setUpClass()
         import_module(settings.ROOT_URLCONF)    # declares every resource
         cls.tabs = list(Resource.registry)
+        # Each catalog's msgids, read once: parsing a .po file for every text took a quarter of an hour.
+        cls.msgids = {language: {message.id for message in catalogs.load(language)} for language in catalogs.languages()}
 
     def assertTranslatable(self, text, where):
         self.assertIsInstance(text, Promise, f'{where} is plain text: wrap it in gettext_lazy')
         english = audit.english(text)
         for language in catalogs.languages():
-            known = any(message.id == english for message in catalogs.load(language))
-            self.assertTrue(known, f'{where}: {english!r} is not in the {language} catalog')
+            self.assertIn(english, self.msgids[language], f'{where}: {english!r} is not in the {language} catalog')
 
     def test_the_tabs_are_found(self):
         self.assertGreaterEqual(len(self.tabs), 5)

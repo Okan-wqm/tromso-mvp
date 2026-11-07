@@ -4,7 +4,8 @@ decided by farm/water/read.py, never here.
 
 - `latest`: the channels bound now (binding live, target live, holding at `now`), active (a channel in maintenance or
   retired is skipped, so the next source counts), of a water quantity, with a value in `sensors_channel_state`: its last
-  GOOD value at the device time it was measured, fresh for the channel's `fresh_s`. Never the hypertable.
+  GOOD value at the device time it was measured, fresh for the channel's `fresh_s`, and only when it was measured while
+  the binding held (a probe moved here gives this place nothing until its first value here). Never the hypertable.
 - `value_at`: the channels bound there at any time up to the moment, and for each the newest clean reading at or before
   it taken while the binding held (a sensor moved away keeps its earlier values with the place it was in, and gives none
   to the place it moved to before it came). One indexed row per binding."""
@@ -48,6 +49,8 @@ class SensorSource:
             state = states.get(binding.channel.channel_no)
             if state is None or state.last_value is None or state.last_value_ts is None:
                 continue
+            if not binding.took(state.last_value_ts):
+                continue                        # measured before the channel came here: never this place's
             channel = binding.channel
             found.setdefault(_target(binding), {}).setdefault(channel.quantity, []).append(sources.SensorValue(
                 code=channel.quantity, value=state.last_value, at=state.last_value_ts, fresh_for=channel.fresh_s,

@@ -1,0 +1,38 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} The Move device dialog (sensors.views.device_move): a whole device (a portable probe) to a unit, a sampling
+   point, a system or a piece of equipment, or out of the water, from a moment; each channel's landing shown before it
+   moves, a channel that cannot go there with its reason (then nothing moves). {% endcomment %}
+{% block title %}{% trans "Move device" %}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{% trans "Move device" %}{% endblock %}
+{% block content %}
+<form method="post" action="{% url 'sensors:device_move' %}" class="record-form" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    {% for field in form %}{% include "registration/_field.html" %}{% endfor %}
+  </div>
+  {% if plan %}
+  <h3 class="panel-title">{% trans "Where each channel goes" %}</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "Now" %}</th><th scope="col">{% trans "From then" %}</th></tr></thead>
+      <tbody>
+        {% for step in plan %}
+        <tr>
+          <td><span class="row-title">{{ step.channel.code }}</span><span class="row-sub">{{ step.channel.get_quantity_display }}{% if not step.moves %} · {% trans "retired or deleted: leaves its place" %}{% endif %}</span></td>
+          <td>{% if step.current %}{{ step.current.target }}{% else %}{% trans "Not placed" %}{% endif %}</td>
+          <td>{% if step.reason %}<span class="form-error">{{ step.reason }}</span>{% elif step.place %}{{ step.place }}{% else %}{% trans "Not placed" %}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <div class="form-actions">
+    <a class="button button-ghost" href="{{ list_url }}" data-modal-close>{% trans "Cancel" %}</a>
+    <button type="submit" class="button button-inline">{% trans "Move device" %}</button>
+  </div>
+</form>
+{% endblock %}

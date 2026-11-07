@@ -530,7 +530,8 @@ class DerivedTests(WaterTestCase):
         self.t1.refresh_from_db()
         self.sample(hours=2, oxygen_mg_l='10.63', temperature_c='10')
         saturation = self.reading('oxygen_saturation_pct')
-        self.assertEqual((saturation.value, saturation.derived, saturation.note), (D('100.0'), True, ''))
+        self.assertEqual((saturation.value, saturation.derived, saturation.note),
+                         (D('100.0'), True, 'Worked out from 10.0 °C, 0.0 ‰ and 0.942 atm.'))
         self.sample(hours=1, oxygen_saturation_pct='80', temperature_c='20', salinity_ppt='0')
         mg_l = self.reading('oxygen_mg_l')
         self.assertEqual((mg_l.value, mg_l.derived), ((D(80) * D(chemistry.oxygen_solubility(

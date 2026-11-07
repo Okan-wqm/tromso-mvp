@@ -163,3 +163,15 @@ the right reason (the `Test:` commits), then fixed in its own commit.
   the system (its sensor or a loop sample) stands in only when the unit has nothing fresh; stale is shown, never used.
   It supersedes the owner's 2026-11-04 rule that the chart never takes the loop's temperature; four old tests were
   changed to A9 in `Test:` commits. Tests: `NewestOwnValueTests` (five).
+
+## Verification after the cross review, A9 and the oxygen entry (main 912c55d merged, e6f3e25)
+- Fresh `test_fixmon`, no --parallel: monitoring, farm water / sources / points / calculator / deffeyes / cleaner fish /
+  sites / both migrations / feeding / health, sensors, core: 1230 tests, 8 errors, all `core.test_database`: its
+  fixtures used altitude -5.50 and -7.00, which the owner's 0 .. 5000 m now refuses; they take a negative longitude
+  instead (44556fa) and the module reruns green (58 tests).
+- `makemigrations --check`: no changes; `data_map --check`: up to date; `compile_catalogs`: tr and nb, nothing
+  missing; tsc clean; the node tests 48 pass, 0 skipped. The main repo's `node_modules/typescript/bin` is empty after
+  the move to F:, so `npm test` cannot find `tsc`; the same steps were run through `node_modules/typescript/lib/tsc.js`.
+- Open: the round form does not offer temperature and salinity for an oxygen entry yet; A9 keeps primary-before-backup
+  among a point's sensors (please confirm with the owner); the farm migration 0028 needs a merge migration with
+  another branch's 0027 at landing.

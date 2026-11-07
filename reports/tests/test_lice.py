@@ -437,6 +437,11 @@ class AnswersAndExportTests(LiceTestCase):
         for raw in ('voksneHunnlus', 'lusetelling', 'adult_females', 'temperature_c', 'Happened on', 'What happened'):
             self.assertNotIn(raw, page)
         self.assertIn('<td>0,200</td>', norsk)
+        with temperature(WARM):
+            printed = self.client.get(reverse('reports:report_print', args=[self.report_.pk])).content.decode()
+        self.assertIn('<th scope="row">Lice counts · Adult females per fish</th><td>0.200</td>', printed)  # the print page too
+        for raw in ('voksneHunnlus', 'lusetelling', 'adult_females'):
+            self.assertNotIn(raw, printed)
 
     def test_the_row_lists_are_stored_read_edited_and_removed_through_the_pages(self):
         treatment = self.treat([self.m1, self.m2], day(10, 26), day(10, 26))

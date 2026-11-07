@@ -6,6 +6,7 @@ from decimal import Decimal
 from unittest import mock
 
 from django.urls import reverse
+from django.utils import translation
 
 from farm.health import services as health
 from farm.models import Batch, HandlingPlanItem, Medicine, SamplingPoint, Site, Treatment
@@ -422,16 +423,20 @@ class AnswersAndExportTests(LiceTestCase):
                                                       'årsak': 'BIOESSAY', 'annenÅrsak': None}])
         self.assertEqual(body['følsomhetsundersøkelser'][0]['utførtDato'], '2026-10-20T00:00:00Z')
 
-    def test_the_report_page_shows_the_weeks_figures_as_the_print_page_does(self):
-        """A kind without a table of its own on the report's page shows the fields the print page lists (exports.rows),
-        never another kind's: the lice figures, not a notice's Happened on."""
+    def test_the_report_page_shows_the_weeks_figures_named_and_in_the_persons_language(self):
+        """A kind without a table of its own on the report's page lists its figures named by the one label registry
+        (reports/labels.py), as the page names them, translated, the numbers as the language writes them: never an API
+        key (voksneHunnlus) nor a notice's fields."""
         with temperature(WARM):
-            page = self.client.get(reverse('reports:report_detail', args=[self.report_.pk]))
-            printed = self.client.get(reverse('reports:report_print', args=[self.report_.pk]))
-        self.assertEqual(page.context['figure_rows'], printed.context['rows'])
-        self.assertContains(page, '<td>lusetelling</td><td>voksneHunnlus</td><td>0.2</td>', html=True)
-        for notice in ('Happened on', 'What happened', 'Fish dead'):
-            self.assertNotContains(page, notice)
+            page = self.client.get(reverse('reports:report_detail', args=[self.report_.pk])).content.decode()
+            with translation.override('nb'):
+                norsk = self.client.get(reverse('reports:report_detail', args=[self.report_.pk]),
+                                        HTTP_ACCEPT_LANGUAGE='nb').content.decode()
+        self.assertIn('<th scope="row">Lice counts · Adult females per fish</th><td>0.200</td>', page)
+        self.assertIn('<th scope="row">Sea temperature (°C)</th><td>8.5</td>', page)
+        for raw in ('voksneHunnlus', 'lusetelling', 'adult_females', 'temperature_c', 'Happened on', 'What happened'):
+            self.assertNotIn(raw, page)
+        self.assertIn('<td>0,200</td>', norsk)
 
     def test_the_row_lists_are_stored_read_edited_and_removed_through_the_pages(self):
         treatment = self.treat([self.m1, self.m2], day(10, 26), day(10, 26))

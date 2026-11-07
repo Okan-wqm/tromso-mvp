@@ -18,8 +18,10 @@
 - `device_status(devices, now)`: online while a message came within three times the device's interval.
 
 A unit's chart reads its middle point's channels, then its system's; a system's, the system's and its loop's; a point's,
-its own (and the system's when it is a system's middle point); a piece of equipment's, its own. Bucket boundaries are on
-the tier's grid: a sensor moved in the middle of an hour is counted in the hour rollup at the place its hour began."""
+its own (and the system's when it is a system's middle point); a piece of equipment's, its own. A place has exactly the
+readings taken while a channel was bound there, at every tier: on the hour tiers the whole hours of a binding come from
+the rollup and the parts of an hour it only partly holds (a move, a device taken out, a window's edge) from the readings
+(`hours_of`), so an hour that holds a move is shared by the two places."""
 from bisect import bisect_right
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone as dt_timezone
@@ -204,19 +206,49 @@ def tier_of(width):
     return RAW if width < HOUR else ROLLUP_1H if width < DAY else LOCAL_DAY
 
 
+def _hour(moment):
+    """The start of the UTC hour `moment` is in (the hour rollup's bucket)."""
+    return moment.astimezone(dt_timezone.utc).replace(minute=0, second=0, microsecond=0)
+
+
+def hours_of(segment):
+    """((first, last), [(from, to)]): the whole hours inside the segment, which the hour rollup gives exactly, and the
+    parts of the hours it only partly holds (where a binding began or ended inside an hour: a move, a window's edge),
+    read from the raw readings, so an hour that holds a move is shared by the two places, never given whole to one.
+    Each part lies inside one hour (the replay keys it by that hour, which ends after every reading in it)."""
+    first = _hour(segment.start)
+    if first < segment.start:
+        first += HOUR
+    last = _hour(segment.end)
+    if last <= first:
+        # No whole hour: the stay is inside one hour, or crosses one boundary (01:30-02:20): one part per hour.
+        cut = min(first, segment.end)
+        return (first, first), [(start, end) for start, end in ((segment.start, cut), (cut, segment.end)) if start < end]
+    return (first, last), [(start, end) for start, end in ((segment.start, first), (last, segment.end)) if start < end]
+
+
 def chart_rows(segment, width, tier, zone):
-    """The segment's buckets: (start, n, sum, min, max, first, last), clean values only."""
+    """The segment's buckets: (start, n, sum, min, max, first, last), clean values only. On the hour tiers the whole
+    hours come from the rollup and the parts of hours from the readings (`hours_of`)."""
+    clean = f'(quality & {BAD_MASK}) = 0'
     if tier == RAW:
         sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value)), '
                f'min(coalesce(run_min, value)), max(coalesce(run_max, value)), min(ts), max(ts) FROM sensors_reading '
-               f'WHERE channel_no = %s AND ts >= %s AND ts < %s AND (quality & {BAD_MASK}) = 0 GROUP BY b ORDER BY b')
+               f'WHERE channel_no = %s AND ts >= %s AND ts < %s AND {clean} GROUP BY b ORDER BY b')
         params = [width, segment.channel_no, segment.start, segment.end]
     else:
-        bucket = 'time_bucket(%s, bucket, %s)' if tier == LOCAL_DAY else 'time_bucket(%s, bucket)'
-        sql = (f'SELECT {bucket} AS b, sum(n)::bigint, sum(sum_v), min(vmin), max(vmax), min(first_ts), max(last_ts) '
-               f'FROM sensors_rollup_1h '
-               f'WHERE channel_no = %s AND bucket >= %s AND bucket < %s GROUP BY b ORDER BY b')
-        params = [width, *([zone.key] if tier == LOCAL_DAY else []), segment.channel_no, segment.start, segment.end]
+        local = [zone.key] if tier == LOCAL_DAY else []
+        on = ', %s' if tier == LOCAL_DAY else ''
+        (first, last), parts = hours_of(segment)
+        parts = (parts + [(segment.start, segment.start)] * 2)[:2]
+        sql = (f'SELECT b, sum(n)::bigint, sum(s), min(lo), max(hi), min(f), max(l) FROM ('
+               f'SELECT time_bucket(%s, bucket{on}) AS b, n, sum_v AS s, vmin AS lo, vmax AS hi, first_ts AS f, '
+               f'last_ts AS l FROM sensors_rollup_1h WHERE channel_no = %s AND bucket >= %s AND bucket < %s '
+               f'UNION ALL SELECT time_bucket(%s, ts{on}), n, coalesce(run_sum, value), coalesce(run_min, value), '
+               f'coalesce(run_max, value), ts, ts FROM sensors_reading WHERE channel_no = %s AND {clean} '
+               f'AND ((ts >= %s AND ts < %s) OR (ts >= %s AND ts < %s))) parts GROUP BY b ORDER BY b')
+        params = [width, *local, segment.channel_no, first, last, width, *local, segment.channel_no,
+                  *parts[0], *parts[1]]
     with connection.cursor() as cursor:
         cursor.execute(sql, params)
         return cursor.fetchall()
@@ -387,7 +419,8 @@ def replay_rows(found, first, step, count, tier):
     moments from `first` every `step`, taken while it was bound there. ONE query for every segment and moment. Below an
     hour the readings of the page's span, the newest of each step (the one at or before the moment that ends it) and the
     newest before the first moment within the channel's freshness; above, the hours of the span read once and each moment
-    given the last value of the newest hour ENDED by it (never an hour still running at the moment)."""
+    given the last value of the newest hour ENDED by it (never an hour still running at the moment), an hour a segment
+    only partly holds giving the last reading of its part (`hours_of`)."""
     if not found or count < 1:
         return {}
     numbers = [segment.channel_no for segment in found]
@@ -421,15 +454,28 @@ def replay_rows(found, first, step, count, tier):
                     found_rows[(index, slot)] = carried
         return found_rows
     reach = timedelta(seconds=max(fresh)) + HOUR
+    # The parts of hours a segment only partly holds (`hours_of`): each its last clean reading, in the same query.
+    spans = [hours_of(segment) for segment in found]
+    parts = [(index, _hour(start), start, end) for index, (_whole, edges) in enumerate(spans) for start, end in edges]
     with connection.cursor() as cursor:
-        cursor.execute('SELECT channel_no, bucket, last_ts, vlast FROM sensors_rollup_1h WHERE channel_no = ANY(%s) '
-                       'AND bucket >= %s AND bucket < %s ORDER BY channel_no, bucket',
-                       [list(set(numbers)), max(min(starts), first - reach), last])
-        for number, bucket, last_ts, value in cursor.fetchall():
-            rows.setdefault(number, []).append((bucket, last_ts, value))
+        cursor.execute(
+            f'SELECT 0, channel_no, bucket, last_ts, vlast FROM sensors_rollup_1h WHERE channel_no = ANY(%s) '
+            f'AND bucket >= %s AND bucket < %s '
+            f'UNION ALL SELECT e.ord, e.channel_no, e.hour, r.ts, r.value FROM unnest(%s::int[], %s::timestamptz[], '
+            f'%s::timestamptz[], %s::timestamptz[]) WITH ORDINALITY AS e(channel_no, hour, lo, hi, ord) '
+            f'CROSS JOIN LATERAL (SELECT ts, value FROM sensors_reading WHERE channel_no = e.channel_no '
+            f'AND ts >= e.lo AND ts < e.hi AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r',
+            [list(set(numbers)), max(min(starts), first - reach), last,
+             [numbers[index] for index, *_rest in parts], [hour for _index, hour, *_rest in parts],
+             [start for *_rest, start, _end in parts], [end for *_rest, end in parts]])
+        for ordinal, number, bucket, last_ts, value in cursor.fetchall():
+            key = ('part', parts[int(ordinal) - 1][0]) if ordinal else number
+            rows.setdefault(key, []).append((bucket, last_ts, value))
     found_rows = {}
     for index, segment in enumerate(found):
-        hours = [row for row in rows.get(segment.channel_no, []) if segment.start <= row[0] < segment.end]
+        (whole_from, whole_to), _edges = spans[index]
+        hours = sorted([row for row in rows.get(segment.channel_no, []) if whole_from <= row[0] < whole_to]
+                       + rows.get(('part', index), []))
         ended = [row[0] + HOUR for row in hours]
         for slot in range(count):
             position = bisect_right(ended, first + slot * step) - 1

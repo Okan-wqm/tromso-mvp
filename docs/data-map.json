@@ -201,6 +201,7 @@
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_migration_altitude.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -255,7 +256,8 @@
         "sensors/tests/test_bench.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_operations.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -4069,7 +4071,8 @@
         "tasks/tests/__init__.py",
         "tasks/tests/test_pages.py",
         "sensors/tests/test_bindings.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -4448,7 +4451,8 @@
         "inventory/tests/test_pages.py",
         "tasks/tests/__init__.py",
         "sensors/tests/test_bindings.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -10482,7 +10486,9 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
-        "sensors/tests/test_bindings.py"
+        "sensors/tests/test_alarms.py",
+        "sensors/tests/test_bindings.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -12166,7 +12172,9 @@
         "experiments/tests/test_start.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py"
       ]
     },
@@ -15607,9 +15615,11 @@
         "experiments/tests/test_places.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_templates_db.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py"
       ]
@@ -16642,7 +16652,8 @@
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_templates_db.py",
         "monitoring/tests/test_token.py",
-        "sensors/tests/test_pages.py"
+        "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -17743,8 +17754,10 @@
         "core/test_languages.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_water.py",
-        "monitoring/tests/__init__.py"
+        "monitoring/tests/__init__.py",
+        "monitoring/tests/test_extras.py"
       ]
     },
     {
@@ -18269,7 +18282,9 @@
             "point": "",
             "measured_at": "",
             "source": "",
-            "notes": ""
+            "notes": "",
+            "temperature_offered": "",
+            "salinity_offered": ""
           }
         },
         {
@@ -31136,6 +31151,21 @@
           "why": "written by manage.py check_sensors from the channels’ state"
         },
         {
+          "name": "binding_id",
+          "field": "binding",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "sensors_binding",
+            "model": "sensors.Binding",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the binding its channel held when it opened: its place; written by manage.py check_sensors"
+        },
+        {
           "name": "opened_at",
           "field": "opened_at",
           "type": "timestamp with time zone",
@@ -31806,7 +31836,8 @@
             "on_delete": "CASCADE"
           },
           "on_form": [
-            "BindForm › Binding"
+            "BindForm › Binding",
+            "DeviceMoveForm.device"
           ],
           "how": "form",
           "why": ""
@@ -31823,7 +31854,8 @@
             "on_delete": "DO_NOTHING"
           },
           "on_form": [
-            "BindForm.target"
+            "BindForm.target",
+            "DeviceMoveForm.target"
           ],
           "how": "form",
           "why": ""
@@ -31840,7 +31872,8 @@
             "on_delete": "DO_NOTHING"
           },
           "on_form": [
-            "BindForm.target"
+            "BindForm.target",
+            "DeviceMoveForm.target"
           ],
           "how": "form",
           "why": ""
@@ -31857,7 +31890,8 @@
             "on_delete": "DO_NOTHING"
           },
           "on_form": [
-            "BindForm.target"
+            "BindForm.target",
+            "DeviceMoveForm.target"
           ],
           "how": "form",
           "why": ""
@@ -31873,7 +31907,8 @@
           ],
           "link": null,
           "on_form": [
-            "BindForm › Binding"
+            "BindForm › Binding",
+            "DeviceMoveForm"
           ],
           "how": "form",
           "why": ""
@@ -31886,7 +31921,8 @@
           "choices": [],
           "link": null,
           "on_form": [
-            "BindForm › Binding"
+            "BindForm › Binding",
+            "DeviceMoveForm"
           ],
           "how": "form",
           "why": ""
@@ -31913,7 +31949,8 @@
           "link": null,
           "on_form": [
             "BindForm › Binding",
-            "BindingForm › Binding"
+            "BindingForm › Binding",
+            "DeviceMoveForm"
           ],
           "how": "form",
           "why": ""
@@ -31962,6 +31999,16 @@
               "routes": [
                 "/sensors/bindings/new/"
               ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.device_move",
+              "url_names": [
+                "sensors:device_move"
+              ],
+              "routes": [
+                "/sensors/devices/move/"
+              ]
             }
           ],
           "why": ""
@@ -31977,6 +32024,16 @@
               ],
               "routes": [
                 "/sensors/bindings/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.device_move",
+              "url_names": [
+                "sensors:device_move"
+              ],
+              "routes": [
+                "/sensors/devices/move/"
               ]
             }
           ],
@@ -32015,7 +32072,7 @@
           "why": ""
         }
       },
-      "note": "Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same moment; an edit changes only the end and the note.",
+      "note": "Made by the Move dialog (sensors/bindings.py move), which ends the channel’s open binding at the same moment, or for every channel of a device by the Move device dialog (move_device, which also takes a device out of the water); an edit changes only the end and the note.",
       "forms": [
         {
           "form": "BindForm",
@@ -32037,6 +32094,17 @@
             "note": "Binding",
             "version": ""
           }
+        },
+        {
+          "form": "DeviceMoveForm",
+          "module": "sensors.forms",
+          "fields": {
+            "device": "",
+            "target": "",
+            "role": "",
+            "valid_from": "",
+            "note": ""
+          }
         }
       ],
       "delete_kind": "soft delete through the delete plan",
@@ -32052,9 +32120,11 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
-        "sensors/tests/test_history.py"
+        "sensors/tests/test_history.py",
+        "sensors/tests/test_portable.py"
       ]
     },
     {
@@ -32942,6 +33012,7 @@
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
         "sensors/tests/test_schema.py"
       ]
@@ -33157,6 +33228,7 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py"
       ]
     },
@@ -34698,6 +34770,16 @@
               "routes": [
                 "/sensors/devices/<uuid:pk>/"
               ]
+            },
+            {
+              "how": "view",
+              "label": "sensors.views.device_move",
+              "url_names": [
+                "sensors:device_move"
+              ],
+              "routes": [
+                "/sensors/devices/move/"
+              ]
             }
           ],
           "why": ""
@@ -34735,7 +34817,7 @@
           "why": ""
         }
       },
-      "note": "",
+      "note": "Its site is where it is placed: a move to a place of another site changes it (Move device), the form only while it is out of the water.",
       "forms": [
         {
           "form": "DeviceForm",
@@ -34777,6 +34859,7 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_schema.py"
       ]

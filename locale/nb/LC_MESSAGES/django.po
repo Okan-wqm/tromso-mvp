@@ -40,6 +40,14 @@ msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s er %(species)s; protokollen er for %(protocol_species)s."
 
 #, python-format
+msgid ""
+"%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
+"after this change: the fish could go to food."
+msgstr ""
+"%(batch)s holdes tilbake i dag (%(withdrawal)s) og vil ikke lenger holdes av en "
+"tilbakeholdelsestid etter denne endringen: fisken kan gå til mat."
+
+#, python-format
 msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvested."
 msgstr "%(batch)s ble høstet %(date)s: rensefisk avlives, den høstes ikke."
 
@@ -5850,6 +5858,9 @@ msgstr "Undersøkte fisk"
 msgid "Fish farm"
 msgstr "Fiskeoppdrett"
 
+msgid "Fish freed from a withdrawal"
+msgstr "Fisk frigjort fra en tilbakeholdelsestid"
+
 msgid "Fish harvested"
 msgstr "Høstet fisk"
 
@@ -9939,11 +9950,17 @@ msgstr "Registrer høsting"
 msgid "Record health event"
 msgstr "Registrer helsehendelse"
 
+msgid "Record id"
+msgstr "Post-ID"
+
 msgid "Record meal"
 msgstr "Registrer måltid"
 
 msgid "Record mortality"
 msgstr "Registrer dødfisk"
+
+msgid "Record name"
+msgstr "Postens navn"
 
 msgid "Record sample"
 msgstr "Registrer prøve"
@@ -14705,6 +14722,9 @@ msgstr "Tilbakeholdelsestid (døgngrader)"
 msgid "Withdrawal end estimated"
 msgstr "Slutt på tilbakeholdelse anslått"
 
+msgid "Withdrawal of"
+msgstr "Tilbakeholdelsestid fra"
+
 msgid "Withdrawal until"
 msgstr "Tilbakeholdelse til"
 
@@ -16438,6 +16458,12 @@ msgstr "uansett hvor den er"
 #, python-format
 msgid "withdrawal %(rule)s"
 msgstr "tilbakeholdelsestid %(rule)s"
+
+msgid "withdrawal acknowledgement"
+msgstr "kvittering for tilbakeholdelsestid"
+
+msgid "withdrawal acknowledgements"
+msgstr "kvitteringer for tilbakeholdelsestid"
 
 msgid "worked out from the sample"
 msgstr "regnet ut fra prøven"

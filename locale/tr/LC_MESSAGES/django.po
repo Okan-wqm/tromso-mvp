@@ -42,6 +42,14 @@ msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s partisi %(species)s; protokol ise %(protocol_species)s için."
 
 #, python-format
+msgid ""
+"%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
+"after this change: the fish could go to food."
+msgstr ""
+"%(batch)s bugün tutuluyor (%(withdrawal)s) ve bu değişiklikten sonra artık bir ilaç arınma "
+"süresiyle tutulmayacak: balıklar gıdaya gidebilir."
+
+#, python-format
 msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvested."
 msgstr "%(batch)s %(date)s tarihinde hasat edilmiş: temizleyici balıklar hasat edilmez, itlaf edilir."
 
@@ -5856,6 +5864,9 @@ msgstr "İncelenen balık"
 msgid "Fish farm"
 msgstr "Balık çiftliği"
 
+msgid "Fish freed from a withdrawal"
+msgstr "Arınma süresinden çıkan balık"
+
 msgid "Fish harvested"
 msgstr "Hasat edilen balık"
 
@@ -9945,11 +9956,17 @@ msgstr "Hasat kaydet"
 msgid "Record health event"
 msgstr "Sağlık olayı kaydet"
 
+msgid "Record id"
+msgstr "Kayıt kimliği"
+
 msgid "Record meal"
 msgstr "Öğün kaydet"
 
 msgid "Record mortality"
 msgstr "Ölüm kaydet"
+
+msgid "Record name"
+msgstr "Kayıt adı"
 
 msgid "Record sample"
 msgstr "Numune kaydet"
@@ -14717,6 +14734,9 @@ msgstr "Bekleme süresi (gün-derece)"
 msgid "Withdrawal end estimated"
 msgstr "Bekleme süresi bitişi tahmini"
 
+msgid "Withdrawal of"
+msgstr "Arınma süresinin kaynağı"
+
 msgid "Withdrawal until"
 msgstr "Bekleme süresi bitişi"
 
@@ -16450,6 +16470,12 @@ msgstr "nerede olursa olsun"
 #, python-format
 msgid "withdrawal %(rule)s"
 msgstr "bekleme süresi %(rule)s"
+
+msgid "withdrawal acknowledgement"
+msgstr "arınma süresi onayı"
+
+msgid "withdrawal acknowledgements"
+msgstr "arınma süresi onayları"
 
 msgid "worked out from the sample"
 msgstr "numuneden hesaplandı"

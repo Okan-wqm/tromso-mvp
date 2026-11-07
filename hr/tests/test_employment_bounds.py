@@ -132,6 +132,7 @@ class EmploymentChangesTests(EmploymentCase):
             services.decide_leave(self.everyone, pending, approve=True)
         pending.refresh_from_db()
         self.assertEqual(pending.status, 'pending')
+        pending.delete()               # the database refuses the pair at the commit (Django reads it as the test ends)
 
     def test_a_last_day_before_approved_leave_or_a_punch_is_refused(self):
         LeaveRequest.objects.create(employee=self.in_a, leave_type=self.annual, first_day=date(2026, 4, 6),
@@ -157,6 +158,11 @@ class EmploymentChangesTests(EmploymentCase):
 
     def test_the_database_refuses_a_record_outside_the_employment_whatever_writes(self):
         from django.db import IntegrityError, connection, transaction
+
+        def deferred_again():          # SET CONSTRAINTS lasts to the end of the transaction the test class shares
+            with connection.cursor() as cursor:
+                cursor.execute('SET CONSTRAINTS ALL DEFERRED')
+        self.addCleanup(deferred_again)
         Employee.objects.filter(pk=self.in_a.pk).update(left_on=LEFT)
         for write in (
                 lambda: ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 4, 2), shift=self.early),
@@ -173,3 +179,21 @@ class EmploymentChangesTests(EmploymentCase):
                 cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
             ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 2), shift=self.early)
             Employee.objects.filter(pk=self.in_a.pk).update(left_on=date(2026, 2, 27))
+
+
+class CheckedUnderTheLockTests(EmploymentCase):
+    """The save checks the rule again with the person's row locked (a last day may be committed between the form's check
+    and the save): a refusal there is put on the form and nothing is written."""
+
+    def test_a_refusal_at_the_save_is_on_the_form_and_writes_nothing(self):
+        Employee.objects.filter(pk=self.in_a.pk).update(left_on=None)
+        self.client.force_login(self.everyone)
+        before = self.counts()
+        refused = ValidationError('Ann left on 31 Mar 2026.')
+        with mock.patch.object(services, 'lock_employed', side_effect=refused):
+            response = self.client.post(reverse('hr:production_leaverequest_create'), {
+                'employee': str(self.in_a.pk), 'leave_type': str(self.annual.pk), 'first_day': '2026-03-02',
+                'last_day': '2026-03-03', 'reason': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Ann left on 31 Mar 2026.', response.context['form'].non_field_errors())
+        self.assertEqual(self.counts(), before)

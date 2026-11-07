@@ -1091,9 +1091,11 @@ are in the bug document, not in the database).
   fish shows its values with "no limit"** (owner decision 1). A value without a limit says why, under a point's status on
   the water page: "No fish in the unit", or "No water limit is set for the fish in the unit" (`Reading.why_no_limit`; the
   species is not named, the water's readers need not read the stock).
-- A point's status is the worst of its fresh judged values; when a value with a limit grew old and nothing fresh is judged,
-  the point is **Stale**, never "No limit" (a critical CO₂ of three days ago read as "No limit" once it aged, because the
-  sample's other values have no limit row).
+- **A point's status is the worst of its values**, and an old critical or warning value still counts: the point reads
+  "Critical, no recent data" (`Reading.judged` keeps what the limits said when the value grew old, `PointWater.old_alert`),
+  never hidden by a fresh OK of another parameter and never "No limit" (HA-K02's side outlet: a CO₂ of 15.6 three days old
+  read "No limit" once it aged, because the sample's other values have no limit row). A point whose judged values all grew
+  old and were not alarming is **Stale**. The overview's critical count counts such a point too.
 - **A past sample is judged against the limits as they are now** (owner decision 2): a changed limit
   re-judges the history at once; the limits of the time are not kept. The page says so.
 - The latest value of each parameter is per parameter, not per sample: a later sample without DO never

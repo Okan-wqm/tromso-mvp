@@ -65,7 +65,7 @@ from farm.models.water_point import PointKind, local_time, owner_type_of, site_o
 from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
-from .evaluate import Limits, Status, is_fresh, worst
+from .evaluate import ALERTS, Limits, Status, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # How far back the latest values, and a salinity for a sample without one, are looked for.
@@ -358,6 +358,7 @@ class Reading:
     status: str = Status.NOT_MEASURED
     limits: list = field(default_factory=list)
     why_no_limit: str = ''      # with status No limit: no fish in the unit that day, or no limit for their species
+    judged: str = ''            # what the limits said of the value, kept when it grew old (status is then Stale)
 
     @property
     def at(self):
@@ -393,16 +394,28 @@ class PointWater:
     readings: dict = field(default_factory=dict)
     sensors_failed: bool = False
 
+    def _counted(self):
+        """Each limited value's status as the point counts it: an old critical or warning value keeps its judgement."""
+        return [reading.judged if reading.status == Status.STALE and reading.judged in ALERTS else reading.status
+                for reading in self.readings.values() if reading.code in LIMITED]
+
     @property
     def status(self):
-        """The worst status of its fresh judged values; Stale when a value with a limit grew old and none fresh is judged
-        (never "No limit" over it: a critical value that aged must not read as one without a limit); else the worst of
-        the rest (No limit, Not measured)."""
-        statuses = [reading.status for reading in self.readings.values() if reading.code in LIMITED]
-        judged = [status for status in statuses if status in (Status.CRITICAL, Status.WARNING, Status.OK)]
+        """The worst of its values. An old critical or warning value still counts ("critical, no recent data": never
+        hidden by a fresh OK of another parameter, never "No limit"); else the worst fresh judgement; Stale when a value
+        with a limit grew old and nothing fresh is judged; else No limit or Not measured."""
+        counted = self._counted()
+        judged = [status for status in counted if status in (Status.CRITICAL, Status.WARNING, Status.OK)]
         if judged:
             return worst(judged)
-        return Status.STALE if Status.STALE in statuses else worst(statuses)
+        return Status.STALE if Status.STALE in counted else worst(counted)
+
+    @property
+    def old_alert(self):
+        """Whether the point's critical or warning comes only from old values: the page adds "no recent data"."""
+        status = self.status
+        return status in ALERTS and not any(reading.status == status for reading in self.readings.values()
+                                            if reading.code in LIMITED)
 
     @property
     def why_no_limit(self):
@@ -576,6 +589,7 @@ class Context:
             return reading
         exposures = self.exposures(reading.sample.point, day)
         reading.status, reading.limits = self.limits.assess(reading.code, reading.value, exposures)
+        reading.judged = reading.status
         if reading.status == Status.NO_LIMIT:
             reading.why_no_limit = self._why_no_limit(exposures)
         if now is not None and not reading.fresh(now):

@@ -2331,6 +2331,9 @@ msgstr "Haftalık bir görev en az bir hafta gününde yinelenir; diğerleri hi�
 msgid "A whole number: the same pool and seed always give the same placements."
 msgstr "Bir tam sayı: aynı havuz ve tohum her zaman aynı yerleşimleri verir."
 
+msgid "A wide chart scrolls sideways inside its frame."
+msgstr "Geniş bir şema kendi çerçevesi içinde yana kayar."
+
 msgid "A year class is a year, e.g. 2026."
 msgstr "Yıl sınıfı bir yıldır, örneğin 2026."
 
@@ -11171,6 +11174,12 @@ msgstr "Göster"
 #, python-format
 msgid "Show %(name)s"
 msgstr "%(name)s göster"
+
+#, python-format
+msgid "Show %(people)s person"
+msgid_plural "Show %(people)s people"
+msgstr[0] "%(people)s kişiyi göster"
+msgstr[1] "%(people)s kişiyi göster"
 
 msgid "Show all"
 msgstr "Tümünü göster"

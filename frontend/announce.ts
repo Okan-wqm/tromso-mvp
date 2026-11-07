@@ -9,8 +9,12 @@
 // the article's data-state. The grid's own notices (data-poll-state: not updated, gone, live again) are said too, in the
 // assertive region (F-045).
 
-// Worst last; empty is no state to rise from.
-const ORDER = ['ok', 'note', 'unjudged', 'blind', 'warning', 'critical'];
+/** The states in rising order (worst last) from the page's list (#monitor-announce data-states: monitoring/read.py
+ *  STATES, worst first, the one list); empty is no state to rise from. */
+export function order(spec: string): string[] {
+  return spec.split(/\s+/).filter((key) => key && key !== 'empty').reverse();
+}
+
 const WINDOW = 5000;
 // How a card's state is kept in the maps below: its data-state, and ':stale' when its data is old.
 const STALE = ':stale';
@@ -28,7 +32,7 @@ function parse(value: string): { state: string; stale: boolean } {
 }
 
 /** The cards whose state is worse in `after` than in `before`, or whose data became old, in `after`'s order. */
-export function rises(before: Map<string, string>, after: Map<string, string>): Rise[] {
+export function rises(before: Map<string, string>, after: Map<string, string>, states: string[]): Rise[] {
   const found: Rise[] = [];
   for (const [key, value] of after) {
     const was = before.get(key);
@@ -37,10 +41,11 @@ export function rises(before: Map<string, string>, after: Map<string, string>): 
     }
     const from = parse(was);
     const to = parse(value);
-    if (!ORDER.includes(from.state) || !ORDER.includes(to.state)) {
+    if (!states.includes(from.state) || !states.includes(to.state)) {
       continue;
     }
-    if (ORDER.indexOf(to.state) > ORDER.indexOf(from.state) || (to.stale && !from.stale)) {
+    if (states.indexOf(to.state) > states.indexOf(from.state) || (to.stale && !from.stale)
+        || (to.state === 'blind' && from.state !== 'blind')) {
       found.push({ key, from: from.state, to: to.state, stale: to.stale });
     }
   }
@@ -136,8 +141,9 @@ function start(): void {
     assertive: holder.querySelector<HTMLElement>('[data-announcer][aria-live="assertive"]'),
     polite: holder.querySelector<HTMLElement>('[data-announcer][aria-live="polite"]'),
   };
+  const rising = order(holder.dataset.states ?? '');
   const words: Record<string, string> = {};
-  for (const state of ORDER) {
+  for (const state of rising) {
     const word = holder.getAttribute(`data-state-${state}`);
     if (word) {
       words[state] = word;
@@ -161,7 +167,7 @@ function start(): void {
     const unitOf = (key: string): string =>
       detail.replaced.find((each) => each.node.getAttribute('data-key') === key)?.node.querySelector('h3')?.textContent
         ?.trim() ?? key;
-    const found = sentences(rises(before, after), unitOf, words, holder.dataset.announceWorse ?? '',
+    const found = sentences(rises(before, after, rising), unitOf, words, holder.dataset.announceWorse ?? '',
                             holder.dataset.announceMore ?? '', holder.dataset.staleWord ?? '');
     if (found.assertive) {
       speak('assertive', found.assertive);

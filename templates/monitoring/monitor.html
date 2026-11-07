@@ -38,7 +38,7 @@
 
 {% comment %} What frontend/announce.ts says aloud when a card gets worse: two live regions beside the grid, never inside it
    (a poll replaces the grid's cards, not these), and the sentences and state words in the person's language. {% endcomment %}
-{% card_states as states %}<div id="monitor-announce" class="sr-only" data-announce-worse="{% trans "{unit} is now {state}." %}" data-announce-more="{% trans "{count} more cards got worse." %}"{% for key, word in states %} data-state-{{ key }}="{{ word }}"{% endfor %} data-stale-word="{% trans "no recent data" %}">
+{% card_states as states %}<div id="monitor-announce" class="sr-only" data-states="{% for key, word in states %}{{ key }}{% if not forloop.last %} {% endif %}{% endfor %}" data-announce-worse="{% trans "{unit} is now {state}." %}" data-announce-more="{% trans "{count} more cards got worse." %}"{% for key, word in states %} data-state-{{ key }}="{{ word }}"{% endfor %} data-stale-word="{% trans "no recent data" %}">
   <p data-announcer aria-live="assertive"></p>
   <p data-announcer aria-live="polite"></p>
 </div>

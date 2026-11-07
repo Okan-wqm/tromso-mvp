@@ -1,0 +1,46 @@
+<div class="toolbar">
+  <form method="get" class="toolbar-filter" data-omit-empty>
+    <input type="hidden" name="tab" value="stock">
+    <label class="sr-only" for="site-filter">Site</label>
+    <select id="site-filter" name="site" data-autosubmit>
+      <option value="">All sites</option>
+      <option value="1">Bergen Hatchery</option>
+    </select>
+    <label class="sr-only" for="location-filter">Location</label>
+    <select id="location-filter" name="location" data-autosubmit>
+      <option value="">All locations</option>
+      <option value="2">RES-FR · Research hall feed room, the long name of a room</option>
+    </select>
+    <label class="sr-only" for="item-filter">Item</label>
+    <select id="item-filter" name="item" data-autosubmit>
+      <option value="">All items</option>
+      <option value="3">Trial diet EPA+DHA 1.0 % 3 mm (TD-EPA10), a feed with a long name</option>
+    </select>
+    <label class="check"><input type="checkbox" name="empty" value="1" data-autosubmit> Show empty</label>
+    <noscript><button type="submit" class="button button-ghost">Filter</button></noscript>
+  </form>
+</div>
+
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">Location</th><th scope="col">Item</th><th scope="col">Lot</th><th scope="col">Expiry date</th><th scope="col" class="num">On hand</th><th scope="col">Last movement</th><th scope="col" class="num">Value</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody>
+      
+      <tr>
+        <td><span class="row-title">RES-FR</span><span class="row-sub">Research hall feed room · Bergen Hatchery</span></td>
+        <td><a href="#">Trial diet EPA+DHA 1.0 % 3 mm (TD-EPA10)</a></td>
+        <td><a href="#">FF-26-4410</a></td>
+        <td class="nowrap">20 Apr 2027</td>
+        <td class="num">144.48 kg</td>
+        <td class="nowrap">31 Oct 2026</td>
+        <td class="num">5,490.09 NOK</td>
+        <td class="row-actions"><a class="op-void" href="#" data-modal>Transfer</a><a class="op-void" href="#" data-modal>Issue</a><a class="op-void" href="#" data-modal>Write off</a><a class="op-void" href="#" data-modal>Return</a></td>
+      </tr>
+      
+    </tbody>
+  </table>
+</div>
+<section class="overview-block">
+  <h2>Totals per site and item</h2>
+  <ul class="warning-list"></ul>
+</section>

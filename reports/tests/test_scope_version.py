@@ -37,7 +37,8 @@ class ScopeVersionTests(LiceTestCase):
         self.draft.delete()                                 # the week's report is the one filed before
         report = Report.objects.create(kind=Report.Kind.SEA_LICE, site=self.sea, period_start=WEEK_44.start,
                                        submitted_at=datetime(2026, 11, 2, 9, tzinfo=utc.utc), channel='altinn',
-                                       reference='LUS-0')
+                                       reference='LUS-0', submitted_by=self.user, created_by=self.user,
+                                       updated_by=self.user)
         old = compute.fingerprint(compute.scope(report, version=1))
         # As the deploy finds a report filed before: fingerprinted over version 1's rows, with no version said.
         ReportSnapshot.objects.create(report=report, format_version=compute.FORMAT_VERSION, content={'kind': 'sea_lice'},

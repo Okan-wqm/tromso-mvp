@@ -1,12 +1,13 @@
 //! The Python module `chemcore`: a thin skin over `chemcore_core`. Only `farm/water/native.py` imports it.
 //! Errors become the exception Python's formulas raised at the same place (ValueError, ZeroDivisionError,
 //! OverflowError); a non-finite input or result is `chemcore.NonFiniteError` (a ValueError): never a NaN as a number.
+use chemcore_core::analysis as a;
 use chemcore_core::chemistry as c;
 use chemcore_core::num::ChemError;
 use pyo3::create_exception;
 use pyo3::exceptions::{PyOverflowError, PyValueError, PyZeroDivisionError};
 use pyo3::prelude::*;
-use pyo3::types::PyTuple;
+use pyo3::types::{PyDict, PyTuple};
 
 create_exception!(
     chemcore,
@@ -356,9 +357,163 @@ fn co2_from_air(temp_c: f64, salinity: f64, pressure: f64) -> PyResult<f64> {
     ok(c::co2_from_air(temp_c, salinity, pressure))
 }
 
+// ---- the analysis of a water (chemcore/core/src/analysis.rs) ---------------------------------------------------
+
+create_exception!(
+    chemcore,
+    ChartTooLargeError,
+    PyValueError,
+    "The values need more than 12 ticks of 5e7 on an axis."
+);
+
+fn border<'py>(py: Python<'py>, border: &a::Border) -> PyResult<Bound<'py, PyDict>> {
+    let dict = PyDict::new(py);
+    dict.set_item("ph", border.ph)?;
+    dict.set_item("toxic_above", border.toxic_above)?;
+    dict.set_item("margin", border.margin)?;
+    dict.set_item("status", border.status.code())?;
+    dict.set_item("on_chart", border.on_chart())?;
+    dict.set_item("everywhere", border.everywhere())?;
+    dict.set_item("off_chart", border.off_chart())?;
+    Ok(dict)
+}
+
+fn status(code: Option<&str>) -> PyResult<Option<a::Status>> {
+    code.map(|code| a::Status::from_code(code).ok_or_else(|| PyValueError::new_err(format!("no status {code}"))))
+        .transpose()
+}
+
+/// The border and the status of a pH against a border (see chemcore_core::analysis::judge), as a dict.
+#[pyfunction]
+#[pyo3(signature = (ph, border, toxic_above, missing=None))]
+fn judge<'py>(
+    py: Python<'py>,
+    ph: f64,
+    border: Option<f64>,
+    toxic_above: bool,
+    missing: Option<&str>,
+) -> PyResult<Bound<'py, PyDict>> {
+    inputs(&[ph])?;
+    if let Some(border) = border {
+        inputs(&[border])?;
+    }
+    self::border(py, &a::judge(ph, border, toxic_above, status(missing)?))
+}
+
+/// The values of a water against its limits, as a dict with the names of farm/water/deffeyes.py's Analysis (the
+/// borders as dicts, statuses as codes) and `equilibria`.
+#[pyfunction]
+#[pyo3(signature = (temperature_c, salinity_ppt, ph, alkalinity_mg_l, tan_mg_l=None, total_sulfide_ug_l=None,
+                    calcium_mg_l=None, oxygen_mg_l=None, nh3_n_mg_l=None, co2_mg_l=None, h2s_ug_l=None,
+                    alkalinity_low_mg_l=None, alkalinity_high_mg_l=None, target_ph=None, target_alkalinity_mg_l=None,
+                    pressure=1.0))]
+#[allow(clippy::too_many_arguments)]
+fn analyse<'py>(
+    py: Python<'py>,
+    temperature_c: f64,
+    salinity_ppt: f64,
+    ph: f64,
+    alkalinity_mg_l: f64,
+    tan_mg_l: Option<f64>,
+    total_sulfide_ug_l: Option<f64>,
+    calcium_mg_l: Option<f64>,
+    oxygen_mg_l: Option<f64>,
+    nh3_n_mg_l: Option<f64>,
+    co2_mg_l: Option<f64>,
+    h2s_ug_l: Option<f64>,
+    alkalinity_low_mg_l: Option<f64>,
+    alkalinity_high_mg_l: Option<f64>,
+    target_ph: Option<f64>,
+    target_alkalinity_mg_l: Option<f64>,
+    pressure: f64,
+) -> PyResult<Bound<'py, PyDict>> {
+    let water = a::Water {
+        temperature_c,
+        salinity_ppt,
+        ph,
+        alkalinity_mg_l,
+        tan_mg_l,
+        total_sulfide_ug_l,
+        calcium_mg_l,
+        oxygen_mg_l,
+    };
+    let limits = a::Limits {
+        nh3_n_mg_l,
+        co2_mg_l,
+        h2s_ug_l,
+        alkalinity_low_mg_l,
+        alkalinity_high_mg_l,
+    };
+    let target = match (target_ph, target_alkalinity_mg_l) {
+        (Some(ph), Some(alkalinity_mg_l)) => Some(a::Target { ph, alkalinity_mg_l }),
+        (None, None) => None,
+        _ => return Err(PyValueError::new_err("a target is a pH and an alkalinity")),
+    };
+    let result = a::analyse(&water, &limits, target.as_ref(), pressure).map_err(err)?;
+    let dict = PyDict::new(py);
+    dict.set_item("equilibria", Equilibria(result.equilibria))?;
+    for (name, value) in [
+        ("alkalinity_meq", Some(result.alkalinity_meq)),
+        ("dic", Some(result.dic)),
+        ("co2_mg_l", Some(result.co2_mg_l)),
+        ("target_alkalinity_meq", result.target_alkalinity_meq),
+        ("target_dic", result.target_dic),
+        ("target_co2_mg_l", result.target_co2_mg_l),
+        ("nh3_n_mg_l", result.nh3_n_mg_l),
+        ("safe_tan_mg_l", result.safe_tan_mg_l),
+        ("nh3_share_at_border_pct", result.nh3_share_at_border_pct),
+        ("h2s_ug_l", result.h2s_ug_l),
+        ("safe_total_sulfide_ug_l", result.safe_total_sulfide_ug_l),
+        ("oxygen_solubility_mg_l", Some(result.oxygen_solubility_mg_l)),
+        ("oxygen_saturation_pct", result.oxygen_saturation_pct),
+        ("pressure_atm", Some(result.pressure_atm)),
+        ("nh3_share_pct", Some(result.nh3_share_pct)),
+        ("h2s_share_pct", Some(result.h2s_share_pct)),
+    ] {
+        dict.set_item(name, value.map(|value| ok(Ok(value))).transpose()?)?;
+    }
+    dict.set_item("co2", border(py, &result.co2)?)?;
+    dict.set_item("nh3", border(py, &result.nh3)?)?;
+    dict.set_item("h2s", border(py, &result.h2s)?)?;
+    Ok(dict)
+}
+
+#[pyfunction]
+fn alkalinity_floor(temperature_c: f64, salinity_ppt: f64, ph: f64) -> PyResult<f64> {
+    inputs(&[temperature_c, salinity_ppt, ph])?;
+    ok(a::alkalinity_floor(temperature_c, salinity_ppt, ph))
+}
+
+/// The alkalinity floor when a water of this pH and alkalinity cannot be, else None.
+#[pyfunction]
+fn why_impossible(temperature_c: f64, salinity_ppt: f64, ph: f64, alkalinity_mg_l: f64) -> PyResult<Option<f64>> {
+    inputs(&[temperature_c, salinity_ppt, ph, alkalinity_mg_l])?;
+    ok_option(a::why_impossible(temperature_c, salinity_ppt, ph, alkalinity_mg_l))
+}
+
+/// The chart's box: (DIC end, alkalinity end, DIC step, alkalinity step).
+#[pyfunction]
+#[pyo3(signature = (dic, alkalinity_meq, target=None, alkalinity_high_mg_l=None, extra=Vec::new()))]
+fn box_of(
+    dic: f64,
+    alkalinity_meq: f64,
+    target: Option<(f64, f64)>,
+    alkalinity_high_mg_l: Option<f64>,
+    extra: Vec<(f64, f64)>,
+) -> PyResult<(f64, f64, f64, f64)> {
+    inputs(&[dic, alkalinity_meq])?;
+    let chart = a::box_of(dic, alkalinity_meq, target, alkalinity_high_mg_l, &extra)
+        .map_err(|_| ChartTooLargeError::new_err("the values need more than 12 ticks of 5e7 on an axis"))?;
+    Ok((chart.dic, chart.alkalinity, chart.dic_step, chart.alkalinity_step))
+}
+
 #[pymodule]
 fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
+    module.add("ChartTooLargeError", module.py().get_type::<ChartTooLargeError>())?;
+    module.add("PH_RANGE", a::PH_RANGE)?;
+    module.add("ALERT_PH", a::ALERT_PH)?;
+    module.add("AXIS", a::AXIS)?;
     module.add("KELVIN", c::KELVIN)?;
     module.add("MG_CACO3_PER_MEQ", c::MG_CACO3_PER_MEQ)?;
     module.add("MG_CO2_PER_MMOL", c::MG_CO2_PER_MMOL)?;
@@ -399,6 +554,11 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(vapour_pressure_atm, module)?,
         wrap_pyfunction!(oxygen_solubility, module)?,
         wrap_pyfunction!(co2_from_air, module)?,
+        wrap_pyfunction!(judge, module)?,
+        wrap_pyfunction!(analyse, module)?,
+        wrap_pyfunction!(alkalinity_floor, module)?,
+        wrap_pyfunction!(why_impossible, module)?,
+        wrap_pyfunction!(box_of, module)?,
     ] {
         module.add_function(function)?;
     }

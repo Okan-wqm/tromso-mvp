@@ -37,6 +37,7 @@ name core_hash
 name direction_line
 name free_to_sws
 name free_to_total
+name from_code
 name h2s_assessed
 name h2s_note
 name h2s_plot
@@ -59,7 +60,9 @@ name nh3_note
 name nh3_plot
 name nh3_share
 name nice_step
+name off_chart
 name omega_line
+name on_chart
 name oxygen_solubility
 name ph_free
 name ph_label

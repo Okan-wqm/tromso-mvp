@@ -94,3 +94,14 @@ vapour_pressure_atm = chemcore.vapour_pressure_atm
 oxygen_solubility = chemcore.oxygen_solubility
 k0_co2 = chemcore.k0_co2
 co2_from_air = chemcore.co2_from_air
+
+# ---- the analysis of a water (chemcore/core/src/analysis.rs) ---------------------------------------------------
+ChartTooLargeError = chemcore.ChartTooLargeError
+PH_RANGE = chemcore.PH_RANGE
+ALERT_PH = chemcore.ALERT_PH
+AXIS = chemcore.AXIS
+judge = chemcore.judge
+analyse = chemcore.analyse
+alkalinity_floor = chemcore.alkalinity_floor
+why_impossible = chemcore.why_impossible
+box_of = chemcore.box_of

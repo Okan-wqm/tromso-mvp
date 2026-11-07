@@ -148,8 +148,12 @@ class OrderTests(SourcesCase):
         water = self.latest()
         origins = {code: water.get(code).sample.origin for code in ('ph', 'temperature_c', 'alkalinity_mg_l',
                                                                     'salinity_ppt')}
-        self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.SYSTEM_SENSOR,
+        # A9: the unit's own fresh temperature (the sample, 3 h) wins over the system's sensor; the pH sensor is newer
+        self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.MANUAL,
                                    'alkalinity_mg_l': read.Origin.MANUAL, 'salinity_ppt': read.Origin.MANUAL})
+        self.sample(hours=30, point=self.mid2, temperature_c='8')          # T-02: its own value is stale
+        self.on(self.ras, self.value('temperature_c', 9.5))
+        self.assertEqual(self.latest(self.mid2).get('temperature_c').sample.origin, read.Origin.SYSTEM_SENSOR)
 
     def test_a_lab_value_says_so(self):
         self.sample(hours=1, source='lab', alkalinity_mg_l='80')

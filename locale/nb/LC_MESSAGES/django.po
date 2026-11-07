@@ -862,6 +862,14 @@ msgid "%(person)s (can no longer be chosen)"
 msgstr "%(person)s (kan ikke velges lenger)"
 
 #, python-format
+msgid "%(person)s joined on %(day)s."
+msgstr "%(person)s begynte %(day)s."
+
+#, python-format
+msgid "%(person)s left on %(day)s."
+msgstr "%(person)s sluttet %(day)s."
+
+#, python-format
 msgid "%(person)s, %(day)s: %(what)s"
 msgstr "%(person)s, %(day)s: %(what)s"
 
@@ -5206,6 +5214,9 @@ msgstr "Aktivert"
 msgid "Encoding"
 msgstr "Koding"
 
+msgid "End the leave earlier"
+msgstr "Avslutt permisjonen tidligere"
+
 msgid "End unknown"
 msgstr "Slutt ukjent"
 
@@ -6796,6 +6807,10 @@ msgstr "Er diagnosen mistenkt eller bekreftet?"
 msgid "Issue"
 msgstr "Hefte"
 
+msgctxt "stock operation"
+msgid "Issue"
+msgstr "Uttak"
+
 #, python-format
 msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
 msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
@@ -7856,6 +7871,9 @@ msgstr "Ny fiskegruppe"
 
 msgid "New channel"
 msgstr "Ny kanal"
+
+msgid "New last day"
+msgstr "Ny siste dag"
 
 msgid "New message"
 msgstr "Ny melding"
@@ -12317,6 +12335,9 @@ msgstr[1] "De siste %(weeks)s ukene med tellinger, per lokalitet."
 msgid "The layout as text"
 msgstr "Oppsettet som tekst"
 
+msgid "The leave was shortened."
+msgstr "Permisjonen ble forkortet."
+
 #, python-format
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
@@ -12400,6 +12421,10 @@ msgid ""
 msgstr ""
 "Overvåkingens navngitte veggskjermer: et navn, malen kortene tegnes med som standard, hvor brede "
 "kortene er og hvor ofte skjermene spør."
+
+#, python-format
+msgid "The new last day must lie between %(first)s and the day before %(last)s."
+msgstr "Den nye siste dagen må ligge mellom %(first)s og dagen før %(last)s."
 
 #, python-format
 msgid "The new placement must start after the last one ended (%(day)s)."

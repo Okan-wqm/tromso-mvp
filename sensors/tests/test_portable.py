@@ -294,6 +294,15 @@ class SiteTests(PortableCase):
         bindings.move_device(self.user, self.device, self.start, self.t1)
         self.assertTrue(self.client.get(url).context['form'].fields['site'].disabled)
 
+    def test_a_place_without_a_site_holds_no_site_in_the_form_as_in_the_database(self):
+        lone = make_unit('T-07', ProductionDepartment.objects.create(site=None, name='Loose hall', code='LH'))
+        point_of(lone)
+        bindings.move_device(self.user, self.device, self.start, lone)
+        self.assertFalse(bindings.holds_site(self.device))
+        Device.objects.filter(pk=self.device.pk).update(site=self.oslo)    # the database allows it too
+        bindings.move_device(self.user, self.device, self.start + timedelta(days=1), self.t1)
+        self.assertTrue(bindings.holds_site(self.device))
+
     def test_the_form_locks_the_site_by_the_databases_rule_a_deleted_channels_binding_included(self):
         # The page shows the device not placed (a deleted channel's binding is out of sight), but the database still
         # holds it at its site: the form must not offer a change the database refuses.

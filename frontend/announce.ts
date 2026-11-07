@@ -4,7 +4,7 @@
 // polite one; a first load, a better state, a card that comes into view and a card that goes say nothing. At most one
 // announcement per region in a window: what comes meanwhile is held, the latest goes out when the window has passed.
 // The grid's merge (frontend/poll.ts) tells what it replaced with a `poll:merged` event; the state is the article's
-// data-state. The wall's connection going stale or gone is said too, assertively, in the banner's words.
+// data-state.
 
 // Worst last; empty is no state to rise from.
 const ORDER = ['ok', 'note', 'blind', 'warning', 'critical'];
@@ -79,16 +79,6 @@ export class Limiter {
   }
 }
 
-/** What is said when the wall's connection state (the grid's data-poll-state, set by frontend/poll.ts) changes: the
- *  banner's own text when it becomes stale or gone, nothing when it stays or comes back (the cards say the rest). */
-export function connectionSentence(from: string | null, to: string | null,
-                                   texts: { stale: string; gone: string }): string | null {
-  if (from === to || (to !== 'stale' && to !== 'gone')) {
-    return null;
-  }
-  return texts[to] || null;
-}
-
 // ---- the page ------------------------------------------------------------------------------------------------------
 function states(nodes: Iterable<Element>): Map<string, string> {
   const found = new Map<string, string>();
@@ -130,16 +120,6 @@ function start(): void {
       window.setTimeout(() => speak(region, ''), WINDOW);
     }
   };
-  // The stale and gone banner is CSS content (monitor.css ::before), which a screen reader does not hear: say it too.
-  new MutationObserver((changes) => {
-    for (const change of changes) {
-      const text = connectionSentence(change.oldValue, grid.dataset.pollState ?? null,
-                                      { stale: grid.dataset.staleText ?? '', gone: grid.dataset.goneText ?? '' });
-      if (text !== null) {
-        speak('assertive', text);
-      }
-    }
-  }).observe(grid, { attributes: true, attributeFilter: ['data-poll-state'], attributeOldValue: true });
   grid.addEventListener('poll:merged', (event) => {
     const detail = (event as CustomEvent<{ replaced: { old: Element; node: Element }[] }>).detail;
     const before = states(detail.replaced.map((each) => each.old));

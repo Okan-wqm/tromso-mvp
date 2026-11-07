@@ -3251,7 +3251,7 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   live regions beside the grid (`#monitor-announce`, never inside the polled grid): a critical one assertively, the others
   politely, the first in full ("T-01 is now Critical.") and the rest as a count, at most one announcement per region in 5 s with
   the latest held for after. A first load, a better state, a card coming into view or going say nothing. The sentences and
-  the state words are the page's (`data-announce-*`, `data-state-*`). When the wall's connection goes stale or gone (the grid's `data-poll-state`), the banner's own text (`data-stale-text`, `data-gone-text`) is said assertively too: the banner itself is CSS content, which a screen reader does not hear.
+  the state words are the page's (`data-announce-*`, `data-state-*`).
 - `designer.ts` the card designer of Reference data › Card templates (the Design tab, `templates/monitoring/widgets/_designer.html`):
   it edits the form's own layout textarea (without script the layout is edited as text); a palette (click or Enter adds), a
   canvas of the 12 columns under the card's fixed frame band (select; drag to move, the corner handle to resize, one history

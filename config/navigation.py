@@ -2,9 +2,12 @@ from django.utils.translation import gettext_lazy as _, pgettext_lazy
 
 from core.navigation import Entry, Group, Section, Workspace
 
-# Menu courtesies (hr.scope): which HR lines a person is shown, never what they may open.
+# Lines shown only to some (hr.scope). A hidden line means no access: its pages refuse the person too
+# (core.middleware.MenuAccessMiddleware), and the role matrix says so under the area (show_note).
 NOT_PRODUCTION_ONLY = 'hr.scope.not_production_only'
 LEADS = 'hr.scope.leads'
+OFFICE = {'show_when': NOT_PRODUCTION_ONLY, 'show_note': _('not for a person whose HR is all in Production')}
+LEADERS = {'show_when': LEADS, 'show_note': _('only for a person who leads production people')}
 
 # The panels of the console, switched from the top left. Company holds what belongs to the company
 # as a whole (every signed-in person has it); Production holds the farm's production side and is
@@ -44,27 +47,20 @@ WORKSPACES = [
         ]),
         # The company's office people: who they are, where they work and their time (the production people are under
         # Production › Team: the same records, split by where a person is placed, hr.scope). A team lead reads and plans only
-        # their own team. A person whose HR is all in Production is not shown the lines Production › Team repeats (`show_when`,
-        # a menu courtesy, never a permission).
+        # their own team. A person whose HR is all in Production is not shown the lines Production › Team repeats (`show_when`),
+        # and a hidden line means no access: their pages refuse such a person too.
         Section(_('HR'), [
             Group(_('HR dashboard'), [
-                Entry(_('Today & attendance'), 'hr:today', 'user-check', 'hr.view_attendancerecord',
-                      show_when=NOT_PRODUCTION_ONLY),
-                Entry(_('Team list'), 'hr:employee_list', 'users', 'hr.view_employee',
-                      show_when=NOT_PRODUCTION_ONLY),
+                Entry(_('Today & attendance'), 'hr:today', 'user-check', 'hr.view_attendancerecord', **OFFICE),
+                Entry(_('Team list'), 'hr:employee_list', 'users', 'hr.view_employee', **OFFICE),
                 Entry(_('Departments'), 'hr:officedepartment_list', 'layout-grid', 'hr.view_officedepartment'),
-                Entry(_('Organization chart'), 'hr:orgchart', 'network', 'hr.view_officedepartment',
-                      show_when=NOT_PRODUCTION_ONLY),
+                Entry(_('Organization chart'), 'hr:orgchart', 'network', 'hr.view_officedepartment', **OFFICE),
             ]),
             Group(_('Time & shifts'), [
-                Entry(_('Shift schedule'), 'hr:shiftassignment_list', 'calendar', 'hr.view_shiftassignment',
-                      show_when=NOT_PRODUCTION_ONLY),
-                Entry(_('Team overview'), 'hr:overview', 'users', 'hr.view_shiftassignment',
-                      show_when=NOT_PRODUCTION_ONLY),
-                Entry(_('Attendance'), 'hr:attendancerecord_list', 'user-check', 'hr.view_attendancerecord',
-                      show_when=NOT_PRODUCTION_ONLY),
-                Entry(_('Leave requests'), 'hr:leaverequest_list', 'calendar-off', 'hr.view_leaverequest',
-                      show_when=NOT_PRODUCTION_ONLY),
+                Entry(_('Shift schedule'), 'hr:shiftassignment_list', 'calendar', 'hr.view_shiftassignment', **OFFICE),
+                Entry(_('Team overview'), 'hr:overview', 'users', 'hr.view_shiftassignment', **OFFICE),
+                Entry(_('Attendance'), 'hr:attendancerecord_list', 'user-check', 'hr.view_attendancerecord', **OFFICE),
+                Entry(_('Leave requests'), 'hr:leaverequest_list', 'calendar-off', 'hr.view_leaverequest', **OFFICE),
                 Entry(_('Scheduling settings'), 'hr:schedulingsettings_list', 'settings', 'hr.view_schedulingsettings'),
                 # Reached from Scheduling settings: no line in the menu, still in the role matrix.
                 Entry(_('Shifts'), 'hr:shift_list', 'timer', 'hr.view_shift', hidden=True),
@@ -176,7 +172,7 @@ WORKSPACES = [
         # The production people: the HR pages of Company › HR served again for the people placed in a production
         # department (core.crud.Mount, hr.scope's realm): the same records, rules and log, one set. Last, so the other
         # branches' sections above it stay where they are. Attendance is read with the same right as Today, so a Today
-        # reader has it too. Team overview is shown to the people who lead production (a menu courtesy). The number beside
+        # reader has it too. Team overview is shown to, and opened by, the people who lead production. The number beside
         # Leave requests is the pending requests the person may decide.
         Section(_('Team'), [
             Group(_('Time & attendance'), [
@@ -185,7 +181,7 @@ WORKSPACES = [
                 Entry(_('Leave requests'), 'hr:production_leaverequest_list', 'calendar-off', 'hr.view_leaverequest',
                       badge='hr.read.pending_leave_badge'),
                 Entry(_('Attendance'), 'hr:production_attendancerecord_list', 'user-check', 'hr.view_attendancerecord'),
-                Entry(_('Team overview'), 'hr:production_overview', 'users', 'hr.view_shiftassignment', show_when=LEADS),
+                Entry(_('Team overview'), 'hr:production_overview', 'users', 'hr.view_shiftassignment', **LEADERS),
             ]),
             Group(_('People'), [
                 Entry(_('Team list'), 'hr:production_employee_list', 'users', 'hr.view_employee'),

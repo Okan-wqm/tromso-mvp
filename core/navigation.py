@@ -43,6 +43,7 @@ class Entry:
     show_when: str = ''     # the dotted path of a function(user) -> bool: the line is shown only when it says so (Company's
                             # HR lines are left out for a person whose HR is all in Production). The address agrees with the
                             # menu: a line left out is refused at its address too (core.middleware.MenuAccessMiddleware)
+    show_note: str = ''     # who is not offered it, in words: the role matrix says it under the area
 
     def url(self):
         return reverse(self.url_name)
@@ -133,6 +134,20 @@ def entry_for(path):
     """The menu line a page belongs to: the one whose address is the longest start of the page's (the rail's current
     line), or None."""
     return max((entry for entry in entries() if entry.matches(path)), key=lambda entry: len(entry.url()), default=None)
+
+
+def notes(perm):
+    """["Company · HR · Shift schedule: not for a person whose HR is all in Production"]: the lines read with `perm` that
+    are shown only to some, for the role matrix (a role gives the right; the line still depends on the person)."""
+    found = []
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                for entry in group.entries:
+                    if entry.perm == perm and entry.show_when and not entry.hidden:
+                        labels = [str(label) for label in (workspace.label, section.label, entry.label) if label]
+                        found.append(f'{" · ".join(labels)}: {entry.show_note}')
+    return found
 
 
 def refused(user, path):

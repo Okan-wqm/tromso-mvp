@@ -8,7 +8,7 @@
     <tr class="matrix-group"><th scope="colgroup" colspan="{{ widget.columns|length|add:1 }}">{{ section }}</th></tr>
     {% for row in rows %}
     <tr>
-      <th scope="row">{{ row.label }}</th>
+      <th scope="row">{{ row.label }}{% for note in row.notes %}<span class="row-sub">{{ note }}</span>{% endfor %}</th>
       {% for column, cell in row.cells %}
       <td>{% if cell %}<label class="matrix-check">{% include "django/forms/widgets/input.html" with widget=cell %}<span class="sr-only">{{ row.label }}: {{ column }}</span></label>{% endif %}</td>
       {% endfor %}

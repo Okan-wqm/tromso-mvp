@@ -3031,7 +3031,11 @@ production people in Production, with the same permission.
   Production repeats are not shown to a person whose HR is all in Production (`Entry.show_when`). **The menu and the address bar
   agree**: a line the menu leaves out for a person is refused at its address too, with the 403 page
   (`core.middleware.MenuAccessMiddleware`, `core.navigation.refused`), so nobody opens by its address a page their menu hides
-  (`hr/tests/test_menu_access.py` walks every line for every starting role, a lead, an office person and the admin). Roles & permissions stay in Company › Administration: roles are company-wide.
+  (`hr/tests/test_menu_access.py` walks every line for every starting role, a lead, an office person and the admin, and
+  every address of HR's tabs on both mounts). **A hidden menu line means no access.** The role matrix says it under the
+  area: a role gives the right, and the line (and its pages) still depend on the person ("Company · HR · Shift schedule:
+  not for a person whose HR is all in Production", "Production · Team · Team overview: only for a person who leads
+  production people"; `Entry.show_note`, `core.navigation.notes`). Roles & permissions stay in Company › Administration: roles are company-wide.
 - **How.** `core.crud.Mount` serves a tab a second time under another address and panel: one Resource, one registry entry, the same
   views; the request carries the mount, the tab's `scoped` narrows to it, and every link (`{% url ...|mounted:request %}`), redirect and
   heading stays in it. A record of the other realm is a 404 on every address. A decision, a cancel, a plan or a punch returns to the

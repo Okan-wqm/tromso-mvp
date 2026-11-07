@@ -102,11 +102,13 @@ class CorrectionWindowTests(LeaveTestCase):
         self.assertEqual(services.correction_window_days(), 31)
 
     def test_inside_the_window_a_decider_corrects(self):
+        other = request_for(self.in_a, date(2026, 1, 19), LAST + timedelta(days=3), self.annual, status='approved')
         with on(LAST + timedelta(days=31)):
-            services.shorten_leave(self.lead, self.leave, date(2026, 1, 9))
-            services.cancel_leave(self.lead, self.leave)
+            services.shorten_leave(self.lead, self.leave, date(2026, 1, 9))      # its new last day is now the one counted
+            services.cancel_leave(self.lead, other)
         self.leave.refresh_from_db()
-        self.assertEqual((self.leave.status, self.leave.last_day), ('cancelled', date(2026, 1, 9)))
+        other.refresh_from_db()
+        self.assertEqual((self.leave.last_day, other.status), (date(2026, 1, 9), 'cancelled'))
 
     def test_past_the_window_both_are_refused_with_the_reason_and_nothing_changes(self):
         before = (AuditLog.objects.count(), LeaveRequest.objects.get(pk=self.leave.pk).last_day)

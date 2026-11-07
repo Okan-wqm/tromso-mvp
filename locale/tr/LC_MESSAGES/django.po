@@ -13419,6 +13419,10 @@ msgid "This layout is too large to store."
 msgstr "Bu yerleşim kaydedilemeyecek kadar büyük."
 
 #, python-format
+msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
+msgstr "Bu izin %(day)s tarihinde, %(days)s günden daha önce bitti: artık düzeltilemez."
+
+#, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."
 msgstr "Bu kaplama %(low)s ile %(high)s mm kalınlığındadır."
 

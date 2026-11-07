@@ -2868,7 +2868,9 @@ them in their team, or a holder of Everyone. A type that needs no approval is gr
 pending request is cancelled by the person or a decider at any time, an approved one by the person only while its first day
 has not started on the site's clock. Once it has begun, a decider (never the person, never on their own leave:
 `hr.services.can_correct`) still puts it right: **ends it earlier** (`shorten_leave`, a new last day from its first day to the
-day before its last: the person came back early; the request's page has the field) or cancels it (it was never taken). The
+day before its last: the person came back early; the request's page has the field) or cancels it (it was never taken). Only
+within the correction window after the leave's last day (`hr.services.correction_window_days`, the platform owner's
+correction-window setting, 31 days by default): an older leave is history and is refused with the reason. The
 decisions are `hr.services.decide_leave`, `cancel_leave` and `shorten_leave` (POST routes, a dialog for the rejection
 note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
 

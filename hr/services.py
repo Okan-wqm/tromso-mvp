@@ -308,10 +308,41 @@ def can_decide(user, leave_request):
     return leave_request.status == LeaveStatus.PENDING and _decider(user, leave_request)
 
 
-def can_correct(user, leave_request, listed=False):
+def correction_window_days():
+    """How many days after a record's last day it may still be corrected: the platform owner's correction window, a
+    setting of the platform (31 days by default). Read here, in one place, so a leave correction follows the setting."""
+    return 31
+
+
+def _leave_today(leave_request):
+    return site_today(read.site_on(leave_request.employee, leave_request.first_day))
+
+
+def past_correction(leave_request, today=None):
+    """The refusal of a correction to a leave whose last day lies more than the window behind today, or None."""
+    today = today or _leave_today(leave_request)
+    window = correction_window_days()
+    if (today - leave_request.last_day).days > window:
+        return ValidationError(_('This leave ended on %(day)s, more than %(days)s days ago: it can no longer be '
+                                 'corrected.') % {'day': date_format(leave_request.last_day), 'days': window})
+    return None
+
+
+def can_correct(user, leave_request, listed=False, today=None):
     """Whether `user` may shorten or cancel an approved request that has begun: a decider only, never the person (the
-    days are history now; a lead or HR puts them right when the person came back early or never went)."""
-    return leave_request.status == LeaveStatus.APPROVED and _decider(user, leave_request, listed)
+    days are history now; a lead or HR puts them right when the person came back early or never went), and only within
+    the correction window after its last day."""
+    return (leave_request.status == LeaveStatus.APPROVED and _decider(user, leave_request, listed)
+            and past_correction(leave_request, today) is None)
+
+
+def _refuse_correction(user, current):
+    """A decider correcting a leave past the window is told why; anyone else is refused."""
+    if current.status == LeaveStatus.APPROVED and _decider(user, current):
+        refusal = past_correction(current)
+        if refusal is not None:
+            raise refusal
+    raise PermissionDenied
 
 
 def can_cancel(user, leave_request, today=None, listed=False):
@@ -319,9 +350,9 @@ def can_cancel(user, leave_request, today=None, listed=False):
     while its first day has not started on the site's clock. `listed`: the request came from the viewer's own team already
     (a list), so the team is not asked again."""
     if leave_request.status == LeaveStatus.APPROVED:
-        today = today or site_today(read.site_on(leave_request.employee, leave_request.first_day))
+        today = today or _leave_today(leave_request)
         if leave_request.first_day <= today:
-            return can_correct(user, leave_request, listed)
+            return can_correct(user, leave_request, listed, today)
     elif leave_request.status != LeaveStatus.PENDING:
         return False
     if _own(user, leave_request):
@@ -362,7 +393,7 @@ def cancel_leave(user, leave_request):
     with transaction.atomic():
         current = _lock(leave_request)
         if not can_cancel(user, current):
-            raise PermissionDenied
+            _refuse_correction(user, current)
         before = _leave_values(current)
         current.status = LeaveStatus.CANCELLED
         current.updated_by, current.version = user, current.version + 1
@@ -374,11 +405,11 @@ def cancel_leave(user, leave_request):
 
 def shorten_leave(user, leave_request, last_day):
     """Ends an approved request earlier: `last_day` from its first day to the day before its last (the person came back
-    early). A decider only (`can_correct`); logged; the days after it are free again."""
+    early). A decider only, within the correction window (`can_correct`); logged; the days after it are free again."""
     with transaction.atomic():
         current = _lock(leave_request)
         if not can_correct(user, current):
-            raise PermissionDenied
+            _refuse_correction(user, current)
         if not current.first_day <= last_day < current.last_day:
             raise ValidationError(_('The new last day must lie between %(first)s and the day before %(last)s.')
                                   % {'first': date_format(current.first_day), 'last': date_format(current.last_day)})

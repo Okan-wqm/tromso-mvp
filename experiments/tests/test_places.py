@@ -459,10 +459,13 @@ class PlacesPageTests(PageTestCase):
         self.assertContains(page, 'data-tab="places"')
         rows = page.context['places']
         self.assertEqual([row.label for row in rows], ['Control R1', 'Control R2', 'Test R1', 'Test R2'])
-        self.assertContains(page, f'T-03 · Unit T-03 — {other.code}')
+        self.assertContains(page, f'T-03 · Unit T-03 — booked {self.today.isoformat()} to '
+                                  f'{(self.today + timedelta(days=56)).isoformat()}')
+        self.assertNotContains(page, other.code)
         self.assertContains(page, 'disabled')
         self.assertTrue(page.context['places_form'].initial['seed'] in range(10 ** 9))
-        self.assertEqual(page.context['places_form'].fields['pool'].widget.booked, {f'tank:{self.tanks[2].pk}': other.code})
+        self.assertEqual(page.context['places_form'].fields['pool'].widget.booked, {
+            f'tank:{self.tanks[2].pk}': f'booked {self.today.isoformat()} to {(self.today + timedelta(days=56)).isoformat()}'})
         pool = [value for _group, options in page.context['places_form'].fields['pool'].choices
                 for value, _label in options]
         self.assertEqual(pool[:3], [f'tank:{tank.pk}' for tank in self.tanks[:3]])

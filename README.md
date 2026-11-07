@@ -3232,6 +3232,10 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   make the page inert and stop the wall. All the styles of the module, the wall (`?wall=1` puts
   `data-wall` on `<html>` through the `html_attrs` block of `app_base.html`: no rail, no top bar, no width
   limit) and the notices CSS prints from `data-poll-state`, are in `static/css/monitor.css`.
+- `date-input.ts` the shared date box (`input[data-date-input="day|moment"]`, `core.widgets.DayInput` and `MomentInput`, every
+  form's date by default): what is typed is put `dd.mm.yyyy` and `dd.mm.yyyy HH:MM` when the box is left, in every language
+  (owner rule; `6.11.2026 9:19` becomes `06.11.2026 09:19`), before a filter's autosubmit reads it; what is not a date stays as
+  typed for the server to refuse (docs/i18n.md).
 - `announce.ts` what the monitoring wall says aloud: after each merge of the grid poll.ts sends `poll:merged` (what it replaced,
   inserted and removed); a card whose `data-state` got worse (ok, note, no recent data, warning, critical) is said in one of two
   live regions beside the grid (`#monitor-announce`, never inside the polled grid): a critical one assertively, the others

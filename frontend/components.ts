@@ -10,11 +10,14 @@
 //   data-omit-empty       a GET form that leaves its empty fields out of the address it builds (the database viewer's filters)
 //   data-formset          a list of rows with "add row" and, for [data-primary], one ticked box
 //   data-requires="<id>"  a check box that needs another one (e.g. Edit needs Read in the role matrix)
+//   data-date-input       a date (day) or a date and time (moment) box: what is typed is put dd.mm.yyyy [HH:MM]
+//                         (date-input.ts)
 //   data-print            a button, hidden without this script, that prints the page (the browser's Print does
 //                         the same without it)
 // The code has no UI text of its own: the templates render every text into a data attribute (e.g. the
 // dialog's data-forbidden), translated by the server, and `label()` reads it.
 // Everything is set up on the page and again on whatever the dialog loads.
+import { initDateInputs } from './date-input.js';
 import { label, required } from './dom.js';
 
 // ---- inner tabs ----------------------------------------------------------------------------
@@ -281,6 +284,7 @@ function initOmitEmpty(root: ParentNode): void {
 }
 
 function init(root: Element | Document): void {
+  initDateInputs(root);   // first: a date is put dd.mm.yyyy before an autosubmit reads it
   initTabs(root);
   initUppercase(root);
   initFormsets(root);

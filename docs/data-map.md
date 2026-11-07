@@ -991,7 +991,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 37 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_workspaces.py` and 38 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1854,7 +1854,7 @@ The company’s office departments (finance, administration), nested under one a
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › office_departments
 - **forms**: `OfficeDepartmentForm`
 - **constraints**: uq_office_departments_code_live (unique: code); uq_office_departments_parent_name_live (unique: parent, name); chk_office_departments_parent_not_self (check); chk_office_departments_code (check); chk_office_departments_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_boundary.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_boundary.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

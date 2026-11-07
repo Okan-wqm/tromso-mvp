@@ -1,10 +1,11 @@
 import os
 import subprocess
 import sys
+import unittest
 from unittest import mock
 
 from django.conf import settings
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase, TransactionTestCase
 
 
 def database_setting(key, **env):
@@ -72,3 +73,32 @@ class ParallelRunnerTests(SimpleTestCase):
             with self.subTest(value=value):
                 self.assertIs(runs_the_scheduler(connection), runs)
         self.assertIs(runs_the_scheduler(mock.Mock(vendor='sqlite')), False)
+
+
+class ParallelScheduleTests(SimpleTestCase):
+    """The parallel run hands its workers a class at a time, but a TransactionTestCase's tests share nothing (each starts
+    from a database emptied, or emptied and restored, after the one before), so they are handed out one by one: a class
+    of migration tests of three minutes each no longer keeps one worker busy long after the others are done."""
+
+    def test_a_transaction_test_case_is_handed_out_test_by_test_and_a_test_case_whole(self):
+        from config.test_runner import FastPasswordRunner
+
+        class _Flushed(TransactionTestCase):     # in here, so the run does not find them as tests of their own
+            def test_one(self): pass
+
+            def test_two(self): pass
+
+            def test_three(self): pass
+
+        class _Rolledback(TestCase):
+            def test_one(self): pass
+
+            def test_two(self): pass
+
+        flushed = unittest.TestSuite(_Flushed(name) for name in ('test_one', 'test_two', 'test_three'))
+        rolledback = unittest.TestSuite(_Rolledback(name) for name in ('test_one', 'test_two'))
+        suite = FastPasswordRunner.parallel_test_suite([rolledback, flushed], processes=2)
+        self.assertEqual([[test.id().rsplit('.', 2)[1:] for test in subsuite] for subsuite in suite.subsuites], [
+            [['_Rolledback', 'test_one'], ['_Rolledback', 'test_two']],
+            [['_Flushed', 'test_one']], [['_Flushed', 'test_two']], [['_Flushed', 'test_three']],
+        ])

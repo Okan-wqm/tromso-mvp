@@ -22,7 +22,7 @@ class WithdrawalRuleChangeTests(HealthTestCase):
 
     def test_a_change_of_a_medicine_already_given_is_critical(self):
         bath = self.medicine(days=7)
-        self.treat(bath, 2, 2)
+        self.treat(bath, 9, 9)                               # ended: the change frees no fish held today
         self.assertEqual(self.post(bath, '1').status_code, 302)
         self.assertEqual(self.logged(bath).severity, AuditLog.Severity.CRITICAL)
 

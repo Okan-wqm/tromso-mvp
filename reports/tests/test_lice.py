@@ -546,8 +546,7 @@ class LiceMedicineForAnotherReasonTests(LiceTestCase):
         values = {'units': [self.m1], 'method': 'bath', 'reason': 'parasites', 'start_date': day(10, 26),
                   'end_date': day(10, 26), 'medicine': self.medicine, 'amount_value': Decimal('12.5'),
                   'amount_unit': 'KILO'}
-        checked = health.handling(values['units'], values['start_date'], 'bath', self.medicine, values['end_date'],
-                                  reason='parasites')
+        checked = health.handling(values['units'], values['start_date'], 'bath', self.medicine, reason='parasites')
         return health.record_treatment(self.user, handling_ack=checked.fingerprint, **values)
 
     def test_it_is_not_in_the_report_and_the_report_says_so(self):

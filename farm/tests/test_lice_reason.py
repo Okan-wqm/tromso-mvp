@@ -17,7 +17,7 @@ class LiceMedicineReasonTests(HealthTestCase):
         bath = self.medicine(days=7)
         refused = self.refused(self.treat, bath, 1, 1, reason='parasites')
         self.assertEqual(refused, {'handling_ack': ['Tick the box to go on despite these warnings.']})
-        checked = services.handling([self.t1], self.day(1), 'bath', bath, self.day(1), reason='parasites')
+        checked = services.handling([self.t1], self.day(1), 'bath', bath, reason='parasites')
         self.assertEqual(checked.messages(), [WARNING])
         self.treat(bath, 1, 1, reason='parasites', handling_ack=checked.fingerprint)
         log = AuditLog.objects.get(entity_type='treatment', action='create')

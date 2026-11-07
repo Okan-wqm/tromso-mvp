@@ -123,12 +123,24 @@ def _record_channel(user, channel, before, after):
         audit.record(user, AuditLog.Action.UPDATE, channel, {LABEL: [_target_label(before), _target_label(after)]})
 
 
+def _lock_device(device):
+    """The device's row, locked alone. Every move takes it first, then its channels (`_lock_channel`, `_channels`), so two
+    moves at once wait for each other in one order and never deadlock; the site and the other joined rows stay free."""
+    return Device.objects.select_for_update(of=('self',)).select_related('site').get(pk=device.pk)
+
+
+def _lock_channel(channel):
+    """The channel's row locked alone, after its device's (`_lock_device`)."""
+    _lock_device(channel.device)
+    return Channel.objects.select_for_update(of=('self',)).select_related('device__site').get(pk=channel.pk)
+
+
 def move(user, channel, at, role=Binding.Role.PRIMARY, note='', **target):
     """Binds `channel` from `at` to one target (point=, system= or equipment=), closing its open binding there. Returns the
     new binding."""
     (place,) = target.values()
     with transaction.atomic():
-        channel = Channel.objects.select_for_update().select_related('device__site').get(pk=channel.pk)
+        channel = _lock_channel(channel)
         current = _open(channel)
         _check_moment(at, current)
         refused = refusals(channel, place, role, at)
@@ -144,7 +156,7 @@ def move(user, channel, at, role=Binding.Role.PRIMARY, note='', **target):
 def unbind(user, channel, at):
     """Ends the channel's open binding at `at`; nothing to end is said."""
     with transaction.atomic():
-        channel = Channel.objects.select_for_update().get(pk=channel.pk)
+        channel = _lock_channel(channel)
         current = _open(channel)
         if current is None:
             raise ValidationError(_('The channel is not bound anywhere now.'))
@@ -234,7 +246,7 @@ def move_device(user, device, at, target, role=Binding.Role.PRIMARY, note=''):
     """Moves every channel of the device from `at` to `target` (None: out of the water, `unbind_device`), all or nothing.
     Returns the steps."""
     with transaction.atomic():
-        device = Device.objects.select_for_update(of=('self',)).select_related('site').get(pk=device.pk)
+        device = _lock_device(device)
         steps = [step for step in _plan(device, _channels(device, lock=True), target, at, role, lock=True)
                  if step.moves or step.current is not None]
         refused = [f'{step.channel.code}: {step.reason}' for step in steps if step.reason]

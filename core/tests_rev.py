@@ -252,6 +252,7 @@ class TrackRevOperationTests(TestCase):
 
 class ConcurrencyTests(Farm, TransactionTestCase):
     """Two writers on their own connections, committing."""
+    serialized_rollback = True      # the rows migrations write (the equipment types) come back for later tests
 
     def setUp(self):
         self.make_farm()

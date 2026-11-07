@@ -35,6 +35,7 @@ from farm.water.read import middle_points
 
 from . import alarms
 from .models import Binding, Channel, ChannelStatus, Device
+from .models.binding import place_site
 
 LABEL = 'Bound to'
 SITE_LABEL = 'Site'
@@ -313,10 +314,11 @@ def placed(now=None):
 
 
 def holds_site(device):
-    """Whether the device's site is held by where it is: an open live binding of any of its channels, a deleted one's
-    too (the rule migration 0007 holds; the pages leave a deleted channel's binding out of sight). Its site changes then
-    only by a move."""
-    return Binding.objects.filter(channel__device=device, valid_to__isnull=True).exists()
+    """Whether the device's site is held by where it is: an open live binding of any of its channels (a deleted one's
+    too: the pages leave it out of sight) to a place of a site. The rule migration 0007's device trigger holds, read
+    from the same function (`place_site`); its site changes then only by a move."""
+    return (Binding.objects.filter(channel__device=device, valid_to__isnull=True).annotate(site=place_site())
+            .filter(site__isnull=False).exists())
 
 
 def placements(devices, now=None):

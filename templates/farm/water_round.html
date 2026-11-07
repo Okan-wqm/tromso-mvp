@@ -43,9 +43,9 @@
       <tbody>
         {% for row in rows %}
         <tr{% if row.errors %} class="has-error"{% endif %}>
-          <th scope="row" class="nowrap">{{ row.point.owner.code }}<span class="row-sub">{{ row.point.name }} · {{ row.point.get_kind_display }}</span>{% if row.non_field_errors %}<span class="form-error">{{ row.non_field_errors }}</span>{% endif %}</th>
+          <th scope="row" class="nowrap">{{ row.point.owner.code }}<span class="row-sub">{{ row.point.name }} · {{ row.point.get_kind_display }}</span>{% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}{% if row.non_field_errors %}<span class="form-error">{{ row.non_field_errors }}</span>{% endif %}</th>
           {% for field in row.visible_fields %}
-          <td class="field{% if field.errors %} has-error{% endif %}"><label class="sr-only" for="{{ field.id_for_label }}">{{ row.point }} · {{ field.label }}</label>{{ field }}{{ field.errors }}</td>
+          <td class="field{% if field.errors %} has-error{% endif %}"><label class="sr-only" for="{{ field.id_for_label }}">{{ row.point }} · {{ field.label }}</label>{{ field }}{% if field.field.offered %}<span class="row-sub">{{ field.field.offered }}</span>{% endif %}{{ field.errors }}</td>
           {% endfor %}
         </tr>
         {% endfor %}

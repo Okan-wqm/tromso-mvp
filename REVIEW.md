@@ -155,11 +155,13 @@ the right reason (the `Test:` commits), then fixed in its own commit.
   `AnnouncerTests` and announce.test.ts.
 - Owner rule (2026-11-07) oxygen entry: the record form offers the point's latest fresh temperature and salinity
   (with origin and age), stores them with the oxygen, needs them where there is none, does not store an untouched offer
-  without oxygen; a worked-out oxygen says "Worked out from T, S and P" on the water page and the card. Not done: the
-  round form (several points at once) does not offer them yet. Tests: `PageTests.test_an_oxygen_entry_...` (two),
+  without oxygen; a worked-out oxygen says "Worked out from T, S and P" on the water page and the card. The water round
+  follows the same rule (`OxygenInputs`, shared, not copied; an oxygen column brings the temperature and salinity
+  columns; one read for every row). Note: an offer typed back unchanged without oxygen cannot be told from an untouched
+  one and is not stored. Tests: `PageTests.test_an_oxygen_entry_...` (two),
   `test_the_worked_out_oxygen_says_what_it_was_worked_out_from`, `test_a_worked_out_oxygen_says_on_the_card_...`.
-- Owner rule A9 (2026-11-07) in the one resolver: the newest of the unit's own fresh values wins whatever the origin
-  (the point's sensors keep primary before backup: the decision speaks of origins, not of channel roles; check);
+- Owner rule A9 (2026-11-07) in the one resolver: the newest of the unit's own fresh values wins whatever the origin,
+  the sensor channels too (`read.newest`; the primary before the backup only at one measurement time, owner follow-up);
   the system (its sensor or a loop sample) stands in only when the unit has nothing fresh; stale is shown, never used.
   It supersedes the owner's 2026-11-04 rule that the chart never takes the loop's temperature; four old tests were
   changed to A9 in `Test:` commits. Tests: `NewestOwnValueTests` (five).
@@ -172,6 +174,4 @@ the right reason (the `Test:` commits), then fixed in its own commit.
 - `makemigrations --check`: no changes; `data_map --check`: up to date; `compile_catalogs`: tr and nb, nothing
   missing; tsc clean; the node tests 48 pass, 0 skipped. The main repo's `node_modules/typescript/bin` is empty after
   the move to F:, so `npm test` cannot find `tsc`; the same steps were run through `node_modules/typescript/lib/tsc.js`.
-- Open: the round form does not offer temperature and salinity for an oxygen entry yet; A9 keeps primary-before-backup
-  among a point's sensors (please confirm with the owner); the farm migration 0028 needs a merge migration with
-  another branch's 0027 at landing.
+- Open: the farm migration 0028 needs a merge migration with another branch's 0027 at landing.

@@ -480,7 +480,9 @@ def record_round(request):
                         % {'rows': services.ROUND_ROWS})
     data = request.POST if request.method == 'POST' else None
     header = RoundForm(data, site=site)
-    rows = [RoundRowForm(data, point=point, columns=columns) for point in points]
+    # One read of every row's water for the offers an oxygen column brings (forms.water.OxygenInputs).
+    water = read.latest(points) if points and {parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT} & set(columns) else {}
+    rows = [RoundRowForm(data, point=point, columns=columns, water=water.get(point.pk)) for point in points]
     context = _context(heading=_('Water round'), scope=scope, header=header, rows=rows,
                        columns=[parameters.get(code) for code in columns], site=site,
                        back_url=page_url(site=site.pk if site else ''))

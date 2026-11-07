@@ -1123,7 +1123,8 @@ published values):
   0.0 ‰ and 1.000 atm", on the water page and the card); the record form offers the point's latest fresh temperature and
   salinity (A9's order, with their origin and age; fresh water's 0), which are stored on the sample with the oxygen, kept
   or changed, needed where there is none, and not stored when no oxygen is entered and the offer is untouched (owner,
-  2026-11-07; the round form does not offer them yet); when both are entered and differ by more than 10 %, both are
+  2026-11-07; the water round does the same for its rows, one rule `forms.water.OxygenInputs`, an oxygen column bringing
+  the temperature and salinity columns); when both are entered and differ by more than 10 %, both are
   kept and flagged.
 
 **The page** has three tabs: **Latest** (one row per point: the middle point of every unit (a unit without one
@@ -2654,7 +2655,8 @@ What works:
 
 Per unit and parameter, each on its own, in one place (`farm/water/read.py` `latest`, the sensors reach it through the
 registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): among the
-unit's OWN fresh values (the sensors on its point, the primary before a backup, and its own manual or lab samples) the
+unit's OWN fresh values (the sensors on its point and its own manual or lab samples; between two channels measured at the same time the
+primary before the backup) the
 newest by measurement time wins, whatever its origin; only when it has no fresh value of its own does the system stand in,
 for the middle point: the newest fresh value of a sensor on the unit's system or of a sample of the system's loop; else
 the newest of its own values, shown stale, else the system's. A stale value never enters a calculation: a value is

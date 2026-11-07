@@ -41,7 +41,7 @@ Live values (farm/water/sources.py: the sensors) join the samples here and nowhe
 `Observation`: where (a point), when, from what (`Origin`: manual, lab, a sensor on the point, the system's sensor) and,
 for a live value, how long it stays fresh. `latest` picks per point and per parameter, each on its own, in the owner's
 order (A9, which replaced A1): the newest of the point's OWN fresh values, a sensor's on the point (the primary before a
-backup) or a manual or lab sample's, whatever its origin; for a unit's middle point with nothing fresh of its own, the
+backup at one measurement time) or a manual or lab sample's, whatever its origin; for a unit's middle point with nothing fresh of its own, the
 newest fresh value of its system (the system's sensor, a sample of its loop); else the newest of all, which is then stale
 and enters no calculation. A sensor value enters as the parameter's Decimal at its decimals, exactly as a typed value,
 and is
@@ -337,8 +337,9 @@ class Series:
         return [found for found in self.asked[moment].get(point_id, []) if moment - found.at <= window]
 
     def latest(self, point_id, moment, window):
-        """The point's value at `moment` (Found): the newest fresh value at or before `moment`, a sensor's (the primary first)
-        or a sample's, whatever its origin (owner rule A9); else the newest at most `window` older than it, stale; None when
+        """The point's value at `moment` (Found): the newest fresh value at or before `moment`, a sensor's or a sample's,
+        whatever its origin (owner rule A9; at one time the primary channel first); else the newest at most `window`
+        older than it, stale; None when
         there is none."""
         moments = self.moments.get(point_id, [])
         index = bisect_right(moments, moment) - 1
@@ -347,12 +348,12 @@ class Series:
             sample = Found(moments[index], self.values[point_id][index])
         live = self._live(point_id, moment, window) if self.live else []
         parameter = parameters.get(self.code)
-        fresh = [found for found in (next((found for found in live
-                                            if is_fresh(parameter, found.at, moment, found.fresh_for)), None),
-                                       sample if sample is not None and is_fresh(parameter, sample.at, moment) else None)
+        fresh = [found for found in (newest(found for found in live
+                                            if is_fresh(parameter, found.at, moment, found.fresh_for)),
+                                     sample if sample is not None and is_fresh(parameter, sample.at, moment) else None)
                  if found is not None]
         if fresh:                                   # owner rule A9: the newest fresh value, whatever its origin
-            return max(fresh, key=lambda found: found.at)
+            return newest(fresh)
         return max([found for found in (sample, *live) if found is not None], key=lambda found: found.at, default=None)
 
 
@@ -669,10 +670,20 @@ def _live(point, targets, answer):
     return found
 
 
+def newest(found):
+    """The newest of `found` (anything with `at`), the first of them at the same time: the one rule of A9 (2026-11-07);
+    given in the order they count (sources.ordered: the primary channel first), a tie goes to the primary."""
+    best = None
+    for each in found:
+        if best is None or each.at > best.at:
+            best = each
+    return best
+
+
 def _fresh_live(live, now):
-    """{code: the first fresh Observation} of live values in the order they count (primary channels first)."""
-    return {code: next((each for each in observations if is_fresh(parameters.get(code), each.at, now, each.fresh_for)),
-                       None) for code, observations in live.items()}
+    """{code: the newest fresh Observation} of live values (`newest`: the primary first at the same time)."""
+    return {code: newest(each for each in observations if is_fresh(parameters.get(code), each.at, now, each.fresh_for))
+            for code, observations in live.items()}
 
 
 def _tier(code, fresh_live, manual, context, now):
@@ -692,12 +703,12 @@ def _tier(code, fresh_live, manual, context, now):
     sample = manual.get(code)
     if sample is not None and sample.fresh(now):
         found.append(sample)
-    return max(found, key=lambda reading: reading.at, default=None)
+    return newest(found)
 
 
 def _resolve(point, manual, live, context, now, stand_in=None):
     """{code: Reading} of one point, each parameter on its own, by owner rule A9: the newest of the point's OWN fresh values
-    (its sensors, the primary first, and its samples; whatever the origin); only when it has none, the newest fresh value
+    (its sensors and its samples, whatever the origin; at one time the primary channel first); only when it has none, the newest fresh value
     of its system (the system's sensors, and `stand_in`: the latest samples of the system's loop, for a unit's middle
     point); else the newest of its own values, stale, else the system's, stale (shown with its age, never used as fresh).
     A derived value follows the source of its base: NH3 and NH4 a live TAN's (worked out from fresh live values only) or

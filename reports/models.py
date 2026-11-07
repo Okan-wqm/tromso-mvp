@@ -2,6 +2,7 @@
 and the few answers no record holds. Every figure of a report is computed from the farm's records on read
 (reports/compute); nothing here holds a count, a weight or a feed amount (docs/regulatory-reports.md, section 5)."""
 import uuid
+from functools import cached_property
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -211,7 +212,7 @@ class Report(AuditedModel):
             return None
         return periods.Period(self.info.grain, self.period_start)
 
-    @property
+    @cached_property
     def deadline(self):
         """The authority's deadline (a date in Oslo); None for a notice, which is filed at once: the one function every
         reader asks (reports.compute.deadline, audit F-101)."""

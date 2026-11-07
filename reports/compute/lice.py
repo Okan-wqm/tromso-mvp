@@ -15,7 +15,7 @@ from django.db.models import Max, Q
 from django.utils.translation import gettext as _
 
 from farm.health import lice as health_lice, read as health_read
-from farm.models import Batch, HandlingPlanItem, LiceCount, Medicine, Site, Species, Treatment
+from farm.models import Batch, HandlingPlanItem, LiceCount, Medicine, Site, Species, StockOperation, Treatment
 from farm.models.harvest import PlanKind
 from farm.models.health import MEDICINAL, MedicineKind, TreatmentMethod, TreatmentReason
 from farm.models.site import zone_of
@@ -141,11 +141,16 @@ def _questions(treatments):
 def scope(site, period, units=None):
     """The rows the week's figures are read from (for the fingerprint), without computing them."""
     units = units if units is not None else stock.site_units(site)
+    plans = HandlingPlanItem.all_objects.filter(kind=PlanKind.HARVEST, unit__in=units,
+                                                date__lte=period.end + timedelta(days=SLAUGHTER_DAYS))
     return stock.scope_rows(units, period.end) + [
         ('lice_counts', LiceCount.all_objects.filter(unit__in=units, date__gte=period.start, date__lte=period.end)),
         # What decides whether a cage was due a count: its earlier counts and the harvest plans of § 6 (F-206).
         ('earlier_lice_counts', LiceCount.all_objects.filter(unit__in=units, date__lt=period.start)),
-        ('harvest_plans', HandlingPlanItem.all_objects.filter(kind=PlanKind.HARVEST, unit__in=units)),
+        # Only plans the § 6 exception can read: dated up to SLAUGHTER_DAYS after the week (a later plan cannot cover a
+        # count due in it), with the harvests they were recorded as (a harvest voided after filing reopens its plan).
+        ('harvest_plans', plans),
+        ('harvest_plan_operations', StockOperation.all_objects.filter(plan_items__in=plans).distinct()),
         # The treatments for sea lice, and those with a sea-lice medicine the report leaves out and says so (F-239).
         ('treatments', Treatment.all_objects.filter(
             Q(reason=TreatmentReason.SEA_LICE) | Q(medicine__kind=MedicineKind.LICE),

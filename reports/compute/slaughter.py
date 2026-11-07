@@ -194,5 +194,7 @@ def deadline(facility, period):
     fasts = [fast_of(item, done_too=True) for item in items]
     found = min([KINDS[ReportKind.SLAUGHTER_PLANNED].deadline(period),
                  *(fast.first_day for fast in fasts if fast is not None)])
-    agreed = min((periods.oslo_today(item.created_at) for item in items), default=None)
+    # The day each plan was agreed, never after the slaughter day it plans: a plan entered after the fish went is late,
+    # not "agreed late", and cannot make an overdue week in time (cross-review 7).
+    agreed = min((min(periods.oslo_today(item.created_at), item.date) for item in items), default=None)
     return found if agreed is None else max(found, agreed)

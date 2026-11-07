@@ -26,3 +26,12 @@ class AmountTests(SimpleTestCase):
                     with self.subTest(language=language, value=value):
                         self.assertEqual(quantity(Decimal(value), 'kg'), shown)
                         self.assertEqual(feed_kg(Decimal(value)), shown)
+
+    def test_only_a_mass_is_rounded_things_counted_show_as_recorded(self):
+        """The rule is for masses: a quantity of things counted (doses, bottles: units) is shown as it was recorded, to
+        its three decimals, trailing zeros dropped, never rounded to two."""
+        with translation.override('en'):
+            self.assertEqual(quantity(Decimal('4.125'), 'units'), '4.125 units')
+            self.assertEqual(quantity(Decimal('1250.500'), 'units'), '1,250.5 units')
+            self.assertEqual(quantity(Decimal('12'), 'units'), '12 units')
+            self.assertEqual(quantity(Decimal('4.125'), 'kg'), '4.13 kg')

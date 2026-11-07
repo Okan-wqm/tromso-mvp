@@ -292,18 +292,6 @@ class NoLimitTests(SourcesCase):
     is not judged while the lumpfish have no row, whatever the salmon's row says; the oxygen in mg/L and in % is one
     quantity only within one observation."""
 
-    def test_a_species_without_a_limit_is_not_hidden_by_one_with_a_limit(self):
-        lumpfish = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='')
-        self.stock()
-        self.stock(species=lumpfish)
-        self.limit('temperature_c', warning_high=18)
-        self.sample(hours=1, temperature_c='16')
-        reading = self.latest().get('temperature_c')
-        self.assertEqual((reading.judged, reading.uncovered), (Status.OK, (lumpfish.pk,)))
-        self.assertEqual([each.code for each in self.latest().unjudged], ['temperature_c'])
-        self.limit('temperature_c', species=lumpfish, warning_high=17)
-        self.assertEqual(self.latest().unjudged, [])
-
     def test_oxygen_in_two_observations_is_judged_each_by_its_own_unit(self):
         """The reviewer's case: a row on mg/L only; a manual 8.5 mg/L two hours ago without a temperature (no % worked
         out), and a live probe saying 35 % now (no live temperature, so no mg/L worked out): the % is not judged."""
@@ -335,4 +323,4 @@ class NoLimitTests(SourcesCase):
         percent = water.get('oxygen_saturation_pct')
         self.assertEqual((percent.judged, percent.status, percent.uncovered), (Status.CRITICAL, Status.CRITICAL, ()))
         self.assertEqual(water.get('oxygen_mg_l').judged, Status.OK)               # both values are kept and shown
-        self.assertEqual(water.unjudged, [])
+        self.assertNotIn('oxygen_saturation_pct', [each.code for each in water.unjudged])

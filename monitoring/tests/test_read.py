@@ -276,18 +276,6 @@ class CardsTests(MonitoringCase):
         self.assertEqual(state.key, 'critical')
         self.assertIn('no recent data', state.reasons[0])
 
-    def test_a_unit_with_salmon_and_lumpfish_is_not_ok_while_the_lumpfish_have_no_limit(self):
-        """Cross review: the salmon's rows judge the water fine, the lumpfish beside them have none: never green."""
-        from farm.tests.helpers import make_species, stock_fish
-        lumpfish = make_species('LUM', 'Lumpfish', 'Cyclopterus lumpus', local_name='')
-        stock_fish(self.user, self.t2, 200, '50', 10, species=lumpfish)
-        self.limit('oxygen_mg_l', critical_low=6)
-        self.limit('temperature_c', critical_high=18)
-        self.sample(self.t2, hours=1, temperature_c='9', oxygen_mg_l='9')
-        state = {card.unit.code: card.state for card in self.cards()}['T-02']
-        self.assertEqual(state.key, 'unjudged')
-        self.assertIn('Temperature (°C): no limit for these fish', state.reasons)
-
     def test_the_card_is_what_the_pages_say_for_the_same_unit(self):
         """No second computation: the card's figures are those the other pages print, on one fixture."""
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)

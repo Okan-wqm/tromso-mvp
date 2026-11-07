@@ -2946,11 +2946,23 @@ cannot disagree): per person the days working, planned off and on leave, the pla
 standard week (a setting; a week over it is marked), and per day how many work, are off or are away. It has the week, department and search
 filters and the "n of m" paging of the schedule, needs Read on the Shift schedule, and runs in a fixed number of queries.
 
-**Organization chart** is the company as nested lists, drawn by the server (no script, no layout algorithm; the browser's print makes a
-printed page of it), one per panel (`hr.read.org_tree(user, realm)`): Company's office departments under their parents and one
+**Organization chart** is the company as a family tree, one per panel: each box (a site, a department, the Production box) shows its
+name, kind, manager with their title and head count, and its children hang below it joined by connector lines (down from the parent, a bar
+over the siblings, down into each child), each level on one line. It is nested lists (a box's children are the list inside its item) and
+the stylesheet draws it (`static/css/hr.css`: pseudo-element connectors in the token colours; no chart library and no script), so it reads,
+prints and is announced as a list of lists. A department's people open under its box as small cards with a native disclosure
+(`<details>`). A wide tree scrolls sideways inside its own labelled frame (keyboard-focusable; a line of text and edge shadows say there is
+more), never the page; below 768px it is an indented vertical tree; printed, it goes on a landscape A4 (a named page) without the menu, the
+frame or the closed people lists. The data is one read per panel (`hr.read.org_tree(user, realm)`): Company's office departments under their parents and one
 **Production** box with the production people the viewer may count (computed, never a row, so nothing to delete; there with no production
-department; a link to Production's chart for who may open it), and Production's sites with their production departments; each box with its manager
-and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). A
+department; a link to Production's chart for who may open it). **Where the Production box hangs:** when the company has exactly one top
+office department (one without a parent, e.g. Management), the Production box is its last child and its people count in that department's
+"in all"; with several top departments, or none, it stands beside them as a top box of its own. And Production's sites with their production departments; each box with its manager
+and the people in it, direct and in all below, counted among the people the viewer may reach (a lead's chart counts their own team). For a
+viewer who may read people (`hr.view_employee`) a department's box also carries its people (`hr.read.chart_people`: placed in it today,
+among those the viewer may reach, so the cards are the count, sorted by last name, each with their placement title) and the manager's
+title (their placement title today, in that department first); a reader of departments only sees the counts and the manager's name, no
+person and no title. A
 production department created, renamed or deleted under Production is in the chart at once, from the same rows.
 
 **Rules the review of the branch added.** A record of a person belongs to the manager of the department the person was placed in

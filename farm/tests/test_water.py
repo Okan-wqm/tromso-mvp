@@ -537,7 +537,8 @@ class DerivedTests(WaterTestCase):
             20, 0, chemistry.pressure_atm(500))) / 100).quantize(D('0.01')), True))
         Site.objects.filter(pk=self.bergen.pk).update(altitude=None)
         self.t1.refresh_from_db()
-        self.assertEqual(self.reading('oxygen_mg_l').note, 'At sea-level pressure: the site has no altitude.')
+        self.assertEqual(self.reading('oxygen_mg_l').note, 'Worked out from 20.0 °C, 0.0 ‰ and 1.000 atm. '
+                                                           'At sea-level pressure: the site has no altitude.')
 
     def test_two_oxygen_values_that_disagree_are_kept_and_flagged(self):
         self.sample(oxygen_mg_l='11.3', oxygen_saturation_pct='70', temperature_c='10')

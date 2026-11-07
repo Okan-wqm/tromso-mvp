@@ -75,6 +75,12 @@ class Limits:
             return Status.NO_LIMIT, []
         return worst(judge(value, row) for row in found), found
 
+    def uncovered(self, parameter, exposures):
+        """The species of `exposures` that no row judges `parameter` for, in their order: a unit with salmon judged and
+        lumpfish beside them with no row is not judged for the lumpfish, whatever the salmon's row says."""
+        return tuple(dict.fromkeys(species_id for species_id, water_type in exposures
+                                   if self.applying(species_id, parameter, water_type) is None))
+
 
 def is_fresh(parameter, measured_at, now, fresh_for=None):
     """The one freshness rule: a value says something about the water now for its parameter's `fresh_hours`, or, for a

@@ -82,12 +82,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -108,7 +108,8 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical",
+    "Oxygen saturation (% of air saturation): Critical"
    ],
    "pairs": [
     [
@@ -188,8 +189,8 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago"
@@ -213,7 +214,8 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning",
+    "Oxygen saturation (% of air saturation): Warning"
    ],
    "pairs": [
     [
@@ -293,11 +295,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago"
+    "Warning · <day+0>, <time> · <age> ago",
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -589,12 +591,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -694,12 +696,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -799,12 +801,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -904,12 +906,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -1008,9 +1010,9 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
@@ -1116,12 +1118,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -1227,12 +1229,12 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -1335,10 +1337,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -1444,12 +1446,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -1552,12 +1554,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -1660,12 +1662,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -1768,12 +1770,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -1875,11 +1877,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -2055,7 +2057,7 @@
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
-    "Meter or test kit · just now",
+    "Meter or test kit · <recent>",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
     "Template: Simple · the rule for every unit",
@@ -2067,10 +2069,10 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -2216,12 +2218,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -2242,7 +2244,8 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical",
+    "Oxygen saturation (% of air saturation): Critical"
    ],
    "pairs": [
     [
@@ -2362,8 +2365,8 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago"
@@ -2387,7 +2390,8 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning",
+    "Oxygen saturation (% of air saturation): Warning"
    ],
    "pairs": [
     [
@@ -2507,11 +2511,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago"
+    "Warning · <day+0>, <time> · <age> ago",
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -2931,12 +2935,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -3080,12 +3084,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -3231,12 +3235,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -3380,12 +3384,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -3524,9 +3528,9 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
@@ -3678,12 +3682,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -3833,12 +3837,12 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -3986,11 +3990,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -4140,12 +4144,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -4292,12 +4296,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -4444,12 +4448,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -4596,12 +4600,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -4749,11 +4753,11 @@
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No limit · <day+0>, <time> · <age> ago",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -5012,7 +5016,7 @@
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
-    "Meter or test kit · just now",
+    "Meter or test kit · <recent>",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
@@ -5029,10 +5033,10 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -5134,12 +5138,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -5160,7 +5164,8 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical",
+    "Oxygen saturation (% of air saturation): Critical"
    ],
    "pairs": [
     [
@@ -5240,8 +5245,8 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago"
@@ -5265,7 +5270,8 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning",
+    "Oxygen saturation (% of air saturation): Warning"
    ],
    "pairs": [
     [
@@ -5345,11 +5351,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago"
+    "Warning · <day+0>, <time> · <age> ago",
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -5641,12 +5647,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -5746,12 +5752,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -5851,12 +5857,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -5956,12 +5962,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -6060,9 +6066,9 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
@@ -6168,12 +6174,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -6279,12 +6285,12 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -6387,10 +6393,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -6496,12 +6502,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -6604,12 +6610,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -6712,12 +6718,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -6820,12 +6826,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -6927,11 +6933,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -7107,7 +7113,7 @@
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
-    "Meter or test kit · 10 s ago",
+    "Meter or test kit · <recent>",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
     "Template: Simple · the rule for every unit",
@@ -7119,10 +7125,10 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -7255,12 +7261,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -7281,7 +7287,8 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical",
+    "Oxygen saturation (% of air saturation): Critical"
    ],
    "pairs": [
     [
@@ -7361,8 +7368,8 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago"
@@ -7386,7 +7393,8 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning",
+    "Oxygen saturation (% of air saturation): Warning"
    ],
    "pairs": [
     [
@@ -7466,11 +7474,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago"
+    "Warning · <day+0>, <time> · <age> ago",
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -7762,12 +7770,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -7867,12 +7875,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8018,12 +8026,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8123,12 +8131,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8227,9 +8235,9 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
@@ -8335,12 +8343,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8446,12 +8454,12 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8554,10 +8562,10 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -8663,12 +8671,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8771,12 +8779,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8879,12 +8887,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -8987,12 +8995,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -9094,11 +9102,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -9313,7 +9321,7 @@
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
-    "Meter or test kit · 10 s ago",
+    "Meter or test kit · <recent>",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
@@ -9330,10 +9338,10 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -9356,7 +9364,8 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical",
+    "Oxygen saturation (% of air saturation): Critical"
    ],
    "pairs": [
     [
@@ -9476,8 +9485,8 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago"
@@ -9580,12 +9589,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -9731,12 +9740,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -9886,12 +9895,12 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -10111,7 +10120,7 @@
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
-    "Meter or test kit · 10 s ago",
+    "Meter or test kit · <recent>",
     "State from: Fish, Feeding, Water, Health",
     "T-02",
     "Template: Simple · chosen for this card on the board",
@@ -10123,10 +10132,10 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -10272,12 +10281,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -10298,7 +10307,8 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical",
+    "Oxygen saturation (% of air saturation): Critical"
    ],
    "pairs": [
     [
@@ -10418,8 +10428,8 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Critical · <day+0>, <time> · <age> ago",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago"
@@ -10443,7 +10453,8 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning",
+    "Oxygen saturation (% of air saturation): Warning"
    ],
    "pairs": [
     [
@@ -10563,11 +10574,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago"
+    "Warning · <day+0>, <time> · <age> ago",
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -10987,12 +10998,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -11136,12 +11147,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -11287,12 +11298,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -11436,12 +11447,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -11580,9 +11591,9 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
@@ -11734,12 +11745,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -11889,12 +11900,12 @@
     "<batch-13> · <day+5>",
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -12042,11 +12053,11 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -12196,12 +12207,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -12348,12 +12359,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -12500,12 +12511,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -12652,12 +12663,12 @@
    "titles": [
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -12805,11 +12816,11 @@
     "Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the last weighing",
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No limit · <day+0>, <time> · <age> ago",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Not weighed since the fish came in.",
     "Not weighed since the fish came in.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -13068,7 +13079,7 @@
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
-    "Meter or test kit · 10 s ago",
+    "Meter or test kit · <recent>",
     "Middle",
     "No treatment in this unit in the last <age>.",
     "Side outlet",
@@ -13085,10 +13096,10 @@
     "Economic feed conversion ratio: the feed given per kg of fish kept, harvested or moved on; dead, culled and lost fish are not credited",
     "No feed recorded up to the last weighing.",
     "No feed recorded up to the last weighing.",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -14480,10 +14491,10 @@
     "Unit G-00 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -14504,7 +14515,8 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical",
+    "Oxygen saturation (% of air saturation): Critical"
    ],
    "pairs": [
     [
@@ -14559,7 +14571,7 @@
    ],
    "titles": [
     "Critical · <day+0>, <time> · <age> ago",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
+    "Critical · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -14581,7 +14593,8 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning",
+    "Oxygen saturation (% of air saturation): Warning"
    ],
    "pairs": [
     [
@@ -14635,9 +14648,9 @@
     "Unit G-02 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
-    "Warning · <day+0>, <time> · <age> ago"
+    "Warning · <day+0>, <time> · <age> ago",
+    "Warning · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -14844,10 +14857,10 @@
     "Unit G-05 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -14921,10 +14934,10 @@
     "Unit G-06 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -14998,10 +15011,10 @@
     "Unit G-07 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15075,10 +15088,10 @@
     "Unit G-08 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15151,7 +15164,7 @@
     "Unit G-09 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
@@ -15227,10 +15240,10 @@
     "Unit G-10 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15308,10 +15321,10 @@
    ],
    "titles": [
     "<batch-13> · <day+5>",
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15386,8 +15399,8 @@
     "Unit G-12 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "Warning · <day+0>, <time> · <age> ago"
    ],
    "links": {
@@ -15462,10 +15475,10 @@
     "Unit G-13 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15539,10 +15552,10 @@
     "Unit G-14 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15616,10 +15629,10 @@
     "Unit G-15 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15693,10 +15706,10 @@
     "Unit G-16 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15771,9 +15784,9 @@
     "Unit G-17 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [
@@ -15892,17 +15905,17 @@
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
     "Meter or test kit · 1 h ago",
-    "Meter or test kit · 10 s ago",
+    "Meter or test kit · <recent>",
     "State from: Fish, Water",
     "T-02",
     "Template: Simple · the rule for every unit",
     "Unit T-02 · Hall A"
    ],
    "titles": [
-    "No limit · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude.",
     "OK · <day+0>, <time> · <age> ago",
     "OK · <day+0>, <time> · <age> ago",
-    "OK · <day+0>, <time> · <age> ago"
+    "OK · <day+0>, <time> · <age> ago",
+    "OK · <day+0>, <time> · <age> ago · worked out from the sample · At sea-level pressure: the site has no altitude."
    ],
    "links": {
     "unit": [

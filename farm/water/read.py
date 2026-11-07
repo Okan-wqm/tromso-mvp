@@ -49,7 +49,7 @@ a manual TAN only with its own sample's pH and temperature. `Series` answers "th
 the sensors alike (each sensor value at or before the moment, never after it)."""
 from bisect import bisect_right
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -361,6 +361,7 @@ class Reading:
     status: str = Status.NOT_MEASURED
     limits: list = field(default_factory=list)
     judged: str = Status.NOT_MEASURED
+    uncovered: tuple = ()          # the species it concerns that no limit row judges it for
 
     @property
     def at(self):
@@ -408,27 +409,13 @@ class PointWater:
         return worst(reading.status for reading in self.readings.values() if reading.code in LIMITED)
 
     @property
-    def alerts(self):
-        return [reading for reading in self.readings.values() if reading.status in (Status.CRITICAL, Status.WARNING)]
-
-    @property
     def unjudged(self):
-        """The values no limit row judges for the fish they concern, fresh or old ("no limit": the owner has set none
-        for these fish), in reading order; one quantity in two units (parameters.SAME_QUANTITY) is judged when either
-        has a row, and named once (the first of the two) when neither has. Where there are no fish nothing is judged, so
-        the caller asks only where there are fish."""
-        found = []
-        for reading in self.readings.values():
-            other = parameters.SAME_QUANTITY.get(reading.code)
-            if reading.code in LIMITED and reading.value is not None and reading.judged == Status.NO_LIMIT \
-                    and not self._judged(other) and not any(each.code == other for each in found):
-                found.append(reading)
-        return found
-
-    def _judged(self, code):
-        other = self.readings.get(code) if code else None
-        return other is not None and other.value is not None and other.judged not in (Status.NO_LIMIT,
-                                                                                     Status.NOT_MEASURED)
+        """The values that some of the fish they concern have no limit row for (`Reading.uncovered`: "no limit", the
+        owner has set none for them), fresh or old, in reading order; the oxygen is one quantity, judged through either
+        unit's rows where it can be worked out (Context.judge_oxygen), so a value that stays here could not be. Where
+        there are no fish nothing is judged, so the caller asks only where there are fish."""
+        return [reading for reading in self.readings.values()
+                if reading.code in LIMITED and reading.value is not None and reading.uncovered]
 
     def get(self, code):
         return self.readings.get(code)
@@ -575,18 +562,50 @@ class Context:
         return {}
 
     # -- judging --
-    def judge(self, reading, day, now=None):
-        """Sets the reading's judgement and limit rows, for the fish of `day`, and its status: the judgement, or stale
-        when `now` is given and the value is no longer fresh (Reading.fresh); the judgement stays."""
+    def judge(self, reading, day, now=None, temperature=None):
+        """Sets the reading's judgement, its limit rows and the species no row judges it for (`uncovered`), for the fish
+        of `day`, and its status: the judgement, or stale when `now` is given and the value is no longer fresh
+        (Reading.fresh); the judgement stays. The dissolved oxygen is one quantity (owner, 2026-11-07): for the fish
+        with no row in the reading's own unit but one in the other (mg/L or %), the value is worked out in the other
+        unit (`_in_other_unit`) and judged by that row; where it cannot be, those fish stay uncovered ("no limit")."""
         if reading.code not in LIMITED or reading.value is None:
             reading.status = reading.judged = Status.NOT_MEASURED if reading.value is None else Status.NO_LIMIT
             return reading
-        reading.judged, reading.limits = self.limits.assess(reading.code, reading.value,
-                                                            self.exposures(reading.sample.point, day))
+        exposures = self.exposures(reading.sample.point, day)
+        reading.judged, reading.limits = self.limits.assess(reading.code, reading.value, exposures)
+        reading.uncovered = self.limits.uncovered(reading.code, exposures)
+        other = parameters.SAME_QUANTITY.get(reading.code)
+        through = [(species_id, water_type) for species_id, water_type in exposures
+                   if species_id in reading.uncovered and self.limits.applying(species_id, other, water_type)] \
+            if other else []
+        value = self._in_other_unit(reading, temperature) if through else None
+        if value is not None:
+            status, _rows = self.limits.assess(other, value, through)
+            reading.judged = status if reading.judged == Status.NO_LIMIT else worst([reading.judged, status])
+            judged_for = {species_id for species_id, _water_type in through}
+            reading.uncovered = tuple(each for each in reading.uncovered if each not in judged_for)
         reading.status = reading.judged
         if now is not None and not reading.fresh(now):
             reading.status = Status.STALE
         return reading
+
+    def _in_other_unit(self, reading, temperature):
+        """An oxygen value in its other unit (mg/L <-> %): the other value of its own observation when that has one,
+        else worked out as a sample's is (`_oxygen`: the solubility at the temperature, the salinity and the site's
+        pressure) with the observation's own temperature or the point's fresh `temperature` (a Reading); None when it
+        cannot be worked out. Never a second formula."""
+        other = parameters.SAME_QUANTITY[reading.code]
+        observation = reading.sample
+        if observation.get(other) is not None:
+            return observation.get(other)
+        if observation.get(parameters.TEMPERATURE) is None:
+            if temperature is None or temperature.value is None:
+                return None
+            alone = replace(temperature.sample, measured={parameters.TEMPERATURE: temperature.value})
+            observation = Observation.combined([replace(observation, measured={reading.code: reading.value}), alone])
+        worked = self._oxygen(observation, observation.get(parameters.TEMPERATURE), self.salinity_for(observation))
+        found = worked.get(other)
+        return found.value if found is not None else None
 
 
 def _local_day(sample):
@@ -701,8 +720,10 @@ def latest(points, now=None, at=None):
         day = local_time(moment, point).date()
         resolved = _resolve(point, _manual(point, newest, samples, context), _live(point, targets[point.pk], answer),
                             context, moment)
+        temperature = resolved.get(parameters.TEMPERATURE)          # what an oxygen value is worked out with
+        temperature = temperature if temperature is not None and temperature.fresh(moment) else None
         for code, reading in resolved.items():
-            point_water.readings[code] = context.judge(reading, day, moment)
+            point_water.readings[code] = context.judge(reading, day, moment, temperature)
     return water
 
 

@@ -1854,7 +1854,7 @@ The company’s office departments (finance, administration), nested under one a
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › office_departments
 - **forms**: `OfficeDepartmentForm`
 - **constraints**: uq_office_departments_code_live (unique: code); uq_office_departments_parent_name_live (unique: parent, name); chk_office_departments_parent_not_self (check); chk_office_departments_code (check); chk_office_departments_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_boundary.py` and 5 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_boundary.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

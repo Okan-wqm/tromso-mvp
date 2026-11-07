@@ -1119,7 +1119,11 @@ published values):
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
   0 .. 5000 m (owner: no site lies below sea level, a minus sign is a slip), held by the form, the model and the
   database `chk_sites_altitude_range`, F-089, and the calculator's field takes the same range). From
-  mg/L the % is worked out, from % the mg/L; when both are entered and differ by more than 10 %, both are
+  mg/L the % is worked out, from % the mg/L, the value saying what it was worked out from ("Worked out from 9.5 °C,
+  0.0 ‰ and 1.000 atm", on the water page and the card); the record form offers the point's latest fresh temperature and
+  salinity (A9's order, with their origin and age; fresh water's 0), which are stored on the sample with the oxygen, kept
+  or changed, needed where there is none, and not stored when no oxygen is entered and the offer is untouched (owner,
+  2026-11-07; the round form does not offer them yet); when both are entered and differ by more than 10 %, both are
   kept and flagged.
 
 **The page** has three tabs: **Latest** (one row per point: the middle point of every unit (a unit without one

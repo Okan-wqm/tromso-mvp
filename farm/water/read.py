@@ -59,6 +59,7 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.db import models
 from django.db.models import Func, Q, UUIDField
 from django.utils import timezone
+from django.utils.formats import number_format
 from django.utils.translation import gettext as _, gettext_lazy
 
 from farm.models import Batch, EquipmentSystem, SamplingPoint, Species, System, Tank, WaterLimit, WaterMeasurement
@@ -91,6 +92,13 @@ def assumed_salinity(water_types):
     """The salinity (ppt) to use where none was measured: 0 when every unit concerned (`water_types`: their
     Tank.WaterType values) is in fresh water, else None, never a guess: the value is then not worked out."""
     return Decimal(0) if set(water_types) == {Tank.WaterType.FRESHWATER} else None
+
+
+def assumed_salinity_at(point):
+    """The salinity assumed at a sampling point: 0 when every unit its water concerns (Context._served: the unit, the
+    units of a loop or of the systems a piece of equipment serves) is in fresh water, else None."""
+    served = Context._served([point])[point.pk]
+    return assumed_salinity(unit.water_type for unit in served) if served else None
 
 
 class First(Func):
@@ -549,7 +557,12 @@ class Context:
         altitude = site.altitude if site is not None else None
         pressure = chemistry.pressure_atm(float(altitude)) if altitude is not None else 1.0
         solubility = Decimal(chemistry.oxygen_solubility(float(temperature), float(salinity), pressure))
-        note = '' if altitude is not None else _('At sea-level pressure: the site has no altitude.')
+        # What the value was worked out from, said beside it (owner, 2026-11-07): the temperature, salinity and pressure.
+        note = _('Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm.') % {
+            'temperature': number_format(temperature, 1), 'salinity': number_format(salinity, 1),
+            'pressure': number_format(pressure, 3)}
+        if altitude is None:
+            note = f'{note} {_("At sea-level pressure: the site has no altitude.")}'
         if missing == OXYGEN_PCT:
             value = (100 * mg_l / solubility).quantize(parameters.get(OXYGEN_PCT).step)
             return {OXYGEN_PCT: Reading(parameters.get(OXYGEN_PCT), value, observation, True, note)}

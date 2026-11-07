@@ -6051,6 +6051,9 @@ msgstr "Güncellik süresi (saniye)"
 msgid "Fresh water"
 msgstr "Tatlı su"
 
+msgid "Fresh water: 0."
+msgstr "Tatlı su: 0."
+
 msgid "Freshwater"
 msgstr "Tatlı su"
 
@@ -7159,6 +7162,10 @@ msgstr "Son değerler"
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Son deniz biti sayımı %(date)s, %(fish)s balık incelendi"
 
+#, python-format
+msgid "Latest: %(source)s"
+msgstr "Son değer: %(source)s"
+
 msgid "Latitude"
 msgstr "Enlem"
 
@@ -7830,6 +7837,9 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Doğal gaz"
+
+msgid "Needed with the oxygen: the other unit is worked out with it."
+msgstr "Oksijenle birlikte gerekli: diğer birim bununla hesaplanır."
 
 msgid "Needs a fresh pH and temperature from the sensors with the sensor’s TAN."
 msgstr "Sensörün TAN değeriyle birlikte sensörlerden güncel bir pH ve sıcaklık gerekir."
@@ -14693,6 +14703,10 @@ msgstr "Üretim departmanı olmayanlar"
 
 msgid "Without a site"
 msgstr "Sahasız"
+
+#, python-format
+msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
+msgstr "%(temperature)s °C, %(salinity)s ‰ ve %(pressure)s atm ile hesaplandı."
 
 msgid ""
 "Worked out from the dimensions and the max density each time the unit is saved; shown as last "

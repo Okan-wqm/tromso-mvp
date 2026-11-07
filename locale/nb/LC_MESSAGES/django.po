@@ -6043,6 +6043,9 @@ msgstr "Fersk i (sekunder)"
 msgid "Fresh water"
 msgstr "Ferskvann"
 
+msgid "Fresh water: 0."
+msgstr "Ferskvann: 0."
+
 msgid "Freshwater"
 msgstr "Ferskvann"
 
@@ -7149,6 +7152,10 @@ msgstr "Siste"
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Siste lusetelling %(date)s, %(fish)s fisk undersøkt"
 
+#, python-format
+msgid "Latest: %(source)s"
+msgstr "Siste: %(source)s"
+
 msgid "Latitude"
 msgstr "Breddegrad"
 
@@ -7818,6 +7825,9 @@ msgstr ""
 
 msgid "Natural gas"
 msgstr "Naturgass"
+
+msgid "Needed with the oxygen: the other unit is worked out with it."
+msgstr "Trengs med oksygenet: den andre enheten regnes ut med den."
 
 msgid "Needs a fresh pH and temperature from the sensors with the sensor’s TAN."
 msgstr "Trenger fersk pH og temperatur fra sensorene sammen med sensorens TAN."
@@ -14680,6 +14690,10 @@ msgstr "Uten produksjonsavdeling"
 
 msgid "Without a site"
 msgstr "Uten lokalitet"
+
+#, python-format
+msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
+msgstr "Regnet ut fra %(temperature)s °C, %(salinity)s ‰ og %(pressure)s atm."
 
 msgid ""
 "Worked out from the dimensions and the max density each time the unit is saved; shown as last "

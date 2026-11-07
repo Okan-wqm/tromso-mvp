@@ -117,7 +117,7 @@ class TaskResource(Resource):
             else:
                 params[key] = ''
         for key, lookup in (('from', 'due_date__gte'), ('to', 'due_date__lte')):
-            day = read_day(params[key])
+            day = read_day(params[key], request)
             if day is not None:
                 objects = objects.filter(**{lookup: day})
             else:

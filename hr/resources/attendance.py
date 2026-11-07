@@ -63,8 +63,8 @@ class AttendanceRecordResource(Resource):
     @classmethod
     def filter_list(cls, request, objects):
         today = site_today(None)
-        first = read_day(request.GET.get('from', '')) or today - timedelta(days=cls.DAYS)
-        last = read_day(request.GET.get('to', '')) or today
+        first = read_day(request.GET.get('from', ''), request) or today - timedelta(days=cls.DAYS)
+        last = read_day(request.GET.get('to', ''), request) or today
         # whole days on the company's clock: the list is a log of stretches, not a day's roster
         zone = zone_of(None)
         objects = objects.filter(clock_in__gte=clock.start_of_day(first, zone),

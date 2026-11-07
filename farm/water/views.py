@@ -212,7 +212,7 @@ def _latest(site):
 
 
 def _day(request, name, default):
-    return read_day(request.GET.get(name, '')) or default
+    return read_day(request.GET.get(name, ''), request) or default
 
 
 def _history(request, site, place):

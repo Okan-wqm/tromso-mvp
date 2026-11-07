@@ -25,9 +25,9 @@ def set_language(request):
     return response
 
 
-def _day(value, end=False):
+def _day(request, value, end=False):
     """The start (or the end) of the day typed in a filter, in the language's format or ISO (core.dates.read_day)."""
-    day = read_day(value)
+    day = read_day(value, request)
     if day is None:
         return None
     return timezone.make_aware(datetime.combine(day, time.max if end else time.min))
@@ -52,9 +52,9 @@ def activity_log(request):
         entries = entries.filter(severity=filters['severity'])
     else:
         filters['severity'] = ''
-    if start := _day(filters['from']):
+    if start := _day(request, filters['from']):
         entries = entries.filter(created_at__gte=start)
-    if end := _day(filters['to'], end=True):
+    if end := _day(request, filters['to'], end=True):
         entries = entries.filter(created_at__lte=end)
 
     page = Paginator(entries, 50).get_page(request.GET.get('page'))

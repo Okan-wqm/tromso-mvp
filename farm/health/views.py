@@ -99,7 +99,7 @@ def treated_batches(treatments, today):
     return found
 
 
-def _filtered_treatments(params, today):
+def _filtered_treatments(params, today, request):
     treatments = Treatment.all_objects.select_related('medicine', 'vet', 'health_event', 'created_by', 'deleted_by')\
         .prefetch_related('units__production_department__site', 'acknowledgements')
     if params['voided'] != '1':
@@ -123,7 +123,7 @@ def _filtered_treatments(params, today):
     else:
         params['method'] = ''
     for key, lookup in (('from', 'end_date__gte'), ('to', 'start_date__lte')):
-        day = read_day(params[key])
+        day = read_day(params[key], request)
         params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             treatments = treatments.filter(**{lookup: day})
@@ -150,7 +150,7 @@ def treatments(request):
     it puts on each, filtered in the address."""
     params = {key: request.GET.get(key, '').strip() for key in TREATMENT_FILTERS}
     today = local_today()
-    found, choices = _filtered_treatments(params, today)
+    found, choices = _filtered_treatments(params, today, request)
     page = Paginator(found, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
     batches = treated_batches(rows, today)
@@ -248,7 +248,7 @@ def void_treatment(request, pk):
 COUNT_FILTERS = ('site', 'unit', 'from', 'to', 'voided')
 
 
-def _filtered_counts(params):
+def _filtered_counts(params, request):
     counts = LiceCount.all_objects.select_related('unit__production_department__site', 'created_by', 'deleted_by')
     if params['voided'] != '1':
         params['voided'] = ''
@@ -264,7 +264,7 @@ def _filtered_counts(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-        day = read_day(params[key])
+        day = read_day(params[key], request)
         params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             counts = counts.filter(**{lookup: day})
@@ -275,7 +275,7 @@ def _filtered_counts(params):
 def lice_counts(request):
     """Operations › Sea-lice counts: the site's weekly averages against the statutory limit, then every count."""
     params = {key: request.GET.get(key, '').strip() for key in COUNT_FILTERS}
-    counts, choices = _filtered_counts(params)
+    counts, choices = _filtered_counts(params, request)
     weeks = read.lice_weeks(counts)[:LICE_WEEKS]
     stocked = read.stocked_by_site(_units_with_fish(production=True))
     for week in weeks:

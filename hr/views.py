@@ -197,7 +197,7 @@ def team_overview(request):
     """Team overview: the viewer's people and their week in numbers (`?week=`, `?department=`, `?q=`, `?page=`)."""
     if not request.user.has_perm('hr.view_shiftassignment'):
         raise PermissionDenied
-    start = read_day(request.GET.get('week')) or site_today(None)
+    start = read_day(request.GET.get('week'), request) or site_today(None)
     department = units.find(request.GET.get('department', ''))
     try:
         page = int(request.GET.get('page', '1'))

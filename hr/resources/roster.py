@@ -48,7 +48,7 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def list_queryset(cls, request):
-        start = read_day(request.GET.get('week')) or site_today(None)
+        start = read_day(request.GET.get('week'), request) or site_today(None)
         department = units.find(request.GET.get('department', ''))
         try:
             page = int(request.GET.get('page', '1'))

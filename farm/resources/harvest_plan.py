@@ -71,7 +71,7 @@ class HandlingPlanItemResource(FromAddress, Resource):
             else:
                 chosen[key] = ''
         for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-            day = read_day(chosen[key])
+            day = read_day(chosen[key], request)
             chosen[key] = day or ''          # a date: the input shows it as the language writes it
             if day:
                 objects = objects.filter(**{lookup: day})

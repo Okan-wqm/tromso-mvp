@@ -142,7 +142,7 @@ def _movements(request, context):
     if params['kind'] not in (*OperationKind.values, FEEDING):
         params['kind'] = ''
     for key in ('from', 'to'):
-        day = read_day(params[key])
+        day = read_day(params[key], request)
         params[key] = day or ''          # a date: the input shows it as the language writes it
     if params['voided'] != '1':
         params['voided'] = ''

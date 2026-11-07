@@ -69,7 +69,7 @@ def _with_next(url, request):
 
 
 # ---- the list ------------------------------------------------------------------------------------
-def _filtered(params):
+def _filtered(params, request):
     """The records the filters choose, voided ones only when asked for, newest first; and the filters'
     values that name something (a stale link shows everything, as the other pages do)."""
     records = FeedingRecord.all_objects.select_related(
@@ -89,7 +89,7 @@ def _filtered(params):
         else:
             params[key] = ''
     for key, lookup in (('from', 'date__gte'), ('to', 'date__lte')):
-        day = read_day(params[key])
+        day = read_day(params[key], request)
         params[key] = day or ''          # a date: the input shows it as the language writes it
         if day:
             records = records.filter(**{lookup: day})
@@ -106,7 +106,7 @@ def feeding_records(request):
     if request.GET.get('view') == DAYS:
         return _by_day(request)
     params = {key: request.GET.get(key, '').strip() for key in FILTERS}
-    records, choices = _filtered(params)
+    records, choices = _filtered(params, request)
     totals = records.aggregate(count=Count('pk'), kilos=Sum('amount_kg', filter=Q(is_deleted=False)))
     page = Paginator(records, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
@@ -147,8 +147,8 @@ def _by_day(request):
     corrections. At most SPAN days a page, the last 7 by default; computed on read in one walk."""
     params = {key: request.GET.get(key, '').strip() for key in DAY_FILTERS}
     today = local_today()
-    last = min(read_day(params['to']) or today, today)
-    first = min(read_day(params['from']) or last - timedelta(days=read.WEEK - 1), last)
+    last = min(read_day(params['to'], request) or today, today)
+    first = min(read_day(params['from'], request) or last - timedelta(days=read.WEEK - 1), last)
     clipped = (last - first).days >= SPAN
     if clipped:
         first = last - timedelta(days=SPAN - 1)

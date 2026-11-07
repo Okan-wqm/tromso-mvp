@@ -75,11 +75,11 @@ the right reason (the `Test:` commits), then fixed in its own commit.
 - Fix: `farm.models.site.ALTITUDE_LOW/HIGH` = 0 .. 5000 m (owner decision 2026-11-06: no site lies below sea level; a
   minus sign is a slip, and 10 m change the pressure by about 0.1 %) as validators and
   `chk_sites_altitude_range`; the calculator's field takes the same range and its offer no longer re-checks it (one
-  rule, the database's). Migration 0027 moves an out-of-range altitude into the site's notes with the day and empties it
+  rule, the database's). Migration 0028 (renumbered: 0027 is another branch's) moves an out-of-range altitude into the site's notes with the day it runs, empties it, logs each change in the activity log, and goes back from that log
   (the pattern of 0023), so the oxygen is worked out at sea-level pressure and says so.
 - Tests: `SiteCreateTests.test_the_altitude_is_a_place_where_fish_are_kept`, `SiteAltitudeTests` (database, calculator
   at sea level, the calculator field's range), `AltitudeMigrationTests`.
-- The low bound is the owner's (0 m, 2026-11-06); migration 0027 moves negative altitudes into the notes too.
+- The low bound is the owner's (0 m, 2026-11-06); migration 0028 moves negative altitudes into the notes too.
   `chemistry.pressure_atm` itself was not touched (wip/chemcore).
 
 ## Other findings in the area
@@ -115,7 +115,7 @@ the right reason (the `Test:` commits), then fixed in its own commit.
 - F-240, F-140: documentation wording, no defect.
 
 ## Notes for the reviewer
-- New migration `farm/0027_site_altitude_range` may need renumbering when other branches add farm migrations.
+- Migration `farm/0028_site_altitude_range` depends on main's 0026; with another branch's 0027 landed first, a merge migration joins the two leaves (coordinator).
 - `water.read` judges with `Reading.judged`; `status` keeps its old meaning, so every other page is unchanged.
 - The golden cards were re-recorded (GOLDEN_WRITE=1): the states of every old card are unchanged; G-17 is new ("No
   limit"), limits for pH and CO₂ were added to the golden farm so its cards stay judged, and the recording now holds the
@@ -131,3 +131,27 @@ the right reason (the `Test:` commits), then fixed in its own commit.
 - `--keepdb` runs are not trustworthy here after migration tests (TransactionTestCase) on a kept database: built-in card
   templates went missing and monitoring tests failed; a fresh database passes. Use a fresh test database for this
   branch.
+
+## Cross review 2026-11-07 (APPROVE WITH FIXES): what was done
+- 1 (high) mixed species: `Limits.uncovered` names the species no row judges a value for; `Reading.uncovered` carries
+  them and `PointWater.unjudged` is every value with any; a cage with salmon judged and lumpfish without a row is
+  "No limit". Tests: `WaterLimitsOfEveryFishTests` (farm, sea cage), `CleanerFishTests.test_a_cage_with_salmon_and_lumpfish_...`.
+- 2 oxygen: owner rule, dissolved oxygen is one quantity. `Context.judge` works an oxygen value out in the other unit
+  (`_in_other_unit`: its own observation's other value, else `_oxygen` with its own or the point's fresh temperature,
+  the salinity and the site's pressure: the existing solubility, no second formula) and judges it by that unit's row;
+  what cannot be worked out stays uncovered ("No limit"). The pair excuse in `unjudged` is gone. Tests:
+  `NoLimitTests.test_oxygen_in_two_observations_is_judged_each_by_its_own_unit` (the reviewer's 8.5 mg/L + 35 %),
+  `test_a_probes_saturation_is_judged_against_the_mg_l_limit_through_the_solubility` (35 % at 9 °C: critical).
+  The golden cards now say the worked-out % with its judgement ("Oxygen saturation: Critical" beside the mg/L);
+  no card changed state.
+- 3 history dates: `_day` holds a day to the last century up to today (`OLDEST_DAYS`); tested with 9999-12-31 and
+  0001-01-01.
+- 4 golden ages: the Normaliser marks ages under an hour as `<recent>`; re-recorded; `NormaliserTests`.
+- 5/6 migration: renumbered 0028 (depends on main's 0026 and core 0007); the note says the day it runs; one
+  activity-log row per changed site ("system", altitude and notes before and after); going back restores from those
+  rows. Tests: `AltitudeMigrationTests` (two).
+- 7 `PointWater.alerts` removed (no caller). The announcer reads the order of the states from the page
+  (`data-states`, from `read.STATES`) and says an old critical card falling to "No recent data"; tested in
+  `AnnouncerTests` and announce.test.ts.
+- Not done here (owner rule of 2026-11-07, next): the sample form pre-filling temperature and salinity for an oxygen
+  entry and storing them on the row, and "computed from T, S, P" on the card and the water page.

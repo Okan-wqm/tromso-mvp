@@ -632,14 +632,19 @@ critical); warning (a warning reading, over capacity, an estimate that says weig
 temperature or oxygen is missing or older than its 24 hours, or with no middle point, or whose live sensors could not be read:
 the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is
 printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
-its fish, "pH (NBS scale): no limit for these fish": what it means for the fish is not known, so it is never OK; the oxygen in
-mg/L and in % is one quantity, a row on either judges it); note (a withdrawal in force, weigh soon, a ration that cannot be
+every species of its fish, "pH (NBS scale): no limit for these fish": a row for the salmon does not judge it for the lumpfish
+beside them (`Limits.uncovered`); what it means for the fish is not known, so it is never OK. The dissolved oxygen is one
+quantity (owner, 2026-11-07): a % with no row of its own is worked out to mg/L with the solubility (its own observation's
+temperature, else the point's fresh one, the salinity and the site's pressure) and judged by the mg/L row, and the reverse;
+one that cannot be worked out is "no limit". Both values are shown with their origin and age); note (a withdrawal in force,
+weigh soon, a ration that cannot be
 worked out with its reason, an open health event); ok; empty. Word, shape and reasons, never colour alone; the words are
 `read.STATES`, the one list the card, the strip, the announcer and the designer read.
 
 **Danger is never shown as OK** (audit F-090, F-244, F-088, F-025, F-134). A value keeps what its limit said when it grows old
 (`Reading.judged` beside `status`, farm/water/read.py): an old critical nitrite keeps the card critical ("Nitrite: Critical, no
-recent data, 8 days old") and marks the article `data-stale`, so the announcer says it ("T-01 is now Critical, no recent data");
+recent data, 8 days old") and marks the article `data-stale`, so the announcer says it ("T-01 is now Critical, no recent data"; it takes the order of the states from the page, `data-states`,
+never from a list of its own);
 a card that falls to no recent data from any state is said too, and the grid's own notices (not updated, signed out, updated
 again) are said in the assertive region. Reference data › Water limits lists **Fish with no limit**: per species and water type
 kept today, the parameters no row judges (`water.read.missing_limits`). The value-against-limits bar draws each stretch as
@@ -3452,7 +3457,7 @@ real mail.
 | `/operations/feeding/assignments/` | Operations › Feeding › Assignments |
 | `/operations/feeding/void/<id>/` | Voids a feeding |
 | `/sampling-points/` | Setup › Facility structure › Sampling points: the points of the units, loops and equipment; `?unit=<id>`, `?system=<id>` or `?equipment=<id>` one owner's, filters by site, owner and kind |
-| `/operations/water/` | Operations › Water chemistry: the latest water per point; `?view=history` the samples, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner's history (every point of it), `?point=<id>` one point's; `from`/`to` choose the days (a day that is no day is the default 30 days; a span longer than 366 days starts later and says so; the samples are paged in the database and only the shown page is judged, F-019, F-176) |
+| `/operations/water/` | Operations › Water chemistry: the latest water per point; `?view=history` the samples, `?unit=<id>`, `?system=<id>` or `?equipment=<id>` an owner's history (every point of it), `?point=<id>` one point's; `from`/`to` choose the days (a day that is no day is the default 30 days, a day is held to the last century up to today so 9999-12-31 is today; a span longer than 366 days starts later and says so; the samples are paged in the database and only the shown page is judged, F-019, F-176) |
 | `/operations/water/calculator/` | Water chemistry › Calculator: the Water Quality Management Chart, the small charts, the results and the dosing of the water in the address (a GET form); `?point=tank:<id>` or `system:<id>` puts that unit's or loop's values in |
 | `/operations/water/calculator/results/` | The calculator's live parts for the values in the address (what the page's script asks for) |
 | `/operations/water/calculator/report/` | The calculator's printed report for the values in the address |

@@ -61,11 +61,11 @@ delete is a soft delete. Differences from the source:
 - Deleting a site leaves its production departments without a site (see Production departments); the other dependants
   join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
 - **Every site has its time zone** (Basic info), the clock its feeding days, shifts, punches and plans are read on
-  (`farm.models.site.zone_of`). An empty zone once meant "the company's", which is `settings.TIME_ZONE` (UTC on a server
-  set so), and ran a Norwegian site's day an hour or two off unseen. Now the form asks for one, offering the company's
-  first; a site made without one (a seed, a test) is given the company's, stored; the database refuses an empty one
-  (`chk_sites_timezone_given`). Migration `farm/0030_site_timezone_required` gave every site without a zone the company's
-  as it was when it ran: check each site's zone after it.
+  (`farm.models.site.zone_of`). An empty zone once ran a Norwegian site's day on the server's UTC, an hour or two off,
+  unseen. Now the form asks for one, offering the company's first; a site made without one (a seed, a test) is given the
+  company's, stored; the database refuses an empty one (`chk_sites_timezone_given`). **The company's zone is a setting of
+  its own**, `COMPANY_TIME_ZONE` (environment, `Europe/Oslo` by default; later the platform owner's settings), never the
+  server's `TIME_ZONE` (UTC). Migration `farm/0030_site_timezone_required` gives every site without a zone the company's.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).
 - The Reports tab has what the regulatory reports need of the site (see Production › Reports): its **organisation
@@ -3222,7 +3222,8 @@ C:\Python312\python.exe -m venv .venv
 ```
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
-defaults match the local container in `docker-compose.yml`. `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
+defaults match the local container in `docker-compose.yml`. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0030 gives a site without one
+(default `Europe/Oslo`; the server's own clock stays UTC). `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.
 

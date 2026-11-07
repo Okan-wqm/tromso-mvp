@@ -13,8 +13,9 @@ from .contact import ONE_PRIMARY, Contact
 
 
 def company_zone():
-    """The company's time zone (settings.TIME_ZONE): a new site's, and the clock of a place without a site."""
-    return settings.TIME_ZONE
+    """The company's time zone (settings.COMPANY_TIME_ZONE, Europe/Oslo unless the environment names another): a new
+    site's, never the server's UTC."""
+    return settings.COMPANY_TIME_ZONE
 
 
 class Site(CodedMixin, AuditedModel):
@@ -100,7 +101,7 @@ class Site(CodedMixin, AuditedModel):
     # meet or has not been set, which is judged by the stricter area.
     lice_area = models.CharField(_('Sea-lice limit area'), max_length=10, blank=True, choices=LiceArea.choices)
     # Every site has its zone, stored and shown (an empty one ran on the company's zone unseen, UTC on a server set so);
-    # a site made without one is given the company's (settings.TIME_ZONE), the database refuses an empty one.
+    # a site made without one is given the company's (settings.COMPANY_TIME_ZONE), the database refuses an empty one.
     timezone = models.CharField(_('Timezone'), max_length=50, choices=TIMEZONES, default=company_zone)
 
     area_m2 = models.DecimalField(_('Total area (m²)'), max_digits=12, decimal_places=2, null=True, blank=True)
@@ -191,8 +192,8 @@ class Site(CodedMixin, AuditedModel):
 
 def zone_of(site):
     """The time zone a farm's day and clock are read in: the site's (every site has one), and for a place without a
-    site the company's (settings.TIME_ZONE). Never a browser's (the source's dialogs were a day behind east of UTC)."""
-    return ZoneInfo(site.timezone if site is not None else company_zone())
+    site the server's clock (settings.TIME_ZONE). Never a browser's (the source's dialogs were a day behind east of UTC)."""
+    return ZoneInfo(site.timezone if site is not None else settings.TIME_ZONE)
 
 
 class SiteContact(Contact):

@@ -98,7 +98,7 @@ class HarvestBroughtInsideTests(GuardTestCase):
         self.assertEqual(WithdrawalAcknowledgement.objects.get().record_type, 'medicine')
 
     def test_a_backdated_water_sample_that_slows_the_degree_days_asks(self):
-        bath = self.medicine(degree_days=50)
+        bath = self.medicine(degree_days=55)
         for days_ago in (5, 4, 3):
             self.temperature(self.t1, days_ago, '20')        # 60 degree-days by 3 days ago: free from 2 days ago
         self.treat(bath, 6, 6)
@@ -204,8 +204,10 @@ class WritePathTests(GuardTestCase):
         water_services: ('record', 'record_round', 'void'),
         stock_services: ('_commit', 'void'),
     }
-    # Writes that cannot change a withdrawal: a lice count, a health event's void (refused while a treatment names it).
-    EXEMPT = {(services, 'record_lice_count'), (services, 'void_lice_count'), (services, 'void_event')}
+    # Writes that cannot change a withdrawal (a lice count, a health event's void, refused while a treatment names it), and
+    EXEMPT = {(services, 'record_lice_count'), (services, 'void_lice_count'), (services, 'void_event'),
+              # The shared void step: it is called inside each guarded void (stock, feeding, treatment, water).
+              (stock_services, 'voided')}
 
     def test_every_write_function_of_the_modules_is_guarded(self):
         for module, guarded_names in self.MODULES.items():

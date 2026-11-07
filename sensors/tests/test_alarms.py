@@ -149,9 +149,11 @@ class PageTests(AlarmCase):
 
     def test_events_are_listed_said_not_sent_and_acknowledged_with_a_log(self):
         rule = AlarmRule.objects.create(kind='low', severity='warning', channel=self.flow, threshold=10)
-        event = AlarmEvent.objects.create(rule=rule, channel_no=self.flow.channel_no, opened_at=timezone.now(), peak=4)
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.flow.channel_no, opened_at=timezone.now(), peak=4,
+                                     binding=self.bound)
         page = self.client.get(reverse('sensors:alarm_events'))
         self.assertContains(page, 'Nobody is notified')
+        self.assertContains(page, 'RAS 1 (R1)')                       # the place it opened at
         self.client.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]))
         event.refresh_from_db()
         self.assertEqual(event.acknowledged_by, self.keeper)
@@ -207,10 +209,10 @@ class PlaceTests(AlarmCase):
         self.assertEqual((alarms.open_events(self.site), alarms.open_events(self.oslo)), ([], []))
         alarms.evaluate()                                     # the value measured in Bergen is not Oslo's
         self.assertEqual(AlarmEvent.objects.filter(closed_at__isnull=True).count(), 0)
-        self.state(self.orp, 470)                             # measured in Oslo
+        self.state(self.orp, 470, seconds=0)                  # measured in Oslo, after the move
         alarms.evaluate()
         self.assertEqual([str(event.binding.target) for event in alarms.open_events(self.oslo)], ['RAS 9 (R9)'])
-        out_at = timezone.now().replace(microsecond=0)
+        out_at = timezone.now()
         bindings.unbind_device(self.user, self.probe, out_at)
         self.assertEqual(AlarmEvent.objects.filter(closed_at__isnull=True).count(), 0)
 

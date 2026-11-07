@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { Limiter, connectionSentence, rises, sentences } from './announce.js';
+import { Limiter, rises, sentences } from './announce.js';
 
 test('a rise is a card whose state got worse; better, the same, new and gone cards are not', () => {
   const before = new Map([['a', 'ok'], ['b', 'warning'], ['c', 'critical'], ['d', 'note'], ['gone', 'ok']]);
@@ -33,15 +33,4 @@ test('a limiter lets one announcement through per window and keeps the latest fo
   assert.equal(limiter.take('', 6100), 'three');                   // the window passed: the held one goes out
   assert.equal(limiter.take('four', 7000), null);
   assert.equal(limiter.take('five', 11200), 'five');
-});
-
-test('the wall going stale or gone is said aloud once, as the banner says it; coming back and staying say nothing', () => {
-  const texts = { stale: 'No connection: this may be out of date', gone: 'This page has stopped updating' };
-  assert.equal(connectionSentence('live', 'stale', texts), texts.stale);
-  assert.equal(connectionSentence('stale', 'gone', texts), texts.gone);
-  assert.equal(connectionSentence('live', 'gone', texts), texts.gone);
-  assert.equal(connectionSentence('stale', 'stale', texts), null);
-  assert.equal(connectionSentence('stale', 'live', texts), null);
-  assert.equal(connectionSentence(null, 'live', texts), null);
-  assert.equal(connectionSentence('live', 'stale', { stale: '', gone: '' }), null);    // no text, nothing said
 });

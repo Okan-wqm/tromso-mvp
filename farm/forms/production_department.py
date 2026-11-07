@@ -32,6 +32,10 @@ class ProductionDepartmentForm(CodedFormMixin, TabbedForm):
         site = self.fields['site']
         site.queryset = Site.objects.all()
         site.empty_label = _('Select a site')
+        if not self.instance._state.adding and self.instance.site_id is None:
+            # A department a deleted site left without a site (from before F-212) is put on one now: chosen once,
+            # the first time it has one.
+            site.disabled, site.required = False, True
         # Anyone who can sign in; the person already chosen stays offered after their account is deactivated.
         self.fields['manager'].queryset = get_user_model().objects.filter(
             Q(is_active=True) | Q(pk=self.instance.manager_id)).order_by('username')

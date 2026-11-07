@@ -31,7 +31,6 @@ from functools import wraps
 from django import forms
 from django.contrib import messages
 from django.contrib.postgres.constraints import ExclusionConstraint
-from django.core import validators
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
@@ -129,8 +128,8 @@ class TabbedForm(forms.ModelForm):
     """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`, where a
     tab can group some of its fields under a heading (Fieldset) and say a word about itself (`tab_help`).
     `fixed_after_creation` names the fields chosen once: they are shown but cannot be changed on an
-    existing record (a production department stays on its site). One the record has no value in yet (a department a
-    deleted site left without a site, from before that was refused) is still to be chosen.
+    existing record (a production department stays on its site); a form may open one again for a record that never
+    got a value (a department a deleted site left without a site).
 
     `refresh_on` names fields whose value changes the form itself (an equipment type decides its
     specification fields): changing one posts the form with the `_draft` marker and the server renders
@@ -159,8 +158,6 @@ class TabbedForm(forms.ModelForm):
             self.fields[name].widget.attrs['data-refresh'] = DRAFT
         if not self.instance._state.adding:
             for name in self.fixed_after_creation:
-                if self.initial.get(name) in validators.EMPTY_VALUES:
-                    continue
                 self.fields[name].disabled = True
                 self.fields[name].required = False
         if not any(f.name == 'version' for f in self._meta.model._meta.fields):

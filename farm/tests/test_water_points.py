@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core import access, database, navigation
+from core.crud import ENTRY_KEY
 from core.models import AuditLog, Profile
 from core.softdelete import plan_delete, restore
 
@@ -338,9 +339,9 @@ class PointPageTests(PointTestCase):
                                           {'owner_type': owner_type, owner_type: str(owner.pk), 'kind': kind.value,
                                            '_draft': 'kind'}).context['form']
                 every |= set(posted.fields)
-        # Every field the form can show is a column, except the one that only says which owner field to show; and every
-        # column a person fills in is on the form.
-        self.assertEqual(sorted(every - columns), ['owner_type'])
+        # Every field the form can show is a column, except the one that only says which owner field to show and the
+        # new-record form's key (core.models.EntryKey); and every column a person fills in is on the form.
+        self.assertEqual(sorted(every - columns), [ENTRY_KEY, 'owner_type'])
         self.assertEqual(columns - every, {'id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'is_deleted',
                                            'deleted_at', 'deleted_by'})
         self.assertEqual(list(SamplingPointResource.snapshot(self.named(self.t1)['Inlet'])),

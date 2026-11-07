@@ -421,7 +421,7 @@ class ActivityLogLanguageTests(TestCase):
         self.client.post(reverse('farm:site_delete', args=[site.pk]))
         rows = {row.entity_type: row for row in AuditLog.objects.all()}
         self.assertEqual(set(rows), {'site', 'production department'})
-        self.assertEqual(rows['production department'].changes, {'Site': ['Bergen (BG)', None]})
+        self.assertEqual(rows['production department'].action, 'delete')     # deleted with its site (F-212)
 
     def test_role_permissions_are_logged_in_english_too(self):
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')

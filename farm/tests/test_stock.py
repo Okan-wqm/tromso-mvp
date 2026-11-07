@@ -1118,13 +1118,14 @@ class SiteHistoryTests(StockTestCase):
 
     def test_a_site_with_stock_records_is_closed_not_deleted(self):
         from core.softdelete import plan_delete
-        self.assertEqual(plan_delete(self.bergen).blockers, [])
+        self.assertEqual(plan_delete(self.bergen).blockers, ['2 units still belong to it.'])     # live units (F-212)
         operation = services.record_input(self.user, species=self.salmon, input_stage='fry', origin='own_hatchery',
                                           day=self.day(3), lines=[(self.t1, 10, Decimal(5))])
         self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers,
-                         ['Its units have stock records: set its status to Closed instead.'])
+                         ['Its units have stock records: set its status to Closed instead.',
+                          'It holds fish: move or harvest them first.'])
         services.void(self.user, operation, 'Entered by mistake')    # a voided stocking is no record
-        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers, [])
+        self.assertEqual(plan_delete(Site.objects.get(pk=self.bergen.pk)).blockers, ['2 units still belong to it.'])
 
 
 class ReadsOfAPeriodTests(StockTestCase):

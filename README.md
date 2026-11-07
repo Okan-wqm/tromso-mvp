@@ -3327,8 +3327,8 @@ made before this stamped each record with its own moment: restoring one of those
 What one tab needed and the next ones will too lives in `core/`:
 
 - `TabbedForm` (`core/crud.py`): inner tabs, fields grouped under a heading (`Fieldset`), a word per
-  tab (`tab_help`), fields chosen once (`fixed_after_creation`; one the record has no value in yet, such as the site of
-  a department a deleted site left without one, is still to be chosen) and fields that change the form itself
+  tab (`tab_help`), fields chosen once (`fixed_after_creation`; the department form opens its site again for a department a
+  deleted site left without one) and fields that change the form itself
   (`refresh_on`: the form is posted with a `_draft` marker and rendered again from the values entered so
   far, nothing validated or saved; the values travel in the request body, never in the address; the
   marker names the field that changed and the form comes back on that field's tab). A form can drop

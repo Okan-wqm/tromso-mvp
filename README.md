@@ -84,9 +84,7 @@ the source:
   departments without a site, where their units' fish were in no site's reports and their feed drew on no store
   (F-212); now a site is deleted only once its units are gone, and its departments go with it. A department left
   without a site before is kept as it was (the check was added `NOT VALID`, migration 0029): its form asks for a site
-  the next time it is saved (the owner's rule, cross review F4: without stock records in its units to any live site; with
-  them only to the site they were recorded on, which the log of the old delete names, restored first; refused when that
-  site is not known, since its units' past figures would be reported for another locality), its units take no fish
+  the next time it is saved (whatever its units' records: on no site they are in no report), its units take no fish
   until then, and `manage.py check_stock` names it; once it names none, the check can be validated. "On a site" means a
   live department on a live site (`farm.models.tank.ON_A_SITE` / `on_a_site`, one predicate for the stocking list, a
   unit's checks and the stock's write path): three constraint triggers (farm 0030) refuse a live unit in a deleted
@@ -2364,8 +2362,9 @@ Times are on the company's clock (`settings.TIME_ZONE`), as in the activity log.
   page and fragment, also for the platform admin, who is not a member of other people's conversations).
 - A channel's owners add people, remove members and make members owners or owners members; anyone leaves.
   A channel with members keeps an owner: the last one cannot leave, be removed or step down while others
-  remain. A channel its last member leaves is deleted (logged; its messages stay with it and the admin can restore it),
-  so its name is free again (F-110). Channel names are unique among live channels, whatever their case.
+  remain. A channel its last member leaves is deleted with that membership at one moment (logged; its messages stay with
+  it, and the admin's restore brings it back with that member), so its name is free again (F-110, cross review F5).
+  Channel names are unique among live channels, whatever their case.
 - Messages are never edited: a correction is a new message, as a void and a new entry is for the records.
   The author deletes a message: the row stays with who deleted it and when, and everyone sees "Message
   deleted", never the text again (in the conversation, the list, the polls).

@@ -158,3 +158,66 @@ class OneResolverTests(SourcesCase):
         # the loop's own water is judged for every unit of the loop
         loop = self.latest(self.loop).get('oxygen_mg_l')
         self.assertEqual(loop.uncovered, (lumpfish.pk,))
+
+
+class WorstFreshDecidesTests(SourcesCase):
+    """Owner decision 2026-11-08 on the second cross review's P2: the value SHOWN stays A9's choice (the unit's own newest
+    fresh value), but the STATUS (and so the alarm) is the worst of every fresh value the unit has: its own points' and
+    its system's. When a worse fresh value decides it, the reading says so ("system sensor #1 reads 3.00 now ..."): danger
+    is never hidden behind a newer or nearer OK. An inlet never counts (it is the supply stream)."""
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.limit('oxygen_mg_l', critical_low=5, warning_low=7)
+
+    def test_p2_a_critical_system_probe_is_never_hidden_by_the_units_own_older_ok(self):
+        self.sample(hours=20, oxygen_mg_l='9', temperature_c='10', salinity_ppt='0')
+        self.on(self.ras, self.value('oxygen_mg_l', 3.0, seconds=30))
+        water = self.latest()
+        reading = water.get('oxygen_mg_l')
+        self.assertEqual((reading.value, reading.origin), (D('9.00'), read.Origin.MANUAL))     # shown: its own
+        self.assertEqual((reading.status, reading.judged), (Status.CRITICAL, Status.CRITICAL))
+        self.assertIn('system sensor #1 reads 3.00', reading.note)
+        self.assertEqual(water.status, Status.CRITICAL)
+
+    def test_the_card_and_the_water_page_say_it(self):
+        self.sample(hours=20, oxygen_mg_l='9', temperature_c='10', salinity_ppt='0')
+        self.on(self.ras, self.value('oxygen_mg_l', 3.0, seconds=30))
+        from django.urls import reverse
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        self.assertTrue('system sensor #1 reads 3.00' in card, 'the card says the worse fresh value')
+        page = self.client.get(reverse('farm:water')).content.decode()
+        self.assertTrue('system sensor #1 reads 3.00' in page, 'the water page says the worse fresh value')
+
+    def test_a_worse_fresh_value_at_another_own_point_decides_the_status(self):
+        drain = point_of(self.t1, 'bottom_drain')
+        self.sample(point=drain, hours=2, oxygen_mg_l='4')
+        self.sample(hours=1, oxygen_mg_l='9')
+        reading = self.latest().get('oxygen_mg_l')
+        self.assertEqual((reading.value, reading.point, reading.status), (D('9.00'), self.mid1, Status.CRITICAL))
+        self.assertIn('reads 4.00', reading.note)
+
+    def test_an_inlet_never_decides_the_units_status(self):
+        inlet = point_of(self.t1, 'inlet')
+        self.sample(point=inlet, hours=1, oxygen_mg_l='3')
+        self.sample(hours=2, oxygen_mg_l='9')
+        reading = self.latest().get('oxygen_mg_l')
+        self.assertEqual((reading.value, reading.status, reading.note), (D('9.00'), Status.OK, ''))
+
+    def test_a_stale_worse_value_does_not_decide_and_a_better_one_says_nothing(self):
+        self.sample(point=self.loop, hours=30, oxygen_mg_l='3')            # stale: shown nowhere for the unit
+        self.on(self.ras, self.value('oxygen_mg_l', 10.0, seconds=30))     # fresh and better
+        self.sample(hours=1, oxygen_mg_l='8')
+        reading = self.latest().get('oxygen_mg_l')
+        self.assertEqual((reading.value, reading.status, reading.note), (D('8.00'), Status.OK, ''))
+
+    def test_one_loop_value_is_judged_for_each_unit_on_its_own(self):
+        """A loop sample standing in for two units is judged for each unit's fish: one unit's judgement never lands on
+        the other's reading (each reading judged on its own copy)."""
+        lumpfish = make_species(code='LUM', common_name='Lumpfish', scientific_name='Cyclopterus lumpus')
+        self.stock(unit=self.t2, species=lumpfish)
+        self.sample(point=self.loop, hours=1, oxygen_mg_l='5.5')
+        water = read.latest([self.mid1, self.mid2], now=self.now)
+        self.assertEqual(water[self.mid1.pk].get('oxygen_mg_l').status, Status.WARNING)
+        self.assertEqual(water[self.mid2.pk].get('oxygen_mg_l').status, Status.NO_LIMIT)

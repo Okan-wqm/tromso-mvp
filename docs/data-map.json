@@ -200,7 +200,9 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
+        "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lice_reason.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -212,6 +214,9 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_guard.py",
+        "farm/tests/test_withdrawal_rule_change.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_languages.py",
@@ -227,6 +232,7 @@
         "reports/tests/test_questions.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
+        "reports/tests/test_take_away_once.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py",
         "hr/tests/test_attendance.py",
@@ -3423,7 +3429,9 @@
         "farm/tests/test_stock.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_cross_review.py",
         "reports/tests/test_lice.py",
+        "reports/tests/test_probe_review.py",
         "tasks/tests/test_pages.py",
         "experiments/tests/test_deviations.py",
         "monitoring/tests/test_golden.py"
@@ -5914,6 +5922,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "farm/tests/test_one_column_table.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -6342,6 +6351,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
       ]
@@ -6999,9 +7009,13 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_probe_review.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_guard.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_search.py",
         "messaging/tests/test_pages.py",
@@ -7078,6 +7092,32 @@
             "withdrawal",
             "fasting"
           ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it"
+        },
+        {
+          "name": "batch_id",
+          "field": "batch",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "batches",
+            "model": "farm.Batch",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the person was shown when they acknowledged the warning: the handling check (farm/handling/check.py) works it out and the service stores it"
+        },
+        {
+          "name": "withdrawal_source",
+          "field": "withdrawal_source",
+          "type": "varchar(80)",
+          "null": false,
+          "choices": [],
           "link": null,
           "on_form": [],
           "how": "computed",
@@ -7337,6 +7377,7 @@
       "tests": [
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_lice_reason.py",
         "farm/tests/test_migration_purging.py"
       ]
     },
@@ -7795,12 +7836,16 @@
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_harvest.py",
+        "farm/tests/test_plan_moved.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_cross_review.py",
+        "reports/tests/test_deadline.py",
         "reports/tests/test_due.py",
         "reports/tests/test_labels.py",
         "reports/tests/test_lice.py",
         "reports/tests/test_pages.py",
+        "reports/tests/test_probe_review.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "monitoring/tests/test_read.py"
@@ -8139,7 +8184,8 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_purging.py",
-        "reports/tests/test_compute.py"
+        "reports/tests/test_compute.py",
+        "reports/tests/test_deadline.py"
       ]
     },
     {
@@ -9595,7 +9641,8 @@
       "tests": [
         "core/test_languages.py",
         "farm/tests/test_health.py",
-        "farm/tests/test_migration_withdrawals.py"
+        "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_withdrawal_gate.py"
       ]
     },
     {
@@ -13247,6 +13294,8 @@
         "farm/tests/test_restore.py",
         "farm/tests/test_species.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
@@ -13798,6 +13847,7 @@
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
         "experiments/tests/test_overview.py"
       ]
@@ -14318,6 +14368,7 @@
         "farm/tests/test_migration_purging.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
@@ -15194,6 +15245,7 @@
         "inventory/tests/test_pages.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_deadline.py",
         "reports/tests/test_pages.py"
       ]
     },
@@ -15613,6 +15665,8 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "tasks/tests/__init__.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_places.py",
@@ -16645,6 +16699,8 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "inventory/tests/test_services.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
@@ -16775,7 +16831,9 @@
         "masked": [],
         "left_out": false
       },
-      "tests": []
+      "tests": [
+        "farm/tests/test_withdrawal_gate.py"
+      ]
     },
     {
       "app": "farm",
@@ -17348,7 +17406,10 @@
       "tests": [
         "core/test_languages.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
         "monitoring/tests/test_golden.py"
       ]
@@ -18332,6 +18393,9 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_guard.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
       ]
@@ -18798,7 +18862,350 @@
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_sources.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py"
+      ]
+    },
+    {
+      "app": "farm",
+      "model": "WithdrawalAcknowledgement",
+      "table": "withdrawal_acknowledgements",
+      "description": "One warning a person went on past when a write changed a medicine withdrawal (the withdrawal guard, farm.health.withdrawal.guarded, which every such write goes through: a treatment, its last day or void, a medicated feeding or its void, a medicine's withdrawal rows, a water sample, a stock operation): a harvest already recorded now lies inside a withdrawal (`harvested`, naming the harvest), or fish held today are freed by it (`released`).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "record_type",
+          "field": "record_type",
+          "type": "varchar(60)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "record_id",
+          "field": "record_id",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "record_label",
+          "field": "record_label",
+          "type": "varchar(255)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "warning",
+          "field": "warning",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "harvested",
+            "released"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "batch_id",
+          "field": "batch",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "batches",
+            "model": "farm.Batch",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "harvest_id",
+          "field": "harvest",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "stock_operations",
+            "model": "farm.StockOperation",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "source",
+          "field": "source",
+          "type": "varchar(80)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "until",
+          "field": "until",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "approximate",
+          "field": "approximate",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the withdrawal guard found and the person was shown, stored when they went on"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_withdrawal_acknowledgements_warning",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_withdrawal_acknowledgements_harvest",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "farm:treatment_record",
+              "url_names": [
+                "farm:treatment_record"
+              ],
+              "routes": [
+                "/operations/health/treatments/new/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:treatment_last_day",
+              "url_names": [
+                "farm:treatment_last_day"
+              ],
+              "routes": [
+                "/operations/health/treatments/<uuid:pk>/last-day/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:treatment_void",
+              "url_names": [
+                "farm:treatment_void"
+              ],
+              "routes": [
+                "/operations/health/treatments/<uuid:pk>/void/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:feeding_record",
+              "url_names": [
+                "farm:feeding_record"
+              ],
+              "routes": [
+                "/operations/units/<uuid:pk>/feeding/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:feeding_void",
+              "url_names": [
+                "farm:feeding_void"
+              ],
+              "routes": [
+                "/operations/feeding/void/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water_record",
+              "url_names": [
+                "farm:water_record"
+              ],
+              "routes": [
+                "/operations/water/record/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water_round",
+              "url_names": [
+                "farm:water_round"
+              ],
+              "routes": [
+                "/operations/water/round/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water_void",
+              "url_names": [
+                "farm:water_void"
+              ],
+              "routes": [
+                "/operations/water/void/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:stock_harvest",
+              "url_names": [
+                "farm:stock_harvest"
+              ],
+              "routes": [
+                "/operations/units/<uuid:pk>/harvest/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:stock_transfer",
+              "url_names": [
+                "farm:stock_transfer"
+              ],
+              "routes": [
+                "/operations/units/<uuid:pk>/transfer/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:stock_void",
+              "url_names": [
+                "farm:stock_void"
+              ],
+              "routes": [
+                "/operations/units/void/<uuid:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:medicine_withdrawals",
+              "url_names": [
+                "farm:medicine_withdrawals"
+              ],
+              "routes": [
+                "/medicines/<uuid:pk>/withdrawals/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only (a database trigger): what the person went on past stays as it was"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only (a database trigger): voiding the write leaves them as history"
+        },
+        "read": {
+          "status": "gap",
+          "paths": [],
+          "why": "no page lists them yet: check_withdrawal reads them, and the write's critical log entry says what was acknowledged"
+        }
+      },
+      "note": "One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest already recorded brought inside a withdrawal, or fish held today freed by the write.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "farm/tests/test_harvest_inside_withdrawal.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_guard.py"
       ]
     },
     {
@@ -28531,7 +28938,8 @@
         "left_out": false
       },
       "tests": [
-        "reports/tests/test_slaughter_duty.py"
+        "reports/tests/test_slaughter_duty.py",
+        "reports/tests/test_take_away_once.py"
       ]
     },
     {
@@ -28746,7 +29154,8 @@
         "left_out": false
       },
       "tests": [
-        "reports/tests/test_duties.py"
+        "reports/tests/test_duties.py",
+        "reports/tests/test_take_away_once.py"
       ]
     },
     {
@@ -29706,6 +30115,17 @@
           "why": "frozen by reports/services.py when the filing is recorded"
         },
         {
+          "name": "scope_version",
+          "field": "scope_version",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "frozen by reports/services.py when the filing is recorded"
+        },
+        {
           "name": "created_at",
           "field": "created_at",
           "type": "timestamp with time zone",
@@ -29816,7 +30236,8 @@
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
-        "reports/tests/test_preview.py"
+        "reports/tests/test_preview.py",
+        "reports/tests/test_scope_version.py"
       ]
     },
     {
@@ -30722,22 +31143,6 @@
           "why": ""
         },
         {
-          "name": "harvest_condition",
-          "field": "harvest_condition",
-          "type": "varchar(10)",
-          "null": false,
-          "choices": [
-            "round",
-            "gutted"
-          ],
-          "link": null,
-          "on_form": [
-            "ReportForm › Report"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
           "name": "no_cleaner_feed",
           "field": "no_cleaner_feed",
           "type": "boolean",
@@ -30818,12 +31223,6 @@
         },
         {
           "name": "chk_regulatory_reports_escape",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_regulatory_reports_harvest_condition",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -31051,7 +31450,6 @@
             "health_event": "Report",
             "escape": "Report",
             "occurred_on": "Report",
-            "harvest_condition": "Report",
             "no_cleaner_feed": "Report",
             "contact_name": "Contact person",
             "contact_email": "Contact person",
@@ -31101,6 +31499,8 @@
         "reports/tests/test_api_call.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
+        "reports/tests/test_cross_review.py",
+        "reports/tests/test_deadline.py",
         "reports/tests/test_delivery.py",
         "reports/tests/test_due.py",
         "reports/tests/test_gaps789.py",
@@ -31109,6 +31509,7 @@
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
         "reports/tests/test_preview.py",
+        "reports/tests/test_scope_version.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"
@@ -37900,6 +38301,12 @@
       "table": "farm.EquipmentType",
       "what": "read",
       "why": "no page lists the equipment catalogue: a type only shows as the choice on the Equipment form",
+      "weight": 3
+    },
+    {
+      "table": "farm.WithdrawalAcknowledgement",
+      "what": "read",
+      "why": "no page lists them yet: check_withdrawal reads them, and the write's critical log entry says what was acknowledged",
       "weight": 3
     },
     {

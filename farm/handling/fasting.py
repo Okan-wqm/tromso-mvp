@@ -276,10 +276,12 @@ class Fast:
         return text
 
 
-def fast_of(item, water=None, requirement=None):
+def fast_of(item, water=None, requirement=None, done_too=False):
     """The fast a plan item asks for; None when it is done or cancelled, or no rule (or one that asks nothing) applies.
-    `water` (BatchWater with the item's batch) and `requirement` are given by a caller that has them for many items."""
-    if not item.is_open:
+    `water` (BatchWater with the item's batch) and `requirement` are given by a caller that has them for many items.
+    `done_too`: the fast a done item asked for as well (the planned-slaughter deadline: the day the fish were to start
+    fasting does not move once the harvest is recorded, audit F-101)."""
+    if item.cancelled_reason or (item.done and not done_too):
         return None
     if requirement is None:
         requirement = requirement_of(item.kind, item.batch.species)

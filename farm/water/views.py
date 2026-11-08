@@ -472,6 +472,7 @@ def record_round(request):
                 samples = services.record_round(
                     request.user, measured_at=header.cleaned_data['measured_at'],
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
+                    withdrawal_ack=header.cleaned_data['withdrawal_ack'],
                     rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered])
             except AlreadyRecorded:
                 return done(request, context['back_url'])
@@ -487,7 +488,9 @@ def record_round(request):
 
 
 def _round_errors(error, header, entered):
-    """The service's reasons on the round: a cell's on its row and parameter, the time on the header."""
+    """The service's reasons on the round: a cell's on its row and parameter, the time on the header. The withdrawal
+    guard's question goes on the header, with its box."""
+    header.withdrawal_change = getattr(error, 'change', None) or header.withdrawal_change
     for key, messages_ in error.message_dict.items():
         index, _sep, code = key.partition('-')
         if code and index.isdigit():
@@ -507,7 +510,8 @@ def void_sample(request, pk):
         form = SampleVoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void(request.user, sample, form.cleaned_data['reason'])
+                services.void(request.user, sample, form.cleaned_data['reason'],
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:

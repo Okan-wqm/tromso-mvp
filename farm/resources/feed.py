@@ -3,7 +3,8 @@ from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 from core.crud import Resource, RowList, filter_by
 
 from ..forms import FeedForm, FeedSuitabilityFormSet
-from ..models import Feed, Species, Supplier
+from ..models import Feed, FeedingRecord, Species, Supplier
+from .withdrawal_input import WithdrawalInput
 
 
 def grams(value):
@@ -36,7 +37,7 @@ class FeedSuitabilityList(RowList):
         return f'{text} ({row.notes})' if row.notes else text
 
 
-class FeedResource(Resource):
+class FeedResource(WithdrawalInput, Resource):
     model = Feed
     form_class = FeedForm
     name, plural = _('feed'), _('feeds')
@@ -47,6 +48,13 @@ class FeedResource(Resource):
     icon = 'wheat'
     row_lists = (FeedSuitabilityList,)
     page_size = 50
+
+    @classmethod
+    def reached(cls, request, feed):
+        """A feed's type decides whether its feedings hold the fish (a medicated feed no in-feed treatment covers,
+        withdrawal rule 6): the fish of the units it fed, from its first feeding."""
+        fed = FeedingRecord.all_objects.filter(feed=feed).values_list('unit_id', 'date')
+        return {unit for unit, _day in fed}, min((day for _unit, day in fed), default=None)
 
     @classmethod
     def queryset(cls):

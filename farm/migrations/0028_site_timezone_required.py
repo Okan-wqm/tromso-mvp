@@ -38,7 +38,7 @@ def give_the_companys_zone(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0026_production_form_other'),
+        ('farm', '0027_withdrawal_acknowledgements'),
     ]
 
     operations = [

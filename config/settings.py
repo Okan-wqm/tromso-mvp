@@ -165,7 +165,7 @@ LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
 LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
 TIME_ZONE = 'UTC'
-# The company's time zone: a new site's (the form offers it first) and the one migration farm/0030 gives a site that had
+# The company's time zone: a new site's (the form offers it first) and the one migration farm/0028 gives a site that had
 # none. Not the server's clock above. From the environment until the platform owner's settings hold it.
 COMPANY_TIME_ZONE = os.environ.get('COMPANY_TIME_ZONE', 'Europe/Oslo')
 # In the tests a page may not show an aware time without a clock filter (core/clock_guard.py): |date and |time refuse it.

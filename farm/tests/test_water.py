@@ -29,6 +29,7 @@ from ..water import chemistry, parameters, read, services
 from ..water.evaluate import Limits, Status, judge, worst
 from .helpers import make_species, point_of, role, stock_fish
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 WATER_KEEPER = ('view_watermeasurement', 'add_watermeasurement', 'delete_watermeasurement', 'view_tank',
                 'delete_tank', 'view_system', 'delete_system', 'view_samplingpoint', 'view_species', 'delete_species', 'view_waterlimit',
@@ -212,6 +213,7 @@ class SchemaTests(WaterTestCase):
         services.void(self.user, old, 'Wrong unit')       # an update by id finds the row in its chunk
         self.assertEqual(WaterMeasurement.all_objects.get(pk=old.pk).void_reason, 'Wrong unit')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_database_refuses_what_the_service_refuses(self):
         base = {'point': self.mid1, 'measured_at': self.now, 'source': 'manual'}
         cases = [
@@ -442,6 +444,7 @@ class PointsWaterTests(WaterTestCase):
         self.assertEqual(by_name[self.inlet.name].get('temperature_c').value, D('8.8'))
         self.assertEqual(len(found[self.t2.pk]), 1)                # narrowed to its middle
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_an_inactive_point_is_left_out(self):
         SamplingPoint.objects.filter(pk=self.drain.pk).update(is_active=False)
         found = read.points_water([self.t1], self.now)

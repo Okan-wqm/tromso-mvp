@@ -70,7 +70,7 @@ delete is a soft delete. Differences from the source:
   test reads the code so nothing falls back to the server's clock or day (`core/tests_company_clock.py`: also `date.today()`,
   `now().date()`, `Trunc*` without `tzinfo`, a `__date` lookup on a moment; the attendance list's day of a stretch is the
   company's, `hr.read.local_day` the site's for a person's placement). The server refuses to
-  start on a zone that is not one a site may have (system check `farm.E001`). Migration `farm/0030_site_timezone_required`
+  start on a zone that is not one a site may have (system check `farm.E001`). Migration `farm/0028_site_timezone_required`
   gives every site without a zone the company's, and refuses such a zone rather than write it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).
@@ -831,7 +831,8 @@ one, always shown with its source. The bands meet without gaps (checked when the
 (an exclusion constraint, `btree_gist`, created by migration 0015); every cell is filled (the grid is saved whole).
 The dialog has a General tab (name, unique among live protocols in any case; species; status; expected FCR;
 notes), the **Feeding table** tab, a grid of the bands by the temperature columns: the columns are typed as
-"4 8 12 16", and changing them renders the grid again with what was entered (`data-refresh`, nothing saved); the
+"4 8 12 16", **at least two** (one column gave an SFR at exactly its own temperature and none on every other day, audit
+F-080; a table stored with one keeps that), and changing them renders the grid again with what was entered (`data-refresh`, nothing saved); the
 whole table is saved at once, replacing the stored bands and cells, guarded by the protocol's version and logged on
 the protocol as one change ("Feeding table", before and after). A band whose feed is not listed as suitable for the
 species at its weights is noticed, not refused. Status: a new protocol is a draft; it is set active once it has a
@@ -962,7 +963,8 @@ the server's reason on its field:
   reason is on the target when the unit holds the other kind); and the other way round, a stock operation (a backdated harvest or transfer, the void of the stocking that brought the
   fish) is refused while a recorded feeding would be left without fish, naming it;
 - a new record takes an active feed; a record keeps its feed whatever the feed's status becomes;
-- above `FEEDING_ACK_PERCENT` (10 %) of the book biomass of the target's fish in a day, the person is asked to confirm,
+- above `FEEDING_ACK_PERCENT` (10 %) of the book biomass of the target's fish in a day (the day's feedings of the target in
+  the unit, this one included: two feedings of 6 % are 12 %, audit F-081), the person is asked to confirm,
   and the confirmation is stored on the record (a kilo typed for a gram is caught; fry may be fed more);
 - a form sent twice records once; the unit is locked as a stock operation locks it, so a feeding and a
   harvest of one unit take turns.
@@ -1757,7 +1759,9 @@ their medicine as a site's contacts are: they stay with it when it is deleted an
 species keeps its rows out of sight while it is deleted, and cannot be erased from the database while a row names it.
 `farm/health/withdrawal.py`'s `row_for` is the one place that says which row applies to a species; the withdrawal, the
 Medicines pages and the treatment dialog's choice all ask it. Nothing is seeded: the values are the product's SPC,
-entered by the farm and checked by its vet. A medicine a treatment used cannot be deleted, nor its manufacturer
+entered by the farm and checked by its vet. A change of the rows of a medicine already given (a live treatment) is logged as
+**critical**, and goes through the withdrawal guard (below): the withdrawal is worked out live, so a change that brings a
+recorded harvest inside a withdrawal, or frees fish held today, is asked about first (audit F-196). A medicine a treatment used cannot be deleted, nor its manufacturer
 (`PROTECT`): set it inactive. Migration `0021` copies each medicine's old two columns into a row for every species, and
 goes back when every medicine has one (it says why when it cannot).
 
@@ -1773,7 +1777,11 @@ answers. **The fast before it** is the shared handling check's (kind treatment; 
 Handling rules, 24 h to start with): the dialog shows when the fish of each unit were last fed against the rule, and too short a
 fast is a warning; going on stores a handling acknowledgement on the treatment (`HandlingAcknowledgement`, which
 belongs to a stock operation or a treatment, exactly one, a database check) and makes its log entry critical. A
-medicated feed is not checked: it is the feeding itself. Every unit must hold fish on the first day; the other
+medicated feed is not checked: it is the feeding itself. **A sea-lice medicine given for another reason** (hydrogen
+peroxide is also an AGD treatment) is never refused, but the weekly sea-lice report lists only the treatments for sea
+lice: the dialog says it will not be in it and goes on past the box, and the log entry keeps the warning ("Warnings
+acknowledged"; not critical, it is a report's warning). The rule is one function, `farm.health.lice.left_out_of_lice_report`
+(audit F-083, F-239). Every unit must hold fish on the first day; the other
 way round, a stock operation that would leave a treatment (or a lice count) without fish on its day is refused,
 naming it, and `check_stock` reports one. **No
 batch is stored**: the batches treated are the ones the stock ledger has in its units from its first to its last
@@ -1852,7 +1860,9 @@ on 2026-11-03) has them:
   the limit is over it ("færre enn"). The area is the site's (Facility › Sites, Location: Sea-lice limit area);
   a site without one is judged by the stricter of the two, and the page says so;
 - Vedlegg 1 points 2 and 3: at least 20 fish a cage in weeks 14–21 (south) or 19–26 (north), 10 otherwise; a
-  smaller sample is pointed out; how many of the units with fish were counted is shown.
+  smaller sample is pointed out; how many of the units with fish were counted is shown. The weekly table is always the
+  site's whole weeks: the filters of the list below choose which sites and weeks it shows (a unit: its site; a date
+  range: the weeks it touches), never which counts make an average (audit F-082).
 
 Over the limit is a warning on the page; nobody is alerted yet, and the weekly report to Mattilsynet is not
 built (§ 10).
@@ -1865,7 +1875,54 @@ treatment, Record sea-lice count and Record health event with the unit chosen.
 Treatments (read, create, edit = change the last day, delete = void), Health events (read, create, edit, delete =
 void) and Sea-lice counts (read, create, delete = void), the last three under Production · Operations · Health.
 The admin shows voided treatments, events and counts and does not restore them. `manage.py check_withdrawal`
-works out every unit's withdrawal from scratch and lists the fish held, with the end and why.
+works out every unit's withdrawal from scratch and lists the fish held, with the end and why, and then **every harvest
+already recorded inside a withdrawal** (medicated fish that may have gone to food), however it came to (a treatment entered
+after the harvest, a longer course, a corrected temperature, a medicine's withdrawal changed), each with whether someone
+acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
+harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.
+
+**The withdrawal guard** (audit F-195, F-188, F-196 and the three cross-reviews): every write that can create, grow, shorten
+or end a medicine withdrawal goes through one function, `farm.health.withdrawal.guarded`: a treatment, its last day and its
+void, a medicated feeding and its void, a medicine's withdrawal rows, a water sample (a round too) and its void, every stock
+operation and its void, and on their Setup pages a feed's type, a species' assumed water temperature, a unit's loop (its
+system, whose samples count for a unit without its own) and a sampling point's active flag, kind and owner. Those pages
+(`farm/resources/withdrawal_input.py`) lock the fish the record reaches before the record itself, the order a stock
+operation and a water sample lock them in; a record changed between the edit's first read and its lock is refused as a
+crossed edit. A system, a unit, a species or a sampling point is **not deleted or restored** while a withdrawal holds fish
+it reaches (weighed as it stands live: the readers read live records, so a deleted unit's fish would show no withdrawal at
+all), or while water samples are on the point: its delete page says why (`withdrawal_blockers()`), and the gate refuses
+any other way of flipping the flag, the admin's restore included (shown as a message). A unit's loop changed outside the
+guard is refused when it moves a withdrawal (worked out as the guard works it, rolled back), free when it moves none.
+**The data layer holds it** (`farm/withdrawal_gate.py`): those rows and fields refuse a change made anywhere but inside the guard, whatever writes it
+(a model's save or delete, `loaddata`, a treatment's units from either side or through their link table, a queryset's
+update, delete, bulk create or bulk update, a field named by its column alike), so a new path that skips the guard fails
+at once with a ValidationError; a test fixture, a command or a correction meant to write behind it says so with
+`withdrawal_gate.opened(reason)`. Migrations work on historical models and raw SQL is not seen. A test derives the columns
+the withdrawal readers read from the queries they run and fails on one that is neither registered nor said not to be an
+input (`farm/tests/test_withdrawal_gate_coverage.py`).
+
+Inside the write's transaction the guard locks the fish first (`farm.stock.services.lock_fish`: the batches, then the
+units, then the batches read again under the unit locks, so a batch that arrived in between is locked too; a harvest locks
+them in the same order, so the two take turns), works out their withdrawals, makes the write **once**, in a savepoint, and
+works them out again from what it left. It asks when the write
+
+- brings a harvest already recorded inside a withdrawal, or makes the withdrawal it lies inside end later than before
+  (medicated fish may have gone to food: a treatment entered up to 31 days back, a longer course, a backdated medicated
+  feeding, a corrected temperature, a longer medicine withdrawal), or
+- makes the withdrawal of fish held today end earlier, or ends it (a course voided or shortened, a medicine's withdrawal
+  shortened, a medicated feeding voided, a temperature corrected): the message gives the old and the new end.
+
+Unless the person went on past exactly this impact, the savepoint is rolled back and the write refused: the dialog shows
+what was found with its box, `withdrawal_ack`, whose value (the impact's fingerprint) the form hands to its own service, so
+a tick acknowledges that write only; an impact that changed since it was shown is asked again. Going on keeps the write as
+it was made, stores a `WithdrawalAcknowledgement` per warning (the write, the batch, the withdrawal, the harvest, the end
+and what was shown; the database refuses an edit or a delete) and logs a critical entry on the record with the warnings.
+An acknowledgement covers the end it was given for: `check_withdrawal` says "Not acknowledged (acknowledged until …; now
+…)" once a withdrawal ends later than that. A harvest the write records itself is asked about by its own handling check,
+not twice. Whether a second person must approve going on past a withdrawal is a setting of the platform owner's (owner
+answer, 2026-11-06); it is asked in one place, `farm.handling.check.second_person_must_approve(user, kinds, record)`, which
+answers no until that setting exists.
+
 
 Differences from the source (details in the bug document, HLT-01 to HLT-23):
 
@@ -2281,8 +2338,9 @@ page, and the filing is refused until the person confirms it was checked by hand
 question in the register lifts it.
 
 **Filed late.** Recording a filing stores the deadline and whether it came after it (the day in Oslo); the report and the list say
-"Filed 2 days after its deadline" and a notice, filed at once, is never late. **Said, not assumed:** the biomass report asks in what
-condition the harvested fish are weighed (round or gutted weight) and is not ready with a harvest until it is said; a cleaner-fish
+"Filed 2 days after its deadline" and a notice, filed at once, is never late. **Said, not assumed:** the biomass report's harvest weights are the round kilos weighed at
+harvest, the only kilos the farm holds, and say so (`slaktetilstand` round): it never asks, so round kilos cannot be filed as gutted
+(audit F-086; gutted kilos come with the slaughter result, OUR-18); a cleaner-fish
 month with no feed recorded is a problem unless the person says none was given. The cleaner-fish file for the API has one row per
 species, with the mixed origin when both farmed and wild-caught fish are in it.
 
@@ -2322,9 +2380,12 @@ the records now, and say which.
 - *Sea lice*: the week's counts per cage and the site's average per stage (the mean of the cages' averages, as the regulation
   says), the cages that held salmonids and were due a count (7 days, 14 below 4 °C; none for broodstock below 4 °C, nor when every
   fish is planned for slaughter within 14 days of the day the count fell due, whether the harvest is still planned or already
-  recorded; a cage with no production fish left on that day needs none), the sea temperature (the mean of the week's samples at the site's depth points of
+  recorded (a plan whose harvest was voided is open again); a cage with no production fish left on that day needs none), the sea temperature (the mean of the week's samples at the site's depth points of
   3 m, from Water chemistry), the week's lice treatments with substance, strength and amount from their records (the amount is
-  the product's: Mattilsynet's § 10 c asks for the active substance's, so the report says to confirm which it wants).
+  the product's: Mattilsynet's § 10 c asks for the active substance's, so the report says to confirm which it wants). A
+  treatment of the week with a sea-lice medicine recorded for another reason is not in it, and the report warns of each one
+  (void it and record it again if it was given against sea lice) and reads it for its fingerprint. The fingerprint also
+  reads what decides whether a cage was due a count: its earlier counts and the harvest plans (audit F-206).
 - *Smolt*: per tank and species that held fish, its number, species, the fish and average weight at the month's end (a tank
   emptied in the month reports the fish just before, less those moved to another tank of the site, which are in that tank's
   count), and the fish dead, culled and moved out of the site, deliveries included. A tank that held two species one after the
@@ -3256,7 +3317,7 @@ C:\Python312\python.exe -m venv .venv
 ```
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
-defaults match the local container in `docker-compose.yml`. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0030 gives a site without one
+defaults match the local container in `docker-compose.yml`. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0028 gives a site without one
 (default `Europe/Oslo`; the server's own clock stays UTC; one of the zones a site may have, or the server refuses to start: `farm.E001`). `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.

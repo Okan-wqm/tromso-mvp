@@ -18,6 +18,7 @@ from . import golden
 from .golden import Normaliser, cards_say, multiset_missing
 from . import TEMPLATE, MonitoringCase
 from ..cards.builtin import DETAILED
+from farm import withdrawal_gate
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
 
@@ -26,6 +27,7 @@ class GoldenFarm(MonitoringCase):
     """T-01 (no water: no recent data), T-02 (the worked example's ration) and P-01 (an empty pond in maintenance), and
     seventeen more units G-00 to G-16, each in a state of its own (below)."""
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def setUp(self):
         super().setUp()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)

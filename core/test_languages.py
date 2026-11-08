@@ -23,6 +23,7 @@ from .audit import message
 from .language import save_account_language
 from .models import AuditLog, Profile
 from .tests import perms, user_data
+from farm import withdrawal_gate
 
 COOKIE = settings.LANGUAGE_COOKIE_NAME
 LANGUAGES = [code for code, _ in settings.LANGUAGES]
@@ -138,6 +139,7 @@ class PagesInEveryLanguageTests(TestCase):
     """Every page and dialog renders in each language, with no placeholder left over."""
 
     @classmethod
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         cls.site = Site.objects.create(name='Bergen', code='BG', area_m2=Decimal('50000.5'))

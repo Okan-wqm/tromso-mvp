@@ -63,7 +63,7 @@ class CompanyClockTests(TestCase):
 
 class CompanyZoneCheckTests(SimpleTestCase):
     """The server refuses to start on a company zone that is not a known zone or not one a site may be given: migration
-    farm/0030 would write it into every zone-less site, and every read of the site's day would fail."""
+    farm/0028 would write it into every zone-less site, and every read of the site's day would fail."""
 
     def errors(self):
         from .. import checks                                       # the module the farm app registers its checks from

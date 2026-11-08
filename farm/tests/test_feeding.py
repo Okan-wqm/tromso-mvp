@@ -25,6 +25,7 @@ from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.fold import Line, Op
 from .helpers import make_facility, role
 from .test_stock import StockTestCase, make_unit
+from farm import withdrawal_gate
 
 
 def setUpModule():
@@ -290,14 +291,23 @@ class RecordTests(FeedingTestCase):
         response = self.client.post(self.url(), self.data(amount_kg='60'), headers={'X-Modal': '1'})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].errors['high_rate_ack'], [
-            f'60 kg is 12.0 % of the 500.0 kg T-01 holds on {stock_services.shown_date(self.day(1))} in the book; '
-            'more than 10 % a day is unusual. Tick the box below to record it anyway.'])
+            f'60 kg fed on {stock_services.shown_date(self.day(1))}, this feeding included, is 12.0 % of the 500.0 kg T-01 '
+            'holds in the book; more than 10 % a day is unusual. Tick the box below to record it anyway.'])
         self.assertContains(response, 'name="high_rate_ack"', status_code=422)
         self.assertFalse(FeedingRecord.objects.exists())
         self.client.post(self.url(), self.data(amount_kg='60', high_rate_ack='on'), headers={'X-Modal': '1'})
         self.assertTrue(FeedingRecord.objects.get().high_rate_ack)
         # A tick that was not needed is not stored as an acknowledgement.
-        self.assertFalse(self.record(kilos='5', ack=True).high_rate_ack)
+        self.assertFalse(self.record(kilos='5', days_ago=2, ack=True).high_rate_ack)
+
+    def test_the_usual_rate_is_of_the_days_total_not_of_one_feeding(self):
+        """Q-F5 asks about more than 10 % a day: two feedings of 6 % each are 12 % that day (audit F-081)."""
+        self.record(kilos='30')
+        errors = self.refused(self.record, kilos='30')
+        self.assertIn('60 kg fed on', errors['high_rate_ack'][0])
+        self.assertIn('is 12.0 % of the 500.0 kg T-01 holds', errors['high_rate_ack'][0])
+        self.assertTrue(self.record(kilos='30', ack=True).high_rate_ack)
+        self.assertFalse(self.record(kilos='30', days_ago=2).high_rate_ack)          # another day
 
     def test_the_same_form_sent_twice_records_once(self):
         data = self.data()
@@ -400,6 +410,7 @@ class FishRuleTests(FeedingTestCase):
         self.assertEqual(self.fish(self.t1), 0)
         self.assertStockAddsUp()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_reports_a_feeding_moved_past_the_service(self):
         feeding = self.record(days_ago=1)
         call_command('check_stock', stdout=io.StringIO())
@@ -437,6 +448,7 @@ class VoidTests(FeedingTestCase):
         logged = AuditLog.objects.get(entity_type='feeding record', action='void')
         self.assertEqual(logged.entity_label, f'Feeding · T-01 · {self.day(1).isoformat()} · 12 kg · GR-4')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_only_within_the_backdating_window(self):
         feeding = self.record(days_ago=20)
         FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(32))
@@ -687,6 +699,7 @@ class DeletePlanTests(FeedingTestCase):
 
 
 class ConstraintTests(FeedingTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_checks(self):
         good = {'unit': self.t1, 'date': self.today, 'feed': self.feed, 'amount_kg': Decimal(1)}
         for fields in ({'amount_kg': 0}, {'amount_kg': Decimal('-1')}, {'meals': 0}, {'meals': 49},

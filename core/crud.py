@@ -343,6 +343,7 @@ class RowList:
     label = ''        # how the activity log names the list, e.g. _('Contacts')
     formset = None    # an inline formset over the row model (RowFormSet); the rows have `created_by`
     saved = ''        # the flash message: ngettext_lazy('%(count)d ... saved.', '...', 'count')
+    question_field = None   # the box that answers what its save may ask first (`save`'s `seen`), when it may
 
     @classmethod
     def applies_to(cls, obj):
@@ -370,7 +371,13 @@ class RowList:
         return {name: row[name] for name in fields}
 
     @classmethod
-    def save(cls, user, obj, rows, entity_type):
+    def severity(cls, obj):
+        """The severity of the log entry of a change of the list: normal; a list whose change protects or endangers fish
+        or food says critical (a medicine's withdrawal already given, audit F-196)."""
+        return AuditLog.Severity.NORMAL
+
+    @classmethod
+    def save(cls, user, obj, rows, entity_type, seen=None):
         """Replaces the stored rows with `rows` (cleaned data) and logs the change on `obj`."""
         model, link = cls.formset.model, cls.formset.fk.name
         # The row's own fields; an inline formset adds the link to its parent to the form's fields.
@@ -384,7 +391,7 @@ class RowList:
             after = cls.summary(obj)
             if before != after:
                 audit.record(user, AuditLog.Action.UPDATE, obj, {str(cls.label): [before, after]},
-                             entity_type=entity_type)
+                             entity_type=entity_type, severity=cls.severity(obj))
 
 
 class Resource:
@@ -512,6 +519,21 @@ class Resource:
     @classmethod
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
+
+    # When a save may ask something first (`edited`, below): the template the edit page shows the question with, and the
+    # name of the box that answers it.
+    question_template = None
+    question_field = None
+
+    @classmethod
+    def edited(cls, request, record, write, seen):
+        """Makes an edit of `record` (as read before the edit, not locked yet): `write()` as it is, which locks the
+        record, checks that it has not changed since and saves it. A tab whose records feed a rule that must ask
+        before a change stands wraps it (the medicine withdrawal: farm.health.withdrawal.guarded), locking what the
+        rule reads before `write()` locks the record; `seen` is the value of the edit form's box for that question.
+        A refusal is a ValidationError, shown on the form with what it carries (`change`, as `question` in the
+        page)."""
+        return write()
 
     @classmethod
     def search(cls, objects, query):
@@ -721,6 +743,10 @@ class CreateView(FormView):
         return done(request, self.url('edit', sent.pk), stay=True)
 
 
+class Crossed(Exception):
+    """The record changed between the edit's first read and its lock: the edit crossed another one."""
+
+
 class UpdateView(FormView):
     action = 'change'
 
@@ -736,26 +762,47 @@ class UpdateView(FormView):
         form = r.form(request, request.POST, request.FILES, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
+        versioned = 'version' in form.fields
         try:
             with transaction.atomic():
-                current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
-                versioned = 'version' in form.fields
-                if versioned and form.cleaned_data.get('version') != current.version:
-                    # Translators: %(name)s is the kind of record in lower case (e.g. site).
-                    messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                              'The form now shows their version; make your changes again.')
-                                   % {'name': r.name})
-                    return done(request, self.url('edit', pk))
-                before = r.recorded(current)
-                obj = form.save(commit=False)
-                if versioned:
-                    obj.version = current.version + 1
-                if hasattr(obj, 'updated_by'):
-                    obj.updated_by = request.user
-                obj.save()
-                form.save_m2m()
-                audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
-                r.after_save(request, obj, created=False)
+                # What the edit may reach is worked out from the record as read here, and what it reaches is locked
+                # first (Resource.edited: the fish before the record, as a stock operation locks them). The record is
+                # locked in write(): changed meanwhile (its version moved), the edit is refused as any edit that
+                # crossed another.
+                read = r.visible(request).get(pk=pk)
+
+                def write():
+                    current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
+                    if versioned and form.cleaned_data.get('version') != current.version \
+                            or getattr(read, 'version', None) != getattr(current, 'version', None):
+                        raise Crossed
+                    before = r.recorded(current)
+                    obj = form.save(commit=False)
+                    if versioned:
+                        obj.version = current.version + 1
+                    if hasattr(obj, 'updated_by'):
+                        obj.updated_by = request.user
+                    obj.save()
+                    form.save_m2m()
+                    audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
+                    r.after_save(request, obj, created=False)
+                    return obj
+
+                obj = r.edited(request, read, write,
+                               request.POST.get(r.question_field, '') if r.question_field else None)
+        except Crossed:
+            # Translators: %(name)s is the kind of record in lower case (e.g. site).
+            messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                      'The form now shows their version; make your changes again.')
+                           % {'name': r.name})
+            return done(request, self.url('edit', pk))
+        except ValidationError as error:
+            # The save asked something first (Resource.edited): the form again with the question, nothing saved.
+            form.add_error(None, error.messages)
+            response = self.page(form, self.get_object(pk), withdrawal_change=getattr(error, 'change', None),
+                                 question_template=r.question_template)
+            response.status_code = 422
+            return response
         except IntegrityError as error:
             # A rule the database holds across tables refused the change: said on the form, nothing saved.
             if not trigger_refusal(form, error):
@@ -844,7 +891,19 @@ class RowListView(ResourceView):
                 return done(request, self.url('edit', pk), stay=True)
             if not rows.applies_to(current):
                 raise Http404
-            rows.save(request.user, current, kept, r.entity_type())
+            try:
+                with transaction.atomic():
+                    asked = {'seen': request.POST.get(rows.question_field, '')} if rows.question_field else {}
+                    rows.save(request.user, current, kept, r.entity_type(), **asked)
+            except ValidationError as error:
+                # A list whose save asks something first (a medicine's withdrawal rows and the withdrawal guard): the
+                # page again with the reason and what was found (`withdrawal_change`), nothing saved.
+                formset._non_form_errors = formset.error_class(error.messages)
+                page = UpdateView.as_page(r, request)
+                response = page.page(r.form(request, instance=obj), obj, **{rows.key: formset, 'open_tab': rows.tab,
+                                                                          'withdrawal_change': getattr(error, 'change', None)})
+                response.status_code = 422
+                return response
             if versioned:
                 current.version += 1
                 current.updated_by = request.user

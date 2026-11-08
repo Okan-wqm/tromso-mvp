@@ -322,6 +322,11 @@ class SamplingPoint(AuditedModel):
     def delete_blockers(self):
         """A point with samples is not deleted: they stay in the history (make it inactive instead). Only a
         point deleted by itself is asked, never one that goes with its owner: those stay, out of sight."""
+        return self.withdrawal_blockers()
+
+    def withdrawal_blockers(self):
+        """The same reason holds a point's restore, and any other change of its deleted flag (the withdrawal gate's
+        rule, farm/apps.py): the samples it would take out of the water a withdrawal counts, or bring back to it."""
         if self._state.adding:
             return []
         from .water import WaterMeasurement

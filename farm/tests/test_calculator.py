@@ -28,6 +28,7 @@ from ..water.evaluate import Status
 from .helpers import make_species, point_of, role, stock_fish
 from .test_deffeyes import plummer_busenberg
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 REFERENCE = json.loads((Path(__file__).parent / 'deffeyes_reference' / 'reference.json').read_text(encoding='utf-8'))
 # The source's reagent names (reagents.ts REAGENTS) and ours.
@@ -884,6 +885,7 @@ class UnitChartTests(UnitWaterCase):
         self.assertIn('Nothing is filled in', body)
         self.assertNotIn('<svg', body)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_unit_without_a_middle_point_lists_its_points_and_draws_nothing(self):
         other = self.make('T-03')
         self.sample(point_of(other, 'inlet'), temperature_c=9, ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')

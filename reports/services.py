@@ -79,7 +79,8 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
             _refuse(_('The records changed after you looked at the report: review it again before you record the '
                       'filing.'))
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
-                                      content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope))
+                                      content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope),
+                                      scope_version=compute.scope_version(current.kind))
         current.deadline_on = compute.deadline(current)
         current.filed_late = (periods.oslo_today(submitted_at) > current.deadline_on) if current.deadline_on else False
         current.submitted_at, current.submitted_by = submitted_at, user
@@ -128,15 +129,24 @@ def close_due(user, *, kind, place, period, reason):
     return closure
 
 
+def _take_away(user, model, row):
+    """Deletes a closure or a duty done once: the row locked first, refused when it is gone already (a second press on a
+    page shown before the first), logged after it is gone (audit F-077)."""
+    with transaction.atomic():
+        found = model.objects.select_for_update().filter(pk=row.pk).first()
+        if found is None:
+            _refuse(_('It was taken away already.'))
+        pk, label = found.pk, audit.english(found)
+        found.delete()
+        found.pk = pk
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.DELETE, found, entity_type=model._meta.verbose_name, label=label)
+    return pk
+
+
 def reopen(user, closure):
     """Takes a closure away: the report is owed again. Logged."""
-    with transaction.atomic():
-        pk = closure.pk
-        with audit.source_language():
-            audit.record(user, AuditLog.Action.DELETE, closure, entity_type=DueClosure._meta.verbose_name,
-                         label=audit.english(closure))
-        closure.delete()
-    return pk
+    return _take_away(user, DueClosure, closure)
 
 
 def record_duty_done(user, *, duty, site, year, done_on, reference=''):
@@ -167,11 +177,7 @@ def record_duty_done(user, *, duty, site, year, done_on, reference=''):
 
 def undo_duty_done(user, record):
     """Takes a record away: the duty is owed again. Logged."""
-    with transaction.atomic():
-        with audit.source_language():
-            audit.record(user, AuditLog.Action.DELETE, record, entity_type=OutsideDutyDone._meta.verbose_name,
-                         label=audit.english(record))
-        record.delete()
+    _take_away(user, OutsideDutyDone, record)
 
 
 def start_correction(user, report):

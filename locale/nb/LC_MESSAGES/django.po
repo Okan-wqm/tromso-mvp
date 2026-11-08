@@ -41,6 +41,22 @@ msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s er %(species)s; protokollen er for %(protocol_species)s."
 
 #, python-format
+msgid ""
+"%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish "
+"may go to food from %(after)s instead of %(until)s."
+msgstr ""
+"%(batch)s holdes tilbake (%(withdrawal)s): etter denne endringen slutter tilbakeholdelsestiden "
+"tidligere, fisken kan gå til mat fra %(after)s i stedet for %(until)s."
+
+#, python-format
+msgid ""
+"%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
+"after this change: the fish could go to food."
+msgstr ""
+"%(batch)s holdes tilbake i dag (%(withdrawal)s) og vil ikke lenger holdes av en "
+"tilbakeholdelsestid etter denne endringen: fisken kan gå til mat."
+
+#, python-format
 msgid "%(batch)s was harvested on %(date)s: cleaner fish are culled, not harvested."
 msgstr "%(batch)s ble høstet %(date)s: rensefisk avlives, den høstes ikke."
 
@@ -663,11 +679,13 @@ msgstr "%(kilos)s kg"
 
 #, python-format
 msgid ""
-"%(kilos)s kg is %(rate)s %% of the %(biomass)s kg %(unit)s holds on %(date)s in the book; more "
-"than %(limit)s %% a day is unusual. Tick the box below to record it anyway."
+"%(kilos)s kg fed on %(date)s, this feeding included, is %(rate)s %% of the %(biomass)s kg "
+"%(unit)s holds in the book; more than %(limit)s %% a day is unusual. Tick the box below to record"
+" it anyway."
 msgstr ""
-"%(kilos)s kg er %(rate)s %% av de %(biomass)s kg %(unit)s har i beholdningen %(date)s; mer enn "
-"%(limit)s %% om dagen er uvanlig. Kryss av i boksen under for å registrere det likevel."
+"%(kilos)s kg fôret %(date)s, denne fôringen medregnet, er %(rate)s %% av de %(biomass)s kg "
+"%(unit)s har i beholdningen; mer enn %(limit)s %% per dag er uvanlig. Kryss av i boksen under for"
+" å registrere det likevel."
 
 #, python-format
 msgid ""
@@ -798,6 +816,14 @@ msgid ""
 msgstr ""
 "%(medicine)s har ikke noe virkestoff i lusrapporten (Referansedata › Legemidler): behandlingen "
 "%(date)s kan ikke rapporteres."
+
+#, python-format
+msgid ""
+"%(medicine)s is a sea-lice medicine, given here for “%(reason)s”: the weekly sea-lice report to "
+"Mattilsynet lists only the treatments for sea lice, so this one will not be in it."
+msgstr ""
+"%(medicine)s er et lusemiddel, her gitt for «%(reason)s»: den ukentlige luserapporten til "
+"Mattilsynet viser bare behandlinger mot lakselus, så denne kommer ikke med i den."
 
 #, python-format
 msgid "%(medicine)s is given as %(administration)s."
@@ -1844,6 +1870,12 @@ msgstr[0] "Et legemiddel har høyst %(num)d rad."
 msgstr[1] "Et legemiddel har høyst %(num)d rader."
 
 #, python-format
+msgid "A medicine withdrawal holds batch %(batches)s, and this moves it: wait until it ends."
+msgid_plural "Medicine withdrawals hold batches %(batches)s, and this moves them: wait until they end."
+msgstr[0] "En tilbakeholdelsestid holder fiskegruppe %(batches)s, og dette flytter den: vent til den er over."
+msgstr[1] "Tilbakeholdelsestider holder fiskegruppene %(batches)s, og dette flytter dem: vent til de er over."
+
+#, python-format
 msgid ""
 "A membrane (HDPE, PVC, EPDM) is %(low)s to %(high)s mm thick, concrete %(concrete_low)s to "
 "%(concrete_high)s mm."
@@ -2088,6 +2120,13 @@ msgstr "Et lakselusmiddel oppgir virkestoffet slik luserapporten har det; andre 
 
 msgid "A sea-lice medicine only: its substance as Mattilsynet’s weekly lice report names it."
 msgstr "Bare lakselusmiddel: virkestoffet slik Mattilsynets ukentlige luserapport kaller det."
+
+msgid ""
+"A second person must approve going on past a medicine withdrawal (the platform owner’s setting), "
+"and that approval cannot be given here yet."
+msgstr ""
+"En person til må godkjenne å gå videre forbi en tilbakeholdelsestid (plattformeierens "
+"innstilling), og den godkjenningen kan ikke gis her ennå."
 
 msgid "A share of the outflow, from 0 to 100 %, can be stated for an outlet only."
 msgstr "En andel av utstrømmen, fra 0 til 100 %, kan bare oppgis for et utløp."
@@ -4298,9 +4337,6 @@ msgstr "Betong"
 msgid "Condition"
 msgstr "Tilstand"
 
-msgid "Condition of the harvested fish"
-msgstr "Tilstand på den slaktede fisken"
-
 msgid "Conductivity"
 msgstr "Ledningsevne"
 
@@ -5931,6 +5967,9 @@ msgstr "Undersøkte fisk"
 msgid "Fish farm"
 msgstr "Fiskeoppdrett"
 
+msgid "Fish freed from a withdrawal"
+msgstr "Fisk frigjort fra en tilbakeholdelsestid"
+
 msgid "Fish harvested"
 msgstr "Høstet fisk"
 
@@ -6293,8 +6332,8 @@ msgstr "Oppgi et år fra 2026."
 msgid "Give at least one bound."
 msgstr "Oppgi minst én grense."
 
-msgid "Give at least one temperature column."
-msgstr "Oppgi minst én temperaturkolonne."
+msgid "Give at least two temperature columns: the SFR is read between them, never outside them."
+msgstr "Oppgi minst to temperaturkolonner: SFR leses mellom dem, aldri utenfor."
 
 msgid "Give both ends of the range, the first below the second, or neither."
 msgstr "Oppgi begge endene av området, den første under den andre, eller ingen av dem."
@@ -6553,6 +6592,35 @@ msgstr "Høsting og håndtering"
 
 msgid "Harvest and logistics"
 msgstr "Høsting og logistikk"
+
+msgid "Harvest inside a withdrawal"
+msgstr "Slakting innenfor en tilbakeholdelsestid"
+
+#, python-format
+msgid ""
+"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
+"withdrawal, which holds the fish until %(until)s: medicated fish may have gone to food."
+msgstr ""
+"Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
+"denne tilbakeholdelsestiden, som holder fisken til %(until)s: medisinert fisk kan ha gått til "
+"mat."
+
+#, python-format
+msgid ""
+"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
+"withdrawal, which holds the fish until about %(until)s: medicated fish may have gone to food."
+msgstr ""
+"Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
+"denne tilbakeholdelsestiden, som holder fisken til omkring %(until)s: medisinert fisk kan ha gått"
+" til mat."
+
+#, python-format
+msgid ""
+"Harvest of %(date)s from %(unit)s (%(batch)s, %(fish)s fish to %(facility)s) lies inside this "
+"withdrawal, whose end is unknown: medicated fish may have gone to food."
+msgstr ""
+"Slaktingen %(date)s fra %(unit)s (%(batch)s, %(fish)s fisk til %(facility)s) ligger innenfor "
+"denne tilbakeholdelsestiden, som har ukjent slutt: medisinert fisk kan ha gått til mat."
 
 msgid "Harvest plan"
 msgstr "Høsteplan"
@@ -7017,6 +7085,9 @@ msgstr "Den er sendt inn: start en korrigering i stedet."
 
 msgid "It was reviewed; after this change it is a draft again, until it is reviewed anew."
 msgstr "Den var gjennomgått; etter denne endringen er den et utkast igjen, til den gjennomgås på nytt."
+
+msgid "It was taken away already."
+msgstr "Den er allerede fjernet."
 
 msgid "Item"
 msgstr "Vare"
@@ -9054,9 +9125,6 @@ msgstr "Bare ett system kan være det primære."
 msgid "Only suspected"
 msgstr "Bare mistenkt"
 
-msgid "Only the biomass report has a condition of the harvested fish."
-msgstr "Bare biomasserapporten har tilstand på den slaktede fisken."
-
 msgid "Only the cleaner-fish report says that no feed was given."
 msgstr "Bare rensefiskrapporten sier at det ikke ble gitt fôr."
 
@@ -9650,6 +9718,16 @@ msgstr "Planlagt for"
 msgid "Planned for %(date)s"
 msgstr "Planlagt til %(date)s"
 
+#, python-format
+msgid ""
+"Planned for %(date)s to %(facility)s: recorded on another week or at another facility, this "
+"harvest is still reported in the planned-slaughter notice of the plan’s week and facility; "
+"correct that notice if it was filed."
+msgstr ""
+"Planlagt %(date)s til %(facility)s: registrert i en annen uke eller ved et annet slakteri, "
+"rapporteres denne slaktingen fortsatt i meldingen om planlagt slakting for planens uke og "
+"slakteri; rett den meldingen hvis den er sendt."
+
 msgid "Planned off"
 msgstr "Planlagt fri"
 
@@ -10099,11 +10177,17 @@ msgstr "Registrer høsting"
 msgid "Record health event"
 msgstr "Registrer helsehendelse"
 
+msgid "Record id"
+msgstr "Post-ID"
+
 msgid "Record meal"
 msgstr "Registrer måltid"
 
 msgid "Record mortality"
 msgstr "Registrer dødfisk"
+
+msgid "Record name"
+msgstr "Postens navn"
 
 msgid "Record sample"
 msgstr "Registrer prøve"
@@ -10656,13 +10740,6 @@ msgstr "Si fra hvilken dag endringen gjelder."
 
 msgid "Say from which day the person is placed."
 msgstr "Si fra hvilken dag personen er plassert."
-
-msgid ""
-"Say in what condition the harvested fish are weighed in this report: round or gutted weight (the "
-"Report tab; slaktetilstand)."
-msgstr ""
-"Oppgi i hvilken tilstand den slaktede fisken er veid i denne rapporten: rund eller sløyd vekt "
-"(fanen Rapport; slaktetilstand)."
 
 msgid "Say what caused it, or what is thought to have."
 msgstr "Si hva som forårsaket det, eller hva som antas å ha gjort det."
@@ -11383,6 +11460,9 @@ msgstr "Kilde: %(kind)s"
 
 msgid "Sources fingerprint"
 msgstr "Kildenes fingeravtrykk"
+
+msgid "Sources fingerprint version"
+msgstr "Versjon av kildefingeravtrykket"
 
 msgid "Spanish"
 msgstr "Spansk"
@@ -12437,6 +12517,14 @@ msgid "The half mesh, from one knot to the next; a stretched mesh is twice as lo
 msgstr "Halvmaske, fra knute til knute; en strukket maske er dobbelt så lang."
 
 #, python-format
+msgid ""
+"The harvest of %(unit)s on %(date)s is the plan of %(planned)s at %(facility)s: it is reported "
+"with that plan, not here."
+msgstr ""
+"Slaktingen fra %(unit)s %(date)s hører til planen for %(planned)s ved %(facility)s: den "
+"rapporteres med den planen, ikke her."
+
+#, python-format
 msgid "The harvest of %(unit)s on %(date)s was not planned: its weighed kilos are reported, late."
 msgstr "Slaktingen fra %(unit)s %(date)s var ikke planlagt: de veide kiloene rapporteres, for sent."
 
@@ -12849,6 +12937,14 @@ msgid ""
 msgstr ""
 "Den planlagte høstingen av %(unit)s %(date)s har ingen planlagte kilo (Drift › Høsting › "
 "Høsteplan)."
+
+#, python-format
+msgid ""
+"The planned harvest of %(unit)s on %(planned)s was recorded on %(date)s at %(facility)s: it is "
+"reported here as planned; correct the notice if it was filed."
+msgstr ""
+"Den planlagte slaktingen fra %(unit)s %(planned)s ble registrert %(date)s ved %(facility)s: den "
+"rapporteres her som planlagt; rett meldingen hvis den er sendt."
 
 #, python-format
 msgid "The points of %(owner)s."
@@ -13302,6 +13398,16 @@ msgid ""
 msgstr ""
 "Behandlingen %(date)s gjaldt ingen enhet som hadde laksefisk: rapporten kan ikke si hvor mange "
 "merder som ble behandlet."
+
+#, python-format
+msgid ""
+"The treatment with %(medicine)s in %(units)s from %(start)s to %(end)s was recorded for "
+"“%(reason)s”, not for sea lice, so it is not in this report: if it was given against sea lice, "
+"void it and record it again with the reason “%(sea_lice)s”."
+msgstr ""
+"Behandlingen med %(medicine)s i %(units)s fra %(start)s til %(end)s ble registrert for "
+"«%(reason)s», ikke mot lakselus, så den er ikke med i denne rapporten: ble den gitt mot lakselus,"
+" annuller den og registrer den på nytt med årsaken «%(sea_lice)s»."
 
 msgid "The unit factor is a number other than 0."
 msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
@@ -14919,6 +15025,9 @@ msgstr "Tilbakeholdelsestid (døgngrader)"
 msgid "Withdrawal end estimated"
 msgstr "Slutt på tilbakeholdelse anslått"
 
+msgid "Withdrawal of"
+msgstr "Tilbakeholdelsestid fra"
+
 msgid "Withdrawal until"
 msgstr "Tilbakeholdelse til"
 
@@ -15121,6 +15230,12 @@ msgstr "alarmregel"
 
 msgid "alarm rules"
 msgstr "alarmregler"
+
+msgid "an unknown end"
+msgstr "en ukjent slutt"
+
+msgid "an unknown facility"
+msgstr "et ukjent slakteri"
 
 #, python-format
 msgid "and %(count)s more: all reports"
@@ -16667,6 +16782,12 @@ msgstr "uansett hvor den er"
 #, python-format
 msgid "withdrawal %(rule)s"
 msgstr "tilbakeholdelsestid %(rule)s"
+
+msgid "withdrawal acknowledgement"
+msgstr "kvittering for tilbakeholdelsestid"
+
+msgid "withdrawal acknowledgements"
+msgstr "kvitteringer for tilbakeholdelsestid"
 
 msgid "worked out from the sample"
 msgstr "regnet ut fra prøven"

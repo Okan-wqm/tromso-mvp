@@ -43,7 +43,7 @@ def setting(name, **env):
 
 
 class CompanyTimeZoneTests(SimpleTestCase):
-    """The company's time zone (COMPANY_TIME_ZONE): a new site's and the one migration 0030 gives a site without one.
+    """The company's time zone (COMPANY_TIME_ZONE): a new site's and the one migration 0028 gives a site without one.
     Europe/Oslo unless the environment names another; the server's own clock (TIME_ZONE) stays UTC."""
 
     def test_default_is_oslo_and_the_environment_names_another(self):

@@ -175,8 +175,8 @@ class Document(AuditedModel):
         ]
 
     @classmethod
-    def from_db(cls, db, field_names, values):
-        document = super().from_db(db, field_names, values)
+    def from_db(cls, db, field_names, values, *, fetch_mode=None):
+        document = super().from_db(db, field_names, values, fetch_mode=fetch_mode)
         # The file as stored, to tell on save whether it was replaced or cleared.
         document._stored_file = values[field_names.index('file')] if 'file' in field_names else None
         return document

@@ -3648,8 +3648,8 @@ time, so the times move with the load; 2828 tests):
 | `WORKERS=8 scripts/test.sh` | 1338 s |
 | `scripts/test.sh` (6 workers), three runs in a row | 1118 s, 957 s, 768 s (2828 tests, 3 skipped, each) |
 
-The parallel and the serial run pass the same tests (2828, 3 skipped by both: the TypeScript tests without Node in the
-image). More workers than 8 did not help on this machine (12 workers: 2116 s under load): the test database and the workers
+The parallel and the serial run pass the same tests (2828, 3 skipped by both: the two TypeScript tests, without Node in the
+image, and the load check, which runs with `MONITOR_LOAD=1`). More workers than 8 did not help on this machine (12 workers: 2116 s under load): the test database and the workers
 share the same CPUs, and half of all test time is the migration tests.
 
 Without Docker the suite still runs on the development server, one process:

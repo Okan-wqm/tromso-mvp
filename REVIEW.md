@@ -154,13 +154,41 @@ Each written as a test first and seen failing (the `Test:` commits), then fixed 
   The overview's critical count keeps counting such a point (it holds a critical value). **At fix-monitoring's landing:
   its `_alerts`/`unjudged` replace `PointWater.alerts`; keep this rule (old judgements count) and the card test.**
 
-## Still open after the second cross-review
+## The third cross-review's follow-ups (N1-N6)
 
-- **Template times without a clock**: about 37 places in templates format an aware time with `|date` and no clock, which
-  renders in the server's zone (UTC). Some are already naive site-clock values; the rest (created/updated times on
-  detail pages and lists) show UTC. Fixed here only for the activity log, a record's history and the messages
-  (`|company_clock`). The class fix is a decision: activate the company zone per request (middleware), which also moves
-  form parsing and ORM `__date` lookups to the company's day; it needs its own review and a full-suite pass.
+Each written as a test first and seen failing (the `Test:` commits), then fixed in its own commit with its docs.
+
+- **N1 report values**: a notice's Found at is shown on the site's clock (dd.mm.yyyy HH:MM) on the detail and print pages,
+  every date dd.mm.yyyy, a biomass basis and a loss's cause in words (`reports.labels.shown`, the `figure` and `coded`
+  filters). The content and the **CSV keep the machine form: an instant as ISO with its UTC offset**, so the file says its
+  zone (README). The test reads every value of every kind's detail and print pages.
+- **N2 template times**: every time a page shows goes through `|site_clock:site` (alarms on their binding's clock, a
+  Mattilsynet notification on its event's site, bindings, tasks, live values, feeding and lice records, a filing on Oslo's
+  clock as typed) or `|company_clock` (the activity log, history, messages, the library, user sign-ins, stock and
+  inventory recording times, which may span sites). In the tests `|date` and `|time` refuse an aware moment without one
+  (`core/clock_guard.py`, `settings.CLOCK_GUARD`): the whole suite is the guard, so a page no test renders is not checked.
+  No middleware, no `TIME_ZONE` change (the reviewer's DST and raw-SQL evidence).
+- **N3 UTC days**: the clock guard also refuses `date.today()`, `datetime.now()` without a zone, `now().date()`,
+  `Trunc*` without `tzinfo` and a `__date` lookup on a moment (it sees the reviewer's bypass probe). The attendance list
+  reads a stretch's day on the company's zone (the department move at 00:30 is the new department's); the form and the
+  service read the person's site through `hr.read.local_day`. `hr/forms/attendance.py:72` (`naive_in.date()`) is the
+  typed wall date, right as it is.
+- **N4 periods**: `Period.from_key` reads through `core.dates.read_period` (ASCII digits, a real week or month,
+  1900-2100). The one-parser guard also sees a parser reached through `getattr` with its name built from text and a date
+  built from `int(...)`/`map(int, ...)`; a parser's name held in a variable is not seen (said in the test).
+- **N5 muster**: On site now is every open clock-in on the farm whoever looks (`hr.read.muster`), a number only, by site
+  when several; the tile says "Everyone clocked in, all teams". An open clock-in is read whatever its age; one open more
+  than 12 hours stays on site, flagged "Open since …: check" on its row and counted on the tile.
+- **N6**: migration 0030 holds its own frozen list of zones. `core.dates.on_clock` is the one DST check (the water chart
+  and the sensors). Found on the way: the old check compared a time with itself in its own zone, so a skipped spring time
+  was refused as "happens twice"; it now reads through UTC and says "does not exist". Still not under it: the moments
+  typed on a site's clock elsewhere (a water sample, an attendance stretch, a report's Found at and filing time) are made
+  aware with `make_aware`, which takes a skipped or repeated time silently as its first reading. Whether those should
+  refuse (an attendance punch at 02:30 on the autumn night is real) is a decision, not done here.
+
+## Still open after the third cross-review
+
+- Template times without a clock: closed by N2 above, with explicit filters and a test guard (no middleware).
 - **R9** user-facing translated messages that still show ISO dates (experiments, a feeding form error): deferred.
 - **R11** a 403/400/500 in a dialog (two wordings, no 400 template, the 500 document in the dialog): deferred.
 - **R12** `monitoring.tests.test_golden` G-03 fails between about 00:00 and 06:00 UTC, here and on main; the

@@ -148,7 +148,7 @@ class FontTests(SimpleTestCase):
         families = {re.search(r'font-family:\s*"([^"]+)"', face).group(1) for face in faces}
         self.assertEqual(families, {'Atkinson Hyperlegible Next', 'Bricolage Grotesque'})
         for face in faces:
-            for url in re.findall(r'url\(["']?([^)"']+)', face):
+            for url in re.findall(r'url\(["\']?([^)"\']+)', face):
                 self.assertFalse(url.startswith(('http:', 'https:', '//')), url)
                 self.assertTrue((static / 'css' / url).resolve().is_file(), url)
         third_party = (Path(settings.BASE_DIR) / 'THIRD_PARTY.md').read_text(encoding='utf-8')

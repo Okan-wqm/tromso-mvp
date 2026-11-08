@@ -18,44 +18,75 @@ given here yet": fail closed until the approval flow exists). For wip/owner-sett
 and build the approval flow. Test:
 `SecondPersonHookTests.test_the_platform_owners_setting_is_asked_in_one_place_before_a_withdrawal_is_gone_past`.
 
-## The withdrawal guard (F-195, F-188, F-196; cross-review 1, 2, 3)
+## The withdrawal guard (F-195, F-188, F-196; cross-reviews 1 and 2)
 
-ONE function, `farm.health.withdrawal.guarded(user, batch_ids, today, write, ...)`, is the gate of every write that can
-create, grow, shorten or end a withdrawal: `record_treatment`, `change_last_day`, `void_treatment`, `record_feeding`,
-`void_feeding`, water `record` / `record_round` / `void`, stock `_commit` (every stock operation) and `void`, and
-`MedicineWithdrawalList.save` (the medicine's rows). It works out the withdrawals of the fish the write touches (their
-batches, locked first: batches, then units, the order a harvest locks them) before and after the write, inside the
-write's transaction, and asks when the write
+ONE function, `farm.health.withdrawal.guarded(user, batch_ids, today, write, *, seen, ...)`, is the gate of every write
+that can create, grow, shorten or end a withdrawal: `record_treatment`, `change_last_day`, `void_treatment`,
+`record_feeding`, `void_feeding`, water `record` / `record_round` / `void`, stock `_commit` (every stock operation) and
+`void`, the medicine's rows (`MedicineWithdrawalList.save`), and on their Setup pages a feed's type, a species' assumed
+temperature and a sampling point's active flag, kind and owner (`Resource.edited`, a hook of `core.crud.UpdateView`).
 
-- brings a recorded harvest inside a withdrawal it was not inside before (`harvested`), or
-- frees fish held by a withdrawal today (`released`; cross-review 3: shortening a running course, a medicine's row, a
-  void, a temperature correction that frees held fish is confirmed and logged critical, not only relabelled).
+- **Data-layer enforcement (cross-review 2, items 2 and 3).** `farm/withdrawal_gate.py` registers the inputs (Treatment,
+  FeedingRecord, WaterMeasurement, MedicineWithdrawal, StockOperation, StockMovement: every write; Feed.feed_type,
+  Species.withdrawal_temperature_c, SamplingPoint.is_active/kind/unit/system/equipment: changes of those fields). It
+  refuses a change outside the guard through `pre_save`, `pre_delete`, `m2m_changed` (a treatment's units) and the
+  QuerySet's `update`, `delete`, `bulk_create` and `bulk_update` (patched once, in the farm app's ready(); a model not in
+  the registry passes through unchanged). The guard opens it for its write. Fixtures, commands and corrections that
+  write behind it say why with `withdrawal_gate.opened(reason)`. The name-scan test is gone: the whole suite proves the
+  gate, and `DataLayerTests` proves the registry and every kind of write.
+- **One run (items 1 and 5).** The write runs once, in a savepoint. Its impact is worked out from the real after-state.
+  If an acknowledgement is needed and not given, or `seen` is not exactly this impact's fingerprint, the savepoint is
+  rolled back and `WithdrawalChanged` is raised with the change. Otherwise the write is kept as it was made, and the
+  acknowledgements stored are those of the impact that was checked. Nothing runs twice, so a unit's status set by
+  `_follow_status` stays (the reviewer's transfer probe, adopted as `OneRunTests`). `core.audit.marked` is gone. The
+  guard writes its own critical log entry on the record, with the messages.
+- **Earlier end (item 4).** `released` now covers any move of a held batch's withdrawal end to an earlier day (with the
+  old and new end in the message), not only "free today". Owner decision as stated; note the cost below.
+- **Explicit box (item 6).** No middleware. Every guarded service takes `withdrawal_ack=None`. Every `ServiceErrors`
+  form carries an unrendered `withdrawal_ack` field and its save hands it to its own service. The void views, the water
+  round, the row list (`RowList.question_field`) and the crud edit (`Resource.question_field`) pass the box of their own
+  POST. A tick acknowledges that write only.
+- **Locks (item 7).** `farm.stock.services.lock_fish`: read the batches present, lock them, lock the units, read again and
+  lock any batch that arrived. Used by treatments, feedings, water samples, medicine rows and the Setup edits.
+- **The acknowledged end (item 8).** A harvest already inside a withdrawal whose end moves later is asked again. In
+  `check_withdrawal` an acknowledgement covers only the end it was given for ("Not acknowledged (acknowledged until X;
+  now Y)").
+- `check_withdrawal` labels per (harvest, batch, withdrawal) (cross-review 1, item 2).
 
-The write is tried in a savepoint; with nothing to ask it stands as it is (one write). With warnings it is rolled back and
-refused (`WithdrawalChanged`, a ValidationError on `withdrawal_ack` carrying the change) unless the person went on past
-exactly these warnings (the box `withdrawal_ack`, its value the fingerprint; `farm.middleware.WithdrawalAcknowledgementMiddleware`
-hands it to the guard from the POST; tests use `withdrawal.acknowledging`). Going on makes the write again inside
-`core.audit.marked(CRITICAL, ...)` (its own log entries critical, with "Withdrawal warnings acknowledged") and stores one
-`WithdrawalAcknowledgement` per warning (the write, the batch, the withdrawal `source`, the harvest; append-only by a DB
-trigger). A harvest the write itself records is left to its own handling check (not asked twice). Every dialog shows the
-question with its box (`templates/farm/_withdrawal_change.html`, through `ServiceErrors.withdrawal_change`; the medicine
-rows page through `RowListView`). `check_withdrawal` labels an acknowledgement only for the (harvest, batch, withdrawal)
-it names: `HandlingAcknowledgement` withdrawal rows now keep `batch` and `withdrawal_source`; older rows name none and
-count as not acknowledged (cross-review 2).
+Not guarded, on purpose:
+- lice counts and a health event's void (no withdrawal input);
+- the shared `voided` step (called inside each guarded void);
+- sensor readings (the degree-days read the water samples only, `BatchWater`);
+- data migrations (historical models) and raw SQL.
 
-Not guarded, on purpose (stated in `WritePathTests.EXEMPT` or here): lice counts and a health event's void (no
-withdrawal input); the shared `voided` step (called inside each guarded void); sensor readings (the sensors
-app; the degree-days read the water samples only, `farm.water.degree_days.BatchWater`); the Django
-admin and data migrations (superuser tools). A water point of equipment holds no fish.
+Known residual inputs not in the registry:
+- a unit's `system` and the deletion of a unit or system, which change which samples count;
+- a species' soft delete, which changes which withdrawal row applies.
 
-Tests: `farm/tests/test_withdrawal_guard.py` (14: each path's scenario, freed fish, labels, the enumeration of the write
-functions of the four service modules plus the medicine rows, and a spy that each path calls the guard),
-`farm/tests/test_harvest_inside_withdrawal.py` (rewritten to the guard), `farm/tests/test_probe_review.py` (the
-reviewer's probes 1 and 2, adopted).
+Units with past fish are rarely deleted or moved, and `check_withdrawal` still catches what these do. Admin is
+read-only, apart from its restore action, which goes through `save()` and is refused for gate fields.
 
-Migration farm 0027 (`0027_withdrawal_acknowledgements`, keeps number 0027; replaces this branch's earlier 0027, which
-never landed): the new table and its append-only trigger, `batch` and `withdrawal_source` on handling acknowledgements.
-Fully reversible (cross-review 6).
+**Cost (cross-review 2, item 8, measured by the reviewer):** a grower feeding takes 30 queries without the guard and 52
+with it, because two full `Reader`s run. The `Reader` loads every treatment ever given in the units, with no date bound,
+so the cost grows with the farm's age. The rule "every end moved earlier is asked" also means a temperature recorded
+during a degree-day withdrawal whose projected end moves earlier asks for the box. For wip/perf and the owner:
+
+- skip the guard for writes that cannot touch a withdrawal (a non-medicated feed, a sample without a temperature);
+- bound the `Reader` to treatments overlapping the batches' presence;
+- decide whether a projected (estimated) end moving earlier should ask.
+
+Tests:
+- `farm/tests/test_withdrawal_gate.py`: one run, refused stale acknowledgement, stored = shown, no ambient
+  acknowledgement, earlier end, grown past the acknowledged end, data layer, the three Setup pages, the lock re-read;
+- `farm/tests/test_withdrawal_guard.py`: each path's scenario, freed fish, labels, the spy that each known path calls
+  the guard;
+- `farm/tests/test_harvest_inside_withdrawal.py`;
+- `farm/tests/test_migration_withdrawal_acknowledgements.py`: the reviewer's migration probe, with assertions;
+- `reports/tests/test_scope_version.py`: item 9.
+
+Migration farm 0027 (`0027_withdrawal_acknowledgements`): the new table and its append-only trigger, plus `batch` and
+`withdrawal_source` on handling acknowledgements. Fully reversible; the reverse drops the acknowledgement rows. Reports
+0014 adds `ReportSnapshot.scope_version` (default 1 for everything filed before).
 
 ## Findings fixed
 
@@ -92,6 +123,17 @@ Translations: TR/NB, 0 missing (babel check); data map regenerated after the mer
     `queryset.update()` to a versioned save so that it could pass; it is not test-first, and the fingerprint still does
     not see `update()` writes that bypass versions (any write path in the app bumps the version). The lock tests check
     that batches and tanks are locked, not the order; the order is shared code (`_lock_fish`, `locked`).
+
+Cross-review 2 (REVIEW-CROSS-2-health.md), the coordinator's decisions:
+
+1, 5. One run in a savepoint; the impact is checked against exactly what was shown; nothing is written twice: done.
+2, 3. Data-layer enforcement (`farm/withdrawal_gate.py`), the Setup edits through the guard, the name scan replaced: done.
+4. Every earlier end of a held batch asks (the test that expected otherwise removed): done.
+6. No middleware; `withdrawal_ack` is an explicit argument of each guarded service, handed over by its own form: done.
+7. Units locked, the batches read again under the lock (`lock_fish`): done.
+8. An acknowledgement covers its end: the guard asks again and the sweep says so: done.
+9. Scope versions on the snapshot (`scope_version`; lice and slaughter 2): done.
+Cost (30 -> 52 queries per feeding): recorded above for wip/perf.
 
 ## Not fixed, and why
 

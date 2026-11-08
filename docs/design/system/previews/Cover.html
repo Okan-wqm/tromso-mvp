@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cover — Suderra Platform</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<style>.theme-switch{position:fixed;right:12px;bottom:12px;z-index:999;display:flex;gap:4px;padding:4px;border:1px solid var(--line-control);border-radius:6px;background:var(--surface-sheet);font:600 13px/1 var(--font-text)}.theme-switch button{padding:6px 10px;border:0;border-radius:4px;background:none;color:var(--text-2);font:inherit;cursor:pointer}.theme-switch button[aria-pressed="true"]{background:var(--action-tint);color:var(--action)}</style>
+</head>
+<body>
+<div class="cover">
+<style>
+.cover{position:relative;width:960px;height:288px;background:var(--surface-canvas);overflow:hidden;font-family:var(--font-text)}
+.cover svg{position:absolute;inset:0}
+.rail{fill:var(--surface-rail)} .slate{fill:var(--slate-300)} .teal{fill:var(--brand-teal)} .action{fill:var(--action)} .snow{fill:var(--surface-sheet);stroke:var(--line-hair)}
+.stripe{fill:var(--brand-teal)} .dot{fill:var(--text-3)} .r-obj{rx:var(--radius-object)}
+.name{position:absolute;left:48px;bottom:60px;margin:0;max-width:440px;font-family:var(--font-display);font-weight:600;font-size:84px;line-height:.95;letter-spacing:-.02em;color:var(--text-1)}
+.tag{position:absolute;left:50px;bottom:28px;margin:0;max-width:440px;font-size:14px;color:var(--text-3)}
+</style>
+<svg viewBox="0 0 960 288" width="960" height="288" aria-hidden="true">
+<!-- blocks: surface-rail 216x288 (bleeds top/bottom), slate-300 208x120, brand-teal 96x96, action 96x24, surface-sheet 208x120 -->
+<!-- arrangement: a flush modular grid right of x=480, the rail slab first like the app's own left rail -->
+<!-- pattern: the 3px brand stripe atop the rail, plus a dot grid at space-4 (16px) pitch: readings on a sheet. Chosen because the system is a precise, tabular console with one recurring mark -->
+<!-- scales: gaps space-4 (16px), corners radius-object (10px), dots r=2 -->
+<rect class="rail" x="504" y="-12" width="216" height="312"/>
+<rect class="stripe" x="504" y="0" width="216" height="3"/>
+<rect class="teal r-obj" x="536" y="40" width="96" height="96"/>
+<rect class="action r-obj" x="536" y="152" width="96" height="24"/>
+<rect class="slate r-obj" x="736" y="24" width="200" height="120"/>
+<rect class="snow r-obj" x="736" y="156" width="200" height="120"/>
+<circle class="dot" cx="744" cy="168" r="2"/><circle class="dot" cx="744" cy="184" r="2"/><circle class="dot" cx="744" cy="200" r="2"/><circle class="dot" cx="744" cy="216" r="2"/><circle class="dot" cx="744" cy="232" r="2"/><circle class="dot" cx="744" cy="248" r="2"/><circle class="dot" cx="744" cy="264" r="2"/><circle class="dot" cx="760" cy="168" r="2"/><circle class="dot" cx="760" cy="184" r="2"/><circle class="dot" cx="760" cy="200" r="2"/><circle class="dot" cx="760" cy="216" r="2"/><circle class="dot" cx="760" cy="232" r="2"/><circle class="dot" cx="760" cy="248" r="2"/><circle class="dot" cx="760" cy="264" r="2"/><circle class="dot" cx="776" cy="168" r="2"/><circle class="dot" cx="776" cy="184" r="2"/><circle class="dot" cx="776" cy="200" r="2"/><circle class="dot" cx="776" cy="216" r="2"/><circle class="dot" cx="776" cy="232" r="2"/><circle class="dot" cx="776" cy="248" r="2"/><circle class="dot" cx="776" cy="264" r="2"/><circle class="dot" cx="792" cy="168" r="2"/><circle class="dot" cx="792" cy="184" r="2"/><circle class="dot" cx="792" cy="200" r="2"/><circle class="dot" cx="792" cy="216" r="2"/><circle class="dot" cx="792" cy="232" r="2"/><circle class="dot" cx="792" cy="248" r="2"/><circle class="dot" cx="792" cy="264" r="2"/><circle class="dot" cx="808" cy="168" r="2"/><circle class="dot" cx="808" cy="184" r="2"/><circle class="dot" cx="808" cy="200" r="2"/><circle class="dot" cx="808" cy="216" r="2"/><circle class="dot" cx="808" cy="232" r="2"/><circle class="dot" cx="808" cy="248" r="2"/><circle class="dot" cx="808" cy="264" r="2"/><circle class="dot" cx="824" cy="168" r="2"/><circle class="dot" cx="824" cy="184" r="2"/><circle class="dot" cx="824" cy="200" r="2"/><circle class="dot" cx="824" cy="216" r="2"/><circle class="dot" cx="824" cy="232" r="2"/><circle class="dot" cx="824" cy="248" r="2"/><circle class="dot" cx="824" cy="264" r="2"/><circle class="dot" cx="840" cy="168" r="2"/><circle class="dot" cx="840" cy="184" r="2"/><circle class="dot" cx="840" cy="200" r="2"/><circle class="dot" cx="840" cy="216" r="2"/><circle class="dot" cx="840" cy="232" r="2"/><circle class="dot" cx="840" cy="248" r="2"/><circle class="dot" cx="840" cy="264" r="2"/><circle class="dot" cx="856" cy="168" r="2"/><circle class="dot" cx="856" cy="184" r="2"/><circle class="dot" cx="856" cy="200" r="2"/><circle class="dot" cx="856" cy="216" r="2"/><circle class="dot" cx="856" cy="232" r="2"/><circle class="dot" cx="856" cy="248" r="2"/><circle class="dot" cx="856" cy="264" r="2"/><circle class="dot" cx="872" cy="168" r="2"/><circle class="dot" cx="872" cy="184" r="2"/><circle class="dot" cx="872" cy="200" r="2"/><circle class="dot" cx="872" cy="216" r="2"/><circle class="dot" cx="872" cy="232" r="2"/><circle class="dot" cx="872" cy="248" r="2"/><circle class="dot" cx="872" cy="264" r="2"/><circle class="dot" cx="888" cy="168" r="2"/><circle class="dot" cx="888" cy="184" r="2"/><circle class="dot" cx="888" cy="200" r="2"/><circle class="dot" cx="888" cy="216" r="2"/><circle class="dot" cx="888" cy="232" r="2"/><circle class="dot" cx="888" cy="248" r="2"/><circle class="dot" cx="888" cy="264" r="2"/><circle class="dot" cx="904" cy="168" r="2"/><circle class="dot" cx="904" cy="184" r="2"/><circle class="dot" cx="904" cy="200" r="2"/><circle class="dot" cx="904" cy="216" r="2"/><circle class="dot" cx="904" cy="232" r="2"/><circle class="dot" cx="904" cy="248" r="2"/><circle class="dot" cx="904" cy="264" r="2"/>
+</svg>
+<p class="name">Suderra<br>Platform</p>
+<p class="tag">One calm console for fish, feed, water and people.</p>
+</div>
+
+<div class="theme-switch" role="group" aria-label="Theme"><button data-t="light" aria-pressed="true">Day</button><button data-t="dark" aria-pressed="false">Night</button><button data-t="fjord" aria-pressed="false">Fjord</button></div>
+<script>document.querySelectorAll('.theme-switch button').forEach(b=>b.onclick=()=>{document.documentElement.dataset.theme=b.dataset.t;document.querySelectorAll('.theme-switch button').forEach(x=>x.setAttribute('aria-pressed',x===b))});</script>
+</body>
+</html>

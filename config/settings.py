@@ -101,6 +101,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.navigation.rail',
                 'core.navigation.page_base',
+                'core.theme.context',
             ],
         },
     },

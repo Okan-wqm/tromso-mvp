@@ -393,6 +393,40 @@ class BoardTests(PeopleTestCase):
         from ..templatetags.hr import on_clock
         self.assertEqual(on_clock(at(23, 30), ''), datetime(2026, 3, 3, 0, 30))
 
+    def test_on_site_now_is_the_muster_count_of_every_open_clock_in_whoever_looks(self):
+        """In an emergency the count must be the whole site's: every open clock-in, the viewer's team or not, as a number
+        only (no name outside the viewer's team), and the tile says so. A clock-in left open for days still counts."""
+        punch(self.in_a, at(7))                                        # the lead's team
+        punch(self.in_b, at(6))                                        # another team: counted, not named
+        punch(self.in_fin, at(7, day=DAY - timedelta(days=3)))         # left open three days ago: still counted
+        punch(self.ben, at(6), at(8))                                  # went home: not counted
+        board = read.board(self.lead, at(10))
+        self.assertEqual(board.on_site, 3)
+        self.client.force_login(self.lead)
+        with mock.patch('django.utils.timezone.now', return_value=at(10)):
+            page = self.client.get(reverse('hr:production_today_board')).content.decode()
+        shown = {label: count for count, label in
+                 re.findall(r'<span class="tile-count">(\d+)</span><span class="tile-label">([^<]+)</span>', page)}
+        self.assertEqual(shown['On site now'], '3')
+        self.assertIn('Everyone clocked in, all teams', page)
+        self.assertNotIn('Bravo', page)
+        self.assertNotIn('Charlie', page)
+
+    def test_a_clock_in_open_more_than_twelve_hours_is_listed_and_flagged_not_dropped(self):
+        punch(self.in_a, at(7, day=DAY - timedelta(days=3)))           # forgot to clock out three days ago
+        punch(self.ben, at(21, day=DAY - timedelta(days=1)))           # 13 hours ago
+        punch(self.cy, at(8))                                          # 2 hours ago
+        board = read.board(self.lead, at(10))
+        flagged = {row.employee.last_name: row.open_since for row in board.rows}
+        self.assertEqual(flagged, {'Alfa': at(7, day=DAY - timedelta(days=3)),
+                                   'Bergh': at(21, day=DAY - timedelta(days=1)), 'Cyr': None})
+        self.assertEqual(board.open_long, 2)
+        self.client.force_login(self.lead)
+        with mock.patch('django.utils.timezone.now', return_value=at(10)):
+            page = self.client.get(reverse('hr:production_today_board')).content.decode()
+        self.assertIn('Open since 27.02.2026 07:00: check', page)          # on the site's clock (UTC here)
+        self.assertIn('2 open more than 12 hours: check', page)
+
     def test_people_planned_off_or_with_no_plan_are_not_listed_unless_they_are_there(self):
         self.plan(self.in_a, None)                                     # planned off
         states, _ = self.states(at(8))

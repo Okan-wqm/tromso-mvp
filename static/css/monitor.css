@@ -28,7 +28,9 @@
 html[data-wall] .rail,
 html[data-wall] .topbar,
 html[data-wall] .scrim,
-html[data-wall] .menu-button { display: none; }
+html[data-wall] .page-head,
+html[data-wall] .ui-bottombar { display: none; }
+html[data-wall] body { padding-bottom: 0; }
 html[data-wall] .content { max-width: none; padding: clamp(8px, 1vw, 20px); }
 html[data-wall] .monitor-filters,
 html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Full screen and Leave buttons */

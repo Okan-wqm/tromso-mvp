@@ -9,6 +9,7 @@
 #   makemigrations --check no model change without its migration
 #   data_map --check       docs/data-map.* match the code
 #   update_catalogs        brings locale/*/django.po up to date; CI then fails when that changed a file (git diff)
+# then compile_catalogs, then the suite unless SUITE=0.
 set -eu
 py() { python -W error::DeprecationWarning -W error::PendingDeprecationWarning "$@"; }
 
@@ -43,4 +44,6 @@ if [ "${CHECKS:-0}" = 1 ]; then (
   py manage.py update_catalogs
 ) fi
 py manage.py compile_catalogs >/dev/null
+# SUITE=0: the checks and the catalogs only, no tests (CI on a pull request)
+[ "${SUITE:-1}" = 1 ] || exit 0
 exec python -W error::DeprecationWarning -W error::PendingDeprecationWarning manage.py test --noinput "$@"

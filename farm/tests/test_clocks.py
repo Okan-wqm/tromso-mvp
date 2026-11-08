@@ -26,7 +26,7 @@ class ClockTests(TestCase):
 
     def test_on_selects_the_rows_of_the_sites_that_read_the_clock(self):
         site = Site.objects.create(name='Oslo', code='OS', timezone='Europe/Oslo')
-        other = Site.objects.create(name='Bergen', code='BG')    # company zone (UTC)
+        other = Site.objects.create(name='Bergen', code='BG', timezone='UTC')     # the server's clock
         clock = next(c for c in clocks() if c.zone.key == 'Europe/Oslo')
         self.assertEqual(set(Site.objects.filter(clock.on('pk'))), {site})
         none = next(c for c in clocks() if c.sites is None)

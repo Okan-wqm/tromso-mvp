@@ -91,7 +91,7 @@ class FastingTests(HarvestTestCase):
         [warning] = result.warnings
         self.assertEqual((warning.warning, warning.fasted_hours, warning.required_hours, warning.rule.kind),
                          ('fasting', Decimal('6.0'), 72, 'harvest'))
-        self.assertIn(f'Last fed {services.shown_date(self.day(1))}, 18:00: 6.0 h before', result.notes[1])
+        self.assertIn(f'Last fed {services.shown_date(self.day(1))} 18:00: 6.0 h before', result.notes[1])
         self.assertIn('the harvest rule asks for 72 h', warning.message())
 
     def test_a_feeding_without_a_time_counts_from_the_end_of_its_day(self):
@@ -565,7 +565,7 @@ class FastsTests(HarvestTestCase):
         self.assertEqual(fasting.fasting_on(self.t1, on - timedelta(days=4)), None)
         self.assertEqual(fasting.fasting_on(self.t1, on - timedelta(days=3)),
                          f'Fasting before the harvest of {services.shown_date(on)}: from '
-                         f'{services.shown_date(on - timedelta(days=3))}, 00:00 (72 h).')
+                         f'{services.shown_date(on - timedelta(days=3))} 00:00 (72 h).')
         self.assertIsNone(fasting.fasting_on(self.t2, on))
         transport = HandlingPlanItem.objects.create(kind='transport', date=on - timedelta(days=1), unit=self.t1,
                                                     batch=self.batch)
@@ -623,9 +623,9 @@ class PurgingTests(PurgingBase):
                          ('fasting', Decimal('30.0'), Decimal('60.0'), None, 'harvest'))
         self.assertEqual(warning.fasted_hours, Decimal('78.0'))              # 18:00 four days ago to today's start
         self.assertEqual(warning.message(),
-                         f'Last fed {services.shown_date(self.day(4))}, 18:00, 30 degree-days before '
+                         f'Last fed {services.shown_date(self.day(4))} 18:00, 30 degree-days before '
                          f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days.')
-        self.assertIn(f'Last fed {services.shown_date(self.day(4))}, 18:00: 30 degree-days before '
+        self.assertIn(f'Last fed {services.shown_date(self.day(4))} 18:00: 30 degree-days before '
                       f'{services.shown_date(self.today)}.', result.notes)
         self.assertIn('The harvest rule for Atlantic salmon asks for 60 degree-days.', result.notes)
         # Reached exactly: no warning; one degree-day short: a warning.
@@ -694,7 +694,7 @@ class PurgingTests(PurgingBase):
         [warning] = self.assess('transport').warnings
         self.assertEqual((warning.required_hours, warning.required_degree_days, warning.fasted_degree_days),
                          (100, None, None))
-        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(4))}, 18:00, 78.0 h before '
+        self.assertEqual(warning.message(), f'Last fed {services.shown_date(self.day(4))} 18:00, 78.0 h before '
                                             f'{services.shown_date(self.today)}: the transport rule asks for 100 h.')
 
     def test_going_on_stores_the_degree_days_and_a_new_temperature_asks_again(self):
@@ -761,7 +761,7 @@ class PurgingFastsTests(PurgingBase):
         self.assertEqual(fast.first_day, self.day(1))
         self.assertTrue(fast.start.projected)
         self.assertEqual(fast.why(), f'Fasting before the harvest of {services.shown_date(item.date)}: from '
-                                     f'{services.shown_date(self.day(1))}, 00:00 (60 degree-days). Projected at the '
+                                     f'{services.shown_date(self.day(1))} 00:00 (60 degree-days). Projected at the '
                                      'mean water temperature of the last days measured.')
         days = fasting.fasts([self.t1], self.day(3), item.date)
         self.assertEqual(sorted(day for _unit, day in days),

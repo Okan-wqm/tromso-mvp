@@ -136,8 +136,8 @@ class StockTestCase(TestCase):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
         self.user.groups.add(role('Stock keeper', *STOCK_KEEPER))
         self.client.force_login(self.user)
-        self.bergen = Site.objects.create(name='Bergen', code='BG')
-        self.tromso = Site.objects.create(name='Tromso', code='TR')
+        self.bergen = Site.objects.create(name='Bergen', code='BG', timezone='UTC')     # the clock the tests count on
+        self.tromso = Site.objects.create(name='Tromso', code='TR', timezone='UTC')
         self.hall = ProductionDepartment.objects.create(site=self.bergen, name='Hall A', code='HA')
         self.sea = ProductionDepartment.objects.create(site=self.tromso, name='Sea', code='SE')
         self.t1 = make_unit('T-01', self.hall)            # 100 m³ at 50 kg/m³: 5,000 kg

@@ -136,7 +136,7 @@ class WaterTestCase(TestCase):
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'eski-sifre-123')
         self.user.groups.add(role('Water keeper', *WATER_KEEPER))
         self.client.force_login(self.user)
-        self.bergen = Site.objects.create(name='Bergen', code='BG', altitude=D(0))
+        self.bergen = Site.objects.create(name='Bergen', code='BG', altitude=D(0), timezone='UTC')
         self.hall = ProductionDepartment.objects.create(site=self.bergen, name='Hall A', code='HA')
         self.ras = System.objects.create(name='RAS 1', code='R1', site=self.bergen, production_department=self.hall)
         self.t1 = make_unit('T-01', self.hall, system=self.ras)

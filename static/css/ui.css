@@ -297,7 +297,7 @@ a.ui-btn { text-decoration: none; }
 .board-table .board-weight { max-width: 9.5rem; }
 .board-table .board-weight .ui-chip-wrap { max-width: 9rem; }
 .ui-table .sticky-end .ui-btn { padding: 0 var(--space-3); }
-.ui-table td.num.board-weight, .ui-table td.num:has(> .ui-sub) { white-space: normal; }
+.ui-table td.num.board-weight { white-space: normal; }
 .board-table .board-protocol { max-width: 11rem; }
 .ui-table .sticky-first { max-width: 12rem; }
 .ui-table .sticky-first .ui-chip, .ui-table .water-status .ui-chip { white-space: normal; line-height: 1.25; padding-block: 3px; }

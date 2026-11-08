@@ -3668,8 +3668,62 @@ real mail.
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
+| `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests) |
 
 ## Tests
+
+The whole suite, as every agent and developer runs it (Git Bash, or any POSIX shell with Docker):
+
+```
+scripts/test.sh                          # the whole suite, 6 worker processes in parallel
+scripts/test.sh farm.tests.test_stock    # only these labels; any `manage.py test` argument passes through
+WORKERS=1 scripts/test.sh                # one process, without --parallel
+```
+
+`scripts/test.sh` starts a PostgreSQL server for the run alone (the development database's image,
+`timescale/timescaledb:2.17.2-pg17`, in a container `balik-test-db-<run>` on a network of its own, no host port, its data in
+memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the image built from
+`scripts/testrunner/Dockerfile` (the requirements and `tblib`, tagged by their hash, built when missing), and removes the
+server and the network at the end (`KEEP_DB=1` keeps them). So a run never touches the development database `balik`, its
+server or its volume, never shares test databases, roles or the shared server's 100 connections with another run, and needs
+no `DB_TEST_NAME`. There is no serial-only group: every test runs in the parallel run. Why the run is shaped so:
+
+- **Its own server, with TimescaleDB's job scheduler off** (`timescaledb.max_background_workers=0`). Each worker gets a copy
+  of the test database, and PostgreSQL copies a database only while nobody is connected to it; the scheduler keeps a
+  connection open to every database with the extension, so on the development server the copy fails ("source database is
+  being accessed by other users"). No test needs the scheduler: the tests of the jobs run them (`CALL run_job`), so no job
+  runs behind a test's back either. `manage.py test --parallel` on a server running the scheduler stops before it makes
+  anything and names this script (`config/test_runner.py`). Its data lives only as long as the run, so `fsync`,
+  `synchronous_commit` and `full_page_writes` are off; `max_connections` is 200, one connection per worker and the few a
+  test opens itself.
+- **A worker's failure is reported, not the run stopped**: without `tblib` a failing test's traceback cannot be sent from its
+  worker and the whole run ends at the first error.
+- **The catalogs are built in one step** (`core.catalogs.compile`): each worker builds them (the language tests'
+  `setUpModule`), and a worker loading a `.mo` file another one was rewriting read it half-written. The new file is written
+  beside the old one and replaces it, and a file that would not change is left alone.
+- **A request's language ends with the request** (`core.language.end_request_language` on `request_finished`): a test
+  client's request left its language active in the thread, and tests after it in the same worker read Norwegian or Turkish.
+- **A TransactionTestCase's tests are handed out one by one** (`config.test_runner.TestByTestParallelSuite`): they share
+  nothing, and the migration tests take minutes each (each migrates the schema back and forth), so a class of them no
+  longer keeps one worker busy long after the rest. They still come after every TestCase, as Django orders them, so no
+  TestCase meets a database one of them has emptied.
+
+**Measured** (2026-11-07 and 08, commit e8d5162, this development machine: 12 CPUs, 31 GB for Docker, other agents' suites running at the same
+time, so the times move with the load; 2828 tests):
+
+| How | Time |
+|---|---|
+| Before: `manage.py test` in Docker on the shared development server, one process (the agents' logs of 2026-11-06/07, about 2790 tests) | 5677 to 8685 s (1.6 to 2.4 h) |
+| `WORKERS=1 scripts/test.sh` (own server, one process) | 4661 s (1.3 h; 2828 tests, 3 skipped) |
+| `scripts/test.sh` with 4 workers, before the last two fixes above | 2362 s |
+| `WORKERS=8 scripts/test.sh` | 1338 s |
+| `scripts/test.sh` (6 workers), three runs in a row | 1118 s, 957 s, 768 s (2828 tests, 3 skipped, each) |
+
+The parallel and the serial run pass the same tests (2828, 3 skipped by both: the two TypeScript tests, without Node in the
+image, and the load check, which runs with `MONITOR_LOAD=1`). More workers than 8 did not help on this machine (12 workers: 2116 s under load): the test database and the workers
+share the same CPUs, and half of all test time is the migration tests.
+
+Without Docker the suite still runs on the development server, one process:
 
 ```
 .venv\Scripts\python.exe manage.py test
@@ -3680,5 +3734,5 @@ type-checked by a test when Node and `npm install` are there, and its unit tests
 builds `frontend/` with its `*.test.ts` and `frontend/test/` into `.build/test`, not committed, `scripts/mark-esm.mjs` marks it
 as ES modules and `node --test` runs it; without Node the test is skipped, under `CI=1` it fails). The browser build
 (`tsconfig.json`) leaves the tests out, and the no-UI-text rule reads every folder of `frontend/` but the tests. The
-development-only tools and their licences are in [`THIRD_PARTY.md`](THIRD_PARTY.md); none of them is shipped to the browser. The tests need the database container running (they check the timescaledb extension too). Set
-`DB_TEST_NAME` to give a checkout its own test database when two test runs overlap.
+development-only tools and their licences are in [`THIRD_PARTY.md`](THIRD_PARTY.md); none of them is shipped to the browser. Run so, the tests need the database container running (they check the timescaledb extension too); set
+`DB_TEST_NAME` to give a checkout its own test database when two such runs overlap.

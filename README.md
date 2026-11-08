@@ -3679,14 +3679,23 @@ starts; a plain `manage.py test` has the runner's filters only.
 
 ## CI and dependency updates
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request into it: four jobs in
-parallel, `permissions: contents: read`, a newer push to the same branch or pull request cancels the older run, and every
-action is pinned to a full commit with its version beside it. No secret is used: the database passwords are throwaway
-values that live only inside the job.
+GitHub Actions (`.github/workflows/ci.yml`) runs four jobs in parallel, `permissions: contents: read`, every action pinned
+to a full commit with its version beside it. No secret is used: the database passwords are throwaway values that live only
+inside the job. When it runs (the owner's decision, 2026-11-08):
+
+- **A pull request into `main`**: the fast jobs only, minutes each: `frontend`, `rust`, `security` and `python` as the
+  checks without the suite (`SUITE=0`). A newer push to the pull request cancels the older run.
+- **The whole Python suite** (an hour or more on a hosted runner): on every push to `main`, nightly at 06:30 UTC (after
+  06:00: until the golden-card fix G-03 lands, six subtests of `monitoring.tests.test_golden` fail before 06:00 UTC) and
+  by hand (Actions, CI, Run workflow). These runs carry the other three jobs too and are never cancelled.
+
+The python job is the same job on every event, only `SUITE` differs; its logic is in one place, `scripts/test.sh` and
+`scripts/testrunner/in-container.sh`, which a developer runs the same way. The suite itself is not run on a pull request,
+so run `scripts/test.sh` on the branch before asking for a merge.
 
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
-| `python` | `CHECKS=1 scripts/test.sh` with 4 workers, in the test runner's image (built with its pip layers cached): `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; the whole suite with warnings as errors | `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `python` | `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (built with its pip layers cached): `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host), where any issue but the five still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the console mail backend and the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
 | `frontend` | `npm ci`, `npm run build` (tsc, `tsconfig.json`), `npm test` (the TypeScript tests, the designer's browser test on the runner's Chrome) | the same three |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's; the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); `npm audit --omit=dev --audit-level=high` | see below |
@@ -3704,7 +3713,8 @@ npm audit --omit=dev --audit-level=high
 
 The workflow is checked with `actionlint` (the `rhysd/actionlint` image runs it with shellcheck:
 `docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12`). The suite takes far longer on GitHub's runners than
-here (4 workers on a small runner; the job allows 150 minutes), so `scripts/test.sh` stays the way to run it while working.
+here (4 workers on a small runner; the job allows 150 minutes, the checks alone 30), so `scripts/test.sh` stays the way to
+run it while working.
 
 **Dependency updates** come from Dependabot (`.github/dependabot.yml`): every Monday for pip (the requirements and the
 test runner's), npm, cargo (`sensors-ingest`), the GitHub actions and the Dockerfiles' images; minor and patch releases

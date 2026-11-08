@@ -1,6 +1,7 @@
 # Continuous integration (README, CI and dependency updates). Every job runs what a developer runs locally:
-#   python    scripts/test.sh with CHECKS=1: the project checks, then the whole suite, in the test runner's image on a
-#             TimescaleDB server of its own; then the catalogs must be unchanged
+#   python    scripts/test.sh with CHECKS=1: the project checks, in the test runner's image on a TimescaleDB server of its
+#             own, then the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole
+#             suite (an hour or more on a hosted runner) runs on a push to main, nightly and by hand
 #   frontend  npm ci, the browser build (tsc) and the TypeScript tests (npm test)
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   security  pip-audit, the Python licence gate, npm audit
@@ -12,23 +13,33 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Nightly at 06:30 UTC: after 06:00, as monitoring's golden-card tests (G-03) fail before 06:00 UTC until their fix
+  # lands on main.
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# One run per pull request (a newer push cancels the older run); runs on main (a push, the nightly, by hand) are never
+# cancelled, and each event has a group of its own.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "22"
 
 jobs:
+  # One job on every event, only SUITE differs: 0 on a pull request (the checks), 1 otherwise (the checks and the suite).
   python:
-    name: Django checks and the whole suite
+    name: ${{ github.event_name == 'pull_request' && 'Django checks' || 'Django checks and the whole suite' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 150 }}
+    env:
+      SUITE: ${{ github.event_name == 'pull_request' && '0' || '1' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -58,7 +69,7 @@ jobs:
       # The database server is the one scripts/test.sh starts (timescale/timescaledb:2.17.2-pg17, data in memory, the
       # job scheduler off, fsync off): a GitHub service container cannot be given those server options, and the
       # parallel run needs the scheduler off (README, Tests).
-      - name: Project checks and the whole suite (scripts/test.sh)
+      - name: Project checks, and the whole suite unless SUITE=0 (scripts/test.sh)
         env:
           CHECKS: "1"
           WORKERS: "4"

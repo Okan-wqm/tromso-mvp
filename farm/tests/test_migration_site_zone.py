@@ -40,3 +40,11 @@ class SiteZoneMigrationTests(TransactionTestCase):
         Site.objects.create(name='Izmir', code='IZ', timezone='')
         Site = self.migrate(AFTER).get_model('farm', 'Site')
         self.assertEqual(Site.objects.get(code='IZ').timezone, 'Europe/Istanbul')
+
+    @override_settings(COMPANY_TIME_ZONE='Europe/Olso')
+    def test_a_company_zone_that_is_no_zone_is_refused_not_written_into_the_sites(self):
+        Site = self.old.get_model('farm', 'Site')
+        Site.objects.create(name='Bergen', code='BG', timezone='')
+        with self.assertRaisesMessage(ValueError, "COMPANY_TIME_ZONE 'Europe/Olso' is not a known time zone."):
+            self.migrate(AFTER)
+        self.assertEqual(self.old.get_model('farm', 'Site').objects.get(code='BG').timezone, '')

@@ -956,6 +956,16 @@ class UnitChartTests(UnitWaterCase):
         self.client.force_login(blind)
         self.assertEqual(self.client.get(url).status_code, 403)
 
+    def test_a_moment_outside_the_window_of_dates_is_refused_never_a_server_error(self):
+        """`?at=` is an address a person can edit: the calendar's ends (an overflow on the site's clock) and anything
+        outside 1900-2100 are refused (400) through core.dates.read_moment, like any other date typed."""
+        url = reverse('farm:water_unit_chart', args=[self.unit.pk])
+        for typed in ('0001-01-01T00:30', '9999-12-31T23:59', '1899-12-31T12:00', '2026-13-01T00:00', '2026-01-05',
+                      'x'):
+            with self.subTest(at=typed):
+                self.assertEqual(self.client.get(url, {'at': typed}).status_code, 400)
+        self.assertEqual(self.client.get(url, {'at': '2026-01-05T09:00'}).status_code, 200)
+
     def test_two_windows_never_share_an_svg_id_and_the_calculators_ids_are_unchanged(self):
         inlet = point_of(self.unit, 'inlet')
         self.sample(inlet, temperature_c=8.1, ph='7.2', alkalinity_mg_l=90, salinity_ppt='0.2')

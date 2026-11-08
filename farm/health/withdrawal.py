@@ -547,6 +547,11 @@ class WithdrawalChanged(ValidationError):
         super().__init__(errors)
         self.change = found
 
+    def __reduce__(self):
+        # Pickled (the parallel test runner, a worker) as what it was made of: ValidationError's own args are not its
+        # constructor's.
+        return type(self), (self.change, self.message_dict)
+
 
 FIELD = 'withdrawal_ack'
 

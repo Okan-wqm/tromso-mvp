@@ -78,7 +78,7 @@ class EmploymentBoundsTests(EmploymentCase):
         before = self.counts()
         for actor in (self.ann, self.everyone):
             self.client.force_login(actor)
-            response = self.client.post(reverse('hr:leaverequest_create'), {
+            response = self.client.post(reverse('hr:production_leaverequest_create'), {
                 'employee': str(self.in_a.pk), 'leave_type': str(self.annual.pk), 'first_day': '2026-03-30',
                 'last_day': '2026-04-03', 'reason': ''})
             self.assertEqual(response.status_code, 200, actor)

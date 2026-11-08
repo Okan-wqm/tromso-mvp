@@ -315,6 +315,11 @@ def observe(value):
     return Observation.of_sample(value) if isinstance(value, WaterMeasurement) else value
 
 
+def SYSTEM_KEY(system_id):
+    """The key a Series reads a system's own sensors under (a system without a loop point)."""
+    return (sources.SYSTEM, system_id)
+
+
 def sensor_targets(point):
     """[(target, origin)] of a point's OWN live values, in the order a tie goes: the sensors bound to the point, then, for
     a system's middle point (its loop), the sensors bound to the system, which are the loop's own. A unit's middle point
@@ -341,26 +346,40 @@ class Series:
     moment" is looked up in, for a sample without a salinity here and for a unit's temperature on the day of its
     ration (farm/feeding/temperature.py). Live samples of live points only; with `live`, the sensors too (asked once
     per point and moment; a system's middle point has the system's sensors as its own). A sample's own workings never
-    take a live value (its salinity series is not live)."""
+    take a live value (its salinity series is not live). With `carry`, each point's newest sample before `since` is read
+    too (one more query), so the newest value is found however old (owner amendment A11: the ration). `systems`: the
+    ids of systems without a loop point whose sensors are read too, under the key SYSTEM_KEY(id), with no point (the
+    ration's system tier where the water page reads the system's sensors)."""
 
-    def __init__(self, points, code, since, until=None, live=False):
+    def __init__(self, points, code, since, until=None, live=False, carry=False, systems=()):
         self.code, self.live = code, live
         self.points = {point.pk: point for point in points}
+        self.targets = {point.pk: sensor_targets(point) for point in points}
+        for system_id in systems:
+            key = SYSTEM_KEY(system_id)
+            self.points[key] = None
+            self.targets[key] = [((sources.SYSTEM, system_id), Origin.SYSTEM_SENSOR)]
         self.moments = defaultdict(list)    # point id -> [measured at], in time order
         self.values = defaultdict(list)     # point id -> [value], in the same order
         self.asked = {}                     # moment -> {point id: [Found]} of the sensors
         self.bound = set()                  # the sensor targets with a channel of the parameter bound in the range
-        chosen = list(self.points)
+        chosen = [pk for pk, point in self.points.items() if point is not None]
         if chosen:
-            rows = WaterMeasurement.objects.filter(point__in=chosen, measured_at__gte=since,
-                                                   **{f'{code}__isnull': False})
+            measured = {f'{code}__isnull': False}
+            rows = WaterMeasurement.objects.filter(point__in=chosen, measured_at__gte=since, **measured)
             if until is not None:
                 rows = rows.filter(measured_at__lte=until)
-            for point_id, moment, value in rows.order_by('measured_at').values_list('point_id', 'measured_at', code):
+            found = list(rows.order_by('measured_at').values_list('point_id', 'measured_at', code))
+            if carry:
+                before = (WaterMeasurement.objects.filter(point__in=chosen, measured_at__lt=since, **measured)
+                          .order_by('point_id', '-measured_at').distinct('point_id')
+                          .values_list('point_id', 'measured_at', code))
+                found = [*before, *found]
+            for point_id, moment, value in found:
                 self.moments[point_id].append(moment)
                 self.values[point_id].append(value)
         if live and self.points:
-            wanted = [target for point in self.points.values() for target, _origin in sensor_targets(point)]
+            wanted = [target for targets in self.targets.values() for target, _origin in targets]
             self.bound = sources.bound(wanted, code, since, until or timezone.now())
 
     def _live(self, point_id, moment, window):
@@ -368,8 +387,8 @@ class Series:
         `window` old. One ask of the live sources per moment for every point of the series, so the queries do not grow
         with the points."""
         if moment not in self.asked:
-            targets = {pk: [(target, origin) for target, origin in sensor_targets(point) if target in self.bound]
-                       for pk, point in self.points.items()}
+            targets = {pk: [(target, origin) for target, origin in found if target in self.bound]
+                       for pk, found in self.targets.items()}
             if not any(targets.values()):
                 self.asked[moment] = {}
                 return []
@@ -386,7 +405,7 @@ class Series:
                                                 self.points[pk]))
                 by_point[pk] = values
             self.asked[moment] = by_point
-        return [found for found in self.asked[moment].get(point_id, []) if moment - found.at <= window]
+        return [found for found in self.asked[moment].get(point_id, []) if window is None or moment - found.at <= window]
 
     def candidates(self, point_id, moment, window):
         """The point's values at `moment` (Found) at or before it and at most `window` older, in the order a tie at one
@@ -394,7 +413,7 @@ class Series:
         found = list(self._live(point_id, moment, window)) if self.live else []
         moments = self.moments.get(point_id, [])
         index = bisect_right(moments, moment) - 1
-        if index >= 0 and moment - moments[index] <= window:
+        if index >= 0 and (window is None or moment - moments[index] <= window):
             found.append(Found(moments[index], self.values[point_id][index], point=self.points[point_id]))
         return found
 
@@ -664,8 +683,9 @@ class Context:
             reading.judged = status if reading.judged == Status.NO_LIMIT else worst([reading.judged, status])
             judged_for = {species_id for species_id, _water_type in through}
             reading.uncovered = tuple(each for each in reading.uncovered if each not in judged_for)
-            said = self._judged_through(converted)
-            reading.note = f'{reading.note} {said}' if reading.note else said
+            if converted.derived:               # said only where a conversion was made, not the sample's own value
+                said = self._judged_through(converted)
+                reading.note = f'{reading.note} {said}' if reading.note else said
         reading.status = reading.judged
         if now is not None and not reading.fresh(now):
             reading.status = Status.STALE

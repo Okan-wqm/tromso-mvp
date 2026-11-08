@@ -3422,6 +3422,12 @@ msgstr "Dårlig"
 msgid "Band"
 msgstr "Vektklasse"
 
+#, python-format
+msgid "Based on the temperature from %(when)s (%(days)d day old)"
+msgid_plural "Based on the temperature from %(when)s (%(days)d days old)"
+msgstr[0] "Basert på temperaturen fra %(when)s (%(days)d dag gammel)"
+msgstr[1] "Basert på temperaturen fra %(when)s (%(days)d dager gammel)"
+
 msgid "Basic info"
 msgstr "Grunnleggende info"
 
@@ -8357,9 +8363,8 @@ msgstr "Ingen oppgaver fullført eller avlyst ennå"
 msgid "No task matches these filters."
 msgstr "Ingen oppgaver samsvarer med filtrene."
 
-#, python-format
-msgid "No temperature in the last %(days)d days: record one."
-msgstr "Ingen temperatur de siste %(days)d dagene: registrer én."
+msgid "No temperature recorded here yet: record one."
+msgstr "Ingen temperatur er registrert her ennå: registrer en."
 
 msgid "No test. Use “Add test” to add a row."
 msgstr "Ingen test. Bruk «Legg til test» for å legge til en rad."

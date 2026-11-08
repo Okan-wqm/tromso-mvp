@@ -228,9 +228,6 @@ FEEDING_ACK_PERCENT = 10
 # measured biomass marked stale (docs/regulatory-reports.md, D-7).
 REPORT_RECENT_WEIGHING_DAYS = 30
 
-# A ration reads the latest temperature of the unit or its loop measured at most this many days before (owner
-# decision Q5): stale after the temperature's 24 hours, no ration after this (farm/feeding/temperature.py).
-TEMPERATURE_USABLE_DAYS = 7
 
 # The estimated weight between weighings (farm/feeding/projection.py) is marked "weigh soon" after this many days
 # since the last measured point, and "weigh now: the estimate is unreliable" after the second (owner decision Q6).

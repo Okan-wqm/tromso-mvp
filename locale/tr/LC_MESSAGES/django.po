@@ -3421,6 +3421,12 @@ msgstr "Kötü"
 msgid "Band"
 msgstr "Ağırlık aralığı"
 
+#, python-format
+msgid "Based on the temperature from %(when)s (%(days)d day old)"
+msgid_plural "Based on the temperature from %(when)s (%(days)d days old)"
+msgstr[0] "%(when)s tarihli sıcaklığa göre (%(days)d günlük)"
+msgstr[1] "%(when)s tarihli sıcaklığa göre (%(days)d günlük)"
+
 msgid "Basic info"
 msgstr "Temel bilgiler"
 
@@ -8363,9 +8369,8 @@ msgstr "Henüz tamamlanan veya iptal edilen görev yok"
 msgid "No task matches these filters."
 msgstr "Bu filtrelere uyan görev yok."
 
-#, python-format
-msgid "No temperature in the last %(days)d days: record one."
-msgstr "Son %(days)d günde sıcaklık kaydı yok: bir tane kaydedin."
+msgid "No temperature recorded here yet: record one."
+msgstr "Burada henüz sıcaklık kaydedilmedi: bir tane kaydedin."
 
 msgid "No test. Use “Add test” to add a row."
 msgstr "Test yok. Satır eklemek için “Test ekle”yi kullanın."

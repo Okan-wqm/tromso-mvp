@@ -865,9 +865,12 @@ ended, and counts the fish each row feeds today after the more specific rows.
 **The ration** of a batch in a unit on a day (`farm/feeding/ration.py`): the protocol by the rule above; the band
 by the fish's **estimated** average (owner decision Q7); the **temperature** of the unit, else of its system's loop,
 then of the systems that system is nested in (`farm/feeding/temperature.py`, the water samples' series of
-`farm/water/read.py`): the unit's own fresh value wins, else the nearest loop's fresh value, else the newest stale
-one, marked stale; fresh is the temperature parameter's 24 h, and nothing within `TEMPERATURE_USABLE_DAYS` (7,
-owner decision Q5) gives no ration; the moment is now for today and the end of the day for a past day. The SFR is
+`farm/water/read.py`, picked by A9's `read.choose`): the unit's own fresh value wins (its own-water points), else
+the nearest system's fresh value (its loop, or its own sensors when it has no loop point), else the newest stale one;
+fresh is the temperature parameter's 24 h. **However old, the newest temperature gives the ration** (owner amendment
+A11, 2026-11-08, the one explicit exception to A9.3; it replaced decision Q5's 7-day cut-off): a stale one says so on
+the meal board, "Based on the temperature from 03.11.2026 07:40 (5 days old)"; only a unit where no temperature was ever
+recorded has no ration ("No temperature recorded here yet: record one."); the moment is now for today and the end of the day for a past day. The SFR is
 the band's cell at that temperature, **interpolated linearly between two columns and never extrapolated** (owner
 decision Q1): outside the first and last column, or a fish outside the bands, there is no ration and the page says
 why; never a default temperature or rate. The day's ration R = estimated biomass × SFR / 100, a meal R ÷ the band's
@@ -1162,7 +1165,7 @@ stream's, not the fish's: it is judged for the same fish and shown at its own po
 and never moves the unit's status. The unit's system's loop stands in only for a parameter the unit has nothing fresh
 of. Its **temperature** for the ration
 (`farm/feeding/temperature.py`) is picked by the same rule (`read.choose`), with the loops of the systems its system is
-nested in as further tiers; the withdrawal's daily mean (`farm/health/withdrawal.py`) reads the unit's middle point, else
+nested in as further tiers; the withdrawal's daily mean (`farm/health/withdrawal.py`) takes the lowest daily mean of the unit's own-water points (never the inlet; owner 2026-11-08: the conservative side), else
 its own system's loop (a day without one counts at the species' assumed temperature, else as 0 °C, and says so: the safe
 side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
 and a test fails when another module reads the samples.

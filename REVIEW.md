@@ -211,3 +211,15 @@ Test first throughout: each fix has its `Test:` commit before it.
   **10**: golden cards on a pinned clock, recorded again (only the new notes changed).
 - **Not done here**: the migration chain (6) is re-pointed at landing; the Deffeyes replay and the trail
   (`sensors/read.deffeyes_frames`, `sensors/trail.py`) still read sensor-before-sample (A1) per frame, not `read.choose`.
+
+## Owner follow-ups (2026-11-08)
+
+- **A11** (the one explicit exception to A9.3): the ration takes the newest temperature however old; a stale one is shown
+  with "Based on the temperature from dd.mm.yyyy HH:MM (N days old)" (`feeding.temperature.Temperature.warning`, the meal
+  board); `TEMPERATURE_USABLE_DAYS` is gone; the samples before the read range are found by `Series(carry=True)`.
+- **Withdrawal degree-days**: per day the lowest daily mean of the unit's own-water points (never the inlet), else the
+  loop (`water/degree_days.Temperatures.of`, `water_sources(every_point=True)`). **To reconcile at the merge with
+  wip/fix-health-reports**: its withdrawal guard's coverage test registers what the withdrawal readers read; this
+  branch makes `Temperatures` read the unit's other own-water points too.
+- A "Judged as" note only where a conversion was made; a system without a loop point stands in for the ration through
+  its own sensors, as on the water page (`Series(systems=...)`, `read.SYSTEM_KEY`).

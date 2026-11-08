@@ -39,8 +39,9 @@ SAFE_MARKERS = re.compile(r'\bmark_safe\(|\bSafeString\(|\bSafeText\(')
 
 def _sources(pattern):
     root = Path(settings.BASE_DIR)
-    # docs/ holds the design system's previews and the written reports: pages read beside the code, never served by it.
-    skipped = {'node_modules', '.venv', 'staticfiles', '.build', 'media', 'docs'}
+    # docs/ holds the design system's previews and the written reports, frontend/test the browser tests' fixture pages:
+    # pages read beside the code, never served by it.
+    skipped = {'node_modules', '.venv', 'staticfiles', '.build', 'media', 'docs', 'frontend'}
     for path in sorted(root.rglob(pattern)):
         relative = path.relative_to(root)
         if skipped & set(relative.parts):

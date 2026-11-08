@@ -224,3 +224,26 @@ class RailOrderTests(TestCase):
         Site.objects.create(name='Bergen Hatchery', code='BH-01', timezone='Europe/Oslo')
         with self.settings(COMPANY_NAME=''):
             self.assertIn('<div class="rail-foot">Bergen Hatchery</div>', self.rail(reverse('home')))
+
+
+class DisplayWeightTests(SimpleTestCase):
+    """Bricolage Grotesque is served at 600 only (static/css/fonts.css): a rule that sets it, or a heading it draws (h1,
+    h2), asks for no other weight, so the browser never fakes a bold."""
+
+    def test_the_display_face_is_never_asked_for_another_weight(self):
+        rule = re.compile(r'([^{}]+)\{([^{}]*)\}')
+        found = []
+        for path in (ROOT / 'static' / 'css').glob('*.css'):
+            css = re.sub(r'/\*.*?\*/', '', path.read_text(encoding='utf-8'), flags=re.S)
+            for selectors, body in rule.findall(css):
+                display = 'var(--font-display)' in body or 'Bricolage' in body or any(
+                    re.search(r'(^|[\s>+~,])h[12]\b', selector.strip()) for selector in selectors.split(','))
+                weight = re.search(r'font-weight:\s*(\d+)', body)
+                if display and weight and weight.group(1) != '600':
+                    found.append(f'{path.name}: {selectors.strip()} {weight.group(1)}')
+        self.assertEqual(found, [])
+
+    def test_the_sign_in_wordmark_is_set_in_the_display_face(self):
+        css = (ROOT / 'static' / 'css' / 'auth.css').read_text(encoding='utf-8')
+        brand = re.search(r'\n\.brand \{([^}]*)\}', css).group(1)
+        self.assertIn('var(--font-display)', brand)

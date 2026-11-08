@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
+from unittest import mock
 
 from django.test import SimpleTestCase
 from django.urls import reverse
@@ -252,6 +253,11 @@ class SeriesTests(SourcesCase):
 class ShownTests(SourcesCase):
     def setUp(self):
         super().setUp()
+        # The pages read the clock when they render. Pinned to the test's own moment, a value set 12 s before it is
+        # 12 s old however long the machine takes to get there (under load a page rendered late said "20 s ago").
+        clock = mock.patch('django.utils.timezone.now', return_value=self.now)
+        clock.start()
+        self.addCleanup(clock.stop)
         self.sample(hours=26, alkalinity_mg_l='90', salinity_ppt='0', ph='7.0', temperature_c='8')
         self.on(self.mid1, self.value('ph', 7.41, seconds=12))
         self.on(self.ras, self.value('temperature_c', 9.5, seconds=40))

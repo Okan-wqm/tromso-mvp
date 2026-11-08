@@ -41,7 +41,6 @@ class AttendanceRecord(AuditedModel):
     via = models.CharField(_('How'), max_length=10, choices=Via.choices, default=Via.ENTERED)
     # The lead's reason for an entered time, or any remark: the person's own words, masked in the log and the viewer.
     note = models.CharField(_('Note'), max_length=200, blank=True)
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'attendance_records'

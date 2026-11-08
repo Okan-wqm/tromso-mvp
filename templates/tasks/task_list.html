@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n tasks assets %}
+{% load i18n tasks assets dates %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
 {% comment %} Operations › Tasks (tasks.resources.TaskResource): three views, each a query of its own paged on the
    server (Today: overdue, then due today, then done today; Open; Completed), the filters and the open drawer
@@ -56,8 +56,8 @@
       <option value="">{% trans "Any category" %}</option>
       {% for value, label in categories %}<option value="{{ value }}"{% if params.category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "Due from" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "to" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "Due from" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "to" %} {% day_input "to" params.to %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
 
@@ -84,9 +84,9 @@
             <span class="row-sub">{{ task.get_category_display }} · <span class="priority-{{ task.priority }}">{{ task.get_priority_display }}</span>{% if task.series_id %} · {% trans "recurring" %}{% endif %}</span>
           </td>
           <td>{{ place|place_label }}{% if place.is_deleted %} <span class="badge badge-voided">{% trans "Place deleted" %}</span>{% endif %}<span class="row-sub nowrap">{{ place|place_context }}</span></td>
-          <td class="nowrap"><time datetime="{{ task.due_date|date:'Y-m-d' }}">{{ task.due_date|date:"DATE_FORMAT" }}</time>{% if task.due_time %} {{ task.due_time|time:"H:i" }}{% endif %}{% if task.overdue %} <span class="badge badge-overdue">{% trans "Overdue" %}</span>{% endif %}</td>
+          <td class="nowrap"><time datetime="{{ task.due_date|date:'Y-m-d' }}">{{ task.due_date|date:"DATE_FORMAT" }}</time>{% if task.due_time %} {{ task.due_time|time:"TIME_FORMAT" }}{% endif %}{% if task.overdue %} <span class="badge badge-overdue">{% trans "Overdue" %}</span>{% endif %}</td>
           <td>{% with names=task.assignees.all|people %}{% if names %}{{ names }}{% else %}<span class="over-text">{% trans "Nobody" %}</span>{% endif %}{% endwith %}</td>
-          <td><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>{% if task.status == "done" %}<span class="row-sub">{{ task.completed_by|person }} · {{ task.completed_at|date:"DATETIME_FORMAT" }}</span>{% elif task.status == "cancelled" %}<span class="row-sub">{{ task.cancelled_by|person }}: {{ task.cancel_reason }}</span>{% elif task.status == "in_progress" %}<span class="row-sub">{{ task.started_by|person }}</span>{% endif %}</td>
+          <td><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>{% if task.status == "done" %}<span class="row-sub">{{ task.completed_by|person }} · {{ task.completed_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</span>{% elif task.status == "cancelled" %}<span class="row-sub">{{ task.cancelled_by|person }}: {{ task.cancel_reason }}</span>{% elif task.status == "in_progress" %}<span class="row-sub">{{ task.started_by|person }}</span>{% endif %}</td>
           <td class="num">{% if task.lines %}{{ task.lines_done }}/{{ task.lines }}{% else %}—{% endif %}</td>
         </tr>
         {% endwith %}{% endfor %}

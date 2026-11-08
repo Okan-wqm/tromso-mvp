@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time, timezone as utc
 from decimal import Decimal
 
@@ -6,6 +7,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from farm.models import ProductionDepartment, Site
+from farm.tests.helpers import leave_without_site
 
 from .. import read
 from ..models import LeaveType, LeaveRequest, SchedulingSettings, Shift, ShiftAssignment
@@ -71,6 +73,32 @@ class OverviewReadTests(OverviewTestCase):
                 read.overview(self.lead, MONDAY)
             return len(queries)
         self.assertEqual(count(4), count(40))
+
+
+class DayStateTests(OverviewTestCase):
+    """A person's day has one state (read.Cell.state), read by the schedule and the team overview alike: approved leave
+    first (a planned shift or a planned day off under it is for someone else to cover), then a planned shift, then a
+    planned day off, else nothing planned."""
+
+    def test_approved_leave_reads_on_leave_on_the_schedule_and_in_the_overview(self):
+        self.plan(self.in_a, MONDAY, shift=None)                                # planned off, then leave approved
+        self.plan(self.in_a, date(2026, 3, 3))                                  # planned to work, then leave approved
+        self.plan(self.in_a, date(2026, 3, 4), shift=None)                      # planned off, no leave
+        kind = LeaveType.objects.create(name='Annual', code='AN')
+        LeaveRequest.objects.create(employee=self.in_a, leave_type=kind, first_day=MONDAY, last_day=date(2026, 3, 3),
+                                    status='approved', decided_at=datetime(2026, 1, 1, tzinfo=utc.utc))
+        cells = read.week(self.lead, MONDAY).rows[0].cells
+        self.assertEqual([cell.state for cell in cells[:5]], ['leave', 'leave', 'off', 'none', 'none'])
+        row = read.overview(self.lead, MONDAY).rows[0]
+        self.assertEqual((row.working, row.off, row.leave), (0, 1, 2))
+        self.client.force_login(self.lead)
+        page = self.client.get(reverse('hr:production_shiftassignment_list'), {'week': MONDAY.isoformat()}).content.decode()
+        days = re.findall(r'data-day="(2026-03-0[2-4])".*?</td>', page, re.S)
+        cell = {day: text for day, text in re.findall(r'data-day="(2026-03-0[2-4])"(.*?)</td>', page, re.S)}
+        self.assertEqual(len(days), 3)
+        for day, state in (('2026-03-02', 'On leave'), ('2026-03-03', 'On leave'), ('2026-03-04', 'Off')):
+            self.assertIn(f'>{state}</span>', cell[day], day)
+            self.assertNotIn('>Off</span>' if state == 'On leave' else '>On leave</span>', cell[day], day)
 
 
 class OverviewPageTests(OverviewTestCase):
@@ -167,7 +195,7 @@ class OrgChartTests(OverviewTestCase):
         self.assertNotIn('Smolt hall 2', tree())
 
     def test_the_counts_are_the_viewers_to_see_and_a_site_less_department_has_its_own_box(self):
-        orphan = ProductionDepartment.objects.create(site=None, name='Orphan hall', code='ORP')
+        orphan = leave_without_site(ProductionDepartment.objects.create(site=self.site, name='Orphan hall', code='ORP'))
         place(employee('E-9', 'India'), orphan)
         boss = read.org_tree(self.lead, read.PRODUCTION)
         self.assertEqual(boss.total, 1)                                          # only the lead's own team

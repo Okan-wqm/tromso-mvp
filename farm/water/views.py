@@ -28,12 +28,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
+from core.dates import on_clock, read_day, read_moment
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -212,7 +212,7 @@ def _latest(site):
 
 
 def _day(request, name, default):
-    return parse_date(request.GET.get(name, '')) or default
+    return read_day(request.GET.get(name, ''), request) or default
 
 
 def _history(request, site, place):
@@ -361,13 +361,13 @@ def _moment(request, owner):
     value = request.GET.get('at', '')
     if not value:
         return None
-    try:
-        wall = datetime.strptime(value, '%Y-%m-%dT%H:%M')
-    except ValueError:
+    wall = read_moment(value)                   # core.dates: the one reader, inside 1900-2100 (never an overflow)
+    if wall is None:
         raise BadRequest('at')
     zone = zone_of(site_of(owner))
-    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
-    if first.utcoffset() != second.utcoffset() or timezone.make_naive(first.astimezone(zone), zone) != wall:
+    try:
+        first = on_clock(wall, zone)            # core.dates: the one check of a skipped or repeated time
+    except ValidationError:
         raise BadRequest('at')
     if first > timezone.now():
         raise BadRequest('at')
@@ -472,6 +472,7 @@ def record_round(request):
                 samples = services.record_round(
                     request.user, measured_at=header.cleaned_data['measured_at'],
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
+                    withdrawal_ack=header.cleaned_data['withdrawal_ack'],
                     rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered])
             except AlreadyRecorded:
                 return done(request, context['back_url'])
@@ -487,7 +488,9 @@ def record_round(request):
 
 
 def _round_errors(error, header, entered):
-    """The service's reasons on the round: a cell's on its row and parameter, the time on the header."""
+    """The service's reasons on the round: a cell's on its row and parameter, the time on the header. The withdrawal
+    guard's question goes on the header, with its box."""
+    header.withdrawal_change = getattr(error, 'change', None) or header.withdrawal_change
     for key, messages_ in error.message_dict.items():
         index, _sep, code = key.partition('-')
         if code and index.isdigit():
@@ -507,7 +510,8 @@ def void_sample(request, pk):
         form = SampleVoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void(request.user, sample, form.cleaned_data['reason'])
+                services.void(request.user, sample, form.cleaned_data['reason'],
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -557,9 +561,9 @@ def drawer(request, unit):
 
 
 def overview_tiles(user):
-    """The production overview's water figure: the units with a critical water value now."""
+    """The production overview's water figure: the sampling points with a critical water value now, the water page's own
+    count (`_latest`, every point it lists, an outlet too), so the two cannot disagree."""
     if not user.has_perm(VIEW):
         return []
-    units = list(Tank.objects.select_related('production_department__site'))
-    return [{'label': _('Units with a critical water value'), 'count': critical_count(unit_water(user, units)),
+    return [{'label': _('Sampling points with a critical water value'), 'count': _latest(None)['critical_count'],
              'url': page_url()}]

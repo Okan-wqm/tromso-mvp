@@ -86,7 +86,7 @@
           {% for row in rows %}{% with unit=row.unit stock=row.stock %}
           <tr class="unit-row{% if row.selected %} is-selected{% endif %}{% if stock.over_capacity %} is-over{% endif %}"{% if row.selected %} aria-current="true"{% endif %}>
             <td>
-              <a class="unit-code row-link" href="{{ row.href }}">{{ unit.code }}</a>{% if row.placements %} {% include "farm/_placements.html" with chips=row.placements %}{% endif %}{% if row.water %} {% include "farm/_water_dot.html" with status=row.water.status %}{% endif %}{% if row.withdrawal %} <span class="badge badge-critical" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
+              <a class="unit-code row-link" href="{{ row.href }}">{{ unit.code }}</a>{% if row.placements %} {% include "farm/_placements.html" with chips=row.placements %}{% endif %}{% if row.water %} {% include "farm/_water_dot.html" with status=row.water.status old=row.water.old_alert %}{% endif %}{% if row.withdrawal %} <span class="badge badge-critical" title="{% for block in row.withdrawal %}{{ block.batch.code }}{% if block.until %} · {{ block.until|date:'DATE_FORMAT' }}{% endif %} {% endfor %}">{% trans "Withdrawal" %}</span>{% endif %}
               <span class="row-sub nowrap">{{ unit.production_department.name }}{% if unit.production_department.site %} · {{ unit.production_department.site.name }}{% endif %}</span>
             </td>
             <td>

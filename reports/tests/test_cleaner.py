@@ -16,6 +16,7 @@ from .. import compute, exports
 from ..models import Report
 from .helpers import OCTOBER, ReportTestCase, day, previewed
 from .schema import errors
+from farm import withdrawal_gate
 
 
 class CleanerFishTestCase(ReportTestCase):
@@ -48,6 +49,7 @@ class CleanerFishTestCase(ReportTestCase):
                                           lines=[(unit, count, Decimal(weight))])
         return operation.movements.first().batch
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def adjust(self, unit, batch, on, count, reason):
         """A count adjustment, which has no dialog: its operation and line as the stock service would write them."""
         operation = StockOperation.objects.create(kind='adjustment', date=on, created_by=self.user)
@@ -115,6 +117,7 @@ class FiguresTests(CleanerFishTestCase):
         self.assertEqual(feed['feeds'], [{'feed': 'Fish paste', 'form': 'wet', 'kg': '2.4'},
                                          {'feed': 'Lumpfish pellets', 'form': 'dry', 'kg': '7.6'}])
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_recount_up_is_a_warning_a_cull_of_another_reason_and_a_harvest_are_problems(self):
         self.feed_cleaner(self.dry, '1', day(10, 3))
         self.adjust(self.m1, self.farmed, day(10, 21), 10, 'count_correction')      # nets to a loss of 30

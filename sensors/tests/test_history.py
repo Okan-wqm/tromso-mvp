@@ -4,6 +4,7 @@ value from after it, a moved sensor counting for the tank it was in then), a sys
 point on the diagram from the hour tier, the channel that feeds each input, and binding a channel from a card's place
 through the Move dialog."""
 import json
+import re
 from datetime import datetime, timedelta, timezone as tz
 from decimal import Decimal
 
@@ -97,7 +98,7 @@ class PastMomentTests(HistoryCase):
         page = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk]), {'at': local})
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, '7.31')
-        self.assertRegex(page.content.decode(), r'unit sensor #\d+ · 2\s?minutes ago')
+        self.assertRegex(re.sub(r'<[^>]+>', '', page.content.decode()), r'unit sensor #\d+ · 2\s?minutes ago')
         self.assertEqual(self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk]),
                                          {'at': 'yesterday'}).status_code, 400)
 

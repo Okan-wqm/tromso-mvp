@@ -52,8 +52,8 @@ def lock_employed(employee, first, last=None):
 
 
 def punch_day(employee, moment):
-    """The day of a punch on its site's clock (the day the employment rule reads)."""
-    return timezone.localtime(moment, zone_of(read.site_on(employee, moment.date()))).date()
+    """The day of a punch on its site's clock (hr.read.local_day): the day the employment rule reads."""
+    return read.local_day(employee, moment)[0]
 
 
 def employment_conflicts(employee, joined_on, left_on):
@@ -268,8 +268,11 @@ def plan_shifts(user, cells, shift):
                     raise PermissionDenied
                 if shift is not CLEAR:
                     check_employed(employee, day)
-            if shift is CLEAR and not existing:
-                continue
+            if shift is CLEAR:
+                # Clearing a selection clears its filled cells: an empty one has nothing to clear (F-024).
+                changes = {day: value for day, value in changes.items() if day in existing}
+                if not changes:
+                    continue
             found = evaluate(employee, changes)
             blocking += [(employee, item) for item in found if item.blocks]
             warnings += [(employee, item) for item in found if not item.blocks]
@@ -534,8 +537,8 @@ def clock_out(user):
 def enter_presence(user, employee, clock_in_at, clock_out_at, note):
     """A lead records presence for a person of their team: times already on the site's clock as instants, and a reason
     (required: the CHECK on the table says so too). Needs Create on Attendance and the person in the user's team."""
-    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(user, employee, timezone.localtime(
-            clock_in_at, zone_of(read.site_on(employee, clock_in_at.date()))).date()) or own_record(user, employee):
+    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(
+            user, employee, read.local_day(employee, clock_in_at)[0]) or own_record(user, employee):
         raise PermissionDenied
     note = (note or '').strip()
     if not note:

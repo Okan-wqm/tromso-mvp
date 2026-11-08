@@ -134,7 +134,7 @@ class DraftTests(ReportPagesTestCase):
         self.assertEqual(report.found_at.astimezone(dt_tz.utc), datetime(2026, 10, 29, 21, 15, tzinfo=dt_tz.utc))
         edit = self.client.get(reverse('reports:report_edit', args=[report.pk]))
         self.assertEqual(edit.context['form'].initial['found_at'], datetime(2026, 10, 30, 6, 15))
-        self.assertContains(edit, 'value="2026-10-30T06:15"')
+        self.assertContains(edit, 'value="30.10.2026 06:15"')                       # dd.mm.yyyy HH:MM in every language
         self.assertEqual(compute.compute(report).content['found_at'], '2026-10-29T21:15:00+00:00')
         # The future is the site's future: a time that is past in UTC may still be to come in Tokyo.
         soon = timezone.localtime(timezone.now(), zone_of(self.sea)) + timedelta(hours=2)
@@ -266,6 +266,10 @@ class FilingTests(ReportPagesTestCase):
         paths = [path for path, _before, _after in page.context['differences']['figures']]
         self.assertIn(f'/units/{self.k2.pk}/fish_at_end', paths)
         self.assertIn(f'/units/{self.k2.pk}/moved_out_of_site', paths)
+        # Said as the figures are named on the page, the unit by its number, never as a key of the content.
+        self.assertContains(page, '<li>Unit K-02 · Fish at the month’s end: 500 → 1000</li>', html=True)
+        self.assertContains(page, '<li>Unit K-02 · Moved out of the site: 500 → 0</li>', html=True)
+        self.assertNotContains(page, f'/units/{self.k2.pk}/')
         response = self.client.post(reverse('reports:report_correct', args=[report.pk]))
         correction = Report.objects.get(corrects=report)
         self.assertRedirects(response, reverse('reports:report_edit', args=[correction.pk]))

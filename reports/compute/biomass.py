@@ -18,6 +18,7 @@ from farm.models import Batch, DeliveryRecord, Feed, FeedingRecord, ProtocolAssi
 from farm.models.stock import AdjustmentReason, MovementKind
 from farm.stock import read
 
+from ..models import HarvestCondition
 from . import stock
 from .common import Result, identity, species_code, text, unit_number, year_class
 
@@ -32,6 +33,10 @@ ADJUSTMENT_CAUSE = {
     AdjustmentReason.OTHER: OTHER,
 }
 BOOK, PROJECTED, STALE = 'book', 'projected', 'book_stale'
+# The condition of the harvest kilos (slaktetilstand): those the farm holds, weighed round at harvest (the harvest line's
+# measured kilos). It is the weights' fact, never a person's answer: a "gutted" answer once put round kilos under a gutted
+# label in a filing (audit F-086). Gutted kilos come with the slaughter result (OUR-18), and with them their condition.
+HARVEST_CONDITION = HarvestCondition.ROUND.value
 
 
 def is_production(batch):
@@ -46,7 +51,6 @@ def loss_cause(line):
 
 def compute(site, period, report=None):
     problems, warnings = [], []
-    condition = report.harvest_condition if report is not None else ''
     units = stock.site_units(site)
     opening, closing, lines = read.in_period(units, period.start, period.end)
     batches = Batch.all_objects.select_related('species').in_bulk(
@@ -86,7 +90,7 @@ def compute(site, period, report=None):
                                        'from_lokalitetsnummer': other_site.lokalitetsnummer if other_site else None})
             elif line.kind == MovementKind.HARVEST:
                 row['harvested'].append({'species': code, 'fish': -line.count, 'slaughter_weight_kg': text(
-                    line.kilos, 1), 'condition': condition or None})
+                    line.kilos, 1), 'condition': HARVEST_CONDITION})
             elif line.kind == MovementKind.DELIVERY:
                 row['moved_out'].append({'species': code, 'fish': -line.count, 'kg': text(line.kilos, 1),
                                          'to_lokalitetsnummer': deliveries[line.operation_id].destination_site_number})
@@ -109,9 +113,6 @@ def compute(site, period, report=None):
             feed = feeds[feed_id]
             row['feed'].append({'feed': feed.name, 'feed_type': feed.feed_type, 'kg': text(kilos, 1)})
         rows[str(unit.pk)] = row
-    if any(row['harvested'] for row in rows.values()) and not condition:
-        problems.append(_('Say in what condition the harvested fish are weighed in this report: round or gutted weight '
-                          '(the Report tab; slaktetilstand).'))
     content = {
         'kind': 'biomass', 'period': period.key, 'identity': identity(site, problems), 'units': rows,
         'fallow_since': _fallow_since(units, closing, period),

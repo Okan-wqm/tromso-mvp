@@ -1,4 +1,2 @@
-# The English date look the console had before it had languages (day, short month, 24-hour clock).
-# Turkish and Norwegian use Django's own formats for their language.
-DATE_FORMAT = 'j M Y'
-DATETIME_FORMAT = 'j M Y, H:i'
+# The dates of this language: the European way (config/formats/european.py, owner rule).
+from config.formats.european import *  # noqa: F401,F403

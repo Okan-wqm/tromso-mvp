@@ -2,6 +2,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from ..models import Document, KnowledgeEntry, SourceKind
 from ..models.entry import ALL_SOURCE_FIELDS, SOURCE_FIELDS, TOPICS_MESSAGE
@@ -61,7 +62,7 @@ class KnowledgeEntryForm(TabbedForm):
             'quote': forms.Textarea(attrs={'rows': 4}),
             'citation': forms.Textarea(attrs={'rows': 3}),
             'url': forms.URLInput(attrs={'placeholder': 'https://example.com/article'}),
-            'observed_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'observed_on': DayInput(),
         }
         error_messages = {'topics': {'required': TOPICS_MESSAGE}}
 

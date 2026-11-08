@@ -38,7 +38,7 @@ from django.utils.translation import gettext as _
 
 from farm.feeding.read import book_on, last_fed_at
 from farm.models import Batch, HandlingAcknowledgement, Treatment
-from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule
+from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule, WithdrawalWarning
 from farm.stock.dates import local_today
 from farm.water.degree_days import BatchWater, degree_days_text, missing_sentence
 
@@ -326,17 +326,41 @@ def _earliest(result, batches):
     result.notes.append(result.earliest.text())
 
 
-def require_acknowledged(assessment, seen, field='handling_ack'):
+def require_acknowledged(assessment, seen, field='handling_ack', user=None, refused=None):
     """Refuses a save with warnings the person has not gone on past exactly as they are now (`seen`: the
     fingerprint the form's box carried); they are asked, or asked again. `assessment` has `warnings` and a
     `fingerprint` (an Assessment, or the treatment's over its units, or an experiment's start). The error is
-    reported on `field`, the name of the form's box."""
+    reported on `field`, the name of the form's box. `user` is the person going
+    on (for the second-person hook); `refused(errors)` makes the error raised (a ValidationError by default; the withdrawal
+    guard raises its WithdrawalChanged, which carries what it found)."""
+    refused = refused or ValidationError
     if assessment.warnings and seen != assessment.fingerprint:
         if not seen:
             message = _('Tick the box to go on despite these warnings.')
         else:
             message = _('The warnings changed since the form was shown: read them again, and tick the box to go on.')
-        raise ValidationError({field: message})
+        raise refused({field: message})
+    kinds = sorted({str(getattr(warning, 'warning', '')) for warning in assessment.warnings}
+                   & {str(kind) for kind in WITHDRAWAL_WARNINGS})
+    if kinds and second_person_must_approve(user, kinds, assessment):
+        raise refused({field: _('A second person must approve going on past a medicine withdrawal (the '
+                                'platform owner’s setting), and that approval cannot be given here yet.')})
+
+
+# The warnings about fish that may go, or have gone, to food medicated: a withdrawal in force before a harvest, and the
+# withdrawal guard's (farm.health.withdrawal.guarded) harvest inside a withdrawal and fish freed from one.
+WITHDRAWAL_WARNINGS = (AcknowledgedWarning.WITHDRAWAL, WithdrawalWarning.HARVESTED, WithdrawalWarning.RELEASED)
+
+
+def second_person_must_approve(user, kinds, record):
+    """THE hook of the platform owner's setting "a second person approves a withdrawal acknowledgement" (owner answer
+    2026-11-06, audit F-164): `user` is the person about to go on, `kinds` the withdrawal warnings (WITHDRAWAL_WARNINGS)
+    they go on past, `record` what they acknowledge (the assessment or the withdrawal change: its warnings, messages and
+    fingerprint), so the approval flow can name both people and what was approved.
+    It is the one place that setting is consulted (require_acknowledged, every dialog's save); the setting itself and
+    the second person's approval flow are built in the owner-settings work. Until then the setting does not exist and is
+    off: one person's acknowledgement goes on, stored and logged as critical."""
+    return False
 
 
 def acknowledge(record, assessment):
@@ -349,7 +373,8 @@ def acknowledge(record, assessment):
             block = warning.block
             rows.append(HandlingAcknowledgement(
                 **link, warning=warning.warning, withdrawal_until=block.until,
-                withdrawal_approximate=block.approximate, withdrawal_reason=block.reason[:500]))
+                withdrawal_approximate=block.approximate, withdrawal_reason=block.reason[:500], batch=block.batch,
+                withdrawal_source=withdrawal.source_key(block.source)))
         else:
             rows.append(HandlingAcknowledgement(
                 **link, warning=warning.warning, last_fed_at=warning.last_fed_at,

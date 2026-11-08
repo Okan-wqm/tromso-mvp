@@ -189,8 +189,6 @@ class TaskSeries(AtPlace, AuditedModel):
     is_active = models.BooleanField(_('Active'), default=True)
     # The last day its tasks were made up to (tasks.services.materialise); None before the first time.
     generated_until = models.DateField(null=True, blank=True, editable=False)
-    # The key of the form it was created with (core.crud.ENTRY_KEY): the same form sent twice creates one.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'task_series'
@@ -359,8 +357,6 @@ class Task(AtPlace, AuditedModel):
     cancelled_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='+', editable=False, verbose_name=_('Cancelled by'))
     cancel_reason = models.CharField(_('Reason for cancelling'), max_length=500, blank=True, editable=False)
-    # The key of the form it was created with (core.crud.ENTRY_KEY): the same form sent twice creates one task.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     objects = TaskManager()
     all_objects = TaskQuerySet.as_manager()

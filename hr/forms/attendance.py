@@ -42,7 +42,7 @@ class AttendanceRecordForm(TabbedForm):
         self.fields['employee'].queryset = employees.select_related('user')
         self.fields['employee'].label_from_instance = lambda employee: employee.full_name
         if not self.instance._state.adding and not self.is_bound:
-            zone = self.zone(self.instance.employee, self.instance.clock_in.date())
+            _day, zone = read.local_day(self.instance.employee, self.instance.clock_in)   # the site's day, never UTC's
             for name in ('clock_in', 'clock_out'):
                 moment = getattr(self.instance, name)
                 if moment is not None:

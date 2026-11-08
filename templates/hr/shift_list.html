@@ -16,7 +16,7 @@
           <span class="shift-chip tone-{{ shift.tone }}">{{ shift.code }}</span>
           {% if can_change %}<a class="row-title row-title-inline" href="{% url 'hr:shift_edit' shift.pk %}" data-modal>{{ shift.name }}</a>{% else %}<span class="row-title row-title-inline">{{ shift.name }}</span>{% endif %}
         </td>
-        <td>{{ shift.starts_at|time:"H:i" }}–{{ shift.ends_at|time:"H:i" }}{% if shift.ends_at <= shift.starts_at %} <span class="muted">{% trans "next day" %}</span>{% endif %}</td>
+        <td>{{ shift.starts_at|time:"TIME_FORMAT" }}–{{ shift.ends_at|time:"TIME_FORMAT" }}{% if shift.ends_at <= shift.starts_at %} <span class="muted">{% trans "next day" %}</span>{% endif %}</td>
         <td class="num">{{ shift.break_minutes }}</td>
         <td class="num">{{ shift.grace_minutes }}</td>
         <td><span class="badge badge-{{ shift.status }}">{{ shift.get_status_display }}</span></td>

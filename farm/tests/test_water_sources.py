@@ -11,6 +11,7 @@ Every value says where it comes from and how old it is, on the water page, the m
 Derived values (NH3, the other oxygen unit) need all their inputs from one kind of source: a sensor TAN with sensor pH and
 temperature (the oldest input's time), a manual TAN with its own sample's pH and temperature, never a mix. A provider that
 fails leaves the manual values and says so."""
+import re
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
@@ -260,19 +261,37 @@ class ShownTests(SourcesCase):
         origins = {item.field: item.reading.sample.origin for item in chart.inputs if item.reading}
         self.assertEqual(origins, {'ph': read.Origin.SENSOR, 'temperature_c': read.Origin.SYSTEM_SENSOR,
                                    'alkalinity_mg_l': read.Origin.MANUAL, 'salinity_ppt': read.Origin.MANUAL})
-        html = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])).content.decode()
+        html = text(self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])))
         self.assertRegex(html, r'unit sensor #\d+ · 1[2-9] s ago')
         self.assertRegex(html, r'system sensor #\d+ · 4[0-9] s ago')
         self.assertRegex(html, r'manual · 1.day ago')
 
     def test_the_water_page_and_the_card_name_the_origin(self):
         self.stock()                                              # an empty unit's card shows no water
-        page = self.client.get(reverse('farm:water')).content.decode()
+        page = text(self.client.get(reverse('farm:water')))
         self.assertRegex(page, r'unit sensor #\d+ · 1[2-9] s ago')
-        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        card = text(self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}))
         # A card says the age in bands (monitoring/cards/render.py age_text): 12 s is "10 s ago", 40 s "40 s ago".
         self.assertRegex(card, r'unit sensor #\d+ · 10 s ago')
         self.assertRegex(card, r'system sensor #\d+ · 40 s ago')
+
+    def test_the_origin_and_the_age_are_one_part_under_the_value_everywhere(self):
+        """The water page, the Deffeyes window and the card print where a value came from and how old it is through one
+        part (farm/_water_source.html): a line of its own under the value, the origin and the age apart, so it breaks
+        between the two and never runs into the figure."""
+        self.stock()
+        part = r'<span class="wq-source"><span class="wq-origin">unit sensor #\d+</span> · <span class="wq-age">{age}</span></span>'
+        page = self.client.get(reverse('farm:water')).content.decode()
+        self.assertRegex(page, r'7\.41' + part.format(age=r'1[2-9] s ago'))
+        chart = self.client.get(reverse('farm:water_unit_chart', args=[self.t1.pk])).content.decode()
+        self.assertRegex(chart, part.format(age=r'1[2-9] s ago'))
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        self.assertRegex(card, r'<dd class="row-sub wq-said">' + part.format(age='10 s ago') + '</dd>')
+
+
+def text(response):
+    """A page's words without its markup."""
+    return re.sub(r'<[^>]+>', '', response.content.decode())
 
 
 class SeriesCostTests(SourcesCase):

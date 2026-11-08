@@ -1,7 +1,7 @@
 import io
 import re
 import warnings
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as utc
 from unittest import mock
 from importlib import import_module
 
@@ -154,7 +154,20 @@ class AuditLogTests(TestCase):
         self.assertEqual(labels(q='bh'), ['Bergen (BH)'])
         self.assertEqual(labels(user='kari'), ['Tromsø (TS)'])
         self.assertEqual(labels(action='create'), ['Bergen (BH)'])
-        self.assertEqual(labels(**{'from': '2999-01-01'}), [])
+        self.assertEqual(labels(**{'from': '01.01.2099'}), [])          # the window of dates ends with 2100
+
+    def test_activity_log_days_and_times_are_the_companys_clock(self):
+        """23:30 UTC on 1 March is 00:30 on 2 March in Oslo (settings.COMPANY_TIME_ZONE): the entry is the 2nd's, by
+        the filter and on the page, not the server's UTC day."""
+        self.user.user_permissions.add(Permission.objects.get(codename='view_auditlog'))
+        self.client.force_login(self.user)
+        with mock.patch('django.utils.timezone.now', return_value=datetime(2026, 3, 1, 23, 30, tzinfo=utc.utc)):
+            self.make_entry(entity_label='Night (NT)')
+        url = reverse('core:activity_log')
+        labels = lambda **query: [e.entity_label for e in self.client.get(url, query).context['page'].object_list]
+        self.assertEqual(labels(**{'from': '02.03.2026', 'to': '02.03.2026'}), ['Night (NT)'])
+        self.assertEqual(labels(**{'from': '01.03.2026', 'to': '01.03.2026'}), [])
+        self.assertContains(self.client.get(url), '02.03.2026 00:30')
 
 
 def perms(*names):

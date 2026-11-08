@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core.crud import TabbedForm, tab_fields
 from farm.stock.dates import site_today
+from core.widgets import DayInput
 
 from .. import read, scope, services, units
 from ..models import Employee
@@ -44,7 +45,7 @@ class EmployeeForm(TabbedForm):
     department = DepartmentField(label=_('Department'), required=False)
     title = forms.CharField(label=_('Title'), max_length=100, required=False)
     from_day = forms.DateField(label=_('From'), required=False,
-                               widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+                               widget=DayInput())
 
     class Meta:
         model = Employee
@@ -60,8 +61,8 @@ class EmployeeForm(TabbedForm):
         }
         widgets = {
             'employee_number': forms.TextInput(attrs={'placeholder': _('e.g. E-1042')}),
-            'joined_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'left_on': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'joined_on': DayInput(),
+            'left_on': DayInput(),
         }
 
     def __init__(self, *args, editor=None, realm=None, **kwargs):

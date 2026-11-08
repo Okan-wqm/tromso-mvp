@@ -16,8 +16,9 @@ needs the same way:
 - files: a form with a file field gets the uploaded files (a library document's PDF);
 - a read page: a tab with a `detail_template` gets a page that shows one record to everyone who may
   read the tab (the edit form needs the change permission), e.g. a document with its citation;
-- a form sent twice creates once: a model with an `entry_key` field gets the key of the form it was
-  created with (TabbedForm), and the same form sent again opens the record the first one created;
+- a form sent twice creates once: every new-record form carries a key (TabbedForm), stored with the record it
+  created in one table for every kind of record (core.models.EntryKey), and the same form sent again opens the
+  record the first one created;
 - a second place: a tab's `mounts` serve the same Resource, views and records again under another address and
   panel (HR's people pages under Production › Team); the request carries the mount it came by (`mount_of`), the
   tab's `scoped` narrows the rows to it, and every link and redirect stays in it.
@@ -30,7 +31,7 @@ from functools import wraps
 from django import forms
 from django.contrib import messages
 from django.contrib.postgres.constraints import ExclusionConstraint
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, Q
@@ -41,7 +42,7 @@ from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
 from . import audit, navigation, softdelete
-from .models import AuditedModel, AuditLog
+from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
 from .widgets import NONE
 
@@ -110,8 +111,8 @@ def done(request, url, stay=False):
 
 # The marker of a posted form to render again with what was entered, nothing saved (TabbedForm.refresh_on).
 DRAFT = '_draft'
-# A model's field for the key of the form that created the record (not a secret): the same form sent twice
-# (a double click, a retried request) creates one record. The form carries it hidden (TabbedForm).
+# The hidden field of a new-record form that keys it (not a secret): the same form sent twice (a double click, a
+# retried request) creates one record (core.models.EntryKey). The form carries it hidden (TabbedForm).
 ENTRY_KEY = 'entry_key'
 
 
@@ -127,7 +128,8 @@ class TabbedForm(forms.ModelForm):
     """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`, where a
     tab can group some of its fields under a heading (Fieldset) and say a word about itself (`tab_help`).
     `fixed_after_creation` names the fields chosen once: they are shown but cannot be changed on an
-    existing record (a production department stays on its site).
+    existing record (a production department stays on its site); a form may open one again for a record that never
+    got a value (a department a deleted site left without a site).
 
     `refresh_on` names fields whose value changes the form itself (an equipment type decides its
     specification fields): changing one posts the form with the `_draft` marker and the server renders
@@ -140,8 +142,8 @@ class TabbedForm(forms.ModelForm):
     A form can drop fields for one record (`del self.fields[name]` in `__init__`, e.g. the measures a
     pond does not have); the tabs then show the fields it kept, and a heading left without fields goes.
 
-    A new record of a model with an `entry_key` field gets a hidden key (ENTRY_KEY), stored with it;
-    `sent_before()` finds the record a form with the same key already created (CreateView)."""
+    A new record's form gets a hidden key (ENTRY_KEY); `note_sent()` stores it with the record it created
+    (core.models.EntryKey) and `sent_before()` finds the record a form with the same key already created (CreateView)."""
 
     tabs = []
     fixed_after_creation = ()
@@ -162,7 +164,7 @@ class TabbedForm(forms.ModelForm):
             del self.fields['version']
         elif not self.instance._state.adding and not self.is_bound:
             self.initial['version'] = self.instance.version
-        if self.instance._state.adding and any(f.name == ENTRY_KEY for f in self._meta.model._meta.fields):
+        if self.instance._state.adding:
             self.fields[ENTRY_KEY] = forms.UUIDField(widget=forms.HiddenInput, initial=uuid.uuid4, required=False)
 
     def get_initial_for_field(self, field, field_name):
@@ -183,17 +185,29 @@ class TabbedForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         self._check_conditional_constraints(cleaned)
-        if cleaned.get(ENTRY_KEY):
-            setattr(self.instance, ENTRY_KEY, cleaned[ENTRY_KEY])
         return cleaned
+
+    def sent_key(self):
+        """The key the form was sent with, read from what was posted (before or without the form's checks); None for a
+        form without one or a key that is not a key."""
+        if ENTRY_KEY not in self.fields or not self.is_bound:
+            return None
+        try:
+            return self.fields[ENTRY_KEY].clean(self[ENTRY_KEY].value())
+        except ValidationError:
+            return None
 
     def sent_before(self):
         """The record a form with this form's key already created (the same form sent twice); None for a
-        first sending or a form without a key."""
-        key = self.cleaned_data.get(ENTRY_KEY) if ENTRY_KEY in self.fields else None
-        if key is None:
-            return None
-        return self._meta.model._base_manager.filter(**{ENTRY_KEY: key}).first()
+        first sending or a form without a key. It needs no check of the form: ask it first."""
+        key = self.sent_key()
+        return None if key is None else EntryKey.record_of(key, self._meta.model)
+
+    def note_sent(self, record):
+        """Stores the form's key with the record it created (in the creating transaction)."""
+        key = self.sent_key()
+        if key is not None:
+            EntryKey.note(key, record)
 
     def _check_conditional_constraints(self, cleaned):
         """Conditional unique and exclusion constraints, e.g. "code unique among live records", "scientific
@@ -279,16 +293,13 @@ def tab_fields(tabs):
 def constraint_error(form, error):
     """Puts a database constraint's refusal (`error`, an IntegrityError) on the form, on the constraint's last field
     the form shows, with its message. False when the error names no constraint of the form's model."""
-    name = getattr(getattr(error.__cause__, 'diag', None), 'constraint_name', None)
-    model = form._meta.model
-    constraint = next((item for item in model._meta.constraints if item.name == name), None)
+    constraint = violated_constraint(form._meta.model, error)
     if constraint is None:
         return False
     names = []
     if isinstance(constraint, (models.UniqueConstraint, ExclusionConstraint)):
         names = [item for item in constrained_fields(constraint) if item in form.fields]
     form.add_error(names[-1] if names else None, constraint.violation_error_message)
-    form.instance._state.adding = True
     return True
 
 
@@ -343,6 +354,7 @@ class RowList:
     label = ''        # how the activity log names the list, e.g. _('Contacts')
     formset = None    # an inline formset over the row model (RowFormSet); the rows have `created_by`
     saved = ''        # the flash message: ngettext_lazy('%(count)d ... saved.', '...', 'count')
+    question_field = None   # the box that answers what its save may ask first (`save`'s `seen`), when it may
 
     @classmethod
     def applies_to(cls, obj):
@@ -370,7 +382,13 @@ class RowList:
         return {name: row[name] for name in fields}
 
     @classmethod
-    def save(cls, user, obj, rows, entity_type):
+    def severity(cls, obj):
+        """The severity of the log entry of a change of the list: normal; a list whose change protects or endangers fish
+        or food says critical (a medicine's withdrawal already given, audit F-196)."""
+        return AuditLog.Severity.NORMAL
+
+    @classmethod
+    def save(cls, user, obj, rows, entity_type, seen=None):
         """Replaces the stored rows with `rows` (cleaned data) and logs the change on `obj`."""
         model, link = cls.formset.model, cls.formset.fk.name
         # The row's own fields; an inline formset adds the link to its parent to the form's fields.
@@ -384,7 +402,7 @@ class RowList:
             after = cls.summary(obj)
             if before != after:
                 audit.record(user, AuditLog.Action.UPDATE, obj, {str(cls.label): [before, after]},
-                             entity_type=entity_type)
+                             entity_type=entity_type, severity=cls.severity(obj))
 
 
 class Resource:
@@ -512,7 +530,23 @@ class Resource:
     @classmethod
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user. A ValidationError raised here
-        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold)."""
+        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold: HR's
+        employment bound)."""
+
+    # When a save may ask something first (`edited`, below): the template the edit page shows the question with, and the
+    # name of the box that answers it.
+    question_template = None
+    question_field = None
+
+    @classmethod
+    def edited(cls, request, record, write, seen):
+        """Makes an edit of `record` (as read before the edit, not locked yet): `write()` as it is, which locks the
+        record, checks that it has not changed since and saves it. A tab whose records feed a rule that must ask
+        before a change stands wraps it (the medicine withdrawal: farm.health.withdrawal.guarded), locking what the
+        rule reads before `write()` locks the record; `seen` is the value of the edit form's box for that question.
+        A refusal is a ValidationError, shown on the form with what it carries (`change`, as `question` in the
+        page)."""
+        return write()
 
     @classmethod
     def search(cls, objects, query):
@@ -612,6 +646,11 @@ class ResourceView:
             raise PermissionDenied
         return obj
 
+    def locked_object(self, pk):
+        """The record, locked for the caller's transaction (not the rows it is joined to); 404 when it was deleted or
+        left the person's reach since the page was opened (F-009: not a server error)."""
+        return get_object_or_404(self.resource.visible(self.request).select_for_update(of=('self',)), pk=pk)
+
 
 # NONE (core.widgets, imported above): a list filter's value for "records without one" (production departments
 # without a site), the value a DependentSelect's source takes for the same.
@@ -687,9 +726,11 @@ class CreateView(FormView):
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
             return self.draft_page(r.form(request, draft=request.POST))
         form = r.form(request, request.POST, request.FILES)
-        if not form.is_valid():
-            return self.page(form)
+        # Looked up before the form is checked again: a second sending would be refused as a clash with its own first
+        # record (a code taken).
         sent = form.sent_before()
+        if sent is None and not form.is_valid():
+            return self.page(form)
         if sent is None:
             try:
                 with transaction.atomic():
@@ -698,24 +739,30 @@ class CreateView(FormView):
                         if hasattr(obj, field):
                             setattr(obj, field, request.user)
                     obj.save()
+                    form.note_sent(obj)
                     form.save_m2m()
                     audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
                     r.after_save(request, obj, created=True)
-            except ValidationError as error:
-                # A rule `after_save` checks under its lock (e.g. HR's employment bound): nothing was written.
-                form.add_error(None, error)
-                return self.page(form)
             except IntegrityError as error:
                 # The same form sent twice at once: the other request's insert held the key's unique index until it
                 # committed, so its record is there now.
                 sent = form.sent_before()
                 if sent is None:
                     # Two people saving the same record at once both pass the form's checks; the database's constraint
-                    # refuses the second, and it is told why on the form instead of a server error. Any other refusal
-                    # is a fault.
-                    if not constraint_error(form, error):
+                    # refuses the second, and it is told why on the form instead of a server error; so is a rule the
+                    # database holds across tables (a unit in a department being deleted, farm 0030). Any other
+                    # refusal is a fault.
+                    if not (constraint_error(form, error) or trigger_refusal(form, error)):
                         raise
+                    form.instance._state.adding = True     # the page is the new-record form again
                     return self.page(form)
+            except ValidationError as error:
+                # Its key stands for a record of another kind (EntryKey.note), or a rule `after_save` checks under its lock
+                # refused it (HR's employment bound): nothing was written.
+                form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages)
+                               if hasattr(error, 'error_dict') else error.messages)
+                form.instance._state.adding = True
+                return self.page(form)
             else:
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
                 flash(request, _('%(name)s “%(object)s” created.'), r, obj)
@@ -724,6 +771,15 @@ class CreateView(FormView):
         if getattr(sent, 'is_deleted', False):
             return done(request, self.url('list'))
         return done(request, self.url('edit', sent.pk), stay=True)
+
+
+class Crossed(Exception):
+    """The record changed between the edit's first read and its lock: the edit crossed another one."""
+
+
+class Clashed(Exception):
+    """The edit's save met a database constraint another save just took (two records given one code): the form says
+    which (F-034)."""
 
 
 class UpdateView(FormView):
@@ -741,38 +797,63 @@ class UpdateView(FormView):
         form = r.form(request, request.POST, request.FILES, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
+        versioned = 'version' in form.fields
         try:
-            return self.save(request, r, form, pk)
+            with transaction.atomic():
+                # What the edit may reach is worked out from the record as read here, and what it reaches is locked
+                # first (Resource.edited: the fish before the record, as a stock operation locks them). The record is
+                # locked in write(): changed meanwhile (its version moved), the edit is refused as any edit that
+                # crossed another; deleted meanwhile, it is not found (404, F-009).
+                read = get_object_or_404(r.visible(request), pk=pk)
+
+                def write():
+                    current = self.locked_object(pk)
+                    if versioned and form.cleaned_data.get('version') != current.version \
+                            or getattr(read, 'version', None) != getattr(current, 'version', None):
+                        raise Crossed
+                    before = r.recorded(current)
+                    obj = form.save(commit=False)
+                    if versioned:
+                        obj.version = current.version + 1
+                    if hasattr(obj, 'updated_by'):
+                        obj.updated_by = request.user
+                    try:
+                        with transaction.atomic():
+                            obj.save()
+                    except IntegrityError as error:
+                        # Two people giving two records the same code at once both pass the form's checks; the
+                        # database's constraint refuses the second, told on the form as on a new record (F-034). Any
+                        # other refusal goes on to the trigger check below.
+                        if not constraint_error(form, error):
+                            raise
+                        raise Clashed from None
+                    form.save_m2m()
+                    audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
+                    r.after_save(request, obj, created=False)
+                    return obj
+
+                obj = r.edited(request, read, write,
+                               request.POST.get(r.question_field, '') if r.question_field else None)
+        except Clashed:
+            return self.page(form, self.get_object(pk))
+        except Crossed:
+            # Translators: %(name)s is the kind of record in lower case (e.g. site).
+            messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                      'The form now shows their version; make your changes again.')
+                           % {'name': r.name})
+            return done(request, self.url('edit', pk))
         except ValidationError as error:
-            # A rule `after_save` checks under its lock (e.g. HR's employment bound): nothing was written.
-            form.add_error(None, error)
-            return self.page(form, obj)
+            # The save asked something first (Resource.edited): the form again with the question, nothing saved.
+            form.add_error(None, error.messages)
+            response = self.page(form, self.get_object(pk), withdrawal_change=getattr(error, 'change', None),
+                                 question_template=r.question_template)
+            response.status_code = 422
+            return response
         except IntegrityError as error:
             # A rule the database holds across tables refused the change: said on the form, nothing saved.
             if not trigger_refusal(form, error):
                 raise
             return self.page(form, self.get_object(pk))
-
-    def save(self, request, r, form, pk):
-        with transaction.atomic():
-            current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
-            versioned = 'version' in form.fields
-            if versioned and form.cleaned_data.get('version') != current.version:
-                # Translators: %(name)s is the kind of record in lower case (e.g. site).
-                messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                          'The form now shows their version; make your changes again.')
-                               % {'name': r.name})
-                return done(request, self.url('edit', pk))
-            before = r.recorded(current)
-            obj = form.save(commit=False)
-            if versioned:
-                obj.version = current.version + 1
-            if hasattr(obj, 'updated_by'):
-                obj.updated_by = request.user
-            obj.save()
-            form.save_m2m()
-            audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
-            r.after_save(request, obj, created=False)
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” saved.'), r, obj)
         return done(request, self.url('list'))
@@ -801,7 +882,12 @@ class DeleteView(ResourceView):
     def post(self, request, pk):
         r = self.resource
         with transaction.atomic():
-            obj = get_object_or_404(r.visible(request).select_for_update(of=('self',)), pk=pk)
+            # What the delete takes along is locked before the record itself, the deepest first (core.softdelete,
+            # LOCK ORDER), as a unit's save locks the unit before its department.
+            read = self.get_object(pk)
+            if isinstance(read, AuditedModel):
+                softdelete.lock_along(plan_delete(read))
+            obj = self.locked_object(pk)
             if not r.allowed(request, obj, 'delete'):
                 raise PermissionDenied
             if isinstance(obj, AuditedModel):
@@ -846,7 +932,7 @@ class RowListView(ResourceView):
             # As an edit of the record: locked, refused when it changed since the list was opened (its version
             # travels with the list), its version moved on. Asked again under the lock whether the record has
             # the list: a report filed meanwhile has no answers to change any more.
-            current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)
+            current = self.locked_object(pk)
             versioned = isinstance(current, AuditedModel)
             if versioned and request.POST.get('version') != str(current.version):
                 # Translators: %(name)s is the kind of record in lower case (e.g. site).
@@ -856,7 +942,19 @@ class RowListView(ResourceView):
                 return done(request, self.url('edit', pk), stay=True)
             if not rows.applies_to(current):
                 raise Http404
-            rows.save(request.user, current, kept, r.entity_type())
+            try:
+                with transaction.atomic():
+                    asked = {'seen': request.POST.get(rows.question_field, '')} if rows.question_field else {}
+                    rows.save(request.user, current, kept, r.entity_type(), **asked)
+            except ValidationError as error:
+                # A list whose save asks something first (a medicine's withdrawal rows and the withdrawal guard): the
+                # page again with the reason and what was found (`withdrawal_change`), nothing saved.
+                formset._non_form_errors = formset.error_class(error.messages)
+                page = UpdateView.as_page(r, request)
+                response = page.page(r.form(request, instance=obj), obj, **{rows.key: formset, 'open_tab': rows.tab,
+                                                                          'withdrawal_change': getattr(error, 'change', None)})
+                response.status_code = 422
+                return response
             if versioned:
                 current.version += 1
                 current.updated_by = request.user

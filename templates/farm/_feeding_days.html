@@ -1,4 +1,4 @@
-{% load i18n stock feeding %}{% comment %} Records by unit and day (farm.feeding.views._by_day): per unit and day the calculated
+{% load i18n stock feeding dates %}{% comment %} Records by unit and day (farm.feeding.views._by_day): per unit and day the calculated
    ration, the feed given and the deviation (given − calculated), each batch's estimated weight and the basis of its
    ration, or why there is none; a weighing's line compares the estimate with what was weighed. Computed on read.{% endcomment %}
 <div class="toolbar">
@@ -21,8 +21,8 @@
       <option value="">{% trans "All batches" %}</option>
       {% for batch in choices.batch %}<option value="{{ batch.pk }}"{% if params.batch == batch.pk|stringformat:"s" %} selected{% endif %}>{{ batch.code }}{% if batch.name %} · {{ batch.name }}{% endif %}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ params.from }}"></label>
-    <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ params.to }}"></label>
+    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
   {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record feeding" %}</a>{% endif %}

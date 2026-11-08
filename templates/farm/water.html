@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock water %}
+{% load i18n stock water dates %}
 {% comment %} Operations › Water chemistry (farm.water.views.water_page): the latest water of every point (a unit's
    middle point, a loop, and the other points that were sampled) with its status, or the history of the samples
    (?view=history, or one owner's with ?unit= / ?system= / ?equipment=, one point's with ?point=), each value judged
@@ -32,8 +32,8 @@
       {% for option in point_choices %}<option value="{{ option.pk }}"{% if point == option %} selected{% endif %}>{{ option.name }} · {{ option.get_kind_display }}</option>{% endfor %}
     </select>
     {% endif %}
-    <label class="water-date">{% trans "From" %} <input type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
-    <label class="water-date">{% trans "To" %} <input type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+    <label class="water-date">{% trans "From" %} {% day_input "from" start %}</label>
+    <label class="water-date">{% trans "To" %} {% day_input "to" end %}</label>
     <label class="check"><input type="checkbox" name="alerts" value="1"{% if alerts_only %} checked{% endif %}> {% trans "Only warnings and criticals" %}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
@@ -75,7 +75,7 @@
     <tbody>
       {% for row in history %}{% with sample=row.sample %}
       <tr class="{% if sample.is_deleted %}is-voided{% else %}wq-row-{{ row.status }}{% endif %}">
-        <td class="nowrap"><time datetime="{{ sample.measured_at|date:'c' }}">{{ sample|site_clock|date:"DATETIME_FORMAT" }}</time>{% if sample.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=sample.void_reason name=sample.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td class="nowrap"><time datetime="{{ sample.measured_at|date:'c' }}">{{ sample|sample_clock|date:"DATETIME_FORMAT" }}</time>{% if sample.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=sample.void_reason name=sample.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td class="nowrap"><a class="row-title" href="{{ row.history_url }}">{{ sample.point.owner.code }}</a><span class="row-sub">{{ sample.point.name }} · {{ sample.point.get_kind_display }}</span></td>
         <td>{{ sample.get_source_display }}{% if sample.notes %}<span class="row-sub">{{ sample.notes }}</span>{% endif %}</td>
         {% for reading in row.cells %}{% include "farm/_water_cell.html" %}{% endfor %}
@@ -113,7 +113,7 @@
       {% for row in rows %}{% with owner=row.owner point=row.point water=row.water %}
       <tr>
         <td class="nowrap"><a class="row-title" href="{{ row.history_url }}">{{ owner.code }}</a><span class="row-sub">{% if point %}{{ point.name }} · {{ point.get_kind_display }}{% else %}{% trans "No middle point" %}{% endif %} · {% if row.loop %}{{ owner.site.name }}{% else %}{{ owner.production_department.name }}{% if owner.production_department.site %} · {{ owner.production_department.site.name }}{% endif %}{% endif %}</span></td>
-        <td class="nowrap">{% include "farm/_water_status.html" with status=water.status %}</td>
+        <td class="nowrap">{% include "farm/_water_status.html" with status=water.status old=water.old_alert %}{% if water.why_no_limit %}<span class="row-sub">{{ water.why_no_limit }}</span>{% endif %}</td>
         {% for reading in row.cells %}{% include "farm/_water_cell.html" with latest=True source=True %}{% endfor %}
         <td class="row-actions"><a href="{{ row.history_url }}">{% trans "History" %}</a></td>
       </tr>

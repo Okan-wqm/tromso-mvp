@@ -31,3 +31,11 @@ class AccountLanguageMiddleware(MiddlewareMixin):
         if language:
             translation.activate(language)
             request.LANGUAGE_CODE = language
+
+
+def end_request_language(**kwargs):
+    """The language LocaleMiddleware or AccountLanguageMiddleware activated belongs to the request: when the response
+    is closed (request_finished, after a streamed body too) the thread goes back to the default language, so what it
+    runs next (another request's code before the middleware, a test after a test client's request) never inherits the
+    last visitor's."""
+    translation.deactivate()

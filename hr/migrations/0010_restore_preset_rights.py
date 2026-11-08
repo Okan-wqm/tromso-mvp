@@ -29,7 +29,7 @@ def restore(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('hr', '0008_production_permissions'),
+        ('hr', '0009_entry_keys'),
         ('auth', '0012_alter_user_first_name_max_length'),
     ]
 

@@ -100,6 +100,14 @@ class LoopTests(LoopTestCase):
         with self.assertRaises(gate.UnguardedWithdrawalWrite), transaction.atomic():
             self.t1.save()
 
+    def test_a_loop_change_that_moves_no_withdrawal_is_free_and_one_that_does_is_refused_row_by_row(self):
+        with transaction.atomic():
+            Tank.objects.filter(pk=self.t2.pk).update(system=self.loop)          # no fish of T-02 is treated
+        self.assertEqual(Tank.objects.get(pk=self.t2.pk).system, self.loop)
+        with self.assertRaises(gate.UnguardedWithdrawalWrite), transaction.atomic():
+            Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(system=None)
+        self.assertEqual(Tank.objects.get(pk=self.t1.pk).system, self.loop)
+
     def test_the_units_edit_page_asks_before_moving_it_out_of_its_loop(self):
         self.user.groups.add(role('Unit keeper', 'view_tank', 'change_tank'))
         url = reverse('farm:tank_edit', args=[self.t1.pk])

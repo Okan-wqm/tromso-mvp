@@ -177,3 +177,24 @@ Each item: `Test:` commit first (seen failing), then the fix commit.
   not changed.
 - `monitoring.tests.test_golden` fails 6 subtests on main too (clock-dependent "Stale · <day-1>" around 01:00 UTC);
   not this branch's.
+
+## Merge review (audit-verify/REVIEW-CROSS-merge-integrity.md): LAND WITH FOLLOW-UPS, followed up
+
+- **Finding 1 (MEDIUM) lock-order deadlock** between a department delete (department, then its units) and a unit save
+  (unit, then site and department). One lock order now, written once in `core/softdelete.py` (LOCK ORDER): the fish
+  first (batches, then units: stock operations, the withdrawal guard's `lock_fish`), then the place going up (production
+  departments, then sites: `Tank._lock_place`, which now locks the department before the site). A delete locks what it
+  takes along the deepest first and the record last (`softdelete.lock_along`, called by the delete view before it
+  locks the record; `execute` again); a restore collects unlocked and locks the deepest first, then saves parents first.
+  Health's guard locks the fish first, which is the start of the same order. Backstop:
+  `core.middleware.CrossedWritesMiddleware` turns a deadlock (40P01) or serialization failure (40001) on a POST into
+  "Someone else saved at the same moment: nothing was saved. Send it again." on the page it was sent from. Tests:
+  `farm.tests.test_lock_order.LockOrderTests` (two real transactions on two connections; it deadlocked before the fix)
+  and `CrossedWritesTests`.
+- **Finding 2 (LOW) experiment copy sent twice at once**: `experiments.services.copy` locks the source before it looks
+  the key up, as every keyed write path does. Test: `experiments.tests.test_amend.CopyRaceTests` (two threads; the
+  second failed on the key before the fix).
+- **Finding 3 (INFO) migration reverse**: the reverse of the entry-key migrations (farm 0031, tasks 0002, hr 0009,
+  inventory 0002, experiments 0003) is a no-op for the data: rolling back re-adds the 11 `entry_key` columns empty and
+  does not copy the keys back from `entry_keys`. The only effect is that a form opened before the rollback and sent
+  after it is not recognised as sent before; no record is touched.

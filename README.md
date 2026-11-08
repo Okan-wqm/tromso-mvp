@@ -2778,9 +2778,13 @@ controls are the UI's, not built here):
   (three heartbeats), at the parameter's decimals as the chart takes it; else a fresh manual or lab sample; else for the
   salinity of fresh water the assumption; else missing. Nothing is interpolated or carried past its freshness. A moved
   sensor counts for the place it was in.
-- One query of the readings per tier and page: below an hour the readings of the page's span, the newest of each step,
-  and the newest still fresh before the page; from an hour the page's hours of the hour rollup read once, each frame
-  given the last value of the newest hour ended by it.
+- One query of the readings per tier and page. Below an hour each frame gets, per channel, what the live view's rule
+  (`value_at`) gives at its moment: the newest clean reading at or before it, taken while the channel was bound there,
+  when it is no older than the channel's freshness (`sensors/tests/test_replay.py` ValueAtTests holds the two equal on
+  irregular readings at every raw step). At a step of 5 s or less the page's span is read, the last reading of each step
+  kept; at a longer step one indexed look-up per frame and channel (the primary key read backwards), so a page reads
+  about one reading per frame however dense the readings are (a test holds it to two). From an hour the page's hours of
+  the hour rollup are read once, each frame given the last value of the newest hour ended by it.
 - Every frame with its required inputs carries the whole diagram of its water (A8): isolines, regions, borders, Ω
   lines, names and notes, with the fish's limits, computed only by `farm/water/deffeyes.py` as `deffeyes.figure`, a
   JSON shape of flat number arrays. The server's SVG is drawn from the same shape (`deffeyes.draw` is
@@ -3457,13 +3461,24 @@ unit's chart), each refusing a user without its permission.
 | S9 (part) a replay page shares one diagram among frames equal but for pH, alkalinity and oxygen (proved invariant on random waters), its point left out (each frame carries its own); the page is sent gzipped | done |
 | S8 the SVG scene in the core; S9 the rest (one batch call, a binary encoding); S10 the retirement audit | open |
 
-**The replay, measured** (2026-11-08, development database, read only, 2000-frame pages on three units with live
-demo readings). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362
-at 5 s, 927 to 1 158 at 60 s. A page took 2.5 to 4.2 s at 1 s, 4.4 to 5.1 s at 5 s and 44 to 62 s at 60 s; of that
-the readings query (`replay_rows`) was 0.8 to 1.4 s, 2.8 to 3.5 s and 42 to 60 s, the figures 0.2 to 1.3 s (about
-1 to 3 ms each in the core, against 21 to 23 ms in Python before). The database read is the bottleneck: the raw
-tier is scanned below an hour (perf plan, `replay_window`). On a synthetic page (2000 frames, 54 temperatures) the
-figures take 131 ms and the page is 746 KB of JSON, 169 KB gzipped.
+**The replay, measured** (development database, read only, 2000-frame pages on three units with live demo readings at
+about 1 Hz). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362 at
+5 s, 927 to 1 158 at 60 s; a figure takes about 1 to 3 ms in the core (21 to 23 ms in Python before). The readings
+query (`replay_rows`) was the bottleneck at long steps: below an hour it read and sorted every raw reading of the page's
+span. Since `replay_window` (2026-11-09) it reads at a step over 5 s one indexed reading per frame and channel. Measured
+the same way, old and new code back to back on the same data (the machine shared with other test runs, so the
+spread is wide):
+
+| Step | Whole page, before | Whole page, after | Readings query, before | Readings query, after |
+|---|---|---|---|---|
+| 1 s | 2.0 to 3.5 s | 2.2 to 2.9 s | 0.3 to 0.7 s | 0.26 to 0.6 s |
+| 5 s | 2.1 to 3.1 s | 2.4 to 3.1 s | 0.58 to 0.91 s | 0.59 to 0.83 s |
+| 60 s | 8.7 to 12.5 s | 2.4 to 3.8 s | 6.7 to 9.6 s | 0.55 to 1.06 s |
+
+(On 2026-11-08, on a busier machine, the old 60 s page had taken 44 to 62 s.) What is left of a 60 s page is, besides
+the readings, the figures (0.6 to 1.3 s), the bindings read per input (0.4 to 0.5 s) and the 2000 analyses (0.2 to
+0.5 s): the next levers are the one batch call of S9 and fewer binding queries. On a synthetic page (2000 frames, 54
+temperatures) the figures take 131 ms and the page is 746 KB of JSON, 169 KB gzipped.
 | I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
 
 ## Languages

@@ -4,7 +4,8 @@ the code, so a new fallback to the server's zone cannot slip by. Refused outside
 - `settings.TIME_ZONE`; `localdate()` and `localtime(x)` without a zone; `make_aware(x)` without a zone;
   `get_default_timezone()`; `get_current_timezone()` other than as the zone a form's own aware value is made naive again
   in (`make_naive(value, get_current_timezone())`: the wall time typed, no clock read);
-- `date.today()`, `datetime.today()`, `datetime.now()`, `timezone.now().date()`: the server's (or UTC's) day;
+- `date.today()`, `datetime.today()`, `datetime.now()` without a zone, `timezone.now().date()`: the server's (or UTC's) day
+  (`datetime.now(timezone.utc)` is an instant, not a day, and passes);
 - `TruncDate`, `TruncDay` and the other `Trunc*` without `tzinfo`: a day of the current zone (UTC) in the database;
 - a `__date` lookup on a moment (`created_at__date`, `clock_in__date`): the same, in a filter. A key's part before
   `__date` names a moment when it ends with `_at`, or is one of MOMENT_FIELDS; a field called `date` (`operation__date`)
@@ -70,7 +71,7 @@ def server_clock_reads_in(tree):
                 what = 'get_current_timezone() outside make_naive'
             elif name == 'today' and owner in ('date', 'datetime'):
                 what = f'{owner}.today()'
-            elif name == 'now' and owner == 'datetime':
+            elif name == 'now' and owner == 'datetime' and not node.args and not node.keywords:
                 what = 'datetime.now()'
             elif (name == 'date' and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Call)
                   and _name(node.func.value) == 'now'):

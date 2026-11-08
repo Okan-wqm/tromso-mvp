@@ -67,7 +67,9 @@ delete is a soft delete. Differences from the source:
   its own**, `COMPANY_TIME_ZONE` (environment, `Europe/Oslo` by default; later the platform owner's settings), never the
   server's `TIME_ZONE` (UTC): a place without a site (a person not posted, a record or a form over sites of several
   zones, the activity log, a record's history, the messages) reads it (`zone_of(None)`, `core.dates.company_zone`), and a
-  test reads the code so nothing falls back to the server's clock (`core/tests_company_clock.py`). The server refuses to
+  test reads the code so nothing falls back to the server's clock or day (`core/tests_company_clock.py`: also `date.today()`,
+  `now().date()`, `Trunc*` without `tzinfo`, a `__date` lookup on a moment; the attendance list's day of a stretch is the
+  company's, `hr.read.local_day` the site's for a person's placement). The server refuses to
   start on a zone that is not one a site may have (system check `farm.E001`). Migration `farm/0030_site_timezone_required`
   gives every site without a zone the company's, and refuses such a zone rather than write it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),

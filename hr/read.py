@@ -106,6 +106,13 @@ def site_on(employee, day):
     return site_of_posting(posting) if posting is not None else None
 
 
+def local_day(employee, moment):
+    """(the day, the zone) of `moment` on the clock of the site the person is placed on then: the placement is read on the
+    company's day, never the server's UTC day (a stretch from 00:30 is that day's, at a department move too)."""
+    zone = zone_of(site_on(employee, timezone.localdate(moment, zone_of(None))))
+    return timezone.localdate(moment, zone), zone
+
+
 def sites_of(pairs):
     """{(employee id, day): the site of the department they are placed in that day, or None}, for several pairs in one
     query."""

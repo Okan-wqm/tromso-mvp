@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core import navigation
 from core.crud import Mount, Resource
-from core.dates import read_day
+from core.dates import company_zone, read_day
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
@@ -42,7 +42,10 @@ class AttendanceRecordResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return scope.by_day(request.user, objects.annotate(clocked_day=TruncDate('clock_in')), 'employee', 'clocked_day',
+        # the day that decides who sees a stretch is the company's (a site's clock per person would need its posting first;
+        # the company's zone is the farm's, and never the server's UTC: a stretch from 00:30 is that day's)
+        day = TruncDate('clock_in', tzinfo=company_zone())
+        return scope.by_day(request.user, objects.annotate(clocked_day=day), 'employee', 'clocked_day',
                             scope.realm_for(request))
 
     @classmethod
@@ -72,7 +75,7 @@ class AttendanceRecordResource(Resource):
         # each record carries the time zone of the site its person was placed on that day (one query: a subquery), so the page
         # shows the times on the site's clock
         placement = Posting.objects.filter(scope.covering(OuterRef('day')), employee=OuterRef('employee'))
-        objects = objects.annotate(day=TruncDate('clock_in')).annotate(zone_name=Coalesce(
+        objects = objects.annotate(day=TruncDate('clock_in', tzinfo=company_zone())).annotate(zone_name=Coalesce(
             Subquery(placement.values('production_department__site__timezone')[:1]),
             Subquery(placement.values('office_department__site__timezone')[:1]), Value('')))
         return objects, {'first': first, 'last': last}

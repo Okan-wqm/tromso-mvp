@@ -175,3 +175,15 @@ the right reason (the `Test:` commits), then fixed in its own commit.
   missing; tsc clean; the node tests 48 pass, 0 skipped. The main repo's `node_modules/typescript/bin` is empty after
   the move to F:, so `npm test` cannot find `tsc`; the same steps were run through `node_modules/typescript/lib/tsc.js`.
 - Open: the farm migration 0028 needs a merge migration with another branch's 0027 at landing.
+
+## Follow-ups (2026-11-07/08): A9 always the newest, the round's oxygen inputs
+- `read.newest`: among a point's own fresh sensor channels the newest reading wins; the primary before the backup only
+  at one measurement time (latest values and a value at a moment). Test: `OrderTests.test_the_newest_fresh_channel_wins_and_the_primary_only_at_the_same_time`.
+- The water round uses the sample form's rule (`forms.water.OxygenInputs`, shared mixin): an oxygen column brings the
+  temperature and salinity columns, each row offered its point's latest fresh values (one read of every row's water),
+  stored with the oxygen, needed where there is none, an untouched offer alone is no sample. Test:
+  `PageTests.test_a_round_with_oxygen_offers_and_stores_temperature_and_salinity_as_the_sample_form_does`.
+- Full suite, fresh `test_fixmon`, no --parallel, on 440a13f (main 912c55d merged; main has not moved since):
+  2868 tests OK (3 skipped). `makemigrations --check` no changes; `compile_catalogs` built, nothing missing; the data map
+  was regenerated afterwards (a6dbf4f: the round's hidden offer fields) and is up to date; `npm test` from
+  F:/dev/balik-ciftligi's node_modules: 48 pass, 0 skipped.

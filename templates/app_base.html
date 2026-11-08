@@ -51,7 +51,9 @@
 
       <nav class="rail-nav ui-rail-nav">
         {% for section in rail_sections %}
-        {% if section.label %}<p class="rail-section">{{ section.label }}</p>{% endif %}
+        {% if section.collapsed %}<details class="rail-collapse" data-collapse="{{ section.key }}"{% if section.current %} open data-current{% endif %}>
+        <summary class="rail-section">{{ section.label }}</summary>
+        {% elif section.label %}<p class="rail-section">{{ section.label }}</p>{% endif %}
         {% for group in section.groups %}
         {% if group.label %}<p class="rail-group">{{ group.label }}</p>{% endif %}
         {% for entry in group.entries %}
@@ -61,10 +63,11 @@
         </a>
         {% endfor %}
         {% endfor %}
+        {% if section.collapsed %}</details>{% endif %}
         {% endfor %}
       </nav>
 
-      <div class="rail-foot">{% block rail_foot %}{% trans "Fish farm" %}{% endblock %}</div>
+      <div class="rail-foot">{% block rail_foot %}{% if rail_foot %}{{ rail_foot }}{% else %}{% trans "Fish farm" %}{% endif %}{% endblock %}</div>
     </aside>
     <div class="scrim" data-nav-close hidden></div>
 

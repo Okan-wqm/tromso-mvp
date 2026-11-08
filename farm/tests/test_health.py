@@ -41,6 +41,7 @@ from ..feeding import services as feeding_services
 from .. import withdrawal_gate as gate
 from .helpers import going_on, make_facility, make_species, point_of, role, rows_data
 from .test_stock import StockTestCase, make_unit
+from farm import withdrawal_gate
 
 Status = Tank.Status
 
@@ -73,6 +74,7 @@ class HealthTestCase(StockTestCase):
             self.withdraw(medicine, None, degree_days=degree_days, days=days)
         return medicine
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def withdraw(self, medicine, species, degree_days=None, days=None, margin=0, note=''):
         """A medicine's withdrawal row for a species (None: for every species)."""
         with gate.opened('test fixture: a withdrawal row straight in the database'):
@@ -86,6 +88,7 @@ class HealthTestCase(StockTestCase):
                                          start_date=self.day(start_ago), end_date=self.day(end_ago), medicine=medicine,
                                          **fields)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def temperature(self, point, days_ago, value):
         """A water sample of `value` °C at noon, `days_ago` days back, on the point's site clock."""
         site = point.site if isinstance(point, System) else point.production_department.site
@@ -158,6 +161,7 @@ class WithdrawalTests(HealthTestCase):
         self.assertIn('1 day without a measured water temperature is counted as 0 °C: set the species’ assumed '
                       'temperature in Reference data › Species.', withdrawal.describe(held))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_missing_day_counts_at_the_species_assumed_temperature_exactly_as_if_it_was_measured_there(self):
         # 55 degree-days; 10 °C on four of the five days since the last day, the fourth day back not measured.
         self.treat(self.medicine(degree_days=55), 6, 6)
@@ -187,6 +191,7 @@ class WithdrawalTests(HealthTestCase):
                          (assumed.until, assumed.estimated, assumed.remaining_degree_days))
         self.assertEqual((measured.days_without_temperature, measured.until), (0, self.day(-1)))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_species_assumption_of_zero_is_a_value_not_an_absence(self):
         self.treat(self.medicine(degree_days=45), 6, 6)
         for days_ago in (5, 3, 2, 1):
@@ -197,6 +202,7 @@ class WithdrawalTests(HealthTestCase):
         self.assertIn('is counted at the assumed 0.0 °C (the species’ setting in Reference data)',
                       withdrawal.describe(held))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_without_any_temperature_the_end_is_unknown_unless_the_species_has_an_assumption(self):
         self.treat(self.medicine(degree_days=50), 6, 6)
         [held] = self.held()
@@ -229,6 +235,7 @@ class WithdrawalTests(HealthTestCase):
         [held] = self.held()
         self.assertEqual((held.until, held.projected_at_assumed), (None, False))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_assumed_temperature_texts_are_in_turkish_and_norwegian(self):
         self.addCleanup(translation.activate, 'en')
         self.treat(self.medicine(degree_days=50), 6, 6)        # five past days, none measured
@@ -588,6 +595,7 @@ class BulkRegistryTests(HealthTestCase):
 class BulkHealthReadTests(HealthTestCase):
     """The treatments, open events and latest counts of many units, each against the per-unit code the drawer had."""
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def setUp(self):
         super().setUp()
         Site.objects.filter(pk=self.tromso.pk).update(timezone='Pacific/Auckland')
@@ -823,6 +831,7 @@ class TreatmentServiceTests(HealthTestCase):
         self.assertEqual((row.changes['Reason for voiding'], row.severity), ([None, 'Recorded twice'], 'critical'))
         self.assertTrue(self.refused(services.void_treatment, self.user, treatment, 'Again'))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_database_holds_the_rules_too(self):
         medicine = self.medicine(days=1)
         broken = [
@@ -857,6 +866,7 @@ class TreatmentServiceTests(HealthTestCase):
                       out.getvalue())
         self.assertIn('1 of 1 units with fish are under a medicine withdrawal.', out.getvalue())
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_finds_a_treatment_without_fish(self):
         treatment = Treatment.objects.create(method='thermal', reason='sea_lice', start_date=self.day(2),
                                              end_date=self.day(2))
@@ -1182,6 +1192,7 @@ class MedicineWithdrawalPageTests(HealthTestCase):
         self.assertNotIn(self.cod, page.context['withdrawals'].empty_form.fields['species'].queryset)
 
     def test_the_database_holds_the_rules_too(self):
+        @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
         def make(**fields):
             return MedicineWithdrawal.objects.create(medicine=self.slice, **fields)
 

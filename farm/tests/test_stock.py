@@ -25,6 +25,7 @@ from ..models import (
 from ..stock import integrity, read, services
 from ..stock.fold import Line, Op, StockError, fold
 from .helpers import make_facility, make_species, role, stock_fish
+from farm import withdrawal_gate
 
 Status = Tank.Status
 
@@ -382,6 +383,7 @@ class VoidTests(StockTestCase):
         self.assertEqual(self.fish(self.t1), 0)
         self.assertStockAddsUp()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_only_within_the_backdating_window(self):
         batch = self.stock(days_ago=31)
         died = self.mortality(batch, 1, days_ago=31)
@@ -434,6 +436,7 @@ class StatusTests(StockTestCase):
 
 
 class IntegrityTests(StockTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_reports_rows_that_got_past_the_service(self):
         batch = self.stock()
         call_command('check_stock', stdout=io.StringIO())
@@ -483,6 +486,7 @@ class IntegrityTests(StockTestCase):
 class ConstraintTests(StockTestCase):
     """The database holds the line rules whatever writes the rows."""
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_checks(self):
         batch = self.stock()
         operation = StockOperation.objects.get()
@@ -709,6 +713,7 @@ class HarvestTests(StockTestCase):
         services.void(self.user, operation, 'Harvest was postponed')
         self.assertEqual((self.fish(self.t1), Tank.objects.get(pk=self.t1.pk).status), (2000, 'active'))
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_a_harvest_is_always_weighed(self):
         operation = StockOperation.objects.get()
         with self.assertRaises(IntegrityError), transaction.atomic():

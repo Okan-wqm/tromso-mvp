@@ -25,6 +25,7 @@ from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.fold import Line, Op
 from .helpers import make_facility, role
 from .test_stock import StockTestCase, make_unit
+from farm import withdrawal_gate
 
 
 def setUpModule():
@@ -409,6 +410,7 @@ class FishRuleTests(FeedingTestCase):
         self.assertEqual(self.fish(self.t1), 0)
         self.assertStockAddsUp()
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_check_stock_reports_a_feeding_moved_past_the_service(self):
         feeding = self.record(days_ago=1)
         call_command('check_stock', stdout=io.StringIO())
@@ -446,6 +448,7 @@ class VoidTests(FeedingTestCase):
         logged = AuditLog.objects.get(entity_type='feeding record', action='void')
         self.assertEqual(logged.entity_label, f'Feeding · T-01 · {self.day(1).isoformat()} · 12 kg · GR-4')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_only_within_the_backdating_window(self):
         feeding = self.record(days_ago=20)
         FeedingRecord.objects.filter(pk=feeding.pk).update(date=self.day(32))
@@ -696,6 +699,7 @@ class DeletePlanTests(FeedingTestCase):
 
 
 class ConstraintTests(FeedingTestCase):
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_checks(self):
         good = {'unit': self.t1, 'date': self.today, 'feed': self.feed, 'amount_kg': Decimal(1)}
         for fields in ({'amount_kg': 0}, {'amount_kg': Decimal('-1')}, {'meals': 0}, {'meals': 49},

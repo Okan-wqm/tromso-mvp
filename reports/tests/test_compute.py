@@ -19,6 +19,7 @@ from ..compute import biomass
 from ..models import Report, UnitAnswer
 from ..periods import MONTH, WEEK, YEAR, Period
 from .helpers import OCTOBER, WEEK_47, ReportTestCase, day
+from farm import withdrawal_gate
 
 
 class PeriodTests(SimpleTestCase):
@@ -302,6 +303,7 @@ class FingerprintTests(ReportTestCase):
                                   cause='unknown')
         self.assertNotEqual(compute.fingerprint(compute.compute(report).scope), voided)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_feedings_of_the_month_are_in_the_biomass_scope(self):
         self.october()
         report = self.report(Report.Kind.BIOMASS, OCTOBER, site=self.sea)

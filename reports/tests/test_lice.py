@@ -21,6 +21,7 @@ from ..models import Report, ResistanceSuspicion, SensitivityTest, TreatmentAnsw
 from ..periods import WEEK, Period
 from .helpers import ReportTestCase, day
 from .schema import errors
+from farm import withdrawal_gate
 
 WEEK_44 = Period(WEEK, date(2026, 10, 26))         # Monday 26 October to Sunday 1 November
 WARM, COLD = (Decimal('8.5'), []), (Decimal('3.0'), [])
@@ -337,6 +338,7 @@ class TreatmentTests(LiceTestCase):
         self.treat([self.m1, self.m2], day(10, 26), day(10, 26))
         self.assertEqual(self.result().warnings.count(AMOUNT_WARNING), 1)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_other_is_described_and_a_treatment_of_no_cage_with_salmonids_is_a_problem(self):
         # The treatment dialog refuses an undescribed "other"; a record written another way is told here.
         other = self.treat([self.m1, self.m2], day(10, 26), day(10, 26), method='other', notes='Brushing')

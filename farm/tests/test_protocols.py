@@ -38,6 +38,7 @@ from ..water import services as water_services
 from .helpers import make_facility, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_stock import make_unit
+from farm import withdrawal_gate
 
 D = Decimal
 
@@ -410,6 +411,7 @@ class BoardTests(WorkedExampleTestCase):
         self.assertEqual(self.board_line()[2]['why'], 'Trout, assigned to T-02, is for Rainbow trout (RBT); these fish '
                                                       'are Atlantic salmon (SAL).')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_the_temperature_ages_and_falls_back_to_the_system(self):
         WaterMeasurement.all_objects.all().delete()
         ras = System.objects.create(site=self.bergen, name='RAS 1', code='RAS1', type='ras')

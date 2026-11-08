@@ -279,3 +279,9 @@ class EndpointTests(ReplayCase):
                            ('1899-12-30T00:00', '1899-12-31T00:00'), ('2026-10-10', '2026-10-11')):
             with self.subTest(start=start, end=end):
                 self.assertEqual(self.get(start=start, end=end).status_code, 400)
+
+    def test_a_step_longer_than_any_time_is_refused_never_a_server_error(self):
+        self.reader()
+        for step in ('100000000000000000', '9' * 40):            # a short step is snapped up to the ladder, kept
+            with self.subTest(step=step):
+                self.assertEqual(self.get(step=step).status_code, 400)

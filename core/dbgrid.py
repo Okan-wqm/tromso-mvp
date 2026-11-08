@@ -22,6 +22,8 @@ from django.db.models.lookups import IContains
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from . import query
+
 PAGE_SIZE = 100
 EXPORT_LIMIT = 50_000
 DELETED_MODES = [('show', _('Show deleted rows')), ('hide', _('Hide deleted rows')), ('only', _('Only deleted rows'))]
@@ -143,7 +145,7 @@ class Grid:
             **{f'f_{name}': term for name, term in self.filters.items()},
             'sort': sort.name if sort else '', 'dir': 'desc' if sort and descending else '',
         }
-        self.page_number = max(int(params['page']), 1) if params.get('page', '').isdecimal() else 1
+        self.page_number = query.number(params.get('page', ''), least=1) or 1      # one rule (core.query)
 
     def default_order(self):
         """The model's own ordering, where it names columns the viewer can sort by."""

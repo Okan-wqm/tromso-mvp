@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="fjord">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -50,7 +50,7 @@
 <span class="ui-chip" data-status="neutral">23 units</span>
 </div>
 
-<div class="theme-switch" role="group" aria-label="Theme"><button data-t="light" aria-pressed="true">Day</button><button data-t="dark" aria-pressed="false">Night</button><button data-t="fjord" aria-pressed="false">Fjord</button></div>
+<div class="theme-switch" role="group" aria-label="Theme"><button data-t="fjord" aria-pressed="true">Fjord</button><button data-t="polarnatt" aria-pressed="false">Polarnatt</button><button data-t="nordlys" aria-pressed="false">Nordlys</button><button data-t="tang" aria-pressed="false">Tang</button><button data-t="laks" aria-pressed="false">Laks</button></div>
 <script>document.querySelectorAll('.theme-switch button').forEach(b=>b.onclick=()=>{document.documentElement.dataset.theme=b.dataset.t;document.querySelectorAll('.theme-switch button').forEach(x=>x.setAttribute('aria-pressed',x===b))});</script>
 </body>
 </html>

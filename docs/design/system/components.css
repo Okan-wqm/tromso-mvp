@@ -60,35 +60,33 @@ body {
   background: var(--gradient-rail); background-color: var(--surface-rail);
   box-shadow: var(--stripe-rail); color: var(--text-on-rail);
 }
-[data-theme="dark"] .ui-rail { background: var(--gradient-rail-night); }
-[data-theme="fjord"] .ui-rail { background: var(--gradient-rail-fjord); }
 .ui-rail-head { display: flex; align-items: center; gap: var(--space-3); height: var(--topbar-h); padding: 4px var(--space-3) 0 var(--space-4); }
 .ui-logo { display: block; width: 40px; height: 40px; flex: none; border-radius: var(--radius-pill); background: var(--surface-sheet); box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 2px 6px rgba(0, 0, 0, .25); }
-.ui-wordmark { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: .08em; line-height: 1; color: var(--slate-50); }
-.ui-wordmark span { color: var(--brand-teal); }
+.ui-wordmark { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: .08em; line-height: 1; color: var(--text-on-rail); }
+.ui-wordmark span { color: var(--brand); }
 .ui-panel-switch {
   display: flex; align-items: center; gap: var(--space-2); width: calc(100% - 24px); margin: 0 var(--space-3) var(--space-2);
   min-height: var(--control-h); padding: 0 var(--space-3);
-  border: 1px solid var(--navy-700); border-radius: var(--radius-control);
+  border: 1px solid rgba(255, 255, 255, .14); border-radius: var(--radius-control);
   background: none; color: var(--text-on-rail); font: inherit; font-weight: 600; cursor: pointer;
 }
 .ui-panel-switch .ui-icon { margin-left: auto; }
 .ui-rail-nav { flex: 1; overflow-y: auto; padding: var(--space-2) var(--space-3) var(--space-5); }
-.ui-rail-group { margin: var(--space-4) 0 var(--space-1); padding: 0 var(--space-3); color: var(--navy-300); font-size: 13px; font-weight: 600; }
+.ui-rail-group { margin: var(--space-4) 0 var(--space-1); padding: 0 var(--space-3); color: var(--text-on-rail); opacity: .62; font-size: 13px; font-weight: 600; }
 .ui-rail-link {
   position: relative; display: flex; align-items: center; gap: var(--space-3);
   min-height: var(--control-h); padding: 0 var(--space-3);
   border-radius: var(--radius-control); color: var(--text-on-rail); text-decoration: none; font-weight: 500;
 }
 .ui-rail-link .ui-icon { width: var(--icon-rail); height: var(--icon-rail); stroke-width: 1.75; opacity: .85; }
-.ui-rail-link:hover { background: rgba(216, 224, 234, .07); }
+.ui-rail-link:hover { background: rgba(255, 255, 255, .06); }
 .ui-rail-link:focus-visible { box-shadow: var(--ring-focus-rail); }
-.ui-rail-link[aria-current="page"] { background: rgba(216, 224, 234, .12); color: var(--slate-50); font-weight: 700; }
-.ui-rail-link[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 4px; border-radius: 0 2px 2px 0; background: var(--brand-teal); }
+.ui-rail-link[aria-current="page"] { background: rgba(255, 255, 255, .10); color: #ffffff; font-weight: 700; }
+.ui-rail-link[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 4px; border-radius: 0 2px 2px 0; background: var(--brand); }
 .ui-rail-link[aria-current="page"] .ui-icon { opacity: 1; }
-.ui-rail-badge { margin-left: auto; min-width: var(--badge-h); height: var(--badge-h); padding: 0 6px; border-radius: var(--radius-pill); background: var(--navy-700); color: var(--slate-50); font-size: 12px; font-weight: 700; line-height: var(--badge-h); text-align: center; }
+.ui-rail-badge { margin-left: auto; min-width: var(--badge-h); height: var(--badge-h); padding: 0 6px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .14); color: #ffffff; font-size: 12px; font-weight: 700; line-height: var(--badge-h); text-align: center; }
 .ui-rail-badge[data-status="critical"] { background: var(--crit); color: var(--on-crit); }
-.ui-rail-foot { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--navy-700); color: var(--navy-300); font-size: 13px; }
+.ui-rail-foot { padding: var(--space-3) var(--space-4); border-top: 1px solid rgba(255, 255, 255, .10); color: var(--text-on-rail); opacity: .7; font-size: 13px; }
 
 .ui-topbar {
   position: sticky; top: 0; z-index: var(--z-topbar);

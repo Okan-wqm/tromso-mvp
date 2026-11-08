@@ -1,6 +1,6 @@
 # Tailwind
 
-Suderra Platform works with Tailwind as a theme over the same CSS custom properties, so Day, Night and Fjord switch with `data-theme` and no class changes. Load `tokens.css` first; Tailwind only names the variables.
+Suderra Platform works with Tailwind as a theme over the same CSS custom properties, so all five themes (Fjord, Polarnatt, Nordlys, Tang, Laks) switch with `data-theme` and no class changes. Load `tokens.css` first; Tailwind only names the variables.
 
 ## Tailwind v4 (recommended)
 
@@ -8,8 +8,7 @@ Suderra Platform works with Tailwind as a theme over the same CSS custom propert
 @import "tailwindcss";
 @import "./tokens.css";
 
-@custom-variant night (&:where([data-theme="dark"], [data-theme="dark"] *));
-@custom-variant fjord (&:where([data-theme="fjord"], [data-theme="fjord"] *));
+@custom-variant night (&:where([data-theme="polarnatt"], [data-theme="polarnatt"] *, [data-theme="nordlys"], [data-theme="nordlys"] *));
 
 @theme inline {
   --font-text: var(--font-text);
@@ -30,7 +29,7 @@ Suderra Platform works with Tailwind as a theme over the same CSS custom propert
   --color-on-primary: var(--on-primary);
   --color-action: var(--action);
   --color-action-tint: var(--action-tint);
-  --color-brand: var(--brand-teal);
+  --color-brand: var(--brand);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-warn-text: var(--warn-text);
@@ -48,7 +47,9 @@ Suderra Platform works with Tailwind as a theme over the same CSS custom propert
   --background-image-rail: var(--gradient-rail);
   --background-image-dusk: var(--gradient-fjord-dusk);
   --background-image-polar: var(--gradient-polar-night);
-  --background-image-aurora: var(--gradient-aurora);
+  --background-image-nordlys: var(--gradient-nordlys);
+  --background-image-tang: var(--gradient-tang);
+  --background-image-laks: var(--gradient-laks);
 }
 ```
 
@@ -70,7 +71,7 @@ module.exports = {
         ink: { 1: v('text-1'), 2: v('text-2'), 3: v('text-3') },
         primary: { DEFAULT: v('primary'), hover: v('primary-hover'), on: v('on-primary') },
         action: { DEFAULT: v('action'), tint: v('action-tint') },
-        brand: v('brand-teal'),
+        brand: v('brand'),
         ok: v('ok'),
         warn: { DEFAULT: v('warn'), text: v('warn-text'), tint: v('warn-tint') },
         crit: { DEFAULT: v('crit'), text: v('crit-text'), tint: v('crit-tint'), on: v('on-crit') },
@@ -81,7 +82,7 @@ module.exports = {
       },
       borderRadius: { chip: v('radius-chip'), control: v('radius-control'), object: v('radius-object') },
       boxShadow: { overlay: v('shadow-overlay'), focus: v('ring-focus'), 'edge-crit': v('edge-crit'), 'edge-warn': v('edge-warn'), stripe: v('stripe-rail') },
-      backgroundImage: { rail: v('gradient-rail'), dusk: v('gradient-fjord-dusk'), polar: v('gradient-polar-night'), aurora: v('gradient-aurora'), 'edge-fade': v('gradient-edge-fade') },
+      backgroundImage: { rail: v('gradient-rail'), dusk: v('gradient-fjord-dusk'), polar: v('gradient-polar-night'), nordlys: v('gradient-nordlys'), tang: v('gradient-tang'), laks: v('gradient-laks'), 'edge-fade': v('gradient-edge-fade') },
       height: { control: v('control-h'), coarse: v('control-h-coarse'), topbar: v('topbar-h') },
       width: { rail: v('rail-w'), 'rail-compact': v('rail-w-compact'), drawer: v('drawer-w') },
     },
@@ -92,7 +93,7 @@ module.exports = {
 ## The rules still hold
 
 - Use role utilities (`bg-sheet text-ink-1 border-control`), not palette steps, in UI. Scales (`navy-900`, `teal-500`, …) are for illustration.
-- Gradient utilities (`bg-rail`, `bg-dusk`, `bg-polar`, `bg-aurora`) only on brand surfaces.
+- Gradient utilities (`bg-rail`, `bg-dusk`, `bg-polar`, `bg-nordlys`, `bg-tang`, `bg-laks`) only on brand surfaces.
 - `text-warn` is a shape colour; words in warning use `text-warn-text`.
 - `bg-crit` only for critical. Never `bg-brand` on data, links or buttons.
 

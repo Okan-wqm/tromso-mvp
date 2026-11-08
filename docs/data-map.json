@@ -214,6 +214,7 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_rule_change.py",
         "knowledge/tests/test_documents.py",
@@ -6350,6 +6351,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
       ]
@@ -7011,6 +7013,7 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_suppliers.py",
+        "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_search.py",
@@ -9635,7 +9638,8 @@
       "tests": [
         "core/test_languages.py",
         "farm/tests/test_health.py",
-        "farm/tests/test_migration_withdrawals.py"
+        "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_withdrawal_gate.py"
       ]
     },
     {
@@ -13278,6 +13282,7 @@
         "farm/tests/test_restore.py",
         "farm/tests/test_species.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
@@ -13828,6 +13833,7 @@
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
         "experiments/tests/test_overview.py"
       ]
@@ -14348,6 +14354,7 @@
         "farm/tests/test_migration_purging.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
@@ -16676,6 +16683,7 @@
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
         "inventory/tests/test_services.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
@@ -17381,6 +17389,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_lice.py",
         "monitoring/tests/test_golden.py"
       ]
@@ -18364,6 +18373,7 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
+        "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py",
         "reports/tests/test_compute.py",
         "monitoring/tests/test_pages.py"
@@ -18831,6 +18841,7 @@
         "farm/tests/test_water.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_sources.py",
+        "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_lice.py"
       ]
     },
@@ -19171,6 +19182,7 @@
       },
       "tests": [
         "farm/tests/test_harvest_inside_withdrawal.py",
+        "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_guard.py"
       ]
     },
@@ -30074,6 +30086,17 @@
           "why": "frozen by reports/services.py when the filing is recorded"
         },
         {
+          "name": "scope_version",
+          "field": "scope_version",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "frozen by reports/services.py when the filing is recorded"
+        },
+        {
           "name": "created_at",
           "field": "created_at",
           "type": "timestamp with time zone",
@@ -30184,7 +30207,8 @@
         "reports/tests/test_due.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
-        "reports/tests/test_preview.py"
+        "reports/tests/test_preview.py",
+        "reports/tests/test_scope_version.py"
       ]
     },
     {
@@ -31455,6 +31479,7 @@
         "reports/tests/test_notices.py",
         "reports/tests/test_pages.py",
         "reports/tests/test_preview.py",
+        "reports/tests/test_scope_version.py",
         "reports/tests/test_slaughter_duty.py",
         "reports/tests/test_tabs.py",
         "tasks/tests/test_pages.py"

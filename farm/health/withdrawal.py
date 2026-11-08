@@ -296,11 +296,9 @@ def holding(batch_ids, today, day=None):
     return found
 
 
-def held_reached(unit_ids=(), species=None):
-    """Why a unit, a loop (the units in it) or a species is not deleted or restored now: the batches a withdrawal holds
-    today among the fish ever in `unit_ids` and the batches of `species`. Deleting or restoring one moves their
-    withdrawals (the treatments' units, the loop's samples that count for a unit, the species' assumed temperature), so
-    it waits until they end (cross-review 3). [] when none is held."""
+def _reached(unit_ids=(), species=None):
+    """(the batches ever in `unit_ids` or of `species`, the farm's earliest today among the units they were in: the
+    longest held)."""
     batch_ids = set()
     if unit_ids:
         batch_ids.update(batch_id for batches in Presence.of_units(set(unit_ids)).batches.values()
@@ -308,16 +306,41 @@ def held_reached(unit_ids=(), species=None):
     if species is not None:
         batch_ids.update(Batch.all_objects.filter(species=species).values_list('pk', flat=True))
     if not batch_ids:
-        return []
+        return batch_ids, None
     units = Tank.all_objects.filter(pk__in={unit_id for units in Presence.of_batches(batch_ids).units.values()
                                             for unit_id in units}).select_related('production_department__site')
-    today = min((local_today(unit) for unit in units), default=local_today())   # the earliest: the longest held
+    return batch_ids, min((local_today(unit) for unit in units), default=local_today())
+
+
+def held_reached(unit_ids=(), species=None):
+    """Why a unit, a loop (the units in it) or a species is not deleted or restored now: the batches a withdrawal holds
+    today among the fish ever in `unit_ids` and the batches of `species`. Deleting or restoring one moves their
+    withdrawals (the treatments' units, the loop's samples that count for a unit, the species' assumed temperature), so
+    it waits until they end (cross-review 3). [] when none is held."""
+    batch_ids, today = _reached(unit_ids, species)
+    if not batch_ids:
+        return []
     codes = sorted(Batch.all_objects.filter(pk__in=holding(batch_ids, today)).values_list('code', flat=True))
     if not codes:
         return []
     return [ngettext('A medicine withdrawal holds batch %(batches)s, and this moves it: wait until it ends.',
                      'Medicine withdrawals hold batches %(batches)s, and this moves them: wait until they end.',
                      len(codes)) % {'batches': ', '.join(codes)}]
+
+
+def weighed(record, values, unit_ids):
+    """What writing `values` ({attname: value}) to the stored `record` would do to the withdrawals of every fish ever in
+    `unit_ids`, worked out as the guard works it (before, the write, after) in a savepoint rolled back: the messages
+    of the change, [] when it changes none (the withdrawal gate's rule for a unit's loop, written outside the guard)."""
+    batch_ids, today = _reached(unit_ids)
+    if not batch_ids:
+        return []
+    before = snapshot(batch_ids, today)
+    with transaction.atomic(), gate.opened('weighing a write, rolled back'):
+        type(record)._base_manager.filter(pk=record.pk).update(**values)
+        after = snapshot(batch_ids, today)
+        transaction.set_rollback(True)
+    return change(before, after).messages()
 
 
 def blockers_while_live(record):

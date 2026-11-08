@@ -4,6 +4,7 @@ order at that moment (a fresh sensor value at or before it, carried no longer th
 sample; else missing, never invented), and the whole diagram of that moment's water worked out by farm/water/deffeyes.py
 (every frame its own geometry, frames whose diagram reads exactly the same inputs sharing one), one query of the readings
 per tier and page; and its JSON endpoint: the page's figures once each, the frames as columns, the cursor of the next page."""
+import gzip
 import json
 from datetime import datetime, timedelta, timezone as tz
 from decimal import Decimal
@@ -234,6 +235,19 @@ class EndpointTests(ReplayCase):
         return self.client.get(reverse('sensors:deffeyes_frames'), {
             'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300',
             **params})
+
+    def test_a_page_is_sent_compressed_to_a_browser_that_takes_gzip(self):
+        """Owner amendment B4: the replay endpoint compresses its page (the figures are geometry, no secret)."""
+        self.steady()
+        self.reader()
+        plain = self.get()
+        packed = self.client.get(reverse('sensors:deffeyes_frames'), {
+            'target': f'unit:{self.t1.pk}', 'start': '2026-10-10T00:05', 'end': '2026-10-10T00:55', 'step': '300'},
+            HTTP_ACCEPT_ENCODING='gzip')
+        self.assertNotIn('Content-Encoding', plain)
+        self.assertEqual(packed['Content-Encoding'], 'gzip')
+        self.assertLess(len(packed.content), len(plain.content))
+        self.assertEqual(json.loads(gzip.decompress(packed.content)), json.loads(plain.content))
 
     def test_a_page_has_each_figure_once_and_the_frames_as_columns(self):
         self.steady()

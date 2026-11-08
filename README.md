@@ -3435,7 +3435,17 @@ unit's chart), each refusing a user without its permission.
 | S5 the analysis (judge, analyse, the alkalinity floor, the box): deffeyes.py's analysis is a door to the core | done |
 | A replay page's box worked out once (its largest DIC and alkalinity), not every point for every figure | done |
 | S6 the chart in its own units (box, isolines, regions, borders, safe zone, Omega, dosing clipped): deffeyes.py's geometry is a door to the core; the notes are codes, farm/water/messages.py says them | done |
-| S7 to S10 the dosing, the small charts, the scene, the replay batch, the retirement audit | in progress |
+| S7 the dosing, the small charts, the simulator's judging: dosing.py, charts.py and calculation.judge_step are doors to the core | done |
+| S9 (part) a replay page shares one diagram among frames equal but for pH, alkalinity and oxygen (proved invariant on random waters), its point left out (each frame carries its own); the page is sent gzipped | done |
+| S8 the SVG scene in the core; S9 the rest (one batch call, a binary encoding); S10 the retirement audit | open |
+
+**The replay, measured** (2026-11-08, development database, read only, 2000-frame pages on three units with live
+demo readings). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362
+at 5 s, 927 to 1 158 at 60 s. A page took 2.5 to 4.2 s at 1 s, 4.4 to 5.1 s at 5 s and 44 to 62 s at 60 s; of that
+the readings query (`replay_rows`) was 0.8 to 1.4 s, 2.8 to 3.5 s and 42 to 60 s, the figures 0.2 to 1.3 s (about
+1 to 3 ms each in the core, against 21 to 23 ms in Python before). The database read is the bottleneck: the raw
+tier is scanned below an hour (perf plan, `replay_window`). On a synthetic page (2000 frames, 54 temperatures) the
+figures take 131 ms and the page is 746 KB of JSON, 169 KB gzipped.
 | I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
 
 ## Languages

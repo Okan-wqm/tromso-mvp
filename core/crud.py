@@ -877,6 +877,11 @@ class DeleteView(ResourceView):
     def post(self, request, pk):
         r = self.resource
         with transaction.atomic():
+            # What the delete takes along is locked before the record itself, the deepest first (core.softdelete,
+            # LOCK ORDER), as a unit's save locks the unit before its department.
+            read = self.get_object(pk)
+            if isinstance(read, AuditedModel):
+                softdelete.lock_along(plan_delete(read))
             obj = self.locked_object(pk)
             if not r.allowed(request, obj, 'delete'):
                 raise PermissionDenied

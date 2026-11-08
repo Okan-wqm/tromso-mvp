@@ -37,6 +37,13 @@ from django.utils.translation import gettext as _, ngettext
 from . import audit
 from .models import AuditedModel, AuditLog, violated_constraint
 
+# LOCK ORDER. The one order every write takes its locks on the farm's structure in: the fish first (batches, then
+# units: the stock operations, the withdrawal guard's lock_fish), then the place going up (production departments, then
+# sites: a unit's save, Tank._lock_place). A delete and a restore lock the records they take along the deepest first
+# and what they delete or restore last; a record is never locked after one above it. Two writes that both follow it
+# wait for each other; the database still fails one of a cycle no write can foresee (core.middleware.
+# CrossedWritesMiddleware says "try again").
+
 
 @dataclass
 class DeletePlan:
@@ -186,7 +193,7 @@ def execute(plan, user):
     locked now and taken only as they still are (cross review F2): one moved to another parent meanwhile stays where
     it went, with what hangs under it, and one deleted on its own meanwhile keeps its own moment."""
     moment = timezone.now()
-    rows = _locked([record for record, _link in plan.detach] + plan.cascade)
+    rows = lock_along(plan)
     gone = {(type(plan.obj), plan.obj.pk)}
     taken = []
     for record in plan.cascade:                        # parents before their children
@@ -211,9 +218,18 @@ def execute(plan, user):
         audit.record_delete(user, plan.obj)
 
 
+def lock_along(plan):
+    """Locks what the plan takes along or detaches, the deepest first, before what it deletes is locked (the delete view
+    calls it first; execute again, a no-op then). One lock order for the farm's structure (LOCK ORDER above): from
+    the fish and the leaves up to the site, so a unit's save (unit, department, site) and a delete (units, department)
+    wait for each other instead of deadlocking (the merge review's finding 1). Returns {(model, pk): row}."""
+    return _locked([*reversed(plan.cascade), *(record for record, _link in plan.detach)])
+
+
 def _locked(records):
     """{(model, pk): row} of the records as they are now, each locked for the caller's transaction, model by model in
-    primary-key order (a record deleted meanwhile is there too, marked so)."""
+    the order the records come (the deepest first: LOCK ORDER above), each model's in primary-key order (a record
+    deleted meanwhile is there too, marked so)."""
     pks = {}
     for record in records:
         pks.setdefault(type(record), set()).add(record.pk)
@@ -233,8 +249,9 @@ def _still_under(row, link, parent, gone):
 
 def taken_with(record):
     """`record`, deleted, and what its delete took along: the records pointing at it that were deleted in the same
-    moment (execute), and theirs in turn; parents before their children, each locked for this transaction. A record
-    deleted on its own before is not among them, nor what was only detached (its link is not known any more)."""
+    moment (execute), and theirs in turn; parents before their children, as read (restore locks them, the deepest
+    first). A record deleted on its own before is not among them, nor what was only detached (its link is not known
+    any more)."""
     found, seen, frontier = [], set(), [record]
     while frontier:
         found.extend(frontier)
@@ -245,7 +262,7 @@ def taken_with(record):
                 model = relation.related_model
                 if not relation.one_to_many or not issubclass(model, AuditedModel):
                     continue
-                children = (model.all_objects.select_for_update(of=('self',)).order_by('pk')
+                children = (model.all_objects.order_by('pk')
                             .filter(**{relation.field.name: parent}, is_deleted=True, deleted_at=parent.deleted_at))
                 following.extend(child for child in children if (model, child.pk) not in seen)
                 seen.update((model, child.pk) for child in children)
@@ -256,15 +273,21 @@ def taken_with(record):
 def restore(record, user):
     """Brings a deleted record back with what its delete took along (taken_with), each checked like a new one:
     refused when a record one of them points at is deleted and does not come back with them (bring that back first),
-    when a code was taken meanwhile, or when another restore was first. The record is locked, so two restores take
-    turns; it all comes back or nothing does. Each change is logged. A link the delete cleared (SET_NULL) stays
-    cleared: what it pointed at is not kept."""
+    when a code was taken meanwhile, or when another restore was first. They are locked the deepest first and the
+    record last (LOCK ORDER above), so two restores take turns; it all comes back or nothing does. Each change is
+    logged. A link the delete cleared (SET_NULL) stays cleared: what it pointed at is not kept."""
     model = type(record)
     with transaction.atomic():
-        record = model.all_objects.select_for_update(of=('self',)).filter(pk=record.pk).first() or record
-        if not record.is_deleted:
+        read = model.all_objects.filter(pk=record.pk).first() or record
+        collected = taken_with(read) if read.is_deleted else [read]
+        rows = _locked(list(reversed(collected)))
+        record = rows.get((model, record.pk), record)
+        if not record.is_deleted or record.deleted_at != read.deleted_at:
             raise ValidationError(_('“%(record)s” is not deleted.'), params={'record': record})
-        records = taken_with(record)
+        # As locked, parents before their children: what is still deleted at the moment of this record's delete (a
+        # restore meanwhile took it back).
+        records = [row for row in (rows.get((type(item), item.pk)) for item in collected)
+                   if row is not None and row.is_deleted and row.deleted_at == read.deleted_at]
         coming = {(type(item), item.pk) for item in records}
         for item in records:
             for link in item._meta.concrete_fields:

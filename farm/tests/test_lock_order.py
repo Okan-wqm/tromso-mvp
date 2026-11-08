@@ -14,6 +14,8 @@ from .test_stock import make_unit
 
 
 class LockOrderTests(TransactionTestCase):
+    serialized_rollback = True      # the rows migrations write come back for later tests
+
     def setUp(self):
         self.user = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.site = Site.objects.create(name='Bergen', code='BG')
@@ -66,6 +68,8 @@ class LockOrderTests(TransactionTestCase):
 class CrossedWritesTests(TransactionTestCase):
     """The backstop: a write the database aborted for another one at the same moment (a deadlock, a serialization
     failure) says "try again" and saves nothing, never a server error."""
+
+    serialized_rollback = True
 
     def setUp(self):
         self.user = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')

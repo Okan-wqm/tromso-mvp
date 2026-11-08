@@ -627,14 +627,15 @@ class Tank(CodedMixin, AuditedModel):
         super().save(*args, **kwargs)
 
     def _lock_place(self):
-        """Locks the unit's site, then its production department (the order a site's delete takes them), so a unit
-        saved while its site is being deleted waits for that delete and is then refused (farm 0030) instead of staying
-        live under it (cross review F1)."""
+        """Locks the unit's production department, then its site (the LOCK ORDER of core.softdelete: the unit, locked by
+        its writer, then the place going up), so a unit saved while its site or department is being deleted waits for
+        that delete and is then refused (farm 0030) instead of staying live under it (cross review F1), and the two
+        never deadlock (merge review, finding 1)."""
         if not self.production_department_id or not transaction.get_connection().in_atomic_block:
             return
         site_id = (ProductionDepartment.all_objects.filter(pk=self.production_department_id)
                    .values_list('site_id', flat=True).first())
-        if site_id is not None:
-            list(Site.all_objects.select_for_update().filter(pk=site_id).values_list('pk', flat=True))
         list(ProductionDepartment.all_objects.select_for_update().filter(pk=self.production_department_id)
              .values_list('pk', flat=True))
+        if site_id is not None:
+            list(Site.all_objects.select_for_update().filter(pk=site_id).values_list('pk', flat=True))

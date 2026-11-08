@@ -11454,6 +11454,9 @@ msgid ""
 "filing."
 msgstr "Noen andre endret denne rapporten mens du så på den: se på nytt før du registrerer innsendingen."
 
+msgid "Someone else saved at the same moment: nothing was saved. Send it again."
+msgstr "Noen andre lagret i samme øyeblikk: ingenting ble lagret. Send det på nytt."
+
 msgid "Someone planned one of these days at the same time. Look at the week again."
 msgstr "Noen planla en av disse dagene samtidig. Se på uken igjen."
 

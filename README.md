@@ -3504,6 +3504,15 @@ stays in the lists, showing its place as deleted). Records that point at it thro
 only a plan go with it all the same: their model says which (`AuditedModel.deleted_with`, a recurring task's
 planned tasks nobody touched).
 
+**Lock order** (`core.softdelete`, LOCK ORDER): every write takes its locks on the farm's structure in one order, the
+fish first (batches, then units: the stock operations and the withdrawal guard's `lock_fish`) and then the place going
+up (production departments, then sites: a unit's save, `Tank._lock_place`). A delete locks what it takes along the
+deepest first and the record last (`lock_along`), a restore the same, so a department deleted while one of its units
+is saved waits for the save instead of deadlocking (merge review, finding 1). A cycle no write can foresee is still
+failed by the database, whole: a deadlock or a serialization failure on a write comes back as "Someone else saved at
+the same moment: nothing was saved. Send it again." on the page it was sent from (`CrossedWritesMiddleware`), never a
+server error.
+
 **Restoring** (the admin's action, `core.softdelete.restore`): a delete stamps every record it deletes with one
 moment, so a restore brings back the record and what that delete took along (a site's production departments,
 systems and equipment, a draft experiment's design, a recurring task's planned tasks: F-029, F-067), parents first,

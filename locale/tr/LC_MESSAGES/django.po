@@ -11465,6 +11465,9 @@ msgid ""
 "filing."
 msgstr "Siz bakarken bu raporu başka biri değiştirdi: sunumu kaydetmeden önce yeniden bakın."
 
+msgid "Someone else saved at the same moment: nothing was saved. Send it again."
+msgstr "Başka biri aynı anda kaydetti: hiçbir şey kaydedilmedi. Yeniden gönderin."
+
 msgid "Someone planned one of these days at the same time. Look at the week again."
 msgstr "Biri bu günlerden birini aynı anda planladı. Haftaya yeniden bakın."
 

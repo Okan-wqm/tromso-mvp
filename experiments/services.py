@@ -688,6 +688,9 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
     core.codes.next_code inside the transaction; a form sent twice (`token`) makes one copy. Logged as created, with
     its design, and the copier's team row as any other."""
     with transaction.atomic():
+        # The source first, as every write path takes its locks before it looks the form's key up: the same form sent
+        # twice at once waits here for the first sending and then finds its copy.
+        source = Experiment.all_objects.select_for_update(of=('self',)).get(pk=source.pk)
         if token is not None:
             sent = EntryKey.record_of(token, Experiment)
             if sent is not None:
@@ -697,7 +700,6 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
             raise _refused(_('The copy needs a name.'))
         if len(name) > Experiment._meta.get_field('name').max_length:
             raise _refused(_('The name of the copy is too long.'))
-        source = Experiment.all_objects.get(pk=source.pk)
         if source.is_deleted:
             raise _refused(_('This experiment was deleted meanwhile.'))
         new = Experiment(

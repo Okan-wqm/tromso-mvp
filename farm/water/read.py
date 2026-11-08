@@ -462,6 +462,11 @@ class Reading:
         return self.sample.point
 
     @property
+    def decided_at(self):
+        """The point whose value decided this reading's judgement: the worse fresh value's (`worst_fresh`), else its own."""
+        return (self.worse or self).point
+
+    @property
     def origin(self):
         return self.sample.origin
 
@@ -483,26 +488,48 @@ class Reading:
 class PointWater:
     """The latest readings of one sampling point, by parameter code; `point` is None for a unit that has no
     middle point (unit_water), which has no readings. `sensors_failed`: a live source could not be read, so what is
-    shown comes from the samples alone (the pages say so)."""
+    shown comes from the samples alone (the pages say so).
+
+    Two statuses, kept apart on purpose (owner, 2026-11-08):
+    - `status` is COMPUTED FOR THE PLACE the point stands for: for a unit's middle point, the unit (its other own-water
+      points' values and its system's stand in, A9.1, and the worst fresh value decides, P2): what its card, its alarm
+      and its row show;
+    - `point_status` is what was MEASURED AT THE POINT itself (`measured`: each value taken there, judged before any
+      other point's value decided): what a count of critical points counts, so one physical problem is counted once."""
     point: object
     readings: dict = field(default_factory=dict)
     sensors_failed: bool = False
+    measured: list = field(default_factory=list)     # [(status, judged)] of the limited values taken at the point
 
-    def _counted(self):
-        """Each limited value's status as the point counts it: an old critical or warning value keeps its judgement."""
-        return [reading.judged if reading.status == Status.STALE and reading.judged in ALERTS else reading.status
-                for reading in self.readings.values() if reading.code in LIMITED]
-
-    @property
-    def status(self):
-        """The worst of its values. An old critical or warning value still counts ("critical, no recent data": never
-        hidden by a fresh OK of another parameter, never "No limit"); else the worst fresh judgement; Stale when a value
-        with a limit grew old and nothing fresh is judged; else No limit or Not measured."""
-        counted = self._counted()
+    @staticmethod
+    def _rolled_up(counted):
+        """The one rule of a point's status over [status as counted]: an old critical or warning value still counts
+        ("critical, no recent data": never hidden by a fresh OK of another parameter, never "No limit"); else the worst
+        fresh judgement; Stale when a value with a limit grew old and nothing fresh is judged; else No limit or Not
+        measured."""
         judged = [status for status in counted if status in (Status.CRITICAL, Status.WARNING, Status.OK)]
         if judged:
             return worst(judged)
         return Status.STALE if Status.STALE in counted else worst(counted)
+
+    @staticmethod
+    def _as_counted(status, judged):
+        """A value's status as a point counts it: an old critical or warning value keeps its judgement."""
+        return judged if status == Status.STALE and judged in ALERTS else status
+
+    def _counted(self):
+        return [self._as_counted(reading.status, reading.judged) for reading in self.readings.values()
+                if reading.code in LIMITED]
+
+    @property
+    def status(self):
+        """The worst of its values, computed for the place the point stands for (`_rolled_up`)."""
+        return self._rolled_up(self._counted())
+
+    @property
+    def point_status(self):
+        """The worst of the values measured at the point itself (`measured`), by the same rule."""
+        return self._rolled_up([self._as_counted(status, judged) for status, judged in self.measured])
 
     @property
     def old_alert(self):
@@ -1035,8 +1062,13 @@ def latest(points, now=None, at=None):
         for code, reading in resolved.items():
             # Each judged on its own copy: a loop's reading stands in for several units, each with its own fish.
             reading = context.judge(replace(reading), day, moment, temperature, for_point=point)
-            worst_fresh(reading, [context.judge(replace(each), day, moment, temperature, for_point=point)
-                                  for each in others.get(code, [])])
+            judged_others = [context.judge(replace(each), day, moment, temperature, for_point=point)
+                             for each in others.get(code, [])]
+            if code in LIMITED:       # what was measured AT the point, judged before another point's value decides
+                point_water.measured += [(each.status, each.judged) for each in (reading, *judged_others)
+                                         if each.value is not None and each.point is not None
+                                         and each.point.pk == point.pk]
+            worst_fresh(reading, judged_others)           # computed for the place the point stands for
             point_water.readings[code] = reading
     return water
 

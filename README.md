@@ -2788,7 +2788,11 @@ and so the card's state and alarm, is the worst judgement among every fresh valu
 system's, each judged for the unit's fish; never an inlet's, never a stale one) (`read.worst_fresh`). When another value
 decides it, the reading says so beside the value on the water page and the card: "system sensor #1 reads 3.00
 (08.11.2026 12:40): the worst fresh value decides the status" (a sample is named with its point). Each place's
-readings are judged on their own copy, so a loop value standing in for two units carries each unit's own judgement.
+readings are judged on their own copy, so a loop value standing in for two units carries each unit's own judgement. **Computed for the unit,
+measured at the point** (owner, 2026-11-08): a unit's middle point shows the unit's status (`PointWater.status`), and
+the card names the point that drove it ("Carbon dioxide (mg/L free CO₂) (T-01 › East side outlet): Critical"); a count
+of critical sampling points (the water page, the overview tile) counts what was measured at each point
+(`PointWater.point_status`), so one physical problem is counted once.
 
 A stale value never enters a calculation (PLAN A9.3): a value is worked out (the other oxygen unit, NH₃, the oxygen
 judged through the mg/L row) only from values fresh AT its own time (`read.fresh_at`: measured at or before it, or within

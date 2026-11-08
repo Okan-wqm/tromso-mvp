@@ -1149,6 +1149,8 @@ class ProductionUnitsTests(WaterTestCase):
         self.assertEqual(page.context['critical_count'], 1)
         tiles = self.client.get(reverse('production_home')).context['water_tiles']
         self.assertEqual([tile['count'] for tile in tiles], [1])
+        card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
+        self.assertIn('Carbon dioxide (mg/L free CO₂) (T-01 › East side outlet): Critical', card)   # which point drove it
 
     def test_an_old_critical_value_keeps_its_point_critical_with_no_recent_data_and_no_limit_says_why(self):
         """A point's status is the worst of its values. A critical value that grew old still counts: the point is

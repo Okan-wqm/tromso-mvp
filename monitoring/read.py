@@ -446,10 +446,14 @@ def _alerts(middle, now):
         if reading.value is None:
             continue
         status = Status(judged).label
+        label = reading.parameter.label
+        where = reading.decided_at
+        if where is not None and middle.point is not None and where != middle.point:
+            label = f'{label} ({where})'            # another point of the unit's water decided it (A9.1, P2): say which
         if not stale:
-            text = '{}: {}'.format(reading.parameter.label, status)
+            text = '{}: {}'.format(label, status)
         else:
-            text = '{}: {}'.format(reading.parameter.label, _('%(status)s, no recent data') % {'status': status})
+            text = '{}: {}'.format(label, _('%(status)s, no recent data') % {'status': status})
             old.append(text)
         (critical if judged == Status.CRITICAL else warning).append(text)
     return critical, warning, old

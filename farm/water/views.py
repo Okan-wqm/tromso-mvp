@@ -206,7 +206,9 @@ def _latest(site):
     columns = _columns([row['water'].readings for row in rows])
     for row in rows:
         row['cells'] = [row['water'].get(parameter.code) for parameter in columns]
-    counts = {status: sum(1 for row in rows if row['water'].status == status) for status in ALERTS}
+    # A count of POINTS counts what was measured at each point (PointWater.point_status): one physical problem once,
+    # though the unit's middle point shows the unit's status computed from its other points too (A9.1).
+    counts = {status: sum(1 for row in rows if row['water'].point_status == status) for status in ALERTS}
     return {'rows': rows, 'columns': columns, 'point_count': sum(1 for row in rows if row['point'] is not None),
             'critical_count': counts[Status.CRITICAL], 'warning_count': counts[Status.WARNING],
             'sensors_failed': any(point_water.sensors_failed for point_water in water.values()), 'now': timezone.now()}

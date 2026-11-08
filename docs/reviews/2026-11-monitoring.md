@@ -241,6 +241,7 @@ Test first throughout: each fix has its `Test:` commit before it.
   (`withdrawal_gate.opened`). The degree-days now read the unit's own-water points (`water_sources(every_point=True)`);
   the coverage test (farm/tests/test_withdrawal_gate_coverage.py) derives the columns from the queries the readers run,
   and a sample at any point of a unit is already guarded (`services._fish_of`), so it passes unchanged.
-- With A9.1 and the worst fresh value, a unit's middle point counts its side outlet's critical value too: the water
-  page's and the overview's critical count of bugs' two tests is 2 (the outlet and the unit), not 1.
+- Owner, 2026-11-08: a count of critical points counts each physical point by what was measured AT it
+  (`PointWater.point_status`, from `PointWater.measured`); the unit's status, card and alarm are computed for the unit
+  (`PointWater.status`) and the card names the point that drove it (`Reading.decided_at`). Bugs' two counts are 1 again.
 - The parallel-run struct.error in gettext was main's e318bd5 (an atomic .mo build), now here with the merge.

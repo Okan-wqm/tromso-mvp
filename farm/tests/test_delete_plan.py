@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.models import AuditLog
-from core.softdelete import plan_delete
+from core.softdelete import execute, plan_delete, restore
 
 from ..models import ProductionDepartment, Site, System
 from .helpers import role
@@ -127,3 +127,38 @@ class ProtectTests(DeletePlanTestCase):
         self.hall_b.soft_delete(self.user)
         with mock.patch.object(DEPARTMENT_SITE_LINK, 'on_delete', models.PROTECT):
             self.assertTrue(plan_delete(self.site).can_delete)
+
+
+class StalePlanTests(DeletePlanTestCase):
+    """The plan is read before the delete runs; what changed meanwhile wins (cross review F2): the delete locks the
+    records it takes along and takes only those still under what it deletes and still live."""
+
+    def setUp(self):
+        super().setUp()
+        self.ras = System.objects.create(site=self.site, name='RAS 1', code='R1')
+        self.loop = System.objects.create(site=self.site, name='Loop', code='LP', parent=self.ras)
+        self.other = System.objects.create(site=self.site, name='RAS 2', code='R2')
+
+    def test_a_child_moved_meanwhile_stays_live_under_its_new_parent(self):
+        plan = plan_delete(self.ras)
+        System.objects.filter(pk=self.loop.pk).update(parent=self.other)
+        execute(plan, self.user)
+        self.assertFalse(System.all_objects.get(pk=self.loop.pk).is_deleted)
+        self.assertTrue(System.all_objects.get(pk=self.ras.pk).is_deleted)
+
+    def test_a_child_deleted_on_its_own_meanwhile_keeps_its_own_moment(self):
+        plan = plan_delete(self.ras)
+        self.loop.soft_delete(self.user)
+        own = System.all_objects.get(pk=self.loop.pk).deleted_at
+        execute(plan, self.user)
+        self.assertEqual(System.all_objects.get(pk=self.loop.pk).deleted_at, own)
+        restore(System.all_objects.get(pk=self.ras.pk), self.user)
+        self.assertTrue(System.all_objects.get(pk=self.loop.pk).is_deleted)
+
+    def test_the_records_it_takes_along_are_locked(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as queries:
+            execute(plan_delete(self.ras), self.user)
+        self.assertTrue(any('"systems"' in query['sql'] and 'FOR UPDATE' in query['sql']
+                            for query in queries.captured_queries))

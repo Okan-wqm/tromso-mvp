@@ -15,6 +15,7 @@ from core.softdelete import plan_delete
 
 from ..forms.stock import stockable_units
 from ..models import ProductionDepartment, Site, Tank
+from ..models.stock import takes_fish
 from ..stock import integrity, services
 from .helpers import leave_without_site, make_species, stock_fish
 from .test_production_departments import production_department_data
@@ -110,3 +111,73 @@ class UnitWithoutASiteTests(SiteStructureTestCase):
         self.assertIn('Production department HA is not on any site.', found)
         with self.assertRaises(CommandError):
             call_command('check_stock', stdout=StringIO())
+
+
+def immediately():
+    """Runs the deferred checks now (they otherwise run at commit, which a test's transaction never reaches)."""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+
+
+class LiveSiteTests(SiteStructureTestCase):
+    """"On a site" means a live unit in a live department on a live site (cross review F1): a deleted department or site
+    still holds its link, so a unit left live under one would be in no report as surely as one on no site."""
+
+    def setUp(self):
+        super().setUp()
+        self.unit = make_unit('T-01', self.hall)
+
+    def strand(self, department=True, site=True):
+        """A live unit under a deleted department and/or site, as a race between a site's delete and a unit's create
+        could leave it (written past the rules, then the database's own checks deferred)."""
+        if department:
+            ProductionDepartment.objects.filter(pk=self.hall.pk).update(is_deleted=True)
+        if site:
+            Site.objects.filter(pk=self.bergen.pk).update(is_deleted=True)
+        self.unit = Tank.all_objects.get(pk=self.unit.pk)
+
+    def test_a_live_unit_under_a_deleted_department_or_site_takes_no_fish(self):
+        for department, site in ((True, False), (False, True)):
+            with self.subTest(department=department, site=site), transaction.atomic():
+                self.strand(department, site)
+                self.assertFalse(takes_fish(self.unit))
+                self.assertNotIn(self.unit, stockable_units())
+                with self.assertRaisesMessage(ValidationError, 'T-01 is not on any site'):
+                    stock_fish(self.user, self.unit, species=self.salmon)
+                transaction.set_rollback(True)
+
+    def test_check_stock_names_live_units_and_departments_under_deleted_records(self):
+        with transaction.atomic():
+            self.strand(department=False, site=True)
+            self.assertIn('Production department HA is on the deleted site BG.', integrity.problems())
+            transaction.set_rollback(True)
+        self.strand(department=True, site=False)
+        self.assertIn('Unit T-01 is live in the deleted production department HA.', integrity.problems())
+
+    def test_a_new_unit_goes_only_into_a_live_department_on_a_live_site(self):
+        Site.objects.filter(pk=self.bergen.pk).update(is_deleted=True)
+        unit = Tank(name='Unit T-03', code='T-03', kind='tank', production_department=self.hall, water_type='freshwater',
+                    shape='rectangular', material='fiberglass', length=10, width=5, depth=2, max_density_kg_m3=50)
+        with self.assertRaises(ValidationError) as caught:
+            unit.full_clean()
+        self.assertEqual(caught.exception.message_dict,
+                         {'production_department': ['This production department is not on any site; choose one that is.']})
+
+    def test_the_database_refuses_a_live_unit_under_a_deleted_department_or_site(self):
+        for statement in (lambda: ProductionDepartment.objects.filter(pk=self.hall.pk).update(is_deleted=True),
+                          lambda: Site.objects.filter(pk=self.bergen.pk).update(is_deleted=True),
+                          lambda: make_unit('T-02', ProductionDepartment.objects.create(
+                              site=self.bergen, name='Old', code='OL', is_deleted=True))):
+            with self.subTest(statement=statement), self.assertRaises(IntegrityError), transaction.atomic():
+                statement()
+                immediately()
+
+    def test_a_unit_saved_locks_its_department_and_site(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as queries, transaction.atomic():
+            make_unit('T-04', self.hall)
+        locks = [query['sql'] for query in queries.captured_queries if 'FOR' in query['sql'] and 'UPDATE' in query['sql']]
+        self.assertTrue(any('"production_departments"' in sql for sql in locks), locks)
+        self.assertTrue(any('"sites"' in sql for sql in locks), locks)

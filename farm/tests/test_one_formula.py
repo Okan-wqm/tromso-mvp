@@ -2,6 +2,7 @@
 used to hold it keep their names as doors to it, with no arithmetic of their own. A module is listed here in the
 commit that switches it to the core and deletes its Python bodies (README, Water-chemistry core)."""
 import ast
+import re
 from pathlib import Path
 
 from django.conf import settings
@@ -89,3 +90,95 @@ class OneFormulaTests(SimpleTestCase):
             with self.subTest(name=name):
                 self.assertIs(getattr(chemistry, name), getattr(native, name))
         self.assertIs(chemistry._free_to_total, native.free_to_total)
+
+
+# S10, the retirement audit. The modules that were the Python chemistry and are now doors to the core.
+DOORS = ['farm/water/chemistry.py', 'farm/water/deffeyes.py', 'farm/water/dosing.py', 'farm/water/charts.py',
+         'farm/water/calculation.py']
+# The functions of the doors that compute with numbers and are not chemistry, each with why (reviewed): the picture
+# (the SVG scene stays Python, S8 deferred by the owner), a unit a value is shown in, and the checks of an input.
+NOT_CHEMISTRY = {
+    'farm/water/deffeyes.py': {'Box.inside': 'a pixel point inside the drawn box (the scene)',
+                               'isoline_colour': 'the colour ramp of an isoline (the scene)',
+                               '_pairs': 'a flat array read as points (the scene)',
+                               'render': 'the SVG in pixels (the scene)', '_arrow': 'an arrow head (the scene)',
+                               '_star': 'the target star (the scene)'},
+    'farm/water/dosing.py': {'Dose.mg_l': "mmol/L times the core's molar mass: the dose in the unit shown",
+                             'Dose.kilograms': 'grams shown as kilograms'},
+    'farm/water/charts.py': {'nice_step': 'the step of an axis (the scene)',
+                             '_decimals': 'the decimals of an axis label (the scene)',
+                             'draw': 'a small chart in pixels (the scene)'},
+    'farm/water/calculation.py': {'Calculation.final': 'counts the steps the simulator reached',
+                                  'Calculation.change': "the difference of the core's values, shown",
+                                  'calculate': 'counts the reagents chosen',
+                                  'offers': "the altitude's accepted range (an input check)",
+                                  'fish_limits': "a limit pair's order (an input check)"},
+}
+
+
+def computes(node):
+    """Arithmetic or an ordering of numbers in a function's body (equality, identity and membership are not; a
+    translated text formatted with % is words)."""
+    if isinstance(node, ast.BinOp):
+        return not ((isinstance(node.op, ast.Mod) and isinstance(node.left, ast.Call)
+                     and getattr(node.left.func, 'id', '') in ('_', 'gettext', 'ngettext'))
+                    or isinstance(node.op, ast.BitOr))
+    if isinstance(node, ast.Compare):
+        return any(isinstance(op, (ast.Lt, ast.LtE, ast.Gt, ast.GtE)) for op in node.ops)
+    return False
+
+
+def functions_of(tree):
+    """{'name' or 'Class.name': FunctionDef} of a module's functions and methods."""
+    found = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            found[node.name] = node
+        elif isinstance(node, ast.ClassDef):
+            found.update({f'{node.name}.{each.name}': each for each in node.body if isinstance(each, ast.FunctionDef)})
+    return found
+
+
+class RetirementTests(SimpleTestCase):
+    """S10: once every function moved, no Python formula is left in the doors and no door is left without a caller."""
+
+    def test_a_door_computes_nothing_but_what_is_listed_as_not_chemistry(self):
+        for name in DOORS:
+            tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
+            outside = [ast.unparse(each) for statement in tree.body
+                       if not isinstance(statement, (ast.FunctionDef, ast.ClassDef))
+                       for each in ast.walk(statement) if computes(each)]
+            with self.subTest(module=name, function=None):
+                self.assertEqual(outside, [], 'a formula outside the core, at the top of the module')
+            for function, node in functions_of(tree).items():
+                found = [ast.unparse(each) for statement in node.body for each in ast.walk(statement) if computes(each)]
+                with self.subTest(module=name, function=function):
+                    if function in NOT_CHEMISTRY.get(name, {}):
+                        self.assertTrue(found, 'listed as computing, but it no longer does: take it off the list')
+                    else:
+                        self.assertEqual(found, [], 'a formula outside the core (chemcore/core/src)')
+
+    def test_every_name_a_door_gives_has_a_caller_outside_the_tests(self):
+        """A door nothing calls is a dead path: it goes (the tests call what the code calls)."""
+        callers = [path for folder in ('farm', 'sensors', 'monitoring', 'reports', 'core', 'chemcore/scripts')
+                   for path in (ROOT / folder).rglob('*.py')
+                   if 'tests' not in path.parts and 'migrations' not in path.parts
+               and path != ROOT / 'farm' / 'water' / 'native.py']   # the core's own names are no caller
+        callers += list((ROOT / 'templates').rglob('*.html'))
+        text = {path: path.read_text(encoding='utf-8') for path in callers}
+        for name in DOORS:
+            tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
+            given = set(functions_of(tree))
+            given |= {alias.asname or alias.name for node in tree.body if isinstance(node, ast.ImportFrom)
+                      and node.module == 'native' for alias in node.names}
+            given |= {target.id for node in tree.body if isinstance(node, ast.Assign) for target in node.targets
+                      if isinstance(target, ast.Name)}
+            for each in sorted(given):
+                short = each.split('.')[-1]
+                if short.startswith('__'):
+                    continue
+                pattern = re.compile(rf'\b{re.escape(short)}\b')
+                used = [path for path, body in text.items() if path != ROOT / name and pattern.search(body)]
+                own = len(pattern.findall(text[ROOT / name]))
+                with self.subTest(module=name, name=each):
+                    self.assertTrue(used or own > 1, 'nothing outside the tests calls it')

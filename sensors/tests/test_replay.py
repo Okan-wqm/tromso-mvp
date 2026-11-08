@@ -61,7 +61,9 @@ class ReplayCase(SensorsCase):
         """The figure of the unit's own chart at the frame's moment (calculation.chart_of with `at`), in the page's box."""
         analysis = calculation.chart_of(frames.target, at=frame.at).calculation.analysis
         extent = [(each.point.dic, each.point.alkalinity_meq) for each in frames.frames if each.point is not None]
-        return deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent))
+        # A page's figure leaves its point out (None): the diagram does not read the pH, the alkalinity or the oxygen
+        # (sensors/tests/test_page_share.py proves it), so frames of one diagram share it and carry their own point.
+        return {**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None}
 
 
 class FrameTests(ReplayCase):
@@ -94,10 +96,12 @@ class FrameTests(ReplayCase):
         for frame in frames.frames:
             with self.subTest(at=frame.at):
                 self.assertEqual(frames.figures[frame.figure], self.figure_at(frames, frame))
-        # One figure for each different water (at the parameters' decimals): the frames of one water share it.
+        # One figure for each different diagram (the water but its pH, alkalinity and oxygen, at the parameters'
+        # decimals): the frames of one diagram share it.
         waters = {}
         for frame in frames.frames:
-            waters.setdefault(tuple(sorted((code, item.value) for code, item in frame.inputs.items())), set()).add(
+            waters.setdefault(tuple(sorted((code, item.value) for code, item in frame.inputs.items()
+                                           if code not in ('ph', 'alkalinity_mg_l', 'oxygen_mg_l'))), set()).add(
                 frame.figure)
         self.assertEqual(len(frames.figures), len(waters))
         self.assertGreater(len(waters), 5)

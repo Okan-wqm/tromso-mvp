@@ -277,3 +277,15 @@ class LockTests(HarvestInsideTestCase):
         locks = [query['sql'] for query in queries.captured_queries
                  if 'FOR UPDATE' in query['sql'] and '"batches"' in query['sql']]
         self.assertTrue(any(b2.pk.hex in sql for sql in locks), locks)
+
+
+class RefusalTests(HarvestInsideTestCase):
+    def test_the_refusal_crosses_a_process_boundary(self):
+        """The parallel test runner and any worker pickle an exception: the refusal and what it found survive it."""
+        import pickle
+        treatment = self.treat(self.medicine(days=7), 2, 2)
+        with self.assertRaises(WithdrawalChanged) as caught:
+            services.void_treatment(self.user, treatment, 'Wrong unit')
+        copied = pickle.loads(pickle.dumps(caught.exception))
+        self.assertEqual((copied.message_dict, copied.change.fingerprint),
+                         (caught.exception.message_dict, caught.exception.change.fingerprint))

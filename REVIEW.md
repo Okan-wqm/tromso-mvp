@@ -159,6 +159,8 @@ Cost (30 -> 52 queries per feeding): recorded above for wip/perf.
 
 ## Checks run
 
-At 190817f (main 912c55d merged): full Docker suite on a fresh test DB (balik-testrunner, test_fixhr, no --parallel)
-2888 tests OK, 3 skipped; `makemigrations --check` no changes; `data_map --check` up to date; catalogs TR/NB 0 missing;
-`tsc --noEmit` OK; `npm test` 40/40 (node_modules of F:/dev/balik-ciftligi).
+At c99310e (main 16fa1b3 merged): `scripts/test.sh` (the full suite, parallel, its own throwaway database server): 2915 tests,
+2909 OK, 3 skipped, 6 failures, all `monitoring.tests.test_golden` G-03 (the stale card). That test fails the same way on
+main 16fa1b3 itself, run at the same hour (it depends on the time of day: a sample 30 hours old); it is monitoring's, not
+this branch's. `makemigrations --check` no changes; `data_map --check` up to date; catalogs TR/NB 0 missing;
+`compile_catalogs`; `tsc --noEmit` OK; `npm test` 40/40 (node_modules of F:/dev/balik-ciftligi).

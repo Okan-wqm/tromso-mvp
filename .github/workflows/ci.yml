@@ -66,7 +66,7 @@ jobs:
         run: |
           TEST_DB_PASSWORD=$(openssl rand -hex 16)
           export TEST_DB_PASSWORD
-          scripts/test.sh
+          bash scripts/test.sh
 
       - name: The translation catalogs are up to date (update_catalogs changed nothing)
         run: |

@@ -28,3 +28,14 @@ NOTES = {
 def note(code):
     """The words of a note's code (lazy: said in the language active when shown). KeyError for an unknown code."""
     return NOTES[code]
+
+
+DOSING_NOTES = {
+    'dosing.cannot_reach': _('Dosing path: these two reagents cannot reach the target.'),
+    'dosing.tick_one_or_two': _('Dosing path: tick one reagent to draw its line, or two to draw their path to the target.'),
+}
+
+
+def dosing_note(code):
+    """The words of the dosing layer's note ('' when it has none). KeyError for an unknown code."""
+    return '' if code is None else DOSING_NOTES[code]

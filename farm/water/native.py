@@ -112,3 +112,11 @@ safe_zone = chemcore.safe_zone
 safe_zone_gaps = chemcore.safe_zone_gaps
 
 clip_polyline = chemcore.clip_polyline
+
+# ---- dosing (chemcore/core/src/dosing.rs) -------------------------------------------------------------------------
+reagents = chemcore.reagents
+at_target = chemcore.at_target
+split = chemcore.split
+recipes = chemcore.recipes
+visual = chemcore.visual
+simulate = chemcore.simulate

@@ -8,6 +8,7 @@ extern crate alloc;
 
 pub mod analysis;
 pub mod chemistry;
+pub mod dosing;
 pub mod geometry;
 pub mod num;
 

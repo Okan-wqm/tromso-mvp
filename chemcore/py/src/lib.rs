@@ -3,6 +3,7 @@
 //! OverflowError); a non-finite input or result is `chemcore.NonFiniteError` (a ValueError): never a NaN as a number.
 use chemcore_core::analysis as a;
 use chemcore_core::chemistry as c;
+use chemcore_core::dosing as d;
 use chemcore_core::geometry as g;
 use chemcore_core::num::ChemError;
 use pyo3::create_exception;
@@ -712,6 +713,132 @@ fn clip_polyline(points: Vec<Point>, chart: (f64, f64, f64, f64)) -> PyResult<Ve
     Ok(g::clip_polyline(&points, &chart_box(chart)))
 }
 
+// ---- dosing (chemcore/core/src/dosing.rs) ----------------------------------------------------------------------
+
+fn reagent_of(key: &str) -> PyResult<d::Reagent> {
+    d::by_key(key).ok_or_else(|| PyValueError::new_err(format!("no reagent {key}")))
+}
+
+/// The reagents in their order: (key, molar mass g/mol, DIC mmol, alkalinity meq per mmol).
+#[pyfunction]
+fn reagents() -> Vec<(&'static str, f64, f64, f64)> {
+    d::reagents()
+        .iter()
+        .map(|reagent| (reagent.key, reagent.molar_mass, reagent.dic, reagent.alkalinity))
+        .collect()
+}
+
+#[pyfunction]
+fn at_target(start: Point, end: Point) -> bool {
+    d::at_target(start, end)
+}
+
+/// (lower key, a, higher key, b) of two reagents from start to end, or None.
+#[pyfunction]
+fn split(
+    start: Point,
+    end: Point,
+    first: &str,
+    second: &str,
+) -> PyResult<Option<(&'static str, f64, &'static str, f64)>> {
+    Ok(d::split(start, end, reagent_of(first)?, reagent_of(second)?)
+        .map(|(lower, a, higher, b)| (lower.key, a, higher.key, b)))
+}
+
+/// The recipes, practical first: [{'doses': [(key, concentration, grams or None, delta DIC, delta alkalinity)],
+/// 'waypoint': (DIC, alkalinity), 'below_air': bool}]. `air`: (temperature, salinity, the air's CO2 mg/L) to flag a
+/// stripping that ends below the air's whichever dose goes first.
+#[pyfunction]
+#[pyo3(signature = (start, end, chosen, volume=None, air=None))]
+fn recipes<'py>(
+    py: Python<'py>,
+    start: Point,
+    end: Point,
+    chosen: Vec<String>,
+    volume: Option<f64>,
+    air: Option<(f64, f64, f64)>,
+) -> PyResult<Vec<Bound<'py, PyDict>>> {
+    let keys: Vec<&str> = chosen.iter().map(String::as_str).collect();
+    let equilibria = air
+        .map(|(temperature, salinity, _co2)| c::equilibria(temperature, salinity))
+        .transpose()
+        .map_err(err)?;
+    let air = match (&equilibria, air) {
+        (Some(equilibria), Some((_t, _s, co2_mg_l))) => Some(d::Air { equilibria, co2_mg_l }),
+        _ => None,
+    };
+    let found = d::recipes(start, end, &keys, volume, air.as_ref()).map_err(err)?;
+    let mut made = Vec::with_capacity(found.len());
+    for recipe in found {
+        let dict = PyDict::new(py);
+        let doses: Vec<(&str, f64, Option<f64>, f64, f64)> = recipe
+            .doses
+            .iter()
+            .map(|dose| {
+                (
+                    dose.reagent.key,
+                    dose.concentration,
+                    dose.grams,
+                    dose.delta_dic,
+                    dose.delta_alkalinity,
+                )
+            })
+            .collect();
+        dict.set_item("doses", doses)?;
+        dict.set_item("waypoint", recipe.waypoint)?;
+        dict.set_item("below_air", recipe.below_air)?;
+        made.push(dict);
+    }
+    Ok(made)
+}
+
+/// The chart's dosing layer: {'lines': [(key, points)], 'wedge', 'path', 'waypoint', 'note': a code or None}.
+#[pyfunction]
+#[pyo3(signature = (start, end, chosen))]
+fn visual<'py>(py: Python<'py>, start: Point, end: Option<Point>, chosen: Vec<String>) -> PyResult<Bound<'py, PyDict>> {
+    let keys: Vec<&str> = chosen.iter().map(String::as_str).collect();
+    let shown = d::visual(start, end, &keys).map_err(err)?;
+    let dict = PyDict::new(py);
+    dict.set_item("lines", shown.lines)?;
+    dict.set_item("wedge", shown.wedge)?;
+    dict.set_item("path", shown.path)?;
+    dict.set_item("waypoint", shown.waypoint)?;
+    dict.set_item("note", shown.note)?;
+    Ok(dict)
+}
+
+/// The simulator's steps: [(key or None, grams, DIC, alkalinity, pH or None, CO2 mg/L or None, below the air)].
+#[pyfunction]
+#[pyo3(signature = (temperature_c, salinity_ppt, start, ph, amounts, volume, air_co2_mg_l=None))]
+#[allow(clippy::type_complexity)]
+fn simulate(
+    temperature_c: f64,
+    salinity_ppt: f64,
+    start: Point,
+    ph: f64,
+    amounts: Vec<(String, f64)>,
+    volume: f64,
+    air_co2_mg_l: Option<f64>,
+) -> PyResult<Vec<(Option<&'static str>, f64, f64, f64, Option<f64>, Option<f64>, bool)>> {
+    let eq = c::equilibria(temperature_c, salinity_ppt).map_err(err)?;
+    let amounts: Vec<(&str, f64)> = amounts.iter().map(|(key, grams)| (key.as_str(), *grams)).collect();
+    let steps = d::simulate(&eq, start, ph, &amounts, volume, air_co2_mg_l).map_err(err)?;
+    Ok(steps
+        .iter()
+        .map(|step| {
+            (
+                step.reagent,
+                step.grams,
+                step.dic,
+                step.alkalinity,
+                step.ph,
+                step.co2_mg_l,
+                step.below_air,
+            )
+        })
+        .collect())
+}
+
 #[pymodule]
 fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
@@ -768,6 +895,12 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(safe_zone, module)?,
         wrap_pyfunction!(geometry, module)?,
         wrap_pyfunction!(clip_polyline, module)?,
+        wrap_pyfunction!(reagents, module)?,
+        wrap_pyfunction!(at_target, module)?,
+        wrap_pyfunction!(split, module)?,
+        wrap_pyfunction!(recipes, module)?,
+        wrap_pyfunction!(visual, module)?,
+        wrap_pyfunction!(simulate, module)?,
     ] {
         module.add_function(function)?;
     }

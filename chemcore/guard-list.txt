@@ -26,6 +26,7 @@ name alkalinity_floor
 name at_target
 name below_air
 name box_of
+name by_key
 name carbonate_plot
 name clip_polyline
 name clip_segment
@@ -33,6 +34,7 @@ name clip_to_box
 name co2_curve
 name co2_from_air
 name core_hash
+name counter_productive
 name direction_line
 name free_to_sws
 name free_to_total
@@ -80,6 +82,7 @@ name sws_to_nbs
 name total_boron
 name total_fluoride
 name total_sulfate
+name unit_move
 name vapour_pressure_atm
 name why_impossible
 number 2.25577e-05
@@ -129,6 +132,8 @@ number 32.065
 number 34.08088
 number 34.6435
 number 35.453
+number 39.99710928
+number 39.997109280000004
 number 40.078
 number 44.0095
 number 44.0096

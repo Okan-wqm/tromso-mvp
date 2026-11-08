@@ -165,8 +165,7 @@ class ReagentTests(SimpleTestCase):
         def co2(point):
             return eq.co2(point[0], eq.ph_at(*point)) * chemistry.MG_CO2_PER_MMOL
 
-        def below_air(dic, alkalinity):
-            return co2((dic, alkalinity)) < air
+        below_air = (12, 1, air)            # the water's temperature and salinity, the air's CO₂: the core judges
 
         # Stripping and acid to DIC 1.55, alkalinity 1.40: stripping first ends at 0.34 mg/L, acid first and
         # stripping last at the target's 6.7: it can be done.

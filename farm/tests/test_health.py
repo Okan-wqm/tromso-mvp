@@ -327,6 +327,7 @@ class WithdrawalTests(HealthTestCase):
         self.withdraw(medicine, None, days=7)
         self.assertEqual(self.held()[0].until, self.day(-5))
 
+    @gate.opened('test fixture: a withdrawal row read back and saved as it is')
     def test_the_safety_margin_is_added_to_both_values_and_rounded_up_and_the_label_value_is_kept(self):
         # 7 days + 20 % = 8.4, so 9 days; 30 degree-days + 20 % = 36, reached by 4 days at 10 °C: the days decide.
         medicine = self.medicine()
@@ -362,7 +363,8 @@ class WithdrawalTests(HealthTestCase):
         for days_ago in range(1, 6):
             self.temperature(self.t1, days_ago, '8')
         self.assertEqual(self.held(day=self.day(1))[0].until, self.today)             # reached by yesterday
-        MedicineWithdrawal.objects.update(safety_margin_pct=25)
+        with gate.opened('test: a margin changed behind the services'):
+            MedicineWithdrawal.objects.update(safety_margin_pct=25)
         [held] = self.held()
         self.assertEqual((held.rule.degree_days, held.estimated, held.remaining_degree_days),
                          (Decimal(50), True, Decimal(10)))
@@ -411,7 +413,7 @@ class WithdrawalTests(HealthTestCase):
     def test_a_running_course_counts_from_its_planned_last_day(self):
         treatment = self.treat(self.medicine(days=7), 1, -3)          # yesterday to 3 days ahead
         self.assertEqual(self.held()[0].until, self.day(-11))
-        services.change_last_day(self.user, treatment, self.day(-1))  # stopped earlier: tomorrow is its last day
+        self.going_on(services.change_last_day, self.user, treatment, self.day(-1))   # stopped earlier: asked (an earlier end)
         self.assertEqual(self.held()[0].until, self.day(-9))
 
     def test_a_running_course_in_degree_days_is_projected_from_its_last_day(self):
@@ -499,7 +501,7 @@ class WithdrawalTests(HealthTestCase):
         # Recorded as an in-feed treatment that covers the day: its own withdrawal replaces the unknown end.
         in_feed = self.medicine(name='Slice vet.', kind='lice', administration='in_feed', days=14,
                                 active_substance='emamectin benzoate', lice_report_code='EMAMECTIN_BENZOAT')
-        self.treat(in_feed, 3, 2)
+        self.going_on(self.treat, in_feed, 3, 2)          # the unknown end becomes a date: an earlier end, asked
         [held] = self.held()
         self.assertEqual((held.until, held.feeding), (self.day(-13), None))
 
@@ -513,7 +515,7 @@ class WithdrawalTests(HealthTestCase):
         self.assertContains(page, 'No in-feed treatment covers this day')
         in_feed = self.medicine(name='Slice vet.', administration='in_feed', days=14,
                                 active_substance='emamectin benzoate', lice_report_code='EMAMECTIN_BENZOAT')
-        self.treat(in_feed, 2, 0)
+        self.going_on(self.treat, in_feed, 2, 0)
         page = self.client.post(url, {**data, 'token': str(uuid.uuid4())}, follow=True)
         self.assertNotContains(page, 'No in-feed treatment covers this day')
 
@@ -828,7 +830,9 @@ class TreatmentServiceTests(HealthTestCase):
         self.assertEqual((treatment.is_deleted, treatment.void_reason, treatment.deleted_by),
                          (True, 'Recorded twice', self.user))
         row = AuditLog.objects.get(entity_type='treatment', action='void')
-        self.assertEqual((row.changes['Reason for voiding'], row.severity), ([None, 'Recorded twice'], 'critical'))
+        self.assertEqual(row.changes['Reason for voiding'], [None, 'Recorded twice'])
+        self.assertTrue(AuditLog.objects.filter(entity_type='treatment', entity_id=str(treatment.pk),
+                                                severity=AuditLog.Severity.CRITICAL).exists())   # the guard's entry
         self.assertTrue(self.refused(services.void_treatment, self.user, treatment, 'Again'))
 
     @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')

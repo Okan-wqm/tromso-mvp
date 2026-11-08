@@ -444,6 +444,7 @@ class PointsWaterTests(WaterTestCase):
         self.assertEqual(by_name[self.inlet.name].get('temperature_c').value, D('8.8'))
         self.assertEqual(len(found[self.t2.pk]), 1)                # narrowed to its middle
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_an_inactive_point_is_left_out(self):
         SamplingPoint.objects.filter(pk=self.drain.pk).update(is_active=False)
         found = read.points_water([self.t1], self.now)

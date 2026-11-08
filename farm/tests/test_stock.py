@@ -813,6 +813,7 @@ class PageTests(StockTestCase):
         response = self.page(unit=self.t2.pk)
         self.assertContains(response, '<tr class="unit-row is-selected is-over" aria-current="true">')
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_two_empty_states(self):
         self.assertContains(self.page(q='nothing like it'), 'No units match these filters.')
         self.assertContains(self.page(q='nothing like it'), f'href="{self.url}">Clear filters')

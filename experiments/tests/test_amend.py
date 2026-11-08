@@ -407,3 +407,54 @@ class ReleaseRaceTests(TransactionTestCase):
         self.assertIn('Someone else changed this experiment', [r for r in results if r != 'ok'][0])
         self.assertEqual((Experiment.objects.get().version, ReplicateUnit.objects.exclude(left_reason='').count()),
                          (self.trial.version + 1, 1))
+
+
+class CopyRaceTests(TransactionTestCase):
+    """One copy form sent twice at once makes one copy (cross review of the merge, finding 2): the source is locked
+    before the form's key is looked up, as every write path takes its locks first, so the second sending waits for the
+    first and finds its copy instead of failing on the key."""
+
+    serialized_rollback = True
+
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        from farm.models import Site
+        from farm.tests.helpers import make_species
+        self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'x')
+        self.trial = Experiment.objects.create(code='E-2026-001', name='One', site=Site.objects.create(name='Bergen',
+                                                                                                      code='BG'),
+                                               species=make_species(), duration_days=56)
+
+    def test_two_sendings_at_once_make_one_copy(self):
+        import threading
+        import time
+        import uuid
+        from unittest import mock
+
+        from django.db import connection
+
+        from core import codes
+        token, results, gate = uuid.uuid4(), [], threading.Barrier(2)
+        numbered = codes.next_code
+
+        def slow_number(*args, **kwargs):
+            time.sleep(0.5)                  # both sendings are past their first look before either has a copy
+            return numbered(*args, **kwargs)
+
+        def send():
+            gate.wait()
+            try:
+                results.append(services.copy(self.user, self.trial, 'Repeat', token=token).pk)
+            except Exception as error:      # noqa: BLE001 - the outcome is what the test is about
+                results.append(f'{type(error).__name__}: {str(error)[:80]}')
+            finally:
+                connection.close()
+
+        with mock.patch.object(services, 'next_code', slow_number):
+            threads = [threading.Thread(target=send) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(30)
+        self.assertEqual(Experiment.objects.filter(copied_from=self.trial).count(), 1)
+        self.assertEqual(len(set(results)), 1, results)

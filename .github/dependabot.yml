@@ -1,0 +1,73 @@
+# Dependency updates (README, CI and dependency updates). Weekly; minor and patch releases come grouped into one pull
+# request per ecosystem, each major (and each Django feature release) in a pull request of its own, merged only with the
+# whole CI green. Security updates are a repository setting (Dependabot security updates), not this file.
+version: 2
+updates:
+  # The server's packages (requirements.txt) and the test runner's (scripts/testrunner/requirements.txt).
+  - package-ecosystem: pip
+    directories: ["/", "/scripts/testrunner"]
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-and-patch:
+        patterns: ["*"]
+        # Django's feature releases (6.1 -> 6.2) are planned moves, like a major: on their own, never in the group.
+        exclude-patterns: ["Django", "django"]
+        update-types: ["minor", "patch"]
+
+  # Development-only tools of the browser code (package.json); nothing from npm is shipped.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # The MQTT ingest (sensors-ingest/Cargo.toml and Cargo.lock). A new crate must still pass cargo deny (licences).
+  - package-ecosystem: cargo
+    directory: "/sensors-ingest"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      cargo-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # The actions of .github/workflows, pinned to a commit; Dependabot moves the commit and its version comment together.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # The images the Dockerfiles build from: the test runner's (scripts/testrunner) and the ingest's (sensors-ingest).
+  - package-ecosystem: docker
+    directories: ["/scripts/testrunner", "/sensors-ingest"]
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      docker-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # A new Python (3.12 -> 3.13) or Rust (1.88 -> 1.89) is a planned move: the Rust image moves together with
+      # sensors-ingest/rust-toolchain.toml, tests/run.sh and the crate's rust-version; only patches and digests come here.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "rust"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

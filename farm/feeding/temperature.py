@@ -1,14 +1,16 @@
-"""The water temperature a ration is read at: the unit's own manual sample, else its system's loop, then the
-loops of the systems that system is nested in, read from the water samples (farm/water/read.py: the places the
-unit's water is read from, `water_sources`, and the lookup in them, `Series`, which takes the sensors too: a fresh
-sensor value at the moment wins at its point, and a sensor value counts as fresh for its channel's three heartbeats).
-The ration only ever sees a Temperature.
+"""The water temperature a ration is read at, picked by the water's one rule (owner rule A9, `farm.water.read.choose`)
+from the places a unit's water is read from (`water_sources`, every point of the unit, then its system's loop, then the
+loops of the systems that system is nested in) and the lookup in them, `Series`, which takes the sensors too (a sensor
+value counts as fresh for its channel's three heartbeats). The ration only ever sees a Temperature.
 
-- The candidates are the live samples with a temperature at the unit's middle point, at the loop point of its
-  system and of that system's parents, measured at or before the moment asked and at most
-  TEMPERATURE_USABLE_DAYS (7) before it (owner decision Q5).
-- The unit's own fresh value wins; else the nearest system's fresh value; with nothing fresh, the newest of the
-  stale ones, marked stale. Fresh is the temperature parameter's freshness (24 h, farm/water/parameters.py).
+- The candidates are the values with a temperature at the unit's own points (its sensors and its samples), at the loop
+  point of its system and of that system's parents (the sensors on the loop point and on the system, and the loop's
+  samples), measured at or before the moment asked and at most TEMPERATURE_USABLE_DAYS (7) before it (owner decision
+  Q5).
+- The newest fresh value of the unit's own points wins; else the newest fresh value of the nearest system that has one;
+  with nothing fresh, the newest of the unit's own, else of the nearest system's, marked stale: exactly what the unit's
+  water shows (`farm.water.read.latest`). Fresh is the temperature parameter's freshness (24 h,
+  farm/water/parameters.py).
 - Nothing within the window: no temperature, so no ration, and the page says so. Never a default temperature
   (the source fed the full ration at an unknown temperature, FP-02).
 
@@ -19,9 +21,8 @@ from decimal import Decimal
 
 from django.conf import settings
 
-from farm.water import parameters
-from farm.water.evaluate import is_fresh
-from farm.water.read import SYSTEM, UNIT, Series, water_sources
+from farm.water import parameters, read
+from farm.water.read import UNIT, Series, water_sources
 
 TEMPERATURE = parameters.get(parameters.TEMPERATURE)
 
@@ -34,13 +35,15 @@ def usable():
 @dataclass(frozen=True)
 class Temperature:
     """A temperature for a unit at a moment: its value, when and where it was measured (the unit, or the loop of
-    the system named by `point`), how old it was at that moment and whether it was still fresh."""
+    the system named by `point`; `sampling_point` the point itself), how old it was at that moment and whether it was
+    still fresh."""
     value_c: Decimal
     measured_at: datetime
     point: object
     via: str
     age: timedelta
     fresh: bool
+    sampling_point: object = None
 
 
 class TemperatureBook:
@@ -49,21 +52,31 @@ class TemperatureBook:
 
     def __init__(self, units, since, until):
         self.sources = water_sources(units, nested=True)
-        points = [source.point for sources in self.sources.values() for source in sources]
-        self.series = Series(points, TEMPERATURE.code, since - usable(), until, live=True)
+        points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
+        self.series = Series(points.values(), TEMPERATURE.code, since - usable(), until, live=True)
+
+    def tiers(self, unit):
+        """[[Source]]: the unit's own points, then each system's loop, nearest first: the tiers `choose` reads."""
+        tiers = []
+        for source in self.sources.get(unit.pk, []):
+            if source.via == UNIT and tiers and tiers[-1][0].via == UNIT:
+                tiers[-1].append(source)
+            else:
+                tiers.append([source])
+        return tiers
 
     def at(self, unit, moment):
         """The Temperature the unit's ration reads at `moment`, or None."""
-        candidates = []
-        for source in self.sources.get(unit.pk, []):
-            found = self.series.latest(source.point.pk, moment, usable())
-            if found is not None:
-                candidates.append(Temperature(found.value, found.at, source.owner, source.via, moment - found.at,
-                                              is_fresh(TEMPERATURE, found.at, moment, found.fresh_for)))
-        fresh = [candidate for candidate in candidates if candidate.fresh]
-        if fresh:
-            return fresh[0]           # the unit's own, else the nearest loop's
-        return max(candidates, key=lambda candidate: candidate.measured_at, default=None)
+        tiers = self.tiers(unit)
+        where = {source.point.pk: source for tier in tiers for source in tier}
+        found = read.choose([[found for source in tier
+                              for found in self.series.candidates(source.point.pk, moment, usable())] for tier in tiers],
+                            moment, lambda each: self.series.fresh(each, moment))
+        if found is None:
+            return None
+        source = where[found.point.pk]
+        return Temperature(found.value, found.at, source.owner, source.via, moment - found.at,
+                           self.series.fresh(found, moment), found.point)
 
 
 def temperature_for(units, at):

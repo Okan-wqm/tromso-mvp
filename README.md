@@ -2658,8 +2658,13 @@ registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the far
 unit's OWN fresh values (the sensors on its point and its own manual or lab samples; between two channels measured at the same time the
 primary before the backup) the
 newest by measurement time wins, whatever its origin; only when it has no fresh value of its own does the system stand in,
-for the middle point: the newest fresh value of a sensor on the unit's system or of a sample of the system's loop; else
-the newest of its own values, shown stale, else the system's. A stale value never enters a calculation: a value is
+for the middle point: the newest fresh value of a sensor on the unit's system, of a sensor bound to the system's loop
+point, or of a sample of the system's loop; else the newest of its own values, shown stale, else the system's. A value
+standing in from the system is judged for the unit's fish, as the unit's own would be. The rule is ONE function,
+`read.choose(tiers, now, fresh)`: the latest values (`read.latest`), a value at a moment (`Series.latest`) and the
+ration's temperature (`feeding.temperature.TemperatureBook.at`, which adds the loops of parent systems as further tiers)
+all pick through it, from the same places, with one tie-breaker at one measurement time: a sensor before a sample, the
+primary channel before the backup. A stale value never enters a calculation: a value is
 worked out (the other oxygen unit, NH₃, the oxygen judged through the mg/L row) only from fresh values. A channel in maintenance
 or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
 device whose clock runs fast; the sensors' contract allows up to an hour) is never fresh and never the newest: it is

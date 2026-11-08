@@ -3,6 +3,7 @@ early: a new last day, from the first day to the day before the old last day) or
 person cannot do either to their own started leave; a decider cannot touch their own. Each is logged; a refusal writes
 nothing. A correction is made only within the platform's correction window after the leave's last day
 (hr.services.correction_window_days): an older leave is refused with the reason."""
+import re
 from datetime import date, timedelta
 from unittest import mock
 
@@ -81,7 +82,16 @@ class StartedLeaveCorrectionTests(LeaveTestCase):
         url = reverse('hr:production_leaverequest_shorten', args=[self.started.pk])
         page = self.client.get(reverse('hr:production_leaverequest_detail', args=[self.started.pk])).content.decode()
         self.assertIn(f'action="{url}"', page)
-        response = self.client.post(url, {'last_day': '2026-01-09'})
+        # the shared day box (core.widgets.DayInput), never a browser date box, offering the latest day it takes: the
+        # day before the last
+        box = re.search(r'<input[^>]*name="last_day"[^>]*>', page).group(0)
+        self.assertIn('data-date-input="day"', box)
+        self.assertNotIn('type="date"', box)
+        self.assertIn('value="15.01.2026"', box)
+        response = self.client.post(url, {'last_day': 'nonsense'})          # not a day: said, nothing changed
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.state()[1], LAST)
+        response = self.client.post(url, {'last_day': '09.01.2026'})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.state()[1], date(2026, 1, 9))
         self.client.force_login(self.ann_user)

@@ -29,11 +29,14 @@ from .test_notices import NoticeTestCase
 
 def keys_written():
     """Every string key of a dict literal in reports/compute, every string key it assigns (`content['contact'] = …`), and
-    the keys it writes from a list of names. A static net only: the test below reads what the pages really show."""
+    the keys it writes from a list of names. A static net only: the test below reads what the pages really show. A dict
+    that fills a message (`_('… %(unit)s …') % {...}`) holds the message's placeholders, not content."""
     found = set(lice.STAGES) | set(notices.NARRATIVE) | set(slaughter.WEEKDAYS)
     for path in Path(settings.BASE_DIR, 'reports', 'compute').glob('*.py'):
-        for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
-            if isinstance(node, ast.Dict):
+        tree = ast.parse(path.read_text(encoding='utf-8'))
+        messages = {id(node.right) for node in ast.walk(tree) if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod)}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Dict) and id(node) not in messages:
                 found |= {key.value for key in node.keys if isinstance(key, ast.Constant) and isinstance(key.value, str)}
             elif (isinstance(node, ast.Subscript) and isinstance(node.ctx, ast.Store)
                   and isinstance(node.slice, ast.Constant) and isinstance(node.slice.value, str)):

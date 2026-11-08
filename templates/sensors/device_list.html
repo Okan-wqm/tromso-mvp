@@ -1,23 +1,38 @@
 {% extends "crud/list.html" %}
-{% load i18n %}
+{% load i18n sensors_places %}
 {% comment %} Sensors › Setup › Devices (sensors.resources.DeviceResource): the field devices, each on one topic of one
-   connection. {% endcomment %}
+   connection, and where each is placed now (`?placed=no`: the ones out of the water); a person who may bind moves one
+   from here (sensors:device_move). {% endcomment %}
 {% block search_placeholder %}{% trans "Search by code, name, topic or model" %}{% endblock %}
+{% block filters %}
+<form method="get" class="toolbar-filter">
+  {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+  <label class="sr-only" for="device-placed">{% trans "Placed" %}</label>
+  <select id="device-placed" name="placed" data-autosubmit>
+    <option value=""{% if not placed %} selected{% endif %}>{% trans "Placed or not" %}</option>
+    <option value="yes"{% if placed == "yes" %} selected{% endif %}>{% trans "Placed now" %}</option>
+    <option value="no"{% if placed == "no" %} selected{% endif %}>{% trans "Not placed" %}</option>
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+{% endblock %}
 {% block empty_text %}{% trans "A device publishes on one topic of a connection: a probe, a PLC, a gateway. Its channels are the values it sends." %}{% endblock %}
 {% block items %}
+{% placed objects as rows %}
 <div class="table-wrap">
   <table class="data-table">
-    <thead><tr><th scope="col">{% trans "Device" %}</th><th scope="col">{% trans "Topic" %}</th><th scope="col">{% trans "Connection" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col" class="num">{% trans "Channels" %}</th><th scope="col">{% trans "State" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <thead><tr><th scope="col">{% trans "Device" %}</th><th scope="col">{% trans "Topic" %}</th><th scope="col">{% trans "Connection" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Placed at" %}</th><th scope="col" class="num">{% trans "Channels" %}</th><th scope="col">{% trans "State" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
     <tbody>
-      {% for device in objects %}
+      {% for device, places in rows %}
       <tr>
         <td>{% if can_change %}<a class="row-title" href="{% url 'sensors:device_edit' device.pk %}" data-modal>{{ device.name }}</a>{% else %}<span class="row-title">{{ device.name }}</span>{% endif %}<span class="row-sub">{{ device.code }}{% if device.manufacturer %} · {{ device.manufacturer }} {{ device.model }}{% endif %}</span></td>
         <td class="mono">{{ device.topic }}</td>
         <td>{{ device.connection.name }}</td>
         <td>{{ device.site.name }}</td>
+        <td>{% for place in places %}{{ place }}{% if not forloop.last %}<br>{% endif %}{% empty %}<span class="badge badge-closed">{% trans "Not placed" %}</span>{% endfor %}</td>
         <td class="num"><a href="{% url 'sensors:channel_list' %}?device={{ device.pk }}">{{ device.channel_count }}</a></td>
         <td>{% if device.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% endif %}</td>
-        <td class="row-actions">{% include "sensors/_row_actions.html" with model="device" obj=device label=device.name %}</td>
+        <td class="row-actions">{% if perms.sensors.add_binding %}<a class="icon-button" href="{% url 'sensors:device_move' %}?device={{ device.pk }}" data-modal title="{% trans "Move device" %}">{% include "icons/_icon.html" with name="target" %}<span class="sr-only">{% trans "Move device" %}</span></a>{% endif %}{% include "sensors/_row_actions.html" with model="device" obj=device label=device.name %}</td>
       </tr>
       {% endfor %}
     </tbody>

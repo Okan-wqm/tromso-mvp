@@ -292,6 +292,22 @@ def constraint_error(form, error):
     return True
 
 
+def refusal_text(error):
+    """What the database said when it refused a write (an IntegrityError): its own message."""
+    return str(getattr(getattr(error.__cause__, 'diag', None), 'message_primary', '') or error)
+
+
+def trigger_refusal(form, error):
+    """Puts a constraint trigger's refusal (a check violation whose constraint is a trigger, `trg_...`: a rule across
+    tables, e.g. a unit not moved to another site while a sensor is placed in it) on the form, with the database's
+    message. False for any other error."""
+    diag = getattr(error.__cause__, 'diag', None)
+    if getattr(diag, 'sqlstate', '') != '23514' or not (getattr(diag, 'constraint_name', '') or '').startswith('trg_'):
+        return False
+    form.add_error(None, refusal_text(error))
+    return True
+
+
 def constrained_fields(constraint):
     """The fields a unique or exclusion constraint covers: its `fields`, or the fields its expressions read
     (Lower('scientific_name') covers scientific_name; an assignment's daterange its first and last day)."""
@@ -727,34 +743,40 @@ class UpdateView(FormView):
         form = r.form(request, request.POST, request.FILES, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
-        with transaction.atomic():
-            current = self.locked_object(pk)
-            versioned = 'version' in form.fields
-            if versioned and form.cleaned_data.get('version') != current.version:
-                # Translators: %(name)s is the kind of record in lower case (e.g. site).
-                messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                          'The form now shows their version; make your changes again.')
-                               % {'name': r.name})
-                return done(request, self.url('edit', pk))
-            before = r.recorded(current)
-            obj = form.save(commit=False)
-            if versioned:
-                obj.version = current.version + 1
-            if hasattr(obj, 'updated_by'):
-                obj.updated_by = request.user
-            try:
-                with transaction.atomic():
-                    obj.save()
-            except IntegrityError as error:
-                # Two people giving two records the same code at once both pass the form's checks; the database's
-                # constraint refuses the second, told on the form as on a new record (F-034). Any other refusal is a
-                # fault.
-                if not constraint_error(form, error):
-                    raise
-                return self.page(form, current)
-            form.save_m2m()
-            audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
-            r.after_save(request, obj, created=False)
+        try:
+            with transaction.atomic():
+                current = self.locked_object(pk)
+                versioned = 'version' in form.fields
+                if versioned and form.cleaned_data.get('version') != current.version:
+                    # Translators: %(name)s is the kind of record in lower case (e.g. site).
+                    messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                              'The form now shows their version; make your changes again.')
+                                   % {'name': r.name})
+                    return done(request, self.url('edit', pk))
+                before = r.recorded(current)
+                obj = form.save(commit=False)
+                if versioned:
+                    obj.version = current.version + 1
+                if hasattr(obj, 'updated_by'):
+                    obj.updated_by = request.user
+                try:
+                    with transaction.atomic():
+                        obj.save()
+                except IntegrityError as error:
+                    # Two people giving two records the same code at once both pass the form's checks; the database's
+                    # constraint refuses the second, told on the form as on a new record (F-034). Any other refusal
+                    # goes on to the trigger check below.
+                    if not constraint_error(form, error):
+                        raise
+                    return self.page(form, current)
+                form.save_m2m()
+                audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
+                r.after_save(request, obj, created=False)
+        except IntegrityError as error:
+            # A rule the database holds across tables refused the change: said on the form, nothing saved.
+            if not trigger_refusal(form, error):
+                raise
+            return self.page(form, self.get_object(pk))
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” saved.'), r, obj)
         return done(request, self.url('list'))

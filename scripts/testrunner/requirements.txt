@@ -1,0 +1,4 @@
+# Only for the test runs (scripts/test.sh), on top of the project's requirements.txt.
+# The parallel runner sends a failing test's traceback from its worker to the main process; without tblib a traceback
+# cannot be sent and the whole run stops at the first error instead of reporting it.
+tblib==3.1.0

@@ -36,6 +36,13 @@ def _one_target():
     return condition
 
 
+def place_site(prefix=''):
+    """The site of a binding's place (`prefix`: the path to the binding, e.g. 'binding__'), as the database works it out:
+    migration 0007's `sensors_place_site`, the one definition (NULL for a department without a site)."""
+    return Func(F(f'{prefix}point_id'), F(f'{prefix}system_id'), F(f'{prefix}equipment_id'), function='sensors_place_site',
+                output_field=models.UUIDField())
+
+
 class BindingQuerySet(models.QuerySet):
     def visible(self):
         """The live bindings of live channels whose target is live: a deleted point (or its deleted owner), system or
@@ -114,6 +121,12 @@ class Binding(AuditedModel):
     @property
     def target(self):
         return self.point or self.system or self.equipment
+
+    def took(self, moment):
+        """Whether a value measured at `moment` is this place's: taken while the binding held (a moved probe's value
+        from its previous place, or from while it was out of the water, is not). The one rule the latest values and
+        the alarms read a channel's state by."""
+        return moment is not None and self.valid_from <= moment and (self.valid_to is None or moment < self.valid_to)
 
     @property
     def target_kind(self):

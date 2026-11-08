@@ -13,12 +13,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import AuditLog
+from farm.models import ProductionDepartment, Site, System
 from farm.tests.helpers import role
 
-from sensors import alarms
+from sensors import alarms, bindings
 from sensors.models import AlarmEvent, AlarmRule, ChannelState, DeviceState
 
-from . import SensorsCase, make_channel
+from . import SensorsCase, make_channel, make_device
 
 KEEPER = ('view_alarmrule', 'add_alarmrule', 'change_alarmrule', 'delete_alarmrule', 'view_alarmevent',
           'change_alarmevent', 'view_channel')
@@ -29,6 +30,8 @@ class AlarmCase(SensorsCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.flow = make_channel(cls.device, 'flow_m3_h')
+        cls.ras = System.objects.create(name='RAS 1', code='R1', site=cls.site, production_department=cls.hall)
+        cls.bound = bindings.move(cls.user, cls.flow, timezone.now() - timedelta(days=30), system=cls.ras)
 
     def state(self, channel, value, seconds=5):
         at = timezone.now() - timedelta(seconds=seconds)
@@ -146,9 +149,11 @@ class PageTests(AlarmCase):
 
     def test_events_are_listed_said_not_sent_and_acknowledged_with_a_log(self):
         rule = AlarmRule.objects.create(kind='low', severity='warning', channel=self.flow, threshold=10)
-        event = AlarmEvent.objects.create(rule=rule, channel_no=self.flow.channel_no, opened_at=timezone.now(), peak=4)
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.flow.channel_no, opened_at=timezone.now(), peak=4,
+                                     binding=self.bound)
         page = self.client.get(reverse('sensors:alarm_events'))
         self.assertContains(page, 'Nobody is notified')
+        self.assertContains(page, 'RAS 1 (R1)')                       # the place it opened at
         self.client.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]))
         event.refresh_from_db()
         self.assertEqual(event.acknowledged_by, self.keeper)
@@ -156,7 +161,7 @@ class PageTests(AlarmCase):
 
     def test_open_events_of_a_site(self):
         rule = AlarmRule.objects.create(kind='low', severity='warning', channel=self.flow, threshold=10)
-        AlarmEvent.objects.create(rule=rule, channel_no=self.flow.channel_no, opened_at=timezone.now())
+        AlarmEvent.objects.create(rule=rule, channel_no=self.flow.channel_no, opened_at=timezone.now(), binding=self.bound)
         self.assertEqual(len(alarms.open_events(self.site)), 1)
         self.assertEqual(len(alarms.open_events()), 1)
 
@@ -164,3 +169,76 @@ class PageTests(AlarmCase):
         from django.core.exceptions import ValidationError
         with self.assertRaises(ValidationError):
             AlarmRule(kind='low', severity='warning', channel=self.channel, threshold=5).full_clean()
+
+
+class PlaceTests(AlarmCase):
+    """An alarm belongs to the place, through the binding it opened under: only a channel bound now is checked, and only
+    with values measured while it was bound there; moving it or taking it out of the water closes its open events then;
+    a site's open events are those of its places, whatever the device's site is now."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.oslo = Site.objects.create(name='Oslo', code='OS', timezone='Europe/Oslo')
+        cls.r9 = System.objects.create(name='RAS 9', code='R9', site=cls.oslo, production_department=(
+            ProductionDepartment.objects.create(site=cls.oslo, name='Hall O', code='HO')))
+        cls.probe = make_device(cls.connection, cls.format, cls.site, code='ORP-1')
+        cls.orp = make_channel(cls.probe, 'orp_mv')
+
+    def place(self, at=None, system=None):
+        bindings.move_device(self.user, self.probe, at or timezone.now() - timedelta(hours=2), system or self.ras)
+
+    def test_an_event_opens_under_the_binding_of_its_place(self):
+        self.place()
+        AlarmRule.objects.create(kind='high', severity='warning', channel=self.orp, threshold=400)
+        self.state(self.orp, 450)
+        alarms.evaluate()
+        event = AlarmEvent.objects.get()
+        self.assertEqual(event.binding, bindings.Binding.objects.get(channel=self.orp, valid_to__isnull=True))
+        self.assertEqual(len(alarms.open_events(self.site)), 1)
+
+    def test_a_move_or_taking_it_out_closes_its_open_events_then(self):
+        self.place(timezone.now() - timedelta(hours=3))
+        AlarmRule.objects.create(kind='high', severity='warning', channel=self.orp, threshold=400)
+        self.state(self.orp, 450, seconds=60)
+        alarms.evaluate()
+        moved_at = timezone.now()
+        bindings.move_device(self.user, self.probe, moved_at, self.r9)
+        event = AlarmEvent.objects.get()
+        self.assertEqual(event.closed_at, moved_at)
+        self.assertEqual((alarms.open_events(self.site), alarms.open_events(self.oslo)), ([], []))
+        alarms.evaluate()                                     # the value measured in Bergen is not Oslo's
+        self.assertEqual(AlarmEvent.objects.filter(closed_at__isnull=True).count(), 0)
+        self.state(self.orp, 470, seconds=0)                  # measured in Oslo, after the move
+        alarms.evaluate()
+        self.assertEqual([str(event.binding.target) for event in alarms.open_events(self.oslo)], ['RAS 9 (R9)'])
+        out_at = timezone.now()
+        bindings.unbind_device(self.user, self.probe, out_at)
+        self.assertEqual(AlarmEvent.objects.filter(closed_at__isnull=True).count(), 0)
+
+    def test_a_device_out_of_the_water_is_not_checked(self):
+        AlarmRule.objects.create(kind='high', severity='warning', channel=self.orp, threshold=400)
+        AlarmRule.objects.create(kind='no_data', severity='warning', channel=self.orp, for_s=0)
+        AlarmRule.objects.create(kind='device_offline', severity='warning', channel=self.orp)
+        self.state(self.orp, 450, seconds=7200)
+        alarms.evaluate()
+        self.assertFalse(AlarmEvent.objects.exists())
+
+    def test_the_no_data_clock_starts_when_it_is_placed(self):
+        AlarmRule.objects.create(kind='no_data', severity='warning', channel=self.orp, for_s=0)
+        self.state(self.orp, 300, seconds=7200)               # its last value, from before it came here
+        self.place(timezone.now() - timedelta(seconds=30))
+        alarms.evaluate()
+        self.assertFalse(AlarmEvent.objects.exists())          # placed 30 s ago: not yet past its freshness
+        bindings.Binding.objects.filter(channel=self.orp, valid_to__isnull=True).update(
+            valid_from=timezone.now() - timedelta(hours=1))     # placed an hour ago, nothing measured since
+        alarms.evaluate()
+        self.assertEqual(AlarmEvent.objects.filter(rule__kind='no_data').count(), 1)
+
+    def test_the_time_above_counts_only_the_readings_taken_there(self):
+        AlarmRule.objects.create(kind='high', severity='warning', channel=self.orp, threshold=400, for_s=600)
+        self.readings(self.orp, [(500, 300), (200, 450), (5, 460)])     # 300 was taken before it came here
+        self.place(timezone.now() - timedelta(seconds=300))
+        self.state(self.orp, 460)
+        alarms.evaluate()
+        self.assertEqual(AlarmEvent.objects.count(), 1)

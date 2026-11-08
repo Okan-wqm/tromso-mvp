@@ -74,6 +74,12 @@ msgid "%(batch)s: not weighed since it came in, so no FCR yet"
 msgstr "%(batch)s: geldiğinden beri tartılmadı, bu yüzden henüz FCR yok"
 
 #, python-format
+msgid "%(channel)s measures %(quantity)s as %(other)s does: one of the two is the backup there."
+msgstr ""
+"%(channel)s, %(other)s ile aynı %(quantity)s değerini ölçüyor: oradaki ikisinden biri yedek "
+"olmalı."
+
+#, python-format
 msgid "%(code)s has no tank."
 msgstr "%(code)s için tank yok."
 
@@ -477,6 +483,20 @@ msgstr "%(density)s kg/m³"
 #, python-format
 msgid "%(department)s (no site)"
 msgstr "%(department)s (sahasız)"
+
+#, python-format
+msgid "%(device)s is at %(site)s: a channel goes to another site with its whole device (Move device)."
+msgstr ""
+"%(device)s, %(site)s sahasında: bir kanal başka bir sahaya ancak cihazının tamamıyla gider "
+"(Cihazı taşı)."
+
+#, python-format
+msgid "%(device)s moved to %(place)s."
+msgstr "%(device)s, %(place)s yerine taşındı."
+
+#, python-format
+msgid "%(device)s taken out of the water."
+msgstr "%(device)s sudan çıkarıldı."
 
 #, python-format
 msgid "%(direct)s person"
@@ -1158,6 +1178,10 @@ msgstr "%(unit)s biriminde ay içinde hasat veya sayı düzeltmeleri var; bu rap
 #, python-format
 msgid "%(unit)s has no average weight to report (the authority wants one above 0)."
 msgstr "%(unit)s için bildirilecek ortalama ağırlık yok (kurum 0’dan büyük bir değer ister)."
+
+#, python-format
+msgid "%(unit)s has no middle sampling point."
+msgstr "%(unit)s biriminin orta numune noktası yok."
 
 #, python-format
 msgid ""
@@ -2232,6 +2256,13 @@ msgstr "Bir birim %(old)s durumundan %(new)s durumuna geçemez."
 
 msgid "A unit cost needs its currency, and a currency a unit cost."
 msgstr "Birim maliyetin para birimi, para biriminin de birim maliyeti olmalı."
+
+msgid ""
+"A unit takes the water values at its middle point; a system takes them as its own water. A "
+"process value goes to a system or a piece of equipment."
+msgstr ""
+"Bir birim su değerlerini orta noktasında alır; bir sistem onları kendi suyu olarak alır. Bir "
+"proses değeri bir sisteme veya bir ekipmana gider."
 
 msgid "A unit with fish in it cannot be made inactive: move or harvest them first."
 msgstr "İçinde balık olan bir birim pasif yapılamaz: önce balıkları taşıyın veya hasat edin."
@@ -4853,6 +4884,9 @@ msgstr "Cihaz çevrimdışı"
 msgid "Devices"
 msgstr "Cihazlar"
 
+msgid "Devices not placed"
+msgstr "Yerleştirilmemiş cihazlar"
+
 msgid "Devices online"
 msgstr "Çevrimiçi cihazlar"
 
@@ -6108,6 +6142,9 @@ msgstr "Su yüzeyinden ağın dibine kadar."
 
 msgid "From the water to the last step:"
 msgstr "Sudan son adıma:"
+
+msgid "From then"
+msgstr "O andan itibaren"
 
 msgid "Frozen at"
 msgstr "Dondurulma zamanı"
@@ -7703,6 +7740,12 @@ msgstr "Bu pH'de en fazla toplam sülfür (S olarak)"
 msgid "Most working days in a row"
 msgstr "Art arda en çok çalışma günü"
 
+msgid "Move device"
+msgstr "Cihazı taşı"
+
+msgid "Move to"
+msgstr "Taşınacağı yer"
+
 msgid "Moved in"
 msgstr "Taşındı (giriş)"
 
@@ -7863,6 +7906,9 @@ msgstr "Ağ malzemesi"
 
 msgid "Never"
 msgstr "Hiç"
+
+msgid "Never placed yet."
+msgstr "Henüz hiç yerleştirilmedi."
 
 msgid "Never shown"
 msgstr "Hiçbir zaman gösterilmez"
@@ -8534,6 +8580,9 @@ msgstr "Yerleştirilmemiş"
 msgid "Not placed in any department."
 msgstr "Hiçbir departmana yerleştirilmemiş."
 
+msgid "Not placed: out of the water, its readings belong to no place."
+msgstr "Yerleştirilmemiş: sudan çıkarıldı, okumaları hiçbir yere ait değil."
+
 msgid "Not planned"
 msgstr "Planlanmamış"
 
@@ -8653,6 +8702,9 @@ msgstr "Mattilsynet’e bildirin"
 msgid "Notify at once"
 msgstr "Hemen bildirin"
 
+msgid "Now"
+msgstr "Şimdi"
+
 msgid "Nullable"
 msgstr "Boş olabilir"
 
@@ -8744,8 +8796,11 @@ msgstr ""
 msgid "On leave"
 msgstr "İzinde"
 
-msgid "On the clock of the channel’s site. Its binding until now ends then."
-msgstr "Kanalın sahasının saatine göre. Şu ana kadarki ataması o zaman sona erer."
+msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
+msgstr "Yerin sahasının saatine göre. Her kanalın şu ana kadarki ataması o zaman sona erer."
+
+msgid "On the clock of the place’s site. Its binding until now ends then."
+msgstr "Yerin sahasının saatine göre. Şu ana kadarki ataması o zaman sona erer."
 
 msgid "On the clock of the place’s site; a task not done by then is overdue."
 msgstr "Yerin bulunduğu sahanın saatine göre; o zamana kadar yapılmayan görev gecikmiş olur."
@@ -9159,6 +9214,9 @@ msgstr "Çıkış"
 msgid "Out of service"
 msgstr "Hizmet dışı"
 
+msgid "Out of the water (not placed)"
+msgstr "Sudan çıkarıldı (yerleştirilmemiş)"
+
 msgid "Outcome"
 msgstr "Sonuç"
 
@@ -9405,8 +9463,17 @@ msgstr "Piscirickettsiozis"
 msgid "Place"
 msgstr "Yer"
 
+msgid "Place (binding)"
+msgstr "Yer (atama)"
+
 msgid "Place deleted"
 msgstr "Yer silindi"
+
+msgid "Placed"
+msgstr "Yerleştirilmiş"
+
+msgid "Placed at"
+msgstr "Yerleştirildiği yer"
 
 msgid "Placed by hand"
 msgstr "Elle yerleştirildi"
@@ -9414,6 +9481,12 @@ msgstr "Elle yerleştirildi"
 #, python-format
 msgid "Placed by hand: %(reason)s"
 msgstr "Elle yerleştirildi: %(reason)s"
+
+msgid "Placed now"
+msgstr "Şu an yerleştirilmiş"
+
+msgid "Placed or not"
+msgstr "Yerleştirilmiş ya da değil"
 
 msgid "Placement"
 msgstr "Yerleştirme"
@@ -10946,6 +11019,9 @@ msgstr "Önceki mesajları göster"
 msgid "Show empty"
 msgstr "Boşları göster"
 
+msgid "Show every binding"
+msgstr "Tüm atamaları göster"
+
 msgid "Show on the chart"
 msgstr "Çizelgede göster"
 
@@ -11997,6 +12073,12 @@ msgstr "Tasarımda tank yerleştirilecek tekrar yok."
 msgid "The design has one group: there is nothing to compare it with."
 msgstr "Tasarımda tek grup var: onu karşılaştıracak bir şey yok."
 
+msgid "The device has no channel to place."
+msgstr "Cihazın yerleştirilecek kanalı yok."
+
+msgid "The device is not placed anywhere now."
+msgstr "Cihaz şu an hiçbir yere yerleştirilmemiş."
+
 msgid "The device marked the value bad."
 msgstr "Cihaz değeri kötü olarak işaretledi."
 
@@ -12782,6 +12864,10 @@ msgstr "Gizli anahtar değiştirildi."
 #, python-format
 msgid "The seed is a whole number from 0 to %(top)d."
 msgstr "Tohum, 0 ile %(top)d arasında bir tam sayıdır."
+
+#, python-format
+msgid "The sensors at %(place)s: those there now first, then those there before."
+msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha önce orada olanlar."
 
 msgid ""
 "The shift patterns of the roster: a start and an end on the wall clock of the site, a break and a"
@@ -14424,6 +14510,9 @@ msgstr ""
 " adlandırılmış bir yer; akımın girişini, içindeki suyu veya çıkan akımı görüp görmediğini "
 "söyleyen bir türde."
 
+msgid "Where each channel goes"
+msgstr "Her kanalın gideceği yer"
+
 msgid "Where each person works from a day: one department, production or office, and the title."
 msgstr "Her kişinin bir günden itibaren çalıştığı yer: bir departman (üretim ya da ofis) ve unvan."
 
@@ -14444,6 +14533,9 @@ msgstr "DOI’si yoksa ya da DOI yetmiyorsa okunabileceği yer. Yazılmazsa http
 
 msgid "Where it stands"
 msgstr "Durumu"
+
+msgid "Where the device is placed now: a move to another site changes it (Move device)."
+msgstr "Cihazın şu an yerleştirildiği yer: başka bir sahaya taşıma bunu değiştirir (Cihazı taşı)."
 
 msgid ""
 "Where the fish go: an active facility that takes this species (Harvest and logistics › Slaughter "
@@ -16046,6 +16138,9 @@ msgstr "direnç şüphesi"
 
 msgid "resistance suspicions"
 msgstr "direnç şüpheleri"
+
+msgid "retired or deleted: leaves its place"
+msgstr "kullanımdan kaldırılmış veya silinmiş: yerinden ayrılır"
 
 msgid "role"
 msgstr "rol"

@@ -421,10 +421,14 @@ class BoardTests(WorkedExampleTestCase):
         WaterMeasurement.all_objects.filter(point__system=ras).delete()
         temperature = self.board_line()[1]['temperature']
         self.assertEqual((temperature.value_c, temperature.via, temperature.fresh), (D('13.0'), 'unit', False))
-        self.assertContains(self.client.get(reverse('farm:meal_board')), 'stale')
+        self.assertContains(self.client.get(reverse('farm:meal_board')), 'Based on the temperature from')
         WaterMeasurement.all_objects.all().delete()
-        self.water('13.0', unit=self.t2, hours=24 * 8)                     # older than 7 days: no ration
-        self.assertEqual(self.board_line()[2]['why'], 'No temperature in the last 7 days: record one.')
+        self.water('13.0', unit=self.t2, hours=24 * 8)                     # A11: however old, it gives the ration
+        temperature = self.board_line()[1]['temperature']
+        self.assertEqual((temperature.value_c, temperature.fresh), (D('13.0'), False))
+        self.assertIn('(8 days old)', temperature.warning)
+        WaterMeasurement.all_objects.all().delete()                        # none ever recorded: no ration
+        self.assertEqual(self.board_line()[2]['why'], 'No temperature recorded here yet: record one.')
 
 
 class PrecedenceTests(ProtocolTestCase):

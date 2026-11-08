@@ -69,7 +69,7 @@ from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
-from .evaluate import ALERTS, Limits, Status, is_fresh, worst
+from .evaluate import ALERTS, Limits, Status, ahead, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # How far back the latest values, and a salinity for a sample without one, are looked for.
@@ -354,7 +354,7 @@ class Series:
                  if found is not None]
         if fresh:                                   # owner rule A9: the newest fresh value, whatever its origin
             return newest(fresh)
-        return max([found for found in (sample, *live) if found is not None], key=lambda found: found.at, default=None)
+        return newest_shown([found for found in (sample, *live) if found is not None], moment)
 
 
 # ---- what a reading is -----------------------------------------------------------------------------------
@@ -680,6 +680,13 @@ def newest(found):
     return best
 
 
+def newest_shown(found, now):
+    """The newest of `found` when none is fresh, shown stale: one stamped further ahead of `now` than the clock's skew
+    (evaluate.ahead) only when there is nothing else, so a device whose clock runs fast never hides the others; None
+    for none."""
+    return max(found, key=lambda each: (not ahead(each.at, now), each.at), default=None)
+
+
 def _fresh_live(live, now):
     """{code: the newest fresh Observation} of live values (`newest`: the primary first at the same time)."""
     return {code: newest(each for each in observations if is_fresh(parameters.get(code), each.at, now, each.fresh_for))
@@ -731,7 +738,7 @@ def _resolve(point, manual, live, context, now, stand_in=None):
                 if samples.get(code) is not None:
                     candidates.append(samples[code])
                 if candidates:
-                    found = max(candidates, key=lambda reading: reading.at)
+                    found = newest_shown(candidates, now)
                     break
         if found is not None:
             chosen[code] = found

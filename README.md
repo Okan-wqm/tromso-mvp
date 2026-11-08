@@ -2661,7 +2661,9 @@ newest by measurement time wins, whatever its origin; only when it has no fresh 
 for the middle point: the newest fresh value of a sensor on the unit's system or of a sample of the system's loop; else
 the newest of its own values, shown stale, else the system's. A stale value never enters a calculation: a value is
 worked out (the other oxygen unit, NH₃, the oxygen judged through the mg/L row) only from fresh values. A channel in maintenance
-or retired is skipped. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
+or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
+device whose clock runs fast; the sensors' contract allows up to an hour) is never fresh and never the newest: it is
+shown, stale, only when there is nothing else. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
 limits. Derived values follow their base value's source (a sensor TAN gives NH₃ only with fresh sensor pH and
 temperature, at the oldest input's time; a manual TAN only with its own sample's). Every latest value on the water page,
 the monitoring cards and the Deffeyes window says where it comes from and how old it is ("unit sensor #12 · 12 s ago",

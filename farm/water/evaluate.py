@@ -35,6 +35,10 @@ class Status(models.TextChoices):
 RANK = {status: rank for rank, status in enumerate(Status)}
 # How far ahead of the server's clock a value may be stamped and still count (a device's clock a little fast).
 CLOCK_SKEW = timedelta(minutes=5)
+# The furthest ahead the sensors' ingest contract lets a device's time be (sensors_contract.future_skew_s, at most 3600 s):
+# a value between CLOCK_SKEW and this decides a status (read.worst_fresh, said as a clock ahead) but is never shown as
+# the newest; beyond it, it is a data error the card says ("timestamp in the future").
+MAX_AHEAD = timedelta(seconds=3600)
 ALERTS = (Status.CRITICAL, Status.WARNING)
 
 

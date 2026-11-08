@@ -252,3 +252,21 @@ Test first throughout: each fix has its `Test:` commit before it.
   key; this branch's oxygen basis is still found after the locks (fish first, then the points, core/softdelete.py's
   LOCK ORDER: the basis read takes no lock) and written with the sample.
 - Farm migrations renumbered to 0032_site_altitude_range (on main's 0031_entry_keys) and 0033_oxygen_basis.
+
+## Third cross review (2026-11-08, BLOCK): what was done
+
+Test first (farm/tests/test_water_review3.py), then the fixes:
+- **1 (high)**: every limited quantity goes through the worst fresh value (`read.WORST_FRESH_CODES`; NH3-N and NH4-N
+  from every sample's own NH3 and the sensors' worked-out one); N1, N2 and a loop variant; a test enumerates every
+  limited parameter.
+- **2 (medium, coordinator)**: a unit without an active middle point is read through its anchor (`read.anchors`, its
+  first own-water point) with its other points and its system (B5); `PointWater.for_unit` marks the point that stands for
+  the unit, the card reads it.
+- **3 (low, coordinator)**: a value ahead of the clock beyond CLOCK_SKEW and up to `evaluate.MAX_AHEAD` (the contract's
+  3600 s) decides the status with "The device clock is ahead by N min."; beyond it the card says "timestamp in the
+  future" (`PointWater.future`), never OK (B2).
+- **4 (low)**: a derived oxygen is no second card reason beside its own measurement (G-01/G-02).
+- **5 (A11, owner wording)**: with every temperature stale, the most recently entered one across all tiers (B7b).
+- **6**: the basis's "one moment for two clocks" is in the README beside the basis.
+- **7**: a loop-point probe in a unit's system tier is a system sensor.
+- **8**: a point's own old critical stays in its `point_status` when another point's value is shown (it dropped out).

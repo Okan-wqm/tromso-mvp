@@ -69,7 +69,7 @@ from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
-from .evaluate import ALERTS, CLOCK_SKEW, RANK, Limits, Status, ahead, is_fresh, worst
+from .evaluate import ALERTS, CLOCK_SKEW, MAX_AHEAD, RANK, Limits, Status, ahead, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # How far back the latest values, and a salinity for a sample without one, are looked for.
@@ -81,6 +81,10 @@ SLOTS[OXYGEN] = Q(oxygen_mg_l__isnull=False) | Q(oxygen_saturation_pct__isnull=F
 # Entered oxygen in mg/L and in % may differ by this share before the page says so.
 OXYGEN_TOLERANCE = Decimal('0.10')
 LIMITED = {parameter.code for parameter in parameters.LIMITED}
+# Every limited quantity, a measured column or a derived one (NH3-N), goes through the worst fresh value (owner, A10.1;
+# third cross review): `latest` judges every fresh candidate of each of them.
+WORST_FRESH_CODES = frozenset(LIMITED)
+DERIVED = (NH3_N.code, NH4_N.code)
 # What a sample's label, clock and fish need loaded: its point, the owner of it and the owner's site.
 POINT_RELATED = ('point__unit__production_department__site', 'point__system__site',
                  'point__equipment__production_department__site')
@@ -500,6 +504,8 @@ class PointWater:
     readings: dict = field(default_factory=dict)
     sensors_failed: bool = False
     measured: list = field(default_factory=list)     # [(status, judged)] of the limited values taken at the point
+    for_unit: bool = False      # the point stands for its unit (its middle point, or its anchor without one)
+    future: list = field(default_factory=list)       # readings stamped more than MAX_AHEAD ahead: a data error
 
     @staticmethod
     def _rolled_up(counted):
@@ -939,37 +945,49 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
     only when it has none, the newest fresh value of its system (`system_live`, the system's sensors and those on its loop
     point, and `system_manual`, the loop's samples); else the newest of its own values, stale, else the system's, stale
     (shown with its age, never used as fresh). A derived value follows the source of its base: NH3 and NH4 a live TAN's
-    (worked out from fresh live values only) or the TAN sample's own."""
+    (worked out from fresh live values only) or the TAN sample's own. Returns (chosen, {code: every candidate of both
+    tiers, fresh, stale or ahead of the clock, derived ones too}): what the worst fresh value and the point's own status
+    read."""
     fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
     fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
-    chosen, others = {}, {}
+    chosen, candidates = {}, {}
     for code in parameters.COLUMNS:
         tiers = [_candidates(code, own_live, fresh_own, own_manual, context),
                  _candidates(code, system_live, fresh_system, system_manual, context)]
         found = choose(tiers, now, lambda reading: reading.fresh(now))
         if found is not None:
             chosen[code] = found
-            others[code] = [each for tier in tiers for each in tier if each is not found and each.fresh(now)]
+            candidates[code] = [each for tier in tiers for each in tier]
+    # The derived ammonia: every sample's own NH3 and NH4 (its TAN with its own pH and temperature) is a candidate of
+    # the worst fresh value, wherever the shown TAN comes from (third cross review, N1/N2).
+    for code in DERIVED:
+        found = [manual[code] for manual in (*own_manual, *system_manual)
+                 if manual.get(code) is not None and manual[code].value is not None]
+        if found:
+            candidates[code] = found
     tan = chosen.get(TAN)
     if tan is not None and tan.sample.live:
         inputs = [tan.sample, *(fresh_live[code] for code in (parameters.PH, parameters.TEMPERATURE, parameters.SALINITY)
                                 if fresh_live.get(code) is not None)]
         if tan.fresh(now):
             together = Observation.combined(inputs)
-            chosen.update(context._ammonia(together, context.salinity_for(together)))
+            worked = context._ammonia(together, context.salinity_for(together))
+            chosen.update(worked)
+            for code, reading in worked.items():
+                if reading.value is not None:
+                    candidates.setdefault(code, []).insert(0, reading)
         else:
             chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, _('Not worked out: the TAN is no longer fresh.'))
     elif tan is not None:
         source = next((manual for manual in (*own_manual, *system_manual) if manual.get(TAN) is tan), {})
-        chosen.update({code: source[code] for code in (NH3_N.code, NH4_N.code) if code in source})
-    return chosen, others
+        chosen.update({code: source[code] for code in DERIVED if code in source})
+    return chosen, candidates
 
 
 def _loops_of(points):
-    """{point id: the loop point of its unit's system} for the unit middle points given whose unit is in a system: the
-    system's tier of the unit (owner rule A9). No query when there are none."""
-    systems = {point.pk: point.unit.system_id for point in points
-               if point.unit_id and point.kind == PointKind.MIDDLE and point.unit.system_id}
+    """{point id: the loop point of its unit's system} for the unit points given (the points that stand for their unit)
+    whose unit is in a system: the system's tier of the unit (owner rule A9). No query when there are none."""
+    systems = {point.pk: point.unit.system_id for point in points if point.unit_id and point.unit.system_id}
     if not systems:
         return {}
     loops = middle_points([System(pk=system_id) for system_id in set(systems.values())])
@@ -988,32 +1006,60 @@ class Places:
     own_targets: list
     system: list = field(default_factory=list)
     system_targets: list = field(default_factory=list)
+    for_unit: bool = False          # the point stands for its unit: its middle, or its anchor without one (`anchors`)
 
 
-def _observed(point):
-    """The live targets of a point's own values, observed at the point (sensor_targets)."""
-    return [(target, origin, point) for target, origin in sensor_targets(point)]
+def _observed(point, origin=None):
+    """The live targets of a point's own values, observed at the point (sensor_targets); `origin` names them all (a loop
+    point's probe in a unit's system tier is a system sensor)."""
+    return [(target, origin or each, point) for target, each in sensor_targets(point)]
+
+
+def _own_water_order(point):
+    """The order a unit's own-water points count in: the middle first, then the others by kind and name."""
+    return point.kind != PointKind.MIDDLE, list(PointKind.values).index(point.kind), point.name
+
+
+def anchors(units):
+    """{unit id: the point that stands for the unit's water}: its active middle point (`middle_points`), else, for a unit
+    without one, its first active own-water point (OWN_WATER_KINDS: never an inlet), so its outlets and its system still
+    give it a status (coordinator, third cross review B5). A unit without either is not in the result. One query."""
+    units = list(units)
+    found = {}
+    if units:
+        for point in sorted(SamplingPoint.objects.filter(unit__in=[unit.pk for unit in units], is_active=True)
+                            .filter(Q(kind=PointKind.MIDDLE) | Q(kind__in=OWN_WATER_KINDS)).with_owners(),
+                            key=_own_water_order):
+            found.setdefault(point.unit_id, point)
+    return found
 
 
 def _places(points):
-    """{point id: Places} of the points given: one query for the other points of the units, one for their loops."""
-    units = {point.unit_id for point in points if point.unit_id and point.kind == PointKind.MIDDLE}
+    """{point id: Places} of the points given: one query for the other points of their units, one for the units'
+    anchors, one for their loops. A point stands for its unit (`for_unit`) when it is the unit's middle point, or, for a
+    unit without one, the unit's anchor (`anchors`): it then reads the unit's own-water points and its system's."""
+    unit_ids = {point.unit_id for point in points if point.unit_id}
     others = defaultdict(list)
-    if units:
-        for point in (SamplingPoint.objects.filter(unit__in=units, is_active=True, kind__in=OWN_WATER_KINDS)
-                      .with_owners()):
+    if unit_ids:
+        for point in (SamplingPoint.objects.filter(unit__in=unit_ids, is_active=True)
+                      .filter(Q(kind=PointKind.MIDDLE) | Q(kind__in=OWN_WATER_KINDS)).with_owners()):
             others[point.unit_id].append(point)
-    loops = _loops_of(points)
+    standing = {}
+    for unit_id, found in others.items():
+        found.sort(key=_own_water_order)
+        standing[unit_id] = found[0].pk
+    unit_points = [point for point in points if point.unit_id and standing.get(point.unit_id) == point.pk]
+    loops = _loops_of(unit_points)
     found = {}
     for point in points:
-        if not (point.unit_id and point.kind == PointKind.MIDDLE):
+        if point not in unit_points:
             found[point.pk] = Places([point], _observed(point))
             continue
-        own = [point, *sorted(others[point.unit_id], key=lambda each: each.name)]
-        places = Places(own, [target for each in own for target in _observed(each)])
+        own = [point, *(each for each in others[point.unit_id] if each.pk != point.pk)]
+        places = Places(own, [target for each in own for target in _observed(each)], for_unit=True)
         loop = loops.get(point.pk)
         if loop is not None:
-            places.system, places.system_targets = [loop], _observed(loop)
+            places.system, places.system_targets = [loop], _observed(loop, Origin.SYSTEM_SENSOR)
         elif point.unit.system_id:                  # a system without a loop point: its sensors still stand in
             places.system_targets = [((sources.SYSTEM, point.unit.system_id), Origin.SYSTEM_SENSOR, point)]
         found[point.pk] = places
@@ -1051,24 +1097,36 @@ def latest(points, now=None, at=None):
 
     water = {}
     for point in points:
-        point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed)
-        day = local_time(moment, point).date()
         where = places[point.pk]
-        resolved, others = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
-                            _live(where.system_targets, answer), [manual(each) for each in where.system],
-                            context, moment)
+        point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit)
+        day = local_time(moment, point).date()
+        resolved, candidates = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
+                                        _live(where.system_targets, answer), [manual(each) for each in where.system],
+                                        context, moment)
         temperature = resolved.get(parameters.TEMPERATURE)          # what an oxygen value is worked out with
         temperature = temperature if temperature is not None and temperature.fresh(moment) else None
-        for code, reading in resolved.items():
+
+        def judged(reading):
             # Each judged on its own copy: a loop's reading stands in for several units, each with its own fish.
-            reading = context.judge(replace(reading), day, moment, temperature, for_point=point)
-            judged_others = [context.judge(replace(each), day, moment, temperature, for_point=point)
-                             for each in others.get(code, [])]
-            if code in LIMITED:       # what was measured AT the point, judged before another point's value decides
-                point_water.measured += [(each.status, each.judged) for each in (reading, *judged_others)
-                                         if each.value is not None and each.point is not None
-                                         and each.point.pk == point.pk]
-            worst_fresh(reading, judged_others)           # computed for the place the point stands for
+            return context.judge(replace(reading), day, moment, temperature, for_point=point)
+
+        for code, reading in resolved.items():
+            reading = judged(reading)
+            if code in WORST_FRESH_CODES:
+                found = [each for each in candidates.get(code, []) if each is not resolved[code]]
+                point_water.future += [judged(each) for each in found if each.at - moment > MAX_AHEAD]
+                # Fresh, or ahead of the clock within the ingest contract's hour: they take part in the status.
+                deciding = [judged(each) for each in found
+                            if each.fresh(moment) or CLOCK_SKEW < each.at - moment <= MAX_AHEAD]
+                # MEASURED AT THE POINT: the point's own newest value of the code, and its fresh others, each judged
+                # before another point's value decides (the point's own old critical stays).
+                here = [each for each in (resolved[code], *found) if each.value is not None
+                        and each.point is not None and each.point.pk == point.pk and each.at - moment <= MAX_AHEAD]
+                shown_here = choose([here], moment, lambda each: each.fresh(moment))
+                if shown_here is not None:
+                    point_water.measured += [(each.status, each.judged) for each in map(judged, [
+                        shown_here, *(each for each in here if each is not shown_here and each.fresh(moment))])]
+                worst_fresh(reading, deciding, moment)    # COMPUTED FOR THE PLACE the point stands for
             point_water.readings[code] = reading
     return water
 
@@ -1103,7 +1161,7 @@ def oxygen_basis(rows, moment):
     return dict(found), dict(missing)
 
 
-def worst_fresh(reading, others):
+def worst_fresh(reading, others, now=None):
     """Owner decision 2026-11-08 (the second cross review's P2): the value shown is A9's choice, but the status, and so
     the alarm, is the worst of every fresh value the place has (`others`: its own points' and its system's, judged for its
     fish). When another fresh value is worse, the reading takes its judgement and says which value decided it, so danger
@@ -1118,6 +1176,9 @@ def worst_fresh(reading, others):
     said = _('%(source)s reads %(value)s (%(time)s): the worst fresh value decides the status.') % {
         'source': source, 'value': number_format(worse.value, worse.parameter.decimals),
         'time': local_time(worse.at, worse.point).strftime('%d.%m.%Y %H:%M')}
+    if now is not None and ahead(worse.at, now):
+        said = '{} {}'.format(said, _('The device clock is ahead by %(minutes)d min.') % {
+            'minutes': int((worse.at - now).total_seconds() // 60)})
     reading.judged = reading.status = worse.judged
     reading.worse = worse
     reading.note = f'{reading.note} {said}' if reading.note else said
@@ -1140,7 +1201,8 @@ def owner_water(owners, now=None):
     (`middle_points`), nothing for an owner that has none. What Production units, its drawer and the overview show
     for units (`unit_water`), and what the calculator takes a unit's or a loop's values from."""
     owners = list(owners)
-    middles = middle_points(owners)
+    units = [owner for owner in owners if owner_type_of(owner) == 'unit']
+    middles = {**middle_points([owner for owner in owners if owner_type_of(owner) != 'unit']), **anchors(units)}
     water = latest(list(middles.values()), now)
     return {owner.pk: water[middles[owner.pk].pk] if owner.pk in middles else PointWater(None) for owner in owners}
 
@@ -1158,13 +1220,13 @@ def points_of(units, middle_only=()):
     one definition of it), the others by name; for the units of `middle_only` (ids) the middle point alone. A unit
     without a middle point has only its others (or none): nothing stands in for it."""
     units = list(units)
-    middles = middle_points(units)
+    middles = anchors(units)                   # the middle point, else the point that stands for the unit
     narrow = set(middle_only)
     wide = [unit.pk for unit in units if unit.pk not in narrow]
     others = defaultdict(list)
     if wide:
-        for point in (SamplingPoint.objects.filter(unit__in=wide, is_active=True).exclude(kind=MIDDLE)
-                      .with_owners()):
+        for point in (SamplingPoint.objects.filter(unit__in=wide, is_active=True)
+                      .exclude(pk__in=[point.pk for point in middles.values()]).with_owners()):
             others[point.unit_id].append(point)
     return {unit.pk: [*([middles[unit.pk]] if unit.pk in middles else []),
                       *sorted(others[unit.pk], key=lambda point: point.name)] for unit in units}

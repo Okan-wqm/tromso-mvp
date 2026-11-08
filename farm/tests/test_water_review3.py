@@ -90,7 +90,8 @@ class NoMiddlePointTests(SourcesCase):
         self.assertTrue(water.for_unit)
         self.assertEqual(water.status, Status.CRITICAL)
         card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()
-        self.assertIn('Dissolved oxygen (mg/L O₂) (T-01 › Side outlet): Critical', card)
+        self.assertIn('data-state="critical"', card)                       # the outlet stands for the unit
+        self.assertIn('Dissolved oxygen (mg/L O₂): Critical', card)
         from ..models import WaterMeasurement
         WaterMeasurement.objects.all().delete()
         self.on(self.ras, self.value('oxygen_mg_l', 8.0, seconds=30))      # nothing of its own: the system's

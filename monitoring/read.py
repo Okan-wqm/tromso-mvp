@@ -413,7 +413,7 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
 def _middle(card):
     """The PointWater of the card's middle point (always the first, when there is one), else None."""
     first = card.water[0] if card.water else None
-    return first if first is not None and first.point is not None and first.point.kind == water_read.MIDDLE else None
+    return first if first is not None and first.point is not None and first.for_unit else None
 
 
 def _key_readings(card):
@@ -442,9 +442,11 @@ def _alerts(middle, now):
     last word there is about the water; it is never dropped for being old). The values and the words are the water
     page's one rule, farm.water.read.PointWater.alerts."""
     critical, warning, old = [], [], []
-    for reading, judged, stale in (middle.alerts if middle is not None else ()):
-        if reading.value is None:
-            continue
+    alerts = list(middle.alerts if middle is not None else ())
+    listed = {id(reading.sample) for reading, _judged, _stale in alerts if not reading.derived}
+    for reading, judged, stale in alerts:
+        if reading.value is None or (reading.derived and id(reading.sample) in listed):
+            continue                                # a derived value is no second reason beside its own measurement
         status = Status(judged).label
         label = reading.parameter.label
         where = reading.decided_at
@@ -497,6 +499,9 @@ def state_of(card):
             elif not reading.fresh(card.now):
                 stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label,
                                                                                'age': _age(reading, card.now)})
+        if middle is not None:
+            stale += [_('%(label)s: timestamp in the future') % {'label': reading.parameter.label}
+                      for reading in middle.future]       # a data error, never silently OK
         if middle is not None and middle.sensors_failed:
             stale.append(_('Live sensor values could not be read: samples only.'))
         if stale:

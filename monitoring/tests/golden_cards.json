@@ -116,8 +116,7 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical",
-    "Oxygen saturation (% of air saturation): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical"
    ],
    "pairs": [
     [
@@ -228,8 +227,7 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning",
-    "Oxygen saturation (% of air saturation): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning"
    ],
    "pairs": [
     [
@@ -2384,8 +2382,7 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical",
-    "Oxygen saturation (% of air saturation): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical"
    ],
    "pairs": [
     [
@@ -2536,8 +2533,7 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning",
-    "Oxygen saturation (% of air saturation): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning"
    ],
    "pairs": [
     [
@@ -5440,8 +5436,7 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical",
-    "Oxygen saturation (% of air saturation): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical"
    ],
    "pairs": [
     [
@@ -5552,8 +5547,7 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning",
-    "Oxygen saturation (% of air saturation): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning"
    ],
    "pairs": [
     [
@@ -7695,8 +7689,7 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical",
-    "Oxygen saturation (% of air saturation): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical"
    ],
    "pairs": [
     [
@@ -7807,8 +7800,7 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning",
-    "Oxygen saturation (% of air saturation): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning"
    ],
    "pairs": [
     [
@@ -9896,8 +9888,7 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical",
-    "Oxygen saturation (% of air saturation): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical"
    ],
    "pairs": [
     [
@@ -10885,8 +10876,7 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical",
-    "Oxygen saturation (% of air saturation): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical"
    ],
    "pairs": [
     [
@@ -11037,8 +11027,7 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning",
-    "Oxygen saturation (% of air saturation): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning"
    ],
    "pairs": [
     [
@@ -15229,8 +15218,7 @@
   "G-01": {
    "state": "Critical",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Critical",
-    "Oxygen saturation (% of air saturation): Critical"
+    "Dissolved oxygen (mg/L O₂): Critical"
    ],
    "pairs": [
     [
@@ -15313,8 +15301,7 @@
   "G-02": {
    "state": "Warning",
    "reasons": [
-    "Dissolved oxygen (mg/L O₂): Warning",
-    "Oxygen saturation (% of air saturation): Warning"
+    "Dissolved oxygen (mg/L O₂): Warning"
    ],
    "pairs": [
     [

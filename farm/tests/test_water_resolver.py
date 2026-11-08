@@ -132,7 +132,8 @@ class OneResolverTests(SourcesCase):
         self.sample(point=self.loop, hours=26, temperature_c='10.0')
         water, ration = self.both()
         self.assertEqual(water, (D('8.0'), self.mid1, False))
-        self.assertEqual(ration, water)
+        # The ration is A11's one exception: with nothing fresh, the most recently entered temperature of any tier.
+        self.assertEqual(ration, (D('10.0'), self.loop, False))
 
     def test_a_value_exactly_at_its_freshness_is_fresh_on_every_reader(self):
         self.sample(hours=24, temperature_c='8.0')                          # temperature is fresh for 24 h

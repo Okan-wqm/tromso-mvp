@@ -895,7 +895,9 @@ then of the systems that system is nested in (`farm/feeding/temperature.py`, the
 `farm/water/read.py`, picked by A9's `read.choose`): the unit's own fresh value wins (its own-water points), else
 the nearest system's fresh value (its loop, or its own sensors when it has no loop point), else the newest stale one;
 fresh is the temperature parameter's 24 h. **However old, the newest temperature gives the ration** (owner amendment
-A11, 2026-11-08, the one explicit exception to A9.3; it replaced decision Q5's 7-day cut-off): a stale one says so on
+A11, 2026-11-08, the one explicit exception to A9.3; it replaced decision Q5's 7-day cut-off; with nothing fresh, the
+MOST RECENTLY entered temperature across every tier, so a 2-day-old loop value beats an 8-day-old own one): a stale one
+says so on
 the meal board, "Based on the temperature from 03.11.2026 07:40 (5 days old)"; only a unit where no temperature was ever
 recorded has no ration ("No temperature recorded here yet: record one."); the moment is now for today and the end of the day for a past day. The SFR is
 the band's cell at that temperature, **interpolated linearly between two columns and never extrapolated** (owner
@@ -2809,7 +2811,14 @@ readings are judged on their own copy, so a loop value standing in for two units
 measured at the point** (owner, 2026-11-08): a unit's middle point shows the unit's status (`PointWater.status`), and
 the card names the point that drove it ("Carbon dioxide (mg/L free CO₂) (T-01 › East side outlet): Critical"); a count
 of critical sampling points (the water page, the overview tile) counts what was measured at each point
-(`PointWater.point_status`), so one physical problem is counted once.
+(`PointWater.point_status`, which keeps the point's own old critical too), so one physical problem is counted once.
+**Every limited quantity** goes through the worst fresh value (`read.WORST_FRESH_CODES`), the derived NH₃-N and NH₄-N
+too: every sample's own NH₃ (its TAN with its own pH and temperature) and the sensors' worked-out one are its candidates,
+so a newer OK TAN elsewhere never hides a fresh critical NH₃ (third cross review). **A unit without an active middle
+point** is read through its first active own-water point (`read.anchors`: depth, outlets, drain; never an inlet), which
+then stands for the unit (`PointWater.for_unit`) with its other points and its system: never "Not measured" while an
+outlet or the system has a fresh value. A derived oxygen is no second card reason beside the measurement it comes
+from.
 
 A stale value never enters a calculation (PLAN A9.3): a value is worked out (the other oxygen unit, NH₃, the oxygen
 judged through the mg/L row) only from values fresh AT its own time (`read.fresh_at`: measured at or before it, or within
@@ -2819,8 +2828,10 @@ was measured here in the 7 days before.", "Not worked out: the TAN is no longer 
 limit (or the reverse) says so beside it: "Judged as 3.98 mg/L. Worked out from 9.0 °C, 0.0 ‰ and 1.000 atm. Limit:
 Atlantic salmon: critical below 6.00." (`Reading.through` keeps the converted reading and its limit rows). A channel in maintenance
 or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
-device whose clock runs fast; the sensors' contract allows up to an hour) is never fresh and never the newest: it is
-shown, stale, only when there is nothing else. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
+device whose clock runs fast) is never fresh and never shown as the newest, but up to the ingest contract's hour
+(`evaluate.MAX_AHEAD`) it takes part in the worst fresh value and says so ("The device clock is ahead by 10 min.");
+beyond the hour it is a data error the card says ("Dissolved oxygen (mg/L O₂): timestamp in the future"), never
+silently OK. A probe bound to the loop point is a system sensor in a unit's system tier. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water
 limits. Derived values follow their base value's source (a sensor TAN gives NH₃ only with fresh sensor pH and
 temperature, at the oldest input's time; a manual TAN only with its own sample's). Every latest value on the water page,
 the monitoring cards and the Deffeyes window says where it comes from and how old it is ("unit sensor #12 · 12 s ago",

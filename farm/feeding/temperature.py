@@ -103,6 +103,9 @@ class TemperatureBook:
                     where[id(found)] = (owner, via)
                     candidates[-1].append(found)
         found = read.choose(candidates, moment, lambda each: self.series.fresh(each, moment))
+        if found is not None and not self.series.fresh(found, moment):
+            # A11 (owner, 2026-11-08): with nothing fresh, the MOST RECENTLY entered temperature across every tier
+            found = read.newest_shown([each for tier in candidates for each in tier], moment)
         if found is None:
             return None
         owner, via = where[id(found)]

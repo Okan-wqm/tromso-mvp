@@ -756,6 +756,10 @@ msgid "%(label)s: the stored value %(value)s is not in the form it is saved in."
 msgstr "%(label)s: kayıtlı %(value)s değeri, kaydedildiği biçimde değil."
 
 #, python-format
+msgid "%(label)s: timestamp in the future"
+msgstr "%(label)s: zaman damgası gelecekte"
+
+#, python-format
 msgid "%(late)s late"
 msgid_plural "%(late)s late"
 msgstr[0] "%(late)s geç"
@@ -12406,6 +12410,10 @@ msgstr "Tasarımda tank yerleştirilecek tekrar yok."
 
 msgid "The design has one group: there is nothing to compare it with."
 msgstr "Tasarımda tek grup var: onu karşılaştıracak bir şey yok."
+
+#, python-format
+msgid "The device clock is ahead by %(minutes)d min."
+msgstr "Cihaz saati %(minutes)d dk ileride."
 
 msgid "The device has no channel to place."
 msgstr "Cihazın yerleştirilecek kanalı yok."

@@ -18,7 +18,7 @@
   </dl>
   <div class="form-actions">
     {% if row.can_shorten %}
-    <form method="post" action="{% url 'hr:leaverequest_shorten'|mounted:request object.pk %}" class="inline-form">{% csrf_token %}<label for="shorten-last-day">{% trans "New last day" %}</label> <input type="date" id="shorten-last-day" name="last_day" required min="{{ object.first_day|date:'Y-m-d' }}" max="{{ object.last_day|date:'Y-m-d' }}"> <button type="submit" class="button button-ghost">{% trans "End the leave earlier" %}</button></form>
+    <form method="post" action="{% url 'hr:leaverequest_shorten'|mounted:request object.pk %}" class="inline-form">{% csrf_token %}<label for="shorten-last-day">{% trans "New last day" %}</label> {% day_input "last_day" row.shorten_to id="shorten-last-day" required=True %} <button type="submit" class="button button-ghost">{% trans "End the leave earlier" %}</button></form>
     {% endif %}
     {% if row.can_cancel %}
     <form method="post" action="{% url 'hr:leaverequest_cancel'|mounted:request object.pk %}" class="inline-form">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Cancel the request" %}</button></form>

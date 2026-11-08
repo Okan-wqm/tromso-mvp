@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db.models import Case, Q, Value, When
 from django.utils.translation import gettext_lazy as _
 
@@ -120,6 +122,7 @@ class LeaveRequestResource(Resource):
                 'can_cancel': services.can_cancel(request.user, item, listed=True,
                                                   today=site_today(sites[(item.employee_id, item.first_day)])),
                 'can_shorten': item.first_day < item.last_day and services.can_correct(request.user, item, listed=True),
+                'shorten_to': item.last_day - timedelta(days=1),          # the latest new last day the service takes
             })
         return rows
 

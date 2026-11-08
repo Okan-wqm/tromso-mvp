@@ -151,12 +151,12 @@ def reject(request, pk):
 
 @require_POST
 def shorten(request, pk):
-    """A decider ends an approved leave earlier (hr.services.shorten_leave): `last_day`, the new last day."""
+    """A decider ends an approved leave earlier (hr.services.shorten_leave): `last_day`, the new last day, typed in the
+    shared day box (core.dates.read_day says a text that is no day back to the person; nothing changes)."""
     item = leave_request(request, pk)
-    try:
-        last_day = date.fromisoformat(request.POST.get('last_day', ''))
-    except ValueError:
-        return HttpResponseBadRequest()
+    last_day = read_day(request.POST.get('last_day', ''), request)
+    if last_day is None:
+        return _back(request)
     return _run(request, lambda: services.shorten_leave(request.user, item, last_day), _('The leave was shortened.'))
 
 

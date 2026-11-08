@@ -2723,10 +2723,13 @@ controls are the UI's, not built here):
   days at one minute are 7 200 frames, served in pages of at most 2 000 (`cursor` the page's first frame, `next` the
   following page's, None after the last).
 - Each frame reads what a unit's chart reads (temperature, pH, alkalinity, salinity required; TAN and oxygen when
-  there), each in the A1 order at that moment: a sensor value at or before it, no older than its channel's freshness
-  (three heartbeats), at the parameter's decimals as the chart takes it; else a fresh manual or lab sample; else for the
-  salinity of fresh water the assumption; else missing. Nothing is interpolated or carried past its freshness. A moved
-  sensor counts for the place it was in.
+  there), each by owner rule A9 at that moment through the live view's one function (`farm.water.read.choose`, over
+  `sensors.read.tiers`: the unit's own-water points, never the inlet, then its system's sensors, those on its loop
+  point and the loop's samples): the newest of the fresh values (a sensor value at or before it, no older than its
+  channel's freshness (three heartbeats), at the parameter's decimals as the chart takes it; a fresh manual or lab
+  sample), a sensor's before a sample's at one time; else for the salinity of fresh water the assumption; else missing.
+  Nothing is interpolated or carried past its freshness. A moved sensor counts for the place it was in. The hourly
+  trail (`sensors/trail.py`) picks each hour's inputs the same way at the hour's end.
 - One query of the readings per tier and page: below an hour the readings of the page's span, the newest of each step,
   and the newest still fresh before the page; from an hour the page's hours of the hour rollup read once, each frame
   given the last value of the newest hour ended by it.

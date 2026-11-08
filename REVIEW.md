@@ -210,7 +210,7 @@ Test first throughout: each fix has its `Test:` commit before it.
   never fresh (P7, `evaluate.CLOCK_SKEW`); the round no longer carries hidden offers; one assumed-salinity read per round.
   **10**: golden cards on a pinned clock, recorded again (only the new notes changed).
 - **Not done here**: the migration chain (6) is re-pointed at landing; the Deffeyes replay and the trail
-  (`sensors/read.deffeyes_frames`, `sensors/trail.py`) still read sensor-before-sample (A1) per frame, not `read.choose`.
+  (`sensors/read.deffeyes_frames`, `sensors/trail.py`) were moved to `read.choose` per frame in the follow-ups.
 
 ## Owner follow-ups (2026-11-08)
 

@@ -2968,11 +2968,16 @@ person's own site clock (or the night that began yesterday and is still running)
 (a setting) and their approved leave give one state: *upcoming* (before the start plus the grace), *not in yet* (until the later of the
 grace and the absent-after minutes), *absent*, *present* or *late* (clocked in, past the grace) while in, *done* once out, *on leave*. A
 record is a fact and the plan an intent: a person who is there but not planned is listed as present, "not planned", and **a clock-in
-beats leave**: whoever clocked in is on the board whatever their plan or leave (the headcount on site, in an emergency). People planned off,
+beats leave**: whoever clocked in is on the board whatever their plan or leave (the headcount on site, in an emergency), and an open
+clock-in counts whatever the punch window (someone called in hours before their shift is present, not upcoming or absent; only
+the clock-ins inside the window say whether they were late). People planned off,
 with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
-leave; nothing planned and on leave is not listed either. Today shows the figures (`hr.read.Board.tiles`): Planned today, then one
+leave; nothing planned and on leave is not listed either. Today shows the figures (`hr.read.Board`): **On site now** first (every open
+clock-in, planned or not: the emergency headcount), Planned today, then one
 tile per state the planned people are in, each person in exactly one, so they add up to it (upcoming, here now with the late among
-them said in it, not in yet, absent, on leave, done), and "Here, not planned" apart; then the people; the board is a fragment the page
+them said in it, not in yet, absent, on leave, done), and "Here, not planned" apart (only those still in; someone unplanned who clocked
+out is listed as done, not counted here); punches are read from two days back, so a clock-in left open longer is not counted on
+site; then the people; the board is a fragment the page
 polls (`data-poll`, 30 seconds) and the server draws every number and every time, on the clock of each person's site. The person's own
 **Clock in** and **Clock out** buttons need Read on Attendance and an employee row of their own, and are refused while a stretch is open
 or none is.

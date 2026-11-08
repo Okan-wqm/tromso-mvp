@@ -1,5 +1,6 @@
 {% load i18n hr %}{# The board's fragment (hr.views.today_board): the figures (hr.read.Board.tiles) and the people, drawn by the server. #}
 <ul class="tiles" role="list">
+  <li><span class="tile"><span class="tile-count">{{ board.on_site }}</span><span class="tile-label">{% trans "On site now" %}</span></span></li>
   <li><span class="tile"><span class="tile-count">{{ board.planned }}</span><span class="tile-label">{% trans "Planned today" %}</span></span></li>
   {% for tile in board.tiles %}<li><span class="tile"><span class="tile-count">{{ tile.count }}</span><span class="tile-label">{% if tile.key == "upcoming" %}{% trans "Upcoming" %}{% elif tile.key == "here" %}{% trans "Here now" %}{% elif tile.key == "not_in" %}{% trans "Not in yet" %}{% elif tile.key == "absent" %}{% trans "Absent" %}{% elif tile.key == "on_leave" %}{% trans "On leave" %}{% else %}{% trans "Done" %}{% endif %}</span>{% if tile.key == "here" and board.late %}<span class="tile-sub">{% blocktrans trimmed count late=board.late %}{{ late }} late{% plural %}{{ late }} late{% endblocktrans %}</span>{% endif %}</span></li>
   {% endfor %}

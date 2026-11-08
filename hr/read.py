@@ -372,10 +372,16 @@ class Board:
     counts: dict           # {state: people planned today in it}
     planned: int
     moment: object
-    unplanned: int = 0     # people here (or done) today without a plan: listed, counted apart
+    unplanned: int = 0     # people here now without a plan: listed, counted apart ("Here, not planned")
+    unplanned_done: int = 0  # people who came without a plan and clocked out again: listed, not on site
 
     def count(self, state):
         return self.counts.get(state, 0)
+
+    @property
+    def on_site(self):
+        """Who is on site now: every open clock-in, planned (present or late) or not. The emergency headcount."""
+        return self.here + self.unplanned
 
     @property
     def tiles(self):
@@ -394,7 +400,9 @@ def board(user, moment=None, realm=None):
     """Who is where now, for the people `user` may reach: each person's planned shift today (or the night shift that began
     yesterday and is still running), their punches, their leave, and the state worked out from them (rules.status) on their
     site's clock. People planned off, on a holiday or with nothing planned are not listed, unless they are there all the
-    same. In a fixed number of queries whatever the number of people. With a realm, only the people in it today."""
+    same. In a fixed number of queries whatever the number of people. With a realm, only the people in it today.
+    Punches are read from two days back: a clock-in left open longer than that (someone who forgot to clock out) is not
+    counted as on site; the attendance page shows it, and a lead closes it there."""
     moment = moment or timezone.now()
     clocks_now = clocks(moment)
     by_site = {site: clock for clock in clocks_now if clock.sites is not None for site in clock.sites}
@@ -417,7 +425,7 @@ def board(user, moment=None, realm=None):
     away = leave.approved_days(ids, low, high)
     rows = []
     counts = defaultdict(int)
-    planned = unplanned = 0
+    planned = unplanned = unplanned_done = 0
     for employee in people:
         placed = postings.get(employee.pk, [])
         head = next((p for p in placed if p.valid_from <= high and (p.valid_until is None or p.valid_until >= low)), None)
@@ -442,11 +450,14 @@ def board(user, moment=None, realm=None):
                                            # who clocked in is present, rules.status: the headcount lists them)
         rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone))
         if span is None:
-            unplanned += 1
+            if standing.state == rules.DONE:
+                unplanned_done += 1
+            else:
+                unplanned += 1
         else:
             counts[standing.state] += 1
             planned += 1
-    return Board(rows, dict(counts), planned, moment, unplanned)
+    return Board(rows, dict(counts), planned, moment, unplanned, unplanned_done)
 
 
 # ---- the team overview and the organisation chart -------------------------------------------------------------------

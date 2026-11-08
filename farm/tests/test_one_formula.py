@@ -13,7 +13,11 @@ ROOT = Path(settings.BASE_DIR)
 SWITCHED = ['farm/water/chemistry.py']
 # Functions of a module still partly in Python, switched one by one: no arithmetic, no number, no math of their own.
 SWITCHED_FUNCTIONS = {'farm/water/deffeyes.py': ['judge', 'analyse', 'alkalinity_floor', 'why_impossible', 'possible',
-                                                 'box_of']}
+                                                 'box_of', 'geometry', 'safe_zone', 'safe_zone_gaps']}
+# What a switch deleted: the module must not hold it any more (one formula, in the core).
+DELETED = {'farm/water/deffeyes.py': ['_axis', '_clip', '_cross', 'clip_to_box', 'clip_segment', 'clip_polyline',
+                                     '_isoline_segment', '_half', 'co2_curve', '_co2_region', 'omega_line',
+                                     '_toxic_region', '_nh3_note', '_h2s_note']}
 
 
 def arithmetic(node):
@@ -63,6 +67,13 @@ class OneFormulaTests(SimpleTestCase):
                                       and id(each) not in allowed], [])
                     self.assertFalse({each.value.id for each in ast.walk(node) if isinstance(each, ast.Attribute)
                                       and isinstance(each.value, ast.Name)} & {'math', 'chemistry'})
+
+    def test_what_a_switch_deleted_is_gone(self):
+        for name, functions in DELETED.items():
+            tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))
+            defined = {node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
+            with self.subTest(module=name):
+                self.assertEqual(sorted(defined & set(functions)), [])
 
     def test_the_chemistry_names_are_the_cores(self):
         for name in ('equilibria', 'solve', 'oxygen_solubility', 'co2_from_air', 'pressure_atm', 'nh3_fraction',

@@ -7037,6 +7037,10 @@ msgstr "Begynte"
 msgid "Joined on"
 msgstr "Begynte"
 
+#, python-format
+msgid "Judged as %(value)s %(unit)s."
+msgstr "Vurdert som %(value)s %(unit)s."
+
 msgid "Juveniles"
 msgstr "Ungfisk"
 
@@ -7288,6 +7292,10 @@ msgstr "Livsstadium"
 
 msgid "Limit"
 msgstr "Grense"
+
+#, python-format
+msgid "Limit: %(limits)s."
+msgstr "Grense: %(limits)s."
 
 msgid "Limits"
 msgstr "Grenser"
@@ -7896,8 +7904,9 @@ msgstr "Trenger kalsium og en salinitet på 5 til 44 ‰, området til Mucci (19
 msgid "Needs the pH and the temperature of the same sample."
 msgstr "Trenger pH og temperatur fra samme prøve."
 
-msgid "Needs the salinity: none was recorded here in the 30 days before."
-msgstr "Trenger saliniteten: ingen ble registrert her de 30 dagene før."
+#, python-format
+msgid "Needs the salinity: none was measured here in the %(days)d days before."
+msgstr "Trenger saliniteten: ingen ble målt her de %(days)d dagene før."
 
 msgid "Needs the temperature of the same sample."
 msgstr "Trenger temperaturen fra samme prøve."
@@ -8654,6 +8663,9 @@ msgstr "Ikke bekreftet"
 
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
+
+msgid "Not worked out: the TAN is no longer fresh."
+msgstr "Ikke regnet ut: TAN-verdien er ikke lenger fersk."
 
 msgid "Note"
 msgstr "Notat"

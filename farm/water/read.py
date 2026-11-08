@@ -69,7 +69,7 @@ from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
-from .evaluate import ALERTS, RANK, Limits, Status, ahead, is_fresh, worst
+from .evaluate import ALERTS, CLOCK_SKEW, RANK, Limits, Status, ahead, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # How far back the latest values, and a salinity for a sample without one, are looked for.
@@ -385,6 +385,7 @@ class Reading:
     judged: str = Status.NOT_MEASURED
     uncovered: tuple = ()          # the species it concerns that no limit row judges it for
     worse: object = None           # the worse fresh value that decided its status (worst_fresh), else None
+    through: object = None         # the Reading in the other oxygen unit it was judged as (Context.judge), else None
 
     @property
     def at(self):
@@ -510,15 +511,17 @@ class Context:
                 for species_id in self.book.on(unit.pk, day)]
 
     def salinity_for(self, observation):
-        """The observation's salinity, else its point's latest sample within WINDOW before it, else its owner's middle
-        point's, else 0 where every unit it concerns is in fresh water."""
+        """The observation's salinity, else its point's latest sample fresh at its time (at or before it, within the
+        salinity's freshness: a stale salinity never enters a calculation, PLAN A9.3), else its owner's middle point's,
+        else 0 where every unit it concerns is in fresh water; None when there is none."""
         observation = observe(observation)
         if observation.get(parameters.SALINITY) is not None:
             return observation.get(parameters.SALINITY)
         point = observation.point
+        fresh = timedelta(hours=parameters.get(parameters.SALINITY).fresh_hours)
         for where in (point, self.middles.get(point.owner.pk)):
-            found = None if where is None else self.salinity.latest(where.pk, observation.at, WINDOW)
-            if found is not None:
+            found = None if where is None else self.salinity.latest(where.pk, observation.at, fresh)
+            if found is not None and self.salinity.fresh(found, observation.at):
                 return found.value
         return assumed_salinity(self.water_types(point))
 
@@ -536,7 +539,8 @@ class Context:
 
     @staticmethod
     def _salinity_missing():
-        return _('Needs the salinity: none was recorded here in the 30 days before.')
+        return _('Needs the salinity: none was measured here in the %(days)d days before.') % {
+            'days': parameters.get(parameters.SALINITY).fresh_hours // 24}
 
     @staticmethod
     def _same_source_missing(observation):
@@ -608,12 +612,16 @@ class Context:
         through = [(species_id, water_type) for species_id, water_type in exposures
                    if species_id in reading.uncovered and self.limits.applying(species_id, other, water_type)] \
             if other else []
-        value = self._in_other_unit(reading, temperature) if through else None
-        if value is not None:
-            status, _rows = self.limits.assess(other, value, through)
+        converted = self._in_other_unit(reading, temperature) if through else None
+        if converted is not None:
+            status, rows = self.limits.assess(other, converted.value, through)
+            converted.limits, converted.judged = rows, status
+            reading.through = converted
             reading.judged = status if reading.judged == Status.NO_LIMIT else worst([reading.judged, status])
             judged_for = {species_id for species_id, _water_type in through}
             reading.uncovered = tuple(each for each in reading.uncovered if each not in judged_for)
+            said = self._judged_through(converted)
+            reading.note = f'{reading.note} {said}' if reading.note else said
         reading.status = reading.judged
         if now is not None and not reading.fresh(now):
             reading.status = Status.STALE
@@ -623,19 +631,40 @@ class Context:
         """An oxygen value in its other unit (mg/L <-> %): the other value of its own observation when that has one,
         else worked out as a sample's is (`_oxygen`: the solubility at the temperature, the salinity and the site's
         pressure) with the observation's own temperature or the point's fresh `temperature` (a Reading); None when it
-        cannot be worked out. Never a second formula."""
+        cannot be worked out. Never a second formula. The point's `temperature` is taken only when it is fresh AT the
+        value's own time (`fresh_at`): a stale value is never converted with today's temperature (PLAN A9.3, P8).
+        Returns the Reading in the other unit (its note says what it was worked out from), or None."""
         other = parameters.SAME_QUANTITY[reading.code]
         observation = reading.sample
         if observation.get(other) is not None:
-            return observation.get(other)
-        if observation.get(parameters.TEMPERATURE) is None:
-            if temperature is None or temperature.value is None:
+            return Reading(parameters.get(other), observation.get(other), observation)
+        if self._temperature_of(observation) is None:
+            if temperature is None or temperature.value is None or not fresh_at(temperature, reading.at):
                 return None
             alone = replace(temperature.sample, measured={parameters.TEMPERATURE: temperature.value})
             observation = Observation.combined([replace(observation, measured={reading.code: reading.value}), alone])
-        worked = self._oxygen(observation, observation.get(parameters.TEMPERATURE), self.salinity_for(observation))
+        worked = self._oxygen(observation, self._temperature_of(observation), self.salinity_for(observation))
         found = worked.get(other)
-        return found.value if found is not None else None
+        return found if found is not None and found.value is not None and found.derived else None
+
+    @staticmethod
+    def _temperature_of(observation):
+        """The temperature an observation's oxygen is worked out with: its own."""
+        return observation.get(parameters.TEMPERATURE)
+
+    @staticmethod
+    def _judged_through(converted):
+        """What a value judged through its other unit says: the value it was judged as, what that was worked out from and
+        the limits that judged it (second cross review, finding 5)."""
+        from farm.templatetags.water import limit_text      # the one way a limit is said; it imports this module
+        unit = 'mg/L' if converted.code == OXYGEN_MG_L else '%'
+        said = _('Judged as %(value)s %(unit)s.') % {
+            'value': number_format(converted.value, converted.parameter.decimals), 'unit': unit}
+        parts = [said, str(converted.note or '')]
+        if converted.limits:
+            parts.append(_('Limit: %(limits)s.') % {'limits': '; '.join(str(limit_text(row))
+                                                                          for row in converted.limits)})
+        return ' '.join(part for part in parts if part)
 
 
 def _local_day(sample):
@@ -692,6 +721,12 @@ def newest(found):
         if best is None or each.at > best.at:
             best = each
     return best
+
+
+def fresh_at(reading, moment):
+    """Whether a reading can stand for the water at `moment` in a calculation (PLAN A9.3): measured at or before it (or
+    within evaluate.CLOCK_SKEW after it, one moment for two clocks) and still fresh then."""
+    return reading.at <= moment + CLOCK_SKEW and is_fresh(reading.parameter, reading.at, moment, reading.sample.fresh_for)
 
 
 def newest_shown(found, now):
@@ -768,7 +803,7 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
             together = Observation.combined(inputs)
             chosen.update(context._ammonia(together, context.salinity_for(together)))
         else:
-            chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, context._same_source_missing(tan.sample))
+            chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, _('Not worked out: the TAN is no longer fresh.'))
     elif tan is not None:
         source = next((manual for manual in (*own_manual, *system_manual) if manual.get(TAN) is tan), {})
         chosen.update({code: source[code] for code in (NH3_N.code, NH4_N.code) if code in source})

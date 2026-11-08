@@ -1113,7 +1113,7 @@ published values):
 - **NH₃-N** = TAN × K / (K + [H⁺]), with K the ammonium constant of Millero (1995) on the seawater scale,
   converted to the free scale, and the pH (NBS) converted too, ported from the source's engine; in fresh
   water it equals Emerson et al. (1975) within 0.002 pK up to 30 °C and 0.003 up to 40 °C. It needs the pH and the temperature of the same
-  sample; the salinity is the sample's, else its point's latest within 30 days before it, else its owner's middle
+  sample; the salinity is the sample's, else its point's latest fresh at the sample's time (measured at or before it, within the salinity's 7 days: a stale salinity never enters a calculation), else its owner's middle
   point's, else 0 where every unit it concerns is in fresh water; otherwise the page says what is missing. NH₄-N = TAN − NH₃-N is shown.
 - **Oxygen saturation**: Benson & Krause (1984) as in Standard Methods 4500-O, corrected for the
   barometric pressure of the site's altitude (sea-level pressure, said so, when the site has none; the altitude is
@@ -2676,8 +2676,15 @@ and so the card's state and alarm, is the worst judgement among every fresh valu
 system's, each judged for the unit's fish; never an inlet's, never a stale one) (`read.worst_fresh`). When another value
 decides it, the reading says so beside the value on the water page and the card: "system sensor #1 reads 3.00
 (08.11.2026 12:40): the worst fresh value decides the status" (a sample is named with its point). Each place's
-readings are judged on their own copy, so a loop value standing in for two units carries each unit's own judgement. A stale value never enters a calculation: a value is
-worked out (the other oxygen unit, NH₃, the oxygen judged through the mg/L row) only from fresh values. A channel in maintenance
+readings are judged on their own copy, so a loop value standing in for two units carries each unit's own judgement.
+
+A stale value never enters a calculation (PLAN A9.3): a value is worked out (the other oxygen unit, NH₃, the oxygen
+judged through the mg/L row) only from values fresh AT its own time (`read.fresh_at`: measured at or before it, or within
+the clock's skew after it, and still fresh then), so a 3-day-old saturation is never judged with today's temperature and
+a salinity older than its 7 days is not used (the value is then not worked out and says why: "Needs the salinity: none
+was measured here in the 7 days before.", "Not worked out: the TAN is no longer fresh."). A % judged against an mg/L
+limit (or the reverse) says so beside it: "Judged as 3.98 mg/L. Worked out from 9.0 °C, 0.0 ‰ and 1.000 atm. Limit:
+Atlantic salmon: critical below 6.00." (`Reading.through` keeps the converted reading and its limit rows). A channel in maintenance
 or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
 device whose clock runs fast; the sensors' contract allows up to an hour) is never fresh and never the newest: it is
 shown, stale, only when there is nothing else. Sensor values enter as the parameter's Decimal at its decimals and are judged by the same water

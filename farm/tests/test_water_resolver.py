@@ -284,7 +284,7 @@ class JudgedThroughTheOtherUnitTests(SourcesCase):
         self.assertIsNotNone(getattr(reading, 'through', None), 'the converted reading is kept')
         self.assertEqual((reading.through.code, [row.parameter for row in reading.through.limits]),
                          ('oxygen_mg_l', ['oxygen_mg_l']))
-        self.assertRegex(reading.note, r'Judged as \d+\.\d\d mg/L, worked out from 9\.0 °C, 0\.0 ‰ and 1\.000 atm')
+        self.assertRegex(reading.note, r'Judged as \d+\.\d\d mg/L\. Worked out from 9\.0 °C, 0\.0 ‰ and 1\.000 atm')
         self.assertIn('Atlantic salmon: critical below 6.00', reading.note)
         from django.urls import reverse
         card = self.client.get(reverse('monitoring:monitor'), {'occupancy': 'all'}).content.decode()

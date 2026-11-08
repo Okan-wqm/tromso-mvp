@@ -7049,6 +7049,10 @@ msgstr "İşe giriş"
 msgid "Joined on"
 msgstr "İşe giriş tarihi"
 
+#, python-format
+msgid "Judged as %(value)s %(unit)s."
+msgstr "%(value)s %(unit)s olarak değerlendirildi."
+
 msgid "Juveniles"
 msgstr "Juvenil"
 
@@ -7300,6 +7304,10 @@ msgstr "Yaşam evresi"
 
 msgid "Limit"
 msgstr "Sınır"
+
+#, python-format
+msgid "Limit: %(limits)s."
+msgstr "Sınır: %(limits)s."
 
 msgid "Limits"
 msgstr "Sınırlar"
@@ -7910,8 +7918,9 @@ msgstr "Kalsiyum ve 5 ile 44 ‰ arasında bir tuzluluk gerekir, Mucci’nin (19
 msgid "Needs the pH and the temperature of the same sample."
 msgstr "Aynı numunenin pH'ı ve sıcaklığı gerekir."
 
-msgid "Needs the salinity: none was recorded here in the 30 days before."
-msgstr "Tuzluluk gerekir: burada önceki 30 günde kaydedilmemiş."
+#, python-format
+msgid "Needs the salinity: none was measured here in the %(days)d days before."
+msgstr "Tuzluluk gerekli: burada önceki %(days)d günde ölçülmedi."
 
 msgid "Needs the temperature of the same sample."
 msgstr "Aynı numunenin sıcaklığı gerekir."
@@ -8664,6 +8673,9 @@ msgstr "Doğrulanmadı"
 
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
+
+msgid "Not worked out: the TAN is no longer fresh."
+msgstr "Hesaplanmadı: TAN değeri artık güncel değil."
 
 msgid "Note"
 msgstr "Not"

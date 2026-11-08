@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WaterChemistry — Suderra Platform</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<style>.theme-switch{position:fixed;right:12px;bottom:12px;z-index:999;display:flex;gap:4px;padding:4px;border:1px solid var(--line-control);border-radius:6px;background:var(--surface-sheet);font:600 13px/1 var(--font-text)}.theme-switch button{padding:6px 10px;border:0;border-radius:4px;background:none;color:var(--text-2);font:inherit;cursor:pointer}.theme-switch button[aria-pressed="true"]{background:var(--action-tint);color:var(--action)}</style>
+</head>
+<body>
+<div class="ui-shell" style="min-height:820px">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+<symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+<symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></symbol>
+<symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></symbol>
+<symbol id="i-list-checks" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></symbol>
+<symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+<symbol id="i-utensils" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
+<symbol id="i-clipboard-list" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+<symbol id="i-table" viewBox="0 0 24 24"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+<symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-panel-left-close" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></symbol>
+<symbol id="i-message-square" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+<symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+<symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+<symbol id="i-fish" viewBox="0 0 24 24"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86"/><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"/><path d="M10.46 7.26C10.2 5.88 9.17 4.24 8 3h5.8a2 2 0 0 1 1.98 1.67l.23 1.4"/><path d="m16.01 17.93-.23 1.4A2 2 0 0 1 13.8 21H9.5a5.96 5.96 0 0 0 1.49-3.98"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="i-octagon" viewBox="0 0 24 24"><path d="M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+<symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+</svg>
+
+<nav class="ui-rail" aria-label="Main menu" style="height:820px">
+  <div class="ui-rail-head"><img class="ui-logo" src="../assets/logos/suderra-mark-disc.png" alt=""><span class="ui-wordmark">SU<span>DERRA</span></span></div>
+  <button class="ui-panel-switch" aria-haspopup="menu">Production<svg class="ui-icon"><use href="#i-chevron-down"/></svg></button>
+  <div class="ui-rail-nav"><a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-home"/></svg>Overview</a>
+    <div class="ui-rail-group">Operations</div>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-layers"/></svg>Production units</a>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-monitor"/></svg>Monitoring</a>
+    <a class="ui-rail-link" href="#" aria-current="page"><svg class="ui-icon"><use href="#i-droplet"/></svg>Water chemistry<span class="ui-rail-badge" data-status="critical">1</span></a>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-package"/></svg>Storage</a>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-list-checks"/></svg>Tasks<span class="ui-rail-badge">4</span></a>
+    <div class="ui-rail-group">Feeding</div>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-utensils"/></svg>Meal board</a>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-clipboard-list"/></svg>Records</a>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-table"/></svg>Protocols</a>
+    <div class="ui-rail-group">Team</div>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-users"/></svg>Today &amp; attendance</a>
+    <a class="ui-rail-link" href="#"><svg class="ui-icon"><use href="#i-calendar"/></svg>Shift schedule</a></div>
+  <div class="ui-rail-foot">Nordhav Akva · Bergen Hatchery</div>
+</nav>
+<div>
+<header class="ui-topbar"><span class="ui-crumbs">Production › <b>Operations</b></span><div class="ui-lang" role="group" aria-label="Language"><button aria-pressed="true">EN</button><button aria-pressed="false">TR</button><button aria-pressed="false">NB</button></div><span class="ui-user"><span class="ui-avatar">KN</span>kari.nordmann</span></header>
+<main class="ui-page">
+  <div class="ui-head">
+    <div><h1>Water chemistry</h1>
+      <div class="ui-head-status"><span class="ui-chip" data-status="neutral">40 sampling points</span><span class="ui-chip" data-status="critical"><svg class="ui-icon"><use href="#i-octagon"/></svg>1 critical</span><span class="ui-chip" data-status="warning"><svg class="ui-icon"><use href="#i-alert"/></svg>6 warnings</span></div></div>
+    <div class="ui-head-actions"><button class="ui-btn">Round</button><button class="ui-btn" data-variant="primary"><svg class="ui-icon"><use href="#i-plus"/></svg>Record sample</button></div>
+  </div>
+  <div class="ui-tabs" role="tablist"><button class="ui-tab" role="tab" aria-selected="true">Latest</button><button class="ui-tab" role="tab" aria-selected="false">History</button><button class="ui-tab" role="tab" aria-selected="false">Calculator</button></div>
+  <p class="ui-safety"><svg class="ui-icon"><use href="#i-alert"/></svg>Nobody is alerted: critical values are shown here, not sent.</p>
+  <div class="ui-table-wrap" tabindex="0" role="region" aria-label="Latest water values, scrolls sideways">
+  <table class="ui-table">
+    <thead><tr><th class="sticky-first">Sampling point</th><th>Status</th><th class="num">Temp. (°C)</th><th class="num">O<sub>2</sub> (mg/L)</th><th class="num">CO<sub>2</sub> (mg/L)</th><th class="num">pH</th><th class="sticky-end"><span class="sr-only">Actions</span></th></tr></thead>
+    <tbody>
+      <tr data-status="critical"><td class="sticky-first"><span class="ui-code">HA-K02 Side outlet</span><span class="ui-sub">Hatchery hall A, Bergen Hatchery</span></td>
+        <td><span class="ui-chip" data-status="critical"><svg class="ui-icon"><use href="#i-octagon"/></svg>Critical</span></td>
+        <td class="num"><span class="ui-value"><b>9.6</b><small>Manual, 2 d ago</small></span></td>
+        <td class="num"><span class="ui-value" data-status="warning"><b><svg class="ui-icon" style="color:var(--warn)"><use href="#i-alert"/></svg> 6.00</b><small>below 7.00</small></span></td>
+        <td class="num"><span class="ui-value" data-status="critical"><b><svg class="ui-icon"><use href="#i-octagon"/></svg> 15.6</b><small>limit 15.0</small></span></td>
+        <td class="num"><span class="ui-value"><b>7.33</b><small>Manual, 2 d ago</small></span></td>
+        <td class="sticky-end"><button class="ui-btn">Record sample</button></td></tr>
+      <tr><td class="sticky-first"><span class="ui-code">HA-K01 Outlet</span><span class="ui-sub">Hatchery hall A, Bergen Hatchery</span></td>
+        <td><span class="ui-chip" data-status="ok"><svg class="ui-icon"><use href="#i-check-circle"/></svg><span class="sr-only">OK</span></span></td>
+        <td class="num"><span class="ui-value"><b>9.5</b><small>Sensor, 40 s ago</small></span></td>
+        <td class="num"><span class="ui-value"><b>9.30</b><small>Sensor, 40 s ago</small></span></td>
+        <td class="num"><span class="ui-value"><b>8.2</b><small>Lab, 1 d ago</small></span></td>
+        <td class="num"><span class="ui-value"><b>7.12</b><small>Sensor, 40 s ago</small></span></td>
+        <td class="sticky-end"><button class="ui-btn">Record sample</button></td></tr>
+      <tr><td class="sticky-first"><span class="ui-code">HA-K03 Middle</span><span class="ui-sub">Hatchery hall A, Bergen Hatchery</span></td>
+        <td><span class="ui-chip" data-state="stale"><svg class="ui-icon"><use href="#i-clock"/></svg>No recent data</span></td>
+        <td class="num"><span class="ui-value"><b>12.0</b><small>Manual, 3 d ago, old</small></span></td>
+        <td class="num ui-why">no data</td><td class="num ui-why">no data</td><td class="num ui-why">no data</td>
+        <td class="sticky-end"><button class="ui-btn">Record sample</button></td></tr>
+      <tr><td class="sticky-first"><span class="ui-code">HA-R01 Inlet</span><span class="ui-sub">Hatchery hall A, Bergen Hatchery</span></td>
+        <td><span class="ui-chip" data-status="neutral">No limit</span></td>
+        <td colspan="4"><span class="ui-why">No fish in HA-R01, so no limits apply.</span></td>
+        <td class="sticky-end"><button class="ui-btn">Record sample</button></td></tr>
+      <tr class="ui-fold"><td colspan="7">Not measured (8)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</main>
+</div>
+</div>
+
+<div class="theme-switch" role="group" aria-label="Theme"><button data-t="light" aria-pressed="true">Day</button><button data-t="dark" aria-pressed="false">Night</button><button data-t="fjord" aria-pressed="false">Fjord</button></div>
+<script>document.querySelectorAll('.theme-switch button').forEach(b=>b.onclick=()=>{document.documentElement.dataset.theme=b.dataset.t;document.querySelectorAll('.theme-switch button').forEach(x=>x.setAttribute('aria-pressed',x===b))});</script>
+</body>
+</html>

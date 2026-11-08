@@ -105,3 +105,8 @@ analyse = chemcore.analyse
 alkalinity_floor = chemcore.alkalinity_floor
 why_impossible = chemcore.why_impossible
 box_of = chemcore.box_of
+
+# ---- the chart in its own units (chemcore/core/src/geometry.rs) ------------------------------------------------
+geometry = chemcore.geometry
+safe_zone = chemcore.safe_zone
+safe_zone_gaps = chemcore.safe_zone_gaps

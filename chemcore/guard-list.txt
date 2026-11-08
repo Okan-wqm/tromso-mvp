@@ -44,6 +44,7 @@ name h2s_plot
 name h2s_share
 name ionic_strength
 name isoline_colour
+name isoline_phs
 name isoline_segment
 name k0_co2
 name k1_sws

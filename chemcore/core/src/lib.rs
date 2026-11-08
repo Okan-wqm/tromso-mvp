@@ -4,8 +4,11 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
+extern crate alloc;
+
 pub mod analysis;
 pub mod chemistry;
+pub mod geometry;
 pub mod num;
 
 mod digest {

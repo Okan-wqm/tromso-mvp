@@ -3,6 +3,7 @@
 //! OverflowError); a non-finite input or result is `chemcore.NonFiniteError` (a ValueError): never a NaN as a number.
 use chemcore_core::analysis as a;
 use chemcore_core::chemistry as c;
+use chemcore_core::geometry as g;
 use chemcore_core::num::ChemError;
 use pyo3::create_exception;
 use pyo3::exceptions::{PyOverflowError, PyValueError, PyZeroDivisionError};
@@ -507,6 +508,203 @@ fn box_of(
     Ok((chart.dic, chart.alkalinity, chart.dic_step, chart.alkalinity_step))
 }
 
+// ---- the chart in its own units (chemcore/core/src/geometry.rs) ------------------------------------------------
+
+type Point = (f64, f64);
+
+fn optional(dict: &Bound<'_, PyDict>, key: &str) -> PyResult<Option<f64>> {
+    match dict.get_item(key)? {
+        Some(value) if !value.is_none() => Ok(Some(value.extract::<f64>()?)),
+        _ => Ok(None),
+    }
+}
+
+fn required(dict: &Bound<'_, PyDict>, key: &str) -> PyResult<f64> {
+    optional(dict, key)?.ok_or_else(|| PyValueError::new_err(format!("{key} is required")))
+}
+
+fn water_of(water: &Bound<'_, PyDict>) -> PyResult<a::Water> {
+    Ok(a::Water {
+        temperature_c: required(water, "temperature_c")?,
+        salinity_ppt: required(water, "salinity_ppt")?,
+        ph: required(water, "ph")?,
+        alkalinity_mg_l: required(water, "alkalinity_mg_l")?,
+        tan_mg_l: optional(water, "tan_mg_l")?,
+        total_sulfide_ug_l: optional(water, "total_sulfide_ug_l")?,
+        calcium_mg_l: optional(water, "calcium_mg_l")?,
+        oxygen_mg_l: optional(water, "oxygen_mg_l")?,
+    })
+}
+
+fn limits_of(limits: &Bound<'_, PyDict>) -> PyResult<a::Limits> {
+    Ok(a::Limits {
+        nh3_n_mg_l: optional(limits, "nh3_n_mg_l")?,
+        co2_mg_l: optional(limits, "co2_mg_l")?,
+        h2s_ug_l: optional(limits, "h2s_ug_l")?,
+        alkalinity_low_mg_l: optional(limits, "alkalinity_low_mg_l")?,
+        alkalinity_high_mg_l: optional(limits, "alkalinity_high_mg_l")?,
+    })
+}
+
+fn geometry_err(error: g::GeometryError) -> PyErr {
+    match error {
+        g::GeometryError::Chem(error) => err(error),
+        g::GeometryError::ChartTooLarge => ChartTooLargeError::new_err("the values need more than 12 ticks of 5e7"),
+    }
+}
+
+fn chart_box(chart: (f64, f64, f64, f64)) -> a::ChartBox {
+    a::ChartBox {
+        dic: chart.0,
+        alkalinity: chart.1,
+        dic_step: chart.2,
+        alkalinity_step: chart.3,
+    }
+}
+
+fn analysis_of(
+    water: &Bound<'_, PyDict>,
+    limits: &a::Limits,
+    target: Option<Point>,
+    pressure: f64,
+) -> PyResult<a::Analysis> {
+    let target = target.map(|(ph, alkalinity_mg_l)| a::Target { ph, alkalinity_mg_l });
+    a::analyse(&water_of(water)?, limits, target.as_ref(), pressure).map_err(err)
+}
+
+/// Why there can be no safe zone, as codes (farm/water/messages.py says them).
+#[pyfunction]
+#[pyo3(signature = (water, limits, target=None, pressure=1.0))]
+fn safe_zone_gaps(
+    water: &Bound<'_, PyDict>,
+    limits: &Bound<'_, PyDict>,
+    target: Option<Point>,
+    pressure: f64,
+) -> PyResult<Vec<&'static str>> {
+    let limits = limits_of(limits)?;
+    Ok(g::safe_zone_gaps(
+        &analysis_of(water, &limits, target, pressure)?,
+        &limits,
+    ))
+}
+
+/// The safe zone of a water in a given box, as a polygon (DIC, alkalinity).
+#[pyfunction]
+#[pyo3(signature = (water, limits, chart, target=None, pressure=1.0))]
+fn safe_zone(
+    water: &Bound<'_, PyDict>,
+    limits: &Bound<'_, PyDict>,
+    chart: (f64, f64, f64, f64),
+    target: Option<Point>,
+    pressure: f64,
+) -> PyResult<Vec<Point>> {
+    let limits = limits_of(limits)?;
+    let analysis = analysis_of(water, &limits, target, pressure)?;
+    g::safe_zone(&analysis, &limits, &chart_box(chart)).map_err(geometry_err)
+}
+
+/// The chart of a water in its own units, as a dict (see chemcore_core::geometry::Geometry; notes as codes).
+#[pyfunction]
+#[pyo3(signature = (water, limits, target=None, pressure=1.0, layers=Vec::new(), dosing=None, simulator=Vec::new(),
+                    extent=Vec::new()))]
+#[allow(clippy::too_many_arguments)]
+fn geometry<'py>(
+    py: Python<'py>,
+    water: &Bound<'py, PyDict>,
+    limits: &Bound<'py, PyDict>,
+    target: Option<Point>,
+    pressure: f64,
+    layers: Vec<String>,
+    dosing: Option<&Bound<'py, PyDict>>,
+    simulator: Vec<Point>,
+    extent: Vec<Point>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let mut chosen = g::Layers::default();
+    for layer in &layers {
+        match layer.as_str() {
+            "isolines" => chosen.isolines = true,
+            "safe" => chosen.safe = true,
+            "nh3" => chosen.nh3 = true,
+            "co2" => chosen.co2 = true,
+            "h2s" => chosen.h2s = true,
+            "omega" => chosen.omega = true,
+            "target" => chosen.target = true,
+            "dosing" => chosen.dosing = true,
+            "simulator" => chosen.simulator = true,
+            other => return Err(PyValueError::new_err(format!("no layer {other}"))),
+        }
+    }
+    let mut keys: Vec<String> = Vec::new();
+    let mut lines: Vec<Vec<Point>> = Vec::new();
+    let (mut wedge, mut path, mut waypoint) = (Vec::new(), Vec::new(), None);
+    if let Some(dosing) = dosing {
+        if let Some(found) = dosing.get_item("lines")? {
+            for (key, line) in found.extract::<Vec<(String, Vec<Point>)>>()? {
+                keys.push(key);
+                lines.push(line);
+            }
+        }
+        if let Some(found) = dosing.get_item("wedge")? {
+            wedge = found.extract()?;
+        }
+        if let Some(found) = dosing.get_item("path")? {
+            path = found.extract()?;
+        }
+        if let Some(found) = dosing.get_item("waypoint")? {
+            waypoint = found.extract()?;
+        }
+    }
+    let visual = dosing.map(|_| g::Dosing {
+        lines: keys.iter().map(String::as_str).zip(lines.iter().cloned()).collect(),
+        wedge: wedge.clone(),
+        path: path.clone(),
+        waypoint,
+    });
+    let target = target.map(|(ph, alkalinity_mg_l)| a::Target { ph, alkalinity_mg_l });
+    let shape = g::geometry(
+        &water_of(water)?,
+        &limits_of(limits)?,
+        target.as_ref(),
+        pressure,
+        chosen,
+        visual.as_ref(),
+        &simulator,
+        &extent,
+    )
+    .map_err(geometry_err)?;
+    let dict = PyDict::new(py);
+    let chart = shape.chart.ok_or_else(|| ChartTooLargeError::new_err("no box"))?;
+    dict.set_item(
+        "box",
+        (chart.dic, chart.alkalinity, chart.dic_step, chart.alkalinity_step),
+    )?;
+    dict.set_item("isolines", shape.isolines)?;
+    let regions = PyDict::new(py);
+    for (key, polygon) in shape.regions {
+        regions.set_item(key, polygon)?;
+    }
+    dict.set_item("regions", regions)?;
+    let boundaries = PyDict::new(py);
+    for (key, found) in shape.boundaries {
+        boundaries.set_item(key, found)?;
+    }
+    dict.set_item("boundaries", boundaries)?;
+    let omega = PyDict::new(py);
+    for (key, found) in shape.omega {
+        omega.set_item(key, found)?;
+    }
+    dict.set_item("omega", omega)?;
+    dict.set_item("point", shape.point)?;
+    dict.set_item("target", shape.target)?;
+    dict.set_item("reagent_lines", shape.reagent_lines)?;
+    dict.set_item("wedge", shape.wedge)?;
+    dict.set_item("dosing_path", shape.dosing_path)?;
+    dict.set_item("waypoint", shape.waypoint)?;
+    dict.set_item("simulator", shape.simulator)?;
+    dict.set_item("notes", shape.notes)?;
+    Ok(dict)
+}
+
 #[pymodule]
 fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("NonFiniteError", module.py().get_type::<NonFiniteError>())?;
@@ -559,6 +757,9 @@ fn chemcore(module: &Bound<'_, PyModule>) -> PyResult<()> {
         wrap_pyfunction!(alkalinity_floor, module)?,
         wrap_pyfunction!(why_impossible, module)?,
         wrap_pyfunction!(box_of, module)?,
+        wrap_pyfunction!(safe_zone_gaps, module)?,
+        wrap_pyfunction!(safe_zone, module)?,
+        wrap_pyfunction!(geometry, module)?,
     ] {
         module.add_function(function)?;
     }

@@ -468,3 +468,26 @@
 [data-nav="collapsed"] .rail-collapse > summary { display: block; cursor: pointer; }
 [data-nav="collapsed"] .rail-collapse > summary::after { display: none; }
 @media (prefers-reduced-motion: reduce) { .rail-collapse > summary::after { transition: none; } }
+
+/* The collapsed rail says a link's name beside it on hover and on focus (README: icons, label on focus). Fixed, so the
+   rail's scrolling list does not cut it; with no top of its own it stays level with its link. */
+@media (min-width: 1024px) {
+  [data-nav="collapsed"] .rail-link:is(:hover, :focus-visible) .rail-label {
+    position: fixed;
+    left: calc(var(--rail-w-compact) + var(--space-2));
+    z-index: var(--z-menu);
+    width: auto;
+    height: auto;
+    padding: var(--space-1) var(--space-3);
+    overflow: visible;
+    clip: auto;
+    border-radius: var(--radius-control);
+    background: var(--surface-rail);
+    color: var(--on-rail-strong);
+    box-shadow: var(--shadow-overlay);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}

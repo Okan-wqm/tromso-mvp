@@ -1887,7 +1887,7 @@ Where each person works from a day: one department, production or office, and th
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
-- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_boundary.py` and 7 more
+- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

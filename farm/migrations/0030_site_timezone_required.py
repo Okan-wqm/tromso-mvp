@@ -4,15 +4,32 @@
 # refuses an empty one. A company zone that is not a zone a site may have is refused, never written. Going back leaves the
 # zones as they are.
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from django.conf import settings
 from django.db import migrations, models
 
 import farm.models.site
 
 
+# The zones a site may be given when this migration was written (Site.TIMEZONES then), frozen here: a migration never
+# reads live code, so a zone added to the model later does not change what this one accepts.
+ZONES = ('UTC', 'Europe/Oslo', 'Europe/Istanbul', 'Europe/London', 'America/New_York', 'Asia/Tokyo')
+
+
+def zone_problem(zone):
+    """Why `zone` cannot be written into the sites, or None (the server's start says the same: farm.E001)."""
+    try:
+        ZoneInfo(zone)
+    except (ZoneInfoNotFoundError, ValueError, TypeError):
+        return f'COMPANY_TIME_ZONE {zone!r} is not a known time zone.'
+    if zone not in ZONES:
+        return f'COMPANY_TIME_ZONE {zone!r} is not one a site may be given ({", ".join(ZONES)}).'
+    return None
+
+
 def give_the_companys_zone(apps, schema_editor):
-    from farm.checks import company_zone_problem          # the server's start refuses it too (farm.E001)
-    problem = company_zone_problem(settings.COMPANY_TIME_ZONE)
+    problem = zone_problem(settings.COMPANY_TIME_ZONE)
     if problem is not None:
         raise ValueError(problem)
     apps.get_model('farm', 'Site')._base_manager.filter(timezone='').update(timezone=settings.COMPANY_TIME_ZONE)

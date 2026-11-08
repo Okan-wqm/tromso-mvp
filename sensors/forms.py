@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext_lazy
 
 from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
+from core.dates import on_clock
 from farm.models import Equipment, SamplingPoint, Site, System, Tank
 from farm.models.site import zone_of
 from core.widgets import MomentInput
@@ -298,15 +299,9 @@ class SiteClockDateTimeField(forms.DateTimeField):
         return on_site_clock(timezone.make_naive(moment, timezone.get_current_timezone()), self.zone)
 
 
-def on_site_clock(wall, zone):
-    """The moment a wall-clock time (naive) is on a site's clock; refused when the clocks skip it or show it twice."""
-    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
-    if first.utcoffset() != second.utcoffset():
-        raise ValidationError(_('This time happens twice on the site’s clock (the clocks go back): choose another.'))
-    if timezone.make_naive(first.astimezone(zone), zone) != wall:
-        raise ValidationError(_('This time does not exist on the site’s clock (the clocks go forward): choose '
-                                'another.'))
-    return first
+# The moment a wall-clock time (naive) is on a site's clock, refused when the clocks skip it or show it twice: the one
+# check, core.dates.on_clock, under the name the sensors' forms and views use.
+on_site_clock = on_clock
 
 
 class CalibrationForm(forms.ModelForm):

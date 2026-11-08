@@ -21230,6 +21230,7 @@
       "tests": [
         "farm/tests/test_systems.py",
         "hr/tests/helpers_people.py",
+        "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_hardening.py",

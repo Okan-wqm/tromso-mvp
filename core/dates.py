@@ -4,7 +4,7 @@ address carries it, inside one window of dates (01.01.1900 to 31.12.2100). The o
 another shape (11/06/2026, 06-11-2026, a two-digit year) is never reinterpreted, a date outside the window is refused
 (never a server error further on), and a moment needs its time (never a silent 00:00)."""
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone as dt_timezone
 from zoneinfo import ZoneInfo
 
 from django import forms
@@ -117,6 +117,22 @@ def read_period(key):
     except ValueError:
         return None
     return (grain, start) if inside(start) else None
+
+
+SKIPPED = _('This time does not exist on the site’s clock (the clocks go forward): choose another.')
+REPEATED = _('This time happens twice on the site’s clock (the clocks go back): choose another.')
+
+
+def on_clock(wall, zone):
+    """The one check of a wall time on a clock: the aware moment that `wall` (naive) is on `zone`; ValidationError when the
+    clocks skip it (code 'skipped', a spring night) or show it twice (code 'repeated', an autumn night)."""
+    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
+    # through UTC: astimezone to its own zone changes nothing, so a skipped time would read back as itself
+    if timezone.make_naive(first.astimezone(dt_timezone.utc), zone) != wall:     # first: in a gap the folds differ too
+        raise ValidationError(SKIPPED, code='skipped')
+    if first.utcoffset() != second.utcoffset():
+        raise ValidationError(REPEATED, code='repeated')
+    return first
 
 
 def _shaped(text):

@@ -33,7 +33,7 @@ from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
-from core.dates import read_day, read_moment
+from core.dates import on_clock, read_day, read_moment
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -365,8 +365,9 @@ def _moment(request, owner):
     if wall is None:
         raise BadRequest('at')
     zone = zone_of(site_of(owner))
-    first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)
-    if first.utcoffset() != second.utcoffset() or timezone.make_naive(first.astimezone(zone), zone) != wall:
+    try:
+        first = on_clock(wall, zone)            # core.dates: the one check of a skipped or repeated time
+    except ValidationError:
         raise BadRequest('at')
     if first > timezone.now():
         raise BadRequest('at')

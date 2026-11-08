@@ -180,3 +180,47 @@ class BottomBarTests(TestCase):
         first = [entry['url'] for section in response.context['rail_sections'] for group in section['groups']
                  for entry in group['entries']][:4]
         self.assertEqual(re.findall(r'<a class="ui-bottombar-link" href="([^"]+)"', bar), first)
+
+
+class RailOrderTests(TestCase):
+    """The rail in daily order (docs/design/system/README.md, Shell): the day's work first, Setup collapsed and last,
+    open on its own pages; the foot says the company and the person's site."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.client.force_login(self.admin)
+
+    def rail(self, url):
+        html = self.client.get(url).content.decode()
+        return html[html.index('id="rail"'):html.index('</aside>')]
+
+    def test_setup_comes_last_in_production_and_in_sensors(self):
+        for url in (reverse('farm:meal_board'), reverse('sensors:home')):
+            with self.subTest(url=url):
+                sections = [section['label'] for section in self.client.get(url).context['rail_sections']]
+                self.assertEqual(sections[-1], 'Setup')
+                self.assertEqual(sections[0], '')
+
+    def test_setup_is_folded_away_on_a_days_page_and_open_on_its_own(self):
+        closed = self.rail(reverse('farm:meal_board'))
+        self.assertRegex(closed, r'<details class="rail-collapse" data-collapse="production-setup">\s*'
+                                 r'<summary class="rail-section">Setup</summary>')
+        opened = self.rail(reverse('farm:system_list'))
+        self.assertRegex(opened, r'<details class="rail-collapse" data-collapse="production-setup" open data-current>')
+
+    def test_the_foot_says_the_company_and_the_persons_site(self):
+        from farm.models import ProductionDepartment, Site
+        from hr.tests.helpers_people import employee, place
+        site = Site.objects.create(name='Bergen Hatchery', code='BH-01', timezone='Europe/Oslo')
+        Site.objects.create(name='Tromsø Grow-out', code='TG-02', timezone='Europe/Oslo')
+        department = ProductionDepartment.objects.create(name='Hatchery hall A', code='HA', site=site)
+        with self.settings(COMPANY_NAME='Nordhav Akva'):
+            self.assertIn('<div class="rail-foot">Nordhav Akva</div>', self.rail(reverse('home')))
+            place(employee('E-1', user=self.admin), department)
+            self.assertIn('<div class="rail-foot">Nordhav Akva · Bergen Hatchery</div>', self.rail(reverse('home')))
+
+    def test_one_site_is_the_sites_and_without_a_company_name_the_site_alone(self):
+        from farm.models import Site
+        Site.objects.create(name='Bergen Hatchery', code='BH-01', timezone='Europe/Oslo')
+        with self.settings(COMPANY_NAME=''):
+            self.assertIn('<div class="rail-foot">Bergen Hatchery</div>', self.rail(reverse('home')))

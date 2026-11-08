@@ -161,12 +161,11 @@ class MainHeadingTests(WorkspaceTestCase):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
         self.assertEqual(self.headings(response),
-                         [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
-                                                 'Purchasing']),
-                          ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']), ('Reports', ['']),
-                          ('Communication', ['']), ('Team', ['Time & attendance', 'People'])])
+                         [('', ['']), ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']),
+                          ('Reports', ['']), ('Communication', ['']), ('Team', ['Time & attendance', 'People']),
+                          ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics', 'Purchasing'])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
-        self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
+        self.assertContains(response, '<summary class="rail-section">Setup</summary>', html=True)    # (collapsible, last)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Reference data</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Harvest and logistics</p>', html=True)

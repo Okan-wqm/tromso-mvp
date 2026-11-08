@@ -353,6 +353,7 @@ div.choices label { display: inline-flex; align-items: center; gap: .375rem; fon
 .matrix { width: 100%; border-collapse: collapse; font-size: .9375rem; }
 .matrix th,
 .matrix td { padding: .625rem 1rem; border-bottom: 1px solid var(--line); text-align: center; }
+.matrix .matrix-note td { padding-top: 0; text-align: left; }      /* the lines of the area shown only to some */
 .matrix th[scope="row"],
 .matrix thead th:first-child { text-align: left; font-weight: 500; }
 .matrix thead th { color: var(--muted); font-size: .8125rem; font-weight: 600; }

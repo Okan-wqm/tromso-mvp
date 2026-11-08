@@ -3459,7 +3459,12 @@ unit's chart), each refusing a user without its permission.
 | S6 the chart in its own units (box, isolines, regions, borders, safe zone, Omega, dosing clipped): deffeyes.py's geometry is a door to the core; the notes are codes, farm/water/messages.py says them | done |
 | S7 the dosing, the small charts, the simulator's judging: dosing.py, charts.py and calculation.judge_step are doors to the core | done |
 | S9 (part) a replay page shares one diagram among frames equal but for pH, alkalinity and oxygen (proved invariant on random waters), its point left out (each frame carries its own); the page is sent gzipped | done |
-| S8 the SVG scene in the core; S9 the rest (one batch call, a binary encoding); S10 the retirement audit | open |
+| S8 the SVG scene in the core | deferred (owner direction, 2026-11-09): the scene stays Python (`deffeyes.render`, `charts.draw`), drawing from the core's figures |
+| S9 the rest: the readings read per frame (`replay_window`) | done (see the measured table below) |
+| S9 the rest: one batch call for a page's analyses and figures | open |
+| S9 the rest: a binary encoding of the figures | not needed now: a real 60 s page is 0.4 to 0.76 MB gzipped, under the 2 MB at which it would be built (the plan's 400 KB target is passed at 60 s) |
+| S10 the retirement audit | open |
+| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
 
 **The replay, measured** (development database, read only, 2000-frame pages on three units with live demo readings at
 about 1 Hz). Distinct (temperature, salinity, TAN), and so figures, per page: 140 to 215 at a 1 s step, 219 to 362 at
@@ -3478,8 +3483,9 @@ spread is wide):
 (On 2026-11-08, on a busier machine, the old 60 s page had taken 44 to 62 s.) What is left of a 60 s page is, besides
 the readings, the figures (0.6 to 1.3 s), the bindings read per input (0.4 to 0.5 s) and the 2000 analyses (0.2 to
 0.5 s): the next levers are the one batch call of S9 and fewer binding queries. On a synthetic page (2000 frames, 54
-temperatures) the figures take 131 ms and the page is 746 KB of JSON, 169 KB gzipped.
-| I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
+temperatures) the figures take 131 ms and the page is 746 KB of JSON, 169 KB gzipped. Real pages as the endpoint sends
+them (2026-11-09, the same three units): at 1 s 1.9 to 2.6 MB of JSON, 124 to 147 KB gzipped; at 5 s 2.7 to 4.1 MB, 149
+to 204 KB; at 60 s 9.6 to 12 MB, 396 to 764 KB.
 
 ## Languages
 

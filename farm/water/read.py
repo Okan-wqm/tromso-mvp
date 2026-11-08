@@ -69,7 +69,7 @@ from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
 from . import chemistry, parameters, sources
-from .evaluate import ALERTS, Limits, Status, ahead, is_fresh, worst
+from .evaluate import ALERTS, RANK, Limits, Status, ahead, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # How far back the latest values, and a salinity for a sample without one, are looked for.
@@ -384,6 +384,7 @@ class Reading:
     limits: list = field(default_factory=list)
     judged: str = Status.NOT_MEASURED
     uncovered: tuple = ()          # the species it concerns that no limit row judges it for
+    worse: object = None           # the worse fresh value that decided its status (worst_fresh), else None
 
     @property
     def at(self):
@@ -751,13 +752,14 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
     (worked out from fresh live values only) or the TAN sample's own."""
     fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
     fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
-    chosen = {}
+    chosen, others = {}, {}
     for code in parameters.COLUMNS:
-        found = choose([_candidates(code, own_live, fresh_own, own_manual, context),
-                        _candidates(code, system_live, fresh_system, system_manual, context)],
-                       now, lambda reading: reading.fresh(now))
+        tiers = [_candidates(code, own_live, fresh_own, own_manual, context),
+                 _candidates(code, system_live, fresh_system, system_manual, context)]
+        found = choose(tiers, now, lambda reading: reading.fresh(now))
         if found is not None:
             chosen[code] = found
+            others[code] = [each for tier in tiers for each in tier if each is not found and each.fresh(now)]
     tan = chosen.get(TAN)
     if tan is not None and tan.sample.live:
         inputs = [tan.sample, *(fresh_live[code] for code in (parameters.PH, parameters.TEMPERATURE, parameters.SALINITY)
@@ -770,7 +772,7 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now):
     elif tan is not None:
         source = next((manual for manual in (*own_manual, *system_manual) if manual.get(TAN) is tan), {})
         chosen.update({code: source[code] for code in (NH3_N.code, NH4_N.code) if code in source})
-    return chosen
+    return chosen, others
 
 
 def _loops_of(points):
@@ -862,14 +864,39 @@ def latest(points, now=None, at=None):
         point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed)
         day = local_time(moment, point).date()
         where = places[point.pk]
-        resolved = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
+        resolved, others = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
                             _live(where.system_targets, answer), [manual(each) for each in where.system],
                             context, moment)
         temperature = resolved.get(parameters.TEMPERATURE)          # what an oxygen value is worked out with
         temperature = temperature if temperature is not None and temperature.fresh(moment) else None
         for code, reading in resolved.items():
-            point_water.readings[code] = context.judge(reading, day, moment, temperature, for_point=point)
+            # Each judged on its own copy: a loop's reading stands in for several units, each with its own fish.
+            reading = context.judge(replace(reading), day, moment, temperature, for_point=point)
+            worst_fresh(reading, [context.judge(replace(each), day, moment, temperature, for_point=point)
+                                  for each in others.get(code, [])])
+            point_water.readings[code] = reading
     return water
+
+
+def worst_fresh(reading, others):
+    """Owner decision 2026-11-08 (the second cross review's P2): the value shown is A9's choice, but the status, and so
+    the alarm, is the worst of every fresh value the place has (`others`: its own points' and its system's, judged for its
+    fish). When another fresh value is worse, the reading takes its judgement and says which value decided it, so danger
+    is never hidden behind a newer or nearer OK value."""
+    worse = min((each for each in others if each.judged in ALERTS and RANK[each.judged] < RANK[reading.judged]),
+                key=lambda each: RANK[each.judged], default=None)
+    if worse is None:
+        return reading
+    source = origin_text(worse)
+    if not worse.sample.live:
+        source = _('%(origin)s at %(point)s') % {'origin': source, 'point': worse.point}
+    said = _('%(source)s reads %(value)s (%(time)s): the worst fresh value decides the status.') % {
+        'source': source, 'value': number_format(worse.value, worse.parameter.decimals),
+        'time': local_time(worse.at, worse.point).strftime('%d.%m.%Y %H:%M')}
+    reading.judged = reading.status = worse.judged
+    reading.worse = worse
+    reading.note = f'{reading.note} {said}' if reading.note else said
+    return reading
 
 
 def _values_at(targets, moment):

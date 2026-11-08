@@ -869,6 +869,10 @@ msgstr "%(operation)s (%(date)s) er annullert."
 msgid "%(operation)s recorded: %(quantity)s %(unit)s of %(item)s from %(location)s."
 msgstr "%(operation)s registrert: %(quantity)s %(unit)s %(item)s fra %(location)s."
 
+#, python-format
+msgid "%(origin)s at %(point)s"
+msgstr "%(origin)s ved %(point)s"
+
 #. Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor);
 #. %(age)s how old.
 #, python-format
@@ -1026,6 +1030,10 @@ msgstr "%(size)s mm"
 #, python-format
 msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
 msgstr "%(size)s: %(grams)s g per skudd, silo %(silo)s kg"
+
+#, python-format
+msgid "%(source)s reads %(value)s (%(time)s): the worst fresh value decides the status."
+msgstr "%(source)s viser %(value)s (%(time)s): den verste ferske verdien avgjør statusen."
 
 #, python-format
 msgid "%(species)s has no official code (Setup › Reference data › Species)."

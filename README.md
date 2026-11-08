@@ -2668,7 +2668,15 @@ standing in from the system is judged for the unit's fish, as the unit's own wou
 `read.choose(tiers, now, fresh)`: the latest values (`read.latest`), a value at a moment (`Series.latest`) and the
 ration's temperature (`feeding.temperature.TemperatureBook.at`, which adds the loops of parent systems as further tiers)
 all pick through it, from the same places, with one tie-breaker at one measurement time: a sensor before a sample, the
-primary channel before the backup. A stale value never enters a calculation: a value is
+primary channel before the backup.
+
+**The worst fresh value decides the status** (owner decision 2026-11-08, on the second cross review's P2, where a
+20-hour-old manual 9.0 mg/L hid a system probe reading 3.0 mg/L now): the value SHOWN stays A9's choice, but the status,
+and so the card's state and alarm, is the worst judgement among every fresh value of the place (its own points' and its
+system's, each judged for the unit's fish; never an inlet's, never a stale one) (`read.worst_fresh`). When another value
+decides it, the reading says so beside the value on the water page and the card: "system sensor #1 reads 3.00
+(08.11.2026 12:40): the worst fresh value decides the status" (a sample is named with its point). Each place's
+readings are judged on their own copy, so a loop value standing in for two units carries each unit's own judgement. A stale value never enters a calculation: a value is
 worked out (the other oxygen unit, NH₃, the oxygen judged through the mg/L row) only from fresh values. A channel in maintenance
 or retired is skipped. A value stamped more than five minutes ahead of the server's clock (`evaluate.CLOCK_SKEW`: a
 device whose clock runs fast; the sensors' contract allows up to an hour) is never fresh and never the newest: it is

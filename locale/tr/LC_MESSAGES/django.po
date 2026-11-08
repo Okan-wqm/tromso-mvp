@@ -874,6 +874,10 @@ msgstr "%(operation)s (%(date)s) iptal edildi."
 msgid "%(operation)s recorded: %(quantity)s %(unit)s of %(item)s from %(location)s."
 msgstr "%(operation)s kaydedildi: %(location)s yerinden %(quantity)s %(unit)s %(item)s."
 
+#, python-format
+msgid "%(origin)s at %(point)s"
+msgstr "%(point)s noktasında %(origin)s"
+
 #. Translators: %(origin)s is where a value comes from (manual, lab, unit sensor #12, system sensor);
 #. %(age)s how old.
 #, python-format
@@ -1031,6 +1035,10 @@ msgstr "%(size)s mm"
 #, python-format
 msgid "%(size)s: %(grams)s g per shot, silo %(silo)s kg"
 msgstr "%(size)s: atış başına %(grams)s g, silo %(silo)s kg"
+
+#, python-format
+msgid "%(source)s reads %(value)s (%(time)s): the worst fresh value decides the status."
+msgstr "%(source)s %(value)s gösteriyor (%(time)s): durumu en kötü güncel değer belirler."
 
 #, python-format
 msgid "%(species)s has no official code (Setup › Reference data › Species)."

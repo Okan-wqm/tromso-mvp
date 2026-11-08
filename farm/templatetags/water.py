@@ -61,7 +61,7 @@ def age(moment):
 
 
 @register.filter
-def site_clock(sample):
+def sample_clock(sample):
     """When a sample was taken, on the clock of its site, as a naive time the date filter shows as it is."""
     return timezone.make_naive(sample.measured_at, zone_of(site_of(sample.point)))
 

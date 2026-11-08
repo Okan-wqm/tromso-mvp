@@ -83,7 +83,7 @@
         <td class="num">{{ record.amount_kg|feed_kg }}</td>
         <td class="num">{{ record.meals|default:"—" }}</td>
         <td>{{ record.feeder.name|default:"—" }}</td>
-        <td>{{ record.created_by.get_username|default:"system" }}<span class="row-sub">{{ record.created_at|date:"DATETIME_FORMAT" }}</span></td>
+        <td>{{ record.created_by.get_username|default:"system" }}<span class="row-sub">{{ record.created_at|site_clock:record.unit.production_department.site|date:"DATETIME_FORMAT" }}</span></td>
         <td>{{ record.notes }}{% if record.high_rate_ack %}<span class="row-sub">{% trans "Above the usual feed rate, accepted" %}</span>{% endif %}{% if record.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=record.void_reason name=record.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% elif record.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
       </tr>

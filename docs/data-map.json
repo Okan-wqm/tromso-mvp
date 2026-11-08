@@ -12126,6 +12126,7 @@
         "core/tests_crud_mount.py",
         "core/tests_schema.py",
         "core/tests_scope.py",
+        "core/tests_template_clocks.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",

@@ -1,5 +1,5 @@
 {% extends "crud/detail.html" %}
-{% load i18n %}
+{% load i18n dates %}
 {% comment %} A knowledge entry's read page (knowledge.resources.KnowledgeEntryResource.detail_extras): the statement,
    what it is about, its one source in the kind's own fields, and its review.{% endcomment %}
 {% block details %}
@@ -8,7 +8,7 @@
   <dl class="facts">
     <div><dt>{% trans "Topics" %}</dt><dd>{{ object.topic_labels|join:", " }}</dd></div>
     <div><dt>{% trans "Species" context "plural" %}</dt><dd>{% for species in object.species.all %}{{ species }}{% if not forloop.last %}, {% endif %}{% empty %}{% trans "Any species" %}{% endfor %}</dd></div>
-    <div><dt>{% trans "Added" %}</dt><dd>{% blocktrans trimmed with when=object.created_at|date:"DATETIME_FORMAT" who=object.created_by|default:"–" %}{{ when }} by {{ who }}{% endblocktrans %}</dd></div>
+    <div><dt>{% trans "Added" %}</dt><dd>{% blocktrans trimmed with when=object.created_at|company_clock|date:"DATETIME_FORMAT" who=object.created_by|default:"–" %}{{ when }} by {{ who }}{% endblocktrans %}</dd></div>
   </dl>
 </section>
 

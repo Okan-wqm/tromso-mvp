@@ -1,4 +1,4 @@
-{% load assets i18n stock water %}<!doctype html>
+{% load assets i18n stock water dates %}<!doctype html>
 {% comment %} The calculator's printed report (farm.water.views.calculator_report), as the source's: the values entered, the
    values worked out, the charts in the calculator's three columns with every layer drawn, and here the
    recipes and the simulator's steps too; a page of its own, laid out for A4 across. Its Print button is
@@ -18,7 +18,7 @@
   <header class="report-head">
     <div>
       <h1 class="report-title">{% trans "Water chemistry report" %}</h1>
-      <p class="report-date">{{ generated_at|date:"DATETIME_FORMAT" }}{% if source %} · {{ source.point.code }} · {{ source.point.name }}{% endif %}</p>
+      <p class="report-date">{{ generated_at|company_clock|date:"DATETIME_FORMAT" }}{% if source %} · {{ source.point.code }} · {{ source.point.name }}{% endif %}</p>
     </div>
     <button type="button" class="button button-inline report-print" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button>
   </header>

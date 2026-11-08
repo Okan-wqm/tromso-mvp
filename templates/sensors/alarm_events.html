@@ -1,5 +1,5 @@
 {% extends "app_base.html" %}
-{% load i18n sensors %}
+{% load i18n sensors dates %}
 {% comment %} Sensors › Operations › Alarm events (sensors.views.alarm_events): the times a rule held, the open ones first, written
    by manage.py check_sensors. Shown, never sent. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
@@ -18,10 +18,10 @@
         <td>#{{ event.channel_no }}</td>
         <td>{% if event.binding %}{{ event.binding.target }}{% else %}—{% endif %}</td>
         <td>{{ event.rule.get_severity_display }}</td>
-        <td>{{ event.opened_at|date:"DATETIME_FORMAT" }}</td>
-        <td>{% if event.closed_at %}{{ event.closed_at|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-maintenance">{% trans "Open" %}</span>{% endif %}</td>
+        <td>{{ event.opened_at|site_clock:event.binding.clock|date:"DATETIME_FORMAT" }}</td>
+        <td>{% if event.closed_at %}{{ event.closed_at|site_clock:event.binding.clock|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-maintenance">{% trans "Open" %}</span>{% endif %}</td>
         <td class="num">{{ event.peak|measured:event.rule.quantity_code }}</td>
-        <td>{% if event.acknowledged_at %}{{ event.acknowledged_by }} · {{ event.acknowledged_at|date:"DATETIME_FORMAT" }}{% elif can_acknowledge %}<form method="post" action="{% url 'sensors:alarm_event_acknowledge' event.pk %}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Acknowledge" %}</button></form>{% else %}—{% endif %}</td>
+        <td>{% if event.acknowledged_at %}{{ event.acknowledged_by }} · {{ event.acknowledged_at|site_clock:event.binding.clock|date:"DATETIME_FORMAT" }}{% elif can_acknowledge %}<form method="post" action="{% url 'sensors:alarm_event_acknowledge' event.pk %}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Acknowledge" %}</button></form>{% else %}—{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>

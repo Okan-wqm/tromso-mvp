@@ -67,7 +67,7 @@
         <td>{{ operation.get_kind_display }}{% if operation.reason %}<span class="row-sub">{{ operation.reason_label }}</span>{% endif %}{% if operation.location %}<span class="row-sub">{{ operation.location.code }}</span>{% endif %}</td>
         <td><ul class="op-lines">{% for line in row.lines %}<li>{% include "inventory/_line.html" %}</li>{% empty %}<li>{% trans "Nothing found" %}</li>{% endfor %}</ul></td>
         <td>{{ operation.supplier|default:"—" }}{% if operation.reference %}<span class="row-sub">{{ operation.reference }}</span>{% endif %}</td>
-        <td>{{ operation.created_by.get_username|default:"system" }}<span class="row-sub">{{ operation.created_at|date:"DATETIME_FORMAT" }}</span></td>
+        <td>{{ operation.created_by.get_username|default:"system" }}<span class="row-sub">{{ operation.created_at|company_clock|date:"DATETIME_FORMAT" }}</span></td>
         <td>{{ operation.notes }}{% if operation.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% elif operation.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
       </tr>

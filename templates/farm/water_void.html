@@ -7,7 +7,7 @@
 {% block heading %}{{ heading }}{% endblock %}
 {% block content %}
 <div class="confirm">
-  <p class="confirm-question">{% blocktrans trimmed with point=sample.point moment=sample|site_clock|date:"DATETIME_FORMAT" %}Void the sample of {{ point }} at {{ moment }}?{% endblocktrans %}</p>
+  <p class="confirm-question">{% blocktrans trimmed with point=sample.point moment=sample|sample_clock|date:"DATETIME_FORMAT" %}Void the sample of {{ point }} at {{ moment }}?{% endblocktrans %}</p>
   <ul class="op-lines">
     {% for parameter, value in values %}<li>{{ parameter.label }}: {{ value|water_value:parameter.code }}</li>{% endfor %}
   </ul>

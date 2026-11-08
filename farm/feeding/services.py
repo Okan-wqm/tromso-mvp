@@ -14,11 +14,10 @@ from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
 from farm.health import withdrawal
-from farm.models import Batch, Feed, FeedingRecord, Tank
+from farm.models import Feed, FeedingRecord
 from farm.models.feeding import FeedTarget
 from farm.stock.dates import check_date, local_today, shown_date, sites_of
-from farm.stock.read import Presence
-from farm.stock.services import AlreadyRecorded, locked, voided
+from farm.stock.services import AlreadyRecorded, lock_fish, voided
 from farm.templatetags.feeding import amount
 from farm.templatetags.stock import number
 
@@ -36,7 +35,7 @@ def label(record):
 
 
 def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, feeder=None, notes='', ack=False,
-                   target=FeedTarget.PRODUCTION, token=None):
+                   target=FeedTarget.PRODUCTION, token=None, withdrawal_ack=None):
     """Feed given to `unit` on `day`, for its production fish or for the cleaner fish beside them (`target`, D-1).
     It needs fish of its target in the unit at the start or the end of that day (the stock ledger), a feed that is
     active, and, above FEEDING_ACK_PERCENT of their book biomass, the person's acknowledgement (stored on the record;
@@ -91,10 +90,10 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
             return saved
 
         # A medicated feeding no in-feed treatment covers holds the fish (withdrawal rule 6): through the guard.
-        return withdrawal.guarded(user, batch_ids, local_today(unit), write)
+        return withdrawal.guarded(user, batch_ids, local_today(unit), write, seen=withdrawal_ack)
 
 
-def void_feeding(user, record, reason):
+def void_feeding(user, record, reason, withdrawal_ack=None):
     """The undo, as for a stock operation: the record stops counting, with its reason, within the
     backdating window. It moves no fish; a medicated feeding's void can free fish its withdrawal holds, so it goes
     through the withdrawal guard."""
@@ -108,13 +107,12 @@ def void_feeding(user, record, reason):
             voided(user, current, reason, sites_of([current.unit]), label(current))
             return current
 
-        return withdrawal.guarded(user, batch_ids, local_today(found.unit), write)
+        return withdrawal.guarded(user, batch_ids, local_today(found.unit), write, seen=withdrawal_ack)
 
 
 def _lock_fish(unit, day):
     """Locks the batches with fish in the unit on the feeding's day, then the unit, as a stock operation locks them
     (batches, then units), so a feeding and a harvest of the same fish take turns; returns (the unit, the batch ids):
     the fish a medicated feeding holds, which the withdrawal guard works the withdrawals of."""
-    batch_ids = Presence.of_units([unit.pk]).batches_in(unit.pk, day)
-    locked(Batch, batch_ids)
-    return locked(Tank, {unit.pk})[unit.pk], batch_ids
+    units, batch_ids = lock_fish([unit.pk], day)
+    return units[unit.pk], batch_ids

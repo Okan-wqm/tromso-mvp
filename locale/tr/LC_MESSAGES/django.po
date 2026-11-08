@@ -43,6 +43,14 @@ msgstr "%(batch)s partisi %(species)s; protokol ise %(protocol_species)s için."
 
 #, python-format
 msgid ""
+"%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish "
+"may go to food from %(after)s instead of %(until)s."
+msgstr ""
+"%(batch)s tutuluyor (%(withdrawal)s): bu değişiklikten sonra arınma süresi daha erken biter, "
+"balıklar %(until)s yerine %(after)s tarihinden itibaren gıdaya gidebilir."
+
+#, python-format
+msgid ""
 "%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
 "after this change: the fish could go to food."
 msgstr ""
@@ -11289,6 +11297,9 @@ msgstr "Kaynak: %(kind)s"
 msgid "Sources fingerprint"
 msgstr "Kaynakların parmak izi"
 
+msgid "Sources fingerprint version"
+msgstr "Kaynak parmak izi sürümü"
+
 msgid "Spanish"
 msgstr "İspanyolca"
 
@@ -15020,6 +15031,9 @@ msgstr "alarm kuralı"
 
 msgid "alarm rules"
 msgstr "alarm kuralları"
+
+msgid "an unknown end"
+msgstr "bilinmeyen bir bitiş"
 
 msgid "an unknown facility"
 msgstr "bilinmeyen bir tesis"

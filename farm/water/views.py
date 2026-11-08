@@ -472,6 +472,7 @@ def record_round(request):
                 samples = services.record_round(
                     request.user, measured_at=header.cleaned_data['measured_at'],
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
+                    withdrawal_ack=header.cleaned_data['withdrawal_ack'],
                     rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered])
             except AlreadyRecorded:
                 return done(request, context['back_url'])
@@ -509,7 +510,8 @@ def void_sample(request, pk):
         form = SampleVoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void(request.user, sample, form.cleaned_data['reason'])
+                services.void(request.user, sample, form.cleaned_data['reason'],
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:

@@ -3,7 +3,7 @@ from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 from core.crud import Resource, RowList, filter_by
 
 from ..forms import FeedForm, FeedSuitabilityFormSet
-from ..models import Feed, Species, Supplier
+from ..models import Feed, FeedingRecord, Species, Supplier
 
 
 def grams(value):
@@ -47,6 +47,16 @@ class FeedResource(Resource):
     icon = 'wheat'
     row_lists = (FeedSuitabilityList,)
     page_size = 50
+    question_template, question_field = 'farm/_withdrawal_change.html', 'withdrawal_ack'
+
+    @classmethod
+    def edited(cls, request, current, write, seen):
+        """A feed's type decides whether its feedings hold the fish (a medicated feed no in-feed treatment covers,
+        withdrawal rule 6): an edit goes through the withdrawal guard over the fish of the units it fed."""
+        from ..health import withdrawal
+        fed = FeedingRecord.all_objects.filter(feed=current).values_list('unit_id', 'date')
+        return withdrawal.guarded_units(request.user, {unit for unit, _day in fed}, min((day for _unit, day in fed),
+                                                                                         default=None), write, seen)
 
     @classmethod
     def queryset(cls):

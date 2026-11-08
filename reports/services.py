@@ -79,7 +79,8 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
             _refuse(_('The records changed after you looked at the report: review it again before you record the '
                       'filing.'))
         ReportSnapshot.objects.create(report=current, format_version=compute.FORMAT_VERSION, content=result.content,
-                                      content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope))
+                                      content_sha256=digest, sources_fingerprint=compute.fingerprint(result.scope),
+                                      scope_version=compute.scope_version(current.kind))
         current.deadline_on = compute.deadline(current)
         current.filed_late = (periods.oslo_today(submitted_at) > current.deadline_on) if current.deadline_on else False
         current.submitted_at, current.submitted_by = submitted_at, user

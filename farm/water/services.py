@@ -17,7 +17,6 @@ A failure raises ValidationError, a dict of field to message: 'measured_at', 'po
 code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row', index). Nothing is
 written."""
 import uuid
-from datetime import date
 
 from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -28,11 +27,10 @@ from django.utils.translation import gettext as _
 from core import audit
 from core.models import AuditLog
 from farm.health import withdrawal
-from farm.models import Batch, Equipment, SamplingPoint, System, Tank, WaterMeasurement
+from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
 from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
-from farm.stock.read import Presence
-from farm.stock.services import AlreadyRecorded, locked
+from farm.stock.services import AlreadyRecorded, lock_fish
 
 from . import parameters
 from .read import POINT_RELATED
@@ -128,7 +126,7 @@ def _values(values):
     return {code: value for code, value in values.items() if value is not None}
 
 
-def record(user, *, point, measured_at, source, values, notes='', token=None):
+def record(user, *, point, measured_at, source, values, notes='', token=None, withdrawal_ack=None):
     """One sample at one sampling point (a place on a unit, a system's loop or a piece of equipment). Returns the
     sample."""
     values = _values(values)
@@ -146,7 +144,7 @@ def record(user, *, point, measured_at, source, values, notes='', token=None):
         if errors:
             raise ValidationError(errors)
         return withdrawal.guarded(user, *fish, lambda: _write(
-            user, [_sample(user, point, measured_at, source, values, notes, token)])[0])
+            user, [_sample(user, point, measured_at, source, values, notes, token)])[0], seen=withdrawal_ack)
 
 
 def row_key(token, point):
@@ -155,7 +153,7 @@ def row_key(token, point):
     return uuid.uuid5(token, f'point:{point.pk}')
 
 
-def record_round(user, *, measured_at, source, rows, token=None):
+def record_round(user, *, measured_at, source, rows, token=None, withdrawal_ack=None):
     """The samples of a round, at one time and from one source: `rows` = [(point, values, notes)]. A row
     with no value is skipped; the rest are written together or not at all. Returns the samples."""
     rows = [(point, _values(values), notes) for point, values, notes in rows]
@@ -184,10 +182,11 @@ def record_round(user, *, measured_at, source, rows, token=None):
             raise ValidationError(errors)
         return withdrawal.guarded(user, *fish, lambda: _write(user, [
             _sample(user, point, measured_at, source, values, notes, key)
-            for point, (_point, values, notes), key in zip(points, rows, keys)]), record_of=lambda samples: samples[0])
+            for point, (_point, values, notes), key in zip(points, rows, keys)]), record_of=lambda samples: samples[0],
+            seen=withdrawal_ack)
 
 
-def void(user, sample, reason):
+def void(user, sample, reason, withdrawal_ack=None):
     """The undo: the sample stops counting, with its reason, and stays in the history. Refused for samples
     older than the backdating window."""
     reason = reason.strip()
@@ -203,34 +202,29 @@ def void(user, sample, reason):
         if local_time(sample.measured_at, sample.point).date() < earliest(sample.point):
             raise ValidationError({NON_FIELD_ERRORS: _('Samples older than %(days)d days cannot be voided.')
                                    % {'days': settings.STOCK_BACKDATE_DAYS}})
-        def write():
-            current = WaterMeasurement.all_objects.select_related(*POINT_RELATED).get(pk=sample.pk)   # as stored
-            current.void_reason = reason
-            current.soft_delete(user)
-            with audit.source_language():
-                audit.record(user, AuditLog.Action.VOID, current, {str(_('Reason for voiding')): [None, reason]},
-                             label=label(current))
-            return current
 
-        return withdrawal.guarded(user, *fish, write)
+        def write():
+            sample.void_reason = reason
+            sample.soft_delete(user)
+            with audit.source_language():
+                audit.record(user, AuditLog.Action.VOID, sample, {str(_('Reason for voiding')): [None, reason]},
+                             label=label(sample))
+            return sample
+
+        return withdrawal.guarded(user, *fish, write, seen=withdrawal_ack)
 
 
 def _fish_of(points, measured_at):
     """(batch ids, the farm's today) of a sample's write for the withdrawal guard (farm.health.withdrawal.guarded): a
     temperature counts in the degree-days of the withdrawals of the fish of the point's unit, or of the units of its
     system, from its day on, so a backdated or voided one can bring a harvest inside a withdrawal or free fish held today.
-    Their batches are locked first, as a stock operation locks them before its units; a point of equipment holds no
-    fish."""
+    Their batches and units are locked first, as a stock operation locks them (farm.stock.services.lock_fish); a point of
+    equipment holds no fish."""
     unit_ids = set()
     for point in points:
         if point.unit_id:
             unit_ids.add(point.unit_id)
         elif point.system_id:
             unit_ids.update(Tank.all_objects.filter(system_id=point.system_id).values_list('pk', flat=True))
-    units = list(Tank.all_objects.filter(pk__in=unit_ids))
-    day = local_time(measured_at, points[0]).date()
-    presence = Presence.of_units(unit_ids)
-    batch_ids = {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
-                 if presence.present_between(unit_id, batch_id, day, date.max)}
-    locked(Batch, batch_ids)
-    return batch_ids, min((dates.local_today(unit) for unit in units), default=dates.local_today())
+    units, batch_ids = lock_fish(unit_ids, local_time(measured_at, points[0]).date())
+    return batch_ids, min((dates.local_today(unit) for unit in units.values()), default=dates.local_today())

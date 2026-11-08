@@ -24,24 +24,38 @@ COMPUTE = {
 
 # The rows each kind reads, for the fingerprint, without computing a figure: what "the records no longer give what was
 # filed" is checked by on the list, so the list never folds a ledger.
+# The version of the rows each kind reads for its fingerprint, when they changed (1 before): a filed report keeps the
+# version it was filed under (ReportSnapshot.scope_version), and is compared with the rows of that version, so a change of
+# the rule flags no filing that was made under the old one (cross-review 2, 12). Sea lice 2: the earlier counts and the
+# harvest plans and their harvests (F-206), the lice medicines given for another reason (F-239); planned slaughter 2: the
+# harvests its plans were recorded as (F-085).
+SCOPE_VERSIONS = {ReportKind.SEA_LICE.value: 2, ReportKind.SLAUGHTER_PLANNED.value: 2}
+
 SCOPE = {
-    ReportKind.SEA_LICE: lambda report: lice.scope(report.site, report.period),
-    ReportKind.SMOLT: lambda report: smolt.scope(report.site, report.period),
-    ReportKind.CLEANER_FISH: lambda report: cleaner.scope(report.site, report.period),
-    ReportKind.BIOMASS: lambda report: biomass.scope(report.site, report.period),
-    ReportKind.SLAUGHTER_PLANNED: lambda report: slaughter.scope(report.facility, report.period),
-    ReportKind.LAND_STOCK: notices.land_stock_scope,
-    ReportKind.SITE_IN_USE: notices.site_change_scope,
-    ReportKind.SITE_EMPTIED: notices.site_change_scope,
-    ReportKind.ESCAPE: notices.event_scope,
-    ReportKind.DISEASE: notices.event_scope,
-    ReportKind.WELFARE: notices.event_scope,
+    ReportKind.SEA_LICE: lambda report, version: lice.scope(report.site, report.period, version=version),
+    ReportKind.SMOLT: lambda report, version: smolt.scope(report.site, report.period),
+    ReportKind.CLEANER_FISH: lambda report, version: cleaner.scope(report.site, report.period),
+    ReportKind.BIOMASS: lambda report, version: biomass.scope(report.site, report.period),
+    ReportKind.SLAUGHTER_PLANNED: lambda report, version: slaughter.scope(report.facility, report.period,
+                                                                          version=version),
+    ReportKind.LAND_STOCK: lambda report, version: notices.land_stock_scope(report),
+    ReportKind.SITE_IN_USE: lambda report, version: notices.site_change_scope(report),
+    ReportKind.SITE_EMPTIED: lambda report, version: notices.site_change_scope(report),
+    ReportKind.ESCAPE: lambda report, version: notices.event_scope(report),
+    ReportKind.DISEASE: lambda report, version: notices.event_scope(report),
+    ReportKind.WELFARE: lambda report, version: notices.event_scope(report),
 }
 
 
-def scope(report):
-    """The rows the report reads, as `compute` reads them (a pair of label and queryset each)."""
-    return SCOPE[report.kind](report)
+def scope_version(kind):
+    """The version of the rows a report of `kind` reads now (SCOPE_VERSIONS)."""
+    return SCOPE_VERSIONS.get(str(kind), 1)
+
+
+def scope(report, version=None):
+    """The rows the report reads, as `compute` reads them (a pair of label and queryset each); of `version` (default:
+    the current one), for a report filed under an earlier one."""
+    return SCOPE[report.kind](report, version or scope_version(report.kind))
 
 
 def compute(report):

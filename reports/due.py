@@ -408,6 +408,7 @@ def no_longer_match(today=None):
         # A period older than the backdating window cannot change; a notice has no window and is always read again.
         if report.is_superseded or report.period and report.period.end < recent:
             continue
-        if compute.fingerprint(compute.scope(report)) != report.snapshot.sources_fingerprint:
+        scope = compute.scope(report, version=report.snapshot.scope_version)       # as it was filed
+        if compute.fingerprint(scope) != report.snapshot.sources_fingerprint:
             found.append(report)
     return found

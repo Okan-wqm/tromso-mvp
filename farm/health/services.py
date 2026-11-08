@@ -23,7 +23,7 @@ were shown, which are stored on the treatment (HandlingAcknowledgement) and make
 decision: warn, never block)."""
 import hashlib
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import timedelta
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
@@ -34,12 +34,11 @@ from core.models import AuditLog
 from farm.feeding import read as feeding_read
 from farm.handling import check
 from farm.health import lice, read as health_read, withdrawal
-from farm.models import Batch, HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
+from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
 from farm.stock.dates import check_date, earliest, local_today, shown_date, sites_of
-from farm.stock.read import Presence
-from farm.stock.services import AlreadyRecorded, locked, voided
+from farm.stock.services import AlreadyRecorded, lock_fish, locked, voided
 
 # The fields the activity log shows for a new treatment and a new lice count.
 TREATMENT_FIELDS = ['units', 'method', 'medicine', 'reason', 'start_date', 'end_date', 'dose_value', 'dose_unit',
@@ -196,15 +195,11 @@ def handling(units, day, method, medicine=None, reason=None):
 
 
 def _lock_fish(unit_ids, first):
-    """Locks the batches with fish in the units from `first` on, then the units, in the order a stock operation locks
-    them (farm.stock.services: batches, then units), so a treatment and a harvest of the same fish take turns and the
-    withdrawal guard sees every harvest committed before it. Returns (the units, the batch ids): the fish the treatment
-    can reach, which the guard works the withdrawals of."""
-    presence = Presence.of_units(unit_ids)
-    batch_ids = {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())
-                 if presence.present_between(unit_id, batch_id, first, date.max)}
-    locked(Batch, batch_ids)
-    return list(locked(Tank, set(unit_ids)).values()), batch_ids
+    """The fish of the units from `first` on, locked as a harvest locks them (farm.stock.services.lock_fish: batches,
+    then units, then the batches read again under the unit locks), so a treatment and a harvest of the same fish take
+    turns and the withdrawal guard sees every harvest committed before it. Returns (the units, the batch ids)."""
+    units, batch_ids = lock_fish(unit_ids, first)
+    return list(units.values()), batch_ids
 
 
 def _today(units):
@@ -213,7 +208,8 @@ def _today(units):
 
 def record_treatment(user, *, units, method, reason, start_date, end_date, medicine=None, dose_value=None,
                      dose_unit='', amount_value=None, amount_unit='', bath_minutes=None, prescribed_by='',
-                     prescription_ref='', vet=None, health_event=None, notes='', handling_ack=None, token=None):
+                     prescription_ref='', vet=None, health_event=None, notes='', handling_ack=None, token=None,
+                     withdrawal_ack=None):
     """A course given to the fish of `units` from `start_date` to `end_date` (see the module's rules);
     `handling_ack` is the fingerprint of the handling warnings the person went on past. The withdrawal it creates goes
     through the withdrawal guard (harvests already recorded inside it are asked about)."""
@@ -265,7 +261,7 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
                                     severity=AuditLog.Severity.CRITICAL if critical else AuditLog.Severity.NORMAL)
             return treatment
 
-        return withdrawal.guarded(user, batch_ids, _today(locked_units), write)
+        return withdrawal.guarded(user, batch_ids, _today(locked_units), write, seen=withdrawal_ack)
 
 
 def _acknowledged(values, checked):
@@ -285,7 +281,7 @@ def _treatment_fish(treatment_id, first):
     return _lock_fish(unit_ids, first)
 
 
-def change_last_day(user, treatment, end_date):
+def change_last_day(user, treatment, end_date, withdrawal_ack=None):
     """The course ended on another day than planned, or goes on longer: the withdrawal counts from the new
     last day. Logged with the old and new day; refused for a voided treatment, and outside the backdating
     window (neither the old nor the new last day may be older than it). Through the withdrawal guard: a longer
@@ -305,22 +301,22 @@ def change_last_day(user, treatment, end_date):
                 'date': shown_date(first)}})
         if end_date == treatment.end_date:
             return treatment
+
         def write():
-            current = Treatment.all_objects.get(pk=treatment.pk)       # as stored: a write tried is made again
             with audit.source_language():
-                before = audit.snapshot(current, ['end_date'])
-                current.end_date = end_date
-                current.updated_by = user
-                current.version += 1
-                current.save(update_fields=['end_date', 'updated_by', 'version', 'updated_at'])
-                audit.record_update(user, current, before, audit.snapshot(current, ['end_date']),
-                                    label=treatment_label(current, units))
-            return current
+                before = audit.snapshot(treatment, ['end_date'])
+                treatment.end_date = end_date
+                treatment.updated_by = user
+                treatment.version += 1
+                treatment.save(update_fields=['end_date', 'updated_by', 'version', 'updated_at'])
+                audit.record_update(user, treatment, before, audit.snapshot(treatment, ['end_date']),
+                                    label=treatment_label(treatment, units))
+            return treatment
 
-        return withdrawal.guarded(user, batch_ids, _today(units), write)
+        return withdrawal.guarded(user, batch_ids, _today(units), write, seen=withdrawal_ack)
 
 
-def void_treatment(user, treatment, reason):
+def void_treatment(user, treatment, reason, withdrawal_ack=None):
     """The undo: the treatment stops counting, with its reason, and its withdrawal with it: through the withdrawal guard
     (fish held today that it frees, and the medicated feedings it covered, now of unknown end, are asked about)."""
     with transaction.atomic():
@@ -329,12 +325,12 @@ def void_treatment(user, treatment, reason):
         treatment = (Treatment.all_objects.select_for_update(of=('self',)).select_related('medicine')
                      .get(pk=treatment.pk))
         units = list(treatment.units.select_related('production_department__site'))
-        def write():
-            current = Treatment.all_objects.select_related('medicine').get(pk=treatment.pk)   # as stored
-            voided(user, current, reason, sites_of(units), treatment_label(current, units))
-            return current
 
-        return withdrawal.guarded(user, batch_ids, _today(units), write)
+        def write():
+            voided(user, treatment, reason, sites_of(units), treatment_label(treatment, units))
+            return treatment
+
+        return withdrawal.guarded(user, batch_ids, _today(units), write, seen=withdrawal_ack)
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------

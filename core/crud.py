@@ -343,6 +343,7 @@ class RowList:
     label = ''        # how the activity log names the list, e.g. _('Contacts')
     formset = None    # an inline formset over the row model (RowFormSet); the rows have `created_by`
     saved = ''        # the flash message: ngettext_lazy('%(count)d ... saved.', '...', 'count')
+    question_field = None   # the box that answers what its save may ask first (`save`'s `seen`), when it may
 
     @classmethod
     def applies_to(cls, obj):
@@ -376,7 +377,7 @@ class RowList:
         return AuditLog.Severity.NORMAL
 
     @classmethod
-    def save(cls, user, obj, rows, entity_type):
+    def save(cls, user, obj, rows, entity_type, seen=None):
         """Replaces the stored rows with `rows` (cleaned data) and logs the change on `obj`."""
         model, link = cls.formset.model, cls.formset.fk.name
         # The row's own fields; an inline formset adds the link to its parent to the form's fields.
@@ -518,6 +519,19 @@ class Resource:
     @classmethod
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
+
+    # When a save may ask something first (`edited`, below): the template the edit page shows the question with, and the
+    # name of the box that answers it.
+    question_template = None
+    question_field = None
+
+    @classmethod
+    def edited(cls, request, current, write, seen):
+        """Makes an edit of `current`: `write()` as it is. A tab whose records feed a rule that must ask before a change
+        stands wraps it (the medicine withdrawal: farm.health.withdrawal.guarded); `seen` is the value of the edit
+        form's box for that question. A refusal is a ValidationError, shown on the form with what it carries
+        (`change`, as `question` in the page)."""
+        return write()
 
     @classmethod
     def search(cls, objects, query):
@@ -753,15 +767,28 @@ class UpdateView(FormView):
                                    % {'name': r.name})
                     return done(request, self.url('edit', pk))
                 before = r.recorded(current)
-                obj = form.save(commit=False)
-                if versioned:
-                    obj.version = current.version + 1
-                if hasattr(obj, 'updated_by'):
-                    obj.updated_by = request.user
-                obj.save()
-                form.save_m2m()
-                audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
-                r.after_save(request, obj, created=False)
+
+                def write():
+                    obj = form.save(commit=False)
+                    if versioned:
+                        obj.version = current.version + 1
+                    if hasattr(obj, 'updated_by'):
+                        obj.updated_by = request.user
+                    obj.save()
+                    form.save_m2m()
+                    audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
+                    r.after_save(request, obj, created=False)
+                    return obj
+
+                obj = r.edited(request, current, write,
+                               request.POST.get(r.question_field, '') if r.question_field else None)
+        except ValidationError as error:
+            # The save asked something first (Resource.edited): the form again with the question, nothing saved.
+            form.add_error(None, error.messages)
+            response = self.page(form, self.get_object(pk), withdrawal_change=getattr(error, 'change', None),
+                                 question_template=r.question_template)
+            response.status_code = 422
+            return response
         except IntegrityError as error:
             # A rule the database holds across tables refused the change: said on the form, nothing saved.
             if not trigger_refusal(form, error):
@@ -852,7 +879,8 @@ class RowListView(ResourceView):
                 raise Http404
             try:
                 with transaction.atomic():
-                    rows.save(request.user, current, kept, r.entity_type())
+                    rows.save(request.user, current, kept, r.entity_type(),
+                               seen=request.POST.get(rows.question_field, '') if rows.question_field else None)
             except ValidationError as error:
                 # A list whose save asks something first (a medicine's withdrawal rows and the withdrawal guard): the
                 # page again with the reason and what was found (`withdrawal_change`), nothing saved.

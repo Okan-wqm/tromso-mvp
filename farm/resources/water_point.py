@@ -29,9 +29,35 @@ class SamplingPointResource(Resource):
     icon = 'droplet'
     page_size = 50
 
+    question_template, question_field = 'farm/_withdrawal_change.html', 'withdrawal_ack'
+
     @classmethod
     def queryset(cls):
         return super().queryset().with_owners()
+
+    @classmethod
+    def edited(cls, request, current, write, seen):
+        """Only an active middle point counts a unit's or a loop's water (farm/water/read.py), so its active flag, kind
+        and owner move the degree-days of a withdrawal: an edit goes through the withdrawal guard over the fish of the
+        units of the owner it had and of the one it is given."""
+        from ..health import withdrawal
+        unit_ids = set()
+        for owner_type, model in ((UNIT, Tank), (SYSTEM, System)):
+            owners = {getattr(current, f'{owner_type}_id'), request.POST.get(owner_type) or None} - {None}
+            owners = [owner for owner in owners if cls._is_uuid(owner)]
+            if owner_type == UNIT:
+                unit_ids.update(Tank.all_objects.filter(pk__in=owners).values_list('pk', flat=True))
+            else:
+                unit_ids.update(Tank.all_objects.filter(system_id__in=owners).values_list('pk', flat=True))
+        return withdrawal.guarded_units(request.user, unit_ids, None, write, seen)    # every fish they held
+
+    @staticmethod
+    def _is_uuid(value):
+        try:
+            uuid.UUID(str(value))
+        except ValueError:
+            return False
+        return True
 
     @classmethod
     def snapshot(cls, point):

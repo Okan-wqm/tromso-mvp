@@ -41,6 +41,14 @@ msgstr "%(batch)s er %(species)s; protokollen er for %(protocol_species)s."
 
 #, python-format
 msgid ""
+"%(batch)s is held (%(withdrawal)s): after this change its withdrawal would end earlier, the fish "
+"may go to food from %(after)s instead of %(until)s."
+msgstr ""
+"%(batch)s holdes tilbake (%(withdrawal)s): etter denne endringen slutter tilbakeholdelsestiden "
+"tidligere, fisken kan gå til mat fra %(after)s i stedet for %(until)s."
+
+#, python-format
+msgid ""
 "%(batch)s is held today (%(withdrawal)s) and would no longer be held by a medicine withdrawal "
 "after this change: the fish could go to food."
 msgstr ""
@@ -11280,6 +11288,9 @@ msgstr "Kilde: %(kind)s"
 msgid "Sources fingerprint"
 msgstr "Kildenes fingeravtrykk"
 
+msgid "Sources fingerprint version"
+msgstr "Versjon av kildefingeravtrykket"
+
 msgid "Spanish"
 msgstr "Spansk"
 
@@ -15008,6 +15019,9 @@ msgstr "alarmregel"
 
 msgid "alarm rules"
 msgstr "alarmregler"
+
+msgid "an unknown end"
+msgstr "en ukjent slutt"
 
 msgid "an unknown facility"
 msgstr "et ukjent slakteri"

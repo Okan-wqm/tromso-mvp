@@ -280,6 +280,9 @@ class ReportSnapshot(models.Model):
     content = models.JSONField(_('Content as filed'))
     content_sha256 = models.CharField(_('Content hash'), max_length=64)
     sources_fingerprint = models.CharField(_('Sources fingerprint'), max_length=64)
+    # The version of the rows the fingerprint was taken over (reports.compute.SCOPE_VERSIONS): the "still matches?" check
+    # reads the same rows again, whatever the current version.
+    scope_version = models.PositiveSmallIntegerField(_('Sources fingerprint version'), default=1)
     created_at = models.DateTimeField(_('Frozen at'), auto_now_add=True)
 
     class Meta:

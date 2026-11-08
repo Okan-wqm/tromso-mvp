@@ -214,7 +214,8 @@ class WaterSampleForm(ValuesMixin, ServiceErrors, forms.Form):
     def save(self, user):
         data = self.cleaned_data
         return services.record(user, point=data['point'], measured_at=data['measured_at'], source=data['source'],
-                               values=self.entered(), notes=data['notes'], token=data['token'])
+                               values=self.entered(), notes=data['notes'], token=data['token'],
+                               withdrawal_ack=data['withdrawal_ack'])
 
 
 # ---- a round --------------------------------------------------------------------------------------------

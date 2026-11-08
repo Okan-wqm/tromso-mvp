@@ -155,8 +155,9 @@ def compute(facility, period):
     return Result(content, problems, warnings, scope(facility, period, items))
 
 
-def scope(facility, period, items=None):
-    """The rows the week's figures are read from (for the fingerprint), without computing them."""
+def scope(facility, period, items=None, version=2):
+    """The rows the week's figures are read from (for the fingerprint), without computing them; `version` 1 (a report
+    filed before version 2, reports.compute.SCOPE_VERSIONS) leaves out the harvests the plans were recorded as."""
     items = items if items is not None else entries_of(facility, period)
     sites = {item.unit.production_department.site_id for item in items if item.unit.production_department.site_id}
     return [
@@ -165,9 +166,9 @@ def scope(facility, period, items=None):
         ('harvests', StockOperation.all_objects.filter(kind=OperationKind.HARVEST, harvest_record__facility=facility,
                                                        date__gte=period.start, date__lte=period.end)),
         # The harvests the week's plans were recorded as, wherever and whenever they were done (plans_of).
-        ('planned_harvests', StockOperation.all_objects.filter(
+        *([] if version == 1 else [('planned_harvests', StockOperation.all_objects.filter(
             plan_items__kind=HandlingPlanItem.Kind.HARVEST, plan_items__facility=facility,
-            plan_items__date__gte=period.start, plan_items__date__lte=period.end).distinct()),
+            plan_items__date__gte=period.start, plan_items__date__lte=period.end).distinct())]),
         ('facility', SlaughterFacility.all_objects.filter(pk=facility.pk)),
         ('sites', Site.all_objects.filter(pk__in=sites)),
         ('units', Tank.all_objects.filter(pk__in={item.unit.pk for item in items})),

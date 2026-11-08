@@ -1858,26 +1858,38 @@ after the harvest, a longer course, a corrected temperature, a medicine's withdr
 acknowledged it or not: an acknowledgement counts only for the harvest, the batch and the withdrawal it names (when the
 harvest was recorded, or when the write that brought it inside was), never for another withdrawal of the same harvest.
 
-**The withdrawal guard** (audit F-195, F-188, F-196 and the cross-review): every write that can create, grow, shorten or end
-a medicine withdrawal goes through one function, `farm.health.withdrawal.guarded`: a treatment, its last day and its void,
-a medicated feeding and its void, a medicine's withdrawal rows, a water sample (a round too) and its void, and every stock
-operation and its void (`farm/tests/test_withdrawal_guard.py` enumerates them, so a new write path that skips it fails a
-test). Inside the write's transaction, after its locks (batches, then units, as a harvest locks them, so the two take
-turns), it works out the withdrawals of the fish the write touches before and after it, and asks when the write
+**The withdrawal guard** (audit F-195, F-188, F-196 and the two cross-reviews): every write that can create, grow, shorten
+or end a medicine withdrawal goes through one function, `farm.health.withdrawal.guarded`: a treatment, its last day and its
+void, a medicated feeding and its void, a medicine's withdrawal rows, a water sample (a round too) and its void, every stock
+operation and its void, and on their Setup pages a feed's type, a species' assumed water temperature and a sampling point's
+active flag, kind and owner. **The data layer holds it** (`farm/withdrawal_gate.py`): those rows and fields refuse a change
+made anywhere but inside the guard, whatever writes it (a model's save or delete, a treatment's units, a queryset's update,
+delete or bulk create), so a new path that skips the guard fails at once; a test fixture, a command or a correction meant
+to write behind it says so with `withdrawal_gate.opened(reason)`. Migrations work on historical models and raw SQL is not
+seen.
 
-- brings a harvest already recorded inside a withdrawal (medicated fish may have gone to food: a treatment entered up to
-  31 days back, a longer course, a backdated medicated feeding, a corrected temperature, a longer medicine withdrawal), or
-- frees fish held by a withdrawal today (a course voided or shortened, a medicine's withdrawal shortened, a medicated
-  feeding voided, a temperature corrected): the fish could then go to food.
+Inside the write's transaction the guard locks the fish first (`farm.stock.services.lock_fish`: the batches, then the
+units, then the batches read again under the unit locks, so a batch that arrived in between is locked too; a harvest locks
+them in the same order, so the two take turns), works out their withdrawals, makes the write **once**, in a savepoint, and
+works them out again from what it left. It asks when the write
 
-The dialog shows what it found with a box, `withdrawal_ack` (its value the warnings' fingerprint: changed warnings are
-asked again; the middleware `farm.middleware.WithdrawalAcknowledgementMiddleware` hands it to the guard). Going on stores a
-`WithdrawalAcknowledgement` per warning (the write, the batch, the withdrawal, the harvest and what was shown; the database
-refuses an edit or a delete) and makes the write's log entries critical, with what was acknowledged. A harvest the write
-records itself is asked about by its own handling check, not twice. A withdrawal whose end only moves while the fish stay
-held today asks nothing: they stay held, and the page shows the new end. Whether a second person must approve going on past a withdrawal is a
-setting of the platform owner's (owner answer, 2026-11-06); it is asked in one place,
-`farm.handling.check.second_person_must_approve(user, kinds, record)`, which answers no until that setting exists.
+- brings a harvest already recorded inside a withdrawal, or makes the withdrawal it lies inside end later than before
+  (medicated fish may have gone to food: a treatment entered up to 31 days back, a longer course, a backdated medicated
+  feeding, a corrected temperature, a longer medicine withdrawal), or
+- makes the withdrawal of fish held today end earlier, or ends it (a course voided or shortened, a medicine's withdrawal
+  shortened, a medicated feeding voided, a temperature corrected): the message gives the old and the new end.
+
+Unless the person went on past exactly this impact, the savepoint is rolled back and the write refused: the dialog shows
+what was found with its box, `withdrawal_ack`, whose value (the impact's fingerprint) the form hands to its own service, so
+a tick acknowledges that write only; an impact that changed since it was shown is asked again. Going on keeps the write as
+it was made, stores a `WithdrawalAcknowledgement` per warning (the write, the batch, the withdrawal, the harvest, the end
+and what was shown; the database refuses an edit or a delete) and logs a critical entry on the record with the warnings.
+An acknowledgement covers the end it was given for: `check_withdrawal` says "Not acknowledged (acknowledged until …; now
+…)" once a withdrawal ends later than that. A harvest the write records itself is asked about by its own handling check,
+not twice. Whether a second person must approve going on past a withdrawal is a setting of the platform owner's (owner
+answer, 2026-11-06); it is asked in one place, `farm.handling.check.second_person_must_approve(user, kinds, record)`, which
+answers no until that setting exists.
+
 
 Differences from the source (details in the bug document, HLT-01 to HLT-23):
 

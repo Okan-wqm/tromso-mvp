@@ -138,9 +138,20 @@ def _questions(treatments):
     return found
 
 
-def scope(site, period, units=None):
-    """The rows the week's figures are read from (for the fingerprint), without computing them."""
+def scope(site, period, units=None, version=2):
+    """The rows the week's figures are read from (for the fingerprint), without computing them; of `version` 1 for a
+    report filed before version 2 (reports.compute.SCOPE_VERSIONS)."""
     units = units if units is not None else stock.site_units(site)
+    if version == 1:
+        return stock.scope_rows(units, period.end) + [
+            ('lice_counts', LiceCount.all_objects.filter(unit__in=units, date__gte=period.start, date__lte=period.end)),
+            ('treatments', Treatment.all_objects.filter(reason=TreatmentReason.SEA_LICE,
+                                                        units__production_department__site=site,
+                                                        start_date__lte=period.end, end_date__gte=period.start)
+             .distinct()),
+            ('medicines', Medicine.all_objects.filter(treatments__in=week_treatments(site, period)).distinct()),
+            ('water_samples', depth_samples(site, period)),
+        ]
     plans = HandlingPlanItem.all_objects.filter(kind=PlanKind.HARVEST, unit__in=units,
                                                 date__lte=period.end + timedelta(days=SLAUGHTER_DAYS))
     return stock.scope_rows(units, period.end) + [

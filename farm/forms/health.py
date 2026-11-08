@@ -312,7 +312,8 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
             dose_value=data['dose_value'], dose_unit=data['dose_unit'], amount_value=data['amount_value'],
             amount_unit=data['amount_unit'], bath_minutes=data['bath_minutes'], prescribed_by=data['prescribed_by'],
             prescription_ref=data['prescription_ref'], vet=data['vet'], health_event=data['health_event'],
-            notes=data['notes'], handling_ack=data['handling_ack'], token=data['token'])
+            notes=data['notes'], handling_ack=data['handling_ack'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class LastDayForm(ServiceErrors, forms.Form):
@@ -328,7 +329,8 @@ class LastDayForm(ServiceErrors, forms.Form):
         self.fields['end_date'].initial = treatment.end_date
 
     def save(self, user):
-        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'])
+        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'],
+                                        withdrawal_ack=self.cleaned_data['withdrawal_ack'])
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------

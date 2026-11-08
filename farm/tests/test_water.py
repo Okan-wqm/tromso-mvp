@@ -901,6 +901,21 @@ class ProductionUnitsTests(WaterTestCase):
         person.groups.add(role(f'Role {len(codenames)}', *codenames))
         self.client.force_login(person)
 
+    def test_an_old_critical_value_reads_critical_no_recent_data_on_the_dot_and_the_drawer(self):
+        """The rule of the water page (PointWater.status, old_alert): the units' dot is red and says "Critical, no recent
+        data" (its title and its words for a screen reader), the drawer says it too; never red alone."""
+        self.stock()
+        self.limit('co2_mg_l', critical_high=15)
+        self.limit('ph', critical_low=6)
+        self.sample(hours=80, co2_mg_l='15.6')                                       # older than CO₂'s 72 fresh hours
+        self.sample(hours=1, ph='7.2', temperature_c='9', oxygen_mg_l='9')           # fresh and fine
+        response = self.client.get(self.url)
+        row = next(row for row in response.context['rows'] if row['unit'] == self.t1)
+        self.assertEqual((row['water'].status, row['water'].old_alert), (Status.CRITICAL, True))
+        self.assertContains(response, 'wq-critical" title="Critical, no recent data"')
+        self.assertContains(response, '<span class="sr-only">Critical, no recent data</span>')
+        self.assertContains(self.client.get(self.url, {'unit': self.t1.pk}), 'Critical, no recent data')
+
     def test_the_columns_the_status_dot_and_the_count_of_critical_units(self):
         self.stock()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)

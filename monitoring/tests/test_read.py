@@ -105,6 +105,20 @@ class LadderTests(SimpleTestCase):
         self.assertEqual(self.key(water=(water(reading('temperature_c', 9),
                                               reading('oxygen_mg_l', 2, status=Status.CRITICAL)),)), 'critical')
 
+    def test_an_old_critical_or_warning_is_said_with_no_recent_data_never_hidden(self):
+        """The water page's rule (PointWater.status): an old critical value keeps the middle point critical, so the card
+        is critical with "Critical, no recent data", never ok because a fresh pH is fine; the same for a warning."""
+        for judged, key in ((Status.CRITICAL, 'critical'), (Status.WARNING, 'warning')):
+            with self.subTest(judged=judged):
+                old = reading('co2_mg_l', 15.6, hours=80, status=Status.STALE)
+                old.judged = judged
+                mixed = water(reading('temperature_c', 9), reading('oxygen_mg_l', 9), reading('ph', 7.2), old)
+                self.assertEqual((mixed.status, mixed.old_alert), (judged, True))
+                state = card(water=(mixed,)).state
+                label = Status(judged).label
+                self.assertEqual((state.key, state.reasons),
+                                 (key, (f'{parameters.get("co2_mg_l").label}: {label}, no recent data',)))
+
     def test_a_fresh_ph_does_not_hide_a_stale_oxygen(self):
         mixed = water(reading('ph', 7.2, hours=1), reading('temperature_c', 9),
                       reading('oxygen_mg_l', 9, hours=72, status=Status.STALE))

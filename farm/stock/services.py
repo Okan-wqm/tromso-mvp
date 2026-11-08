@@ -56,7 +56,7 @@ from django.utils.translation import gettext as _
 
 from core import audit
 from core.codes import next_code
-from core.models import AuditLog
+from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import walk
 from farm.handling import check
@@ -71,7 +71,7 @@ from farm.models.stock import (
     ARRIVAL_STATUSES, CLEANER_CULL_REASONS, PRODUCTION_CULL_REASONS, PROVENANCE_OF_ORIGIN, REASONS, AdjustmentReason,
     CullReason, MovementKind, OperationKind, TransferReason,
 )
-from farm.models.tank import NEEDS_NO_FISH
+from farm.models.tank import NEEDS_NO_FISH, on_a_site
 from farm.templatetags.stock import number
 
 from . import read
@@ -150,7 +150,7 @@ def lock_fish(unit_ids, first=None):
 
 def _already(token):
     if token is not None:
-        done = StockOperation.all_objects.filter(entry_key=token).first()
+        done = EntryKey.record_of(token, StockOperation)
         if done is not None:
             raise AlreadyRecorded(done)
 
@@ -184,8 +184,10 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, token=None, new_ba
                     entry.batch = batch
                 with audit.source_language():
                     audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
-            operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, entry_key=token,
-                                                      health_event=health_event, created_by=user, updated_by=user)
+            operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, health_event=health_event,
+                                                      created_by=user, updated_by=user)
+            if token is not None:
+                EntryKey.note(token, operation)
             StockMovement.objects.bulk_create([
                 StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
                               kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,
@@ -285,8 +287,11 @@ def _check_static(kind, day, entries, batches, units, new_batch):
                                                   'dated before.') % {'batch': batch.code,
                                                                       'date': shown_date(batch.input_date)}})
     for entry in entries:
-        if entry.count_delta > 0 and units[entry.unit.pk].status not in ARRIVAL_STATUSES:
-            unit = units[entry.unit.pk]
+        unit = units[entry.unit.pk]
+        if entry.count_delta > 0 and not on_a_site(unit.production_department):
+            raise ValidationError({'unit': _('%(unit)s is not on any site, so it cannot take fish: put its production '
+                                             'department on a site first.') % {'unit': unit.code}})
+        if entry.count_delta > 0 and unit.status not in ARRIVAL_STATUSES:
             raise ValidationError({'unit': _('%(unit)s has the status %(status)s, so it cannot take fish: it can '
                                              'when it is active, preparing or fallow.')
                                    % {'unit': unit.code, 'status': str(unit.get_status_display()).lower()}})

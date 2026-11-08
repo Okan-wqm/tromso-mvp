@@ -96,8 +96,6 @@ class Experiment(AuditedModel):
     copied_from = models.ForeignKey('self', null=True, blank=True, on_delete=models.DO_NOTHING,
                                     related_name='copies', verbose_name=_('Copied from'))
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
-    # The key of the form it was created with (not a secret): the same form sent twice creates it once.
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     kept_note = _('They stay as they are.')
 

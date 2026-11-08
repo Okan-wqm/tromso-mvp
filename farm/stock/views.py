@@ -37,7 +37,7 @@ from ..forms.stock import (
 from ..harvest import read as harvest_read, views as harvest_views
 from .. import placements
 from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
-from ..models.stock import ARRIVAL_STATUSES
+from ..models.stock import takes_fish
 from ..templatetags.stock import fish, number, tonnes
 from ..water import views as water_views
 from . import read, services
@@ -149,7 +149,7 @@ def production_units(request):
         rows=[{'unit': unit, 'stock': stock.get(unit.pk), 'feeding': feeding.get(unit.pk),
                'water': water.get(unit.pk), 'withdrawal': withdrawals.get(unit.pk), 'placements': chips.get(unit.pk, ()),
                'selected': unit is drawer_unit,
-               'href': page_url(params, unit=str(unit.pk)), 'takes_fish': unit.status in ARRIVAL_STATUSES}
+               'href': page_url(params, unit=str(unit.pk)), 'takes_fish': takes_fish(unit)}
               for unit in shown],
         biomass=biomass,
         count_line=ngettext('%(count)d unit', '%(count)d units', len(shown)) % {'count': len(shown)},
@@ -212,14 +212,14 @@ def _drawer(request, unit, stock, feeding, params):
                             and not operation.is_deleted and (line.batch_id, operation.date) in corrections],
             'void_url': reverse('farm:stock_void', args=[operation.pk]) + query
             if can_void and not operation.is_deleted and operation.date >= earliest else ''})
-    takes_fish = unit.status in ARRIVAL_STATUSES
+    open_to_fish = takes_fish(unit)
     actions = []
     if stock is not None and request.user.has_perm(feeding_views.RECORD):
         actions.append({'label': _('Record feeding'), 'url': reverse('farm:feeding_record', args=[unit.pk]) + query})
     if can_record and stock is not None:
         actions += [{'label': heading, 'url': reverse(f'farm:stock_{kind}', args=[unit.pk]) + query}
                     for kind, (_form, heading) in OPERATIONS.items()]
-        if takes_fish:
+        if open_to_fish:
             actions.append({'label': _('Stock another batch'), 'url': reverse('farm:stock_input') + query})
     for index, action in enumerate(actions):
         action['primary'] = index == 0
@@ -237,9 +237,9 @@ def _drawer(request, unit, stock, feeding, params):
         'drawer': unit, 'drawer_stock': stock, 'history': history, 'actions': actions,
         'drawer_placements': placements.of([unit], request.user).get(unit.pk, ()),
         'drawer_days': stock.days(services.local_today(unit)) if stock else None,
-        'stock_url': reverse('farm:stock_input') + query if can_record and takes_fish else '',
+        'stock_url': reverse('farm:stock_input') + query if can_record and open_to_fish else '',
         'close_url': page_url(params, unit=''),
-        'takes_fish': takes_fish,
+        'takes_fish': open_to_fish,
         'edit_unit_url': reverse('farm:tank_edit', args=[unit.pk]) if request.user.has_perm('farm.change_tank') else '',
     }
 
@@ -278,7 +278,7 @@ def stock_input(request):
     preselected = Tank.objects.filter(pk=chosen).first() if _is_uuid(chosen) else None
     kwargs = {'form_kwargs': _unit_choices(stockable_units()), 'prefix': 'units'}
     heading = (_('Stock unit %(unit)s') % {'unit': preselected.code} if preselected and
-               preselected.status in ARRIVAL_STATUSES else _('New batch'))
+               takes_fish(preselected) else _('New batch'))
     if request.method == 'POST':
         form = BatchInputForm(request.POST)
         rows = InputLineFormSet(request.POST, **kwargs)
@@ -299,7 +299,7 @@ def stock_input(request):
         return _refused(request, 'farm/stock_input.html', _context(form=form, rows=rows, heading=heading,
                                                                    back_url=_back(request)))
     form = BatchInputForm(unit=preselected)
-    initial = [{'unit': preselected.pk}] if preselected and preselected.status in ARRIVAL_STATUSES else []
+    initial = [{'unit': preselected.pk}] if preselected and takes_fish(preselected) else []
     rows = InputLineFormSet(initial=initial, **kwargs)
     return render_page(request, 'farm/stock_input.html', _context(form=form, rows=rows, heading=heading,
                                                                   back_url=_back(request)))

@@ -13,6 +13,7 @@ from django.db.models import Sum
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import audit
+from core.models import EntryKey
 from farm.health import withdrawal
 from farm.models import Feed, FeedingRecord
 from farm.models.feeding import FeedTarget
@@ -43,7 +44,7 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
     with transaction.atomic():
         unit, batch_ids = _lock_fish(unit, day)
         if token is not None:
-            done = FeedingRecord.all_objects.filter(entry_key=token).first()
+            done = EntryKey.record_of(token, FeedingRecord)
             if done is not None:
                 raise AlreadyRecorded(done)
         if unit.is_deleted:
@@ -60,8 +61,7 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
             raise ValidationError({'target' if read.book_on(unit, day).has_fish else 'date': text % {
                 'unit': unit.code, 'date': shown_date(day)}})
         record = FeedingRecord(unit=unit, date=day, time=time, feed=feed, target=target, amount_kg=amount_kg,
-                               meals=meals, feeder=feeder, notes=notes, entry_key=token, created_by=user,
-                               updated_by=user)
+                               meals=meals, feeder=feeder, notes=notes, created_by=user, updated_by=user)
         record.full_clean()
         # Q-F5 asks about more than the limit a day: the day's feedings of the target in the unit, this one included (the
         # unit is locked, so two feedings of one day take turns; audit F-081).
@@ -81,9 +81,11 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
 
         def write():
             saved = FeedingRecord(unit=unit, date=day, time=time, feed=feed, target=target, amount_kg=amount_kg,
-                                  meals=meals, feeder=feeder, notes=notes, entry_key=token, created_by=user,
-                                  updated_by=user, high_rate_ack=record.high_rate_ack)
+                                  meals=meals, feeder=feeder, notes=notes, created_by=user, updated_by=user,
+                                  high_rate_ack=record.high_rate_ack)
             saved.save()
+            if token is not None:
+                EntryKey.note(token, saved)
             with audit.source_language():
                 names = [*LOGGED, *(['high_rate_ack'] if saved.high_rate_ack else [])]
                 audit.record_create(user, saved, audit.snapshot(saved, names), label=label(saved))

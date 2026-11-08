@@ -13,6 +13,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from django.utils.module_loading import import_string
 from django.utils.text import format_lazy
+from django.utils.translation import gettext_lazy as _
 
 SESSION_KEY = 'workspace'
 
@@ -223,7 +224,25 @@ def rail(request):
                            'badge': Badge(sum(badges), '') if badges else None})
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
-    return {'workspaces': panels, 'workspace': current, 'rail_sections': current['sections'] if current else []}
+    sections = current['sections'] if current else []
+    return {'workspaces': panels, 'workspace': current, 'rail_sections': sections, 'bottom_bar': bottom_bar(sections)}
+
+
+# The bottom bar below 1024 px (docs/design/system/README.md, Shell): the daily pages under a short name, then More (the
+# whole menu as a sheet). A panel without them (Company) shows its first pages under their own names.
+BOTTOM_BAR = (('farm:meal_board', _('Meals')), ('farm:water', _('Water')), ('farm:production_units', _('Units')),
+              ('inventory:storage', _('Storage')))
+BOTTOM_BAR_SIZE = 4
+
+
+def bottom_bar(sections):
+    """The bottom bar's links out of the panel's menu as the person sees it (so only what their role opens)."""
+    shown = [entry for section in sections for group in section['groups'] for entry in group['entries']]
+    by_url = {entry['url']: entry for entry in shown}
+    daily = [{**by_url[reverse(name)], 'label': label} for name, label in BOTTOM_BAR if reverse(name) in by_url]
+    if daily:
+        return daily
+    return shown[:BOTTOM_BAR_SIZE]
 
 
 def page_base(request):

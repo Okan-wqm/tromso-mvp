@@ -124,7 +124,7 @@ cleaner fish beside them), so a cleaner fish's feed is never the trial's feed in
 
 Batches, then tanks (in primary-key order, `farm.stock.services.locked`), then the experiment **last**. Every write of a form compares the stored
 `version` under `select_for_update`: a form older than the stored version is refused, and the person is told someone else changed it. A
-form sent twice (a double click) creates one record (`entry_key`).
+form sent twice (a double click) creates one record (its key in `entry_keys`, core.models.EntryKey).
 
 ## Where the code differs from the plan
 
@@ -154,4 +154,4 @@ Tests run in Docker against a test database; these need a real browser and serve
 6. **Both merge orders** with the water sampling points (the Data tab's Water link, `farm/water/read.py`) and the withdrawal-scope branch (`farm/handling/check.py`, `farm/health/withdrawal.py`, farm migrations 0020 and 0021): then `check_stock` and `check_experiments`.
 7. **A release and a replacement on the running trial** on a real tank: the diet row ends, the new tank's ration follows from its first day, and the Overview names the gap when there is no weighing at the move.
 8. **The activity log** of a started experiment (the `Places`, `Reason it left`, `Status` and `Warnings acknowledged` rows) read in all three languages.
-9. **The database viewer's Research section** shows the eight tables with their constraints and descriptions; the admin restores an experiment (not its parts).
+9. **The database viewer's Research section** shows the eight tables with their constraints and descriptions; the admin restores an experiment with the parts its delete took along.

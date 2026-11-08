@@ -444,6 +444,12 @@ msgstr[0] "Değeri olmayan %(count)s zaman aralığı gölgelenir, asla doldurul
 msgstr[1] "Değeri olmayan %(count)s zaman aralığı gölgelenir, asla doldurulmaz."
 
 #, python-format
+msgid "%(count)s unit"
+msgid_plural "%(count)s units"
+msgstr[0] "%(count)s birim"
+msgstr[1] "%(count)s birim"
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s uyarı"
@@ -520,6 +526,10 @@ msgid "%(direct)s person"
 msgid_plural "%(direct)s people"
 msgstr[0] "%(direct)s kişi"
 msgstr[1] "%(direct)s kişi"
+
+#, python-format
+msgid "%(done)s of %(planned)s meals done"
+msgstr "%(planned)s öğünün %(done)s tanesi verildi"
 
 #, python-format
 msgid "%(dose)s g/m³"
@@ -690,6 +700,10 @@ msgstr ""
 "%(date)s tarihinde bu yemleme dahil verilen %(kilos)s kg, %(unit)s biriminin kayıttaki "
 "%(biomass)s kg biyokütlesinin %%%(rate)s kadarı; günde %%%(limit)s üzeri olağan dışıdır. Yine de "
 "kaydetmek için aşağıdaki kutuyu işaretleyin."
+
+#, python-format
+msgid "%(kilos)s left"
+msgstr "%(kilos)s kaldı"
 
 #, python-format
 msgid ""
@@ -1273,6 +1287,14 @@ msgstr "%(unit)s silinmiş ve yeniden balık tutacaktı: önce onu geri yükleyi
 #, python-format
 msgid "%(unit)s is deleted."
 msgstr "%(unit)s silinmiş."
+
+#, python-format
+msgid ""
+"%(unit)s is not on any site, so it cannot take fish: put its production department on a site "
+"first."
+msgstr ""
+"%(unit)s hiçbir sahada değil, bu yüzden balık alamaz: önce üretim departmanını bir sahaya "
+"bağlayın."
 
 #, python-format
 msgid "%(unit)s is on no site."
@@ -6824,6 +6846,12 @@ msgstr ""
 "Cihazın ne sıklıkla mesaj gönderdiği. Bunun üç katı süre boyunca mesaj gelmezse çevrimdışı "
 "sayılır."
 
+msgid "How rations are worked out"
+msgstr "Rasyonlar nasıl hesaplanır"
+
+msgid "How values are judged"
+msgstr "Değerler nasıl değerlendirilir"
+
 msgid ""
 "How wide the cards are at the least: compact fits more on a wall, comfortable is easier to read "
 "from a distance."
@@ -7168,8 +7196,17 @@ msgstr "Hangi sistemlerin seçilebileceğini bunun sahası belirler."
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Görevleri bu günden itibaren, iki hafta öncesine kadar oluşturulur."
 
+#, python-format
+msgid "Its units have stock records on %(site)s: restore that site and choose it."
+msgstr "Birimlerinin %(site)s sahasında stok kayıtları var: o sahayı geri yükleyip onu seçin."
+
 msgid "Its units have stock records on their site: the department stays on it."
 msgstr "Birimlerinin sahalarında stok kayıtları var: departman o sahada kalır."
+
+msgid ""
+"Its units have stock records, and the site they were recorded on is not known: it cannot be put "
+"on another one."
+msgstr "Birimlerinin stok kayıtları var ve kaydedildikleri saha bilinmiyor: başka bir sahaya konamaz."
 
 msgid "Its units have stock records: set its status to Closed instead."
 msgstr "Birimlerinin stok kayıtları var: bunun yerine durumunu Kapalı yapın."
@@ -7352,6 +7389,9 @@ msgstr "Son değerler"
 #, python-format
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Son deniz biti sayımı %(date)s, %(fish)s balık incelendi"
+
+msgid "Latest water values, scrolls sideways"
+msgstr "Son su değerleri, yana kayar"
 
 msgid "Latitude"
 msgstr "Enlem"
@@ -7570,6 +7610,9 @@ msgstr "MQTT"
 msgid "Main navigation"
 msgstr "Ana gezinme"
 
+msgid "Main pages"
+msgstr "Ana sayfalar"
+
 msgid "Maintenance"
 msgstr "Bakım"
 
@@ -7685,6 +7728,9 @@ msgstr "Azami sıcaklık"
 
 msgid "Meal board"
 msgstr "Öğün panosu"
+
+msgid "Meal board, scrolls sideways"
+msgstr "Öğün panosu, yana kayar"
 
 msgid "Meals"
 msgstr "Öğün"
@@ -7887,6 +7933,9 @@ msgstr "Aylık"
 
 msgid "Monthly biomass"
 msgstr "Aylık biyokütle"
+
+msgid "More"
+msgstr "Diğer"
 
 #, python-format
 msgid "More than %(count)d widgets: a card this full is hard to read from a distance."
@@ -8636,6 +8685,9 @@ msgstr ""
 msgid "Nobody else is placed in your department this week."
 msgstr "Bu hafta departmanınızda başka kimse yok."
 
+msgid "Nobody is alerted: critical values are shown here, not sent."
+msgstr "Kimse uyarılmaz: kritik değerler burada gösterilir, gönderilmez."
+
 msgid "Nobody is expected today"
 msgstr "Bugün kimse beklenmiyor"
 
@@ -9175,6 +9227,10 @@ msgstr "Açık"
 msgid "Open %(name)s"
 msgstr "%(name)s panosunu aç"
 
+#, python-format
+msgid "Open %(unit)s"
+msgstr "%(unit)s birimini aç"
+
 msgid "Open alarms"
 msgstr "Açık alarmlar"
 
@@ -9186,9 +9242,6 @@ msgstr "Konuşmayı aç"
 
 msgid "Open health events"
 msgstr "Açık sağlık olayları"
-
-msgid "Open menu"
-msgstr "Menüyü aç"
 
 msgid "Open ones"
 msgstr "Açık olanlar"
@@ -9443,6 +9496,9 @@ msgstr "Kapasite üstü"
 
 msgid "Over the limit"
 msgstr "Sınırın üstünde"
+
+msgid "Over- and underfeeding are not flagged yet."
+msgstr "Fazla ve eksik yemleme henüz işaretlenmiyor."
 
 msgid "Overall length (m)"
 msgstr "Toplam uzunluk (m)"
@@ -9940,6 +9996,9 @@ msgstr "Üretim planları"
 
 msgid "Production units"
 msgstr "Üretim birimleri"
+
+msgid "Production units, scrolls sideways"
+msgstr "Üretim birimleri, yana kayar"
 
 #, python-format
 msgid ""
@@ -11448,6 +11507,9 @@ msgid ""
 "filing."
 msgstr "Siz bakarken bu raporu başka biri değiştirdi: sunumu kaydetmeden önce yeniden bakın."
 
+msgid "Someone else saved at the same moment: nothing was saved. Send it again."
+msgstr "Başka biri aynı anda kaydetti: hiçbir şey kaydedilmedi. Yeniden gönderin."
+
 msgid "Someone planned one of these days at the same time. Look at the week again."
 msgstr "Biri bu günlerden birini aynı anda planladı. Haftaya yeniden bakın."
 
@@ -11750,6 +11812,9 @@ msgstr "Etken madde"
 
 msgid "Substance in the lice report"
 msgstr "Bit raporundaki etken madde"
+
+msgid "Suderra, home"
+msgstr "Suderra, ana sayfa"
 
 msgid "Suitable for"
 msgstr "Uygunluk"
@@ -12991,9 +13056,6 @@ msgstr "Ambalajdaki ürün adı, örn. Salmosan vet."
 msgid "The production department belongs to another site."
 msgstr "Üretim departmanı başka bir sahaya ait."
 
-msgid "The production department is not on any site, so its units cannot be in a system."
-msgstr "Üretim departmanı hiçbir sahada değil, bu yüzden birimleri bir sistemde olamaz."
-
 msgid "The production figures will appear here."
 msgstr "Üretim rakamları burada görünecek."
 
@@ -13637,6 +13699,9 @@ msgstr "Yayımlandığı yıl."
 msgid "Their weight (kg)"
 msgstr "Toplam ağırlıkları (kg)"
 
+msgid "Theme"
+msgstr "Tema"
+
 msgid "There is already a rule for this handling and species."
 msgstr "Bu elleçleme ve tür için zaten bir kural var."
 
@@ -13751,6 +13816,9 @@ msgstr "Bu deney bu arada silindi."
 
 msgid "This file is not a PDF."
 msgstr "Bu dosya bir PDF değil."
+
+msgid "This form was sent before for another record: open it again and send it anew."
+msgstr "Bu form daha önce başka bir kayıt için gönderildi: yeniden açıp yeniden gönderin."
 
 msgid "This health event has a notice already: open it from the list."
 msgstr "Bu sağlık olayı için zaten bir bildirim var: listeden açın."
@@ -14555,6 +14623,9 @@ msgstr "%(point)s su numunesi iptal edildi."
 msgid "Water sample recorded at %(point)s."
 msgstr "%(point)s için su numunesi kaydedildi."
 
+msgid "Water samples, scrolls sideways"
+msgstr "Su numuneleri, yana kayar"
+
 msgid "Water source"
 msgstr "Su kaynağı"
 
@@ -15158,6 +15229,9 @@ msgstr "Giriş yaptınız."
 
 msgid "You are clocked out."
 msgstr "Çıkış yaptınız."
+
+msgid "You are here"
+msgstr "Buradasınız"
 
 msgid "You are its owner. People who cannot use Messages are not listed."
 msgstr "Kanalın sahibi sizsiniz. Mesajlar'ı kullanamayan kişiler listede yok."
@@ -16893,6 +16967,10 @@ msgstr "“%(option)s” için değer yok."
 #, python-format
 msgid "“%(option)s” is not an option of this widget."
 msgstr "“%(option)s” bu bileşenin bir seçeneği değil."
+
+#, python-format
+msgid "“%(record)s” is not deleted."
+msgstr "“%(record)s” silinmiş değil."
 
 #, python-format
 msgid "“%(task)s” is cancelled."

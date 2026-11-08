@@ -20,7 +20,7 @@ from ..models import Batch, HandlingPlanItem, HealthEvent, SlaughterFacility, Sp
 from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
 from ..models.stock import (
-    ARRIVAL_STATUSES, PROVENANCE_OF_ORIGIN, CullReason, InputStage, MortalityCause, Origin, TransferReason,
+    PROVENANCE_OF_ORIGIN, TAKES_FISH, CullReason, InputStage, MortalityCause, Origin, TransferReason,
 )
 from ..models.supplier import SupplyCategory
 from ..stock import services
@@ -452,8 +452,8 @@ InputLineFormSet = forms.formset_factory(InputLineForm, extra=0, min_num=1, vali
 
 
 def stockable_units():
-    """The units fish can go into: those whose status takes fish."""
-    return (Tank.objects.filter(status__in=ARRIVAL_STATUSES)
+    """The units fish can go into: on a site, with a status that takes fish."""
+    return (Tank.objects.filter(TAKES_FISH)
             .select_related('production_department__site').order_by('code'))
 
 

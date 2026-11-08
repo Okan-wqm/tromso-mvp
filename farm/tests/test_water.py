@@ -230,10 +230,6 @@ class SchemaTests(WaterTestCase):
                 WaterMeasurement.objects.create(**{**base, **values})
         with self.assertRaises(IntegrityError), transaction.atomic():
             WaterMeasurement.objects.create(measured_at=self.now, source='manual', ph=D(7))      # no point
-        key = uuid.uuid4()
-        WaterMeasurement.objects.create(**base, ph=D(7), entry_key=key)
-        with self.assertRaisesMessage(IntegrityError, 'uq_water_measurements_entry'), transaction.atomic():
-            WaterMeasurement.objects.create(**base, ph=D(8), entry_key=key)
 
 
 class RecordTests(WaterTestCase):
@@ -931,10 +927,11 @@ class ProductionUnitsTests(WaterTestCase):
         self.assertEqual(response.context['water_critical'], 1)
         html = response.content.decode()
         for text in ('<th scope="col" class="num">Temp. (°C)</th>', '<th scope="col" class="num">O₂ (mg/L)</th>',
-                     '>9.5</td>', '>5.20</td>', '>12.0</td>', 'wq-stale', '<span class="sr-only">Critical</span>',
-                     '<strong class="over-text">1 critical</strong>'):
+                     '>9.5<span class="wq-source">', '>5.20<span class="wq-source">', '>12.0<span class="wq-source">', 'wq-stale', '<span class="sr-only">Critical</span>',
+                     '<span class="ui-chip" data-status="critical">'):
             self.assertIn(text, html)
-        self.assertEqual(html.count('class="num wq wq-critical'), 1)
+        self.assertIn('1 critical</span>', html)
+        self.assertEqual(html.count('<b class="wq wq-critical'), 1)     # the value face, farm/_water_face.html
 
     def test_the_drawers_water_section(self):
         self.stock()
@@ -1047,7 +1044,7 @@ class DatabaseViewerTests(TestCase):
         structure = tables['water_measurements'].structure()
         constraints = {constraint.name: constraint for constraint in structure.constraints}
         self.assertEqual(constraints['water_measurements_pkey'].definition, 'PRIMARY KEY (id, measured_at)')
-        self.assertTrue({'chk_water_measurements_ph', 'uq_water_measurements_entry'} <= set(constraints))
+        self.assertTrue('chk_water_measurements_ph' in constraints)
         self.assertNotIn('chk_water_measurements_one_point', constraints)      # a sample has one point: a required key
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)

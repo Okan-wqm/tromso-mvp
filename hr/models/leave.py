@@ -82,7 +82,6 @@ class LeaveRequest(AuditedModel):
     decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+', verbose_name=_('Decided by'))
     decided_at = models.DateTimeField(_('Decided at'), null=True, blank=True)
-    entry_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table = 'leave_requests'

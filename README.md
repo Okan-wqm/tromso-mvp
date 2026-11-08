@@ -58,8 +58,10 @@ delete is a soft delete. Differences from the source:
   as database constraints; the source enforced most of this only in service code.
 - Column lengths win where the source's form allowed longer values (name 150, code 20, email 150).
 - Editing is guarded by the `version` column: a save based on an old version is refused.
-- Deleting a site leaves its production departments without a site (see Production departments); the other dependants
-  join the delete plan as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
+- A site with live units is not deleted (the confirmation says how many hold it): their fish and feed are counted
+  for a site only through it (F-212). Without units, its production departments, systems and equipment are deleted
+  with it and come back with it when it is restored (see the delete plan); the other dependants join the delete plan
+  as their tabs arrive. Its health events stay with it, out of sight, and come back with it.
 - **Every site has its time zone** (Basic info), the clock its feeding days, shifts, punches and plans are read on
   (`farm.models.site.zone_of`). An empty zone once ran a Norwegian site's day on the server's UTC, an hour or two off,
   unseen. Now the form asks for one, offering the company's first; a site made without one (a seed, a test) is given the
@@ -86,12 +88,21 @@ The farm's production departments: a hatchery hall, a nursery, a grow-out unit o
 company's organisational departments (management, HR and the like), which come with the HR module.
 Table `production_departments` (renamed from `departments` by migration 0004, data kept): a table (production
 department, type, site, capacity) with search by name or code, a
-site filter that includes "without a site", a flat form in the dialog and delete. Differences from
+site filter that includes "without a site" (rows from before F-212), a flat form in the dialog and delete. Differences from
 the source:
 
-- A production department belongs to a site chosen once, at creation. Deleting a site leaves its production departments
-  without a site, as in the source; the confirmation lists them and each gets its own activity-log
-  row (see the delete plan below).
+- A production department belongs to a site chosen once, at creation, and a live one always has a site: a database
+  check (`chk_production_departments_live_on_a_site`) refuses one without. The source left a deleted site's
+  departments without a site, where their units' fish were in no site's reports and their feed drew on no store
+  (F-212); now a site is deleted only once its units are gone, and its departments go with it. A department left
+  without a site before is kept as it was (the check was added `NOT VALID`, migration 0029): its form asks for a site
+  the next time it is saved (whatever its units' records: on no site they are in no report), its units take no fish
+  until then, and `manage.py check_stock` names it; once it names none, the check can be validated. "On a site" means a
+  live department on a live site (`farm.models.tank.ON_A_SITE` / `on_a_site`, one predicate for the stocking list, a
+  unit's checks and the stock's write path): three constraint triggers (farm 0030) refuse a live unit in a deleted
+  department or on a deleted site, a department deleted with live units and a site deleted with live departments, a
+  unit's save locks its site and department (the order a site's delete takes them), and `check_stock` names live units
+  in deleted departments and live departments on deleted sites (cross review F1).
 - The source's `administration` type is not carried over: an administrative department is an organisational one.
 - Code is unique among live production departments and a name is unique within a site, as database
   constraints; capacity cannot be negative.
@@ -182,8 +193,8 @@ Differences from the source:
 - Feed calibrations: a real foreign key; only a feeder has them, and a feeder that has them keeps a
   feeder type; new rows start empty instead of 0 / 0 / 0.
 - Deleting a production department deletes its equipment, as in the source; deleting equipment deletes
-  its parts. Deleting a site leaves its production departments without a site (as before), so their
-  equipment stays with them, without systems: the source deleted that equipment with the site.
+  its parts. Deleting a site deletes its production departments, so their equipment goes with them, as the source
+  deleted it with the site.
 - The catalogue: English and metric throughout, bounds on every quantity, no fuel type on the heat
   exchanger (EQ-17 to EQ-19).
 - Not ported: sub-equipment (a second way of nesting next to the parent, unusable in the source,
@@ -224,7 +235,8 @@ The volume, the water volume and the max biomass are **generated columns**: the 
 from the measures on every write (`Tank.water_surface()`: π·d²/4, L·W, an ellipse π·L·W/4, a D-ended
 tank (L − W)·W + π·W²/4, a pond's area), so a stored volume always matches its unit, whatever wrote the
 row. The max biomass is the water volume (else the volume) times the max density. The status follows the
-source's status machine, in one place (`TRANSITIONS`); a new unit holds no fish, so it starts as
+source's status machine, in one place (`TRANSITIONS`), with one move added: maintenance → active, the way back for
+a unit serviced with its fish in it (F-166); a new unit holds no fish, so it starts as
 preparing, fallow, maintenance or inactive; the form offers the current status and where it can go.
 Every rule that needs the fish in a unit asks `Tank.has_stock()`, which reads the stock ledger: active
 and harvesting need fish, preparing, fallow, cleaning and inactive need none (maintenance and
@@ -251,8 +263,9 @@ Differences from the source:
   form across the site. A unit with stock records stays on its site, and so does a production department whose
   units have some, since moved, their past figures would be reported for another locality. A deleted unit can
   be restored from the admin.
-- Deleting a site leaves its production departments, with their units, without a site (as for
-  equipment); the source deactivated their tanks.
+- A site with live units is not deleted (F-212); the source deactivated their tanks. A unit is in a production
+  department on a site: one left without a site before (see Production departments) is not offered for a new unit,
+  and the unit is moved to a department on a site the next time it is saved.
 - Water sources "spring" and "sea or estuary" and the net material "polyester (PET)" are added; an
   earthen pond is bare soil or compacted clay, a membrane or concrete makes it a lined pond.
 - Not ported: the sensor link (`temperatureSensorId`), the equipment type (kind and shape replace the
@@ -532,7 +545,7 @@ escape from several units is recorded for each). A harvest shows the handling ch
 delivery the fast alone (a medicine withdrawal is a meat withdrawal: it means nothing for live fish), and each asks for an
 acknowledgement when it warns. A unit holding two batches asks which one.
 Dates default to the farm's today (the site's time zone), never in the future, at most 31 days back
-(`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored on the operation).
+(`STOCK_BACKDATE_DAYS`). A form sent twice records once (the form's key, stored with it in `entry_keys`).
 
 **The ledger.** A batch holds its identity and origin, no count. An operation (`StockOperation`) is what
 a person did, with its date; its lines (`StockMovement`) say how many fish of which batch came into (+)
@@ -543,7 +556,7 @@ out take whatever the book holds, moved fish arrive with exactly the grams that 
 the whole lot. Only measured weights enter the book. Nothing is stored that can drift.
 
 **One write path** (`farm/stock/services.py`, `_commit`): it locks the batches and the units, checks the
-date, the units' status (a unit takes fish while active, preparing or fallow), the species (one per unit,
+date, the units' status (a unit takes fish while active, preparing or fallow, and only on a site: F-212), the species (one per unit,
 several batches of it; on a sea site cleaner fish may join the production species, see Cleaner fish below), then
 writes and folds every batch involved from its first line, so a backdated
 operation is accepted only if every later day stays right (no share ever below 0 fish, and every feeding
@@ -586,8 +599,8 @@ Temp. and O₂ columns are to those who may read the water (`feeding.views.unit_
 right alone sees the stock. A unit with fish cannot be deleted, nor resized,
 nor set to a status that needs it empty; a species with batches and a supplier fish were bought from
 cannot be deleted (`PROTECT`). `manage.py check_stock` checks the whole ledger from scratch (counts,
-operations made of their lines, stocking dates, unit statuses, species, feedings without fish) and the
-tests run it.
+operations made of their lines, stocking dates, unit statuses, species, feedings without fish, fish in a unit or
+a production department without a site) and the tests run it.
 
 Differences from the source (details in the bug document, STK-01 to STK-73):
 
@@ -1296,9 +1309,8 @@ structure) with read, create, edit and delete.
 
 **Deleting**: a unit, a system or a piece of equipment keeps its sampling points, and they their samples, out of
 sight while it is deleted (the links are `DO_NOTHING`; the confirmation counts both) and back when it is restored,
-as its stock lines are: points are not deleted with their owner because restoring a record brings back only that
-record, so points deleted with it would never return. A species takes its water limits with it, each listed and
-logged. The admin shows voided samples but does not restore them.
+as its stock lines are: points are history of their owner, not a part deleted with it. A species takes its water
+limits with it, each listed and logged. The admin shows voided samples but does not restore them.
 
 **The MVP alerts nobody.** A critical value is shown on the page, on the unit in Production units (its
 columns, dot, count line and drawer) and as a tile of the production overview, never sent: there is no
@@ -1455,8 +1467,9 @@ first expired first out (lots not expired that day by expiry, a lot without one 
 arrived, its number, the location's code; then expired lots, which the overview reports). What the book
 cannot cover is **feeding beyond the book**, per site and day: shown on the overview and the item's page,
 never refused, and never filled by a later delivery (owner decision Q-S1): it is fixed by recording the
-missing delivery, dated on or before the day (within the backdating window). Units without a site feed
-from no store.
+missing delivery, dated on or before the day (within the backdating window). Every unit that takes fish is on a
+site (F-212), so every feeding draws on a store; a unit left without a site before takes no fish and
+`check_stock` names it.
 
 **The fold** (`inventory/fold.py`, pure; `inventory/read.py` loads it), per item over every location of every
 site, day by day: arrivals, departures, the feeding's draw, counts. The lines are facts and the feeding is an
@@ -2062,7 +2075,8 @@ farm migrations does not matter):
   day key), the hypothesis, the primary endpoint (`experiments/variables.py`: biological FCR, economic FCR, survival,
   biomass gain: what the farm's reads give today), the start day (day 0, the baseline weighing) and the duration in days
   (the last day is the final weighing), how the tanks were allocated (not yet, randomised with a seed, or placed by hand
-  with the reason), the experiment it was copied from, notes and the key of the form that made it.
+  with the reason), the experiment it was copied from and notes (the key of the form that made it is in the one key
+  table, `core.models.EntryKey`).
 - A **factor** (a thing the groups differ in: the diet, whose levels name feeding protocols, which is how the farm
   applies it, or another factor with a unit) has **levels**: a diet level names its protocol and has no label; another
   level has a label and optionally a number (a dose, a setting). A **group** has a role (test, control, negative or
@@ -2237,7 +2251,8 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
   from its first day to its last. The test suite runs it after its scenarios.
 - **Delete** goes through the delete plan: a draft is deleted with its factors, levels, groups, replicates and placements
   (one activity-log row each, its tanks free again), a started experiment is refused with the reason. A restored draft
-  comes back without its design (only the record itself returns). A copy of a deleted experiment keeps pointing at it.
+  comes back with its design (what its delete took along, core.softdelete.restore). A copy of a deleted experiment
+  keeps pointing at it.
   A protocol a level names, a tank or a department a placement names, and a site or species an experiment names cannot
   be deleted while it does.
 
@@ -2245,7 +2260,7 @@ the tab is a `core.crud` Resource, `experiments/resources.py`):
 experiment, Edit changes it, saves its design, its places and its team, and starts it, Delete removes a draft. The recommended roles are data in Roles (no built-in roles): a researcher all four, a
 student Read, Create and Edit, a technician and an advisor Read. Rights per experiment (a student edits only the
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
-deleted ones too, and restores an experiment (not its parts).
+deleted ones too, and restores an experiment with the parts its delete took along.
 
 ## Regulatory reports (Production › Reports, `/reports/`)
 
@@ -2446,7 +2461,9 @@ Times are on the company's clock (`COMPANY_TIME_ZONE`, the `company_clock` filte
   page and fragment, also for the platform admin, who is not a member of other people's conversations).
 - A channel's owners add people, remove members and make members owners or owners members; anyone leaves.
   A channel with members keeps an owner: the last one cannot leave, be removed or step down while others
-  remain. Channel names are unique among live channels, whatever their case.
+  remain. A channel its last member leaves is deleted with that membership at one moment (logged; its messages stay with
+  it, and the admin's restore brings it back with that member), so its name is free again (F-110, cross review F5).
+  Channel names are unique among live channels, whatever their case.
 - Messages are never edited: a correction is a new message, as a void and a new entry is for the records.
   The author deletes a message: the row stays with who deleted it and when, and everyone sees "Message
   deleted", never the text again (in the conversation, the list, the polls).
@@ -2985,7 +3002,8 @@ only (`hr.scope.visible_days`).
 
 **One roster table** (`hr.ShiftAssignment`, `shift_assignments`, shown as "plan" in the log): a person and the day a shift
 starts (a night shift ends on the next day), the shift or none (planned off, which is not the same as no plan), a note (private:
-masked in the log and the viewer). One row per person and day among live rows; a cleared cell is a soft delete. Leave and
+masked in the log and the viewer). One row per person and day among live rows; a cleared cell is a soft delete, and clearing a selection clears its
+filled cells (an empty one has nothing to clear, F-024). Leave and
 holidays are joined when the week is read, there is no publish step, and every change is logged with its before and after.
 
 **Real instants, not wall-clock sums** (`hr/clock.py`): a shift on a day becomes two UTC instants through the site's time zone, so
@@ -3463,13 +3481,42 @@ database (the other commands' checks ask the database for its version, which a g
 `makemigrations` without a database needs `--skip-checks`). How to add a string or a language, the glossary and the
 translations that need a native speaker's review are in [`docs/i18n.md`](docs/i18n.md).
 
+## Look and themes
+
+The console follows the Suderra Platform design system in [`docs/design/system/`](docs/design/system/README.md) (the
+brand book) and its hand-off ([`HANDOFF.md`](docs/design/system/HANDOFF.md)). So far the shell and three Production
+pages are drawn in it: Meal board, Production units and Water chemistry; the other pages run on its tokens without a
+redesign yet.
+
+- **Tokens.** `static/css/tokens.css` is the design system's `tokens.css` plus a short block of the app's own (the
+  rail's overlays), loaded first. No stylesheet writes a colour of its own: `core/tests_design_shell.py` fails on a
+  hex, `rgb()` or `rgba()` outside `tokens.css`. The old variables (`--mist`, `--olive`, `--stripe` and the rest) are
+  gone; every sheet reads the role tokens (`--surface-*`, `--text-1` to `-3`, `--line-*`, `--primary`, `--action`,
+  `--ok`, `--warn`, `--crit` with their `-text` and `-tint`).
+- **Parts.** `static/css/ui.css` is the design system's `components.css` (the `ui-*` classes) with the app's additions
+  at its end; the shell's layout is `app.css`.
+- **Themes.** Fjord (the default), Polarnatt, Nordlys (for the monitoring wall), Tang and Laks, picked in the user menu
+  beside the language. The choice is a cookie (`theme`, kept a year, `core/theme.py`) that the server writes on
+  `<html data-theme>`, so the first paint has it; never the system's colour scheme.
+- **Fonts.** Atkinson Hyperlegible Next (text) and Bricolage Grotesque (h1, h2, the wordmark) are served from
+  `static/fonts/` (SIL OFL 1.1, THIRD_PARTY.md): no page asks another server for anything, and the console reads the
+  same offline on site.
+- **Shell.** The dark rail (240 px; 72 px of icons when collapsed, the toggle and its rule unchanged) with the logo disc
+  and the SU/DERRA wordmark and the panel switch under them; the top bar with the breadcrumb, the EN / TR / NB switch
+  and the user menu; the page head (h1, a line of status chips, the page's primary action). Below 1024 px the rail is a
+  sheet and a bottom bar holds Meals, Water, Units and Storage (those the person's role opens; the Company panel shows
+  its first pages) and More, which opens the sheet.
+- **Tables** on the three pages are real tables in a `ui-table-wrap` that scrolls inside itself, with the first column
+  and the row actions sticky; each value is a value face (figure, origin and age), a missing figure says why or "no
+  data", a status is a chip with glyph and word. Dates stay dd.mm.yyyy in every language.
+
 ## Browser code
 
 There is no hand-written JavaScript. The browser code is TypeScript in `frontend/` (strict mode),
 compiled by `npm run build` into `static/js/`, which is not committed:
 
 - `nav-boot.ts` sets the rail state before the first paint and owns the open/collapsed rule;
-- `shell.ts` the rail toggle, the phone menu and the user menu;
+- `shell.ts` the rail toggle, the rail as a sheet below 1024 px (opened from the bottom bar's More) and the popup menus;
 - `components.ts` the shared parts every tab uses through data attributes: the dialog
   (`data-modal`), inner tabs, upper-case inputs, row lists and check boxes that need another one
   (`data-requires`, the role matrix), GET forms that leave empty fields out of the address
@@ -3612,23 +3659,57 @@ stays in the lists, showing its place as deleted). Records that point at it thro
 only a plan go with it all the same: their model says which (`AuditedModel.deleted_with`, a recurring task's
 planned tasks nobody touched).
 
+**Lock order** (`core.softdelete`, LOCK ORDER): every write takes its locks on the farm's structure in one order, the
+fish first (batches, then units: the stock operations and the withdrawal guard's `lock_fish`) and then the place going
+up (production departments, then sites: a unit's save, `Tank._lock_place`). A delete locks what it takes along the
+deepest first and the record last (`lock_along`), a restore the same, so a department deleted while one of its units
+is saved waits for the save instead of deadlocking (merge review, finding 1). A cycle no write can foresee is still
+failed by the database, whole: a deadlock or a serialization failure on a write comes back as "Someone else saved at
+the same moment: nothing was saved. Send it again." on the page it was sent from (`CrossedWritesMiddleware`), never a
+server error.
+
+**Restoring** (the admin's action, `core.softdelete.restore`): a delete stamps every record it deletes with one
+moment, so a restore brings back the record and what that delete took along (a site's production departments,
+systems and equipment, a draft experiment's design, a recurring task's planned tasks: F-029, F-067), parents first,
+each checked like a new one, all of it or nothing, one activity-log row each. A record deleted on its own before
+stays deleted, and a link the delete cleared (`SET_NULL`) stays cleared: what it pointed at is not kept (F-036). The
+record is locked, so two restores take turns, and a code taken by a record committed meanwhile is refused with its
+reason, not a server error (F-003). The records a delete takes along were read for the plan, not locked, so it
+writes only their deletion's columns, counting the version up in the database (`AuditedModel.mark_deleted`,
+`detach`): an edit saved meanwhile is kept and its editor's outdated version refused (F-065, F-079, F-190). The delete
+locks the records it takes along and takes each only as it still is: one moved to another parent meanwhile stays
+there with what hangs under it, one deleted on its own meanwhile keeps its own moment (cross review F2). Deletes
+made before this stamped each record with its own moment: restoring one of those brings back the record alone.
+
 ### Shared form parts
 
 What one tab needed and the next ones will too lives in `core/`:
 
 - `TabbedForm` (`core/crud.py`): inner tabs, fields grouped under a heading (`Fieldset`), a word per
-  tab (`tab_help`), fields chosen once (`fixed_after_creation`) and fields that change the form itself
+  tab (`tab_help`), fields chosen once (`fixed_after_creation`; the department form opens its site again for a department a
+  deleted site left without one) and fields that change the form itself
   (`refresh_on`: the form is posted with a `_draft` marker and rendered again from the values entered so
   far, nothing validated or saved; the values travel in the request body, never in the address; the
   marker names the field that changed and the form comes back on that field's tab). A form can drop
   fields for one record (a pond has no diameter): the tabs show the fields it kept.
   A unique constraint among live records, on fields or on an expression (a species' scientific name
   in any case, `Lower(...)`), is checked on the form by the constraint itself, with its message on
-  the field. A model with an `entry_key` field gets a hidden key on its new-record form, stored with the
-  record: the same form sent twice (a double click, a retried request, two at once) creates one record and
-  the second sending opens it (`core.crud.ENTRY_KEY`, a task, a recurring task).
+  the field; a clash only the database catches (two people saving at once) comes back the same way, on a new record
+  and on an edit (F-034). An edit or a row list locks its record to save it, and one deleted meanwhile is not found
+  (404, F-009). Every new-record form carries a hidden key, stored with the record it created in one table for every
+  kind of record (`entry_keys`, `core.models.EntryKey`, F-232): the same form sent twice (a double click, a retried
+  request, two at once) creates one record and the second sending opens it. The write paths of their own (a stock
+  operation, a feeding, a treatment, a sea-lice count, a storage operation, a water sample, an experiment's copy) and
+  the dialogs that write their own way (feeding assignments, a sensor's Move) keep and read their key in the same table
+  (`EntryKey.note` / `record_of`, cross review F7): one mechanism. A key that already stands for a record of another
+  kind (tampering, a broken client) is refused with a reason on the form, never a server error (F7c).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
+- `core/query.py`: the numbers and years a page reads from its address (`?page=`, `?before=`, `?year=`), one rule for
+  every page (F-006, F-176, F-120): a number in ASCII digits within its bounds, a year of the calendar `core.dates`
+  reads; anything else is taken as not given and the page shows its default, as for a stale link, never a server error.
+  Days, moments and periods are `core.dates`' (`read_day`, `read_moment`, `read_period`); `core/tests_query_pages.py`
+  asks every page with malformed values of both.
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
   "Tanks, ponds & cages" lists units.
 - `Resource.search`: what the list's search box does; by default the text in one of `search_fields`, a
@@ -3703,8 +3784,8 @@ reads the templates and the style sheets; `frontend/test/layout.browser.test.ts`
 
 A deleted record stays in the database. In `/admin/` (platform admin) every farm record type lists its
 records including deleted ones, and the "Restore" action brings them back: refused when a record it
-points at is deleted too (bring that back first) or its code was taken meanwhile, and logged. Only
-the record itself returns, not what was deleted with it. The admin edits nothing, and users and roles
+points at is deleted too (bring that back first) or its code was taken meanwhile, and logged. What its
+delete took along comes back with it (see the delete plan: restoring). The admin edits nothing, and users and roles
 are not in it: they are changed on their own screens, where every change is logged.
 
 ### Adding a tab
@@ -3873,10 +3954,12 @@ real mail.
 | `core/navigation.py`, `config/navigation.py`, `core/middleware.py` | The menu as data: panels (workspaces) with main headings, groups and entries, filtered by permission; the panel in use is remembered; where a page sits (`place`) for the role matrix and page headings |
 | `farm/resources/`, `templates/farm/` | Farm tabs declared on top of `core.crud`; their URLs come from the registry |
 | `core/admin.py` | The admin for farm records: shows deleted ones, restores them (checked like a new one), edits nothing; reference data (equipment types) is shown read-only |
-| `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail) |
+| `static/css/components.css` | Shared page components (buttons, cards, tabs, form grids, audit trail), on the tokens |
+| `static/css/tokens.css`, `static/css/ui.css`, `static/css/fonts.css`, `static/fonts/` | The design system (Look and themes): every colour, size and font as a token, the `ui-*` parts, the two self-hosted typefaces |
+| `core/theme.py` | The theme cookie and the context processor that writes it on `<html data-theme>` |
 | `templates/auth_base.html`, `templates/registration/` | Sign-in and password pages |
-| `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu), Lucide icons |
-| `static/css/base.css` | Colour tokens, reset, form controls shared by every page |
+| `templates/app_base.html`, `templates/icons/` | Console shell (rail, top bar, user menu, page head, bottom bar), Lucide icons |
+| `static/css/base.css` | Reset and form controls shared by every page, on the tokens |
 | `static/css/auth.css` | Sign-in layout |
 | `static/css/app.css` | Console shell layout |
 | `frontend/`, `tsconfig.json`, `package.json` | Browser code in TypeScript |

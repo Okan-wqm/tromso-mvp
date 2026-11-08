@@ -3411,7 +3411,9 @@ against golden v1 by class and against the anchors (`farm/tests/test_native_chem
 module keeps its names as a door (`from .native import ...`) and loses its bodies in the same commit, and
 `farm/tests/test_one_formula.py` checks that a switched module holds no formula. From then on golden v1 is held by
 class (`chemcore/scripts/golden_parity.py`), not bit for bit. Two deliberate differences from the Python it replaced:
-an input that is not a finite number is refused (`native.NonFiniteError`, a ValueError) where Python sometimes
+a tie (an alkalinity on the floor or one ulp beside it) may be decided apart by two libms: such cases are listed by
+`farm/tests/test_native_analysis.py` (one flips in golden v1: 10 °C, S 0, pH 9, one ulp above Python's floor); where
+Python ran out of the box's 1-2-5 steps with a bare StopIteration the core raises `ChartTooLargeError`; an input that is not a finite number is refused (`native.NonFiniteError`, a ValueError) where Python sometimes
 returned NaN, and nothing is cached (a water's constants take about 1 µs). After a change to `chemcore/`, rebuild the
 image and run `chemcore/scripts/gen_expected.sh`; the browser guard's list is regenerated with
 `gen_guard_list.py`.
@@ -3430,7 +3432,9 @@ unit's chart), each refusing a user without its permission.
 | S2 golden reference, anchors, browser guard, lean endpoints | done |
 | S3 three-way cross-validation with the source platform: seven findings | done; all decided for ours (owner, B5) |
 | S4 the constants, the equilibria, the solver, the gases: `farm/water/chemistry.py` is a door to the core | done |
-| S5 to S10 the analysis, the chart, the dosing, the scene, the replay, the retirement audit | in progress |
+| S5 the analysis (judge, analyse, the alkalinity floor, the box): deffeyes.py's analysis is a door to the core | done |
+| A replay page's box worked out once (its largest DIC and alkalinity), not every point for every figure | done |
+| S6 to S10 the chart, the dosing, the scene, the replay batch, the retirement audit | in progress |
 | I2 fresh-water ionic strength (golden v3 beside v1, the owner sees it before any switch) | after S10 |
 
 ## Languages

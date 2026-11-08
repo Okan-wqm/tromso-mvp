@@ -3541,10 +3541,11 @@ What one tab needed and the next ones will too lives in `core/`:
   kind (tampering, a broken client) is refused with a reason on the form, never a server error (F7c).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
-- `core/query.py`: what a page reads from its address (`?from=`, `?to=`, `?week=`, `?page=`, `?before=`, `?year=`), one
-  rule for every page (F-006, F-176, F-120): a date written YYYY-MM-DD between 1900 and 2999, a number in ASCII digits
-  within its bounds, a year of that calendar; anything else is taken as not given and the page shows its default, as
-  for a stale link, never a server error (`core/tests_query_pages.py` asks every page).
+- `core/query.py`: the numbers and years a page reads from its address (`?page=`, `?before=`, `?year=`), one rule for
+  every page (F-006, F-176, F-120): a number in ASCII digits within its bounds, a year of the calendar `core.dates`
+  reads; anything else is taken as not given and the page shows its default, as for a stale link, never a server error.
+  Days, moments and periods are `core.dates`' (`read_day`, `read_moment`, `read_period`); `core/tests_query_pages.py`
+  asks every page with malformed values of both.
 - A tab's page heading is what the menu calls it (`Resource.title`, from the menu entry), so
   "Tanks, ponds & cages" lists units.
 - `Resource.search`: what the list's search box does; by default the text in one of `search_fields`, a

@@ -50,7 +50,7 @@ class DosingParityTests(SimpleTestCase):
                 for dose in recipe['doses']:
                     golden[dose['reagent']['key']] = (dose['reagent']['molar_mass'], dose['reagent']['dic'],
                                                       dose['reagent']['alkalinity'])
-        ours = {key: (mass, dic, alkalinity) for key, mass, dic, alkalinity in native.reagents()}
+        ours = {key: (mass, dic, alkalinity) for key, mass, dic, alkalinity, _angle in native.reagents()}
         self.assertEqual([key for key, *_rest in native.reagents()],
                          ['nahco3', 'na2co3', 'naoh', 'caco3', 'caoh2', 'cao', 'co2', 'degas', 'hcl'])
         for key, values in golden.items():

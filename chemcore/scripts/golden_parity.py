@@ -37,6 +37,9 @@ def kind_of(path):
 
 INPUTS = ('temp_c', 'salinity', 'altitude_m')
 TIE = 1e-12
+# Fields an implementation added since golden v1 was recorded (each with its step); a field v1 holds is never
+# skipped, and a field missing from the implementation is always a difference.
+ADDED = {'angle', 'counter_productive', 'priority'}       # a reagent's angle, a recipe's ranks (S7)
 # Exceptions the core names where Python raised an accidental one: (recorded, now). Each is a deliberate, tested change.
 RENAMED_RAISES = {('StopIteration', 'ChartTooLargeError')}     # the box beyond 12 steps of 5e7 (S5)
 
@@ -61,6 +64,8 @@ def compare(expected, actual, path=(), found=None, ceilings=None, refused=False)
         for key in sorted(set(expected) | set(actual)):
             if key in SKIPPED or str(key).endswith('_path'):
                 continue
+            if key not in expected and key in ADDED:
+                continue                    # a field the implementation added since v1, listed in ADDED
             if key not in expected or key not in actual:
                 found.append((path + (key,), expected.get(key, '<missing>'), actual.get(key, '<missing>')))
                 continue

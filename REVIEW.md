@@ -187,3 +187,27 @@ the right reason (the `Test:` commits), then fixed in its own commit.
   2868 tests OK (3 skipped). `makemigrations --check` no changes; `compile_catalogs` built, nothing missing; the data map
   was regenerated afterwards (a6dbf4f: the round's hidden offer fields) and is up to date; `npm test` from
   F:/dev/balik-ciftligi's node_modules: 48 pass, 0 skipped.
+
+## Second cross review (2026-11-08, CHANGES REQUIRED): what was done
+
+Test first throughout: each fix has its `Test:` commit before it.
+
+- **1 (high) oxygen entry provenance**: what an oxygen is worked out with is stored as `oxygen_basis_*` (value, source,
+  channel, time; migration 0029, checks), found by the server at the sample's own point and time (`read.oxygen_basis`),
+  never as a measurement; the forms leave T and S empty (P3, P4, P5 tests; P6: a typed value alone is stored).
+- **2 (high, owner decision 2026-11-08)**: the worst fresh value decides the status (`read.worst_fresh`), the shown
+  value stays A9's choice and the reading says which value decided it.
+- **A9.1 (owner decision 2026-11-08)**: a unit's own points are those measuring its own water (`read.OWN_WATER_KINDS`:
+  middle, depth, outlets, drain); an inlet (supply stream) never counts for the unit's value or status.
+- **3 (medium) stale never calculates**: salinity fresh at the value's time (7 days), conversion only with a temperature
+  fresh at the value's own time (`read.fresh_at`, P8), stale sensor TAN says so.
+- **4 (medium) one resolver**: `read.choose` is A9 for `latest`, `Series.latest` and the ration's temperature; a probe on
+  the loop point stands in (P1); one tie-breaker; a value standing in is judged for the unit's fish only; each place's
+  readings are judged on their own copy.
+- **5 (medium)**: a % judged against an mg/L limit says the value it was judged as, its inputs and the limit
+  (`Reading.through`).
+- **7 (low)**: migration 0028 going back skips a site corrected since. **8 (low)**: future-stamped values beyond 5 min are
+  never fresh (P7, `evaluate.CLOCK_SKEW`); the round no longer carries hidden offers; one assumed-salinity read per round.
+  **10**: golden cards on a pinned clock, recorded again (only the new notes changed).
+- **Not done here**: the migration chain (6) is re-pointed at landing; the Deffeyes replay and the trail
+  (`sensors/read.deffeyes_frames`, `sensors/trail.py`) still read sensor-before-sample (A1) per frame, not `read.choose`.

@@ -123,7 +123,45 @@ Each finding was answered test first (`Test:` commits), then fixed, no history r
 
 - `monitoring.tests.test_golden` fails between about 00:00 and 06:00 UTC on this branch **and on main 16fa1b3 alike**
   (a 30-hour-old sample falls two days back; checked at 01:49 UTC on both). Not caused here; the test should fix its now.
-- Moments parsed from addresses (`farm/water/views.py` `?at=`, sensors charts) still use `strptime` on ISO: machine
-  addresses, not days; they are not under `read_day`'s window.
 - Landing: `farm/0030_site_timezone_required` depends on 0026; re-point it at main's latest farm migration when
   health-reports has landed, and renumber to follow.
+
+## The second cross-review's findings (R1-R12)
+
+Each written as a test first and seen failing (the `Test:` commits), then fixed in its own commit with its docs.
+
+- **R3/R4 headcount**: an open clock-in counts whatever the punch window (`hr.rules.status`): someone called in hours
+  before their shift is present, not upcoming or absent, on leave or not; lateness comes only from the shift's own
+  clock-ins. The board's first tile is **On site now** (every open clock-in, planned or not); "Here, not planned" keeps out
+  who clocked out (`Board.unplanned_done`). Punches are read from two days back: a clock-in left open longer is not
+  counted on site (said in `hr.read.board` and the README).
+- **R8 report labels**: `contact`, `escape`, `health_event`, the weekdays and a plain list of units have their words. The
+  test computes a report of every kind with every optional part filled, renders its print page and describes every path
+  of its content, and fails on a raw key or "(unnamed figure)"; the static net also reads assigned keys. "Cause" is any
+  cause (Årsak, Neden); only the mortality form says cause of death (`pgettext_lazy('mortality', 'Cause')`).
+- **R1/R2 company zone**: `zone_of(None)` is the company's zone (`core.dates.company_zone`, `company_today`): the clocks,
+  an unposted person on Today, HR times with no site, the activity log's days and times, a record's history, the
+  messages, the feeding walk's default day, a unit's status time, the monitoring page's time. `core/tests_company_clock.py`
+  reads the code: no `settings.TIME_ZONE`, no `localdate()`/`localtime(x)`/`make_aware(x)` without a zone. System check
+  `farm.E001` refuses a company zone that is not one a site may have; migration 0030 refuses to write one.
+- **R5/R6 one parser**: `core.dates.read_moment` reads the water chart's `?at=` and the replay's `start`/`end` (1900-2100;
+  a 400, never an overflow); a replay step longer than any time is a 400 too. A test reads the code: no `strptime`,
+  `parse_date`, `fromisoformat` … outside `core/dates.py`. The date filters tried are found by opening every menu page and
+  the views it links to (typed date boxes and hidden dates of GET forms), checked to include the 16 the hand list had.
+- **R7**: a stock count's unreadable day on a reload is said back and kept in the box, never replaced by today.
+- **R10 (item 8)**: `PointWater.alerts` counts an old critical or warning as the point's status does: the monitoring card
+  is critical/warning with "…, no recent data", the Production units dot says it in its title and for a screen reader.
+  The overview's critical count keeps counting such a point (it holds a critical value). **At fix-monitoring's landing:
+  its `_alerts`/`unjudged` replace `PointWater.alerts`; keep this rule (old judgements count) and the card test.**
+
+## Still open after the second cross-review
+
+- **Template times without a clock**: about 37 places in templates format an aware time with `|date` and no clock, which
+  renders in the server's zone (UTC). Some are already naive site-clock values; the rest (created/updated times on
+  detail pages and lists) show UTC. Fixed here only for the activity log, a record's history and the messages
+  (`|company_clock`). The class fix is a decision: activate the company zone per request (middleware), which also moves
+  form parsing and ORM `__date` lookups to the company's day; it needs its own review and a full-suite pass.
+- **R9** user-facing translated messages that still show ISO dates (experiments, a feeding form error): deferred.
+- **R11** a 403/400/500 in a dialog (two wordings, no 400 template, the 500 document in the dialog): deferred.
+- **R12** `monitoring.tests.test_golden` G-03 fails between about 00:00 and 06:00 UTC, here and on main; the
+  monitoring branch fixes it.

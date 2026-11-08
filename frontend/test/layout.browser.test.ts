@@ -30,7 +30,7 @@ const part = (name: string): string => `<section id="part-${name}">${readFileSyn
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>layout</title>
 <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/ui.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/monitor.css"></head><body><div class="shell"><aside class="rail"></aside><div class="console">
+<link rel="stylesheet" href="/css/monitor.css"></head><body><div class="shell"><aside class="rail" id="rail"><nav class="rail-nav"><a class="rail-link" id="rail-units" href="#"><svg class="icon"></svg><span class="rail-label">Production units</span></a></nav></aside><div class="console">
 <header class="topbar"><div class="title-block"><h1>Layout</h1></div></header><main class="content">${PARTS.map(part).join('\n')}</main></div></div></body></html>`;
 }
 
@@ -118,6 +118,19 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
         });
         assert.deepEqual(hidden, { under: '', overlap: '', cut: [] }, `at ${width} px`);
       }
+    });
+
+    await t.test('the collapsed rail says a link\'s name beside it on focus, not only on hover', async () => {
+      await tab.setViewportSize({ width: 1280, height: 900 });
+      await tab.evaluate(() => { document.documentElement.dataset.nav = 'collapsed'; });
+      await tab.waitForTimeout(50);
+      const hidden = await box(tab, '#rail-units .rail-label');
+      assert.ok(hidden.width <= 1, 'the name is read aloud only while the link is not in focus');
+      await tab.focus('#rail-units');
+      const shown = await box(tab, '#rail-units .rail-label');
+      const rail = await box(tab, '#rail');
+      assert.ok(shown.width > 40 && shown.left >= rail.right, `the name stands beside the rail (${JSON.stringify(shown)})`);
+      await tab.evaluate(() => { delete document.documentElement.dataset.nav; (document.activeElement as HTMLElement).blur(); });
     });
 
     await t.test('nothing of a monitoring card spills out of it, in English and Norwegian at 390 and 1440 px', async () => {

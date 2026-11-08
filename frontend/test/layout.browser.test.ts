@@ -98,6 +98,28 @@ test('the page layout of the real templates', { skip: BROWSERS.length ? false : 
       });
     }
 
+    await t.test('the meal board shows every column without scrolling at 1440 px, and scrolled to its end at 1024 and 390 px nothing lies under its sticky columns', async () => {
+      for (const width of [1440, 1024, 390]) {
+        await tab.setViewportSize({ width, height: 900 });
+        await tab.waitForTimeout(50);
+        const meal = await frame(tab, '#part-meal .table-wrap');
+        if (width === 1440) assert.ok(!meal.wide, 'the meal board fits its frame at 1440 px (README: five numbers never clip)');
+        const hidden = await tab.locator('#part-meal .table-wrap').evaluate((wrap) => {
+          wrap.scrollLeft = wrap.scrollWidth;
+          const first = wrap.querySelector('thead .sticky-first')!.getBoundingClientRect();
+          const end = wrap.querySelector('thead .sticky-end')!.getBoundingClientRect();
+          const heads = [...wrap.querySelectorAll('thead th:not(.sticky-first):not(.sticky-end)')];
+          const last = heads[heads.length - 1].getBoundingClientRect();
+          const cut = [...wrap.querySelectorAll('td, th')].filter((cell) => cell.scrollWidth > cell.clientWidth + 1)
+            .map((cell) => (cell.textContent ?? '').trim().slice(0, 30));
+          wrap.scrollLeft = 0;
+          return { under: last.right > end.left + 1 ? 'the last column ends under the actions' : '',
+            overlap: first.right > end.left + 1 ? 'the sticky columns overlap' : '', cut };
+        });
+        assert.deepEqual(hidden, { under: '', overlap: '', cut: [] }, `at ${width} px`);
+      }
+    });
+
     await t.test('nothing of a monitoring card spills out of it, in English and Norwegian at 390 and 1440 px', async () => {
       for (const width of [390, 1440]) {
         await tab.setViewportSize({ width, height: 900 });

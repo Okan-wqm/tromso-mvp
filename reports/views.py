@@ -15,7 +15,9 @@ from django.views.decorators.http import require_POST
 
 from core import navigation
 from core.crud import done, render_page
+from core.dates import company_zone
 from farm.models import Site
+from farm.models.site import zone_of
 
 from . import compute, due, duties, exports, labels, periods, services
 from .forms import CloseForm, DutyDoneForm, SubmitForm
@@ -231,12 +233,13 @@ def print_page(request, pk):
     """The report on one page to print or to type from, its figures named as the report's page names them."""
     report = _report(pk)
     content, filed = _content(report)
+    zone = zone_of(report.site) if report.site_id else company_zone()      # an instant on the site's clock
     place = navigation.place(ReportResource.perm('view'))
     return render_page(request, 'reports/report_print.html', {
         'object': report, 'content': content, 'filed': filed, 'title': str(report),
         'content_hash': compute.content_hash(content), 'api_call': exports.api_call(report),
         'eyebrow': f'{place.heading} · {place.entry.label}',
-        'figure_outline': labels.outline(content), 'list_url': reverse('reports:report_list'),
+        'figure_outline': labels.outline(content, zone), 'figure_zone': zone, 'list_url': reverse('reports:report_list'),
         'detail_url': reverse('reports:report_detail', args=[report.pk]),
     })
 

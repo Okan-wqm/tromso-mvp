@@ -4511,6 +4511,9 @@ msgstr "Telt av %(name)s, registrert %(when)s"
 msgid "Counted location"
 msgstr "Telt lagerplass"
 
+msgid "Counting error"
+msgstr "Tellefeil"
+
 msgid "Country"
 msgstr "Land"
 
@@ -4704,6 +4707,9 @@ msgstr "Dager dekning: beholdningen på lokaliteten delt på kiloene fôret der 
 
 msgid "Days that are not working days, for every site or for one."
 msgstr "Dager som ikke er arbeidsdager, for alle lokaliteter eller for én."
+
+msgid "Dead"
+msgstr "Døde"
 
 msgid "Dead fish"
 msgstr "Dødfisk"
@@ -7227,6 +7233,12 @@ msgstr "Sist innlogget"
 
 msgid "Last weighed"
 msgstr "Sist veid"
+
+msgid "Last weighing"
+msgstr "Siste veiing"
+
+msgid "Last weighing, none recent"
+msgstr "Siste veiing, ingen nylig"
 
 msgid "Late"
 msgstr "Sen"
@@ -9836,6 +9848,9 @@ msgstr ""
 
 msgid "Projected at the mean water temperature of the last days measured."
 msgstr "Fremskrevet med middeltemperaturen i vannet de siste målte dagene."
+
+msgid "Projected from the feeding since the last weighing"
+msgstr "Beregnet fra fôringen siden siste veiing"
 
 msgid "Propane"
 msgstr "Propan"

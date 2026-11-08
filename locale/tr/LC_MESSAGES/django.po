@@ -4519,6 +4519,9 @@ msgstr "Sayan %(name)s, kayıt %(when)s"
 msgid "Counted location"
 msgstr "Sayılan yer"
 
+msgid "Counting error"
+msgstr "Sayım hatası"
+
 msgid "Country"
 msgstr "Ülke"
 
@@ -4710,6 +4713,9 @@ msgstr "Yeterlilik: sahadaki eldeki stok, son 7 günde orada günde verilen kilo
 
 msgid "Days that are not working days, for every site or for one."
 msgstr "Çalışma günü olmayan günler, tüm sahalar ya da bir saha için."
+
+msgid "Dead"
+msgstr "Ölü"
 
 msgid "Dead fish"
 msgstr "Ölü balık"
@@ -7239,6 +7245,12 @@ msgstr "Son giriş"
 
 msgid "Last weighed"
 msgstr "Son tartım"
+
+msgid "Last weighing"
+msgstr "Son tartım"
+
+msgid "Last weighing, none recent"
+msgstr "Son tartım, yakın tarihli yok"
 
 msgid "Late"
 msgstr "Geç"
@@ -9844,6 +9856,9 @@ msgstr ""
 
 msgid "Projected at the mean water temperature of the last days measured."
 msgstr "Son ölçülen günlerin ortalama su sıcaklığıyla öngörüldü."
+
+msgid "Projected from the feeding since the last weighing"
+msgstr "Son tartımdan bu yana yemlemeden hesaplandı"
 
 msgid "Propane"
 msgstr "Propan"

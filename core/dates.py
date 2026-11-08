@@ -82,6 +82,21 @@ def read_moment(text):
     return datetime(day.year, day.month, day.day, hour, minute)
 
 
+STORED_MOMENT = re.compile(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\.[0-9]{1,6})?)?[+-][0-9]{2}:[0-9]{2}$')
+
+
+def stored_moment(text):
+    """An instant the code wrote itself as ISO with its offset (a report's content, `found_at`), aware; None for anything
+    else. Never for what a person typed: that is read_moment's, on a site's clock."""
+    if not isinstance(text, str) or not STORED_MOMENT.match(text):
+        return None
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return moment if inside(moment.date()) else None
+
+
 def _shaped(text):
     """Whether `text` is a real calendar date in an accepted shape, inside the window or not."""
     for shape in formats.get_format('DATE_INPUT_FORMATS'):

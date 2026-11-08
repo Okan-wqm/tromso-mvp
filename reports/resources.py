@@ -8,8 +8,10 @@ from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core import audit
 from core.crud import Resource, RowList, filter_by
+from core.dates import company_zone
 from farm.health.read import with_deaths
 from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site
+from farm.models.site import zone_of
 
 from . import compute, due, exports, labels, periods, services
 from .forms import (
@@ -207,7 +209,8 @@ class ReportResource(Resource):
             'print_url': reverse('reports:report_print', args=[report.pk]),
             'has_api': report.kind in exports.API_KINDS,
         }
-        extras['figure_outline'] = labels.outline(extras['content'])           # named by the one label registry
+        extras['figure_zone'] = zone_of(report.site) if report.site_id else company_zone()   # the site's clock
+        extras['figure_outline'] = labels.outline(extras['content'], extras['figure_zone'])   # the one label registry
         extras['event_kinds'] = [str(kind) for kind in EVENTS]
         if extras['can_submit']:
             extras['preview_hash'] = compute.content_hash(result.content)

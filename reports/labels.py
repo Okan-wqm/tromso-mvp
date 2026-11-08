@@ -6,8 +6,10 @@ a number is said as the person's language writes it."""
 import re
 from decimal import Decimal, InvalidOperation
 
-from django.utils import formats
+from django.utils import formats, timezone
 from django.utils.translation import gettext, gettext_lazy as _, pgettext_lazy
+
+from core.dates import company_zone, read_day, stored_moment
 
 # A key of the content: the words the report pages give it (the same msgids where a page already names it).
 FIELDS = {
@@ -143,7 +145,24 @@ SILENT = {'identity'}
 NOT_CONTENT = {'content'}
 # What the page's own heading already says, left out of the figures.
 HEADED = {'kind', 'period', 'identity'}
+# Coded values the computation writes, said in words: a batch's biomass basis (reports/compute/biomass.py) and a loss's
+# cause. Free text (an escape's cause, a notice's narrative) is the person's own and shown as written.
+CODES = {
+    'method': {'book': _('Last weighing'), 'projected': _('Projected from the feeding since the last weighing'),
+               'book_stale': _('Last weighing, none recent')},
+    'loss_cause': {'dead': _('Dead'), 'escape': _('Escape'), 'counting_error': _('Counting error'), 'other': _('Other')},
+}
+
+
+def codes_for(parts):
+    """The words of the coded values at a content path, if it holds them."""
+    if parts and parts[-1] == 'method':
+        return CODES['method']
+    if len(parts) > 1 and parts[-1] == 'cause' and 'losses' in parts:
+        return CODES['loss_cause']
+    return None
 UNNAMED = _('(unnamed figure)')
+ISO_DAY = re.compile(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
 RECORD_ID = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 
 
@@ -199,12 +218,16 @@ def _reaches(content, parts):
     return True
 
 
-def shown(value):
-    """A content value as the page says it: a number in the language's way (its decimals kept), yes or no, a dash."""
+def shown(value, zone=None, codes=None):
+    """A content value as the page says it: a coded value in words, a number in the language's way (its decimals kept),
+    yes or no, a date dd.mm.yyyy, an instant on the site's clock (`zone`; none: the company's) as dd.mm.yyyy HH:MM, a
+    dash. The content keeps the machine form (ISO, the instant with its offset): the exports read it as it is."""
     if value is None or value == '':
         return '–'
     if isinstance(value, bool):
         return gettext('Yes') if value else gettext('No')
+    if codes and isinstance(value, str) and value in codes:
+        return str(codes[value])
     if isinstance(value, (int, float, Decimal)) or (isinstance(value, str) and re.fullmatch(r'-?\d+(\.\d+)?', value)):
         try:
             number = Decimal(str(value))
@@ -212,11 +235,19 @@ def shown(value):
             return str(value)
         places = max(-number.as_tuple().exponent, 0)
         return formats.number_format(number, places, use_l10n=True, force_grouping=isinstance(value, int) or places == 0)
+    if isinstance(value, str) and ISO_DAY.match(value):
+        day = read_day(value)
+        if day is not None:
+            return formats.date_format(day, 'DATE_FORMAT')
+    moment = stored_moment(value)
+    if moment is not None:
+        return formats.date_format(timezone.localtime(moment, zone or company_zone()), 'DATETIME_FORMAT')
     return str(value)
 
 
-def outline(content):
-    """[(words, shown value)] of every figure of `content` but what the page's heading says and record references."""
+def outline(content, zone=None):
+    """[(words, shown value)] of every figure of `content` but what the page's heading says and record references; an
+    instant on `zone`'s clock (the report's site)."""
     rows = []
 
     def walk(node, parts):
@@ -229,7 +260,9 @@ def outline(content):
             for index, item in enumerate(node):
                 walk(item, parts + [str(index)])
         elif not (isinstance(node, str) and RECORD_ID.match(node)):
-            value = ', '.join(shown(item) for item in node) if isinstance(node, list) else shown(node)
+            codes = codes_for(parts)
+            value = (', '.join(shown(item, zone, codes) for item in node) if isinstance(node, list)
+                     else shown(node, zone, codes))
             rows.append((_words(parts, content), value))
     walk(content, [])
     return rows

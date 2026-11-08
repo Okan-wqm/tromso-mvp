@@ -2210,7 +2210,11 @@ use, translated, numbers as the language writes them; a test computes a report o
 (the contact person, a health event and its units, an escape, a planned slaughter by weekday), renders its print page and
 describes every path of its content, and fails on any row or difference that is a raw key or "(unnamed figure)"; a second
 test reads the computation's code (dict keys and assigned keys) so every key it writes has its
-label), never a content or API key and never another kind's fields. The CSV export keeps the authority's field names.
+label), never a content or API key and never another kind's fields. The values are said the same way (`labels.shown`): a
+date dd.mm.yyyy, a notice's **Found at** on the site's clock as dd.mm.yyyy HH:MM (it is typed there), a coded value (a
+batch's biomass basis, a loss's cause) in words. The content keeps the machine form, and so does the **CSV export**: the
+authority's field names, dates in ISO and an instant as ISO with its UTC offset (`2026-10-25T06:15:00+00:00`), so the file
+says its zone.
 
 **The reports** (`reports/kinds.py`: authority, basis, period, deadline, where it is filed):
 

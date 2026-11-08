@@ -17,6 +17,7 @@ from ..models import Feed, FeedSuitability, Species, Supplier
 from ..resources import FeedResource
 from .helpers import role, rows_data
 from .test_suppliers import supplier_data
+from farm import withdrawal_gate
 
 FEED_MANAGER = ('view_feed', 'add_feed', 'change_feed', 'delete_feed', 'view_auditlog')
 TEXTS = ('name', 'code', 'feed_type', 'buoyancy', 'status', 'currency', 'notes')
@@ -205,6 +206,7 @@ class FeedValidationTests(FeedTestCase):
         self.create(name='Nutra Olympic 3 mm', code='nutra-3')
         self.assertEqual(Feed.objects.filter(code='NUTRA-3').count(), 1)
 
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def test_type_buoyancy_and_status_are_their_choices(self):
         errors = self.errors(self.create(feed_type='pizza', buoyancy='flying', status='low_stock'))
         self.assertEqual(set(errors), {'feed_type', 'buoyancy', 'status'})

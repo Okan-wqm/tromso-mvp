@@ -290,7 +290,10 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
                 units = [unit for unit in self.fields['units'].queryset if str(unit.pk) in chosen]
             day = data.get('start_date') or self.current('start_date')
             method = data.get('method') or self['method'].value()
-            self._handling = services.handling(list(units), day, method)
+            medicine = data.get('medicine') if 'medicine' in data else self.current('medicine')
+            reason = data.get('reason') or self['reason'].value()
+            self._handling = services.handling(list(units), day, method, medicine,
+                                               reason if reason in Treatment.Reason.values else None)
             self.fields['handling_ack'].widget.fingerprint = self._handling.fingerprint
         return self._handling
 
@@ -309,10 +312,14 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
             dose_value=data['dose_value'], dose_unit=data['dose_unit'], amount_value=data['amount_value'],
             amount_unit=data['amount_unit'], bath_minutes=data['bath_minutes'], prescribed_by=data['prescribed_by'],
             prescription_ref=data['prescription_ref'], vet=data['vet'], health_event=data['health_event'],
-            notes=data['notes'], handling_ack=data['handling_ack'], token=data['token'])
+            notes=data['notes'], handling_ack=data['handling_ack'], token=data['token'],
+            withdrawal_ack=data['withdrawal_ack'])
 
 
 class LastDayForm(ServiceErrors, forms.Form):
+    """A treatment's last day, changed. What the change does to the withdrawal (a harvest brought inside it, fish freed)
+    the withdrawal guard asks, with its box (ServiceErrors shows it)."""
+
     end_date = forms.DateField(label=_('Last day'), widget=DATE,
                                help_text=_('The withdrawal counts from the new last day; the change is logged.'))
 
@@ -322,7 +329,8 @@ class LastDayForm(ServiceErrors, forms.Form):
         self.fields['end_date'].initial = treatment.end_date
 
     def save(self, user):
-        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'])
+        return services.change_last_day(user, self.treatment, self.cleaned_data['end_date'],
+                                        withdrawal_ack=self.cleaned_data['withdrawal_ack'])
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------

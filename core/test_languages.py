@@ -12,6 +12,7 @@ from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import translation
 
 from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, HandlingRule, HealthEvent,
                          LiceCount, Medicine, MedicineWithdrawal, ProductionDepartment, Site, SiteContact,
@@ -19,8 +20,10 @@ from farm.models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibr
 from farm.tests.helpers import SITE_MANAGER, contacts_data, point_of, role, site_data
 
 from .audit import message
+from .language import save_account_language
 from .models import AuditLog, Profile
 from .tests import perms, user_data
+from farm import withdrawal_gate
 
 COOKIE = settings.LANGUAGE_COOKIE_NAME
 LANGUAGES = [code for code, _ in settings.LANGUAGES]
@@ -77,6 +80,23 @@ class NegotiationTests(TestCase):
         response = self.client.get(reverse('core:set_language'), {'language': 'tr', 'next': '/'})
         self.assertNotIn(COOKIE, response.cookies)
 
+    def test_a_requests_language_ends_with_the_request(self):
+        # The language is per request: what the thread does after it (the next request's code before the middleware
+        # runs, a test, a job) is in the default language, never in the last visitor's.
+        for header, cookie in (('nb', None), (None, 'tr')):
+            with self.subTest(header=header, cookie=cookie):
+                self.client.cookies.clear()
+                if cookie:
+                    self.client.cookies[COOKIE] = cookie
+                response = self.get_login(**{'Accept-Language': header} if header else {})
+                self.assertEqual(lang_of(response), header or cookie)
+                self.assertEqual(translation.get_language(), settings.LANGUAGE_CODE)
+        signed_in = get_user_model().objects.create_user('reader', 'reader@example.com', 'x')
+        save_account_language(signed_in, 'nb')
+        self.client.force_login(signed_in)
+        self.client.get(reverse('login'))
+        self.assertEqual(translation.get_language(), settings.LANGUAGE_CODE)
+
 
 class AccountLanguageTests(TestCase):
     """For a signed-in person the language is saved on the account, so it follows them to any device."""
@@ -119,6 +139,7 @@ class PagesInEveryLanguageTests(TestCase):
     """Every page and dialog renders in each language, with no placeholder left over."""
 
     @classmethod
+    @withdrawal_gate.opened('test fixture: withdrawal inputs written straight in the database')
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         cls.site = Site.objects.create(name='Bergen', code='BG', area_m2=Decimal('50000.5'))
@@ -283,7 +304,11 @@ class FormsAndMessagesTests(TestCase):
         self.assertContains(response, 'Saha “Bergen (BH)” oluşturuldu.')
         invalid = self.client.post(reverse('farm:site_create'), site_data(name='', code='x'))
         self.assertEqual(invalid.context['form'].errors['code'], ['Kod en az 2 karakter olmalı.'])
-        self.assertEqual(invalid.context['form'].errors['name'], ['Bu alan zorunludur.'])      # Django's own
+        # Django's own message is lazy: the page shows it as the request rendered it, and read here it is in the
+        # language active now, which the request's language no longer is once it has ended.
+        self.assertContains(invalid, 'Bu alan zorunludur.')
+        with translation.override('tr'):
+            self.assertEqual(invalid.context['form'].errors['name'], ['Bu alan zorunludur.'])
         self.in_language('nb')
         response = self.client.post(reverse('farm:site_create'), site_data(name='Tromsø', code='ts'), follow=True)
         self.assertContains(response, 'Lokalitet «Tromsø (TS)» ble opprettet.')
@@ -335,8 +360,9 @@ class FormsAndMessagesTests(TestCase):
         with mock.patch('django.utils.timezone.now', return_value=entry_time):
             AuditLog.objects.create(user=self.user, user_name='ali', action='create', entity_type='site',
                                     entity_id='1', entity_label='Bergen (BG)')
-        for language, shown in [('en', '2 Nov 2026, 13:05'), ('tr', '02 Kasım 2026 13:05'),
-                                ('nb', '2. november 2026 13:05')]:
+        # 13:05 UTC is 14:05 on the company's clock (Oslo, winter time), as the activity log shows it
+        for language, shown in [('en', '02.11.2026 14:05'), ('tr', '02.11.2026 14:05'),       # the European way in every
+                                ('nb', '02.11.2026 14:05')]:                                # language (owner rule)
             self.in_language(language)
             self.assertContains(self.client.get(reverse('core:activity_log')), shown, msg_prefix=language)
 

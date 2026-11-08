@@ -1,0 +1,42 @@
+{% extends "crud/form.html" %}
+{% load i18n dates %}
+{% comment %} A device's form adds its channels on a tab of their own, read-only: each channel is edited on its own form;
+   and where it is placed now and was before (sensors/bindings.py `placement_history`), with the Move device dialog for
+   a person who may bind. {% endcomment %}
+{% block extra_tabs %}{% if object %}<button type="button" role="tab" class="tab" data-tab="channels">{% trans "Channels" %}</button><button type="button" role="tab" class="tab" data-tab="placement">{% trans "Placement" %}</button>{% endif %}{% endblock %}
+{% block extra_panels %}
+{% if object %}
+<section class="tab-panel" role="tabpanel" data-panel="channels">
+  <h3 class="panel-title">{% trans "Channels" %}</h3>
+  {% if channels %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "Quantity" %}</th><th scope="col">{% trans "Value" %}</th><th scope="col" class="num">{% trans "Heartbeat (s)" %}</th><th scope="col">{% trans "State" %}</th></tr></thead>
+      <tbody>
+        {% for channel in channels %}
+        <tr><td><a class="row-title" href="{% url 'sensors:channel_edit' channel.pk %}">{{ channel.code }}</a><span class="row-sub">{{ channel.name }} · #{{ channel.channel_no }}</span></td><td>{{ channel.get_quantity_display }}</td><td class="mono">{{ channel.value_path|default:channel.item_name }}</td><td class="num">{{ channel.heartbeat_s }}</td><td>{{ channel.get_state_display }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="panel-help">{% trans "No channels yet: add them on the Channels page." %}</p>{% endif %}
+</section>
+<section class="tab-panel" role="tabpanel" data-panel="placement">
+  <h3 class="panel-title">{% trans "Placement" %}</h3>
+  <p class="panel-help">{% if placed_at %}{% trans "Placed at" %}: {% for place in placed_at %}{{ place }}{% if not forloop.last %}, {% endif %}{% endfor %}.{% else %}{% trans "Not placed: out of the water, its readings belong to no place." %}{% endif %}
+  {% if perms.sensors.add_binding %}<a class="button button-ghost" href="{% url 'sensors:device_move' %}?device={{ object.pk }}">{% include "icons/_icon.html" with name="target" %}{% trans "Move device" %}</a>{% endif %}</p>
+  {% if placement_history %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">{% trans "Where" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th></tr></thead>
+      <tbody>
+        {% for stay in placement_history %}
+        <tr><td>{% for place in stay.places %}{{ place }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td><td>{{ stay.start|site_clock:object.site|date:"DATETIME_FORMAT" }}</td><td>{% if stay.end %}{{ stay.end|site_clock:object.site|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="panel-help">{% trans "Never placed yet." %}</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -3,7 +3,7 @@
 
 .auth {
   display: grid;
-  grid-template-columns: minmax(18rem, 5fr) 7fr;
+  grid-template-columns: minmax(18rem, 5fr) minmax(0, 7fr);
   min-height: 100vh;
 }
 
@@ -107,7 +107,7 @@
 
 /* Phone: the skin becomes a band across the top */
 @media (max-width: 48rem) {
-  .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
   .skin { min-height: 9rem; padding: 1.25rem 1rem; }
   .skin-note { display: none; }
   .panel { align-items: flex-start; padding: 4.5rem 1rem 3rem; }

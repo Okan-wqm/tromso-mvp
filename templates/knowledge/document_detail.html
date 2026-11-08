@@ -1,5 +1,5 @@
 {% extends "crud/detail.html" %}
-{% load i18n knowledge %}
+{% load i18n knowledge dates %}
 {% comment %} A library document's read page (knowledge.resources.DocumentResource.detail_extras): its reference,
    abstract and details, its file and what reading its text gave, the pages where a search's words are found
    (?q=), and the knowledge entries taken from it.{% endcomment %}
@@ -24,7 +24,7 @@
     <div><dt>{% trans "Language" %}</dt><dd>{{ object.get_language_display|default:"–" }}</dd></div>
     <div><dt>{% trans "DOI" %}</dt><dd>{% if object.doi %}<a href="https://doi.org/{{ object.doi|urlencode:'/' }}" rel="noopener noreferrer">{{ object.doi }}</a>{% else %}–{% endif %}</dd></div>
     <div><dt>{% trans "Web address" %}</dt><dd>{% if object.url %}<a href="{{ object.url }}" rel="noopener noreferrer">{{ object.url }}</a>{% else %}–{% endif %}</dd></div>
-    <div><dt>{% trans "Added" %}</dt><dd>{% blocktrans trimmed with when=object.created_at|date:"DATETIME_FORMAT" who=object.created_by|default:"–" %}{{ when }} by {{ who }}{% endblocktrans %}</dd></div>
+    <div><dt>{% trans "Added" %}</dt><dd>{% blocktrans trimmed with when=object.created_at|company_clock|date:"DATETIME_FORMAT" who=object.created_by|default:"–" %}{{ when }} by {{ who }}{% endblocktrans %}</dd></div>
   </dl>
 </section>
 

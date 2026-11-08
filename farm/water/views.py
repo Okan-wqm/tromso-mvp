@@ -21,19 +21,19 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, BadRequest, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
+from core.dates import on_clock, read_day, read_moment
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -208,11 +208,11 @@ def _latest(site):
     counts = {status: sum(1 for row in rows if row['water'].status == status) for status in ALERTS}
     return {'rows': rows, 'columns': columns, 'point_count': sum(1 for row in rows if row['point'] is not None),
             'critical_count': counts[Status.CRITICAL], 'warning_count': counts[Status.WARNING],
-            'now': timezone.now()}
+            'sensors_failed': any(point_water.sensors_failed for point_water in water.values()), 'now': timezone.now()}
 
 
 def _day(request, name, default):
-    return parse_date(request.GET.get(name, '')) or default
+    return read_day(request.GET.get(name, ''), request) or default
 
 
 def _history(request, site, place):
@@ -354,28 +354,40 @@ def calculator_report(request):
     return render(request, 'farm/water_calculator_report.html', context)
 
 
-# ---- a unit's own chart ----------------------------------------------------------------------------------------
-@permission_required(VIEW, raise_exception=True)
-def unit_chart(request, pk):
-    """The Deffeyes chart of one unit's water, as the body of the monitoring cards' window (the fragment is polled):
-    the chart, the readings it is drawn from with their age, status and point, the limits and species of the fish, and
-    the unit's points as links to the same fragment for another one. `?point=` is one of the unit's own active points
-    (404 for any other); without it, the middle point. A water that cannot be drawn is refused with what it lacks
-    (farm/water/calculation.chart_of). Gated by the right to read water samples alone: it shows nothing else of the
-    unit's records."""
-    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+# ---- a unit's or a system's own chart ----------------------------------------------------------------------------
+def _moment(request, owner):
+    """The past moment `?at=` names, on the clock of the owner's site (A4: the Deffeyes as it was then); None without
+    one. A value that is not a time, or a time the clocks skip or repeat, is refused (400): never read as now."""
+    value = request.GET.get('at', '')
+    if not value:
+        return None
+    wall = read_moment(value)                   # core.dates: the one reader, inside 1900-2100 (never an overflow)
+    if wall is None:
+        raise BadRequest('at')
+    zone = zone_of(site_of(owner))
+    try:
+        first = on_clock(wall, zone)            # core.dates: the one check of a skipped or repeated time
+    except ValidationError:
+        raise BadRequest('at')
+    if first > timezone.now():
+        raise BadRequest('at')
+    return first
+
+
+def _owner_chart(request, owner, here):
     chosen = None
     if request.GET.get('point'):
-        chosen = next((point for point in read.points_of([unit])[unit.pk] if str(point.pk) == request.GET['point']), None)
+        chosen = next((point for point in calculation.points_for(owner) if str(point.pk) == request.GET['point']), None)
         if chosen is None:
             raise Http404
-    result = calculation.chart_of(unit, chosen)
-    here = reverse('farm:water_unit_chart', args=[unit.pk])
+    at = _moment(request, owner)
+    result = calculation.chart_of(owner, chosen, at=at)
     labels = CalculatorForm().fields
+    kept = {'at': request.GET['at']} if at is not None else {}
     return render(request, 'farm/_unit_chart.html', {
-        'unit': unit, 'result': result, 'uid': f'chart-{result.point.pk}' if result.point else 'chart',
+        'unit': owner, 'result': result, 'uid': f'chart-{result.point.pk}' if result.point else 'chart', 'at': at,
         'chart': getattr(getattr(result, 'calculation', None), 'chart', None),
-        'point_links': [{'point': point, 'url': f'{here}?{urlencode({"point": point.pk})}',
+        'point_links': [{'point': point, 'url': f'{here}?{urlencode({"point": point.pk, **kept})}',
                          'current': result.point is not None and point.pk == result.point.pk}
                         for point in result.points],
         'limit_rows': [(labels[name].label, offer) for name, offer in getattr(result, 'limits', {}).items()],
@@ -383,6 +395,25 @@ def unit_chart(request, pk):
         'species': sorted({row.species.common_name for offer in getattr(result, 'limits', {}).values()
                            for row in offer.rows}) if request.user.has_perm('farm.view_stockoperation') else [],
     })
+
+
+@permission_required(VIEW, raise_exception=True)
+def unit_chart(request, pk):
+    """The Deffeyes chart of one unit's water, as the body of the monitoring cards' window (the fragment is polled):
+    the chart, the readings it is drawn from with their origin, age, status and point, the limits and species of the
+    fish, and the unit's points as links to the same fragment for another one. `?point=` is one of the unit's own active
+    points (404 for any other); without it, the middle point. `?at=` draws the water as it was at a past moment (on the
+    site's clock). A water that cannot be drawn is refused with what it lacks (farm/water/calculation.chart_of). Gated
+    by the right to read water samples alone: it shows nothing else of the unit's records."""
+    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+    return _owner_chart(request, unit, reverse('farm:water_unit_chart', args=[unit.pk]))
+
+
+@permission_required(VIEW, raise_exception=True)
+def system_chart(request, pk):
+    """A system's own Deffeyes chart (A4): its loop's water and the system's sensors, as a unit's (`unit_chart`)."""
+    system = get_object_or_404(System.objects.select_related('site'), pk=pk)
+    return _owner_chart(request, system, reverse('farm:water_system_chart', args=[system.pk]))
 
 
 # ---- the dialogs ---------------------------------------------------------------------------------------
@@ -441,6 +472,7 @@ def record_round(request):
                 samples = services.record_round(
                     request.user, measured_at=header.cleaned_data['measured_at'],
                     source=header.cleaned_data['source'], token=header.cleaned_data['token'],
+                    withdrawal_ack=header.cleaned_data['withdrawal_ack'],
                     rows=[(row.point, row.entered(), row.cleaned_data['notes']) for row in entered])
             except AlreadyRecorded:
                 return done(request, context['back_url'])
@@ -456,7 +488,9 @@ def record_round(request):
 
 
 def _round_errors(error, header, entered):
-    """The service's reasons on the round: a cell's on its row and parameter, the time on the header."""
+    """The service's reasons on the round: a cell's on its row and parameter, the time on the header. The withdrawal
+    guard's question goes on the header, with its box."""
+    header.withdrawal_change = getattr(error, 'change', None) or header.withdrawal_change
     for key, messages_ in error.message_dict.items():
         index, _sep, code = key.partition('-')
         if code and index.isdigit():
@@ -476,7 +510,8 @@ def void_sample(request, pk):
         form = SampleVoidForm(request.POST)
         if form.is_valid():
             try:
-                services.void(request.user, sample, form.cleaned_data['reason'])
+                services.void(request.user, sample, form.cleaned_data['reason'],
+                              withdrawal_ack=form.cleaned_data['withdrawal_ack'])
             except ValidationError as error:
                 form.add_service_error(error)
             else:
@@ -526,9 +561,9 @@ def drawer(request, unit):
 
 
 def overview_tiles(user):
-    """The production overview's water figure: the units with a critical water value now."""
+    """The production overview's water figure: the sampling points with a critical water value now, the water page's own
+    count (`_latest`, every point it lists, an outlet too), so the two cannot disagree."""
     if not user.has_perm(VIEW):
         return []
-    units = list(Tank.objects.select_related('production_department__site'))
-    return [{'label': _('Units with a critical water value'), 'count': critical_count(unit_water(user, units)),
+    return [{'label': _('Sampling points with a critical water value'), 'count': _latest(None)['critical_count'],
              'url': page_url()}]

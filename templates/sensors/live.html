@@ -1,0 +1,32 @@
+{% extends "app_base.html" %}
+{% load i18n sensors water dates %}
+{% comment %} Sensors › Operations › Live values (sensors.views.live): every channel listened to, its last good value, how
+   old it is, whether it is fresh (three heartbeats) and where it is bound now. The water of a unit, with its other
+   sources, is on the Water chemistry page and the monitoring cards. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<p class="panel-help">{% trans "A value is fresh for three heartbeats of its channel. A stale value is not used for a unit’s water: the next source counts (its system’s sensor, then the latest sample)." %}</p>
+{% if rows %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "Quantity" %}</th><th scope="col" class="num">{% trans "Value" %}</th><th scope="col">{% trans "Measured" %}</th><th scope="col">{% trans "State" %}</th><th scope="col">{% trans "Bound to" %}</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><span class="row-title">{{ row.channel.code }}</span><span class="row-sub">{{ row.channel.device.code }} · #{{ row.channel.channel_no }}</span></td>
+        <td>{{ row.channel.get_quantity_display }}</td>
+        <td class="num">{{ row.state.value|measured:row.channel.quantity }}</td>
+        <td>{% if row.state.at %}{{ row.state.at|site_clock:row.channel.device.site|date:"DATETIME_FORMAT" }}<span class="row-sub">{% blocktrans trimmed with age=row.state.at|age %}{{ age }} ago{% endblocktrans %}</span>{% else %}—{% endif %}</td>
+        <td>{% if row.channel.state == "maintenance" %}<span class="badge badge-closed">{% trans "Maintenance" %}</span>{% elif row.state.value is None %}{% trans "No value yet" %}{% elif row.state.fresh %}<span class="badge badge-operational">{% trans "Fresh" %}</span>{% else %}<span class="badge badge-maintenance">{% trans "Stale" %}</span>{% endif %}</td>
+        <td>{% if row.binding %}{{ row.binding.target }}{% if row.binding.role == "backup" %} · {% trans "backup" %}{% endif %}{% else %}<span class="faint">{% trans "Not bound" %}</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="panel-help">{% trans "No channel is listened to yet." %}</p>
+{% endif %}
+{% endblock %}

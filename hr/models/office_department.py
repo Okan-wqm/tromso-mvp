@@ -10,7 +10,7 @@ from farm.models import Site
 
 class OfficeDepartment(CodedMixin, TreeMixin, AuditedModel):
     """A department of the company's office side (management, Finance, administration). The production departments
-    are the farm's own rows and appear in HR by themselves (hr.read.departments); HR owns only these.
+    are the farm's own rows, listed under Production (Setup, and Team's organisation chart); HR owns only these.
 
     Departments nest under one another (the organisation chart); a cycle is refused by the form and, whatever
     writes, by a database trigger (migration 0001). The manager sees and plans the department's people, and those of

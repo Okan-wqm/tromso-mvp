@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from django.utils.translation import gettext
 
 from farm.templatetags.water import water_value
-from farm.water.evaluate import Status, is_fresh
+from farm.water import read as water_read
+from farm.water.evaluate import Status
 
 from . import catalogue
 
@@ -104,14 +105,15 @@ def face(reading, now, parameter=None):
     label = str(parameter.short) if parameter is not None else ''
     if reading is None:
         return Face(label, gettext('no data'), '', '', '', '', False, True)
-    source = getattr(reading.sample, 'get_source_display', None)
-    origin = str(source()) if callable(source) else ''
+    # A sample says how it was taken (its source); a live value which sensor gave it (owner rule A1, farm/water/read.py).
+    sample = getattr(reading.sample, 'sample', None)
+    origin = str(sample.get_source_display()) if sample is not None else water_read.origin_text(reading)
     age = age_text((now - reading.at).total_seconds())
     missing = reading.value is None
     status = '' if missing else str(reading.status)
     return Face(label, gettext('no data') if missing else water_value(reading.value, reading.code), status,
                 str(Status(reading.status).label) if status else '', origin, age,
-                not is_fresh(reading.parameter, reading.at, now), missing, reading)
+                not reading.fresh(now), missing, reading)
 
 
 def reading_at(card, code, point_kind):

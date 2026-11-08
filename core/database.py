@@ -112,14 +112,25 @@ class Table:
     def soft_deletable(self):
         return any(f.column == 'is_deleted' for f in self.model._meta.concrete_fields)
 
+    @property
+    def hypertable(self):
+        """Whether the table is a TimescaleDB hypertable: asked of the catalogue when counting (the list of tables itself
+        is read from the models and asks the database nothing)."""
+        return self.name in hypertables()
+
     def counts(self):
-        """{'rows': n, 'deleted': n}, the soft-deleted rows counted among the rows; 'deleted' is None
-        for a table that does not soft-delete."""
+        """{'rows': n, 'deleted': n, 'estimated': bool}, the soft-deleted rows counted among the rows; 'deleted' is None
+        for a table that does not soft-delete. A hypertable's rows are the database's estimate from its statistics
+        (approximate_row_count; counting a hypertable reads every chunk), its deleted rows not counted."""
+        if self.hypertable:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT approximate_row_count(%s::regclass)', [connection.ops.quote_name(self.name)])
+                return {'rows': cursor.fetchone()[0], 'deleted': None, 'estimated': True}
         counted = {'rows': Count('pk')}
         if self.soft_deletable:
             counted['deleted'] = Count('pk', filter=Q(is_deleted=True))
         counts = self.model._base_manager.aggregate(**counted)
-        return {'deleted': None, **counts}
+        return {'deleted': None, **counts, 'estimated': False}
 
     def structure(self):
         """What the database says about the table, with each column matched to the model's field."""
@@ -173,7 +184,7 @@ CONSTRAINTS_SQL = """
 SELECT conname, contype, pg_get_constraintdef(oid)
 FROM pg_constraint
 WHERE conrelid = to_regclass(%s) AND contype <> 'n'
-ORDER BY array_position(ARRAY['p', 'u', 'f', 'c', 'x'], contype::text), conname
+ORDER BY array_position(ARRAY['p', 'u', 'f', 'c', 'x', 't'], contype::text), conname
 """
 INDEXES_SQL = """
 SELECT c.relname, i.indisunique, pg_get_indexdef(i.indexrelid)
@@ -182,7 +193,8 @@ JOIN pg_class c ON c.oid = i.indexrelid
 WHERE i.indrelid = to_regclass(%s)
 ORDER BY i.indisprimary DESC, c.relname
 """
-CONSTRAINT_KINDS = {'p': _('Primary key'), 'u': _('Unique'), 'f': _('Foreign key'), 'c': _('Check'), 'x': _('Exclusion')}
+CONSTRAINT_KINDS = {'p': _('Primary key'), 'u': _('Unique'), 'f': _('Foreign key'), 'c': _('Check'), 'x': _('Exclusion'),
+                    't': _('Constraint trigger')}
 SHORT_TYPES = {
     'character varying': 'varchar', 'character': 'char', 'double precision': 'float8',
     'timestamp with time zone': 'timestamptz', 'timestamp without time zone': 'timestamp',
@@ -226,3 +238,10 @@ def sections():
 def find(name):
     """The table called `name` in the database, or None when the viewer does not show it."""
     return next((table for _, tables in sections() for table in tables if table.name == name), None)
+
+
+def hypertables():
+    """The names of the TimescaleDB hypertables, from the catalogue."""
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT hypertable_name FROM timescaledb_information.hypertables')
+        return {name for name, in cursor.fetchall()}

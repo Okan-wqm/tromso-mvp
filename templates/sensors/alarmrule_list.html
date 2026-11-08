@@ -1,0 +1,25 @@
+{% extends "crud/list.html" %}
+{% load i18n sensors %}
+{% comment %} Sensors › Operations › Alarm rules (sensors.resources.AlarmRuleResource). Shown, never sent. {% endcomment %}
+{% block search_placeholder %}{% trans "Search by channel or quantity" %}{% endblock %}
+{% block notice %}<p class="notice notice-warning" role="status">{% trans "Alarms are shown on the Sensors pages, not sent: nobody is notified yet." %}</p>{% endblock %}
+{% block empty_text %}{% trans "A rule says when a channel needs a look: no fresh value, its device offline, a value above or below a threshold, or a change too fast." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Rule" %}</th><th scope="col" class="num">{% trans "Threshold" %}</th><th scope="col" class="num">{% trans "For (seconds)" %}</th><th scope="col">{% trans "Severity" %}</th><th scope="col">{% trans "State" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for rule in objects %}
+      <tr>
+        <td><span class="row-title">{{ rule }}</span></td>
+        <td class="num">{{ rule.threshold|measured:rule.quantity_code }}</td>
+        <td class="num">{{ rule.for_s }}</td>
+        <td>{{ rule.get_severity_display }}</td>
+        <td>{% if rule.is_active %}{% trans "Active" %}{% else %}<span class="badge badge-closed">{% trans "Inactive" %}</span>{% endif %}</td>
+        <td class="row-actions">{% include "sensors/_row_actions.html" with model="alarmrule" obj=rule label=rule %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

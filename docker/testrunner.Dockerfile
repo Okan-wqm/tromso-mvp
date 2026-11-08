@@ -1,7 +1,8 @@
 # The Django test runner, with the water-chemistry core (chemcore) built from this checkout (README, chemcore).
 #   docker build -f docker/testrunner.Dockerfile -t <tag> .
 # Stages: chemcore-tools (Rust 1.88.0, maturin, cargo-deny: the gates of chemcore/scripts/test.sh),
-# chemcore-wheel (the wheel, built --locked), runner (Python 3.12 with requirements and the wheel). Every base
+# chemcore-wheel (the wheel, built --locked), runner (Python 3.12 with requirements and the wheel), tests (the runner
+# and tblib, for scripts/test.sh). Every base
 # image is pinned by digest, every Python package by hash, cargo-deny by sha256; crates by chemcore/Cargo.lock.
 # The runner fails to build when the module does not import: there is no server without its chemistry.
 
@@ -35,3 +36,9 @@ COPY --from=chemcore-wheel /wheels/ /wheels/
 RUN pip install --no-cache-dir --no-index /wheels/chemcore-*.whl \
  && python -c "import chemcore; print('chemcore', chemcore.version(), chemcore.formula_version(), chemcore.core_hash())"
 WORKDIR /app
+
+# The test runs (scripts/test.sh): the runner and the test-only packages (tblib sends a worker's traceback to the main
+# process of a parallel run).
+FROM runner AS tests
+COPY scripts/testrunner/requirements.txt /tmp/test-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/test-requirements.txt

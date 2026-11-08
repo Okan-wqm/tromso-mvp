@@ -15,9 +15,10 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
-from farm.water import parameters
+from farm.tests.test_water_sources import FakeProvider
+from farm.water import parameters, sources
 from farm.water.evaluate import Status
-from farm.water.read import PointWater, Reading
+from farm.water.read import Observation, Origin, PointWater, Reading
 
 from .. import read
 from ..cards import builtin, catalogue, render, resolve
@@ -27,14 +28,22 @@ from . import D, MonitoringCase
 from .golden import Tree
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
+POINT = SimpleNamespace(name='Middle', kind='middle', owner_type='unit')
 NOW = timezone.now()
 OPERATOR = builtin.OPERATOR_LAYOUT
 
 
 def reading(code, value, hours=1, status=Status.OK, source='manual'):
-    sample = SimpleNamespace(measured_at=NOW - timedelta(hours=hours), point=SimpleNamespace(name='Middle', kind='middle'),
-                             source=source, get_source_display=lambda: {'manual': 'Meter or test kit'}[source])
-    return Reading(parameters.get(code), None if value is None else D(str(value)), sample, status=status)
+    sample = SimpleNamespace(get_source_display=lambda: {'manual': 'Meter or test kit'}[source])
+    observation = Observation(POINT, NOW - timedelta(hours=hours), Origin.MANUAL, {code: value}, sample=sample)
+    return Reading(parameters.get(code), None if value is None else D(str(value)), observation, status=status)
+
+
+def live(code, value, seconds, channel_no, origin=Origin.SENSOR, fresh_for=900):
+    """A sensor's value on the middle point (owner rule A1), `seconds` old, fresh for `fresh_for` seconds."""
+    observation = Observation(POINT, NOW - timedelta(seconds=seconds), origin, {code: D(value)}, channel_no=channel_no,
+                              role='primary', fresh_for=fresh_for)
+    return Reading(parameters.get(code), D(value), observation, status=Status.OK)
 
 
 def articles(html):
@@ -70,6 +79,17 @@ class FaceTests(SimpleTestCase):
     def test_an_old_value_is_stale_by_the_parameters_own_freshness(self):
         self.assertTrue(render.face(reading('oxygen_mg_l', '8.1', hours=30), NOW).stale)
         self.assertFalse(render.face(reading('oxygen_mg_l', '8.1', hours=23), NOW).stale)
+
+    def test_a_sensor_value_says_which_sensor_as_every_latest_value_does(self):
+        # Owner rule A1: a live value says the sensor and its channel, as the water page and the Deffeyes window do.
+        face = render.face(live('oxygen_mg_l', '8.4', seconds=40, channel_no=12), NOW)
+        self.assertEqual((face.origin, face.age, face.stale), ('unit sensor #12', '40 s ago', False))
+        system = render.face(live('temperature_c', '13.0', seconds=20, channel_no=3, origin=Origin.SYSTEM_SENSOR), NOW)
+        self.assertEqual(system.origin, 'system sensor #3')
+
+    def test_a_sensor_value_is_stale_by_its_channels_freshness_not_the_parameters_hours(self):
+        self.assertTrue(render.face(live('oxygen_mg_l', '8.4', seconds=200, channel_no=12, fresh_for=180), NOW).stale)
+        self.assertFalse(render.face(live('oxygen_mg_l', '8.4', seconds=170, channel_no=12, fresh_for=180), NOW).stale)
 
 
 class BuildTests(MonitoringCase):
@@ -141,6 +161,18 @@ class PageTests(MonitoringCase):
         tan = next(node for node in widgets_of(card) if node.attrs['style'].startswith('--x:8;--y:3'))
         self.assertIn('no data', ' '.join(tan.text().split()))
         self.assertNotIn('—', tan.text())
+
+    def test_a_card_says_when_the_live_sensor_values_could_not_be_read(self):
+        # Owner rule A1: when the sensors cannot be read, the water shown comes from the samples only, and the card says so.
+        self.sample(self.t2, hours=1, temperature_c='13.2', oxygen_mg_l='8.1')
+        broken = FakeProvider(broken=True)
+        sources.register(broken)
+        self.addCleanup(sources.unregister, broken)
+        with self.assertLogs('farm.water.sources', 'ERROR'):
+            html = self.page(builtin.DETAILED_LAYOUT)
+        text = ' '.join(articles(html)[f'card:{self.t2.pk}'].text().split())
+        self.assertIn('Live sensor values could not be read: samples only.', text)
+        self.assertIn('8.10', text)                                              # the sample's value is still shown
 
     def test_a_bar_draws_its_limits_as_an_image_with_the_same_sentence_or_says_there_is_none(self):
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7, warning_high=12, critical_high=14)

@@ -1,9 +1,15 @@
 {% load i18n %}<li class="org-node org-{{ node.kind }}">
   <div class="org-box">
-    <span class="org-name">{% if node.kind == "site" and not node.label %}{% trans "No site" %}{% else %}{{ node.label }}{% endif %}</span>
-    <span class="org-kind">{% if node.kind == "site" %}{% trans "Site" %}{% elif node.kind == "production" %}{% trans "Production" %}{% else %}{% trans "Office" %}{% endif %}</span>
-    {% if node.manager %}<span class="org-manager">{{ node.manager.get_full_name|default:node.manager.get_username }}</span>{% endif %}
-    <span class="org-count">{% if node.kind == "site" %}{% blocktrans trimmed count total=node.total %}{{ total }} person{% plural %}{{ total }} people{% endblocktrans %}{% else %}{% blocktrans trimmed count direct=node.direct %}{{ direct }} person{% plural %}{{ direct }} people{% endblocktrans %}{% if node.children %} · {% blocktrans trimmed with total=node.total %}{{ total }} in all{% endblocktrans %}{% endif %}{% endif %}</span>
+    <span class="org-name">{% if node.kind == "site" and not node.label %}{% trans "No site" %}{% elif node.kind == "production_root" and production_chart %}<a href="{% url 'hr:production_orgchart' %}">{{ node.label }}</a>{% else %}{{ node.label }}{% endif %}</span>
+    <span class="org-kind">{% if node.kind == "site" %}{% trans "Site" %}{% elif node.kind == "production" or node.kind == "production_root" %}{% trans "Production" %}{% else %}{% trans "Office" %}{% endif %}</span>
+    {% if node.manager %}<span class="org-manager"><span class="sr-only">{% trans "Manager" %}: </span>{{ node.manager.get_full_name|default:node.manager.get_username }}</span>{% if node.manager_title %}<span class="org-manager-title">{{ node.manager_title }}</span>{% endif %}{% endif %}
+    <span class="org-count">{% if node.kind == "site" or node.kind == "production_root" %}{% blocktrans trimmed count total=node.total %}{{ total }} person{% plural %}{{ total }} people{% endblocktrans %}{% else %}{% blocktrans trimmed count direct=node.direct %}{{ direct }} person{% plural %}{{ direct }} people{% endblocktrans %}{% if node.children %} · {% blocktrans trimmed with total=node.total %}{{ total }} in all{% endblocktrans %}{% endif %}{% endif %}</span>
   </div>
+  {% if node.people %}<details class="org-people">
+    <summary>{% blocktrans trimmed count people=node.people|length %}Show {{ people }} person{% plural %}Show {{ people }} people{% endblocktrans %}</summary>
+    <ul class="org-person-list">{% for person in node.people %}
+      <li class="org-person"><span class="org-person-name">{{ person.name }}</span>{% if person.title %}<span class="org-person-title">{{ person.title }}</span>{% endif %}</li>{% endfor %}
+    </ul>
+  </details>{% endif %}
   {% if node.children %}<ul>{% for node in node.children %}{% include "hr/_org_node.html" %}{% endfor %}</ul>{% endif %}
 </li>

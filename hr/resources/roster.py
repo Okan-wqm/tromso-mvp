@@ -1,22 +1,14 @@
-from datetime import date
-
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
 from core import audit
-from core.crud import Resource
+from core.crud import Mount, Resource
+from core.dates import read_day
 from farm.stock.dates import site_today
 
 from .. import read, rules, scope, services, units
 from ..forms.roster import ShiftAssignmentForm
-from ..models import ShiftAssignment
-
-
-def parse_day(value):
-    try:
-        return date.fromisoformat(value)
-    except (TypeError, ValueError):
-        return None
+from ..models import Employee, ShiftAssignment
 
 
 class ShiftAssignmentResource(Resource):
@@ -29,6 +21,7 @@ class ShiftAssignmentResource(Resource):
     form_class = ShiftAssignmentForm
     name, plural = _('plan'), _('plans')
     url_prefix = 'hr/schedule'
+    mounts = (Mount(scope.PRODUCTION, 'production/team/schedule'),)
     list_template = 'hr/roster.html'
     icon = 'calendar'
     private_fields = ('note',)
@@ -39,7 +32,7 @@ class ShiftAssignmentResource(Resource):
 
     @classmethod
     def scoped(cls, request, objects):
-        return scope.by_day(request.user, objects, 'employee', 'day')
+        return scope.by_day(request.user, objects, 'employee', 'day', scope.realm_for(request))
 
     @classmethod
     def allowed(cls, request, obj, action):
@@ -48,19 +41,21 @@ class ShiftAssignmentResource(Resource):
     @classmethod
     def form(cls, request, *args, **kwargs):
         kwargs.setdefault('user', request.user)
+        kwargs.setdefault('realm', scope.realm_for(request))
         if not args and kwargs.get('instance') is None and request.method == 'GET':
             kwargs.setdefault('initial', {key: request.GET[key] for key in ('employee', 'day') if key in request.GET})
         return cls.form_class(*args, **kwargs)
 
     @classmethod
     def list_queryset(cls, request):
-        start = parse_day(request.GET.get('week')) or site_today(None)
+        start = read_day(request.GET.get('week'), request) or site_today(None)
         department = units.find(request.GET.get('department', ''))
         try:
             page = int(request.GET.get('page', '1'))
         except ValueError:
             page = 1
-        return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip())
+        return read.week(request.user, start, department, page, query=request.GET.get('q', '').strip(),
+                         realm=scope.realm_for(request))
 
     @classmethod
     def search(cls, objects, query):
@@ -69,9 +64,21 @@ class ShiftAssignmentResource(Resource):
     @classmethod
     def filter_list(cls, request, objects):
         week = objects
-        return week.rows, {'week': week, 'departments': units.choices(),
+        return week.rows, {'week': week, 'departments': units.choices(kinds=[scope.realm_for(request)]),
                            'chosen_department': request.GET.get('department', ''),
-                           'shifts': cls.shifts()}
+                           'shifts': cls.shifts(), 'crew': cls.crew(request, week)}
+
+    CREW = 'hr.crew_shiftassignment'
+
+    @classmethod
+    def crew(cls, request, week):
+        """The Crew block under the viewer's own week: in Production › Team, for a holder of Crew who is a worker (has an
+        employee record: a crew is a worker's, so the platform admin gets none) (hr.read.crew_week)."""
+        if scope.realm_for(request) != scope.PRODUCTION or not request.user.has_perm(cls.CREW):
+            return None
+        if not Employee.objects.filter(user=request.user).exists():
+            return None
+        return read.crew_week(request.user, week.start)
 
     @classmethod
     def shifts(cls):

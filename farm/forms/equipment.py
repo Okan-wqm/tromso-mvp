@@ -5,7 +5,7 @@ from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
 from core.crud import CodedFormMixin, Fieldset, RowFormSet, TabbedForm
 from core.links import LinkList
-from core.widgets import DependentSelect
+from core.widgets import DayInput, DependentSelect
 
 from ..models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Supplier,
                       System)
@@ -22,7 +22,7 @@ EQUIPMENT_FORM_TABS = [
     # Filled per form with the fields of the chosen type (core.schema).
     (SPECIFICATIONS, _('Technical specifications'), []),
 ]
-DATE = forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')
+DATE = DayInput()
 
 
 class EquipmentForm(CodedFormMixin, TabbedForm):

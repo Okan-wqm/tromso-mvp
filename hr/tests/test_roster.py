@@ -34,7 +34,7 @@ class RosterTestCase(PeopleTestCase):
         self.night = shift('NIGHT', time(22), time(6), tone=4)
         self.planner = user('planner', *PLANNER_PERMS, group='Planner role')
         ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=self.planner)
-        self.url = reverse('hr:shiftassignment_list')
+        self.url = reverse('hr:production_shiftassignment_list')
 
     def cell(self, person, day, which=None, **fields):
         return ShiftAssignment.objects.create(employee=person, day=day, shift=which, **fields)
@@ -42,7 +42,7 @@ class RosterTestCase(PeopleTestCase):
     def post_cell(self, person, day, which, actor=None, **extra):
         if actor is not None:
             self.client.force_login(actor)
-        return self.client.post(reverse('hr:shiftassignment_create'), {
+        return self.client.post(reverse('hr:production_shiftassignment_create'), {
             'employee': str(person.pk), 'day': day.isoformat(), 'shift': str(which.pk) if which else '', 'note': '',
             **extra})
 
@@ -77,7 +77,7 @@ class CellFormTests(RosterTestCase):
     def test_create_read_edit_clear_a_cell_with_a_note(self):
         # Create
         self.client.force_login(self.planner)
-        response = self.client.get(reverse('hr:shiftassignment_create'), {'employee': str(self.in_a.pk),
+        response = self.client.get(reverse('hr:production_shiftassignment_create'), {'employee': str(self.in_a.pk),
                                                                           'day': MONDAY.isoformat()})
         self.assertEqual(response.context['form']['day'].value(), MONDAY.isoformat())
         self.post_cell(self.in_a, MONDAY, self.early, note='Covers for Bo')
@@ -89,18 +89,18 @@ class CellFormTests(RosterTestCase):
         week = self.client.get(self.url, {'week': MONDAY.isoformat()}).context['week']
         cell = next(r for r in week.rows if r.employee == self.in_a).cells[0]
         self.assertEqual((cell.shift, cell.assignment.note), (self.early, 'Covers for Bo'))
-        form = self.client.get(reverse('hr:shiftassignment_edit', args=[row.pk])).context['form']
+        form = self.client.get(reverse('hr:production_shiftassignment_edit', args=[row.pk])).context['form']
         self.assertEqual((form['shift'].value(), form['note'].value()), (self.early.pk, 'Covers for Bo'))
         # Edit: another shift, then planned off; the person and the day cannot move
-        self.client.post(reverse('hr:shiftassignment_edit', args=[row.pk]), {
+        self.client.post(reverse('hr:production_shiftassignment_edit', args=[row.pk]), {
             'employee': str(self.in_b.pk), 'day': '2026-03-05', 'shift': str(self.late.pk), 'note': '', 'version': '1'})
         row.refresh_from_db()
         self.assertEqual((row.employee, row.day, row.shift, row.note, row.version), (self.in_a, MONDAY, self.late, '', 2))
-        self.client.post(reverse('hr:shiftassignment_edit', args=[row.pk]), {'shift': '', 'note': '', 'version': '2'})
+        self.client.post(reverse('hr:production_shiftassignment_edit', args=[row.pk]), {'shift': '', 'note': '', 'version': '2'})
         row.refresh_from_db()
         self.assertIsNone(row.shift)
         # Clear: a delete, logged
-        self.client.post(reverse('hr:shiftassignment_delete', args=[row.pk]))
+        self.client.post(reverse('hr:production_shiftassignment_delete', args=[row.pk]))
         self.assertTrue(ShiftAssignment.all_objects.get(pk=row.pk).is_deleted)
         self.assertEqual(list(AuditLog.objects.filter(entity_id=str(row.pk)).order_by('created_at')
                               .values_list('action', flat=True)), ['create', 'update', 'update', 'delete'])
@@ -112,7 +112,7 @@ class CellFormTests(RosterTestCase):
         self.assertEqual(entry.changes['Note'], [None, PRIVATE])
         self.assertNotIn('Private words', str(AuditLog.objects.values_list('changes', flat=True)))
         ShiftAssignment.objects.filter(pk=row.pk).update(version=3)
-        self.client.post(reverse('hr:shiftassignment_edit', args=[row.pk]), {'shift': str(self.late.pk),
+        self.client.post(reverse('hr:production_shiftassignment_edit', args=[row.pk]), {'shift': str(self.late.pk),
                                                                               'note': '', 'version': '1'})
         row.refresh_from_db()
         self.assertEqual(row.shift, self.early)
@@ -126,7 +126,7 @@ class CellFormTests(RosterTestCase):
     def test_only_active_shifts_are_offered(self):
         Shift.objects.filter(pk=self.late.pk).update(status='inactive')
         self.client.force_login(self.planner)
-        form = self.client.get(reverse('hr:shiftassignment_create')).context['form']
+        form = self.client.get(reverse('hr:production_shiftassignment_create')).context['form']
         self.assertEqual(set(form.fields['shift'].queryset), {self.early, self.night})
 
 
@@ -330,11 +330,11 @@ class RosterUrlTests(RosterTestCase):
         row = self.cell(self.in_b, MONDAY, self.early)
         self.client.force_login(self.planner)
         before = (ShiftAssignment.objects.count(), AuditLog.objects.count(), row.version)
-        self.assertEqual(self.client.get(reverse('hr:shiftassignment_edit', args=[row.pk])).status_code, 404)
-        self.assertEqual(self.client.post(reverse('hr:shiftassignment_edit', args=[row.pk]),
+        self.assertEqual(self.client.get(reverse('hr:production_shiftassignment_edit', args=[row.pk])).status_code, 404)
+        self.assertEqual(self.client.post(reverse('hr:production_shiftassignment_edit', args=[row.pk]),
                                           {'shift': str(self.late.pk), 'version': '1'}).status_code, 404)
-        self.assertEqual(self.client.post(reverse('hr:shiftassignment_delete', args=[row.pk])).status_code, 404)
-        self.assertEqual(self.client.get(reverse('hr:shiftassignment_delete', args=[row.pk])).status_code, 404)
+        self.assertEqual(self.client.post(reverse('hr:production_shiftassignment_delete', args=[row.pk])).status_code, 404)
+        self.assertEqual(self.client.get(reverse('hr:production_shiftassignment_delete', args=[row.pk])).status_code, 404)
         row.refresh_from_db()
         self.assertEqual((ShiftAssignment.objects.count(), AuditLog.objects.count(), row.version), before)
 
@@ -366,32 +366,32 @@ class RosterUrlTests(RosterTestCase):
         self.client.force_login(reader)
         self.assertEqual(self.client.get(self.url).status_code, 200)
         self.assertNotContains(self.client.get(self.url), 'roster-add')           # no plus without Create
-        self.assertEqual(self.client.get(reverse('hr:shiftassignment_create')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('hr:production_shiftassignment_create')).status_code, 403)
 
     def test_the_batch_plan_view(self):
         self.client.force_login(self.planner)
         post = {'cells': [f'{self.in_a.pk}:2026-03-02', f'{self.in_a.pk}:2026-03-03'], 'shift': str(self.early.pk),
                 'next': '/hr/schedule/?week=2026-03-02'}
-        response = self.client.post(reverse('hr:roster_plan'), post)
+        response = self.client.post(reverse('hr:production_roster_plan'), post)
         self.assertRedirects(response, '/hr/schedule/?week=2026-03-02', fetch_redirect_response=False)
         self.assertEqual(ShiftAssignment.objects.count(), 2)
         # a forged person: 404 and nothing written, not even the cells of the person that is allowed
         before = (ShiftAssignment.objects.count(), AuditLog.objects.count())
-        self.assertEqual(self.client.post(reverse('hr:roster_plan'), {
+        self.assertEqual(self.client.post(reverse('hr:production_roster_plan'), {
             'cells': [f'{self.in_a.pk}:2026-03-09', f'{self.in_b.pk}:2026-03-09'], 'shift': 'clear'}).status_code, 404)
         self.assertEqual((ShiftAssignment.objects.count(), AuditLog.objects.count()), before)
         for bad in ({'shift': 'off'}, {'cells': ['nope'], 'shift': 'off'}, {'cells': [f'{self.in_a.pk}:2026-03-02'],
                                                                            'shift': 'not-a-shift'}):
-            self.assertEqual(self.client.post(reverse('hr:roster_plan'), bad).status_code, 400, bad)
-        self.assertEqual(self.client.get(reverse('hr:roster_plan')).status_code, 405)
+            self.assertEqual(self.client.post(reverse('hr:production_roster_plan'), bad).status_code, 400, bad)
+        self.assertEqual(self.client.get(reverse('hr:production_roster_plan')).status_code, 405)
         # an address of another site is not followed
-        response = self.client.post(reverse('hr:roster_plan'), {**post, 'next': 'https://evil.example/'})
+        response = self.client.post(reverse('hr:production_roster_plan'), {**post, 'next': 'https://evil.example/'})
         self.assertRedirects(response, self.url, fetch_redirect_response=False)
         # planned off and clear
-        self.client.post(reverse('hr:roster_plan'), {**post, 'shift': 'off'})
+        self.client.post(reverse('hr:production_roster_plan'), {**post, 'shift': 'off'})
         self.assertEqual(set(ShiftAssignment.objects.values_list('shift', flat=True)), {None})
-        self.client.post(reverse('hr:roster_plan'), {**post, 'shift': 'clear'})
+        self.client.post(reverse('hr:production_roster_plan'), {**post, 'shift': 'clear'})
         self.assertEqual(ShiftAssignment.objects.count(), 0)
         # no verb: refused
         self.client.force_login(user('reader2', 'view_shiftassignment', group='Reader2'))
-        self.assertEqual(self.client.post(reverse('hr:roster_plan'), post).status_code, 404)    # nobody's team
+        self.assertEqual(self.client.post(reverse('hr:production_roster_plan'), post).status_code, 404)    # nobody's team

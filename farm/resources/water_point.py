@@ -10,11 +10,12 @@ from ..forms.water_point import OWNER_TYPES, SamplingPointForm
 from ..models import Equipment, SamplingPoint, Site, System, Tank
 from ..models.water_point import EQUIPMENT, OWNER_FIELDS, SYSTEM, UNIT, PointKind
 from ..water import points
+from .withdrawal_input import WithdrawalInput
 
 OWNER_MODELS = {UNIT: Tank, SYSTEM: System, EQUIPMENT: Equipment}
 
 
-class SamplingPointResource(Resource):
+class SamplingPointResource(WithdrawalInput, Resource):
     """Setup › Facility structure › Sampling points: where in the water a sample is taken, on a unit, a loop or a piece
     of equipment, of a kind that says whether it sees the stream in, the water within or the stream out. The default
     points of a new unit or system are made when it is created (farm/water/points.py)."""
@@ -32,6 +33,29 @@ class SamplingPointResource(Resource):
     @classmethod
     def queryset(cls):
         return super().queryset().with_owners()
+
+    @classmethod
+    def reached(cls, request, point):
+        """Only an active middle point counts a unit's or a loop's water (farm/water/read.py), so its active flag, kind
+        and owner move the degree-days of a withdrawal: every fish of the units of the owner it had and of the one it
+        is given."""
+        unit_ids = set()
+        for owner_type in (UNIT, SYSTEM):
+            owners = {getattr(point, f'{owner_type}_id'), request.POST.get(owner_type) or None} - {None}
+            owners = [owner for owner in owners if cls._is_uuid(owner)]
+            if owner_type == UNIT:
+                unit_ids.update(Tank.all_objects.filter(pk__in=owners).values_list('pk', flat=True))
+            else:
+                unit_ids.update(Tank.all_objects.filter(system_id__in=owners).values_list('pk', flat=True))
+        return unit_ids, None
+
+    @staticmethod
+    def _is_uuid(value):
+        try:
+            uuid.UUID(str(value))
+        except ValueError:
+            return False
+        return True
 
     @classmethod
     def snapshot(cls, point):

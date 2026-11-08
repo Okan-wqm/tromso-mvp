@@ -52,7 +52,7 @@ from farm.models import Tank
 from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
 from farm.water import parameters, read as water_read, views as water_views
-from farm.water.evaluate import Status, is_fresh
+from farm.water.evaluate import Status
 from tasks import read as tasks_read, views as tasks_views
 
 from .cards import catalogue, render, resolve
@@ -399,8 +399,9 @@ def _age(reading, now):
 
 def state_of(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
-    1. critical: a water reading judged critical;
-    2. warning: a reading judged a warning, the unit over its capacity, an estimate that says weigh now;
+    1. critical: a water reading judged critical, an old one too ("Critical, no recent data": the water page's rule,
+       farm.water.read.PointWater.alerts);
+    2. warning: a reading judged a warning (an old one too), the unit over its capacity, an estimate that says weigh now;
     3. blind: a stocked unit whose temperature or oxygen is missing or older than its freshness (a fresh pH hides a
        three-day-old oxygen in the water's own status: that status ranks OK above stale), or with no middle point;
        never OK, never red; not worked out when the water is hidden (the card says so);
@@ -416,9 +417,11 @@ def state_of(card):
     critical, warning, note = [], [], []
     middle = _middle(card)                  # the unit's own water: a detailed card's other points do not change its state
     for point in ([middle] if middle is not None else []):
-        for reading in point.alerts:
-            text = '{}: {}'.format(reading.parameter.label, Status(reading.status).label)
-            (critical if reading.status == Status.CRITICAL else warning).append(text)
+        for reading, status, old in point.alerts:      # an old critical or warning still counts, said as old
+            label = Status(status).label
+            text = '{}: {}'.format(reading.parameter.label,
+                                   _('%(status)s, no recent data') % {'status': label} if old else label)
+            (critical if status == Status.CRITICAL else warning).append(text)
     if critical:
         return State(CRITICAL, tuple(critical), basis)
     if card.stock.over_capacity:
@@ -432,7 +435,7 @@ def state_of(card):
         for label, reading in _key_readings(card):
             if reading is None:
                 stale.append(_('%(label)s: no recent data') % {'label': label})
-            elif not is_fresh(reading.parameter, reading.at, card.now):
+            elif not reading.fresh(card.now):
                 stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label,
                                                                                'age': _age(reading, card.now)})
         if stale:

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -59,6 +60,9 @@ INSTALLED_APPS = [
     'experiments',
     # The monitoring cards: one live card per unit for the control room's wall, composed from the other apps' reads.
     'monitoring',
+    # Sensors: MQTT connections, devices, channels and their readings (a TimescaleDB hypertable written by the ingest
+    # service, sensors-ingest/), in a panel of their own; their water values reach the water read (farm/water/sources.py).
+    'sensors',
 ]
 
 MIDDLEWARE = [
@@ -72,6 +76,8 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # A page whose menu line is left out for the person is refused at its address too.
+    'core.middleware.MenuAccessMiddleware',
     # Every page needs a signed-in user unless its view is marked @login_not_required.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -92,6 +98,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.navigation.rail',
+                'core.navigation.page_base',
             ],
         },
     },
@@ -115,6 +122,11 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'balik'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5433'),
+        # Seconds a connection stays open for the next request (0, Django's default: one per request), for a server with
+        # long-lived workers (gunicorn). Never with runserver: it starts a thread per request, so every request would
+        # leave its own connection open until the database refuses clients. A kept connection is checked before reuse.
+        'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '0')),
+        'CONN_HEALTH_CHECKS': True,
         # Lets two checkouts run tests at the same time on separate test databases.
         'TEST': {'NAME': os.environ.get('DB_TEST_NAME') or None},
     }
@@ -153,6 +165,12 @@ LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
 LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
 TIME_ZONE = 'UTC'
+# The company's time zone: a new site's (the form offers it first) and the one migration farm/0028 gives a site that had
+# none. Not the server's clock above. From the environment until the platform owner's settings hold it.
+COMPANY_TIME_ZONE = os.environ.get('COMPANY_TIME_ZONE', 'Europe/Oslo')
+# In the tests a page may not show an aware time without a clock filter (core/clock_guard.py): |date and |time refuse it.
+# Never on in production: the filters stay Django's own there.
+CLOCK_GUARD = os.environ.get('CLOCK_GUARD', '1' if sys.argv[1:2] == ['test'] else '0') == '1'
 
 USE_I18N = True
 # Quantities group their digits where a template asks (floatformat:"g"); plain numbers such as
@@ -237,3 +255,7 @@ MONITOR_POLL_SECONDS = 15
 # are overdue): tasks/services.py, owner decision 3.
 TASK_HORIZON_DAYS = 14
 TASK_BACKFILL_DAYS = 7
+
+# Where manage.py sensor_broker_sync writes the MQTT broker's passwd and acl files; the broker container mounts it at
+# /mosquitto/auth and reloads them when they change (sensors-ingest/mosquitto).
+SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR / '.sensors' / 'broker-auth'))

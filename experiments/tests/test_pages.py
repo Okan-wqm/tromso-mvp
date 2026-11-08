@@ -100,7 +100,7 @@ class CreateTests(PageTestCase):
                  ({'site': ''}, 'site', 'This field is required.'),
                  ({'primary_endpoint': 'weight'}, 'primary_endpoint',
                   'Select a valid choice. weight is not one of the available choices.'),
-                 ({'starts_on': 'soon'}, 'starts_on', 'Enter a valid date.')]
+                 ({'starts_on': 'soon'}, 'starts_on', 'Give the date as dd.mm.yyyy, e.g. 06.11.2026.')]
         for fields, field, message in cases:
             with self.subTest(field=field, value=fields[field]):
                 response = self.create(**fields)

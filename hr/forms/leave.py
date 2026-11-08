@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from .. import leave, read, scope
 from ..models import Employee, LeaveRequest, LeaveType
@@ -50,15 +51,17 @@ class LeaveRequestForm(TabbedForm):
             'reason': _('Only you and the people who see every employee can read this.'),
         }
         widgets = {
-            'first_day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'last_day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'first_day': DayInput(),
+            'last_day': DayInput(),
             'reason': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, realm=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
-        employees = scope.team(user) if user is not None else Employee.objects.none()
+        # a new record's person is chosen among the team in the panel's realm (an existing one keeps its person)
+        chosen_in = realm if self.instance._state.adding else None
+        employees = scope.team(user, realm=chosen_in) if user is not None else Employee.objects.none()
         self.fields['employee'].queryset = employees.select_related('user')
         self.fields['employee'].label_from_instance = lambda employee: employee.full_name
         own = Employee.objects.filter(user=user).first() if user is not None else None

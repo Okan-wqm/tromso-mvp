@@ -75,15 +75,18 @@ AREAS = [
     # Recurring tasks: the rules that plan tasks ahead; Create, Edit and Delete change the plan.
     Area(_('Recurring tasks'), 'tasks.TaskSeries'),
     # HR: the people (Everyone reads every employee, otherwise only the team: HR's row scope, hr/scope.py) and the
-    # office departments (the production departments are the farm's own, edited under Production).
-    Area(_('Employees'), 'hr.Employee', actions=('view', 'add', 'change', 'all')),
+    # office departments (the production departments are the farm's own, edited under Production). All production reads every
+    # person placed in a production department (Production › Team), a department without a manager too, and never an office
+    # person or a leave reason: the head of production's reach.
+    Area(_('Employees'), 'hr.Employee', actions=('view', 'add', 'change', 'all_production', 'all')),
     Area(_('Departments'), 'hr.OfficeDepartment'),
     # The shift patterns and the holidays the roster and the leave charge read, and the scheduling limits (one row: Edit
     # only). The three have no menu line of their own but Scheduling settings: it leads to the other two.
     Area(_('Shifts'), 'hr.Shift'),
     # The roster: Read is the Shift schedule (the viewer's team), Create plans a day, Edit changes a plan, Delete clears a
-    # cell; the rules (rest, hours, leave) run on every save.
-    Area(_('Shift schedule'), 'hr.ShiftAssignment'),
+    # cell; the rules (rest, hours, leave) run on every save. Crew adds, under one's own week, the name and shift code and times
+    # of the people in one's own production department that day: nothing else of theirs (hr.read.crew_week).
+    Area(_('Shift schedule'), 'hr.ShiftAssignment', actions=('view', 'add', 'change', 'delete', 'crew')),
     # Attendance: Read is Today & attendance (the team's board, and clocking oneself in and out) and the Attendance page, Create
     # enters presence by hand (with a reason), Edit corrects a stretch (logged), Delete voids one.
     Area(_('Attendance'), 'hr.AttendanceRecord'),
@@ -98,5 +101,23 @@ AREAS = [
     # and places it, starts it and releases or replaces a tank, Delete removes a draft. A started experiment is never
     # deleted. Who may do what to which experiment (its team) comes with the permissions plan.
     Area(_('Experiments'), 'experiments.Experiment'),
+    # Sensors: the configuration of where live values come from. Edit on Channels also saves a channel's calibrations.
+    Area(_('Connections'), 'sensors.Connection'),
+    Area(_('Payload formats'), 'sensors.PayloadFormat'),
+    Area(_('Devices'), 'sensors.Device'),
+    Area(_('Channels'), 'sensors.Channel'),
+    # Where a channel's values belong: Create is the Move dialog (also from a monitoring card), Edit changes only the end
+    # and the note, Delete hides a wrong binding with its history.
+    Area(_('Channel bindings'), 'sensors.Binding'),
+    # Sensor readings: Read is the Charts and Live values pages and a place's charts in a monitoring window. Nobody writes
+    # them but the ingest service.
+    Area(_('Sensor readings'), 'sensors.Reading', actions=('view',)),
+    # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
+    Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
+    # Alarms are shown, not sent. Rules: read, create, edit, delete. Events: Read is their page, Edit acknowledges one.
+    Area(_('Alarm rules'), 'sensors.AlarmRule'),
+    Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view', 'change')),
+    # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
+    Area(_('Sensor credentials'), 'sensors.Credential'),
     Area(_('Activity log'), 'core.AuditLog', actions=('view',)),
 ]

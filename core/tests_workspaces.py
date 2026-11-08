@@ -66,13 +66,14 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                                     'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                     'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
                                                     'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages'])
+                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
+                                                   'Team overview', 'Team list', 'Organization chart'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
         self.sign_in(self.admin)
         response = self.page(reverse('farm:system_list'))
         self.assertEqual([(p['key'], p['label']) for p in response.context['workspaces']],
-                         [('company', 'Company'), ('production', 'Production')])
+                         [('company', 'Company'), ('production', 'Production'), ('sensors', 'Sensors')])
         self.assertContains(response, 'data-menu-toggle', count=2)    # the switcher and the user menu
         self.assertContains(response, '<span class="workspace-name">Production</span>', html=True)
         self.assertContains(response, 'aria-current="true">Production</a>')
@@ -81,7 +82,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
     def test_each_panel_links_to_its_first_page_for_this_person(self):
         self.sign_in(self.admin)
         panels = {p['key']: p['url'] for p in self.page(reverse('home')).context['workspaces']}
-        self.assertEqual(panels, {'company': reverse('home'), 'production': reverse('production_home')})
+        self.assertEqual(panels, {'company': reverse('home'), 'production': reverse('production_home'),
+                                  'sensors': reverse('sensors:home')})
         production_only = get_user_model().objects.create_user('per', 'per@example.com', 'x')
         production_only.groups.add(role('Systems', 'view_system'))
         self.sign_in(production_only)
@@ -127,7 +129,8 @@ class PanelMemoryTests(WorkspaceTestCase):
                                                   'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
                                                   'Harvested', 'Harvest plan', 'Production plans', 'Treatments',
                                                   'Health events', 'Sea-lice counts', 'Experiments', 'Regulatory reports', 'Questions for the authority',
-                                                   'Messages'])
+                                                   'Messages', 'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance',
+                                                   'Team overview', 'Team list', 'Organization chart'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')
 
@@ -161,7 +164,7 @@ class MainHeadingTests(WorkspaceTestCase):
                          [('', ['']), ('Setup', ['Facility structure', 'Reference data', 'Harvest and logistics',
                                                  'Purchasing']),
                           ('Operations', ['', 'Feeding', 'Harvest', 'Health']), ('Research', ['']), ('Reports', ['']),
-                          ('Communication', [''])])
+                          ('Communication', ['']), ('Team', ['Time & attendance', 'People'])])
         self.assertContains(response, '<p class="rail-section">Operations</p>', html=True)
         self.assertContains(response, '<p class="rail-section">Setup</p>', html=True)
         self.assertContains(response, '<p class="rail-group">Facility structure</p>', html=True)
@@ -244,6 +247,16 @@ class MenuPlacementTests(TestCase):
             'hr.LeaveType': 'Company · HR · Time & shifts',
             'hr.Holiday': 'Company · HR · Time & shifts',
             'hr.SchedulingSettings': 'Company · HR · Time & shifts',
+            'sensors.Connection': 'Sensors · Setup',
+            'sensors.PayloadFormat': 'Sensors · Setup',
+            'sensors.Device': 'Sensors · Setup',
+            'sensors.Channel': 'Sensors · Setup',
+            'sensors.Binding': 'Sensors · Setup',
+            'sensors.Reading': 'Sensors · Operations',
+            'sensors.DeadLetter': 'Sensors · Operations',
+            'sensors.AlarmRule': 'Sensors · Operations',
+            'sensors.AlarmEvent': 'Sensors · Operations',
+            'sensors.Credential': 'Sensors · Administration',
             'core.AuditLog': 'Company · Administration',
         })
 

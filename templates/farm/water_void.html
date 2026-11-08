@@ -7,7 +7,7 @@
 {% block heading %}{{ heading }}{% endblock %}
 {% block content %}
 <div class="confirm">
-  <p class="confirm-question">{% blocktrans trimmed with point=sample.point moment=sample|site_clock|date:"DATETIME_FORMAT" %}Void the sample of {{ point }} at {{ moment }}?{% endblocktrans %}</p>
+  <p class="confirm-question">{% blocktrans trimmed with point=sample.point moment=sample|sample_clock|date:"DATETIME_FORMAT" %}Void the sample of {{ point }} at {{ moment }}?{% endblocktrans %}</p>
   <ul class="op-lines">
     {% for parameter, value in values %}<li>{{ parameter.label }}: {{ value|water_value:parameter.code }}</li>{% endfor %}
   </ul>
@@ -15,6 +15,7 @@
   <form method="post" action="{{ request.get_full_path }}" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% include "farm/_withdrawal_change.html" with withdrawal_change=form.withdrawal_change %}
     {% with field=form.reason %}{% include "registration/_field.html" %}{% endwith %}
     <div class="form-actions">
       <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>

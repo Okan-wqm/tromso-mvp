@@ -7,7 +7,7 @@ from django.utils.translation import gettext as _
 
 from ..models.site import zone_of
 from ..models.water_point import site_of
-from ..water import parameters
+from ..water import parameters, read as water_read
 from ..water.evaluate import ANY_WATER, Status
 from .stock import DASH, number
 
@@ -61,7 +61,7 @@ def age(moment):
 
 
 @register.filter
-def site_clock(sample):
+def sample_clock(sample):
     """When a sample was taken, on the clock of its site, as a naive time the date filter shows as it is."""
     return timezone.make_naive(sample.measured_at, zone_of(site_of(sample.point)))
 
@@ -91,3 +91,25 @@ def signed_amount(value, decimals):
         return DASH
     rounded = round(value, int(decimals))
     return ('+' if rounded > 0 else '−' if rounded < 0 else '') + number(abs(rounded), int(decimals))
+
+
+def short_age(moment, now=None):
+    """How long ago: the seconds of a live value under a minute ("12 s"), else as `age` says it ("3 hours")."""
+    if not moment:
+        return DASH
+    now = now or timezone.now()
+    seconds = int((now - moment).total_seconds())
+    if seconds < 60:
+        return _('%(count)d s') % {'count': max(seconds, 0)}
+    return timesince(moment, now, depth=1)
+
+
+@register.filter
+def source(reading, now=None):
+    """Where a value comes from and how old it is, as every page with a latest value shows it (owner rule A1), for
+    farm/_water_source.html: {'origin': 'unit sensor #12', 'age': '12 s ago'}, 'system sensor #3' and '40 s ago',
+    'manual' and '2 days ago'; `now`: the moment the age is counted to (a past moment's Deffeyes), else now."""
+    if not reading:
+        return None
+    # Translators: how old a value is, e.g. "12 s ago", "2 days ago".
+    return {'origin': water_read.origin_text(reading), 'age': _('%(age)s ago') % {'age': short_age(reading.at, now or None)}}

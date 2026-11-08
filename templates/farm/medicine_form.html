@@ -10,5 +10,5 @@
 {% trans "Save withdrawal" as save %}
 {% trans "The withdrawal can be added once the medicine is created." as pending %}
 {% if object %}{% url 'farm:medicine_withdrawals' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=withdrawals tab="withdrawal" legend=panel_title kind="withdrawal-row" %}
+{% include "crud/_row_list.html" with rows=withdrawals tab="withdrawal" legend=panel_title kind="withdrawal-row" extra="farm/_withdrawal_change.html" %}
 {% endblock %}

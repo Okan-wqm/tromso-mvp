@@ -1,7 +1,8 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core.audit import message
@@ -133,7 +134,8 @@ class SiteAuditTests(SiteTestCase):
         self.assertEqual(deleted, ('delete', 'ali', {}))
 
     def test_saving_without_changes_logs_nothing(self):
-        site = self.make_site(name='Same', code='SM', area_m2='100.00', latitude='60.391300', longitude='5.322100')
+        site = self.make_site(name='Same', code='SM', area_m2='100.00', latitude='60.391300', longitude='5.322100',
+                              timezone='Europe/Oslo')
         # Same values typed differently (100 vs 100.00) are not a change.
         self.client.post(reverse('farm:site_edit', args=[site.pk]), site_data(
             name='Same', code='SM', country='', region='', area_m2='100', latitude='60.3913', longitude='5.3221',
@@ -221,7 +223,7 @@ class SiteCreateTests(SiteTestCase):
         self.assertEqual(site.code, 'MPS-001')
         self.assertEqual(site.created_by, self.user)
         self.assertEqual(site.version, 1)
-        self.assertEqual(site.timezone, '')
+        self.assertEqual(site.timezone, 'Europe/Oslo')
 
     def test_name_and_code_are_required_and_code_needs_two_characters(self):
         response = self.client.post(reverse('farm:site_create'), site_data(name=' ', code='x'))
@@ -284,6 +286,32 @@ class SiteCreateTests(SiteTestCase):
         response = self.client.post(reverse('farm:site_create'), site_data(type='sea_cage'))
         tabs = {tab['key']: tab['has_errors'] for tab in response.context['form'].tab_list()}
         self.assertEqual(tabs, {'basic': False, 'location': True, 'contact': False, 'reports': False})
+
+
+class SiteTimeZoneTests(SiteTestCase):
+    """A site's day and clock are read in its time zone (farm.models.zone_of): every site has one, stored and shown, so
+    none runs on UTC unseen. A site made without one is given the company's (settings.COMPANY_TIME_ZONE, from the
+    environment, Europe/Oslo by default), never the server's UTC."""
+
+    def test_a_site_made_without_a_time_zone_is_given_the_companys_never_the_servers_utc(self):
+        self.assertEqual(settings.TIME_ZONE, 'UTC')                        # the server's clock is not the company's
+        self.assertEqual(self.make_site().timezone, 'Europe/Oslo')
+        with override_settings(COMPANY_TIME_ZONE='Europe/Istanbul'):
+            self.assertEqual(self.make_site(name='Site B', code='SB').timezone, 'Europe/Istanbul')
+
+    def test_the_database_refuses_a_site_without_a_time_zone(self):
+        site = self.make_site(timezone='Europe/Oslo')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Site.objects.filter(pk=site.pk).update(timezone='')
+
+    def test_the_form_asks_for_a_time_zone_and_offers_the_companys_first(self):
+        response = self.client.post(reverse('farm:site_create'), site_data(timezone=''))
+        self.assertEqual(response.context['form'].errors['timezone'], ['This field is required.'])
+        self.assertFalse(Site.objects.exists())
+        with override_settings(COMPANY_TIME_ZONE='Europe/Istanbul'):
+            form = self.client.get(reverse('farm:site_create')).context['form']
+        self.assertNotIn('', [value for value, _ in form.fields['timezone'].choices])
+        self.assertEqual(form['timezone'].value(), 'Europe/Istanbul')
 
 
 class SiteDatabaseConstraintTests(SiteTestCase):

@@ -20,9 +20,12 @@ from . import navigation
 
 # The matrix columns: (action, column label). `all` ("Everyone") is offered by the one area whose rows are
 # scoped to a relationship (HR's Employees): a role without it reaches only the rows its holder's relationship
-# gives (Resource.scoped), a role with it reaches every row. It implies Read like the other actions.
+# gives (Resource.scoped), a role with it reaches every row. It implies Read like the other actions. Two more columns
+# widen HR's rows for production: `crew` (Shift schedule: a production worker also sees the name and shift of the people
+# in their own department) and `all_production` (Employees: every production person, never the office's). Each is
+# offered by its one area; the other rows have an empty cell there.
 ACTIONS = [('view', _('Read')), ('add', _('Create')), ('change', _('Edit')), ('delete', _('Delete')),
-           ('all', _('Everyone'))]
+           ('crew', _('Crew')), ('all_production', _('All production')), ('all', _('Everyone'))]
 READ = 'view'
 ALL = 'all'
 

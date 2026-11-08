@@ -1,0 +1,31 @@
+{% load i18n %}{% comment %} The Crew block of the Shift schedule (hr.read.crew_week): the viewer's colleagues in their own production
+   department, each day their shift code and times or an empty cell. Plain values only: no link, no note, no leave. {% endcomment %}
+<section class="crew" aria-labelledby="crew-heading">
+  <h2 id="crew-heading" class="section-title">{% trans "Crew this week" %}</h2>
+  {% if crew.rows %}
+  <div class="table-wrap">
+    <table class="data-table roster">
+      <thead>
+        <tr>
+          <th scope="col">{% trans "Colleague" %}</th>
+          {% for day in crew.days %}<th scope="col" class="roster-day">{{ day|date:"D" }}<span class="row-sub">{{ day|date:"MONTH_DAY_FORMAT" }}</span></th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in crew.rows %}
+        <tr>
+          <th scope="row"><span class="row-title">{{ row.name }}</span><span class="row-sub">{{ row.department }}</span></th>
+          {% for cell in row.cells %}
+          <td class="roster-cell">{% if cell %}<span class="shift-chip tone-{{ cell.tone }}" title="{{ cell.starts_at|time:"TIME_FORMAT" }}–{{ cell.ends_at|time:"TIME_FORMAT" }}">{{ cell.shift_code }}</span><span class="row-sub">{{ cell.starts_at|time:"TIME_FORMAT" }}–{{ cell.ends_at|time:"TIME_FORMAT" }}</span>{% endif %}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif not crew.placed %}
+  <p class="muted">{% trans "You are not placed in a production department this week, so you have no crew." %}</p>
+  {% else %}
+  <p class="muted">{% trans "Nobody else is placed in your department this week." %}</p>
+  {% endif %}
+</section>

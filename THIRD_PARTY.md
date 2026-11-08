@@ -14,3 +14,11 @@ Used to build and test the browser code on a developer's machine or in CI; never
 | `@types/node` | MIT | Types of Node's test runner and assertions, for the TypeScript unit tests only (`tsconfig.test.json`) |
 | `playwright-core` | Apache-2.0 | Drives the machine's own Chrome or Edge for the designer's browser test (`frontend/test/designer.browser.test.ts`); no browser is downloaded |
 | `axe-core` | MPL-2.0 | Accessibility rules run in that browser test on the designer (serious and critical violations fail it) |
+
+## Test-only Python packages (`scripts/testrunner/requirements.txt`)
+
+Installed only in the image the tests run in (`scripts/test.sh`); never on a server.
+
+| Package | Licence | What it is used for |
+|---|---|---|
+| `tblib` | BSD-2-Clause | Lets the parallel test runner send a failing test's traceback from its worker to the main process |

@@ -2,4 +2,5 @@
 *
 !chemcore/
 !docker/
+!scripts/testrunner/
 chemcore/target/

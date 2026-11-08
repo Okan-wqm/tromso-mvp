@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n stock %}
+{% load i18n stock dates %}
 {% comment %} Operations › Harvest › Harvest plan (farm.resources.harvest_plan): the planned harvests and transports,
    each with its derived status, planned against actual, the fast it asks of its unit and a medicine
    withdrawal on its day; "Record harvest" / "Record transfer" opens the stock's dialog started from it.{% endcomment %}
@@ -28,8 +28,8 @@
     <option value="">{% trans "All units" %}</option>
     {% for unit in units %}<option value="{{ unit.pk }}"{% if chosen.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
   </select>
-  <label class="date-filter">{% trans "From" %} <input type="date" name="from" value="{{ chosen.from }}"></label>
-  <label class="date-filter">{% trans "To" %} <input type="date" name="to" value="{{ chosen.to }}"></label>
+  <label class="date-filter">{% trans "From" %} {% day_input "from" chosen.from %}</label>
+  <label class="date-filter">{% trans "To" %} {% day_input "to" chosen.to %}</label>
   <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
 </form>
 {% if can_add %}<a class="button button-ghost" href="{{ plan_transport_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Plan transport" %}</a>{% endif %}

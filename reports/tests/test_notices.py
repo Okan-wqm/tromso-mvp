@@ -289,6 +289,7 @@ class EscapeNoticeTests(NoticeTestCase):
 
 class TimesMovedIntoNoticesTests(TransactionTestCase):
     """Reports migration 0005 and its reverse (farm migration 0024 drops the column after it)."""
+    serialized_rollback = True      # the rows migrations write come back for the test classes after this one
 
     before = [('farm', '0023_reports_fields'), ('reports', '0003_sea_lice_answers')]
 

@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from core.crud import TabbedForm, tab_fields
+from core.widgets import DayInput
 
 from .. import rules, scope, services
 from ..models import Employee, Shift, ShiftAssignment
@@ -27,15 +28,17 @@ class ShiftAssignmentForm(TabbedForm):
             'note': _('A remark for the lead’s own planning; it is not shown in the log.'),
         }
         widgets = {
-            'day': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'day': DayInput(),
             'note': forms.TextInput(),
         }
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, realm=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
         self.warnings = []
-        employees = scope.team(user) if user is not None else Employee.objects.none()
+        # a new record's person is chosen among the team in the panel's realm (an existing one keeps its person)
+        chosen_in = realm if self.instance._state.adding else None
+        employees = scope.team(user, realm=chosen_in) if user is not None else Employee.objects.none()
         self.fields['employee'].queryset = employees.select_related('user')
         self.fields['employee'].label_from_instance = lambda employee: employee.full_name
         self.fields['shift'].queryset = Shift.objects.filter(status='active')

@@ -1,0 +1,112 @@
+"""A sensor chart as server-rendered SVG (no chart library, as the Deffeyes chart): the mean of each bucket as a line,
+its lowest and highest as a band, the gaps shaded (a gap is never bridged: the line breaks there), the manual and lab
+samples as points, the moments a sensor was moved or calibrated as marks, and a header that names what the buckets are
+(stored values, minute or hourly summaries, the site's days). Every word is a translated string; every value the person
+typed (a unit's code) is escaped."""
+from django.utils import formats, timezone
+from django.utils.html import escape
+from django.utils.translation import gettext as _
+
+from . import read
+
+WIDTH, HEIGHT = 720, 260
+LEFT, RIGHT, TOP, BOTTOM = 56, 16, 30, 34
+
+
+def tier_text(tier):
+    return {read.RAW: _('stored values'), read.ROLLUP_1H: _('hourly summaries'),
+            read.LOCAL_DAY: _('days on the site’s clock')}[tier]
+
+
+def width_text(width):
+    seconds = int(width.total_seconds())
+    if seconds < 60:
+        return _('%(count)d s') % {'count': seconds}
+    if seconds < 3600:
+        return _('%(count)d min') % {'count': seconds // 60}
+    if seconds < 86400:
+        return _('%(count)d h') % {'count': seconds // 3600}
+    return _('%(count)d d') % {'count': seconds // 86400}
+
+
+def _number(value):
+    return f'{value:.2f}'
+
+
+def draw(chart, title):
+    """The chart's SVG (a string, safe to put in a page as it is)."""
+    head = _('%(title)s · %(quantity)s · %(tier)s, %(width)s each') % {
+        'title': title, 'quantity': chart.quantity.label, 'tier': tier_text(chart.tier), 'width': width_text(chart.width)}
+    parts = [f'<svg class="sensor-chart" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" data-tier="{chart.tier}" '
+             f'xmlns="http://www.w3.org/2000/svg"><title>{escape(head)}</title>',
+             f'<text class="chart-head" x="{LEFT}" y="18">{escape(head)}</text>']
+    if chart.empty and not chart.samples:
+        parts.append(f'<text class="chart-empty" x="{WIDTH / 2}" y="{HEIGHT / 2}" text-anchor="middle">'
+                     f'{escape(_("No sensor values in this time."))}</text></svg>')
+        return ''.join(parts)
+    values = [b.vmin for b in chart.buckets] + [b.vmax for b in chart.buckets] + [float(v) for _a, v in chart.samples]
+    low, high = min(values), max(values)
+    pad = (high - low) * 0.08 or max(abs(high) * 0.05, 0.5)
+    low, high = low - pad, high + pad
+    span = (chart.end - chart.start).total_seconds()
+
+    def x(moment):
+        share = (moment - chart.start).total_seconds() / span
+        return LEFT + max(0.0, min(1.0, share)) * (WIDTH - LEFT - RIGHT)
+
+    def y(value):
+        return TOP + (high - value) / (high - low) * (HEIGHT - TOP - BOTTOM)
+
+    for start, end in chart.gaps:
+        parts.append(f'<rect class="chart-gap" x="{_number(x(start))}" y="{TOP}" width="{_number(max(x(end) - x(start), 1))}" '
+                     f'height="{HEIGHT - TOP - BOTTOM}"><title>{escape(_("No value"))}</title></rect>')
+    gap_starts = {start for start, _end in chart.gaps}
+    runs, run = [], []
+    for bucket in chart.buckets:
+        run.append(bucket)
+        if bucket.last_ts in gap_starts:
+            runs.append(run)
+            run = []
+    if run:
+        runs.append(run)
+    for run in runs:
+        middle = [(x(b.start + (b.end - b.start) / 2), b) for b in run]
+        band = [f'{_number(px)},{_number(y(b.vmax))}' for px, b in middle] + [
+            f'{_number(px)},{_number(y(b.vmin))}' for px, b in reversed(middle)]
+        parts.append(f'<polygon class="chart-band" points="{" ".join(band)}"/>')
+        line = ' '.join(f'{_number(px)},{_number(y(b.avg))}' for px, b in middle)
+        parts.append(f'<polyline class="chart-line" points="{line}"/>')
+        for px, b in middle:
+            if b.role == 'backup' or b.origin == read.SYSTEM_SENSOR:
+                parts.append(f'<circle class="chart-other-source" cx="{_number(px)}" cy="{_number(y(b.avg))}" r="2.5">'
+                             f'<title>{escape(_("From the backup or the system’s channel"))}</title></circle>')
+    for at, value in chart.samples:
+        parts.append(f'<circle class="chart-sample" cx="{_number(x(at))}" cy="{_number(y(float(value)))}" r="4">'
+                     f'<title>{escape(_("Sample"))}: {escape(formats.localize(value))}</title></circle>')
+    for marker in chart.markers:
+        label = _('Sensor moved here') if marker.kind == 'move' else _('Calibrated')
+        parts.append(f'<line class="chart-marker" x1="{_number(x(marker.at))}" x2="{_number(x(marker.at))}" y1="{TOP}" '
+                     f'y2="{HEIGHT - BOTTOM}"><title>{escape(label)}</title></line>')
+    for value in (low + pad, (low + high) / 2, high - pad):
+        parts.append(f'<text class="chart-tick" x="{LEFT - 6}" y="{_number(y(value))}" text-anchor="end" '
+                     f'dominant-baseline="middle">{escape(formats.localize(round(value, 2)))}</text>')
+    for moment, anchor in ((chart.start, 'start'), (chart.end, 'end')):
+        shown = formats.date_format(timezone.localtime(moment, chart.zone), 'DATETIME_FORMAT')
+        parts.append(f'<text class="chart-tick" x="{_number(x(moment))}" y="{HEIGHT - 12}" text-anchor="{anchor}">'
+                     f'{escape(shown)}</text>')
+    parts.append(f'<rect class="chart-frame" x="{LEFT}" y="{TOP}" width="{WIDTH - LEFT - RIGHT}" '
+                 f'height="{HEIGHT - TOP - BOTTOM}"/></svg>')
+    return ''.join(parts)
+
+
+def notes(chart):
+    """What the person should know to read the chart right, translated."""
+    found = []
+    if chart.reduced:
+        found.append(_('A channel that stores a value when it moves counts the values it did not store at the row that '
+                       'closes their run: less than two heartbeats late.'))
+    if chart.tier != read.RAW:
+        found.append(_('Each point is the mean of its time; the band is its lowest and highest value.'))
+    if chart.samples:
+        found.append(_('The dots are manual and lab samples.'))
+    return found

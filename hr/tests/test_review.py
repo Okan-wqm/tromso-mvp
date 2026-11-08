@@ -48,29 +48,29 @@ class Moved(PeopleTestCase):
         return getattr(self.client, method)(reverse(name, args=[pk]), {'version': '1', 'note': 'x'}).status_code
 
     def test_the_old_record_stays_with_the_old_manager_on_every_verb(self):
-        for name, obj in (('hr:shiftassignment_edit', self.cell), ('hr:shiftassignment_delete', self.cell),
-                          ('hr:attendancerecord_edit', self.punch), ('hr:attendancerecord_delete', self.punch),
-                          ('hr:leaverequest_detail', self.request), ('hr:leaverequest_edit', self.request)):
+        for name, obj in (('hr:production_shiftassignment_edit', self.cell), ('hr:production_shiftassignment_delete', self.cell),
+                          ('hr:production_attendancerecord_edit', self.punch), ('hr:production_attendancerecord_delete', self.punch),
+                          ('hr:production_leaverequest_detail', self.request), ('hr:production_leaverequest_edit', self.request)):
             self.assertEqual(self.status(self.new, 'get', name, obj.pk), 404, ('new manager', name))
             self.assertEqual(self.status(self.old, 'get', name, obj.pk), 200, ('old manager', name))
-        for name in ('hr:leaverequest_approve', 'hr:leaverequest_cancel'):
+        for name in ('hr:production_leaverequest_approve', 'hr:production_leaverequest_cancel'):
             self.assertEqual(self.status(self.new, 'post', name, self.request.pk), 404, name)
-        self.assertEqual(self.status(self.new, 'post', 'hr:shiftassignment_delete', self.cell.pk), 404)
-        self.assertEqual(self.status(self.new, 'post', 'hr:attendancerecord_delete', self.punch.pk), 404)
+        self.assertEqual(self.status(self.new, 'post', 'hr:production_shiftassignment_delete', self.cell.pk), 404)
+        self.assertEqual(self.status(self.new, 'post', 'hr:production_attendancerecord_delete', self.punch.pk), 404)
         self.assertEqual((ShiftAssignment.objects.count(), AttendanceRecord.objects.count()), (1, 1))
         self.assertEqual(LeaveRequest.objects.get().status, 'pending')
 
     def test_a_new_record_after_the_move_is_the_new_managers(self):
         later = ShiftAssignment.objects.create(employee=self.p, day=MOVE_DAY + timedelta(days=2), shift=self.shift)
-        self.assertEqual(self.status(self.new, 'get', 'hr:shiftassignment_edit', later.pk), 200)
-        self.assertEqual(self.status(self.old, 'get', 'hr:shiftassignment_edit', later.pk), 404)
+        self.assertEqual(self.status(self.new, 'get', 'hr:production_shiftassignment_edit', later.pk), 200)
+        self.assertEqual(self.status(self.old, 'get', 'hr:production_shiftassignment_edit', later.pk), 404)
 
     def test_the_lists_follow_the_day_too(self):
         self.client.force_login(self.new)
-        rows = self.client.get(reverse('hr:leaverequest_list'), {'tab': 'all'}).context['objects']
+        rows = self.client.get(reverse('hr:production_leaverequest_list'), {'tab': 'all'}).context['objects']
         self.assertEqual([r['request'] for r in rows], [])
         self.client.force_login(self.old)
-        rows = self.client.get(reverse('hr:leaverequest_list'), {'tab': 'all'}).context['objects']
+        rows = self.client.get(reverse('hr:production_leaverequest_list'), {'tab': 'all'}).context['objects']
         self.assertEqual([r['request'] for r in rows], [self.request])
 
     def test_the_week_names_the_department_of_a_day_the_viewer_reaches_and_hides_the_other_teams_findings(self):
@@ -100,10 +100,10 @@ class SelfAndPrivilegeTests(PeopleTestCase):
         punch = AttendanceRecord.objects.create(employee=self.in_a, clock_in=datetime(2026, 3, 10, 6, tzinfo=utc.utc),
                                                 via='entered', note='x')
         self.client.force_login(self.lead)
-        for name, obj in (('hr:shiftassignment_edit', own), ('hr:shiftassignment_delete', own),
-                          ('hr:attendancerecord_edit', punch), ('hr:attendancerecord_delete', punch)):
+        for name, obj in (('hr:production_shiftassignment_edit', own), ('hr:production_shiftassignment_delete', own),
+                          ('hr:production_attendancerecord_edit', punch), ('hr:production_attendancerecord_delete', punch)):
             self.assertEqual(self.client.post(reverse(name, args=[obj.pk]), {'version': '1'}).status_code, 403, name)
-        response = self.client.post(reverse('hr:shiftassignment_create'), {
+        response = self.client.post(reverse('hr:production_shiftassignment_create'), {
             'employee': str(self.in_a.pk), 'day': '2026-03-11', 'shift': str(self.shift.pk), 'note': ''})
         self.assertTrue(response.context['form'].non_field_errors())
         with self.assertRaises(Exception):
@@ -135,17 +135,17 @@ class SelfAndPrivilegeTests(PeopleTestCase):
         ProductionDepartment.objects.filter(pk=self.dept_b.pk).update(manager=editor)
         spare = user('spare')
         self.client.force_login(editor)
-        form = self.client.get(reverse('hr:employee_edit', args=[self.in_b.pk])).context['form']
+        form = self.client.get(reverse('hr:production_employee_edit', args=[self.in_b.pk])).context['form']
         self.assertTrue(form.fields['user'].disabled)
         self.assertNotIn(spare, form.fields['user'].queryset)
-        self.client.post(reverse('hr:employee_edit', args=[self.in_b.pk]), {
+        self.client.post(reverse('hr:production_employee_edit', args=[self.in_b.pk]), {
             'employee_number': 'E-2', 'last_name': 'Bravo', 'first_name': 'Bob', 'employment_type': 'staff',
             'joined_on': '2026-01-01', 'user': str(spare.pk), 'department': token(self.dept_b), 'title': 'Feeder',
             'from_day': '2026-01-01', 'version': '1'})
         self.in_b.refresh_from_db()
         self.assertIsNone(self.in_b.user)
         self.client.force_login(self.hr)
-        self.assertIn(spare, self.client.get(reverse('hr:employee_edit', args=[self.in_b.pk])).context['form'].fields['user'].queryset)
+        self.assertIn(spare, self.client.get(reverse('hr:production_employee_edit', args=[self.in_b.pk])).context['form'].fields['user'].queryset)
 
 
 class SmallRuleTests(PeopleTestCase):
@@ -158,7 +158,7 @@ class SmallRuleTests(PeopleTestCase):
         with self.assertRaises(ValidationError):
             services.decide_leave(lead, request, True, 'x' * 501)
         self.client.force_login(lead)
-        response = self.client.post(reverse('hr:leaverequest_approve', args=[request.pk]), {'note': 'x' * 501})
+        response = self.client.post(reverse('hr:production_leaverequest_approve', args=[request.pk]), {'note': 'x' * 501})
         self.assertEqual(response.status_code, 302)
         request.refresh_from_db()
         self.assertEqual(request.status, 'pending')
@@ -180,7 +180,7 @@ class SmallRuleTests(PeopleTestCase):
         lead = user('boss', *PERMS, group='Lead role')
         Employee.objects.filter(pk=self.in_a.pk).update(user=lead, first_name='', last_name='')
         self.client.force_login(lead)
-        self.client.post(reverse('hr:leaverequest_create'), {
+        self.client.post(reverse('hr:production_leaverequest_create'), {
             'employee': str(self.in_a.pk), 'leave_type': str(kind.pk), 'first_day': '2026-03-10', 'last_day': '2026-03-10',
             'reason': 'First words'})
         request = LeaveRequest.objects.get()
@@ -189,7 +189,7 @@ class SmallRuleTests(PeopleTestCase):
         # a holder of Everyone edits the request's reason
         hr_edit = user('editall', 'view_leaverequest', 'change_leaverequest', 'all_employee', group='Edit all')
         self.client.force_login(hr_edit)
-        self.client.post(reverse('hr:leaverequest_edit', args=[request.pk]), {
+        self.client.post(reverse('hr:production_leaverequest_edit', args=[request.pk]), {
             'leave_type': str(kind.pk), 'first_day': '2026-03-10', 'last_day': '2026-03-10', 'reason': 'Other words',
             'version': '1'})
         entry = AuditLog.objects.order_by('created_at').last()
@@ -213,7 +213,7 @@ class SmallRuleTests(PeopleTestCase):
         record = AttendanceRecord.objects.create(
             employee=self.in_a, clock_in=datetime(2026, 3, 10, 8, 0, 45, tzinfo=utc.utc), via='entered', note='first')
         self.client.force_login(lead)
-        self.client.post(reverse('hr:attendancerecord_edit', args=[record.pk]), {
+        self.client.post(reverse('hr:production_attendancerecord_edit', args=[record.pk]), {
             'clock_in': '2026-03-10T08:00', 'clock_out': '', 'note': 'second', 'version': '1'})
         record.refresh_from_db()
         self.assertEqual((record.clock_in.second, record.note, record.version), (45, 'second', 2))

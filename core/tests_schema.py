@@ -92,8 +92,8 @@ class SchemaFormTests(SimpleTestCase):
             ({'flowRate': 1, 'phase': 'two'}, 'Select a valid choice'),
             ({'flowRate': 1, 'parameters': ['ph', 'temperature']}, 'not in the form it is saved in'),
             ({'flowRate': 1, 'autoFilling': False}, 'not in the form it is saved in'),
-            ({'flowRate': 1, 'calibrated': '2026-3-1'}, 'not in the form it is saved in'),
-            ({'flowRate': 1, 'calibrated': 'soon'}, 'Enter a valid date'),
+            ({'flowRate': 1, 'calibrated': '2026-3-1'}, 'Give the date as dd.mm.yyyy'),      # not a shape read
+            ({'flowRate': 1, 'calibrated': 'soon'}, 'Give the date as dd.mm.yyyy'),
             ({'flowRate': '1'}, 'not in the form it is saved in'),
         ]:
             with self.subTest(stored=stored), self.assertRaisesMessage(ValidationError, words):
@@ -206,7 +206,7 @@ class TitleTests(TestCase):
         import_module(settings.ROOT_URLCONF)    # declares every resource
         for tab in Resource.registry:
             place = navigation.place(tab.perm('view'))
-            if 'title' in vars(tab):
+            if 'menu_place' in vars(tab):
                 # a tab whose read permission is shared with an earlier page (HR's Attendance and Today) names its own entry
                 place = navigation.page(tab.url_name('list'))
             self.assertEqual(tab.title(), place.entry.label, tab.__name__)

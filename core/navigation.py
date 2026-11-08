@@ -20,7 +20,8 @@ SESSION_KEY = 'workspace'
 @dataclass(frozen=True)
 class Badge:
     """A number beside a menu entry (the unread messages), and the address of a fragment that renders the
-    number again (polled by frontend/poll.ts); no address for a panel's total, which is not polled."""
+    number again (polled by frontend/poll.ts); no address for one that is not polled (a panel's total, the pending leave
+    requests: they change on the next page)."""
     count: int
     url: str
 
@@ -39,6 +40,10 @@ class Entry:
     badge: str = ''         # the dotted path of a function(user) -> Badge, for a number beside the entry
     hidden: bool = False    # no line in the menu (a settings page reached from another page's links); it still
                             # has its place: the role matrix and the page heading read it, and it is current there
+    show_when: str = ''     # the dotted path of a function(user) -> bool: the line is shown only when it says so (Company's
+                            # HR lines are left out for a person whose HR is all in Production). The address agrees with the
+                            # menu: a line left out is refused at its address too (core.middleware.MenuAccessMiddleware)
+    show_note: str = ''     # who is not offered it, in words: the role matrix says it under the area
 
     def url(self):
         return reverse(self.url_name)
@@ -49,6 +54,18 @@ class Entry:
     def matches(self, path):
         url = self.url()
         return path == url if url == '/' else path.startswith(url)
+
+    def shown_to(self, user, answers=None):
+        """Whether the line is shown to the person: their permission, not hidden, and its `show_when` (asked once per
+        function and request: `answers` caches them)."""
+        if not self.allowed_for(user) or self.hidden:
+            return False
+        if not self.show_when:
+            return True
+        answers = {} if answers is None else answers
+        if self.show_when not in answers:
+            answers[self.show_when] = bool(import_string(self.show_when)(user))
+        return answers[self.show_when]
 
     def badge_for(self, user):
         return import_string(self.badge)(user) if self.badge else None
@@ -113,6 +130,34 @@ def entries():
     return [entry for workspace in workspaces() for entry in workspace.entries()]
 
 
+def entry_for(path):
+    """The menu line a page belongs to: the one whose address is the longest start of the page's (the rail's current
+    line), or None."""
+    return max((entry for entry in entries() if entry.matches(path)), key=lambda entry: len(entry.url()), default=None)
+
+
+def notes(perm):
+    """["Company · HR · Shift schedule: not for a person whose HR is all in Production"]: the lines read with `perm` that
+    are shown only to some, for the role matrix (a role gives the right; the line still depends on the person)."""
+    found = []
+    for workspace in workspaces():
+        for section in workspace.sections:
+            for group in section.groups:
+                for entry in group.entries:
+                    if entry.perm == perm and entry.show_when and not entry.hidden:
+                        labels = [str(label) for label in (workspace.label, section.label, entry.label) if label]
+                        found.append(f'{" · ".join(labels)}: {entry.show_note}')
+    return found
+
+
+def refused(user, path):
+    """Whether the page is refused to the person because its menu line is left out for them (`show_when`), though they
+    hold its permission: the menu and the address bar agree. A line never in the menu (`hidden`) is not a refusal."""
+    entry = entry_for(path)
+    return (entry is not None and not entry.hidden and bool(entry.show_when) and entry.allowed_for(user)
+            and not entry.shown_to(user))
+
+
 def place(perm):
     """Where the page read with this permission ('farm.view_site') sits in the menu."""
     for workspace in workspaces():
@@ -153,6 +198,7 @@ def rail(request):
     # is not current on its sibling /operations/feeding/protocols/).
     current_url = max((entry.url() for entry in entries() if entry.matches(request.path)), key=len, default=None)
     panels = []
+    answers = {}
     for workspace in workspaces():
         if not workspace.offered_to(user):
             continue
@@ -163,7 +209,7 @@ def rail(request):
                 shown = [
                     {'label': entry.label, 'url': entry.url(), 'icon': entry.icon,
                      'current': entry.url() == current_url, 'badge': entry.badge_for(user)}
-                    for entry in group.entries if entry.allowed_for(user) and not entry.hidden
+                    for entry in group.entries if entry.shown_to(user, answers)
                 ]
                 if shown:
                     groups.append({'label': group.label, 'entries': shown})
@@ -178,3 +224,13 @@ def rail(request):
     chosen = workspace_of(request.path) or request.session.get(SESSION_KEY)
     current = next((panel for panel in panels if panel['key'] == chosen), panels[0] if panels else None)
     return {'workspaces': panels, 'workspace': current, 'rail_sections': current['sections'] if current else []}
+
+
+def page_base(request):
+    """The frame a page that is not a tab's own (an error page) draws in: the dialog's when the dialog asked for it
+    (X-Modal), the console's for a person signed in, the sign-in page's for a visitor (context processor)."""
+    from .crud import is_modal
+    if is_modal(request):
+        return {'page_base': 'modal_base.html'}
+    user = getattr(request, 'user', None)
+    return {'page_base': 'app_base.html' if user is not None and user.is_authenticated else 'auth_base.html'}

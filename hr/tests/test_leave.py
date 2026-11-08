@@ -46,7 +46,7 @@ class LeaveTestCase(PeopleTestCase):
 
     def file(self, actor, person, first, last, kind=None, **extra):
         self.client.force_login(actor)
-        return self.client.post(reverse('hr:leaverequest_create'), {
+        return self.client.post(reverse('hr:production_leaverequest_create'), {
             'employee': str(person.pk), 'leave_type': str((kind or self.annual).pk), 'first_day': first.isoformat(),
             'last_day': last.isoformat(), 'reason': '', **extra})
 
@@ -179,7 +179,7 @@ class FilingTests(LeaveTestCase):
                           'decided_at': None})
         self.assertEqual(request.created_by, self.ann_user)
         # the form opens for them with themselves chosen
-        form = self.client.get(reverse('hr:leaverequest_create')).context['form']
+        form = self.client.get(reverse('hr:production_leaverequest_create')).context['form']
         self.assertEqual(form.initial['employee'], self.in_a.pk)
 
     def test_a_type_that_needs_no_approval_is_granted_at_once_with_no_decider(self):
@@ -190,12 +190,12 @@ class FilingTests(LeaveTestCase):
 
     def test_the_same_form_sent_twice_files_once(self):
         self.client.force_login(self.ann_user)
-        form = self.client.get(reverse('hr:leaverequest_create')).context['form']
+        form = self.client.get(reverse('hr:production_leaverequest_create')).context['form']
         key = form['entry_key'].value()
         data = {'employee': str(self.in_a.pk), 'leave_type': str(self.annual.pk), 'first_day': '2026-03-09',
                 'last_day': '2026-03-09', 'reason': '', 'entry_key': str(key)}
-        self.client.post(reverse('hr:leaverequest_create'), data)
-        self.client.post(reverse('hr:leaverequest_create'), data)
+        self.client.post(reverse('hr:production_leaverequest_create'), data)
+        self.client.post(reverse('hr:production_leaverequest_create'), data)
         self.assertEqual(LeaveRequest.objects.count(), 1)
 
     def test_the_form_refuses_what_cannot_be_charged_or_clashes_or_goes_over_the_allowance(self):
@@ -227,16 +227,16 @@ class FilingTests(LeaveTestCase):
         self.file(self.ann_user, self.in_a, MONDAY, MONDAY, reason='First')
         request = LeaveRequest.objects.get()
         self.client.force_login(self.ann_user)                           # Read and Create: no Edit, no change
-        self.assertEqual(self.client.get(reverse('hr:leaverequest_edit', args=[request.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse('hr:production_leaverequest_edit', args=[request.pk])).status_code, 403)
         self.client.force_login(self.lead)
-        self.client.post(reverse('hr:leaverequest_edit', args=[request.pk]), {
+        self.client.post(reverse('hr:production_leaverequest_edit', args=[request.pk]), {
             'leave_type': str(self.annual.pk), 'first_day': '2026-03-10', 'last_day': '2026-03-11', 'version': '1'})
         request.refresh_from_db()
         self.assertEqual((request.first_day, request.last_day, request.reason, request.version),
                          (TUESDAY, date(2026, 3, 11), 'First', 2))        # the reason is not the lead's to see or change
         LeaveRequest.objects.filter(pk=request.pk).update(status='approved', decided_at=datetime(2026, 1, 1, tzinfo=utc.utc),
                                                           decided_by=self.hr_leave, version=3)
-        response = self.client.post(reverse('hr:leaverequest_edit', args=[request.pk]), {
+        response = self.client.post(reverse('hr:production_leaverequest_edit', args=[request.pk]), {
             'leave_type': str(self.annual.pk), 'first_day': '2026-03-12', 'last_day': '2026-03-12', 'version': '3'})
         self.assertTrue(response.context['form'].non_field_errors())
         request.refresh_from_db()
@@ -299,14 +299,14 @@ class DecisionTests(LeaveTestCase):
     def test_the_decision_routes_post_and_the_list_buttons(self):
         request = request_for(self.in_a, MONDAY, MONDAY, self.annual)
         self.client.force_login(self.lead)
-        listed = self.client.get(reverse('hr:leaverequest_list')).context['objects']
+        listed = self.client.get(reverse('hr:production_leaverequest_list')).context['objects']
         self.assertEqual([(row['request'], row['can_decide'], row['can_cancel']) for row in listed], [(request, True, True)])
-        self.assertEqual(self.client.get(reverse('hr:leaverequest_reject', args=[request.pk])).status_code, 200)
-        self.assertEqual(self.client.get(reverse('hr:leaverequest_approve', args=[request.pk])).status_code, 405)
-        self.client.post(reverse('hr:leaverequest_reject', args=[request.pk]), {'note': 'No'})
+        self.assertEqual(self.client.get(reverse('hr:production_leaverequest_reject', args=[request.pk])).status_code, 200)
+        self.assertEqual(self.client.get(reverse('hr:production_leaverequest_approve', args=[request.pk])).status_code, 200)   # the dialog
+        self.client.post(reverse('hr:production_leaverequest_reject', args=[request.pk]), {'note': 'No'})
         request.refresh_from_db()
         self.assertEqual((request.status, request.decision_note), ('rejected', 'No'))
-        again = self.client.post(reverse('hr:leaverequest_approve', args=[request.pk]), follow=True)
+        again = self.client.post(reverse('hr:production_leaverequest_approve', args=[request.pk]), follow=True)
         self.assertEqual(again.status_code, 403)                            # decided: no longer anyone's to decide
 
 
@@ -351,7 +351,7 @@ class PrivacyAndScopeTests(LeaveTestCase):
         super().setUp()
         self.request = request_for(self.in_a, MONDAY, MONDAY, self.sick, reason='A diagnosis')
 
-    def page(self, actor, name='hr:leaverequest_list', *args):
+    def page(self, actor, name='hr:production_leaverequest_list', *args):
         self.client.force_login(actor)
         return self.client.get(reverse(name, args=args))
 
@@ -359,16 +359,16 @@ class PrivacyAndScopeTests(LeaveTestCase):
         lead = self.page(self.lead)
         self.assertContains(lead, 'Sick leave')
         self.assertNotContains(lead, 'A diagnosis')
-        self.assertNotContains(self.page(self.lead, 'hr:leaverequest_detail', self.request.pk), 'A diagnosis')
+        self.assertNotContains(self.page(self.lead, 'hr:production_leaverequest_detail', self.request.pk), 'A diagnosis')
         self.assertContains(self.page(self.ann_user), 'A diagnosis')
-        self.assertContains(self.page(self.ann_user, 'hr:leaverequest_detail', self.request.pk), 'A diagnosis')
+        self.assertContains(self.page(self.ann_user, 'hr:production_leaverequest_detail', self.request.pk), 'A diagnosis')
         self.assertContains(self.page(self.hr_leave), 'A diagnosis')
 
     def test_the_lead_cannot_read_the_reason_through_the_edit_form_either(self):
         self.client.force_login(self.lead)
-        form = self.client.get(reverse('hr:leaverequest_edit', args=[self.request.pk])).context['form']
+        form = self.client.get(reverse('hr:production_leaverequest_edit', args=[self.request.pk])).context['form']
         self.assertNotIn('reason', form.fields)
-        self.client.post(reverse('hr:leaverequest_edit', args=[self.request.pk]), {
+        self.client.post(reverse('hr:production_leaverequest_edit', args=[self.request.pk]), {
             'leave_type': str(self.annual.pk), 'first_day': '2026-03-09', 'last_day': '2026-03-09', 'reason': 'overwritten',
             'version': '1'})
         self.request.refresh_from_db()
@@ -387,15 +387,15 @@ class PrivacyAndScopeTests(LeaveTestCase):
         other = request_for(self.in_b, MONDAY, MONDAY, self.annual)
         self.client.force_login(self.lead)
         before = self.state_of(other)
-        self.assertEqual(list(r['request'] for r in self.client.get(reverse('hr:leaverequest_list'), {'tab': 'all'}
+        self.assertEqual(list(r['request'] for r in self.client.get(reverse('hr:production_leaverequest_list'), {'tab': 'all'}
                                                                     ).context['objects']), [self.request])
         for query in ({'q': 'Bravo'}, {'tab': 'all', 'q': 'Annual'}):
-            self.assertNotIn(other, [r['request'] for r in self.client.get(reverse('hr:leaverequest_list'), query
+            self.assertNotIn(other, [r['request'] for r in self.client.get(reverse('hr:production_leaverequest_list'), query
                                                                            ).context['objects']])
-        for method, name in (('get', 'hr:leaverequest_detail'), ('get', 'hr:leaverequest_edit'),
-                             ('post', 'hr:leaverequest_edit'), ('post', 'hr:leaverequest_approve'),
-                             ('get', 'hr:leaverequest_reject'), ('post', 'hr:leaverequest_reject'),
-                             ('post', 'hr:leaverequest_cancel')):
+        for method, name in (('get', 'hr:production_leaverequest_detail'), ('get', 'hr:production_leaverequest_edit'),
+                             ('post', 'hr:production_leaverequest_edit'), ('post', 'hr:production_leaverequest_approve'),
+                             ('get', 'hr:production_leaverequest_reject'), ('post', 'hr:production_leaverequest_reject'),
+                             ('post', 'hr:production_leaverequest_cancel')):
             response = getattr(self.client, method)(reverse(name, args=[other.pk]), {'version': '1', 'note': 'x'})
             self.assertEqual(response.status_code, 404, (method, name))
         self.assertEqual(self.state_of(other), before)
@@ -406,33 +406,33 @@ class PrivacyAndScopeTests(LeaveTestCase):
 
     def test_a_reader_cannot_decide_through_the_urls_and_a_stranger_reaches_nothing(self):
         self.client.force_login(self.ann_user)                      # Read and Create only
-        for name in ('hr:leaverequest_approve', 'hr:leaverequest_reject'):
+        for name in ('hr:production_leaverequest_approve', 'hr:production_leaverequest_reject'):
             self.assertEqual(self.client.post(reverse(name, args=[self.request.pk])).status_code, 403, name)
         stranger = user('stranger')
         self.client.force_login(stranger)
-        self.assertEqual(self.client.get(reverse('hr:leaverequest_list')).status_code, 403)
-        self.assertEqual(self.client.post(reverse('hr:leaverequest_cancel', args=[self.request.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse('hr:production_leaverequest_list')).status_code, 403)
+        self.assertEqual(self.client.post(reverse('hr:production_leaverequest_cancel', args=[self.request.pk])).status_code, 403)
 
     def test_the_tabs_and_counts(self):
         request_for(self.in_a, TUESDAY, TUESDAY, self.annual, status='approved')
         request_for(self.in_a, date(2026, 3, 11), date(2026, 3, 11), self.annual, status='rejected')
         self.client.force_login(self.lead)
-        counts = self.client.get(reverse('hr:leaverequest_list')).context['counts']
+        counts = self.client.get(reverse('hr:production_leaverequest_list')).context['counts']
         self.assertEqual(counts, {'pending': 1, 'approved': 1, 'rejected': 1})
         for tab, expected in (('pending', 1), ('approved', 1), ('rejected', 1), ('all', 3), ('nonsense', 1)):
-            rows = self.client.get(reverse('hr:leaverequest_list'), {'tab': tab}).context['objects']
+            rows = self.client.get(reverse('hr:production_leaverequest_list'), {'tab': tab}).context['objects']
             self.assertEqual(len(rows), expected, tab)
 
     def test_the_list_runs_the_same_queries_for_few_and_many_requests(self):
         self.client.force_login(self.lead)
-        self.client.get(reverse('hr:leaverequest_list'))                                      # warm the permission cache
+        self.client.get(reverse('hr:production_leaverequest_list'))                                      # warm the permission cache
         def count(people):
             for n in range(people):
                 person = employee(f'E-{4000 + n + people}', f'Many{n}')
                 place(person, self.dept_a)
                 request_for(person, MONDAY, TUESDAY, self.annual)
             with CaptureQueriesContext(connection) as queries:
-                self.client.get(reverse('hr:leaverequest_list'))
+                self.client.get(reverse('hr:production_leaverequest_list'))
             return len(queries)
         self.assertEqual(count(3), count(30))
 

@@ -417,15 +417,16 @@ def omega_line(eq, calcium_mg_l, ksp, box):
     return clip_polyline(points, box)
 
 
-def geometry(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
+def geometry(analysis, layers=ALL_LAYERS, dosing=None, simulator=(), extent=()):
     """The chart of an analysis, the layers asked for, in the chart's units; a note says why a layer asked
     for is not drawn. `dosing`: the dosing layer (a dosing.Visual); `simulator`: the water after each step of
-    the simulator, (DIC, alkalinity), the water first."""
+    the simulator, (DIC, alkalinity), the water first; `extent`: more points (DIC, alkalinity) the box must hold, drawn
+    as nothing (a replay's frames, A6)."""
     eq, limits, water = analysis.equilibria, analysis.limits, analysis.water
     show_target = 'target' in layers and analysis.target is not None
     path = dosing is not None and 'dosing' in layers and show_target and bool(dosing.path)
     simulator = list(simulator) if 'simulator' in layers and len(simulator) > 1 else []
-    box = box_of(analysis, [*simulator, *([dosing.waypoint] if path else [])])
+    box = box_of(analysis, [*simulator, *([dosing.waypoint] if path else []), *extent])
     shape = Geometry(box, point=(analysis.dic, analysis.alkalinity_meq))
     if 'isolines' in layers:
         for ph in ISOLINE_PHS:
@@ -554,10 +555,50 @@ class Chart:
     simulator: dict | None = None
 
 
-def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
-    """The chart of an analysis as the template draws it (`dosing` and `simulator` as `geometry` takes them)."""
-    shape = geometry(analysis, layers, dosing, simulator)
+def _flat(polyline):
+    return [float(value) for point in polyline for value in point]
+
+
+def _pairs(values):
+    return [(values[index], values[index + 1]) for index in range(0, len(values), 2)]
+
+
+def figure(analysis, shape):
+    """A chart's whole geometry (`geometry`) as numbers and words a JSON document holds: THE shape the server's SVG
+    (`render`) and the replay's player draw from (A8). Every line a flat array [DIC, alkalinity, DIC, alkalinity, ...]
+    in the chart's units; the regions and borders with their names and the notes in the active language."""
     box = shape.box
+    names = _region_names(analysis)
+    return {
+        'box': [float(box.dic), float(box.alkalinity), float(box.dic_step), float(box.alkalinity_step)],
+        'isolines': [[float(isoline.ph), int(isoline.labelled), *_flat(isoline.segment)] for isoline in shape.isolines],
+        'regions': [[key, names[key], _flat(polygon)]
+                    for key in ('co2', 'h2s', 'nh3', 'safe') if (polygon := shape.regions.get(key))],
+        'boundaries': [[key, names[key], _flat(line)] for key in ('co2', 'h2s', 'nh3')
+                       for line in shape.boundaries.get(key, [])],
+        'omega': [[key, _flat(line)] for key in ('calcite', 'aragonite') for line in shape.omega.get(key, [])],
+        'point': [float(shape.point[0]), float(shape.point[1])],
+        'target': None if shape.target is None else [float(shape.target[0]), float(shape.target[1])],
+        'reagent_lines': [[reagent.key, reagent.formula, _flat(line)]
+                          for reagent, lines in shape.reagent_lines for line in lines],
+        'wedge': _flat(shape.wedge),
+        'dosing_path': [_flat(line) for line in shape.dosing_path],
+        'waypoint': None if shape.waypoint is None else [float(shape.waypoint[0]), float(shape.waypoint[1])],
+        'simulator': _flat(shape.simulator),
+        'notes': [str(note) for note in shape.notes],
+    }
+
+
+def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=(), extent=()):
+    """The chart of an analysis as the template draws it (`dosing`, `simulator` and `extent` as `geometry` takes them):
+    the SVG's parts drawn from its figure."""
+    return render(figure(analysis, geometry(analysis, layers, dosing, simulator, extent)))
+
+
+def render(figure):
+    """The SVG's parts (Chart) of a figure, from the figure alone: the server draws every chart through here, and the
+    replay's player draws the same figures."""
+    box = Box(*figure['box'])
 
     def x(dic):
         return LEFT + dic / box.dic * PLOT
@@ -565,60 +606,55 @@ def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
     def y(alkalinity):
         return TOP + PLOT - alkalinity / box.alkalinity * PLOT
 
-    def points(polyline):
-        return ' '.join(f'{_fixed(x(dic))},{_fixed(y(alkalinity))}' for dic, alkalinity in polyline)
+    def points(flat):
+        return ' '.join(f'{_fixed(x(dic))},{_fixed(y(alkalinity))}' for dic, alkalinity in _pairs(flat))
 
     def ticks(end, step, place):
         return [{'at': _fixed(place(step * index)), 'label': _tick(step * index)}
                 for index in range(round(end / step) + 1)]
 
     isolines = []
-    for isoline in shape.isolines:
-        (x1, y1), (x2, y2) = [(x(dic), y(alkalinity)) for dic, alkalinity in isoline.segment]
+    for ph, labelled, *segment in figure['isolines']:
+        (x1, y1), (x2, y2) = [(x(dic), y(alkalinity)) for dic, alkalinity in _pairs(segment)]
         label = None
-        if isoline.labelled:
+        if labelled:
             angle = max(-65.0, min(65.0, math.degrees(math.atan2(y2 - y1, x2 - x1))))
             label = {'x': _fixed(x1 + LABEL_AT * (x2 - x1)), 'y': _fixed(y1 + LABEL_AT * (y2 - y1)),
                      'angle': _fixed(angle),
-                     'text': f'pH {formats.number_format(Decimal(f"{isoline.ph:.1f}"), 1, use_l10n=True)}'}
-        isolines.append({'ph': f'{isoline.ph:.2f}', 'labelled': isoline.labelled,
-                         'colour': isoline_colour(isoline.ph), 'points': points(isoline.segment), 'label': label})
-    names = _region_names(analysis)
-    regions = [{'key': key, 'name': names[key], 'points': points(polygon)}
-               for key in ('co2', 'h2s', 'nh3', 'safe') if (polygon := shape.regions.get(key))]
-    boundaries = [{'key': key, 'name': names[key], 'points': points(line)}
-                  for key in ('co2', 'h2s', 'nh3') for line in shape.boundaries.get(key, [])]
+                     'text': f'pH {formats.number_format(Decimal(f"{ph:.1f}"), 1, use_l10n=True)}'}
+        isolines.append({'ph': f'{ph:.2f}', 'labelled': bool(labelled),
+                         'colour': isoline_colour(ph), 'points': points(segment), 'label': label})
+    regions = [{'key': key, 'name': name, 'points': points(polygon)} for key, name, polygon in figure['regions']]
+    boundaries = [{'key': key, 'name': name, 'points': points(line)} for key, name, line in figure['boundaries']]
     omega_names = {'calcite': _('Ω calcite = 1'), 'aragonite': _('Ω aragonite = 1')}
-    omega = [{'key': key, 'name': omega_names[key], 'points': points(line)}
-             for key in ('calcite', 'aragonite') for line in shape.omega.get(key, [])]
+    omega = [{'key': key, 'name': omega_names[key], 'points': points(line)} for key, line in figure['omega']]
     legend = [{'key': region['key'], 'name': region['name']} for region in regions]
-    legend += [{'key': key, 'name': omega_names[key]} for key in ('calcite', 'aragonite') if shape.omega.get(key)]
-    px, py = x(shape.point[0]), y(shape.point[1])
+    legend += [{'key': key, 'name': omega_names[key]} for key in ('calcite', 'aragonite')
+               if any(each == key for each, _line in figure['omega'])]
+    px, py = x(figure['point'][0]), y(figure['point'][1])
     target = path = None
-    if shape.target is not None:
-        tx, ty = x(shape.target[0]), y(shape.target[1])
+    if figure['target'] is not None:
+        tx, ty = x(figure['target'][0]), y(figure['target'][1])
         arm = 7
         target = {'x': _fixed(tx), 'y': _fixed(ty),
                   'lines': [[_fixed(tx - arm), _fixed(ty - arm), _fixed(tx + arm), _fixed(ty + arm)],
                             [_fixed(tx + arm), _fixed(ty - arm), _fixed(tx - arm), _fixed(ty + arm)]]}
-        path = points([shape.point, shape.target])
+        path = points([*figure['point'], *figure['target']])
     reagent_lines = []
-    for reagent, lines in shape.reagent_lines:
-        for line in lines:
-            (x1, y1), (x2, y2) = [(x(dic), y(alkalinity)) for dic, alkalinity in line[-2:]]
-            reagent_lines.append({'key': reagent.key, 'formula': reagent.formula, 'points': points(line),
-                                  'arrow': _arrow(x1, y1, x2, y2)})
+    for key, formula, line in figure['reagent_lines']:
+        (x1, y1), (x2, y2) = [(x(dic), y(alkalinity)) for dic, alkalinity in _pairs(line)[-2:]]
+        reagent_lines.append({'key': key, 'formula': formula, 'points': points(line), 'arrow': _arrow(x1, y1, x2, y2)})
     simulator_drawing = None
-    if shape.simulator:
-        pixels = [(x(dic), y(alkalinity)) for dic, alkalinity in shape.simulator]
+    if figure['simulator']:
+        pixels = [(x(dic), y(alkalinity)) for dic, alkalinity in _pairs(figure['simulator'])]
         simulator_drawing = {
             'points': ' '.join(f'{_fixed(across)},{_fixed(up)}' for across, up in pixels),
             'arrows': [_arrow(*pixels[index - 1], *pixels[index]) for index in range(1, len(pixels))
                        if math.dist(pixels[index - 1], pixels[index]) > 1],
             'end': {'x': _fixed(pixels[-1][0]), 'y': _fixed(pixels[-1][1])}}
     waypoint = None
-    if shape.waypoint is not None and box.inside(shape.waypoint):
-        waypoint = {'x': _fixed(x(shape.waypoint[0])), 'y': _fixed(y(shape.waypoint[1]))}
+    if figure['waypoint'] is not None and box.inside(tuple(figure['waypoint'])):
+        waypoint = {'x': _fixed(x(figure['waypoint'][0])), 'y': _fixed(y(figure['waypoint'][1]))}
     return Chart(
         width=WIDTH, height=HEIGHT,
         plot={'left': LEFT, 'top': TOP, 'right': LEFT + PLOT, 'bottom': TOP + PLOT, 'size': PLOT,
@@ -627,9 +663,9 @@ def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=()):
         x_ticks=ticks(box.dic, box.dic_step, x), y_ticks=ticks(box.alkalinity, box.alkalinity_step, y),
         isolines=isolines, regions=regions, boundaries=boundaries, omega=omega, legend=legend,
         point={'x': _fixed(px), 'y': _fixed(py), 'star': _star(px, py)}, target=target, path=path,
-        notes=shape.notes, box=box, reagent_lines=reagent_lines,
-        wedge=points(shape.wedge) if shape.wedge else None,
-        dosing_path=[points(line) for line in shape.dosing_path], waypoint=waypoint, simulator=simulator_drawing)
+        notes=list(figure['notes']), box=box, reagent_lines=reagent_lines,
+        wedge=points(figure['wedge']) if figure['wedge'] else None,
+        dosing_path=[points(line) for line in figure['dosing_path']], waypoint=waypoint, simulator=simulator_drawing)
 
 
 def _arrow(x1, y1, x2, y2, size=9):

@@ -7,7 +7,7 @@ def site_data(**overrides):
         'name': 'Main Production Site', 'code': 'mps-001', 'type': 'land_based', 'status': 'active',
         'lokalitetsnummer': '', 'organisation_number': '', 'production_form': '', 'reports_from': '',
         'description': '', 'area_m2': '',
-        'timezone': '', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
+        'timezone': 'Europe/Oslo', 'country': 'Norway', 'region': 'Vestland', 'street': '', 'city': '', 'state': '',
         'postal_code': '', 'latitude': '', 'longitude': '', 'altitude': '', 'site_manager': '',
         'contact_email': '', 'contact_phone': '',
     }
@@ -86,3 +86,14 @@ def point_of(owner, kind='middle'):
     for point_kind, name in wanted:
         SamplingPoint.all_objects.get_or_create(**{owner_type: owner}, kind=point_kind, name=name)
     return SamplingPoint.objects.get(**{owner_type: owner}, kind=kind)
+
+
+def going_on(call, *args, **kwargs):
+    """A write the withdrawal guard asks about (a harvest brought inside a withdrawal, fish released earlier), gone on
+    with as the person does: the box's value, the change's fingerprint, sent with the same write
+    (farm/tests/test_withdrawal_guard.py tests the question itself)."""
+    from ..health.withdrawal import WithdrawalChanged
+    try:
+        return call(*args, **kwargs)
+    except WithdrawalChanged as asked:
+        return call(*args, withdrawal_ack=asked.change.fingerprint, **kwargs)

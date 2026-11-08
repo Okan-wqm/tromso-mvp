@@ -26,7 +26,7 @@ from decimal import Decimal
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from ..models import SamplingPoint
+from ..models import SamplingPoint, System
 from ..models.water_point import site_of
 from . import charts, chemistry, deffeyes, dosing, parameters, read
 from .evaluate import Status, judge as judge_bounds
@@ -214,12 +214,13 @@ def _strictest(rows, bound, pick):
     return (pick(values), tuple(row for row in rows if getattr(row, bound) is not None)) if values else (None, ())
 
 
-def offers(owner, now=None, point=None):
+def offers(owner, now=None, point=None, water=None):
     """{field: Offer} of what a unit or a loop gives the calculator now. `point`: a sampling point of the owner whose
     readings are given instead of its middle point's (a unit's inlet, its outlet); nothing is borrowed from any other
     point."""
     found = {}
-    water = read.owner_water([owner], now)[owner.pk] if point is None else read.latest([point], now)[point.pk]
+    if water is None:
+        water = read.owner_water([owner], now)[owner.pk] if point is None else read.latest([point], now)[point.pk]
     for name in MEASURED_FIELDS:
         reading = water.get(name)
         if reading is not None and reading.value is not None:
@@ -227,6 +228,14 @@ def offers(owner, now=None, point=None):
     site = site_of(owner)
     if site is not None and site.altitude is not None and 0 <= site.altitude <= ALTITUDE_HIGH:
         found['altitude_m'] = Offer('altitude_m', Decimal(round(site.altitude)))
+    found.update(fish_limits(owner))
+    return found
+
+
+def fish_limits(owner):
+    """{field: Offer} of the limits of the fish in a unit or a loop today: the NH₃-N and CO₂ limits, the pH bounds, the
+    alkalinity band."""
+    found = {}
     limits = read.limits_now(owner)
     for name, code in (('nh3_n_limit_mg_l', 'nh3_n_mg_l'), ('co2_limit_mg_l', 'co2_mg_l')):
         value, rows = _strictest(limits.get(code, []), 'critical_high', min)
@@ -279,6 +288,7 @@ class UnitChart:
     assumed: tuple = ()                # the fields that are assumed, never measured: ('salinity_ppt',)
     absent: tuple = ()
     points: tuple = ()                 # the unit's active points, middle first (the window's links)
+    sensors_failed: bool = False       # the live values could not be read: the samples alone gave the inputs
 
 
 @dataclass(frozen=True)
@@ -292,27 +302,31 @@ class Refusal:
     points: tuple = ()
     impossible: str = ''
     no_point: bool = False
+    sensors_failed: bool = False
 
 
-def chart_of(unit, point=None, now=None):
-    """The Deffeyes chart (UnitChart) of a unit's water at `point` (one of its sampling points; the middle point by
-    default), or a Refusal. The temperature, pH, alkalinity and salinity are the point's own latest readings (a
+def chart_of(unit, point=None, now=None, at=None):
+    """The Deffeyes chart (UnitChart) of a unit's or a system's water at `point` (one of its sampling points; the middle
+    point by default, a system's loop), or a Refusal; with `at`, as the water was at that past moment (read.latest: the
+    samples and the sensor values of then, their age relative to it). The temperature, pH, alkalinity and salinity are the point's own latest readings (a
     sea unit without a salinity is refused; a fresh-water unit's is 0, said); the TAN and the oxygen are drawn when
     they are there; the sulfide and the calcium are measured nowhere, so there is no H2S or calcite layer. The limits
     are the fish's (`offers`). Never a default: what is missing is listed."""
-    now = now or timezone.now()
-    points = tuple(read.points_of([unit])[unit.pk])
+    now = at or now or timezone.now()
+    points = points_for(unit)
     if point is None:
         point = next((each for each in points if each.kind == read.MIDDLE), None)
         if point is None:
             return Refusal(unit, None, [], points, no_point=True)
-    found = offers(unit, now, point)
+    water = read.latest([point], at=at)[point.pk] if at is not None else read.latest([point], now)[point.pk]
+    failed = water.sensors_failed
+    found = offers(unit, now, point, water)
     values = {name: float(found[name].value) for name in (*REQUIRED, *OPTIONAL) if name in found}
     inputs = {name: ChartInput(name, parameters.get(name).label, found[name].value, found[name].reading)
               for name in (*REQUIRED, *OPTIONAL) if name in found}
     assumed = ()
     if 'salinity_ppt' not in found:
-        salinity = read.assumed_salinity({unit.water_type})
+        salinity = read.assumed_salinity(_water_types(unit))
         if salinity is not None:
             values['salinity_ppt'] = float(salinity)
             inputs['salinity_ppt'] = ChartInput('salinity_ppt', parameters.get('salinity_ppt').label, salinity,
@@ -320,18 +334,38 @@ def chart_of(unit, point=None, now=None):
             assumed = ('salinity_ppt',)
     missing = [parameters.get(name).label for name in REQUIRED if name not in values]
     if missing:
-        return Refusal(unit, point, missing, points)
+        return Refusal(unit, point, missing, points, sensors_failed=failed)
     why = deffeyes.why_impossible(values['temperature_c'], values['salinity_ppt'], values['ph'],
                                   values['alkalinity_mg_l'])
     if why:
-        return Refusal(unit, point, [], points, impossible=why)
+        return Refusal(unit, point, [], points, impossible=why, sensors_failed=failed)
     if 'altitude_m' in found:
         values['altitude_m'] = float(found['altitude_m'].value)
         inputs['altitude_m'] = ChartInput('altitude_m', _('Altitude (m)'), found['altitude_m'].value)
-    limits = {name: found[name] for name in LIMIT_FIELDS if name in found}
+    limits = chart_limits(found)
     values.update({name: float(offer.value) for name, offer in limits.items()})
     made = calculate(**inputs_from(values), layers=deffeyes.ALL_LAYERS, plots=False)
     absent = tuple(label for name, label in (('nh3_n_limit_mg_l', _('NH₃-N limit')), ('co2_limit_mg_l', _('CO₂ limit')))
                    if name not in limits)
     ordered = [inputs[name] for name in (*REQUIRED, *OPTIONAL, 'altitude_m') if name in inputs]
-    return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points)
+    return UnitChart(unit, point, now, ordered, limits, made, assumed, absent, points, sensors_failed=failed)
+
+
+def chart_limits(offered):
+    """{field: Offer} of the limits a unit's chart is drawn with (LIMIT_FIELDS), of those offered."""
+    return {name: offered[name] for name in LIMIT_FIELDS if name in offered}
+
+
+def points_for(owner):
+    """The active points of a unit (its middle point first) or of a system (its loop first)."""
+    if isinstance(owner, System):
+        found = SamplingPoint.objects.filter(system=owner, is_active=True).with_owners()
+        return tuple(sorted(found, key=lambda point: (point.kind != read.MIDDLE, point.name)))
+    return tuple(read.points_of([owner])[owner.pk])
+
+
+def _water_types(owner):
+    """The water types the owner's water is in: a unit's own, a system's units' (none: nothing is assumed)."""
+    if isinstance(owner, System):
+        return {unit.water_type for unit in owner.tanks.all()} or {None}
+    return {owner.water_type}

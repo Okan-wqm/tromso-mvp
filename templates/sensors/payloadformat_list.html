@@ -1,0 +1,24 @@
+{% extends "crud/list.html" %}
+{% load i18n %}
+{% comment %} Sensors › Setup › Payload formats (sensors.resources.PayloadFormatResource): how the messages of a kind of device
+   are written. {% endcomment %}
+{% block search_placeholder %}{% trans "Search by name" %}{% endblock %}
+{% block empty_text %}{% trans "A payload format says how a kind of device writes its messages: where the time is, and where each value is." %}{% endblock %}
+{% block items %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Payload format" %}</th><th scope="col">{% trans "Shape" %}</th><th scope="col">{% trans "Time" %}</th><th scope="col" class="num">{% trans "Devices" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for format in objects %}
+      <tr>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'sensors:payloadformat_edit' format.pk %}" data-modal>{{ format.name }}</a>{% else %}<span class="row-title">{{ format.name }}</span>{% endif %}</td>
+        <td>{{ format.get_shape_display }}</td>
+        <td>{% if format.time_path %}<span class="mono">{{ format.time_path }}</span> · {{ format.get_time_unit_display }}{% else %}{% trans "When received" %}{% endif %}</td>
+        <td class="num">{{ format.device_count }}</td>
+        <td class="row-actions">{% include "sensors/_row_actions.html" with model="payloadformat" obj=format label=format.name %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

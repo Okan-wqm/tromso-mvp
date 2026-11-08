@@ -1,0 +1,45 @@
+{% extends "app_base.html" %}
+{% load i18n dates %}
+{% comment %} Sensors › Operations › Dead letters (sensors.views.dead_letters): the messages the ingest could not store, kept as
+   evidence and counted. The payload is whatever a device sent: it is shown escaped, as text and as hex, never as HTML. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<form method="get" class="toolbar toolbar-filter">
+  <label class="sr-only" for="reason-filter">{% trans "Reason" %}</label>
+  <select id="reason-filter" name="reason" data-autosubmit>
+    <option value="">{% trans "Every reason" %}</option>
+    {% for value, label in reasons %}<option value="{{ value }}"{% if value == reason %} selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <label class="sr-only" for="show-filter">{% trans "Show" %}</label>
+  <select id="show-filter" name="show" data-autosubmit>
+    <option value="">{% trans "Open ones" %}</option>
+    <option value="all"{% if show == "all" %} selected{% endif %}>{% trans "Resolved ones too" %}</option>
+  </select>
+  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+</form>
+<p class="panel-help">{% trans "A message the ingest could not store is kept here with how often it came. Beyond 1000 new ones per connection and hour the rest are counted on one row. Readings are never refused for the dead letters’ sake. Kept 90 days." %}</p>
+{% if rows %}
+<div class="table-wrap">
+  <table class="data-table">
+    <thead><tr><th scope="col">{% trans "Topic" %}</th><th scope="col">{% trans "Reason" %}</th><th scope="col" class="num">{% trans "Times" %}</th><th scope="col">{% trans "Last" %}</th><th scope="col">{% trans "Payload" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><span class="row-title mono">{{ row.letter.topic }}</span><span class="row-sub">{{ row.connection }}</span></td>
+        <td>{{ row.letter.get_reason_display }}</td>
+        <td class="num">{{ row.letter.count }}</td>
+        <td>{{ row.letter.last_at|company_clock|date:"DATETIME_FORMAT" }}</td>
+        <td><details><summary class="mono">{{ row.text|truncatechars:60 }}</summary><pre class="mono">{{ row.text }}</pre><pre class="mono faint">{{ row.hex }}</pre><p class="row-sub">{% blocktrans trimmed with size=row.letter.payload_len %}{{ size }} bytes{% endblocktrans %}</p></details></td>
+        <td class="row-actions">{% if row.letter.resolved_at %}<span class="badge">{% trans "Resolved" %}</span>{% elif can_resolve %}<form method="post" action="{% url 'sensors:dead_letter_resolve' row.letter.pk %}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Resolve" %}</button></form>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% else %}
+<p class="panel-help">{% trans "No dead letters." %}</p>
+{% endif %}
+{% endblock %}

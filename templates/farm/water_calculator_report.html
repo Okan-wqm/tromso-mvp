@@ -1,4 +1,4 @@
-{% load assets i18n stock water %}<!doctype html>
+{% load assets i18n stock water dates %}<!doctype html>
 {% comment %} The calculator's printed report (farm.water.views.calculator_report), as the source's: the values entered, the
    values worked out, the charts in the calculator's three columns with every layer drawn, and here the
    recipes and the simulator's steps too; a page of its own, laid out for A4 across. Its Print button is
@@ -18,35 +18,39 @@
   <header class="report-head">
     <div>
       <h1 class="report-title">{% trans "Water chemistry report" %}</h1>
-      <p class="report-date">{{ generated_at|date:"DATETIME_FORMAT" }}{% if source %} · {{ source.point.code }} · {{ source.point.name }}{% endif %}</p>
+      <p class="report-date">{{ generated_at|company_clock|date:"DATETIME_FORMAT" }}{% if source %} · {{ source.point.code }} · {{ source.point.name }}{% endif %}</p>
     </div>
     <button type="button" class="button button-inline report-print" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button>
   </header>
   {% if result %}
   {% with water=analysis.water limits=analysis.limits %}
   <div class="report-tables">
-    <table class="data-table report-table">
-      <caption>{% trans "Values" %}</caption>
-      <tbody>
-        {% for tab in form.tabs %}{% if tab.key != "reagents" and tab.key != "simulator" %}{% for field in tab.fields %}{% with value=field.value %}{% if value is not None and value != "" %}<tr><th scope="row">{{ field.label }}</th><td class="num">{{ value }}</td></tr>{% endif %}{% endwith %}{% endfor %}{% endif %}{% endfor %}
-        <tr><th scope="row">{% trans "Reagents to dose with" %}</th><td>{% for reagent in result.reagents %}{{ reagent.formula }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
-      </tbody>
-    </table>
-    <table class="data-table report-table">
-      <caption>{% trans "Worked out from the values" %}</caption>
-      <tbody>
-        <tr><th scope="row">{% trans "Un-ionised ammonia (NH₃-N)" %}</th><td class="num wq-value wq-{{ analysis.nh3.status }}">{{ analysis.nh3_n_mg_l|amount:4 }}{% if analysis.nh3_n_mg_l is not None %} mg/L{% endif %} · {{ analysis.nh3.status|status_label }}</td></tr>
-        {% include "farm/_deffeyes_border.html" with border=analysis.nh3 %}
-        <tr><th scope="row">{% trans "H₂S (as H₂S)" %}</th><td class="num wq-value wq-{{ analysis.h2s.status }}">{{ analysis.h2s_ug_l|amount:2 }}{% if analysis.h2s_ug_l is not None %} µg/L{% endif %} · {{ analysis.h2s.status|status_label }}</td></tr>
-        {% include "farm/_deffeyes_border.html" with border=analysis.h2s %}
-        <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L · {{ analysis.co2.status|status_label }}</td></tr>
-        {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
-        <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
-        {% if analysis.target %}<tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
-        <tr><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td></tr>{% endif %}
-        <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="data-table report-table">
+        <caption>{% trans "Values" %}</caption>
+        <tbody>
+          {% for tab in form.tabs %}{% if tab.key != "reagents" and tab.key != "simulator" %}{% for field in tab.fields %}{% with value=field.value %}{% if value is not None and value != "" %}<tr><th scope="row">{{ field.label }}</th><td class="num">{{ value }}</td></tr>{% endif %}{% endwith %}{% endfor %}{% endif %}{% endfor %}
+          <tr><th scope="row">{% trans "Reagents to dose with" %}</th><td>{% for reagent in result.reagents %}{{ reagent.formula }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table report-table">
+        <caption>{% trans "Worked out from the values" %}</caption>
+        <tbody>
+          <tr><th scope="row">{% trans "Un-ionised ammonia (NH₃-N)" %}</th><td class="num wq-value wq-{{ analysis.nh3.status }}">{{ analysis.nh3_n_mg_l|amount:4 }}{% if analysis.nh3_n_mg_l is not None %} mg/L{% endif %} · {{ analysis.nh3.status|status_label }}</td></tr>
+          {% include "farm/_deffeyes_border.html" with border=analysis.nh3 %}
+          <tr><th scope="row">{% trans "H₂S (as H₂S)" %}</th><td class="num wq-value wq-{{ analysis.h2s.status }}">{{ analysis.h2s_ug_l|amount:2 }}{% if analysis.h2s_ug_l is not None %} µg/L{% endif %} · {{ analysis.h2s.status|status_label }}</td></tr>
+          {% include "farm/_deffeyes_border.html" with border=analysis.h2s %}
+          <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L · {{ analysis.co2.status|status_label }}</td></tr>
+          {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
+          <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
+          {% if analysis.target %}<tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
+          <tr><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td></tr>{% endif %}
+          <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
   {% endwith %}
   <div class="calc-charts report-charts">

@@ -140,8 +140,8 @@ class EveryoneColumnTests(TestCase):
         self.assertEqual(access.ACTIONS[-1][0], access.ALL)
         rows = re.findall(r'<tr>\s*<th scope="row">(.*?)</th>(.*?)</tr>', html, re.S)
         cells = {label: re.findall(r'<td>(.*?)</td>', body, re.S) for label, body in rows}
-        self.assertEqual(len(cells['Species']), 5)
-        self.assertEqual(cells['Species'][4].strip(), '')       # Species has no Everyone box
+        self.assertEqual(len(cells['Species']), len(access.ACTIONS))
+        self.assertEqual(cells['Species'][-1].strip(), '')      # Species has no Everyone box
 
 
 # A menu with one entry no line of which is shown (a settings page reached by links), for the hidden-entry tests.

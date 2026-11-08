@@ -131,8 +131,8 @@ class RegistryTests(DatabaseViewerTestCase):
     def test_tables_come_from_the_models_of_the_listed_apps(self):
         expected = {model._meta.db_table
                     for label in ('farm', 'inventory', 'knowledge', 'messaging', 'reports', 'tasks', 'experiments',
-                                  'monitoring', 'hr', 'core', 'auth')
-                    for model in apps.get_app_config(label).get_models(include_auto_created=True)}
+                                  'monitoring', 'hr', 'sensors', 'core', 'auth')
+                    for model in apps.get_app_config(label).get_models(include_auto_created=True)} - set(database.viewer().excluded)
         self.assertEqual(set(names()), expected)
         self.assertTrue({'sites', 'site_contacts', 'production_departments', 'audit_log', 'auth_user',
                          'auth_group', 'auth_permission', 'auth_user_groups'} <= expected)
@@ -618,3 +618,49 @@ class StructureTests(DatabaseViewerTestCase):
         self.assertContains(page, '<code>farm.Site</code> of the <code>farm</code> app')
         self.assertContains(page, 'uq_sites_code_live')
         self.assertContains(page, 'varchar(150)')
+
+
+class HypertableCountTests(DatabaseViewerTestCase):
+    """A hypertable can hold billions of rows (the sensor readings): counting them for the overview would scan every
+    chunk. Its count is the database's own estimate from the statistics (TimescaleDB's approximate_row_count), said to
+    be one; a hypertable whose grid would count every row on each page (the paginator) is not shown at all."""
+
+    def hypertables(self):
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT hypertable_name FROM timescaledb_information.hypertables')
+            return {name for name, in cursor.fetchall()}
+
+    def test_every_hypertable_is_left_out_or_estimated(self):
+        shown = {table.name: table for _label, tables in database.sections() for table in tables}
+        for name in self.hypertables():
+            with self.subTest(table=name):
+                if name in shown:
+                    self.assertTrue(shown[name].hypertable)
+                    self.assertTrue(shown[name].counts()['estimated'])
+                else:
+                    self.assertIn(name, database.viewer().excluded)
+        self.assertIn('sensors_reading', database.viewer().excluded)
+
+    def test_the_estimate_is_the_databases_and_the_page_says_it_is_one(self):
+        with connection.cursor() as cursor:
+            cursor.execute('ANALYZE water_measurements')
+            cursor.execute("SELECT approximate_row_count('water_measurements')")
+            estimate = cursor.fetchone()[0]
+        table = database.find('water_measurements')
+        self.assertEqual(table.counts(), {'rows': estimate, 'deleted': None, 'estimated': True})
+        overview = self.client.get(reverse('core:database')).content.decode()
+        self.assertIn('title="An estimate from the database’s statistics"', overview)
+        page = self.page('water_measurements').content.decode()
+        self.assertIn('An estimate from the database’s statistics', page)
+
+    def test_an_ordinary_table_is_counted_exactly(self):
+        self.make_site()
+        self.assertEqual(database.find('sites').counts(), {'rows': 1, 'deleted': 0, 'estimated': False})
+
+
+class ConstraintTriggerTests(DatabaseViewerTestCase):
+    def test_a_constraint_trigger_is_shown_among_the_constraints(self):
+        constraints = {constraint.name: constraint for constraint in database.find('sensors_binding').structure().constraints}
+        trigger = constraints['trg_sensors_binding_rules']
+        self.assertEqual(str(trigger.kind), 'Constraint trigger')
+        self.assertIn('TRIGGER', trigger.definition)

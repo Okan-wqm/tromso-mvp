@@ -49,5 +49,5 @@ def rule_text(series):
         text = ngettext('Every month on day %(day)d', 'Every %(count)d months on day %(day)d', count) % {
             'count': count, 'day': series.day_of_month}
     if series.due_time is not None:
-        text = _('%(rule)s at %(time)s') % {'rule': text, 'time': formats.time_format(series.due_time, 'H:i')}
+        text = _('%(rule)s at %(time)s') % {'rule': text, 'time': formats.time_format(series.due_time, 'TIME_FORMAT')}
     return text

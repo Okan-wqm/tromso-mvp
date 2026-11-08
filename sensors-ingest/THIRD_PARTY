@@ -1,0 +1,162 @@
+# Third-party components of the Sensors ingest and its services
+#
+# Generated from Cargo.lock by `cargo metadata` (Linux target); the licence gate is `cargo deny --locked check`
+# (deny.toml: permissive licences only, rodbus banned). Where a crate offers a choice ("MIT OR Apache-2.0")
+# the ingest uses it under a permissive option. Regenerate after any dependency change (tests/run.sh checks it).
+
+## Services (docker images, digest-pinned in docker-compose.yml)
+eclipse-mosquitto 2.0.20        EPL-2.0 OR EDL-1.0 (BSD-3-Clause)   broker
+nodered/node-red 4.0.9          Apache-2.0                          field simulator (development only)
+rust 1.88.0-slim-bookworm       MIT OR Apache-2.0 (toolchain); Debian packages, build stage only
+debian bookworm-slim            Debian free software (DFSG); ca-certificates MPL-2.0 data   runtime base
+timescale/timescaledb 2.17.2    Apache-2.0 core; compression, continuous aggregates and policies under the
+                                Timescale License (TSL), allowed for self-hosted use inside our application
+
+## Crates compiled into the ingest binary (130)
+aho-corasick 1.1.5            Unlicense OR MIT
+async-trait 0.1.92            MIT OR Apache-2.0
+atomic-waker 1.1.2            Apache-2.0 OR MIT
+aws-lc-rs 1.19.0              ISC AND (Apache-2.0 OR ISC)
+aws-lc-sys 0.47.0             ISC AND (Apache-2.0 OR ISC) AND Apache-2.0 AND MIT AND BSD-3-Clause AND (Apache-2.0 OR ISC OR MIT) AND (Apache-2.0 OR ISC OR MIT-0)
+axum 0.8.9                    MIT
+axum-core 0.5.6               MIT
+base64 0.22.1                 MIT OR Apache-2.0
+block-buffer 0.10.4           MIT OR Apache-2.0
+block-buffer 0.12.1           MIT OR Apache-2.0
+byteorder 1.5.0               Unlicense OR MIT
+bytes 1.12.1                  MIT
+cfg-if 1.0.5                  MIT OR Apache-2.0
+chacha20 0.10.2               MIT OR Apache-2.0
+chrono 0.4.45                 MIT OR Apache-2.0
+cmov 0.5.4                    Apache-2.0 OR MIT
+const-oid 0.10.2              Apache-2.0 OR MIT
+cpufeatures 0.2.17            MIT OR Apache-2.0
+cpufeatures 0.3.1             MIT OR Apache-2.0
+crypto-common 0.1.7           MIT OR Apache-2.0
+crypto-common 0.2.2           MIT OR Apache-2.0
+ctutils 0.4.8                 Apache-2.0 OR MIT
+digest 0.10.7                 MIT OR Apache-2.0
+digest 0.11.3                 MIT OR Apache-2.0
+errno 0.3.14                  MIT OR Apache-2.0
+fallible-iterator 0.2.0       MIT/Apache-2.0
+fixedbitset 0.5.7             MIT OR Apache-2.0
+flume 0.11.1                  Apache-2.0/MIT
+futures-channel 0.3.34        MIT OR Apache-2.0
+futures-core 0.3.34           MIT OR Apache-2.0
+futures-sink 0.3.34           MIT OR Apache-2.0
+futures-task 0.3.34           MIT OR Apache-2.0
+futures-util 0.3.34           MIT OR Apache-2.0
+generic-array 0.14.7          MIT
+getrandom 0.2.17              MIT OR Apache-2.0
+getrandom 0.4.3               MIT OR Apache-2.0
+hmac 0.13.0                   MIT OR Apache-2.0
+http 1.5.0                    MIT OR Apache-2.0
+http-body 1.1.0               MIT
+http-body-util 0.1.5          MIT
+httparse 1.10.1               MIT OR Apache-2.0
+httpdate 1.0.3                MIT OR Apache-2.0
+hybrid-array 0.4.15           MIT OR Apache-2.0
+hyper 1.12.0                  MIT
+hyper-util 0.1.21             MIT
+iana-time-zone 0.1.65         MIT OR Apache-2.0
+itoa 1.0.18                   MIT OR Apache-2.0
+lazy_static 1.5.1             MIT OR Apache-2.0
+libc 0.2.191                  MIT OR Apache-2.0
+lock_api 0.4.14               MIT OR Apache-2.0
+log 0.4.35                    MIT OR Apache-2.0
+matchers 0.2.0                MIT
+matchit 0.8.4                 MIT AND BSD-3-Clause
+md-5 0.11.0                   MIT OR Apache-2.0
+memchr 2.8.3                  Unlicense OR MIT
+mime 0.3.17                   MIT OR Apache-2.0
+mio 1.2.4                     MIT
+num-traits 0.2.19             MIT OR Apache-2.0
+once_cell 1.21.4              MIT OR Apache-2.0
+openssl-probe 0.2.2           MIT OR Apache-2.0
+parking_lot 0.12.5            MIT OR Apache-2.0
+parking_lot_core 0.9.12       MIT OR Apache-2.0
+percent-encoding 2.3.2        MIT OR Apache-2.0
+phf 0.13.1                    MIT
+phf_shared 0.13.1             MIT
+pin-project-lite 0.2.17       Apache-2.0 OR MIT
+postgres-protocol 0.6.12      MIT OR Apache-2.0
+postgres-types 0.2.14         MIT OR Apache-2.0
+proc-macro2 1.0.107           MIT OR Apache-2.0
+quote 1.0.47                  MIT OR Apache-2.0
+rand 0.10.3                   MIT OR Apache-2.0
+rand_core 0.10.1              MIT OR Apache-2.0
+regex-automata 0.4.18         MIT OR Apache-2.0
+regex-syntax 0.8.11           MIT OR Apache-2.0
+ring 0.17.14                  Apache-2.0 AND ISC
+rumqttc 0.25.1                Apache-2.0
+rustls 0.23.46                Apache-2.0 OR ISC OR MIT
+rustls-native-certs 0.8.5     Apache-2.0 OR ISC OR MIT
+rustls-pemfile 2.2.0          Apache-2.0 OR ISC OR MIT
+rustls-pki-types 1.15.1       MIT OR Apache-2.0
+rustls-webpki 0.102.8         ISC
+rustls-webpki 0.103.16        ISC
+scopeguard 1.2.0              MIT OR Apache-2.0
+serde 1.0.229                 MIT OR Apache-2.0
+serde_core 1.0.229            MIT OR Apache-2.0
+serde_derive 1.0.229          MIT OR Apache-2.0
+serde_json 1.0.154            MIT OR Apache-2.0
+serde_path_to_error 0.1.20    MIT OR Apache-2.0
+sha2 0.10.9                   MIT OR Apache-2.0
+sha2 0.11.1                   MIT OR Apache-2.0
+sharded-slab 0.1.7            MIT
+signal-hook-registry 1.4.8    MIT OR Apache-2.0
+siphasher 1.0.4               MIT OR Apache-2.0
+slab 0.4.12                   MIT
+smallvec 1.16.4               MIT OR Apache-2.0
+socket2 0.6.5                 MIT OR Apache-2.0
+spin 0.9.9                    MIT
+stringprep 0.1.5              MIT/Apache-2.0
+subtle 2.6.1                  BSD-3-Clause
+syn 2.0.119                   MIT OR Apache-2.0
+syn 3.0.9                     MIT OR Apache-2.0
+sync_wrapper 1.0.2            Apache-2.0
+thiserror 2.0.21              MIT OR Apache-2.0
+thiserror-impl 2.0.21         MIT OR Apache-2.0
+thread_local 1.1.10           MIT OR Apache-2.0
+tinyvec 1.13.3                Zlib OR Apache-2.0 OR MIT
+tokio 1.54.1                  MIT
+tokio-macros 2.7.2            MIT
+tokio-postgres 0.7.18         MIT OR Apache-2.0
+tokio-rustls 0.26.6           MIT OR Apache-2.0
+tokio-stream 0.1.19           MIT
+tokio-util 0.7.20             MIT
+tower 0.5.3                   MIT
+tower-layer 0.3.3             MIT
+tower-service 0.3.3           MIT
+tracing 0.1.44                MIT
+tracing-attributes 0.1.31     MIT
+tracing-core 0.1.36           MIT
+tracing-serde 0.2.0           MIT
+tracing-subscriber 0.3.23     MIT
+typenum 1.20.1                MIT OR Apache-2.0
+unicode-bidi 0.3.18           MIT OR Apache-2.0
+unicode-ident 1.0.27          (MIT OR Apache-2.0) AND Unicode-3.0
+unicode-normalization 0.1.26  (MIT OR Apache-2.0) AND Unicode-3.0
+unicode-properties 0.1.5      (MIT OR Apache-2.0) AND Unicode-3.0
+untrusted 0.9.0               ISC
+uuid 1.26.1                   Apache-2.0 OR MIT
+whoami 2.1.3                  Apache-2.0 OR BSL-1.0 OR MIT
+zeroize 1.9.1                 Apache-2.0 OR MIT
+zmij 1.0.23                   MIT
+
+## Crates used only to build or test (15)
+autocfg 1.5.1                 Apache-2.0 OR MIT
+bitflags 2.13.2               MIT OR Apache-2.0
+cc 1.11.0                     MIT OR Apache-2.0
+cmake 0.1.58                  MIT OR Apache-2.0
+core_detect 1.0.0             MIT/Apache-2.0
+dunce 1.0.5                   CC0-1.0 OR MIT-0 OR Apache-2.0
+find-msvc-tools 0.1.15        MIT OR Apache-2.0
+fs_extra 1.3.0                MIT
+jobserver 0.1.35              MIT OR Apache-2.0
+pkg-config 0.3.34             MIT OR Apache-2.0
+proptest 1.12.0               MIT OR Apache-2.0
+rand_xorshift 0.5.0           MIT OR Apache-2.0
+shlex 2.0.1                   MIT OR Apache-2.0
+unarray 0.1.4                 MIT OR Apache-2.0
+version_check 0.9.5           MIT/Apache-2.0

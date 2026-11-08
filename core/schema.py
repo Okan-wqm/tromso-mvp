@@ -26,6 +26,7 @@ from django.utils import formats
 from django.utils.translation import gettext, gettext_lazy as _
 
 from . import audit
+from .widgets import DayInput
 
 TYPES = ('text', 'textarea', 'number', 'select', 'multiselect', 'boolean', 'date')
 TEXT_LENGTH = 255
@@ -103,7 +104,7 @@ class Schema:
         if kind == 'boolean':
             return forms.BooleanField(**common)
         if kind == 'date':
-            return forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'), **common)
+            return forms.DateField(widget=DayInput(), **common)
         if kind == 'textarea':
             return forms.CharField(max_length=TEXTAREA_LENGTH, widget=forms.Textarea(attrs={'rows': 3, **attrs}),
                                    **common)

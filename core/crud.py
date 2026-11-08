@@ -17,11 +17,15 @@ needs the same way:
 - a read page: a tab with a `detail_template` gets a page that shows one record to everyone who may
   read the tab (the edit form needs the change permission), e.g. a document with its citation;
 - a form sent twice creates once: a model with an `entry_key` field gets the key of the form it was
-  created with (TabbedForm), and the same form sent again opens the record the first one created.
+  created with (TabbedForm), and the same form sent again opens the record the first one created;
+- a second place: a tab's `mounts` serve the same Resource, views and records again under another address and
+  panel (HR's people pages under Production › Team); the request carries the mount it came by (`mount_of`), the
+  tab's `scoped` narrows the rows to it, and every link and redirect stays in it.
 """
 import copy
 import uuid
 from dataclasses import dataclass, field as dataclass_field
+from functools import wraps
 
 from django import forms
 from django.contrib import messages
@@ -40,6 +44,43 @@ from . import audit, navigation, softdelete
 from .models import AuditedModel, AuditLog
 from .softdelete import plan_delete
 from .widgets import NONE
+
+
+@dataclass(frozen=True)
+class Mount:
+    """A second place a tab is served: the same Resource, views and records under another address, in another panel of the
+    menu (HR's leave requests under Production › Team as well as under Company › HR). `key` names it: it prefixes the URL
+    names ('hr:production_leaverequest_list') and tells the tab's `scoped` which rows belong there; `url_prefix` is the
+    address of the tab's list there ('production/team/leave'). A record outside the mount's rows is a 404 there, as any
+    record out of scope; the record itself, its rules and its log are the same."""
+    key: str
+    url_prefix: str
+
+
+def mounted_name(url_name, mount):
+    """The name of the route `url_name` ('hr:punch') as served under `mount`: 'hr:production_punch'. Unchanged without one."""
+    if mount is None:
+        return url_name
+    namespace, _separator, name = url_name.rpartition(':')
+    return f'{namespace}:{mount.key}_{name}' if namespace else f'{mount.key}_{name}'
+
+
+def mount_of(request):
+    """The mount the request came by (`serve_mounted`); None for a plain route, or no request."""
+    return getattr(request, 'mount', None)
+
+
+def serve_mounted(view, mount):
+    """`view` as served under `mount`: the request carries the mount (`mount_of`), so the scope, the page's heading and
+    every link and redirect it builds are the mount's. Without a mount the view is returned as it is."""
+    if mount is None:
+        return view
+
+    @wraps(view)
+    def mounted(request, *args, **kwargs):
+        request.mount = mount
+        return view(request, *args, **kwargs)
+    return mounted
 
 
 def is_modal(request):
@@ -251,6 +292,22 @@ def constraint_error(form, error):
     return True
 
 
+def refusal_text(error):
+    """What the database said when it refused a write (an IntegrityError): its own message."""
+    return str(getattr(getattr(error.__cause__, 'diag', None), 'message_primary', '') or error)
+
+
+def trigger_refusal(form, error):
+    """Puts a constraint trigger's refusal (a check violation whose constraint is a trigger, `trg_...`: a rule across
+    tables, e.g. a unit not moved to another site while a sensor is placed in it) on the form, with the database's
+    message. False for any other error."""
+    diag = getattr(error.__cause__, 'diag', None)
+    if getattr(diag, 'sqlstate', '') != '23514' or not (getattr(diag, 'constraint_name', '') or '').startswith('trg_'):
+        return False
+    form.add_error(None, refusal_text(error))
+    return True
+
+
 def constrained_fields(constraint):
     """The fields a unique or exclusion constraint covers: its `fields`, or the fields its expressions read
     (Lower('scientific_name') covers scientific_name; an assignment's daterange its first and last day)."""
@@ -286,6 +343,7 @@ class RowList:
     label = ''        # how the activity log names the list, e.g. _('Contacts')
     formset = None    # an inline formset over the row model (RowFormSet); the rows have `created_by`
     saved = ''        # the flash message: ngettext_lazy('%(count)d ... saved.', '...', 'count')
+    question_field = None   # the box that answers what its save may ask first (`save`'s `seen`), when it may
 
     @classmethod
     def applies_to(cls, obj):
@@ -313,7 +371,13 @@ class RowList:
         return {name: row[name] for name in fields}
 
     @classmethod
-    def save(cls, user, obj, rows, entity_type):
+    def severity(cls, obj):
+        """The severity of the log entry of a change of the list: normal; a list whose change protects or endangers fish
+        or food says critical (a medicine's withdrawal already given, audit F-196)."""
+        return AuditLog.Severity.NORMAL
+
+    @classmethod
+    def save(cls, user, obj, rows, entity_type, seen=None):
         """Replaces the stored rows with `rows` (cleaned data) and logs the change on `obj`."""
         model, link = cls.formset.model, cls.formset.fk.name
         # The row's own fields; an inline formset adds the link to its parent to the form's fields.
@@ -327,7 +391,7 @@ class RowList:
             after = cls.summary(obj)
             if before != after:
                 audit.record(user, AuditLog.Action.UPDATE, obj, {str(cls.label): [before, after]},
-                             entity_type=entity_type)
+                             entity_type=entity_type, severity=cls.severity(obj))
 
 
 class Resource:
@@ -356,6 +420,7 @@ class Resource:
     detail_template = ''  # a read page for one record (extends crud/detail.html); '' for none
     private_fields = ()   # form fields holding a person's own text (a leave reason): the activity log says
                           # "Private text" for a filled one and never stores the words
+    mounts = ()           # Mount: the other places the tab is served, its rows there narrowed by `scoped`
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -364,20 +429,28 @@ class Resource:
         return f'{meta.app_label}.{action}_{meta.model_name}'
 
     @classmethod
-    def url_name(cls, action):
-        return f'{cls.namespace or cls.model._meta.app_label}:{cls.model._meta.model_name}_{action}'
+    def url_name(cls, action, mount=None):
+        return mounted_name(f'{cls.namespace or cls.model._meta.app_label}:{cls.model._meta.model_name}_{action}', mount)
 
     @classmethod
-    def group(cls):
+    def menu_place(cls, mount=None):
+        """Where the tab's page sits in the menu: the entry read with its permission or, under a mount, the entry of its
+        mounted list (one permission has an entry in each panel then)."""
+        if mount is not None:
+            return navigation.page(cls.url_name('list', mount))
+        return navigation.place(cls.perm('view'))
+
+    @classmethod
+    def group(cls, mount=None):
         """The menu heading the tab's page sits under, shown above its title: its group, e.g. _('Facility'), or the
         section of an entry in a group without a label (navigation.Place.heading)."""
-        return navigation.place(cls.perm('view')).heading
+        return cls.menu_place(mount).heading
 
     @classmethod
-    def title(cls):
+    def title(cls, mount=None):
         """The page's heading: the menu entry's label, so the page is called what the menu calls it
         (e.g. Tanks, ponds & cages, whose records are units)."""
-        return navigation.place(cls.perm('view')).entry.label
+        return cls.menu_place(mount).entry.label
 
     @classmethod
     def allows(cls, action):
@@ -405,7 +478,8 @@ class Resource:
         data allows (HR: their own team). The role matrix says which verbs; this says which rows. A record
         outside it does not exist for them: its page, its edit, its delete and its lists are a 404, whatever
         the address or the query. The default is every row. It is applied to the list, to every record
-        lookup and to the locks a save takes, so a rule written here holds on every verb."""
+        lookup and to the locks a save takes, so a rule written here holds on every verb. Under a mount
+        (`mount_of(request)`) it narrows to the mount's rows as well."""
         return objects
 
     @classmethod
@@ -446,6 +520,21 @@ class Resource:
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user."""
 
+    # When a save may ask something first (`edited`, below): the template the edit page shows the question with, and the
+    # name of the box that answers it.
+    question_template = None
+    question_field = None
+
+    @classmethod
+    def edited(cls, request, record, write, seen):
+        """Makes an edit of `record` (as read before the edit, not locked yet): `write()` as it is, which locks the
+        record, checks that it has not changed since and saves it. A tab whose records feed a rule that must ask
+        before a change stands wraps it (the medicine withdrawal: farm.health.withdrawal.guarded), locking what the
+        rule reads before `write()` locks the record; `seen` is the value of the edit form's box for that question.
+        A refusal is a ValidationError, shown on the form with what it carries (`change`, as `question` in the
+        page)."""
+        return write()
+
     @classmethod
     def search(cls, objects, query):
         """The records that match what was typed in the list's search box: by default those with the
@@ -468,17 +557,26 @@ class Resource:
     # --- URLs ---------------------------------------------------------------------------------
     @classmethod
     def urls(cls):
-        p, n = cls.url_prefix, cls.model._meta.model_name
+        """The tab's routes, then the same routes under each of its mounts (named with the mount's key first)."""
+        return [route for mount in (None, *cls.mounts) for route in cls.routes(mount)]
+
+    @classmethod
+    def routes(cls, mount=None):
+        p = mount.url_prefix if mount is not None else cls.url_prefix
+        n = (f'{mount.key}_' if mount is not None else '') + cls.model._meta.model_name
         pk = 'uuid:pk' if isinstance(cls.model._meta.pk, models.UUIDField) else 'int:pk'
+
+        def view(view_class, **initkwargs):
+            return serve_mounted(view_class.as_view(resource=cls, **initkwargs), mount)
         routes = {
-            'list': path(f'{p}/', ListView.as_view(resource=cls), name=f'{n}_list'),
-            'add': path(f'{p}/new/', (cls.create_view or CreateView).as_view(resource=cls), name=f'{n}_create'),
-            'change': path(f'{p}/<{pk}>/', UpdateView.as_view(resource=cls), name=f'{n}_edit'),
-            'delete': path(f'{p}/<{pk}>/delete/', DeleteView.as_view(resource=cls), name=f'{n}_delete'),
+            'list': path(f'{p}/', view(ListView), name=f'{n}_list'),
+            'add': path(f'{p}/new/', view(cls.create_view or CreateView), name=f'{n}_create'),
+            'change': path(f'{p}/<{pk}>/', view(UpdateView), name=f'{n}_edit'),
+            'delete': path(f'{p}/<{pk}>/delete/', view(DeleteView), name=f'{n}_delete'),
         }
-        rows = [path(f'{p}/<{pk}>/{row_list.key}/', RowListView.as_view(resource=cls, rows=row_list),
+        rows = [path(f'{p}/<{pk}>/{row_list.key}/', view(RowListView, rows=row_list),
                      name=f'{n}_{row_list.key}') for row_list in cls.row_lists] if cls.allows('change') else []
-        detail = [path(f'{p}/<{pk}>/view/', DetailView.as_view(resource=cls), name=f'{n}_detail')
+        detail = [path(f'{p}/<{pk}>/view/', view(DetailView), name=f'{n}_detail')
                   ] if cls.detail_template else []
         return [route for action, route in routes.items() if action == 'list' or cls.allows(action)] + rows + detail
 
@@ -509,13 +607,21 @@ class ResourceView:
         self.resource, self.request = resource, request
         return self
 
+    @property
+    def mount(self):
+        return mount_of(self.request)
+
+    def url(self, action, *args):
+        """The address of one of the tab's routes, under the mount the page came by."""
+        return reverse(self.resource.url_name(action, self.mount), args=args)
+
     def context(self, **extra):
         r, user = self.resource, self.request.user
         return {
-            'resource': r, 'name': r.name, 'plural': r.plural, 'group': r.group(), 'title': r.title(),
-            'empty_icon': r.icon,
-            'list_url': reverse(r.url_name('list')),
-            'create_url': reverse(r.url_name('create')) if r.allows('add') else '',
+            'resource': r, 'name': r.name, 'plural': r.plural, 'group': r.group(self.mount),
+            'title': r.title(self.mount), 'empty_icon': r.icon,
+            'list_url': self.url('list'),
+            'create_url': self.url('create') if r.allows('add') else '',
             **{f'can_{action}': r.allows(action) and user.has_perm(r.perm(action))
                for action in ('add', 'change', 'delete')},
             **extra,
@@ -630,11 +736,15 @@ class CreateView(FormView):
             else:
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
                 flash(request, _('%(name)s “%(object)s” created.'), r, obj)
-                return done(request, reverse(r.url_name('edit'), args=[obj.pk]), stay=True)
+                return done(request, self.url('edit', obj.pk), stay=True)
         # Sent before: the record the first sending created, as that sending showed it.
         if getattr(sent, 'is_deleted', False):
-            return done(request, reverse(r.url_name('list')))
-        return done(request, reverse(r.url_name('edit'), args=[sent.pk]), stay=True)
+            return done(request, self.url('list'))
+        return done(request, self.url('edit', sent.pk), stay=True)
+
+
+class Crossed(Exception):
+    """The record changed between the edit's first read and its lock: the edit crossed another one."""
 
 
 class UpdateView(FormView):
@@ -652,28 +762,55 @@ class UpdateView(FormView):
         form = r.form(request, request.POST, request.FILES, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
-        with transaction.atomic():
-            current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
-            versioned = 'version' in form.fields
-            if versioned and form.cleaned_data.get('version') != current.version:
-                # Translators: %(name)s is the kind of record in lower case (e.g. site).
-                messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                          'The form now shows their version; make your changes again.')
-                               % {'name': r.name})
-                return done(request, reverse(r.url_name('edit'), args=[pk]))
-            before = r.recorded(current)
-            obj = form.save(commit=False)
-            if versioned:
-                obj.version = current.version + 1
-            if hasattr(obj, 'updated_by'):
-                obj.updated_by = request.user
-            obj.save()
-            form.save_m2m()
-            audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
-            r.after_save(request, obj, created=False)
+        versioned = 'version' in form.fields
+        try:
+            with transaction.atomic():
+                # What the edit may reach is worked out from the record as read here, and what it reaches is locked
+                # first (Resource.edited: the fish before the record, as a stock operation locks them). The record is
+                # locked in write(): changed meanwhile (its version moved), the edit is refused as any edit that
+                # crossed another.
+                read = r.visible(request).get(pk=pk)
+
+                def write():
+                    current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
+                    if versioned and form.cleaned_data.get('version') != current.version \
+                            or getattr(read, 'version', None) != getattr(current, 'version', None):
+                        raise Crossed
+                    before = r.recorded(current)
+                    obj = form.save(commit=False)
+                    if versioned:
+                        obj.version = current.version + 1
+                    if hasattr(obj, 'updated_by'):
+                        obj.updated_by = request.user
+                    obj.save()
+                    form.save_m2m()
+                    audit.record_update(request.user, obj, before, r.recorded(obj), entity_type=r.entity_type())
+                    r.after_save(request, obj, created=False)
+                    return obj
+
+                obj = r.edited(request, read, write,
+                               request.POST.get(r.question_field, '') if r.question_field else None)
+        except Crossed:
+            # Translators: %(name)s is the kind of record in lower case (e.g. site).
+            messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                      'The form now shows their version; make your changes again.')
+                           % {'name': r.name})
+            return done(request, self.url('edit', pk))
+        except ValidationError as error:
+            # The save asked something first (Resource.edited): the form again with the question, nothing saved.
+            form.add_error(None, error.messages)
+            response = self.page(form, self.get_object(pk), withdrawal_change=getattr(error, 'change', None),
+                                 question_template=r.question_template)
+            response.status_code = 422
+            return response
+        except IntegrityError as error:
+            # A rule the database holds across tables refused the change: said on the form, nothing saved.
+            if not trigger_refusal(form, error):
+                raise
+            return self.page(form, self.get_object(pk))
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” saved.'), r, obj)
-        return done(request, reverse(r.url_name('list')))
+        return done(request, self.url('list'))
 
 
 class DetailView(ResourceView):
@@ -683,7 +820,7 @@ class DetailView(ResourceView):
     def get(self, request, pk):
         r = self.resource
         obj = self.get_object(pk)
-        urls = {f'{action}_url': reverse(r.url_name(action), args=[obj.pk]) for action in ('edit', 'delete')
+        urls = {f'{action}_url': self.url(action, obj.pk) for action in ('edit', 'delete')
                 if r.allows({'edit': 'change'}.get(action, action))}
         return render_page(request, r.detail_template, self.context(object=obj, **urls, **r.detail_extras(request, obj)))
 
@@ -709,7 +846,7 @@ class DeleteView(ResourceView):
                     # record; %(reasons)s are sentences saying what is in the way.
                     messages.error(request, _('%(name)s “%(object)s” cannot be deleted: %(reasons)s') % {
                         'name': capfirst(r.name), 'object': obj, 'reasons': ' '.join(plan.blockers)})
-                    return done(request, reverse(r.url_name('list')))
+                    return done(request, self.url('list'))
                 softdelete.execute(plan, request.user)
             else:
                 # Logged first: a hard delete clears the object's primary key.
@@ -717,7 +854,7 @@ class DeleteView(ResourceView):
                 obj.delete()
         # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
         flash(request, _('%(name)s “%(object)s” deleted.'), r, obj)
-        return done(request, reverse(r.url_name('list')))
+        return done(request, self.url('list'))
 
 
 class RowListView(ResourceView):
@@ -728,7 +865,7 @@ class RowListView(ResourceView):
     rows = None
 
     def get(self, request, pk):
-        return redirect(reverse(self.resource.url_name('edit'), args=[pk]))
+        return redirect(self.url('edit', pk))
 
     def post(self, request, pk):
         r, rows = self.resource, self.rows
@@ -751,13 +888,25 @@ class RowListView(ResourceView):
                 messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
                                           'The form now shows their version; make your changes again.')
                                % {'name': r.name})
-                return done(request, reverse(r.url_name('edit'), args=[pk]), stay=True)
+                return done(request, self.url('edit', pk), stay=True)
             if not rows.applies_to(current):
                 raise Http404
-            rows.save(request.user, current, kept, r.entity_type())
+            try:
+                with transaction.atomic():
+                    asked = {'seen': request.POST.get(rows.question_field, '')} if rows.question_field else {}
+                    rows.save(request.user, current, kept, r.entity_type(), **asked)
+            except ValidationError as error:
+                # A list whose save asks something first (a medicine's withdrawal rows and the withdrawal guard): the
+                # page again with the reason and what was found (`withdrawal_change`), nothing saved.
+                formset._non_form_errors = formset.error_class(error.messages)
+                page = UpdateView.as_page(r, request)
+                response = page.page(r.form(request, instance=obj), obj, **{rows.key: formset, 'open_tab': rows.tab,
+                                                                          'withdrawal_change': getattr(error, 'change', None)})
+                response.status_code = 422
+                return response
             if versioned:
                 current.version += 1
                 current.updated_by = request.user
                 current.save(update_fields=['version', 'updated_by', 'updated_at'])
         messages.success(request, rows.saved % {'count': len(kept)})
-        return done(request, reverse(r.url_name('edit'), args=[pk]), stay=True)
+        return done(request, self.url('edit', pk), stay=True)

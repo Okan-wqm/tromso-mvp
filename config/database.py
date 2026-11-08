@@ -16,16 +16,25 @@ VIEWER = Viewer(
         Section(_('People'), ('hr',)),
         Section(_('Research'), ('experiments',)),
         Section(_('Monitoring'), ('monitoring',)),
+        Section(_('Sensors'), ('sensors',)),
         Section(_('Administration'), ('core', 'auth')),
     ],
     # Tables of a listed app that stay hidden, by table name.
-    excluded=(),
+    excluded=(
+        # Sensor readings: billions of rows; the grid's pager would count them on every page. Their charts are the
+        # Sensors panel's (README, Sensors).
+        'sensors_reading',
+    ),
     # Columns never read from the database: their cells show a placeholder, they cannot be sorted or
     # filtered (that would reveal them), and the CSV export leaves them out. Every column that holds
     # a secret belongs here, and so does what people write to each other: a message's text is for the
     # members of its conversation, which the platform admin reading the database is not (README, Messages).
     masked={'auth_user': ('password',), 'messages': ('body',), 'shift_assignments': ('note',),
-            'leave_requests': ('reason', 'decision_note'), 'attendance_records': ('note',)},
+            'leave_requests': ('reason', 'decision_note'), 'attendance_records': ('note',),
+            # A broker credential's hash, where the ingest's broker secret lies (a file name, masked as every column named
+            # like a secret), and what a device sent that could not be stored (it may hold anything).
+            'sensors_credential': ('password_hash',), 'sensors_connection': ('secret_file',),
+            'sensors_dead_letter': ('payload',)},
     # One line per table where the model's docstring does not say it in the project's words.
     descriptions={
         'employees': _('The people of the company for HR: number, name (or the account that names them), type and the '
@@ -63,5 +72,15 @@ VIEWER = Viewer(
         'document_species': _('Which species each library document is about.'),
         'knowledge_entry_species': _('Which species each knowledge entry holds for.'),
         'slaughter_facility_species': _('Which species each slaughter facility takes.'),
+        'sensors_channel_state': _('What the ingest service remembers of each sensor channel: its last value, the last stored '
+                                   'value the deadband is measured from and the values not stored since.'),
+        'sensors_device_state': _('What the ingest service has seen of each sensor device: its last message and how many '
+                                  'it took, took late, could not store or ignored.'),
+        'sensors_ingest_status': _('The ingest service’s heartbeat per broker connection: connected or not, messages '
+                                   'waiting and its last commit.'),
+        'sensors_dead_letter': _('Messages the ingest service could not store, kept as evidence and counted.'),
+        'sensors_contract': _('The one row both Django and the ingest service read: the contract’s version, the '
+                              'configuration’s epoch and the time limits.'),
+        'sensors_quality_flag': _('The bits of a sensor reading’s quality and which of them make a reading bad.'),
     },
 )

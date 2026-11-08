@@ -33,14 +33,16 @@ class AttendanceRecordForm(TabbedForm):
         help_texts = {'note': _('Why the time was entered or corrected: it is not shown in the log.')}
         widgets = {'note': forms.TextInput()}
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, realm=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
-        employees = scope.team(user) if user is not None else Employee.objects.none()
+        # a new record's person is chosen among the team in the panel's realm (an existing one keeps its person)
+        chosen_in = realm if self.instance._state.adding else None
+        employees = scope.team(user, realm=chosen_in) if user is not None else Employee.objects.none()
         self.fields['employee'].queryset = employees.select_related('user')
         self.fields['employee'].label_from_instance = lambda employee: employee.full_name
         if not self.instance._state.adding and not self.is_bound:
-            zone = self.zone(self.instance.employee, self.instance.clock_in.date())
+            _day, zone = read.local_day(self.instance.employee, self.instance.clock_in)   # the site's day, never UTC's
             for name in ('clock_in', 'clock_out'):
                 moment = getattr(self.instance, name)
                 if moment is not None:

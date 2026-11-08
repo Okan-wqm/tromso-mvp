@@ -1125,12 +1125,30 @@ class ProductionUnitsTests(WaterTestCase):
         self.sample(co2_mg_l='8')                                      # the middle point is fine
         self.sample(point=side, co2_mg_l='15.6')                       # the side outlet is critical
         page = self.client.get(reverse('farm:water'))
-        # The side outlet, and the unit's middle point: the outlet measures the unit's own water and the worst fresh
-        # value decides the unit's status (owner decisions 2026-11-08, A9.1 and P2).
-        self.assertEqual(page.context['critical_count'], 2)
+        self.assertEqual(page.context['critical_count'], 1)
         tiles = self.client.get(reverse('production_home')).context['water_tiles']
         self.assertEqual([(str(tile['label']), tile['count']) for tile in tiles],
-                         [('Sampling points with a critical water value', 2)])
+                         [('Sampling points with a critical water value', 1)])
+
+    def test_the_unit_is_critical_through_its_outlet_but_a_critical_point_is_counted_once(self):
+        """Owner, 2026-11-08: the unit's status, card and alarm are computed for the UNIT (A9.1: its outlet measures the
+        unit's own water; the worst fresh value decides, P2) and say which point drove it; a count of critical POINTS
+        counts each physical point by what was measured AT it, so one problem is never counted twice."""
+        self.stock()
+        self.limit('co2_mg_l', critical_high=15)
+        side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
+        self.sample(hours=1, co2_mg_l='8')                             # the middle point's own value is fine
+        self.sample(point=side, hours=2, co2_mg_l='15.6')              # the side outlet's is critical
+        unit = read.unit_water([self.t1])[self.t1.pk]
+        self.assertEqual(unit.status, Status.CRITICAL)                  # computed for the unit
+        self.assertEqual(unit.point_status, Status.OK)                  # measured at the middle point
+        self.assertIn('East side outlet', unit.get('co2_mg_l').note)   # says which point drove it
+        outlet = read.latest([side])[side.pk]
+        self.assertEqual((outlet.status, outlet.point_status), (Status.CRITICAL, Status.CRITICAL))
+        page = self.client.get(reverse('farm:water'))
+        self.assertEqual(page.context['critical_count'], 1)
+        tiles = self.client.get(reverse('production_home')).context['water_tiles']
+        self.assertEqual([tile['count'] for tile in tiles], [1])
 
     def test_an_old_critical_value_keeps_its_point_critical_with_no_recent_data_and_no_limit_says_why(self):
         """A point's status is the worst of its values. A critical value that grew old still counts: the point is
@@ -1148,7 +1166,7 @@ class ProductionUnitsTests(WaterTestCase):
         self.assertEqual((co2.status, co2.judged), (Status.STALE, Status.CRITICAL))
         self.assertEqual((row['water'].status, row['water'].old_alert), (Status.CRITICAL, True))
         self.assertContains(page, 'Critical, no recent data')
-        self.assertEqual(page.context['critical_count'], 2)            # and the unit's middle point (A9.1)
+        self.assertEqual(page.context['critical_count'], 1)
         alkalinity = row['water'].get('alkalinity_mg_l')
         self.assertEqual(alkalinity.status, Status.NO_LIMIT)
         self.assertEqual(alkalinity.why_no_limit, 'No water limit is set for the fish in the unit.')

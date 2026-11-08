@@ -1,7 +1,7 @@
 """The Sensors panel's pages beyond its tabs: the overview, and a credential's secret, shown once when it is made or
 replaced and never again."""
 import csv
-from datetime import datetime, timedelta
+from datetime import timedelta
 from urllib.parse import urlencode
 
 from django import forms
@@ -21,6 +21,7 @@ from django.views.decorators.http import require_POST
 
 from core import audit, navigation
 from core.crud import DRAFT, done, refusal_text, render_page
+from core.dates import read_moment
 from core.models import AuditLog
 from farm.models import System, Tank
 from farm.models.site import zone_of
@@ -391,8 +392,10 @@ def deffeyes_frames(request):
     zone = read.zone_for(target)
     try:
         if request.GET.get('start') and request.GET.get('end'):
-            start, end = (on_site_clock(datetime.strptime(request.GET[name], '%Y-%m-%dT%H:%M'), zone)
-                          for name in ('start', 'end'))
+            walls = [read_moment(request.GET[name]) for name in ('start', 'end')]   # core.dates: inside 1900-2100
+            if None in walls:
+                raise ValueError('Not a moment this page reads.')
+            start, end = (on_site_clock(wall, zone) for wall in walls)
         else:
             end = timezone.now().replace(minute=0, second=0, microsecond=0)
             start = end - dict(RANGES).get(request.GET.get('range', ''), timedelta(days=7))

@@ -2669,7 +2669,8 @@ the monitoring cards and the Deffeyes window says where it comes from and how ol
 never runs into the figure; a card's water cells are wide enough for either on one line; when the sensors cannot be read, the pages say the values come from
 the samples only. The ration's temperature takes a fresh sensor value at its moment too.
 
-A unit's or a system's Deffeyes can be drawn as it was at a past moment (`?at=` on the window's address, the site's
+A unit's or a system's Deffeyes can be drawn as it was at a past moment (`?at=` on the window's address, read by
+`core.dates.read_moment`, 1900-2100, else 400; the site's
 clock): the samples taken up to then and each channel's value then, from the bindings that held then. The hourly trail of
 a unit's point on the diagram is `sensors:trail` (JSON, from the hour rollup). The monitoring card's own buttons for
 these, for a place's charts (`sensors:target_charts`) and for binding a channel from a card (`sensors:binding_create`

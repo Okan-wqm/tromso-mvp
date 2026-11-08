@@ -33,7 +33,7 @@ from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
-from core.dates import read_day
+from core.dates import read_day, read_moment
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -361,9 +361,8 @@ def _moment(request, owner):
     value = request.GET.get('at', '')
     if not value:
         return None
-    try:
-        wall = datetime.strptime(value, '%Y-%m-%dT%H:%M')
-    except ValueError:
+    wall = read_moment(value)                   # core.dates: the one reader, inside 1900-2100 (never an overflow)
+    if wall is None:
         raise BadRequest('at')
     zone = zone_of(site_of(owner))
     first, second = wall.replace(fold=0, tzinfo=zone), wall.replace(fold=1, tzinfo=zone)

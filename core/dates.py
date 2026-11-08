@@ -62,6 +62,26 @@ def read_day(text, request=None):
     return None
 
 
+MOMENT_SHAPE_ADDRESS = re.compile(r'^(?:([0-9]{4}-[0-9]{2}-[0-9]{2})T|([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}) )'
+                                  r'([0-9]{1,2}):([0-9]{2})$')                         # ASCII digits only
+
+
+def read_moment(text):
+    """The one moment parser of an address (a chart's ?at=, a replay's start and end): the wall time in `text`, as the
+    links write it (2026-11-06T09:19) or the European way (06.11.2026 09:19), its day read by read_day (so inside the
+    window of dates), naive; None for anything else. The caller reads it on its site's clock and refuses a None."""
+    if not isinstance(text, str):
+        return None
+    found = MOMENT_SHAPE_ADDRESS.match(text.strip())
+    if found is None:
+        return None
+    day = read_day(found[1] or found[2])
+    hour, minute = int(found[3]), int(found[4])
+    if day is None or hour > 23 or minute > 59:
+        return None
+    return datetime(day.year, day.month, day.day, hour, minute)
+
+
 def _shaped(text):
     """Whether `text` is a real calendar date in an accepted shape, inside the window or not."""
     for shape in formats.get_format('DATE_INPUT_FORMATS'):

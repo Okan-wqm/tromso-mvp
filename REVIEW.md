@@ -137,16 +137,19 @@ Cost (30 -> 52 queries per feeding): recorded above for wip/perf.
 
 
 Cross-review 3 (REVIEW-CROSS-3-health.md, "land with follow-ups"); the reviewer's probes are tests now
-(`farm/tests/test_withdrawal_gate_coverage.py`, test commits ee7d434 and 6ee736f before the fix 046709a):
+(`farm/tests/test_withdrawal_gate_coverage.py`, test commits ee7d434, 6ee736f and 8f13c37 before the fixes 046709a and 072e8d1):
 
-1. A unit's loop: `Tank.system` is registered; the unit's edit page goes through `guarded_units` and asks (422 with the
+1. A unit's loop (`Tank.system`) is a conditional input: a change outside the guard is refused when it moves a
+   withdrawal of the fish ever in the unit (`withdrawal.weighed`: before, the write, after, in a savepoint rolled back),
+   free when it moves none (a system deleted with untreated units detaches them as before); the unit's edit page goes
+   through `guarded_units` and asks (422 with the
    released batch, then saved with the box). Root cause of the wider class: the readers read live records, so a deleted
    unit's fish show no withdrawal at all (probed: held before, nothing after). A system, a unit, a species and a sampling
    point carry `withdrawal_blockers()` (`farm.health.withdrawal.held_reached`: batches a withdrawal holds today among the
    fish ever in the units, or of the species; samples on a point), which their `delete_blockers()` say on the delete page
    and the gate holds for any write of `is_deleted` (`gate.CONDITIONAL`), weighed as the record stands live
    (`blockers_while_live`: a restore is worked out in a savepoint rolled back). Deleting a system detaches its units, which
-   the registered `Tank.system` refuses too. Done.
+   the loop rule weighs too. A queryset update or bulk update of a conditional field is weighed row by row. Done.
 2. `_counts` and the save check name a field by its name or its column (`_field`): `unit_id` is `unit`. Done.
 3. The link table `Treatment.units.through` is registered; `m2m_changed` checks the link table, the instance's model and
    the other side's; Django sends no save or delete signal for a link table it made, so its row's `save_base`/`delete`
@@ -207,3 +210,7 @@ At c99310e (main 16fa1b3 merged): `scripts/test.sh` (the full suite, parallel, i
 main 16fa1b3 itself, run at the same hour (it depends on the time of day: a sample 30 hours old); it is monitoring's, not
 this branch's. `makemigrations --check` no changes; `data_map --check` up to date; catalogs TR/NB 0 missing;
 `compile_catalogs`; `tsc --noEmit` OK; `npm test` 40/40 (node_modules of F:/dev/balik-ciftligi).
+
+After cross-review 3, at 072e8d1 (main still 16fa1b3): `scripts/test.sh` 2932 tests, OK (3 skipped), no failures (the
+G-03 golden flake did not show at this hour). `makemigrations --check` no changes; `data_map --check` up to date;
+catalogs TR/NB 0 missing; `compile_catalogs`; `tsc --noEmit` OK; `npm test` 40/40.

@@ -1868,8 +1868,9 @@ operation and a water sample lock them in; a record changed between the edit's f
 crossed edit. A system, a unit, a species or a sampling point is **not deleted or restored** while a withdrawal holds fish
 it reaches (weighed as it stands live: the readers read live records, so a deleted unit's fish would show no withdrawal at
 all), or while water samples are on the point: its delete page says why (`withdrawal_blockers()`), and the gate refuses
-any other way of flipping the flag, the admin's restore included (shown as a message). **The data layer holds it**
-(`farm/withdrawal_gate.py`): those rows and fields refuse a change made anywhere but inside the guard, whatever writes it
+any other way of flipping the flag, the admin's restore included (shown as a message). A unit's loop changed outside the
+guard is refused when it moves a withdrawal (worked out as the guard works it, rolled back), free when it moves none.
+**The data layer holds it** (`farm/withdrawal_gate.py`): those rows and fields refuse a change made anywhere but inside the guard, whatever writes it
 (a model's save or delete, `loaddata`, a treatment's units from either side or through their link table, a queryset's
 update, delete, bulk create or bulk update, a field named by its column alike), so a new path that skips the guard fails
 at once with a ValidationError; a test fixture, a command or a correction meant to write behind it says so with

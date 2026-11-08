@@ -1,0 +1,223 @@
+# Continuous integration (README, CI and dependency updates). Every job runs what a developer runs locally:
+#   python    scripts/test.sh with CHECKS=1: the project checks, then the whole suite, in the test runner's image on a
+#             TimescaleDB server of its own; then the catalogs must be unchanged
+#   frontend  npm ci, the browser build (tsc) and the TypeScript tests (npm test)
+#   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
+#   security  pip-audit, the Python licence gate, npm audit
+# No secret is used: the database passwords are throwaway values that live only inside a job.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+
+jobs:
+  python:
+    name: Django checks and the whole suite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The image scripts/test.sh runs the tests in, built here with its layers (the pip installs) cached between runs,
+      # and tagged as the script tags it (the hash of the requirements), so the script finds it and builds nothing.
+      - name: Test runner image tag (as scripts/test.sh computes it)
+        id: image
+        run: |
+          hash=$(cat requirements.txt scripts/testrunner/requirements.txt scripts/testrunner/Dockerfile | sha256sum | cut -c1-12)
+          echo "tag=balik-testrunner:req-$hash" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/testrunner"
+          cp requirements.txt "$RUNNER_TEMP/testrunner/requirements.txt"
+          cp scripts/testrunner/requirements.txt "$RUNNER_TEMP/testrunner/test-requirements.txt"
+          cp scripts/testrunner/Dockerfile "$RUNNER_TEMP/testrunner/Dockerfile"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ runner.temp }}/testrunner
+          tags: ${{ steps.image.outputs.tag }}
+          load: true
+          push: false
+          cache-from: type=gha,scope=testrunner
+          cache-to: type=gha,mode=max,scope=testrunner
+
+      # The database server is the one scripts/test.sh starts (timescale/timescaledb:2.17.2-pg17, data in memory, the
+      # job scheduler off, fsync off): a GitHub service container cannot be given those server options, and the
+      # parallel run needs the scheduler off (README, Tests).
+      - name: Project checks and the whole suite (scripts/test.sh)
+        env:
+          CHECKS: "1"
+          WORKERS: "4"
+          DB_TMPFS: 4g
+        run: |
+          TEST_DB_PASSWORD=$(openssl rand -hex 16)
+          export TEST_DB_PASSWORD
+          scripts/test.sh
+
+      - name: The translation catalogs are up to date (update_catalogs changed nothing)
+        run: |
+          if ! git diff --exit-code -- locale; then
+            echo "::error::locale/*/django.po are stale: run manage.py update_catalogs and commit the result"
+            exit 1
+          fi
+
+  frontend:
+    name: Browser code (tsc build and TypeScript tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Build (tsc -p tsconfig.json)
+        run: npm run build
+      # The designer's browser test drives the runner's own Chrome (/usr/bin/google-chrome). Ubuntu 24.04 limits
+      # unprivileged user namespaces, which Chrome's sandbox needs.
+      - name: Allow Chrome's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: TypeScript tests (npm test)
+        run: npm test
+
+  rust:
+    name: sensors-ingest (fmt, clippy, tests, deny)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: sensors-ingest
+    services:
+      db:
+        image: timescale/timescaledb:2.17.2-pg17
+        env:
+          POSTGRES_USER: balik
+          POSTGRES_PASSWORD: ci-throwaway-not-a-secret
+          POSTGRES_DB: sensors_ingest_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U balik"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      CARGO_TERM_COLOR: always
+      DB_PASSWORD: ci-throwaway-not-a-secret
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain of rust-toolchain.toml
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --component clippy --component rustfmt
+          rustc --version
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: sensors-ingest
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+
+      # The tests run against the real schema, migrated by Django, and a broker with the production configuration
+      # (as tests/run.sh does them on a developer's machine).
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Schema (manage.py migrate on the test database)
+        working-directory: .
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: "5432"
+          DB_NAME: sensors_ingest_test
+          DB_USER: balik
+        run: |
+          python -m pip install -r requirements.txt
+          python manage.py migrate --no-input
+      - name: Broker (Mosquitto, users ingest and dev)
+        working-directory: .
+        run: |
+          MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+          docker volume create si-test-broker-auth
+          docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '
+            mosquitto_passwd -c -b /mosquitto/auth/passwd ingest ingest-pw 2>/dev/null
+            mosquitto_passwd -b /mosquitto/auth/passwd dev dev-pw 2>/dev/null
+            printf "user ingest\ntopic read #\nuser dev\ntopic write #\n" > /mosquitto/auth/acl
+            chown -R mosquitto:mosquitto /mosquitto/auth && chmod 0700 /mosquitto/auth/passwd /mosquitto/auth/acl'
+          docker run -d --name broker -p 127.0.0.1:1883:1883 -v "$PWD/sensors-ingest/mosquitto:/mosquitto/config:ro" \
+            -v si-test-broker-auth:/mosquitto/auth --tmpfs /mosquitto/data --entrypoint sh "$MOSQ" \
+            /mosquitto/config/entrypoint.sh
+          for _ in $(seq 1 30); do
+            (exec 3<>/dev/tcp/127.0.0.1/1883) 2>/dev/null && break
+            sleep 1
+          done
+      - name: cargo test (unit, property, database and broker tests)
+        env:
+          TEST_DATABASE_URL: host=127.0.0.1 port=5432 user=balik password=ci-throwaway-not-a-secret dbname=sensors_ingest_test
+          TEST_MQTT_HOST: 127.0.0.1
+          REQUIRE_DB: "1"
+        run: cargo test --locked --all-targets
+
+      - name: cargo deny (licences, bans, sources, advisories)
+        run: |
+          command -v cargo-deny >/dev/null || cargo install --locked cargo-deny@0.20.2
+          cargo deny --locked check
+      - name: THIRD_PARTY matches Cargo.lock
+        run: |
+          cargo metadata --format-version 1 --locked --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/meta.json"
+          python -I tests/third_party.py "$RUNNER_TEMP/meta.json" > "$RUNNER_TEMP/THIRD_PARTY"
+          diff -u THIRD_PARTY "$RUNNER_TEMP/THIRD_PARTY" || { echo "::error::sensors-ingest/THIRD_PARTY is out of date"; exit 1; }
+
+  security:
+    name: Advisories and licences
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            scripts/testrunner/requirements.txt
+      - name: Tools (a virtual environment of their own)
+        run: |
+          python -m venv "$RUNNER_TEMP/tools"
+          "$RUNNER_TEMP/tools/bin/pip" install pip-audit==2.10.1 pip-licenses==5.5.5
+      - name: pip-audit (known vulnerabilities in the Python requirements)
+        run: |
+          "$RUNNER_TEMP/tools/bin/pip-audit" --strict -r requirements.txt -r scripts/testrunner/requirements.txt
+      # The licences the requirements install (the test runner's too), each allowed in THIRD_PARTY.md; anything else
+      # fails: AGPL, SSPL, BUSL, a non-commercial licence or a new one nobody has reviewed yet.
+      - name: Python licences (pip-licenses, the allow-list of THIRD_PARTY.md)
+        run: |
+          python -m venv "$RUNNER_TEMP/app"
+          "$RUNNER_TEMP/app/bin/pip" install -r requirements.txt -r scripts/testrunner/requirements.txt
+          "$RUNNER_TEMP/tools/bin/pip-licenses" --python "$RUNNER_TEMP/app/bin/python" --from=mixed --format=markdown
+          "$RUNNER_TEMP/tools/bin/pip-licenses" --python "$RUNNER_TEMP/app/bin/python" --from=mixed \
+            --allow-only="Apache-2.0;Apache-2.0 OR BSD-3-Clause;BSD-2-Clause;BSD-3-Clause;BSD License;LGPL-3.0-only;MIT-0;PSF-2.0"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: npm audit (high and critical)
+        run: npm audit --omit=dev --audit-level=high

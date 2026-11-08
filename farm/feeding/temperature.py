@@ -51,7 +51,7 @@ class TemperatureBook:
     `at(unit, moment)` is the lookup."""
 
     def __init__(self, units, since, until):
-        self.sources = water_sources(units, nested=True)
+        self.sources = water_sources(units, nested=True, every_point=True)
         points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
         self.series = Series(points.values(), TEMPERATURE.code, since - usable(), until, live=True)
 

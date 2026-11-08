@@ -1145,15 +1145,16 @@ bottom drains, depth points, the points of equipment), the other points of them,
 rows are skipped, a value out of range is shown in its cell and nothing is recorded until every cell is right
 (at most 200 rows).
 
-**A unit's water** is the latest samples at its middle point, and only there (`read.middle_points`, the one
-definition; `read.unit_water`): what Production units, its drawer, the overview tile, the status dot and the
-calculator show of it. An inlet's or an outlet's sample is the stream's, not the fish's: it is judged for the same
-fish and shown, but it never moves the unit's status. Nothing of a unit's DO, pH or nitrogen is taken from its
-loop (the source passes on only what is the same all round a loop, and so does this). Its **temperature** is the
-one value that may come from a loop: the ration (`farm/feeding/temperature.py`) reads the unit's middle point, else
-the loop point of its system and of the systems that system is nested in, and the withdrawal's daily mean
-(`farm/health/withdrawal.py`) the unit's, else its own system's loop (a day without one counts at the species'
-assumed temperature, else as 0 °C, and says so: the safe side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
+**A unit's water** is read for its middle point (`read.middle_points`, the one definition; `read.unit_water`): what
+Production units, its drawer, the overview tile, the status dot and the calculator show of it. By owner rule A9 (below,
+"The water's latest value"), every active point of the unit is the unit's own (A9.1, since the second cross review of
+2026-11-08: the newest fresh value of the middle, an inlet or an outlet wins; this replaced "an inlet's sample is the
+stream's and never moves the unit's status", an open owner question: a newer inlet value can stand for the bulk), and its
+system's loop stands in only for a parameter the unit has nothing fresh of. Its **temperature** for the ration
+(`farm/feeding/temperature.py`) is picked by the same rule (`read.choose`), with the loops of the systems its system is
+nested in as further tiers; the withdrawal's daily mean (`farm/health/withdrawal.py`) reads the unit's middle point, else
+its own system's loop (a day without one counts at the species' assumed temperature, else as 0 °C, and says so: the safe
+side). Both ask `read.water_sources`, the one place that says where a unit's temperature is read from,
 and a test fails when another module reads the samples.
 
 **The calculator** (the third tab, `/operations/water/calculator/`) is laid out as the source's: where the
@@ -2655,8 +2656,9 @@ What works:
 
 Per unit and parameter, each on its own, in one place (`farm/water/read.py` `latest`, the sensors reach it through the
 registry `farm/water/sources.py`, registered by `SensorsConfig.ready()`; the farm never imports the sensors): among the
-unit's OWN fresh values (the sensors on its point and its own manual or lab samples; between two channels measured at the same time the
-primary before the backup) the
+unit's OWN fresh values (the sensors on its points and its own manual or lab samples, at every active point of the unit,
+A9.1 "its own sampling points": the middle, an inlet, an outlet; between two channels measured at the same time the
+primary before the backup, a point's before a later-named point's) the
 newest by measurement time wins, whatever its origin; only when it has no fresh value of its own does the system stand in,
 for the middle point: the newest fresh value of a sensor on the unit's system, of a sensor bound to the system's loop
 point, or of a sample of the system's loop; else the newest of its own values, shown stale, else the system's. A value

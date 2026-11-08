@@ -785,7 +785,7 @@ def _loops_of(points):
 class Places:
     """Where one point's water is read from (owner rule A9): its own points, then its system's, and the live targets on
     each ([(target, origin, the point a value of it is observed at)]). A unit's middle point stands for the unit: its own
-    point is the middle point; its system's are the
+    points are every active point of the unit (A9.1, "its own sampling points"), the middle first; its system's are the
     loop point of the unit's system with the sensors on it and on the system. Any other point is its own alone, with no
     system tier (a loop's middle point has the system's sensors as its own)."""
     own: list
@@ -800,14 +800,20 @@ def _observed(point):
 
 
 def _places(points):
-    """{point id: Places} of the points given (one query for the loops of the units in a system)."""
+    """{point id: Places} of the points given: one query for the other points of the units, one for their loops."""
+    units = {point.unit_id for point in points if point.unit_id and point.kind == PointKind.MIDDLE}
+    others = defaultdict(list)
+    if units:
+        for point in (SamplingPoint.objects.filter(unit__in=units, is_active=True).exclude(kind=PointKind.MIDDLE)
+                      .with_owners()):
+            others[point.unit_id].append(point)
     loops = _loops_of(points)
     found = {}
     for point in points:
         if not (point.unit_id and point.kind == PointKind.MIDDLE):
             found[point.pk] = Places([point], _observed(point))
             continue
-        own = [point]
+        own = [point, *sorted(others[point.unit_id], key=lambda each: each.name)]
         places = Places(own, [target for each in own for target in _observed(each)])
         loop = loops.get(point.pk)
         if loop is not None:

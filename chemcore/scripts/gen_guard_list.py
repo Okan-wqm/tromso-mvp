@@ -1,7 +1,7 @@
 """The deny-list of the browser guard (owner amendment B2: no chemistry in the browser). Writes
 chemcore/guard-list.txt from the code that holds the chemistry: the public functions and constants of the Rust
-core (chemcore/core/src) and, until each moves, the Python formula modules (farm/water/chemistry.py, deffeyes.py,
-dosing.py, charts.py). Two kinds of entry:
+core (chemcore/core/src) and the names of its Python doors (farm/water/chemistry.py, deffeyes.py, dosing.py,
+charts.py: they hold no formula since the retirement audit S10, farm/tests/test_one_formula.py). Two kinds of entry:
 
   name <identifier>   a function or constant name with an underscore, at least 6 characters (single words such as
                       `draw` or `split` would match ordinary text)

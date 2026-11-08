@@ -45,11 +45,8 @@ from . import chemistry, messages, native
 from .evaluate import Status
 
 PH_RANGE = native.PH_RANGE                                   # the chart's pH domain (the source's), 4 to 12.5
-ISOLINE_PHS = [round(4.25 + 0.25 * step, 2) for step in range(34)]
-LABELLED_PHS = {round(5.0 + 0.5 * step, 1) for step in range(15)}
 AXIS = native.AXIS            # the axes' ends at least: 6 mmol/L DIC and 6 meq/L alkalinity
 ALERT_PH = native.ALERT_PH    # a pH border nearer than this (0.2) is a warning
-OMEGA_SALINITY = (5, 44)      # the salinities Mucci (1983) measured
 
 LAYERS = [
     ('isolines', _('pH isolines')),

@@ -463,23 +463,23 @@ class SmallChartTests(SimpleTestCase):
         # WQ-42: the source's NH₃ chart runs from pH 6 to 9.5 and up to 2.5 times the limit, and its points are
         # dropped outside: a water at pH 9.8, or with more NH₃ than that, had no point.
         result = analyse(Water(12, 1, 9.8, 200, tan_mg_l=2), Limits(0.0103, 15))
-        plot = charts.nh3_plot(result)
+        plot = charts.plots(result)['nh3']
         self.assertEqual(plot.x, (6.0, 10.5))
         self.assertGreaterEqual(plot.y[1], result.nh3_n_mg_l)
         drawing = charts.draw(plot)
         self.assertIn('water', [dot['key'] for dot in drawing.dots])
         self.assertIn('water', [line['key'] for line in drawing.verticals])
-        self.assertIsNone(charts.nh3_plot(analyse(Water(12, 1, 7.0, 80))))         # without the TAN
+        self.assertIsNone(charts.plots(analyse(Water(12, 1, 7.0, 80)))['nh3'])         # without the TAN
 
     def test_saturation_only_where_its_constants_hold(self):
-        self.assertIsNone(charts.saturation_plot(analyse(Water(12, 1, 7.0, 80, calcium_mg_l=400))))   # WQ-32
-        self.assertIsNone(charts.saturation_plot(analyse(Water(25, 35, 8.1, 115))))
-        plot = charts.saturation_plot(analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412)))
+        self.assertIsNone(charts.plots(analyse(Water(12, 1, 7.0, 80, calcium_mg_l=400)))['saturation'])   # WQ-32
+        self.assertIsNone(charts.plots(analyse(Water(25, 35, 8.1, 115)))['saturation'])
+        plot = charts.plots(analyse(Water(25, 35, 8.1, 115, calcium_mg_l=412)))['saturation']
         self.assertEqual([key for key, _name, _curve in plot.series], ['calcite', 'aragonite'])
         self.assertLessEqual(plot.y[0], 0)
         self.assertGreaterEqual(plot.y[1], 0)
         # Its ticks are whole steps (the curves run from −2.27 to 1.40 here), never a half rounded to −0.
-        drawing = charts.draw(charts.saturation_plot(analyse(Water(12, 35, 7.0, 80, calcium_mg_l=400))))
+        drawing = charts.draw(charts.plots(analyse(Water(12, 35, 7.0, 80, calcium_mg_l=400)))['saturation'])
         self.assertEqual([tick['label'] for tick in drawing.y_ticks], ['-3', '-2', '-1', '0', '1', '2'])
 
     def test_the_svg_has_plain_coordinates_and_the_languages_labels(self):

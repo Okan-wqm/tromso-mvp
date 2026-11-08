@@ -16,7 +16,7 @@ fractions, isoline, DIC, CO2, the borders of a limit), the solver (`solve`), the
 with the air (`k0_co2`, `co2_from_air`, Weiss 1974). An input that is not a finite number, or one where the mathematics
 fails, raises (ValueError, ZeroDivisionError, OverflowError; native.NonFiniteError for a non-finite one)."""
 from .native import (  # noqa: F401  the names the code has always used
-    AIR_CO2, H2S_PER_S, KELVIN, MG_CACO3_PER_MEQ, MG_CALCIUM_PER_MOL, MG_CO2_PER_MMOL, SOLVER_PH, Equilibria,
+    H2S_PER_S, MG_CACO3_PER_MEQ, MG_CALCIUM_PER_MOL, MG_CO2_PER_MMOL, Equilibria,
     co2_from_air, equilibria, k0_co2, k1_sws, k2_sws, k_h2s_total, k_nh4_sws, kb_total, ksp_aragonite, ksp_calcite,
     kw_total, nh3_fraction, oxygen_solubility, ph_free, pk_nh4, pressure_atm, solve, vapour_pressure_atm)
 from .native import activity_coefficient_h as _activity_coefficient_h  # noqa: F401

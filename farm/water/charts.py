@@ -84,30 +84,9 @@ def plots(analysis):
     return {key: _plot(key, found) for key, found in native.plots(water, limits, target, pressure).items()}
 
 
-def nh3_plot(analysis):
-    """NH₃-N against pH; None without the TAN."""
-    return plots(analysis)['nh3']
-
-
-def h2s_plot(analysis):
-    """The shares of the total sulfide as H₂S and HS⁻ against pH, in %."""
-    return plots(analysis)['h2s']
-
-
-def carbonate_plot(analysis):
-    """The shares of the DIC as CO₂, HCO₃⁻ and CO₃²⁻ against pH, in %."""
-    return plots(analysis)['carbonate']
-
-
 def saturation_index(eq, dic, ph, calcium_mg_l, ksp):
     """log10 Ω of a water: Ω = [Ca²⁺] [CO₃²⁻] / Ksp, concentrations per litre (WQ-32; the core's)."""
     return native.saturation_index(eq.temp_c, eq.salinity, dic, ph, calcium_mg_l, ksp)
-
-
-def saturation_plot(analysis):
-    """The calcite and aragonite saturation index against pH at the water's DIC; None without the calcium or
-    outside Mucci's salinities."""
-    return plots(analysis)['saturation']
 
 
 # ---- the SVG --------------------------------------------------------------------------------------------

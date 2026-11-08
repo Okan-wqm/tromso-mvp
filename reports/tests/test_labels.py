@@ -12,9 +12,10 @@ from pathlib import Path
 from django.conf import settings
 from django.test import SimpleTestCase, override_settings
 from django.urls import reverse
-from django.utils import translation
+from django.utils import timezone, translation
 
 from farm.models import HandlingPlanItem, HealthEvent
+from farm.models.site import zone_of
 from farm.stock import services as stock_services
 
 from .. import compute, labels
@@ -132,3 +133,24 @@ class EveryKeyThatReachesAPageTests(NoticeTestCase):
         content = compute.compute(disease).content
         self.assertEqual(labels.describe('/health_event/units/0', content), 'Health event · Unit 1')   # M-01's number
         self.assertIn(('Health event · Units', '1'), labels.outline(content))
+
+    def test_no_value_on_a_page_is_an_iso_date_or_time_and_found_at_is_on_the_sites_clock(self):
+        """A notice's "Found at" is typed on the site's clock: the detail and print pages show it there, dd.mm.yyyy HH:MM,
+        never the stored ISO instant in UTC; every date a row shows is dd.mm.yyyy. The CSV keeps the ISO instant with its
+        offset (machine format, its zone said)."""
+        iso = re.compile(r'\b\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?')
+        found = {}
+        for report in self.reports:
+            for name in ('reports:report_print', 'reports:report_detail'):
+                page = self.client.get(reverse(name, args=[report.pk])).content.decode()
+                values = re.findall(r'<td>([^<]*)</td>', page) + re.findall(r'<dd>([^<]*)</dd>', page)
+                bad = sorted({value for value in values if iso.search(value)})
+                if bad:
+                    found[(report.kind, name)] = bad
+        self.assertEqual(found, {})
+        escape = next(report for report in self.reports if report.kind == Report.Kind.ESCAPE)
+        shown = timezone.localtime(escape.found_at, zone_of(self.sea)).strftime('%d.%m.%Y %H:%M')
+        for name in ('reports:report_print', 'reports:report_detail'):
+            self.assertContains(self.client.get(reverse(name, args=[escape.pk])), shown)
+        csv_text = self.client.get(reverse('reports:report_export', args=[escape.pk, 'csv'])).content.decode()
+        self.assertIn('2026-10-25T06:15:00+00:00', csv_text)

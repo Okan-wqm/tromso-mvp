@@ -526,11 +526,13 @@ class Resource:
     question_field = None
 
     @classmethod
-    def edited(cls, request, current, write, seen):
-        """Makes an edit of `current`: `write()` as it is. A tab whose records feed a rule that must ask before a change
-        stands wraps it (the medicine withdrawal: farm.health.withdrawal.guarded); `seen` is the value of the edit
-        form's box for that question. A refusal is a ValidationError, shown on the form with what it carries
-        (`change`, as `question` in the page)."""
+    def edited(cls, request, record, write, seen):
+        """Makes an edit of `record` (as read before the edit, not locked yet): `write()` as it is, which locks the
+        record, checks that it has not changed since and saves it. A tab whose records feed a rule that must ask
+        before a change stands wraps it (the medicine withdrawal: farm.health.withdrawal.guarded), locking what the
+        rule reads before `write()` locks the record; `seen` is the value of the edit form's box for that question.
+        A refusal is a ValidationError, shown on the form with what it carries (`change`, as `question` in the
+        page)."""
         return write()
 
     @classmethod
@@ -741,6 +743,10 @@ class CreateView(FormView):
         return done(request, self.url('edit', sent.pk), stay=True)
 
 
+class Crossed(Exception):
+    """The record changed between the edit's first read and its lock: the edit crossed another one."""
+
+
 class UpdateView(FormView):
     action = 'change'
 
@@ -756,19 +762,21 @@ class UpdateView(FormView):
         form = r.form(request, request.POST, request.FILES, instance=obj)
         if not form.is_valid():
             return self.page(form, obj)
+        versioned = 'version' in form.fields
         try:
             with transaction.atomic():
-                current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
-                versioned = 'version' in form.fields
-                if versioned and form.cleaned_data.get('version') != current.version:
-                    # Translators: %(name)s is the kind of record in lower case (e.g. site).
-                    messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                              'The form now shows their version; make your changes again.')
-                                   % {'name': r.name})
-                    return done(request, self.url('edit', pk))
-                before = r.recorded(current)
+                # What the edit may reach is worked out from the record as read here, and what it reaches is locked
+                # first (Resource.edited: the fish before the record, as a stock operation locks them). The record is
+                # locked in write(): changed meanwhile (its version moved), the edit is refused as any edit that
+                # crossed another.
+                read = r.visible(request).get(pk=pk)
 
                 def write():
+                    current = r.visible(request).select_for_update(of=('self',)).get(pk=pk)   # not the joined rows
+                    if versioned and form.cleaned_data.get('version') != current.version \
+                            or getattr(read, 'version', None) != getattr(current, 'version', None):
+                        raise Crossed
+                    before = r.recorded(current)
                     obj = form.save(commit=False)
                     if versioned:
                         obj.version = current.version + 1
@@ -780,8 +788,14 @@ class UpdateView(FormView):
                     r.after_save(request, obj, created=False)
                     return obj
 
-                obj = r.edited(request, current, write,
+                obj = r.edited(request, read, write,
                                request.POST.get(r.question_field, '') if r.question_field else None)
+        except Crossed:
+            # Translators: %(name)s is the kind of record in lower case (e.g. site).
+            messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                      'The form now shows their version; make your changes again.')
+                           % {'name': r.name})
+            return done(request, self.url('edit', pk))
         except ValidationError as error:
             # The save asked something first (Resource.edited): the form again with the question, nothing saved.
             form.add_error(None, error.messages)

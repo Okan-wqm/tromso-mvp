@@ -179,6 +179,16 @@ class Species(CodedMixin, AuditedModel):
         """The labels of the water environments ticked, e.g. [Fresh water, Sea water]."""
         return [self._meta.get_field(name).verbose_name for name in self.WATER_FIELDS if getattr(self, name)]
 
+    def withdrawal_blockers(self):
+        """Why the species is not deleted or restored now: its assumed water temperature counts the degree-days of its
+        batches on a day without a measured one, so a withdrawal that holds one waits
+        (farm.health.withdrawal.held_reached; the withdrawal gate's rule, farm/apps.py)."""
+        from ..health.withdrawal import held_reached
+        return held_reached(species=self)
+
+    def delete_blockers(self):
+        return self.withdrawal_blockers()
+
     def clean(self):
         super().clean()
         errors = {}

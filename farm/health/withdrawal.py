@@ -52,7 +52,8 @@ from farm import withdrawal_gate as gate
 from farm.feeding import read as feeding_read
 from farm.handling import check
 from farm.handling.withdrawal import WithdrawalBlock, source_key
-from farm.models import Batch, FeedingRecord, MedicineWithdrawal, StockMovement, Treatment, WithdrawalAcknowledgement
+from farm.models import (Batch, FeedingRecord, MedicineWithdrawal, StockMovement, Tank, Treatment,
+                         WithdrawalAcknowledgement)
 from farm.models.feed import FeedType
 from farm.models.handling import WithdrawalWarning
 from farm.models.health import TreatmentMethod
@@ -293,6 +294,44 @@ def holding(batch_ids, today, day=None):
             if withdrawal.holds_on(day):
                 found[withdrawal.batch_id].append(withdrawal)
     return found
+
+
+def held_reached(unit_ids=(), species=None):
+    """Why a unit, a loop (the units in it) or a species is not deleted or restored now: the batches a withdrawal holds
+    today among the fish ever in `unit_ids` and the batches of `species`. Deleting or restoring one moves their
+    withdrawals (the treatments' units, the loop's samples that count for a unit, the species' assumed temperature), so
+    it waits until they end (cross-review 3). [] when none is held."""
+    batch_ids = set()
+    if unit_ids:
+        batch_ids.update(batch_id for batches in Presence.of_units(set(unit_ids)).batches.values()
+                         for batch_id in batches)
+    if species is not None:
+        batch_ids.update(Batch.all_objects.filter(species=species).values_list('pk', flat=True))
+    if not batch_ids:
+        return []
+    units = Tank.all_objects.filter(pk__in={unit_id for units in Presence.of_batches(batch_ids).units.values()
+                                            for unit_id in units}).select_related('production_department__site')
+    today = min((local_today(unit) for unit in units), default=local_today())   # the earliest: the longest held
+    codes = sorted(Batch.all_objects.filter(pk__in=holding(batch_ids, today)).values_list('code', flat=True))
+    if not codes:
+        return []
+    return [ngettext('A medicine withdrawal holds batch %(batches)s, and this moves it: wait until it ends.',
+                     'Medicine withdrawals hold batches %(batches)s, and this moves them: wait until they end.',
+                     len(codes)) % {'batches': ', '.join(codes)}]
+
+
+def blockers_while_live(record):
+    """A unit's, a loop's, a species' or a sampling point's withdrawal_blockers() as they stand with it live (the
+    withdrawal gate's rule for its deleted flag): the readers read live records, so the fish of a deleted unit show no
+    withdrawal at all, and a restore is weighed as the record would stand restored, in a savepoint rolled back."""
+    if not record.is_deleted:
+        return record.withdrawal_blockers()
+    with transaction.atomic(), gate.opened('weighing a restore, rolled back'):
+        type(record)._base_manager.filter(pk=record.pk).update(is_deleted=False)
+        record.is_deleted = False
+        reasons = record.withdrawal_blockers()
+        transaction.set_rollback(True)
+    return reasons
 
 
 def of_units(units, day=None):

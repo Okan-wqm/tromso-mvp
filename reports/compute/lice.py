@@ -138,7 +138,12 @@ def _questions(treatments):
     return found
 
 
-def scope(site, period, units=None, version=2):
+# The version of the rows scope() reads (reports.compute.SCOPE_VERSIONS): 2 adds the earlier counts and the harvest plans
+# and their harvests (F-206) and the lice medicines given for another reason (F-239).
+SCOPE_VERSION = 2
+
+
+def scope(site, period, units=None, version=SCOPE_VERSION):
     """The rows the week's figures are read from (for the fingerprint), without computing them; of `version` 1 for a
     report filed before version 2 (reports.compute.SCOPE_VERSIONS)."""
     units = units if units is not None else stock.site_units(site)

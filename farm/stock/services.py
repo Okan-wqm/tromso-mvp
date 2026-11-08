@@ -130,7 +130,10 @@ def lock_fish(unit_ids, first=None):
     """Locks the fish of `unit_ids` from the day `first` on (None: every batch they ever held), in the order a stock operation locks them (batches, then
     units), and returns ({unit id: unit}, the batch ids): the fish a write about these units can reach, which the
     withdrawal guard works the withdrawals of. Which batches were there is read before the units are locked and read
-    again after: a batch that arrived in between is locked too (cross-review 2, 7)."""
+    again after: a batch that arrived in between is locked too (cross-review 2, 7). That late lock is the one taken
+    after a unit's: the operation that brought the batch has committed (it is read), so only an operation begun since,
+    holding the batch and waiting for one of these units, can cross it; the database sees that deadlock and fails one of
+    the two whole, nothing written, and the person sends it again (cross-review 3, 5)."""
     def present():
         presence = read.Presence.of_units(unit_ids)
         return {batch_id for unit_id in unit_ids for batch_id in presence.batches.get(unit_id, ())

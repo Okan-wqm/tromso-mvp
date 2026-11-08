@@ -155,7 +155,12 @@ def compute(facility, period):
     return Result(content, problems, warnings, scope(facility, period, items))
 
 
-def scope(facility, period, items=None, version=2):
+# The version of the rows scope() reads (reports.compute.SCOPE_VERSIONS): 2 adds the harvests the plans were recorded as
+# (F-085).
+SCOPE_VERSION = 2
+
+
+def scope(facility, period, items=None, version=SCOPE_VERSION):
     """The rows the week's figures are read from (for the fingerprint), without computing them; `version` 1 (a report
     filed before version 2, reports.compute.SCOPE_VERSIONS) leaves out the harvests the plans were recorded as."""
     items = items if items is not None else entries_of(facility, period)

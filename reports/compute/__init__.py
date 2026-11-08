@@ -26,10 +26,10 @@ COMPUTE = {
 # filed" is checked by on the list, so the list never folds a ledger.
 # The version of the rows each kind reads for its fingerprint, when they changed (1 before): a filed report keeps the
 # version it was filed under (ReportSnapshot.scope_version), and is compared with the rows of that version, so a change of
-# the rule flags no filing that was made under the old one (cross-review 2, 12). Sea lice 2: the earlier counts and the
-# harvest plans and their harvests (F-206), the lice medicines given for another reason (F-239); planned slaughter 2: the
-# harvests its plans were recorded as (F-085).
-SCOPE_VERSIONS = {ReportKind.SEA_LICE.value: 2, ReportKind.SLAUGHTER_PLANNED.value: 2}
+# the rule flags no filing that was made under the old one (cross-review 2, 12). The version is the module's own
+# (SCOPE_VERSION, with what changed), the default of its scope(): one source (cross-review 3, 7).
+SCOPE_VERSIONS = {ReportKind.SEA_LICE.value: lice.SCOPE_VERSION,
+                  ReportKind.SLAUGHTER_PLANNED.value: slaughter.SCOPE_VERSION}
 
 SCOPE = {
     ReportKind.SEA_LICE: lambda report, version: lice.scope(report.site, report.period, version=version),

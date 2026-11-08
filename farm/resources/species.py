@@ -8,11 +8,12 @@ from core.crud import NONE, Resource, filter_by
 
 from ..forms import SpeciesForm
 from ..models import Species, StockMovement
+from .withdrawal_input import WithdrawalInput
 
 ANY_CLEANER_FISH = 'any'   # the cleaner-fish filter's value for "every cleaner fish, whatever its type"
 
 
-class SpeciesResource(Resource):
+class SpeciesResource(WithdrawalInput, Resource):
     model = Species
     form_class = SpeciesForm
     name, plural = _('species'), pgettext_lazy('plural', 'species')
@@ -21,16 +22,13 @@ class SpeciesResource(Resource):
     list_template = 'farm/species_list.html'
     icon = 'fish'
     page_size = 50
-    question_template, question_field = 'farm/_withdrawal_change.html', 'withdrawal_ack'
 
     @classmethod
-    def edited(cls, request, current, write, seen):
+    def reached(cls, request, species):
         """A species' assumed water temperature counts the degree-days of a withdrawal on a day without a measured
-        one: an edit goes through the withdrawal guard over the fish of the units its batches were in."""
-        from ..health import withdrawal
-        lines = StockMovement.objects.filter(batch__species=current).values_list('unit_id', 'operation__date')
-        return withdrawal.guarded_units(request.user, {unit for unit, _day in lines},
-                                        min((day for _unit, day in lines), default=None), write, seen)
+        one: the fish of the units its batches were in, from the first stock line."""
+        lines = StockMovement.objects.filter(batch__species=species).values_list('unit_id', 'operation__date')
+        return {unit for unit, _day in lines}, min((day for _unit, day in lines), default=None)
 
     @classmethod
     def filter_list(cls, request, objects):

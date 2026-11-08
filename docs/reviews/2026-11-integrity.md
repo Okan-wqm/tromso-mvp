@@ -102,9 +102,7 @@ its fix commit (the test was run and seen failing for the reason named; the run 
   updated `tasks.tests.test_pages`, `hr.tests.test_attendance/test_leave` (column lists).
 - Not done: the frontend submit lock (UX only; the server guard is the real one); no browser test infrastructure runs
   here (Playwright tests skip, F-127).
-- Migrations: core 0010, hr 0009, tasks 0002, farm 0029, numbered after the other branches' (farm 0027
-  health-reports, 0028 monitoring; core 0008/0009 owner-settings, exp-access, perf). Here they depend on main's last
-  (farm 0026, core 0007); when those branches land first, point the dependency at their last migration (one line each).
+- Migrations: see F10 below (on main's leaves after the merge of c6ae1f7).
 
 ## Checks run (final, after merging main 6bf9a78)
 - Full Docker suite (image balik-testrunner, test_fixint fresh, no --parallel) at ff923c5: 2784 tests, 1 failure, the
@@ -167,12 +165,12 @@ Each item: `Test:` commit first (seen failing), then the fix commit.
 - **F9 (partly)** The DB viewer's page number goes through `query.number`. Test in `core.tests_query_pages`.
 
 ### Waiting / not done in this round
-- **F8**: day parsing moves to `core.dates.read_day` (wip/bugs-nov5) once that lands; then `core.query` keeps
-  `number`/`year`, every day parse (incl. `tasks/resources.py _date`, `hr/views.py parse_cells`) switches, and
-  `core.tests_query_pages` gets a dd.mm.yyyy row. Not started, as instructed.
-- **F10**: when the earlier branches land (health-reports -> bugs-nov5 -> monitoring -> integrity), re-point the first
-  migration of each app here at main's leaf and renumber. Mine now: core 0010, farm 0029/0030/0031, hr 0009,
-  tasks 0002, inventory 0002, experiments 0003 (all rooted on main's current leaves).
+- **F8** (done after main c6ae1f7 was merged): every day, moment and period is `core.dates.read_day` / `read_moment` /
+  `read_period` (main's side taken in the merge for every caller); `core.query` keeps `number` and `year`, the year on
+  `core.dates`' calendar; `core.tests_query_pages` has a dd.mm.yyyy row. Tests: `core.tests_query`.
+- **F10** (done at the merge of main c6ae1f7): each app's migrations sit on main's latest, one leaf per app: core
+  0008_entry_keys (after 0007), farm 0029-0031 (after 0028_site_timezone_required), hr 0009, tasks 0002, inventory
+  0002, experiments 0003.
 - **F7c** (LOW): fixed after the round: `EntryKey.note` refuses a key that stands for a record of another kind with a
   form error (new-record form, assignment dialog, write paths). Tests: `core.tests_entry_key.KeyOfAnotherRecordTests`.
 - **F6** weak spots (timestamp equality as "same delete", whole-restore refusal not naming the record): documented,

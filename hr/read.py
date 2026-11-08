@@ -351,6 +351,7 @@ class BoardRow:
     standing: object
     day: date
     zone: object
+    open_since: object = None    # the clock-in of a stretch open more than OPEN_CHECK_HOURS: still counted, to be checked
 
     @property
     def state(self):
@@ -369,6 +370,9 @@ class Tile:
 
 # The tiles of the people planned today, each such person in exactly one, so they add up to Planned today; Here now is the
 # present and the late (the late are said in it).
+# A clock-in open longer than this is still on site, and flagged: a forgotten clock-out, or a long night to check.
+OPEN_CHECK_HOURS = 12
+OPEN_CHECK = timedelta(hours=OPEN_CHECK_HOURS)
 TILES = (('upcoming', (rules.UPCOMING,)), ('here', (rules.PRESENT, rules.LATE)), ('not_in', (rules.NOT_IN,)),
          ('absent', (rules.ABSENT,)), ('on_leave', (rules.ON_LEAVE,)), ('done', (rules.DONE,)))
 
@@ -381,14 +385,12 @@ class Board:
     moment: object
     unplanned: int = 0     # people here now without a plan: listed, counted apart ("Here, not planned")
     unplanned_done: int = 0  # people who came without a plan and clocked out again: listed, not on site
+    on_site: int = 0       # every open clock-in on the farm, whoever looks (the muster count: a number, no names)
+    muster_sites: tuple = ()  # (site name, open clock-ins) when they are on more than one site
+    open_long: int = 0     # of them, the clock-ins open more than OPEN_CHECK_HOURS (forgot to clock out? check)
 
     def count(self, state):
         return self.counts.get(state, 0)
-
-    @property
-    def on_site(self):
-        """Who is on site now: every open clock-in, planned (present or late) or not. The emergency headcount."""
-        return self.here + self.unplanned
 
     @property
     def tiles(self):
@@ -408,8 +410,9 @@ def board(user, moment=None, realm=None):
     yesterday and is still running), their punches, their leave, and the state worked out from them (rules.status) on their
     site's clock. People planned off, on a holiday or with nothing planned are not listed, unless they are there all the
     same. In a fixed number of queries whatever the number of people. With a realm, only the people in it today.
-    Punches are read from two days back: a clock-in left open longer than that (someone who forgot to clock out) is not
-    counted as on site; the attendance page shows it, and a lead closes it there."""
+    Closed stretches are read from two days back; an open clock-in whatever its age: one open more than OPEN_CHECK_HOURS
+    (someone who forgot to clock out?) stays on site and is flagged, a lead checks it and closes it on the attendance page.
+    `on_site` is the muster count: every open clock-in on the farm whoever looks, a number only (no names past the team)."""
     moment = moment or timezone.now()
     clocks_now = clocks(moment)
     by_site = {site: clock for clock in clocks_now if clock.sites is not None for site in clock.sites}
@@ -426,8 +429,8 @@ def board(user, moment=None, realm=None):
     plan = {(row.employee_id, row.day): row for row in ShiftAssignment.objects.filter(
         employee__in=ids, day__range=(low - timedelta(days=1), high)).select_related('shift')}
     punches = defaultdict(list)
-    for record in AttendanceRecord.objects.filter(employee__in=ids, clock_in__gte=moment - timedelta(days=2),
-                                               clock_in__lte=moment):
+    for record in AttendanceRecord.objects.filter(Q(clock_in__gte=moment - timedelta(days=2)) | Q(clock_out__isnull=True),
+                                                  employee__in=ids, clock_in__lte=moment):
         punches[record.employee_id].append(record)
     away = leave.approved_days(ids, low, high)
     rows = []
@@ -455,7 +458,9 @@ def board(user, moment=None, realm=None):
         if standing is None or (span is None and standing.state == rules.ON_LEAVE):
             continue                       # nothing planned and not there: on leave or not, nobody is expected (a person
                                            # who clocked in is present, rules.status: the headcount lists them)
-        rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone))
+        open_since = next((start for start, end in mine if end is None and moment - start > OPEN_CHECK), None)
+        rows.append(BoardRow(employee, head.department if head is not None else None, shift, span, standing, day, zone,
+                             open_since))
         if span is None:
             if standing.state == rules.DONE:
                 unplanned_done += 1
@@ -464,7 +469,24 @@ def board(user, moment=None, realm=None):
         else:
             counts[standing.state] += 1
             planned += 1
-    return Board(rows, dict(counts), planned, moment, unplanned, unplanned_done)
+    on_site, muster_sites, open_long = muster(moment)
+    return Board(rows, dict(counts), planned, moment, unplanned, unplanned_done, on_site, muster_sites, open_long)
+
+
+def muster(moment):
+    """(every open clock-in on the farm at `moment`, [(site name, count)] when they are on more than one site, how many are
+    open more than OPEN_CHECK_HOURS): the emergency headcount, whoever looks, so never names. A person's site is the one
+    they are placed on the company's day (none: "Not placed")."""
+    open_now = list(AttendanceRecord.objects.filter(clock_out__isnull=True, clock_in__lte=moment).values_list(
+        'employee_id', 'clock_in'))
+    day = timezone.localdate(moment, zone_of(None))
+    sites = sites_of({(employee_id, day) for employee_id, _start in open_now})
+    by_site = defaultdict(int)
+    for employee_id, _start in open_now:
+        site = sites.get((employee_id, day))
+        by_site[site.name if site is not None else _('Not placed')] += 1
+    places = tuple(sorted(by_site.items())) if len(by_site) > 1 else ()
+    return len(open_now), places, sum(1 for _id, start in open_now if moment - start > OPEN_CHECK)
 
 
 # ---- the team overview and the organisation chart -------------------------------------------------------------------

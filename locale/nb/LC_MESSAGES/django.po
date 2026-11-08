@@ -861,6 +861,12 @@ msgid "%(number)s deleted"
 msgstr "%(number)s slettet"
 
 #, python-format
+msgid "%(open)s open more than 12 hours: check"
+msgid_plural "%(open)s open more than 12 hours: check"
+msgstr[0] "%(open)s åpen i mer enn 12 timer: sjekk"
+msgstr[1] "%(open)s åpne i mer enn 12 timer: sjekk"
+
+#, python-format
 msgid "%(operation)s of %(date)s voided."
 msgstr "%(operation)s (%(date)s) er annullert."
 
@@ -5498,6 +5504,9 @@ msgstr[1] "Hver %(count)d. uke på %(days)s"
 msgid "Everyone"
 msgstr "Alle"
 
+msgid "Everyone clocked in, all teams"
+msgstr "Alle innstemplet, alle team"
+
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Alle i samtalen ser at en melding ble slettet, ikke hva den sa."
 
@@ -9112,6 +9121,10 @@ msgstr ""
 
 msgid "Open questions acknowledged"
 msgstr "Bekreftede åpne spørsmål"
+
+#, python-format
+msgid "Open since %(since)s: check"
+msgstr "Åpen siden %(since)s: sjekk"
 
 msgid "Open the PDF"
 msgstr "Åpne PDF-en"

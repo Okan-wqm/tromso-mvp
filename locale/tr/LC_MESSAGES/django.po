@@ -866,6 +866,12 @@ msgid "%(number)s deleted"
 msgstr "%(number)s silinmiş"
 
 #, python-format
+msgid "%(open)s open more than 12 hours: check"
+msgid_plural "%(open)s open more than 12 hours: check"
+msgstr[0] "%(open)s kayıt 12 saatten uzun süredir açık: kontrol edin"
+msgstr[1] "%(open)s kayıt 12 saatten uzun süredir açık: kontrol edin"
+
+#, python-format
 msgid "%(operation)s of %(date)s voided."
 msgstr "%(operation)s (%(date)s) iptal edildi."
 
@@ -5503,6 +5509,9 @@ msgstr[1] "%(count)d haftada bir: %(days)s"
 msgid "Everyone"
 msgstr "Herkes"
 
+msgid "Everyone clocked in, all teams"
+msgstr "Giriş yapan herkes, tüm ekipler"
+
 msgid "Everyone in the conversation sees that a message was deleted, not what it said."
 msgstr "Konuşmadaki herkes bir mesajın silindiğini görür, içeriğini görmez."
 
@@ -9122,6 +9131,10 @@ msgstr ""
 
 msgid "Open questions acknowledged"
 msgstr "Onaylanan açık sorular"
+
+#, python-format
+msgid "Open since %(since)s: check"
+msgstr "%(since)s tarihinden beri açık: kontrol edin"
 
 msgid "Open the PDF"
 msgstr "PDF’i aç"

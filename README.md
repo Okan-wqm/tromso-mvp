@@ -2990,11 +2990,14 @@ clock-in counts whatever the punch window (someone called in hours before their 
 the clock-ins inside the window say whether they were late). People planned off,
 with nothing planned or on a day off are not listed (the source counted every unrecorded person absent, HR-12); pending leave is not
 leave; nothing planned and on leave is not listed either. Today shows the figures (`hr.read.Board`): **On site now** first (every open
-clock-in, planned or not: the emergency headcount), Planned today, then one
+clock-in on the farm, whoever looks: the emergency muster, a number only, never names past the viewer's team, by site when
+there are several, `hr.read.muster`; the tile says "Everyone clocked in, all teams" and how many are open more than 12 hours),
+Planned today, then one
 tile per state the planned people are in, each person in exactly one, so they add up to it (upcoming, here now with the late among
 them said in it, not in yet, absent, on leave, done), and "Here, not planned" apart (only those still in; someone unplanned who clocked
-out is listed as done, not counted here); punches are read from two days back, so a clock-in left open longer is not counted on
-site; then the people; the board is a fragment the page
+out is listed as done, not counted here); closed stretches are read from two days back and an open clock-in whatever its age:
+one open more than 12 hours stays on site and its row says "Open since …: check" (a forgotten clock-out is closed on the
+attendance page); then the people; the board is a fragment the page
 polls (`data-poll`, 30 seconds) and the server draws every number and every time, on the clock of each person's site. The person's own
 **Clock in** and **Clock out** buttons need Read on Attendance and an employee row of their own, and are refused while a stretch is open
 or none is.

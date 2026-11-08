@@ -2,7 +2,6 @@
 team overview and the organisation chart. Each is served in Company › HR and again under Production › Team (core.crud.Mount):
 the request carries the mount, the reads take its realm, and every link and return stays in it."""
 import uuid
-from datetime import date
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -46,10 +45,13 @@ def parse_cells(values):
     """[(employee id, day)] from 'employee id:YYYY-MM-DD' strings; None when one is malformed."""
     cells = []
     for value in values:
-        employee, _separator, day = value.partition(':')
+        employee, _separator, text = value.partition(':')
+        day = read_day(text)                         # the one day parser: ISO, inside the window of dates
         try:
-            cells.append((uuid.UUID(employee), date.fromisoformat(day)))
+            cells.append((uuid.UUID(employee), day))
         except ValueError:
+            return None
+        if day is None:
             return None
     return cells
 

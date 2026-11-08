@@ -13,8 +13,8 @@ from django.utils import formats
 from django.utils.translation import gettext, gettext_lazy as _
 
 FIRST, LAST = date(1900, 1, 1), date(2100, 12, 31)
-DAY_SHAPE = re.compile(r'^(\d{1,2}\.\d{1,2}\.\d{4}|\d{4}-\d{2}-\d{2})$')
-TIME = re.compile(r'\d{1,2}:\d{2}')
+DAY_SHAPE = re.compile(r'^([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})$')   # ASCII digits only
+TIME = re.compile(r'[0-9]{1,2}:[0-9]{2}')
 
 SHAPE = _('Give the date as dd.mm.yyyy, e.g. 06.11.2026.')
 MOMENT_SHAPE = _('Give the date and the time as dd.mm.yyyy HH:MM, e.g. 06.11.2026 09:19.')
@@ -26,9 +26,11 @@ def inside(day):
 
 
 def read_day(text, request=None):
-    """The date in `text` (dd.mm.yyyy or ISO, inside the window), or None. With `request`, a text that is not such a date
+    """The one day parser: the date in `text` (dd.mm.yyyy or ISO in ASCII digits, inside the window), or None. With `request`, a text that is not such a date
     is said back to the person (a list still answers, unfiltered by it)."""
-    text = (text or '').strip()
+    if not isinstance(text, str):                     # a number, a date object, a list: not a date typed
+        return None
+    text = text.strip()
     if not text:
         return None
     found = None

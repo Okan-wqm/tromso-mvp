@@ -87,7 +87,7 @@
       {% for row in history %}{% with sample=row.sample %}
       <tr class="{% if sample.is_deleted %}is-voided{% else %}wq-row-{{ row.status }}{% endif %}">
         <td class="sticky-first nowrap"{% if not sample.is_deleted %}{% if row.status == "critical" %} data-status="critical"{% elif row.status == "warning" %} data-status="warning"{% endif %}{% endif %}><time class="ui-code" datetime="{{ sample.measured_at|date:'c' }}">{{ sample|sample_clock|date:"DATETIME_FORMAT" }}</time>{% if sample.is_deleted %}<span class="ui-sub">{% blocktrans trimmed with reason=sample.void_reason name=sample.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
-        <td class="nowrap"><a class="ui-code" href="{{ row.history_url }}">{{ sample.point.owner.code }}</a><span class="ui-sub">{{ sample.point.name }} · {{ sample.point.get_kind_display }}</span></td>
+        <td class="nowrap"><a class="ui-code" href="{{ row.history_url }}">{{ sample.point.owner.code }}</a><span class="row-sub">{{ sample.point.name }} · {{ sample.point.get_kind_display }}</span></td>
         <td>{{ sample.get_source_display }}{% if sample.notes %}<span class="ui-sub">{{ sample.notes }}</span>{% endif %}</td>
         {% for reading in row.cells %}{% include "farm/_water_cell.html" %}{% endfor %}
         <td>{{ sample.created_by.get_username|default:"system" }}</td>

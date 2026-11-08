@@ -262,3 +262,6 @@ a.ui-btn { text-decoration: none; }
   .ui-table .ui-chip { white-space: normal; line-height: 1.25; padding-block: 3px; }
   .ui-head-actions { margin-left: 0; }
 }
+/* The origin and age printed inside a value (farm/_water_source.html) read as the value face's small line */
+.ui-value b .wq-source { display: block; margin-top: 1px; color: var(--text-3); font-size: 13px; font-style: normal; font-weight: 400; white-space: nowrap; }
+.ui-table .row-sub { display: block; color: var(--text-3); font-size: 13px; }

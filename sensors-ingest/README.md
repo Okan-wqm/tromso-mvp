@@ -41,7 +41,8 @@ tables as the role `sensors_ingest`.
 - `tests/run.sh`: a fresh test database migrated by Django, a broker with the production configuration, then
   `cargo fmt --check`, `cargo test` (unit, property, database as role `sensors_ingest`, live MQTT), `cargo clippy -D
   warnings`, `cargo deny check` (licences: permissive only, `rodbus` banned; advisories; sources) and THIRD_PARTY
-  freshness.
+  freshness. CI runs the same on every pull request (the root README, CI and dependency updates), on the toolchain
+  pinned in `rust-toolchain.toml` (1.88.0, as the Dockerfile and `tests/run.sh`'s image).
 - `simulator/check.sh`: the Node-RED simulator's devices and switches; every run has its own containers, network and
   MQTT client id, so runs at the same time never disturb each other (`simulator/test_isolation.sh`).
 - `simulator/farm-check.sh`: the farm flow on its own database with Django's demo sensors; per parameter code, values

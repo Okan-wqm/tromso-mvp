@@ -97,6 +97,28 @@ def stored_moment(text):
     return moment if inside(moment.date()) else None
 
 
+PERIOD_KEY = re.compile(r'^([0-9]{4})(?:-W([0-9]{2})|-([0-9]{2}))?$')          # ASCII digits only
+
+
+def read_period(key):
+    """A period's key as an address writes it (2026-W45, 2026-11, 2026): ('week', its Monday), ('month', its first day) or
+    ('year', 1 January), inside the window of dates; None for anything else (a week the year has not, month 13, year 1)."""
+    found = PERIOD_KEY.match(key) if isinstance(key, str) else None
+    if found is None:
+        return None
+    year, week, month = int(found[1]), found[2], found[3]
+    try:
+        if week is not None:
+            grain, start = 'week', date.fromisocalendar(year, int(week), 1)
+        elif month is not None:
+            grain, start = 'month', date(year, int(month), 1)
+        else:
+            grain, start = 'year', date(year, 1, 1)
+    except ValueError:
+        return None
+    return (grain, start) if inside(start) else None
+
+
 def _shaped(text):
     """Whether `text` is a real calendar date in an accepted shape, inside the window or not."""
     for shape in formats.get_format('DATE_INPUT_FORMATS'):

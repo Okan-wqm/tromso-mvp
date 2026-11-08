@@ -1,10 +1,10 @@
-{% load i18n %}{# A conversation's messages, oldest first: the page's list, and the rows a poll adds (messaging.views.poll). #}
+{% load i18n dates %}{# A conversation's messages, oldest first: the page's list, and the rows a poll adds (messaging.views.poll). #}
 {% for message in shown %}
 {% if message.pk == first_new %}<li class="chat-new" role="separator"><span>{% trans "New" %}</span></li>{% endif %}
 <li class="msg{% if message.author_id == participant.pk %} msg-mine{% endif %}{% if message.is_deleted %} msg-deleted{% endif %}" id="m{{ message.pk }}">
   <p class="msg-meta">
     <strong class="msg-author">{{ message.author }}</strong>
-    <time datetime="{{ message.created_at|date:'c' }}" title="{{ message.created_at|date:'DATETIME_FORMAT' }}">{{ message.created_at|date:"DATETIME_FORMAT" }}</time>
+    <time datetime="{{ message.created_at|date:'c' }}" title="{{ message.created_at|company_clock|date:'DATETIME_FORMAT' }}">{{ message.created_at|company_clock|date:"DATETIME_FORMAT" }}</time>
     {% if message.author_id == participant.pk and not message.is_deleted %}<a class="msg-delete" href="{% url 'messaging:delete_message' participant.conversation_id message.pk %}" data-modal title="{% trans "Delete message" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete message" %}</span></a>{% endif %}
   </p>
   {% if message.is_deleted %}<p class="msg-body msg-gone">{% trans "Message deleted" %}</p>{% else %}<p class="msg-body">{{ message.body|linebreaksbr }}</p>{% endif %}

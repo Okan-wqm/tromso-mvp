@@ -65,7 +65,11 @@ delete is a soft delete. Differences from the source:
   unseen. Now the form asks for one, offering the company's first; a site made without one (a seed, a test) is given the
   company's, stored; the database refuses an empty one (`chk_sites_timezone_given`). **The company's zone is a setting of
   its own**, `COMPANY_TIME_ZONE` (environment, `Europe/Oslo` by default; later the platform owner's settings), never the
-  server's `TIME_ZONE` (UTC). Migration `farm/0030_site_timezone_required` gives every site without a zone the company's.
+  server's `TIME_ZONE` (UTC): a place without a site (a person not posted, a record or a form over sites of several
+  zones, the activity log, a record's history, the messages) reads it (`zone_of(None)`, `core.dates.company_zone`), and a
+  test reads the code so nothing falls back to the server's clock (`core/tests_company_clock.py`). The server refuses to
+  start on a zone that is not one a site may have (system check `farm.E001`). Migration `farm/0030_site_timezone_required`
+  gives every site without a zone the company's, and refuses such a zone rather than write it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
   which decides the weeks of the lower spring limit (see Operations › Health).
 - The Reports tab has what the regulatory reports need of the site (see Production › Reports): its **organisation
@@ -2353,7 +2357,7 @@ messages (earlier ones a link away), a "New" line above the first one not read b
 (Enter sends, Shift+Enter starts a new line) and, for a channel, its member count and **Members**. **New
 message** asks for a person and opens your direct conversation with them, the one you already have if there
 is one; **New channel** asks for a name and the first members. On a phone one of the two columns shows.
-Times are on the company's clock (`settings.TIME_ZONE`), as in the activity log.
+Times are on the company's clock (`COMPANY_TIME_ZONE`, the `company_clock` filter), as in the activity log.
 
 **The rules**, each where it can be held:
 
@@ -3240,7 +3244,7 @@ C:\Python312\python.exe -m venv .venv
 
 The database connection reads `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT`; the
 defaults match the local container in `docker-compose.yml`. `COMPANY_TIME_ZONE` is the company's time zone, a new site's and the one migration farm/0030 gives a site without one
-(default `Europe/Oslo`; the server's own clock stays UTC). `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
+(default `Europe/Oslo`; the server's own clock stays UTC; one of the zones a site may have, or the server refuses to start: `farm.E001`). `DB_CONN_MAX_AGE` keeps a connection open between requests for that many seconds (default 0, one per request) and is meant for a server with long-lived worker threads or processes (gunicorn); a kept connection is health-checked before reuse. Never set it for `manage.py runserver`: the development server starts a new thread for every request, so each request leaves its own connection open until the database refuses new clients ("too many clients"). Uploaded files (the library's PDFs) go to
 `MEDIA_ROOT`: `DJANGO_MEDIA_ROOT`, by default `media/` in the checkout (ignored by git); keep it outside the
 checkout anywhere but a developer's machine, and back it up with the database.
 

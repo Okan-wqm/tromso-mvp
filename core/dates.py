@@ -5,11 +5,13 @@ another shape (11/06/2026, 06-11-2026, a two-digit year) is never reinterpreted,
 (never a server error further on), and a moment needs its time (never a silent 00:00)."""
 import re
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.utils import formats
+from django.utils import formats, timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
 FIRST, LAST = date(1900, 1, 1), date(2100, 12, 31)
@@ -23,6 +25,17 @@ OUTSIDE = _('Give a date from 01.01.1900 to 31.12.2100.')
 
 def inside(day):
     return day is not None and FIRST <= day <= LAST
+
+
+def company_zone():
+    """The company's time zone (settings.COMPANY_TIME_ZONE, checked when the server starts: farm.checks): the clock of a
+    place without a site, never the server's UTC (settings.TIME_ZONE). A site reads its own (farm's zone_of)."""
+    return ZoneInfo(settings.COMPANY_TIME_ZONE)
+
+
+def company_today():
+    """Today on the company's clock."""
+    return timezone.localdate(timezone=company_zone())
 
 
 def read_day(text, request=None):

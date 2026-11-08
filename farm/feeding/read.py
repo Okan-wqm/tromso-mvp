@@ -155,7 +155,7 @@ def project(unit_ids, days=(), now=None):
     records = feedings(unit_ids)
     units = Tank.all_objects.select_related('production_department__site').in_bulk(unit_ids)
     first = min([record.date for record in records] + [day for _unit, day in days],
-                default=timezone.localdate(now))
+                default=timezone.localdate(now, zone_of(None)))
     projector = Projector(policy(units, batch_ids, first, now), days)
     return Projection(walk(ledger(batch_ids), records, days, projector=projector), projector)
 

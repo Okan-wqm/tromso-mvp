@@ -25,6 +25,7 @@ from django.utils.translation import gettext as _, ngettext, pgettext
 from django.views.decorators.http import require_POST
 
 from core import audit, navigation
+from core.dates import company_today, company_zone
 from core.crud import render_page
 from farm.models import ProductionDepartment, Site, System, Tank
 from farm.stock.views import VIEW
@@ -47,7 +48,7 @@ def _keep_alive(request, params):
     signs itself out freezes. The only write on this path, a session row, at most once a day (owner decision)."""
     if not params.wall:
         return
-    today = timezone.localdate().isoformat()
+    today = company_today().isoformat()
     if request.session.get(SESSION_DAY) != today:
         request.session[SESSION_DAY] = today      # modifying the session saves it with a new expiry
 
@@ -80,7 +81,8 @@ def _grid(request, params, board, now=None):
     return {
         'rows': [{'card': card, 'flip': _flip_urls(params, card)} for card in found], 'strip': read.attention(found),
         'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
-        'computed_at': timezone.localtime(now), 'shown': len(found), 'on_farm': farm,
+        'computed_at': timezone.make_naive(now, company_zone()),     # naive: a template shows an aware one in UTC
+        'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)
         % {'shown': len(found), 'farm': farm},
     }

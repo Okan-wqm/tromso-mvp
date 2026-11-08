@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext, gettext_lazy as _
 
+from core.dates import company_zone as company_zone_info
 from core.models import AuditedModel, CodedMixin
 
 from ..health import lice
@@ -192,8 +193,9 @@ class Site(CodedMixin, AuditedModel):
 
 def zone_of(site):
     """The time zone a farm's day and clock are read in: the site's (every site has one), and for a place without a
-    site the server's clock (settings.TIME_ZONE). Never a browser's (the source's dialogs were a day behind east of UTC)."""
-    return ZoneInfo(site.timezone if site is not None else settings.TIME_ZONE)
+    site the company's (settings.COMPANY_TIME_ZONE, core.dates.company_zone), never the server's UTC. Never a browser's
+    (the source's dialogs were a day behind east of UTC)."""
+    return ZoneInfo(site.timezone) if site is not None else company_zone_info()
 
 
 class SiteContact(Contact):

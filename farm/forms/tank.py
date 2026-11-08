@@ -12,6 +12,7 @@ from core.crud import CodedFormMixin, Fieldset, TabbedForm
 from core.widgets import DayInput, DependentSelect, Output
 
 from ..models import ProductionDepartment, System, Tank
+from ..models.site import zone_of
 from ..models.tank import (
     KIND_FIELDS, LIMITS, LINER_THICKNESS, LINERS, OFFERED, REQUIRED, SHAPE_MEASURES, VOLUME_FIELDS, Kind, Liner,
     PondType, Shape, described_by,
@@ -152,8 +153,9 @@ class TankForm(CodedFormMixin, TabbedForm):
         if adding:
             del self.fields['status_changed_at']
         else:
+            site = unit.production_department.site if unit.production_department_id else None
             self.initial['status_changed_at'] = formats.date_format(
-                timezone.localtime(unit.status_changed_at), 'DATETIME_FORMAT') if unit.status_changed_at else ''
+                timezone.localtime(unit.status_changed_at, zone_of(site)), 'DATETIME_FORMAT') if unit.status_changed_at else ''
 
     def _location(self, unit):
         departments = (ProductionDepartment.objects.select_related('site')

@@ -109,10 +109,10 @@ class ChartForm(forms.Form):
             self.add_error(None, _('Choose a time: a preset, or from and to.'))
             return cleaned
         zone = read.zone_for(target)
-        current = timezone.get_current_timezone()
         try:
-            cleaned['from'] = on_site_clock(timezone.make_naive(cleaned['start'], current), zone)
-            cleaned['to'] = on_site_clock(timezone.make_naive(cleaned['end'], current), zone)
+            # the wall time typed (the form made it aware in the current zone), read on the place's clock
+            cleaned['from'] = on_site_clock(timezone.make_naive(cleaned['start'], timezone.get_current_timezone()), zone)
+            cleaned['to'] = on_site_clock(timezone.make_naive(cleaned['end'], timezone.get_current_timezone()), zone)
         except ValidationError as error:
             self.add_error(None, error)
             return cleaned

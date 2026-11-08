@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.translation import gettext
 from django.views import i18n
 
-from .dates import read_day
+from .dates import company_zone, read_day
 from . import audit
 from .language import is_supported, save_account_language
 from .models import AuditLog
@@ -30,7 +30,7 @@ def _day(request, value, end=False):
     day = read_day(value, request)
     if day is None:
         return None
-    return timezone.make_aware(datetime.combine(day, time.max if end else time.min))
+    return timezone.make_aware(datetime.combine(day, time.max if end else time.min), company_zone())
 
 
 @permission_required('core.view_auditlog', raise_exception=True)

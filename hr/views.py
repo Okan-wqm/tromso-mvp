@@ -9,7 +9,6 @@ from django.db import IntegrityError
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.http import require_POST
@@ -157,7 +156,7 @@ def cancel(request, pk):
 def _today_context(request):
     own = services.own_employee(request.user)
     open_punch = AttendanceRecord.objects.filter(employee=own, clock_out__isnull=True).first() if own else None
-    open_zone = zone_of(read.site_on(own, timezone.localdate())) if open_punch else None
+    open_zone = zone_of(read.site_on(own, site_today(None))) if open_punch else None
     return {'board': read.board(request.user, realm=scope.realm_for(request)), 'own': own, 'open_punch': open_punch,
             'open_zone': open_zone,
             'can_enter': request.user.has_perm('hr.add_attendancerecord'), 'states': rules.STATES}

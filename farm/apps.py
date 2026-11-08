@@ -5,7 +5,7 @@ class FarmConfig(AppConfig):
     name = 'farm'
 
     def ready(self):
-        from . import resources  # noqa: F401  declares the tabs on Resource.registry
+        from . import checks, resources  # noqa: F401  registers the system checks, declares the tabs
         from .handling import withdrawal
         from .health.withdrawal import provider
 
